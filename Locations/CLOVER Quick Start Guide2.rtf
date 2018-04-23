@@ -1,0 +1,101 @@
+{\rtf1\ansi\ansicpg1252\cocoartf1404\cocoasubrtf470
+{\fonttbl\f0\fswiss\fcharset0 Helvetica;\f1\fnil\fcharset0 LucidaGrande;}
+{\colortbl;\red255\green255\blue255;}
+{\*\listtable{\list\listtemplateid1\listhybrid{\listlevel\levelnfc23\levelnfcn23\leveljc0\leveljcn0\levelfollow0\levelstartat1\levelspace360\levelindent0{\*\levelmarker \{square\}}{\leveltext\leveltemplateid1\'01\uc0\u9642 ;}{\levelnumbers;}\fi-360\li720\lin720 }{\listname ;}\listid1}
+{\list\listtemplateid2\listhybrid{\listlevel\levelnfc0\levelnfcn0\leveljc0\leveljcn0\levelfollow0\levelstartat1\levelspace360\levelindent0{\*\levelmarker \{decimal\}.}{\leveltext\leveltemplateid101\'02\'00.;}{\levelnumbers\'01;}\fi-360\li720\lin720 }{\listlevel\levelnfc4\levelnfcn4\leveljc0\leveljcn0\levelfollow0\levelstartat1\levelspace360\levelindent0{\*\levelmarker \{lower-alpha\}.}{\leveltext\leveltemplateid102\'02\'01.;}{\levelnumbers\'01;}\fi-360\li1440\lin1440 }{\listlevel\levelnfc2\levelnfcn2\leveljc0\leveljcn0\levelfollow0\levelstartat1\levelspace360\levelindent0{\*\levelmarker \{lower-roman\}.}{\leveltext\leveltemplateid103\'02\'02.;}{\levelnumbers\'01;}\fi-360\li2160\lin2160 }{\listname ;}\listid2}}
+{\*\listoverridetable{\listoverride\listid1\listoverridecount0\ls1}{\listoverride\listid2\listoverridecount0\ls2}}
+\paperw11900\paperh16840\margl1440\margr1440\vieww10800\viewh8400\viewkind0
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\pardirnatural\partightenfactor0
+
+\f0\fs24 \cf0 CLOVER Quick Start Guide\
+\
+This guide provides a very brief guide to using CLOVER as quickly as possible following the initial download. The file structure has two branches: \
+\pard\tx220\tx720\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\li720\fi-720\pardirnatural\partightenfactor0
+\ls1\ilvl0\cf0 {\listtext	
+\f1 \uc0\u9642 
+\f0 	}a \'93Scripts\'94 branch which contains Python files that the user runs and uses to generate outputs and perform simulations, \
+{\listtext	
+\f1 \uc0\u9642 
+\f0 	}a \'93Locations\'94 branch that the describes individual locations and specifics of a given scenario being investigated. \
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\pardirnatural\partightenfactor0
+\cf0 \
+An example location, \'93Bahraich\'94 in India, is included in the initial download for reference. New locations can be set up using the generic \'93New_Location\'94 folder structure. Functions are stated below without explicit definition of their input arguments for brevity. \
+\
+\pard\tx220\tx720\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\li720\fi-720\pardirnatural\partightenfactor0
+\ls2\ilvl0\cf0 {\listtext	1.	}General Setup\
+\pard\tx940\tx1440\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\li1440\fi-1440\pardirnatural\partightenfactor0
+\ls2\ilvl1\cf0 {\listtext	a.	}In each file in the \'93Scripts\'94 branch, update:\
+\pard\tx1660\tx2160\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\li2160\fi-2160\pardirnatural\partightenfactor0
+\ls2\ilvl2\cf0 {\listtext	i.	}\'93self.location\'94 to the name of your location\
+{\listtext	ii.	}\'93self.CLOVER_filepath\'94 to the file path of your CLOVER folder\
+{\listtext	iii.	}Update the file path syntax as necessary\
+{\listtext	iv.	}Do this for all scripts\
+\pard\tx940\tx1440\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\li1440\fi-1440\pardirnatural\partightenfactor0
+\ls2\ilvl1\cf0 {\listtext	b.	}In the \'93Locations\'94 folder, copy a new version of the \'93New_Location\'94 file structure and rename it to your chosen location\
+{\listtext	c.	}Go to {\field{\*\fldinst{HYPERLINK "https://www.renewables.ninja/register"}}{\fldrslt https://www.renewables.ninja/register}} to register a free account to gain your API token \
+\pard\tx220\tx720\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\li720\fi-720\pardirnatural\partightenfactor0
+\ls2\ilvl0\cf0 {\listtext	2.	}Establish your location\
+\pard\tx940\tx1440\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\li1440\fi-1440\pardirnatural\partightenfactor0
+\ls2\ilvl1\cf0 {\listtext	a.	}In your location folder (e.g. \'93Bahraich\'94), open the \'93Location Data\'94 folder\
+{\listtext	b.	}Complete the \'93Location inputs.csv\'94 template with the details of your location and your API token \
+\pard\tx220\tx720\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\li720\fi-720\pardirnatural\partightenfactor0
+\ls2\ilvl0\cf0 {\listtext	3.	}Get PV generation data\
+\pard\tx940\tx1440\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\li1440\fi-1440\pardirnatural\partightenfactor0
+\ls2\ilvl1\cf0 {\listtext	a.	}In your location folder, open the \'93Generation\'94 folder and then the \'93PV\'94 folder\
+{\listtext	b.	}Complete the \'93PV generation inputs.csv\'94 template with the details of your location\
+{\listtext	c.	}Run Solar().save_solar_output(gen_year) for each year of ten consecutive years\
+\pard\tx1660\tx2160\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\li2160\fi-2160\pardirnatural\partightenfactor0
+\ls2\ilvl2\cf0 {\listtext	i.	}This function requires the internet access to connect to the renewables.ninja site\
+{\listtext	ii.	}The renewables.ninja site has a limit on the number of downloads in a given time period, so needs to be done manually for each year\
+{\listtext	iii.	}Choose any period of ten years for which renewables.ninja has data\
+\pard\tx940\tx1440\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\li1440\fi-1440\pardirnatural\partightenfactor0
+\ls2\ilvl1\cf0 {\listtext	d.	}Run Solar().total_solar_output(start_year) to combine your yearly solar outputs into a single file of twenty years\
+\pard\tx220\tx720\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\li720\fi-720\pardirnatural\partightenfactor0
+\ls2\ilvl0\cf0 {\listtext	4.	}Get grid availability data\
+\pard\tx940\tx1440\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\li1440\fi-1440\pardirnatural\partightenfactor0
+\ls2\ilvl1\cf0 {\listtext	a.	}In your location folder, open the \'93Generation\'94 folder and then the \'93Grid\'94 folder\
+{\listtext	b.	}Complete the \'93Grid inputs.csv\'94 template with the details of your location\
+\pard\tx1660\tx2160\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\li2160\fi-2160\pardirnatural\partightenfactor0
+\ls2\ilvl2\cf0 {\listtext	i.	}Grid profiles are a 1x24 matrix of hourly probabilities (0-1) that the grid is available\
+{\listtext	ii.	}Input all grid profiles at the same time\
+\pard\tx940\tx1440\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\li1440\fi-1440\pardirnatural\partightenfactor0
+\ls2\ilvl1\cf0 {\listtext	c.	}Run Grid().get_lifetime_grid_status() to automatically generate grid availability for all specified profiles\
+\pard\tx220\tx720\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\li720\fi-720\pardirnatural\partightenfactor0
+\ls2\ilvl0\cf0 {\listtext	5.	}Get diesel backup generation data\
+\pard\tx940\tx1440\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\li1440\fi-1440\pardirnatural\partightenfactor0
+\ls2\ilvl1\cf0 {\listtext	a.	}In your location folder, open the \'93Generation\'94 folder and then the \'93Diesel\'94 folder\
+{\listtext	b.	}Complete the \'93Diesel generation inputs.csv\'94 template with the details of your location\
+\pard\tx220\tx720\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\li720\fi-720\pardirnatural\partightenfactor0
+\ls2\ilvl0\cf0 {\listtext	6.	}Get load data\
+\pard\tx940\tx1440\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\li1440\fi-1440\pardirnatural\partightenfactor0
+\ls2\ilvl1\cf0 {\listtext	a.	}In your location folder, open the \'93Load\'94 folder\
+{\listtext	b.	}Complete the \'93Devices.csv\'94 template with the details of your location\
+{\listtext	c.	}In the \'93Devices utilisation\'94 folder, complete the utilisation profiles for each device e.g. \'93light_times.csv\'94\
+\pard\tx1660\tx2160\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\li2160\fi-2160\pardirnatural\partightenfactor0
+\ls2\ilvl2\cf0 {\listtext	i.	}Utilisation profiles are a 12x24 (monthly x hourly) matrix of probabilities that the specified device is in use in that hour\
+{\listtext	ii.	}Each device in  \'93Devices.csv\'94 must have a corresponding utilisation profile\
+\pard\tx940\tx1440\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\li1440\fi-1440\pardirnatural\partightenfactor0
+\ls2\ilvl1\cf0 {\listtext	d.	}Run Load().number_of_devices_daily() to get the number of each device in the community on a given day\
+{\listtext	e.	}Run Load().get_device_daily_profile() to get the daily utilisation profile (365x24 matrix) for each device\
+{\listtext	f.	}Run Load().devices_in_use_hourly() to generate the number of devices in use for each hour\
+{\listtext	g.	}Run Load().device_load_hourly() to get the load of each device\
+{\listtext	h.	}Run Load().total_load_hourly() to get the total community load, segregated into \'93Domestic\'94, \'93Commercial\'94 and \'93Public\'94 demand types\
+\pard\tx220\tx720\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\li720\fi-720\pardirnatural\partightenfactor0
+\ls2\ilvl0\cf0 {\listtext	7.	}Set up the energy system\
+\pard\tx940\tx1440\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\li1440\fi-1440\pardirnatural\partightenfactor0
+\ls2\ilvl1\cf0 {\listtext	a.	}In your location folder, open the \'93Simulation\'94 folder\
+\pard\tx940\tx1440\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\li1440\fi-1440\pardirnatural\partightenfactor0
+\ls2\ilvl1\cf0 {\listtext	b.	}Complete the \'93Energy system inputs.csv\'94 template with the details of your location\
+{\listtext	c.	}In your location folder, open the \'93Scenario\'94 folder\
+{\listtext	d.	}Complete the \'93Scenario inputs.csv\'94 template with the details of your location\
+\pard\tx220\tx720\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\li720\fi-720\pardirnatural\partightenfactor0
+\ls2\ilvl0\cf0 {\listtext	8.	}Perform a simulation\
+\pard\tx940\tx1440\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\li1440\fi-1440\pardirnatural\partightenfactor0
+\ls2\ilvl1\cf0 {\listtext	a.	}Run Energy_System().simulation(start_year, end_year, PV_size, storage_size) with your chosen system\
+{\listtext	b.	}Record the outputs as a variable to investigate the outputs in more detail\
+{\listtext	c.	}Save the outputs using Energy_System().save_simulation(simulation_name,filename)\
+{\listtext	d.	}Open a saved simulation using Energy_System().open_simulation(filename)\
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\pardirnatural\partightenfactor0
+\cf0 \
+For more information, contact Phil Sandwell (philip.sandwell@gmail.com)\
+}
