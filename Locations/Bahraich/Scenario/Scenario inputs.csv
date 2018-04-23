@@ -1,0 +1,1 @@
+PV,Y,(Y/N)Battery,Y,(Y/N)Diesel backup,Y,(Y/N)Diesel backup threshold,0.1,Maximum acceptible blackouts (0.0-1.0)Grid,Y,(Y/N)Grid type,bahraich,Grid profilePrioritise self generation,Y,(Y/N)Domestic,Y,(Y/N)Commercial,Y,(Y/N)Public,Y,(Y/N)Distribution network,DC,DC or AC distribution network
