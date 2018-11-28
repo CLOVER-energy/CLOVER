@@ -4,7 +4,7 @@
                                 LOAD FILE
 ===============================================================================
                             Most recent update:
-                                23 April 2018
+                              28 November 2018
 ===============================================================================
 Made by:
     Philip Sandwell
@@ -20,13 +20,13 @@ import numpy as np
 import math
 
 import sys
-sys.path.insert(0, '/***YOUR LOCAL FILE PATH***/CLOVER 4.0/Scripts/Conversion scripts')
+sys.path.insert(0, '/***YOUR LOCAL FILE PATH***/CLOVER/Scripts/Conversion scripts')
 from Conversion import Conversion
 
 class Load():
     def __init__(self):
         self.location = 'Bahraich'
-        self.CLOVER_filepath = '/***YOUR LOCAL FILE PATH***/CLOVER 4.0'
+        self.CLOVER_filepath = '/***YOUR LOCAL FILE PATH***/CLOVER'
         self.location_filepath = self.CLOVER_filepath + '/Locations/' + self.location
         self.location_inputs = pd.read_csv(self.location_filepath + '/Location Data/Location inputs.csv',header=None,index_col=0)[1]
         self.device_filepath = self.location_filepath + '/Load/'
@@ -39,6 +39,7 @@ class Load():
 # =============================================================================
 #       Calculate the load of devices in the community
 # =============================================================================
+
     def total_load_hourly(self):
         """
         Function:
@@ -55,23 +56,18 @@ class Load():
         for i in range(len(self.device_inputs)):
             device_info = self.device_inputs.iloc[i]
             if device_info['Type'] == 'Domestic':
-                add_load = pd.read_csv(self.device_load_filepath
-                                       + device_info['Device'] + '_load.csv',
-                                       index_col = 0).reset_index(drop=True)
+                add_load = pd.read_csv(self.device_load_filepath + device_info['Device'] + '_load.csv', index_col = 0).reset_index(drop=True)
                 domestic_load = pd.DataFrame(domestic_load.values + add_load.values)
             elif device_info['Type'] == 'Commercial':
-                add_load = pd.read_csv(self.device_load_filepath
-                                       + device_info['Device'] + '_load.csv',
-                                       index_col = 0).reset_index(drop=True)
+                add_load = pd.read_csv(self.device_load_filepath + device_info['Device'] + '_load.csv', index_col = 0).reset_index(drop=True)
                 commercial_load = pd.DataFrame(commercial_load.values + add_load.values)
             elif device_info['Type'] == 'Public':
-                add_load = pd.read_csv(self.device_load_filepath
-                                       + device_info['Device'] + '_load.csv',
-                                       index_col = 0).reset_index(drop=True)
+                add_load = pd.read_csv(self.device_load_filepath + device_info['Device'] + '_load.csv', index_col = 0).reset_index(drop=True)
                 public_load = pd.DataFrame(public_load.values + add_load.values)
         total_load = pd.concat([domestic_load,commercial_load,public_load],axis=1)
         total_load.columns = ["Domestic", "Commercial", "Public"]
         total_load.to_csv(self.device_load_filepath + 'total_load.csv')
+#        total_load.to_excel(self.device_load_filepath + 'total_load.xlsx')
 
     def device_load_hourly(self):
         """
@@ -85,9 +81,7 @@ class Load():
         """
         for i in range(len(self.device_inputs)):
             device_info = self.device_inputs.iloc[i]
-            device_load = float(device_info['Power'])*pd.read_csv(
-                    self.device_usage_filepath + device_info['Device'] + '_in_use.csv',
-                    index_col = 0)
+            device_load = float(device_info['Power'])*pd.read_csv(self.device_usage_filepath + device_info['Device'] + '_in_use.csv', index_col = 0)
             device_load.to_csv(self.device_load_filepath + device_info['Device'] + '_load.csv')
                         
 # =============================================================================
@@ -108,13 +102,9 @@ class Load():
         """                
         for i in range(len(self.device_inputs)):
             device_info = self.device_inputs.iloc[i]
-            device_daily_profile = pd.read_csv(self.device_utilisation_filepath
-                                               + device_info['Device'] + '_daily_times.csv',
-                                               index_col = 0)
+            device_daily_profile = pd.read_csv(self.device_utilisation_filepath + device_info['Device'] + '_daily_times.csv', index_col = 0)
             device_daily_profile = device_daily_profile.reset_index(drop=True)
-            daily_devices = pd.read_csv(self.device_ownership_filepath
-                                        + device_info['Device'] + '_daily_ownership.csv',
-                                        index_col = 0)
+            daily_devices = pd.read_csv(self.device_ownership_filepath + device_info['Device'] + '_daily_ownership.csv', index_col = 0)
             daily_devices = daily_devices.reset_index(drop=True)
             device_hourlist = pd.DataFrame()
             print('Calculating number of '+device_info['Device']+'s in use\n')
@@ -123,8 +113,7 @@ class Load():
                 day_profile = device_daily_profile.iloc[day]
                 day_devices_on = pd.DataFrame(np.random.binomial(devices, day_profile))
                 device_hourlist = device_hourlist.append(day_devices_on)
-            device_hourlist.to_csv(self.device_usage_filepath
-                                   + device_info['Device'] + '_in_use.csv')
+            device_hourlist.to_csv(self.device_usage_filepath + device_info['Device'] + '_in_use.csv')
         print('\nAll devices in use calculated')
         
     def get_device_daily_profile(self):
