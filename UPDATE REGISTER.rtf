@@ -2,15 +2,32 @@ CLOVER Updates Register
 
 This guide provides a very brief overview of the updates to the CLOVER model.
 	1.	Update to Load.py (28.11.18)
-	      ⁃	Minor tidying
+			Minor tidying
 	2.	Update to Conversion.py (28.11.18)
-	      ⁃	Minor updates to comments
-	      ⁃	Addition of self.daily_sum_to_monthly_sum(...)
+			Minor updates to comments
+			Addition of self.daily_sum_to_monthly_sum(...)
 	3.	Update to Load.py (12.12.18)
-	      ⁃	Addition of function to calculate load statistics (aggregated yearly) for later integration into other modules
+			Addition of function to calculate load statistics (aggregated yearly) for later integration into other modules
 	4.	Update to Energy_System.py (12.12.18)
-	      ⁃	self.simulation(…) restructured to fix bugs (unmet energy miscalculations, grid energy recorded as “-0”)
-	      ⁃	self.simulation(…) now gives two outputs (system performance outputs as before, and description of installed system capacity for later use)
-	      ⁃	Change of function orders in file
+			self.simulation(…) restructured to fix bugs (unmet energy miscalculations, grid energy recorded as “-0”)
+			self.simulation(…) now gives two outputs (system performance outputs as before, and description of installed system capacity for later use)
+			Change of function orders in file
+	5.	Addition of “Impact Scripts” and Finance.py (12.12.18)
+			Added to “Scripts” folder
+			Script for calculating financial impacts
+	6.	Addition of “Impact” folder in Bahraich location folder (12.12.18)
+			Added “Finance inputs.csv”
+	7.	Addition of “Impact” folder in New_Location folder (12.12.18)
+			Added “Finance inputs.csv”
+	8.	Addition of “Optimisation” folder in Bahraich location folder (12.12.18)
+			Added “Optimisation inputs.csv”
+			Added example saved optimisations
+	9.	Addition of “Optimisation” folder in New_Location folder (12.12.18)
+			Added “Optimisation inputs.csv”
+			Added example saved optimisations
+	10.	Addition of Optimisation.py (12.12.18)
+			Added to “Scripts” folder
+			Script for optimising system sizes
+
 
 For more information, contact Phil Sandwell (philip.sandwell@gmail.com) or go to the list of CLOVER pull requests (https://github.com/phil-sandwell/CLOVER/pulls)
