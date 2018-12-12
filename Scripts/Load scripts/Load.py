@@ -4,7 +4,7 @@
                                 LOAD FILE
 ===============================================================================
                             Most recent update:
-                              28 November 2018
+                             12 December 2018
 ===============================================================================
 Made by:
     Philip Sandwell
@@ -47,8 +47,9 @@ class Load():
         Inputs:
             Takes in the .csv files of the loads of all devices
         Outputs:
-            Gives a single .csv file with columns for the load of domestic and 
-            commercial devices to be used in later simulations
+            Gives a .csv file with columns for the load of domestic and 
+            commercial devices to be used in later simulations and a .csv file
+            of the load statistics from Load().yearly_load_statistics(...)
         """
         domestic_load = pd.DataFrame(np.zeros((int(self.location_inputs['Years'])*365*24, 1)))
         commercial_load = pd.DataFrame(np.zeros((int(self.location_inputs['Years'])*365*24, 1)))
@@ -67,7 +68,9 @@ class Load():
         total_load = pd.concat([domestic_load,commercial_load,public_load],axis=1)
         total_load.columns = ["Domestic", "Commercial", "Public"]
         total_load.to_csv(self.device_load_filepath + 'total_load.csv')
-#        total_load.to_excel(self.device_load_filepath + 'total_load.xlsx')
+        
+        yearly_load_statistics = self.yearly_load_statistics(total_load)
+        yearly_load_statistics.to_csv(self.device_load_filepath + 'yearly_load_statistics.csv')
 
     def device_load_hourly(self):
         """
@@ -83,7 +86,30 @@ class Load():
             device_info = self.device_inputs.iloc[i]
             device_load = float(device_info['Power'])*pd.read_csv(self.device_usage_filepath + device_info['Device'] + '_in_use.csv', index_col = 0)
             device_load.to_csv(self.device_load_filepath + device_info['Device'] + '_load.csv')
-                        
+       
+# =============================================================================
+#       Calculate the maximum loads for each year
+# =============================================================================
+    def yearly_load_statistics(self,total_load):
+        """
+        Function:
+            Calculates the load statistics for each year on an hourly basis
+        Inputs:
+            total_load      Hourly total load of the system
+        Outputs:
+            Gives dataframe of the maximum, mean and median hourly loads
+        """        
+        total_load_yearly = pd.DataFrame(np.reshape(pd.DataFrame(total_load.sum(axis=1)).values,
+                                                    (int(self.location_inputs['Years']),365*24))) 
+        yearly_maximum = pd.DataFrame(total_load_yearly.max(axis=1))
+        yearly_maximum.columns = ['Maximum']
+        yearly_mean = pd.DataFrame(total_load_yearly.mean(axis=1).round(0))
+        yearly_mean.columns = ['Mean']
+        yearly_median = pd.DataFrame(np.percentile(total_load_yearly, 50, axis=1))
+        yearly_median.columns = ['Median']
+        yearly_load_statistics = pd.concat([yearly_maximum,yearly_mean,yearly_median],axis=1)
+        return yearly_load_statistics
+        
 # =============================================================================
 #       Calculate the number of devices in use by the community
 # =============================================================================
