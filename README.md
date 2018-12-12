@@ -57,5 +57,16 @@ An example location, “Bahraich” in India, is included in the initial downloa
 		b.	Record the outputs as a variable to investigate the outputs in more detail
 		c.	Save the outputs using Energy_System().save_simulation(simulation_name,filename)
 		d.	Open a saved simulation using Energy_System().open_simulation(filename)
+	9.	Input financial information
+		a. 	In your location folder, open the "Impact" folder
+		b. 	Complete the "Financial inputs.csv" with detials of your location
+	10.	Set up the optimisation process
+		a.	In your location folder, open the "Optimisation" folder
+		b.	Complete the “Optimisation inputs.csv” template with the details of your location
+	11.	Perform an optimisation
+		a. 	Run Optimisation().multiple_optimisation_step()
+		b.	Record the outputs as a variable to investigate the outputs in more detail
+		c.	Save the outputs using Optimisation().save_optimisation(optimisation_name,filename)
+		d.	Open a saved optimisation using Optimisation().open_optimisation(filename)
 
 For more information, contact Phil Sandwell (philip.sandwell@gmail.com)
