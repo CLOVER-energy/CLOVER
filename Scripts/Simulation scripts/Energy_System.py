@@ -42,35 +42,13 @@ class Energy_System():
         self.simulation_storage = self.location_filepath + '/Simulation/Saved simulations/'
 
 #%%
-    def save_simulation(self,simulation_name,filename=None):
-        """
-        Function:
-            Saves simulation outputs to a .csv file
-        Inputs:
-            simulation_name     DataFrame output from Energy_System().simulation(...)
-            filename            Name of .csv file to be saved as (defaults to timestamp)
-        Outputs:
-            Simulation saved to .csv file
-        """
-        if filename != None:
-            simulation_name.to_csv(self.simulation_storage + str(filename) + '.csv')
-        else:
-            filename = str(datetime.datetime.now().strftime("%Y-%m-%d %H-%M-%S"))
-            simulation_name.to_csv(self.simulation_storage + filename + '.csv')
-        print('\nSimulation saved as '+ filename + '.csv')
-            
-    def open_simulation(self,filename):
-        """
-        Function:
-            Opens a previously saved simulation from a .csv file
-        Inputs:
-            filename            Name of the .csv file to be opened (not including .csv)
-        Outputs:
-            DataFrame of previously performed simulation
-        """
-        output = pd.read_csv(self.simulation_storage + str(filename) + '.csv',index_col=0)
-        return output
-#%%
+# =============================================================================
+# SIMULATION FUNCTIONS
+#       This function simulates the energy system of a given capacity and to
+#       the parameters stated in the input files. At present a system must 
+#       include battery storage (i.e. storage_size > 0) but systems without
+#       storage will be included in later updates.  
+# =============================================================================
     def simulation(self, start_year = 0, end_year = 4, 
                    PV_size = 10, storage_size = 10, **options):
         '''
@@ -83,29 +61,39 @@ class Energy_System():
             storage_size        Amount of storage in kWh
             
         Outputs:
-            load_energy                     Amount of energy (kWh) required to satisfy the loads
-            renewables_energy               Amount of energy (kWh) provided by renewables to the system
-            blackout_times                  Times with power is available (0) or unavailable (1)
-            renewables_energy_used_directly Amount of energy (kWh) from renewables used directly to satisfy load (kWh)
-            storage_power_supplied          Amount of energy (kWh) supplied by battery storage
-            grid_energy                     Amount of energy (kWh) supplied by the grid
-            diesel_energy                   Amount of energy (kWh) supplied from diesel generator
-            unmet_energy                    Amount of energy (kWh) unmet by the system
-            diesel_times                    Times when diesel generator is on (1) or off (0)
-            diesel_fuel_usage               Amount of diesel (l) used by the generator
-            storage_profile                 Amount of energy (kWh) into (+ve) and out of (-ve) the battery
-            hourly_storage                  Amount of energy (kWh) in the battery
-            energy_surplus                  Amount of energy (kWh) dumped owing to overgeneration
-            battery_health                  Relative capactiy of the battery compared to new (0.0-1.0)
-            households                      Number of households in the community
-            kerosene_usage                  Number of kerosene lamps in use (if no power available)
-            kerosene_mitigation             Number of kerosene lamps not used (when power is available)
+            tuple([system_performance_outputs,system_details]):
+                system_performance_outputs          Hourly performance of the simulated system
+                    load_energy                     Amount of energy (kWh) required to satisfy the loads
+                    total_energy_used               Amount of energy (kWh) used by the system
+                    unmet_energy                    Amount of energy (kWh) unmet by the system
+                    blackout_times                  Times with power is available (0) or unavailable (1)
+                    renewables_energy_used_directly Amount of energy (kWh) from renewables used directly to satisfy load (kWh)
+                    storage_power_supplied          Amount of energy (kWh) supplied by battery storage
+                    grid_energy                     Amount of energy (kWh) supplied by the grid
+                    diesel_energy                   Amount of energy (kWh) supplied from diesel generator
+                    diesel_times                    Times when diesel generator is on (1) or off (0)
+                    diesel_fuel_usage               Amount of diesel (l) used by the generator
+                    storage_profile                 Amount of energy (kWh) into (+ve) and out of (-ve) the battery
+                    renewables_energy               Amount of energy (kWh) provided by renewables to the system
+                    hourly_storage                  Amount of energy (kWh) in the battery
+                    energy_surplus                  Amount of energy (kWh) dumped owing to overgeneration
+                    battery_health                  Relative capactiy of the battery compared to new (0.0-1.0)
+                    households                      Number of households in the community
+                    kerosene_usage                  Number of kerosene lamps in use (if no power available)
+                    kerosene_mitigation             Number of kerosene lamps not used (when power is available)
+                system details                      Information about the installed system     
+                    Start year                      Start year of the simulation
+                    End year                        End year of the simulation
+                    Initial PV size                 Capacity of PV installed (kWp)
+                    Initial storage size            Capacity of battery storage installed (kWh)
+                    Final PV size                   Equivalent capacity of PV (kWp) after simulation
+                    Final storage size              Equivalent capacity of battery storage (kWh) after simulation
+                    Diesel capacity                 Capacity of diesel generation installed (kW)
         '''
 #   Start timer to see how long simulation will take
         timer_start = datetime.datetime.now()
 
 #   Initialise values for simulation
-        print('\nInitialising simulation')
         PV_size = float(PV_size)
         storage_size= float(storage_size)
         
@@ -114,7 +102,7 @@ class Energy_System():
         load_energy = pd.DataFrame(input_profiles['Load energy (kWh)'])
         renewables_energy = pd.DataFrame(input_profiles['Renewables energy supplied (kWh)'])
         renewables_energy_used_directly = pd.DataFrame(input_profiles['Renewables energy used (kWh)'])
-        grid_energy = pd.DataFrame(input_profiles['Grid energy (kWh)'])
+        grid_energy = pd.DataFrame(input_profiles['Grid energy (kWh)']).abs()
         storage_profile = pd.DataFrame(input_profiles['Storage profile (kWh)'])
         kerosene_profile = pd.DataFrame(input_profiles['Kerosene lamps'])
         households = pd.DataFrame(Load().population_hourly()[start_year*8760:end_year*8760].values)
@@ -142,10 +130,8 @@ class Energy_System():
         energy_surplus = []
         energy_deficit = []
         storage_power_supplied = []
-        blackout_hour = []
-        
+   
 #   Begin simulation, iterating over timesteps
-        print('\nBeginning energy system simulation')
         for t in range(0,int(storage_profile.size)):  
             battery_energy_flow = storage_profile.iloc[t][0]
             if t == 0:
@@ -163,29 +149,16 @@ class Energy_System():
 #   Battery capacities and blackouts (if battery is too full or empty)
             if new_hourly_storage >= max_storage:
                 new_hourly_storage = max_storage
-                blackout_status = 0
             elif new_hourly_storage <= min_storage:
-                new_hourly_storage = min_storage
-                blackout_status = 1
-            else:
-                blackout_status = 0
-                
+                new_hourly_storage = min_storage          
 #   Update hourly_storage
             hourly_storage.append(new_hourly_storage)  
-            
-#   Check whether grid is supplying power instead
-            if grid_energy.iloc[t]['Grid energy (kWh)'] > 0:
-                blackout_status = 0
                 
-#   Update blackout status
-            blackout_hour.append(blackout_status)
-            
 #   Update battery health
             if t == 0:
                 storage_power_supplied.append(0.0 - battery_energy_flow)
             else:
-                storage_power_supplied.append(max(
-                        hourly_storage[t-1] * (1.0 - battery_leakage) - hourly_storage[t], 0.0))
+                storage_power_supplied.append(max(hourly_storage[t-1] * (1.0 - battery_leakage) - hourly_storage[t], 0.0))
             cumulative_storage_power = cumulative_storage_power + storage_power_supplied[t]    
             
             storage_degradation = (1.0 - battery_lifetime_loss * 
@@ -195,39 +168,39 @@ class Energy_System():
             min_storage = (storage_degradation * storage_size * 
                            self.energy_system_inputs[1]['Battery minimum charge'])
             battery_health.append(storage_degradation)
-        
+    
+#   Consolidate outputs from iteration stage                    
         storage_power_supplied = pd.DataFrame(storage_power_supplied)
 
-#   Get full list of blackout times (before diesel backup, if included)
-        blackout_times = pd.DataFrame(blackout_hour)
-
 #   Find unmet energy
-        unmet_energy = pd.DataFrame(blackout_times.values * 
-                                    (load_energy.values - renewables_energy_used_directly.values
-                                    - grid_energy.values - storage_power_supplied.values))
+        unmet_energy = pd.DataFrame((load_energy.values - renewables_energy_used_directly.values
+                                    - grid_energy.values - storage_power_supplied.values))    
+        blackout_times = ((unmet_energy > 0) * 1).astype(float)
+
 #   Use backup diesel generator
         if diesel_backup_status == "Y":
-            print('\nIncorporating diesel backup generation')
-            diesel_energy, diesel_times = Diesel().get_diesel_energy_and_times(
-                    unmet_energy,blackout_times,diesel_backup_threshold)
+            diesel_energy, diesel_times = Diesel().get_diesel_energy_and_times(unmet_energy,blackout_times,diesel_backup_threshold)
             diesel_capacity = math.ceil(np.max(diesel_energy))
             diesel_fuel_usage = pd.DataFrame(Diesel().get_diesel_fuel_usage(
                     diesel_capacity,diesel_energy,diesel_times).values)
             unmet_energy = pd.DataFrame(unmet_energy.values - diesel_energy.values)
+            diesel_energy = diesel_energy.abs()
         else:
             diesel_energy = pd.DataFrame([0.0]*int(storage_profile.size))
             diesel_times = pd.DataFrame([0.0]*int(storage_profile.size))
             diesel_fuel_usage = pd.DataFrame([0.0]*int(storage_profile.size))
+            diesel_capacity = 0.0
 
-#   Find new blackout times, accouting for when diesel generator is on
-        blackout_times = blackout_times * (1-diesel_times)
-      
+#   Find new blackout times, according to when there is unmet energy
+        blackout_times = ((unmet_energy > 0) * 1).astype(float)        
+#   Ensure all unmet energy is calculated correctly, removing any negative values
+        unmet_energy = ((unmet_energy > 0) * unmet_energy).abs()
+
 #   Find how many kerosene lamps are in use
         kerosene_usage = pd.DataFrame(blackout_times.values * kerosene_profile.values)
         kerosene_mitigation = pd.DataFrame((1-blackout_times).values * kerosene_profile.values)
 
-#   Format outputs
-        print('\nPreparing outputs')
+#   System performance outputs
         blackout_times.columns = ['Blackouts']
         hourly_storage = pd.DataFrame(hourly_storage)
         hourly_storage.columns = ['Hourly storage (kWh)']
@@ -243,31 +216,115 @@ class Energy_System():
         households.columns = ['Households']
         kerosene_usage.columns = ['Kerosene lamps']
         kerosene_mitigation.columns = ['Kerosene mitigation']
+
+#   Find total energy used by the system
+        total_energy_used = pd.DataFrame(renewables_energy_used_directly.values +
+                                         storage_power_supplied.values + 
+                                         grid_energy.values +
+                                         diesel_energy.values)
+        total_energy_used.columns = ['Total energy used (kWh)']
+
+#   System details
+        system_details = pd.DataFrame({'Start year':float(start_year),
+                                       'End year':float(end_year),
+                                       'Initial PV size':PV_size,
+                                       'Initial storage size':storage_size,
+                                       'Final PV size':PV_size*Solar().solar_degradation()[0][8760*(end_year-start_year)],
+                                       'Final storage size':storage_size*np.min(battery_health['Battery health']),
+                                       'Diesel capacity':diesel_capacity
+                                       },index=['System details'])
         
 #   End simulation timer
         timer_end = datetime.datetime.now()
         time_delta = timer_end - timer_start
-        print("\nTime taken for simulation: " + str(time_delta.seconds) + " seconds")
+        print("\nTime taken for simulation: " + "{0:.2f}".format(
+                (time_delta.microseconds*0.000001)/float(end_year-start_year)) + " seconds per year")
         
 #   Return all outputs        
-        return pd.concat([load_energy,
-                          renewables_energy,
-                          blackout_times,
-                          renewables_energy_used_directly,
-                          storage_power_supplied,
-                          grid_energy,
-                          diesel_energy,
-                          unmet_energy,
-                          diesel_times,
-                          diesel_fuel_usage,
-                          storage_profile,
-                          hourly_storage,
-                          energy_surplus,
-                          battery_health,
-                          households,
-                          kerosene_usage,
-                          kerosene_mitigation],axis=1)
+        system_performance_outputs = pd.concat([load_energy,
+                                                total_energy_used,
+                                                unmet_energy,
+                                                blackout_times,
+                                                renewables_energy_used_directly,
+                                                storage_power_supplied,
+                                                grid_energy,
+                                                diesel_energy,
+                                                diesel_times,
+                                                diesel_fuel_usage,
+                                                storage_profile,
+                                                renewables_energy,
+                                                hourly_storage,
+                                                energy_surplus,
+                                                battery_health,
+                                                households,
+                                                kerosene_usage,
+                                                kerosene_mitigation],axis=1)
         
+        return tuple([system_performance_outputs,system_details])
+#%%
+# =============================================================================
+# GENERAL FUNCTIONS
+#       These functions allow users to save simulations and open previous ones,
+#       and resimulate the entire lifetime of a previously-optimised system
+#       including consideration of increasing capacity. 
+# =============================================================================
+    def save_simulation(self,simulation_name,filename=None):
+        """
+        Function:
+            Saves simulation outputs to a .csv file
+        Inputs:
+            simulation_name     DataFrame output from Energy_System().simulation(...)
+            filename            Name of .csv file to be saved as (defaults to timestamp)
+        Outputs:
+            Simulation saved to .csv file
+        """
+        if filename != None:
+            simulation_name.to_csv(self.simulation_storage + str(filename) + '.csv')
+        else:
+            filename = str(datetime.datetime.now().strftime("%Y-%m-%d %H-%M-%S"))
+            simulation_name.to_csv(self.simulation_storage + filename + '.csv')
+        print('\nSimulation saved as '+ filename + '.csv')
+            
+    def open_simulation(self,filename):
+        """
+        Function:
+            Opens a previously saved simulation from a .csv file
+        Inputs:
+            filename            Name of the .csv file to be opened (not including .csv)
+        Outputs:
+            DataFrame of previously performed simulation
+        """
+        output = pd.read_csv(self.simulation_storage + str(filename) + '.csv',index_col=0)
+        return output        
+
+    def lifetime_simulation(self,optimisation_report):
+        '''
+        Function:
+            Simulates a minigrid system over the course of its lifetime to get the complete technical
+                performance of the system
+        Inputs:
+            optimisation_report     Report of outputs from Optimisation().multiple_optimisation_step()
+        Outputs:
+            lifetime_output         The lifetime technical performance of the system
+        '''
+#   Initialise
+        optimisation_report = optimisation_report.reset_index(drop=True)
+        lifetime_output = pd.DataFrame([])
+        simulation_periods = np.size(optimisation_report,0)
+#   Iterate over all simulation periods
+        for sim in range(simulation_periods):
+            system_performance_outputs = self.simulation(start_year = int(optimisation_report['Start year'][sim]),
+                                                         end_year = int(optimisation_report['End year'][sim]), 
+                                                         PV_size = float(optimisation_report['Initial PV size'][sim]),
+                                                         storage_size = float(optimisation_report['Initial storage size'][sim]))
+            lifetime_output = pd.concat([lifetime_output,system_performance_outputs[0]],axis=0)
+        return lifetime_output.reset_index(drop=True)
+#%%
+# =============================================================================
+# ENERGY BALANCE FUNCTIONS
+#       These functions identify the sources and uses of energy in the system, 
+#       such as generation, loads and the overall balance
+# =============================================================================
 #%% Energy balance
     def get_storage_profile(self, start_year = 0, end_year = 4, PV_size = 10, **options):
         '''
@@ -302,10 +359,12 @@ class Energy_System():
         if self.scenario_inputs[1]['Distribution network'] == 'DC':
             PV_generation = self.energy_system_inputs[1]['DC to DC conversion']*PV_generation
             transmission_eff = self.energy_system_inputs[1]['Transmission efficiency DC']
+#            grid_conversion_eff = self.energy_system_inputs[1]['AC to DC conversion']
             
         if self.scenario_inputs[1]['Distribution network'] == 'AC':
             PV_generation = self.energy_system_inputs[1]['DC to AC conversion']*PV_generation
             transmission_eff = self.energy_system_inputs[1]['Transmission efficiency AC']
+#            grid_conversion_eff = self.energy_system_inputs[1]['AC to AC conversion']
         
 #   Consider transmission efficiency
         load_energy = load_profile / transmission_eff
@@ -348,7 +407,6 @@ class Energy_System():
         
         return pd.concat([load_energy, renewables_energy, renewables_energy_used_directly,
                           grid_energy, storage_profile, kerosene_usage],axis=1)
-
 #%% Energy sources
     def get_PV_generation(self, **options):
         '''
@@ -372,8 +430,7 @@ class Energy_System():
             Availabilty of grid (1 = available, 0 = not available)
         '''
         grid_type = self.scenario_inputs[1]['Grid type']
-        return pd.read_csv(self.generation_filepath + '/Grid/' + grid_type + '_grid_status.csv',index_col=0)
-        
+        return pd.read_csv(self.generation_filepath + '/Grid/' + grid_type + '_grid_status.csv',index_col=0)      
 #%% Energy usage
     def get_load_profile(self, **options):
         '''
