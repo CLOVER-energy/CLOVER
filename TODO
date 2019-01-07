@@ -1,0 +1,14 @@
+CLOVER TO DO LIST
+Last updated 7 Jan 2019
+
+The following list describes known updates and issue resolutions that will be included in the future.
+
+1. Addition of environmental assessment module
+  - Allows the user to assess the greenhouse gas emissions of systems that have been simulated and optimised
+  - Associated edits to Optimisation.py to integrate
+2. Addition of power analysis module
+  - Allows the user to analyse peak power demand, in addition to energy demand
+  - Associated edits to various files
+3. Bug fixes
+  - Calling values from "Financial inputs.csv" to be made more explicit
+  - Compatibility assurance with Windows
