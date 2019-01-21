@@ -10,5 +10,4 @@ The following list describes known updates and issue resolutions that will be in
   - Allows the user to analyse peak power demand, in addition to energy demand
   - Associated edits to various files
 3. Bug fixes
-  - Calling values from "Financial inputs.csv" to be made more explicit
   - Compatibility assurance with Windows
