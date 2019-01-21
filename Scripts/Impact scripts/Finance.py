@@ -47,8 +47,8 @@ class Finance():
         Outputs:
             Undiscounted cost 
         '''  
-        PV_cost = PV_array_size * self.finance_inputs[1]['PV cost']
-        annual_reduction = 0.01 * self.finance_inputs[1]['PV cost decrease']
+        PV_cost = PV_array_size * self.finance_inputs.loc['PV cost']
+        annual_reduction = 0.01 * self.finance_inputs.loc['PV cost decrease']
         return PV_cost * (1.0 - annual_reduction)**year
 #   PV balance of systems costs
     def get_BOS_cost(self,PV_array_size,year=0):
@@ -61,8 +61,8 @@ class Finance():
         Outputs:
             Undiscounted cost 
         '''          
-        BOS_cost = PV_array_size * self.finance_inputs[1]['BOS cost']
-        annual_reduction = 0.01 * self.finance_inputs[1]['BOS cost decrease']
+        BOS_cost = PV_array_size * self.finance_inputs.loc['BOS cost']
+        annual_reduction = 0.01 * self.finance_inputs.loc['BOS cost decrease']
         return BOS_cost * (1.0 - annual_reduction)**year
 #   Battery storage costs
     def get_storage_cost(self,storage_size,year=0):
@@ -75,8 +75,8 @@ class Finance():
         Outputs:
             Undiscounted cost 
         '''  
-        storage_cost = storage_size * self.finance_inputs[1]['Storage cost']
-        annual_reduction = 0.01 * self.finance_inputs[1]['Storage cost decrease']
+        storage_cost = storage_size * self.finance_inputs.loc['Storage cost']
+        annual_reduction = 0.01 * self.finance_inputs.loc['Storage cost decrease']
         return storage_cost * (1.0 - annual_reduction)**year
 #   Diesel generator costs
     def get_diesel_cost(self,diesel_size,year=0):
@@ -89,8 +89,8 @@ class Finance():
         Outputs:
             Undiscounted cost 
         '''
-        diesel_cost = diesel_size * self.finance_inputs[1]['Diesel generator cost']
-        annual_reduction = 0.01 * self.finance_inputs[1]['Diesel generator cost decrease']
+        diesel_cost = diesel_size * self.finance_inputs.loc['Diesel generator cost']
+        annual_reduction = 0.01 * self.finance_inputs.loc['Diesel generator cost decrease']
         return diesel_cost * (1.0 - annual_reduction)**year
 #   Installation costs
     def get_installation_cost(self,PV_array_size,diesel_size,year=0):
@@ -104,10 +104,10 @@ class Finance():
         Outputs:
             Undiscounted cost 
         '''  
-        PV_installation = PV_array_size * self.finance_inputs[1]['PV installation cost']
-        annual_reduction_PV = 0.01 * self.finance_inputs[1]['PV installation cost decrease']
-        diesel_installation = diesel_size * self.finance_inputs[1]['Diesel installation cost']
-        annual_reduction_diesel = 0.01 * self.finance_inputs[1]['Diesel installation cost decrease']
+        PV_installation = PV_array_size * self.finance_inputs.loc['PV installation cost']
+        annual_reduction_PV = 0.01 * self.finance_inputs.loc['PV installation cost decrease']
+        diesel_installation = diesel_size * self.finance_inputs.loc['Diesel installation cost']
+        annual_reduction_diesel = 0.01 * self.finance_inputs.loc['Diesel installation cost decrease']
         return PV_installation * (1.0 - annual_reduction_PV)**year + diesel_installation * (1.0 - annual_reduction_diesel)**year
 
 #   Miscellaneous costs
@@ -121,7 +121,7 @@ class Finance():
         Outputs:
             Undiscounted cost 
         '''  
-        misc_costs = (PV_array_size + diesel_size) * self.finance_inputs[1]['Misc. costs']
+        misc_costs = (PV_array_size + diesel_size) * self.finance_inputs.loc['Misc. costs']
         return misc_costs
 
 #   Total cost of newly installed equipment
@@ -162,7 +162,7 @@ class Finance():
             Discounted cost 
         '''  
         undiscounted_cost = self.get_total_equipment_cost(PV_array_size,storage_size,diesel_size,year)
-        discount_fraction = (1.0 - self.finance_inputs[1]['Discount rate'])**year
+        discount_fraction = (1.0 - self.finance_inputs.loc['Discount rate'])**year
         return undiscounted_cost * discount_fraction
 
     def get_connections_expenditure(self,households,year=0):
@@ -176,10 +176,10 @@ class Finance():
             Discounted cost 
         '''  
         households = pd.DataFrame(households)
-        connection_cost = self.finance_inputs[1]['Connection cost']
+        connection_cost = self.finance_inputs.loc['Connection cost']
         new_connections = np.max(households) - np.min(households)
         undiscounted_cost = float(connection_cost * new_connections)
-        discount_fraction = (1.0 - self.finance_inputs[1]['Discount rate'])**year
+        discount_fraction = (1.0 - self.finance_inputs.loc['Discount rate'])**year
         total_discounted_cost = undiscounted_cost * discount_fraction
 #   Section in comments allows a more accurate consideration of the discounted 
 #        cost for new connections, but substantially increases the processing time. 
@@ -204,9 +204,9 @@ class Finance():
         Outputs:
             Discounted cost 
         '''         
-        grid_extension_cost = self.finance_inputs[1]['Grid extension cost']    # per km
-        grid_infrastructure_cost = self.finance_inputs[1]['Grid infrastructure cost']
-        discount_fraction = (1.0 - self.finance_inputs[1]['Discount rate'])**year
+        grid_extension_cost = self.finance_inputs.loc['Grid extension cost']    # per km
+        grid_infrastructure_cost = self.finance_inputs.loc['Grid infrastructure cost']
+        discount_fraction = (1.0 - self.finance_inputs.loc['Discount rate'])**year
         return grid_extension_distance * grid_extension_cost * discount_fraction + grid_infrastructure_cost
 #%%
 # =============================================================================
@@ -239,7 +239,7 @@ class Finance():
             Discounted cost 
         '''
 #   Initialise inverter replacement periods
-        replacement_period = int(self.finance_inputs[1]['Inverter lifetime'])
+        replacement_period = int(self.finance_inputs.loc['Inverter lifetime'])
         system_lifetime = int(self.location_inputs['Years'])
         replacement_intervals = pd.DataFrame(np.arange(0,system_lifetime,replacement_period))
         replacement_intervals.columns = ['Installation year']
@@ -250,7 +250,7 @@ class Finance():
             return inverter_discounted_cost
 #   Initialise inverter sizing calculation
         max_power = []
-        inverter_step = float(self.finance_inputs[1]['Inverter size increment'])
+        inverter_step = float(self.finance_inputs.loc['Inverter size increment'])
         inverter_size = []
         for i in range(len(replacement_intervals)):
 #   Calculate maximum power in interval years
@@ -265,10 +265,10 @@ class Finance():
         inverter_size.columns = ['Inverter size (kW)']
         inverter_info = pd.concat([replacement_intervals,inverter_size],axis=1)
 #   Calculate 
-        inverter_info['Discount rate'] = [(1 - self.finance_inputs[1]['Discount rate']) ** 
+        inverter_info['Discount rate'] = [(1 - self.finance_inputs.loc['Discount rate']) ** 
                      inverter_info['Installation year'].iloc[i] for i in range(len(inverter_info))]
-        inverter_info['Inverter cost ($/kW)'] = [self.finance_inputs[1]['Inverter cost'] * 
-                      (1 - 0.01*self.finance_inputs[1]['Inverter cost decrease'])
+        inverter_info['Inverter cost ($/kW)'] = [self.finance_inputs.loc['Inverter cost'] * 
+                      (1 - 0.01*self.finance_inputs.loc['Inverter cost decrease'])
                       **inverter_info['Installation year'].iloc[i] for i in range(len(inverter_info))]
         inverter_info['Discounted expenditure ($)'] = [inverter_info['Discount rate'].iloc[i] * 
                       inverter_info['Inverter size (kW)'].iloc[i] * inverter_info['Inverter cost ($/kW)'].iloc[i] 
@@ -293,7 +293,7 @@ class Finance():
         Outputs:
             Discounted cost 
         '''
-        kerosene_cost = kerosene_lamps_in_use_hourly * self.finance_inputs[1]['Kerosene cost']
+        kerosene_cost = kerosene_lamps_in_use_hourly * self.finance_inputs.loc['Kerosene cost']
         total_daily_cost = Conversion().hourly_profile_to_daily_sum(kerosene_cost)
         total_discounted_cost = self.discounted_cost_total(total_daily_cost,start_year,end_year)
         return total_discounted_cost
@@ -309,7 +309,7 @@ class Finance():
         Outputs:
             Discounted cost 
         '''
-        kerosene_cost = kerosene_lamps_mitigated_hourly * self.finance_inputs[1]['Kerosene cost']
+        kerosene_cost = kerosene_lamps_mitigated_hourly * self.finance_inputs.loc['Kerosene cost']
         total_daily_cost = Conversion().hourly_profile_to_daily_sum(kerosene_cost)
         total_discounted_cost = self.discounted_cost_total(total_daily_cost,start_year,end_year)
         return total_discounted_cost
@@ -325,7 +325,7 @@ class Finance():
         Outputs:
             Discounted cost 
         '''        
-        grid_cost = grid_energy_hourly * self.finance_inputs[1]['Grid cost']
+        grid_cost = grid_energy_hourly * self.finance_inputs.loc['Grid cost']
         total_daily_cost = Conversion().hourly_profile_to_daily_sum(grid_cost)
         total_discounted_cost = self.discounted_cost_total(total_daily_cost,start_year,end_year)
         return total_discounted_cost
@@ -345,8 +345,8 @@ class Finance():
         start_day = start_year * 365
         end_day = end_year * 365
         diesel_price_daily = []
-        original_diesel_price = self.finance_inputs[1]['Diesel fuel cost']
-        r_y = 0.01 * self.finance_inputs[1]['Diesel fuel cost decrease']
+        original_diesel_price = self.finance_inputs.loc['Diesel fuel cost']
+        r_y = 0.01 * self.finance_inputs.loc['Diesel fuel cost decrease']
         r_d = ((1.0 + r_y) ** (1.0/365.0)) - 1.0
         for t in range(start_day,end_day):
             diesel_price = original_diesel_price * (1.0 - r_d)**t
@@ -372,7 +372,7 @@ class Finance():
         Outputs:
             Discounted cost 
         ''' 
-        PV_OM_cost = PV_array_size * self.finance_inputs[1]['PV O&M']             # $ per year
+        PV_OM_cost = PV_array_size * self.finance_inputs.loc['PV O&M']             # $ per year
         PV_OM_cost_daily = PV_OM_cost / 365.0                                     # $ per day 
         total_daily_cost = pd.DataFrame([PV_OM_cost_daily]*(end_year-start_year)*365)
         return self.discounted_cost_total(total_daily_cost,start_year,end_year)
@@ -389,7 +389,7 @@ class Finance():
         Outputs:
             Discounted cost 
         ''' 
-        storage_OM_cost = storage_size * self.finance_inputs[1]['Storage O&M']     # $ per year
+        storage_OM_cost = storage_size * self.finance_inputs.loc['Storage O&M']     # $ per year
         storage_OM_cost_daily = storage_OM_cost / 365.0                            # $ per day 
         total_daily_cost = pd.DataFrame([storage_OM_cost_daily]*(end_year-start_year)*365)
         return self.discounted_cost_total(total_daily_cost,start_year,end_year)
@@ -406,7 +406,7 @@ class Finance():
         Outputs:
             Discounted cost 
         '''         
-        diesel_OM_cost = diesel_size * self.finance_inputs[1]['Diesel O&M']         # $ per year
+        diesel_OM_cost = diesel_size * self.finance_inputs.loc['Diesel O&M']         # $ per year
         diesel_OM_cost_daily = diesel_OM_cost / 365.0                               # $ per day 
         total_daily_cost = pd.DataFrame([diesel_OM_cost_daily]*(end_year-start_year)*365)
         return self.discounted_cost_total(total_daily_cost,start_year,end_year)
@@ -422,7 +422,7 @@ class Finance():
         Outputs:
             Discounted cost 
         ''' 
-        general_OM_cost = self.finance_inputs[1]['General O&M']                     # $ per year
+        general_OM_cost = self.finance_inputs.loc['General O&M']                     # $ per year
         general_OM_cost_daily = general_OM_cost / 365.0                             # $ per day 
         total_daily_cost = pd.DataFrame([general_OM_cost_daily]*(end_year-start_year)*365)
         return self.discounted_cost_total(total_daily_cost,start_year,end_year)
@@ -456,7 +456,7 @@ class Finance():
         Function:
             Calculates equivalent discount rate at a daily resolution
         '''
-        r_y = self.finance_inputs[1]['Discount rate']
+        r_y = self.finance_inputs.loc['Discount rate']
         return ((1.0 + r_y) ** (1.0/365.0)) - 1.0
     
     def discounted_fraction(self,start_year = 0, end_year = 20):
