@@ -4,7 +4,7 @@
                       	      OPTIMISATION FILE
 ===============================================================================
                             Most recent update:
-                              12 December 2018
+                              1 February 2019
 ===============================================================================
 Made by:
     Philip Sandwell
@@ -30,12 +30,17 @@ from Energy_System import Energy_System
 class Optimisation():
     def __init__(self):
         self.location = ‘Bahraich’
-        self.CLOVER_filepath = '/Users/prs09/Dropbox/CLOVER 4.0'
+        self.CLOVER_filepath = '/***YOUR LOCAL FILE PATH***/CLOVER 4.0'
         self.location_filepath = self.CLOVER_filepath + '/Locations/' + self.location
         self.optimisation_filepath = self.location_filepath + '/Optimisation/Optimisation inputs.csv'
         self.optimisation_inputs  = pd.read_csv(self.optimisation_filepath,header=None,index_col=0).round(decimals=3)
-        self.maximum_criteria = ['Blackouts','LCUE ($/kWh)','Unmet energy fraction','Cumulative system cost ($)','Total cost ($)','Total system cost ($)']
-        self.minimum_criteria = ['Renewables fraction','Kerosene displacement']
+        self.maximum_criteria = ['Blackouts','LCUE ($/kWh)','Emissions intensity (gCO2/kWh)','Unmet energy fraction',
+                                 'Cumulative cost ($)','Cumulative system cost ($)',
+                                 'Total cost ($)','Total system cost ($)',
+                                 'Cumulative GHGs (kgCO2eq)','Cumulative system GHGs (kgCO2eq)',
+                                 'Total GHGs (kgCO2eq)','Total system GHGs (kgCO2eq)']
+        self.minimum_criteria = ['Renewables fraction','Kerosene displacement',
+                                 'Kerosene cost mitigated ($)','Kerosene GHGs mitigated (kgCO2eq)']
         self.optimum_criterion = str(self.optimisation_inputs[1]['Optimisation criterion'])
         self.optimisation_storage = self.location_filepath + '/Optimisation/Saved optimisations/'
 #%%
@@ -447,10 +452,13 @@ class Optimisation():
 #   Calculate total discounted energy
         total_energy_daily = Conversion().hourly_profile_to_daily_sum(simulation_results['Total energy used (kWh)'])
         discounted_energy = Finance().discounted_energy_total(total_energy_daily,start_year,end_year)       
-#   Calculate proportion of kerosene displaced
-        kerosene_displacement = ((np.sum(simulation_results['Kerosene mitigation']))/
-                                 (np.sum(simulation_results['Kerosene mitigation']) + 
-                                 np.sum(simulation_results['Kerosene lamps'])))
+#   Calculate proportion of kerosene displaced (defaults to zero if kerosene is not originally used)
+        if np.sum(simulation_results['Kerosene lamps']) > 0.0:
+            kerosene_displacement = ((np.sum(simulation_results['Kerosene mitigation']))/
+                                     (np.sum(simulation_results['Kerosene mitigation']) + 
+                                      np.sum(simulation_results['Kerosene lamps'])))
+        else:
+            kerosene_displacement = 0.0
 #   Calculate diesel fuel usage
         total_diesel_fuel = np.sum(simulation_results['Diesel fuel usage (l)'])
 #   Return outputs        
@@ -550,6 +558,87 @@ class Optimisation():
         system_outputs['Kerosene cost mitigated ($)'] = kerosene_costs_mitigated
         return system_outputs.round(2)
     
+    def simulation_environmental_appraisal(self,simulation,previous_systems = pd.DataFrame([])):
+        '''
+        Function:
+            Appraises the environmental impact of a minigrid system
+        Inputs:
+            simulation          Outputs of Energy_System().simulation(...)
+            previous_systems    Report from previously installed system (not require
+                                    if no system was previously deployed)
+        Outputs:
+            system_outputs      DataFrame of key environmental data e.g. GHGs from equipment,
+                                    O&M, kerosene spending and mitigation
+        '''
+#   Initialise
+        simulation_results = simulation[0]
+        simulation_details = simulation[1]
+        start_year = int(simulation_details.loc['System details']['Start year'])
+        end_year = int(simulation_details.loc['System details']['End year'])
+        intallation_year = start_year
+        system_outputs = pd.DataFrame(index=['System results'])
+#   Check to see if a system was previously installed     
+        if previous_systems.empty == True:
+            previous_system = pd.DataFrame({'Final PV size':0.0,
+                                            'Final storage size':0.0,
+                                            'Diesel capacity':0.0,
+                                            'Total system cost ($)':0.0,
+                                            'Discounted energy (kWh)':0.0
+                                            },index=['System details'])
+        else:
+            previous_system = previous_systems.tail(1).reset_index(drop=True)
+            previous_system = previous_system.rename({0:'System details'},axis='index')           
+#   Calculate new PV, storage and diesel installations
+        PV_addition = (simulation_details.loc['System details']['Initial PV size']-
+                       previous_system.loc['System details']['Final PV size'])
+        storage_addition = (simulation_details.loc['System details']['Initial storage size']-
+                       previous_system.loc['System details']['Final storage size'])
+        diesel_addition = (simulation_details.loc['System details']['Diesel capacity']-
+                       previous_system.loc['System details']['Diesel capacity'])
+#   Calculate new equipment GHGs
+        equipment_GHGs = GHGs().get_total_equipment_GHGs(
+                PV_array_size = PV_addition,
+                storage_size = storage_addition,diesel_size = diesel_addition,
+                year=intallation_year) + GHGs().get_independent_GHGs(
+                        start_year,end_year)
+#   Calculate GHGs of connecting new households
+        connections_GHGs = GHGs().get_connections_GHGs(
+                households = simulation_results['Households'],
+                year = intallation_year)
+#   Calculate operating GHGs of the system during this simulation
+        OM_GHGs = GHGs().get_total_OM(
+                PV_array_size = simulation_details.loc['System details']['Initial PV size'],
+                storage_size = simulation_details.loc['System details']['Initial storage size'],
+                diesel_size = simulation_details.loc['System details']['Diesel capacity'],
+                start_year = start_year,end_year = end_year)
+#   Calculate running GHGs of the system
+        diesel_GHGs = GHGs().get_diesel_fuel_GHGs(
+                diesel_fuel_usage_hourly = simulation_results['Diesel fuel usage (l)'],
+                start_year=start_year,end_year=end_year)
+        grid_GHGs = GHGs().get_grid_GHGs(
+                grid_energy_hourly = simulation_results['Grid energy (kWh)'],
+                start_year=start_year,end_year=end_year)
+        kerosene_GHGs = GHGs().get_kerosene_GHGs(
+                kerosene_lamps_in_use_hourly = simulation_results['Kerosene lamps'],
+                start_year=start_year,end_year=end_year)
+        kerosene_GHGs_mitigated = GHGs().get_kerosene_GHGs_mitigated(
+                kerosene_lamps_mitigated_hourly = simulation_results['Kerosene mitigation'],
+                start_year=start_year,end_year=end_year)
+#   Total GHGs incurred during simulation period
+        total_GHGs = equipment_GHGs + connections_GHGs + OM_GHGs + diesel_GHGs + grid_GHGs + kerosene_GHGs
+        total_system_GHGs = equipment_GHGs + connections_GHGs + OM_GHGs + diesel_GHGs + grid_GHGs
+#   Return outputs        
+        system_outputs['Total GHGs (kgCO2eq)'] = total_GHGs
+        system_outputs['Total system GHGs (kgCO2eq)'] = total_system_GHGs
+        system_outputs['New equipment GHGs (kgCO2eq)'] = equipment_GHGs
+        system_outputs['New connection GHGs (kgCO2eq)'] = connections_GHGs
+        system_outputs['O&M GHGs (kgCO2eq)'] = OM_GHGs
+        system_outputs['Diesel GHGs (kgCO2eq)'] = diesel_GHGs
+        system_outputs['Grid GHGs (kgCO2eq)'] = grid_GHGs
+        system_outputs['Kerosene GHGs (kgCO2eq)'] = kerosene_GHGs
+        system_outputs['Kerosene GHGs mitigated (kgCO2eq)'] = kerosene_GHGs_mitigated
+        return system_outputs.round(2)
+    
     def system_appraisal(self,simulation,previous_systems = pd.DataFrame([])):
         '''
         Function:
@@ -559,8 +648,8 @@ class Optimisation():
             previous_systems    Report from previously installed system (not required
                                     if no system was previously deployed)
         Outputs:
-            system_outputs      DataFrame of key all key technical, performance and
-                                    financial information
+            system_outputs      DataFrame of key all key technical, performance,
+                                    financial and environmental information
         '''
 #   Initialisation
 #   Check to see if a system was previously installed     
@@ -569,8 +658,13 @@ class Optimisation():
                                             'Final storage size':0.0,
                                             'Diesel capacity':0.0,
                                             'Total system cost ($)':0.0,
+                                            'Total system GHGs (kgCO2eq)':0.0,
                                             'Discounted energy (kWh)':0.0,
+                                            'Cumulative cost ($)':0.0,
                                             'Cumulative system cost ($)':0.0,
+                                            'Cumulative GHGs (kgCO2eq)':0.0,
+                                            'Cumulative system GHGs (kgCO2eq)':0.0,
+                                            'Cumulative energy (kWh)':0.0,
                                             'Cumulative discounted energy (kWh)':0.0,
                                             },index=['System results'])
         else:
@@ -581,19 +675,36 @@ class Optimisation():
         system_details = simulation[1].rename({'System details':'System results'},axis='index')
         technical_results = self.simulation_technical_appraisal(simulation)
         financial_results = self.simulation_financial_appraisal(simulation,previous_systems = previous_systems)
+        environmental_results = self.simulation_environmental_appraisal(simulation,previous_systems = previous_systems)
 
 #   Get results that rely on metrics of different kinds and several different iteration periods
-        cumulative_costs = (financial_results['Total system cost ($)'] + 
+        cumulative_costs = (financial_results['Total cost ($)'] + 
+                                              previous_system['Cumulative cost ($)'])
+        cumulative_system_costs = (financial_results['Total system cost ($)'] + 
                                               previous_system['Cumulative system cost ($)'])
-        cumulative_energy = (technical_results['Discounted energy (kWh)'] + 
+        cumulative_GHGs = (environmental_results['Total GHGs (kgCO2eq)'] +
+                                              previous_system['Cumulative GHGs (kgCO2eq)'])
+        cumulative_system_GHGs = (environmental_results['Total system GHGs (kgCO2eq)'] +
+                                              previous_system['Cumulative system GHGs (kgCO2eq)'])
+        cumulative_energy = (technical_results['Total energy (kWh)'] + 
+                                              previous_system['Cumulative energy (kWh)'])
+        cumulative_discounted_energy = (technical_results['Discounted energy (kWh)'] + 
                                               previous_system['Cumulative discounted energy (kWh)'])
-        
-        LCUE = float(cumulative_costs / cumulative_energy)
-        combined_outputs['Cumulative system cost ($)'] = cumulative_costs
-        combined_outputs['Cumulative discounted energy (kWh)'] = cumulative_energy
+#   Combined metrics        
+        LCUE = float(cumulative_system_costs / cumulative_discounted_energy)
+        emissions_intensity = 1000.0 * float(cumulative_system_GHGs / cumulative_energy) # in grams
+#   Format outputs
+        combined_outputs['Cumulative cost ($)'] = cumulative_costs
+        combined_outputs['Cumulative system cost ($)'] = cumulative_system_costs
+        combined_outputs['Cumulative GHGs (kgCO2eq)'] = cumulative_GHGs
+        combined_outputs['Cumulative system GHGs (kgCO2eq)'] = cumulative_system_GHGs
+        combined_outputs['Cumulative energy (kWh)'] = cumulative_energy
+        combined_outputs['Cumulative discounted energy (kWh)'] = cumulative_discounted_energy
         combined_outputs['LCUE ($/kWh)'] = np.round(LCUE,3)
+        combined_outputs['Emissions intensity (gCO2/kWh)'] = np.round(emissions_intensity,3)
 #   Return results
-        system_outputs = pd.concat([system_details,combined_outputs,technical_results,financial_results],axis=1)
+        system_outputs = pd.concat([system_details,combined_outputs,technical_results,
+                                    financial_results,environmental_results],axis=1)
         return system_outputs
 #%%
 # =============================================================================
