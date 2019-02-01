@@ -4,7 +4,7 @@
                             SOLAR GENERATION FILE
 ===============================================================================
                             Most recent update:
-                                23 April 2018
+                              1 February 2019
 ===============================================================================
 Made by:
     Philip Sandwell
@@ -74,7 +74,7 @@ class Solar():
                 self.get_solar_generation_from_RN(gen_year),time_difference = time_dif)
 #   Write the data to file
         solar_output.to_csv(self.generation_filepath
-                            + 'test_solar_generation_' + str(gen_year) + '.csv',header=None)
+                            + 'solar_generation_' + str(gen_year) + '.csv',header=None)
 
     def get_solar_local_time(self,solar_data_UTC, time_difference = 0):
         """
