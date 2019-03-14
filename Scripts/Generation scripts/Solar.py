@@ -4,7 +4,7 @@
                             SOLAR GENERATION FILE
 ===============================================================================
                             Most recent update:
-                              1 February 2019
+                              14 March 2019
 ===============================================================================
 Made by:
     Philip Sandwell
@@ -24,9 +24,9 @@ class Solar():
         self.CLOVER_filepath = '/***YOUR LOCAL FILE PATH***/CLOVER 4.0'
         self.location_filepath = self.CLOVER_filepath + '/Locations/' + self.location
         self.generation_filepath = self.location_filepath + '/Generation/PV/'
-        self.input_data = pd.read_csv(self.generation_filepath + 'PV generation inputs.csv',header=None,index_col=0)
+        self.input_data = pd.read_csv(self.generation_filepath + 'PV generation inputs.csv',header=None,index_col=0)[1]
         self.location_data_filepath = self.location_filepath + '/Location Data/'
-        self.location_input_data = pd.read_csv(self.location_data_filepath + 'Location inputs.csv',header=None,index_col=0)
+        self.location_input_data = pd.read_csv(self.location_data_filepath + 'Location inputs.csv',header=None,index_col=0)[1]
 #%%
     def total_solar_output(self,start_year=2007):
         """
@@ -50,7 +50,7 @@ class Solar():
         output.to_csv(self.generation_filepath + 'solar_generation_20_years.csv',header=None)
         
     def solar_degradation(self):
-        lifetime = self.input_data[1]['lifetime']
+        lifetime = self.input_data.loc['lifetime']
         hourly_degradation = 0.20/(lifetime * 365 * 24)
         lifetime_degradation = []
         for i in range(20*365*24):
@@ -68,7 +68,7 @@ class Solar():
             .csv file of PV generation (kW/kWp) for the given year
         """
 #   Get input data from "Location data" file
-        time_dif = float(self.location_input_data[1]['Time difference'])
+        time_dif = float(self.location_input_data.loc['Time difference'])
 #   Get solar output in local time for the given year 
         solar_output = self.get_solar_local_time(
                 self.get_solar_generation_from_RN(gen_year),time_difference = time_dif)
@@ -133,21 +133,21 @@ class Solar():
         api_base = 'https://www.renewables.ninja/api/'
         s = requests.session()
         url = api_base + 'data/pv'
-        token = str(self.location_input_data[1]['token'])
+        token = str(self.location_input_data.loc['token'])
         s.headers = {'Authorization': 'Token ' + token}
 
 #   Gets some data from input file
         args = {
-            'lat': float(self.location_input_data[1]['Latitude']),
-            'lon': float(self.location_input_data[1]['Longitude']),
+            'lat': float(self.location_input_data.loc['Latitude']),
+            'lon': float(self.location_input_data.loc['Longitude']),
             'date_from': str(year)+'-01-01',
             'date_to': str(year)+'-12-31',
             'dataset': 'merra2',
             'capacity': 1.0,
             'system_loss': 0,
             'tracking': 0,          
-            'tilt': float(self.input_data[1]['tilt']),
-            'azim': float(self.input_data[1]['azim']),
+            'tilt': float(self.input_data.loc['tilt']),
+            'azim': float(self.input_data.loc['azim']),
             'format': 'json',
             'metadata': False,
             'raw': False
