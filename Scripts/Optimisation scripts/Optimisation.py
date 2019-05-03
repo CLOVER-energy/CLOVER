@@ -4,7 +4,7 @@
                       	      OPTIMISATION FILE
 ===============================================================================
                             Most recent update:
-                              1 February 2019
+                                3 May 2019
 ===============================================================================
 Made by:
     Philip Sandwell
@@ -260,6 +260,8 @@ class Optimisation():
                 else:
                     break
                 iteration_PV_size -= PV_size_step
+                if iteration_PV_size < 0:
+                    break
             if np.ceil(PV_size_max/PV_size_step)*PV_size_step != PV_size_max:
                 simulation = Energy_System().simulation(start_year = start_year, end_year = end_year, 
                                           PV_size = PV_size_max, 
@@ -288,6 +290,8 @@ class Optimisation():
                 else:
                     break
                 iteration_storage_size -= storage_size_step
+                if iteration_storage_size < 0:
+                    break
             if np.ceil(storage_size_max/storage_size_step)*storage_size_step != storage_size_max:
                 simulation = Energy_System().simulation(start_year = start_year, end_year = end_year, 
                                           PV_size = test_PV_size, 
@@ -380,6 +384,8 @@ class Optimisation():
                 else:
                     break
                 iteration_storage_size -= storage_size_step
+                if iteration_storage_size < 0:
+                    break
 #   Check minimum case where no extra storage is required
             if iteration_storage_size < storage_size_min:
                 simulation = Energy_System().simulation(start_year = start_year, end_year = end_year,
@@ -390,7 +396,7 @@ class Optimisation():
                     system_appraisals = pd.concat([system_appraisals,new_appraisal],axis=0)    
             PV_size_max -= PV_size_step
 #   Check minimum case where no extra PV is required
-            if PV_size_max < PV_size_min:
+            if (PV_size_max < PV_size_min) & (PV_size_max >= 0):
                 iteration_storage_size = storage_size_max
                 while iteration_storage_size >= storage_size_min:
                     simulation = Energy_System().simulation(start_year = start_year, end_year = end_year, 
@@ -403,7 +409,7 @@ class Optimisation():
                         break
                     iteration_storage_size -= storage_size_step
 #   Check minimum case where no extra storage is required
-                if iteration_storage_size < storage_size_min:
+                if (iteration_storage_size < storage_size_min) & (iteration_storage_size >= 0):
                     simulation = Energy_System().simulation(start_year = start_year, end_year = end_year,
                                               PV_size = PV_size_max, 
                                               storage_size = storage_size_min)
@@ -778,6 +784,9 @@ class Optimisation():
         max_storage = optimisation_results['Initial storage size'].iloc[-1]
         max_diesel = optimisation_results['Diesel capacity'].iloc[-1]
         LCUE = optimisation_results['LCUE ($/kWh)'].iloc[-1]
+        emissions_intensity = optimisation_results['Emissions intensity (gCO2/kWh)'].iloc[-1]
+        total_GHGs = optimisation_results['Cumulative GHGs (kgCO2eq)'].iloc[-1]
+        total_system_GHGs = optimisation_results['Cumulative system GHGs (kgCO2eq)'].iloc[-1]
 #   Data where the mean is most relevant
         blackouts = np.mean(optimisation_results['Blackouts'])
         kerosene_displacement = np.mean(optimisation_results['Kerosene displacement'])        
@@ -798,10 +807,19 @@ class Optimisation():
         diesel_cost = np.sum(optimisation_results['Diesel cost ($)'])
         grid_cost = np.sum(optimisation_results['Grid cost ($)'])
         kerosene_cost = np.sum(optimisation_results['Kerosene cost ($)'])
-        kerosene_cost_mitigated = np.sum(optimisation_results['Kerosene cost mitigated ($)'])
+        kerosene_cost_mitigated = np.sum(optimisation_results['Kerosene cost mitigated ($)'])  
+        OM_GHGs = np.sum(optimisation_results['O&M GHGs (kgCO2eq)'])
+        diesel_GHGs = np.sum(optimisation_results['Diesel GHGs (kgCO2eq)'])
+        grid_GHGs = np.sum(optimisation_results['Grid GHGs (kgCO2eq)'])
+        kerosene_GHGs = np.sum(optimisation_results['Kerosene GHGs (kgCO2eq)'])
+        kerosene_mitigated_GHGs = np.sum(optimisation_results['Kerosene GHGs mitigated (kgCO2eq)'])
+
 #   Data which requires combinations of summary results
         unmet_fraction = round(unmet_energy/total_energy,3)
-        renewables_fraction = round(renewable_energy/total_energy,3)        
+        renewables_fraction = round(renewable_energy/total_energy,3)  
+        storage_fraction = round(storage_energy/total_energy,3)
+        diesel_fraction = round(diesel_energy/total_energy,3)
+        grid_fraction = round(grid_energy/total_energy,3)
 #   Combine results into output
         results = pd.DataFrame({'Start year':start_year,
                                 'End year':end_year,
@@ -811,9 +829,13 @@ class Optimisation():
                                 'Maximum storage size':max_storage,
                                 'Maximum diesel capacity':max_diesel,
                                 'LCUE ($/kWh)':LCUE,
+                                'Emissions intensity (gCO2/kWh)':emissions_intensity,
                                 'Blackouts':blackouts,
-                                'Unmet energy fraction':unmet_fraction,
+                                'Unmet fraction':unmet_fraction,
                                 'Renewables fraction':renewables_fraction,
+                                'Storage fraction':storage_fraction,
+                                'Diesel fraction':diesel_fraction,
+                                'Grid fraction':grid_fraction,                                
                                 'Total energy (kWh)':total_energy,
                                 'Unmet energy (kWh)':unmet_energy,
                                 'Renewable energy (kWh)':renewable_energy,
@@ -831,7 +853,15 @@ class Optimisation():
                                 'Kerosene cost ($)':kerosene_cost,
                                 'Kerosene cost mitigated ($)':kerosene_cost_mitigated,
                                 'Kerosene displacement':kerosene_displacement,
-                                'Diesel fuel usage (l)':diesel_fuel_usage
+                                'Diesel fuel usage (l)':diesel_fuel_usage,
+                                'Total GHGs (kgCO2eq)':total_GHGs,
+                                'Total system GHGs (kgCO2eq)':total_system_GHGs,
+                                'Total GHGs (kgCO2eq)':total_GHGs,
+                                'O&M GHGs (kgCO2eq)':OM_GHGs,
+                                'Diesel GHGs (kgCO2eq)':diesel_GHGs,
+                                'Grid GHGs (kgCO2eq)':grid_GHGs,
+                                'Kerosene GHGs (kgCO2eq)':kerosene_GHGs,
+                                'Kerosene GHGs mitigated (kgCO2eq)':kerosene_mitigated_GHGs,
                                 },index=['Lifetime results'])
         return results
 
