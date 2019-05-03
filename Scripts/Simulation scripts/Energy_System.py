@@ -4,7 +4,7 @@
                         ENERGY SYSTEM SIMULATION FILE
 ===============================================================================
                             Most recent update:
-                                23 April 2018
+                                3 May 2019
 ===============================================================================
 Made by:
     Philip Sandwell
@@ -45,9 +45,7 @@ class Energy_System():
 # =============================================================================
 # SIMULATION FUNCTIONS
 #       This function simulates the energy system of a given capacity and to
-#       the parameters stated in the input files. At present a system must 
-#       include battery storage (i.e. storage_size > 0) but systems without
-#       storage will be included in later updates.  
+#       the parameters stated in the input files.  
 # =============================================================================
     def simulation(self, start_year = 0, end_year = 4, 
                    PV_size = 10, storage_size = 10, **options):
@@ -133,6 +131,15 @@ class Energy_System():
    
 #   Begin simulation, iterating over timesteps
         for t in range(0,int(storage_profile.size)):  
+#   Check if any storage is being used
+            if storage_size == 0:
+                simulation_hours = int(storage_profile.size)
+                hourly_storage = pd.DataFrame([0]*simulation_hours)
+                storage_power_supplied = pd.DataFrame([0]*simulation_hours)
+                energy_surplus = ((storage_profile > 0) * storage_profile).abs()
+                energy_deficit = ((storage_profile < 0) * storage_profile).abs()
+                battery_health = pd.DataFrame([0]*simulation_hours)
+                break
             battery_energy_flow = storage_profile.iloc[t][0]
             if t == 0:
                 new_hourly_storage = initial_storage + battery_energy_flow
