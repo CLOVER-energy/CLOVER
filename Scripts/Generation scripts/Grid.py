@@ -4,7 +4,7 @@
                             GRID GENERATION FILE
 ===============================================================================
                             Most recent update:
-                                23 April 2018
+                                3 May 2019
 ===============================================================================
 Made by:
     Philip Sandwell
@@ -49,3 +49,23 @@ class Grid():
             grid_name = grid_types[i]
             grid_times = pd.DataFrame(grid_status)
             grid_times.to_csv(self.generation_filepath + grid_name + '_grid_status.csv')
+
+    def change_grid_coverage(self,grid_type='bahraich', hours=12):
+        grid_profile = self.grid_inputs[grid_type]
+        baseline_hours = np.sum(grid_profile)
+        new_profile = pd.DataFrame([0]*24)
+        for hour in range(24):
+            m = interp1d([0,baseline_hours,24],[0,grid_profile[hour],1])
+            new_profile.iloc[hour] = m(hours).round(3)
+        new_profile.columns = [grid_type+'_'+ str(hours)]
+        return new_profile
+    
+    def save_grid_coverage(self,grid_type='bahraich',hours=12):
+        new_profile = self.change_grid_coverage(grid_type,hours)
+        new_profile_name = grid_type+'_'+ str(hours)
+        output = self.grid_inputs
+        if new_profile_name in output.columns:
+            output[new_profile_name] = new_profile
+        else:
+            output = pd.concat([output,new_profile],axis=1)
+        output.to_csv(self.generation_filepath + 'Grid inputs.csv')
