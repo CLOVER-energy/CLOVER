@@ -22,6 +22,7 @@ import datetime
 import sys
 sys.path.insert(0, '/***YOUR LOCAL FILE PATH***/CLOVER 4.0/Scripts/Impact scripts/')
 from Finance import Finance
+from GHGs import GHGs
 sys.path.insert(0, '/***YOUR LOCAL FILE PATH***/CLOVER 4.0/Scripts/Conversion scripts')
 from Conversion import Conversion
 sys.path.insert(0, '/***YOUR LOCAL FILE PATH***/CLOVER 4.0/Scripts/Simulation scripts')
