@@ -22,6 +22,7 @@ import datetime
 import sys
 sys.path.insert(0, '/***YOUR LOCAL FILE PATH***/CLOVER 4.0/Scripts/Impact scripts/')
 from Finance import Finance
+from GHGs import GHGs
 sys.path.insert(0, '/***YOUR LOCAL FILE PATH***/CLOVER 4.0/Scripts/Conversion scripts')
 from Conversion import Conversion
 sys.path.insert(0, '/***YOUR LOCAL FILE PATH***/CLOVER 4.0/Scripts/Simulation scripts')
@@ -448,13 +449,14 @@ class Optimisation():
         system_blackouts = np.mean(simulation_results['Blackouts'])
 #   Total energy used
         total_energy = np.sum(simulation_results['Total energy used (kWh)'])
+        total_load_energy = np.sum(simulation_results['Load energy (kWh)'])
         total_renewables_used = np.sum(simulation_results['Renewables energy used (kWh)'])
         total_storage_used = np.sum(simulation_results['Storage energy supplied (kWh)'])
         total_grid_used = np.sum(simulation_results['Grid energy (kWh)'])
         total_diesel_used = np.sum(simulation_results['Diesel energy (kWh)'])
         total_unmet_energy = np.sum(simulation_results['Unmet energy (kWh)'])
         renewables_fraction = (total_renewables_used+total_storage_used)/total_energy
-        unmet_fraction = total_unmet_energy/total_energy
+        unmet_fraction = total_unmet_energy/total_load_energy
 #   Calculate total discounted energy
         total_energy_daily = Conversion().hourly_profile_to_daily_sum(simulation_results['Total energy used (kWh)'])
         discounted_energy = Finance().discounted_energy_total(total_energy_daily,start_year,end_year)       
