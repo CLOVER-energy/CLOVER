@@ -53,7 +53,7 @@ class Solar():
         lifetime = self.input_data.loc['lifetime']
         hourly_degradation = 0.20/(lifetime * 365 * 24)
         lifetime_degradation = []
-        for i in range(20*365*24):
+        for i in range((20*365*24)+1):
             equiv = 1.0 - i * hourly_degradation
             lifetime_degradation.append(equiv)
         return pd.DataFrame(lifetime_degradation)
