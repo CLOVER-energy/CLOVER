@@ -4,7 +4,7 @@
                             SOLAR GENERATION FILE
 ===============================================================================
                             Most recent update:
-                              14 March 2019
+                             19 November 2019
 ===============================================================================
 Made by:
     Philip Sandwell
@@ -17,6 +17,7 @@ For more information, please email:
 import requests
 import pandas as pd
 import numpy as np
+import json
 
 class Solar():
     def __init__(self):
@@ -149,17 +150,19 @@ class Solar():
             'tilt': float(self.input_data.loc['tilt']),
             'azim': float(self.input_data.loc['azim']),
             'format': 'json',
-            'metadata': False,
-            'raw': False
+#   Metadata and raw data now supported by different function in API
+#            'metadata': False,
+#            'raw': False
         }        
         r = s.get(url, params=args)
         
 #   Parse JSON to get a pandas.DataFrame
-        df = pd.read_json(r.text, orient='index')
+        parsed_response = json.loads(r.text)
+        df = pd.read_json(json.dumps(parsed_response['data']), orient='index')
         df = df.reset_index(drop=True)
        
 ##   Remove leap days
-        if year in {2004,2008,2012,2016}:
+        if year in {2004,2008,2012,2016,2020}:
             feb_29 = (31+28)*24
             df = df.drop(range(feb_29,feb_29+24))
             df = df.reset_index(drop=True)
