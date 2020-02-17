@@ -113,7 +113,8 @@ class Energy_System():
         battery_leakage = self.energy_system_inputs[1]['Battery leakage']
         battery_eff_in = self.energy_system_inputs[1]['Battery conversion in']
         battery_eff_out = self.energy_system_inputs[1]['Battery conversion out']
-        battery_C_rate = self.energy_system_inputs[1]['Battery C rate']
+        battery_C_rate_out = self.energy_system_inputs[1]['Battery C rate discharging']
+        battery_C_rate_in = self.energy_system_inputs[1]['Battery C rate charging']
         battery_lifetime_loss = self.energy_system_inputs[1]['Battery lifetime loss']
         cumulative_storage_power = 0.0
         hourly_storage = []
@@ -145,9 +146,9 @@ class Energy_System():
                 new_hourly_storage = initial_storage + battery_energy_flow
             else:
                 if battery_energy_flow >= 0.0:   # Battery charging
-                    new_hourly_storage = hourly_storage[t - 1] * (1.0 - battery_leakage) + battery_eff_in * min(battery_energy_flow, battery_C_rate * (max_storage - min_storage))
+                    new_hourly_storage = hourly_storage[t - 1] * (1.0 - battery_leakage) + battery_eff_in * min(battery_energy_flow, battery_C_rate_in * (max_storage - min_storage))
                 else:                           # Battery discharging
-                    new_hourly_storage = hourly_storage[t - 1] * (1.0 - battery_leakage) + (1.0 / battery_eff_out) * max(battery_energy_flow, (-1.0) * battery_C_rate * (max_storage - min_storage))
+                    new_hourly_storage = hourly_storage[t - 1] * (1.0 - battery_leakage) + (1.0 / battery_eff_out) * max(battery_energy_flow, (-1.0) * battery_C_rate_out * (max_storage - min_storage))
                     
 #   Dumped energy and unmet demand
             energy_surplus.append(max(new_hourly_storage - max_storage, 0.0))   #Battery too full
