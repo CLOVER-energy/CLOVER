@@ -1,1 +1,17 @@
-PV,Y,(Y/N)Battery,Y,(Y/N)Diesel backup,Y,(Y/N)Diesel backup threshold,0.1,Maximum acceptible blackouts (0.0-1.0)Grid,Y,(Y/N)Grid type,bahraich,Grid profilePrioritise self generation,Y,(Y/N)Domestic,Y,(Y/N)Commercial,Y,(Y/N)Public,Y,(Y/N)Distribution network,DC,DC or AC distribution network
+PV,Y,(Y/N)
+Battery,Y,(Y/N)
+Diesel backup,N,(Y/N)
+Diesel backup threshold,1.0,Maximum acceptible blackouts (0.0-1.0)
+Dispatchable diesel,Y,(Y/N) Cannot be used in conjunction with diesel backup
+Dispatchable diesel time,18:00 - 01:00,Time in 24hr Clock - leave as '00:00 - 00:00' if none
+Dispatchable diesel timed minimum battery SOC,0.5,State of charge (0.0 - 1.0)
+Dispatchable diesel timed switch off SOC,0.9,State of charge (0.0 - 1.0)
+Dispatchable diesel universal minimum battery SOC,0.3,State of charge (0.0 - 1.0)
+Dispatchable diesel universal switch off SOC,0.9,State of charge (0.0 - 1.0)
+Grid,N,(Y/N)
+Grid type,none,Grid profiles
+Prioritise self generation,Y,(Y/N)
+Domestic,N,(Y/N)
+Commercial,Y,(Y/N)
+Public,Y,(Y/N)
+Distribution network,AC,DC or AC distribution network
