@@ -1,1 +1,3 @@
-Diesel consumption,0.4,litres per kW capacity per hourDiesel minimum load,0.35,Minimum capacity factor (0.0-1.0)
+Diesel consumption,0.31,litres per kW capacity per hour
+Diesel minimum load,0.35,Minimum capacity factor (0.0-1.0)
+Diesel size,13.0,Capacity (kW)
