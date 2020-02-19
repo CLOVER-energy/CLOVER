@@ -4,7 +4,7 @@
                         ENERGY SYSTEM SIMULATION FILE
 ===============================================================================
                             Most recent update:
-                                3 May 2019
+                                19 February 2020
 ===============================================================================
 Made by:
     Philip Sandwell
@@ -31,12 +31,13 @@ class Energy_System():
     def __init__(self):
         self.location = 'Bahraich'
         self.CLOVER_filepath = '/***YOUR LOCAL FILE PATH***/CLOVER 4.0'
-        self.location_filepath = self.CLOVER_filepath + '/Locations/' + self.location
         self.generation_filepath = self.location_filepath + '/Generation/'
+        self.diesel_filepath = self.generation_filepath + '/Diesel/'
         self.location_data_filepath = self.location_filepath + '/Location Data/'
         self.energy_system_filepath = self.location_filepath + '/Simulation/Energy system inputs.csv'
         self.energy_system_inputs  = pd.read_csv(self.energy_system_filepath,header=None,index_col=0).round(decimals=3)
         self.scenario_inputs = pd.read_csv(self.location_filepath + '/Scenario/Scenario inputs.csv' ,header=None,index_col=0).round(decimals=3)
+        self.diesel_inputs = pd.read_csv(self.diesel_filepath + 'Diesel inputs.csv', header=None, index_col=0)
         self.kerosene_data_filepath = self.location_filepath + '/Load/Devices in use/kerosene_in_use.csv'
         self.kerosene_usage = pd.read_csv(self.kerosene_data_filepath, index_col = 0).reset_index(drop=True)
         self.simulation_storage = self.location_filepath + '/Simulation/Saved simulations/'
@@ -47,7 +48,7 @@ class Energy_System():
 #       This function simulates the energy system of a given capacity and to
 #       the parameters stated in the input files.  
 # =============================================================================
-    def simulation(self, start_year = 0, end_year = 4, 
+    def simulation(self, start_year = 0, end_year = 4,
                    PV_size = 10, storage_size = 10, **options):
         '''
         Function:
@@ -103,6 +104,7 @@ class Energy_System():
         grid_energy = pd.DataFrame(input_profiles['Grid energy (kWh)']).abs()
         storage_profile = pd.DataFrame(input_profiles['Storage profile (kWh)'])
         kerosene_profile = pd.DataFrame(input_profiles['Kerosene lamps'])
+        dispatched_diesel_profile = pd.DataFrame(input_profiles['Timed dispatchable diesel profile'])
         households = pd.DataFrame(Load().population_hourly()[start_year*8760:end_year*8760].values)
            
 #   Initialise battery storage parameters 
@@ -124,14 +126,37 @@ class Energy_System():
 #   Initialise simulation parameters
         diesel_backup_status = self.scenario_inputs[1]['Diesel backup']
         diesel_backup_threshold = float(self.scenario_inputs[1]['Diesel backup threshold'])
-        
+
+#   Dispatchable Diesel parameters
+        dispatched_diesel_status = self.scenario_inputs[1]['Dispatchable diesel']
+        diesel_capacity_dd = float(self.diesel_inputs[1]['Diesel size'])
+        diesel_dispatched_timed_minimum_SOC = float(self.scenario_inputs[1]['Dispatchable diesel '
+                                                                            'timed minimum battery SOC'])
+        diesel_dispatched_universal_minimum_SOC = float(self.scenario_inputs[1]['Dispatchable diesel '
+                                                                                'universal minimum battery SOC'])
+        diesel_dispatched_timed_switch_off_SOC = float(self.scenario_inputs[1]['Dispatchable diesel '
+                                                                               'timed switch off SOC'])
+        diesel_dispatched_universal_switch_off_SOC = float(self.scenario_inputs[1]['Dispatchable diesel '
+                                                                                   'universal switch off SOC'])
+        min_diesel_capacity = diesel_capacity_dd * float(self.diesel_inputs[1]['Diesel minimum load'])
+        max_diesel_energy_in = min(storage_size * battery_C_rate_in, diesel_capacity_dd)
+
 #   Initialise energy accounting parameters 
         energy_surplus = []
         energy_deficit = []
         storage_power_supplied = []
-   
-#   Begin simulation, iterating over timesteps
-        for t in range(0,int(storage_profile.size)):  
+
+#   Initialise dispatched diesel accounting parameters
+        dispatched_diesel_used = []
+        dispatched_diesel_supplied = []
+        dispatched_diesel_surplus = []
+        empty_capacity_list = []
+        state_of_charge_list = []
+        dd_on = [0]
+#   Begin simulation, iterating over time-steps
+
+        for t in range(0,int(storage_profile.size)):
+
 #   Check if any storage is being used
             if storage_size == 0:
                 simulation_hours = int(storage_profile.size)
@@ -142,14 +167,114 @@ class Energy_System():
                 battery_health = pd.DataFrame([0]*simulation_hours)
                 break
             battery_energy_flow = storage_profile.iloc[t][0]
+            dispatched_diesel_energy_used = 0 # Total diesel energy used
+            dispatched_diesel_energy_supplied = 0 # Total diesel energy supplied
+            new_hourly_storage = 0
             if t == 0:
-                new_hourly_storage = initial_storage + battery_energy_flow
+                new_hourly_storage += initial_storage + battery_energy_flow
             else:
                 if battery_energy_flow >= 0.0:   # Battery charging
-                    new_hourly_storage = hourly_storage[t - 1] * (1.0 - battery_leakage) + battery_eff_in * min(battery_energy_flow, battery_C_rate_in * (max_storage - min_storage))
+                    new_hourly_storage += hourly_storage[t - 1] * (1.0 - battery_leakage) + battery_eff_in * min(battery_energy_flow, battery_C_rate_in * (max_storage - min_storage))
                 else:                           # Battery discharging
-                    new_hourly_storage = hourly_storage[t - 1] * (1.0 - battery_leakage) + (1.0 / battery_eff_out) * max(battery_energy_flow, (-1.0) * battery_C_rate_out * (max_storage - min_storage))
-                    
+                    new_hourly_storage += hourly_storage[t - 1] * (1.0 - battery_leakage) + (1.0 / battery_eff_out) * max(battery_energy_flow, (-1.0) * battery_C_rate_out * (max_storage - min_storage))
+
+            # If no dispatched diesel, pass
+            if dispatched_diesel_status == 'N':
+                empty_capacity_list.append(0)
+            # If dispatched diesel is in operation, run set of functions
+            elif dispatched_diesel_status == 'Y':
+                state_of_charge = new_hourly_storage / storage_size
+                state_of_charge_list.append(state_of_charge)
+                if t == 0:
+                    empty_capacity = max_storage - (state_of_charge * storage_size)
+                    empty_capacity_list.append(empty_capacity)
+                else:
+                    empty_capacity = max_storage - (state_of_charge * storage_size * battery_health[t - 1])
+                    empty_capacity_list.append(empty_capacity)
+                # if timed is on, then run at specific time
+                timed_on_off = int(dispatched_diesel_profile['Timed dispatchable diesel profile'][t])
+                if timed_on_off == 0:
+                    # if the generator wasn't running in the previous hour:
+                    if dd_on[t] == 0:
+                        # if the state of charge is higher than the minimum universal switch on, then pass
+                        if state_of_charge >= diesel_dispatched_universal_minimum_SOC:
+                            dd_on.append(0)
+                        else:
+                            dd_on.append(1)
+                            if empty_capacity <= min_diesel_capacity:
+                                new_hourly_storage += empty_capacity  # Hourly storage plus the empty capacity remaining
+                                dispatched_diesel_energy_used += empty_capacity  # Diesel used = empty capacity
+                                dispatched_diesel_energy_supplied += min_diesel_capacity  # Diesel supplied is min diesel capacity
+                            if empty_capacity >= max_diesel_energy_in:
+                                new_hourly_storage += max_diesel_energy_in  # Hourly storage plus the max diesel in
+                                dispatched_diesel_energy_used += max_diesel_energy_in  # Diesel used = the max diesel input
+                                dispatched_diesel_energy_supplied += max_diesel_energy_in  # Diesel supplied = supplied at max output
+                            if min_diesel_capacity < empty_capacity < max_diesel_energy_in:
+                                new_hourly_storage += empty_capacity  # adds in the empty capacity to the hourly storage
+                                dispatched_diesel_energy_used += empty_capacity  # adds empty capacity to used
+                                dispatched_diesel_energy_supplied += empty_capacity
+                    elif dd_on[t] == 1: # If the generator was running in the previous hour:
+                        # if the state of charge is higher than the minimum universal switch off, then pass
+                        if state_of_charge >= diesel_dispatched_universal_switch_off_SOC:
+                            dd_on.append(0)
+                        else:
+                            dd_on.append(1)
+                            if empty_capacity <= min_diesel_capacity:
+                                new_hourly_storage += empty_capacity
+                                dispatched_diesel_energy_used += empty_capacity
+                                dispatched_diesel_energy_supplied += min_diesel_capacity
+                            if empty_capacity >= max_diesel_energy_in:
+                                new_hourly_storage += max_diesel_energy_in
+                                dispatched_diesel_energy_used += max_diesel_energy_in
+                                dispatched_diesel_energy_supplied += max_diesel_energy_in
+                            if min_diesel_capacity < empty_capacity < max_diesel_energy_in:
+                                new_hourly_storage += empty_capacity
+                                dispatched_diesel_energy_used += empty_capacity
+                                dispatched_diesel_energy_supplied += empty_capacity
+                    # if timed generation activated:
+                elif timed_on_off == 1:
+                    # If generator not running in previous hour
+                    if dd_on[t] == 0:
+                        # Check state of charge of the battery first
+                        if state_of_charge >= diesel_dispatched_timed_minimum_SOC:
+                            dd_on.append(0)
+                        else:
+                            dd_on.append(1)
+                            if empty_capacity <= min_diesel_capacity:
+                                new_hourly_storage += empty_capacity
+                                dispatched_diesel_energy_used += empty_capacity
+                                dispatched_diesel_energy_supplied += min_diesel_capacity
+                            if empty_capacity >= max_diesel_energy_in:
+                                new_hourly_storage += max_diesel_energy_in
+                                dispatched_diesel_energy_used += max_diesel_energy_in
+                                dispatched_diesel_energy_supplied += max_diesel_energy_in
+                            if min_diesel_capacity < empty_capacity < max_diesel_energy_in:
+                                new_hourly_storage += empty_capacity
+                                dispatched_diesel_energy_used = empty_capacity
+                                dispatched_diesel_energy_supplied = empty_capacity
+                    # If generator running in previous hour:
+                    elif dd_on[t] == 1:
+                        if state_of_charge >= diesel_dispatched_timed_switch_off_SOC:
+                            dd_on.append(0)
+                        else:
+                            dd_on.append(1)
+                            if empty_capacity <= min_diesel_capacity:
+                                new_hourly_storage += empty_capacity
+                                dispatched_diesel_energy_used += empty_capacity
+                                dispatched_diesel_energy_supplied += min_diesel_capacity
+                            if empty_capacity >= max_diesel_energy_in:
+                                new_hourly_storage += max_diesel_energy_in
+                                dispatched_diesel_energy_used += max_diesel_energy_in
+                                dispatched_diesel_energy_supplied += max_diesel_energy_in
+                            if min_diesel_capacity < empty_capacity < max_diesel_energy_in:
+                                new_hourly_storage += empty_capacity
+                                dispatched_diesel_energy_used += empty_capacity
+                                dispatched_diesel_energy_supplied += empty_capacity
+
+            dispatched_diesel_used.append(dispatched_diesel_energy_used)
+            dispatched_diesel_supplied.append(dispatched_diesel_energy_supplied)
+            dispatched_diesel_surplus.append(diesel_capacity_dd - dispatched_diesel_energy_used)
+
 #   Dumped energy and unmet demand
             energy_surplus.append(max(new_hourly_storage - max_storage, 0.0))   #Battery too full
             energy_deficit.append(max(min_storage - new_hourly_storage, 0.0))   #Battery too empty
@@ -158,16 +283,16 @@ class Energy_System():
             if new_hourly_storage >= max_storage:
                 new_hourly_storage = max_storage
             elif new_hourly_storage <= min_storage:
-                new_hourly_storage = min_storage          
+                new_hourly_storage = min_storage
 #   Update hourly_storage
-            hourly_storage.append(new_hourly_storage)  
-                
+            hourly_storage.append(new_hourly_storage)
+
 #   Update battery health
             if t == 0:
                 storage_power_supplied.append(0.0 - battery_energy_flow)
             else:
                 storage_power_supplied.append(max(hourly_storage[t-1] * (1.0 - battery_leakage) - hourly_storage[t], 0.0))
-            cumulative_storage_power = cumulative_storage_power + storage_power_supplied[t]    
+            cumulative_storage_power = cumulative_storage_power + storage_power_supplied[t]
             
             storage_degradation = (1.0 - battery_lifetime_loss * 
                                    (cumulative_storage_power / max_energy_throughput))
@@ -177,12 +302,29 @@ class Energy_System():
                            self.energy_system_inputs[1]['Battery minimum charge'])
             battery_health.append(storage_degradation)
     
-#   Consolidate outputs from iteration stage                    
+#   Consolidate outputs from iteration stage                    0
         storage_power_supplied = pd.DataFrame(storage_power_supplied)
 
+#   Consolidate outputs from dispatched diesel
+        dispatched_diesel_surplus = pd.DataFrame(dispatched_diesel_surplus, columns=['Surplus'])
+        dispatched_diesel_used = pd.DataFrame(dispatched_diesel_used, columns=['Used'])
+        dispatched_diesel_supplied = pd.DataFrame(dispatched_diesel_supplied, columns=['Supplied'])
+        state_of_charge = pd.DataFrame(state_of_charge_list, columns=['State of Charge'])
+
 #   Find unmet energy
-        unmet_energy = pd.DataFrame((load_energy.values - renewables_energy_used_directly.values
-                                    - grid_energy.values - storage_power_supplied.values))    
+        unmet_energy = pd.DataFrame((load_energy.values - renewables_energy_used_directly.values - grid_energy.values -
+                                     storage_power_supplied.values),columns=['Unmet'])
+        if dispatched_diesel_status == 'N':
+            pass
+        elif dispatched_diesel_status == 'Y':
+            new_unmet_energy, new_dispatched_diesel_used, new_dispatched_diesel_supplied = \
+                Diesel().diesel_surplus_unmet_dispatched(unmet_energy,dispatched_diesel_surplus, dispatched_diesel_used,
+                                                         dispatched_diesel_supplied, storage_power_supplied,
+                                                         empty_capacity_list, dd_on, state_of_charge_list)
+            unmet_energy = new_unmet_energy
+            dispatched_diesel_used = new_dispatched_diesel_used
+            dispatched_diesel_supplied = new_dispatched_diesel_supplied
+
         blackout_times = ((unmet_energy > 0) * 1).astype(float)
 
 #   Use backup diesel generator
@@ -194,10 +336,18 @@ class Energy_System():
             unmet_energy = pd.DataFrame(unmet_energy.values - diesel_energy.values)
             diesel_energy = diesel_energy.abs()
         else:
-            diesel_energy = pd.DataFrame([0.0]*int(storage_profile.size))
-            diesel_times = pd.DataFrame([0.0]*int(storage_profile.size))
-            diesel_fuel_usage = pd.DataFrame([0.0]*int(storage_profile.size))
-            diesel_capacity = 0.0
+            if dispatched_diesel_status == 'N':
+                diesel_energy = pd.DataFrame([0.0]*int(storage_profile.size))
+                diesel_times = pd.DataFrame([0.0]*int(storage_profile.size))
+                diesel_fuel_usage = pd.DataFrame([0.0]*int(storage_profile.size))
+                diesel_capacity = 0.0
+            else:
+                diesel_energy = dispatched_diesel_used
+                diesel_times = pd.DataFrame(dd_on[1:])
+                diesel_capacity = diesel_capacity_dd
+                diesel_fuel_usage = pd.DataFrame(Diesel().get_diesel_fuel_usage(diesel_capacity,
+                                                                                dispatched_diesel_supplied,
+                                                                                diesel_times))
 
 #   Find new blackout times, according to when there is unmet energy
         blackout_times = ((unmet_energy > 0) * 1).astype(float)        
@@ -255,8 +405,10 @@ class Energy_System():
                                                 blackout_times,
                                                 renewables_energy_used_directly,
                                                 storage_power_supplied,
+                                                state_of_charge,
                                                 grid_energy,
                                                 diesel_energy,
+                                                dispatched_diesel_supplied,
                                                 diesel_times,
                                                 diesel_fuel_usage,
                                                 storage_profile,
@@ -266,7 +418,8 @@ class Energy_System():
                                                 battery_health,
                                                 households,
                                                 kerosene_usage,
-                                                kerosene_mitigation],axis=1)
+                                                kerosene_mitigation,
+                                                ],axis=1)
         
         return tuple([system_performance_outputs,system_details])
 #%%
@@ -352,17 +505,19 @@ class Energy_System():
             storage_profile                 Amount of energy (kWh) into (+ve) and out of (-ve) the battery
             kerosene_usage                  Number of kerosene lamps in use (if no power available)
         '''
-        
+
 #   Initialise simulation parameters
         start_hour = start_year*8760
         end_hour = end_year*8760
         
 #   Initialise power generation, including degradation of PV
-        PV_generation = PV_size * pd.DataFrame(self.get_PV_generation()[start_hour:end_hour].values 
-                                     * Solar().solar_degradation()[0:(end_hour-start_hour)].values)
+        PV_generation = PV_size * pd.DataFrame(self.get_PV_generation()[start_hour:end_hour].values
+                                               * Solar().solar_degradation()[0:(end_hour-start_hour)].values)
         grid_status = pd.DataFrame(self.get_grid_profile()[start_hour:end_hour].values)
         load_profile = pd.DataFrame(self.get_load_profile()[start_hour:end_hour].values)
-        
+        timed_dispatchable_diesel_profile = pd.DataFrame(Diesel().get_dispatchable_diesel_times()[start_hour:end_hour].values)
+        timed_dispatchable_diesel_profile.to_csv('~/desktop/diesel_out.csv')
+
 #   Consider power distribution network
         if self.scenario_inputs[1]['Distribution network'] == 'DC':
             PV_generation = self.energy_system_inputs[1]['DC to DC conversion']*PV_generation
@@ -412,9 +567,15 @@ class Energy_System():
         grid_energy.columns = ['Grid energy (kWh)']
         storage_profile.columns = ['Storage profile (kWh)']
         kerosene_usage.columns = ['Kerosene lamps']
-        
+        timed_dispatchable_diesel_profile.columns = ['Timed dispatchable diesel profile']
+
+        #out_file = pd.concat([load_energy, renewables_energy, renewables_energy_used_directly,
+        #                      grid_energy, storage_profile, kerosene_usage], axis=1)
+        #out_file.to_csv('/Users/hrb16/Library/Mobile Documents/com~apple~CloudDocs/Mahama Project/Dispatchable Diesel/get_stor_outs.csv')
+
         return pd.concat([load_energy, renewables_energy, renewables_energy_used_directly,
-                          grid_energy, storage_profile, kerosene_usage],axis=1)
+                          grid_energy, storage_profile, kerosene_usage, timed_dispatchable_diesel_profile], axis=1)
+
 #%% Energy sources
     def get_PV_generation(self, **options):
         '''
