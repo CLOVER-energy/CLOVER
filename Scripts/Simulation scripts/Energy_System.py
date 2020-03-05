@@ -139,7 +139,9 @@ class Energy_System():
         diesel_dispatched_universal_switch_off_SOC = float(self.scenario_inputs[1]['Dispatchable diesel '
                                                                                    'universal switch off SOC'])
         min_diesel_capacity = diesel_capacity_dd * float(self.diesel_inputs[1]['Diesel minimum load'])
+        print(min_diesel_capacity)
         max_diesel_energy_in = min(storage_size * battery_C_rate_in, diesel_capacity_dd)
+        print(max_diesel_energy_in)
 
 #   Initialise energy accounting parameters 
         energy_surplus = []
@@ -169,121 +171,187 @@ class Energy_System():
             battery_energy_flow = storage_profile.iloc[t][0]
             dispatched_diesel_energy_used = 0 # Total diesel energy used
             dispatched_diesel_energy_supplied = 0 # Total diesel energy supplied
-            new_hourly_storage = 0
-            if t == 0:
-                new_hourly_storage += initial_storage + battery_energy_flow
-            else:
-                if battery_energy_flow >= 0.0:   # Battery charging
-                    new_hourly_storage += hourly_storage[t - 1] * (1.0 - battery_leakage) + battery_eff_in * min(battery_energy_flow, battery_C_rate_in * (max_storage - min_storage))
-                else:                           # Battery discharging
-                    new_hourly_storage += hourly_storage[t - 1] * (1.0 - battery_leakage) + (1.0 / battery_eff_out) * max(battery_energy_flow, (-1.0) * battery_C_rate_out * (max_storage - min_storage))
 
-            # If no dispatched diesel, pass
-            if dispatched_diesel_status == 'N':
-                empty_capacity_list.append(0)
-            # If dispatched diesel is in operation, run set of functions
-            elif dispatched_diesel_status == 'Y':
-                state_of_charge = new_hourly_storage / storage_size
+            if t == 0:
+                new_hourly_storage = initial_storage + battery_energy_flow
+                empty_capacity = max_storage - new_hourly_storage
+                empty_capacity_list.append(empty_capacity)
+                dd_on.append(0)
+            else:
+                state_of_charge = (hourly_storage[t - 1] - min_storage) / (max_storage - min_storage)
                 state_of_charge_list.append(state_of_charge)
-                if t == 0:
-                    empty_capacity = max_storage - (state_of_charge * storage_size)
+                new_hourly_storage = hourly_storage[t-1]
+#   If no dispatched diesel, run discharging and charging as normal
+                if dispatched_diesel_status == 'N':
+                    empty_capacity_list.append(0)
+                    if battery_energy_flow >= 0.0:  # Battery charging
+                        new_hourly_storage = hourly_storage[t - 1] * (1.0 - battery_leakage) + battery_eff_in * min(
+                            battery_energy_flow, battery_C_rate_in * (max_storage - min_storage))
+                    else:  # Battery discharging
+                        new_hourly_storage = hourly_storage[t - 1] * (1.0 - battery_leakage) + (
+                                    1.0 / battery_eff_out) * max(battery_energy_flow, (-1.0) * battery_C_rate_out * (
+                                    max_storage - min_storage))
+#   Dumped energy
+                    energy_surplus.append(max(new_hourly_storage - max_storage, 0.0))  # Battery too full
+#   Battery capacities and blackouts (if battery is too full or empty)
+                    if new_hourly_storage >= max_storage:
+                        new_hourly_storage = max_storage
+                    elif new_hourly_storage <= min_storage:
+                        new_hourly_storage = min_storage
+
+#   If dispatched diesel is in operation, run set of functions
+                elif dispatched_diesel_status == 'Y':
+                    empty_capacity = max_storage  - new_hourly_storage
                     empty_capacity_list.append(empty_capacity)
-                else:
-                    empty_capacity = max_storage - (state_of_charge * storage_size * battery_health[t - 1])
-                    empty_capacity_list.append(empty_capacity)
-                # if timed is on, then run at specific time
-                timed_on_off = int(dispatched_diesel_profile['Timed dispatchable diesel profile'][t])
-                if timed_on_off == 0:
-                    # if the generator wasn't running in the previous hour:
-                    if dd_on[t] == 0:
-                        # if the state of charge is higher than the minimum universal switch on, then pass
-                        if state_of_charge >= diesel_dispatched_universal_minimum_SOC:
-                            dd_on.append(0)
-                        else:
-                            dd_on.append(1)
-                            if empty_capacity <= min_diesel_capacity:
-                                new_hourly_storage += empty_capacity  # Hourly storage plus the empty capacity remaining
-                                dispatched_diesel_energy_used += empty_capacity  # Diesel used = empty capacity
-                                dispatched_diesel_energy_supplied += min_diesel_capacity  # Diesel supplied is min diesel capacity
-                            if empty_capacity >= max_diesel_energy_in:
-                                new_hourly_storage += max_diesel_energy_in  # Hourly storage plus the max diesel in
-                                dispatched_diesel_energy_used += max_diesel_energy_in  # Diesel used = the max diesel input
-                                dispatched_diesel_energy_supplied += max_diesel_energy_in  # Diesel supplied = supplied at max output
-                            if min_diesel_capacity < empty_capacity < max_diesel_energy_in:
-                                new_hourly_storage += empty_capacity  # adds in the empty capacity to the hourly storage
-                                dispatched_diesel_energy_used += empty_capacity  # adds empty capacity to used
-                                dispatched_diesel_energy_supplied += empty_capacity
-                    elif dd_on[t] == 1: # If the generator was running in the previous hour:
-                        # if the state of charge is higher than the minimum universal switch off, then pass
-                        if state_of_charge >= diesel_dispatched_universal_switch_off_SOC:
-                            dd_on.append(0)
-                        else:
-                            dd_on.append(1)
-                            if empty_capacity <= min_diesel_capacity:
-                                new_hourly_storage += empty_capacity
-                                dispatched_diesel_energy_used += empty_capacity
-                                dispatched_diesel_energy_supplied += min_diesel_capacity
-                            if empty_capacity >= max_diesel_energy_in:
-                                new_hourly_storage += max_diesel_energy_in
-                                dispatched_diesel_energy_used += max_diesel_energy_in
-                                dispatched_diesel_energy_supplied += max_diesel_energy_in
-                            if min_diesel_capacity < empty_capacity < max_diesel_energy_in:
-                                new_hourly_storage += empty_capacity
-                                dispatched_diesel_energy_used += empty_capacity
-                                dispatched_diesel_energy_supplied += empty_capacity
-                    # if timed generation activated:
-                elif timed_on_off == 1:
-                    # If generator not running in previous hour
-                    if dd_on[t] == 0:
-                        # Check state of charge of the battery first
-                        if state_of_charge >= diesel_dispatched_timed_minimum_SOC:
-                            dd_on.append(0)
-                        else:
-                            dd_on.append(1)
-                            if empty_capacity <= min_diesel_capacity:
-                                new_hourly_storage += empty_capacity
-                                dispatched_diesel_energy_used += empty_capacity
-                                dispatched_diesel_energy_supplied += min_diesel_capacity
-                            if empty_capacity >= max_diesel_energy_in:
-                                new_hourly_storage += max_diesel_energy_in
-                                dispatched_diesel_energy_used += max_diesel_energy_in
-                                dispatched_diesel_energy_supplied += max_diesel_energy_in
-                            if min_diesel_capacity < empty_capacity < max_diesel_energy_in:
-                                new_hourly_storage += empty_capacity
-                                dispatched_diesel_energy_used = empty_capacity
-                                dispatched_diesel_energy_supplied = empty_capacity
-                    # If generator running in previous hour:
-                    elif dd_on[t] == 1:
-                        if state_of_charge >= diesel_dispatched_timed_switch_off_SOC:
-                            dd_on.append(0)
-                        else:
-                            dd_on.append(1)
-                            if empty_capacity <= min_diesel_capacity:
-                                new_hourly_storage += empty_capacity
-                                dispatched_diesel_energy_used += empty_capacity
-                                dispatched_diesel_energy_supplied += min_diesel_capacity
-                            if empty_capacity >= max_diesel_energy_in:
-                                new_hourly_storage += max_diesel_energy_in
-                                dispatched_diesel_energy_used += max_diesel_energy_in
-                                dispatched_diesel_energy_supplied += max_diesel_energy_in
-                            if min_diesel_capacity < empty_capacity < max_diesel_energy_in:
-                                new_hourly_storage += empty_capacity
-                                dispatched_diesel_energy_used += empty_capacity
-                                dispatched_diesel_energy_supplied += empty_capacity
+                    # if timed is on, then run at specific time
+                    timed_on_off = int(dispatched_diesel_profile['Timed dispatchable diesel profile'][t])
+                    if timed_on_off == 0:
+                        # if the generator wasn't running in the previous hour:
+                        if dd_on[t] == 0:
+                            # if the state of charge is higher than the minimum universal switch on, then pass
+                            if state_of_charge >= diesel_dispatched_universal_minimum_SOC:
+                                dd_on.append(0)
+                                if battery_energy_flow >= 0.0:  # Battery charging
+                                    new_hourly_storage = hourly_storage[t - 1] * (
+                                                1.0 - battery_leakage) + battery_eff_in * min(
+                                        battery_energy_flow, battery_C_rate_in * (max_storage - min_storage))
+                                else:  # Battery discharging
+                                    new_hourly_storage = hourly_storage[t - 1] * (1.0 - battery_leakage) + (
+                                            1.0 / battery_eff_out) * max(battery_energy_flow,
+                                                                         (-1.0) * battery_C_rate_out * (
+                                                                                 max_storage - min_storage))
+                                #   Dumped energy
+                                energy_surplus.append(max(new_hourly_storage - max_storage, 0.0))  # Battery too full
+                                #   Battery capacities and blackouts (if battery is too full or empty)
+                                if new_hourly_storage >= max_storage:
+                                    new_hourly_storage = max_storage
+                                elif new_hourly_storage <= min_storage:
+                                    new_hourly_storage = min_storage
+                            else:
+                                dd_on.append(1)
+                                if empty_capacity <= min_diesel_capacity:
+                                    new_hourly_storage += empty_capacity  # Hourly storage plus the empty capacity remaining
+                                    dispatched_diesel_energy_used += empty_capacity  # Diesel used = empty capacity
+                                    dispatched_diesel_energy_supplied += min_diesel_capacity  # Diesel supplied is min diesel capacity
+                                if empty_capacity >= max_diesel_energy_in:
+                                    new_hourly_storage += max_diesel_energy_in  # Hourly storage plus the max diesel in
+                                    dispatched_diesel_energy_used += max_diesel_energy_in  # Diesel used = the max diesel input
+                                    dispatched_diesel_energy_supplied += max_diesel_energy_in  # Diesel supplied = supplied at max output
+                                if min_diesel_capacity < empty_capacity < max_diesel_energy_in:
+                                    new_hourly_storage += empty_capacity  # adds in the empty capacity to the hourly storage
+                                    dispatched_diesel_energy_used += empty_capacity  # adds empty capacity to used
+                                    dispatched_diesel_energy_supplied += empty_capacity
+                        elif dd_on[t] == 1: # If the generator was running in the previous hour:
+                            # if the state of charge is higher than the minimum universal switch off, then pass
+                            if state_of_charge >= diesel_dispatched_universal_switch_off_SOC:
+                                dd_on.append(0)
+                                if battery_energy_flow >= 0.0:  # Battery charging
+                                    new_hourly_storage = hourly_storage[t - 1] * (
+                                                1.0 - battery_leakage) + battery_eff_in * min(
+                                        battery_energy_flow, battery_C_rate_in * (max_storage - min_storage))
+                                else:  # Battery discharging
+                                    new_hourly_storage = hourly_storage[t - 1] * (1.0 - battery_leakage) + (
+                                            1.0 / battery_eff_out) * max(battery_energy_flow,
+                                                                         (-1.0) * battery_C_rate_out * (
+                                                                                 max_storage - min_storage))
+                                #   Dumped energy
+                                energy_surplus.append(max(new_hourly_storage - max_storage, 0.0))  # Battery too full
+                                #   Battery capacities and blackouts (if battery is too full or empty)
+                                if new_hourly_storage >= max_storage:
+                                    new_hourly_storage = max_storage
+                                elif new_hourly_storage <= min_storage:
+                                    new_hourly_storage = min_storage
+                            else:
+                                dd_on.append(1)
+                                if empty_capacity <= min_diesel_capacity:
+                                    new_hourly_storage += empty_capacity
+                                    dispatched_diesel_energy_used += empty_capacity
+                                    dispatched_diesel_energy_supplied += min_diesel_capacity
+                                if empty_capacity >= max_diesel_energy_in:
+                                    new_hourly_storage += max_diesel_energy_in
+                                    dispatched_diesel_energy_used += max_diesel_energy_in
+                                    dispatched_diesel_energy_supplied += max_diesel_energy_in
+                                if min_diesel_capacity < empty_capacity < max_diesel_energy_in:
+                                    new_hourly_storage += empty_capacity
+                                    dispatched_diesel_energy_used += empty_capacity
+                                    dispatched_diesel_energy_supplied += empty_capacity
+                        # if timed generation activated:
+                    elif timed_on_off == 1:
+                        # If generator not running in previous hour
+                        if dd_on[t] == 0:
+                            # Check state of charge of the battery first
+                            if state_of_charge >= diesel_dispatched_timed_minimum_SOC:
+                                dd_on.append(0)
+                                if battery_energy_flow >= 0.0:  # Battery charging
+                                    new_hourly_storage = hourly_storage[t - 1] * (
+                                                1.0 - battery_leakage) + battery_eff_in * min(
+                                        battery_energy_flow, battery_C_rate_in * (max_storage - min_storage))
+                                else:  # Battery discharging
+                                    new_hourly_storage = hourly_storage[t - 1] * (1.0 - battery_leakage) + (
+                                            1.0 / battery_eff_out) * max(battery_energy_flow,
+                                                                         (-1.0) * battery_C_rate_out * (
+                                                                                 max_storage - min_storage))
+                                #   Dumped energy
+                                energy_surplus.append(max(new_hourly_storage - max_storage, 0.0))  # Battery too full
+                                #   Battery capacities and blackouts (if battery is too full or empty)
+                                if new_hourly_storage >= max_storage:
+                                    new_hourly_storage = max_storage
+                                elif new_hourly_storage <= min_storage:
+                                    new_hourly_storage = min_storage
+                            else:
+                                dd_on.append(1)
+                                if empty_capacity <= min_diesel_capacity:
+                                    new_hourly_storage += empty_capacity
+                                    dispatched_diesel_energy_used += empty_capacity
+                                    dispatched_diesel_energy_supplied += min_diesel_capacity
+                                if empty_capacity >= max_diesel_energy_in:
+                                    new_hourly_storage += max_diesel_energy_in
+                                    dispatched_diesel_energy_used += max_diesel_energy_in
+                                    dispatched_diesel_energy_supplied += max_diesel_energy_in
+                                if min_diesel_capacity < empty_capacity < max_diesel_energy_in:
+                                    new_hourly_storage += empty_capacity
+                                    dispatched_diesel_energy_used = empty_capacity
+                                    dispatched_diesel_energy_supplied = empty_capacity
+                        # If generator running in previous hour:
+                        elif dd_on[t] == 1:
+                            if state_of_charge >= diesel_dispatched_timed_switch_off_SOC:
+                                dd_on.append(0)
+                                if battery_energy_flow >= 0.0:  # Battery charging
+                                    new_hourly_storage = hourly_storage[t - 1] * (
+                                                1.0 - battery_leakage) + battery_eff_in * min(
+                                        battery_energy_flow, battery_C_rate_in * (max_storage - min_storage))
+                                else:  # Battery discharging
+                                    new_hourly_storage = hourly_storage[t - 1] * (1.0 - battery_leakage) + (
+                                            1.0 / battery_eff_out) * max(battery_energy_flow,
+                                                                         (-1.0) * battery_C_rate_out * (
+                                                                                 max_storage - min_storage))
+                                #   Dumped energy
+                                energy_surplus.append(max(new_hourly_storage - max_storage, 0.0))  # Battery too full
+                                #   Battery capacities and blackouts (if battery is too full or empty)
+                                if new_hourly_storage >= max_storage:
+                                    new_hourly_storage = max_storage
+                                elif new_hourly_storage <= min_storage:
+                                    new_hourly_storage = min_storage
+                            else:
+                                dd_on.append(1)
+                                if empty_capacity <= min_diesel_capacity:
+                                    new_hourly_storage += empty_capacity
+                                    dispatched_diesel_energy_used += empty_capacity
+                                    dispatched_diesel_energy_supplied += min_diesel_capacity
+                                if empty_capacity >= max_diesel_energy_in:
+                                    new_hourly_storage += max_diesel_energy_in
+                                    dispatched_diesel_energy_used += max_diesel_energy_in
+                                    dispatched_diesel_energy_supplied += max_diesel_energy_in
+                                if min_diesel_capacity < empty_capacity < max_diesel_energy_in:
+                                    new_hourly_storage += empty_capacity
+                                    dispatched_diesel_energy_used += empty_capacity
+                                    dispatched_diesel_energy_supplied += empty_capacity
+
 
             dispatched_diesel_used.append(dispatched_diesel_energy_used)
             dispatched_diesel_supplied.append(dispatched_diesel_energy_supplied)
             dispatched_diesel_surplus.append(diesel_capacity_dd - dispatched_diesel_energy_used)
 
-#   Dumped energy and unmet demand
-            energy_surplus.append(max(new_hourly_storage - max_storage, 0.0))   #Battery too full
-            energy_deficit.append(max(min_storage - new_hourly_storage, 0.0))   #Battery too empty
-                       
-#   Battery capacities and blackouts (if battery is too full or empty)
-            if new_hourly_storage >= max_storage:
-                new_hourly_storage = max_storage
-            elif new_hourly_storage <= min_storage:
-                new_hourly_storage = min_storage
 #   Update hourly_storage
             hourly_storage.append(new_hourly_storage)
 
@@ -315,15 +383,21 @@ class Energy_System():
         unmet_energy = pd.DataFrame((load_energy.values - renewables_energy_used_directly.values - grid_energy.values -
                                      storage_power_supplied.values),columns=['Unmet'])
         if dispatched_diesel_status == 'N':
-            pass
+            dispatched_diesel_stored = pd.DataFrame([0]*simulation_hours)
+            dispatched_diesel_used_total = pd.DataFrame([0]*simulation_hours)
+            dispatched_diesel_used_demand = pd.DataFrame([0]*simulation_hours)
+
         elif dispatched_diesel_status == 'Y':
             new_unmet_energy, new_dispatched_diesel_used, new_dispatched_diesel_supplied = \
                 Diesel().diesel_surplus_unmet_dispatched(unmet_energy,dispatched_diesel_surplus, dispatched_diesel_used,
                                                          dispatched_diesel_supplied, storage_power_supplied,
                                                          empty_capacity_list, dd_on, state_of_charge_list)
+
+            dispatched_diesel_stored = dispatched_diesel_used
             unmet_energy = new_unmet_energy
-            dispatched_diesel_used = new_dispatched_diesel_used
+            dispatched_diesel_used_total = new_dispatched_diesel_used
             dispatched_diesel_supplied = new_dispatched_diesel_supplied
+            dispatched_diesel_used_demand = dispatched_diesel_used_total - dispatched_diesel_stored
 
         blackout_times = ((unmet_energy > 0) * 1).astype(float)
 
@@ -342,7 +416,7 @@ class Energy_System():
                 diesel_fuel_usage = pd.DataFrame([0.0]*int(storage_profile.size))
                 diesel_capacity = 0.0
             else:
-                diesel_energy = dispatched_diesel_used
+                diesel_energy = dispatched_diesel_used_total
                 diesel_times = pd.DataFrame(dd_on[1:])
                 diesel_capacity = diesel_capacity_dd
                 diesel_fuel_usage = pd.DataFrame(Diesel().get_diesel_fuel_usage(diesel_capacity,
@@ -374,12 +448,14 @@ class Energy_System():
         households.columns = ['Households']
         kerosene_usage.columns = ['Kerosene lamps']
         kerosene_mitigation.columns = ['Kerosene mitigation']
+        dispatched_diesel_used_demand.columns = ['Dispatched Diesel Used Meeting Demand (kWh)']
+        dispatched_diesel_stored.columns = ['Dispatched Diesel Stored (kWh)']
 
 #   Find total energy used by the system
         total_energy_used = pd.DataFrame(renewables_energy_used_directly.values +
                                          storage_power_supplied.values + 
                                          grid_energy.values +
-                                         diesel_energy.values)
+                                         dispatched_diesel_used_demand.values)
         total_energy_used.columns = ['Total energy used (kWh)']
 
 #   System details
@@ -408,6 +484,8 @@ class Energy_System():
                                                 state_of_charge,
                                                 grid_energy,
                                                 diesel_energy,
+                                                dispatched_diesel_stored,
+                                                dispatched_diesel_used_demand,
                                                 dispatched_diesel_supplied,
                                                 diesel_times,
                                                 diesel_fuel_usage,
@@ -516,7 +594,7 @@ class Energy_System():
         grid_status = pd.DataFrame(self.get_grid_profile()[start_hour:end_hour].values)
         load_profile = pd.DataFrame(self.get_load_profile()[start_hour:end_hour].values)
         timed_dispatchable_diesel_profile = pd.DataFrame(Diesel().get_dispatchable_diesel_times()[start_hour:end_hour].values)
-        timed_dispatchable_diesel_profile.to_csv('~/desktop/diesel_out.csv')
+        #timed_dispatchable_diesel_profile.to_csv('~/desktop/diesel_out.csv')
 
 #   Consider power distribution network
         if self.scenario_inputs[1]['Distribution network'] == 'DC':
