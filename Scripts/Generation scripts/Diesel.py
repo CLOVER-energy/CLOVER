@@ -154,7 +154,7 @@ class Diesel():
     def diesel_surplus_unmet_dispatched(self, unmet_energy, surplus_diesel, diesel_used, diesel_supplied,
                                         storage_power_supplied, empty_capacity_list, dd_on, state_of_charge):
         """
-        Added by Hamish Beath - February 2020
+        Added by Hamish Beath - March 2020
 
         Function:
             Works out how much additional unmet energy is met by the diesel genset in this hour, and the respective
@@ -174,10 +174,12 @@ class Diesel():
         dispatched_diesel_supplied_new = []
         unmet_energy_new = []
 
+        # Gets existing profiles
         surplus_diesel = surplus_diesel['Surplus']
         diesel_used = diesel_used['Used']
         diesel_supplied = diesel_supplied['Supplied']
         unmet_energy = unmet_energy['Unmet']
+
         # Iterates through the profiles
         for cell in range(0, len(unmet_energy)):
 
@@ -191,30 +193,46 @@ class Diesel():
                 unmet_energy_new.append(0)
                 dispatched_diesel_supplied_new.append(supplied_diesel_energy_hour)
                 dispatched_diesel_used_new.append(used_diesel_energy_hour)
+
             else:
-                # Calculate the difference between the unmet energy and the surplus available in hour
-                remainder_unmet = unmet_energy_hour - surplus_diesel_hour
-                # If amount above zero, do the following
-                if remainder_unmet >= 0:
-                    # Calculates new unmet energy
-                    new_unmet = remainder_unmet
-                    used_addition = unmet_energy[cell] - new_unmet
-                    unmet_energy_new.append(new_unmet)
-                    # Calculates new used diesel energy
-                    used_diesel_energy_hour += used_addition
-                    dispatched_diesel_used_new.append(used_addition)
-                    # Calculates the additional supplied energy
-                    supplied_difference = supplied_diesel_energy_hour - used_diesel_energy_hour
-                    if supplied_difference >= 0:
-                        dispatched_diesel_supplied_new.append(supplied_diesel_energy_hour)
-                    elif supplied_difference < 0:
-                        dispatched_diesel_supplied_new.append(used_diesel_energy_hour)
-                # If amount less than zero, do the following to reset zero value
-                elif remainder_unmet < 0:
-                    used_diesel_energy_hour += unmet_energy[cell]
-                    dispatched_diesel_used_new.append(used_diesel_energy_hour)
-                    dispatched_diesel_supplied_new.append(used_diesel_energy_hour)
+                # Diesel isn't on then do nothing
+                if supplied_diesel_energy_hour == 0:
                     unmet_energy_new.append(0)
+                    dispatched_diesel_supplied_new.append(supplied_diesel_energy_hour)
+                    dispatched_diesel_used_new.append(used_diesel_energy_hour)
+                else:
+                    # Calculate the difference between the unmet energy and the surplus available in hour
+                    remainder_unmet = unmet_energy_hour - surplus_diesel_hour
+                    # If amount above zero, do the following
+
+                    if remainder_unmet >= 0:
+                        # Calculates new unmet energy
+                        new_unmet = remainder_unmet
+                        used_addition = unmet_energy[cell] - new_unmet
+                        unmet_energy_new.append(new_unmet)
+
+                        # Calculates new used diesel energy
+                        used_diesel_energy_hour += used_addition
+                        dispatched_diesel_used_new.append(used_diesel_energy_hour)
+
+                        # Calculates the additional supplied energy
+                        supplied_difference = supplied_diesel_energy_hour - used_diesel_energy_hour
+                        if supplied_difference >= 0:
+                            dispatched_diesel_supplied_new.append(supplied_diesel_energy_hour)
+                        elif supplied_difference < 0:
+                            dispatched_diesel_supplied_new.append(used_diesel_energy_hour)
+
+                    # If amount less than zero, do the following to reset zero value
+                    elif remainder_unmet < 0:
+                        used_diesel_energy_hour += unmet_energy[cell]
+                        dispatched_diesel_used_new.append(used_diesel_energy_hour)
+                        # Calculates the additional supplied energy
+                        supplied_difference = supplied_diesel_energy_hour - used_diesel_energy_hour
+                        if supplied_difference >= 0:
+                            dispatched_diesel_supplied_new.append(supplied_diesel_energy_hour)
+                        elif supplied_difference < 0:
+                            dispatched_diesel_supplied_new.append(used_diesel_energy_hour)
+                        unmet_energy_new.append(0)
 
         # Makes Dataframes from lists of values
         dispatched_diesel_used_new = pd.DataFrame(dispatched_diesel_used_new, columns=['Used'])
@@ -224,9 +242,9 @@ class Diesel():
         dd_on = pd.DataFrame(dd_on, columns=['Dispatched Diesel On'])
         state_of_charge = pd.DataFrame(state_of_charge, columns=['state of charge'])
 
-        #test_outputs = pd.concat([unmet_energy, empty_capacity, diesel_used,diesel_supplied, surplus_diesel, unmet_energy_new,
-        #                         dispatched_diesel_used_new, dispatched_diesel_supplied_new, storage_power_supplied, dd_on, state_of_charge
-        #                          ], axis=1)
-        #test_outputs.to_csv('~/Library/Mobile Documents/com~apple~CloudDocs/Mahama Project/Dispatchable Diesel/test_feb20.csv')
+        # test_outputs = pd.concat([unmet_energy, empty_capacity, diesel_used,diesel_supplied, surplus_diesel, unmet_energy_new,
+        #                          dispatched_diesel_used_new, dispatched_diesel_supplied_new, storage_power_supplied, dd_on, state_of_charge
+        #                           ], axis=1)
+        # test_outputs.to_csv('~/Library/Mobile Documents/com~apple~CloudDocs/Mahama Project/Dispatchable Diesel/test_feb20.csv')
         # Returns to energy_system script
         return unmet_energy_new, dispatched_diesel_used_new, dispatched_diesel_supplied_new
