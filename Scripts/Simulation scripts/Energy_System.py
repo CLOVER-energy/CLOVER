@@ -118,6 +118,7 @@ class Energy_System():
         battery_C_rate_out = self.energy_system_inputs[1]['Battery C rate discharging']
         battery_C_rate_in = self.energy_system_inputs[1]['Battery C rate charging']
         battery_lifetime_loss = self.energy_system_inputs[1]['Battery lifetime loss']
+        max_storage_energy_in = storage_size * battery_C_rate_in
         cumulative_storage_power = 0.0
         hourly_storage = []
         new_hourly_storage = []
@@ -142,6 +143,10 @@ class Energy_System():
         print(min_diesel_capacity)
         max_diesel_energy_in = min(storage_size * battery_C_rate_in, diesel_capacity_dd)
         print(max_diesel_energy_in)
+        if max_storage_energy_in > max_diesel_energy_in:
+            max_solar_in = max_storage_energy_in - max_diesel_energy_in
+        else:
+            max_solar_in = 0
 
 #   Initialise energy accounting parameters 
         energy_surplus = []
@@ -177,6 +182,7 @@ class Energy_System():
                 empty_capacity = max_storage - new_hourly_storage
                 empty_capacity_list.append(empty_capacity)
                 dd_on.append(0)
+                energy_surplus.append(max(new_hourly_storage - max_storage, 0.0))  # Battery too full
             else:
                 state_of_charge = (hourly_storage[t - 1] - min_storage) / (max_storage - min_storage)
                 state_of_charge_list.append(state_of_charge)
@@ -233,14 +239,56 @@ class Energy_System():
                                     new_hourly_storage += empty_capacity  # Hourly storage plus the empty capacity remaining
                                     dispatched_diesel_energy_used += empty_capacity  # Diesel used = empty capacity
                                     dispatched_diesel_energy_supplied += min_diesel_capacity  # Diesel supplied is min diesel capacity
+                                    # Empty capacity filled by diesel, any remaining solar dumped
+                                    if battery_energy_flow > 0:
+                                        energy_surplus.append(battery_energy_flow)
+                                    else:
+                                        energy_surplus.append(0)
                                 if empty_capacity >= max_diesel_energy_in:
                                     new_hourly_storage += max_diesel_energy_in  # Hourly storage plus the max diesel in
                                     dispatched_diesel_energy_used += max_diesel_energy_in  # Diesel used = the max diesel input
                                     dispatched_diesel_energy_supplied += max_diesel_energy_in  # Diesel supplied = supplied at max output
+                                    # Spare capacity in the battery for solar so if there is remaining solar
+                                    if battery_energy_flow > 0:
+                                        if max_storage_energy_in < diesel_capacity_dd:
+                                            energy_surplus.append(battery_energy_flow)
+                                        else:
+                                            if battery_energy_flow < max_solar_in:
+                                                new_hourly_storage += battery_energy_flow
+                                                energy_surplus.append(max(new_hourly_storage - max_storage, 0.0))
+                                            if new_hourly_storage >= max_storage:
+                                                new_hourly_storage = max_storage
+                                            else:
+                                                new_hourly_storage += max_solar_in
+                                                if new_hourly_storage >= max_storage:
+                                                    energy_surplus.append(max(new_hourly_storage - max_storage, 0.0))
+                                                    new_hourly_storage = max_storage
+                                                else:
+                                                    energy_surplus.append(battery_energy_flow - max_solar_in)
+                                    else:
+                                        energy_surplus.append(0)
+
                                 if min_diesel_capacity < empty_capacity < max_diesel_energy_in:
                                     new_hourly_storage += empty_capacity  # adds in the empty capacity to the hourly storage
                                     dispatched_diesel_energy_used += empty_capacity  # adds empty capacity to used
                                     dispatched_diesel_energy_supplied += empty_capacity
+                                    if battery_energy_flow > 0:
+                                            max_solar_in = max_storage_energy_in - empty_capacity
+                                            if battery_energy_flow < max_solar_in:
+                                                new_hourly_storage += battery_energy_flow
+                                                energy_surplus.append(max(new_hourly_storage - max_storage, 0.0))
+                                                if new_hourly_storage >= max_storage:
+                                                    new_hourly_storage = max_storage
+                                            else:
+                                                new_hourly_storage += max_solar_in
+                                                if new_hourly_storage >= max_storage:
+                                                    energy_surplus.append(max(new_hourly_storage - max_storage, 0.0))
+                                                    new_hourly_storage = max_storage
+                                                else:
+                                                    energy_surplus.append(battery_energy_flow - max_solar_in)
+                                    else:
+                                        energy_surplus.append(0)
+
                         elif dd_on[t] == 1: # If the generator was running in the previous hour:
                             # if the state of charge is higher than the minimum universal switch off, then pass
                             if state_of_charge >= diesel_dispatched_universal_switch_off_SOC:
@@ -264,17 +312,58 @@ class Energy_System():
                             else:
                                 dd_on.append(1)
                                 if empty_capacity <= min_diesel_capacity:
-                                    new_hourly_storage += empty_capacity
-                                    dispatched_diesel_energy_used += empty_capacity
-                                    dispatched_diesel_energy_supplied += min_diesel_capacity
+                                    new_hourly_storage += empty_capacity  # Hourly storage plus the empty capacity remaining
+                                    dispatched_diesel_energy_used += empty_capacity  # Diesel used = empty capacity
+                                    dispatched_diesel_energy_supplied += min_diesel_capacity  # Diesel supplied is min diesel capacity
+                                    # Empty capacity filled by diesel, any remaining solar dumped
+                                    if battery_energy_flow > 0:
+                                        energy_surplus.append(battery_energy_flow)
+                                    else:
+                                        energy_surplus.append(0)
                                 if empty_capacity >= max_diesel_energy_in:
-                                    new_hourly_storage += max_diesel_energy_in
-                                    dispatched_diesel_energy_used += max_diesel_energy_in
-                                    dispatched_diesel_energy_supplied += max_diesel_energy_in
+                                    new_hourly_storage += max_diesel_energy_in  # Hourly storage plus the max diesel in
+                                    dispatched_diesel_energy_used += max_diesel_energy_in  # Diesel used = the max diesel input
+                                    dispatched_diesel_energy_supplied += max_diesel_energy_in  # Diesel supplied = supplied at max output
+                                    # Spare capacity in the battery for solar so if there is remaining solar
+                                    if battery_energy_flow > 0:
+                                        if max_storage_energy_in < diesel_capacity_dd:
+                                            energy_surplus.append(battery_energy_flow)
+                                        else:
+                                            if battery_energy_flow < max_solar_in:
+                                                new_hourly_storage += battery_energy_flow
+                                                energy_surplus.append(max(new_hourly_storage - max_storage, 0.0))
+                                            if new_hourly_storage >= max_storage:
+                                                new_hourly_storage = max_storage
+                                            else:
+                                                new_hourly_storage += max_solar_in
+                                                if new_hourly_storage >= max_storage:
+                                                    energy_surplus.append(max(new_hourly_storage - max_storage, 0.0))
+                                                    new_hourly_storage = max_storage
+                                                else:
+                                                    energy_surplus.append(battery_energy_flow - max_solar_in)
+                                    else:
+                                        energy_surplus.append(0)
+
                                 if min_diesel_capacity < empty_capacity < max_diesel_energy_in:
-                                    new_hourly_storage += empty_capacity
-                                    dispatched_diesel_energy_used += empty_capacity
+                                    new_hourly_storage += empty_capacity  # adds in the empty capacity to the hourly storage
+                                    dispatched_diesel_energy_used += empty_capacity  # adds empty capacity to used
                                     dispatched_diesel_energy_supplied += empty_capacity
+                                    if battery_energy_flow > 0:
+                                        max_solar_in = max_storage_energy_in - empty_capacity
+                                        if battery_energy_flow < max_solar_in:
+                                            new_hourly_storage += battery_energy_flow
+                                            energy_surplus.append(max(new_hourly_storage - max_storage, 0.0))
+                                            if new_hourly_storage >= max_storage:
+                                                new_hourly_storage = max_storage
+                                        else:
+                                            new_hourly_storage += max_solar_in
+                                            if new_hourly_storage >= max_storage:
+                                                energy_surplus.append(max(new_hourly_storage - max_storage, 0.0))
+                                                new_hourly_storage = max_storage
+                                            else:
+                                                energy_surplus.append(battery_energy_flow - max_solar_in)
+                                    else:
+                                        energy_surplus.append(0)
                         # if timed generation activated:
                     elif timed_on_off == 1:
                         # If generator not running in previous hour
@@ -301,17 +390,58 @@ class Energy_System():
                             else:
                                 dd_on.append(1)
                                 if empty_capacity <= min_diesel_capacity:
-                                    new_hourly_storage += empty_capacity
-                                    dispatched_diesel_energy_used += empty_capacity
-                                    dispatched_diesel_energy_supplied += min_diesel_capacity
+                                    new_hourly_storage += empty_capacity  # Hourly storage plus the empty capacity remaining
+                                    dispatched_diesel_energy_used += empty_capacity  # Diesel used = empty capacity
+                                    dispatched_diesel_energy_supplied += min_diesel_capacity  # Diesel supplied is min diesel capacity
+                                    # Empty capacity filled by diesel, any remaining solar dumped
+                                    if battery_energy_flow > 0:
+                                        energy_surplus.append(battery_energy_flow)
+                                    else:
+                                        energy_surplus.append(0)
                                 if empty_capacity >= max_diesel_energy_in:
-                                    new_hourly_storage += max_diesel_energy_in
-                                    dispatched_diesel_energy_used += max_diesel_energy_in
-                                    dispatched_diesel_energy_supplied += max_diesel_energy_in
+                                    new_hourly_storage += max_diesel_energy_in  # Hourly storage plus the max diesel in
+                                    dispatched_diesel_energy_used += max_diesel_energy_in  # Diesel used = the max diesel input
+                                    dispatched_diesel_energy_supplied += max_diesel_energy_in  # Diesel supplied = supplied at max output
+                                    # Spare capacity in the battery for solar so if there is remaining solar
+                                    if battery_energy_flow > 0:
+                                        if max_storage_energy_in < diesel_capacity_dd:
+                                            energy_surplus.append(battery_energy_flow)
+                                        else:
+                                            if battery_energy_flow < max_solar_in:
+                                                new_hourly_storage += battery_energy_flow
+                                                energy_surplus.append(max(new_hourly_storage - max_storage, 0.0))
+                                            if new_hourly_storage >= max_storage:
+                                                new_hourly_storage = max_storage
+                                            else:
+                                                new_hourly_storage += max_solar_in
+                                                if new_hourly_storage >= max_storage:
+                                                    energy_surplus.append(max(new_hourly_storage - max_storage, 0.0))
+                                                    new_hourly_storage = max_storage
+                                                else:
+                                                    energy_surplus.append(battery_energy_flow - max_solar_in)
+                                    else:
+                                        energy_surplus.append(0)
+
                                 if min_diesel_capacity < empty_capacity < max_diesel_energy_in:
-                                    new_hourly_storage += empty_capacity
-                                    dispatched_diesel_energy_used = empty_capacity
-                                    dispatched_diesel_energy_supplied = empty_capacity
+                                    new_hourly_storage += empty_capacity  # adds in the empty capacity to the hourly storage
+                                    dispatched_diesel_energy_used += empty_capacity  # adds empty capacity to used
+                                    dispatched_diesel_energy_supplied += empty_capacity
+                                    if battery_energy_flow > 0:
+                                        max_solar_in = max_storage_energy_in - empty_capacity
+                                        if battery_energy_flow < max_solar_in:
+                                            new_hourly_storage += battery_energy_flow
+                                            energy_surplus.append(max(new_hourly_storage - max_storage, 0.0))
+                                            if new_hourly_storage >= max_storage:
+                                                new_hourly_storage = max_storage
+                                        else:
+                                            new_hourly_storage += max_solar_in
+                                            if new_hourly_storage >= max_storage:
+                                                energy_surplus.append(max(new_hourly_storage - max_storage, 0.0))
+                                                new_hourly_storage = max_storage
+                                            else:
+                                                energy_surplus.append(battery_energy_flow - max_solar_in)
+                                    else:
+                                        energy_surplus.append(0)
                         # If generator running in previous hour:
                         elif dd_on[t] == 1:
                             if state_of_charge >= diesel_dispatched_timed_switch_off_SOC:
@@ -335,18 +465,58 @@ class Energy_System():
                             else:
                                 dd_on.append(1)
                                 if empty_capacity <= min_diesel_capacity:
-                                    new_hourly_storage += empty_capacity
-                                    dispatched_diesel_energy_used += empty_capacity
-                                    dispatched_diesel_energy_supplied += min_diesel_capacity
+                                    new_hourly_storage += empty_capacity  # Hourly storage plus the empty capacity remaining
+                                    dispatched_diesel_energy_used += empty_capacity  # Diesel used = empty capacity
+                                    dispatched_diesel_energy_supplied += min_diesel_capacity  # Diesel supplied is min diesel capacity
+                                    # Empty capacity filled by diesel, any remaining solar dumped
+                                    if battery_energy_flow > 0:
+                                        energy_surplus.append(battery_energy_flow)
+                                    else:
+                                        energy_surplus.append(0)
                                 if empty_capacity >= max_diesel_energy_in:
-                                    new_hourly_storage += max_diesel_energy_in
-                                    dispatched_diesel_energy_used += max_diesel_energy_in
-                                    dispatched_diesel_energy_supplied += max_diesel_energy_in
-                                if min_diesel_capacity < empty_capacity < max_diesel_energy_in:
-                                    new_hourly_storage += empty_capacity
-                                    dispatched_diesel_energy_used += empty_capacity
-                                    dispatched_diesel_energy_supplied += empty_capacity
+                                    new_hourly_storage += max_diesel_energy_in  # Hourly storage plus the max diesel in
+                                    dispatched_diesel_energy_used += max_diesel_energy_in  # Diesel used = the max diesel input
+                                    dispatched_diesel_energy_supplied += max_diesel_energy_in  # Diesel supplied = supplied at max output
+                                    # Spare capacity in the battery for solar so if there is remaining solar
+                                    if battery_energy_flow > 0:
+                                        if max_storage_energy_in < diesel_capacity_dd:
+                                            energy_surplus.append(battery_energy_flow)
+                                        else:
+                                            if battery_energy_flow < max_solar_in:
+                                                new_hourly_storage += battery_energy_flow
+                                                energy_surplus.append(max(new_hourly_storage - max_storage, 0.0))
+                                            if new_hourly_storage >= max_storage:
+                                                new_hourly_storage = max_storage
+                                            else:
+                                                new_hourly_storage += max_solar_in
+                                                if new_hourly_storage >= max_storage:
+                                                    energy_surplus.append(max(new_hourly_storage - max_storage, 0.0))
+                                                    new_hourly_storage = max_storage
+                                                else:
+                                                    energy_surplus.append(battery_energy_flow - max_solar_in)
+                                    else:
+                                        energy_surplus.append(0)
 
+                                if min_diesel_capacity < empty_capacity < max_diesel_energy_in:
+                                    new_hourly_storage += empty_capacity  # adds in the empty capacity to the hourly storage
+                                    dispatched_diesel_energy_used += empty_capacity  # adds empty capacity to used
+                                    dispatched_diesel_energy_supplied += empty_capacity
+                                    if battery_energy_flow > 0:
+                                            max_solar_in = max_storage_energy_in - empty_capacity
+                                            if battery_energy_flow < max_solar_in:
+                                                new_hourly_storage += battery_energy_flow
+                                                energy_surplus.append(max(new_hourly_storage - max_storage, 0.0))
+                                                if new_hourly_storage >= max_storage:
+                                                    new_hourly_storage = max_storage
+                                            else:
+                                                new_hourly_storage += max_solar_in
+                                                if new_hourly_storage >= max_storage:
+                                                    energy_surplus.append(max(new_hourly_storage - max_storage, 0.0))
+                                                    new_hourly_storage = max_storage
+                                                else:
+                                                    energy_surplus.append(battery_energy_flow - max_solar_in)
+                                    else:
+                                        energy_surplus.append(0)
 
             dispatched_diesel_used.append(dispatched_diesel_energy_used)
             dispatched_diesel_supplied.append(dispatched_diesel_energy_supplied)
