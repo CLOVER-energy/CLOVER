@@ -123,6 +123,8 @@ class Energy_System():
         hourly_storage = []
         new_hourly_storage = []
         battery_health = []
+        min_SOC = 0.0   # for dispatched diesel charging
+        max_SOC = 0.99  # for dispatched diesel charging
         
 #   Initialise simulation parameters
         diesel_backup_status = self.scenario_inputs[1]['Diesel backup']
@@ -148,6 +150,28 @@ class Energy_System():
         else:
             max_solar_in = 0
 
+#   Reset SOC parameters from % total battery capacity to % usable capacity
+        high_storage_threshold = self.energy_system_inputs[1]['Battery maximum charge']
+        low_storage_threshold = self.energy_system_inputs[1]['Battery minimum charge']
+
+        diesel_dispatched_timed_minimum_SOC = ((diesel_dispatched_timed_minimum_SOC - low_storage_threshold)/
+                                                     (high_storage_threshold - low_storage_threshold))
+        diesel_dispatched_universal_minimum_SOC = ((diesel_dispatched_universal_minimum_SOC - low_storage_threshold)/
+                                                     (high_storage_threshold - low_storage_threshold))
+        diesel_dispatched_timed_switch_off_SOC = 1.0 - ((high_storage_threshold - diesel_dispatched_timed_switch_off_SOC)/
+                                                        (high_storage_threshold - low_storage_threshold))
+        diesel_dispatched_universal_switch_off_SOC = 1.0 - ((high_storage_threshold - diesel_dispatched_universal_switch_off_SOC)/
+                                                        (high_storage_threshold - low_storage_threshold))
+
+#   Check new SOC parameters do not exceed a maximum/minimum SOC range to avoid overflow issues
+        diesel_dispatched_timed_minimum_SOC = max(diesel_dispatched_timed_minimum_SOC,min_SOC)
+        print(diesel_dispatched_timed_minimum_SOC)
+        diesel_dispatched_universal_minimum_SOC = max(diesel_dispatched_universal_minimum_SOC,min_SOC)
+        print(diesel_dispatched_universal_minimum_SOC)
+        diesel_dispatched_timed_switch_off_SOC = min(diesel_dispatched_timed_switch_off_SOC,max_SOC)
+        print(diesel_dispatched_timed_switch_off_SOC)
+        diesel_dispatched_universal_switch_off_SOC = min(diesel_dispatched_universal_switch_off_SOC,max_SOC)
+        print(diesel_dispatched_universal_switch_off_SOC)
 #   Initialise energy accounting parameters 
         energy_surplus = []
         energy_deficit = []
