@@ -1,1 +1,13 @@
-Scenario length,12,years,Iteration length,4,years,PV size (min),1,kWp,PV size (max),1,kWp,PV size (step),1,kWp,PV size (increase),0,kWp,Set to 0 to ignoreStorage size (min),1,kWh,Storage size (max),1,kWh,Storage size (step),1,kWh,Storage size (increase),0,kWh,Set to 0 to ignoreThreshold criterion,Blackouts,Name of column from appraisal,Threshold value,0.05,Max/min value permitted (see guidance),Optimisation criterion,Cumulative system cost ($),Name of column from appraisal,
+Scenario length,12,years,
+Iteration length,4,years,
+PV size (min),1,kWp,
+PV size (max),1,kWp,
+PV size (step),1,kWp,
+PV size (increase),0,kWp,Set to 0 to ignore
+Storage size (min),1,kWh,
+Storage size (max),1,kWh,
+Storage size (step),1,kWh,
+Storage size (increase),0,kWh,Set to 0 to ignore
+Threshold criterion,Blackouts,Name of column from appraisal,
+Threshold value,0.05,Max/min value permitted (see guidance),
+Optimisation criterion,LCUE ($/kWh),Name of column from appraisal,
