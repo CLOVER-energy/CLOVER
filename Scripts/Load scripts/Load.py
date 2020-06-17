@@ -109,7 +109,22 @@ class Load():
         yearly_median.columns = ['Median']
         yearly_load_statistics = pd.concat([yearly_maximum,yearly_mean,yearly_median],axis=1)
         return yearly_load_statistics
+    
+    def get_yearly_load_statistics(self,load_profile_filename):
+        """
+        Function:
+            Outputs the load statistics for a prespecified load profile, which
+              must have 'Domestic', 'Commercial' and 'Public' headings
+        Inputs:
+            load_profile_filename      Filename of load profile CSV
+        Outputs:
+            CSV file of yearly load statistics
+        """        
         
+        load_profile = pd.read_csv(self.device_load_filepath + load_profile_filename, index_col = 0).reset_index(drop=True)
+        yearly_load_statistics = self.yearly_load_statistics(load_profile)
+        yearly_load_statistics.to_csv(self.device_load_filepath + 'yearly_load_statistics.csv')        
+   
 # =============================================================================
 #       Calculate the number of devices in use by the community
 # =============================================================================
