@@ -1,0 +1,334 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html4" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>CLOVER documentation and user manual &mdash; CLOVER 4.0.1 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script type="text/javascript" src="_static/jquery.js"></script>
+        <script type="text/javascript" src="_static/underscore.js"></script>
+        <script type="text/javascript" src="_static/doctools.js"></script>
+        <script type="text/javascript" src="_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Introduction" href="overview.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="#" class="icon icon-home" alt="Documentation Home"> CLOVER
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="overview.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="general_setup.html">General setup</a></li>
+<li class="toctree-l1"><a class="reference internal" href="electricity_generation.html">Electricity generation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="load.html">Load profiles</a></li>
+<li class="toctree-l1"><a class="reference internal" href="energy_system_simulation.html">Electricity system simulation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="optimisation.html">Electricity system optimisation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="get_involved.html">CLOVER development</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="#">CLOVER</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="#" class="icon icon-home"></a> &raquo;</li>
+        
+      <li>CLOVER documentation and user manual</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/index.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="clover-documentation-and-user-manual">
+<h1>CLOVER documentation and user manual<a class="headerlink" href="#clover-documentation-and-user-manual" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="overview">
+<h2>Overview<a class="headerlink" href="#overview" title="Permalink to this headline">¶</a></h2>
+<p>CLOVER - Continuous Lifetime Optimisation of Variable Electricity Resources - is
+a free, open-source tool for modelling, simulating, optimising and analysing the
+performance and impacts of electricity systems. Originally designed for off-grid
+solar and battery minigrids for rural electrification in developing
+countries, CLOVER now includes the functionality to use solar, battery storage,
+diesel generation and the national grid to supply power to community-scale
+electricity systems.</p>
+<p>Its use cases have expanded from simple feasibility studies
+to analysis of the long-term impacts and benefits of sustainable rural
+electrification, as well as improving the performance and design of real-life
+systems currently deployed in the field.</p>
+<p>CLOVER is designed to be accessible and work on “ordinary” computers and
+laptops and, while the processing speeds will vary, the results will be the
+same: it has been run on machines varying in capacities from a Raspberry Pi
+to a supercomputer cluster. CLOVER is, and always will be, free to use under an
+MIT License.</p>
+</div>
+<div class="section" id="about-this-guide">
+<h2>About this guide<a class="headerlink" href="#about-this-guide" title="Permalink to this headline">¶</a></h2>
+<p>This guide aims to provide an introduction to the operation and functionality
+of CLOVER, as well as an insight into the kinds of investigations it can be
+used for. We have aimed to make it as accessible as possible to new users, who
+are assumed to have a basic knowledge of programming (limited experience with
+some language, not necessarily Python) and a good knowledge of their chosen
+situation (moderate or higher experience with the energy access issues and goals
+relevant to their context). More advanced users are, of course, very welcome to
+dive deeper into CLOVER’s functionality and edit the code to suit their needs.</p>
+<p>Each section walks the user through the modules which make up CLOVER, their
+core functions, and how they fit together in the entire system. Each module
+can be operated independently but we recommend following the order presented in
+this guide, as some modules depend on others to function. The sections also
+present options for outputs and visualisation of the results.</p>
+<p>For coherence with the documentation we recommend that novice users use Spyder
+(available by downloading Anaconda) and Python 3.6, which will make this guide
+easier to follow and has the requisite packages installed already. This may
+also help with the troubleshooting sections throughout this guide.</p>
+<p>This guide focuses on the key inputs and outputs of each CLOVER module with the
+goal of getting usable, actionable results. For details on the inner workings
+of the code, and the exact nature of the functions that it relies on, please
+refer to the comments and documentation in the code itself.</p>
+<p>For a single PDF document containing all of the information in this guide,
+either use the download function (bottom left of the site) or download the user
+manual <a class="reference external" href="https://github.com/phil-sandwell/CLOVER/blob/master/CLOVER%20User%20Manual.pdf">available here</a>.
+This site will be continuously updated and should serve as the main reference,
+whilst the user manual will be updated after significant updates to CLOVER.</p>
+</div>
+<div class="section" id="table-of-contents">
+<h2>Table of contents<a class="headerlink" href="#table-of-contents" title="Permalink to this headline">¶</a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="overview.html">Introduction</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="overview.html#about-clover">About CLOVER</a></li>
+<li class="toctree-l2"><a class="reference internal" href="overview.html#getting-clover-on-your-computer">Getting CLOVER on your computer</a></li>
+<li class="toctree-l2"><a class="reference internal" href="overview.html#about-this-guide">About this guide</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="general_setup.html">General setup</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="general_setup.html#setting-up-clover">Setting up CLOVER</a></li>
+<li class="toctree-l2"><a class="reference internal" href="general_setup.html#setting-up-a-location">Setting up a location</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="electricity_generation.html">Electricity generation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="electricity_generation.html#solar">Solar</a></li>
+<li class="toctree-l2"><a class="reference internal" href="electricity_generation.html#grid">Grid</a></li>
+<li class="toctree-l2"><a class="reference internal" href="electricity_generation.html#diesel">Diesel</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="load.html">Load profiles</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="load.html#preparation">Preparation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="load.html#building-load-profiles">Building load profiles</a></li>
+<li class="toctree-l2"><a class="reference internal" href="load.html#troubleshooting">Troubleshooting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="load.html#extension-and-visualisation">Extension and visualisation</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="energy_system_simulation.html">Electricity system simulation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="energy_system_simulation.html#preparation">Preparation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="energy_system_simulation.html#performing-a-simulation-of-an-electricity-system">Performing a simulation of an electricity system</a></li>
+<li class="toctree-l2"><a class="reference internal" href="energy_system_simulation.html#troubleshooting">Troubleshooting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="energy_system_simulation.html#extension-and-visualisation">Extension and visualisation</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="optimisation.html">Electricity system optimisation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="optimisation.html#preparation">Preparation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="optimisation.html#performing-an-optimisation-of-an-energy-system">Performing an optimisation of an energy system</a></li>
+<li class="toctree-l2"><a class="reference internal" href="optimisation.html#troubleshooting">Troubleshooting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="optimisation.html#extension-and-visualisation">Extension and visualisation</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="get_involved.html">CLOVER development</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="get_involved.html#improvements-to-clover">Improvements to CLOVER</a></li>
+<li class="toctree-l2"><a class="reference internal" href="get_involved.html#acknowledgements-and-support-for-clover">Acknowledgements and support for CLOVER</a></li>
+<li class="toctree-l2"><a class="reference internal" href="get_involved.html#get-involved">Get involved</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
+<div class="section" id="license">
+<h2>License<a class="headerlink" href="#license" title="Permalink to this headline">¶</a></h2>
+<p>MIT License, Copyright 2018 Philip Richard Sandwell</p>
+<p>Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the “Software”), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:</p>
+<p>The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.</p>
+<p>THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.</p>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="overview.html" class="btn btn-neutral float-right" title="Introduction" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2020, Philip Sandwell
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>
