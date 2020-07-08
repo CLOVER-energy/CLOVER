@@ -1,0 +1,1868 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html4" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Electricity system simulation &mdash; CLOVER 4.0.1 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script type="text/javascript" src="_static/jquery.js"></script>
+        <script type="text/javascript" src="_static/underscore.js"></script>
+        <script type="text/javascript" src="_static/doctools.js"></script>
+        <script type="text/javascript" src="_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="Load profiles" href="load.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home" alt="Documentation Home"> CLOVER
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="overview.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="general_setup.html">General setup</a></li>
+<li class="toctree-l1"><a class="reference internal" href="electricity_generation.html">Electricity generation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="load.html">Load profiles</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Electricity system simulation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#preparation">Preparation</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#electricity-system-inputs">Electricity system inputs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#scenario-inputs">Scenario inputs</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#performing-a-simulation-of-an-electricity-system">Performing a simulation of an electricity system</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#inputs">Inputs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#running-a-simulation">Running a simulation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#simulation-outputs">Simulation outputs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#saving-simulation-results-and-opening-saved-files">Saving simulation results and opening saved files</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#troubleshooting">Troubleshooting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#extension-and-visualisation">Extension and visualisation</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#exploring-the-performance-of-the-system">Exploring the performance of the system</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#electricity-usage-on-an-average-day">Electricity usage on an average day</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#electricity-availability">Electricity availability</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#visualising-seasonality">Visualising seasonality</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">CLOVER</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+        
+      <li>Electricity system simulation</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/energy_system_simulation.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="electricity-system-simulation">
+<h1>Electricity system simulation<a class="headerlink" href="#electricity-system-simulation" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="preparation">
+<h2>Preparation<a class="headerlink" href="#preparation" title="Permalink to this headline">¶</a></h2>
+<p>Now that we have completed both the electricity
+generation and demand inputs for our investigation we are almost
+ready to simulate an electricity system. This will allow us to model the
+technical performance of an electricity system of a given size and its
+ability to meet the load demanded by the community. At this stage we
+consider only the technical performance, rather than the financial or
+environmental considerations, which will come later when we optimise
+the sizing of the systems.</p>
+<p>Before we can simulate a system we must first provide inputs for its
+technical performance and the conditions of the scenario under which we
+want it to operate.</p>
+<div class="section" id="electricity-system-inputs">
+<h3>Electricity system inputs<a class="headerlink" href="#electricity-system-inputs" title="Permalink to this headline">¶</a></h3>
+<p>The inputs for the technical performance of the system are included in
+the <code class="docutils literal notranslate"><span class="pre">Energy</span> <span class="pre">system</span> <span class="pre">inputs</span></code> file, which is located in the <em>Simulation</em>
+folder of your location folder.</p>
+<p>Let’s look at the inputs included for the Bahraich case study:</p>
+<div class="code ipython3 highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="n">energy_system_inputs</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="s2">&quot;/Users/prs09/Documents/CLOVER/Locations/Bahraich/Simulation/Energy system inputs.csv&quot;</span><span class="p">,</span><span class="n">header</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+<span class="n">energy_system_inputs</span><span class="o">.</span><span class="n">head</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">energy_system_inputs</span><span class="p">))</span>
+</pre></div>
+</div>
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>0</th>
+      <th>1</th>
+      <th>2</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>Battery maximum charge</td>
+      <td>0.900</td>
+      <td>State of charge (0.0-1.0)</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>Battery minimum charge</td>
+      <td>0.400</td>
+      <td>State of charge (0.0-1.0)</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>Battery leakage</td>
+      <td>0.004</td>
+      <td>Fractional leakage per hour</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>Battery conversion in</td>
+      <td>0.950</td>
+      <td>Conversion efficiency (0.0-1.0)</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>Battery conversion out</td>
+      <td>0.950</td>
+      <td>Conversion efficiency (0.0-1.0)</td>
+    </tr>
+    <tr>
+      <th>5</th>
+      <td>Battery cycle lifetime</td>
+      <td>1500.000</td>
+      <td>Expected number of cycles over lifetime</td>
+    </tr>
+    <tr>
+      <th>6</th>
+      <td>Battery lifetime loss</td>
+      <td>0.400</td>
+      <td>Fractional loss over lifetime (0.0-1.0)</td>
+    </tr>
+    <tr>
+      <th>7</th>
+      <td>Battery C rate discharging</td>
+      <td>0.330</td>
+      <td>Discharge rate</td>
+    </tr>
+    <tr>
+      <th>8</th>
+      <td>Battery C rate charging</td>
+      <td>0.330</td>
+      <td>Charge rate</td>
+    </tr>
+    <tr>
+      <th>9</th>
+      <td>Transmission efficiency DC</td>
+      <td>0.950</td>
+      <td>Efficiency of DC distribution network</td>
+    </tr>
+    <tr>
+      <th>10</th>
+      <td>Transmission efficiency AC</td>
+      <td>0.950</td>
+      <td>Efficiency of AC distribution network</td>
+    </tr>
+    <tr>
+      <th>11</th>
+      <td>DC to AC conversion</td>
+      <td>0.950</td>
+      <td>Conversion efficiency (0.0-1.0)</td>
+    </tr>
+    <tr>
+      <th>12</th>
+      <td>DC to DC conversion</td>
+      <td>0.950</td>
+      <td>Conversion efficiency (0.0-1.0)</td>
+    </tr>
+    <tr>
+      <th>13</th>
+      <td>AC to DC conversion</td>
+      <td>0.800</td>
+      <td>Conversion efficiency (0.0-1.0)</td>
+    </tr>
+    <tr>
+      <th>14</th>
+      <td>AC to AC conversion</td>
+      <td>0.980</td>
+      <td>Conversion efficiency (0.0-1.0)</td>
+    </tr>
+  </tbody>
+</table>
+</div><div class="line-block">
+<div class="line"><br /></div>
+</div>
+<p>These variables control how the electricity system performs, in
+particular the performance of the battery storage and the conversion
+efficiencies in the system. The table below describes in more detail
+what each one means:</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="50%" />
+<col width="50%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Variable</th>
+<th class="head">Explanation</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td><code class="docutils literal notranslate"><span class="pre">Battery</span> <span class="pre">maximum</span> <span class="pre">charge</span></code></td>
+<td>Maximum permitted state of charge
+of the battery</td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal notranslate"><span class="pre">Battery</span> <span class="pre">minimum</span> <span class="pre">charge</span></code></td>
+<td>Minimum permitted state of charge
+of the battery</td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal notranslate"><span class="pre">Battery</span> <span class="pre">leakage</span></code></td>
+<td>Fraction of the energy stored in
+the battery lost per hour</td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal notranslate"><span class="pre">Battery</span> <span class="pre">conversion</span> <span class="pre">in</span></code></td>
+<td>Conversion efficiency of energy
+entering the battery</td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal notranslate"><span class="pre">Battery</span> <span class="pre">conversion</span> <span class="pre">out</span></code></td>
+<td>Conversion efficiency of energy
+leaving the battery</td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal notranslate"><span class="pre">Battery</span> <span class="pre">cycle</span> <span class="pre">lifetime</span></code></td>
+<td>Number of charging cycles
+expected from the battery over
+its lifetime</td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal notranslate"><span class="pre">Battery</span> <span class="pre">C</span> <span class="pre">rate</span> <span class="pre">discharging</span></code></td>
+<td>C-rate of the battery whilst
+providing energy</td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal notranslate"><span class="pre">Battery</span> <span class="pre">C</span> <span class="pre">rate</span> <span class="pre">charging</span></code></td>
+<td>C-rate of the battery whilst
+receiving energy</td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal notranslate"><span class="pre">Transmission</span> <span class="pre">efficiency</span> <span class="pre">DC</span></code></td>
+<td>Transmission efficiency of a DC
+distribution network</td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal notranslate"><span class="pre">Transmission</span> <span class="pre">efficiency</span> <span class="pre">AC</span></code></td>
+<td>Transmission efficiency of an AC
+distribution network</td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal notranslate"><span class="pre">DC</span> <span class="pre">to</span> <span class="pre">AC</span> <span class="pre">conversion</span></code></td>
+<td>Conversion efficiency from DC
+power to an AC distribution
+network</td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal notranslate"><span class="pre">DC</span> <span class="pre">to</span> <span class="pre">DC</span> <span class="pre">conversion</span></code></td>
+<td>Conversion efficiency from DC
+power to an DC distribution
+network</td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal notranslate"><span class="pre">AC</span> <span class="pre">to</span> <span class="pre">DC</span> <span class="pre">conversion</span></code></td>
+<td>Conversion efficiency from AC
+power to an DC distribution
+network</td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal notranslate"><span class="pre">AC</span> <span class="pre">to</span> <span class="pre">AC</span> <span class="pre">conversion</span></code></td>
+<td>Conversion efficiency from AC
+power to an AC distribution
+network</td>
+</tr>
+</tbody>
+</table>
+<p>The variables <code class="docutils literal notranslate"><span class="pre">Battery</span> <span class="pre">maximum</span> <span class="pre">charge</span></code> and <code class="docutils literal notranslate"><span class="pre">Battery</span> <span class="pre">minimum</span> <span class="pre">charge</span></code>
+refer to the maximum and minimum permitted states of charge of the
+battery: in this case the battery is allowed to cycle between 90% and
+40% of its total capacity, resulting in a depth of discharge (DOD) of
+50%, and meaning that 50% of the total installed battery capacity is
+actually usable by the system. <code class="docutils literal notranslate"><span class="pre">Battery</span> <span class="pre">leakage</span></code> is the fraction of
+energy that leaks out of the battery every hour, in this case <code class="docutils literal notranslate"><span class="pre">0.004</span></code>
+or 0.4% of the energy presently stored in it per hour.
+<code class="docutils literal notranslate"><span class="pre">Battery</span> <span class="pre">conversion</span> <span class="pre">in</span></code> and <code class="docutils literal notranslate"><span class="pre">Battery</span> <span class="pre">conversion</span> <span class="pre">out</span></code> are the
+conversion efficiencies of energy being supplied to and from the battery
+respectively; when multiplied together these give the battery round-trip
+efficiency.</p>
+<p><code class="docutils literal notranslate"><span class="pre">Battery</span> <span class="pre">cycle</span> <span class="pre">lifetime</span></code> refers to the number of charging and
+discharging cycles that the battery can be expected to perform over its
+lifetime, with the lifetime defined to be over when the battery has
+degraded by <code class="docutils literal notranslate"><span class="pre">Battery</span> <span class="pre">lifetime</span> <span class="pre">loss</span></code>; in this case
+<code class="docutils literal notranslate"><span class="pre">Battery</span> <span class="pre">lifetime</span> <span class="pre">loss</span> <span class="pre">=</span> <span class="pre">0.2</span></code> (as is typical for this definition) and
+so the lifetime is over when the battery provides just 80% of its
+original capacity. The battery degradation is calculated by multiplying
+the lifetime loss by the energy throughput of the battery (at a given
+point in time) and then dividing by the expected cumulative energy
+throughput over the lifetime of the battery (the cycle lifetime
+multiplied by the depth of discharge and total capacity). This
+simplified method does not account for the effects of temperature or
+reduced cycling which may affect the lifetime of a battery in practice.</p>
+<p>Finally for the battery parameters, <code class="docutils literal notranslate"><span class="pre">Battery</span> <span class="pre">C</span> <span class="pre">rate</span> <span class="pre">discharging</span></code> and
+<code class="docutils literal notranslate"><span class="pre">Battery</span> <span class="pre">C</span> <span class="pre">rate</span> <span class="pre">charging</span></code> are the C-rates for discharging and charging
+the batteries, measured as the maximum permitted fraction of the battery
+capacity that can be stored or supplied in one hour. These battery
+parameters can be taken from a datasheet provided by a battery
+manufacturer or used as indicative values in more general
+investigations. They are also agnostic to the type of battery technology
+being investigated, for example lead acid or lithium ion batteries. Some
+of these parameters will be dependent on one another: for example, a
+given battery being used with a higher DOD will likely have a lower
+cycle lifetime. These relationships are often available on battery
+datasheets (for example as performance curves) but need to be input
+manually and individually here. Similarly, higher C-rates will also
+likely result in lower cycle lifetimes.</p>
+<p>Let’s take a look at some of the variables:</p>
+<div class="code ipython3 highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">max_charge</span> <span class="o">=</span> <span class="n">energy_system_inputs</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span>
+<span class="n">min_charge</span> <span class="o">=</span> <span class="n">energy_system_inputs</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span>
+<span class="n">DOD</span> <span class="o">=</span> <span class="n">max_charge</span> <span class="o">-</span> <span class="n">min_charge</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Maximum state of charge: &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">((</span><span class="nb">int</span><span class="p">(</span><span class="mi">100</span> <span class="o">*</span> <span class="n">max_charge</span><span class="p">)))</span> <span class="o">+</span> <span class="s1">&#39;%&#39;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Minimum state of charge: &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">((</span><span class="nb">int</span><span class="p">(</span><span class="mi">100</span> <span class="o">*</span> <span class="n">min_charge</span><span class="p">)))</span> <span class="o">+</span> <span class="s1">&#39;%&#39;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Depth of discharge: &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="mi">100</span> <span class="o">*</span> <span class="n">DOD</span><span class="p">))</span> <span class="o">+</span> <span class="s1">&#39;%</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+
+<span class="n">battery_conversion_in</span> <span class="o">=</span> <span class="n">energy_system_inputs</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="mi">3</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span>
+<span class="n">battery_conversion_out</span> <span class="o">=</span> <span class="n">energy_system_inputs</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="mi">4</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span>
+<span class="n">round_trip_efficiency</span> <span class="o">=</span> <span class="n">battery_conversion_in</span> <span class="o">*</span> <span class="n">battery_conversion_out</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Battery input efficiency: &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">((</span><span class="nb">int</span><span class="p">(</span><span class="mi">100</span> <span class="o">*</span> <span class="n">battery_conversion_in</span><span class="p">)))</span> <span class="o">+</span> <span class="s1">&#39;%&#39;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Battery output efficiency: &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">((</span><span class="nb">int</span><span class="p">(</span><span class="mi">100</span> <span class="o">*</span> <span class="n">battery_conversion_out</span><span class="p">)))</span> <span class="o">+</span> <span class="s1">&#39;%&#39;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Round trip efficiency: &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="mi">100</span> <span class="o">*</span> <span class="n">round_trip_efficiency</span><span class="p">))</span> <span class="o">+</span> <span class="s1">&#39;%&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Maximum</span> <span class="n">state</span> <span class="n">of</span> <span class="n">charge</span><span class="p">:</span> <span class="mi">90</span><span class="o">%</span>
+<span class="n">Minimum</span> <span class="n">state</span> <span class="n">of</span> <span class="n">charge</span><span class="p">:</span> <span class="mi">40</span><span class="o">%</span>
+<span class="n">Depth</span> <span class="n">of</span> <span class="n">discharge</span><span class="p">:</span> <span class="mi">50</span><span class="o">%</span>
+
+<span class="n">Battery</span> <span class="nb">input</span> <span class="n">efficiency</span><span class="p">:</span> <span class="mi">95</span><span class="o">%</span>
+<span class="n">Battery</span> <span class="n">output</span> <span class="n">efficiency</span><span class="p">:</span> <span class="mi">95</span><span class="o">%</span>
+<span class="n">Round</span> <span class="n">trip</span> <span class="n">efficiency</span><span class="p">:</span> <span class="mi">90</span><span class="o">%</span>
+</pre></div>
+</div>
+<p>The next two variables, <code class="docutils literal notranslate"><span class="pre">Transmission</span> <span class="pre">efficiency</span> <span class="pre">AC</span></code> and
+<code class="docutils literal notranslate"><span class="pre">Transmission</span> <span class="pre">efficiency</span> <span class="pre">DC</span></code>, describe the efficiency of the power
+distribution network being used to transmit power from the generation
+and storage source to the consumers. This can be AC (alternating
+current, generally better for high-power applications and long-range
+transmission) or DC (direct current, generally better for low-power
+applications and short-range transmission). Only one of these will be
+used at a time but both should be completed, for example using a dummy
+value if only one is ever to be investigated. Finally,
+<code class="docutils literal notranslate"><span class="pre">DC</span> <span class="pre">to</span> <span class="pre">AC</span> <span class="pre">conversion</span></code> (for example) gives the conversion efficiency of
+DC power sources, such as solar or batteries, to an AC distribution
+network. These are the efficiencies of inverters, rectifiers and voltage
+converters that would be used in the system; as before, these should all
+be included for completeness but dummy values (or the defaults) could be
+used if only one distribution network is being considered.</p>
+<p><strong>Complete the</strong> <code class="docutils literal notranslate"><span class="pre">Energy</span> <span class="pre">system</span> <span class="pre">inputs</span></code> <strong>CSV with the technical
+performance parameters for your investigation.</strong></p>
+</div>
+<div class="section" id="scenario-inputs">
+<h3>Scenario inputs<a class="headerlink" href="#scenario-inputs" title="Permalink to this headline">¶</a></h3>
+<p>The inputs which describe the situation we are investigating are
+provided in the <em>Scenario inputs</em> CSV file in the <em>Scenario</em> folder of
+your location folder. These describe parameters such as the types of
+technologies that are being used in the system and the loads that are
+being met. Let’s take a look at the default inputs for Bahraich:</p>
+<div class="code ipython3 highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">scenario_inputs</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="s2">&quot;/Users/prs09/Documents/CLOVER/Locations/Bahraich/Scenario/Scenario inputs.csv&quot;</span><span class="p">,</span><span class="n">header</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+<span class="n">scenario_inputs</span><span class="o">.</span><span class="n">head</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">scenario_inputs</span><span class="p">))</span>
+</pre></div>
+</div>
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>0</th>
+      <th>1</th>
+      <th>2</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>PV</td>
+      <td>Y</td>
+      <td>(Y/N)</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>Battery</td>
+      <td>Y</td>
+      <td>(Y/N)</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>Diesel backup</td>
+      <td>Y</td>
+      <td>(Y/N)</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>Diesel backup threshold</td>
+      <td>0.1</td>
+      <td>Maximum acceptible blackouts (0.0-1.0)</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>Grid</td>
+      <td>Y</td>
+      <td>(Y/N)</td>
+    </tr>
+    <tr>
+      <th>5</th>
+      <td>Grid type</td>
+      <td>bahraich</td>
+      <td>Grid profile</td>
+    </tr>
+    <tr>
+      <th>6</th>
+      <td>Prioritise self generation</td>
+      <td>Y</td>
+      <td>(Y/N)</td>
+    </tr>
+    <tr>
+      <th>7</th>
+      <td>Domestic</td>
+      <td>Y</td>
+      <td>(Y/N)</td>
+    </tr>
+    <tr>
+      <th>8</th>
+      <td>Commercial</td>
+      <td>Y</td>
+      <td>(Y/N)</td>
+    </tr>
+    <tr>
+      <th>9</th>
+      <td>Public</td>
+      <td>Y</td>
+      <td>(Y/N)</td>
+    </tr>
+    <tr>
+      <th>10</th>
+      <td>Distribution network</td>
+      <td>DC</td>
+      <td>DC or AC distribution network</td>
+    </tr>
+  </tbody>
+</table>
+</div><div class="line-block">
+<div class="line"><br /></div>
+</div>
+<p>Many of these may be straightforward, but the table below describes them
+explicitly.</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="50%" />
+<col width="50%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Variable</th>
+<th class="head">Explanation</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td><code class="docutils literal notranslate"><span class="pre">PV</span></code></td>
+<td>Whether solar PV is available
+(<code class="docutils literal notranslate"><span class="pre">Y</span></code>) or not (<code class="docutils literal notranslate"><span class="pre">N</span></code>)</td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal notranslate"><span class="pre">Battery</span></code></td>
+<td>Whether battery storage is
+available (<code class="docutils literal notranslate"><span class="pre">Y</span></code>) or not (<code class="docutils literal notranslate"><span class="pre">N</span></code>)</td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal notranslate"><span class="pre">Diesel</span> <span class="pre">backup</span></code></td>
+<td>Whether a diesel generator backup
+is available (<code class="docutils literal notranslate"><span class="pre">Y</span></code>) or not
+(<code class="docutils literal notranslate"><span class="pre">N</span></code>)</td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal notranslate"><span class="pre">Diesel</span> <span class="pre">backup</span> <span class="pre">threshold</span></code></td>
+<td>The blackout threshold which the
+diesel generator is used to
+achieve</td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal notranslate"><span class="pre">Grid</span></code></td>
+<td>Whether the national grid is
+available (<code class="docutils literal notranslate"><span class="pre">Y</span></code>) or not (<code class="docutils literal notranslate"><span class="pre">N</span></code>)</td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal notranslate"><span class="pre">PV</span></code></td>
+<td>Whether solar PV is available
+(<code class="docutils literal notranslate"><span class="pre">Y</span></code>) or not (<code class="docutils literal notranslate"><span class="pre">N</span></code>)</td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal notranslate"><span class="pre">Prioritise</span> <span class="pre">self</span> <span class="pre">generation</span></code></td>
+<td>Whether to prioritise local
+generation (<code class="docutils literal notranslate"><span class="pre">Y</span></code>) or energy from
+the grid (<code class="docutils literal notranslate"><span class="pre">N</span></code>)</td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal notranslate"><span class="pre">Domestic</span></code></td>
+<td>Whether <code class="docutils literal notranslate"><span class="pre">Domestic</span></code> loads are
+included in the load profile
+(<code class="docutils literal notranslate"><span class="pre">Y</span></code>) or not (<code class="docutils literal notranslate"><span class="pre">N</span></code>)</td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal notranslate"><span class="pre">Commercial</span></code></td>
+<td>Whether <code class="docutils literal notranslate"><span class="pre">Commercial</span></code> loads are
+included in the load profile
+(<code class="docutils literal notranslate"><span class="pre">Y</span></code>) or not (<code class="docutils literal notranslate"><span class="pre">N</span></code>)</td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal notranslate"><span class="pre">Public</span></code></td>
+<td>Whether <code class="docutils literal notranslate"><span class="pre">Public</span></code> loads are
+included in the load profile
+(<code class="docutils literal notranslate"><span class="pre">Y</span></code>) or not (<code class="docutils literal notranslate"><span class="pre">N</span></code>)</td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal notranslate"><span class="pre">Distribution</span> <span class="pre">network</span></code></td>
+<td>Whether an <code class="docutils literal notranslate"><span class="pre">AC</span></code> or <code class="docutils literal notranslate"><span class="pre">DC</span></code>
+distribtion network is used to
+transmit electricity</td>
+</tr>
+</tbody>
+</table>
+<p>The three of the variables, <code class="docutils literal notranslate"><span class="pre">PV</span></code>, <code class="docutils literal notranslate"><span class="pre">Battery</span></code> and <code class="docutils literal notranslate"><span class="pre">Grid</span></code>, are
+present for future-proofing and have no effect at present: solar and
+battery storage must be considered in simulations for now, although (as
+we will see in <a class="reference external" href="#performing-a-simulation-of-an-energy-system">we will see
+later</a>) they can have
+capacities of zero which mean they are not actually included. Similarly
+<code class="docutils literal notranslate"><span class="pre">Grid</span> <span class="pre">type</span></code> describes the grid availability profile to be used from
+the <em>Grid</em> module, which can be similarly switched off by selecting a
+profile with no availability (e.g. <code class="docutils literal notranslate"><span class="pre">Grid</span> <span class="pre">type</span> <span class="pre">=</span> <span class="pre">none</span></code>).</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">Diesel</span> <span class="pre">backup</span></code> variable is active and controls whether a diesel
+generator can be used to supply additional power during times of
+blackouts. Periods of blackouts will be described in more detail later,
+but for now the <code class="docutils literal notranslate"><span class="pre">blackouts</span></code> parameter can be described as the fraction
+of time that insufficient energy is available in the system to meet the
+loads. If a system of a specified solar and storage capacity, operating
+with a given grid availability, has a <code class="docutils literal notranslate"><span class="pre">blackouts</span></code> parameter greater
+than <code class="docutils literal notranslate"><span class="pre">Diesel</span> <span class="pre">backup</span> <span class="pre">threshold</span></code> then the diesel generator is used
+retroactively to top up hours where blackouts occur, up to the point at
+which the system <code class="docutils literal notranslate"><span class="pre">blackouts</span></code> and <code class="docutils literal notranslate"><span class="pre">Diesel</span> <span class="pre">backup</span> <span class="pre">threshold</span></code> are
+equal. For example, if a system had <code class="docutils literal notranslate"><span class="pre">blackouts</span> <span class="pre">=</span> <span class="pre">0.17</span></code> and (as in
+default values) <code class="docutils literal notranslate"><span class="pre">Diesel</span> <span class="pre">backup</span> <span class="pre">threshold</span> <span class="pre">=</span> <span class="pre">0.1</span></code>, then the diesel
+generator would be used to supply power in 7% (<code class="docutils literal notranslate"><span class="pre">0.07</span></code>) of the hours to
+make <code class="docutils literal notranslate"><span class="pre">blackouts</span> <span class="pre">=</span> <span class="pre">0.10</span></code> after its implementation.</p>
+<p><code class="docutils literal notranslate"><span class="pre">Prioritise</span> <span class="pre">self</span> <span class="pre">generation</span></code> describes whether the system will use its
+own locally-generated energy from solar first before drawing power from
+the grid if available and then storage (<code class="docutils literal notranslate"><span class="pre">Y</span></code>), or whether it will take
+power from the grid first if available and then from solar and then
+storage (<code class="docutils literal notranslate"><span class="pre">N</span></code>). In either case, it may be that either locally generated
+or grid power is unavailable and therefore this should be thought of as
+a prioritisation of sources rather than a backup. In both cases the
+diesel backup is considered after this prioritisation occurs.</p>
+<p><code class="docutils literal notranslate"><span class="pre">Domestic</span></code>, <code class="docutils literal notranslate"><span class="pre">Commercial</span></code> and <code class="docutils literal notranslate"><span class="pre">Public</span></code> refer to whether these
+demand types are to be included in the load profile used in the
+investigation. Finally the <code class="docutils literal notranslate"><span class="pre">Distribution</span> <span class="pre">network</span></code> defines whether an
+<code class="docutils literal notranslate"><span class="pre">AC</span></code> or <code class="docutils literal notranslate"><span class="pre">DC</span></code> transmission network is used to distribute electricity
+from the sources to the loads, which will affect the conversion
+efficiencies used as inputs in the previous section.</p>
+<p><strong>Complete the</strong> <code class="docutils literal notranslate"><span class="pre">Scenario</span> <span class="pre">inputs</span></code> <strong>CSV with the details of the situation
+of your investigation.</strong></p>
+</div>
+</div>
+<div class="section" id="performing-a-simulation-of-an-electricity-system">
+<h2>Performing a simulation of an electricity system<a class="headerlink" href="#performing-a-simulation-of-an-electricity-system" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="inputs">
+<h3>Inputs<a class="headerlink" href="#inputs" title="Permalink to this headline">¶</a></h3>
+<p>We are now able to perform a simulation of an energy system using the
+<em>Energy_System</em> module. This relies on all of the information we have
+input and generated previously in the electricity
+generation and load profiles sections, and the earlier parts of this
+section. This will let us investigate the technological performance of a
+system with a specified solar and battery capacity, operating under the
+conditions we defined earlier.</p>
+<p>To perform a simulation we must first <strong>run the Energy_System script
+(using the green arrow in the Spyder console)</strong>, which we do here using
+the following:</p>
+<div class="code ipython3 highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">sys</span>
+<span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="s1">&#39;/Users/prs09/Documents/CLOVER/Scripts/Simulation scripts/&#39;</span><span class="p">)</span>
+<span class="kn">from</span> <span class="nn">Energy_System</span> <span class="k">import</span> <span class="n">Energy_System</span>
+</pre></div>
+</div>
+<p>To simulate an energy system we need to specify four further parameters;
+these are taken as inputs for convenience when investigating many system
+sizes, for example during optimisations which we will explore further
+later. These are:</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="30%" />
+<col width="70%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Variable</th>
+<th class="head">Explanation</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td><code class="docutils literal notranslate"><span class="pre">start_year</span></code></td>
+<td>Starting year of the simulation</td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal notranslate"><span class="pre">end_year</span></code></td>
+<td>End year of the simualation</td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal notranslate"><span class="pre">PV_size</span></code></td>
+<td>Installed solar capacity in kWp</td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal notranslate"><span class="pre">storage_size</span></code></td>
+<td>Installed battery storage capacity in kWh</td>
+</tr>
+</tbody>
+</table>
+<p>These tell the function running the simulation both the time period to
+consider and the capacity of the system that is being investigated. The
+parameters <code class="docutils literal notranslate"><span class="pre">start_year</span></code> and <code class="docutils literal notranslate"><span class="pre">end_year</span></code> are defined by the first day
+of their respective years and (as with the rest of Python) start from
+<code class="docutils literal notranslate"><span class="pre">0</span></code>. For example, running a simulation for only the first year of a
+20-year timeline would require <code class="docutils literal notranslate"><span class="pre">start_year</span> <span class="pre">=</span> <span class="pre">0</span></code> and <code class="docutils literal notranslate"><span class="pre">end_year</span> <span class="pre">=</span> <span class="pre">1</span></code>,
+i.e.&nbsp;running from the first day of Year 0 up to (but not including) the
+first day of Year 1. These inputs <strong>must</strong> be integers.</p>
+<p>The parameters <code class="docutils literal notranslate"><span class="pre">PV_size</span></code> and <code class="docutils literal notranslate"><span class="pre">storage_size</span></code> refer to the installed
+capacities of the solar and battery storage components in their
+functional units of kWp and kWh respectively. These inputs can be any
+number, including decimals (for example as a multiple of a given solar
+panel size) and zero if they are not to be included, as we saw earlier
+in ` &lt;#scenario-inputs&gt;`__.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">Energy_System().simulation(...)</span></code> function includes default values
+for each of these parameters which are used if the user does not specify
+any of their input values. In our example, we will simulate a system
+over the first year of its lifetime (<code class="docutils literal notranslate"><span class="pre">start_year</span> <span class="pre">=</span> <span class="pre">0,</span> <span class="pre">end_year</span> <span class="pre">=</span> <span class="pre">1)</span></code>
+and with <code class="docutils literal notranslate"><span class="pre">PV_size</span> <span class="pre">=</span> <span class="pre">5</span></code> kWp and <code class="docutils literal notranslate"><span class="pre">storage_size</span> <span class="pre">=</span> <span class="pre">20</span></code> kWh.</p>
+</div>
+<div class="section" id="running-a-simulation">
+<h3>Running a simulation<a class="headerlink" href="#running-a-simulation" title="Permalink to this headline">¶</a></h3>
+<p>To run a simulation we <strong>run the following function in the console</strong>
+with our choice of input variables, saving the output as a variable
+called <code class="docutils literal notranslate"><span class="pre">example_simulation</span></code> so we can look at the outputs in more
+detail:</p>
+<div class="code ipython3 highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">example_simulation</span> <span class="o">=</span> <span class="n">Energy_System</span><span class="p">()</span><span class="o">.</span><span class="n">simulation</span><span class="p">(</span><span class="n">start_year</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">end_year</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">PV_size</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">storage_size</span><span class="o">=</span><span class="mi">20</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Time</span> <span class="n">taken</span> <span class="k">for</span> <span class="n">simulation</span><span class="p">:</span> <span class="mf">0.45</span> <span class="n">seconds</span> <span class="n">per</span> <span class="n">year</span>
+</pre></div>
+</div>
+<p>When we run this function we get an output, which we called
+<code class="docutils literal notranslate"><span class="pre">example_simulation</span></code>, which is composed of two further outputs: one
+describing the technical performance of the system, and one describing
+the input parameters that we gave to the function. If we did not save
+the output of this function as a variable then the results would have
+been printed to the screen, but not available to use later. We also get
+an estimate of the time taken to perform each year of the simulation:
+running the entire function likely looking much longer than this, but
+this value can be useful in identifying potential errors if the value is
+much higher for some simulations rather than others.</p>
+<p>When this function is called it automatically takes into account all of
+the earlier input data and operating conditions to simulate the system
+over the defined time period - making the function itself very
+straightforward to use.</p>
+</div>
+<div class="section" id="simulation-outputs">
+<h3>Simulation outputs<a class="headerlink" href="#simulation-outputs" title="Permalink to this headline">¶</a></h3>
+<p>The important parts of this function are its two outputs which tell us
+how the system has performed over the simulated time period. Let’s take
+a look at the first component by defining a new variable called
+<code class="docutils literal notranslate"><span class="pre">example_simulation_performance</span></code>:</p>
+<div class="code ipython3 highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">example_simulation_performance</span> <span class="o">=</span> <span class="n">example_simulation</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+<span class="n">example_simulation_performance</span><span class="o">.</span><span class="n">head</span><span class="p">(</span><span class="mi">24</span><span class="p">)</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+</pre></div>
+</div>
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>Load energy (kWh)</th>
+      <th>Total energy used (kWh)</th>
+      <th>Unmet energy (kWh)</th>
+      <th>Blackouts</th>
+      <th>Renewables energy used (kWh)</th>
+      <th>Storage energy supplied (kWh)</th>
+      <th>Grid energy (kWh)</th>
+      <th>Diesel energy (kWh)</th>
+      <th>Diesel times</th>
+      <th>Diesel fuel usage (l)</th>
+      <th>Storage profile (kWh)</th>
+      <th>Renewables energy supplied (kWh)</th>
+      <th>Hourly storage (kWh)</th>
+      <th>Dumped energy (kWh)</th>
+      <th>Battery health</th>
+      <th>Households</th>
+      <th>Kerosene lamps</th>
+      <th>Kerosene mitigation</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>1.166</td>
+      <td>1.166</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.000</td>
+      <td>1.166</td>
+      <td>0.000</td>
+      <td>0.000</td>
+      <td>0.0</td>
+      <td>0.000</td>
+      <td>-1.166</td>
+      <td>0.000</td>
+      <td>16.834</td>
+      <td>0.000</td>
+      <td>1.0</td>
+      <td>100</td>
+      <td>0.0</td>
+      <td>75.0</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>0.938</td>
+      <td>0.938</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.000</td>
+      <td>0.000</td>
+      <td>0.938</td>
+      <td>0.000</td>
+      <td>0.0</td>
+      <td>0.000</td>
+      <td>0.000</td>
+      <td>0.000</td>
+      <td>16.766</td>
+      <td>0.000</td>
+      <td>1.0</td>
+      <td>100</td>
+      <td>0.0</td>
+      <td>103.0</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>0.920</td>
+      <td>0.968</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.000</td>
+      <td>0.968</td>
+      <td>0.000</td>
+      <td>0.000</td>
+      <td>0.0</td>
+      <td>0.000</td>
+      <td>-0.920</td>
+      <td>0.000</td>
+      <td>15.731</td>
+      <td>0.000</td>
+      <td>1.0</td>
+      <td>100</td>
+      <td>0.0</td>
+      <td>81.0</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>0.377</td>
+      <td>0.377</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.000</td>
+      <td>0.000</td>
+      <td>0.377</td>
+      <td>0.000</td>
+      <td>0.0</td>
+      <td>0.000</td>
+      <td>0.000</td>
+      <td>0.000</td>
+      <td>15.668</td>
+      <td>0.000</td>
+      <td>1.0</td>
+      <td>100</td>
+      <td>0.0</td>
+      <td>91.0</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>0.402</td>
+      <td>0.423</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.000</td>
+      <td>0.423</td>
+      <td>0.000</td>
+      <td>0.000</td>
+      <td>0.0</td>
+      <td>0.000</td>
+      <td>-0.402</td>
+      <td>0.000</td>
+      <td>15.182</td>
+      <td>0.000</td>
+      <td>1.0</td>
+      <td>100</td>
+      <td>0.0</td>
+      <td>74.0</td>
+    </tr>
+    <tr>
+      <th>5</th>
+      <td>0.412</td>
+      <td>0.412</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.000</td>
+      <td>0.000</td>
+      <td>0.412</td>
+      <td>0.000</td>
+      <td>0.0</td>
+      <td>0.000</td>
+      <td>0.000</td>
+      <td>0.000</td>
+      <td>15.121</td>
+      <td>0.000</td>
+      <td>1.0</td>
+      <td>100</td>
+      <td>0.0</td>
+      <td>73.0</td>
+    </tr>
+    <tr>
+      <th>6</th>
+      <td>0.446</td>
+      <td>0.470</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.000</td>
+      <td>0.470</td>
+      <td>0.000</td>
+      <td>0.000</td>
+      <td>0.0</td>
+      <td>0.000</td>
+      <td>-0.446</td>
+      <td>0.000</td>
+      <td>14.591</td>
+      <td>0.000</td>
+      <td>1.0</td>
+      <td>100</td>
+      <td>0.0</td>
+      <td>70.0</td>
+    </tr>
+    <tr>
+      <th>7</th>
+      <td>1.258</td>
+      <td>1.322</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.041</td>
+      <td>1.281</td>
+      <td>0.000</td>
+      <td>0.000</td>
+      <td>0.0</td>
+      <td>0.000</td>
+      <td>-1.217</td>
+      <td>0.041</td>
+      <td>13.251</td>
+      <td>0.000</td>
+      <td>1.0</td>
+      <td>100</td>
+      <td>0.0</td>
+      <td>0.0</td>
+    </tr>
+    <tr>
+      <th>8</th>
+      <td>1.479</td>
+      <td>1.513</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.830</td>
+      <td>0.683</td>
+      <td>0.000</td>
+      <td>0.000</td>
+      <td>0.0</td>
+      <td>0.000</td>
+      <td>-0.649</td>
+      <td>0.830</td>
+      <td>12.515</td>
+      <td>0.000</td>
+      <td>1.0</td>
+      <td>100</td>
+      <td>0.0</td>
+      <td>0.0</td>
+    </tr>
+    <tr>
+      <th>9</th>
+      <td>1.300</td>
+      <td>1.300</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>1.300</td>
+      <td>0.000</td>
+      <td>0.000</td>
+      <td>0.000</td>
+      <td>0.0</td>
+      <td>0.000</td>
+      <td>0.591</td>
+      <td>1.891</td>
+      <td>13.027</td>
+      <td>0.000</td>
+      <td>1.0</td>
+      <td>100</td>
+      <td>0.0</td>
+      <td>0.0</td>
+    </tr>
+    <tr>
+      <th>10</th>
+      <td>0.726</td>
+      <td>0.726</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.726</td>
+      <td>0.000</td>
+      <td>0.000</td>
+      <td>0.000</td>
+      <td>0.0</td>
+      <td>0.000</td>
+      <td>1.941</td>
+      <td>2.667</td>
+      <td>14.818</td>
+      <td>0.000</td>
+      <td>1.0</td>
+      <td>100</td>
+      <td>0.0</td>
+      <td>0.0</td>
+    </tr>
+    <tr>
+      <th>11</th>
+      <td>1.668</td>
+      <td>1.668</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>1.668</td>
+      <td>0.000</td>
+      <td>0.000</td>
+      <td>0.000</td>
+      <td>0.0</td>
+      <td>0.000</td>
+      <td>1.432</td>
+      <td>3.100</td>
+      <td>16.119</td>
+      <td>0.000</td>
+      <td>1.0</td>
+      <td>100</td>
+      <td>0.0</td>
+      <td>0.0</td>
+    </tr>
+    <tr>
+      <th>12</th>
+      <td>1.105</td>
+      <td>1.105</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>1.105</td>
+      <td>0.000</td>
+      <td>0.000</td>
+      <td>0.000</td>
+      <td>0.0</td>
+      <td>0.000</td>
+      <td>2.202</td>
+      <td>3.308</td>
+      <td>17.999</td>
+      <td>0.148</td>
+      <td>1.0</td>
+      <td>100</td>
+      <td>0.0</td>
+      <td>0.0</td>
+    </tr>
+    <tr>
+      <th>13</th>
+      <td>1.100</td>
+      <td>1.100</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>1.100</td>
+      <td>0.000</td>
+      <td>0.000</td>
+      <td>0.000</td>
+      <td>0.0</td>
+      <td>0.000</td>
+      <td>2.045</td>
+      <td>3.145</td>
+      <td>17.999</td>
+      <td>1.871</td>
+      <td>1.0</td>
+      <td>100</td>
+      <td>0.0</td>
+      <td>0.0</td>
+    </tr>
+    <tr>
+      <th>14</th>
+      <td>1.947</td>
+      <td>1.947</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>1.947</td>
+      <td>0.000</td>
+      <td>0.000</td>
+      <td>0.000</td>
+      <td>0.0</td>
+      <td>0.000</td>
+      <td>0.733</td>
+      <td>2.680</td>
+      <td>17.999</td>
+      <td>0.624</td>
+      <td>1.0</td>
+      <td>100</td>
+      <td>0.0</td>
+      <td>0.0</td>
+    </tr>
+    <tr>
+      <th>15</th>
+      <td>2.226</td>
+      <td>2.244</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>1.882</td>
+      <td>0.363</td>
+      <td>0.000</td>
+      <td>0.000</td>
+      <td>0.0</td>
+      <td>0.000</td>
+      <td>-0.345</td>
+      <td>1.882</td>
+      <td>17.564</td>
+      <td>0.000</td>
+      <td>1.0</td>
+      <td>100</td>
+      <td>0.0</td>
+      <td>0.0</td>
+    </tr>
+    <tr>
+      <th>16</th>
+      <td>1.479</td>
+      <td>1.511</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.866</td>
+      <td>0.645</td>
+      <td>0.000</td>
+      <td>0.000</td>
+      <td>0.0</td>
+      <td>0.000</td>
+      <td>-0.613</td>
+      <td>0.866</td>
+      <td>16.849</td>
+      <td>0.000</td>
+      <td>1.0</td>
+      <td>100</td>
+      <td>0.0</td>
+      <td>0.0</td>
+    </tr>
+    <tr>
+      <th>17</th>
+      <td>3.626</td>
+      <td>3.626</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.077</td>
+      <td>0.000</td>
+      <td>3.550</td>
+      <td>0.000</td>
+      <td>0.0</td>
+      <td>0.000</td>
+      <td>0.000</td>
+      <td>0.077</td>
+      <td>16.782</td>
+      <td>0.000</td>
+      <td>1.0</td>
+      <td>100</td>
+      <td>0.0</td>
+      <td>122.0</td>
+    </tr>
+    <tr>
+      <th>18</th>
+      <td>2.001</td>
+      <td>2.106</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.000</td>
+      <td>2.106</td>
+      <td>0.000</td>
+      <td>0.000</td>
+      <td>0.0</td>
+      <td>0.000</td>
+      <td>-2.001</td>
+      <td>0.000</td>
+      <td>14.608</td>
+      <td>0.000</td>
+      <td>1.0</td>
+      <td>100</td>
+      <td>0.0</td>
+      <td>333.0</td>
+    </tr>
+    <tr>
+      <th>19</th>
+      <td>4.447</td>
+      <td>4.447</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.000</td>
+      <td>3.473</td>
+      <td>0.000</td>
+      <td>0.974</td>
+      <td>1.0</td>
+      <td>0.560</td>
+      <td>-4.447</td>
+      <td>0.000</td>
+      <td>11.076</td>
+      <td>0.000</td>
+      <td>1.0</td>
+      <td>100</td>
+      <td>0.0</td>
+      <td>338.0</td>
+    </tr>
+    <tr>
+      <th>20</th>
+      <td>1.961</td>
+      <td>2.064</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.000</td>
+      <td>2.064</td>
+      <td>0.000</td>
+      <td>0.000</td>
+      <td>0.0</td>
+      <td>0.000</td>
+      <td>-1.961</td>
+      <td>0.000</td>
+      <td>8.968</td>
+      <td>0.000</td>
+      <td>1.0</td>
+      <td>100</td>
+      <td>0.0</td>
+      <td>336.0</td>
+    </tr>
+    <tr>
+      <th>21</th>
+      <td>1.576</td>
+      <td>1.576</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.000</td>
+      <td>0.000</td>
+      <td>1.576</td>
+      <td>0.000</td>
+      <td>0.0</td>
+      <td>0.000</td>
+      <td>0.000</td>
+      <td>0.000</td>
+      <td>8.932</td>
+      <td>0.000</td>
+      <td>1.0</td>
+      <td>100</td>
+      <td>0.0</td>
+      <td>277.0</td>
+    </tr>
+    <tr>
+      <th>22</th>
+      <td>2.226</td>
+      <td>2.226</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.000</td>
+      <td>0.898</td>
+      <td>0.000</td>
+      <td>1.329</td>
+      <td>1.0</td>
+      <td>0.560</td>
+      <td>-2.226</td>
+      <td>0.000</td>
+      <td>7.999</td>
+      <td>0.000</td>
+      <td>1.0</td>
+      <td>100</td>
+      <td>0.0</td>
+      <td>132.0</td>
+    </tr>
+    <tr>
+      <th>23</th>
+      <td>2.038</td>
+      <td>2.038</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.000</td>
+      <td>0.000</td>
+      <td>0.000</td>
+      <td>2.038</td>
+      <td>1.0</td>
+      <td>0.815</td>
+      <td>-2.038</td>
+      <td>0.000</td>
+      <td>7.998</td>
+      <td>0.000</td>
+      <td>1.0</td>
+      <td>100</td>
+      <td>0.0</td>
+      <td>108.0</td>
+    </tr>
+  </tbody>
+</table>
+</div><div class="line-block">
+<div class="line"><br /></div>
+</div>
+<p>This component gives the performance of the system at an hourly
+resolution, with the first 24 hours of the simulation shown here and
+rounded to three decimal places for convenience. They are defined in the
+table below:</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="50%" />
+<col width="50%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Variable</th>
+<th class="head">Explanation</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td><code class="docutils literal notranslate"><span class="pre">Load</span> <span class="pre">energy</span> <span class="pre">(kWh)</span></code></td>
+<td>Load energy demanded by the
+community</td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal notranslate"><span class="pre">Total</span> <span class="pre">energy</span> <span class="pre">used</span> <span class="pre">(kWh)</span></code></td>
+<td>Total energy used by the
+community</td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal notranslate"><span class="pre">Unmet</span> <span class="pre">energy</span> <span class="pre">(kWh)</span></code></td>
+<td>Energy that would have been
+needed to meet energy demand</td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal notranslate"><span class="pre">Blackouts</span></code></td>
+<td>Whether there was a blackout
+period (<code class="docutils literal notranslate"><span class="pre">1</span></code>) or not (<code class="docutils literal notranslate"><span class="pre">0</span></code>)</td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal notranslate"><span class="pre">Renewables</span> <span class="pre">energy</span> <span class="pre">used</span> <span class="pre">(kWh)</span></code></td>
+<td>Renewable energy used directly by
+the community</td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal notranslate"><span class="pre">Storage</span> <span class="pre">energy</span> <span class="pre">supplied</span> <span class="pre">(kWh)</span></code></td>
+<td>Energy supplied by battery
+storage</td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal notranslate"><span class="pre">Grid</span> <span class="pre">energy</span> <span class="pre">(kWh)</span></code></td>
+<td>Energy supplied by the grid
+network</td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal notranslate"><span class="pre">Diesel</span> <span class="pre">energy</span> <span class="pre">(kWh)</span></code></td>
+<td>Energy supplied by the diesel
+generator</td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal notranslate"><span class="pre">Diesel</span> <span class="pre">times</span></code></td>
+<td>Whether the diesel generator was
+on (<code class="docutils literal notranslate"><span class="pre">1</span></code>) or off (<code class="docutils literal notranslate"><span class="pre">0</span></code>)</td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal notranslate"><span class="pre">Diesel</span> <span class="pre">fuel</span> <span class="pre">usage</span> <span class="pre">(l)</span></code></td>
+<td>Litres of diesel fuel used</td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal notranslate"><span class="pre">Storage</span> <span class="pre">profile</span> <span class="pre">(kWh)</span></code></td>
+<td>Dummy profile of energy into (+)
+or out of (-) the battery</td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal notranslate"><span class="pre">Renewables</span> <span class="pre">energy</span> <span class="pre">supplied</span> <span class="pre">(kWh</span>
+<span class="pre">)</span></code></td>
+<td>Total renewable energy generation
+supplied to the system</td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal notranslate"><span class="pre">Hourly</span> <span class="pre">storage</span> <span class="pre">(kWh)</span></code></td>
+<td>Total energy currently stored in
+the battery</td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal notranslate"><span class="pre">Dumped</span> <span class="pre">energy</span> <span class="pre">(kWh)</span></code></td>
+<td>Energy dumped due to
+overgeneration when storage is
+full</td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal notranslate"><span class="pre">Battery</span> <span class="pre">health</span></code></td>
+<td>Measure of the relative health of
+the battery</td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal notranslate"><span class="pre">Households</span></code></td>
+<td>Number of households currently in
+the community</td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal notranslate"><span class="pre">Kerosene</span> <span class="pre">lamps</span></code></td>
+<td>Number of kerosene lamps used</td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal notranslate"><span class="pre">Kerosene</span> <span class="pre">mitigation</span></code></td>
+<td>Number of kerosene lamps
+mitigated through power
+availability</td>
+</tr>
+</tbody>
+</table>
+<p>The majority of these variables describe the energy flows within the
+system, the sources that they come from and the amount of load energy
+that is being met. Others describe a binary characteristic of whether or
+not an hour experiences a blackout (defined as any shortfall in service
+availability during that hour) or if a diesel generator is being used,
+and others (such as the number of households, kerosene usage and
+mitigation, and storage profile) are used either in the computation of
+this function or later functions that rely on this output.</p>
+<p>Let’s now take a look at the other output of
+<code class="docutils literal notranslate"><span class="pre">Energy_System().simulation(...)</span></code>, which we will define as a new
+variable called <code class="docutils literal notranslate"><span class="pre">example_system_description</span></code>:</p>
+<div class="code ipython3 highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">example_simulation_description</span> <span class="o">=</span> <span class="n">example_simulation</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+<span class="n">example_simulation_description</span><span class="o">.</span><span class="n">head</span><span class="p">()</span>
+</pre></div>
+</div>
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>Start year</th>
+      <th>End year</th>
+      <th>Initial PV size</th>
+      <th>Initial storage size</th>
+      <th>Final PV size</th>
+      <th>Final storage size</th>
+      <th>Diesel capacity</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>System details</th>
+      <td>0.0</td>
+      <td>1.0</td>
+      <td>5.0</td>
+      <td>20.0</td>
+      <td>4.95</td>
+      <td>19.229097</td>
+      <td>4</td>
+    </tr>
+  </tbody>
+</table>
+</div><div class="line-block">
+<div class="line"><br /></div>
+</div>
+<p>This variable provides details of the system that was simulated,
+including several of the input variables such as the time period being
+investigated and the solar and storage capacities we used. It also
+describes three new variables: <code class="docutils literal notranslate"><span class="pre">Final</span> <span class="pre">PV</span> <span class="pre">size</span></code> and
+<code class="docutils literal notranslate"><span class="pre">Final</span> <span class="pre">storage</span> <span class="pre">size</span></code> describe the relative capacities of the solar and
+battery components at the end of the simulation period after accounting
+for degradation, and <code class="docutils literal notranslate"><span class="pre">Diesel</span> <span class="pre">capacity</span></code> is the minimum diesel generator
+capacity (in kW) necessary to supply power as a backup system.</p>
+<p>The outputs of this variable are primarily used as inputs for later
+functions, particularly those that deal with optimisation as it is
+necessary to know the status of an earlier system when considering
+periodic improvements over time.</p>
+</div>
+<div class="section" id="saving-simulation-results-and-opening-saved-files">
+<h3>Saving simulation results and opening saved files<a class="headerlink" href="#saving-simulation-results-and-opening-saved-files" title="Permalink to this headline">¶</a></h3>
+<p>Saving simulation outputs as variables allows us to explore them in more
+detail but, once the session is closed, these variables are deleted and
+the data is lost - meaning that the same simulation would need to be
+performed again in order to investigate the same scenario. As the
+simulation function relies on data previously stored elsewhere, as long
+as the input conditions are unchanged then the same result will be
+generated, but this is not convenient in the long term.</p>
+<p>CLOVER provides a function to save the output of simulations as CSV
+files, storing the data much more conveniently. To save an output
+(<code class="docutils literal notranslate"><span class="pre">simulation_name</span></code>) we need to have first stored it as a variable, and
+choose a filename (<code class="docutils literal notranslate"><span class="pre">filename</span></code>) to store it (note that the <code class="docutils literal notranslate"><span class="pre">filename</span></code>
+variable in this function must be a string). In our case
+<code class="docutils literal notranslate"><span class="pre">simulation_name</span> <span class="pre">=</span> <span class="pre">example_simulation_performance</span></code>, and we choose
+<code class="docutils literal notranslate"><span class="pre">file_name</span> <span class="pre">=</span> <span class="pre">'my_saved_simulation'</span></code>. <strong>To save the simulation results
+we run the function</strong>:</p>
+<p><code class="docutils literal notranslate"><span class="pre">Energy_System().save_simulation(simulation_name</span> <span class="pre">=</span> <span class="pre">example_simulation_performance,</span> <span class="pre">filename</span> <span class="pre">=</span> <span class="pre">'my_saved_simulation')</span></code></p>
+<p>This function creates a new CSV file in the <em>Saved simulations</em> folder
+in the <em>Simulation</em> folder in your location folder titled
+<code class="docutils literal notranslate"><span class="pre">my_saved_simulation.csv</span></code>. If the <code class="docutils literal notranslate"><span class="pre">filename</span></code> variable is left blank,
+the title of the CSV will default to the time when the save operation
+was performed. <strong>Be aware that running this function with a filename
+that already exists will overwrite the existing file</strong>. Notice as well
+that we used <code class="docutils literal notranslate"><span class="pre">example_simulation_performance</span></code> as the variable to be
+saved, rather than the two-component output <code class="docutils literal notranslate"><span class="pre">example_simulation</span></code>:
+performing this function with the latter will result in an error.</p>
+<p>To open a saved file, we use the name of the CSV file to open the
+correct result, for example:</p>
+<p><code class="docutils literal notranslate"><span class="pre">opened_simulation</span> <span class="pre">=</span> <span class="pre">Energy_System().open_simulation(filename</span> <span class="pre">=</span> <span class="pre">'my_saved_simulation')</span></code></p>
+<p>This will open the <code class="docutils literal notranslate"><span class="pre">my_saved_simulation.csv</span></code> file and record the data
+as a new variable, <code class="docutils literal notranslate"><span class="pre">opened_simulation</span></code>, which will be in the same
+format as the original saved variable
+<code class="docutils literal notranslate"><span class="pre">example_simulation_performance</span></code>.</p>
+</div>
+</div>
+<div class="section" id="troubleshooting">
+<h2>Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permalink to this headline">¶</a></h2>
+<p>Most of the <em>Energy System</em> functionality is contained within the
+<code class="docutils literal notranslate"><span class="pre">Energy_System().simulation(...)</span></code> function and so potential issues are
+most likely to come either from how the module gathers data from other
+parts of CLOVER:</p>
+<ul class="simple">
+<li>Ensure that the <code class="docutils literal notranslate"><span class="pre">self.location</span></code> variable is correct in all of the modules that <em>Energy_System</em> imports</li>
+<li>Check that your <code class="docutils literal notranslate"><span class="pre">Scenario</span> <span class="pre">inputs</span></code> CSV is completed with the scenario you want to investigate, and any changes are saved in the CSV file before running another simulation</li>
+<li>Ensure that you use the correct <code class="docutils literal notranslate"><span class="pre">filename</span></code> when saving and opening previous simulations</li>
+<li>When running simulations, remember to save the output of <code class="docutils literal notranslate"><span class="pre">Energy_System().simulation(...)</span></code> as a variable</li>
+</ul>
+</div>
+<div class="section" id="extension-and-visualisation">
+<h2>Extension and visualisation<a class="headerlink" href="#extension-and-visualisation" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="exploring-the-performance-of-the-system">
+<h3>Exploring the performance of the system<a class="headerlink" href="#exploring-the-performance-of-the-system" title="Permalink to this headline">¶</a></h3>
+<p>We can use the <code class="docutils literal notranslate"><span class="pre">example_simulation_performance</span></code> variable to
+investigate the performance of the system. Some variables make more
+sense to look at their average over the simulation period:</p>
+<div class="code ipython3 highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">example_simulation_performance_averages</span> <span class="o">=</span> <span class="n">example_simulation_performance</span><span class="p">[[</span><span class="s1">&#39;Blackouts&#39;</span><span class="p">,</span><span class="s1">&#39;Diesel times&#39;</span><span class="p">]]</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">example_simulation_performance_averages</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Blackouts</span>       <span class="mf">0.100</span>
+<span class="n">Diesel</span> <span class="n">times</span>    <span class="mf">0.104</span>
+<span class="n">dtype</span><span class="p">:</span> <span class="n">float64</span>
+</pre></div>
+</div>
+<p>Here we can see that the average for <code class="docutils literal notranslate"><span class="pre">Blackouts</span></code> is <code class="docutils literal notranslate"><span class="pre">0.100</span></code> meaning
+that power is unavailable for 10% of the time, or equivalently the
+system has power 90% of the time. We could have expected this from our
+earlier condition in the <code class="docutils literal notranslate"><span class="pre">Scenario</span> <span class="pre">inputs</span></code> CSV which set
+<code class="docutils literal notranslate"><span class="pre">Diesel</span> <span class="pre">backup</span> <span class="pre">threshold</span> <span class="pre">=</span> <span class="pre">0.1</span></code>, forcing the diesel backup generator
+to be used to provide this level of reliability. In this case the
+average of <code class="docutils literal notranslate"><span class="pre">Diesel</span> <span class="pre">times</span></code> is <code class="docutils literal notranslate"><span class="pre">0.104</span></code>, meaning that the generator is
+switched on for 10.4% of the time in order to provide the desired level
+of reliability.</p>
+<p>Other variables make more sense to look at their sum, so here we look at
+their performance over the year but then presented as a daily average:</p>
+<div class="code ipython3 highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">example_simulation_performance_sums</span> <span class="o">=</span> <span class="n">example_simulation_performance</span><span class="p">[[</span>
+    <span class="s1">&#39;Total energy used (kWh)&#39;</span><span class="p">,</span><span class="s1">&#39;Unmet energy (kWh)&#39;</span><span class="p">,</span><span class="s1">&#39;Renewables energy used (kWh)&#39;</span><span class="p">,</span><span class="s1">&#39;Storage energy supplied (kWh)&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;Grid energy (kWh)&#39;</span><span class="p">,</span><span class="s1">&#39;Diesel energy (kWh)&#39;</span><span class="p">,</span><span class="s1">&#39;Renewables energy supplied (kWh)&#39;</span><span class="p">,</span><span class="s1">&#39;Dumped energy (kWh)&#39;</span>
+    <span class="p">]]</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span><span class="o">/</span><span class="mf">365.0</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">example_simulation_performance_sums</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="mi">3</span><span class="p">))</span>
+</pre></div>
+</div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Total</span> <span class="n">energy</span> <span class="n">used</span> <span class="p">(</span><span class="n">kWh</span><span class="p">)</span>             <span class="mf">30.465</span>
+<span class="n">Unmet</span> <span class="n">energy</span> <span class="p">(</span><span class="n">kWh</span><span class="p">)</span>                   <span class="mf">0.909</span>
+<span class="n">Renewables</span> <span class="n">energy</span> <span class="n">used</span> <span class="p">(</span><span class="n">kWh</span><span class="p">)</span>        <span class="mf">11.940</span>
+<span class="n">Storage</span> <span class="n">energy</span> <span class="n">supplied</span> <span class="p">(</span><span class="n">kWh</span><span class="p">)</span>        <span class="mf">7.920</span>
+<span class="n">Grid</span> <span class="n">energy</span> <span class="p">(</span><span class="n">kWh</span><span class="p">)</span>                    <span class="mf">7.239</span>
+<span class="n">Diesel</span> <span class="n">energy</span> <span class="p">(</span><span class="n">kWh</span><span class="p">)</span>                  <span class="mf">3.366</span>
+<span class="n">Renewables</span> <span class="n">energy</span> <span class="n">supplied</span> <span class="p">(</span><span class="n">kWh</span><span class="p">)</span>    <span class="mf">22.656</span>
+<span class="n">Dumped</span> <span class="n">energy</span> <span class="p">(</span><span class="n">kWh</span><span class="p">)</span>                  <span class="mf">1.468</span>
+<span class="n">dtype</span><span class="p">:</span> <span class="n">float64</span>
+</pre></div>
+</div>
+<p>These values show the average daily energy supply and usage in the
+system. Here we see that 30.5 kWh per day are consumed by the community,
+with a further 0.9 kWh going unmet on average. The supply is composed of
+renewable energy from our solar capacity directly (11.9 kWh) and from
+the battery storage (7.9 kWh), with the grid (7.2 kWh) and the backup
+diesel generator (3.4 kWh) also supplying energy. Our solar capacity
+generates an average of 45.3 kWh per day: 13.1 kWh is used directly,
+then the rest is stored in the batteries, an average of 1.5 kWh per day
+is dumped when the batteries are already full, and the remainder is lost
+owing to the transmission and conversion efficiencies in the system.</p>
+<p>Adding up the renewables energy used, storage energy, grid energy and
+diesel energy gives us the total energy used, and when we also add the
+unmet energy this gives us the amount of energy required to meet the
+load demanded by the community. This combined value is slightly higher
+than the value for load energy from the <em>Load</em> module because the former
+accounts for the losses in the system needed to entirely satisfy the
+latter.</p>
+</div>
+<div class="section" id="electricity-usage-on-an-average-day">
+<h3>Electricity usage on an average day<a class="headerlink" href="#electricity-usage-on-an-average-day" title="Permalink to this headline">¶</a></h3>
+<p>We can use these outputs to visualise the energy flows in the system on
+an average day:</p>
+<div class="code ipython3 highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="kn">import</span> <span class="nn">matplotlib</span> <span class="k">as</span> <span class="nn">mpl</span>
+
+<span class="n">total_used</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">example_simulation_performance</span><span class="p">[</span><span class="s1">&#39;Total energy used (kWh)&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,(</span><span class="mi">365</span><span class="p">,</span><span class="mi">24</span><span class="p">)),</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+<span class="n">renewable_energy</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">example_simulation_performance</span><span class="p">[</span><span class="s1">&#39;Renewables energy used (kWh)&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,(</span><span class="mi">365</span><span class="p">,</span><span class="mi">24</span><span class="p">)),</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+<span class="n">storage_energy</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">example_simulation_performance</span><span class="p">[</span><span class="s1">&#39;Storage energy supplied (kWh)&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,(</span><span class="mi">365</span><span class="p">,</span><span class="mi">24</span><span class="p">)),</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+<span class="n">grid_energy</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">example_simulation_performance</span><span class="p">[</span><span class="s1">&#39;Grid energy (kWh)&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,(</span><span class="mi">365</span><span class="p">,</span><span class="mi">24</span><span class="p">)),</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+<span class="n">diesel_energy</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">example_simulation_performance</span><span class="p">[</span><span class="s1">&#39;Diesel energy (kWh)&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,(</span><span class="mi">365</span><span class="p">,</span><span class="mi">24</span><span class="p">)),</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+<span class="n">unmet_energy</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">example_simulation_performance</span><span class="p">[</span><span class="s1">&#39;Unmet energy (kWh)&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,(</span><span class="mi">365</span><span class="p">,</span><span class="mi">24</span><span class="p">)),</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+<span class="n">renewables_supplied</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">example_simulation_performance</span><span class="p">[</span><span class="s1">&#39;Renewables energy supplied (kWh)&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,(</span><span class="mi">365</span><span class="p">,</span><span class="mi">24</span><span class="p">)),</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">total_used</span><span class="p">,</span> <span class="n">label</span> <span class="o">=</span> <span class="s1">&#39;Total used&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">renewable_energy</span><span class="p">,</span> <span class="n">label</span> <span class="o">=</span> <span class="s1">&#39;Solar used directly&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">storage_energy</span><span class="p">,</span> <span class="n">label</span> <span class="o">=</span> <span class="s1">&#39;Storage&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">grid_energy</span><span class="p">,</span> <span class="n">label</span> <span class="o">=</span> <span class="s1">&#39;Grid&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">diesel_energy</span><span class="p">,</span> <span class="n">label</span> <span class="o">=</span> <span class="s1">&#39;Diesel&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">unmet_energy</span><span class="p">,</span> <span class="n">label</span> <span class="o">=</span> <span class="s1">&#39;Unmet&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">renewables_supplied</span><span class="p">,</span> <span class="n">label</span> <span class="o">=</span> <span class="s1">&#39;Solar generated&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xlim</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">23</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">ylim</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">5</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xticks</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">24</span><span class="p">,</span><span class="mi">1</span><span class="p">))</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">yticks</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">6</span><span class="p">,</span><span class="mi">1</span><span class="p">))</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s1">&#39;Hour of day&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s1">&#39;Average energy (kWh per hour)&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s1">&#39;Energy supply and demand on an average day&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+<img alt="_images/output_19_0.png" src="_images/output_19_0.png" />
+<p>Here we can see that, on average, the solar generation in this system
+exceeds the demand during the middle of the day, resulting in the total
+energy used by the community being almost entirely satisfied by solar
+energy. In the evening, when the load demanded by the community
+increases and the solar generation decreases, the energy is instead
+supplied by a combination of battery storage, the grid network, and the
+diesel generator which continue to be used throughout the night.</p>
+<p>It is important to note that the values shown here are for an “average”
+day and likely not reflective of any single day. Aside from the
+variations in solar generation and the load demanded, it is far more
+likely that in any given hour only one or two energy sources would be
+used at a time. By considering all of the days in the simulation we have
+artificially smoothed the data to present the averages.</p>
+<p>Let’s instead look at the first day of data for the simulation period:</p>
+<div class="code ipython3 highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">total_used</span> <span class="o">=</span> <span class="n">example_simulation_performance</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">24</span><span class="p">][</span><span class="s1">&#39;Total energy used (kWh)&#39;</span><span class="p">]</span>
+<span class="n">renewable_energy</span> <span class="o">=</span> <span class="n">example_simulation_performance</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">24</span><span class="p">][</span><span class="s1">&#39;Renewables energy used (kWh)&#39;</span><span class="p">]</span>
+<span class="n">storage_energy</span> <span class="o">=</span> <span class="n">example_simulation_performance</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">24</span><span class="p">][</span><span class="s1">&#39;Storage energy supplied (kWh)&#39;</span><span class="p">]</span>
+<span class="n">grid_energy</span> <span class="o">=</span> <span class="n">example_simulation_performance</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">24</span><span class="p">][</span><span class="s1">&#39;Grid energy (kWh)&#39;</span><span class="p">]</span>
+<span class="n">diesel_energy</span> <span class="o">=</span> <span class="n">example_simulation_performance</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">24</span><span class="p">][</span><span class="s1">&#39;Diesel energy (kWh)&#39;</span><span class="p">]</span>
+<span class="n">unmet_energy</span> <span class="o">=</span> <span class="n">example_simulation_performance</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">24</span><span class="p">][</span><span class="s1">&#39;Unmet energy (kWh)&#39;</span><span class="p">]</span>
+<span class="n">renewables_supplied</span> <span class="o">=</span> <span class="n">example_simulation_performance</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">24</span><span class="p">][</span><span class="s1">&#39;Renewables energy supplied (kWh)&#39;</span><span class="p">]</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">total_used</span><span class="p">,</span> <span class="n">label</span> <span class="o">=</span> <span class="s1">&#39;Total used&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">renewable_energy</span><span class="p">,</span> <span class="n">label</span> <span class="o">=</span> <span class="s1">&#39;Solar used directly&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">storage_energy</span><span class="p">,</span> <span class="n">label</span> <span class="o">=</span> <span class="s1">&#39;Storage&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">grid_energy</span><span class="p">,</span> <span class="n">label</span> <span class="o">=</span> <span class="s1">&#39;Grid&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">diesel_energy</span><span class="p">,</span> <span class="n">label</span> <span class="o">=</span> <span class="s1">&#39;Diesel&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">unmet_energy</span><span class="p">,</span> <span class="n">label</span> <span class="o">=</span> <span class="s1">&#39;Unmet&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">renewables_supplied</span><span class="p">,</span> <span class="n">label</span> <span class="o">=</span> <span class="s1">&#39;Solar generated&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xlim</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">23</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">ylim</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">5</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xticks</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">24</span><span class="p">,</span><span class="mi">1</span><span class="p">))</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">yticks</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">6</span><span class="p">,</span><span class="mi">1</span><span class="p">))</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s1">&#39;Hour of day&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s1">&#39;Energy (kWh per hour)&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s1">&#39;Energy supply and demand on a specific day&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+<img alt="_images/output_21_0.png" src="_images/output_21_0.png" />
+<p>As we can see, the data is much spikier as it displays the variation
+between consecutive hours, rather than smoother averages. We can see how
+once again solar meets most of the demand during the day but during the
+evening and night the energy is supplied by either battery storage or,
+if available, the national grid - whose sporadic availability results in
+a seemingly peaked supply profile.</p>
+</div>
+<div class="section" id="electricity-availability">
+<h3>Electricity availability<a class="headerlink" href="#electricity-availability" title="Permalink to this headline">¶</a></h3>
+<p>We can also use the outputs of <code class="docutils literal notranslate"><span class="pre">example_simulation_performance</span></code> to
+investigate the availability of different electricity services and the
+times at which different energy sources are used, including the overall
+measure of service availability recorded in the <code class="docutils literal notranslate"><span class="pre">Blackouts</span></code> variable.</p>
+<p>Let’s once again consider an “average” day to visualise the
+availability:</p>
+<div class="code ipython3 highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">blackouts</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">example_simulation_performance</span><span class="p">[</span><span class="s1">&#39;Blackouts&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,(</span><span class="mi">365</span><span class="p">,</span><span class="mi">24</span><span class="p">)),</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+<span class="n">solar_usage</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">example_simulation_performance</span><span class="p">[</span><span class="s1">&#39;Renewables energy used (kWh)&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="o">&gt;</span><span class="mi">0</span><span class="p">,(</span><span class="mi">365</span><span class="p">,</span><span class="mi">24</span><span class="p">)),</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+<span class="n">diesel_times</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">example_simulation_performance</span><span class="p">[</span><span class="s1">&#39;Diesel times&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,(</span><span class="mi">365</span><span class="p">,</span><span class="mi">24</span><span class="p">)),</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+<span class="n">grid_usage</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">example_simulation_performance</span><span class="p">[</span><span class="s1">&#39;Grid energy (kWh)&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="o">&gt;</span><span class="mi">0</span><span class="p">,(</span><span class="mi">365</span><span class="p">,</span><span class="mi">24</span><span class="p">)),</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+<span class="n">storage_usage</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">example_simulation_performance</span><span class="p">[</span><span class="s1">&#39;Storage energy supplied (kWh)&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="o">&gt;</span><span class="mi">0</span><span class="p">,(</span><span class="mi">365</span><span class="p">,</span><span class="mi">24</span><span class="p">)),</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">blackouts</span><span class="p">,</span> <span class="n">label</span> <span class="o">=</span> <span class="s1">&#39;Blackouts&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">solar_usage</span><span class="p">,</span> <span class="n">label</span> <span class="o">=</span> <span class="s1">&#39;Solar&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">storage_usage</span><span class="p">,</span> <span class="n">label</span> <span class="o">=</span> <span class="s1">&#39;Storage&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">grid_usage</span><span class="p">,</span> <span class="n">label</span> <span class="o">=</span> <span class="s1">&#39;Grid&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">diesel_times</span><span class="p">,</span> <span class="n">label</span> <span class="o">=</span> <span class="s1">&#39;Diesel&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xlim</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">23</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">ylim</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xticks</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">24</span><span class="p">,</span><span class="mi">1</span><span class="p">))</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">yticks</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mf">1.1</span><span class="p">,</span><span class="mf">0.25</span><span class="p">))</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s1">&#39;Hour of day&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s1">&#39;Probability&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s1">&#39;Energy availability on an average day&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+<img alt="_images/output_23_0.png" src="_images/output_23_0.png" />
+<p>Here we can see that the blackout periods are not consistent throughout
+the day: although the average is 10% of the time they are much more
+frequent in the early morning, likely because the battery storage is
+depleted and the sun has not yet risen. As expected solar energy is
+always available (at least somewhat) during the day and never at night.
+Battery storage is used most of the time in the evening and more rarely
+throughout the night, when grid power is more commonly used. The diesel
+generator is also sometimes used during the evening and early hours of
+the morning, but rarely throughout the night.</p>
+</div>
+<div class="section" id="visualising-seasonality">
+<h3>Visualising seasonality<a class="headerlink" href="#visualising-seasonality" title="Permalink to this headline">¶</a></h3>
+<p>CLOVER allows us to investigate both the magnitude and timings of
+electricity supply and demand in the system at several different
+timescales. Given that the demand profiles and resource availability
+change throughout the year, it can be useful to visualise the variation
+at an annual timescale to identify any seasonal variation:</p>
+<div class="code ipython3 highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">seaborn</span> <span class="k">as</span> <span class="nn">sns</span>
+
+<span class="n">total_used</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">example_simulation_performance</span><span class="p">[</span><span class="s1">&#39;Total energy used (kWh)&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,(</span><span class="mi">365</span><span class="p">,</span><span class="mi">24</span><span class="p">))</span>
+<span class="n">renewable_energy</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">example_simulation_performance</span><span class="p">[</span><span class="s1">&#39;Renewables energy used (kWh)&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,(</span><span class="mi">365</span><span class="p">,</span><span class="mi">24</span><span class="p">))</span>
+<span class="n">storage_energy</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">example_simulation_performance</span><span class="p">[</span><span class="s1">&#39;Storage energy supplied (kWh)&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,(</span><span class="mi">365</span><span class="p">,</span><span class="mi">24</span><span class="p">))</span>
+<span class="n">grid_energy</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">example_simulation_performance</span><span class="p">[</span><span class="s1">&#39;Grid energy (kWh)&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,(</span><span class="mi">365</span><span class="p">,</span><span class="mi">24</span><span class="p">))</span>
+<span class="n">diesel_energy</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">example_simulation_performance</span><span class="p">[</span><span class="s1">&#39;Diesel energy (kWh)&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,(</span><span class="mi">365</span><span class="p">,</span><span class="mi">24</span><span class="p">))</span>
+<span class="n">unmet_energy</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">example_simulation_performance</span><span class="p">[</span><span class="s1">&#39;Unmet energy (kWh)&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,(</span><span class="mi">365</span><span class="p">,</span><span class="mi">24</span><span class="p">))</span>
+<span class="n">renewables_supplied</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">example_simulation_performance</span><span class="p">[</span><span class="s1">&#39;Renewables energy supplied (kWh)&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,(</span><span class="mi">365</span><span class="p">,</span><span class="mi">24</span><span class="p">))</span>
+
+<span class="n">fig</span><span class="p">,([</span><span class="n">ax1</span><span class="p">,</span><span class="n">ax2</span><span class="p">],[</span><span class="n">ax3</span><span class="p">,</span><span class="n">ax4</span><span class="p">])</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="mi">2</span><span class="p">)</span><span class="c1">#,sharex=True, sharey=True)</span>
+<span class="n">g1</span> <span class="o">=</span> <span class="n">sns</span><span class="o">.</span><span class="n">heatmap</span><span class="p">(</span><span class="n">renewable_energy</span><span class="p">,</span>
+                <span class="n">vmin</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">vmax</span> <span class="o">=</span> <span class="mf">4.0</span><span class="p">,</span>
+                <span class="n">cmap</span> <span class="o">=</span> <span class="s1">&#39;Reds&#39;</span><span class="p">,</span> <span class="n">cbar</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">ax1</span><span class="p">)</span>
+<span class="n">ax1</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">xticks</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">25</span><span class="p">,</span><span class="mi">6</span><span class="p">),</span> <span class="n">xticklabels</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">25</span><span class="p">,</span><span class="mi">6</span><span class="p">),</span>
+      <span class="n">yticks</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">365</span><span class="p">,</span><span class="mi">60</span><span class="p">),</span> <span class="n">yticklabels</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">365</span><span class="p">,</span><span class="mi">60</span><span class="p">),</span>
+      <span class="n">xlabel</span> <span class="o">=</span> <span class="s1">&#39;Hour of day&#39;</span><span class="p">,</span> <span class="n">ylabel</span> <span class="o">=</span> <span class="s1">&#39;Day of year&#39;</span><span class="p">,</span>
+      <span class="n">title</span> <span class="o">=</span> <span class="s1">&#39;Solar&#39;</span><span class="p">)</span>
+<span class="n">g2</span> <span class="o">=</span> <span class="n">sns</span><span class="o">.</span><span class="n">heatmap</span><span class="p">(</span><span class="n">storage_energy</span><span class="p">,</span>
+                <span class="n">vmin</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">vmax</span> <span class="o">=</span> <span class="mf">4.0</span><span class="p">,</span>
+                <span class="n">cmap</span> <span class="o">=</span> <span class="s1">&#39;Greens&#39;</span><span class="p">,</span> <span class="n">cbar</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">ax2</span><span class="p">)</span>
+<span class="n">ax2</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">xticks</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">25</span><span class="p">,</span><span class="mi">6</span><span class="p">),</span> <span class="n">xticklabels</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">25</span><span class="p">,</span><span class="mi">6</span><span class="p">),</span>
+      <span class="n">yticks</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">365</span><span class="p">,</span><span class="mi">60</span><span class="p">),</span> <span class="n">yticklabels</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">365</span><span class="p">,</span><span class="mi">60</span><span class="p">),</span>
+      <span class="n">xlabel</span> <span class="o">=</span> <span class="s1">&#39;Hour of day&#39;</span><span class="p">,</span> <span class="n">ylabel</span> <span class="o">=</span> <span class="s1">&#39;Day of year&#39;</span><span class="p">,</span>
+      <span class="n">title</span> <span class="o">=</span> <span class="s1">&#39;Storage&#39;</span><span class="p">)</span>
+<span class="n">g3</span> <span class="o">=</span> <span class="n">sns</span><span class="o">.</span><span class="n">heatmap</span><span class="p">(</span><span class="n">grid_energy</span><span class="p">,</span>
+                <span class="n">vmin</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">vmax</span> <span class="o">=</span> <span class="mf">4.0</span><span class="p">,</span>
+                <span class="n">cmap</span> <span class="o">=</span> <span class="s1">&#39;Blues&#39;</span><span class="p">,</span> <span class="n">cbar</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">ax3</span><span class="p">)</span>
+<span class="n">ax3</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">xticks</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">25</span><span class="p">,</span><span class="mi">6</span><span class="p">),</span> <span class="n">xticklabels</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">25</span><span class="p">,</span><span class="mi">6</span><span class="p">),</span>
+      <span class="n">yticks</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">365</span><span class="p">,</span><span class="mi">60</span><span class="p">),</span> <span class="n">yticklabels</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">365</span><span class="p">,</span><span class="mi">60</span><span class="p">),</span>
+      <span class="n">xlabel</span> <span class="o">=</span> <span class="s1">&#39;Hour of day&#39;</span><span class="p">,</span> <span class="n">ylabel</span> <span class="o">=</span> <span class="s1">&#39;Day of year&#39;</span><span class="p">,</span>
+      <span class="n">title</span> <span class="o">=</span> <span class="s1">&#39;Grid&#39;</span><span class="p">)</span>
+<span class="n">g4</span> <span class="o">=</span> <span class="n">sns</span><span class="o">.</span><span class="n">heatmap</span><span class="p">(</span><span class="n">diesel_energy</span><span class="p">,</span>
+                <span class="n">vmin</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">vmax</span> <span class="o">=</span> <span class="mf">4.0</span><span class="p">,</span>
+                <span class="n">cmap</span> <span class="o">=</span> <span class="s1">&#39;Greys&#39;</span><span class="p">,</span> <span class="n">cbar</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">ax4</span><span class="p">)</span>
+<span class="n">ax4</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">xticks</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">25</span><span class="p">,</span><span class="mi">6</span><span class="p">),</span> <span class="n">xticklabels</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">25</span><span class="p">,</span><span class="mi">6</span><span class="p">),</span>
+      <span class="n">yticks</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">365</span><span class="p">,</span><span class="mi">60</span><span class="p">),</span> <span class="n">yticklabels</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">365</span><span class="p">,</span><span class="mi">60</span><span class="p">),</span>
+      <span class="n">xlabel</span> <span class="o">=</span> <span class="s1">&#39;Hour of day&#39;</span><span class="p">,</span> <span class="n">ylabel</span> <span class="o">=</span> <span class="s1">&#39;Day of year&#39;</span><span class="p">,</span>
+      <span class="n">title</span> <span class="o">=</span> <span class="s1">&#39;Diesel&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
+<span class="n">fig</span><span class="o">.</span><span class="n">suptitle</span><span class="p">(</span><span class="s1">&#39;Electricity from different sources (kWh)&#39;</span><span class="p">)</span>
+<span class="n">fig</span><span class="o">.</span><span class="n">subplots_adjust</span><span class="p">(</span><span class="n">top</span><span class="o">=</span><span class="mf">0.87</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xticks</span><span class="p">(</span><span class="n">rotation</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+<img alt="_images/output_25_0.png" src="_images/output_25_0.png" />
+<p>From this we can see that, as expected, solar energy provides most of
+the energy during the daytime but has periods of reduced supply in the
+third quarter of the year. Battery storage provides electricity mainly
+during the evening just after the sun goes down, with the time of sunset
+visibly later in the day during the middle of the year, whilst the grid
+provides power both during the evening and early hours of the morning.
+The diesel generator has a more seasonally varying profile: it is used
+less often in the summer months, when solar generation is higher and
+lasts for longer during the day, pushing back the times when storage is
+required and reducing the need for diesel generation.</p>
+</div>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+      
+        <a href="load.html" class="btn btn-neutral float-left" title="Load profiles" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2020, Philip Sandwell
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>
