@@ -17,6 +17,21 @@ investigating, although throughout this guide we will use Bahraich as
 the example location as all of the input data is provided in the CLOVER
 download.
 
+Dependencies
+~~~~~~~~~~~~
+
+CLOVER relies on the following packages so please ensure you have them
+installed:
+
+- pandas
+- numpy
+- scipy
+- math
+- requests
+- json
+- random
+- datetime
+
 Updating the file path and location
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
