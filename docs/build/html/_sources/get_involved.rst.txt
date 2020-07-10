@@ -37,8 +37,9 @@ If you would like to be involved with the development of CLOVER, have
 suggestions for improvements to its functionality, or identify (or
 solve) any bugs, please `get in
 touch <mailto:philip.sandwell@gmail.com>`__ or submit pull requests on
-GitHub. CLOVER is entirely open-source and so users are encouraged to
+GitHub.
+
+CLOVER is entirely open-source and so users are encouraged to
 use the code, make modifications, and develop improvements to suit their
 unique purposes under the share-and-share-alike conditions of the
 license. We are always happy to hear about how CLOVER has been used!
-
