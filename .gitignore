@@ -5,7 +5,6 @@
 .vscode
 # Ignore internal Python directories
 **/__pycache__
-**/pyyaml
 # Ignore output files
 *output_*
 **/output_files
