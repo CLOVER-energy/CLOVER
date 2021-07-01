@@ -24,7 +24,7 @@ from Conversion import Conversion
 
 class GHGs():
     def __init__(self):
-        self.location = ‘Bahraich’
+        self.location = "Bahraich"
         self.CLOVER_filepath = '/***YOUR LOCAL FILE PATH***/CLOVER 4.0'
         self.location_filepath = self.CLOVER_filepath + '/Locations/' + self.location
         self.location_inputs = pd.read_csv(self.location_filepath + '/Location Data/Location inputs.csv',header=None,index_col=0)[1]
