@@ -1,0 +1,2 @@
+requests==2.21.0
+scipy==1.7.0
