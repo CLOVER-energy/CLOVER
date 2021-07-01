@@ -7,7 +7,7 @@
 **/__pycache__
 # Ignore output files
 *output_*
-**/output_files
+**/output*
 # HPC log files
 *e[0-9]*
 *o[0-9]*
