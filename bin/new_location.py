@@ -137,9 +137,6 @@ def main(args: List[Any]) -> None:
         raise
 
     # Process the new-location data into a usable format.
-    import pdb
-
-    pdb.set_trace()
     new_location_data[0][DIRECTORY] = new_location_data[0][DIRECTORY].format(
         location=parsed_args.location
     )
