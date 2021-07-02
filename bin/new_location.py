@@ -20,10 +20,10 @@ import os
 import sys
 
 
-import yaml
-
-
 from typing import Any, List
+
+
+import yaml
 
 
 # The keyword used to denote the contents of a file or folder.
@@ -56,8 +56,8 @@ def _create_file(contents: str, directory: str, filename: str) -> None:
             "The directory {} could not be found.".format(directory)
         )
 
-    with open(os.path.join(directory, filename), "w") as f:
-        f.write(contents)
+    with open(os.path.join(directory, filename), "w") as new_file:
+        new_file.write(contents)
 
 
 def _create_folder_and_contents(
@@ -127,8 +127,8 @@ def main(args: List[Any]) -> None:
 
     parsed_args = _parse_args(args)
     try:
-        with open(NEW_LOCATION_DATA_FILE, "r") as f:
-            new_location_data = yaml.safe_load(f)
+        with open(NEW_LOCATION_DATA_FILE, "r") as new_location_data_file:
+            new_location_data = yaml.safe_load(new_location_data_file)
     except FileNotFoundError:
         print(
             "ERROR: The new-location data file could not be found. "
