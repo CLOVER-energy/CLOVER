@@ -1,0 +1,157 @@
+---
+################################################################################
+# new_location.yaml - Data for generating a new location.
+#
+# Author: Ben Winchester
+# Date created: 02/07/2021
+# License: Open source
+################################################################################
+
+# Entries consist of directory-and-file information used when creating a new
+# location.
+#
+# An example entry is provided below for a single file contained withinm a
+# directory:
+# - directory: <directory name>
+#   contents:
+#   - file: <file contained within the directory>
+#     contents: <contents of the file>
+#
+
+- directory: {location}
+  contents:
+      - directory: Generation
+        contents:
+            - directory: Diesel
+              contents:
+                  - file: "Diesel inputs.csv"
+                    contents: >-
+                        Diesel minimum load,0.35,Minimum capacity factor
+                        (0.0-1.0)
+            - directory: Grid
+              contents:
+                  - file: "Grid inputs.csv"
+                    contents: "23,0,1,0.7,0.33"
+            - directory: PV
+              contents:
+                  - file: "PV generation inputs.csv"
+                    contents: "lifetime,20,years"
+      - directory: Impact
+        contents:
+            - file: "Finance inputs.csv"
+              contents: "General O&M,500,$ p.a."
+            - file: "GHG inputs.csv"
+              contents: "General O&M GHGs,200,kgCO2 p.a."
+            - directory: Load
+              contents:
+                  - directory: "Device load"
+                    contents:
+                        - file: .gitinclude
+                          contents: ""
+                  - directory: "Device ownership"
+                    contents:
+                        - file: .gitinclude
+                          contents: ""
+                  - file: Devices.csv
+                    contents: "streetlight,Y,25,0.2,0.2,0,0,Public"
+                  - directory: "Devices in use"
+                    contents:
+                        - file: .gitinclude
+                          contents: ""
+                  - directory: "Device utilisation"
+                    contents:
+                        - file: fan_times.csv
+                          contents: >-
+                              0.67,0.70,0.73,0.76,0.80,0.83,0.83,0.80,0.76,0.73,
+                              0.70,0.67
+                        - file: fridge_times.csv
+                          contents: >-
+                              0.67,0.70,0.73,0.76,0.80,0.83,0.83,0.80,0.76,0.73,
+                              0.70,0.67
+                        - file: kerosene_times.csv
+                          contents: >-
+                              0.30,0.30,0.30,0.30,0.30,0.30,0.30,0.30,0.30,0.30,
+                              0.30,0.30
+                        - file: laptop_times.csv
+                          contents: >-
+                              0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,
+                              0.00,0.00
+                        - file: light_times.csv
+                          contents: >-
+                              0.83,0.83,0.83,0.83,0.83,0.83,0.83,0.83,0.83,0.83,
+                              0.83,0.83
+                        - file: mill_times.csv
+                          contents: >-
+                              0.045,0.035,0.045,0.045,0.035,0.035,0.02,0.02,
+                              0.02,0.045,0.045,0.045
+                        - file: phone_times.csv
+                          contents: >-
+                              0.02003,0.01971,0.01912,0.01842,0.01794,0.01781,
+                              0.01799,0.01830,0.01860,0.01888,0.01933,0.01982
+                        - file: radio_times.csv
+                          contents: >-
+                              0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,
+                              0.00,0.00
+                        - file: SME_times.csv
+                          contents: >-
+                              0.008,0.006,0.008,0.008,0.006,0.006,0.006,0.006,
+                              0.006,0.008,0.008,0.008
+                        - file: streetlight_times.csv
+                          contents: "1,1,1,1,1,1,1,1,1,1,1,1"
+                        - file: tv_times.csv
+                          contents: >-
+                              0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,
+                              0.00,0.00
+                        - file: workshop_times.csv
+                          contents: >-
+                              0.008,0.006,0.008,0.008,0.006,0.006,0.006,0.006,
+                              0.006,0.008,0.008,0.008
+      - directory: "Location data"
+        contents:
+            - file: "Location inputs.csv"
+              contents: "token,YOUR_API_TOKEN_HERE,renewables.ninja API token"
+      - directory: Optimisation
+        contents:
+            - file: "Optimisation inputs.csv"
+              contents: >-
+                  Optimisation criterion,Cumulative system cost ($),
+                  Name of column from appraisal,
+            - directory: "Saved optimisations"
+              contents:
+                  - file: .gitinclude
+                    contents: ""
+      - directory: Scenario
+        contents:
+            - file: "Scenario inputs.csv"
+              contents: "Distribution network,DC,DC or AC distribution network"
+      - directory: Simulation
+        contents:
+            - file: .gitinclude
+              contents: ""
+      - directory: Simulation
+        contents:
+            - file: "Energy system inputs.csv"
+              contents: >-
+                  Battery maximum charge,0.9,State of charge (0.0-1.0)\n
+                  Battery minimum charge,0.4,State of charge (0.0-1.0)\n
+                  Battery leakage,0.004,Fractional leakage per hour\n
+                  Battery conversion in,0.95,Conversion efficiency (0.0-1.0)\n
+                  Battery conversion out,0.95,Conversion efficiency (0.0-1.0)\n
+                  Battery cycle lifetime,1500,Expected number of cycles over
+                  lifetime\n
+                  Battery lifetime loss,0.2,Fractional loss over lifetime
+                  (0.0-1.0)\n
+                  Battery C rate discharging,0.33,Discharge rate\n
+                  Battery C rate charging,0.33,Charge rate\n
+                  Transmission efficiency DC,0.95,Efficiency of DC distribution
+                  network\n
+                  Transmission efficiency AC,0.95,Efficiency of AC distribution
+                  network\n
+                  DC to AC conversion,0.95,Conversion efficiency (0.0-1.0)\n
+                  DC to DC conversion,0.95,Conversion efficiency (0.0-1.0)\n
+                  AC to DC conversion,0.8,Conversion efficiency (0.0-1.0)\n
+                  AC to AC conversion,0.98,Conversion efficiency (0.0-1.0)\n
+            - directory: "Saved simulations"
+              contents:
+                  - file: .gitinclue
+                    contents: ""
