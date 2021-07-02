@@ -1,4 +1,6 @@
 numpy>=1.20.1
 pandas>=1.2.3
+PyYAML>=5.4.1
 requests==2.21.0
 scipy==1.7.0
+yamllint>=1.15.0
