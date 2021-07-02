@@ -18,7 +18,7 @@
 #     contents: <contents of the file>
 #
 
-- directory: {location}
+- directory: "Locations/{location}"
   contents:
       - directory: Generation
         contents:
