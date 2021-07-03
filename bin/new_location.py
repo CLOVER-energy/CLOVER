@@ -16,6 +16,7 @@ existing location if asked for.
 
 
 import argparse
+import logging
 import os
 import shutil
 import sys
@@ -33,6 +34,10 @@ CONTENTS = "contents"
 DIRECTORY = "directory"
 # The keyword used to denote a file.
 FILE = "file"
+# The directory in which to save logs.
+LOGGER_DIRECTORY = "logs"
+# The name of the logger to use.
+LOGGER_NAME = "new_location"
 # The path to the new-location data file.
 NEW_LOCATION_DATA_FILE = os.path.join("src", "new_location.yaml")
 
@@ -91,10 +96,53 @@ def _create_folder_and_contents(
             continue
         if DIRECTORY in entry:
             _create_folder_and_contents(
-                entry[CONTENTS],
+                entry[CONTENTS] if CONTENTS in entry else [],
                 entry[DIRECTORY],
                 os.path.join(parent_directory, directory_name),
             )
+
+
+def _get_logger() -> logging.Logger:
+    """
+    Set-up and return a logger.
+
+    :return:
+        The logger for the component.
+
+    """
+
+    # Create a logger and logging directory.
+    logger = logging.getLogger(LOGGER_NAME)
+    logger.setLevel(logging.INFO)
+    os.makedirs(LOGGER_DIRECTORY, exist_ok=True)
+
+    # Create a formatter.
+    formatter = logging.Formatter(
+        "%(asctime)s: %(name)s: %(levelname)s: %(message)s",
+        datefmt="%d/%m/%Y %I:%M:%S %p",
+    )
+
+    # Create a console handler.
+    console_handler = logging.StreamHandler()
+    console_handler.setLevel(logging.ERROR)
+    console_handler.setFormatter(formatter)
+
+    # Delete the existing log if there is one already.
+    if os.path.isfile(os.path.join(LOGGER_DIRECTORY, f"{LOGGER_NAME}.log")):
+        os.remove(os.path.join(LOGGER_DIRECTORY, f"{LOGGER_NAME}.log"))
+
+    # Create a file handler.
+    file_handler = logging.FileHandler(
+        os.path.join(LOGGER_DIRECTORY, f"{LOGGER_NAME}.log")
+    )
+    file_handler.setLevel(logging.INFO)
+    file_handler.setFormatter(formatter)
+
+    # Add the file handler to the logger.
+    logger.addHandler(console_handler)
+    logger.addHandler(file_handler)
+
+    return logger
 
 
 def _parse_args(args: List[Any]) -> argparse.Namespace:
@@ -129,16 +177,21 @@ def main(args: List[Any]) -> None:
 
     """
 
+    logger = _get_logger()
+    logger.info("New location script called with arguments: %s", args)
     parsed_args = _parse_args(args)
+
+    # Process the new-location data.
     try:
         with open(NEW_LOCATION_DATA_FILE, "r") as new_location_data_file:
             new_location_data = yaml.safe_load(new_location_data_file)
     except FileNotFoundError:
-        print(
-            "ERROR: The new-location data file could not be found. "
+        logger.error(
+            "The new-location data file could not be found. "
             "Ensure that you run the new-locations script from the workspace root."
         )
         raise
+    logger.info("Data file successfully read.")
 
     # Process the new-location data into a usable format.
     new_location_directory = new_location_data[0][DIRECTORY].format(
@@ -146,20 +199,31 @@ def main(args: List[Any]) -> None:
     )
 
     # Generate files as per the hard-coded directory structure.
+    logger.info("Creating new-location folder for location %s.", parsed_args.location)
     _create_folder_and_contents(
         new_location_data[0][CONTENTS], new_location_directory, os.getcwd()
+    )
+    logger.info(
+        "New location folder for %s successfully created.", parsed_args.location
     )
 
     # Copy across files from the existing structure if they exist, otherwise, generate
     # them afresh.
     if parsed_args.from_existing is not None:
-
+        logger.info(
+            "Copying files across from existing location %s.", parsed_args.from_existing
+        )
         # Determine the existing location to copy files from and report an error if it
         # does not exist.
         existing_location_directory = new_location_data[0][DIRECTORY].format(
             location=parsed_args.from_existing
         )
         if not os.path.isdir(existing_location_directory):
+            logger.error(
+                "The new-locations script was called to create a location from an "
+                "existing location, but the existing location, %s, could not be found.",
+                parsed_args.from_existing,
+            )
             raise FileNotFoundError(
                 "The existing location, {}, could not be found.".format(
                     existing_location_directory
@@ -178,8 +242,21 @@ def main(args: List[Any]) -> None:
                         ),
                         os.path.join(directory, filename),
                     )
+                    logger.info(
+                        "File copied over from existing location: %s",
+                        os.path.join(
+                            os.path.relpath(directory, new_location_directory), filename
+                        ),
+                    )
                 except FileNotFoundError:
-                    pass
+                    logger.info(
+                        "File could not be copied over: %s",
+                        os.path.join(
+                            os.path.relpath(directory, new_location_directory), filename
+                        ),
+                    )
+            logger.info("File copying complete.")
+    logger.info("New-location script complete. Exiting.")
 
 
 if __name__ == "__main__":
