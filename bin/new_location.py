@@ -17,6 +17,7 @@ existing location if asked for.
 
 import argparse
 import os
+import shutil
 import sys
 
 
@@ -87,6 +88,7 @@ def _create_folder_and_contents(
                 os.path.join(parent_directory, directory_name),
                 entry[FILE],
             )
+            continue
         if DIRECTORY in entry:
             _create_folder_and_contents(
                 entry[CONTENTS],
@@ -103,7 +105,9 @@ def _parse_args(args: List[Any]) -> argparse.Namespace:
 
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("location", help="The name of the new location to be created.")
+    parser.add_argument(
+        "location", type=str, help="The name of the new location to be created."
+    )
     parser.add_argument(
         "--from-existing",
         type=str,
@@ -137,17 +141,45 @@ def main(args: List[Any]) -> None:
         raise
 
     # Process the new-location data into a usable format.
-    new_location_data[0][DIRECTORY] = new_location_data[0][DIRECTORY].format(
+    new_location_directory = new_location_data[0][DIRECTORY].format(
         location=parsed_args.location
     )
 
     # Generate files as per the hard-coded directory structure.
     _create_folder_and_contents(
-        new_location_data[0][CONTENTS], new_location_data[0][DIRECTORY], os.getcwd()
+        new_location_data[0][CONTENTS], new_location_directory, os.getcwd()
     )
 
     # Copy across files from the existing structure if they exist, otherwise, generate
     # them afresh.
+    if parsed_args.from_existing is not None:
+
+        # Determine the existing location to copy files from and report an error if it
+        # does not exist.
+        existing_location_directory = new_location_data[0][DIRECTORY].format(
+            location=parsed_args.from_existing
+        )
+        if not os.path.isdir(existing_location_directory):
+            raise FileNotFoundError(
+                "The existing location, {}, could not be found.".format(
+                    existing_location_directory
+                )
+            )
+
+        # Copy over any of the files as per the set up in the new location.
+        for directory, _, filenames in os.walk(new_location_directory):
+            for filename in filenames:
+                try:
+                    shutil.copy2(
+                        os.path.join(
+                            existing_location_directory,
+                            os.path.relpath(directory, new_location_directory),
+                            filename,
+                        ),
+                        os.path.join(directory, filename),
+                    )
+                except FileNotFoundError:
+                    pass
 
 
 if __name__ == "__main__":
