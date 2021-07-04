@@ -42,7 +42,9 @@ LOGGER_NAME = "new_location"
 NEW_LOCATION_DATA_FILE = os.path.join("src", "new_location.yaml")
 
 
-def _create_file(contents: str, directory: str, filename: str) -> None:
+def _create_file(
+    contents: str, directory: str, filename: str, logger: logging.Logger
+) -> None:
     """
     Creates a file within the directory specified with the contents passed in.
 
@@ -55,6 +57,9 @@ def _create_file(contents: str, directory: str, filename: str) -> None:
     :param filename:
         The name of the file to be created.
 
+    :param logger:
+        The logger to use for the run.
+
     """
 
     if not os.path.isdir(directory):
@@ -62,12 +67,27 @@ def _create_file(contents: str, directory: str, filename: str) -> None:
             "The directory {} could not be found.".format(directory)
         )
 
+    if os.path.isfile(os.path.join(directory, filename)):
+        logger.info(
+            "File already exists, skipping creation: {}".format(
+                os.path.join(directory, filename)
+            )
+        )
+        return
+
     with open(os.path.join(directory, filename), "w") as new_file:
         new_file.write(contents)
 
+    logger.info(
+        "File successfully created: {}".format(os.path.join(directory, filename))
+    )
+
 
 def _create_folder_and_contents(
-    contents: List[Any], directory_name: str, parent_directory: str
+    contents: List[Any],
+    directory_name: str,
+    logger: logging.Logger,
+    parent_directory: str,
 ) -> None:
     """
     Creates a folder and all files and folders contained within it.
@@ -77,6 +97,9 @@ def _create_folder_and_contents(
 
     :param directory_name:
         The name of the directory being created.
+
+    :param logger:
+        The logger to use for the run.
 
     :param parent_directory:
         The directory in which this directory should be created.
@@ -92,12 +115,14 @@ def _create_folder_and_contents(
                 entry[CONTENTS],
                 os.path.join(parent_directory, directory_name),
                 entry[FILE],
+                logger,
             )
             continue
         if DIRECTORY in entry:
             _create_folder_and_contents(
                 entry[CONTENTS] if CONTENTS in entry else [],
                 entry[DIRECTORY],
+                logger,
                 os.path.join(parent_directory, directory_name),
             )
 
@@ -154,12 +179,18 @@ def _parse_args(args: List[Any]) -> argparse.Namespace:
     parser = argparse.ArgumentParser()
 
     parser.add_argument(
-        "location", type=str, help="The name of the new location to be created."
-    )
-    parser.add_argument(
         "--from-existing",
         type=str,
         help="The name of an existing location off which to model the new location.",
+    )
+    parser.add_argument(
+        "location", type=str, help="The name of the new location to be created."
+    )
+    parser.add_argument(
+        "--update",
+        action="store_true",
+        default=False,
+        help="To update an existing location with new or missing files.",
     )
 
     return parser.parse_args(args)
@@ -198,10 +229,26 @@ def main(args: List[Any]) -> None:
         location=parsed_args.location
     )
 
+    # If the new location already exists and the script is not run to update, then exit.
+    if os.path.isdir(new_location_directory) and not parsed_args.update:
+        logger.error(
+            "The new location directory already exists and the script was not run with "
+            "--update."
+        )
+        sys.exit(1)
+
     # Generate files as per the hard-coded directory structure.
-    logger.info("Creating new-location folder for location %s.", parsed_args.location)
+    if parsed_args.update:
+        logger.info(
+            "Updating location folder with new and updated files %s.",
+            parsed_args.location,
+        )
+    else:
+        logger.info(
+            "Creating new-location folder for location %s.", parsed_args.location
+        )
     _create_folder_and_contents(
-        new_location_data[0][CONTENTS], new_location_directory, os.getcwd()
+        new_location_data[0][CONTENTS], new_location_directory, logger, os.getcwd()
     )
     logger.info(
         "New location folder for %s successfully created.", parsed_args.location
