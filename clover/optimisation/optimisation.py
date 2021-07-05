@@ -28,7 +28,11 @@ class Optimisation():
     def __init__(self):
         self.location = "Bahraich"
         self.CLOVER_filepath = os.getcwd()
+<<<<<<< Updated upstream:clover/optimisation/optimisation.py
         self.location_filepath = os.path.join(self.CLOVER_filepath, 'Locations', self.location)
+=======
+        self.location_filepath = os.path.join(self.CLOVER_filepath, 'locations', self.location)
+>>>>>>> Stashed changes:clover/optimisation/optimisation.py
         self.optimisation_filepath = os.path.join(self.location_filepath, 'Optimisation', 'Optimisation inputs.csv')
         self.optimisation_inputs  = pd.read_csv(self.optimisation_filepath,header=None,index_col=0).round(decimals=3)
         self.maximum_criteria = ['Blackouts','LCUE ($/kWh)','Emissions intensity (gCO2/kWh)','Unmet energy fraction',

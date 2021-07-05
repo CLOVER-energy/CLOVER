@@ -24,7 +24,11 @@ class Solar():
     def __init__(self):
         self.location = 'Bahraich'
         self.CLOVER_filepath = os.getcwd()
+<<<<<<< Updated upstream:clover/generation/solar.py
         self.location_filepath = os.path.join(self.CLOVER_filepath, 'Locations', self.location)
+=======
+        self.location_filepath = os.path.join(self.CLOVER_filepath, 'locations', self.location)
+>>>>>>> Stashed changes:clover/generation/solar.py
         self.generation_filepath = os.path.join(self.location_filepath, 'Generation', 'PV')
         self.input_data = pd.read_csv(os.path.join(self.generation_filepath, 'PV generation inputs.csv'),header=None,index_col=0)[1]
         self.location_data_filepath = os.path.join(self.location_filepath, 'Location Data')

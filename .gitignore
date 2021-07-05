@@ -1,5 +1,7 @@
-# Ignore location folders
+# Ignore legacy location folders
 **/Locations
+# Ignore location folders
+**/locations
 # Ignore model outputs
 **/logs
 *.log*
