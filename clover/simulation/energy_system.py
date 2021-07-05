@@ -28,11 +28,7 @@ class Energy_System():
     def __init__(self):
         self.location = 'Bahraich'
         self.CLOVER_filepath = os.getcwd()
-<<<<<<< Updated upstream:clover/simulation/energy_system.py
-        self.location_filepath = os.path.join(self.CLOVER_filepath, 'Locations', self.location)
-=======
         self.location_filepath = os.path.join(self.CLOVER_filepath, 'locations', self.location)
->>>>>>> Stashed changes:clover/simulation/energy_system.py
         self.generation_filepath = os.path.join(self.location_filepath, 'Generation')
         self.location_data_filepath = os.path.join(self.location_filepath, 'Location Data')
         self.energy_system_filepath = os.path.join(self.location_filepath, 'Simulation', 'Energy system inputs.csv')
