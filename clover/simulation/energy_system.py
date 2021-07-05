@@ -14,32 +14,29 @@ For more information, please email:
     philip.sandwell@googlemail.com
 ===============================================================================
 """
+import os
 import numpy as np
 import pandas as pd
 import datetime
 import math
 
-import sys
-sys.path.insert(0, '/***YOUR LOCAL FILE PATH***/CLOVER 4.0/Scripts/Generation scripts/')
-from Solar import Solar
-from Diesel import Diesel
-import sys
-sys.path.insert(0, '/***YOUR LOCAL FILE PATH***/CLOVER 4.0/Scripts/Load scripts/')
-from Load import Load
+from ..generation.solar import Solar
+from ..generation.diesel import Diesel
+from ..load.load import Load
 #%%
 class Energy_System():
     def __init__(self):
         self.location = 'Bahraich'
-        self.CLOVER_filepath = '/***YOUR LOCAL FILE PATH***/CLOVER 4.0'
-        self.location_filepath = self.CLOVER_filepath + '/Locations/' + self.location
-        self.generation_filepath = self.location_filepath + '/Generation/'
-        self.location_data_filepath = self.location_filepath + '/Location Data/'
-        self.energy_system_filepath = self.location_filepath + '/Simulation/Energy system inputs.csv'
+        self.CLOVER_filepath = os.getcwd()
+        self.location_filepath = os.path.join(self.CLOVER_filepath, 'Locations', self.location)
+        self.generation_filepath = os.path.join(self.location_filepath, 'Generation')
+        self.location_data_filepath = os.path.join(self.location_filepath, 'Location Data')
+        self.energy_system_filepath = os.path.join(self.location_filepath, 'Simulation', 'Energy system inputs.csv')
         self.energy_system_inputs  = pd.read_csv(self.energy_system_filepath,header=None,index_col=0).round(decimals=3)
-        self.scenario_inputs = pd.read_csv(self.location_filepath + '/Scenario/Scenario inputs.csv' ,header=None,index_col=0).round(decimals=3)
-        self.kerosene_data_filepath = self.location_filepath + '/Load/Devices in use/kerosene_in_use.csv'
+        self.scenario_inputs = pd.read_csv(os.path.join(self.location_filepath, 'Scenario', 'Scenario inputs.csv') ,header=None,index_col=0).round(decimals=3)
+        self.kerosene_data_filepath = os.path.join(self.location_filepath, 'Load', 'Devices in use', 'kerosene_in_use.csv')
         self.kerosene_usage = pd.read_csv(self.kerosene_data_filepath, index_col = 0).reset_index(drop=True)
-        self.simulation_storage = self.location_filepath + '/Simulation/Saved simulations/'
+        self.simulation_storage = os.path.join(self.location_filepath, 'Simulation', 'Saved simulations')
 
 #%%
 # =============================================================================
@@ -287,10 +284,10 @@ class Energy_System():
             Simulation saved to .csv file
         """
         if filename != None:
-            simulation_name.to_csv(self.simulation_storage + str(filename) + '.csv')
+            simulation_name.to_csv(os.path.join(self.simulation_storage, str(filename) + '.csv'))
         else:
             filename = str(datetime.datetime.now().strftime("%Y-%m-%d %H-%M-%S"))
-            simulation_name.to_csv(self.simulation_storage + filename + '.csv')
+            simulation_name.to_csv(os.path.join(self.simulation_storage, filename + '.csv'))
         print('\nSimulation saved as '+ filename + '.csv')
             
     def open_simulation(self,filename):
@@ -302,7 +299,7 @@ class Energy_System():
         Outputs:
             DataFrame of previously performed simulation
         """
-        output = pd.read_csv(self.simulation_storage + str(filename) + '.csv',index_col=0)
+        output = pd.read_csv(os.path.join(self.simulation_storage, str(filename) + '.csv'),index_col=0)
         return output        
 
     def lifetime_simulation(self,optimisation_report):
@@ -425,7 +422,7 @@ class Energy_System():
         Outputs:
             PV output in kW per kWp installed
         '''
-        return pd.read_csv(self.generation_filepath + '/PV/solar_generation_20_years.csv',header=None,index_col=0)
+        return pd.read_csv(os.path.join(self.generation_filepath, 'PV' ,'solar_generation_20_years.csv'),header=None,index_col=0)
         
     def get_grid_profile(self,**options):
         '''
@@ -438,7 +435,7 @@ class Energy_System():
             Availabilty of grid (1 = available, 0 = not available)
         '''
         grid_type = self.scenario_inputs[1]['Grid type']
-        return pd.read_csv(self.generation_filepath + '/Grid/' + grid_type + '_grid_status.csv',index_col=0)      
+        return pd.read_csv(os.path.join(self.generation_filepath, 'Grid', grid_type + '_grid_status.csv'),index_col=0)      
 #%% Energy usage
     def get_load_profile(self, **options):
         '''
@@ -449,7 +446,7 @@ class Energy_System():
         Outputs:
             Gives a dataframe with columns for the load of domestic, commercial and public devices
         '''
-        loads = pd.read_csv(self.location_filepath + '/Load/Device load/total_load.csv',index_col=0)*0.001
+        loads = pd.read_csv(os.path.join(self.location_filepath, 'Load', 'Device load', 'total_load.csv'),index_col=0)*0.001
         total_load = pd.DataFrame(np.zeros(len(loads)))
         if self.scenario_inputs[1]['Domestic'] == 'Y':
             total_load = pd.DataFrame(total_load.values + pd.DataFrame(loads['Domestic']).values)

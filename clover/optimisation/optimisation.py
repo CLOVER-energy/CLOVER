@@ -19,21 +19,17 @@ import numpy as np
 import pandas as pd
 import datetime
 
-import sys
-sys.path.insert(0, '/***YOUR LOCAL FILE PATH***/CLOVER 4.0/Scripts/Impact scripts/')
-from Finance import Finance
-from GHGs import GHGs
-sys.path.insert(0, '/***YOUR LOCAL FILE PATH***/CLOVER 4.0/Scripts/Conversion scripts')
-from Conversion import Conversion
-sys.path.insert(0, '/***YOUR LOCAL FILE PATH***/CLOVER 4.0/Scripts/Simulation scripts')
-from Energy_System import Energy_System
+from ..impact.finance import Finance
+from ..impact.ghgs import GHGs
+from ..conversion.conversion import Conversion
+from ..simulation.energy_system import Energy_System
 #%%
 class Optimisation():
     def __init__(self):
         self.location = "Bahraich"
-        self.CLOVER_filepath = '/***YOUR LOCAL FILE PATH***/CLOVER 4.0'
-        self.location_filepath = self.CLOVER_filepath + '/Locations/' + self.location
-        self.optimisation_filepath = self.location_filepath + '/Optimisation/Optimisation inputs.csv'
+        self.CLOVER_filepath = os.getcwd()
+        self.location_filepath = os.path.join(self.CLOVER_filepath, 'Locations', self.location)
+        self.optimisation_filepath = os.path.join(self.location_filepath, 'Optimisation', 'Optimisation inputs.csv')
         self.optimisation_inputs  = pd.read_csv(self.optimisation_filepath,header=None,index_col=0).round(decimals=3)
         self.maximum_criteria = ['Blackouts','LCUE ($/kWh)','Emissions intensity (gCO2/kWh)','Unmet energy fraction',
                                  'Cumulative cost ($)','Cumulative system cost ($)',
@@ -43,7 +39,7 @@ class Optimisation():
         self.minimum_criteria = ['Renewables fraction','Kerosene displacement',
                                  'Kerosene cost mitigated ($)','Kerosene GHGs mitigated (kgCO2eq)']
         self.optimum_criterion = str(self.optimisation_inputs[1]['Optimisation criterion'])
-        self.optimisation_storage = self.location_filepath + '/Optimisation/Saved optimisations/'
+        self.optimisation_storage = os.path.join(self.location_filepath, 'Optimisation' ,'Saved optimisations')
 #%%
 # =============================================================================
 # OPTIMISATION FUNCTIONS
@@ -127,9 +123,9 @@ class Optimisation():
         parameter = str(parameter)
         summarised_results = pd.DataFrame()
         if results_folder_name != None:
-            results_folder = str(results_folder_name) + '/'
+            results_folder = str(results_folder_name)
         else:
-            results_folder = self.optimisation_storage + str(datetime.datetime.now().strftime("%Y-%m-%d %H-%M-%S")) + '/'
+            results_folder = self.optimisation_storage + str(datetime.datetime.now().strftime("%Y-%m-%d %H-%M-%S"))
 #   Iterate over the range of threshold steps
         value_counter = 1
         for parameter_value in parameter_values:
@@ -140,14 +136,14 @@ class Optimisation():
 #   Perform optimisation
             optimisation_results = self.multiple_optimisation_step()
 #   Save optimisation
-            optimisation_filename = str(results_folder + parameter + ' = {:.2f}'.format(parameter_value))
+            optimisation_filename = os.path.join(results_folder, parameter + ' = {:.2f}'.format(parameter_value))
             self.save_optimisation(optimisation_name = optimisation_results, filename = optimisation_filename)
             new_results = self.summarise_optimisation_results(optimisation_results)
             summarised_results = pd.concat([summarised_results,new_results],axis=0)
 #   Format and save output summary
         parameter_values = pd.DataFrame({'Parameter value':parameter_values})
         summary_output = pd.concat([parameter_values.reset_index(drop=True),summarised_results.reset_index(drop=True)],axis=1)
-        summary_filename = str(results_folder + parameter + ' lifetime summary of results')
+        summary_filename = os.path.join(results_folder, parameter + ' lifetime summary of results')
         self.save_optimisation(summary_output,filename = summary_filename)
         
     def optimisation_step(self,PV_sizes=[],storage_sizes=[],previous_systems = pd.DataFrame([]),
@@ -748,10 +744,10 @@ class Optimisation():
             Optimisation saved to .csv file
         """
         if filename != None:
-            optimisation_name.to_csv(self.optimisation_storage + str(filename) + '.csv')
+            optimisation_name.to_csv(os.path.join(self.optimisation_storage, str(filename) + '.csv'))
         else:
             filename = str(datetime.datetime.now().strftime("%Y-%m-%d %H-%M-%S"))
-            optimisation_name.to_csv(self.optimisation_storage + filename + '.csv')
+            optimisation_name.to_csv(os.path.join(self.optimisation_storage, filename + '.csv'))
         print('\nOptimisation saved as '+ filename + '.csv')
             
     def open_optimisation(self,filename):
@@ -763,7 +759,7 @@ class Optimisation():
         Outputs:
             DataFrame of previously performed optimisation
         """
-        output = pd.read_csv(self.optimisation_storage + str(filename) + '.csv',index_col=0)
+        output = pd.read_csv(os.path.join(self.optimisation_storage, str(filename) + '.csv',index_col=0))
         return output
 
     def summarise_optimisation_results(self,optimisation_results):

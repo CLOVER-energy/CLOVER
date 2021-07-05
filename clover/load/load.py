@@ -15,26 +15,26 @@ For more information, please email:
 ===============================================================================
 """
 
+import os
 import pandas as pd
 import numpy as np
 import math
 
 import sys
-sys.path.insert(0, '/***YOUR LOCAL FILE PATH***/CLOVER/Scripts/Conversion scripts')
-from Conversion import Conversion
+from ..conversion.conversion import Conversion
 
 class Load():
     def __init__(self):
         self.location = 'Bahraich'
-        self.CLOVER_filepath = '/***YOUR LOCAL FILE PATH***/CLOVER'
-        self.location_filepath = self.CLOVER_filepath + '/Locations/' + self.location
-        self.location_inputs = pd.read_csv(self.location_filepath + '/Location Data/Location inputs.csv',header=None,index_col=0)[1]
-        self.device_filepath = self.location_filepath + '/Load/'
-        self.device_ownership_filepath = self.device_filepath + '/Device ownership/'
-        self.device_inputs = pd.read_csv(self.device_filepath + 'Devices.csv')
-        self.device_utilisation_filepath = self.device_filepath + '/Device utilisation/'
-        self.device_usage_filepath = self.device_filepath + '/Devices in use/'
-        self.device_load_filepath = self.device_filepath + 'Device load/'
+        self.CLOVER_filepath = os.getcwd()
+        self.location_filepath = os.path.join(self.CLOVER_filepath, 'Locations', self.location)
+        self.location_inputs = pd.read_csv(os.path.join(self.location_filepath, 'Location Data', 'Location inputs.csv'),header=None,index_col=0)[1]
+        self.device_filepath = os.path.join(self.location_filepath, 'Load')
+        self.device_ownership_filepath = os.path.join(self.device_filepath, 'Device ownership')
+        self.device_inputs = pd.read_csv(os.path.join(self.device_filepath, 'Devices.csv'))
+        self.device_utilisation_filepath = os.path.join(self.device_filepath, 'Device utilisation')
+        self.device_usage_filepath = os.path.join(self.device_filepath, 'Devices in use')
+        self.device_load_filepath = os.path.join(self.device_filepath, 'Device load')
 
 # =============================================================================
 #       Calculate the load of devices in the community

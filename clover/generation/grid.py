@@ -14,17 +14,18 @@ For more information, please email:
     philip.sandwell@googlemail.com
 ===============================================================================
 """
+import os
 import pandas as pd
 import random
 
 class Grid():
     def __init__(self):
         self.location = 'Bahraich'
-        self.CLOVER_filepath = '/***YOUR LOCAL FILE PATH***/CLOVER 4.0'
-        self.location_filepath = self.CLOVER_filepath + '/Locations/' + self.location
-        self.location_inputs = pd.read_csv(self.location_filepath + '/Location Data/Location inputs.csv',header=None,index_col=0)[1]
-        self.generation_filepath = self.location_filepath + '/Generation/Grid/'
-        self.grid_inputs = pd.read_csv(self.generation_filepath + 'Grid inputs.csv',index_col=0)
+        self.CLOVER_filepath = os.getcwd()
+        self.location_filepath = os.path.join(self.CLOVER_filepath, 'Locations', self.location)
+        self.location_inputs = pd.read_csv(os.path.join(self.location_filepath, 'Location Data', 'Location inputs.csv'),header=None,index_col=0)[1]
+        self.generation_filepath = os.path.join(self.location_filepath, 'Generation')
+        self.grid_inputs = pd.read_csv(os.path.join(self.generation_filepath, 'Grid inputs.csv'),index_col=0)
 #%%
     def get_lifetime_grid_status(self):
         """
