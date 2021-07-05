@@ -25,7 +25,11 @@ class GHGs():
     def __init__(self):
         self.location = "Bahraich"
         self.CLOVER_filepath = os.getcwd()
+<<<<<<< Updated upstream:clover/impact/ghgs.py
         self.location_filepath = os.path.join(self.CLOVER_filepath, 'Locations', self.location)
+=======
+        self.location_filepath = os.path.join(self.CLOVER_filepath, 'locations', self.location)
+>>>>>>> Stashed changes:clover/impact/ghgs.py
         self.location_inputs = pd.read_csv(self.location_filepath + '/Location Data/Location inputs.csv',header=None,index_col=0)[1]
         self.GHG_filepath = os.path.join(self.location_filepath, 'Impact', 'GHG inputs.csv')
         self.GHG_inputs  = pd.read_csv(self.GHG_filepath,header=None,index_col=0).round(decimals=3)[1]
