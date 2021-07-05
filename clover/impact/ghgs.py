@@ -19,20 +19,19 @@ import numpy as np
 import pandas as pd
 
 import sys
-sys.path.insert(0, '/***YOUR LOCAL FILE PATH***/CLOVER 4.0/Scripts/Conversion scripts')
-from Conversion import Conversion
+from ..conversion.conversion import Conversion
 
 class GHGs():
     def __init__(self):
         self.location = "Bahraich"
-        self.CLOVER_filepath = '/***YOUR LOCAL FILE PATH***/CLOVER 4.0'
-        self.location_filepath = self.CLOVER_filepath + '/Locations/' + self.location
+        self.CLOVER_filepath = os.getcwd()
+        self.location_filepath = os.path.join(self.CLOVER_filepath, 'Locations', self.location)
         self.location_inputs = pd.read_csv(self.location_filepath + '/Location Data/Location inputs.csv',header=None,index_col=0)[1]
-        self.GHG_filepath = self.location_filepath + '/Impact/GHG inputs.csv'
+        self.GHG_filepath = os.path.join(self.location_filepath, 'Impact', 'GHG inputs.csv')
         self.GHG_inputs  = pd.read_csv(self.GHG_filepath,header=None,index_col=0).round(decimals=3)[1]
-        self.finance_filepath = self.location_filepath + '/Impact/Finance inputs.csv'
+        self.finance_filepath = os.path.join(self.location_filepath, 'Impact', 'Finance inputs.csv')
         self.finance_inputs  = pd.read_csv(self.finance_filepath,header=None,index_col=0).round(decimals=3)[1]
-        self.inverter_inputs = pd.read_csv(self.location_filepath + '/Load/Device load/yearly_load_statistics.csv',index_col=0)
+        self.inverter_inputs = pd.read_csv(os.path.join(self.location_filepath, 'Load', 'Device load', 'yearly_load_statistics.csv'),index_col=0)
 
 #%%
 #==============================================================================

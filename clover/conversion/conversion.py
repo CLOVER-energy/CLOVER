@@ -16,7 +16,7 @@ For more information, please email:
 """
 import pandas as pd
 import numpy as np
-import scipy
+import scipy  # type: ignore
 
 class Conversion():
     def __init__(self):

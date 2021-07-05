@@ -14,20 +14,21 @@ For more information, please email:
     philip.sandwell@googlemail.com
 ===============================================================================
 """
-import requests
-import pandas as pd
-import numpy as np
 import json
+import os
+import numpy as np
+import pandas as pd
+import requests
 
 class Solar():
     def __init__(self):
         self.location = 'Bahraich'
-        self.CLOVER_filepath = '/***YOUR LOCAL FILE PATH***/CLOVER 4.0'
-        self.location_filepath = self.CLOVER_filepath + '/Locations/' + self.location
-        self.generation_filepath = self.location_filepath + '/Generation/PV/'
-        self.input_data = pd.read_csv(self.generation_filepath + 'PV generation inputs.csv',header=None,index_col=0)[1]
-        self.location_data_filepath = self.location_filepath + '/Location Data/'
-        self.location_input_data = pd.read_csv(self.location_data_filepath + 'Location inputs.csv',header=None,index_col=0)[1]
+        self.CLOVER_filepath = os.getcwd()
+        self.location_filepath = os.path.join(self.CLOVER_filepath, 'Locations', self.location)
+        self.generation_filepath = os.path.join(self.location_filepath, 'Generation', 'PV')
+        self.input_data = pd.read_csv(os.path.join(self.generation_filepath, 'PV generation inputs.csv'),header=None,index_col=0)[1]
+        self.location_data_filepath = os.path.join(self.location_filepath, 'Location Data')
+        self.location_input_data = pd.read_csv(os.path.join(self.location_data_filepath, 'Location inputs.csv'),header=None,index_col=0)[1]
 #%%
     def total_solar_output(self,start_year=2007):
         """
