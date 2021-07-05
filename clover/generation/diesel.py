@@ -23,11 +23,7 @@ class Diesel():
         self.size = 1
         self.location = 'Bahraich'
         self.CLOVER_filepath = os.getcwd()
-<<<<<<< Updated upstream:clover/generation/diesel.py
-        self.location_filepath = os.path.join(self.CLOVER_filepath, 'Locations', self.location)
-=======
         self.location_filepath = os.path.join(self.CLOVER_filepath, 'locations', self.location)
->>>>>>> Stashed changes:clover/generation/diesel.py
         self.generation_filepath = os.path.join(self.location_filepath, 'Generation')
         self.diesel_filepath = os.path.join(self.generation_filepath, 'Diesel', 'Diesel inputs.csv')
         self.diesel_inputs = pd.read_csv(self.diesel_filepath,header=None,index_col=0).round(decimals=3)

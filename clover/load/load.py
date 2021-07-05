@@ -27,11 +27,7 @@ class Load():
     def __init__(self):
         self.location = 'Bahraich'
         self.CLOVER_filepath = os.getcwd()
-<<<<<<< Updated upstream:clover/load/load.py
-        self.location_filepath = os.path.join(self.CLOVER_filepath, 'Locations', self.location)
-=======
         self.location_filepath = os.path.join(self.CLOVER_filepath, 'locations', self.location)
->>>>>>> Stashed changes:clover/load/load.py
         self.location_inputs = pd.read_csv(os.path.join(self.location_filepath, 'Location Data', 'Location inputs.csv'),header=None,index_col=0)[1]
         self.device_filepath = os.path.join(self.location_filepath, 'Load')
         self.device_ownership_filepath = os.path.join(self.device_filepath, 'Device ownership')
