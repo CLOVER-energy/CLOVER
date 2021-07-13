@@ -19,7 +19,7 @@ import os
 import numpy as np
 import pandas as pd
 
-from ..__utils__ import LOCATIONS_FOLDER_NAME
+from ...__utils__ import LOCATIONS_FOLDER_NAME
 
 class Diesel():
     def __init__(self): 

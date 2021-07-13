@@ -20,7 +20,7 @@ import random
 
 import pandas as pd
 
-from ..__utils__ import LOCATIONS_FOLDER_NAME
+from ...__utils__ import LOCATIONS_FOLDER_NAME
 
 class Grid():
     def __init__(self):
