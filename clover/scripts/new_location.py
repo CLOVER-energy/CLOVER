@@ -31,7 +31,7 @@ from typing import Any, List
 import yaml
 
 
-from ..clover.__utils__ import get_logger
+from ..__utils__ import get_logger, LOCATIONS_FOLDER_NAME
 
 
 # The keyword used to denote the contents of a file or folder.
@@ -183,7 +183,7 @@ def main(args: List[Any]) -> None:
 
     # Process the new-location data into a usable format.
     new_location_directory = new_location_data[0][DIRECTORY].format(
-        location=parsed_args.location
+        location=parsed_args.location, locations_folder_name=LOCATIONS_FOLDER_NAME
     )
 
     # If the new location already exists and the script is not run to update, then exit.
@@ -220,7 +220,8 @@ def main(args: List[Any]) -> None:
         # Determine the existing location to copy files from and report an error if it
         # does not exist.
         existing_location_directory = new_location_data[0][DIRECTORY].format(
-            location=parsed_args.from_existing
+            location=parsed_args.from_existing,
+            locations_folder_name=LOCATIONS_FOLDER_NAME,
         )
         if not os.path.isdir(existing_location_directory):
             logger.error(
