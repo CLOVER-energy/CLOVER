@@ -16,18 +16,19 @@ For more information, please email:
 """
 
 import os
-import pandas as pd
-import numpy as np
 import math
 
-import sys
+import numpy as np
+import pandas as pd
+
 from ..conversion.conversion import Conversion
+from ..__utils__ import LOCATIONS_FOLDER_NAME
 
 class Load():
     def __init__(self):
         self.location = 'Bahraich'
         self.CLOVER_filepath = os.getcwd()
-        self.location_filepath = os.path.join(self.CLOVER_filepath, 'locations', self.location)
+        self.location_filepath = os.path.join(self.CLOVER_filepath, LOCATIONS_FOLDER_NAME, self.location)
         self.location_inputs = pd.read_csv(os.path.join(self.location_filepath, 'Location Data', 'Location inputs.csv'),header=None,index_col=0)[1]
         self.device_filepath = os.path.join(self.location_filepath, 'Load')
         self.device_ownership_filepath = os.path.join(self.device_filepath, 'Device ownership')

@@ -14,3 +14,11 @@ components across CLOVER, as well as commonly-held variables to prevent dependen
 issues and increase the ease of code alterations.
 
 """
+
+from enum import Enum
+
+__all__ = ("LOCATIONS_FOLDER_NAME",)
+
+# Locations folder name:
+#   The name of the locations folder.
+LOCATIONS_FOLDER_NAME = "locations"

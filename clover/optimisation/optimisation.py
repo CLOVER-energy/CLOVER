@@ -15,20 +15,24 @@ For more information, please email:
 ===============================================================================
 """
 
+import datetime
+import os
+
 import numpy as np
 import pandas as pd
-import datetime
 
+from ..conversion.conversion import Conversion
 from ..impact.finance import Finance
 from ..impact.ghgs import GHGs
-from ..conversion.conversion import Conversion
 from ..simulation.energy_system import Energy_System
+from ..__utils__ import LOCATIONS_FOLDER_NAME
+
 #%%
 class Optimisation():
     def __init__(self):
         self.location = "Bahraich"
         self.CLOVER_filepath = os.getcwd()
-        self.location_filepath = os.path.join(self.CLOVER_filepath, 'locations', self.location)
+        self.location_filepath = os.path.join(self.CLOVER_filepath, LOCATIONS_FOLDER_NAME, self.location)
         self.optimisation_filepath = os.path.join(self.location_filepath, 'Optimisation', 'Optimisation inputs.csv')
         self.optimisation_inputs  = pd.read_csv(self.optimisation_filepath,header=None,index_col=0).round(decimals=3)
         self.maximum_criteria = ['Blackouts','LCUE ($/kWh)','Emissions intensity (gCO2/kWh)','Unmet energy fraction',
