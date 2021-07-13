@@ -16,15 +16,18 @@ For more information, please email:
 """
 import json
 import os
+
 import numpy as np
 import pandas as pd
 import requests
+
+from ..__utils__ import LOCATIONS_FOLDER_NAME
 
 class Solar():
     def __init__(self):
         self.location = 'Bahraich'
         self.CLOVER_filepath = os.getcwd()
-        self.location_filepath = os.path.join(self.CLOVER_filepath, 'locations', self.location)
+        self.location_filepath = os.path.join(self.CLOVER_filepath, LOCATIONS_FOLDER_NAME, self.location)
         self.generation_filepath = os.path.join(self.location_filepath, 'Generation', 'PV')
         self.input_data = pd.read_csv(os.path.join(self.generation_filepath, 'PV generation inputs.csv'),header=None,index_col=0)[1]
         self.location_data_filepath = os.path.join(self.location_filepath, 'Location Data')

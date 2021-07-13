@@ -14,21 +14,25 @@ For more information, please email:
     philip.sandwell@googlemail.com
 ===============================================================================
 """
-import os
-import numpy as np
-import pandas as pd
+
 import datetime
 import math
+import os
+
+import numpy as np
+import pandas as pd
 
 from ..generation.solar import Solar
 from ..generation.diesel import Diesel
 from ..load.load import Load
+from ..__utils__ import LOCATIONS_FOLDER_NAME
+
 #%%
 class Energy_System():
     def __init__(self):
         self.location = 'Bahraich'
         self.CLOVER_filepath = os.getcwd()
-        self.location_filepath = os.path.join(self.CLOVER_filepath, 'locations', self.location)
+        self.location_filepath = os.path.join(self.CLOVER_filepath, LOCATIONS_FOLDER_NAME, self.location)
         self.generation_filepath = os.path.join(self.location_filepath, 'Generation')
         self.location_data_filepath = os.path.join(self.location_filepath, 'Location Data')
         self.energy_system_filepath = os.path.join(self.location_filepath, 'Simulation', 'Energy system inputs.csv')

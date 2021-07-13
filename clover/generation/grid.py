@@ -14,15 +14,19 @@ For more information, please email:
     philip.sandwell@googlemail.com
 ===============================================================================
 """
+
 import os
-import pandas as pd
 import random
+
+import pandas as pd
+
+from ..__utils__ import LOCATIONS_FOLDER_NAME
 
 class Grid():
     def __init__(self):
         self.location = 'Bahraich'
         self.CLOVER_filepath = os.getcwd()
-        self.location_filepath = os.path.join(self.CLOVER_filepath, 'locations', self.location)
+        self.location_filepath = os.path.join(self.CLOVER_filepath, LOCATIONS_FOLDER_NAME, self.location)
         self.location_inputs = pd.read_csv(os.path.join(self.location_filepath, 'Location Data', 'Location inputs.csv'),header=None,index_col=0)[1]
         self.generation_filepath = os.path.join(self.location_filepath, 'Generation')
         self.grid_inputs = pd.read_csv(os.path.join(self.generation_filepath, 'Grid inputs.csv'),index_col=0)

@@ -14,8 +14,9 @@ For more information, please email:
     philip.sandwell@googlemail.com
 ===============================================================================
 """
-import pandas as pd
+
 import numpy as np
+import pandas as pd
 import scipy  # type: ignore
 
 class Conversion():

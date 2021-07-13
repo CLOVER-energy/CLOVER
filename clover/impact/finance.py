@@ -15,17 +15,18 @@ For more information, please email:
 ===============================================================================
 """
 import os
+
 import numpy as np
 import pandas as pd
 
-import sys
 from ..conversion.conversion import Conversion
+from ..__utils__ import LOCATIONS_FOLDER_NAME
 
 class Finance():
     def __init__(self):
         self.location = 'Bahraich'
         self.CLOVER_filepath = os.getcwd()
-        self.location_filepath = os.path.join(self.CLOVER_filepath, 'locations', self.location)
+        self.location_filepath = os.path.join(self.CLOVER_filepath, LOCATIONS_FOLDER_NAME, self.location)
         self.location_inputs = pd.read_csv(os.path.join(self.location_filepath, 'Location Data', 'Location inputs.csv'),header=None,index_col=0)[1]
         self.finance_filepath = os.path.join(self.location_filepath, 'Impact', 'Finance inputs.csv')
         self.finance_inputs  = pd.read_csv(self.finance_filepath,header=None,index_col=0).round(decimals=3)[1]
