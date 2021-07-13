@@ -98,7 +98,7 @@
               contents: >-
                 0.008,0.006,0.008,0.008,0.006,0.006,0.006,0.006,
                 0.006,0.008,0.008,0.008
-    - directory: "Location data"
+    - directory: "Location Data"
       contents:
         - file: "Location inputs.csv"
           contents: "token,YOUR_API_TOKEN_HERE,renewables.ninja API token"
