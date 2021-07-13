@@ -21,7 +21,7 @@ import numpy as np
 import pandas as pd
 import requests
 
-from ..__utils__ import LOCATIONS_FOLDER_NAME
+from ...__utils__ import LOCATIONS_FOLDER_NAME
 
 class Solar():
     def __init__(self):
