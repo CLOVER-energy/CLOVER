@@ -191,6 +191,10 @@ def monthly_profile_to_daily_profile(monthly_profile: pd.DataFrame) -> pd.DataFr
     }
 
     return pd.DataFrame(list(daily_profile.values()))
+    # NOTE:
+    #   The following line should be uncommented if older python versions are used in
+    #   which dictionaries are unsorted.
+    # return pd.DataFrame([entry[1] for entry in sorted(daily_profile.items())])
 
 
 def open_simulation(filename: str):
