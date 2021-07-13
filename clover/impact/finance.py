@@ -19,8 +19,7 @@ import os
 import numpy as np
 import pandas as pd
 
-from ..conversion.conversion import Conversion
-from ..__utils__ import LOCATIONS_FOLDER_NAME
+from ..__utils__ import hourly_profile_to_daily_sum, LOCATIONS_FOLDER_NAME
 
 class Finance():
     def __init__(self):
@@ -189,7 +188,7 @@ class Finance():
 #        for t in range(int(households.shape[0])-1):
 #            new_connections.append(households['Households'][t+1] - households['Households'][t])
 #        new_connections = pd.DataFrame(new_connections)
-#        new_connections_daily = Conversion().hourly_profile_to_daily_sum(new_connections)
+#        new_connections_daily = hourly_profile_to_daily_sum(new_connections)
 #        total_daily_cost = connection_cost * new_connections_daily
 #        total_discounted_cost = self.discounted_cost_total(total_daily_cost,start_year,end_year)
         return total_discounted_cost
@@ -295,7 +294,7 @@ class Finance():
             Discounted cost 
         '''
         kerosene_cost = kerosene_lamps_in_use_hourly * self.finance_inputs.loc['Kerosene cost']
-        total_daily_cost = Conversion().hourly_profile_to_daily_sum(kerosene_cost)
+        total_daily_cost = hourly_profile_to_daily_sum(kerosene_cost)
         total_discounted_cost = self.discounted_cost_total(total_daily_cost,start_year,end_year)
         return total_discounted_cost
     
@@ -311,7 +310,7 @@ class Finance():
             Discounted cost 
         '''
         kerosene_cost = kerosene_lamps_mitigated_hourly * self.finance_inputs.loc['Kerosene cost']
-        total_daily_cost = Conversion().hourly_profile_to_daily_sum(kerosene_cost)
+        total_daily_cost = hourly_profile_to_daily_sum(kerosene_cost)
         total_discounted_cost = self.discounted_cost_total(total_daily_cost,start_year,end_year)
         return total_discounted_cost
 
@@ -327,7 +326,7 @@ class Finance():
             Discounted cost 
         '''        
         grid_cost = grid_energy_hourly * self.finance_inputs.loc['Grid cost']
-        total_daily_cost = Conversion().hourly_profile_to_daily_sum(grid_cost)
+        total_daily_cost = hourly_profile_to_daily_sum(grid_cost)
         total_discounted_cost = self.discounted_cost_total(total_daily_cost,start_year,end_year)
         return total_discounted_cost
 
@@ -342,7 +341,7 @@ class Finance():
         Outputs:
             Discounted cost 
         '''    
-        diesel_fuel_usage_daily = Conversion().hourly_profile_to_daily_sum(diesel_fuel_usage_hourly)
+        diesel_fuel_usage_daily = hourly_profile_to_daily_sum(diesel_fuel_usage_hourly)
         start_day = start_year * 365
         end_day = end_year * 365
         diesel_price_daily = []
