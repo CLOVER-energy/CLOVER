@@ -40,7 +40,6 @@ class Energy_System():
         self.scenario_inputs = pd.read_csv(os.path.join(self.location_filepath, 'Scenario', 'Scenario inputs.csv') ,header=None,index_col=0).round(decimals=3)
         self.kerosene_data_filepath = os.path.join(self.location_filepath, 'Load', 'Devices in use', 'kerosene_in_use.csv')
         self.kerosene_usage = pd.read_csv(self.kerosene_data_filepath, index_col = 0).reset_index(drop=True)
-        self.simulation_storage = os.path.join(self.location_filepath, 'Simulation', 'Saved simulations')
 
 #%%
 # =============================================================================
@@ -277,34 +276,6 @@ class Energy_System():
 #       and resimulate the entire lifetime of a previously-optimised system
 #       including consideration of increasing capacity. 
 # =============================================================================
-    def save_simulation(self,simulation_name,filename=None):
-        """
-        Function:
-            Saves simulation outputs to a .csv file
-        Inputs:
-            simulation_name     DataFrame output from Energy_System().simulation(...)
-            filename            Name of .csv file to be saved as (defaults to timestamp)
-        Outputs:
-            Simulation saved to .csv file
-        """
-        if filename != None:
-            simulation_name.to_csv(os.path.join(self.simulation_storage, str(filename) + '.csv'))
-        else:
-            filename = str(datetime.datetime.now().strftime("%Y-%m-%d %H-%M-%S"))
-            simulation_name.to_csv(os.path.join(self.simulation_storage, filename + '.csv'))
-        print('\nSimulation saved as '+ filename + '.csv')
-            
-    def open_simulation(self,filename):
-        """
-        Function:
-            Opens a previously saved simulation from a .csv file
-        Inputs:
-            filename            Name of the .csv file to be opened (not including .csv)
-        Outputs:
-            DataFrame of previously performed simulation
-        """
-        output = pd.read_csv(os.path.join(self.simulation_storage, str(filename) + '.csv'),index_col=0)
-        return output        
 
     def lifetime_simulation(self,optimisation_report):
         '''

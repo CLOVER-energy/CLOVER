@@ -19,6 +19,7 @@ issues and increase the ease of code alterations.
 """
 
 
+import datetime
 import logging
 import os
 
@@ -33,7 +34,10 @@ __all__ = (
     "get_logger",
     "hourly_profile_to_daily_sum",
     "LOCATIONS_FOLDER_NAME",
+    "LOGGER_DIRECTORY",
     "monthly_profile_to_daily_profile",
+    "open_simulation",
+    "save_simulation",
 )
 
 
@@ -187,3 +191,44 @@ def monthly_profile_to_daily_profile(monthly_profile: pd.DataFrame) -> pd.DataFr
     }
 
     return pd.DataFrame(list(daily_profile.values()))
+
+
+def open_simulation(filename: str):
+    """
+    Opens a previously saved simulation from a .csv file
+
+    Inputs:
+        - filename
+            Name of the .csv file to be opened including the file extension.
+
+    Outputs:
+        - DataFrame of previously performed simulation
+
+    """
+
+    output = pd.read_csv(os.path.join(filename), index_col=0)
+    return output
+
+
+def save_simulation(
+    logger: logging.Logger,
+    simulation_name: pd.DataFrame,
+    filename: str = str(datetime.datetime.now().strftime("%Y-%m-%d %H-%M-%S")),
+):
+    """
+    Saves simulation outputs to a .csv file
+
+    Inputs:
+        - logger
+            The logger to use for the run.
+        - simulation_name
+            DataFrame output from Energy_System().simulation(...).
+        - filename
+            Name of the .csv file name to use (defaults to timestamp).
+
+    """
+
+    # Save the simulation data in a CSV file.
+    simulation_name.to_csv(os.path.join(filename))
+    logger.info("Simulation successfully saved to %s.", filename)
+    print(f"Simulation saved as {filename}")
