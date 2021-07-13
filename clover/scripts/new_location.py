@@ -17,19 +17,15 @@ existing location if asked for.
 
 """
 
-
 import argparse
 import logging
 import os
 import shutil
 import sys
 
-
 from typing import Any, List
 
-
 import yaml
-
 
 from ..__utils__ import get_logger, LOCATIONS_FOLDER_NAME
 
