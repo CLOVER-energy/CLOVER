@@ -21,11 +21,10 @@ import os
 import numpy as np
 import pandas as pd
 
-from ..conversion.conversion import Conversion
 from ..impact.finance import Finance
 from ..impact.ghgs import GHGs
 from ..simulation.energy_system import Energy_System
-from ..__utils__ import LOCATIONS_FOLDER_NAME
+from ..__utils__ import hourly_profile_to_daily_sum, LOCATIONS_FOLDER_NAME
 
 #%%
 class Optimisation():
@@ -458,7 +457,7 @@ class Optimisation():
         renewables_fraction = (total_renewables_used+total_storage_used)/total_energy
         unmet_fraction = total_unmet_energy/total_load_energy
 #   Calculate total discounted energy
-        total_energy_daily = Conversion().hourly_profile_to_daily_sum(simulation_results['Total energy used (kWh)'])
+        total_energy_daily = hourly_profile_to_daily_sum(simulation_results['Total energy used (kWh)'])
         discounted_energy = Finance().discounted_energy_total(total_energy_daily,start_year,end_year)       
 #   Calculate proportion of kerosene displaced (defaults to zero if kerosene is not originally used)
         if np.sum(simulation_results['Kerosene lamps']) > 0.0:

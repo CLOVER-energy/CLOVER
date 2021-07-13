@@ -21,8 +21,7 @@ import math
 import numpy as np
 import pandas as pd
 
-from ..conversion.conversion import Conversion
-from ..__utils__ import LOCATIONS_FOLDER_NAME
+from ..__utils__ import LOCATIONS_FOLDER_NAME, monthly_profile_to_daily_profile
 
 class Load():
     def __init__(self):
@@ -174,7 +173,7 @@ class Load():
         for i in range(len(self.device_inputs)):
             device_info = self.device_inputs.iloc[i]
             monthly_profile = pd.read_csv(self.device_utilisation_filepath + device_info['Device'] + '_times.csv',header = None, index_col = None)
-            yearly_profile = Conversion().monthly_profile_to_daily_profile(monthly_profile)
+            yearly_profile = monthly_profile_to_daily_profile(monthly_profile)
             yearly_profile = pd.DataFrame.transpose(yearly_profile)
             total_profile = yearly_profile
             for j in range(0,int(self.location_inputs['Years']) - 1):
