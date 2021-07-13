@@ -25,9 +25,19 @@ import sys
 
 from typing import Any, List
 
-import yaml
+from ..__utils__ import (
+    get_logger,
+    LOCATIONS_FOLDER_NAME,
+    read_yaml,
+)
 
-from ..__utils__ import get_logger, LOCATIONS_FOLDER_NAME
+__all__ = (
+    "CONTENTS",
+    "create_new_location",
+    "DIRECTORY",
+    "FILE",
+    "NEW_LOCATION_DATA_FILE",
+)
 
 
 # The keyword used to denote the contents of a file or folder.
@@ -149,32 +159,22 @@ def _parse_args(args: List[Any]) -> argparse.Namespace:
     return parser.parse_args(args)
 
 
-def main(args: List[Any]) -> None:
+def create_new_location(
+    logger: logging.Logger, parsed_args: argparse.Namespace
+) -> None:
     """
-    The main method for the new-location-folder generation script.
+    Creates a new location based on the specified inputs.
 
-    This will generate a new directory in the locations folder based on the command-line
-    arguments passed in.
-
-    :param args:
-        The un-parsed command-line arguments.
+    Inputs:
+        - logger:
+            The logger to use for the run.
+        - parsed_args:
+            The parsed command-line arguments.
 
     """
 
-    logger = get_logger(LOGGER_NAME)
-    logger.info("New location script called with arguments: %s", args)
-    parsed_args = _parse_args(args)
-
-    # Process the new-location data.
-    try:
-        with open(NEW_LOCATION_DATA_FILE, "r") as new_location_data_file:
-            new_location_data = yaml.safe_load(new_location_data_file)
-    except FileNotFoundError:
-        logger.error(
-            "The new-location data file could not be found. "
-            "Ensure that you run the new-locations script from the workspace root."
-        )
-        raise
+    # Read the location data.
+    new_location_data = read_yaml(NEW_LOCATION_DATA_FILE, logger)
     logger.info("Data file successfully read.")
 
     # Process the new-location data into a usable format.
@@ -257,6 +257,25 @@ def main(args: List[Any]) -> None:
                         ),
                     )
             logger.info("File copying complete.")
+
+
+def main(args: List[Any]) -> None:
+    """
+    The main method for the new-location-folder generation script.
+
+    This will generate a new directory in the locations folder based on the command-line
+    arguments passed in.
+
+    Inputs:
+        - args:
+            The un-parsed command-line arguments.
+
+    """
+
+    logger = get_logger(LOGGER_NAME)
+    logger.info("New location script called with arguments: %s", args)
+    parsed_args = _parse_args(args)
+    create_new_location(logger, parsed_args)
     logger.info("New-location script complete. Exiting.")
 
 
