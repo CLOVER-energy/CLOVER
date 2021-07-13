@@ -30,7 +30,6 @@ from typing import Any, List
 
 import yaml
 
-
 from ..__utils__ import get_logger, LOCATIONS_FOLDER_NAME
 
 
