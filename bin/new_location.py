@@ -1,10 +1,13 @@
 #!/usr/bin/python3
 ########################################################################################
-# new_location.py - Script for generating a new location folder.
-#
-# Author: Ben Winchester
-# Date created: 01/07/2021
-# License: Open source
+# new_location.py - Script for generating a new location folder.                       #
+#                                                                                      #
+# Author: Ben Winchester                                                               #
+# Copyright: Ben Winchester, 2021                                                      #
+# Date created: 01/07/2021                                                             #
+#                                                                                      #
+# For more information, please email:                                                  #
+#   philip.sandwell@gmail.com                                                          #
 ########################################################################################
 """
 new_location.py - Script for generating a new location folder.
@@ -28,14 +31,15 @@ from typing import Any, List
 import yaml
 
 
+from ..clover.__utils__ import get_logger
+
+
 # The keyword used to denote the contents of a file or folder.
 CONTENTS = "contents"
 # The keyword used to denote a directory.
 DIRECTORY = "directory"
 # The keyword used to denote a file.
 FILE = "file"
-# The directory in which to save logs.
-LOGGER_DIRECTORY = "logs"
 # The name of the logger to use.
 LOGGER_NAME = "new_location"
 # The path to the new-location data file.
@@ -48,17 +52,15 @@ def _create_file(
     """
     Creates a file within the directory specified with the contents passed in.
 
-    :param contents:
-        The contents of the file to be created.
-
-    :param directory:
-        The name of the directory in which to create the file.
-
-    :param filename:
-        The name of the file to be created.
-
-    :param logger:
-        The logger to use for the run.
+    Inputs:
+        - contents:
+            The contents of the file to be created.
+        - directory:
+            The name of the directory in which to create the file.
+        - filename:
+            The name of the file to be created.
+        - logger:
+            The logger to use for the run.
 
     """
 
@@ -92,17 +94,15 @@ def _create_folder_and_contents(
     """
     Creates a folder and all files and folders contained within it.
 
-    :param contents:
-        The contents of the folder.
-
-    :param directory_name:
-        The name of the directory being created.
-
-    :param logger:
-        The logger to use for the run.
-
-    :param parent_directory:
-        The directory in which this directory should be created.
+    Inputs:
+        - contents:
+            The contents of the file to be created.
+        - directory_name:
+            The name of the directory being created.
+        - logger:
+            The logger to use for the run.
+        - parent_directory:
+            The directory in which this directory should be created.
 
     """
 
@@ -125,49 +125,6 @@ def _create_folder_and_contents(
                 logger,
                 os.path.join(parent_directory, directory_name),
             )
-
-
-def _get_logger() -> logging.Logger:
-    """
-    Set-up and return a logger.
-
-    :return:
-        The logger for the component.
-
-    """
-
-    # Create a logger and logging directory.
-    logger = logging.getLogger(LOGGER_NAME)
-    logger.setLevel(logging.INFO)
-    os.makedirs(LOGGER_DIRECTORY, exist_ok=True)
-
-    # Create a formatter.
-    formatter = logging.Formatter(
-        "%(asctime)s: %(name)s: %(levelname)s: %(message)s",
-        datefmt="%d/%m/%Y %I:%M:%S %p",
-    )
-
-    # Create a console handler.
-    console_handler = logging.StreamHandler()
-    console_handler.setLevel(logging.ERROR)
-    console_handler.setFormatter(formatter)
-
-    # Delete the existing log if there is one already.
-    if os.path.isfile(os.path.join(LOGGER_DIRECTORY, f"{LOGGER_NAME}.log")):
-        os.remove(os.path.join(LOGGER_DIRECTORY, f"{LOGGER_NAME}.log"))
-
-    # Create a file handler.
-    file_handler = logging.FileHandler(
-        os.path.join(LOGGER_DIRECTORY, f"{LOGGER_NAME}.log")
-    )
-    file_handler.setLevel(logging.INFO)
-    file_handler.setFormatter(formatter)
-
-    # Add the file handler to the logger.
-    logger.addHandler(console_handler)
-    logger.addHandler(file_handler)
-
-    return logger
 
 
 def _parse_args(args: List[Any]) -> argparse.Namespace:
@@ -208,7 +165,7 @@ def main(args: List[Any]) -> None:
 
     """
 
-    logger = _get_logger()
+    logger = get_logger(LOGGER_NAME)
     logger.info("New location script called with arguments: %s", args)
     parsed_args = _parse_args(args)
 
