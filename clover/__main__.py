@@ -17,16 +17,65 @@ the clover module from the command-line interface.
 
 """
 
+import logging
+import os
 import sys
 
-from typing import Any, List
+from typing import Any, Dict, List
 
+from .__utils__ import get_logger, LOCATIONS_FOLDER_NAME, read_yaml
 from .argparser import parse_args
-from .__utils__ import get_logger
+from .scripts.new_location import DIRECTORY, NEW_LOCATION_DATA_FILE
 
 # Logger name:
 #   The name to use for the main logger for CLOVER
 LOGGER_NAME = "clover"
+
+
+def _check_location(location: str, logger: logging.Logger) -> bool:
+    """
+    Returns whether the specified location meets the requirements for CLOVER.
+
+    Inputs:
+        - location
+            The name of the location to check.
+
+    Outputs:
+        - Whether the location meets the requirements as a boolean variable.
+
+    """
+
+    if not os.path.isdir(os.path.join(LOCATIONS_FOLDER_NAME, location)):
+        return False
+
+    # Read in the information about the files that should be present.
+    # new_location_data = read_yaml(NEW_LOCATION_DATA_FILE)
+    # new_location_data[0][DIRECTORY].format(
+    #     location=location, locations_folder_name=LOCATIONS_FOLDER_NAME
+    # )
+    # logger.info("New-location information succesfully parsed.")
+
+    return True
+
+
+def _parse_location_information(
+    filepath: str, location: str, logger: logging.Logger
+) -> Dict[Any, Any]:
+    """
+    Parse information about the required format of a location folder for verification.
+
+    Inputs:
+        - filepath:
+            The path to the new-location data file.
+        - location:
+            The name of the location being considered.
+        - logger:
+            The logger to use for the run.
+
+    Outputs:
+        - The parsed folder and file structure.
+
+    """
 
 
 def main(args: List[Any]) -> None:
@@ -51,17 +100,23 @@ def main(args: List[Any]) -> None:
 
     # If the location does not exist or does not meet the required specification, then
     # exit now.
-    if _check_location(parsed_args.location):
-        # Provide the user with information on what they should do to get CLOVER running
-        # correctly.
-        sys.exit(1)
+    logger.info("Checking location %s.", parsed_args.location)
+    if not _check_location(parsed_args.location, logger):
+        logger.error(
+            "The specified location, '%s', does not meet the requirements and/or does "
+            "not exist. Try running the 'new_location' script to ensure all necessary "
+            "files and folders are present."
+        )
 
     # ******* #
     # *  2  * #
     # ******* #
 
     # * Generate the profiles where appropriate based on the arguments passed in.
-    # * Generate and save the PV profiles.
+    # Generate and save the PV profiles.
+    # @ BenWinchester FIXME
+    # The solar data should not be closed and then re-opened as CLOVER runs.
+
     # * Generate and save the grid-availibility profiles.
     # * Generate and save any additional profiles, such as diesel-generator profiles.
 

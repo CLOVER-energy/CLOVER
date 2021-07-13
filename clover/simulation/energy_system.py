@@ -22,7 +22,7 @@ import os
 import numpy as np
 import pandas as pd
 
-from ..generation.solar import Solar
+from ..generation.solar import solar_degradation
 from ..generation.diesel import Diesel
 from ..load.load import Load
 from ..__utils__ import LOCATIONS_FOLDER_NAME
@@ -319,7 +319,7 @@ class Energy_System:
                 "Initial PV size": PV_size,
                 "Initial storage size": storage_size,
                 "Final PV size": PV_size
-                * Solar().solar_degradation()[0][8760 * (end_year - start_year)],
+                * solar_degradation()[0][8760 * (end_year - start_year)],
                 "Final storage size": storage_size
                 * np.min(battery_health["Battery health"]),
                 "Diesel capacity": diesel_capacity,
@@ -433,7 +433,7 @@ class Energy_System:
         #   Initialise power generation, including degradation of PV
         PV_generation = PV_size * pd.DataFrame(
             self.get_PV_generation()[start_hour:end_hour].values
-            * Solar().solar_degradation()[0 : (end_hour - start_hour)].values
+            * solar_degradation()[0 : (end_hour - start_hour)].values
         )
         grid_status = pd.DataFrame(self.get_grid_profile()[start_hour:end_hour].values)
         load_profile = pd.DataFrame(self.get_load_profile()[start_hour:end_hour].values)
