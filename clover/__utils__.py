@@ -18,16 +18,13 @@ issues and increase the ease of code alterations.
 
 """
 
-
 import datetime
 import logging
 import os
 
-
 import numpy as np
 import pandas as pd
 import scipy  # type: ignore
-
 
 __all__ = (
     "daily_sum_to_monthly_sum",
