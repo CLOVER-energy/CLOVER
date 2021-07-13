@@ -25,7 +25,7 @@ import pandas as pd
 from ..generation.solar import Solar
 from ..generation.diesel import Diesel
 from ..load.load import Load
-from ..__utils__ import LOCATIONS_FOLDER_NAME
+from ...__utils__ import LOCATIONS_FOLDER_NAME
 
 #%%
 class Energy_System():

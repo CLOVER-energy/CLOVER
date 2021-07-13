@@ -21,7 +21,7 @@ import math
 import numpy as np
 import pandas as pd
 
-from ..__utils__ import LOCATIONS_FOLDER_NAME, monthly_profile_to_daily_profile
+from ...__utils__ import LOCATIONS_FOLDER_NAME, monthly_profile_to_daily_profile
 
 class Load():
     def __init__(self):
