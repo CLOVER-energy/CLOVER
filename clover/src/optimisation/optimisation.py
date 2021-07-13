@@ -24,7 +24,7 @@ import pandas as pd
 from ..impact.finance import Finance
 from ..impact.ghgs import GHGs
 from ..simulation.energy_system import Energy_System
-from ..__utils__ import hourly_profile_to_daily_sum, LOCATIONS_FOLDER_NAME
+from ...__utils__ import hourly_profile_to_daily_sum, LOCATIONS_FOLDER_NAME
 
 #%%
 class Optimisation():
