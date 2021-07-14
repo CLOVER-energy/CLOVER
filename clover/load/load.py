@@ -45,15 +45,11 @@ __all__ = (
 LOAD_LOGGER_NAME = "load"
 
 
-def _device_daily_profile(
-    device: Dict[str, Any], monthly_profile: pd.DataFrame, years: int
-) -> pd.DataFrame:
+def _device_daily_profile(monthly_profile: pd.DataFrame, years: int) -> pd.DataFrame:
     """
     Converts the monthly utilisation profiles to daily utilisation profiles.
 
     Inputs:
-        - device:
-            The device information, extracted from the device file.
         - monthly_profile:
             The monthly ownership profile for the device.
         - years:
@@ -178,7 +174,7 @@ def _number_of_devices_daily(
 
     if device["available"]:
         logger.info(
-            " Calculating ownership for device %s.",
+            "Calculating ownership for device %s.",
             device["device"],
         )
         population_growth_rate = _population_growth_daily(
@@ -188,7 +184,7 @@ def _number_of_devices_daily(
         )
         if device["final_ownership"] != device["initial_ownership"]:
             logger.info(
-                " %s ownership changes over time, calculating.",
+                "%s ownership changes over time, calculating.",
                 device["device"],
             )
             cum_sales = _cumulative_sales_daily(
@@ -203,19 +199,19 @@ def _number_of_devices_daily(
             )
         else:
             logger.info(
-                " %s ownership remains constant.",
+                "%s ownership remains constant.",
                 device["device"],
             )
             daily_ownership = pd.DataFrame(
                 np.floor(population_growth_rate * device["initial_ownership"])
             )
         logger.info(
-            " Ownership for device %s calculated.",
+            "Ownership for device %s calculated.",
             device["device"],
         )
     else:
         logger.info(
-            " Device %s was marked as unavailable, setting ownership to zero.",
+            "Device %s was marked as unavailable, setting ownership to zero.",
             device["device"],
         )
         daily_ownership = pd.DataFrame(np.zeros((max_years * 365, 1)))
@@ -307,7 +303,7 @@ class DeviceOwnershipThread(threading.Thread):
 
             # Compute daily-utilisation profile.
             interpolated_daily_profile = _device_daily_profile(
-                device, daily_ownership, self.location_inputs["max_years"]
+                daily_ownership, self.location_inputs["max_years"]
             )
             self.logger.info(
                 "Daily device ownership profile for %s successfully computed.",

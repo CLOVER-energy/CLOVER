@@ -21,15 +21,17 @@ issues and increase the ease of code alterations.
 import datetime
 import logging
 import os
+import queue
+import threading
+import time
 
-from typing import Any, Dict
+from typing import Any, Dict, Optional, Tuple
 
 import numpy as np
 import pandas as pd
 import scipy  # type: ignore
 import yaml
 
-from typing import Any, Dict
 
 __all__ = (
     "daily_sum_to_monthly_sum",
@@ -40,6 +42,7 @@ __all__ = (
     "LOGGER_DIRECTORY",
     "monthly_profile_to_daily_profile",
     "open_simulation",
+    "ProgressBar",
     "read_yaml",
     "save_simulation",
 )
@@ -235,6 +238,129 @@ def open_simulation(filename: str):
 
     output = pd.read_csv(os.path.join(filename), index_col=0)
     return output
+
+
+class ProgressBarQueue(queue.Queue):
+    """
+    A child of :class:`queue.Queue` used for tracking progress.
+
+    The progress bar is designed to hold messages containing tuples of the format:
+        - Thread identifier,
+        - Current stage index,
+        - Number of stages until the task is completed.
+
+    """
+
+    # Private Attributes:
+    # .. attribute:: _previous_message_length
+    #   Used to keep track of the previous message length to determine the number of
+    #   line return characters needed.
+    #
+
+    def __init__(self) -> None:
+        """
+        Instantiate a progress queue.
+
+        """
+
+        self._previous_message_length = 1
+
+        super().__init__()
+
+    def _message_from_entry(self, entry: Tuple[str, str, str]) -> str:
+        """
+        Generates a message for the queue based on a queue entry.
+
+        Inputs:
+            - entry:
+                An entry in the queue, usually a Tuple.
+
+        """
+
+        # Generate integer-based data off the entries.
+        current_marker = int(entry[1])
+        final_marker = int(entry[2])
+        percentage: int = int(100 * current_marker / final_marker)
+
+        # Return the entry as a nicely-formatted progress bar.
+        return "{}{}: [{}{}] {}{}%\n".format(
+            entry[0],
+            " " * (15 - len(str(entry[0]))),
+            "#" * int(56 * entry[1] / entry[2]),
+            "-" * int(56 * (1 - entry[1] / entry[2])),
+            " " * (3 - len(str(percentage))),
+            percentage,
+        )
+
+    def get_message(self) -> Optional[str]:
+        """
+        Returns the message to display out to the console.
+
+        """
+
+        message_queue = self.get()
+
+        # If the message queue is empty, then return `None`.
+        if len(message_queue) == 0:
+            return None
+
+        status_message = "\r{}".format("\033[A" * (self._previous_message_length))
+
+        # If the queue contains multiple entries, then report back all of these.
+        if isinstance(message_queue, list):
+            for entry in message_queue:
+                status_message += self._message_from_entry(entry)
+            self._previous_message_length = len(message_queue)
+
+        # If there is only one message in the queue, then print this message.
+        else:
+            status_message = self._message_from_entry(message_queue)
+            self._previous_message_length = 1
+
+        # Update the message length in lines for use next time.
+
+        return status_message
+
+
+class ProgressBarThread(threading.Thread):
+    """
+    A :class:`threading.Thread` child used for monitoring CLOVER's progress.
+
+    """
+
+    # Private Attributes:
+    # .. attribute:: progress_queue
+    #   A :class:`ProgressBarQueue` instance used for tracking the various messages
+    #   that report the progress of running threads.
+    #
+
+    def __init__(self, progress_queue: ProgressBarQueue) -> None:
+        """
+        Instantiate a :class:`ProgressBarThread` instance.
+
+        Inputs:
+            - progress_queue:
+                The queue to use for tracking the progress of the various threads.
+
+        """
+
+        self._progress_queue = progress_queue
+
+        super().__init__()
+
+    def run(self) -> None:
+        """
+        Run the thread.
+
+        """
+
+        message = ""
+
+        # Run until there are no messages to report, then exit.
+        while message is not None:
+            message = self._progress_queue.get_message()
+            print(message)
+            time.sleep(1)
 
 
 def read_yaml(filepath: str, logger: logging.Logger) -> Dict[Any, Any]:
