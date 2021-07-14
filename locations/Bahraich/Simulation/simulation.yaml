@@ -1,0 +1,17 @@
+---
+################################################################################
+# simulation.yaml - Parameters for running a CLOVER simulation.                #
+#                                                                              #
+# Author: Phil Sandwell, Ben Winchester                                        #
+# Copyright: Phil Sandwell & Ben Winchester, 2021                              #
+# Date created: 14/07/2021                                                     #
+# License: Open source                                                         #
+################################################################################
+
+# NOTE: Currently, simulations can only be run for a maximum of 20 years.
+#
+
+end_year: 20 # The end year for the simulation.
+iteration_length: 4 # The length of each iteration to run, in years.
+number_of_iterations: 3 # The number of iterations for CLOVER to run.
+start_year: 0 # The start year for the simulation run.
