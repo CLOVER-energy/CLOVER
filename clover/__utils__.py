@@ -280,24 +280,3 @@ def save_simulation(
     simulation_name.to_csv(os.path.join(filename))
     logger.info("Simulation successfully saved to %s.", filename)
     print(f"Simulation saved as {filename}")
-
-
-def read_yaml(filepath: str, logger: logging.Logger) -> Dict[Any, Any]:
-    """
-    Reads a YAML file and returns the contents.
-
-
-    """
-
-    # Process the new-location data.
-    try:
-        with open(filepath, "r") as filedata:
-            file_contents = yaml.safe_load(filedata)
-    except FileNotFoundError:
-        logger.error(
-            "The file specified, %s, could not be found. "
-            "Ensure that you run the new-locations script from the workspace root.",
-            filepath,
-        )
-        raise
-    return file_contents

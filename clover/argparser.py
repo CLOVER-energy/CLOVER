@@ -13,10 +13,14 @@ argparser.py - The argument-parsing module for CLOVER.
 """
 
 import argparse
+import logging
 
 from typing import Any, List
 
-__all__ = ("parse_args",)
+__all__ = (
+    "parse_args",
+    "validate_args",
+)
 
 
 def parse_args(args: List[Any]) -> argparse.Namespace:
@@ -90,3 +94,23 @@ def parse_args(args: List[Any]) -> argparse.Namespace:
     )
 
     return parser.parse_args(args)
+
+
+def validate_args(logger: logging.Logger, parsed_args: argparse.Namespace) -> bool:
+    """
+    Validates the command-line arguments passed in.
+
+    Inputs:
+        - parsed_args
+            The parsed command-line arguments.
+
+    Outputs:
+        - A boolean giving whether the arguments are valid (True) or not (False).
+
+    """
+
+    if parsed_args.location is None:
+        logger.error("The required argument, 'location', was not specified.")
+        return False
+
+    return True
