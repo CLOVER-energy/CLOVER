@@ -1,0 +1,29 @@
+---
+################################################################################
+# energy_system.yaml - Parameters for specifying a CLOVER energy system.       #
+#                                                                              #
+# Author: Phil Sandwell, Ben Winchester                                        #
+# Copyright: Phil Sandwell & Ben Winchester, 2021                              #
+# Date created: 14/07/2021                                                     #
+# License: Open source                                                         #
+################################################################################
+
+battery:
+  maximum_charge: 0.9 # State of charge (0.0 - 1.0)
+  minimum_charge: 0.4 # State of charge (0.0 - 1.0)
+  leakage: 0.004 # Fractional leakage per hour
+  conversion_in: 0.95 # Conversion efficiency (0.0 - 1.0)
+  conversion_out: 0.95 # Conversion efficiency (0.0 - 1.0)
+  cycle_lifetime: 1500 # Expected number of cycles over lifetime
+  lifetime_loss: 0.2 # Fractional loss over lifetime (0.0 - 1.0)
+  c_rate_discharging: 0.33 # Discharge rate
+  c_rate_charging: 0.33 # Charge rate
+dc_network:
+  transmission_efficiency: 0.95 # Efficiency of DC distribution network
+ac_network:
+  transmission_efficiency: 0.95 # Efficiency of AC distribution network
+conversion:
+  dc_to_ac: 0.95 # Conversion efficiency (0.0-1.0)
+  dc_to_dc: 0.95 # Conversion efficiency (0.0-1.0)
+  ac_to_dc: 0.8 # Conversion efficiency (0.0-1.0)
+  ac_to_ac: 0.98 # Conversion efficiency (0.0-1.0)
