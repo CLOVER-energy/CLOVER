@@ -1,0 +1,12 @@
+---
+################################################################################
+# diesel_inputs.yaml - Diesel-generator input parameters.                      #
+#                                                                              #
+# Author: Phil Sandwell, Ben Winchester                                        #
+# Copyright: Phil Sandwell & Ben Winchester, 2021                              #
+# Date created: 14/07/2021                                                     #
+# License: Open source                                                         #
+################################################################################
+
+diesel_consumption: 0.4 # [litres per kW capacity per hour]
+minimum_load: 0.35 # Minimum capacity factor (0.0 - 1.0)

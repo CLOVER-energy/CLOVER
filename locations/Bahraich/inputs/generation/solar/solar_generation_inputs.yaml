@@ -1,6 +1,6 @@
 ---
 ################################################################################
-# pv_generation_inputs.yaml - PV-data-generation parameters.                   #
+# solar_generation_inputs.yaml - PV-data-generation parameters.                #
 #                                                                              #
 # Author: Phil Sandwell, Ben Winchester                                        #
 # Copyright: Phil Sandwell & Ben Winchester, 2021                              #
@@ -8,8 +8,14 @@
 # License: Open source                                                         #
 ################################################################################
 
+# NOTE: The renewables.ninja API token must be entered under the `token` field.
+# For more information, consult the User Guide, available within the repository
+# and online.
+#
+
 azimuthal_orientation: 180 # [degrees from North]
 end_year: 2016 # The absolute end year for gathering solar data.
 lifetime: 20 # [years] - Lifetime of the PV system.
 start_year: 2007 # The absolute start year for gathering solar data.
 tilt: 29 # [degrees above horizontal]
+token: 082ba129a4a22049735c9f1347fb851211113b23 # renewables.ninja API token
