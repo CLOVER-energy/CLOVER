@@ -17,6 +17,15 @@
 #   - file: <file contained within the directory>
 #     contents: <contents of the file>
 #
+# For large files, use the `|-` literal-style block-scalar character to tell
+# YAML that the text is split across several lines.
+#
+# For files that contain many repeated lines, use the following format:
+#   contents: |-
+#     23:foo,bar,baz
+# This will tell the new-location script to repeat the specified line 23 times.
+# This is done to save space within this YAML file.
+#
 
 - directory: "Locations/{location}"
   contents:
