@@ -1,18 +1,21 @@
-# -*- coding: utf-8 -*-
+#!/usr/bin/python3
+########################################################################################
+# load.py - Load-profile generation module.                                            #
+#                                                                                      #
+# Author: Phil Sandwell                                                                #
+# Copyright: Phil Sandwell, 2018                                                       #
+# License: Open source                                                                 #
+# Most recent update: 14/07/2021                                                       #
+#                                                                                      #
+# For more information, please email:                                                  #
+#     philip.sandwell@gmail.com                                                        #
+########################################################################################
 """
-===============================================================================
-                                LOAD FILE
-===============================================================================
-                            Most recent update:
-                             12 December 2018
-===============================================================================
-Made by:
-    Philip Sandwell
-Copyright:
-    Philip Sandwell, 2018
-For more information, please email:
-    philip.sandwell@googlemail.com
-===============================================================================
+load.py - The load-profile generation module of CLOVER.
+
+This module generates load profiles for CLOVER based on the device information passed
+in.
+
 """
 
 import os
@@ -22,6 +25,39 @@ import numpy as np
 import pandas as pd
 
 from ..__utils__ import LOCATIONS_FOLDER_NAME, monthly_profile_to_daily_profile
+
+__all__ = ("number_of_devices_daily",)
+
+
+def number_of_devices_daily():
+    """
+    Calculates the number of devices owned by the community on each day
+
+    Inputs:
+
+    Outputs:
+        Returns the number of devives that are owned by the community on a given
+        day. Devices which are not permitted by "Devices.csv" should return a list
+        composed entirely of zeroes.
+
+    """
+    for device in device_inputs):
+        if device["available"]:
+            pop = self.population_growth_daily()
+            if device["final_ownership"] != device["initial_ownership"]:
+                cum_sales = _cumulative_sales_daily(device["initial_ownership"], device["final_ownership"], device["innovation"], device["imitation"])
+                daily_ownership = pd.DataFrame(np.floor(cum_sales * pop))
+            else:
+                daily_ownership = pd.DataFrame(np.floor(pop * init))
+        elif device_info["Available"] == "N":
+            daily_ownership = pd.DataFrame(
+                np.zeros((int(self.location_inputs["Years"]) * 365, 1))
+            )
+        daily_ownership.to_csv(
+            self.device_ownership_filepath
+            + device_info["Device"]
+            + "_daily_ownership.csv"
+        )
 
 
 class Load:
@@ -252,38 +288,6 @@ class Load:
     # =============================================================================
     #      Calculate the total number of each device owned by the community
     # =============================================================================
-    def number_of_devices_daily(self):
-        """
-        Function:
-            Calculates the number of devices owned by the community on each day
-        Inputs:
-            Takes inputs from "Devices.csv" in the "Load" folder
-            Use "Devices.csv" to add new devices, permit or deny devices to be used,
-            define the device power, and how quickly it is adopted
-        Outputs:
-            Returns a .csv of the number of devives that are owned by the community
-            on a given day. Devices which are not permitted by "Devices.csv" should
-            return a list composed entirely of zeroes.
-        """
-        for i in range(len(self.device_inputs)):
-            device_info = self.device_inputs.iloc[i]
-            if device_info["Available"] == "Y":
-                init, fin, inno, imit = device_info[3:7]
-                pop = self.population_growth_daily()
-                if fin != init:
-                    cum_sales = self.cumulative_sales_daily(init, fin, inno, imit)
-                    daily_ownership = pd.DataFrame(np.floor(cum_sales * pop))
-                else:
-                    daily_ownership = pd.DataFrame(np.floor(pop * init))
-            elif device_info["Available"] == "N":
-                daily_ownership = pd.DataFrame(
-                    np.zeros((int(self.location_inputs["Years"]) * 365, 1))
-                )
-            daily_ownership.to_csv(
-                self.device_ownership_filepath
-                + device_info["Device"]
-                + "_daily_ownership.csv"
-            )
 
     def population_growth_daily(self):
         """
