@@ -1,0 +1,13 @@
+# Ignore model outputs
+**/logs
+*.log*
+# Ignore VSCode files
+.vscode
+# Ignore internal Python directories
+**/__pycache__
+# Ignore output files
+*output_*
+**/output*
+# HPC log files
+*e[0-9]*
+*o[0-9]*

@@ -30,7 +30,7 @@ from Energy_System import Energy_System
 #%%
 class Optimisation():
     def __init__(self):
-        self.location = ‘Bahraich’
+        self.location = "Bahraich"
         self.CLOVER_filepath = '/***YOUR LOCAL FILE PATH***/CLOVER 4.0'
         self.location_filepath = self.CLOVER_filepath + '/Locations/' + self.location
         self.optimisation_filepath = self.location_filepath + '/Optimisation/Optimisation inputs.csv'
