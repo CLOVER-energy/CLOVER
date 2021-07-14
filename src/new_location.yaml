@@ -30,50 +30,155 @@
 
 - directory: "{locations_folder_name}/{location}"
   contents:
-    - directory: Generation
+    - directory: auto_generated
+    - directory: inputs
       contents:
-        - directory: Diesel
+        - directory: generation
           contents:
-            - file: "Diesel inputs.csv"
+            - directory: diesel
+              contents:
+                - file: "diesel_inputs.yaml"
+                  contents: |+
+                    ---
+                    ################################################################################
+                    # diesel_inputs.yaml - Diesel-generator input parameters.                      #
+                    #                                                                              #
+                    # Author: Phil Sandwell, Ben Winchester                                        #
+                    # Copyright: Phil Sandwell & Ben Winchester, 2021                              #
+                    # Date created: 14/07/2021                                                     #
+                    # License: Open source                                                         #
+                    ################################################################################
+
+                    diesel_consumption: 0.4 # [litres per kW capacity per hour]
+                    minimum_load: 0.35 # Minimum capacity factor (0.0 - 1.0)
+
+            - directory: grid
+              contents:
+                - file: "grid_inputs.csv"
+                  contents: |-
+                    Name,none,all,example,eight_hours
+                    0,0,1,0.8,0.33
+                    1,0,1,0.8,0.33
+                    2,0,1,0.8,0.33
+                    3,0,1,0.8,0.33
+                    4,0,1,0.8,0.33
+                    5,0,1,0.8,0.33
+                    6,0,1,0.5,0.33
+                    7,0,1,0.3,0.33
+                    8,0,1,0.3,0.33
+                    9,0,1,0.3,0.33
+                    10,0,1,0.5,0.33
+                    11,0,1,0.5,0.33
+                    12,0,1,0.5,0.33
+                    13,0,1,0.5,0.33
+                    14,0,1,0.5,0.33
+                    15,0,1,0.5,0.33
+                    16,0,1,0.5,0.33
+                    17,0,1,0.1,0.33
+                    18,0,1,0.1,0.33
+                    19,0,1,0.1,0.33
+                    20,0,1,0.1,0.33
+                    21,0,1,0.5,0.33
+                    22,0,1,0.7,0.33
+                    23,0,1,0.7,0.33
+            - directory: solar
+              contents:
+                - file: "solar_generation_inputs.yaml"
+                  contents: |+
+                    ---
+                    ################################################################################
+                    # solar_generation_inputs.yaml - PV-data-generation parameters.                #
+                    #                                                                              #
+                    # Author: Phil Sandwell, Ben Winchester                                        #
+                    # Copyright: Phil Sandwell & Ben Winchester, 2021                              #
+                    # Date created: 14/07/2021                                                     #
+                    # License: Open source                                                         #
+                    ################################################################################
+
+                    # NOTE: The renewables.ninja API token must be entered under the `token` field.
+                    # For more information, consult the User Guide, available within the repository
+                    # and online.
+                    #
+
+                    azimuthal_orientation: 180 # [degrees from North]
+                    end_year: 2016 # The absolute end year for gathering solar data.
+                    lifetime: 20 # [years] - Lifetime of the PV system.
+                    start_year: 2007 # The absolute start year for gathering solar data.
+                    tilt: 29 # [degrees above horizontal]
+                    token: "YOUR API TOKEN HERE" # renewables.ninja API token
+
+        - directory: Impact
+          contents:
+            - file: "Finance inputs.csv"
               contents: |-
-                Diesel consumption,0.4,litres per kW capacity per hour
-                Diesel minimum load,0.35,Minimum capacity factor (0.0-1.0)
-        - directory: Grid
-          contents:
-            - file: "Grid inputs.csv"
+                Discount rate,0.1,fraction
+                PV cost,500,$/kWp
+                PV O&M,5,$/kWp p.a.
+                PV cost decrease,5,% p.a.
+                Storage cost,400,$/kWh
+                Storage O&M,10,$/kWh p.a.
+                Storage cost decrease,5,% p.a.
+                Diesel generator cost,200,$/kW
+                Diesel generator cost decrease,0,% p.a.
+                Diesel fuel cost,0.9,$/litre
+                Diesel fuel cost decrease,-1,% p.a.
+                Diesel O&M,20,$/kW p.a.
+                BOS cost,200,$/kW
+                BOS cost decrease,2,% p.a.
+                PV installation cost,100,$/kW
+                PV installation cost decrease,0,% p.a.
+                Diesel installation cost,50,$/kW
+                Diesel installation cost decrease,0,% p.a.
+                Connection cost,100,$/household
+                Kerosene cost,0.008,$/hour
+                Grid cost,0.01,$/kWh
+                Grid extension cost,5000,$/km
+                Grid infrastructure cost,2000,$
+                Inverter cost,200,$/kW
+                Inverter cost decrease,2,% p.a.
+                Inverter lifetime,4,years
+                Inverter size increment,1,kW
+                Misc. costs,0,$/kW
+                General O&M,500,$ p.a.
+            - file: "GHG inputs.csv"
               contents: |-
-                Name,none,all,example,eight_hours
-                0,0,1,0.8,0.33
-                1,0,1,0.8,0.33
-                2,0,1,0.8,0.33
-                3,0,1,0.8,0.33
-                4,0,1,0.8,0.33
-                5,0,1,0.8,0.33
-                6,0,1,0.5,0.33
-                7,0,1,0.3,0.33
-                8,0,1,0.3,0.33
-                9,0,1,0.3,0.33
-                10,0,1,0.5,0.33
-                11,0,1,0.5,0.33
-                12,0,1,0.5,0.33
-                13,0,1,0.5,0.33
-                14,0,1,0.5,0.33
-                15,0,1,0.5,0.33
-                16,0,1,0.5,0.33
-                17,0,1,0.1,0.33
-                18,0,1,0.1,0.33
-                19,0,1,0.1,0.33
-                20,0,1,0.1,0.33
-                21,0,1,0.5,0.33
-                22,0,1,0.7,0.33
-                23,0,1,0.7,0.33
-        - directory: PV
+                PV GHGs,3000,kgCO2/kWp
+                PV O&M GHGs,5,kgCO2/kWp p.a.
+                PV GHG decrease,5,% p.a.
+                Storage GHGs,110,kgCO2/kWh
+                Storage O&M GHGs,5,kgCO2/kWh p.a.
+                Storage GHG decrease,5,% p.a.
+                Diesel generator GHGs,2000,kgCO2/kW
+                Diesel generator GHG decrease,0,% p.a.
+                Diesel fuel GHGs,2,kgCO2/litre
+                Diesel O&M GHGs,10,kgCO2/kW p.a.
+                BOS GHGs,200,kgCO2/kW
+                BOS GHG decrease,2,% p.a.
+                PV installation GHGs,50,kgCO2/kW
+                PV installation GHG decrease,0,% p.a.
+                Diesel installation GHGs,50,kgCO2/kW
+                Diesel installation GHG decrease,0,% p.a.
+                Connection GHGs,10,kgCO2/household
+                Kerosene GHGs,0.055,kgCO2/hour
+                Grid GHGs (initial),0.8,kgCO2/kWh
+                Grid GHGs (final),0.4,kgCO2/kWh
+                Grid extension GHGs,290000,kgCO2/km
+                Grid infrastructure GHGs,1200000,kgCO2
+                Inverter GHGs,75,kgCO2/kW
+                Inverter GHG decrease,2,% p.a.
+                Inverter lifetime,4,years
+                Inverter size increment,1,kW
+                Misc. GHGs,0,kgCO2/kW
+                General O&M GHGs,200,kgCO2 p.a.
+        - directory: load
           contents:
-            - file: "pv_generation_inputs.yaml"
-              contents: |+
+            - directory: "Device load"
+            - directory: "Device ownership"
+            - file: devices.yaml
+              contents: |-
                 ---
                 ################################################################################
-                # pv_generation_inputs.yaml - PV-data-generation parameters.                   #
+                # devices.yaml - Device input information.                                     #
                 #                                                                              #
                 # Author: Phil Sandwell, Ben Winchester                                        #
                 # Copyright: Phil Sandwell & Ben Winchester, 2021                              #
@@ -81,319 +186,350 @@
                 # License: Open source                                                         #
                 ################################################################################
 
-                azimuthal_orientation: 180 # [degrees from North]
-                end_year: 2016 # The absolute end year for gathering solar data.
-                lifetime: 20 # [years] - Lifetime of the PV system.
-                start_year: 2007 # The absolute start year for gathering solar data.
-                tilt: 29 # [degrees above horizontal]
-    - directory: Impact
-      contents:
-        - file: "Finance inputs.csv"
-          contents: |-
-            Discount rate,0.1,fraction
-            PV cost,500,$/kWp
-            PV O&M,5,$/kWp p.a.
-            PV cost decrease,5,% p.a.
-            Storage cost,400,$/kWh
-            Storage O&M,10,$/kWh p.a.
-            Storage cost decrease,5,% p.a.
-            Diesel generator cost,200,$/kW
-            Diesel generator cost decrease,0,% p.a.
-            Diesel fuel cost,0.9,$/litre
-            Diesel fuel cost decrease,-1,% p.a.
-            Diesel O&M,20,$/kW p.a.
-            BOS cost,200,$/kW
-            BOS cost decrease,2,% p.a.
-            PV installation cost,100,$/kW
-            PV installation cost decrease,0,% p.a.
-            Diesel installation cost,50,$/kW
-            Diesel installation cost decrease,0,% p.a.
-            Connection cost,100,$/household
-            Kerosene cost,0.008,$/hour
-            Grid cost,0.01,$/kWh
-            Grid extension cost,5000,$/km
-            Grid infrastructure cost,2000,$
-            Inverter cost,200,$/kW
-            Inverter cost decrease,2,% p.a.
-            Inverter lifetime,4,years
-            Inverter size increment,1,kW
-            Misc. costs,0,$/kW
-            General O&M,500,$ p.a.
-        - file: "GHG inputs.csv"
-          contents: |-
-            PV GHGs,3000,kgCO2/kWp
-            PV O&M GHGs,5,kgCO2/kWp p.a.
-            PV GHG decrease,5,% p.a.
-            Storage GHGs,110,kgCO2/kWh
-            Storage O&M GHGs,5,kgCO2/kWh p.a.
-            Storage GHG decrease,5,% p.a.
-            Diesel generator GHGs,2000,kgCO2/kW
-            Diesel generator GHG decrease,0,% p.a.
-            Diesel fuel GHGs,2,kgCO2/litre
-            Diesel O&M GHGs,10,kgCO2/kW p.a.
-            BOS GHGs,200,kgCO2/kW
-            BOS GHG decrease,2,% p.a.
-            PV installation GHGs,50,kgCO2/kW
-            PV installation GHG decrease,0,% p.a.
-            Diesel installation GHGs,50,kgCO2/kW
-            Diesel installation GHG decrease,0,% p.a.
-            Connection GHGs,10,kgCO2/household
-            Kerosene GHGs,0.055,kgCO2/hour
-            Grid GHGs (initial),0.8,kgCO2/kWh
-            Grid GHGs (final),0.4,kgCO2/kWh
-            Grid extension GHGs,290000,kgCO2/km
-            Grid infrastructure GHGs,1200000,kgCO2
-            Inverter GHGs,75,kgCO2/kW
-            Inverter GHG decrease,2,% p.a.
-            Inverter lifetime,4,years
-            Inverter size increment,1,kW
-            Misc. GHGs,0,kgCO2/kW
-            General O&M GHGs,200,kgCO2 p.a.
-    - directory: Load
-      contents:
-        - directory: "Device load"
-        - directory: "Device ownership"
-        - file: Devices.csv
-          contents: |-
-            Device,Available,Power,Initial,Final,Innovation,Imitation,Type
-            light,Y,3,2,4,0.04,0.5,Domestic
-            phone,Y,5,2.2,3,0.02,0.2,Domestic
-            radio,Y,10,0.28,0.35,0.01,0.2,Domestic
-            tv,Y,20,0.08,0.9,0.03,0.25,Domestic
-            laptop,Y,40,0.01,0.5,0.02,0.1,Domestic
-            fridge,Y,50,0,0.5,0.02,0.2,Domestic
-            fan,Y,10,0.1,2,0.04,0.3,Domestic
-            kerosene,Y,1,3.4,2,0.02,0.1,Domestic
-            mill,Y,750,0.01,0.1,0.02,0.2,Commercial
-            workshop,Y,350,0.05,0.05,0.02,0.2,Commercial
-            SME,Y,200,0.05,0.03,0.25,0.25,Commercial
-            streetlight,Y,25,0.2,0.2,0,0,Public
-        - directory: "Devices in use"
-        - directory: "Device utilisation"
+                # A template device is provided below:
+                # - device: light
+                #   available: true
+                #   electric_power: 3
+                #   initial_ownership: 2
+                #   final_ownership: 4
+                #   innovation: 0.04
+                #   imitation: 0.5
+                #   type: domestic
+                #
+
+                - device: light
+                  available: true
+                  electric_power: 3
+                  initial_ownership: 2
+                  final_ownership: 4
+                  innovation: 0.04
+                  imitation: 0.5
+                  type: domestic
+                - device: phone
+                  available: true
+                  electric_power: 5
+                  initial_ownership: 2.2
+                  final_ownership: 3
+                  innovation: 0.02
+                  imitation: 0.2
+                  type: domestic
+                - device: radio
+                  available: true
+                  electric_power: 10
+                  initial_ownership: 0.28
+                  final_ownership: 0.35
+                  innovation: 0.01
+                  imitation: 0.2
+                  type: domestic
+                - device: tv
+                  available: true
+                  electric_power: 20
+                  initial_ownership: 0.08
+                  final_ownership: 0.9
+                  innovation: 0.03
+                  imitation: 0.25
+                  type: domestic
+                - device: laptop
+                  available: true
+                  electric_power: 40
+                  initial_ownership: 0.01
+                  final_ownership: 0.5
+                  innovation: 0.02
+                  imitation: 0.2
+                  type: domestic
+                - device: fridge
+                  available: true
+                  electric_power: 50
+                  initial_ownership: 0
+                  final_ownership: 0.5
+                  innovation: 0.02
+                  imitation: 0.2
+                  type: domestic
+                - device: fan
+                  available: true
+                  electric_power: 10
+                  initial_ownership: 0.1
+                  final_ownership: 2
+                  innovation: 0.04
+                  imitation: 0.3
+                  type: domestic
+                - device: kerosene
+                  available: true
+                  electric_power: 1
+                  initial_ownership: 3.4
+                  final_ownership: 2
+                  innovation: 0.02
+                  imitation: 0.1
+                  type: domestic
+                - device: mill
+                  available: true
+                  electric_power: 750
+                  initial_ownership: 0.01
+                  final_ownership: 0.1
+                  innovation: 0.02
+                  imitation: 0.2
+                  type: commercial
+                - device: workshop
+                  available: true
+                  electric_power: 350
+                  initial_ownership: 0.05
+                  final_ownership: 0.05
+                  innovation: 0.02
+                  imitation: 0.2
+                  type: commercial
+                - device: sme
+                  available: true
+                  electric_power: 200
+                  initial_ownership: 0.05
+                  final_ownership: 0.03
+                  innovation: 0.25
+                  imitation: 0.25
+                  type: commercial
+                - device: streetlight
+                  available: true
+                  electric_power: 25
+                  initial_ownership: 0.2
+                  final_ownership: 0.2
+                  innovation: 0
+                  imitation: 0
+                  type: public
+
+            - directory: "Devices in use"
+            - directory: "Device utilisation"
+              contents:
+                - file: fan_times.csv
+                  contents: |-
+                    23:0.67,0.70,0.73,0.76,0.80,0.83,0.83,0.80,0.76,0.73,0.70,0.67
+                    0.67,0.70,0.73,0.76,0.80,0.83,0.83,0.80,0.76,0.73,0.70,0.67
+                - file: fridge_times.csv
+                  contents: |-
+                    23:0.67,0.70,0.73,0.76,0.80,0.83,0.83,0.80,0.76,0.73,0.70,0.67
+                    0.67,0.70,0.73,0.76,0.80,0.83,0.83,0.80,0.76,0.73,0.70,0.67
+                - file: kerosene_times.csv
+                  contents: |-
+                    6:0.24,0.24,0.24,0.24,0.24,0.24,0.24,0.24,0.24,0.24,0.24,0.24
+                    0.22,0.16,0.05,0.00,0.00,0.00,0.00,0.00,0.00,0.01,0.09,0.18
+                    10:0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00
+                    0.17,0.02,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.11,0.48,0.48
+                    0.99,0.76,0.29,0.23,0.06,0.01,0.00,0.07,0.55,0.99,0.99,0.99
+                    0.99,0.99,0.99,0.99,0.85,0.65,0.64,0.90,0.99,0.99,0.99,0.99
+                    0.99,0.99,0.99,0.99,0.99,0.99,0.99,0.99,0.99,0.99,0.99,0.99
+                    0.83,0.83,0.83,0.83,0.83,0.83,0.83,0.83,0.83,0.83,0.83,0.83
+                    0.43,0.43,0.43,0.43,0.43,0.43,0.43,0.43,0.43,0.43,0.43,0.43
+                    0.30,0.30,0.30,0.30,0.30,0.30,0.30,0.30,0.30,0.30,0.30,0.30
+                - file: laptop_times.csv
+                  contents: |-
+                    17:0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00
+                    0.10,0.10,0.10,0.10,0.10,0.10,0.10,0.10,0.10,0.10,0.10,0.10
+                    0.50,0.50,0.50,0.50,0.50,0.50,0.50,0.50,0.50,0.50,0.50,0.50
+                    0.50,0.50,0.50,0.50,0.50,0.50,0.50,0.50,0.50,0.50,0.50,0.50
+                    0.50,0.50,0.50,0.50,0.50,0.50,0.50,0.50,0.50,0.50,0.50,0.50
+                    0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25
+                    0.15,0.15,0.15,0.15,0.15,0.15,0.15,0.15,0.15,0.15,0.15,0.15
+                    0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00
+                - file: light_times.csv
+                  contents: |-
+                    4:0.39,0.39,0.39,0.39,0.39,0.39,0.39,0.39,0.39,0.39,0.39,0.39
+                    0.39,0.39,0.39,0.39,0.48,0.56,0.46,0.39,0.39,0.39,0.39,0.39
+                    0.39,0.39,0.47,0.48,0.23,0.12,0.28,0.45,0.53,0.57,0.40,0.39
+                    0.58,0.48,0.22,0.00,0.00,0.00,0.00,0.00,0.00,0.05,0.37,0.53
+                    10:0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00
+                    0.47,0.08,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.39,0.74,0.76
+                    0.93,0.93,0.54,0.51,0.23,0.03,0.00,0.26,0.79,0.93,0.93,0.93
+                    0.93,0.93,0.93,0.93,0.93,0.93,0.90,0.93,0.93,0.93,0.93,0.93
+                    2:0.93,0.93,0.93,0.93,0.93,0.93,0.93,0.93,0.93,0.93,0.93,0.93
+                    0.88,0.88,0.88,0.88,0.88,0.88,0.88,0.88,0.88,0.88,0.88,0.88
+                    0.83,0.83,0.83,0.83,0.83,0.83,0.83,0.83,0.83,0.83,0.83,0.83
+                - file: mill_times.csv
+                  contents: |-
+                    7:0.045,0.035,0.045,0.045,0.035,0.035,0.02,0.02,0.02,0.045,0.045,0.045
+                    0.36,0.28,0.36,0.36,0.28,0.28,0.16,0.16,0.16,0.36,0.36,0.36
+                    0.45,0.35,0.45,0.45,0.35,0.35,0.2,0.2,0.2,0.45,0.45,0.45
+                    9:0.54,0.42,0.54,0.54,0.42,0.42,0.24,0.24,0.24,0.54,0.54,0.54
+                    2:0.45,0.35,0.45,0.45,0.35,0.35,0.2,0.2,0.2,0.45,0.45,0.45
+                    0.36,0.28,0.36,0.36,0.28,0.28,0.16,0.16,0.16,0.36,0.36,0.36
+                    0.27,0.21,0.27,0.27,0.21,0.21,0.12,0.12,0.12,0.27,0.27,0.27
+                    0.09,0.07,0.09,0.09,0.07,0.07,0.04,0.04,0.04,0.09,0.09,0.09
+                    0.045,0.035,0.045,0.045,0.035,0.035,0.02,0.02,0.02,0.045,0.045,0.045
+                - file: phone_times.csv
+                  contents: |-
+                    0.00581,0.00572,0.00554,0.00534,0.00520,0.00516,0.00522,0.00531,0.00539,0.00548,0.00561,0.00575
+                    0.00140,0.00138,0.00134,0.00129,0.00126,0.00125,0.00126,0.00128,0.00130,0.00132,0.00135,0.00139
+                    2:0.00000,0.00000,0.00000,0.00000,0.00000,0.00000,0.00000,0.00000,0.00000,0.00000,0.00000,0.00000
+                    0.00011,0.00025,0.00098,0.00369,0.00748,0.00881,0.00695,0.00445,0.00271,0.00158,0.00061,0.00019
+                    0.00233,0.00382,0.00821,0.01606,0.02258,0.02441,0.02179,0.01760,0.01381,0.01052,0.00635,0.00323
+                    0.01323,0.01689,0.02436,0.03354,0.03948,0.04094,0.03882,0.03505,0.03119,0.02741,0.02157,0.01556
+                    0.03166,0.03558,0.04235,0.04849,0.05079,0.05110,0.05061,0.04922,0.04719,0.04468,0.03999,0.03420
+                    0.04942,0.05170,0.05424,0.05454,0.05363,0.05331,0.05377,0.05438,0.05469,0.05462,0.05357,0.05096
+                    0.05855,0.05833,0.05717,0.05524,0.05381,0.05342,0.05398,0.05489,0.05576,0.05656,0.05767,0.05845
+                    0.06004,0.05911,0.05734,0.05525,0.05381,0.05342,0.05398,0.05490,0.05579,0.05665,0.05799,0.05944
+                    0.05869,0.05775,0.05601,0.05396,0.05256,0.05218,0.05272,0.05362,0.05449,0.05533,0.05664,0.05808
+                    0.05769,0.05676,0.05505,0.05304,0.05166,0.05129,0.05182,0.05270,0.05356,0.05439,0.05567,0.05709
+                    0.05709,0.05617,0.05448,0.05249,0.05112,0.05075,0.05128,0.05215,0.05300,0.05382,0.05509,0.05650
+                    0.05809,0.05716,0.05544,0.05341,0.05202,0.05164,0.05218,0.05307,0.05393,0.05476,0.05606,0.05749
+                    0.05909,0.05814,0.05639,0.05433,0.05291,0.05253,0.05308,0.05398,0.05486,0.05571,0.05703,0.05848
+                    0.05969,0.05873,0.05696,0.05488,0.05345,0.05307,0.05362,0.05453,0.05542,0.05627,0.05761,0.05907
+                    0.05949,0.05854,0.05677,0.05470,0.05327,0.05289,0.05344,0.05435,0.05523,0.05609,0.05741,0.05887
+                    0.05909,0.05814,0.05639,0.05433,0.05291,0.05253,0.05308,0.05398,0.05486,0.05571,0.05703,0.05848
+                    0.05709,0.05617,0.05448,0.05249,0.05112,0.05075,0.05128,0.05215,0.05300,0.05382,0.05509,0.05650
+                    0.05188,0.05105,0.04951,0.04770,0.04646,0.04612,0.04660,0.04740,0.04817,0.04891,0.05007,0.05134
+                    0.03666,0.03607,0.03498,0.03370,0.03282,0.03259,0.03293,0.03349,0.03403,0.03456,0.03538,0.03628
+                    0.02003,0.01971,0.01912,0.01842,0.01794,0.01781,0.01799,0.01830,0.01860,0.01888,0.01933,0.01982
+                - file: radio_times.csv
+                  contents: |-
+                    17:0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00
+                    0.10,0.10,0.10,0.10,0.10,0.10,0.10,0.10,0.10,0.10,0.10,0.10
+                    3:0.50,0.50,0.50,0.50,0.50,0.50,0.50,0.50,0.50,0.50,0.50,0.50
+                    0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25
+                    0.15,0.15,0.15,0.15,0.15,0.15,0.15,0.15,0.15,0.15,0.15,0.15
+                    0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00
+                - file: SME_times.csv
+                  contents: |-
+                    7:0.008,0.006,0.008,0.008,0.006,0.006,0.006,0.006,0.006,0.008,0.008,0.008
+                    0.04,0.03,0.04,0.04,0.03,0.03,0.03,0.03,0.03,0.04,0.04,0.04
+                    0.24,0.18,0.24,0.24,0.18,0.18,0.18,0.18,0.18,0.24,0.24,0.24
+                    0.32,0.24,0.32,0.32,0.24,0.24,0.24,0.24,0.24,0.32,0.32,0.32
+                    2:0.4,0.3,0.4,0.4,0.3,0.3,0.3,0.3,0.3,0.4,0.4,0.4
+                    2:0.24,0.18,0.24,0.24,0.18,0.18,0.18,0.18,0.18,0.24,0.24,0.24
+                    6:0.4,0.3,0.4,0.4,0.3,0.3,0.3,0.3,0.3,0.4,0.4,0.4
+                    0.16,0.12,0.16,0.16,0.12,0.12,0.12,0.12,0.12,0.16,0.16,0.16
+                    0.08,0.06,0.08,0.08,0.06,0.06,0.06,0.06,0.06,0.08,0.08,0.08
+                    0.04,0.03,0.04,0.04,0.03,0.03,0.03,0.03,0.03,0.04,0.04,0.04
+                    0.008,0.006,0.008,0.008,0.006,0.006,0.006,0.006,0.006,0.008,0.008,0.008
+                - file: streetlight_times.csv
+                  contents: |-
+                    3:1,1,1,1,1,1,1,1,1,1,1,1
+                    15:0,0,0,0,0,0,0,0,0,0,0,0
+                    5:1,1,1,1,1,1,1,1,1,1,1,1
+                    1,1,1,1,1,1,1,1,1,1,1,1
+                - file: tv_times.csv
+                  contents: |-
+                    17:0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00
+                    0.10,0.10,0.10,0.10,0.10,0.10,0.10,0.10,0.10,0.10,0.10,0.10
+                    3:0.50,0.50,0.50,0.50,0.50,0.50,0.50,0.50,0.50,0.50,0.50,0.50
+                    0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25
+                    0.15,0.15,0.15,0.15,0.15,0.15,0.15,0.15,0.15,0.15,0.15,0.15
+                    0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00
+                - file: workshop_times.csv
+                  contents: |-
+                    7:0.008,0.006,0.008,0.008,0.006,0.006,0.006,0.006,0.006,0.008,0.008,0.008
+                    0.04,0.03,0.04,0.04,0.03,0.03,0.03,0.03,0.03,0.04,0.04,0.04
+                    0.24,0.18,0.24,0.24,0.18,0.18,0.18,0.18,0.18,0.24,0.24,0.24
+                    0.32,0.24,0.32,0.32,0.24,0.24,0.24,0.24,0.24,0.32,0.32,0.32
+                    2:0.4,0.3,0.4,0.4,0.3,0.3,0.3,0.3,0.3,0.4,0.4,0.4
+                    2:0.24,0.18,0.24,0.24,0.18,0.18,0.18,0.18,0.18,0.24,0.24,0.24
+                    4:0.4,0.3,0.4,0.4,0.3,0.3,0.3,0.3,0.3,0.4,0.4,0.4
+                    0.16,0.12,0.16,0.16,0.12,0.12,0.12,0.12,0.12,0.16,0.16,0.16
+                    0.08,0.06,0.08,0.08,0.06,0.06,0.06,0.06,0.06,0.08,0.08,0.08
+                    2:0.04,0.03,0.04,0.04,0.03,0.03,0.03,0.03,0.03,0.04,0.04,0.04
+                    0.008,0.006,0.008,0.008,0.006,0.006,0.006,0.006,0.006,0.008,0.008,0.008
+                    0.008,0.006,0.008,0.008,0.006,0.006,0.006,0.006,0.006,0.008,0.008,0.008
+        - directory: "location_data"
           contents:
-            - file: fan_times.csv
-              contents: |-
-                23:0.67,0.70,0.73,0.76,0.80,0.83,0.83,0.80,0.76,0.73,0.70,0.67
-                0.67,0.70,0.73,0.76,0.80,0.83,0.83,0.80,0.76,0.73,0.70,0.67
-            - file: fridge_times.csv
-              contents: |-
-                23:0.67,0.70,0.73,0.76,0.80,0.83,0.83,0.80,0.76,0.73,0.70,0.67
-                0.67,0.70,0.73,0.76,0.80,0.83,0.83,0.80,0.76,0.73,0.70,0.67
-            - file: kerosene_times.csv
-              contents: |-
-                6:0.24,0.24,0.24,0.24,0.24,0.24,0.24,0.24,0.24,0.24,0.24,0.24
-                0.22,0.16,0.05,0.00,0.00,0.00,0.00,0.00,0.00,0.01,0.09,0.18
-                10:0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00
-                0.17,0.02,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.11,0.48,0.48
-                0.99,0.76,0.29,0.23,0.06,0.01,0.00,0.07,0.55,0.99,0.99,0.99
-                0.99,0.99,0.99,0.99,0.85,0.65,0.64,0.90,0.99,0.99,0.99,0.99
-                0.99,0.99,0.99,0.99,0.99,0.99,0.99,0.99,0.99,0.99,0.99,0.99
-                0.83,0.83,0.83,0.83,0.83,0.83,0.83,0.83,0.83,0.83,0.83,0.83
-                0.43,0.43,0.43,0.43,0.43,0.43,0.43,0.43,0.43,0.43,0.43,0.43
-                0.30,0.30,0.30,0.30,0.30,0.30,0.30,0.30,0.30,0.30,0.30,0.30
-            - file: laptop_times.csv
-              contents: |-
-                17:0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00
-                0.10,0.10,0.10,0.10,0.10,0.10,0.10,0.10,0.10,0.10,0.10,0.10
-                0.50,0.50,0.50,0.50,0.50,0.50,0.50,0.50,0.50,0.50,0.50,0.50
-                0.50,0.50,0.50,0.50,0.50,0.50,0.50,0.50,0.50,0.50,0.50,0.50
-                0.50,0.50,0.50,0.50,0.50,0.50,0.50,0.50,0.50,0.50,0.50,0.50
-                0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25
-                0.15,0.15,0.15,0.15,0.15,0.15,0.15,0.15,0.15,0.15,0.15,0.15
-                0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00
-            - file: light_times.csv
-              contents: |-
-                4:0.39,0.39,0.39,0.39,0.39,0.39,0.39,0.39,0.39,0.39,0.39,0.39
-                0.39,0.39,0.39,0.39,0.48,0.56,0.46,0.39,0.39,0.39,0.39,0.39
-                0.39,0.39,0.47,0.48,0.23,0.12,0.28,0.45,0.53,0.57,0.40,0.39
-                0.58,0.48,0.22,0.00,0.00,0.00,0.00,0.00,0.00,0.05,0.37,0.53
-                10:0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00
-                0.47,0.08,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.39,0.74,0.76
-                0.93,0.93,0.54,0.51,0.23,0.03,0.00,0.26,0.79,0.93,0.93,0.93
-                0.93,0.93,0.93,0.93,0.93,0.93,0.90,0.93,0.93,0.93,0.93,0.93
-                2:0.93,0.93,0.93,0.93,0.93,0.93,0.93,0.93,0.93,0.93,0.93,0.93
-                0.88,0.88,0.88,0.88,0.88,0.88,0.88,0.88,0.88,0.88,0.88,0.88
-                0.83,0.83,0.83,0.83,0.83,0.83,0.83,0.83,0.83,0.83,0.83,0.83
-            - file: mill_times.csv
-              contents: |-
-                7:0.045,0.035,0.045,0.045,0.035,0.035,0.02,0.02,0.02,0.045,0.045,0.045
-                0.36,0.28,0.36,0.36,0.28,0.28,0.16,0.16,0.16,0.36,0.36,0.36
-                0.45,0.35,0.45,0.45,0.35,0.35,0.2,0.2,0.2,0.45,0.45,0.45
-                9:0.54,0.42,0.54,0.54,0.42,0.42,0.24,0.24,0.24,0.54,0.54,0.54
-                2:0.45,0.35,0.45,0.45,0.35,0.35,0.2,0.2,0.2,0.45,0.45,0.45
-                0.36,0.28,0.36,0.36,0.28,0.28,0.16,0.16,0.16,0.36,0.36,0.36
-                0.27,0.21,0.27,0.27,0.21,0.21,0.12,0.12,0.12,0.27,0.27,0.27
-                0.09,0.07,0.09,0.09,0.07,0.07,0.04,0.04,0.04,0.09,0.09,0.09
-                0.045,0.035,0.045,0.045,0.035,0.035,0.02,0.02,0.02,0.045,0.045,0.045
-            - file: phone_times.csv
-              contents: |-
-                0.00581,0.00572,0.00554,0.00534,0.00520,0.00516,0.00522,0.00531,0.00539,0.00548,0.00561,0.00575
-                0.00140,0.00138,0.00134,0.00129,0.00126,0.00125,0.00126,0.00128,0.00130,0.00132,0.00135,0.00139
-                2:0.00000,0.00000,0.00000,0.00000,0.00000,0.00000,0.00000,0.00000,0.00000,0.00000,0.00000,0.00000
-                0.00011,0.00025,0.00098,0.00369,0.00748,0.00881,0.00695,0.00445,0.00271,0.00158,0.00061,0.00019
-                0.00233,0.00382,0.00821,0.01606,0.02258,0.02441,0.02179,0.01760,0.01381,0.01052,0.00635,0.00323
-                0.01323,0.01689,0.02436,0.03354,0.03948,0.04094,0.03882,0.03505,0.03119,0.02741,0.02157,0.01556
-                0.03166,0.03558,0.04235,0.04849,0.05079,0.05110,0.05061,0.04922,0.04719,0.04468,0.03999,0.03420
-                0.04942,0.05170,0.05424,0.05454,0.05363,0.05331,0.05377,0.05438,0.05469,0.05462,0.05357,0.05096
-                0.05855,0.05833,0.05717,0.05524,0.05381,0.05342,0.05398,0.05489,0.05576,0.05656,0.05767,0.05845
-                0.06004,0.05911,0.05734,0.05525,0.05381,0.05342,0.05398,0.05490,0.05579,0.05665,0.05799,0.05944
-                0.05869,0.05775,0.05601,0.05396,0.05256,0.05218,0.05272,0.05362,0.05449,0.05533,0.05664,0.05808
-                0.05769,0.05676,0.05505,0.05304,0.05166,0.05129,0.05182,0.05270,0.05356,0.05439,0.05567,0.05709
-                0.05709,0.05617,0.05448,0.05249,0.05112,0.05075,0.05128,0.05215,0.05300,0.05382,0.05509,0.05650
-                0.05809,0.05716,0.05544,0.05341,0.05202,0.05164,0.05218,0.05307,0.05393,0.05476,0.05606,0.05749
-                0.05909,0.05814,0.05639,0.05433,0.05291,0.05253,0.05308,0.05398,0.05486,0.05571,0.05703,0.05848
-                0.05969,0.05873,0.05696,0.05488,0.05345,0.05307,0.05362,0.05453,0.05542,0.05627,0.05761,0.05907
-                0.05949,0.05854,0.05677,0.05470,0.05327,0.05289,0.05344,0.05435,0.05523,0.05609,0.05741,0.05887
-                0.05909,0.05814,0.05639,0.05433,0.05291,0.05253,0.05308,0.05398,0.05486,0.05571,0.05703,0.05848
-                0.05709,0.05617,0.05448,0.05249,0.05112,0.05075,0.05128,0.05215,0.05300,0.05382,0.05509,0.05650
-                0.05188,0.05105,0.04951,0.04770,0.04646,0.04612,0.04660,0.04740,0.04817,0.04891,0.05007,0.05134
-                0.03666,0.03607,0.03498,0.03370,0.03282,0.03259,0.03293,0.03349,0.03403,0.03456,0.03538,0.03628
-                0.02003,0.01971,0.01912,0.01842,0.01794,0.01781,0.01799,0.01830,0.01860,0.01888,0.01933,0.01982
-            - file: radio_times.csv
-              contents: |-
-                17:0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00
-                0.10,0.10,0.10,0.10,0.10,0.10,0.10,0.10,0.10,0.10,0.10,0.10
-                3:0.50,0.50,0.50,0.50,0.50,0.50,0.50,0.50,0.50,0.50,0.50,0.50
-                0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25
-                0.15,0.15,0.15,0.15,0.15,0.15,0.15,0.15,0.15,0.15,0.15,0.15
-                0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00
-            - file: SME_times.csv
-              contents: |-
-                7:0.008,0.006,0.008,0.008,0.006,0.006,0.006,0.006,0.006,0.008,0.008,0.008
-                0.04,0.03,0.04,0.04,0.03,0.03,0.03,0.03,0.03,0.04,0.04,0.04
-                0.24,0.18,0.24,0.24,0.18,0.18,0.18,0.18,0.18,0.24,0.24,0.24
-                0.32,0.24,0.32,0.32,0.24,0.24,0.24,0.24,0.24,0.32,0.32,0.32
-                2:0.4,0.3,0.4,0.4,0.3,0.3,0.3,0.3,0.3,0.4,0.4,0.4
-                2:0.24,0.18,0.24,0.24,0.18,0.18,0.18,0.18,0.18,0.24,0.24,0.24
-                6:0.4,0.3,0.4,0.4,0.3,0.3,0.3,0.3,0.3,0.4,0.4,0.4
-                0.16,0.12,0.16,0.16,0.12,0.12,0.12,0.12,0.12,0.16,0.16,0.16
-                0.08,0.06,0.08,0.08,0.06,0.06,0.06,0.06,0.06,0.08,0.08,0.08
-                0.04,0.03,0.04,0.04,0.03,0.03,0.03,0.03,0.03,0.04,0.04,0.04
-                0.008,0.006,0.008,0.008,0.006,0.006,0.006,0.006,0.006,0.008,0.008,0.008
-            - file: streetlight_times.csv
-              contents: |-
-                3:1,1,1,1,1,1,1,1,1,1,1,1
-                15:0,0,0,0,0,0,0,0,0,0,0,0
-                5:1,1,1,1,1,1,1,1,1,1,1,1
-                1,1,1,1,1,1,1,1,1,1,1,1
-            - file: tv_times.csv
-              contents: |-
-                17:0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00
-                0.10,0.10,0.10,0.10,0.10,0.10,0.10,0.10,0.10,0.10,0.10,0.10
-                3:0.50,0.50,0.50,0.50,0.50,0.50,0.50,0.50,0.50,0.50,0.50,0.50
-                0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25
-                0.15,0.15,0.15,0.15,0.15,0.15,0.15,0.15,0.15,0.15,0.15,0.15
-                0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00
-            - file: workshop_times.csv
-              contents: |-
-                7:0.008,0.006,0.008,0.008,0.006,0.006,0.006,0.006,0.006,0.008,0.008,0.008
-                0.04,0.03,0.04,0.04,0.03,0.03,0.03,0.03,0.03,0.04,0.04,0.04
-                0.24,0.18,0.24,0.24,0.18,0.18,0.18,0.18,0.18,0.24,0.24,0.24
-                0.32,0.24,0.32,0.32,0.24,0.24,0.24,0.24,0.24,0.32,0.32,0.32
-                2:0.4,0.3,0.4,0.4,0.3,0.3,0.3,0.3,0.3,0.4,0.4,0.4
-                2:0.24,0.18,0.24,0.24,0.18,0.18,0.18,0.18,0.18,0.24,0.24,0.24
-                4:0.4,0.3,0.4,0.4,0.3,0.3,0.3,0.3,0.3,0.4,0.4,0.4
-                0.16,0.12,0.16,0.16,0.12,0.12,0.12,0.12,0.12,0.16,0.16,0.16
-                0.08,0.06,0.08,0.08,0.06,0.06,0.06,0.06,0.06,0.08,0.08,0.08
-                2:0.04,0.03,0.04,0.04,0.03,0.03,0.03,0.03,0.03,0.04,0.04,0.04
-                0.008,0.006,0.008,0.008,0.006,0.006,0.006,0.006,0.006,0.008,0.008,0.008
-                0.008,0.006,0.008,0.008,0.006,0.006,0.006,0.006,0.006,0.008,0.008,0.008
-    - directory: "Location Data"
-      contents:
-        - file: "Location inputs.csv"
-          contents: |-
-            Location,Bahraich,Location name
-            Country,India,Location country
-            Time difference,5.5,Time difference vs. UTC
-            Community size,100,Number of households in community
-            Community growth rate,0.01,Fractional growth rate per year
-            Years,20,years of simulation
-            Latitude,27.6,degrees of latitude (North +ve)
-            Longitude,81.6,degrees of longitude (East +ve)
-            token,YOUR API TOKEN HERE,renewables.ninja API token
-    - directory: Optimisation
-      contents:
-        - file: "Optimisation inputs.csv"
-          contents: |-
-            Scenario length,12,years,
-            Iteration length,4,years,
-            PV size (min),1,kWp,
-            PV size (max),1,kWp,
-            PV size (step),1,kWp,
-            PV size (increase),0,kWp,Set to 0 to ignore
-            Storage size (min),1,kWh,
-            Storage size (max),1,kWh,
-            Storage size (step),1,kWh,
-            Storage size (increase),0,kWh,Set to 0 to ignore
-            Threshold criterion,Blackouts,Name of column from appraisal,
-            Threshold value,0.05,Max/min value permitted (see guidance),
-            Optimisation criterion,Cumulative system cost ($),Name of column from appraisal,
-        - directory: "Saved optimisations"
-    - directory: Scenario
-      contents:
-        - file: "Scenario inputs.csv"
-          contents: |-
-            PV,Y,(Y/N)
-            Battery,Y,(Y/N)
-            Diesel backup,Y,(Y/N)
-            Diesel backup threshold,0.1,Maximum acceptible blackouts (0.0-1.0)
-            Grid,Y,(Y/N)
-            Grid type,bahraich,Grid profile
-            Prioritise self generation,Y,(Y/N)
-            Domestic,Y,(Y/N)
-            Commercial,Y,(Y/N)
-            Public,Y,(Y/N)
-            Distribution network,DC,DC or AC distribution network
-    - directory: Simulation
-      contents:
-        - file: "energy_system.yaml"
-          contents: |-
-            ---
-            ################################################################################
-            # energy_system.yaml - Parameters for specifying a CLOVER energy system.       #
-            #                                                                              #
-            # Author: Phil Sandwell, Ben Winchester                                        #
-            # Copyright: Phil Sandwell & Ben Winchester, 2021                              #
-            # Date created: 14/07/2021                                                     #
-            # License: Open source                                                         #
-            ################################################################################
+            - file: "location_inputs.yaml"
+              contents: |+
+                ---
+                ################################################################################
+                # location_inputs.yaml - Location-specific parameters.                         #
+                #                                                                              #
+                # Author: Phil Sandwell, Ben Winchester                                        #
+                # Copyright: Phil Sandwell & Ben Winchester, 2021                              #
+                # Date created: 14/07/2021                                                     #
+                # License: Open source                                                         #
+                ################################################################################
 
-            battery:
-              maximum_charge: 0.9 # State of charge (0.0 - 1.0)
-              minimum_charge: 0.4 # State of charge (0.0 - 1.0)
-              leakage: 0.004 # Fractional leakage per hour
-              conversion_in: 0.95 # Conversion efficiency (0.0 - 1.0)
-              conversion_out: 0.95 # Conversion efficiency (0.0 - 1.0)
-              cycle_lifetime: 1500 # Expected number of cycles over lifetime
-              lifetime_loss: 0.2 # Fractional loss over lifetime (0.0 - 1.0)
-              c_rate_discharging: 0.33 # Discharge rate
-              c_rate_charging: 0.33 # Charge rate
-            dc_network:
-              transmission_efficiency: 0.95 # Efficiency of DC distribution network
-            ac_network:
-              transmission_efficiency: 0.95 # Efficiency of AC distribution network
-            conversion:
-              dc_to_ac: 0.95 # Conversion efficiency (0.0-1.0)
-              dc_to_dc: 0.95 # Conversion efficiency (0.0-1.0)
-              ac_to_dc: 0.8 # Conversion efficiency (0.0-1.0)
-              ac_to_ac: 0.98 # Conversion efficiency (0.0-1.0)
-        - directory: "Saved simulations"
-        - file: "simulation.yaml"
-          contents: |+
-            ---
-            ################################################################################
-            # simulation.yaml - Parameters for running a CLOVER simulation.                #
-            #                                                                              #
-            # Author: Phil Sandwell, Ben Winchester                                        #
-            # Copyright: Phil Sandwell & Ben Winchester, 2021                              #
-            # Date created: 14/07/2021                                                     #
-            # License: Open source                                                         #
-            ################################################################################
+                location: Bahraich # The name of the location
+                country: India # Location country
+                time_difference: 5.5 # Time difference, in hours, vs. UTC
+                community_size: 100 # Initial number of households in community
+                community_growth_rate: 0.01 # Fractional growth rate per year
+                max_years: 20 # The maximum number of years of simulation
+                latitude: 27.6 # Degrees of latitude (North +ve)
+                longitude: 81.6 # Degrees of longitude (East +ve)
 
-            # NOTE: Currently, simulations can only be run for a maximum of 20 years.
-            #
+        - directory: Optimisation
+          contents:
+            - file: "Optimisation inputs.csv"
+              contents: |-
+                Scenario length,12,years,
+                Iteration length,4,years,
+                PV size (min),1,kWp,
+                PV size (max),1,kWp,
+                PV size (step),1,kWp,
+                PV size (increase),0,kWp,Set to 0 to ignore
+                Storage size (min),1,kWh,
+                Storage size (max),1,kWh,
+                Storage size (step),1,kWh,
+                Storage size (increase),0,kWh,Set to 0 to ignore
+                Threshold criterion,Blackouts,Name of column from appraisal,
+                Threshold value,0.05,Max/min value permitted (see guidance),
+                Optimisation criterion,Cumulative system cost ($),Name of column from appraisal,
+            - directory: "Saved optimisations"
+        - directory: Scenario
+          contents:
+            - file: "Scenario inputs.csv"
+              contents: |-
+                PV,Y,(Y/N)
+                Battery,Y,(Y/N)
+                Diesel backup,Y,(Y/N)
+                Diesel backup threshold,0.1,Maximum acceptible blackouts (0.0-1.0)
+                Grid,Y,(Y/N)
+                Grid type,bahraich,Grid profile
+                Prioritise self generation,Y,(Y/N)
+                Domestic,Y,(Y/N)
+                Commercial,Y,(Y/N)
+                Public,Y,(Y/N)
+                Distribution network,DC,DC or AC distribution network
+        - directory: Simulation
+          contents:
+            - file: "energy_system.yaml"
+              contents: |-
+                ---
+                ################################################################################
+                # energy_system.yaml - Parameters for specifying a CLOVER energy system.       #
+                #                                                                              #
+                # Author: Phil Sandwell, Ben Winchester                                        #
+                # Copyright: Phil Sandwell & Ben Winchester, 2021                              #
+                # Date created: 14/07/2021                                                     #
+                # License: Open source                                                         #
+                ################################################################################
 
-            end_year: 20 # The end year for the simulation.
-            iteration_length: 4 # The length of each iteration to run, in years.
-            number_of_iterations: 3 # The number of iterations for CLOVER to run.
-            start_year: 0 # The start year for the simulation run.
+                battery:
+                  maximum_charge: 0.9 # State of charge (0.0 - 1.0)
+                  minimum_charge: 0.4 # State of charge (0.0 - 1.0)
+                  leakage: 0.004 # Fractional leakage per hour
+                  conversion_in: 0.95 # Conversion efficiency (0.0 - 1.0)
+                  conversion_out: 0.95 # Conversion efficiency (0.0 - 1.0)
+                  cycle_lifetime: 1500 # Expected number of cycles over lifetime
+                  lifetime_loss: 0.2 # Fractional loss over lifetime (0.0 - 1.0)
+                  c_rate_discharging: 0.33 # Discharge rate
+                  c_rate_charging: 0.33 # Charge rate
+                dc_network:
+                  transmission_efficiency: 0.95 # Efficiency of DC distribution network
+                ac_network:
+                  transmission_efficiency: 0.95 # Efficiency of AC distribution network
+                conversion:
+                  dc_to_ac: 0.95 # Conversion efficiency (0.0-1.0)
+                  dc_to_dc: 0.95 # Conversion efficiency (0.0-1.0)
+                  ac_to_dc: 0.8 # Conversion efficiency (0.0-1.0)
+                  ac_to_ac: 0.98 # Conversion efficiency (0.0-1.0)
+            - directory: "Saved simulations"
+            - file: "simulation.yaml"
+              contents: |+
+                ---
+                ################################################################################
+                # simulation.yaml - Parameters for running a CLOVER simulation.                #
+                #                                                                              #
+                # Author: Phil Sandwell, Ben Winchester                                        #
+                # Copyright: Phil Sandwell & Ben Winchester, 2021                              #
+                # Date created: 14/07/2021                                                     #
+                # License: Open source                                                         #
+                ################################################################################
+
+                # NOTE: Currently, simulations can only be run for a maximum of 20 years.
+                #
+
+                end_year: 20 # The end year for the simulation.
+                iteration_length: 4 # The length of each iteration to run, in years.
+                number_of_iterations: 3 # The number of iterations for CLOVER to run.
+                start_year: 0 # The start year for the simulation run.
