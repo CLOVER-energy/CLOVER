@@ -35,6 +35,7 @@ __all__ = (
     "daily_sum_to_monthly_sum",
     "get_logger",
     "hourly_profile_to_daily_sum",
+    "InvalidLocationError",
     "LOCATIONS_FOLDER_NAME",
     "LOGGER_DIRECTORY",
     "monthly_profile_to_daily_profile",
@@ -155,6 +156,25 @@ def hourly_profile_to_daily_sum(hourly_profile: pd.DataFrame):
     daily_profile = pd.DataFrame(hourly_profile.values.reshape((days, 24)))
     # return pd.DataFrame(np.sum(daily_profile, 1))
     return daily_profile.sum()
+
+
+class InvalidLocationError(Exception):
+    """
+    Raised when a user attempts to use an invalid location with CLOVER.
+
+    """
+
+    def __init__(self, location: str) -> None:
+        """
+        Instantiate a :class:`InvalidLocation` error.
+
+        Inputs:
+            - location
+                The name of the location which was invalid.
+
+        """
+
+        super().__init__("The location, {}, is invalid.".format(location))
 
 
 def monthly_profile_to_daily_profile(monthly_profile: pd.DataFrame) -> pd.DataFrame:

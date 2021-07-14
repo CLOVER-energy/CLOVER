@@ -23,7 +23,12 @@ import sys
 
 from typing import Any, Dict, List
 
-from .__utils__ import get_logger, LOCATIONS_FOLDER_NAME, read_yaml
+from .__utils__ import (
+    get_logger,
+    InvalidLocationError,
+    LOCATIONS_FOLDER_NAME,
+    read_yaml,
+)
 from .argparser import parse_args
 from .scripts.new_location import DIRECTORY, NEW_LOCATION_DATA_FILE
 
@@ -43,10 +48,22 @@ def _check_location(location: str, logger: logging.Logger) -> bool:
     Outputs:
         - Whether the location meets the requirements as a boolean variable.
 
+    Raises:
+        - FileNotFoundError:
+            Raised if the location cannot be found.
+
     """
 
     if not os.path.isdir(os.path.join(LOCATIONS_FOLDER_NAME, location)):
-        return False
+        logger.error(
+            "The specified location, '%s', does not exist. Try running the "
+            "'new_location' script to ensure all necessary files and folders are "
+            "present.",
+            location,
+        )
+        raise FileNotFoundError(
+            "The location, {}, could not be found.".format(location)
+        )
 
     # Read in the information about the files that should be present.
     # new_location_data = read_yaml(NEW_LOCATION_DATA_FILE)
@@ -103,10 +120,12 @@ def main(args: List[Any]) -> None:
     logger.info("Checking location %s.", parsed_args.location)
     if not _check_location(parsed_args.location, logger):
         logger.error(
-            "The specified location, '%s', does not meet the requirements and/or does "
-            "not exist. Try running the 'new_location' script to ensure all necessary "
-            "files and folders are present."
+            "The location, '%s', is invalid. Try running the `new_location` script to"
+            "identify missing files. See /logs for details.",
+            parsed_args.location,
         )
+        raise InvalidLocationError(parsed_args.location)
+    logger.info("Location, '%s', has been verified and is valid.", parsed_args.location)
 
     # ******* #
     # *  2  * #
