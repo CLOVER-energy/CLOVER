@@ -28,8 +28,10 @@ import pandas as pd
 
 from . import argparser
 from .generation import grid, solar
+from .load import load
 
 from .__utils__ import (
+    LOGGER_DIRECTORY,
     get_logger,
     InvalidLocationError,
     LOCATIONS_FOLDER_NAME,
@@ -140,10 +142,12 @@ def main(args: List[Any]) -> None:
     if not argparser.validate_args(logger, parsed_args):
         logger.error(
             "Invalid command-line arguments. Check that all required arguments have "
-            "been specified. See /logs for details."
+            "been specified. See %s for details.",
+            "{}.log".format(os.path.join(LOGGER_DIRECTORY, LOGGER_NAME)),
         )
         raise ValueError(
-            "The command-line arguments were invalid. See /logs for details."
+            "The command-line arguments were invalid. See %s for details.",
+            "{}.log".format(os.path.join(LOGGER_DIRECTORY, LOGGER_NAME)),
         )
     logger.info("Command-line arguments successfully validated.")
 
@@ -157,8 +161,9 @@ def main(args: List[Any]) -> None:
     if not _check_location(parsed_args.location, logger):
         logger.error(
             "The location, '%s', is invalid. Try running the `new_location` script to"
-            "identify missing files. See /logs for details.",
+            "identify missing files. See %s for details.",
             parsed_args.location,
+            "{}.log".format(os.path.join(LOGGER_DIRECTORY, LOGGER_NAME)),
         )
         raise InvalidLocationError(parsed_args.location)
     logger.info("Location, '%s', has been verified and is valid.", parsed_args.location)
@@ -233,11 +238,25 @@ def main(args: List[Any]) -> None:
     solar_data_thread = solar.SolarDataThread(
         os.path.join(auto_generated_files_directory, "solar"),
         location_inputs,
-        logger,
         solar_generation_inputs,
     )
     solar_data_thread.start()
-    logger.info("Solar-data thread successfully instantiated.")
+    logger.info(
+        "Solar-data thread successfully instantiated. See %s for details.",
+        "{}.log".format(os.path.join(LOGGER_DIRECTORY, solar.SOLAR_LOGGER_NAME)),
+    )
+
+    # Generate and save the device-ownership profiles.
+    device_ownership_thread = load.DeviceOwnershipThread(
+        device_inputs,
+        os.path.join(auto_generated_files_directory, "load", "device_ownership"),
+        location_inputs,
+    )
+    device_ownership_thread.start()
+    logger.info(
+        "Device-ownership thread successfully instantiated. See %s for details.",
+        "{}.log".format(os.path.join(LOGGER_DIRECTORY, load.LOAD_LOGGER_NAME)),
+    )
 
     # Generate the grid-availability profiles.
     logger.info("Generating grid-availability profiles.")
