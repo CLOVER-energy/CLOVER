@@ -33,13 +33,21 @@ import numpy as np
 import pandas as pd
 import requests
 
+from ..__utils__ import get_logger
+
 __all__ = (
     "get_solar_output",
     "save_solar_output",
     "SolarDataThread",
     "solar_degradation",
+    "SOLAR_LOGGER_NAME",
     "total_solar_output",
 )
+
+
+# Solar logger name:
+#   The name to use for the solar logger.
+SOLAR_LOGGER_NAME = "solar_generation"
 
 
 def _get_solar_generation_from_rn(
@@ -308,13 +316,25 @@ class SolarDataThread(threading.Thread):
     """
     A :class:`threading.Thread` child for running solar-data fetching in the background.
 
+    .. attribute:: auto_generated_files_directory
+        The directory in which CLOVER-generated files should be saved.
+
+    .. attribute:: location_inputs
+        The location inputs information, extracted from the location-inputs file.
+
+    .. attribute:: logger
+        The :class:`logging.Logger` to use for the run.
+
+    .. attribute:: solar_generation_inputs:
+        The solar-generation inputs information, extracted from the
+        solar-generation-inputs file.
+
     """
 
     def __init__(
         self,
         auto_generated_files_directory: str,
         location_inputs: Dict[Any, Any],
-        logger: Logger,
         solar_generation_inputs: Dict[Any, Any],
     ) -> None:
         """
@@ -325,8 +345,6 @@ class SolarDataThread(threading.Thread):
                 The directory in which CLOVER-generated files should be saved.
             - location_inputs:
                 The location inputs.
-            - logger:
-                The logger being used for the run.
             - solar_generation_inputs:
                 The solar-generation inputs.
 
@@ -334,7 +352,7 @@ class SolarDataThread(threading.Thread):
 
         self.auto_generated_files_directory: str = auto_generated_files_directory
         self.location_inputs: Dict[Any, Any] = location_inputs
-        self.logger: Logger = logger
+        self.logger: Logger = get_logger(SOLAR_LOGGER_NAME)
         self.solar_generation_inputs: Dict[Any, Any] = solar_generation_inputs
 
         super().__init__()
@@ -346,33 +364,45 @@ class SolarDataThread(threading.Thread):
         Execute a solar-data thread.
 
         """
-        for year in range(
-            self.solar_generation_inputs["start_year"],
-            self.solar_generation_inputs["end_year"] + 1,
-        ):
-            # The system waits to prevent overloading the renewables.ninja API and being
-            # locked out.
-            time.sleep(20)
 
-            self.logger.info("Fetching solar data for year %s.", year)
-            try:
-                solar_data = get_solar_output(
-                    self.location_inputs,
-                    self.logger,
-                    self.solar_generation_inputs,
-                    year,
+        self.logger.info("Solar data thread instantiated.")
+
+        try:
+            for year in range(
+                self.solar_generation_inputs["start_year"],
+                self.solar_generation_inputs["end_year"] + 1,
+            ):
+                # The system waits to prevent overloading the renewables.ninja API and being
+                # locked out.
+                time.sleep(20)
+
+                self.logger.info("Fetching solar data for year %s.", year)
+                try:
+                    solar_data = get_solar_output(
+                        self.location_inputs,
+                        self.logger,
+                        self.solar_generation_inputs,
+                        year,
+                    )
+                except KeyError as e:  # pylint: disable=invalid-name
+                    self.logger.error("Missing data from input files: %s", str(e))
+                    raise
+
+                self.logger.info("Solar data successfully fetched, saving.")
+                save_solar_output(
+                    self.auto_generated_files_directory, year, self.logger, solar_data
                 )
-            except KeyError as e:  # pylint: disable=invalid-name
-                self.logger.error("Missing data from input files: %s", str(e))
-                raise
 
-            self.logger.info("Solar data successfully fetched, saving.")
-            save_solar_output(
-                self.auto_generated_files_directory, year, self.logger, solar_data
+            self.logger.info(
+                "All solar outputs fetched, saving total solar output file."
             )
-
-        self.logger.info("All solar outputs fetched, saving total solar output file.")
-        total_solar_output(
-            self.auto_generated_files_directory,
-            self.solar_generation_inputs["start_year"],
-        )
+            total_solar_output(
+                self.auto_generated_files_directory,
+                self.solar_generation_inputs["start_year"],
+            )
+        except Exception:
+            self.logger.error(
+                "Error occured in solar-profile fetching. See %s for details.",
+                "/logs/{}".format(SOLAR_LOGGER_NAME),
+            )
+            raise

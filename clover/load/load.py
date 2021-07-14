@@ -2,7 +2,7 @@
 ########################################################################################
 # load.py - Load-profile generation module.                                            #
 #                                                                                      #
-# Author: Phil Sandwell                                                                #
+# Authors: Phil Sandwell, Ben Winchester                                               #
 # Copyright: Phil Sandwell, 2018                                                       #
 # License: Open source                                                                 #
 # Most recent update: 14/07/2021                                                       #
@@ -18,45 +18,317 @@ in.
 
 """
 
-import os
 import math
+import os
+import threading
+
+from logging import Logger
+from typing import Any, Dict, List
 
 import numpy as np
 import pandas as pd
 
-from ..__utils__ import LOCATIONS_FOLDER_NAME, monthly_profile_to_daily_profile
+from ..__utils__ import (
+    get_logger,
+    LOCATIONS_FOLDER_NAME,
+    monthly_profile_to_daily_profile,
+)
 
-__all__ = ("number_of_devices_daily",)
+__all__ = (
+    "DeviceOwnershipThread",
+    "LOAD_LOGGER_NAME",
+)
 
 
-def number_of_devices_daily():
+# Load logger name:
+#   The name to use for the load module logger.
+LOAD_LOGGER_NAME = "load"
+
+
+def _device_daily_profile(
+    device: Dict[str, Any], monthly_profile: pd.DataFrame, years: int
+) -> pd.DataFrame:
+    """
+    Converts the monthly utilisation profiles to daily utilisation profiles.
+
+    Inputs:
+        - device:
+            The device information, extracted from the device file.
+        - monthly_profile:
+            The monthly ownership profile for the device.
+        - years:
+            The number of years for the simulation.
+
+    Outputs:
+        - The daily-device profile as a :class:`pandas.DataFrame`.
+
+    Notes:
+        Gives a daily utilisation for all devices, even those which are not
+        permitted by "Devices.csv"
+
+    """
+
+    # Convert the monthly profile to a daily profile.
+    yearly_profile = pd.DataFrame.transpose(
+        monthly_profile_to_daily_profile(monthly_profile)
+    )
+    for _ in range(years):
+        yearly_profile = yearly_profile.append(yearly_profile)
+
+    return yearly_profile
+
+
+def _cumulative_sales_daily(
+    current_market_proportion: float,
+    maximum_market_proportion: float,
+    innovation: float,
+    imitation: float,
+    years: int,
+) -> pd.DataFrame:
+    """
+    Return the ownership (sales) of devices in the community.
+
+    Computes and returns the sales (ownership) of devices in the community over the
+    lifetime of the simulation.
+
+    Inputs:
+        - current_market_proportion:
+            The current proportion of potential owners who own the device.
+        - maximum_market_proportion:
+            The maximum saturation of ownership within the market.
+        - innovation:
+            The rate of innovation, i.e., new customers spontaneously purchasing the
+            device.
+        - imitation:
+            The rate of customers copying those around them and purchasing the device.
+        - years:
+            The number of years for which the simulation is being run.
+
+    Outputs:
+        - A dataframe of the ownership of that device type for each day.
+
+    Notes:
+        Uses the Bass diffusion model
+
+    """
+
+    maximisation_ratio = maximum_market_proportion - current_market_proportion
+    daily_innovation = innovation / 365
+    daily_imitation = imitation / 365
+    cum_sales = dict()
+    for day in range(0, 365 * years):
+        num = 1 - math.exp(-1 * (daily_innovation + daily_imitation) * day)
+        den = 1 + (daily_imitation / daily_innovation) * math.exp(
+            -1 * (daily_innovation + daily_imitation) * day
+        )
+        cum_sales[day] = maximisation_ratio * num / den + current_market_proportion
+    return pd.DataFrame(list(cum_sales.values()))
+
+
+def _population_growth_daily(
+    community_growth_rate: float, community_size: int, num_years: int
+) -> pd.DataFrame:
+    """
+    Calculates the growth in the number of households in the community
+
+    Inputs:
+        Takes inputs from "Location inputs.csv" in the "Location data" folder
+
+    Outputs:
+        Gives a DataFrame of the number of households in the community for each day
+
+    Notes:
+        Simple compound interest-style growth rate
+
+    """
+
+    population = []
+    growth_rate_daily = (1 + community_growth_rate) ** (1 / 365.0) - 1
+    for day in range(0, 365 * num_years):
+        population.append(math.floor(community_size * (1 + growth_rate_daily) ** day))
+    return pd.DataFrame(population)
+
+
+def _number_of_devices_daily(
+    device: Dict[str, Any],
+    location_inputs: Dict[str, Any],
+    logger: Logger,
+    max_years: int,
+) -> pd.DataFrame:
     """
     Calculates the number of devices owned by the community on each day
 
     Inputs:
+        - device_inputs:
+            The device inputs file contents.
+        - location_inputs:
+            The location inputs file contents.
+        - logger:
+            The logger to use for the run.
+        - max_years:
+            The maximum number of years for which the simulation can run.
 
     Outputs:
-        Returns the number of devives that are owned by the community on a given
-        day. Devices which are not permitted by "Devices.csv" should return a list
-        composed entirely of zeroes.
+        - daily_ownership:
+            Returns the number of devives that are owned by the community on a given
+            day. Devices which are not permitted by "Devices.csv" should return a list
+            composed entirely of zeroes.
 
     """
-    for device in device_inputs):
-        if device["available"]:
-            pop = self.population_growth_daily()
-            if device["final_ownership"] != device["initial_ownership"]:
-                cum_sales = _cumulative_sales_daily(device["initial_ownership"], device["final_ownership"], device["innovation"], device["imitation"])
-                daily_ownership = pd.DataFrame(np.floor(cum_sales * pop))
-            else:
-                daily_ownership = pd.DataFrame(np.floor(pop * init))
-        elif device_info["Available"] == "N":
-            daily_ownership = pd.DataFrame(
-                np.zeros((int(self.location_inputs["Years"]) * 365, 1))
+
+    if device["available"]:
+        logger.info(
+            " Calculating ownership for device %s.",
+            device["device"],
+        )
+        population_growth_rate = _population_growth_daily(
+            location_inputs["community_growth_rate"],
+            location_inputs["community_size"],
+            location_inputs["max_years"],
+        )
+        if device["final_ownership"] != device["initial_ownership"]:
+            logger.info(
+                " %s ownership changes over time, calculating.",
+                device["device"],
             )
-        daily_ownership.to_csv(
-            self.device_ownership_filepath
-            + device_info["Device"]
-            + "_daily_ownership.csv"
+            cum_sales = _cumulative_sales_daily(
+                device["initial_ownership"],
+                device["final_ownership"],
+                device["innovation"],
+                device["imitation"],
+                max_years,
+            )
+            daily_ownership = pd.DataFrame(
+                np.floor(cum_sales.mul(population_growth_rate))  # type: ignore
+            )
+        else:
+            logger.info(
+                " %s ownership remains constant.",
+                device["device"],
+            )
+            daily_ownership = pd.DataFrame(
+                np.floor(population_growth_rate * device["initial_ownership"])
+            )
+        logger.info(
+            " Ownership for device %s calculated.",
+            device["device"],
+        )
+    else:
+        logger.info(
+            " Device %s was marked as unavailable, setting ownership to zero.",
+            device["device"],
+        )
+        daily_ownership = pd.DataFrame(np.zeros((max_years * 365, 1)))
+
+    return daily_ownership
+
+
+class DeviceOwnershipThread(threading.Thread):
+    """
+    A :class:`threading.Thread` child for computing device-ownership profiles.
+
+    .. attribute:: devices
+        A `list` of device-related information, extracted from the devices input file.
+
+    .. attribute:: generated_device_profiles_directory
+        The directory in which CLOVER-generated files should be saved.
+
+    .. attribute:: location_inputs
+        The location inputs information, extracted from the location-inputs file.
+
+    .. attribute:: logger
+        The :class:`logging.Logger` to use for the run.
+
+    .. attribute:: max_years
+        The maximum number of years for which to run the simulation
+
+    """
+
+    def __init__(
+        self,
+        devices: List[Dict[str, Any]],
+        generated_device_profiles_directory: str,
+        location_inputs: Dict[str, Any],
+    ) -> None:
+        """
+        Instantiate a device-ownership thread.
+
+        Inputs:
+            - devices:
+                Device information extracted from the device-inputs file.
+            - generated_device_profiles_directory:
+                The directory in which to store the generated profiles.
+            - max_years:
+                The maximum number of years for the run.
+
+        """
+
+        self.devices: List[Dict[str, Any]] = devices
+        self.generated_device_profiles_directory = generated_device_profiles_directory
+        self.location_inputs = location_inputs
+        self.logger: Logger = get_logger(LOAD_LOGGER_NAME)
+
+        super().__init__()
+
+    def run(
+        self,
+    ) -> None:
+        """
+        Execute a solar-data thread.
+
+        """
+
+        for device in self.devices:
+            # Compute the daily device usage.
+            daily_ownership = _number_of_devices_daily(
+                device,
+                self.location_inputs,
+                self.logger,
+                self.location_inputs["max_years"],
+            )
+            self.logger.info(
+                "Monthly device ownership profile for %s successfully computed.",
+                device["device"],
+            )
+
+            # Save the usage to the output file.
+            daily_ownership_filename = f'{device["device"]}_daily_ownership.csv'
+            daily_ownership.to_csv(
+                os.path.join(
+                    self.generated_device_profiles_directory,
+                    daily_ownership_filename,
+                )
+            )
+            self.logger.info(
+                "Monthly deivice-ownership profile for %s successfully saved to %s.",
+                device["device"],
+                daily_ownership_filename,
+            )
+
+            # Compute daily-utilisation profile.
+            interpolated_daily_profile = _device_daily_profile(
+                device, daily_ownership, self.location_inputs["max_years"]
+            )
+            self.logger.info(
+                "Daily device ownership profile for %s successfully computed.",
+                device["device"],
+            )
+
+            # Save this to the output file.
+            daily_times_filename = f'{device["device"]}_daily_times.csv'
+            interpolated_daily_profile.to_csv(
+                os.path.join(
+                    self.generated_device_profiles_directory, daily_times_filename
+                )
+            )
+            self.logger.info(
+                "Daily deivice-ownership profile for %s successfully saved to %s.",
+                device["device"],
+                daily_times_filename,
+            )
+
+        self.logger.info(
+            "All device daily-ownership profiles computed.",
         )
 
 
@@ -254,60 +526,9 @@ class Load:
             )
         print("\nAll devices in use calculated")
 
-    def get_device_daily_profile(self):
-        """
-        Function:
-            Converts the monthly utilisation profiles to daily utilisation profiles.
-        Inputs:
-            Uses monthly utilisation profiles (e.g. "light_times.csv") which are generated
-            prior to using the model.
-        Outputs:
-            Gives a .csv for each device with the utilisation at a daily resolution
-        Notes:
-            Gives a daily utilisation for all devices, even those which are not
-            permitted by "Devices.csv"
-        """
-        for i in range(len(self.device_inputs)):
-            device_info = self.device_inputs.iloc[i]
-            monthly_profile = pd.read_csv(
-                self.device_utilisation_filepath + device_info["Device"] + "_times.csv",
-                header=None,
-                index_col=None,
-            )
-            yearly_profile = monthly_profile_to_daily_profile(monthly_profile)
-            yearly_profile = pd.DataFrame.transpose(yearly_profile)
-            total_profile = yearly_profile
-            for j in range(0, int(self.location_inputs["Years"]) - 1):
-                total_profile = total_profile.append(yearly_profile)
-            total_profile.to_csv(
-                self.device_utilisation_filepath
-                + device_info["Device"]
-                + "_daily_times.csv"
-            )
-
     # =============================================================================
     #      Calculate the total number of each device owned by the community
     # =============================================================================
-
-    def population_growth_daily(self):
-        """
-        Function:
-            Calculates the growth in the number of households in the community
-        Inputs:
-            Takes inputs from "Location inputs.csv" in the "Location data" folder
-        Outputs:
-            Gives a DataFrame of the number of households in the community for each day
-        Notes:
-            Simple compound interest-style growth rate
-        """
-        community_size = float(self.location_inputs["Community size"])
-        growth_rate = float(self.location_inputs["Community growth rate"])
-        years = int(self.location_inputs["Years"])
-        population = []
-        growth_rate_daily = (1 + growth_rate) ** (1 / 365.0) - 1
-        for t in range(0, 365 * years):
-            population.append(math.floor(community_size * (1 + growth_rate_daily) ** t))
-        return pd.DataFrame(population)
 
     def population_hourly(self):
         """
@@ -330,30 +551,3 @@ class Load:
                 math.floor(community_size * (1 + growth_rate_hourly) ** t)
             )
         return pd.DataFrame(population)
-
-    def cumulative_sales_daily(
-        self, current_market_prop, max_market_prop, innovation, imitation
-    ):
-        """
-        Function:
-            Calculates the cumulative sales (ownership) of devices in the community
-            over the lifetime of the simulation
-        Inputs:
-            Takes inputs of average initial and final ownership and coefficients of
-            innovation and imitation from "Domestic devices.csv" in Load folder
-        Outputs:
-            Gives a dataframe of the ownership of that device type for each day
-        Notes:
-            Uses the Bass diffusion model
-        """
-        c = current_market_prop
-        m = max_market_prop - current_market_prop
-        p = innovation / 365
-        q = imitation / 365
-        cum_sales = []
-        years = int(self.location_inputs["Years"])
-        for t in range(0, 365 * years):
-            num = 1 - math.exp(-1 * (p + q) * t)
-            den = 1 + (q / p) * math.exp(-1 * (p + q) * t)
-            cum_sales.append(m * num / den + c)
-        return pd.DataFrame(cum_sales)

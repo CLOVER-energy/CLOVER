@@ -31,6 +31,12 @@
 - directory: "{locations_folder_name}/{location}"
   contents:
     - directory: auto_generated
+      contents:
+        - directory: grid
+        - directory: load
+          contents:
+            - directory: device_ownership
+        - directory: solar
     - directory: inputs
       contents:
         - directory: generation
