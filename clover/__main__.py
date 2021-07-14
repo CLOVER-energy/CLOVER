@@ -21,7 +21,6 @@ import logging
 import os
 import sys
 
-from argparse import ArgumentError
 from typing import Any, Dict, List
 
 import pandas as pd
@@ -31,10 +30,12 @@ from .generation import grid, solar
 from .load import load
 
 from .__utils__ import (
-    LOGGER_DIRECTORY,
     get_logger,
     InvalidLocationError,
     LOCATIONS_FOLDER_NAME,
+    LOGGER_DIRECTORY,
+    ProgressBarQueue,
+    ProgressBarThread,
     read_yaml,
 )
 
@@ -233,11 +234,15 @@ def main(args: List[Any]) -> None:
     logger.info("Solar generation inputs successfully parsed.")
     logger.info("All input files successfully parsed.")
 
+    # Set up a progress queue for monitoring the progress of the various threads.
+    progress_bar_queue = ProgressBarQueue()
+
     # Generate and save the solar data for each year as a background task.
     logger.info("Beginning solar-data fetching.")
     solar_data_thread = solar.SolarDataThread(
         os.path.join(auto_generated_files_directory, "solar"),
         location_inputs,
+        progress_bar_queue,
         solar_generation_inputs,
     )
     solar_data_thread.start()
@@ -257,6 +262,11 @@ def main(args: List[Any]) -> None:
         "Device-ownership thread successfully instantiated. See %s for details.",
         "{}.log".format(os.path.join(LOGGER_DIRECTORY, load.LOAD_LOGGER_NAME)),
     )
+
+    # Start a progress bar to track thread progress.
+    progress_bar_thread = ProgressBarThread(progress_bar_queue)
+    progress_bar_thread.start()
+    progress_bar_thread.join()
 
     # Generate the grid-availability profiles.
     logger.info("Generating grid-availability profiles.")
