@@ -40,6 +40,9 @@ __all__ = (
 )
 
 
+from ..__utils__ import get_logger, LOCATIONS_FOLDER_NAME
+
+
 # The keyword used to denote the contents of a file or folder.
 CONTENTS = "contents"
 # The keyword used to denote a directory.
