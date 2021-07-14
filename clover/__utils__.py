@@ -22,6 +22,7 @@ import datetime
 import logging
 import os
 import queue
+import sys
 import threading
 import time
 
@@ -283,7 +284,7 @@ class ProgressBarQueue(queue.Queue):
         percentage: int = int(100 * current_marker / final_marker)
 
         # Return the entry as a nicely-formatted progress bar.
-        return "{}{}: [{}{}] {}{}%\n".format(
+        return "\r{}{}: [{}{}] {}{}%".format(
             entry[0],
             " " * (15 - len(str(entry[0]))),
             "#" * int(56 * entry[1] / entry[2]),
@@ -304,12 +305,13 @@ class ProgressBarQueue(queue.Queue):
         if len(message_queue) == 0:
             return None
 
-        status_message = "\r{}".format("\033[A" * (self._previous_message_length))
+        status_message = "{}".format("\033[A" * (self._previous_message_length + 2))
 
         # If the queue contains multiple entries, then report back all of these.
         if isinstance(message_queue, list):
-            for entry in message_queue:
-                status_message += self._message_from_entry(entry)
+            status_message = "\n".join(
+                [self._message_from_entry(entry) for entry in message_queue]
+            )
             self._previous_message_length = len(message_queue)
 
         # If there is only one message in the queue, then print this message.
@@ -359,7 +361,7 @@ class ProgressBarThread(threading.Thread):
         # Run until there are no messages to report, then exit.
         while message is not None:
             message = self._progress_queue.get_message()
-            print(message)
+            print(f"{message}", end="\r")
             time.sleep(1)
 
 
