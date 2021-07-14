@@ -46,6 +46,11 @@ __all__ = (
 )
 
 
+# Renewables.ninja sleep time:
+#   To avoid being locked out of the renewables.ninja API, it is necessary for CLOVER to
+#   sleep between requests. The time taken for this, in seconds, is set below.
+RENEWABLES_NINJA_SLEEP_TIME = 10
+
 # Solar logger name:
 #   The name to use for the solar logger.
 SOLAR_LOGGER_NAME = "solar_generation"
@@ -391,7 +396,7 @@ class SolarDataThread(threading.Thread):
             ):
                 # The system waits to prevent overloading the renewables.ninja API and being
                 # locked out.
-                time.sleep(20)
+                time.sleep(RENEWABLES_NINJA_SLEEP_TIME)
 
                 self.logger.info("Fetching solar data for year %s.", year)
                 try:
