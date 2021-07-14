@@ -25,6 +25,8 @@ import sys
 
 from typing import Any, List
 
+import re
+
 from ..__utils__ import (
     get_logger,
     LOCATIONS_FOLDER_NAME,
@@ -50,6 +52,8 @@ FILE = "file"
 LOGGER_NAME = "new_location"
 # The path to the new-location data file.
 NEW_LOCATION_DATA_FILE = os.path.join("src", "new_location.yaml")
+# Regex used to find lines that should be repeated, used to save YAML file space.
+REPEATED_LINE_REGEX = re.compile(r"(?P<multiplier>\d*):(?P<line_to_repeat>.*)\n")
 
 
 def _create_file(
@@ -82,6 +86,15 @@ def _create_file(
             )
         )
         return
+
+    # Repeat lines where appropriate.
+    for match in REPEATED_LINE_REGEX.finditer(contents):
+        re.sub(
+            r"{}:{}".format(match.group("multiplier"), match.group("line_to_repeat")),
+            "{}\n".format(match.group("line_to_repeat"))
+            * int(match.group("multiplier")),
+            contents,
+        )
 
     with open(os.path.join(directory, filename), "w") as new_file:
         new_file.write(contents)
