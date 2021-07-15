@@ -50,7 +50,7 @@ __all__ = (
 # Renewables.ninja sleep time:
 #   To avoid being locked out of the renewables.ninja API, it is necessary for CLOVER to
 #   sleep between requests. The time taken for this, in seconds, is set below.
-RENEWABLES_NINJA_SLEEP_TIME = 10
+RENEWABLES_NINJA_SLEEP_TIME = 12
 
 # Solar logger name:
 #   The name to use for the solar logger.
