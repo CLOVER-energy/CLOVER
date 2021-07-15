@@ -21,6 +21,8 @@ import logging
 import os
 import sys
 
+from functools import partial
+from multiprocessing import Pool
 from typing import Any, Dict, List
 
 import pandas as pd
@@ -46,9 +48,18 @@ AUTO_GENERATED_FILES_DIRECTORY = "auto_generated"
 # Device inputs file:
 #   The relative path to the device-inputs file.
 DEVICE_INPUTS_FILE = os.path.join("load", "devices.yaml")
+# Device utilisation template filename:
+#   The template filename of device-utilisation profiles used for parsing the files.
+DEVICE_UTILISATION_TEMPLATE_FILENAME = "{device}_times.csv"
+# Device utilisations input directory:
+#   The relative path to the directory contianing the device-utilisaion information.
+DEVICE_UTILISATIONS_INPUT_DIRECTORY = os.path.join("load", "device_utilisation")
 # Diesel inputs file:
 #   The relative path to the diesel-inputs file.
 DIESEL_INPUTS_FILE = os.path.join("generation", "diesel", "diesel_inputs.yaml")
+# Energy-system inputs file:
+#   The relative path to the energy-system-inputs file.
+ENERGY_SYSTEM_INPUTS_FILE = os.path.join("generation", "diesel", "diesel_inputs.yaml")
 # Grid inputs file:
 #   The relative path to the grid-inputs file.
 GRID_INPUTS_FILE = os.path.join("generation", "grid", "grid_inputs.csv")
@@ -61,6 +72,10 @@ LOCATION_INPUTS_FILE = os.path.join("location_data", "location_inputs.yaml")
 # Logger name:
 #   The name to use for the main logger for CLOVER
 LOGGER_NAME = "clover"
+# Number of Workers:
+#   The number of CPUs to use, which dictates the number of workers to use for parllel
+#   jobs.
+NUM_WORKERS = 8
 # Solar inputs file:
 #   The relative path to the solar inputs file.
 SOLAR_INPUTS_FILE = os.path.join("generation", "solar", "solar_generation_inputs.yaml")
@@ -188,7 +203,7 @@ def main(args: List[Any]) -> None:
         INPUTS_DIRECTORY,
     )
 
-    device_inputs = read_yaml(
+    device_inputs: List[Dict[str, Any]] = read_yaml(
         os.path.join(
             inputs_directory_relative_path,
             DEVICE_INPUTS_FILE,
@@ -196,6 +211,28 @@ def main(args: List[Any]) -> None:
         logger,
     )
     logger.info("Device inputs successfully parsed.")
+
+    try:
+        device_utilisations = {
+            device["device"]: pd.read_csv(
+                os.path.join(
+                    inputs_directory_relative_path,
+                    DEVICE_UTILISATIONS_INPUT_DIRECTORY,
+                    DEVICE_UTILISATION_TEMPLATE_FILENAME.format(
+                        device=device["device"]
+                    ),
+                ),
+                header=None,
+                index_col=None,
+            )
+            for device in device_inputs
+        }
+    except FileNotFoundError as e:
+        logger.info(
+            "Error parsing device-utilisation profiles, check that all device names "
+            "are consistent and use the same case. File not found: %s."
+        )
+        raise
 
     diesel_inputs = read_yaml(
         os.path.join(
@@ -206,13 +243,17 @@ def main(args: List[Any]) -> None:
     )
     logger.info("Diesel inputs successfully parsed.")
 
-    grid_inputs = pd.read_csv(
+    with open(
         os.path.join(
             inputs_directory_relative_path,
             GRID_INPUTS_FILE,
         ),
-        index_col=0,
-    )
+        "r",
+    ) as grid_inputs_file:
+        grid_inputs = pd.read_csv(
+            grid_inputs_file,
+            index_col=0,
+        )
     logger.info("Grid inputs successfully parsed.")
 
     location_inputs = read_yaml(
@@ -245,28 +286,125 @@ def main(args: List[Any]) -> None:
         progress_bar_queue,
         solar_generation_inputs,
     )
-    solar_data_thread.start()
-    logger.info(
-        "Solar-data thread successfully instantiated. See %s for details.",
-        "{}.log".format(os.path.join(LOGGER_DIRECTORY, solar.SOLAR_LOGGER_NAME)),
-    )
+    # solar_data_thread.start()
+    # logger.info(
+    #     "Solar-data thread successfully instantiated. See %s for details.",
+    #     "{}.log".format(os.path.join(LOGGER_DIRECTORY, solar.SOLAR_LOGGER_NAME)),
+    # )
+    logger.info("Solar-data thread not run due to time efficiencies.")
 
     # Generate and save the device-ownership profiles.
-    device_ownership_thread = load.DeviceOwnershipThread(
-        device_inputs,
-        os.path.join(auto_generated_files_directory, "load", "device_ownership"),
-        location_inputs,
-    )
-    device_ownership_thread.start()
-    logger.info(
-        "Device-ownership thread successfully instantiated. See %s for details.",
-        "{}.log".format(os.path.join(LOGGER_DIRECTORY, load.LOAD_LOGGER_NAME)),
+    logger.info("Processing device informaiton.")
+    # load_logger = get_logger(load.LOAD_LOGGER_NAME)
+
+    device_hourly_loads: Dict[str, pd.DataFrame] = dict()
+
+    for device in device_inputs:
+        # Compute the device ownership.
+        daily_device_ownership = load.process_device_ownership(
+            device,
+            generated_device_ownership_directory=os.path.join(
+                auto_generated_files_directory, "load", "device_ownership"
+            ),
+            location_inputs=location_inputs,
+            logger=logger,
+        )
+        logger.info(
+            "Device ownership information for %s successfully computed.",
+            device["device"],
+        )
+
+        # Compute the device utilisation.
+        daily_device_utilisaion = load.process_device_utilisation(
+            device,
+            device_utilisations=device_utilisations,
+            generated_device_utilisation_directory=os.path.join(
+                auto_generated_files_directory, "load", "device_utilisation"
+            ),
+            location_inputs=location_inputs,
+            logger=logger,
+        )
+        logger.info(
+            "Device utilisation information for %s successfully computed.",
+            device["device"],
+        )
+
+        # Compute the device usage.
+        hourly_device_usage = load.process_device_hourly_usage(
+            device,
+            daily_device_ownership=daily_device_ownership,
+            daily_device_utilisation=daily_device_utilisaion,
+            generated_device_usage_filepath=os.path.join(
+                auto_generated_files_directory, "load", "device_usage"
+            ),
+            logger=logger,
+            years=location_inputs["max_years"],
+        )
+        logger.info(
+            "Device hourly usage information for %s successfully computed.",
+            device["device"],
+        )
+
+        # Compute the load profile based on this usage.
+        device_hourly_loads[device["device"]] = load.process_device_hourly_power(
+            device,
+            generated_device_load_filepath=os.path.join(
+                auto_generated_files_directory, "load", "device_load"
+            ),
+            hourly_device_usage=hourly_device_usage,
+            logger=logger,
+            power_type="electric_power",
+        )
+        logger.info(
+            "Device hourly load information for %s successfully computed.",
+            device["device"],
+        )
+
+        #     worker_pool.map(
+        #         partial(
+        #             load.process_device_files,
+        #             device_utilisations=device_utilisations,
+        #             generated_device_ownership_directory=os.path.join(
+        #                 auto_generated_files_directory, "load", "device_ownership"
+        #             ),
+        #             generated_device_utilisation_directory=os.path.join(
+        #                 auto_generated_files_directory, "load", "device_utilisation"
+        #             ),
+        #             location_inputs=location_inputs,
+        #             logger=logger,
+        #         ),
+        #         device_inputs,
+        #     )
+        # except Exception as e:
+        #     logger.error(
+        #         "An error occurred computing the device ownership and utilisation "
+        #         "profiles. See %s for details: %s",
+        #         "{}.log".format(os.path.join(LOGGER_DIRECTORY, load.LOAD_LOGGER_NAME)),
+        #         str(e),
+        #     )
+        #     raise
+        # else:
+        #     logger.info(
+        #         "Device ownership and utilisations successfully computed. See %s for "
+        #         "details.",
+        #         "{}.log".format(os.path.join(LOGGER_DIRECTORY, load.LOAD_LOGGER_NAME)),
+        #     )
+
+    logger.info("Computing the total device hourly load.")
+    load.compute_total_hourly_load(
+        device_hourly_loads=device_hourly_loads,
+        devices=device_inputs,
+        generated_device_load_filepath=os.path.join(
+            auto_generated_files_directory, "load", "device_load"
+        ),
+        logger=logger,
+        years=location_inputs["max_years"],
     )
 
-    # Start a progress bar to track thread progress.
-    progress_bar_thread = ProgressBarThread(progress_bar_queue)
-    progress_bar_thread.start()
-    progress_bar_thread.join()
+    # # Start a progress bar to track thread progress.
+    # progress_bar_thread = ProgressBarThread(progress_bar_queue)
+    # progress_bar_thread.start()
+    # progress_bar_thread.join()
 
     # Generate the grid-availability profiles.
     logger.info("Generating grid-availability profiles.")

@@ -35,7 +35,10 @@
         - directory: grid
         - directory: load
           contents:
+            - directory: device_load
             - directory: device_ownership
+            - directory: device_usage
+            - directory: device_utilisation
         - directory: solar
     - directory: inputs
       contents:
@@ -486,7 +489,7 @@
                 Commercial,Y,(Y/N)
                 Public,Y,(Y/N)
                 Distribution network,DC,DC or AC distribution network
-        - directory: Simulation
+        - directory: simulation
           contents:
             - file: "energy_system.yaml"
               contents: |-
