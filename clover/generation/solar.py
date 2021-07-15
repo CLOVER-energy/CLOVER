@@ -224,34 +224,30 @@ def get_solar_output(
 
 
 def save_solar_output(
-    generation_directory: str,
+    filepath: str,
     gen_year: int,
     logger: Logger,
     solar_data: pd.DataFrame,
-    filename: Optional[str] = None,
+    filename: str,
 ) -> None:
     """
     Saves PV generation data as a named .csv file in the location generation file.
 
     Inputs:
-        - generation_directory:
-            The directory in which the data file should be saved.
+        - filepath:
+            The path to save the file to, including the directory in which the data file
+            should be saved and the filename to use.
         - gen_year:
             The year for which the data was generated.
         - logger:
             The logger to use for the run.
         - solar_data:
             The generated solar-data DataFrame to be saved in the CSV file.
-        - filename:
-            The filename to use, which can be `None` and auto-generated from the year.
 
     """
 
-    if filename is None:
-        filename = f"solar_generation_{gen_year}.csv"
-
     solar_data.to_csv(
-        os.path.join(generation_directory, filename),
+        filepath,
         header=None,  # type: ignore
     )
 
@@ -387,6 +383,16 @@ class SolarDataThread(threading.Thread):
                 ),
                 name="solar profiles",
             ):
+                # If the solar-data file for the year already exists, skip.
+                filename = f"solar_generation_{year}.csv"
+                filepath = os.path.join(self.auto_generated_files_directory, filename)
+
+                if os.path.isfile(filepath):
+                    self.logger.info(
+                        "Solar data file for year %s already exists, skipping.", year
+                    )
+                    continue
+
                 # The system waits to prevent overloading the renewables.ninja API and being
                 # locked out.
                 time.sleep(RENEWABLES_NINJA_SLEEP_TIME)
@@ -405,7 +411,7 @@ class SolarDataThread(threading.Thread):
 
                 self.logger.info("Solar data successfully fetched, saving.")
                 save_solar_output(
-                    self.auto_generated_files_directory,
+                    filepath,
                     year,
                     self.logger,
                     solar_data,
