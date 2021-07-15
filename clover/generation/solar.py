@@ -22,7 +22,6 @@ for use locally within CLOVER.
 
 import json
 import os
-import queue
 import threading
 import time
 
@@ -33,6 +32,8 @@ from typing import Any, Dict, Optional
 import numpy as np
 import pandas as pd
 import requests
+
+from atpbar import atpbar
 
 from ..__utils__ import get_logger
 
@@ -341,7 +342,6 @@ class SolarDataThread(threading.Thread):
         self,
         auto_generated_files_directory: str,
         location_inputs: Dict[Any, Any],
-        progress_queue: queue.Queue,
         solar_generation_inputs: Dict[Any, Any],
     ) -> None:
         """
@@ -352,8 +352,6 @@ class SolarDataThread(threading.Thread):
                 The directory in which CLOVER-generated files should be saved.
             - location_inputs:
                 The location inputs.
-            - progress_queue:
-                The queue to use for recording the progress of the run.
             - solar_generation_inputs:
                 The solar-generation inputs.
 
@@ -362,7 +360,6 @@ class SolarDataThread(threading.Thread):
         self.auto_generated_files_directory: str = auto_generated_files_directory
         self.location_inputs: Dict[Any, Any] = location_inputs
         self.logger: Logger = get_logger(SOLAR_LOGGER_NAME)
-        self.progress_queue = progress_queue
         self.solar_generation_inputs: Dict[Any, Any] = solar_generation_inputs
 
         super().__init__()
@@ -381,18 +378,14 @@ class SolarDataThread(threading.Thread):
             - self.solar_generation_inputs["start_year"]
             + 1
         )
-        self.progress_queue.put(
-            (
-                SOLAR_LOGGER_NAME,
-                0,
-                num_years,
-            )
-        )
 
         try:
-            for year in range(
-                self.solar_generation_inputs["start_year"],
-                self.solar_generation_inputs["end_year"] + 1,
+            for year in atpbar(
+                range(
+                    self.solar_generation_inputs["start_year"],
+                    self.solar_generation_inputs["end_year"] + 1,
+                ),
+                name="solar profiles",
             ):
                 # The system waits to prevent overloading the renewables.ninja API and being
                 # locked out.
@@ -412,14 +405,10 @@ class SolarDataThread(threading.Thread):
 
                 self.logger.info("Solar data successfully fetched, saving.")
                 save_solar_output(
-                    self.auto_generated_files_directory, year, self.logger, solar_data
-                )
-                self.progress_queue.put(
-                    (
-                        SOLAR_LOGGER_NAME,
-                        int(year - self.solar_generation_inputs["start_year"] + 1),
-                        num_years,
-                    )
+                    self.auto_generated_files_directory,
+                    year,
+                    self.logger,
+                    solar_data,
                 )
 
             self.logger.info(

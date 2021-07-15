@@ -31,13 +31,13 @@ from . import argparser
 from .generation import grid, solar
 from .load import load
 
+from atpbar import atpbar
+
 from .__utils__ import (
     get_logger,
     InvalidLocationError,
     LOCATIONS_FOLDER_NAME,
     LOGGER_DIRECTORY,
-    ProgressBarQueue,
-    ProgressBarThread,
     read_yaml,
 )
 
@@ -275,22 +275,18 @@ def main(args: List[Any]) -> None:
     logger.info("Solar generation inputs successfully parsed.")
     logger.info("All input files successfully parsed.")
 
-    # Set up a progress queue for monitoring the progress of the various threads.
-    progress_bar_queue = ProgressBarQueue()
-
     # Generate and save the solar data for each year as a background task.
     logger.info("Beginning solar-data fetching.")
     solar_data_thread = solar.SolarDataThread(
         os.path.join(auto_generated_files_directory, "solar"),
         location_inputs,
-        progress_bar_queue,
         solar_generation_inputs,
     )
-    # solar_data_thread.start()
-    # logger.info(
-    #     "Solar-data thread successfully instantiated. See %s for details.",
-    #     "{}.log".format(os.path.join(LOGGER_DIRECTORY, solar.SOLAR_LOGGER_NAME)),
-    # )
+    solar_data_thread.start()
+    logger.info(
+        "Solar-data thread successfully instantiated. See %s for details.",
+        "{}.log".format(os.path.join(LOGGER_DIRECTORY, solar.SOLAR_LOGGER_NAME)),
+    )
     logger.info("Solar-data thread not run due to time efficiencies.")
 
     # Generate and save the device-ownership profiles.
@@ -299,7 +295,7 @@ def main(args: List[Any]) -> None:
 
     device_hourly_loads: Dict[str, pd.DataFrame] = dict()
 
-    for device in device_inputs:
+    for device in atpbar(device_inputs, name="load profiles"):
         # Compute the device ownership.
         daily_device_ownership = load.process_device_ownership(
             device,
@@ -360,36 +356,6 @@ def main(args: List[Any]) -> None:
             device["device"],
         )
 
-        #     worker_pool.map(
-        #         partial(
-        #             load.process_device_files,
-        #             device_utilisations=device_utilisations,
-        #             generated_device_ownership_directory=os.path.join(
-        #                 auto_generated_files_directory, "load", "device_ownership"
-        #             ),
-        #             generated_device_utilisation_directory=os.path.join(
-        #                 auto_generated_files_directory, "load", "device_utilisation"
-        #             ),
-        #             location_inputs=location_inputs,
-        #             logger=logger,
-        #         ),
-        #         device_inputs,
-        #     )
-        # except Exception as e:
-        #     logger.error(
-        #         "An error occurred computing the device ownership and utilisation "
-        #         "profiles. See %s for details: %s",
-        #         "{}.log".format(os.path.join(LOGGER_DIRECTORY, load.LOAD_LOGGER_NAME)),
-        #         str(e),
-        #     )
-        #     raise
-        # else:
-        #     logger.info(
-        #         "Device ownership and utilisations successfully computed. See %s for "
-        #         "details.",
-        #         "{}.log".format(os.path.join(LOGGER_DIRECTORY, load.LOAD_LOGGER_NAME)),
-        #     )
-
     logger.info("Computing the total device hourly load.")
     load.compute_total_hourly_load(
         device_hourly_loads=device_hourly_loads,
@@ -401,24 +367,22 @@ def main(args: List[Any]) -> None:
         years=location_inputs["max_years"],
     )
 
-    # # Start a progress bar to track thread progress.
-    # progress_bar_thread = ProgressBarThread(progress_bar_queue)
-    # progress_bar_thread.start()
-    # progress_bar_thread.join()
-
     # Generate the grid-availability profiles.
     logger.info("Generating grid-availability profiles.")
-    grid_filename, grid_times = grid.get_lifetime_grid_status(
-        os.path.join(auto_generated_files_directory, "grid"),
-        grid_inputs,
-        location_inputs["max_years"],
-    )
+    for _ in atpbar({None}, name="grid profile"):
+        grid_filename, grid_times = grid.get_lifetime_grid_status(
+            os.path.join(auto_generated_files_directory, "grid"),
+            grid_inputs,
+            location_inputs["max_years"],
+        )
     logger.info("Grid-availability profiles successfully generated.")
     grid_times.to_csv(grid_filename)
     logger.info("Grid availability profiles successfully saved to %s.", grid_filename)
 
-    # * Generate and save the grid-availibility profiles.
-    # * Generate and save any additional profiles, such as diesel-generator profiles.
+    # Wait for all threads to finish before proceeding.
+    logger.info("Waiting for all setup threads to finish before proceeding.")
+    solar_data_thread.join()
+    logger.info("All setup threads finished, continuing to CLOVER simulation.")
 
     # ******* #
     # *  3  * #
