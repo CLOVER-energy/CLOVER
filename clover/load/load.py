@@ -201,6 +201,7 @@ def _number_of_devices_daily(
             daily_ownership = pd.DataFrame(
                 np.floor(cum_sales.mul(population_growth_rate))  # type: ignore
             )
+
         else:
             logger.info(
                 "%s ownership remains constant.",
@@ -213,6 +214,7 @@ def _number_of_devices_daily(
             "Ownership for device %s calculated.",
             device["device"],
         )
+
     else:
         logger.info(
             "Device %s was marked as unavailable, setting ownership to zero.",
@@ -288,48 +290,77 @@ def compute_total_hourly_load(
 
     """
 
-    # Instantiate empty dataframes.
-    domestic_load = pd.DataFrame(np.zeros((years * 365 * 24, 1)))
-    commercial_load = pd.DataFrame(np.zeros((years * 365 * 24, 1)))
-    public_load = pd.DataFrame(np.zeros((years * 365 * 24, 1)))
-
-    # Sum over the device loads.
-    for device in devices:
-        if device["type"] == "domestic":
-            domestic_load += device_hourly_loads[device["device"]].reset_index(
-                drop=True
-            )
-        elif device["type"] == "commercial":
-            commercial_load += device_hourly_loads[device["device"]].reset_index(
-                drop=True
-            )
-        elif device["type"] == "public":
-            public_load += device_hourly_loads[device["device"]].reset_index(drop=True)
-        else:
-            logger.error(
-                "Type of device %s is unknown. Type: %s.",
-                device["device"],
-                device["type"],
-            )
-
-    logger.info("Total load for all devices successfully computed.")
-    total_load = pd.concat([domestic_load, commercial_load, public_load], axis=1)
-    total_load.columns = ["Domestic", "Commercial", "Public"]
-
+    # If the files already exist, simply read the data and quit.
     total_load_filepath = os.path.join(generated_device_load_filepath, "total_load.csv")
-    logger.info("Saving total load.")
-    with open(total_load_filepath, "w") as f:
-        total_load.to_csv(f)
-    logger.info("Total device load successfully saved to %s.", total_load_filepath)
-
-    yearly_load_statistics = _yearly_load_statistics(total_load, years)
     yearly_load_statistics_filepath = os.path.join(
         generated_device_load_filepath, "yearly_load_statistics.csv"
     )
 
-    logger.info("Saving yearly load statistics.")
-    with open(yearly_load_statistics_filepath, "w") as f:
-        yearly_load_statistics.to_csv(f)
+    if os.path.isfile(total_load_filepath):
+        with open(total_load_filepath, "r") as f:
+            total_load = pd.read_csv(f)
+        logger.info(
+            "Total-load data successfully read from existing file: %s",
+            total_load_filepath,
+        )
+
+    else:
+        logger.info("Total load data file not found, calculating total load data.")
+
+        # Instantiate empty dataframes.
+        domestic_load = pd.DataFrame(np.zeros((years * 365 * 24, 1)))
+        commercial_load = pd.DataFrame(np.zeros((years * 365 * 24, 1)))
+        public_load = pd.DataFrame(np.zeros((years * 365 * 24, 1)))
+
+        # Sum over the device loads.
+        for device in devices:
+            if device["type"] == "domestic":
+                domestic_load += device_hourly_loads[device["device"]].reset_index(
+                    drop=True
+                )
+            elif device["type"] == "commercial":
+                commercial_load += device_hourly_loads[device["device"]].reset_index(
+                    drop=True
+                )
+            elif device["type"] == "public":
+                public_load += device_hourly_loads[device["device"]].reset_index(
+                    drop=True
+                )
+            else:
+                logger.error(
+                    "Type of device %s is unknown. Type: %s.",
+                    device["device"],
+                    device["type"],
+                )
+
+        logger.info("Total load for all devices successfully computed.")
+        total_load = pd.concat([domestic_load, commercial_load, public_load], axis=1)
+        total_load.columns = ["Domestic", "Commercial", "Public"]
+
+        logger.info("Saving total load.")
+        with open(total_load_filepath, "w") as f:
+            total_load.to_csv(f)
+        logger.info("Total device load successfully saved to %s.", total_load_filepath)
+
+    # Attempt to read the yearly load statistics from a file and compute if it doesn't
+    # exist.
+    if os.path.isfile(yearly_load_statistics_filepath):
+        with open(yearly_load_statistics_filepath, "r") as f:
+            yearly_load_statistics = pd.read_csv(f)
+        logger.info(
+            "Yearly load statistics successfully read from file %s.",
+            yearly_load_statistics_filepath,
+        )
+    else:
+        logger.info(
+            "Yearly load statistics file not found, calculating yearly load statistics."
+        )
+        yearly_load_statistics = _yearly_load_statistics(total_load, years)
+
+        logger.info("Saving yearly load statistics.")
+        with open(yearly_load_statistics_filepath, "w") as f:
+            yearly_load_statistics.to_csv(f)
+        logger.info("Yearly load statistics successfully saved.")
 
 
 def process_device_hourly_power(
@@ -361,26 +392,41 @@ def process_device_hourly_power(
 
     """
 
-    # Compute the hourly load profile.
-    logger.info("Computing hourly power usage for %s.", device["device"])
-    device_load = float(device[power_type]) * hourly_device_usage
-    logger.info("Hourly power usage for %s successfully computed.", device["device"])
-
-    # Save the hourly power profile.
-    logger.info("Saving hourly power usage for %s.", device["device"])
-
     filename = f"{device['device']}_load.csv"
-    with open(
-        os.path.join(generated_device_load_filepath, filename),
-        "w",
-    ) as f:
-        device_load.to_csv(f)
+    hourly_usage_filepath = os.path.join(generated_device_load_filepath, filename)
 
-    logger.info(
-        "Hourly power proifle for %s successfully saved to %s.",
-        device["device"],
-        filename,
-    )
+    # If the hourly power usage file already exists, load the data in.
+    if os.path.isfile(hourly_usage_filepath):
+        with open(hourly_usage_filepath, "r") as f:
+            device_load = pd.read_csv(f)
+        logger.info(
+            "Hourly power profile for %s successfully read from file %s.",
+            device["device"],
+            hourly_usage_filepath,
+        )
+
+    else:
+        # Compute the hourly load profile.
+        logger.info("Computing hourly power usage for %s.", device["device"])
+        device_load = float(device[power_type]) * hourly_device_usage
+        logger.info(
+            "Hourly power usage for %s successfully computed.", device["device"]
+        )
+
+        # Save the hourly power profile.
+        logger.info("Saving hourly power usage for %s.", device["device"])
+
+        with open(
+            hourly_usage_filepath,
+            "w",
+        ) as f:
+            device_load.to_csv(f)
+
+        logger.info(
+            "Hourly power proifle for %s successfully saved to %s.",
+            device["device"],
+            hourly_usage_filepath,
+        )
 
     return device_load
 
