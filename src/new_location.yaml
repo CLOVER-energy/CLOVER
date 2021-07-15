@@ -301,7 +301,7 @@
                   type: public
 
             - directory: "Devices in use"
-            - directory: "Device utilisation"
+            - directory: device_utilisation
               contents:
                 - file: fan_times.csv
                   contents: |-
