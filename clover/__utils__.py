@@ -284,7 +284,7 @@ class ProgressBarQueue(queue.Queue):
         percentage: int = int(100 * current_marker / final_marker)
 
         # Return the entry as a nicely-formatted progress bar.
-        return "\r{}{}: [{}{}] {}{}%".format(
+        return "\r{}{}: [{}{}] {}{}%\r".format(
             entry[0],
             " " * (15 - len(str(entry[0]))),
             "#" * int(56 * entry[1] / entry[2]),
