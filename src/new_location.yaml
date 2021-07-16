@@ -553,6 +553,4 @@
                 #
 
                 end_year: 20 # The end year for the simulation.
-                iteration_length: 4 # The length of each iteration to run, in years.
-                number_of_iterations: 3 # The number of iterations for CLOVER to run.
                 start_year: 0 # The start year for the simulation run.
