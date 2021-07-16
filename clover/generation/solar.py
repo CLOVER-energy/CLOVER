@@ -35,7 +35,7 @@ import requests
 
 from atpbar import atpbar
 
-from ..__utils__ import get_logger
+from ..__utils__ import get_logger, Location
 
 __all__ = (
     "get_solar_output",
@@ -58,7 +58,7 @@ SOLAR_LOGGER_NAME = "solar_generation"
 
 
 def _get_solar_generation_from_rn(
-    location_inputs: Dict[Any, Any],
+    location: Location,
     logger: Logger,
     solar_generation_inputs: Dict[Any, Any],
     year=2014,
@@ -80,8 +80,8 @@ def _get_solar_generation_from_rn(
         Adapted from code by Scot Wheeler
 
     Inputs:
-        - location_inputs:
-            Input file data with location information including latitude and longitude.
+        - location:
+            The location currently being considered.
         - logger:
             The logger to use for the run.
         - solar_generation_inputs:
@@ -116,8 +116,8 @@ def _get_solar_generation_from_rn(
 
     # Gets some data from input file
     args = {
-        "lat": float(location_inputs["latitude"]),
-        "lon": float(location_inputs["longitude"]),
+        "lat": float(location.latitude),
+        "lon": float(location.longitude),
         "date_from": str(year) + "-01-01",
         "date_to": str(year) + "-12-31",
         "dataset": "merra2",
@@ -189,7 +189,7 @@ def _get_solar_local_time(solar_data_utc: pd.DataFrame, time_difference: float =
 
 
 def get_solar_output(
-    location_inputs: Dict[Any, Any],
+    location: Location,
     logger: Logger,
     solar_generation_inputs: Dict[Any, Any],
     gen_year: int = 2014,
@@ -198,8 +198,8 @@ def get_solar_output(
     Generates solar data from Renewables Ninja and returns it in a DataFrame.
 
     Inputs:
-        - location_inputs:
-            The location inputs, extracted from the input file.
+        - location:
+            The location currently being considered.
         - logger:
             The logger to use for the run.
         - solar_generation_inputs:
@@ -215,9 +215,9 @@ def get_solar_output(
     # Get solar output in local time for the given year
     solar_output = _get_solar_local_time(
         _get_solar_generation_from_rn(
-            location_inputs, logger, solar_generation_inputs, gen_year
+            location, logger, solar_generation_inputs, gen_year
         ),
-        time_difference=float(location_inputs["time_difference"]),
+        time_difference=float(location.time_difference),
     )
 
     return solar_output
@@ -321,8 +321,8 @@ class SolarDataThread(threading.Thread):
     .. attribute:: auto_generated_files_directory
         The directory in which CLOVER-generated files should be saved.
 
-    .. attribute:: location_inputs
-        The location inputs information, extracted from the location-inputs file.
+    .. attribute:: location
+        The location currently being considered.
 
     .. attribute:: logger
         The :class:`logging.Logger` to use for the run.
@@ -336,7 +336,7 @@ class SolarDataThread(threading.Thread):
     def __init__(
         self,
         auto_generated_files_directory: str,
-        location_inputs: Dict[Any, Any],
+        location: Location,
         solar_generation_inputs: Dict[Any, Any],
     ) -> None:
         """
@@ -345,15 +345,15 @@ class SolarDataThread(threading.Thread):
         Inputs:
             - auto_generated_files_directory:
                 The directory in which CLOVER-generated files should be saved.
-            - location_inputs:
-                The location inputs.
+            - location:
+                The location currently being considerted.
             - solar_generation_inputs:
                 The solar-generation inputs.
 
         """
 
         self.auto_generated_files_directory: str = auto_generated_files_directory
-        self.location_inputs: Dict[Any, Any] = location_inputs
+        self.location: Location = location
         self.logger: Logger = get_logger(SOLAR_LOGGER_NAME)
         self.solar_generation_inputs: Dict[Any, Any] = solar_generation_inputs
 
@@ -392,7 +392,7 @@ class SolarDataThread(threading.Thread):
                 self.logger.info("Fetching solar data for year %s.", year)
                 try:
                     solar_data = get_solar_output(
-                        self.location_inputs,
+                        self.location,
                         self.logger,
                         self.solar_generation_inputs,
                         year,

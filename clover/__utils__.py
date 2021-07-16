@@ -416,6 +416,31 @@ class Location:
     name: str
     time_difference: float
 
+    @classmethod
+    def from_dict(cls, location_inputs: Dict[str, Any]) -> Any:
+        """
+        Creates a :class:`Location` instance based on the inputs provided.
+
+        Inputs:
+            - location_inputs:
+                The location input information, extracted form the location inputs file.
+
+        Outputs:
+            - A :class:`Location` instance based on the input information provided.
+
+        """
+
+        return cls(
+            location_inputs["community_growth_rate"],
+            location_inputs["community_size"],
+            location_inputs["country"],
+            location_inputs["latitude"],
+            location_inputs["longitude"],
+            location_inputs["max_years"],
+            location_inputs["location"],
+            location_inputs["time_difference"],
+        )
+
 
 def monthly_profile_to_daily_profile(monthly_profile: pd.DataFrame) -> pd.DataFrame:
     """
