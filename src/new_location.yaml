@@ -474,21 +474,35 @@
                 Threshold value,0.05,Max/min value permitted (see guidance),
                 Optimisation criterion,Cumulative system cost ($),Name of column from appraisal,
             - directory: "Saved optimisations"
-        - directory: Scenario
+        - directory: scenario
           contents:
-            - file: "Scenario inputs.csv"
-              contents: |-
-                PV,Y,(Y/N)
-                Battery,Y,(Y/N)
-                Diesel backup,Y,(Y/N)
-                Diesel backup threshold,0.1,Maximum acceptible blackouts (0.0-1.0)
-                Grid,Y,(Y/N)
-                Grid type,bahraich,Grid profile
-                Prioritise self generation,Y,(Y/N)
-                Domestic,Y,(Y/N)
-                Commercial,Y,(Y/N)
-                Public,Y,(Y/N)
-                Distribution network,DC,DC or AC distribution network
+            - file: scenario_inputs.yaml
+              contents: |+
+                ---
+                ################################################################################
+                # energy_system.yaml - Parameters for specifying a CLOVER energy system.       #
+                #                                                                              #
+                # Author: Phil Sandwell, Ben Winchester                                        #
+                # Copyright: Phil Sandwell & Ben Winchester, 2021                              #
+                # Date created: 14/07/2021                                                     #
+                # License: Open source                                                         #
+                ################################################################################
+
+                pv: true # "true" or "false"
+                battery: true # "true" or "false"
+                diesel:
+                  mode: backup # "backup" only option currently
+                  backup:
+                    threshold: 0.1 # Maximum acceptible blackouts (0.0-1.0)
+                grid: true # "true" or "false"
+                grid_type: bahraich # The grid profile to use
+                prioritise_self_generation: true # "true" or "false"
+                demands:
+                  domestic: true # "true" or "false"
+                  commercial: true # "true" or "false"
+                  public: true # "true" or "false"
+                distribution_network: dc # DC ("dc") or AC ("ac") distribution network
+
         - directory: simulation
           contents:
             - file: "energy_system.yaml"
