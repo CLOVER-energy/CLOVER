@@ -228,7 +228,6 @@ def save_solar_output(
     gen_year: int,
     logger: Logger,
     solar_data: pd.DataFrame,
-    filename: str,
 ) -> None:
     """
     Saves PV generation data as a named .csv file in the location generation file.
@@ -252,7 +251,7 @@ def save_solar_output(
     )
 
     logger.info(
-        "Solar output data for year %s successfully saved to %s.", gen_year, filename
+        "Solar output data for year %s successfully saved to %s.", gen_year, filepath
     )
 
 
@@ -369,12 +368,9 @@ class SolarDataThread(threading.Thread):
         """
 
         self.logger.info("Solar data thread instantiated.")
-        num_years = (
-            self.solar_generation_inputs["end_year"]
-            - self.solar_generation_inputs["start_year"]
-            + 1
-        )
 
+        # A counter is used to keep track of calls to renewables.ninja to prevent
+        # overloading.
         try:
             for year in atpbar(
                 range(
@@ -392,10 +388,6 @@ class SolarDataThread(threading.Thread):
                         "Solar data file for year %s already exists, skipping.", year
                     )
                     continue
-
-                # The system waits to prevent overloading the renewables.ninja API and being
-                # locked out.
-                time.sleep(RENEWABLES_NINJA_SLEEP_TIME)
 
                 self.logger.info("Fetching solar data for year %s.", year)
                 try:
@@ -416,6 +408,11 @@ class SolarDataThread(threading.Thread):
                     self.logger,
                     solar_data,
                 )
+
+                # The system waits to prevent overloading the renewables.ninja API and being
+                # locked out.
+                if year != self.solar_generation_inputs["end_year"]:
+                    time.sleep(RENEWABLES_NINJA_SLEEP_TIME)
 
             self.logger.info(
                 "All solar outputs fetched, saving total solar output file."
