@@ -95,7 +95,7 @@ DEVICE_UTILISATIONS_INPUT_DIRECTORY = os.path.join("load", "device_utilisation")
 DIESEL_INPUTS_FILE = os.path.join("generation", "diesel", "diesel_inputs.yaml")
 # Energy-system inputs file:
 #   The relative path to the energy-system-inputs file.
-ENERGY_SYSTEM_INPUTS_FILE = os.path.join("generation", "diesel", "diesel_inputs.yaml")
+ENERGY_SYSTEM_INPUTS_FILE = os.path.join("simulation", "energy_system.yaml")
 # Grid inputs file:
 #   The relative path to the grid-inputs file.
 GRID_INPUTS_FILE = os.path.join("generation", "grid", "grid_inputs.csv")
@@ -275,6 +275,14 @@ def main(args: List[Any]) -> None:
         )
         logger.info("Diesel inputs successfully parsed.")
 
+        energy_system_inputs_filepath = os.path.join(
+            inputs_directory_relative_path, ENERGY_SYSTEM_INPUTS_FILE
+        )
+        minigrid = energy_system.Minigrid.from_dict(
+            read_yaml(energy_system_inputs_filepath, logger)
+        )
+        logger.info("Energy-system inputs successfully parsed.")
+
         with open(
             os.path.join(
                 inputs_directory_relative_path,
@@ -434,7 +442,7 @@ def main(args: List[Any]) -> None:
     print(
         "Generating necessary profiles ................................. "
         "   [   DONE   ]\n"
-        "Beginning CLOVER run           ................................    ",
+        "Beginning CLOVER simulation run ...............................    ",
         end="",
     )
 
@@ -459,16 +467,27 @@ def main(args: List[Any]) -> None:
     # Load the relevant kerosene profile.
 
     # * Run a simulation or optimisation as appropriate.
-    energy_system.run_simulation(
-        energy_system,
-        grid_profile,
-        location,
-        parsed_args.pv_size,
-        scenario,
-        simulation,
-        solar_generation_inputs["lifetime"],
-        parsed_args.storage_size,
-    )
+    try:
+        energy_system.run_simulation(
+            minigrid,
+            grid_profile,
+            location,
+            parsed_args.pv_system_size,
+            scenario,
+            simulation,
+            solar_generation_inputs["lifetime"],
+            parsed_args.storage_size,
+            total_load,
+            total_solar_output,
+        )
+    except Exception as e:
+        print("[  FAILED  ]\n")
+        logger.error(
+            "An unexpected error occurred running a CLOVER simulation. See %s for details: %s",
+            "{}.log".format(os.path.join(LOGGER_DIRECTORY, LOGGER_NAME)),
+            str(e),
+        )
+        raise
 
     print(
         "Time taken for simulation: {0:.2f} seconds per year.".format(

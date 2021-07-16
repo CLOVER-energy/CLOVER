@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 ########################################################################################
-# energy_system.py - Energy-system main module for CLOVER.                             #
+# minigrid.py - Energy-system main module for CLOVER.                             #
 #                                                                                      #
 # Authors: Phil Sandwell, Ben Winchester                                               #
 # Copyright: Phil Sandwell, 2018                                                       #
@@ -11,7 +11,7 @@
 #   philip.sandwell@gmail.com                                                        #
 ########################################################################################
 """
-energy_system.py - The energy-system module for CLOVER.
+minigrid.py - The energy-system module for CLOVER.
 
 This module carries out a simulation for an energy system based on the various inputs
 and profile files that have been parsed/generated.
@@ -23,7 +23,7 @@ import datetime
 import math
 import os
 
-from typing import Optional, Tuple
+from typing import Any, Dict, Optional, Tuple
 
 import numpy as np
 import pandas as pd
@@ -36,20 +36,20 @@ from ..__utils__ import (
     Scenario,
     Simulation,
 )
-from ..generation.solar import solar_degradation, total_solar_output
+from ..generation.solar import solar_degradation
 from ..generation.diesel import Diesel
 from ..load.load import population_hourly
 
 from .storage import Battery
 
 __all__ = (
-    "EnergySystem",
+    "Minigrid",
     "run_simulation",
 )
 
 
 @dataclasses.dataclass
-class EnergySystem:
+class Minigrid:
     """
     Represents an energy system.
 
@@ -84,26 +84,119 @@ class EnergySystem:
     dc_to_dc_conversion_efficiency: Optional[float]
     dc_transmission_efficiency: Optional[float]
 
+    @classmethod
+    def from_dict(cls, minigrid_inputs: Dict[str, Any]) -> Any:
+        """
+        Returns a :class:`Minigrid` instance based on the inputs provided.
+
+        Inputs:
+            - minigrid_inputs:
+                The inputs for the minigrid/energy system, extracted from the input
+                file.
+
+        Outputs:
+            - A :class:`Minigrid` instance based on the inputs provided.
+
+        """
+
+        return cls(
+            minigrid_inputs["conversion"]["ac_to_ac"]
+            if "ac_to_ac" in minigrid_inputs["conversion"]
+            else None,
+            minigrid_inputs["conversion"]["ac_to_ac"]
+            if "ac_to_dc" in minigrid_inputs["conversion"]
+            else None,
+            minigrid_inputs["ac_network"]["transmission_efficiency"]
+            if "ac_network" in minigrid_inputs
+            else None,
+            Battery(
+                minigrid_inputs["battery"]["c_rate_charging"],
+                minigrid_inputs["battery"]["conversion_in"],
+                minigrid_inputs["battery"]["conversion_out"],
+                minigrid_inputs["battery"]["cycle_lifetime"],
+                minigrid_inputs["battery"]["c_rate_discharging"],
+                minigrid_inputs["battery"]["leakage"],
+                minigrid_inputs["battery"]["lifetime_loss"],
+                minigrid_inputs["battery"]["maximum_loss"],
+                minigrid_inputs["battery"]["minimum_loss"],
+            )
+            if "battery" in minigrid_inputs["conversion"]
+            else None,
+            minigrid_inputs["conversion"]["ac_to_ac"]
+            if "dc_to_ac" in minigrid_inputs["conversion"]
+            else None,
+            minigrid_inputs["conversion"]["ac_to_ac"]
+            if "dc_to_dc" in minigrid_inputs["conversion"]
+            else None,
+            minigrid_inputs["dc_network"]["transmission_efficiency"]
+            if "dc_network" in minigrid_inputs
+            else None,
+        )
+
+
+def _get_processed_load_profile(scenario: Scenario, total_load: pd.DataFrame):
+    """
+    Gets the total community load over 20 years in kW
+
+    Inputs:
+        - scenario:
+            Information about the scenario currently being run.
+        - total_load:
+            The total load as a :class:`pandas.DataFrame`.
+
+    Outputs:
+        - A :class:`pandas.DataFrame` with columns for the load of domestic,
+            commercial and public devices.
+
+    """
+
+    total_minigrid_load: Optional[pd.DataFrame] = None
+
+    if scenario.demands.domestic:
+        total_minigrid_load = pd.DataFrame(total_load[DemandType.DOMESTIC.value].values)
+
+    if scenario.demands.commercial:
+        if total_minigrid_load is not None:
+            total_minigrid_load.add(
+                pd.DataFrame(total_load[DemandType.COMMERCIAL.value].values)
+            )
+        else:
+            total_minigrid_load = total_load[DemandType.COMMERCIAL.value]
+
+    if scenario.demands.public:
+        if total_minigrid_load is not None:
+            total_minigrid_load.add(
+                pd.DataFrame(total_load[DemandType.PUBLIC.value].values)
+            )
+        else:
+            total_minigrid_load = total_load[DemandType.PUBLIC.value]
+
+    if total_minigrid_load is None:
+        raise Exception("At least one load type must be specified.")
+
+    return total_minigrid_load
+
 
 def _get_storage_profile(
     *,
-    energy_system: EnergySystem,
     grid_profile: pd.DataFrame,
+    minigrid: Minigrid,
     scenario: Scenario,
     solar_lifetime: int,
     total_solar_output: pd.DataFrame,
     end_year: int = 4,
     pv_size: int = 10,
     start_year: int = 0,
+    total_load: pd.DataFrame,
 ) -> pd.DataFrame:
     """
     Gets the storage profile (energy in/out the battery) and other system energies.
 
     Inputs:
-        - energy_system:
-            The energy system being modelled.
         - grid_profile:
             The relevant grid profile, based on the scenario, for the simulation.
+        - minigrid:
+            The energy system being modelled.
         - scenario:
             The scenatio being considered.
         - solar_lifetime:
@@ -116,6 +209,8 @@ def _get_storage_profile(
             Amount of PV in kWp
         - start_year:
             Start year of this simulation period
+        - total_load:
+            The total load for the system.
 
     Outputs:
         load_energy                     Amount of energy (kWh) required to satisfy the loads
@@ -131,22 +226,24 @@ def _get_storage_profile(
     end_hour = end_year * 8760
 
     # Initialise power generation, including degradation of PV
-    pv_generation = total_solar_output.mul(pv_size).mul(
+    pv_generation = (total_solar_output * pv_size).mul(
         solar_degradation(solar_lifetime)[0 : (end_hour - start_hour)]
     )
     grid_status = pd.DataFrame(grid_profile[start_hour:end_hour].values)
-    load_profile = pd.DataFrame(self.get_load_profile()[start_hour:end_hour].values)
+    load_profile = pd.DataFrame(
+        _get_processed_load_profile(scenario, total_load)[start_hour:end_hour].values
+    )
 
     # Consider power distribution network
     if scenario.distribution_network == DistributionNetwork.DC:
-        pv_generation = pv_generation.mul(energy_system.dc_to_dc_conversion_efficiency)
-        transmission_efficiency = energy_system.dc_transmission_efficiency
-        # grid_conversion_eff = energy_system.ac_to_dc_conversion
+        pv_generation = pv_generation.mul(minigrid.dc_to_dc_conversion_efficiency)
+        transmission_efficiency = minigrid.dc_transmission_efficiency
+        # grid_conversion_eff = minigrid.ac_to_dc_conversion
 
     else:
-        pv_generation = pv_generation.mul(energy_system.dc_to_ac_conversion_efficiency)
-        transmission_efficiency = energy_system.ac_transmission_efficiency
-        # grid_conversion_efficiency = energy_system.ac_to_ac_conversion
+        pv_generation = pv_generation.mul(minigrid.dc_to_ac_conversion_efficiency)
+        transmission_efficiency = minigrid.ac_transmission_efficiency
+        # grid_conversion_efficiency = minigrid.ac_to_ac_conversion
 
     # Consider transmission efficiency
     load_energy = load_profile.div(transmission_efficiency)
@@ -207,7 +304,7 @@ def _get_storage_profile(
 
 
 def run_simulation(
-    energy_system: EnergySystem,
+    minigrid: Minigrid,
     grid_profile: pd.DataFrame,
     location: Location,
     pv_size: float,
@@ -215,6 +312,8 @@ def run_simulation(
     simulation: Simulation,
     solar_lifetime: int,
     storage_size: float,
+    total_load: pd.DataFrame,
+    total_solar_output: pd.DataFrame,
 ) -> Tuple[float, pd.DataFrame]:
     """
     Simulates a minigrid system
@@ -223,7 +322,7 @@ def run_simulation(
     stated in the input files.
 
     Inputs:
-        - energy_system:
+        - minigrid:
             The energy system being considered.
         - grid_profile:
             The grid-availability profile.
@@ -241,6 +340,8 @@ def run_simulation(
             The lifetime of the solar system being considered.
         - storage_size:
             Amount of storage in kWh
+        - total_solar_output:
+            The total energy outputted by the solar system.
 
     Outputs:
         - The time taken for the simulation.
@@ -286,7 +387,7 @@ def run_simulation(
         storage_profile,
         kerosene_profile,
     ) = _get_storage_profile(
-        energy_system=energy_system,
+        minigrid=minigrid,
         grid_profile=grid_profile,
         scenario=scenario,
         solar_lifetime=solar_lifetime,
@@ -294,6 +395,7 @@ def run_simulation(
         end_year=simulation.end_year,
         pv_size=pv_size,
         start_year=simulation.start_year,
+        total_load=total_load,
     )
     households = pd.DataFrame(
         population_hourly(location)[
@@ -302,10 +404,10 @@ def run_simulation(
     )
 
     # Initialise battery storage parameters
-    max_energy_throughput = storage_size * energy_system.battery.cycle_lifetime
-    initial_storage = storage_size * energy_system.battery.maximum_charge
-    max_storage = storage_size * energy_system.battery.maximum_charge
-    min_storage = storage_size * energy_system.battery.minimum_charge
+    max_energy_throughput = storage_size * minigrid.battery.cycle_lifetime
+    initial_storage = storage_size * minigrid.battery.maximum_charge
+    max_storage = storage_size * minigrid.battery.maximum_charge
+    min_storage = storage_size * minigrid.battery.minimum_charge
     cumulative_storage_power = 0.0
     hourly_storage = []
     new_hourly_storage = []
@@ -333,18 +435,18 @@ def run_simulation(
         else:
             if battery_energy_flow >= 0.0:  # Battery charging
                 new_hourly_storage = hourly_storage[t - 1] * (
-                    1.0 - energy_system.battery.leakage
-                ) + energy_system.battery.conversion_in * min(
+                    1.0 - minigrid.battery.leakage
+                ) + minigrid.battery.conversion_in * min(
                     battery_energy_flow,
-                    energy_system.battery.charge_rate * (max_storage - min_storage),
+                    minigrid.battery.charge_rate * (max_storage - min_storage),
                 )
             else:  # Battery discharging
                 new_hourly_storage = hourly_storage[t - 1] * (
-                    1.0 - energy_system.battery.leakage
-                ) + (1.0 / energy_system.battery.conversion_out) * max(
+                    1.0 - minigrid.battery.leakage
+                ) + (1.0 / minigrid.battery.conversion_out) * max(
                     battery_energy_flow,
                     (-1.0)
-                    * energy_system.battery.discharge_rate
+                    * minigrid.battery.discharge_rate
                     * (max_storage - min_storage),
                 )
 
@@ -370,21 +472,21 @@ def run_simulation(
         else:
             storage_power_supplied.append(
                 max(
-                    hourly_storage[t - 1] * (1.0 - energy_system.battery.leakage)
+                    hourly_storage[t - 1] * (1.0 - minigrid.battery.leakage)
                     - hourly_storage[t],
                     0.0,
                 )
             )
         cumulative_storage_power = cumulative_storage_power + storage_power_supplied[t]
 
-        storage_degradation = 1.0 - energy_system.battery.lifetime_loss * (
+        storage_degradation = 1.0 - minigrid.battery.lifetime_loss * (
             cumulative_storage_power / max_energy_throughput
         )
         max_storage = (
-            storage_degradation * storage_size * energy_system.battery.maximum_charge
+            storage_degradation * storage_size * minigrid.battery.maximum_charge
         )
         min_storage = (
-            storage_degradation * storage_size * energy_system.battery.minimum_charge
+            storage_degradation * storage_size * minigrid.battery.minimum_charge
         )
         battery_health.append(storage_degradation)
 
@@ -507,7 +609,7 @@ def run_simulation(
 
 
 #%%
-class EnergySystemOld:
+class MinigridOld:
     """
     Represents an energy system in the context of CLOVER.
 
@@ -515,7 +617,7 @@ class EnergySystemOld:
 
     def __init__(self):
         """
-        Instantiate a :class:`energy_system.EnergySystem` instance.
+        Instantiate a :class:`minigrid.Minigrid` instance.
 
         """
 
@@ -577,43 +679,3 @@ class EnergySystemOld:
     #%% Energy balance
 
     #%% Energy usage
-    def get_load_profile(self, scenario: Scenario, total_load: pd.DataFrame):
-        """
-        Gets the total community load over 20 years in kW
-
-        Inputs:
-            - scenario:
-                Information about the scenario currently being run.
-            - total_load:
-                The total load as a :class:`pandas.DataFrame`.
-
-        Outputs:
-            - A :class:`pandas.DataFrame` with columns for the load of domestic,
-              commercial and public devices.
-
-        """
-
-        total_energy_system_load: pd.DataFrame = pd.DataFrame(
-            np.zeros(total_load[DemandType.DOMESTIC.value].shape)
-        )
-
-        # If no loads were specified, raise an error.
-        if (
-            not scenario.demands.domestic
-            or scenario.demands.commercial
-            or scenario.demands.public
-        ):
-            raise Exception(
-                "At least one of domestic, commercial and public loads needs to be considered."
-            )
-
-        if scenario.demands.domestic:
-            total_energy_system_load += total_load[DemandType.DOMESTIC.value]
-
-        if scenario.demands.commercial:
-            total_energy_system_load += total_load[DemandType.COMMERCIAL.value]
-
-        if scenario.demands.public:
-            total_energy_system_load += total_load[DemandType.PUBLIC.value]
-
-        return total_energy_system_load

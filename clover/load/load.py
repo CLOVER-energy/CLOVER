@@ -325,15 +325,19 @@ def compute_total_hourly_load(
         public_load = pd.DataFrame(np.zeros((years * 365 * 24, 1)))
 
         # Sum over the device loads.
-        for device in devices:
+        for device in atpbar(devices, name="total load profile"):
             if device.demand_type == DemandType.DOMESTIC:
-                domestic_load += device_hourly_loads[device.name].reset_index(drop=True)
+                domestic_load = pd.DataFrame(
+                    domestic_load.values + device_hourly_loads[device.name].values
+                )
             elif device.demand_type == DemandType.COMMERCIAL:
-                commercial_load += device_hourly_loads[device.name].reset_index(
-                    drop=True
+                commercial_load = pd.DataFrame(
+                    commercial_load.values + device_hourly_loads[device.name].values
                 )
             elif device.demand_type == DemandType.PUBLIC:
-                public_load += device_hourly_loads[device.name].reset_index(drop=True)
+                public_load = pd.DataFrame(
+                    public_load.values + device_hourly_loads[device.name].values
+                )
             else:
                 logger.error(
                     "Demand type of device %s is unknown. Type: %s.",
@@ -451,6 +455,9 @@ def process_device_hourly_power(
         logger.info("Computing hourly power usage for %s.", device.name)
         device_load = hourly_device_usage.mul(float(device.electric_power))
         logger.info("Hourly power usage for %s successfully computed.", device.name)
+
+        # Reset the index on the device load.
+        device_load = device_load.reset_index(drop=True)
 
         # Save the hourly power profile.
         logger.info("Saving hourly power usage for %s.", device.name)
