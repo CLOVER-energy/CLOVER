@@ -63,6 +63,7 @@ class Battery:
         cycle_lifetime: int,
         discharge_rate: float,
         leakage: float,
+        lifetime_loss: float,
         maximum_charge: float,
         minimum_charge: float,
     ) -> None:
@@ -84,6 +85,8 @@ class Battery:
                 The rate of discharge of the battery.
             - leakage
                 The rate of charge leakage from the battery.
+            - lifetime_loss
+                The lifetime loss from the battery.
             - maximum_charge
                 The maximum charge level of the battery, defined between 0 (able to hold no
                 charge) and 1 (able to fully charge).
@@ -99,6 +102,7 @@ class Battery:
         self.cycle_lifetime = cycle_lifetime
         self.discharge_rate = discharge_rate
         self.leakage = leakage
+        self.lifetime_loss = lifetime_loss
         self.maximum_charge = maximum_charge
         self.minimum_charge = minimum_charge
 
@@ -122,6 +126,7 @@ class Battery:
             battery_data["cycle_lifetime"],
             battery_data["c_rate_discharging"],
             battery_rate["leakage"],
+            battery_rate["lifetime_loss"],
             battery_data["maximum_charge"],
             battery_data["minimum_charge"],
         )

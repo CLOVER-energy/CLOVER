@@ -41,6 +41,7 @@ from ..__utils__ import (
 __all__ = (
     "compute_total_hourly_load",
     "LOAD_LOGGER_NAME",
+    "population_hourly",
     "process_device_hourly_power",
     "process_device_hourly_usage",
     "process_device_ownership",
@@ -374,6 +375,33 @@ def compute_total_hourly_load(
         logger.info("Yearly load statistics successfully saved.")
 
     return total_load, yearly_load_statistics
+
+
+def population_hourly(location: Location) -> pd.DataFrame:
+    """
+    Calculates the growth in the number of households in the community for each hour
+
+    Inputs:
+        - location:
+            The location being considered.
+
+    Outputs:
+        - A DataFrame of the number of households in the community for each hour.
+
+    Notes:
+        Simple compound interest-style growth rate.
+
+    """
+
+    growth_rate_hourly = (1 + location.community_growth_rate) ** (
+        1 / (24.0 * 365.0)
+    ) - 1
+    population = [
+        math.floor(location.community_size * (1 + growth_rate_hourly) ** hour)
+        for hour in range(0, 365 * 24 * location.max_years)
+    ]
+
+    return pd.DataFrame(population)
 
 
 def process_device_hourly_power(
@@ -714,28 +742,6 @@ def process_device_utilisation(
 #     # =============================================================================
 #     #      Calculate the total number of each device owned by the community
 #     # =============================================================================
-
-#     def population_hourly(self):
-#         """
-#         Function:
-#             Calculates the growth in the number of households in the community for each hour
-#         Inputs:
-#             Takes inputs from "Location inputs.csv" in the "Location data" folder
-#         Outputs:
-#             Gives a DataFrame of the number of households in the community for each hour
-#         Notes:
-#             Simple compound interest-style growth rate
-#         """
-#         community_size = float(location_inputs["Community size"])
-#         growth_rate = float(location_inputs["Community growth rate"])
-#         years = int(location_inputs["Years"])
-#         population = []
-#         growth_rate_hourly = (1 + growth_rate) ** (1 / (24.0 * 365.0)) - 1
-#         for t in range(0, 365 * 24 * years):
-#             population.append(
-#                 math.floor(community_size * (1 + growth_rate_hourly) ** t)
-#             )
-#         return pd.DataFrame(population)
 
 
 def process_load_profiles(

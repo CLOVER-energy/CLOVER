@@ -30,6 +30,7 @@ import pandas as pd
 from . import argparser
 from .generation import grid, solar
 from .load import load
+from .simulation import energy_system
 
 from atpbar import atpbar
 
@@ -42,6 +43,7 @@ from .__utils__ import (
     LOGGER_DIRECTORY,
     read_yaml,
     Scenario,
+    Simulation,
 )
 
 # Auto-generated-files directory:
@@ -311,12 +313,14 @@ def main(args: List[Any]) -> None:
             raise
         logger.info("Scenario inputs successfully parsed.")
 
-        simulation_inputs = read_yaml(
-            os.path.join(
-                inputs_directory_relative_path,
-                SIMULATION_INPUTS_FILE,
-            ),
-            logger,
+        simulation = Simulation.from_dict(
+            read_yaml(
+                os.path.join(
+                    inputs_directory_relative_path,
+                    SIMULATION_INPUTS_FILE,
+                ),
+                logger,
+            )
         )
 
         solar_generation_inputs = read_yaml(
@@ -346,8 +350,7 @@ def main(args: List[Any]) -> None:
 
     logger.info("All input files successfully parsed.")
     print(
-        "[   DONE   ]\nGenerating necessary profiles ................................. "
-        "   ",
+        "[   DONE   ]\nGenerating necessary profiles",
         end="\n",
     )
 
@@ -417,7 +420,16 @@ def main(args: List[Any]) -> None:
     # Wait for all threads to finish before proceeding.
     logger.info("Waiting for all setup threads to finish before proceeding.")
     solar_data_thread.join()
-    logger.info("All setup threads finished, continuing to CLOVER simulation.")
+    logger.info("All setup threads finished.")
+
+    logger.info("Generating and saving total solar output file.")
+    total_solar_output = solar.total_solar_output(
+        os.path.join(auto_generated_files_directory, "solar"),
+        solar_generation_inputs["start_year"],
+    )
+    logger.info("Total solar output successfully computed and saved.")
+
+    logger.info("Setup complete, continuing to CLOVER simulation.")
 
     print(
         "Generating necessary profiles ................................. "
@@ -430,7 +442,41 @@ def main(args: List[Any]) -> None:
     # *  3  * #
     # ******* #
 
+    # Load the relevant grid profile.
+    with open(
+        os.path.join(
+            auto_generated_files_directory,
+            "grid",
+            f"{scenario.grid_type}_grid_status.csv",
+        ),
+        "r",
+    ) as f:
+        grid_profile = pd.read_csv(
+            f,
+            index_col=0,
+        )
+
+    # Load the relevant kerosene profile.
+
     # * Run a simulation or optimisation as appropriate.
+    energy_system.run_simulation(
+        energy_system,
+        grid_profile,
+        location,
+        parsed_args.pv_size,
+        scenario,
+        simulation,
+        solar_generation_inputs["lifetime"],
+        parsed_args.storage_size,
+    )
+
+    print(
+        "Time taken for simulation: {0:.2f} seconds per year.".format(
+            (time_delta.microseconds * 0.000001)
+            / float(simulation.end_year - simulation.start_year)
+        ),
+        end="\n",
+    )
 
     # ******* #
     # *  4  * #
