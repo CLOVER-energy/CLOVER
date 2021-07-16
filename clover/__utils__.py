@@ -271,7 +271,7 @@ class DieselScenario:
     """
 
     backup_threshold: Optional[float]
-    more: DieselMode
+    mode: DieselMode
 
 
 class DistributionNetwork(enum.Enum):
@@ -692,7 +692,8 @@ class Scenario:
         Whether the grid is being included in the scenario.
 
     .. attribute:: grid_type
-        The type of grid being modelled, usually referring to the location.
+        The type of grid being modelled, i.e., whether the grid is full, etc. These
+        options are written in the grid inputs file as headers.
 
     .. attribute:: prioritise_self_generation
         Whether self generation should be prioritised.
@@ -752,3 +753,36 @@ class Scenario:
             scenario_inputs["prioritise_self_generation"],
             scenario_inputs["pv"],
         )
+
+
+@dataclasses.dataclass
+class Simulation:
+    """
+    Represents a simulation being run.
+
+    .. attribute:: end_year
+        The end year for the simulation.
+
+    .. attribute:: start_year
+        The start year for the simulation.
+
+    """
+
+    end_year: int
+    start_year: int
+
+    @classmethod
+    def from_dict(cls, simulation_inputs: Dict[str, Any]) -> Any:
+        """
+        Returns a :class:`Simulation` instance based on the input data.
+
+        Inputs:
+            - simulation_inputs:
+                The input data extracted from the simulation file.
+
+        Outputs:
+            - A :class:`Simulation` instance based on the input data provided.
+
+        """
+
+        return cls(simulation_inputs["end_year"], simulation_inputs["start_year"])

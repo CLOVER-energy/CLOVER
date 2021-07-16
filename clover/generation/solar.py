@@ -279,7 +279,9 @@ def solar_degradation(lifetime: int) -> pd.DataFrame:
     return pd.DataFrame(lifetime_degradation)
 
 
-def total_solar_output(generation_directory: str, start_year: int = 2007):
+def total_solar_output(
+    generation_directory: str, start_year: int = 2007
+) -> pd.DataFrame:
     """
     Generates 20 years of solar output data by taking 10 consecutive years repeated.
 
@@ -294,24 +296,41 @@ def total_solar_output(generation_directory: str, start_year: int = 2007):
 
     output = pd.DataFrame([])
 
-    # Get data for each year using iteration, and add that data to the output file
-    for i in np.arange(10):
-        iteration_year = start_year + i
-        iteration_year_data = pd.read_csv(
-            os.path.join(
-                generation_directory, f"solar_generation_{iteration_year}.csv"
-            ),
-            header=None,  # type: ignore
-            index_col=0,
-        )
-        output = pd.concat([output, iteration_year_data], ignore_index=True)
-
-    # Repeat the initial 10 years in two consecutive periods
-    output = pd.concat([output, output], ignore_index=True)
-    output.to_csv(
-        os.path.join(generation_directory, "solar_generation_20_years.csv"),
-        header=None,  # type: ignore
+    total_solar_output_filename = os.path.join(
+        generation_directory, "solar_generation_20_years.csv"
     )
+
+    # If the total solar output file already exists then simply read this in.
+    if os.path.isfile(total_solar_output_filename):
+        with open(total_solar_output_filename, "r") as f:
+            output = pd.read_csv(f, header=None, index_col=0)
+
+    else:
+        # Get data for each year using iteration, and add that data to the output file
+        for year_index in atpbar(np.arange(10), name="total solar profile"):
+            iteration_year = start_year + year_index
+            with open(
+                os.path.join(
+                    generation_directory, f"solar_generation_{iteration_year}.csv"
+                ),
+                "r",
+            ) as f:
+                iteration_year_data = pd.read_csv(
+                    f,
+                    header=None,  # type: ignore
+                    index_col=0,
+                )
+            output = pd.concat([output, iteration_year_data], ignore_index=True)
+
+        # Repeat the initial 10 years in two consecutive periods
+        output = pd.concat([output, output], ignore_index=True)
+        with open(total_solar_output_filename, "w") as f:
+            output.to_csv(
+                f,
+                header=None,  # type: ignore
+            )
+
+    return output
 
 
 class SolarDataThread(threading.Thread):
@@ -414,13 +433,6 @@ class SolarDataThread(threading.Thread):
                 if year != self.solar_generation_inputs["end_year"]:
                     time.sleep(RENEWABLES_NINJA_SLEEP_TIME)
 
-            self.logger.info(
-                "All solar outputs fetched, saving total solar output file."
-            )
-            total_solar_output(
-                self.auto_generated_files_directory,
-                self.solar_generation_inputs["start_year"],
-            )
         except Exception:
             self.logger.error(
                 "Error occured in solar-profile fetching. See %s for details.",
