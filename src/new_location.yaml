@@ -480,7 +480,7 @@
               contents: |+
                 ---
                 ################################################################################
-                # energy_system.yaml - Parameters for specifying a CLOVER energy system.       #
+                # scenario_inputs.yaml - Parameters for specifying a scenario.                 #
                 #                                                                              #
                 # Author: Phil Sandwell, Ben Winchester                                        #
                 # Copyright: Phil Sandwell & Ben Winchester, 2021                              #
