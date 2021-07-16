@@ -45,6 +45,37 @@ from .__utils__ import (
 #   The name of the directory in which to save auto-generated files, relative to the
 # root of the location.
 AUTO_GENERATED_FILES_DIRECTORY = "auto_generated"
+# Clover header string:
+#   The ascii text to display when starting CLOVER.
+CLOVER_HEADER_STRING = """
+
+        (((((*    /(((
+        ((((((( ((((((((
+   (((((((((((( ((((((((((((
+   ((((((((((((*(((((((((((((       _____ _      ______      ________ _____
+     *((((((((( ((((((((((((       / ____| |    / __ \\ \\    / /  ____|  __ \\
+   (((((((. /((((((((((/          | |    | |   | |  | \\ \\  / /| |__  | |__) |
+ ((((((((((((((((((((((((((,      | |    | |   | |  | |\\ \\/ / |  __| |  _  /
+ (((((((((((*  (((((((((((((      | |____| |___| |__| | \\  /  | |____| | \\ \\
+   ,(((((((. (  (((((((((((/       \\_____|______\\____/   \\/   |______|_|  \\_\\
+   .((((((   (   ((((((((
+             /     (((((
+             ,
+              ,
+               (
+                 (
+                   (
+
+
+
+       Continuous Lifetime Optimisation of Variable Electricity Resources
+                         Copyright Phil Sandwell, 2018
+
+                 For more information, contact Phil Sandwell at
+                           philip.sandwell@gmail.com
+
+
+"""
 # Device inputs file:
 #   The relative path to the device-inputs file.
 DEVICE_INPUTS_FILE = os.path.join("load", "devices.yaml")
@@ -119,26 +150,6 @@ def _check_location(location: str, logger: logging.Logger) -> bool:
     return True
 
 
-def _parse_location_information(
-    filepath: str, location: str, logger: logging.Logger
-) -> Dict[Any, Any]:
-    """
-    Parse information about the required format of a location folder for verification.
-
-    Inputs:
-        - filepath:
-            The path to the new-location data file.
-        - location:
-            The name of the location being considered.
-        - logger:
-            The logger to use for the run.
-
-    Outputs:
-        - The parsed folder and file structure.
-
-    """
-
-
 def main(args: List[Any]) -> None:
     """
     The main module for CLOVER executing all functionality as appropriate.
@@ -162,17 +173,17 @@ def main(args: List[Any]) -> None:
             "{}.log".format(os.path.join(LOGGER_DIRECTORY, LOGGER_NAME)),
         )
         raise ValueError(
-            "The command-line arguments were invalid. See %s for details.",
-            "{}.log".format(os.path.join(LOGGER_DIRECTORY, LOGGER_NAME)),
+            "The command-line arguments were invalid. See {} for details.".format(
+                "{}.log".format(os.path.join(LOGGER_DIRECTORY, LOGGER_NAME))
+            )
         )
     logger.info("Command-line arguments successfully validated.")
 
-    # ******* #
-    # *  1  * #
-    # ******* #
+    print(CLOVER_HEADER_STRING)
 
     # If the location does not exist or does not meet the required specification, then
     # exit now.
+    print("Verifying location information ................................    ", end="")
     logger.info("Checking location %s.", parsed_args.location)
     if not _check_location(parsed_args.location, logger):
         logger.error(
@@ -184,16 +195,18 @@ def main(args: List[Any]) -> None:
         raise InvalidLocationError(parsed_args.location)
     logger.info("Location, '%s', has been verified and is valid.", parsed_args.location)
 
+    print(
+        "[   DONE   ]\nParsing input files ........................................... "
+        "   ",
+        end="",
+    )
+
     # Define common variables.
     auto_generated_files_directory = os.path.join(
         LOCATIONS_FOLDER_NAME,
         parsed_args.location,
         AUTO_GENERATED_FILES_DIRECTORY,
     )
-
-    # ******* #
-    # *  2  * #
-    # ******* #
 
     # Parse the various input files.
     logger.info("Parsing input files.")
@@ -203,77 +216,101 @@ def main(args: List[Any]) -> None:
         INPUTS_DIRECTORY,
     )
 
-    device_inputs: List[Dict[str, Any]] = read_yaml(
-        os.path.join(
-            inputs_directory_relative_path,
-            DEVICE_INPUTS_FILE,
-        ),
-        logger,
-    )
-    logger.info("Device inputs successfully parsed.")
-
     try:
-        device_utilisations = {
-            device["device"]: pd.read_csv(
-                os.path.join(
-                    inputs_directory_relative_path,
-                    DEVICE_UTILISATIONS_INPUT_DIRECTORY,
-                    DEVICE_UTILISATION_TEMPLATE_FILENAME.format(
-                        device=device["device"]
+        device_inputs: List[Dict[str, Any]] = read_yaml(
+            os.path.join(
+                inputs_directory_relative_path,
+                DEVICE_INPUTS_FILE,
+            ),
+            logger,
+        )
+        logger.info("Device inputs successfully parsed.")
+
+        try:
+            device_utilisations = {
+                device["device"]: pd.read_csv(
+                    os.path.join(
+                        inputs_directory_relative_path,
+                        DEVICE_UTILISATIONS_INPUT_DIRECTORY,
+                        DEVICE_UTILISATION_TEMPLATE_FILENAME.format(
+                            device=device["device"]
+                        ),
                     ),
-                ),
-                header=None,
-                index_col=None,
+                    header=None,
+                    index_col=None,
+                )
+                for device in device_inputs
+            }
+        except FileNotFoundError:
+            logger.error(
+                "Error parsing device-utilisation profiles, check that all device "
+                "names are consistent and use the same case. File not found: %s."
             )
-            for device in device_inputs
-        }
+            raise
+
+        diesel_inputs_filepath = os.path.join(
+            inputs_directory_relative_path,
+            DIESEL_INPUTS_FILE,
+        )
+        diesel_inputs = read_yaml(
+            diesel_inputs_filepath,
+            logger,
+        )
+        logger.info("Diesel inputs successfully parsed.")
+
+        with open(
+            os.path.join(
+                inputs_directory_relative_path,
+                GRID_INPUTS_FILE,
+            ),
+            "r",
+        ) as grid_inputs_file:
+            grid_inputs = pd.read_csv(
+                grid_inputs_file,
+                index_col=0,
+            )
+        logger.info("Grid inputs successfully parsed.")
+
+        location_inputs = read_yaml(
+            os.path.join(
+                inputs_directory_relative_path,
+                LOCATION_INPUTS_FILE,
+            ),
+            logger,
+        )
+        logger.info("Location inputs successfully parsed.")
+
+        solar_generation_inputs = read_yaml(
+            os.path.join(
+                inputs_directory_relative_path,
+                SOLAR_INPUTS_FILE,
+            ),
+            logger,
+        )
+        logger.info("Solar generation inputs successfully parsed.")
     except FileNotFoundError as e:
-        logger.info(
-            "Error parsing device-utilisation profiles, check that all device names "
-            "are consistent and use the same case. File not found: %s."
+        print("[  FAILED  ]\n")
+        logger.error(
+            "Not all input files present.  See %s for details: %s",
+            "{}.log".format(os.path.join(LOGGER_DIRECTORY, LOGGER_NAME)),
+            str(e),
+        )
+        raise
+    except Exception as e:
+        print("[  FAILED  ]\n")
+        logger.error(
+            "An unexpected error occured parsing input files. See %s for details: %s",
+            "{}.log".format(os.path.join(LOGGER_DIRECTORY, LOGGER_NAME)),
+            str(e),
         )
         raise
 
-    diesel_inputs = read_yaml(
-        os.path.join(
-            inputs_directory_relative_path,
-            DIESEL_INPUTS_FILE,
-        ),
-        logger,
-    )
-    logger.info("Diesel inputs successfully parsed.")
-
-    with open(
-        os.path.join(
-            inputs_directory_relative_path,
-            GRID_INPUTS_FILE,
-        ),
-        "r",
-    ) as grid_inputs_file:
-        grid_inputs = pd.read_csv(
-            grid_inputs_file,
-            index_col=0,
-        )
-    logger.info("Grid inputs successfully parsed.")
-
-    location_inputs = read_yaml(
-        os.path.join(
-            inputs_directory_relative_path,
-            LOCATION_INPUTS_FILE,
-        ),
-        logger,
-    )
-    logger.info("Location inputs successfully parsed.")
-
-    solar_generation_inputs = read_yaml(
-        os.path.join(
-            inputs_directory_relative_path,
-            SOLAR_INPUTS_FILE,
-        ),
-        logger,
-    )
-    logger.info("Solar generation inputs successfully parsed.")
     logger.info("All input files successfully parsed.")
+    print(
+        "[   DONE   ]\nGenerating necessary profiles ................................. "
+        "   ",
+        end="\n",
+    )
 
     # Generate and save the solar data for each year as a background task.
     logger.info("Beginning solar-data fetching.")
@@ -293,96 +330,62 @@ def main(args: List[Any]) -> None:
     logger.info("Processing device informaiton.")
     # load_logger = get_logger(load.LOAD_LOGGER_NAME)
 
-    device_hourly_loads: Dict[str, pd.DataFrame] = dict()
-
-    for device in atpbar(device_inputs, name="load profiles"):
-        # Compute the device ownership.
-        daily_device_ownership = load.process_device_ownership(
-            device,
-            generated_device_ownership_directory=os.path.join(
-                auto_generated_files_directory, "load", "device_ownership"
-            ),
-            location_inputs=location_inputs,
-            logger=logger,
+    try:
+        total_load, _ = load.process_load_profiles(
+            auto_generated_files_directory,
+            device_inputs,
+            device_utilisations,
+            location_inputs,
+            logger,
         )
-        logger.info(
-            "Device ownership information for %s successfully computed.",
-            device["device"],
+    except Exception as e:
+        print(
+            "Generating necessary profiles ................................. "
+            "[  FAILED  ]\n"
         )
-
-        # Compute the device utilisation.
-        daily_device_utilisaion = load.process_device_utilisation(
-            device,
-            device_utilisations=device_utilisations,
-            generated_device_utilisation_directory=os.path.join(
-                auto_generated_files_directory, "load", "device_utilisation"
-            ),
-            location_inputs=location_inputs,
-            logger=logger,
+        logger.error(
+            "An unexpected error occurred generating the load profiles. See %s for "
+            "details: %s",
+            "{}.log".format(os.path.join(LOGGER_DIRECTORY, LOGGER_NAME)),
+            str(e),
         )
-        logger.info(
-            "Device utilisation information for %s successfully computed.",
-            device["device"],
-        )
-
-        # Compute the device usage.
-        hourly_device_usage = load.process_device_hourly_usage(
-            device,
-            daily_device_ownership=daily_device_ownership,
-            daily_device_utilisation=daily_device_utilisaion,
-            generated_device_usage_filepath=os.path.join(
-                auto_generated_files_directory, "load", "device_usage"
-            ),
-            logger=logger,
-            years=location_inputs["max_years"],
-        )
-        logger.info(
-            "Device hourly usage information for %s successfully computed.",
-            device["device"],
-        )
-
-        # Compute the load profile based on this usage.
-        device_hourly_loads[device["device"]] = load.process_device_hourly_power(
-            device,
-            generated_device_load_filepath=os.path.join(
-                auto_generated_files_directory, "load", "device_load"
-            ),
-            hourly_device_usage=hourly_device_usage,
-            logger=logger,
-            power_type="electric_power",
-        )
-        logger.info(
-            "Device hourly load information for %s successfully computed.",
-            device["device"],
-        )
-
-    logger.info("Computing the total device hourly load.")
-    load.compute_total_hourly_load(
-        device_hourly_loads=device_hourly_loads,
-        devices=device_inputs,
-        generated_device_load_filepath=os.path.join(
-            auto_generated_files_directory, "load", "device_load"
-        ),
-        logger=logger,
-        years=location_inputs["max_years"],
-    )
+        raise
 
     # Generate the grid-availability profiles.
     logger.info("Generating grid-availability profiles.")
-    for _ in atpbar({None}, name="grid profile"):
-        grid_filename, grid_times = grid.get_lifetime_grid_status(
+    try:
+        grid_profiles = grid.get_lifetime_grid_status(
             os.path.join(auto_generated_files_directory, "grid"),
             grid_inputs,
+            logger,
             location_inputs["max_years"],
         )
+    except Exception as e:
+        print(
+            "Generating necessary profiles ................................. "
+            "[  FAILED  ]\n"
+        )
+        logger.error(
+            "An unexpected error occurred generating the grid profiles. See %s for "
+            "details: %s",
+            "{}.log".format(os.path.join(LOGGER_DIRECTORY, LOGGER_NAME)),
+            str(e),
+        )
+        raise
+
     logger.info("Grid-availability profiles successfully generated.")
-    grid_times.to_csv(grid_filename)
-    logger.info("Grid availability profiles successfully saved to %s.", grid_filename)
 
     # Wait for all threads to finish before proceeding.
     logger.info("Waiting for all setup threads to finish before proceeding.")
     solar_data_thread.join()
     logger.info("All setup threads finished, continuing to CLOVER simulation.")
+
+    print(
+        "Generating necessary profiles ................................. "
+        "   [   DONE   ]\n"
+        "Beginning CLOVER run           ................................    ",
+        end="",
+    )
 
     # ******* #
     # *  3  * #
@@ -395,6 +398,12 @@ def main(args: List[Any]) -> None:
     # ******* #
 
     # * Run any and all analysis as appropriate.
+
+    print(
+        "Finished. See {} for output files.".format(
+            os.path.join(LOCATIONS_FOLDER_NAME, "outputs")
+        )
+    )
 
 
 if __name__ == "__main__":
