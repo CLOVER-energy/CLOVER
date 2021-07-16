@@ -24,7 +24,7 @@ import os
 # import threading
 
 from logging import Logger
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, Set, Tuple
 
 import numpy as np
 import pandas as pd
@@ -33,6 +33,7 @@ from atpbar import atpbar
 
 from ..__utils__ import (
     DemandType,
+    Device,
     monthly_profile_to_daily_profile,
 )
 
@@ -50,6 +51,15 @@ __all__ = (
 # Load logger name:
 #   The name to use for the load module logger.
 LOAD_LOGGER_NAME: str = "load"
+# Maximum column name:
+#   The name to use for the "maximum" column in the yearly-load statistics.
+MAXIMUM: str = "Maximum"
+# Mean column name:
+#   The name to use for the "mean" column in the yearly-load statistics.
+MEAN: str = "Mean"
+# Median column name:
+#   The name to use for the "median" column in the yearly-load statistics.
+MEDIAN: str = "Median"
 
 
 def _device_daily_profile(monthly_profile: pd.DataFrame, years: int) -> pd.DataFrame:
@@ -154,7 +164,7 @@ def _population_growth_daily(
 
 
 def _number_of_devices_daily(
-    device: Dict[str, Any],
+    device: Device,
     location_inputs: Dict[str, Any],
     logger: Logger,
     max_years: int,
@@ -163,8 +173,8 @@ def _number_of_devices_daily(
     Calculates the number of devices owned by the community on each day
 
     Inputs:
-        - device_inputs:
-            The device inputs file contents.
+        - device:
+            The device currently being considered.
         - location_inputs:
             The location inputs file contents.
         - logger:
@@ -180,26 +190,26 @@ def _number_of_devices_daily(
 
     """
 
-    if device["available"]:
+    if device.available:
         logger.info(
             "Calculating ownership for device %s.",
-            device["device"],
+            device.name,
         )
         population_growth_rate = _population_growth_daily(
             location_inputs["community_growth_rate"],
             location_inputs["community_size"],
             location_inputs["max_years"],
         )
-        if device["final_ownership"] != device["initial_ownership"]:
+        if device.final_ownership != device.initial_ownership:
             logger.info(
                 "%s ownership changes over time, calculating.",
-                device["device"],
+                device.name,
             )
             cum_sales = _cumulative_sales_daily(
-                device["initial_ownership"],
-                device["final_ownership"],
-                device["innovation"],
-                device["imitation"],
+                device.initial_ownership,
+                device.final_ownership,
+                device.innovation,
+                device.imitation,
                 max_years,
             )
             daily_ownership = pd.DataFrame(
@@ -209,20 +219,20 @@ def _number_of_devices_daily(
         else:
             logger.info(
                 "%s ownership remains constant.",
-                device["device"],
+                device.name,
             )
             daily_ownership = pd.DataFrame(
-                np.floor(population_growth_rate * device["initial_ownership"])
+                np.floor(population_growth_rate * device.initial_ownership)
             )
         logger.info(
             "Ownership for device %s calculated.",
-            device["device"],
+            device.name,
         )
 
     else:
         logger.info(
             "Device %s was marked as unavailable, setting ownership to zero.",
-            device["device"],
+            device.name,
         )
         daily_ownership = pd.DataFrame(np.zeros((max_years * 365, 1)))
 
@@ -252,11 +262,11 @@ def _yearly_load_statistics(total_load: pd.DataFrame, years: int) -> pd.DataFram
     )
 
     yearly_maximum = pd.DataFrame(total_load_yearly.max(axis=1))
-    yearly_maximum.columns = ["Maximum"]
+    yearly_maximum.columns = [MAXIMUM]
     yearly_mean = pd.DataFrame(total_load_yearly.mean(axis=1).round(0))
-    yearly_mean.columns = ["Mean"]
+    yearly_mean.columns = [MEAN]
     yearly_median = pd.DataFrame(np.percentile(total_load_yearly, 50, axis=1))
-    yearly_median.columns = ["Median"]
+    yearly_median.columns = [MEDIAN]
     yearly_load_statistics = pd.concat(
         [yearly_maximum, yearly_mean, yearly_median], axis=1
     )
@@ -267,7 +277,7 @@ def _yearly_load_statistics(total_load: pd.DataFrame, years: int) -> pd.DataFram
 def compute_total_hourly_load(
     *,
     device_hourly_loads: Dict[str, pd.DataFrame],
-    devices: List[Dict[str, Any]],
+    devices: Set[Device],
     generated_device_load_filepath: str,
     logger: Logger,
     years: int,
@@ -279,7 +289,7 @@ def compute_total_hourly_load(
         - device_hourly_loads:
             A mapping between device name and the hourly load profile of the device.
         - devices:
-            Information about the devices included in the system.
+            The set of devices included in the system.
         - generated_device_load_filepath:
             The directory in which to store the generated hourly load profiles for the
             device.
@@ -318,23 +328,19 @@ def compute_total_hourly_load(
 
         # Sum over the device loads.
         for device in devices:
-            if device["type"] == DemandType.DOMESTIC.value:
-                domestic_load += device_hourly_loads[device["device"]].reset_index(
+            if device.demand_type == DemandType.DOMESTIC:
+                domestic_load += device_hourly_loads[device.name].reset_index(drop=True)
+            elif device.demand_type == DemandType.COMMERCIAL:
+                commercial_load += device_hourly_loads[device.name].reset_index(
                     drop=True
                 )
-            elif device["type"] == DemandType.COMMERCIAL.value:
-                commercial_load += device_hourly_loads[device["device"]].reset_index(
-                    drop=True
-                )
-            elif device["type"] == DemandType.PUBLIC.value:
-                public_load += device_hourly_loads[device["device"]].reset_index(
-                    drop=True
-                )
+            elif device.demand_type == DemandType.PUBLIC:
+                public_load += device_hourly_loads[device.name].reset_index(drop=True)
             else:
                 logger.error(
-                    "Type of device %s is unknown. Type: %s.",
-                    device["device"],
-                    device["type"],
+                    "Demand type of device %s is unknown. Type: %s.",
+                    device.name,
+                    device.demand_type,
                 )
 
         logger.info("Total load for all devices successfully computed.")
@@ -374,7 +380,7 @@ def compute_total_hourly_load(
 
 
 def process_device_hourly_power(
-    device: Dict[str, Any],
+    device: Device,
     *,
     generated_device_load_filepath: str,
     hourly_device_usage: pd.DataFrame,
@@ -386,7 +392,7 @@ def process_device_hourly_power(
 
     Inputs:
         - device:
-            The data for the device to be processed.
+            The device to be processed.
         - generated_device_load_filepath:
             The directory in which to store the generated hourly load profiles for the
             device.
@@ -402,7 +408,7 @@ def process_device_hourly_power(
 
     """
 
-    filename = f"{device['device']}_load.csv"
+    filename = f"{device.name}_load.csv"
     hourly_usage_filepath = os.path.join(generated_device_load_filepath, filename)
 
     # If the hourly power usage file already exists, load the data in.
@@ -411,20 +417,18 @@ def process_device_hourly_power(
             device_load: pd.DataFrame = pd.read_csv(f, index_col=0)
         logger.info(
             "Hourly power profile for %s successfully read from file %s.",
-            device["device"],
+            device.name,
             hourly_usage_filepath,
         )
 
     else:
         # Compute the hourly load profile.
-        logger.info("Computing hourly power usage for %s.", device["device"])
-        device_load = hourly_device_usage.mul(float(device[power_type]))
-        logger.info(
-            "Hourly power usage for %s successfully computed.", device["device"]
-        )
+        logger.info("Computing hourly power usage for %s.", device.name)
+        device_load = hourly_device_usage.mul(float(device.electric_power))
+        logger.info("Hourly power usage for %s successfully computed.", device.name)
 
         # Save the hourly power profile.
-        logger.info("Saving hourly power usage for %s.", device["device"])
+        logger.info("Saving hourly power usage for %s.", device.name)
 
         with open(
             hourly_usage_filepath,
@@ -434,7 +438,7 @@ def process_device_hourly_power(
 
         logger.info(
             "Hourly power proifle for %s successfully saved to %s.",
-            device["device"],
+            device.name,
             hourly_usage_filepath,
         )
 
@@ -472,7 +476,7 @@ def process_device_hourly_usage(
 
     """
 
-    filename = f"{device['device']}_in_use.csv"
+    filename = f"{device.name}_in_use.csv"
     filepath = os.path.join(generated_device_usage_filepath, filename)
 
     # If the device hourly usage already exists, then read the data in from the file.
@@ -481,7 +485,7 @@ def process_device_hourly_usage(
             hourly_device_usage = pd.read_csv(f, index_col=0)
         logger.info(
             "Hourly device usage for %s successfully read from file: %s",
-            device["device"],
+            device.name,
             filepath,
         )
 
@@ -492,7 +496,7 @@ def process_device_hourly_usage(
         hourly_device_usage = pd.DataFrame()
 
         # Calculate the hourly-usage profile.
-        logger.info("Calculating number of %ss in use", device["device"])
+        logger.info("Calculating number of %ss in use", device.name)
         # for day in range(0, 365 * years):
         #     devices = float(daily_device_ownership.iloc[day])
         #     day_profile = daily_device_utilisation.iloc[day]
@@ -514,12 +518,10 @@ def process_device_hourly_usage(
             ]
         )
 
-        logger.info(
-            "Hourly usage profile for %s successfully calculated.", device["device"]
-        )
+        logger.info("Hourly usage profile for %s successfully calculated.", device.name)
 
         # Save the hourly-usage profile.
-        logger.info("Saving hourly usage profile for %s.", device["device"])
+        logger.info("Saving hourly usage profile for %s.", device.name)
 
         with open(
             filepath,
@@ -529,7 +531,7 @@ def process_device_hourly_usage(
 
         logger.info(
             "Hourly usage proifle for %s successfully saved to %s.",
-            device["device"],
+            device.name,
             filename,
         )
 
@@ -564,9 +566,9 @@ def process_device_ownership(
 
     """
 
-    logger.info("Load ownership process instantiated for device %s.", device["device"])
+    logger.info("Load ownership process instantiated for device %s.", device.name)
 
-    daily_ownership_filename = f'{device["device"]}_daily_ownership.csv'
+    daily_ownership_filename = f"{device.name}_daily_ownership.csv"
     daily_ownership_filepath = os.path.join(
         generated_device_ownership_directory,
         daily_ownership_filename,
@@ -578,13 +580,13 @@ def process_device_ownership(
             daily_ownership = pd.read_csv(f, index_col=0)
         logger.info(
             "Monthly device-ownership profile for %s successfully read from %s.",
-            device["device"],
+            device.name,
             daily_ownership_filepath,
         )
 
     else:
         # Compute the device-ownership profiles.
-        logger.info("Computing device ownership for %s.", device["device"])
+        logger.info("Computing device ownership for %s.", device.name)
 
         # Compute the daily device usage.
         daily_ownership = _number_of_devices_daily(
@@ -595,7 +597,7 @@ def process_device_ownership(
         )
         logger.info(
             "Monthly device ownership profile for %s successfully computed.",
-            device["device"],
+            device.name,
         )
 
         # Save the usage to the output file.
@@ -606,7 +608,7 @@ def process_device_ownership(
             daily_ownership.to_csv(f)
         logger.info(
             "Monthly deivice-ownership profile for %s successfully saved to %s.",
-            device["device"],
+            device.name,
             daily_ownership_filename,
         )
 
@@ -644,11 +646,9 @@ def process_device_utilisation(
 
     """
 
-    logger.info(
-        "Load utilisation process instantiated for device %s.", device["device"]
-    )
+    logger.info("Load utilisation process instantiated for device %s.", device.name)
 
-    daily_times_filename = f'{device["device"]}_daily_times.csv'
+    daily_times_filename = f"{device.name}_daily_times.csv"
     filepath = os.path.join(
         generated_device_utilisation_directory, daily_times_filename
     )
@@ -659,19 +659,19 @@ def process_device_utilisation(
             interpolated_daily_profile = pd.read_csv(f, index_col=0)
         logger.info(
             "Daily device-utilisation profile for %s successfully read from file %s.",
-            device["device"],
+            device.name,
             filepath,
         )
 
     else:
-        logger.info("Computing device-utilisation profile for %s.", device["device"])
+        logger.info("Computing device-utilisation profile for %s.", device.name)
         interpolated_daily_profile = _device_daily_profile(
-            device_utilisations[device["device"]],
+            device_utilisations[device],
             location_inputs["max_years"],
         )
         logger.info(
             "Daily device-utilisation profile for %s successfully computed.",
-            device["device"],
+            device.name,
         )
 
         # Save this to the output file.
@@ -679,7 +679,7 @@ def process_device_utilisation(
             interpolated_daily_profile.to_csv(f)
         logger.info(
             "Daily deivice-utilisation profile for %s successfully saved to %s.",
-            device["device"],
+            device.name,
             daily_times_filename,
         )
 
@@ -744,7 +744,7 @@ def process_device_utilisation(
 
 def process_load_profiles(
     auto_generated_files_directory: str,
-    device_inputs: List[Dict[str, Any]],
+    devices: Set[Device],
     device_utilisations: Dict[str, pd.DataFrame],
     location_inputs: Dict[str, Any],
     logger: Logger,
@@ -758,8 +758,8 @@ def process_load_profiles(
     Inputs:
         - auto_generated_files_directory:
             The directory in which auto-generated files should be saved.
-        - device_inputs:
-            The device inputs information, extracted from the device-inputs file.
+        - devices:
+            The devices to be processed.
         - device_utilisations:
             The processed device utilisation information.
         - location_inputs:
@@ -775,7 +775,7 @@ def process_load_profiles(
 
     device_hourly_loads: Dict[str, pd.DataFrame] = dict()
 
-    for device in atpbar(device_inputs, name="load profiles"):
+    for device in atpbar(devices, name="load profiles"):
         # Compute the device ownership.
         daily_device_ownership = process_device_ownership(
             device,
@@ -787,7 +787,7 @@ def process_load_profiles(
         )
         logger.info(
             "Device ownership information for %s successfully computed.",
-            device["device"],
+            device.name,
         )
 
         # Compute the device utilisation.
@@ -802,7 +802,7 @@ def process_load_profiles(
         )
         logger.info(
             "Device utilisation information for %s successfully computed.",
-            device["device"],
+            device.name,
         )
 
         # Compute the device usage.
@@ -818,11 +818,11 @@ def process_load_profiles(
         )
         logger.info(
             "Device hourly usage information for %s successfully computed.",
-            device["device"],
+            device.name,
         )
 
         # Compute the load profile based on this usage.
-        device_hourly_loads[device["device"]] = process_device_hourly_power(
+        device_hourly_loads[device.name] = process_device_hourly_power(
             device,
             generated_device_load_filepath=os.path.join(
                 auto_generated_files_directory, "load", "device_load"
@@ -833,13 +833,13 @@ def process_load_profiles(
         )
         logger.info(
             "Device hourly load information for %s successfully computed.",
-            device["device"],
+            device.name,
         )
 
     logger.info("Computing the total device hourly load.")
     total_load, yearly_statistics = compute_total_hourly_load(
         device_hourly_loads=device_hourly_loads,
-        devices=device_inputs,
+        devices=devices,
         generated_device_load_filepath=os.path.join(
             auto_generated_files_directory, "load", "device_load"
         ),

@@ -23,7 +23,7 @@ import sys
 
 from functools import partial
 from multiprocessing import Pool
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Set
 
 import pandas as pd
 
@@ -34,8 +34,10 @@ from .load import load
 from atpbar import atpbar
 
 from .__utils__ import (
+    Device,
     get_logger,
     InvalidLocationError,
+    Location,
     LOCATIONS_FOLDER_NAME,
     LOGGER_DIRECTORY,
     read_yaml,
@@ -193,6 +195,7 @@ def main(args: List[Any]) -> None:
     print("Verifying location information ................................    ", end="")
     logger.info("Checking location %s.", parsed_args.location)
     if not _check_location(parsed_args.location, logger):
+        print("[  FAILED  ]\n")
         logger.error(
             "The location, '%s', is invalid. Try running the `new_location` script to"
             "identify missing files. See %s for details.",
@@ -224,36 +227,41 @@ def main(args: List[Any]) -> None:
     )
 
     try:
-        device_inputs: List[Dict[str, Any]] = read_yaml(
-            os.path.join(
-                inputs_directory_relative_path,
-                DEVICE_INPUTS_FILE,
-            ),
-            logger,
-        )
+        devices: Set[Device] = {
+            Device.from_dict(entry)
+            for entry in read_yaml(
+                os.path.join(
+                    inputs_directory_relative_path,
+                    DEVICE_INPUTS_FILE,
+                ),
+                logger,
+            )
+        }
         logger.info("Device inputs successfully parsed.")
 
-        try:
-            device_utilisations = {
-                device["device"]: pd.read_csv(
+        device_utilisations: Dict[Device, pd.DataFrame] = dict()
+        for device in devices:
+            try:
+                with open(
                     os.path.join(
                         inputs_directory_relative_path,
                         DEVICE_UTILISATIONS_INPUT_DIRECTORY,
-                        DEVICE_UTILISATION_TEMPLATE_FILENAME.format(
-                            device=device["device"]
-                        ),
+                        DEVICE_UTILISATION_TEMPLATE_FILENAME.format(device=device.name),
                     ),
-                    header=None,
-                    index_col=None,
+                    "r",
+                ) as f:
+                    device_utilisations[device] = pd.read_csv(
+                        f,
+                        header=None,
+                        index_col=None,
+                    )
+            except FileNotFoundError:
+                logger.error(
+                    "Error parsing device-utilisation profile for %s, check that the "
+                    "profile is present and that all device names are consistent.",
+                    device.name,
                 )
-                for device in device_inputs
-            }
-        except FileNotFoundError:
-            logger.error(
-                "Error parsing device-utilisation profiles, check that all device "
-                "names are consistent and use the same case. File not found: %s."
-            )
-            raise
+                raise
 
         diesel_inputs_filepath = os.path.join(
             inputs_directory_relative_path,
@@ -278,12 +286,14 @@ def main(args: List[Any]) -> None:
             )
         logger.info("Grid inputs successfully parsed.")
 
-        location_inputs = read_yaml(
-            os.path.join(
-                inputs_directory_relative_path,
-                LOCATION_INPUTS_FILE,
-            ),
-            logger,
+        location = Location.from_dict(
+            read_yaml(
+                os.path.join(
+                    inputs_directory_relative_path,
+                    LOCATION_INPUTS_FILE,
+                ),
+                logger,
+            )
         )
         logger.info("Location inputs successfully parsed.")
 
@@ -345,7 +355,7 @@ def main(args: List[Any]) -> None:
     logger.info("Beginning solar-data fetching.")
     solar_data_thread = solar.SolarDataThread(
         os.path.join(auto_generated_files_directory, "solar"),
-        location_inputs,
+        location,
         solar_generation_inputs,
     )
     solar_data_thread.start()
@@ -362,9 +372,9 @@ def main(args: List[Any]) -> None:
     try:
         total_load, _ = load.process_load_profiles(
             auto_generated_files_directory,
-            device_inputs,
+            devices,
             device_utilisations,
-            location_inputs,
+            location,
             logger,
         )
     except Exception as e:
@@ -387,7 +397,7 @@ def main(args: List[Any]) -> None:
             os.path.join(auto_generated_files_directory, "grid"),
             grid_inputs,
             logger,
-            location_inputs["max_years"],
+            location["max_years"],
         )
     except Exception as e:
         print(

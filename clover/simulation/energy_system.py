@@ -30,8 +30,16 @@ from ..generation.diesel import Diesel
 from ..load.load import Load
 from ..__utils__ import DemandType, LOCATIONS_FOLDER_NAME, Scenario
 
-#%%
+
 class EnergySystem:
+    """
+    Represents an energy system.
+
+    """
+
+
+#%%
+class EnergySystemOld:
     """
     Represents an energy system in the context of CLOVER.
 
