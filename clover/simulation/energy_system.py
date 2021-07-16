@@ -1,18 +1,21 @@
-# -*- coding: utf-8 -*-
+#!/usr/bin/python3
+########################################################################################
+# energy_system.py - Energy-system main module for CLOVER.                             #
+#                                                                                      #
+# Authors: Phil Sandwell, Ben Winchester                                               #
+# Copyright: Phil Sandwell, 2018                                                       #
+# Date created: 13/07/2021                                                             #
+# License: Open source                                                                 #
+
+# For more information, please email:                                                  #
+#     philip.sandwell@gmail.com                                                        #
+########################################################################################
 """
-===============================================================================
-                        ENERGY SYSTEM SIMULATION FILE
-===============================================================================
-                            Most recent update:
-                                3 May 2019
-===============================================================================
-Made by:
-    Philip Sandwell
-Copyright:
-    Philip Sandwell, 2018
-For more information, please email:
-    philip.sandwell@googlemail.com
-===============================================================================
+energy_system.py - The energy-system module for CLOVER.
+
+This module carries out a simulation for an energy system based on the various inputs
+and profile files that have been parsed/generated.
+
 """
 
 import datetime
@@ -22,34 +25,24 @@ import os
 import numpy as np
 import pandas as pd
 
-from ..generation.solar import solar_degradation
+from ..generation.solar import solar_degradation, total_solar_output
 from ..generation.diesel import Diesel
 from ..load.load import Load
-from ..__utils__ import LOCATIONS_FOLDER_NAME
+from ..__utils__ import DemandType, LOCATIONS_FOLDER_NAME, Scenario
 
 #%%
-class Energy_System:
+class EnergySystem:
+    """
+    Represents an energy system in the context of CLOVER.
+
+    """
+
     def __init__(self):
-        self.location = "Bahraich"
-        self.CLOVER_filepath = os.getcwd()
-        self.location_filepath = os.path.join(
-            self.CLOVER_filepath, LOCATIONS_FOLDER_NAME, self.location
-        )
-        self.generation_filepath = os.path.join(self.location_filepath, "Generation")
-        self.location_data_filepath = os.path.join(
-            self.location_filepath, "Location Data"
-        )
-        self.energy_system_filepath = os.path.join(
-            self.location_filepath, "Simulation", "Energy system inputs.csv"
-        )
-        self.energy_system_inputs = pd.read_csv(
-            self.energy_system_filepath, header=None, index_col=0
-        ).round(decimals=3)
-        self.scenario_inputs = pd.read_csv(
-            os.path.join(self.location_filepath, "Scenario", "Scenario inputs.csv"),
-            header=None,
-            index_col=0,
-        ).round(decimals=3)
+        """
+        Instantiate a :class:`energy_system.EnergySystem` instance.
+
+        """
+
         self.kerosene_data_filepath = os.path.join(
             self.location_filepath, "Load", "Devices in use", "kerosene_in_use.csv"
         )
@@ -558,35 +551,43 @@ class Energy_System:
         )
 
     #%% Energy usage
-    def get_load_profile(self, **options):
+    def get_load_profile(self, scenario: Scenario, total_load: pd.DataFrame):
         """
-        Function:
-            Gets the total community load over 20 years in kW
+        Gets the total community load over 20 years in kW
+
         Inputs:
-            'total_load.csv' from 'Device load' folder in Load folder
+            - scenario:
+                Information about the scenario currently being run.
+            - total_load:
+                The total load as a :class:`pandas.DataFrame`.
+
         Outputs:
-            Gives a dataframe with columns for the load of domestic, commercial and public devices
+            - A :class:`pandas.DataFrame` with columns for the load of domestic,
+              commercial and public devices.
+
         """
-        loads = (
-            pd.read_csv(
-                os.path.join(
-                    self.location_filepath, "Load", "Device load", "total_load.csv"
-                ),
-                index_col=0,
-            )
-            * 0.001
+
+        total_energy_system_load: pd.DataFrame = pd.DataFrame(
+            np.zeros(total_load[DemandType.DOMESTIC.value].shape)
         )
-        total_load = pd.DataFrame(np.zeros(len(loads)))
-        if self.scenario_inputs[1]["Domestic"] == "Y":
-            total_load = pd.DataFrame(
-                total_load.values + pd.DataFrame(loads["Domestic"]).values
+
+        # If no loads were specified, raise an error.
+        if (
+            not scenario.demands.domestic
+            or scenario.demands.commercial
+            or scenario.demands.public
+        ):
+            raise Exception(
+                "At least one of domestic, commercial and public loads needs to be considered."
             )
-        if self.scenario_inputs[1]["Commercial"] == "Y":
-            total_load = pd.DataFrame(
-                total_load.values + pd.DataFrame(loads["Commercial"]).values
-            )
-        if self.scenario_inputs[1]["Public"] == "Y":
-            total_load = pd.DataFrame(
-                total_load.values + pd.DataFrame(loads["Public"]).values
-            )
-        return total_load
+
+        if scenario.demands.domestic:
+            total_energy_system_load += total_load[DemandType.DOMESTIC.value]
+
+        if scenario.demands.commercial:
+            total_energy_system_load += total_load[DemandType.COMMERCIAL.value]
+
+        if scenario.demands.public:
+            total_energy_system_load += total_load[DemandType.PUBLIC.value]
+
+        return total_energy_system_load
