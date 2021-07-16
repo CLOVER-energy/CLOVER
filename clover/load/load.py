@@ -34,6 +34,7 @@ from atpbar import atpbar
 from ..__utils__ import (
     DemandType,
     Device,
+    Location,
     monthly_profile_to_daily_profile,
 )
 
@@ -165,9 +166,8 @@ def _population_growth_daily(
 
 def _number_of_devices_daily(
     device: Device,
-    location_inputs: Dict[str, Any],
+    location: Location,
     logger: Logger,
-    max_years: int,
 ) -> pd.DataFrame:
     """
     Calculates the number of devices owned by the community on each day
@@ -175,13 +175,10 @@ def _number_of_devices_daily(
     Inputs:
         - device:
             The device currently being considered.
-        - location_inputs:
-            The location inputs file contents.
+        - location:
+            The location currently being considered.
         - logger:
             The logger to use for the run.
-        - max_years:
-            The maximum number of years for which the simulation can run.
-
     Outputs:
         - daily_ownership:
             Returns the number of devives that are owned by the community on a given
@@ -196,9 +193,9 @@ def _number_of_devices_daily(
             device.name,
         )
         population_growth_rate = _population_growth_daily(
-            location_inputs["community_growth_rate"],
-            location_inputs["community_size"],
-            location_inputs["max_years"],
+            location.community_growth_rate,
+            location.community_size,
+            location.max_years,
         )
         if device.final_ownership != device.initial_ownership:
             logger.info(
@@ -210,7 +207,7 @@ def _number_of_devices_daily(
                 device.final_ownership,
                 device.innovation,
                 device.imitation,
-                max_years,
+                location.max_years,
             )
             daily_ownership = pd.DataFrame(
                 np.floor(cum_sales.mul(population_growth_rate))  # type: ignore
@@ -234,7 +231,7 @@ def _number_of_devices_daily(
             "Device %s was marked as unavailable, setting ownership to zero.",
             device.name,
         )
-        daily_ownership = pd.DataFrame(np.zeros((max_years * 365, 1)))
+        daily_ownership = pd.DataFrame(np.zeros((location.max_years * 365, 1)))
 
     return daily_ownership
 
@@ -539,10 +536,10 @@ def process_device_hourly_usage(
 
 
 def process_device_ownership(
-    device: Dict[str, Any],
+    device: Device,
     *,
     generated_device_ownership_directory: str,
-    location_inputs: Dict[str, Any],
+    location: Location,
     logger: Logger,
 ) -> pd.DataFrame:
     """
@@ -553,11 +550,11 @@ def process_device_ownership(
 
     Inputs:
         - device:
-            The data for the device to be processed.
+            The device to be processed.
         - generated_device_ownership_directory:
             The directory in which to store the generated device-ownership profiles.
-        - location_inputs:
-            The location inputs, extracted from the location file.
+        - location:
+            The location currently being considered.
         - logger:
             The logger to use for the run.
 
@@ -591,9 +588,8 @@ def process_device_ownership(
         # Compute the daily device usage.
         daily_ownership = _number_of_devices_daily(
             device,
-            location_inputs,
+            location,
             logger,
-            location_inputs["max_years"],
         )
         logger.info(
             "Monthly device ownership profile for %s successfully computed.",
@@ -616,11 +612,11 @@ def process_device_ownership(
 
 
 def process_device_utilisation(
-    device: Dict[str, Any],
+    device: Device,
     *,
-    device_utilisations: Dict[str, pd.DataFrame],
+    device_utilisations: Dict[Device, pd.DataFrame],
     generated_device_utilisation_directory: str,
-    location_inputs: Dict[str, Any],
+    location: Location,
     logger: Logger,
 ) -> pd.DataFrame:
     """
@@ -636,8 +632,8 @@ def process_device_utilisation(
             The set of device utilisations to process.
         - generated_device_utilisation_directory:
             The directory in which to store the generated device-utilisation profiles.
-        - location_inputs:
-            The location inputs, extracted from the location file.
+        - location:
+            The location currently being considered.
         - logger:
             The logger to use for the run.
 
@@ -667,7 +663,7 @@ def process_device_utilisation(
         logger.info("Computing device-utilisation profile for %s.", device.name)
         interpolated_daily_profile = _device_daily_profile(
             device_utilisations[device],
-            location_inputs["max_years"],
+            location.max_years,
         )
         logger.info(
             "Daily device-utilisation profile for %s successfully computed.",
@@ -746,7 +742,7 @@ def process_load_profiles(
     auto_generated_files_directory: str,
     devices: Set[Device],
     device_utilisations: Dict[str, pd.DataFrame],
-    location_inputs: Dict[str, Any],
+    location: Location,
     logger: Logger,
 ) -> Tuple[pd.DataFrame, pd.DataFrame]:
     """
@@ -762,8 +758,8 @@ def process_load_profiles(
             The devices to be processed.
         - device_utilisations:
             The processed device utilisation information.
-        - location_inputs:
-            The location input information, extracted from the location-inputs file.
+        - location:
+            The location currently being considered.
         - logger:
             The logger to use for the run.
 
@@ -782,7 +778,7 @@ def process_load_profiles(
             generated_device_ownership_directory=os.path.join(
                 auto_generated_files_directory, "load", "device_ownership"
             ),
-            location_inputs=location_inputs,
+            location=location,
             logger=logger,
         )
         logger.info(
@@ -797,7 +793,7 @@ def process_load_profiles(
             generated_device_utilisation_directory=os.path.join(
                 auto_generated_files_directory, "load", "device_utilisation"
             ),
-            location_inputs=location_inputs,
+            location=location,
             logger=logger,
         )
         logger.info(
@@ -814,7 +810,7 @@ def process_load_profiles(
                 auto_generated_files_directory, "load", "device_usage"
             ),
             logger=logger,
-            years=location_inputs["max_years"],
+            years=location.max_years,
         )
         logger.info(
             "Device hourly usage information for %s successfully computed.",
@@ -844,7 +840,7 @@ def process_load_profiles(
             auto_generated_files_directory, "load", "device_load"
         ),
         logger=logger,
-        years=location_inputs["max_years"],
+        years=location.max_years,
     )
     logger.info("Total load and yearly statistics successfully computed.")
 

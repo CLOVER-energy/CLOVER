@@ -330,7 +330,7 @@ def main(args: List[Any]) -> None:
     except FileNotFoundError as e:
         print("[  FAILED  ]\n")
         logger.error(
-            "Not all input files present.  See %s for details: %s",
+            "Not all input files present. See %s for details: %s",
             "{}.log".format(os.path.join(LOGGER_DIRECTORY, LOGGER_NAME)),
             str(e),
         )
@@ -397,7 +397,7 @@ def main(args: List[Any]) -> None:
             os.path.join(auto_generated_files_directory, "grid"),
             grid_inputs,
             logger,
-            location["max_years"],
+            location.max_years,
         )
     except Exception as e:
         print(
