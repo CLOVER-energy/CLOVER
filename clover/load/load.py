@@ -32,6 +32,7 @@ import pandas as pd
 from atpbar import atpbar
 
 from ..__utils__ import (
+    DemandType,
     monthly_profile_to_daily_profile,
 )
 
@@ -48,7 +49,7 @@ __all__ = (
 
 # Load logger name:
 #   The name to use for the load module logger.
-LOAD_LOGGER_NAME = "load"
+LOAD_LOGGER_NAME: str = "load"
 
 
 def _device_daily_profile(monthly_profile: pd.DataFrame, years: int) -> pd.DataFrame:
@@ -317,15 +318,15 @@ def compute_total_hourly_load(
 
         # Sum over the device loads.
         for device in devices:
-            if device["type"] == "domestic":
+            if device["type"] == DemandType.DOMESTIC.value:
                 domestic_load += device_hourly_loads[device["device"]].reset_index(
                     drop=True
                 )
-            elif device["type"] == "commercial":
+            elif device["type"] == DemandType.COMMERCIAL.value:
                 commercial_load += device_hourly_loads[device["device"]].reset_index(
                     drop=True
                 )
-            elif device["type"] == "public":
+            elif device["type"] == DemandType.PUBLIC.value:
                 public_load += device_hourly_loads[device["device"]].reset_index(
                     drop=True
                 )
@@ -338,7 +339,11 @@ def compute_total_hourly_load(
 
         logger.info("Total load for all devices successfully computed.")
         total_load = pd.concat([domestic_load, commercial_load, public_load], axis=1)
-        total_load.columns = ["Domestic", "Commercial", "Public"]
+        total_load.columns = [
+            DemandType.DOMESTIC.value,
+            DemandType.COMMERCIAL.value,
+            DemandType.PUBLIC.value,
+        ]
 
         logger.info("Saving total load.")
         with open(total_load_filepath, "w") as f:

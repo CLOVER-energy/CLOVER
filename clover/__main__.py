@@ -39,6 +39,7 @@ from .__utils__ import (
     LOCATIONS_FOLDER_NAME,
     LOGGER_DIRECTORY,
     read_yaml,
+    Scenario,
 )
 
 # Auto-generated-files directory:
@@ -107,6 +108,12 @@ LOGGER_NAME = "clover"
 #   The number of CPUs to use, which dictates the number of workers to use for parllel
 #   jobs.
 NUM_WORKERS = 8
+# Scenario inputs file:
+#   The relative path to the scenario inputs file.
+SCENARIO_INPUTS_FILE = os.path.join("scenario", "scenario_inputs.yaml")
+# Simulation inputs file:
+#   The relative path to the simulation inputs file.
+SIMULATION_INPUTS_FILE = os.path.join("simulation", "simulation.yaml")
 # Solar inputs file:
 #   The relative path to the solar inputs file.
 SOLAR_INPUTS_FILE = os.path.join("generation", "solar", "solar_generation_inputs.yaml")
@@ -279,6 +286,28 @@ def main(args: List[Any]) -> None:
             logger,
         )
         logger.info("Location inputs successfully parsed.")
+
+        scenario_inputs = read_yaml(
+            os.path.join(
+                inputs_directory_relative_path,
+                SCENARIO_INPUTS_FILE,
+            ),
+            logger,
+        )
+        try:
+            scenario = Scenario.from_dict(scenario_inputs)
+        except Exception as e:
+            logger.error("Error generating scenario from inputs file: %s", str(e))
+            raise
+        logger.info("Scenario inputs successfully parsed.")
+
+        simulation_inputs = read_yaml(
+            os.path.join(
+                inputs_directory_relative_path,
+                SIMULATION_INPUTS_FILE,
+            ),
+            logger,
+        )
 
         solar_generation_inputs = read_yaml(
             os.path.join(
