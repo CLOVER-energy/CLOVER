@@ -28,7 +28,7 @@ import sys
 import threading
 import time
 
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, Optional
 
 import numpy as np
 import pandas as pd
@@ -39,6 +39,7 @@ import yaml
 __all__ = (
     "daily_sum_to_monthly_sum",
     "DemandType",
+    "Device",
     "get_logger",
     "hourly_profile_to_daily_sum",
     "InvalidLocationError",
@@ -137,6 +138,111 @@ class DemandType(enum.Enum):
     COMMERCIAL = "commercial"
     DOMESTIC = "domestic"
     PUBLIC = "public"
+
+
+@dataclasses.dataclass
+class Device:
+    """
+    Represents a device being modelled.
+
+    .. attribute:: available
+        Whether the device is available.
+
+    .. attribute:: demand_type
+        The type of demand with which the device is associated.
+
+    .. attribute:: electric_power
+        The electric power consumption of the device, measured in Watts.
+
+    .. attribute:: final_ownership
+        The average ownership of the device per household at the end of the time period
+        being modelled.
+
+    .. attribute:: initial_ownership
+        The initial average ownership of the device per household.
+
+    .. attribute:: innovation
+        The rate of innovation for the device: the rate at which new households acquire
+        the device.
+
+    .. attribute:: imitation
+        The rate of imitation for the device: the rate at which households copy others
+        and acquire the device.
+
+    .. attribute:: name
+        The name of the device.
+
+    """
+
+    available: bool
+    demand_type: DemandType
+    electric_power: float
+    final_ownership: float
+    initial_ownership: float
+    innovation: float
+    imitation: float
+    name: str
+
+    def __hash__(self) -> int:
+        """
+        Return a unique identifier for the device.
+
+        Outputs:
+            A unique identifier for the device.
+
+        """
+
+        return hash(self.__str__())
+
+    def __str__(self) -> str:
+        """
+        Return a nice-looking output for the device.
+
+        Outputs:
+            - A nice-looking string representation for the device.
+
+        """
+
+        representation_string = (
+            "Device("
+            + f"name={self.name}, "
+            + ("available, " if self.available else "unavailable, ")
+            + f"electric_power={self.electric_power} W, "
+            + f"final_ownership={self.final_ownership}, "
+            + f"initial_ownership={self.initial_ownership}, "
+            + f"innovation={self.innovation}, "
+            + f"imitation={self.imitation}, "
+            + ")"
+        )
+
+        return representation_string
+
+    @classmethod
+    def from_dict(cls, device_input: Dict[str, Any]) -> Any:
+        """
+        Processes input data to generate a :class:`Device` instance.
+
+        Inputs:
+            - device_input:
+                The device input data extracted from the devices input file.
+
+        Outputs:
+            - The :class:`Device` instancce based on the input data.
+
+        """
+
+        demand_type = DemandType(device_input["type"])
+
+        return cls(
+            device_input["available"],
+            demand_type,
+            device_input["electric_power"],
+            device_input["final_ownership"],
+            device_input["initial_ownership"],
+            device_input["innovation"],
+            device_input["imitation"],
+            device_input["device"],
+        )
 
 
 class DieselMode(enum.Enum):
@@ -268,6 +374,47 @@ class InvalidLocationError(Exception):
         """
 
         super().__init__("The location, {}, is invalid.".format(location))
+
+
+@dataclasses.dataclass
+class Location:
+    """
+    Represents the location being modelled.
+
+    .. attribute:: community_growth_rate
+        Fractional growth rate per year.
+
+    .. attribute:: community_size
+        Initial number of households in community.
+
+    .. attribute:: country
+        The location country.
+
+    .. attribute:: latitude
+        Degrees of latitude (North +ve).
+
+    .. attribute:: longitude
+        Degrees of longitude (East +ve).
+
+    .. attribute:: max_years
+        The maximum number of years of simulation.
+
+    .. attribute:: name
+        The name of the location.
+
+    .. attribute:: time_difference
+        The time difference, in hours, at the location vs. UTC.
+
+    """
+
+    community_growth_rate: float
+    community_size: int
+    country: str
+    latitude: float
+    longitude: float
+    max_years: int
+    name: str
+    time_difference: float
 
 
 def monthly_profile_to_daily_profile(monthly_profile: pd.DataFrame) -> pd.DataFrame:
