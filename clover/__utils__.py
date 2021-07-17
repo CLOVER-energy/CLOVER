@@ -48,6 +48,7 @@ __all__ = (
     "LOGGER_DIRECTORY",
     "monthly_profile_to_daily_profile",
     "open_simulation",
+    "OperatingMode",
     "read_yaml",
     "save_simulation",
     "Scenario",
@@ -79,7 +80,7 @@ class BColours:
     .. attribute:: FAIL
         Used for a failure message.
 
-    .. attributes:: OKTEAL, WARNING, OKBLUE, HEADER, OKCYAN, OKGREEN
+    .. attributes:: WARNING, OKBLUE
         Various colours used.
 
     .. attribute:: ENDC
@@ -90,16 +91,12 @@ class BColours:
 
     """
 
-    FAIL = "\033[91m"
-    OKTEAL = "\033[92m"
-    WARNING = "\033[93m"
-    OKBLUE = "\033[94m"
-    HEADER = "\033[95m"
-    OKCYAN = "\033[96m"
-    OKGREEN = "\033[97m"
-    ENDC = "\033[0m"
-    BOLD = "\033[1m"
-    UNDERLINE = "\033[4m"
+    fail = "\033[91m"
+    warning = "\033[93m"
+    okblue = "\033[94m"
+    endc = "\033[0m"
+    bolc = "\033[1m"
+    underline = "\033[4m"
 
 
 def daily_sum_to_monthly_sum(daily_profile):
@@ -532,6 +529,26 @@ def open_simulation(filename: str):
 
     output = pd.read_csv(os.path.join(filename), index_col=0)
     return output
+
+
+class OperatingMode(enum.Enum):
+    """
+    Represents the mode of operation.
+
+    - OPTIMISATION:
+        Denotes that an optimisation is being run.
+
+    - PROFILE_GENERATION:
+        Denotes that only profile-generation is being run.
+
+    - SIMULATION:
+        Denotes that a simulation is being run
+
+    """
+
+    OPTIMISATION = "optimisation"
+    PROFILE_GENERATION = "profile_generation"
+    SIMULATION = "simulation"
 
 
 # class ProgressBarQueue(queue.Queue):

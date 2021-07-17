@@ -42,6 +42,7 @@ from .__utils__ import (
     Location,
     LOCATIONS_FOLDER_NAME,
     LOGGER_DIRECTORY,
+    OperatingMode,
     read_yaml,
     Scenario,
     Simulation,
@@ -146,9 +147,9 @@ def _check_location(location: str, logger: logging.Logger) -> bool:
             "%sThe specified location, '%s', does not exist. Try running the "
             "'new_location' script to ensure all necessary files and folders are "
             "present.%s",
-            BColours.FAIL,
+            BColours.fail,
             location,
-            BColours.ENDC,
+            BColours.endc,
         )
         raise FileNotFoundError(
             "The location, {}, could not be found.".format(location)
@@ -184,15 +185,28 @@ def main(args: List[Any]) -> None:
         logger.error(
             "%sInvalid command-line arguments. Check that all required arguments have "
             "been specified. See %s for details.%s",
-            BColours.FAIL,
+            BColours.fail,
             "{}.log".format(os.path.join(LOGGER_DIRECTORY, LOGGER_NAME)),
-            BColours.ENDC,
+            BColours.endc,
         )
         raise ValueError(
             "The command-line arguments were invalid. See {} for details.".format(
                 "{}.log".format(os.path.join(LOGGER_DIRECTORY, LOGGER_NAME))
             )
         )
+
+    # Try to determine the operating mode.
+    try:
+        operating_mode = OperatingMode(parsed_args.mode)
+    except ValueError:
+        logger.error(
+            "%sThe operating mode, %s, is invalid. See `clover --help` for details.%s",
+            BColours.fail,
+            parsed_args.mode,
+            BColours.endc,
+        )
+        raise
+
     logger.info("Command-line arguments successfully validated.")
 
     print(CLOVER_HEADER_STRING)
@@ -206,10 +220,10 @@ def main(args: List[Any]) -> None:
         logger.error(
             "%sThe location, '%s', is invalid. Try running the `new_location` script to"
             "identify missing files. See %s for details.%s",
-            BColours.FAIL,
+            BColours.fail,
             parsed_args.location,
             "{}.log".format(os.path.join(LOGGER_DIRECTORY, LOGGER_NAME)),
-            BColours.ENDC,
+            BColours.endc,
         )
         raise InvalidLocationError(parsed_args.location)
     logger.info("Location, '%s', has been verified and is valid.", parsed_args.location)
@@ -268,9 +282,9 @@ def main(args: List[Any]) -> None:
                 logger.error(
                     "%sError parsing device-utilisation profile for %s, check that the "
                     "profile is present and that all device names are consistent.%s",
-                    BColours.FAIL,
+                    BColours.fail,
                     device.name,
-                    BColours.ENDC,
+                    BColours.endc,
                 )
                 raise
 
@@ -328,9 +342,9 @@ def main(args: List[Any]) -> None:
         except Exception as e:
             logger.error(
                 "%sError generating scenario from inputs file: %s%s",
-                BColours.FAIL,
+                BColours.fail,
                 str(e),
-                BColours.ENDC,
+                BColours.endc,
             )
             raise
         logger.info("Scenario inputs successfully parsed.")
@@ -357,10 +371,10 @@ def main(args: List[Any]) -> None:
         print("[  FAILED  ]\n")
         logger.error(
             "%sNot all input files present. See %s for details: %s%s",
-            BColours.FAIL,
+            BColours.fail,
             "{}.log".format(os.path.join(LOGGER_DIRECTORY, LOGGER_NAME)),
             str(e),
-            BColours.ENDC,
+            BColours.endc,
         )
         raise
     except Exception as e:
@@ -368,10 +382,10 @@ def main(args: List[Any]) -> None:
         logger.error(
             "%sAn unexpected error occured parsing input files. See %s for details: "
             "%s%s",
-            BColours.FAIL,
+            BColours.fail,
             "{}.log".format(os.path.join(LOGGER_DIRECTORY, LOGGER_NAME)),
             str(e),
-            BColours.ENDC,
+            BColours.endc,
         )
         raise
 
@@ -416,10 +430,10 @@ def main(args: List[Any]) -> None:
         logger.error(
             "%sAn unexpected error occurred generating the load profiles. See %s for "
             "details: %s%s",
-            BColours.FAIL,
+            BColours.fail,
             "{}.log".format(os.path.join(LOGGER_DIRECTORY, LOGGER_NAME)),
             str(e),
-            BColours.ENDC,
+            BColours.endc,
         )
         raise
 
@@ -440,10 +454,10 @@ def main(args: List[Any]) -> None:
         logger.error(
             "%sAn unexpected error occurred generating the grid profiles. See %s for "
             "details: %s%s",
-            BColours.FAIL,
+            BColours.fail,
             "{}.log".format(os.path.join(LOGGER_DIRECTORY, LOGGER_NAME)),
             str(e),
-            BColours.ENDC,
+            BColours.endc,
         )
         raise
 
@@ -509,10 +523,10 @@ def main(args: List[Any]) -> None:
         logger.error(
             "%sAn unexpected error occurred running a CLOVER simulation. See %s for "
             "details: %s%s",
-            BColours.FAIL,
+            BColours.fail,
             "{}.log".format(os.path.join(LOGGER_DIRECTORY, LOGGER_NAME)),
             str(e),
-            BColours.ENDC,
+            BColours.endc,
         )
         raise
 

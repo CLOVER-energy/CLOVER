@@ -17,7 +17,7 @@ import logging
 
 from typing import Any, List
 
-from .__utils__ import BColours
+from .__utils__ import BColours, OperatingMode
 
 __all__ = (
     "parse_args",
@@ -145,31 +145,31 @@ def validate_args(logger: logging.Logger, parsed_args: argparse.Namespace) -> bo
     if parsed_args.location is None:
         logger.error(
             "%sThe required argument, 'location', was not specified.%s",
-            BColours.FAIL,
-            BColours.ENDC,
+            BColours.fail,
+            BColours.endc,
         )
         raise MissingParametersError("location")
 
     if parsed_args.mode is None:
         logger.error(
-            "%sThe mode of operation must be specified.%s", BColours.FAIL, BColours.ENDC
+            "%sThe mode of operation must be specified.%s", BColours.fail, BColours.endc
         )
         raise MissingParametersError("mode")
 
-    if parsed_args.mode == "simulation":
+    if parsed_args.mode == OperatingMode.SIMULATION:
         if parsed_args.pv_system_size is None:
             logger.error(
                 "%sIf running a simulation, the pv system size must be specified.%s",
-                BColours.FAIL,
-                BColours.ENDC,
+                BColours.fail,
+                BColours.endc,
             )
             raise MissingParametersError("pv-system-size")
 
         if parsed_args.storage_size is None:
             logger.error(
                 "%sIf running a simulation, the storage size must be specified.%s",
-                BColours.FAIL,
-                BColours.ENDC,
+                BColours.fail,
+                BColours.endc,
             )
             raise MissingParametersError("storage size")
 
