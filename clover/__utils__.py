@@ -37,6 +37,7 @@ import yaml
 
 
 __all__ = (
+    "BColours",
     "daily_sum_to_monthly_sum",
     "DemandType",
     "Device",
@@ -68,6 +69,37 @@ MONTH_MID_DAY = [0, 14, 45, 72, 104, 133, 164, 194, 225, 256, 286, 317, 344, 364
 # Month start day:
 #   The "day" in the year that falls at the start of each month.
 MONTH_START_DAY = [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334]
+
+
+@dataclasses.dataclass
+class BColours:
+    """
+    Contains various colours used for pretty-printing out to the command-line on stdout.
+
+    .. attribute:: FAIL
+        Used for a failure message.
+
+    .. attributes:: OKTEAL, WARNING, OKBLUE, HEADER, OKCYAN, OKGREEN
+        Various colours used.
+
+    .. attribute:: ENDC
+        Used to reset the colour of the terminal output.
+
+    .. attribute:: BOLD, UNDERLINE
+        Used to format the text.
+
+    """
+
+    FAIL = "\033[91m"
+    OKTEAL = "\033[92m"
+    WARNING = "\033[93m"
+    OKBLUE = "\033[94m"
+    HEADER = "\033[95m"
+    OKCYAN = "\033[96m"
+    OKGREEN = "\033[97m"
+    ENDC = "\033[0m"
+    BOLD = "\033[1m"
+    UNDERLINE = "\033[4m"
 
 
 def daily_sum_to_monthly_sum(daily_profile):
