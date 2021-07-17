@@ -203,7 +203,7 @@ def main(args: List[Any]) -> None:
     logger.info("Checking location %s.", parsed_args.location)
     if not _check_location(parsed_args.location, logger):
         print("[  FAILED  ]\n")
-        logger.error( 
+        logger.error(
             "%sThe location, '%s', is invalid. Try running the `new_location` script to"
             "identify missing files. See %s for details.%s",
             BColours.FAIL,
@@ -406,6 +406,7 @@ def main(args: List[Any]) -> None:
             device_utilisations,
             location,
             logger,
+            parsed_args.regenerate,
         )
     except Exception as e:
         print(

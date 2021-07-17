@@ -278,6 +278,7 @@ def compute_total_hourly_load(
     devices: Set[Device],
     generated_device_load_filepath: str,
     logger: Logger,
+    regenerate: bool,
     years: int,
 ) -> Tuple[pd.DataFrame, pd.DataFrame]:
     """
@@ -293,6 +294,8 @@ def compute_total_hourly_load(
             device.
         - logger:
             The logger to use for the run.
+        - regenerate:
+            Whether to force regenerate the profiles.
         - years:
             The nbumber of years for which the simulation is being run.
 
@@ -308,7 +311,7 @@ def compute_total_hourly_load(
         generated_device_load_filepath, "yearly_load_statistics.csv"
     )
 
-    if os.path.isfile(total_load_filepath):
+    if os.path.isfile(total_load_filepath) and not regenerate:
         with open(total_load_filepath, "r") as f:
             total_load = pd.read_csv(f, index_col=0)
         logger.info(
@@ -360,7 +363,7 @@ def compute_total_hourly_load(
 
     # Attempt to read the yearly load statistics from a file and compute if it doesn't
     # exist.
-    if os.path.isfile(yearly_load_statistics_filepath):
+    if os.path.isfile(yearly_load_statistics_filepath) and not regenerate:
         with open(yearly_load_statistics_filepath, "r") as f:
             yearly_load_statistics = pd.read_csv(f, index_col=0)
         logger.info(
@@ -415,6 +418,7 @@ def process_device_hourly_power(
     hourly_device_usage: pd.DataFrame,
     logger: Logger,
     power_type: str,
+    regenerate: bool,
 ) -> pd.DataFrame:
     """
     Calculate the hourly usage of the device.
@@ -430,7 +434,9 @@ def process_device_hourly_power(
         - logger:
             The logger to use for the run.
         - power_type:
-            The type of power being investigated, e.g., "electric_power"
+            The type of power being investigated, e.g., "electric_power".
+        - regenerate:
+            Whether to force-regenerate the various profiles.
 
     Outputs:
         - The hourly load of the device as a :class:`pandas.DataFrame`.
@@ -441,7 +447,7 @@ def process_device_hourly_power(
     hourly_usage_filepath = os.path.join(generated_device_load_filepath, filename)
 
     # If the hourly power usage file already exists, load the data in.
-    if os.path.isfile(hourly_usage_filepath):
+    if os.path.isfile(hourly_usage_filepath) and not regenerate:
         with open(hourly_usage_filepath, "r") as f:
             device_load: pd.DataFrame = pd.read_csv(f, index_col=0)
         logger.info(
@@ -484,6 +490,7 @@ def process_device_hourly_usage(
     daily_device_utilisation: pd.DataFrame,
     generated_device_usage_filepath: str,
     logger: Logger,
+    regenerate: bool,
     years: int,
 ) -> pd.DataFrame:
     """
@@ -500,6 +507,8 @@ def process_device_hourly_usage(
             The directory in which to store the generated hourly device-usage profiles.
         - logger:
             The logger to use for the run.
+        - regenerate:
+            Whether to force-regenerate the profiles.
         - years:
             The number of years for which the simulation is being run.
 
@@ -512,7 +521,7 @@ def process_device_hourly_usage(
     filepath = os.path.join(generated_device_usage_filepath, filename)
 
     # If the device hourly usage already exists, then read the data in from the file.
-    if os.path.isfile(filepath):
+    if os.path.isfile(filepath) and not regenerate:
         with open(filepath, "r") as f:
             hourly_device_usage = pd.read_csv(f, index_col=0)
         logger.info(
@@ -576,6 +585,7 @@ def process_device_ownership(
     generated_device_ownership_directory: str,
     location: Location,
     logger: Logger,
+    regenerate: bool,
 ) -> pd.DataFrame:
     """
     Process device-data files.
@@ -592,6 +602,8 @@ def process_device_ownership(
             The location currently being considered.
         - logger:
             The logger to use for the run.
+        - regenerate:
+            Whether to force-regenerate the profiles.
 
     Outputs:
         - The daily ownership of the device.
@@ -607,7 +619,7 @@ def process_device_ownership(
     )
 
     # If the daily ownership file already exists, then read the data from the file.
-    if os.path.isfile(daily_ownership_filepath):
+    if os.path.isfile(daily_ownership_filepath) and not regenerate:
         with open(daily_ownership_filepath, "r") as f:
             daily_ownership = pd.read_csv(f, index_col=0)
         logger.info(
@@ -653,6 +665,7 @@ def process_device_utilisation(
     generated_device_utilisation_directory: str,
     location: Location,
     logger: Logger,
+    regenerate: bool,
 ) -> pd.DataFrame:
     """
     Process device-data files.
@@ -671,6 +684,8 @@ def process_device_utilisation(
             The location currently being considered.
         - logger:
             The logger to use for the run.
+        - regenerate:
+            Whether to force-regenerate the profiles.
 
     Outputs:
         - The interpolated daily utilisation profile.
@@ -685,7 +700,7 @@ def process_device_utilisation(
     )
 
     # If the file already exists, simply read in the data.
-    if os.path.isfile(filepath):
+    if os.path.isfile(filepath) and not regenerate:
         with open(filepath, "r") as f:
             interpolated_daily_profile = pd.read_csv(f, index_col=0)
         logger.info(
@@ -754,9 +769,10 @@ def process_device_utilisation(
 def process_load_profiles(
     auto_generated_files_directory: str,
     devices: Set[Device],
-    device_utilisations: Dict[str, pd.DataFrame],
+    device_utilisations: Dict[Device, pd.DataFrame],
     location: Location,
     logger: Logger,
+    regenerate: bool,
 ) -> Tuple[pd.DataFrame, pd.DataFrame]:
     """
     Process all the load information and profiles to generate the total load.
@@ -775,6 +791,8 @@ def process_load_profiles(
             The location currently being considered.
         - logger:
             The logger to use for the run.
+        - regenerate:
+            Whether to force-regenerate the various profiles.
 
     Outputs:
         - The total load use for all devices;
@@ -785,6 +803,13 @@ def process_load_profiles(
     device_hourly_loads: Dict[str, pd.DataFrame] = dict()
 
     for device in atpbar(devices, name="load profiles"):
+        # Only re-load the various profiles if the total profile doesn't already exist.
+        if os.path.join(
+            os.path.join(auto_generated_files_directory, "load", "device_load"),
+            "total_load.csv",
+        ):
+            continue
+
         # Compute the device ownership.
         daily_device_ownership = process_device_ownership(
             device,
@@ -793,6 +818,7 @@ def process_load_profiles(
             ),
             location=location,
             logger=logger,
+            regenerate=regenerate,
         )
         logger.info(
             "Device ownership information for %s successfully computed.",
@@ -808,6 +834,7 @@ def process_load_profiles(
             ),
             location=location,
             logger=logger,
+            regenerate=regenerate,
         )
         logger.info(
             "Device utilisation information for %s successfully computed.",
@@ -824,6 +851,7 @@ def process_load_profiles(
             ),
             logger=logger,
             years=location.max_years,
+            regenerate=regenerate,
         )
         logger.info(
             "Device hourly usage information for %s successfully computed.",
@@ -839,6 +867,7 @@ def process_load_profiles(
             hourly_device_usage=hourly_device_usage,
             logger=logger,
             power_type="electric_power",
+            regenerate=regenerate,
         )
         logger.info(
             "Device hourly load information for %s successfully computed.",
@@ -854,6 +883,7 @@ def process_load_profiles(
         ),
         logger=logger,
         years=location.max_years,
+        regenerate=regenerate,
     )
     logger.info("Total load and yearly statistics successfully computed.")
 
