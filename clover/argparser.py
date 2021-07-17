@@ -17,10 +17,34 @@ import logging
 
 from typing import Any, List
 
+from .__utils__ import BColours
+
 __all__ = (
     "parse_args",
     "validate_args",
 )
+
+
+class MissingParametersError(Exception):
+    """
+    Raised when not all parameters have been specified on the command line.
+
+    """
+
+    def __init__(self, missing_parameter: str) -> None:
+        """
+        Instantiate a missing parameters error.
+
+        Inputs:
+            - missing_parameter:
+                The parameter which has not been specified.
+
+        """
+
+        super().__init__(
+            f"Missing command-line parameters: {missing_parameter}. "
+            + "Run `clover --help` for more information."
+        )
 
 
 def parse_args(args: List[Any]) -> argparse.Namespace:
@@ -30,6 +54,12 @@ def parse_args(args: List[Any]) -> argparse.Namespace:
     """
 
     parser = argparse.ArgumentParser()
+
+    parser.add_argument(
+        "mode",
+        type=str,
+        help="The mode to run CLOVER in: 'profile_generation', 'simulation' or 'optimisation'.",
+    )
 
     # Mandatory arguments regardless of the use case.
     mandatory_arguments = parser.add_argument_group("mandatory arguments")
@@ -107,10 +137,40 @@ def validate_args(logger: logging.Logger, parsed_args: argparse.Namespace) -> bo
     Outputs:
         - A boolean giving whether the arguments are valid (True) or not (False).
 
+    Raises: MissingParameterError
+        - Raised when a CLI parameter is missing.
+
     """
 
     if parsed_args.location is None:
-        logger.error("The required argument, 'location', was not specified.")
-        return False
+        logger.error(
+            "%sThe required argument, 'location', was not specified.%s",
+            BColours.FAIL,
+            BColours.ENDC,
+        )
+        raise MissingParametersError("location")
+
+    if parsed_args.mode is None:
+        logger.error(
+            "%sThe mode of operation must be specified.%s", BColours.FAIL, BColours.ENDC
+        )
+        raise MissingParametersError("mode")
+
+    if parsed_args.mode == "simulation":
+        if parsed_args.pv_system_size is None:
+            logger.error(
+                "%sIf running a simulation, the pv system size must be specified.%s",
+                BColours.FAIL,
+                BColours.ENDC,
+            )
+            raise MissingParametersError("pv-system-size")
+
+        if parsed_args.storage_size is None:
+            logger.error(
+                "%sIf running a simulation, the storage size must be specified.%s",
+                BColours.FAIL,
+                BColours.ENDC,
+            )
+            raise MissingParametersError("storage size")
 
     return True

@@ -35,6 +35,7 @@ from .simulation import energy_system
 from atpbar import atpbar
 
 from .__utils__ import (
+    BColours,
     Device,
     get_logger,
     InvalidLocationError,
@@ -142,10 +143,12 @@ def _check_location(location: str, logger: logging.Logger) -> bool:
 
     if not os.path.isdir(os.path.join(LOCATIONS_FOLDER_NAME, location)):
         logger.error(
-            "The specified location, '%s', does not exist. Try running the "
+            "%sThe specified location, '%s', does not exist. Try running the "
             "'new_location' script to ensure all necessary files and folders are "
-            "present.",
+            "present.%s",
+            BColours.FAIL,
             location,
+            BColours.ENDC,
         )
         raise FileNotFoundError(
             "The location, {}, could not be found.".format(location)
@@ -179,9 +182,11 @@ def main(args: List[Any]) -> None:
 
     if not argparser.validate_args(logger, parsed_args):
         logger.error(
-            "Invalid command-line arguments. Check that all required arguments have "
-            "been specified. See %s for details.",
+            "%sInvalid command-line arguments. Check that all required arguments have "
+            "been specified. See %s for details.%s",
+            BColours.FAIL,
             "{}.log".format(os.path.join(LOGGER_DIRECTORY, LOGGER_NAME)),
+            BColours.ENDC,
         )
         raise ValueError(
             "The command-line arguments were invalid. See {} for details.".format(
@@ -198,11 +203,13 @@ def main(args: List[Any]) -> None:
     logger.info("Checking location %s.", parsed_args.location)
     if not _check_location(parsed_args.location, logger):
         print("[  FAILED  ]\n")
-        logger.error(
-            "The location, '%s', is invalid. Try running the `new_location` script to"
-            "identify missing files. See %s for details.",
+        logger.error( 
+            "%sThe location, '%s', is invalid. Try running the `new_location` script to"
+            "identify missing files. See %s for details.%s",
+            BColours.FAIL,
             parsed_args.location,
             "{}.log".format(os.path.join(LOGGER_DIRECTORY, LOGGER_NAME)),
+            BColours.ENDC,
         )
         raise InvalidLocationError(parsed_args.location)
     logger.info("Location, '%s', has been verified and is valid.", parsed_args.location)
@@ -259,9 +266,11 @@ def main(args: List[Any]) -> None:
                     )
             except FileNotFoundError:
                 logger.error(
-                    "Error parsing device-utilisation profile for %s, check that the "
-                    "profile is present and that all device names are consistent.",
+                    "%sError parsing device-utilisation profile for %s, check that the "
+                    "profile is present and that all device names are consistent.%s",
+                    BColours.FAIL,
                     device.name,
+                    BColours.ENDC,
                 )
                 raise
 
@@ -317,7 +326,12 @@ def main(args: List[Any]) -> None:
         try:
             scenario = Scenario.from_dict(scenario_inputs)
         except Exception as e:
-            logger.error("Error generating scenario from inputs file: %s", str(e))
+            logger.error(
+                "%sError generating scenario from inputs file: %s%s",
+                BColours.FAIL,
+                str(e),
+                BColours.ENDC,
+            )
             raise
         logger.info("Scenario inputs successfully parsed.")
 
@@ -342,17 +356,22 @@ def main(args: List[Any]) -> None:
     except FileNotFoundError as e:
         print("[  FAILED  ]\n")
         logger.error(
-            "Not all input files present. See %s for details: %s",
+            "%sNot all input files present. See %s for details: %s%s",
+            BColours.FAIL,
             "{}.log".format(os.path.join(LOGGER_DIRECTORY, LOGGER_NAME)),
             str(e),
+            BColours.ENDC,
         )
         raise
     except Exception as e:
         print("[  FAILED  ]\n")
         logger.error(
-            "An unexpected error occured parsing input files. See %s for details: %s",
+            "%sAn unexpected error occured parsing input files. See %s for details: "
+            "%s%s",
+            BColours.FAIL,
             "{}.log".format(os.path.join(LOGGER_DIRECTORY, LOGGER_NAME)),
             str(e),
+            BColours.ENDC,
         )
         raise
 
@@ -394,10 +413,12 @@ def main(args: List[Any]) -> None:
             "[  FAILED  ]\n"
         )
         logger.error(
-            "An unexpected error occurred generating the load profiles. See %s for "
-            "details: %s",
+            "%sAn unexpected error occurred generating the load profiles. See %s for "
+            "details: %s%s",
+            BColours.FAIL,
             "{}.log".format(os.path.join(LOGGER_DIRECTORY, LOGGER_NAME)),
             str(e),
+            BColours.ENDC,
         )
         raise
 
@@ -416,10 +437,12 @@ def main(args: List[Any]) -> None:
             "[  FAILED  ]\n"
         )
         logger.error(
-            "An unexpected error occurred generating the grid profiles. See %s for "
-            "details: %s",
+            "%sAn unexpected error occurred generating the grid profiles. See %s for "
+            "details: %s%s",
+            BColours.FAIL,
             "{}.log".format(os.path.join(LOGGER_DIRECTORY, LOGGER_NAME)),
             str(e),
+            BColours.ENDC,
         )
         raise
 
@@ -483,9 +506,12 @@ def main(args: List[Any]) -> None:
     except Exception as e:
         print("[  FAILED  ]\n")
         logger.error(
-            "An unexpected error occurred running a CLOVER simulation. See %s for details: %s",
+            "%sAn unexpected error occurred running a CLOVER simulation. See %s for "
+            "details: %s%s",
+            BColours.FAIL,
             "{}.log".format(os.path.join(LOGGER_DIRECTORY, LOGGER_NAME)),
             str(e),
+            BColours.ENDC,
         )
         raise
 
