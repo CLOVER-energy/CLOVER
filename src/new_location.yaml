@@ -116,9 +116,9 @@
                     tilt: 29 # [degrees above horizontal]
                     token: "YOUR API TOKEN HERE" # renewables.ninja API token
 
-        - directory: Impact
+        - directory: impact
           contents:
-            - file: "Finance inputs.csv"
+            - file: "finance_inputs.yaml"
               contents: |-
                 Discount rate,0.1,fraction
                 PV cost,500,$/kWp
@@ -551,3 +551,7 @@
 
                 end_year: 20 # The end year for the simulation.
                 start_year: 0 # The start year for the simulation run.
+
+    - directory: outputs
+      contents:
+        - directory: simulation_outputs
