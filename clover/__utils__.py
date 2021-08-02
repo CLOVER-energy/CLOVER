@@ -703,7 +703,8 @@ def read_yaml(filepath: str, logger: logging.Logger) -> Dict[Any, Any]:
 
 def save_simulation(
     logger: logging.Logger,
-    simulation_name: pd.DataFrame,
+    output_directory: str,
+    simulation: pd.DataFrame,
     filename: str = str(datetime.datetime.now().strftime("%Y-%m-%d %H-%M-%S")),
 ):
     """
@@ -712,7 +713,7 @@ def save_simulation(
     Inputs:
         - logger
             The logger to use for the run.
-        - simulation_name
+        - simulation
             DataFrame output from Energy_System().simulation(...).
         - filename
             Name of the .csv file name to use (defaults to timestamp).
@@ -720,9 +721,11 @@ def save_simulation(
     """
 
     # Save the simulation data in a CSV file.
-    simulation_name.to_csv(os.path.join(filename))
-    logger.info("Simulation successfully saved to %s.", filename)
-    print(f"Simulation saved as {filename}")
+    filepath = os.path.join(output_directory, filename)
+    with open(filepath, "w") as f:
+        simulation.to_csv(f)
+    logger.info("Simulation successfully saved to %s.", filepath)
+    print(f"Simulation saved to {filepath}.")
 
 
 @dataclasses.dataclass
