@@ -463,7 +463,6 @@ def process_device_hourly_power(
             device.name,
             hourly_usage_filepath,
         )
-
     else:
         # Compute the hourly load profile.
         logger.info("Computing hourly power usage for %s.", device.name)
@@ -810,15 +809,12 @@ def process_load_profiles(
 
     device_hourly_loads: Dict[str, pd.DataFrame] = dict()
 
-    import pdb
-
-    pdb.set_trace()
-
     for device in atpbar(devices, name="load profiles"):
         # Only re-load the various profiles if the total profile doesn't already exist.
-        if os.path.join(
-            os.path.join(auto_generated_files_directory, "load", "device_load"),
-            "total_load.csv",
+        if os.path.isfile(
+            os.path.join(
+                auto_generated_files_directory, "load", "device_load", "total_load.csv"
+            ),
         ):
             continue
 

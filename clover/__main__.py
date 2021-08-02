@@ -111,6 +111,8 @@ INPUTS_DIRECTORY = "inputs"
 KEROSENE_TIMES_FILEPATH = os.path.join(
     "load", "device_utilisation", "kerosene_times.csv"
 )
+# Kerosene utilisation filepath:
+#   The path to the kerosene u
 # Location inputs file:
 #   The relative path to the location inputs file.
 LOCATION_INPUTS_FILE = os.path.join("location_data", "location_inputs.yaml")
@@ -539,40 +541,46 @@ def main(args: List[Any]) -> None:
         )
 
     # Load the relevant kerosene profile.
+    with open(
+        os.path.join(
+            auto_generated_files_directory, "load", 
+        )
+    )
 
     # * Run a simulation or optimisation as appropriate.
-    try:
-        energy_system.run_simulation(
-            minigrid,
-            grid_profile,
-            location,
-            parsed_args.pv_system_size,
-            scenario,
-            simulation,
-            solar_generation_inputs["lifetime"],
-            parsed_args.storage_size,
-            total_load,
-            total_solar_output,
-        )
-    except Exception as e:
-        print("[  FAILED  ]\n")
-        logger.error(
-            "%sAn unexpected error occurred running a CLOVER simulation. See %s for "
-            "details: %s%s",
-            BColours.fail,
-            "{}.log".format(os.path.join(LOGGER_DIRECTORY, LOGGER_NAME)),
-            str(e),
-            BColours.endc,
-        )
-        raise
+    if operating_mode == OperatingMode.SIMULATION:
+        try:
+            energy_system.run_simulation(
+                minigrid,
+                grid_profile,
+                location,
+                parsed_args.pv_system_size,
+                scenario,
+                simulation,
+                solar_generation_inputs["lifetime"],
+                parsed_args.storage_size,
+                total_load,
+                total_solar_output,
+            )
+        except Exception as e:
+            print("[  FAILED  ]\n")
+            logger.error(
+                "%sAn unexpected error occurred running a CLOVER simulation. See %s for "
+                "details: %s%s",
+                BColours.fail,
+                "{}.log".format(os.path.join(LOGGER_DIRECTORY, LOGGER_NAME)),
+                str(e),
+                BColours.endc,
+            )
+            raise
 
-    print(
-        "Time taken for simulation: {0:.2f} seconds per year.".format(
-            (time_delta.microseconds * 0.000001)
-            / float(simulation.end_year - simulation.start_year)
-        ),
-        end="\n",
-    )
+        print(
+            "Time taken for simulation: {0:.2f} seconds per year.".format(
+                (time_delta.microseconds * 0.000001)
+                / float(simulation.end_year - simulation.start_year)
+            ),
+            end="\n",
+        )
 
     # ******* #
     # *  4  * #
