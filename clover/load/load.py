@@ -34,12 +34,14 @@ from atpbar import atpbar
 from ..__utils__ import (
     DemandType,
     Device,
+    KEROSENE_DEVICE_NAME,
     Location,
     monthly_profile_to_daily_profile,
 )
 
 __all__ = (
     "compute_total_hourly_load",
+    "DEFAULT_KEROSENE_DEVICE",
     "LOAD_LOGGER_NAME",
     "population_hourly",
     "process_device_hourly_power",
@@ -50,6 +52,12 @@ __all__ = (
 )
 
 
+# Default kerosene device:
+#   The default kerosene device to use in the event that no kerosene information is
+#   provided.
+DEFAULT_KEROSENE_DEVICE = Device(
+    False, DemandType.DOMESTIC, 1, 0, 0, 0, 0, KEROSENE_DEVICE_NAME
+)
 # Load logger name:
 #   The name to use for the load module logger.
 LOAD_LOGGER_NAME: str = "load"
@@ -62,36 +70,6 @@ MEAN: str = "Mean"
 # Median column name:
 #   The name to use for the "median" column in the yearly-load statistics.
 MEDIAN: str = "Median"
-
-
-def _device_daily_profile(monthly_profile: pd.DataFrame, years: int) -> pd.DataFrame:
-    """
-    Converts the monthly utilisation profiles to daily utilisation profiles.
-
-    Inputs:
-        - monthly_profile:
-            The monthly ownership profile for the device.
-        - years:
-            The number of years for the simulation.
-
-    Outputs:
-        - The daily-device profile as a :class:`pandas.DataFrame`.
-
-    Notes:
-        Gives a daily utilisation for all devices, even those which are not
-        permitted by "Devices.csv"
-
-    """
-
-    # Convert the monthly profile to a daily profile.
-    yearly_profile = pd.DataFrame.transpose(
-        monthly_profile_to_daily_profile(monthly_profile)
-    )
-
-    # Concatenate the profile by the number of years such that it repeats.
-    concatenated_yearly_profile = pd.concat([yearly_profile] * years)
-
-    return concatenated_yearly_profile
 
 
 def _cumulative_sales_daily(
@@ -141,6 +119,36 @@ def _cumulative_sales_daily(
     return pd.DataFrame(list(cum_sales.values()))
 
 
+def _device_daily_profile(monthly_profile: pd.DataFrame, years: int) -> pd.DataFrame:
+    """
+    Converts the monthly utilisation profiles to daily utilisation profiles.
+
+    Inputs:
+        - monthly_profile:
+            The monthly ownership profile for the device.
+        - years:
+            The number of years for the simulation.
+
+    Outputs:
+        - The daily-device profile as a :class:`pandas.DataFrame`.
+
+    Notes:
+        Gives a daily utilisation for all devices, even those which are not
+        permitted by "Devices.csv"
+
+    """
+
+    # Convert the monthly profile to a daily profile.
+    yearly_profile = pd.DataFrame.transpose(
+        monthly_profile_to_daily_profile(monthly_profile)
+    )
+
+    # Concatenate the profile by the number of years such that it repeats.
+    concatenated_yearly_profile = pd.concat([yearly_profile] * years)
+
+    return concatenated_yearly_profile
+
+
 def _population_growth_daily(
     community_growth_rate: float, community_size: int, num_years: int
 ) -> pd.DataFrame:
@@ -163,6 +171,41 @@ def _population_growth_daily(
     for day in range(0, 365 * num_years):
         population.append(math.floor(community_size * (1 + growth_rate_daily) ** day))
     return pd.DataFrame(population)
+
+
+def _yearly_load_statistics(total_load: pd.DataFrame, years: int) -> pd.DataFrame:
+    """
+    Calculates the load statistics for each year on an hourly basis.
+
+    Inputs:
+        - total_load:
+            Hourly total load of the system.
+        - years:
+            The number of years for which the simulation is being run.
+
+    Outputs:
+        - A dataframe containing the maximum, mean and median hourly loads.
+
+    """
+
+    total_load_yearly = pd.DataFrame(
+        np.reshape(
+            pd.DataFrame(total_load.sum(axis=1)).values,  # type: ignore
+            (years, 365 * 24),
+        )
+    )
+
+    yearly_maximum = pd.DataFrame(total_load_yearly.max(axis=1))
+    yearly_maximum.columns = [MAXIMUM]
+    yearly_mean = pd.DataFrame(total_load_yearly.mean(axis=1).round(0))
+    yearly_mean.columns = [MEAN]
+    yearly_median = pd.DataFrame(np.percentile(total_load_yearly, 50, axis=1))
+    yearly_median.columns = [MEDIAN]
+    yearly_load_statistics = pd.concat(
+        [yearly_maximum, yearly_mean, yearly_median], axis=1
+    )
+
+    return yearly_load_statistics
 
 
 def _number_of_devices_daily(
@@ -235,41 +278,6 @@ def _number_of_devices_daily(
         daily_ownership = pd.DataFrame(np.zeros((location.max_years * 365, 1)))
 
     return daily_ownership
-
-
-def _yearly_load_statistics(total_load: pd.DataFrame, years: int) -> pd.DataFrame:
-    """
-    Calculates the load statistics for each year on an hourly basis.
-
-    Inputs:
-        - total_load:
-            Hourly total load of the system.
-        - years:
-            The number of years for which the simulation is being run.
-
-    Outputs:
-        - A dataframe containing the maximum, mean and median hourly loads.
-
-    """
-
-    total_load_yearly = pd.DataFrame(
-        np.reshape(
-            pd.DataFrame(total_load.sum(axis=1)).values,  # type: ignore
-            (years, 365 * 24),
-        )
-    )
-
-    yearly_maximum = pd.DataFrame(total_load_yearly.max(axis=1))
-    yearly_maximum.columns = [MAXIMUM]
-    yearly_mean = pd.DataFrame(total_load_yearly.mean(axis=1).round(0))
-    yearly_mean.columns = [MEAN]
-    yearly_median = pd.DataFrame(np.percentile(total_load_yearly, 50, axis=1))
-    yearly_median.columns = [MEDIAN]
-    yearly_load_statistics = pd.concat(
-        [yearly_maximum, yearly_mean, yearly_median], axis=1
-    )
-
-    return yearly_load_statistics
 
 
 def compute_total_hourly_load(
@@ -801,6 +809,10 @@ def process_load_profiles(
     """
 
     device_hourly_loads: Dict[str, pd.DataFrame] = dict()
+
+    import pdb
+
+    pdb.set_trace()
 
     for device in atpbar(devices, name="load profiles"):
         # Only re-load the various profiles if the total profile doesn't already exist.
