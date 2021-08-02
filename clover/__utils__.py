@@ -731,7 +731,7 @@ def save_simulation(
     # Save the simulation data in a CSV file.
     filepath = os.path.join(output_directory, filename)
     with open(filepath, "w") as f:
-        simulation.to_csv(f)
+        simulation.to_csv(f)  # type: ignore
     logger.info("Simulation successfully saved to %s.", filepath)
     print(f"Simulation saved to {filepath}.")
 

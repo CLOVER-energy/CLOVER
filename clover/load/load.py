@@ -779,7 +779,6 @@ def process_device_utilisation(
 
 def process_load_profiles(
     auto_generated_files_directory: str,
-    devices: Set[Device],
     device_utilisations: Dict[Device, pd.DataFrame],
     location: Location,
     logger: Logger,
@@ -794,8 +793,6 @@ def process_load_profiles(
     Inputs:
         - auto_generated_files_directory:
             The directory in which auto-generated files should be saved.
-        - devices:
-            The devices to be processed.
         - device_utilisations:
             The processed device utilisation information.
         - location:
@@ -813,7 +810,7 @@ def process_load_profiles(
 
     device_hourly_loads: Dict[str, pd.DataFrame] = dict()
 
-    for device in atpbar(devices, name="load profiles"):
+    for device in atpbar(device_utilisations, name="load profiles"):
         # Only re-load the various profiles if the total profile doesn't already exist.
         if (
             os.path.isfile(
@@ -895,7 +892,7 @@ def process_load_profiles(
     logger.info("Computing the total device hourly load.")
     total_load, yearly_statistics = compute_total_hourly_load(
         device_hourly_loads=device_hourly_loads,
-        devices=devices,
+        devices=set(device_utilisations.keys()),
         generated_device_load_filepath=os.path.join(
             auto_generated_files_directory, "load", "device_load"
         ),

@@ -14,11 +14,31 @@ fileparser.py - The argument-parsing module for CLOVER.
 
 import os
 
-from typing import Set
+from logging import Logger
+from typing import Any, Dict, Set, Tuple
 
-from .__utils__ import Device, read_yaml
+import pandas as pd
 
-__all__ = ("parse_input_files",)
+from . import load
+from .simulation import energy_system
+
+from .__utils__ import (
+    BColours,
+    Device,
+    KEROSENE_DEVICE_NAME,
+    Location,
+    LOCATIONS_FOLDER_NAME,
+    read_yaml,
+    Scenario,
+    Simulation,
+)
+
+__all__ = (
+    "INPUTS_DIRECTORY",
+    "KEROSENE_TIMES_FILE",
+    "KEROSENE_USAGE_FILE",
+    "parse_input_files",
+)
 
 
 # Device inputs file:
@@ -69,22 +89,41 @@ SCENARIO_INPUTS_FILE = os.path.join("scenario", "scenario_inputs.yaml")
 #   The relative path to the simulation inputs file.
 SIMULATION_INPUTS_FILE = os.path.join("simulation", "simulation.yaml")
 
-# Simulation outputs folder:
-#   The folder into which outputs should be saved.
-SIMULATION_OUTPUTS_FOLDER = os.path.join("outputs", "simulation_outputs")
-
 # Solar inputs file:
 #   The relative path to the solar inputs file.
 SOLAR_INPUTS_FILE = os.path.join("generation", "solar", "solar_generation_inputs.yaml")
 
 
-def parse_input_files(location: str):
+def parse_input_files(
+    location: str,
+    logger: Logger,
+) -> Tuple[
+    Dict[Device, pd.DataFrame],
+    Dict[str, Any],
+    energy_system.Minigrid,
+    pd.DataFrame,
+    Scenario,
+    Simulation,
+    Dict[str, Any],
+]:
     """
     Parse the various input files and return content-related information.
 
     Inputs:
         - location:
             The name of the location being considered.
+        - logger:
+            The logger to use for the run.
+
+    Outputs:
+        - A tuple containing:
+            - device_utilisations,
+            - diesel_inputs,
+            - minigrid,
+            - grid_inputs,
+            - scenario,
+            - simulation,
+            - solar_generation_inputs.
 
     """
 
@@ -94,153 +133,142 @@ def parse_input_files(location: str):
         INPUTS_DIRECTORY,
     )
 
-    try:
-        devices: Set[Device] = {
-            Device.from_dict(entry)
-            for entry in read_yaml(
-                os.path.join(
-                    inputs_directory_relative_path,
-                    DEVICE_INPUTS_FILE,
-                ),
-                logger,
-            )
-        }
-        logger.info("Device inputs successfully parsed.")
-
-        # Add the kerosene device information if it was not provided.
-        if KEROSENE_DEVICE_NAME not in {device.name for device in devices}:
-            logger.info(
-                "%sNo kerosene device information provided in the device file. "
-                "Auto-generating device information.%s",
-                BColours.warning,
-                BColours.endc,
-            )
-            devices.add(load.DEFAULT_KEROSENE_DEVICE)
-            logger.info("Default kerosene device added.")
-
-        device_utilisations: Dict[Device, pd.DataFrame] = dict()
-        for device in devices:
-            try:
-                with open(
-                    os.path.join(
-                        inputs_directory_relative_path,
-                        DEVICE_UTILISATIONS_INPUT_DIRECTORY,
-                        DEVICE_UTILISATION_TEMPLATE_FILENAME.format(device=device.name),
-                    ),
-                    "r",
-                ) as f:
-                    device_utilisations[device] = pd.read_csv(
-                        f,
-                        header=None,
-                        index_col=None,
-                    )
-            except FileNotFoundError:
-                logger.error(
-                    "%sError parsing device-utilisation profile for %s, check that the "
-                    "profile is present and that all device names are consistent.%s",
-                    BColours.fail,
-                    device.name,
-                    BColours.endc,
-                )
-                raise
-
-        diesel_inputs_filepath = os.path.join(
-            inputs_directory_relative_path,
-            DIESEL_INPUTS_FILE,
-        )
-        diesel_inputs = read_yaml(
-            diesel_inputs_filepath,
-            logger,
-        )
-        logger.info("Diesel inputs successfully parsed.")
-
-        energy_system_inputs_filepath = os.path.join(
-            inputs_directory_relative_path, ENERGY_SYSTEM_INPUTS_FILE
-        )
-        minigrid = energy_system.Minigrid.from_dict(
-            read_yaml(energy_system_inputs_filepath, logger)
-        )
-        logger.info("Energy-system inputs successfully parsed.")
-
-        with open(
+    devices: Set[Device] = {
+        Device.from_dict(entry)
+        for entry in read_yaml(
             os.path.join(
                 inputs_directory_relative_path,
-                GRID_INPUTS_FILE,
-            ),
-            "r",
-        ) as grid_inputs_file:
-            grid_inputs = pd.read_csv(
-                grid_inputs_file,
-                index_col=0,
-            )
-        logger.info("Grid inputs successfully parsed.")
-
-        location = Location.from_dict(
-            read_yaml(
-                os.path.join(
-                    inputs_directory_relative_path,
-                    LOCATION_INPUTS_FILE,
-                ),
-                logger,
-            )
-        )
-        logger.info("Location inputs successfully parsed.")
-
-        scenario_inputs = read_yaml(
-            os.path.join(
-                inputs_directory_relative_path,
-                SCENARIO_INPUTS_FILE,
+                DEVICE_INPUTS_FILE,
             ),
             logger,
         )
+    }
+    logger.info("Device inputs successfully parsed.")
+
+    # Add the kerosene device information if it was not provided.
+    if KEROSENE_DEVICE_NAME not in {device.name for device in devices}:
+        logger.info(
+            "%sNo kerosene device information provided in the device file. "
+            "Auto-generating device information.%s",
+            BColours.warning,
+            BColours.endc,
+        )
+        devices.add(load.DEFAULT_KEROSENE_DEVICE)
+        logger.info("Default kerosene device added.")
+
+    device_utilisations: Dict[Device, pd.DataFrame] = dict()
+    for device in devices:
         try:
-            scenario = Scenario.from_dict(scenario_inputs)
-        except Exception as e:
+            with open(
+                os.path.join(
+                    inputs_directory_relative_path,
+                    DEVICE_UTILISATIONS_INPUT_DIRECTORY,
+                    DEVICE_UTILISATION_TEMPLATE_FILENAME.format(device=device.name),
+                ),
+                "r",
+            ) as f:
+                device_utilisations[device] = pd.read_csv(
+                    f,
+                    header=None,
+                    index_col=None,
+                )
+        except FileNotFoundError:
             logger.error(
-                "%sError generating scenario from inputs file: %s%s",
+                "%sError parsing device-utilisation profile for %s, check that the "
+                "profile is present and that all device names are consistent.%s",
                 BColours.fail,
-                str(e),
+                device.name,
                 BColours.endc,
             )
             raise
-        logger.info("Scenario inputs successfully parsed.")
 
-        simulation = Simulation.from_dict(
-            read_yaml(
-                os.path.join(
-                    inputs_directory_relative_path,
-                    SIMULATION_INPUTS_FILE,
-                ),
-                logger,
-            )
+    diesel_inputs_filepath = os.path.join(
+        inputs_directory_relative_path,
+        DIESEL_INPUTS_FILE,
+    )
+    diesel_inputs = read_yaml(
+        diesel_inputs_filepath,
+        logger,
+    )
+    logger.info("Diesel inputs successfully parsed.")
+
+    energy_system_inputs_filepath = os.path.join(
+        inputs_directory_relative_path, ENERGY_SYSTEM_INPUTS_FILE
+    )
+    minigrid = energy_system.Minigrid.from_dict(
+        read_yaml(energy_system_inputs_filepath, logger)
+    )
+    logger.info("Energy-system inputs successfully parsed.")
+
+    with open(
+        os.path.join(
+            inputs_directory_relative_path,
+            GRID_INPUTS_FILE,
+        ),
+        "r",
+    ) as grid_inputs_file:
+        grid_inputs = pd.read_csv(
+            grid_inputs_file,
+            index_col=0,
         )
+    logger.info("Grid inputs successfully parsed.")
 
-        solar_generation_inputs = read_yaml(
+    location = Location.from_dict(
+        read_yaml(
             os.path.join(
                 inputs_directory_relative_path,
-                SOLAR_INPUTS_FILE,
+                LOCATION_INPUTS_FILE,
             ),
             logger,
         )
-        logger.info("Solar generation inputs successfully parsed.")
-    except FileNotFoundError as e:
-        print(FAILED)
-        logger.error(
-            "%sNot all input files present. See %s for details: %s%s",
-            BColours.fail,
-            "{}.log".format(os.path.join(LOGGER_DIRECTORY, LOGGER_NAME)),
-            str(e),
-            BColours.endc,
-        )
-        raise
+    )
+    logger.info("Location inputs successfully parsed.")
+
+    scenario_inputs = read_yaml(
+        os.path.join(
+            inputs_directory_relative_path,
+            SCENARIO_INPUTS_FILE,
+        ),
+        logger,
+    )
+    try:
+        scenario = Scenario.from_dict(scenario_inputs)
     except Exception as e:
-        print(FAILED)
         logger.error(
-            "%sAn unexpected error occured parsing input files. See %s for details: "
-            "%s%s",
+            "%sError generating scenario from inputs file: %s%s",
             BColours.fail,
-            "{}.log".format(os.path.join(LOGGER_DIRECTORY, LOGGER_NAME)),
             str(e),
             BColours.endc,
         )
         raise
+    logger.info("Scenario inputs successfully parsed.")
+
+    simulation = Simulation.from_dict(
+        read_yaml(
+            os.path.join(
+                inputs_directory_relative_path,
+                SIMULATION_INPUTS_FILE,
+            ),
+            logger,
+        )
+    )
+
+    solar_generation_inputs = read_yaml(
+        os.path.join(
+            inputs_directory_relative_path,
+            SOLAR_INPUTS_FILE,
+        ),
+        logger,
+    )
+    logger.info("Solar generation inputs successfully parsed.")
+
+    return (
+        device_utilisations,
+        diesel_inputs,
+        minigrid,
+        grid_inputs,
+        location,
+        scenario,
+        simulation,
+        solar_generation_inputs,
+    )

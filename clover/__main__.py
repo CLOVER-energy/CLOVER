@@ -29,6 +29,12 @@ from typing import Any, Dict, List, Set
 import pandas as pd
 
 from . import argparser
+from .fileparser import (
+    INPUTS_DIRECTORY,
+    KEROSENE_TIMES_FILE,
+    KEROSENE_USAGE_FILE,
+    parse_input_files,
+)
 from .generation import grid, solar
 from .load import load
 from .scripts import new_location
@@ -105,6 +111,10 @@ LOGGER_NAME = "clover"
 #   The number of CPUs to use, which dictates the number of workers to use for parllel
 #   jobs.
 NUM_WORKERS = 8
+
+# Simulation outputs folder:
+#   The folder into which outputs should be saved.
+SIMULATION_OUTPUTS_FOLDER = os.path.join("outputs", "simulation_outputs")
 
 
 def _check_location(location: str, logger: logging.Logger) -> bool:
@@ -261,15 +271,48 @@ def main(args: List[Any]) -> None:
     # Parse the various input files.
     logger.info("Parsing input files.")
 
-    logger.info("All input files successfully parsed.")
-    print(DONE)
-    print("Generating necessary profiles", end="\n")
+    try:
+        (
+            device_utilisations,
+            diesel_inputs,
+            minigrid,
+            grid_inputs,
+            location,
+            scenario,
+            simulation,
+            solar_generation_inputs,
+        ) = parse_input_files(parsed_args.location, logger)
+    except FileNotFoundError as e:
+        print(FAILED)
+        logger.error(
+            "%sNot all input files present. See %s for details: %s%s",
+            BColours.fail,
+            "{}.log".format(os.path.join(LOGGER_DIRECTORY, LOGGER_NAME)),
+            str(e),
+            BColours.endc,
+        )
+        raise
+    except Exception as e:
+        print(FAILED)
+        logger.error(
+            "%sAn unexpected error occured parsing input files. See %s for details: "
+            "%s%s",
+            BColours.fail,
+            "{}.log".format(os.path.join(LOGGER_DIRECTORY, LOGGER_NAME)),
+            str(e),
+            BColours.endc,
+        )
+        raise
+    else:
+        logger.info("All input files successfully parsed.")
+        print(DONE)
 
     # Generate and save the solar data for each year as a background task.
+    print("Generating necessary profiles", end="\n")
     logger.info("Beginning solar-data fetching.")
     solar_data_thread = solar.SolarDataThread(
         os.path.join(auto_generated_files_directory, "solar"),
-        parsed_args.location,
+        location,
         parsed_args.regenerate,
         solar_generation_inputs,
     )
@@ -287,7 +330,6 @@ def main(args: List[Any]) -> None:
     try:
         total_load, _ = load.process_load_profiles(
             auto_generated_files_directory,
-            devices,
             device_utilisations,
             location,
             logger,
@@ -295,7 +337,7 @@ def main(args: List[Any]) -> None:
         )
     except Exception as e:
         print(
-            "Generating necessary profiles ................................. "
+            "Generating necessary profiles .................................    "
             "[  FAILED  ]\n"
         )
         logger.error(
