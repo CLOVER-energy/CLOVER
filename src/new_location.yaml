@@ -120,65 +120,99 @@
           contents:
             - file: "finance_inputs.yaml"
               contents: |-
-                Discount rate,0.1,fraction
-                PV cost,500,$/kWp
-                PV O&M,5,$/kWp p.a.
-                PV cost decrease,5,% p.a.
-                Storage cost,400,$/kWh
-                Storage O&M,10,$/kWh p.a.
-                Storage cost decrease,5,% p.a.
-                Diesel generator cost,200,$/kW
-                Diesel generator cost decrease,0,% p.a.
-                Diesel fuel cost,0.9,$/litre
-                Diesel fuel cost decrease,-1,% p.a.
-                Diesel O&M,20,$/kW p.a.
-                BOS cost,200,$/kW
-                BOS cost decrease,2,% p.a.
-                PV installation cost,100,$/kW
-                PV installation cost decrease,0,% p.a.
-                Diesel installation cost,50,$/kW
-                Diesel installation cost decrease,0,% p.a.
-                Connection cost,100,$/household
-                Kerosene cost,0.008,$/hour
-                Grid cost,0.01,$/kWh
-                Grid extension cost,5000,$/km
-                Grid infrastructure cost,2000,$
-                Inverter cost,200,$/kW
-                Inverter cost decrease,2,% p.a.
-                Inverter lifetime,4,years
-                Inverter size increment,1,kW
-                Misc. costs,0,$/kW
-                General O&M,500,$ p.a.
-            - file: "GHG inputs.csv"
+                ################################################################################
+                # finance_inputs.yaml - Finance input information.                             #
+                #                                                                              #
+                # Author: Phil Sandwell, Ben Winchester                                        #
+                # Copyright: Phil Sandwell & Ben Winchester, 2021                              #
+                # Date created: 14/07/2021                                                     #
+                # License: Open source                                                         #
+                ################################################################################
+
+                discount_rate: 0.1 # Fraction between 0 and 1.
+                general_o&m: 500 # [$ p.a.]
+                misc_costs: 0 # [$/kW]
+                bos:
+                  cost: 200 # [$/kW]
+                  cost_decrease: 2 # [% p.a.]
+                diesel_fuel:
+                  cost: 0.9 # [$/litre]
+                  cost_decrease: -1 # [% p.a.]
+                diesel_generator:
+                  cost: 200 # [$/kW]
+                  installation_cost: 50 # [$/kW]
+                  installation_cost_decrease: 0 # [% p.a.]
+                  o&m: 20 # [$/kW p.a.]
+                  cost_decrease: 0 # [% p.a.]
+                grid:
+                  cost: 0.01 # [$/kWh]
+                  extension cost: 5000 # [$/km]
+                  infrastructure_cost: 2000 # [$]
+                households:
+                  connection_cost: 100 # [$/household]
+                  kerosene_cost: 0.008 # [$/hour]
+                inverter:
+                  cost: 200 # [$/kW]
+                  cost_decrease: 2 # [% p.a.]
+                  lifetime: 4 # [years]
+                  size_increment: 1 # [kW]
+                pv:
+                  cost: 500 # [$/kWp]
+                  cost_decrease: 5 # [% p.a.]
+                  installation_cost: 100 # [$/kW]
+                  installation_cost_decrease: 0 # [% p.a.]
+                  o&m: 5 # [$/kWp p.a.]
+                storage:
+                  cost: 400 # [$/kWh]
+                  cost_decrease: 5 # [% p.a.]
+                  o&m: 10 # [$/kWh p.a.]
+
+            - file: ghg_inputs.yaml
               contents: |-
-                PV GHGs,3000,kgCO2/kWp
-                PV O&M GHGs,5,kgCO2/kWp p.a.
-                PV GHG decrease,5,% p.a.
-                Storage GHGs,110,kgCO2/kWh
-                Storage O&M GHGs,5,kgCO2/kWh p.a.
-                Storage GHG decrease,5,% p.a.
-                Diesel generator GHGs,2000,kgCO2/kW
-                Diesel generator GHG decrease,0,% p.a.
-                Diesel fuel GHGs,2,kgCO2/litre
-                Diesel O&M GHGs,10,kgCO2/kW p.a.
-                BOS GHGs,200,kgCO2/kW
-                BOS GHG decrease,2,% p.a.
-                PV installation GHGs,50,kgCO2/kW
-                PV installation GHG decrease,0,% p.a.
-                Diesel installation GHGs,50,kgCO2/kW
-                Diesel installation GHG decrease,0,% p.a.
-                Connection GHGs,10,kgCO2/household
-                Kerosene GHGs,0.055,kgCO2/hour
-                Grid GHGs (initial),0.8,kgCO2/kWh
-                Grid GHGs (final),0.4,kgCO2/kWh
-                Grid extension GHGs,290000,kgCO2/km
-                Grid infrastructure GHGs,1200000,kgCO2
-                Inverter GHGs,75,kgCO2/kW
-                Inverter GHG decrease,2,% p.a.
-                Inverter lifetime,4,years
-                Inverter size increment,1,kW
-                Misc. GHGs,0,kgCO2/kW
-                General O&M GHGs,200,kgCO2 p.a.
+                ################################################################################
+                # ghg_inputs.yaml - GHG input information.                                     #
+                #                                                                              #
+                # Author: Phil Sandwell, Ben Winchester                                        #
+                # Copyright: Phil Sandwell & Ben Winchester, 2021                              #
+                # Date created: 14/07/2021                                                     #
+                # License: Open source                                                         #
+                ################################################################################
+
+                general_o&m_ghgs: 200 # [kgCO2 p.a.]
+                misc_ghgs: 0 # [kgCO2/kW]
+                bos:
+                  ghgs: 200 # [kgCO2/kW]
+                  ghg_decrease: 2 # [% p.a.]
+                diesel_fuel:
+                  ghgs: 2 # [kgCO2/litre]
+                  o&m_ghgs: 10 # [kgCO2/kW p.a.]
+                dieel_generator:
+                  ghgs: 2000 # [kgCO2/kW]
+                  ghg_decrease: 0 # [% p.a.]
+                  installation_ghgs: 50 # [kgCO2/kW]
+                  installation_ghg_decrease: 0 # [% p.a.]
+                grid:
+                  extension_ghgs: 290000 # [kgCO2/km]
+                  infrastructure_GHGs: 1200000 # [kgCO2]
+                  initial_ghgs: 0.8 # [kgCO2/kWh]
+                  final_ghgs: 0.4 # [kgCO2/kWh]
+                households:
+                  connection_ghgs: 10 # [kgCO2/household]
+                  kerosene_ghgs: 0.055 # [kgCO2/hour]
+                inverter:
+                  ghgs: 75 # [kgCO2/kW]
+                  ghg_decrease: # [2,% p.a.]
+                pv:
+                  ghgs: 3000 # [kgCO2/kWp]
+                  ghg_decrease: 5 # [% p.a.]
+                  installation_ghgs: 50 # [kgCO2/kW]
+                  installation_ghg_decrease: 0 # [% p.a.]
+                  o&m_ghgs: 5 #[kgCO2/kWp p.a.]
+                storage:
+                  ghgs: 110 # [kgCO2/kWh]
+                  o&m_ghgs: 5 # [kgCO2/kWh p.a.]
+                  ghg_decrease: 5 # [% p.a.]
+
         - directory: load
           contents:
             - file: devices.yaml
