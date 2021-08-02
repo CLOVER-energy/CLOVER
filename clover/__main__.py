@@ -40,21 +40,12 @@ from .load import load
 from .scripts import new_location
 from .simulation import energy_system
 
-from atpbar import atpbar
-
 from .__utils__ import (
     BColours,
-    Device,
     get_logger,
-    InvalidLocationError,
-    KEROSENE_DEVICE_NAME,
-    Location,
     LOCATIONS_FOLDER_NAME,
     LOGGER_DIRECTORY,
     OperatingMode,
-    read_yaml,
-    Scenario,
-    Simulation,
     save_simulation,
 )
 
@@ -117,16 +108,34 @@ NUM_WORKERS = 8
 SIMULATION_OUTPUTS_FOLDER = os.path.join("outputs", "simulation_outputs")
 
 
-def _check_location(location: str, logger: logging.Logger) -> bool:
+def _get_operating_mode(parsed_args: Namespace) -> OperatingMode:
     """
-    Returns whether the specified location meets the requirements for CLOVER.
+    Determine the operating mode for CLOVER based on the command-line arguments.
+
+    Inputs:
+        - parsed_args:
+            The parsed command-line arguments.
+
+    Outputs:
+        - The operating mode to use for the run.
+
+    """
+
+    # Try to determine the operating mode.
+    if parsed_args.simulation:
+        return OperatingMode.SIMULATION
+    if parsed_args.optimisation:
+        return OperatingMode.OPTIMISATION
+    return OperatingMode.PROFILE_GENERATION
+
+
+def _prepare_location(location: str, logger: logging.Logger):
+    """
+    Prepares the location and raises an error if the location cannot be found.
 
     Inputs:
         - location
             The name of the location to check.
-
-    Outputs:
-        - Whether the location meets the requirements as a boolean variable.
 
     Raises:
         - FileNotFoundError:
@@ -162,29 +171,6 @@ def _check_location(location: str, logger: logging.Logger) -> bool:
         new_location.create_new_location(None, location, logger, True)
         logger.info("%s succesfully updated with missing files.", location)
 
-    return True
-
-
-def _get_operating_mode(parsed_args: Namespace) -> OperatingMode:
-    """
-    Determine the operating mode for CLOVER based on the command-line arguments.
-
-    Inputs:
-        - parsed_args:
-            The parsed command-line arguments.
-
-    Outputs:
-        - The operating mode to use for the run.
-
-    """
-
-    # Try to determine the operating mode.
-    if parsed_args.simulation:
-        return OperatingMode.SIMULATION
-    if parsed_args.optimisation:
-        return OperatingMode.OPTIMISATION
-    return OperatingMode.PROFILE_GENERATION
-
 
 def main(args: List[Any]) -> None:
     """
@@ -199,6 +185,7 @@ def main(args: List[Any]) -> None:
     logger = get_logger(LOGGER_NAME)
     logger.info("CLOVER run initiated. Options specified: %s", " ".join(args))
 
+    # Parse and validate the command-line arguments.
     parsed_args = argparser.parse_args(args)
     logger.info("Command-line arguments successfully parsed.")
 
@@ -220,6 +207,14 @@ def main(args: List[Any]) -> None:
 
     print(CLOVER_HEADER_STRING)
 
+    # Define common variables.
+    auto_generated_files_directory = os.path.join(
+        LOCATIONS_FOLDER_NAME,
+        parsed_args.location,
+        AUTO_GENERATED_FILES_DIRECTORY,
+    )
+
+    # Determine the operating mode for the run.
     operating_mode = _get_operating_mode(parsed_args)
     if operating_mode == OperatingMode.SIMULATION:
         logger.info(
@@ -239,36 +234,28 @@ def main(args: List[Any]) -> None:
             f"generation only for {parsed_args.location}."
         )
 
-    # If the location does not exist or does not meet the required specification, then
-    # exit now.
+    # Verify the location as containing all the required files.
     print("Verifying location information ................................    ", end="")
     logger.info("Checking location %s.", parsed_args.location)
-    if not _check_location(parsed_args.location, logger):
+    try:
+        _prepare_location(parsed_args.location, logger)
+    except FileNotFoundError:
         print(FAILED)
         logger.error(
-            "%sThe location, '%s', is invalid. Try running the `new_location` script to"
-            "identify missing files. See %s for details.%s",
+            "%sThe location, '%s', is missing files. Try running the `new_location` "
+            "script to identify missing files. See %s for details.%s",
             BColours.fail,
             parsed_args.location,
             "{}.log".format(os.path.join(LOGGER_DIRECTORY, LOGGER_NAME)),
             BColours.endc,
         )
-        raise InvalidLocationError(parsed_args.location)
-    logger.info("Location, '%s', has been verified and is valid.", parsed_args.location)
+        raise
 
+    # Parse the various input files.
     print(
         f"{DONE}\nParsing input files ...........................................    ",
         end="",
     )
-
-    # Define common variables.
-    auto_generated_files_directory = os.path.join(
-        LOCATIONS_FOLDER_NAME,
-        parsed_args.location,
-        AUTO_GENERATED_FILES_DIRECTORY,
-    )
-
-    # Parse the various input files.
     logger.info("Parsing input files.")
 
     try:
@@ -397,10 +384,6 @@ def main(args: List[Any]) -> None:
         end="",
     )
 
-    # ******* #
-    # *  3  * #
-    # ******* #
-
     # Load the relevant grid profile.
     with open(
         os.path.join(
@@ -473,6 +456,7 @@ def main(args: List[Any]) -> None:
                 LOCATIONS_FOLDER_NAME, parsed_args.location, SIMULATION_OUTPUTS_FOLDER
             ),
             system_performance_outputs,
+            system_details,
         )
 
     # ******* #
