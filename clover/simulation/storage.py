@@ -106,6 +106,30 @@ class Battery:
         self.maximum_charge = maximum_charge
         self.minimum_charge = minimum_charge
 
+    def __str__(self) -> str:
+        """
+        Returns a nice-looking string describing the :class:`Battery` instance.
+
+        Outputs:
+            - A `str` giving information about the :class:`Battery` instance.
+
+        """
+
+        return (
+            "Battery("
+            + f"charge_rate={self.charge_rate}, "
+            + f"discharge_rate={self.discharge_rate}, "
+            + f"conversion_in={self.conversion_in}, "
+            + f"conversion_out={self.conversion_out}, "
+            + f"cycle_lifetime={self.cycle_lifetime} cycles, "
+            + f"leakage={self.leakage}, "
+            + f"lifetime_loss={self.lifetime_loss}, "
+            + f"maximum_charge={self.maximum_charge}, "
+            + f"minimum_charge={self.minimum_charge}"
+            + ")"
+        )
+
+    @classmethod
     def from_dict(cls, battery_data: Dict[str, Any]) -> Any:
         """
         Create a :class:`Battery` instance based on the file data passed in.

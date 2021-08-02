@@ -560,10 +560,17 @@ def main(args: List[Any]) -> None:
     ) as f:
         kerosene_usage = pd.read_csv(f, index_col=0)
 
+        # Remove the index from the file.
+        kerosene_usage.reset_index(drop=True)
+
     # * Run a simulation or optimisation as appropriate.
     if operating_mode == OperatingMode.SIMULATION:
         try:
-            energy_system.run_simulation(
+            (
+                time_delta,
+                system_performance_outputs,
+                system_details,
+            ) = energy_system.run_simulation(
                 minigrid,
                 grid_profile,
                 kerosene_usage,
@@ -588,6 +595,7 @@ def main(args: List[Any]) -> None:
             )
             raise
 
+        print("[   DONE   ]")
         print(
             "Time taken for simulation: {0:.2f} seconds per year.".format(
                 (time_delta.microseconds * 0.000001)
@@ -595,6 +603,10 @@ def main(args: List[Any]) -> None:
             ),
             end="\n",
         )
+
+    import pdb
+
+    pdb.set_trace()
 
     # ******* #
     # *  4  * #
@@ -604,7 +616,7 @@ def main(args: List[Any]) -> None:
 
     print(
         "Finished. See {} for output files.".format(
-            os.path.join(LOCATIONS_FOLDER_NAME, "outputs")
+            os.path.join(LOCATIONS_FOLDER_NAME, parsed_args.location, "outputs")
         )
     )
 
