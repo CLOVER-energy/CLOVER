@@ -195,21 +195,31 @@ def main(args: List[Any]) -> None:
             )
         )
 
-    # Try to determine the operating mode.
-    try:
-        operating_mode = OperatingMode(parsed_args.mode)
-    except ValueError:
-        logger.error(
-            "%sThe operating mode, %s, is invalid. See `clover --help` for details.%s",
-            BColours.fail,
-            parsed_args.mode,
-            BColours.endc,
-        )
-        raise
-
     logger.info("Command-line arguments successfully validated.")
 
     print(CLOVER_HEADER_STRING)
+
+    # Try to determine the operating mode.
+    if parsed_args.simulation:
+        operating_mode = OperatingMode.SIMULATION
+        logger.info(
+            "A single CLOVER simulation will be run for locatation '%s'.",
+            parsed_args.location,
+        )
+        print(f"A single CLOVER simulation will be run for {parsed_args.location}.")
+    elif parsed_args.optimisation:
+        operating_mode = OperatingMode.OPTIMISATION
+        logger.info(
+            "A CLOVER optimisation will be run for location '%s'.", parsed_args.location
+        )
+        print(f"A CLOVER optimisation will be run for {parsed_args.location}.")
+    else:
+        operating_mode = OperatingMode.PROFILE_GENERATION
+        logger.info("No CLI mode was specified, CLOVER will only generate profiles.")
+        print(
+            "Neither `simulation` or `optimisation` specified, running profile "
+            f"generation only for {parsed_args.location}."
+        )
 
     # If the location does not exist or does not meet the required specification, then
     # exit now.

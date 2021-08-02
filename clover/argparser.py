@@ -55,12 +55,6 @@ def parse_args(args: List[Any]) -> argparse.Namespace:
 
     parser = argparse.ArgumentParser()
 
-    parser.add_argument(
-        "mode",
-        type=str,
-        help="The mode to run CLOVER in: 'profile_generation', 'simulation' or 'optimisation'.",
-    )
-
     # Mandatory arguments regardless of the use case.
     mandatory_arguments = parser.add_argument_group("mandatory arguments")
     mandatory_arguments.add_argument(
@@ -111,6 +105,12 @@ def parse_args(args: List[Any]) -> argparse.Namespace:
     simulation_parser = parser.add_argument_group(
         "simulation-only arguments",
     )
+    simulation_parser.add_argument(
+        "--simulation",
+        action="store_true",
+        default=False,
+        help="If specified, CLOVER will carry out a single simulation.",
+    )
 
     # Optimisation arguments
     optimisation_parser = parser.add_argument_group(
@@ -150,13 +150,7 @@ def validate_args(logger: logging.Logger, parsed_args: argparse.Namespace) -> bo
         )
         raise MissingParametersError("location")
 
-    if parsed_args.mode is None:
-        logger.error(
-            "%sThe mode of operation must be specified.%s", BColours.fail, BColours.endc
-        )
-        raise MissingParametersError("mode")
-
-    if parsed_args.mode == OperatingMode.SIMULATION:
+    if parsed_args.simulation:
         if parsed_args.pv_system_size is None:
             logger.error(
                 "%sIf running a simulation, the pv system size must be specified.%s",
