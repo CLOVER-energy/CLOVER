@@ -85,50 +85,66 @@ CLOVER_HEADER_STRING = """
 
 
 """
+
 # Device inputs file:
 #   The relative path to the device-inputs file.
 DEVICE_INPUTS_FILE = os.path.join("load", "devices.yaml")
+
 # Device utilisation template filename:
 #   The template filename of device-utilisation profiles used for parsing the files.
 DEVICE_UTILISATION_TEMPLATE_FILENAME = "{device}_times.csv"
+
 # Device utilisations input directory:
 #   The relative path to the directory contianing the device-utilisaion information.
 DEVICE_UTILISATIONS_INPUT_DIRECTORY = os.path.join("load", "device_utilisation")
+
 # Diesel inputs file:
 #   The relative path to the diesel-inputs file.
 DIESEL_INPUTS_FILE = os.path.join("generation", "diesel", "diesel_inputs.yaml")
+
 # Energy-system inputs file:
 #   The relative path to the energy-system-inputs file.
 ENERGY_SYSTEM_INPUTS_FILE = os.path.join("simulation", "energy_system.yaml")
+
 # Grid inputs file:
 #   The relative path to the grid-inputs file.
 GRID_INPUTS_FILE = os.path.join("generation", "grid", "grid_inputs.csv")
+
 # Inputs directory:
 #   The directory containing user inputs.
 INPUTS_DIRECTORY = "inputs"
+
 # Kerosene filepath:
 #   The path to the kerosene information file which needs to be provided for CLOVER.
-KEROSENE_TIMES_FILEPATH = os.path.join(
+KEROSENE_TIMES_FILE = os.path.join(
     "load", "device_utilisation", "kerosene_times.csv"
 )
+
 # Kerosene utilisation filepath:
-#   The path to the kerosene u
+#   The path to the kerosene utilisation profile.
+KEROSENE_UTILISATION_FILE = os.path.join("load", "device_usage", "kerosene_in_use.csv")
+
 # Location inputs file:
 #   The relative path to the location inputs file.
 LOCATION_INPUTS_FILE = os.path.join("location_data", "location_inputs.yaml")
+
 # Logger name:
 #   The name to use for the main logger for CLOVER
 LOGGER_NAME = "clover"
+
 # Number of Workers:
 #   The number of CPUs to use, which dictates the number of workers to use for parllel
 #   jobs.
 NUM_WORKERS = 8
+
 # Scenario inputs file:
 #   The relative path to the scenario inputs file.
 SCENARIO_INPUTS_FILE = os.path.join("scenario", "scenario_inputs.yaml")
+
 # Simulation inputs file:
 #   The relative path to the simulation inputs file.
 SIMULATION_INPUTS_FILE = os.path.join("simulation", "simulation.yaml")
+
 # Solar inputs file:
 #   The relative path to the solar inputs file.
 SOLAR_INPUTS_FILE = os.path.join("generation", "solar", "solar_generation_inputs.yaml")
@@ -166,7 +182,7 @@ def _check_location(location: str, logger: logging.Logger) -> bool:
 
     if not os.path.isfile(
         os.path.join(
-            LOCATIONS_FOLDER_NAME, location, INPUTS_DIRECTORY, KEROSENE_TIMES_FILEPATH
+            LOCATIONS_FOLDER_NAME, location, INPUTS_DIRECTORY, KEROSENE_TIMES_FILE
         )
     ):
         logger.info(

@@ -47,14 +47,19 @@ from ..__utils__ import get_logger, LOCATIONS_FOLDER_NAME
 
 # The keyword used to denote the contents of a file or folder.
 CONTENTS = "contents"
+
 # The keyword used to denote a directory.
 DIRECTORY = "directory"
+
 # The keyword used to denote a file.
 FILE = "file"
+
 # The name of the logger to use.
 LOGGER_NAME = "new_location"
+
 # The path to the new-location data file.
 NEW_LOCATION_DATA_FILE = os.path.join("src", "new_location.yaml")
+
 # Regex used to find lines that should be repeated, used to save YAML file space.
 REPEATED_LINE_REGEX = re.compile(r"(?P<multiplier>\d*):(?P<line_to_repeat>.*)\n")
 
