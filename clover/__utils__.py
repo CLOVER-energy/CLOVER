@@ -702,10 +702,10 @@ def read_yaml(filepath: str, logger: logging.Logger) -> Dict[Any, Any]:
 
 
 def save_simulation(
+    filename: Optional[str],
     logger: logging.Logger,
     output_directory: str,
     simulation: pd.DataFrame,
-    filename: str = str(datetime.datetime.now().strftime("%Y-%m-%d %H-%M-%S")),
 ):
     """
     Saves simulation outputs to a .csv file
@@ -719,6 +719,14 @@ def save_simulation(
             Name of the .csv file name to use (defaults to timestamp).
 
     """
+
+    # If the filename is not provided, then generate it.
+    if filename is None:
+        filename = datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
+
+    # Add the file extension if appropriate.
+    if not filename.endswith(".csv"):
+        filename += ".csv"
 
     # Save the simulation data in a CSV file.
     filepath = os.path.join(output_directory, filename)
