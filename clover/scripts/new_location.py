@@ -84,9 +84,8 @@ def _create_file(
 
     if os.path.isfile(os.path.join(directory, filename)):
         logger.info(
-            "File already exists, skipping creation: {}".format(
-                os.path.join(directory, filename)
-            )
+            "File already exists, skipping creation: %s",
+            os.path.relpath(os.path.join(directory, filename), os.getcwd()),
         )
         return
 
@@ -275,7 +274,13 @@ def create_new_location(
                             os.path.relpath(directory, new_location_directory), filename
                         ),
                     )
-            logger.info("File copying complete.")
+            logger.info(
+                "Directory %s successfully copied over.",
+                os.path.join(
+                    existing_location_directory,
+                    os.path.relpath(directory, new_location_directory),
+                ),
+            )
 
 
 def main(args: List[Any]) -> None:

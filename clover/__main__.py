@@ -450,7 +450,7 @@ def main(args: List[Any]) -> None:
     # Generate the grid-availability profiles.
     logger.info("Generating grid-availability profiles.")
     try:
-        grid_profiles = grid.get_lifetime_grid_status(
+        grid.get_lifetime_grid_status(
             os.path.join(auto_generated_files_directory, "grid"),
             grid_inputs,
             logger,
