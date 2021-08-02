@@ -319,7 +319,7 @@ def run_simulation(
     storage_size: float,
     total_load: pd.DataFrame,
     total_solar_output: pd.DataFrame,
-) -> Tuple[float, pd.DataFrame]:
+) -> Tuple[float, pd.DataFrame, Dict[str, Any]]:
     """
     Simulates a minigrid system
 
@@ -569,12 +569,16 @@ def run_simulation(
         "start_year": simulation.start_year,
         "end_year": simulation.end_year,
         "initial_pv_size": pv_size,
-        "initial_storage_size": storage_size,
+        "initial_storage_size": float(storage_size),
         "final_pv_size": pv_size
-        * solar_degradation(solar_lifetime)[0][
-            8760 * (simulation.end_year - simulation.start_year)
-        ],
-        "final_storage_size": storage_size * np.min(battery_health["Battery health"]),
+        * float(
+            solar_degradation(solar_lifetime)[0][
+                8760 * (simulation.end_year - simulation.start_year)
+            ]
+        ),
+        "final_storage_size": float(
+            storage_size * np.min(battery_health["Battery health"])
+        ),
         "diesel_capacity": diesel_capacity,
     }
 

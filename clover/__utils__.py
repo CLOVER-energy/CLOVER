@@ -23,10 +23,6 @@ import datetime
 import enum
 import logging
 import os
-import queue
-import sys
-import threading
-import time
 
 from typing import Any, Dict, Optional
 
@@ -391,25 +387,6 @@ def hourly_profile_to_daily_sum(hourly_profile: pd.DataFrame):
     return daily_profile.sum()
 
 
-class InvalidLocationError(Exception):
-    """
-    Raised when a user attempts to use an invalid location with CLOVER.
-
-    """
-
-    def __init__(self, location: str) -> None:
-        """
-        Instantiate a :class:`InvalidLocation` error.
-
-        Inputs:
-            - location
-                The name of the location which was invalid.
-
-        """
-
-        super().__init__("The location, {}, is invalid.".format(location))
-
-
 @dataclasses.dataclass
 class Location:
     """
@@ -706,17 +683,22 @@ def save_simulation(
     logger: logging.Logger,
     output_directory: str,
     simulation: pd.DataFrame,
+    system_details: Dict[str, Any],
 ):
     """
     Saves simulation outputs to a .csv file
 
     Inputs:
-        - logger
+        - filename:
+            The .csv file name to use (defaults to timestamp).
+        - logger:
             The logger to use for the run.
-        - simulation
+        - output_directory:
+            The directory into which the files should be saved.
+        - simulation:
             DataFrame output from Energy_System().simulation(...).
-        - filename
-            Name of the .csv file name to use (defaults to timestamp).
+        - system_details:
+            Information about the run to save.
 
     """
 
@@ -725,15 +707,27 @@ def save_simulation(
         filename = datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
 
     # Add the file extension if appropriate.
-    if not filename.endswith(".csv"):
-        filename += ".csv"
+    filepath = os.path.join(output_directory, filename)
+    if not filepath.endswith(".csv"):
+        filepath += ".csv"
 
     # Save the simulation data in a CSV file.
-    filepath = os.path.join(output_directory, filename)
+    logger.info("Saving simulation output.")
     with open(filepath, "w") as f:
         simulation.to_csv(f)  # type: ignore
     logger.info("Simulation successfully saved to %s.", filepath)
     print(f"Simulation saved to {filepath}.")
+
+    # Save the system data.
+    simulation_details_filepath = os.path.join(
+        output_directory, filename + "_info.yaml"
+    )
+    logger.info("Saving simulation details.")
+    with open(simulation_details_filepath, "w") as f:
+        yaml.dump(system_details, f, indent=4)
+    logger.info(
+        "Simulation details successfully saved to %s.", simulation_details_filepath
+    )
 
 
 @dataclasses.dataclass
