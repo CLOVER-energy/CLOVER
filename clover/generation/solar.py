@@ -280,7 +280,7 @@ def solar_degradation(lifetime: int) -> pd.DataFrame:
 
 
 def total_solar_output(
-    generation_directory: str, start_year: int = 2007
+    generation_directory: str, regenerate: bool, start_year: int = 2007
 ) -> pd.DataFrame:
     """
     Generates 20 years of solar output data by taking 10 consecutive years repeated.
@@ -288,6 +288,8 @@ def total_solar_output(
     Inputs:
         - generation_directory:
             The directory in which generated solar profiles are saved.
+        - regenerate:
+            Whether to regenerate the profiles.
         - start_year:
             The year for which to begin the simulation.
     Outputs:
@@ -301,7 +303,7 @@ def total_solar_output(
     )
 
     # If the total solar output file already exists then simply read this in.
-    if os.path.isfile(total_solar_output_filename):
+    if os.path.isfile(total_solar_output_filename) and not regenerate:
         with open(total_solar_output_filename, "r") as f:
             output = pd.read_csv(f, header=None, index_col=0)
 
@@ -346,6 +348,11 @@ class SolarDataThread(threading.Thread):
     .. attribute:: logger
         The :class:`logging.Logger` to use for the run.
 
+    .. attribute:: regenerate
+        Whether the profiles are to be regenerated, i.e., re-fetched from the
+        renewables.ninja API (True) or whether existing profiles should be used if
+        present (False).
+
     .. attribute:: solar_generation_inputs:
         The solar-generation inputs information, extracted from the
         solar-generation-inputs file.
@@ -356,6 +363,7 @@ class SolarDataThread(threading.Thread):
         self,
         auto_generated_files_directory: str,
         location: Location,
+        regenerate: bool,
         solar_generation_inputs: Dict[Any, Any],
     ) -> None:
         """
@@ -366,6 +374,8 @@ class SolarDataThread(threading.Thread):
                 The directory in which CLOVER-generated files should be saved.
             - location:
                 The location currently being considerted.
+            - regenerate:
+                Whether to regenerate the profiles.
             - solar_generation_inputs:
                 The solar-generation inputs.
 
@@ -374,6 +384,7 @@ class SolarDataThread(threading.Thread):
         self.auto_generated_files_directory: str = auto_generated_files_directory
         self.location: Location = location
         self.logger: Logger = get_logger(SOLAR_LOGGER_NAME)
+        self.regenerate: bool = regenerate
         self.solar_generation_inputs: Dict[Any, Any] = solar_generation_inputs
 
         super().__init__()
@@ -402,7 +413,7 @@ class SolarDataThread(threading.Thread):
                 filename = f"solar_generation_{year}.csv"
                 filepath = os.path.join(self.auto_generated_files_directory, filename)
 
-                if os.path.isfile(filepath):
+                if os.path.isfile(filepath) and not self.regenerate:
                     self.logger.info(
                         "Solar data file for year %s already exists, skipping.", year
                     )

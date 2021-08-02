@@ -48,12 +48,14 @@ from .__utils__ import (
     read_yaml,
     Scenario,
     Simulation,
+    save_simulation,
 )
 
 # Auto-generated-files directory:
 #   The name of the directory in which to save auto-generated files, relative to the
 # root of the location.
 AUTO_GENERATED_FILES_DIRECTORY = "auto_generated"
+
 # Clover header string:
 #   The ascii text to display when starting CLOVER.
 CLOVER_HEADER_STRING = """
@@ -142,6 +144,10 @@ SCENARIO_INPUTS_FILE = os.path.join("scenario", "scenario_inputs.yaml")
 # Simulation inputs file:
 #   The relative path to the simulation inputs file.
 SIMULATION_INPUTS_FILE = os.path.join("simulation", "simulation.yaml")
+
+# Simulation outputs folder:
+#   The folder into which outputs should be saved.
+SIMULATION_OUTPUTS_FOLDER = os.path.join("outputs", "simulation_outputs")
 
 # Solar inputs file:
 #   The relative path to the solar inputs file.
@@ -452,6 +458,7 @@ def main(args: List[Any]) -> None:
     solar_data_thread = solar.SolarDataThread(
         os.path.join(auto_generated_files_directory, "solar"),
         location,
+        parsed_args.regenerate,
         solar_generation_inputs,
     )
     solar_data_thread.start()
@@ -604,15 +611,22 @@ def main(args: List[Any]) -> None:
             end="\n",
         )
 
-    import pdb
-
-    pdb.set_trace()
+        # Save the simulation output.
+        save_simulation(
+            parsed_args.output,
+            logger,
+            os.path.join(
+                LOCATIONS_FOLDER_NAME, parsed_args.location, SIMULATION_OUTPUTS_FOLDER
+            ),
+            system_performance_outputs,
+        )
 
     # ******* #
     # *  4  * #
     # ******* #
 
     # * Run any and all analysis as appropriate.
+    print("No analysis to be carried out.")
 
     print(
         "Finished. See {} for output files.".format(

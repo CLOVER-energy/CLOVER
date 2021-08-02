@@ -815,10 +815,16 @@ def process_load_profiles(
 
     for device in atpbar(devices, name="load profiles"):
         # Only re-load the various profiles if the total profile doesn't already exist.
-        if os.path.isfile(
-            os.path.join(
-                auto_generated_files_directory, "load", "device_load", "total_load.csv"
-            ),
+        if (
+            os.path.isfile(
+                os.path.join(
+                    auto_generated_files_directory,
+                    "load",
+                    "device_load",
+                    "total_load.csv",
+                ),
+            )
+            and not regenerate
         ):
             continue
 
