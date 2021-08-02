@@ -149,8 +149,8 @@ class Battery:
             battery_data["conversion_out"],
             battery_data["cycle_lifetime"],
             battery_data["c_rate_discharging"],
-            battery_rate["leakage"],
-            battery_rate["lifetime_loss"],
+            battery_data["leakage"],
+            battery_data["lifetime_loss"],
             battery_data["maximum_charge"],
             battery_data["minimum_charge"],
         )
