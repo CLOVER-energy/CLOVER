@@ -181,8 +181,6 @@
                 General O&M GHGs,200,kgCO2 p.a.
         - directory: load
           contents:
-            - directory: "Device load"
-            - directory: "Device ownership"
             - file: devices.yaml
               contents: |-
                 ---
@@ -303,7 +301,6 @@
                   imitation: 0
                   type: public
 
-            - directory: "Devices in use"
             - directory: device_utilisation
               contents:
                 - file: fan_times.csv
