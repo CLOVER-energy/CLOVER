@@ -117,10 +117,10 @@ class Minigrid:
                 minigrid_inputs["battery"]["c_rate_discharging"],
                 minigrid_inputs["battery"]["leakage"],
                 minigrid_inputs["battery"]["lifetime_loss"],
-                minigrid_inputs["battery"]["maximum_loss"],
-                minigrid_inputs["battery"]["minimum_loss"],
+                minigrid_inputs["battery"]["maximum_charge"],
+                minigrid_inputs["battery"]["minimum_charge"],
             )
-            if "battery" in minigrid_inputs["conversion"]
+            if "battery" in minigrid_inputs
             else None,
             minigrid_inputs["conversion"]["ac_to_ac"]
             if "dc_to_ac" in minigrid_inputs["conversion"]
@@ -229,8 +229,12 @@ def _get_storage_profile(
     end_hour = end_year * 8760
 
     # Initialise power generation, including degradation of PV
-    pv_generation = (total_solar_output * pv_size).mul(
-        solar_degradation(solar_lifetime)[0 : (end_hour - start_hour)]
+    pv_generation_array = total_solar_output * pv_size
+    solar_degradation_array = solar_degradation(solar_lifetime)[
+        0 : (end_hour - start_hour)
+    ]
+    pv_generation = pd.DataFrame(
+        np.asarray(pv_generation_array) * np.asarray(solar_degradation_array)
     )
     grid_status = pd.DataFrame(grid_profile[start_hour:end_hour].values)
     load_profile = pd.DataFrame(
@@ -531,7 +535,7 @@ def run_simulation(
     unmet_energy = ((unmet_energy > 0) * unmet_energy).abs()
 
     # Find how many kerosene lamps are in use
-    kerosene_usage = blackout_times.values.mul(kerosene_profile.values)
+    kerosene_usage = blackout_times.mul(kerosene_profile.values)
     kerosene_mitigation = (1 - blackout_times).mul(kerosene_profile.values)
 
     # System performance outputs
@@ -561,22 +565,18 @@ def run_simulation(
     total_energy_used.columns = ["Total energy used (kWh)"]
 
     # System details
-    system_details = pd.DataFrame(
-        {
-            "Start year": simulation.start_year,
-            "End year": simulation.end_year,
-            "Initial PV size": pv_size,
-            "Initial storage size": storage_size,
-            "Final PV size": pv_size
-            * solar_degradation(solar_lifetime)[0][
-                8760 * (simulation.end_year - simulation.start_year)
-            ],
-            "Final storage size": storage_size
-            * np.min(battery_health["Battery health"]),
-            "Diesel capacity": diesel_capacity,
-        },
-        index=["System details"],
-    )
+    system_details = {
+        "start_year": simulation.start_year,
+        "end_year": simulation.end_year,
+        "initial_pv_size": pv_size,
+        "initial_storage_size": storage_size,
+        "final_pv_size": pv_size
+        * solar_degradation(solar_lifetime)[0][
+            8760 * (simulation.end_year - simulation.start_year)
+        ],
+        "final_storage_size": storage_size * np.min(battery_health["Battery health"]),
+        "diesel_capacity": diesel_capacity,
+    }
 
     # End simulation timer
     timer_end = datetime.datetime.now()
