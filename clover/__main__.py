@@ -17,6 +17,7 @@ the clover module from the command-line interface.
 
 """
 
+from argparse import Namespace
 import logging
 import os
 import sys
@@ -88,45 +89,13 @@ CLOVER_HEADER_STRING = """
 
 """
 
-# Device inputs file:
-#   The relative path to the device-inputs file.
-DEVICE_INPUTS_FILE = os.path.join("load", "devices.yaml")
+# Done message:
+#   The message to display when a task was successful.
+DONE = "[   DONE   ]"
 
-# Device utilisation template filename:
-#   The template filename of device-utilisation profiles used for parsing the files.
-DEVICE_UTILISATION_TEMPLATE_FILENAME = "{device}_times.csv"
-
-# Device utilisations input directory:
-#   The relative path to the directory contianing the device-utilisaion information.
-DEVICE_UTILISATIONS_INPUT_DIRECTORY = os.path.join("load", "device_utilisation")
-
-# Diesel inputs file:
-#   The relative path to the diesel-inputs file.
-DIESEL_INPUTS_FILE = os.path.join("generation", "diesel", "diesel_inputs.yaml")
-
-# Energy-system inputs file:
-#   The relative path to the energy-system-inputs file.
-ENERGY_SYSTEM_INPUTS_FILE = os.path.join("simulation", "energy_system.yaml")
-
-# Grid inputs file:
-#   The relative path to the grid-inputs file.
-GRID_INPUTS_FILE = os.path.join("generation", "grid", "grid_inputs.csv")
-
-# Inputs directory:
-#   The directory containing user inputs.
-INPUTS_DIRECTORY = "inputs"
-
-# Kerosene filepath:
-#   The path to the kerosene information file which needs to be provided for CLOVER.
-KEROSENE_TIMES_FILE = os.path.join("load", "device_utilisation", "kerosene_times.csv")
-
-# Kerosene utilisation filepath:
-#   The path to the kerosene utilisation profile.
-KEROSENE_USAGE_FILE = os.path.join("load", "device_usage", "kerosene_in_use.csv")
-
-# Location inputs file:
-#   The relative path to the location inputs file.
-LOCATION_INPUTS_FILE = os.path.join("location_data", "location_inputs.yaml")
+# Failed message:
+#   The message to display when a task has failed.
+FAILED = "[  FAILED  ]"
 
 # Logger name:
 #   The name to use for the main logger for CLOVER
@@ -136,22 +105,6 @@ LOGGER_NAME = "clover"
 #   The number of CPUs to use, which dictates the number of workers to use for parllel
 #   jobs.
 NUM_WORKERS = 8
-
-# Scenario inputs file:
-#   The relative path to the scenario inputs file.
-SCENARIO_INPUTS_FILE = os.path.join("scenario", "scenario_inputs.yaml")
-
-# Simulation inputs file:
-#   The relative path to the simulation inputs file.
-SIMULATION_INPUTS_FILE = os.path.join("simulation", "simulation.yaml")
-
-# Simulation outputs folder:
-#   The folder into which outputs should be saved.
-SIMULATION_OUTPUTS_FOLDER = os.path.join("outputs", "simulation_outputs")
-
-# Solar inputs file:
-#   The relative path to the solar inputs file.
-SOLAR_INPUTS_FILE = os.path.join("generation", "solar", "solar_generation_inputs.yaml")
 
 
 def _check_location(location: str, logger: logging.Logger) -> bool:
@@ -202,6 +155,27 @@ def _check_location(location: str, logger: logging.Logger) -> bool:
     return True
 
 
+def _get_operating_mode(parsed_args: Namespace) -> OperatingMode:
+    """
+    Determine the operating mode for CLOVER based on the command-line arguments.
+
+    Inputs:
+        - parsed_args:
+            The parsed command-line arguments.
+
+    Outputs:
+        - The operating mode to use for the run.
+
+    """
+
+    # Try to determine the operating mode.
+    if parsed_args.simulation:
+        return OperatingMode.SIMULATION
+    if parsed_args.optimisation:
+        return OperatingMode.OPTIMISATION
+    return OperatingMode.PROFILE_GENERATION
+
+
 def main(args: List[Any]) -> None:
     """
     The main module for CLOVER executing all functionality as appropriate.
@@ -236,22 +210,19 @@ def main(args: List[Any]) -> None:
 
     print(CLOVER_HEADER_STRING)
 
-    # Try to determine the operating mode.
-    if parsed_args.simulation:
-        operating_mode = OperatingMode.SIMULATION
+    operating_mode = _get_operating_mode(parsed_args)
+    if operating_mode == OperatingMode.SIMULATION:
         logger.info(
             "A single CLOVER simulation will be run for locatation '%s'.",
             parsed_args.location,
         )
         print(f"A single CLOVER simulation will be run for {parsed_args.location}.")
-    elif parsed_args.optimisation:
-        operating_mode = OperatingMode.OPTIMISATION
+    if operating_mode == OperatingMode.OPTIMISATION:
         logger.info(
             "A CLOVER optimisation will be run for location '%s'.", parsed_args.location
         )
         print(f"A CLOVER optimisation will be run for {parsed_args.location}.")
-    else:
-        operating_mode = OperatingMode.PROFILE_GENERATION
+    if operating_mode == OperatingMode.PROFILE_GENERATION:
         logger.info("No CLI mode was specified, CLOVER will only generate profiles.")
         print(
             "Neither `simulation` or `optimisation` specified, running profile "
@@ -263,7 +234,7 @@ def main(args: List[Any]) -> None:
     print("Verifying location information ................................    ", end="")
     logger.info("Checking location %s.", parsed_args.location)
     if not _check_location(parsed_args.location, logger):
-        print("[  FAILED  ]\n")
+        print(FAILED)
         logger.error(
             "%sThe location, '%s', is invalid. Try running the `new_location` script to"
             "identify missing files. See %s for details.%s",
@@ -276,8 +247,7 @@ def main(args: List[Any]) -> None:
     logger.info("Location, '%s', has been verified and is valid.", parsed_args.location)
 
     print(
-        "[   DONE   ]\nParsing input files ........................................... "
-        "   ",
+        f"{DONE}\nParsing input files ...........................................    ",
         end="",
     )
 
@@ -290,174 +260,16 @@ def main(args: List[Any]) -> None:
 
     # Parse the various input files.
     logger.info("Parsing input files.")
-    inputs_directory_relative_path = os.path.join(
-        LOCATIONS_FOLDER_NAME,
-        parsed_args.location,
-        INPUTS_DIRECTORY,
-    )
-
-    try:
-        devices: Set[Device] = {
-            Device.from_dict(entry)
-            for entry in read_yaml(
-                os.path.join(
-                    inputs_directory_relative_path,
-                    DEVICE_INPUTS_FILE,
-                ),
-                logger,
-            )
-        }
-        logger.info("Device inputs successfully parsed.")
-
-        # Add the kerosene device information if it was not provided.
-        if KEROSENE_DEVICE_NAME not in {device.name for device in devices}:
-            logger.info(
-                "%sNo kerosene device information provided in the device file. "
-                "Auto-generating device information.%s",
-                BColours.warning,
-                BColours.endc,
-            )
-            devices.add(load.DEFAULT_KEROSENE_DEVICE)
-            logger.info("Default kerosene device added.")
-
-        device_utilisations: Dict[Device, pd.DataFrame] = dict()
-        for device in devices:
-            try:
-                with open(
-                    os.path.join(
-                        inputs_directory_relative_path,
-                        DEVICE_UTILISATIONS_INPUT_DIRECTORY,
-                        DEVICE_UTILISATION_TEMPLATE_FILENAME.format(device=device.name),
-                    ),
-                    "r",
-                ) as f:
-                    device_utilisations[device] = pd.read_csv(
-                        f,
-                        header=None,
-                        index_col=None,
-                    )
-            except FileNotFoundError:
-                logger.error(
-                    "%sError parsing device-utilisation profile for %s, check that the "
-                    "profile is present and that all device names are consistent.%s",
-                    BColours.fail,
-                    device.name,
-                    BColours.endc,
-                )
-                raise
-
-        diesel_inputs_filepath = os.path.join(
-            inputs_directory_relative_path,
-            DIESEL_INPUTS_FILE,
-        )
-        diesel_inputs = read_yaml(
-            diesel_inputs_filepath,
-            logger,
-        )
-        logger.info("Diesel inputs successfully parsed.")
-
-        energy_system_inputs_filepath = os.path.join(
-            inputs_directory_relative_path, ENERGY_SYSTEM_INPUTS_FILE
-        )
-        minigrid = energy_system.Minigrid.from_dict(
-            read_yaml(energy_system_inputs_filepath, logger)
-        )
-        logger.info("Energy-system inputs successfully parsed.")
-
-        with open(
-            os.path.join(
-                inputs_directory_relative_path,
-                GRID_INPUTS_FILE,
-            ),
-            "r",
-        ) as grid_inputs_file:
-            grid_inputs = pd.read_csv(
-                grid_inputs_file,
-                index_col=0,
-            )
-        logger.info("Grid inputs successfully parsed.")
-
-        location = Location.from_dict(
-            read_yaml(
-                os.path.join(
-                    inputs_directory_relative_path,
-                    LOCATION_INPUTS_FILE,
-                ),
-                logger,
-            )
-        )
-        logger.info("Location inputs successfully parsed.")
-
-        scenario_inputs = read_yaml(
-            os.path.join(
-                inputs_directory_relative_path,
-                SCENARIO_INPUTS_FILE,
-            ),
-            logger,
-        )
-        try:
-            scenario = Scenario.from_dict(scenario_inputs)
-        except Exception as e:
-            logger.error(
-                "%sError generating scenario from inputs file: %s%s",
-                BColours.fail,
-                str(e),
-                BColours.endc,
-            )
-            raise
-        logger.info("Scenario inputs successfully parsed.")
-
-        simulation = Simulation.from_dict(
-            read_yaml(
-                os.path.join(
-                    inputs_directory_relative_path,
-                    SIMULATION_INPUTS_FILE,
-                ),
-                logger,
-            )
-        )
-
-        solar_generation_inputs = read_yaml(
-            os.path.join(
-                inputs_directory_relative_path,
-                SOLAR_INPUTS_FILE,
-            ),
-            logger,
-        )
-        logger.info("Solar generation inputs successfully parsed.")
-    except FileNotFoundError as e:
-        print("[  FAILED  ]\n")
-        logger.error(
-            "%sNot all input files present. See %s for details: %s%s",
-            BColours.fail,
-            "{}.log".format(os.path.join(LOGGER_DIRECTORY, LOGGER_NAME)),
-            str(e),
-            BColours.endc,
-        )
-        raise
-    except Exception as e:
-        print("[  FAILED  ]\n")
-        logger.error(
-            "%sAn unexpected error occured parsing input files. See %s for details: "
-            "%s%s",
-            BColours.fail,
-            "{}.log".format(os.path.join(LOGGER_DIRECTORY, LOGGER_NAME)),
-            str(e),
-            BColours.endc,
-        )
-        raise
 
     logger.info("All input files successfully parsed.")
-    print(
-        "[   DONE   ]\nGenerating necessary profiles",
-        end="\n",
-    )
+    print(DONE)
+    print("Generating necessary profiles", end="\n")
 
     # Generate and save the solar data for each year as a background task.
     logger.info("Beginning solar-data fetching.")
     solar_data_thread = solar.SolarDataThread(
         os.path.join(auto_generated_files_directory, "solar"),
-        location,
+        parsed_args.location,
         parsed_args.regenerate,
         solar_generation_inputs,
     )
@@ -538,8 +350,8 @@ def main(args: List[Any]) -> None:
 
     print(
         "Generating necessary profiles ................................. "
-        "   [   DONE   ]\n"
-        "Beginning CLOVER simulation run ...............................    ",
+        "   {}\n".format(DONE)
+        + "Beginning CLOVER simulation run ...............................    ",
         end="",
     )
 

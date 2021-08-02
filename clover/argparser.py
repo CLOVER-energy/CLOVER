@@ -1,11 +1,11 @@
 #!/usr/bin/python3
 ########################################################################################
-# argparser.py - Argument-parsing code for CLOVER.
-#
-# Author: Ben Winchester
-# Copyright: Ben Winchester, 2021
-# Date created: 13/07/2021
-# License: Open source
+# argparser.py - Argument-parsing code for CLOVER.                                     #
+#                                                                                      #
+# Author: Ben Winchester                                                               #
+# Copyright: Ben Winchester, 2021                                                      #
+# Date created: 13/07/2021                                                             #
+# License: Open source                                                                 #
 ########################################################################################
 """
 argparser.py - The argument-parsing module for CLOVER.
