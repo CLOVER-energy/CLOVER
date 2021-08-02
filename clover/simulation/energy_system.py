@@ -180,6 +180,7 @@ def _get_processed_load_profile(scenario: Scenario, total_load: pd.DataFrame):
 def _get_storage_profile(
     *,
     grid_profile: pd.DataFrame,
+    kerosene_usage: pd.DataFrame,
     minigrid: Minigrid,
     scenario: Scenario,
     solar_lifetime: int,
@@ -195,6 +196,8 @@ def _get_storage_profile(
     Inputs:
         - grid_profile:
             The relevant grid profile, based on the scenario, for the simulation.
+        - kerosene_usage:
+            The kerosene usage.
         - minigrid:
             The energy system being modelled.
         - scenario:
@@ -283,9 +286,6 @@ def _get_storage_profile(
             .add((storage_profile < 0).mul(renewables_energy))
         )
 
-    # Get kerosene usage
-    kerosene_usage = pd.DataFrame(self.kerosene_usage[start_hour:end_hour].values)
-
     load_energy.columns = ["Load energy (kWh)"]
     renewables_energy.columns = ["Renewables energy supplied (kWh)"]
     renewables_energy_used_directly.columns = ["Renewables energy used (kWh)"]
@@ -306,6 +306,7 @@ def _get_storage_profile(
 def run_simulation(
     minigrid: Minigrid,
     grid_profile: pd.DataFrame,
+    kerosene_usage: pd.DataFrame,
     location: Location,
     pv_size: float,
     scenario: Scenario,
@@ -326,8 +327,8 @@ def run_simulation(
             The energy system being considered.
         - grid_profile:
             The grid-availability profile.
-        - kerosene_profile:
-            The kerosene profile.
+        - kerosene_usage:
+            The kerosene-usage profile.
         - location:
             The location being considered.
         - pv_size:
@@ -387,8 +388,9 @@ def run_simulation(
         storage_profile,
         kerosene_profile,
     ) = _get_storage_profile(
-        minigrid=minigrid,
         grid_profile=grid_profile,
+        kerosene_usage=kerosene_usage,
+        minigrid=minigrid,
         scenario=scenario,
         solar_lifetime=solar_lifetime,
         total_solar_output=total_solar_output,

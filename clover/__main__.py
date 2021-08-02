@@ -116,13 +116,11 @@ INPUTS_DIRECTORY = "inputs"
 
 # Kerosene filepath:
 #   The path to the kerosene information file which needs to be provided for CLOVER.
-KEROSENE_TIMES_FILE = os.path.join(
-    "load", "device_utilisation", "kerosene_times.csv"
-)
+KEROSENE_TIMES_FILE = os.path.join("load", "device_utilisation", "kerosene_times.csv")
 
 # Kerosene utilisation filepath:
 #   The path to the kerosene utilisation profile.
-KEROSENE_UTILISATION_FILE = os.path.join("load", "device_usage", "kerosene_in_use.csv")
+KEROSENE_USAGE_FILE = os.path.join("load", "device_usage", "kerosene_in_use.csv")
 
 # Location inputs file:
 #   The relative path to the location inputs file.
@@ -558,10 +556,9 @@ def main(args: List[Any]) -> None:
 
     # Load the relevant kerosene profile.
     with open(
-        os.path.join(
-            auto_generated_files_directory, "load", 
-        )
-    )
+        os.path.join(auto_generated_files_directory, KEROSENE_USAGE_FILE), "r"
+    ) as f:
+        kerosene_usage = pd.read_csv(f, index_col=0)
 
     # * Run a simulation or optimisation as appropriate.
     if operating_mode == OperatingMode.SIMULATION:
@@ -569,6 +566,7 @@ def main(args: List[Any]) -> None:
             energy_system.run_simulation(
                 minigrid,
                 grid_profile,
+                kerosene_usage,
                 location,
                 parsed_args.pv_system_size,
                 scenario,
