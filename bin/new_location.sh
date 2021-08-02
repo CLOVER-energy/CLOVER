@@ -12,5 +12,5 @@
 
 export PYTHONPATH=$PYTHONPATH:clover
 python3 -m clover.scripts.new_location $@ \
-    && echo "New location '$1' successfully created." \
+    && echo "New location '$1' successfully created/updated." \
     || echo "New location generation failed, see /logs for details."
