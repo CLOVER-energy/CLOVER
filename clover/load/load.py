@@ -58,15 +58,19 @@ __all__ = (
 DEFAULT_KEROSENE_DEVICE = Device(
     False, DemandType.DOMESTIC, 1, 0, 0, 0, 0, KEROSENE_DEVICE_NAME
 )
+
 # Load logger name:
 #   The name to use for the load module logger.
 LOAD_LOGGER_NAME: str = "load"
+
 # Maximum column name:
 #   The name to use for the "maximum" column in the yearly-load statistics.
 MAXIMUM: str = "Maximum"
+
 # Mean column name:
 #   The name to use for the "mean" column in the yearly-load statistics.
 MEAN: str = "Mean"
+
 # Median column name:
 #   The name to use for the "median" column in the yearly-load statistics.
 MEDIAN: str = "Median"
