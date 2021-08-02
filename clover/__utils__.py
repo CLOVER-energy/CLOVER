@@ -44,6 +44,7 @@ __all__ = (
     "get_logger",
     "hourly_profile_to_daily_sum",
     "InvalidLocationError",
+    "KEROSENE_DEVICE_NAME",
     "LOCATIONS_FOLDER_NAME",
     "LOGGER_DIRECTORY",
     "monthly_profile_to_daily_profile",
@@ -54,6 +55,10 @@ __all__ = (
     "Scenario",
 )
 
+
+# Kerosene device name:
+#   The name used to denote the kerosene device.
+KEROSENE_DEVICE_NAME = "kerosene"
 
 # Locations folder name:
 #   The name of the locations folder.

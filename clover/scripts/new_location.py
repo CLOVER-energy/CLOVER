@@ -178,16 +178,25 @@ def _parse_args(args: List[Any]) -> argparse.Namespace:
 
 
 def create_new_location(
-    logger: logging.Logger, parsed_args: argparse.Namespace
+    from_existing: str,
+    location: str,
+    logger: logging.Logger,
+    update: bool,
 ) -> None:
     """
     Creates a new location based on the specified inputs.
 
     Inputs:
+        - from_existing:
+            The name of an existing location from which to copy across files.
+        - location:
+            The name of the new location to create.
         - logger:
             The logger to use for the run.
         - parsed_args:
             The parsed command-line arguments.
+        - update:
+            Whether the new location should be updated.
 
     """
 
@@ -197,11 +206,11 @@ def create_new_location(
 
     # Process the new-location data into a usable format.
     new_location_directory = new_location_data[0][DIRECTORY].format(
-        location=parsed_args.location, locations_folder_name=LOCATIONS_FOLDER_NAME
+        location=location, locations_folder_name=LOCATIONS_FOLDER_NAME
     )
 
     # If the new location already exists and the script is not run to update, then exit.
-    if os.path.isdir(new_location_directory) and not parsed_args.update:
+    if os.path.isdir(new_location_directory) and not update:
         logger.error(
             "The new location directory already exists and the script was not run with "
             "--update."
@@ -209,39 +218,33 @@ def create_new_location(
         sys.exit(1)
 
     # Generate files as per the hard-coded directory structure.
-    if parsed_args.update:
+    if update:
         logger.info(
             "Updating location folder with new and updated files %s.",
-            parsed_args.location,
+            location,
         )
     else:
-        logger.info(
-            "Creating new-location folder for location %s.", parsed_args.location
-        )
+        logger.info("Creating new-location folder for location %s.", location)
     _create_folder_and_contents(
         new_location_data[0][CONTENTS], new_location_directory, logger, os.getcwd()
     )
-    logger.info(
-        "New location folder for %s successfully created.", parsed_args.location
-    )
+    logger.info("New location folder for %s successfully created/updated.", location)
 
     # Copy across files from the existing structure if they exist, otherwise, generate
     # them afresh.
-    if parsed_args.from_existing is not None:
-        logger.info(
-            "Copying files across from existing location %s.", parsed_args.from_existing
-        )
+    if from_existing is not None:
+        logger.info("Copying files across from existing location %s.", from_existing)
         # Determine the existing location to copy files from and report an error if it
         # does not exist.
         existing_location_directory = new_location_data[0][DIRECTORY].format(
-            location=parsed_args.from_existing,
+            location=from_existing,
             locations_folder_name=LOCATIONS_FOLDER_NAME,
         )
         if not os.path.isdir(existing_location_directory):
             logger.error(
                 "The new-locations script was called to create a location from an "
                 "existing location, but the existing location, %s, could not be found.",
-                parsed_args.from_existing,
+                from_existing,
             )
             raise FileNotFoundError(
                 "The existing location, {}, could not be found.".format(
@@ -299,7 +302,9 @@ def main(args: List[Any]) -> None:
     logger = get_logger(LOGGER_NAME)
     logger.info("New location script called with arguments: %s", args)
     parsed_args = _parse_args(args)
-    create_new_location(logger, parsed_args)
+    create_new_location(
+        parsed_args.from_existing, parsed_args.location, logger, parsed_args.update
+    )
     logger.info("New-location script complete. Exiting.")
 
 

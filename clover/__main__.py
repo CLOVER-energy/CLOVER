@@ -30,6 +30,7 @@ import pandas as pd
 from . import argparser
 from .generation import grid, solar
 from .load import load
+from .scripts import new_location
 from .simulation import energy_system
 
 from atpbar import atpbar
@@ -39,6 +40,7 @@ from .__utils__ import (
     Device,
     get_logger,
     InvalidLocationError,
+    KEROSENE_DEVICE_NAME,
     Location,
     LOCATIONS_FOLDER_NAME,
     LOGGER_DIRECTORY,
@@ -104,6 +106,11 @@ GRID_INPUTS_FILE = os.path.join("generation", "grid", "grid_inputs.csv")
 # Inputs directory:
 #   The directory containing user inputs.
 INPUTS_DIRECTORY = "inputs"
+# Kerosene filepath:
+#   The path to the kerosene information file which needs to be provided for CLOVER.
+KEROSENE_TIMES_FILEPATH = os.path.join(
+    "load", "device_utilisation", "kerosene_times.csv"
+)
 # Location inputs file:
 #   The relative path to the location inputs file.
 LOCATION_INPUTS_FILE = os.path.join("location_data", "location_inputs.yaml")
@@ -155,12 +162,20 @@ def _check_location(location: str, logger: logging.Logger) -> bool:
             "The location, {}, could not be found.".format(location)
         )
 
-    # Read in the information about the files that should be present.
-    # new_location_data = read_yaml(NEW_LOCATION_DATA_FILE)
-    # new_location_data[0][DIRECTORY].format(
-    #     location=location, locations_folder_name=LOCATIONS_FOLDER_NAME
-    # )
-    # logger.info("New-location information succesfully parsed.")
+    if not os.path.isfile(
+        os.path.join(
+            LOCATIONS_FOLDER_NAME, location, INPUTS_DIRECTORY, KEROSENE_TIMES_FILEPATH
+        )
+    ):
+        logger.info(
+            "%sThe specified location, '%s', does not contain a kerosene times file. "
+            "The auto-generation script will be run to replace the lost file.%s",
+            BColours.warning,
+            location,
+            BColours.endc,
+        )
+        new_location.create_new_location(None, location, logger, True)
+        logger.info("%s succesfully updated with missing files.", location)
 
     return True
 
@@ -271,6 +286,17 @@ def main(args: List[Any]) -> None:
             )
         }
         logger.info("Device inputs successfully parsed.")
+
+        # Add the kerosene device information if it was not provided.
+        if KEROSENE_DEVICE_NAME not in {device.name for device in devices}:
+            logger.info(
+                "%sNo kerosene device information provided in the device file. "
+                "Auto-generating device information.%s",
+                BColours.warning,
+                BColours.endc,
+            )
+            devices.add(load.DEFAULT_KEROSENE_DEVICE)
+            logger.info("Default kerosene device added.")
 
         device_utilisations: Dict[Device, pd.DataFrame] = dict()
         for device in devices:
