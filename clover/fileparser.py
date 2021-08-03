@@ -61,6 +61,14 @@ DIESEL_INPUTS_FILE = os.path.join("generation", "diesel", "diesel_inputs.yaml")
 #   The relative path to the energy-system-inputs file.
 ENERGY_SYSTEM_INPUTS_FILE = os.path.join("simulation", "energy_system.yaml")
 
+# Finance inputs file:
+#   The relative path to the finance-inputs file.
+FINANCE_INPUTS_FILE = os.path.join("impact", "finance_inputs.yaml")
+
+# GHG inputs file:
+#   The relative path to the GHG inputs file.
+GHG_INPUTS_FILE = os.path.join("impact", "ghg_inputs.yaml")
+
 # Grid inputs file:
 #   The relative path to the grid-inputs file.
 GRID_INPUTS_FILE = os.path.join("generation", "grid", "grid_inputs.csv")
@@ -87,7 +95,7 @@ SCENARIO_INPUTS_FILE = os.path.join("scenario", "scenario_inputs.yaml")
 
 # Simulation inputs file:
 #   The relative path to the simulation inputs file.
-SIMULATION_INPUTS_FILE = os.path.join("simulation", "simulation.yaml")
+SIMULATIONS_INPUTS_FILE = os.path.join("simulation", "simulations.yaml")
 
 # Solar inputs file:
 #   The relative path to the solar inputs file.
@@ -101,10 +109,13 @@ def parse_input_files(
     Dict[Device, pd.DataFrame],
     Dict[str, Any],
     energy_system.Minigrid,
+    Dict[str, Any],
+    Dict[str, Any],
     pd.DataFrame,
     Scenario,
     Simulation,
     Dict[str, Any],
+    Dict[str, str],
 ]:
     """
     Parse the various input files and return content-related information.
@@ -120,10 +131,13 @@ def parse_input_files(
             - device_utilisations,
             - diesel_inputs,
             - minigrid,
+            - finance_inputs,
+            - ghg_inputs,
             - grid_inputs,
             - scenario,
-            - simulation,
-            - solar_generation_inputs.
+            - simulations, the `list` of simulations to run,
+            - solar_generation_inputs,
+            - a `dict` containing information about the input files used.
 
     """
 
@@ -133,13 +147,14 @@ def parse_input_files(
         INPUTS_DIRECTORY,
     )
 
+    device_inputs_filepath = os.path.join(
+        inputs_directory_relative_path,
+        DEVICE_INPUTS_FILE,
+    )
     devices: Set[Device] = {
         Device.from_dict(entry)
         for entry in read_yaml(
-            os.path.join(
-                inputs_directory_relative_path,
-                DEVICE_INPUTS_FILE,
-            ),
+            device_inputs_filepath,
             logger,
         )
     }
@@ -200,11 +215,22 @@ def parse_input_files(
     )
     logger.info("Energy-system inputs successfully parsed.")
 
+    finance_inputs_filepath = os.path.join(
+        inputs_directory_relative_path, FINANCE_INPUTS_FILE
+    )
+    finance_inputs = read_yaml(finance_inputs_filepath, logger)
+    logger.info("Finance inputs successfully parsed.")
+
+    ghg_inputs_filepath = os.path.join(inputs_directory_relative_path, GHG_INPUTS_FILE)
+    ghg_inputs = read_yaml(ghg_inputs_filepath, logger)
+    logger.info("GHG inputs successfully parsed.")
+
+    grid_inputs_filepath = os.path.join(
+        inputs_directory_relative_path,
+        GRID_INPUTS_FILE,
+    )
     with open(
-        os.path.join(
-            inputs_directory_relative_path,
-            GRID_INPUTS_FILE,
-        ),
+        grid_inputs_filepath,
         "r",
     ) as grid_inputs_file:
         grid_inputs = pd.read_csv(
@@ -213,22 +239,24 @@ def parse_input_files(
         )
     logger.info("Grid inputs successfully parsed.")
 
+    location_inputs_filepath = os.path.join(
+        inputs_directory_relative_path,
+        LOCATION_INPUTS_FILE,
+    )
     location = Location.from_dict(
         read_yaml(
-            os.path.join(
-                inputs_directory_relative_path,
-                LOCATION_INPUTS_FILE,
-            ),
+            location_inputs_filepath,
             logger,
         )
     )
     logger.info("Location inputs successfully parsed.")
 
+    scenario_inputs_filepath = os.path.join(
+        inputs_directory_relative_path,
+        SCENARIO_INPUTS_FILE,
+    )
     scenario_inputs = read_yaml(
-        os.path.join(
-            inputs_directory_relative_path,
-            SCENARIO_INPUTS_FILE,
-        ),
+        scenario_inputs_filepath,
         logger,
     )
     try:
@@ -243,32 +271,50 @@ def parse_input_files(
         raise
     logger.info("Scenario inputs successfully parsed.")
 
-    simulation = Simulation.from_dict(
-        read_yaml(
-            os.path.join(
-                inputs_directory_relative_path,
-                SIMULATION_INPUTS_FILE,
-            ),
-            logger,
-        )
+    simulations_inputs_filepath = os.path.join(
+        inputs_directory_relative_path,
+        SIMULATIONS_INPUTS_FILE,
     )
+    simulations_file_contents = read_yaml(
+        simulations_inputs_filepath,
+        logger,
+    )
+    simulations = [Simulation.from_dict(entry) for entry in simulations_file_contents]
 
+    solar_generation_inputs_filepath = os.path.join(
+        inputs_directory_relative_path,
+        SOLAR_INPUTS_FILE,
+    )
     solar_generation_inputs = read_yaml(
-        os.path.join(
-            inputs_directory_relative_path,
-            SOLAR_INPUTS_FILE,
-        ),
+        solar_generation_inputs_filepath,
         logger,
     )
     logger.info("Solar generation inputs successfully parsed.")
+
+    # Generate a dictionary with information about the input files used.
+    input_file_info = {
+        "devices": device_inputs_filepath,
+        "diesel_inputs": diesel_inputs_filepath,
+        "energy_system": energy_system_inputs_filepath,
+        "finance_inputs": finance_inputs_filepath,
+        "ghg_inputs": ghg_inputs_filepath,
+        "grid_inputs": grid_inputs_filepath,
+        "location_inputs": location_inputs_filepath,
+        "scenario": scenario_inputs_filepath,
+        "simularion": simulations_inputs_filepath,
+        "solar_inputs": solar_generation_inputs_filepath,
+    }
 
     return (
         device_utilisations,
         diesel_inputs,
         minigrid,
+        finance_inputs,
+        ghg_inputs,
         grid_inputs,
         location,
         scenario,
-        simulation,
+        simulations,
         solar_generation_inputs,
+        input_file_info,
     )
