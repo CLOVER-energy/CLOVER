@@ -505,14 +505,10 @@
                 number_of_iterations: 3 # number of iterations to carry out
                 pv_size:
                   min: 1 # [kWp]
-                  max: 1 # [kWp]
                   step: 1 # [kWp]
-                  increase: 0 # [kWp], set this to 0 to ignore.
                 storage_size:
                   min: 1 # [kWp]
-                  max: 1 # [kWp]
                   step: 1 # [kWp]
-                  increase: 0 # [kWp], set this to 0 to ignore.
 
             - file: "optimisations.yaml"
               contents: |-
@@ -525,6 +521,26 @@
                 # Date created: 14/07/2021                                                     #
                 # License: Open source                                                         #
                 ################################################################################
+
+                # Valid optimisation criteria, usually set to "minimise":
+                #   CRITERION                       UNIT
+                #   blackouts
+                #   lcue                            $/kWh
+                #   emissions_intensity             gCO2/kWh
+                #   unmet_energy_fraction
+                #   cumulative_cost                 $
+                #   cumulative_system_cost          $
+                #   total_cost                      $
+                #   total_system_cost               $
+                #   cumulative_ghgs                 kgCO2eq
+                #   cumulative_system_ghgs          kgCO2eq
+                #   total_ghgs                      kgCO2eq
+                #   total_system_ghgs               kgCO2eq
+                # Valid optimisation criteria, usually set to "maximise":
+                #   renewables_fraction
+                #   kerosene_displacement
+                #   kerosene_cost_mitigated         $
+                #   kerosene_ghgs_mitigated         kgCO2eq
 
                 - optimisation_criteria:
                     - lcue: minimise # Name of the column and whether to maximise/minimise.

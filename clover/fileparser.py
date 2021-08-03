@@ -12,6 +12,7 @@ fileparser.py - The argument-parsing module for CLOVER.
 
 """
 
+from clover import optimisation
 from clover.scripts.new_location import DIRECTORY
 import os
 
@@ -22,7 +23,7 @@ import pandas as pd
 
 from . import load
 from .simulation import energy_system
-from .optimisation.optimisation import Optimisation
+from .optimisation.optimisation import Optimisation, OptimisationParameters
 
 from .__utils__ import (
     BColours,
@@ -118,7 +119,7 @@ def parse_input_files(
     Dict[str, Any],
     Dict[str, Any],
     pd.DataFrame,
-    Dict[str, Any],
+    OptimisationParameters,
     Set[Optimisation],
     Scenario,
     Set[Simulation],
@@ -267,6 +268,16 @@ def parse_input_files(
         inputs_directory_relative_path, OPTIMISATION_INPUTS_FILE
     )
     optimisation_inputs = read_yaml(optimisation_inputs_filepath, logger)
+    try:
+        optimisation_parameters = OptimisationParameters.from_dict(optimisation_inputs)
+    except Exception as e:
+        logger.error(
+            "%sAn error occurred parsing the optimisation inputs file: %s%s",
+            BColours.fail,
+            str(e),
+            BColours.endc,
+        )
+        raise
     logger.info("Optimisation inputs successfully parsed.")
 
     if optimisations_file is not None:
@@ -354,7 +365,7 @@ def parse_input_files(
         ghg_inputs,
         grid_inputs,
         location,
-        optimisation_inputs,
+        optimisation_parameters,
         optimisations,
         scenario,
         simulations,
