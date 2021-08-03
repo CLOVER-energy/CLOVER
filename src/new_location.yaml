@@ -505,10 +505,12 @@
                 number_of_iterations: 3 # number of iterations to carry out
                 pv_size:
                   min: 1 # [kWp]
+                  max: 1 # [kWp]
                   step: 1 # [kWp]
                 storage_size:
-                  min: 1 # [kWp]
-                  step: 1 # [kWp]
+                  min: 1 # [kWh]
+                  max: 1 # [kWh]
+                  step: 1 # [kWh]
 
             - file: "optimisations.yaml"
               contents: |-
