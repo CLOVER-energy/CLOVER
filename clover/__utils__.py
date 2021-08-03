@@ -793,7 +793,7 @@ class Scenario:
 
         diesel_scenario = DieselScenario(
             scenario_inputs["diesel"]["backup"]["threshold"]
-            if scenario_inputs["diesel"]["mode"] == DieselMode.BACKUP
+            if scenario_inputs["diesel"]["mode"] == DieselMode.BACKUP.value
             else None,
             DieselMode(scenario_inputs["diesel"]["mode"]),
         )
