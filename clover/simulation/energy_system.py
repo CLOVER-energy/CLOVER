@@ -184,7 +184,7 @@ def _get_storage_profile(
     minigrid: Minigrid,
     scenario: Scenario,
     solar_lifetime: int,
-    total_solar_output: pd.DataFrame,
+    total_solar_power_produced: pd.DataFrame,
     end_hour: int = 4,
     pv_size: int = 10,
     start_hour: int = 0,
@@ -204,7 +204,7 @@ def _get_storage_profile(
             The scenatio being considered.
         - solar_lifetime:
             The lifetime of the solar setup.
-        - total_solar_output:
+        - total_solar_power_produced:
             The total solar power output over the time period.
         - end_year:
             End year of this simulation period
@@ -225,7 +225,7 @@ def _get_storage_profile(
     """
 
     # Initialise power generation, including degradation of PV
-    pv_generation_array = total_solar_output * pv_size
+    pv_generation_array = total_solar_power_produced * pv_size
     solar_degradation_array = solar_degradation(solar_lifetime)[
         0 : (end_hour - start_hour)
     ]
@@ -315,7 +315,7 @@ def run_simulation(
     solar_lifetime: int,
     storage_size: float,
     total_load: pd.DataFrame,
-    total_solar_output: pd.DataFrame,
+    total_solar_power_produced: pd.DataFrame,
 ) -> Tuple[float, pd.DataFrame, Dict[str, Any]]:
     """
     Simulates a minigrid system
@@ -344,7 +344,7 @@ def run_simulation(
             Amount of storage in kWh
         - total_load:
             The total load in Watts.
-        - total_solar_output:
+        - total_solar_power_produced:
             The total energy outputted by the solar system.
 
     Outputs:
@@ -400,7 +400,7 @@ def run_simulation(
         minigrid=minigrid,
         scenario=scenario,
         solar_lifetime=solar_lifetime,
-        total_solar_output=total_solar_output,
+        total_solar_power_produced=total_solar_power_produced,
         end_hour=end_hour,
         pv_size=pv_size,
         start_hour=start_hour,

@@ -30,21 +30,31 @@ functions which can be used to carry out an optimisation:
 
 """
 
+from clover.generation.solar import total_solar_output
 import dataclasses
 import datetime
 import enum
 import os
 
 from logging import Logger
-from typing import Any, Dict
+from typing import Any, Dict, Optional, Tuple
 
 import numpy as np
 import pandas as pd
 
+from atpbar import atpbar
+
 from ..impact import finance
 from ..impact import ghgs
 from ..simulation import energy_system
-from ..__utils__ import BColours, hourly_profile_to_daily_sum, LOCATIONS_FOLDER_NAME
+from ..__utils__ import (
+    BColours,
+    Scenario,
+    hourly_profile_to_daily_sum,
+    Location,
+    LOCATIONS_FOLDER_NAME,
+    Simulation,
+)
 
 __all__ = (
     "multiple_optimisation_step",
@@ -237,11 +247,19 @@ class OptimisationParameters:
     .. attribute:: number_of_iterations
         The number of iterations to run.
 
+    .. attribute:: pv_size_max
+        The maximum size of PV capacity to be considered, used only as an initial value,
+        measured in kWp.
+
     .. attribute:: pv_size_min
         The minimum size of PV capacity to be considered, measured in kWp.
 
     .. attribute:: pv_size_step
         The optimisation resolution for the PV size, measured in kWp.
+
+    .. attribute:: storage_size_max
+        The maximum size of storage capacity to be considered, used only as an initial
+        value, measured in kWh.
 
     .. attribute:: storage_size_min
         The minimum size of storage capacity to be considered, measured in kWh.
@@ -253,8 +271,10 @@ class OptimisationParameters:
 
     iteration_length: int
     number_of_iterations: int
+    pv_size_max: float
     pv_size_min: float
     pv_size_step: float
+    storage_size_max: float
     storage_size_min: float
     storage_size_step: float
 
@@ -272,8 +292,10 @@ class OptimisationParameters:
         return cls(
             optimisation_inputs["iteration_length"],
             optimisation_inputs["number_of_iterations"],
+            optimisation_inputs["pv_size"]["max"],
             optimisation_inputs["pv_size"]["min"],
             optimisation_inputs["pv_size"]["step"],
+            optimisation_inputs["storage_size"]["max"],
             optimisation_inputs["storage_size"]["min"],
             optimisation_inputs["storage_size"]["step"],
         )
@@ -291,17 +313,379 @@ class OptimisationParameters:
         return self.iteration_length * self.number_of_iterations
 
 
-def multiple_optimisation_step(
+@dataclasses.dataclass
+class PVSystemSize:
+    """
+    Used to wrap the pv-system-size information.
+
+    .. attribute:: max
+        The maximum size of the system, measured in kWp.
+
+    .. attribute:: min
+        The minimum size of the system, measured in kWp.
+
+    .. attribute:: step
+        The step to use for the system, measured in kWp.
+
+    """
+
+    max: float
+    min: float
+    step: float
+
+
+@dataclasses.dataclass
+class StorageSystemSize:
+    """
+    Used to wrap the storage-system-size information.
+
+    .. attribute:: max
+        The maximum size of the system, measured in kWh.
+
+    .. attribute:: min
+        The minimum size of the system, measured in kWh.
+
+    .. attribute:: step
+        The step to use for the system, measured in kWh.
+
+    """
+
+    max: float
+    min: float
+    step: float
+
+
+def _simulation_iteration(
+    grid_profile: pd.DataFrame,
+    kerosene_usage: pd.DataFrame,
+    location: Location,
+    minigrid: energy_system.Minigrid,
     optimisation_parameters: OptimisationParameters,
-    previous_systems=pd.DataFrame([]),
-    pv_sizes=[],
-    storage_sizes=[],
-    start_year=0,
-) -> pd.DataFrame:
+    previous_systems: pd.DataFrame,
+    pv_sizes: PVSystemSize,
+    scenario: Scenario,
+    solar_lifetime: int,
+    start_year: int,
+    storage_sizes: StorageSystemSize,
+    total_load: pd.DataFrame,
+    total_solar_power_produced: pd.DataFrame,
+) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+    """
+    Carries out a simulation iteration.
+
+    New simulation iteration i.e. checks sufficiency and stops when criteria is not met,
+    increases system size when no sufficient system exists.
+
+    Inputs:
+        - grid_profile:
+            The grid-availability profile.
+        - kerosene_usage:
+            The kerosene-usage profile.
+        - location:
+            The location being considered.
+        - minigrid:
+            The energy system being considered.
+        - optimisation_parameters:
+            A :class:`OptimisationParameters` instance outlining the optimisation bounds.
+        - previous_system:
+            Appraisal of the system already in place before this simulation period.
+        - pv_sizes:
+            Range of PV sizes.
+        - scenario:
+            The scenatio being considered.
+        - solar_lifetime:
+            The lifetime of the solar setup.
+        - start_year:
+            Start year of the initial optimisation step.
+        - storage_sizes:
+            Range of storage sizes.
+        - total_load:
+            The total load on the system.
+        - total_solar_power_produced:
+            The total solar power output over the time period.
+
+    Outputs:
+        - iteration_results:
+            Three components which include:
+                0. The system appraisals for all of the systems that meet the threshold;
+                1. The largest system that was simulated;
+                2. The previous system that was installed.
+
+    """
+
+    # Initialise
+    pv_sizes_data_frame = pd.DataFrame([pv_sizes.min, pv_sizes.max, pv_sizes.step])
+    storage_sizes = pd.DataFrame(
+        [storage_sizes.min, storage_sizes.max, storage_sizes.step]
+    )
+    system_appraisals = pd.DataFrame([])
+    end_year = start_year + int(optimisation_parameters.iteration_length)
+
+    # Check if largest system is sufficient
+    _, simulation, _ = energy_system.run_simulation(
+        minigrid,
+        grid_profile,
+        kerosene_usage,
+        location,
+        pv_sizes.max,
+        scenario,
+        Simulation(end_year, start_year),
+        solar_lifetime,
+        storage_sizes.max,
+        total_load,
+        total_solar_power_produced,
+    )
+
+    new_appraisal = self.system_appraisal(simulation, previous_systems)
+    #   Increase system size until largest system is sufficient (if necessary)
+    while self.check_threshold(new_appraisal).empty == True:
+        PV_size_max = np.ceil(PV_size_max / PV_size_step) * PV_size_step
+        storage_size_max = (
+            np.ceil(storage_size_max / storage_size_step) * storage_size_step
+        )
+        simulation = energy_system.run_simulation(
+            minigrid,
+            grid_profile,
+            kerosene_usage,
+            location,
+            pv_sizes.max,
+            scenario,
+            Simulation(end_year, start_year),
+            solar_lifetime,
+            storage_sizes.max,
+            total_load,
+            total_solar_power_produced,
+        )
+        new_appraisal = self.system_appraisal(simulation, previous_systems)
+
+        PV_size_max += PV_size_step
+        storage_size_max += storage_size_step
+    #   Create an output for the largest system considered
+    largest_system = pd.DataFrame(
+        {
+            "PV size (max)": PV_size_max,
+            "PV size (step)": PV_size_step,
+            "PV size (min)": PV_size_min,
+            "Storage size (max)": storage_size_max,
+            "Storage size (step)": storage_size_step,
+            "Storage size (min)": storage_size_min,
+            "Start year": start_year,
+            "End year": end_year,
+        },
+        index=["System details"],
+    )
+    #   Return simulated systems to the step size increments (rounding up)
+    PV_size_max = np.ceil(PV_size_max / PV_size_step) * PV_size_step
+    storage_size_max = np.ceil(storage_size_max / storage_size_step) * storage_size_step
+    #   Move down system sizes
+    while PV_size_max >= PV_size_min:
+        iteration_storage_size = storage_size_max
+        while iteration_storage_size >= storage_size_min:
+            simulation = energy_system.run_simulation(
+                minigrid,
+                grid_profile,
+                kerosene_usage,
+                location,
+                pv_sizes.max,
+                scenario,
+                Simulation(end_year, start_year),
+                solar_lifetime,
+                iteration_storage_size,
+                total_load,
+                total_solar_power_produced,
+            )
+            new_appraisal = self.system_appraisal(simulation, previous_systems)
+            if self.check_threshold(new_appraisal).empty == False:
+                system_appraisals = pd.concat(
+                    [system_appraisals, new_appraisal], axis=0
+                )
+            else:
+                break
+            iteration_storage_size -= storage_size_step
+            if iteration_storage_size < 0:
+                break
+        #   Check minimum case where no extra storage is required
+        if iteration_storage_size < storage_size_min:
+            simulation = energy_system.run_simulation(
+                minigrid,
+                grid_profile,
+                kerosene_usage,
+                location,
+                pv_sizes.max,
+                scenario,
+                Simulation(end_year, start_year),
+                solar_lifetime,
+                storage_sizes.min,
+                total_load,
+                total_solar_power_produced,
+            )
+            new_appraisal = self.system_appraisal(simulation, previous_systems)
+            if self.check_threshold(new_appraisal).empty == False:
+                system_appraisals = pd.concat(
+                    [system_appraisals, new_appraisal], axis=0
+                )
+        PV_size_max -= PV_size_step
+        #   Check minimum case where no extra PV is required
+        if (PV_size_max < PV_size_min) & (PV_size_max >= 0):
+            iteration_storage_size = storage_size_max
+            while iteration_storage_size >= storage_size_min:
+
+                simulation = energy_system.run_simulation(
+                    minigrid,
+                    grid_profile,
+                    kerosene_usage,
+                    location,
+                    pv_sizes.min,
+                    scenario,
+                    Simulation(end_year, start_year),
+                    solar_lifetime,
+                    iteration_storage_size,
+                    total_load,
+                    total_solar_power_produced,
+                )
+                new_appraisal = self.system_appraisal(simulation, previous_systems)
+                if self.check_threshold(new_appraisal).empty == False:
+                    system_appraisals = pd.concat(
+                        [system_appraisals, new_appraisal], axis=0
+                    )
+                else:
+                    break
+                iteration_storage_size -= storage_size_step
+            #   Check minimum case where no extra storage is required
+            if (iteration_storage_size < storage_size_min) & (
+                iteration_storage_size >= 0
+            ):
+                simulation = energy_system.run_simulation(
+                    minigrid,
+                    grid_profile,
+                    kerosene_usage,
+                    location,
+                    pv_sizes.max,
+                    scenario,
+                    Simulation(end_year, start_year),
+                    solar_lifetime,
+                    storage_size.min,
+                    total_load,
+                    total_solar_power_produced,
+                )
+                new_appraisal = self.system_appraisal(simulation, previous_systems)
+                if self.check_threshold(new_appraisal).empty == False:
+                    system_appraisals = pd.concat(
+                        [system_appraisals, new_appraisal], axis=0
+                    )
+    iteration_results = tuple([system_appraisals, largest_system, previous_systems])
+    return iteration_results
+
+
+def _optimisation_step(
+    grid_profile: pd.DataFrame,
+    kerosene_usage: pd.DataFrame,
+    location: Location,
+    minigrid: energy_system.Minigrid,
+    optimisation_parameters: OptimisationParameters,
+    previous_systems: pd.DataFrame,
+    pv_sizes: PVSystemSize,
+    scenario: Scenario,
+    solar_lifetime: int,
+    start_year: int,
+    storage_sizes: StorageSystemSize,
+    total_load: pd.DataFrame,
+    total_solar_power_produced: pd.DataFrame,
+):
+    """
+    One optimisation step of the continuous lifetime optimisation
+
+    Inputs:
+        - grid_profile:
+            The grid-availability profile.
+        - kerosene_usage:
+            The kerosene-usage profile.
+        - location:
+            The location being considered.
+        - minigrid:
+            The energy system being considered.
+        - optimisation_parameters:
+            A :class:`OptimisationParameters` instance outlining the optimisation bounds.
+        - previous_system:
+            Appraisal of the system already in place before this simulation period.
+        - pv_sizes:
+            Range of PV sizes.
+        - scenario:
+            The scenatio being considered.
+        - solar_lifetime:
+            The lifetime of the solar setup.
+        - start_year:
+            Start year of the initial optimisation step.
+        - storage_sizes:
+            Range of storage sizes.
+        - total_load:
+            The total load on the system.
+        - total_solar_power_produced:
+            The total solar power output over the time period.
+
+    Outputs:
+        - optimum_system:
+            The optimum system for the group of simulated systems
+
+    """
+
+    iteration_results = _simulation_iteration(
+        grid_profile,
+        kerosene_usage,
+        location,
+        minigrid,
+        optimisation_parameters,
+        previous_systems,
+        pv_sizes,
+        scenario,
+        solar_lifetime,
+        start_year,
+        storage_sizes,
+        total_load,
+        total_solar_power_produced,
+    )
+    optimum_system = _find_optimum_system(iteration_results)
+
+    return optimum_system
+
+
+def multiple_optimisation_step(
+    grid_profile: pd.DataFrame,
+    kerosene_usage: pd.DataFrame,
+    location: Location,
+    minigrid: energy_system.Minigrid,
+    optimisation_parameters: OptimisationParameters,
+    scenario: Scenario,
+    solar_lifetime: int,
+    total_load: pd.DataFrame,
+    total_solar_power_produced: pd.DataFrame,
+    previous_systems: pd.DataFrame = pd.DataFrame([]),
+    pv_sizes: Optional[PVSystemSize] = None,
+    storage_sizes: Optional[StorageSystemSize] = None,
+    start_year: int = 0,
+) -> Tuple[str, pd.DataFrame]:
     """
     Carries out multiple optimisation steps of the continuous lifetime optimisation.
 
     Inputs:
+        - grid_profile:
+            The grid-availability profile.
+        - kerosene_usage:
+            The kerosene-usage profile.
+        - location:
+            The location being considered.
+        - minigrid:
+            The energy system being considered.
+        - optimisation_parameters:
+            A :class:`OptimisationParameters` instance outlining the optimisation bounds.
+        - scenario:
+            The scenatio being considered.
+        - solar_lifetime:
+            The lifetime of the solar setup.
+        - total_load:
+            The total load on the system.
+        - total_solar_power_produced:
+            The total solar power output over the time period.
         - previous_system:
             Appraisal of the system already in place before this simulation period;
         - pv_sizes:
@@ -321,36 +705,73 @@ def multiple_optimisation_step(
     timer_start = datetime.datetime.now()
 
     # Initialise
-    iteration_length = optimisation_inputs["iteration_length"]
-    scenario_length = int(self.optimisation_inputs[1]["Scenario length"])
-    steps = int(scenario_length / iteration_length)
     results = pd.DataFrame([])
-    PV_size_step = float(self.optimisation_inputs[1]["PV size (step)"])
-    storage_size_step = float(self.optimisation_inputs[1]["Storage size (step)"])
-    PV_increase = float(self.optimisation_inputs[1]["PV size (increase)"])
-    storage_increase = float(self.optimisation_inputs[1]["Storage size (increase)"])
+
+    # Use the optimisation-parameter values for the first loop.
+    if pv_sizes is None:
+        pv_sizes = PVSystemSize(
+            optimisation_parameters.pv_size_max,
+            optimisation_parameters.pv_size_min,
+            optimisation_parameters.pv_size_step,
+        )
+    if storage_sizes is None:
+        storage_sizes = StorageSystemSize(
+            optimisation_parameters.storage_size_max,
+            optimisation_parameters.storage_size_min,
+            optimisation_parameters.storage_size_step,
+        )
+
     #   Iterate over each optimisation step
-    for step in range(steps):
-        print("\nStep " + str(step + 1) + " of " + str(steps))
-        step_results = self.optimisation_step(
-            PV_sizes, storage_sizes, previous_systems, start_year
+    for _ in atpbar(
+        range(int(optimisation_parameters.number_of_iterations)),
+        name="optimisation steps",
+    ):
+        step_results = _optimisation_step(
+            grid_profile,
+            kerosene_usage,
+            location,
+            minigrid,
+            optimisation_parameters,
+            previous_systems,
+            pv_sizes,
+            scenario,
+            solar_lifetime,
+            start_year,
+            storage_sizes,
+            total_load,
+            total_solar_power_produced,
         )
         results = pd.concat([results, step_results], axis=0)
         #   Prepare inputs for next optimisation step
-        start_year += iteration_length
+        start_year += optimisation_parameters.iteration_length
         previous_systems = step_results
-        PV_size_min = float(step_results["Final PV size"])
+        pv_size_min = float(step_results["Final PV size"])
         storage_size_min = float(step_results["Final storage size"])
-        PV_size_max = float(step_results["Final PV size"] + PV_increase)
-        storage_size_max = float(step_results["Final storage size"] + storage_increase)
-        PV_sizes = [PV_size_min, PV_size_max, PV_size_step]
-        storage_sizes = [storage_size_min, storage_size_max, storage_size_step]
-    #   End simulation timer
+        pv_size_max = float(
+            step_results["Final PV size"] + optimisation_parameters.pv_size_step
+        )
+        storage_size_max = float(
+            step_results["Final storage size"]
+            + optimisation_parameters.storage_size_step
+        )
+        pv_sizes = (
+            pv_size_min,
+            pv_size_max,
+            optimisation_parameters.pv_size_step,
+        )
+        storage_sizes = (
+            storage_size_min,
+            storage_size_max,
+            optimisation_parameters.storage_size_step,
+        )
+
+    # End simulation timer
     timer_end = datetime.datetime.now()
     time_delta = timer_end - timer_start
     minutes, seconds = divmod(time_delta.seconds, 60)
-    print("\nTime taken for optimisation: {}:{} minutes".format(minutes, seconds))
-    return results
+
+    # Return the results along with the time taken.
+    return f"{minutes}:{seconds}", results
 
 
 #%%
@@ -457,30 +878,6 @@ class OptimisationOld:
         )
         self.save_optimisation(summary_output, filename=summary_filename)
 
-    def optimisation_step(
-        self,
-        PV_sizes=[],
-        storage_sizes=[],
-        previous_systems=pd.DataFrame([]),
-        start_year=0,
-    ):
-        """
-        Function:
-            One optimisation step of the continuous lifetime optimisation
-        Inputs:
-            PV_sizes            Range of PV sizes in the form [minimum, maximum, step size]
-            storage_sizes       Range of storage sizes in the form [minimum, maximum, step size]
-            previous_system     Appraisal of the system already in place before this simulation period
-            start_year          Start year of the optimisation step
-        Outputs:
-            optimum_system      The optimum system for the group of simulated systems
-        """
-        iteration_results = self.simulation_iteration(
-            PV_sizes, storage_sizes, previous_systems, start_year
-        )
-        optimum_system = self.find_optimum_system(iteration_results)
-        return optimum_system
-
     def find_optimum_system(self, iteration_results):
         """
         Function:
@@ -583,11 +980,18 @@ class OptimisationOld:
             #   Increase  and iterate over PV size
             iteration_PV_size = np.ceil(PV_size_max + PV_size_step)
             while iteration_PV_size >= PV_size_min:
-                simulation = Energy_System().simulation(
-                    start_year=start_year,
-                    end_year=end_year,
-                    PV_size=iteration_PV_size,
-                    storage_size=test_storage_size,
+                simulation = energy_system.run_simulation(
+                    minigrid,
+                    grid_profile,
+                    kerosene_usage,
+                    location,
+                    iteration_pv_size,
+                    scenario,
+                    Simulation(end_year, start_year),
+                    solar_lifetime,
+                    test_storage_size,
+                    total_load,
+                    total_solar_power_produced,
                 )
                 new_appraisal = self.system_appraisal(simulation, previous_systems)
                 if self.check_threshold(new_appraisal).empty == False:
@@ -600,11 +1004,18 @@ class OptimisationOld:
                 if iteration_PV_size < 0:
                     break
             if np.ceil(PV_size_max / PV_size_step) * PV_size_step != PV_size_max:
-                simulation = Energy_System().simulation(
-                    start_year=start_year,
-                    end_year=end_year,
-                    PV_size=PV_size_max,
-                    storage_size=test_storage_size,
+                simulation = energy_system.run_simulation(
+                    minigrid,
+                    grid_profile,
+                    kerosene_usage,
+                    location,
+                    pv_sizes.max,
+                    scenario,
+                    Simulation(end_year, start_year),
+                    solar_lifetime,
+                    test_stroage_size,
+                    total_load,
+                    total_solar_power_produced,
                 )
                 new_appraisal = self.system_appraisal(simulation, previous_systems)
                 if self.check_threshold(new_appraisal).empty == False:
@@ -623,11 +1034,18 @@ class OptimisationOld:
             #   Increase  and iterate over storage size
             iteration_storage_size = np.ceil(storage_size_max + storage_size_step)
             while iteration_storage_size >= storage_size_min:
-                simulation = Energy_System().simulation(
-                    start_year=start_year,
-                    end_year=end_year,
-                    PV_size=test_PV_size,
-                    storage_size=iteration_storage_size,
+                simulation = energy_system.run_simulation(
+                    minigrid,
+                    grid_profile,
+                    kerosene_usage,
+                    location,
+                    test_pv_size,
+                    scenario,
+                    Simulation(end_year, start_year),
+                    solar_lifetime,
+                    iteration_storage_size,
+                    total_load,
+                    total_solar_power_produced,
                 )
                 new_appraisal = self.system_appraisal(simulation, previous_systems)
                 if self.check_threshold(new_appraisal).empty == False:
@@ -643,11 +1061,18 @@ class OptimisationOld:
                 np.ceil(storage_size_max / storage_size_step) * storage_size_step
                 != storage_size_max
             ):
-                simulation = Energy_System().simulation(
-                    start_year=start_year,
-                    end_year=end_year,
-                    PV_size=test_PV_size,
-                    storage_size=storage_size_max,
+                simulation = energy_system.run_simulation(
+                    minigrid,
+                    grid_profile,
+                    kerosene_usage,
+                    location,
+                    test_pv_size,
+                    scenario,
+                    Simulation(end_year, start_year),
+                    solar_lifetime,
+                    storage_size.max,
+                    total_load,
+                    total_solar_power_produced,
                 )
                 new_appraisal = self.system_appraisal(simulation, previous_systems)
                 if self.check_threshold(new_appraisal).empty == False:
@@ -655,167 +1080,6 @@ class OptimisationOld:
                         [system_appraisals, new_appraisal], axis=0
                     )
             largest_system["PV size (max)"] = test_PV_size
-        iteration_results = tuple([system_appraisals, largest_system, previous_systems])
-        return iteration_results
-
-    def simulation_iteration(
-        self,
-        PV_sizes=[],
-        storage_sizes=[],
-        previous_systems=pd.DataFrame([]),
-        start_year=0,
-    ):
-        """
-        Function:
-            New simulation iteration i.e. checks sufficiency and stops when criteria is not met, increases
-                system size when no sufficient system exists
-        Inputs:
-            PV_sizes            Range of PV sizes in the form [minimum, maximum, step size]
-            storage_sizes       Range of storage sizes in the form [minimum, maximum, step size]
-            previous_system     Appraisal of the system already in place before this simulation period
-            start_year          Start year of the optimisation step
-        Outputs:
-            iteration_results   Three components which include:
-                                    0. The system appraisals for all of the systems that meet the threshold
-                                    1. The largest system that was simulated
-                                    2. The previous system that was installed
-        """
-        #   Initialise
-        PV_sizes = pd.DataFrame(PV_sizes)
-        storage_sizes = pd.DataFrame(storage_sizes)
-        system_appraisals = pd.DataFrame([])
-        #        simulation_number = 0
-        end_year = start_year + int(self.optimisation_inputs[1]["Iteration length"])
-        #   Check to see if PV sizes have been set
-        if PV_sizes.empty == True:
-            PV_size_min = float(self.optimisation_inputs[1]["PV size (min)"])
-            PV_size_max = float(self.optimisation_inputs[1]["PV size (max)"])
-            PV_size_step = float(self.optimisation_inputs[1]["PV size (step)"])
-        else:
-            PV_size_min = float(PV_sizes[0][0])
-            PV_size_max = float(PV_sizes[0][1])
-            PV_size_step = float(PV_sizes[0][2])
-        #   Check to see if storage sizes have been set
-        if storage_sizes.empty == True:
-            storage_size_min = float(self.optimisation_inputs[1]["Storage size (min)"])
-            storage_size_max = float(self.optimisation_inputs[1]["Storage size (max)"])
-            storage_size_step = float(
-                self.optimisation_inputs[1]["Storage size (step)"]
-            )
-        else:
-            storage_size_min = float(storage_sizes[0][0])
-            storage_size_max = float(storage_sizes[0][1])
-            storage_size_step = float(storage_sizes[0][2])
-        #   Check if largest system is sufficient
-        simulation = Energy_System().simulation(
-            start_year=start_year,
-            end_year=end_year,
-            PV_size=PV_size_max,
-            storage_size=storage_size_max,
-        )
-        new_appraisal = self.system_appraisal(simulation, previous_systems)
-        #   Increase system size until largest system is sufficient (if necessary)
-        while self.check_threshold(new_appraisal).empty == True:
-            PV_size_max = np.ceil(PV_size_max / PV_size_step) * PV_size_step
-            storage_size_max = (
-                np.ceil(storage_size_max / storage_size_step) * storage_size_step
-            )
-            simulation = Energy_System().simulation(
-                start_year=start_year,
-                end_year=end_year,
-                PV_size=PV_size_max,
-                storage_size=storage_size_max,
-            )
-            new_appraisal = self.system_appraisal(simulation, previous_systems)
-
-            PV_size_max += PV_size_step
-            storage_size_max += storage_size_step
-        #   Create an output for the largest system considered
-        largest_system = pd.DataFrame(
-            {
-                "PV size (max)": PV_size_max,
-                "PV size (step)": PV_size_step,
-                "PV size (min)": PV_size_min,
-                "Storage size (max)": storage_size_max,
-                "Storage size (step)": storage_size_step,
-                "Storage size (min)": storage_size_min,
-                "Start year": start_year,
-                "End year": end_year,
-            },
-            index=["System details"],
-        )
-        #   Return simulated systems to the step size increments (rounding up)
-        PV_size_max = np.ceil(PV_size_max / PV_size_step) * PV_size_step
-        storage_size_max = (
-            np.ceil(storage_size_max / storage_size_step) * storage_size_step
-        )
-        #   Move down system sizes
-        while PV_size_max >= PV_size_min:
-            iteration_storage_size = storage_size_max
-            while iteration_storage_size >= storage_size_min:
-                simulation = Energy_System().simulation(
-                    start_year=start_year,
-                    end_year=end_year,
-                    PV_size=PV_size_max,
-                    storage_size=iteration_storage_size,
-                )
-                new_appraisal = self.system_appraisal(simulation, previous_systems)
-                if self.check_threshold(new_appraisal).empty == False:
-                    system_appraisals = pd.concat(
-                        [system_appraisals, new_appraisal], axis=0
-                    )
-                else:
-                    break
-                iteration_storage_size -= storage_size_step
-                if iteration_storage_size < 0:
-                    break
-            #   Check minimum case where no extra storage is required
-            if iteration_storage_size < storage_size_min:
-                simulation = Energy_System().simulation(
-                    start_year=start_year,
-                    end_year=end_year,
-                    PV_size=PV_size_max,
-                    storage_size=storage_size_min,
-                )
-                new_appraisal = self.system_appraisal(simulation, previous_systems)
-                if self.check_threshold(new_appraisal).empty == False:
-                    system_appraisals = pd.concat(
-                        [system_appraisals, new_appraisal], axis=0
-                    )
-            PV_size_max -= PV_size_step
-            #   Check minimum case where no extra PV is required
-            if (PV_size_max < PV_size_min) & (PV_size_max >= 0):
-                iteration_storage_size = storage_size_max
-                while iteration_storage_size >= storage_size_min:
-                    simulation = Energy_System().simulation(
-                        start_year=start_year,
-                        end_year=end_year,
-                        PV_size=PV_size_min,
-                        storage_size=iteration_storage_size,
-                    )
-                    new_appraisal = self.system_appraisal(simulation, previous_systems)
-                    if self.check_threshold(new_appraisal).empty == False:
-                        system_appraisals = pd.concat(
-                            [system_appraisals, new_appraisal], axis=0
-                        )
-                    else:
-                        break
-                    iteration_storage_size -= storage_size_step
-                #   Check minimum case where no extra storage is required
-                if (iteration_storage_size < storage_size_min) & (
-                    iteration_storage_size >= 0
-                ):
-                    simulation = Energy_System().simulation(
-                        start_year=start_year,
-                        end_year=end_year,
-                        PV_size=PV_size_max,
-                        storage_size=storage_size_min,
-                    )
-                    new_appraisal = self.system_appraisal(simulation, previous_systems)
-                    if self.check_threshold(new_appraisal).empty == False:
-                        system_appraisals = pd.concat(
-                            [system_appraisals, new_appraisal], axis=0
-                        )
         iteration_results = tuple([system_appraisals, largest_system, previous_systems])
         return iteration_results
 
@@ -1496,11 +1760,18 @@ class OptimisationOld:
             ):
                 #   Run simulation
                 simulation_number += 1
-                simulation = Energy_System().simulation(
-                    start_year=start_year,
-                    end_year=end_year,
-                    PV_size=PV,
-                    storage_size=storage,
+                simulation = energy_system.run_simulation(
+                    minigrid,
+                    grid_profile,
+                    kerosene_usage,
+                    location,
+                    PV,
+                    scenario,
+                    Simulation(end_year, start_year),
+                    solar_lifetime,
+                    storage,
+                    total_load,
+                    total_solar_power_produced,
                 )
                 new_appraisal = self.system_appraisal(simulation, previous_systems)
                 system_appraisals = pd.concat(
