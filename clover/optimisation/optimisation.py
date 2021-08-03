@@ -1,33 +1,216 @@
-# -*- coding: utf-8 -*-
+#!/usr/bin/python3
+########################################################################################
+# optimisation.py - Optimisation module.                                               #
+#                                                                                      #
+# Authors: Phil Sandwell                                               #
+# Copyright: Phil Sandwell, 2018                                                       #
+# License: Open source                                                                 #
+# Most recent update: 14/07/2021                                                       #
+#                                                                                      #
+# For more information, please email:                                                  #
+#     philip.sandwell@gmail.com                                                        #
+########################################################################################
 """
-===============================================================================
-                      	      OPTIMISATION FILE
-===============================================================================
-                            Most recent update:
-                                3 May 2019
-===============================================================================
-Made by:
-    Philip Sandwell
-Copyright:
-    Philip Sandwell, 2018
-For more information, please email:
-    philip.sandwell@googlemail.com
-===============================================================================
+optimisation.py - The optimisation module of CLOVER.
+
+This module carries out an optimisation of an energy system.
+
 """
 
+import dataclasses
 import datetime
+import enum
 import os
+
+from logging import Logger
+from typing import Any, Dict
 
 import numpy as np
 import pandas as pd
 
-from ..impact.finance import Finance
-from ..impact.ghgs import GHGs
-from ..simulation.energy_system import Energy_System
-from ..__utils__ import hourly_profile_to_daily_sum, LOCATIONS_FOLDER_NAME
+from ..impact import finance
+from ..impact import ghgs
+from ..simulation import energy_system
+from ..__utils__ import BColours, hourly_profile_to_daily_sum, LOCATIONS_FOLDER_NAME
+
+__all__ = ("Optimisation",)
+
+
+class CriterionMode(enum.Enum):
+    """
+    The mode of optimisation of the criterion.
+
+    - MAXIMISE:
+        Denotes that the optimisation criterion is to be maximised.
+
+    - MINIMISE:
+        Denotes that the optimisation criterion is to be minimised.
+
+    """
+
+    MAXIMISE = "maximise"
+    MINIMISE = "minimise"
+
+    def __str__(self) -> str:
+        """
+        Returns a nice-looking `str` representing the :class:`CriterionMode`.
+
+        Outputs:
+            - A nice-looking `str` representing the :class:`CriterionMode`
+              instance.
+
+        """
+
+        return f"CriterionMode(mode={self.value})"
+
+
+class OptimisationCriterion(enum.Enum):
+    """
+    The optimisation criteria values that are allowed.
+
+    - LCUE:
+        Denotes the levilised code of electricity.
+
+    """
+
+    LCUE = "lcue"
+
+    def __str__(self) -> str:
+        """
+        Returns a nice-looking `str` representing the :class:`OptimisationCriterion`.
+
+        Outputs:
+            - A nice-looking `str` representing the :class:`OptimisationCriterion`
+              instance.
+
+        """
+
+        return f"OptimisationCriterion({self.value})"
+
+
+class ThersholdCriterion(enum.Enum):
+    """
+    The thershold criteria values that are allowed.
+
+    - BLACKOUTS:
+        Denotes the proportion of time for which a blackout occurs.
+
+    """
+
+    BLACKOUTS = "blackouts"
+
+    def __str__(self) -> str:
+        """
+        Returns a nice-looking `str` representation of the :class:`ThresholdCriterion`.
+
+        Outputs:
+            - A nice-looking `str` representing the :class:`ThresholdCriterion`
+              instance.
+
+        """
+
+        return f"ThresholdCriterion({self.value})"
+
+
+@dataclasses.dataclass
+class Optimisation:
+    """
+    Represents an optimisation to be carried out.
+
+    .. attribute:: optimisation_criteria
+        A `dict` mapping optimisation criteria to whether they should be maximised or
+        minimised.
+
+    .. attribute:: threshold_criteria
+        A `dict` mapping threshold criteria to their values.
+
+    """
+
+    optimisation_criteria: Dict[OptimisationCriterion, CriterionMode]
+    thershold_criteria: Dict[ThersholdCriterion, float]
+
+    def __str__(self) -> str:
+        """
+        Returns a nice-looking `str` summarising the :class:`Optimisation` instance.
+
+        Outputs:
+            - A nice-looking `str` summarising the information contained within the
+              :class:`Optimisation` instance.
+
+        """
+
+        return (
+            "Optimisation("
+            + f"optimisation_crtieria: {self.optimisation_criteria}"
+            + f", thershold_criteria: {self.thershold_criteria}"
+            + ")"
+        )
+
+    def __hash__(self) -> int:
+        """
+        Returns an `int` representing the :class:`Optimisation` instance for sorting.
+
+        In order to efficiently store :class:`Optimisation` instances, a unique hash is
+        required. This method computes such a hash and returns it.
+
+        Outputs:
+            - A unique `int` representing the :class:`Optimisation` instance.
+
+        """
+
+        return hash(str(self))
+
+    @classmethod
+    def from_dict(cls, logger: Logger, optimisation_data: Dict[str, Any]) -> Any:
+        """
+        Creates a :class:`Optimisation` instance based on the input data.
+
+        Inputs:
+            - logger:
+                The logger to use for the run.
+            - optimisation_data:
+                The optimisation data, extracted from the input file.
+
+        Outputs:
+            - A :class:`Optimisation` instance based on the input data.
+
+        """
+
+        try:
+            optimisation_criteria = {
+                OptimisationCriterion(key): CriterionMode(value)
+                for entry in optimisation_data["optimisation_criteria"]
+                for key, value in entry.items()
+            }
+        except KeyError as e:
+            logger.error(
+                "%sError processing optimisation criteria, missing entry: %s%s",
+                BColours.fail,
+                str(e),
+                BColours.endc,
+            )
+            raise
+
+        try:
+            threshold_criteria = {
+                ThersholdCriterion(key): value
+                for entry in optimisation_data["threshold_criteria"]
+                for key, value in entry.items()
+            }
+        except KeyError as e:
+            logger.error(
+                "%sError processing threshold criteria, missing entry: %s%s",
+                BColours.fail,
+                str(e),
+                BColours.endc,
+            )
+            raise
+
+        return cls(optimisation_criteria, threshold_criteria)
+
 
 #%%
-class Optimisation:
+class OptimisationOld:
     def __init__(self):
         self.location = "Bahraich"
         self.CLOVER_filepath = os.getcwd()
