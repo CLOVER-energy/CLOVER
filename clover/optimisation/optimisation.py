@@ -13,7 +13,20 @@
 """
 optimisation.py - The optimisation module of CLOVER.
 
-This module carries out an optimisation of an energy system.
+This module carries out an optimisation of an energy system and exposes several
+functions which can be used to carry out an optimisation:
+    - simulation_iteration(...):
+        Scans the defined range of systems and returns sufficient systems;
+    - optimisation_step(...)
+        Takes the sufficient systems and returns the optimum system;
+    - single_line_simulation(...)
+        An additional row of simulations if the optimum is an edge case;
+    - find_optimum_system(...)
+        Locates the optimum system including edge case considerations;
+    - multiple_optimisation_step(...)
+        Sequential optimisaiton steps over the entire optimisation period;
+    - changing_parameter_optimisation(...)
+        Allows a parameter to be changed to perform many optimisations.
 
 """
 
@@ -33,7 +46,11 @@ from ..impact import ghgs
 from ..simulation import energy_system
 from ..__utils__ import BColours, hourly_profile_to_daily_sum, LOCATIONS_FOLDER_NAME
 
-__all__ = ("Optimisation",)
+__all__ = (
+    "multiple_optimisation_step",
+    "Optimisation",
+    "OptimisationParameters",
+)
 
 
 class CriterionMode(enum.Enum):
@@ -209,6 +226,133 @@ class Optimisation:
         return cls(optimisation_criteria, threshold_criteria)
 
 
+@dataclasses.dataclass
+class OptimisationParameters:
+    """
+    Parameters that define the scope of the optimisation.
+
+    .. attribute:: iteration_length
+        The length of each iteration to be run.
+
+    .. attribute:: number_of_iterations
+        The number of iterations to run.
+
+    .. attribute:: pv_size_min
+        The minimum size of PV capacity to be considered, measured in kWp.
+
+    .. attribute:: pv_size_step
+        The optimisation resolution for the PV size, measured in kWp.
+
+    .. attribute:: storage_size_min
+        The minimum size of storage capacity to be considered, measured in kWh.
+
+    .. attribute:: storage_size_step
+        The optimisation restolution for the storage size, measured in kWh.
+
+    """
+
+    iteration_length: int
+    number_of_iterations: int
+    pv_size_min: float
+    pv_size_step: float
+    storage_size_min: float
+    storage_size_step: float
+
+    @classmethod
+    def from_dict(cls, optimisation_inputs: Dict[str, Any]) -> Any:
+        """
+        Returns a :class:`OptimisationParameters` instance based on the input info.
+
+        Outputs:
+            - A :class:`OptimisationParameters` instanced based on the information
+            passed in.
+
+        """
+
+        return cls(
+            optimisation_inputs["iteration_length"],
+            optimisation_inputs["number_of_iterations"],
+            optimisation_inputs["pv_size"]["min"],
+            optimisation_inputs["pv_size"]["step"],
+            optimisation_inputs["storage_size"]["min"],
+            optimisation_inputs["storage_size"]["step"],
+        )
+
+    @property
+    def scenario_length(self) -> int:
+        """
+        Calculates and returns the scenario length for the optimisation.
+
+        Outputs:
+            - The scenario length for the optimisation.
+
+        """
+
+        return self.iteration_length * self.number_of_iterations
+
+
+def multiple_optimisation_step(
+    optimisation_parameters: OptimisationParameters,
+    previous_systems=pd.DataFrame([]),
+    pv_sizes=[],
+    storage_sizes=[],
+    start_year=0,
+) -> pd.DataFrame:
+    """
+    Carries out multiple optimisation steps of the continuous lifetime optimisation.
+
+    Inputs:
+        - previous_system:
+            Appraisal of the system already in place before this simulation period;
+        - pv_sizes:
+            Range of PV sizes in the form [minimum, maximum, step size];
+        - storage_sizes:
+            Range of storage sizes in the form [minimum, maximum, step size];
+        - start_year:
+            Start year of the initial optimisation step.
+
+    Outputs:
+        - results:
+            The results of each Optimisation().optimisation_step(...)
+
+    """
+
+    # Start timer to see how long simulation will take
+    timer_start = datetime.datetime.now()
+
+    # Initialise
+    iteration_length = optimisation_inputs["iteration_length"]
+    scenario_length = int(self.optimisation_inputs[1]["Scenario length"])
+    steps = int(scenario_length / iteration_length)
+    results = pd.DataFrame([])
+    PV_size_step = float(self.optimisation_inputs[1]["PV size (step)"])
+    storage_size_step = float(self.optimisation_inputs[1]["Storage size (step)"])
+    PV_increase = float(self.optimisation_inputs[1]["PV size (increase)"])
+    storage_increase = float(self.optimisation_inputs[1]["Storage size (increase)"])
+    #   Iterate over each optimisation step
+    for step in range(steps):
+        print("\nStep " + str(step + 1) + " of " + str(steps))
+        step_results = self.optimisation_step(
+            PV_sizes, storage_sizes, previous_systems, start_year
+        )
+        results = pd.concat([results, step_results], axis=0)
+        #   Prepare inputs for next optimisation step
+        start_year += iteration_length
+        previous_systems = step_results
+        PV_size_min = float(step_results["Final PV size"])
+        storage_size_min = float(step_results["Final storage size"])
+        PV_size_max = float(step_results["Final PV size"] + PV_increase)
+        storage_size_max = float(step_results["Final storage size"] + storage_increase)
+        PV_sizes = [PV_size_min, PV_size_max, PV_size_step]
+        storage_sizes = [storage_size_min, storage_size_max, storage_size_step]
+    #   End simulation timer
+    timer_end = datetime.datetime.now()
+    time_delta = timer_end - timer_start
+    minutes, seconds = divmod(time_delta.seconds, 60)
+    print("\nTime taken for optimisation: {}:{} minutes".format(minutes, seconds))
+    return results
+
+
 #%%
 class OptimisationOld:
     def __init__(self):
@@ -251,78 +395,6 @@ class OptimisationOld:
         )
 
     #%%
-    # =============================================================================
-    # OPTIMISATION FUNCTIONS
-    #       These functions control the optimisation process. Use multiple_optimisation_step()
-    #       to find optimise a system over its lifetime, or changing_parameter_optimisation() to
-    #       perform many optimisations with different parameters.
-    #           * simulation_iteration(...)
-    #               Scans the defined range of systems and returns sufficient systems
-    #           * optimisation_step(...)
-    #               Takes the sufficient systems and returns the optimum system
-    #           * single_line_simulation(...)
-    #               An additional row of simulations if the optimum is an edge case
-    #           * find_optimum_system(...)
-    #               Locates the optimum system including edge case considerations
-    #           * multiple_optimisation_step(...)
-    #               Sequential optimisaiton steps over the entire optimisation period
-    #           * changing_parameter_optimisation(...)
-    #               Allows a parameter to be changed to perform many optimisations
-    # =============================================================================
-
-    def multiple_optimisation_step(
-        self,
-        PV_sizes=[],
-        storage_sizes=[],
-        previous_systems=pd.DataFrame([]),
-        start_year=0,
-    ):
-        """
-        Function:
-            Multiple optimisation steps of the continuous lifetime optimisation
-        Inputs:
-            PV_sizes            Range of PV sizes in the form [minimum, maximum, step size]
-            storage_sizes       Range of storage sizes in the form [minimum, maximum, step size]
-            previous_system     Appraisal of the system already in place before this simulation period
-            start_year          Start year of the initial optimisation step
-        Outputs:
-            results             Results of each Optimisation().optimisation_step(...)
-        """
-        #   Start timer to see how long simulation will take
-        timer_start = datetime.datetime.now()
-        #   Initialise
-        scenario_length = int(self.optimisation_inputs[1]["Scenario length"])
-        iteration_length = int(self.optimisation_inputs[1]["Iteration length"])
-        steps = int(scenario_length / iteration_length)
-        results = pd.DataFrame([])
-        PV_size_step = float(self.optimisation_inputs[1]["PV size (step)"])
-        storage_size_step = float(self.optimisation_inputs[1]["Storage size (step)"])
-        PV_increase = float(self.optimisation_inputs[1]["PV size (increase)"])
-        storage_increase = float(self.optimisation_inputs[1]["Storage size (increase)"])
-        #   Iterate over each optimisation step
-        for step in range(steps):
-            print("\nStep " + str(step + 1) + " of " + str(steps))
-            step_results = self.optimisation_step(
-                PV_sizes, storage_sizes, previous_systems, start_year
-            )
-            results = pd.concat([results, step_results], axis=0)
-            #   Prepare inputs for next optimisation step
-            start_year += iteration_length
-            previous_systems = step_results
-            PV_size_min = float(step_results["Final PV size"])
-            storage_size_min = float(step_results["Final storage size"])
-            PV_size_max = float(step_results["Final PV size"] + PV_increase)
-            storage_size_max = float(
-                step_results["Final storage size"] + storage_increase
-            )
-            PV_sizes = [PV_size_min, PV_size_max, PV_size_step]
-            storage_sizes = [storage_size_min, storage_size_max, storage_size_step]
-        #   End simulation timer
-        timer_end = datetime.datetime.now()
-        time_delta = timer_end - timer_start
-        minutes, seconds = divmod(time_delta.seconds, 60)
-        print("\nTime taken for optimisation: {}:{} minutes".format(minutes, seconds))
-        return results
 
     def changing_parameter_optimisation(
         self, parameter, parameter_values=[], results_folder_name=[]
