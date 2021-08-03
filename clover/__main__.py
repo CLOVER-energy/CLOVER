@@ -273,11 +273,13 @@ def main(args: List[Any]) -> None:
             ghg_inputs,
             grid_inputs,
             location,
+            optimisation_inputs,
+            optimisations,
             scenario,
             simulations,
             solar_generation_inputs,
             input_file_info,
-        ) = parse_input_files(parsed_args.location, logger)
+        ) = parse_input_files(parsed_args.location, logger, parsed_args.optimisation)
     except FileNotFoundError as e:
         print(FAILED)
         logger.error(
@@ -488,10 +490,6 @@ def main(args: List[Any]) -> None:
                 system_performance_outputs,
                 system_details,
             )
-
-        import pdb
-
-        pdb.set_trace()
 
     # ******* #
     # *  4  * #

@@ -724,6 +724,24 @@ class Simulation:
     end_year: int
     start_year: int
 
+    def __hash__(self) -> int:
+        """
+        Return a unique hash of the :class:`Simulation` instance.
+
+        Outputs:
+            - A unique hash identifying the :class:`Simulation` instance.
+
+        """
+
+        return hash(
+            (
+                (self.start_year + self.end_year)
+                * (self.start_year + self.end_year + 1)
+                / 2
+            )
+            + self.end_year
+        )
+
     @classmethod
     def from_dict(cls, simulation_inputs: Dict[str, Any]) -> Any:
         """

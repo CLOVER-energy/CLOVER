@@ -12,15 +12,17 @@ fileparser.py - The argument-parsing module for CLOVER.
 
 """
 
+from clover.scripts.new_location import DIRECTORY
 import os
 
 from logging import Logger
-from typing import Any, Dict, List, Set, Tuple
+from typing import Any, Dict, Optional, Set, Tuple
 
 import pandas as pd
 
 from . import load
 from .simulation import energy_system
+from .optimisation.optimisation import Optimisation
 
 from .__utils__ import (
     BColours,
@@ -92,10 +94,6 @@ LOCATION_INPUTS_FILE = os.path.join("location_data", "location_inputs.yaml")
 #   The relative path to the optimisation-input information file.
 OPTIMISATION_INPUTS_FILE = os.path.join("optimisation", "optimisation_inputs.yaml")
 
-# Optimisations file:
-#   The relative path to the optimisations file.
-OPTIMISATIONS_FILE = os.path.join("optimisation", "optimisations.yaml")
-
 # Scenario inputs file:
 #   The relative path to the scenario inputs file.
 SCENARIO_INPUTS_FILE = os.path.join("scenario", "scenario_inputs.yaml")
@@ -112,6 +110,7 @@ SOLAR_INPUTS_FILE = os.path.join("generation", "solar", "solar_generation_inputs
 def parse_input_files(
     location: str,
     logger: Logger,
+    optimisations_file: Optional[str],
 ) -> Tuple[
     Dict[load.load.Device, pd.DataFrame],
     Dict[str, Any],
@@ -119,9 +118,10 @@ def parse_input_files(
     Dict[str, Any],
     Dict[str, Any],
     pd.DataFrame,
-    List[Optimisation],
+    Dict[str, Any],
+    Set[Optimisation],
     Scenario,
-    List[Simulation],
+    Set[Simulation],
     Dict[str, Any],
     Dict[str, str],
 ]:
@@ -133,6 +133,8 @@ def parse_input_files(
             The name of the location being considered.
         - logger:
             The logger to use for the run.
+        - optimisations_file:
+            The path to the optimisations file to use.
 
     Outputs:
         - A tuple containing:
@@ -142,8 +144,10 @@ def parse_input_files(
             - finance_inputs,
             - ghg_inputs,
             - grid_inputs,
+            - optimisation_inputs,
+            - optimisations, the `set` of optimisations to run,
             - scenario,
-            - simulations, the `list` of simulations to run,
+            - simulations, the `set` of simulations to run,
             - solar_generation_inputs,
             - a `dict` containing information about the input files used.
 
@@ -259,6 +263,33 @@ def parse_input_files(
     )
     logger.info("Location inputs successfully parsed.")
 
+    optimisation_inputs_filepath = os.path.join(
+        inputs_directory_relative_path, OPTIMISATION_INPUTS_FILE
+    )
+    optimisation_inputs = read_yaml(optimisation_inputs_filepath, logger)
+    logger.info("Optimisation inputs successfully parsed.")
+
+    if optimisations_file is not None:
+        optimisations_filepath = os.path.join(
+            inputs_directory_relative_path, optimisations_file
+        )
+        optimisations_inputs = read_yaml(optimisations_filepath, logger)
+        try:
+            optimisations = {
+                Optimisation.from_dict(logger, entry) for entry in optimisations_inputs
+            }
+        except Exception as e:
+            logger.error(
+                "%sError generating optimisations from inputs file: %s%s",
+                BColours.fail,
+                str(e),
+                BColours.endc,
+            )
+            raise
+        logger.info("Optimisations file successfully parsed.")
+    else:
+        logger.info("Optimisations file path not provided, skipping.")
+
     scenario_inputs_filepath = os.path.join(
         inputs_directory_relative_path,
         SCENARIO_INPUTS_FILE,
@@ -287,7 +318,7 @@ def parse_input_files(
         simulations_inputs_filepath,
         logger,
     )
-    simulations = [Simulation.from_dict(entry) for entry in simulations_file_contents]
+    simulations = {Simulation.from_dict(entry) for entry in simulations_file_contents}
 
     solar_generation_inputs_filepath = os.path.join(
         inputs_directory_relative_path,
@@ -308,6 +339,8 @@ def parse_input_files(
         "ghg_inputs": ghg_inputs_filepath,
         "grid_inputs": grid_inputs_filepath,
         "location_inputs": location_inputs_filepath,
+        "optimisation_inputs": optimisation_inputs_filepath,
+        "optimisations": optimisations_filepath,
         "scenario": scenario_inputs_filepath,
         "simularion": simulations_inputs_filepath,
         "solar_inputs": solar_generation_inputs_filepath,
@@ -321,6 +354,8 @@ def parse_input_files(
         ghg_inputs,
         grid_inputs,
         location,
+        optimisation_inputs,
+        optimisations,
         scenario,
         simulations,
         solar_generation_inputs,
