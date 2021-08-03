@@ -18,6 +18,7 @@ in.
 
 """
 
+import dataclasses
 import math
 import os
 
@@ -33,7 +34,6 @@ from atpbar import atpbar
 
 from ..__utils__ import (
     DemandType,
-    Device,
     KEROSENE_DEVICE_NAME,
     Location,
     monthly_profile_to_daily_profile,
@@ -42,6 +42,7 @@ from ..__utils__ import (
 __all__ = (
     "compute_total_hourly_load",
     "DEFAULT_KEROSENE_DEVICE",
+    "Device",
     "LOAD_LOGGER_NAME",
     "population_hourly",
     "process_device_hourly_power",
@@ -51,13 +52,6 @@ __all__ = (
     "process_load_profiles",
 )
 
-
-# Default kerosene device:
-#   The default kerosene device to use in the event that no kerosene information is
-#   provided.
-DEFAULT_KEROSENE_DEVICE = Device(
-    False, DemandType.DOMESTIC, 1, 0, 0, 0, 0, KEROSENE_DEVICE_NAME
-)
 
 # Load logger name:
 #   The name to use for the load module logger.
@@ -74,6 +68,119 @@ MEAN: str = "Mean"
 # Median column name:
 #   The name to use for the "median" column in the yearly-load statistics.
 MEDIAN: str = "Median"
+
+
+@dataclasses.dataclass
+class Device:
+    """
+    Represents a device being modelled.
+
+    .. attribute:: available
+        Whether the device is available.
+
+    .. attribute:: demand_type
+        The type of demand with which the device is associated.
+
+    .. attribute:: electric_power
+        The electric power consumption of the device, measured in Watts.
+
+    .. attribute:: final_ownership
+        The average ownership of the device per household at the end of the time period
+        being modelled.
+
+    .. attribute:: initial_ownership
+        The initial average ownership of the device per household.
+
+    .. attribute:: innovation
+        The rate of innovation for the device: the rate at which new households acquire
+        the device.
+
+    .. attribute:: imitation
+        The rate of imitation for the device: the rate at which households copy others
+        and acquire the device.
+
+    .. attribute:: name
+        The name of the device.
+
+    """
+
+    available: bool
+    demand_type: DemandType
+    electric_power: float
+    final_ownership: float
+    initial_ownership: float
+    innovation: float
+    imitation: float
+    name: str
+
+    def __hash__(self) -> int:
+        """
+        Return a unique identifier for the device.
+
+        Outputs:
+            A unique identifier for the device.
+
+        """
+
+        return hash(self.__str__())
+
+    def __str__(self) -> str:
+        """
+        Return a nice-looking output for the device.
+
+        Outputs:
+            - A nice-looking string representation for the device.
+
+        """
+
+        representation_string = (
+            "Device("
+            + f"name={self.name}, "
+            + ("available, " if self.available else "unavailable, ")
+            + f"electric_power={self.electric_power} W, "
+            + f"final_ownership={self.final_ownership}, "
+            + f"initial_ownership={self.initial_ownership}, "
+            + f"innovation={self.innovation}, "
+            + f"imitation={self.imitation}, "
+            + ")"
+        )
+
+        return representation_string
+
+    @classmethod
+    def from_dict(cls, device_input: Dict[str, Any]) -> Any:
+        """
+        Processes input data to generate a :class:`Device` instance.
+
+        Inputs:
+            - device_input:
+                The device input data extracted from the devices input file.
+
+        Outputs:
+            - The :class:`Device` instancce based on the input data.
+
+        """
+
+        demand_type = DemandType(device_input["type"])
+
+        return cls(
+            device_input["available"],
+            demand_type,
+            device_input["electric_power"],
+            device_input["final_ownership"],
+            device_input["initial_ownership"],
+            device_input["innovation"],
+            device_input["imitation"],
+            device_input["device"],
+        )
+
+
+# Default kerosene device:
+#   The default kerosene device to use in the event that no kerosene information is
+#   provided.
+DEFAULT_KEROSENE_DEVICE = Device(
+    False, DemandType.DOMESTIC, 1, 0, 0, 0, 0, KEROSENE_DEVICE_NAME
+)
 
 
 def _cumulative_sales_daily(
