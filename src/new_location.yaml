@@ -568,11 +568,11 @@
                   ac_to_dc: 0.8 # Conversion efficiency (0.0-1.0)
                   ac_to_ac: 0.98 # Conversion efficiency (0.0-1.0)
             - directory: "Saved simulations"
-            - file: "simulation.yaml"
+            - file: "simulations.yaml"
               contents: |+
                 ---
                 ################################################################################
-                # simulation.yaml - Parameters for running a CLOVER simulation.                #
+                # simulations.yaml - Parameters for running a CLOVER simulations.              #
                 #                                                                              #
                 # Author: Phil Sandwell, Ben Winchester                                        #
                 # Copyright: Phil Sandwell & Ben Winchester, 2021                              #
@@ -580,11 +580,8 @@
                 # License: Open source                                                         #
                 ################################################################################
 
-                # NOTE: Currently, simulations can only be run for a maximum of 20 years.
-                #
-
-                end_year: 20 # The end year for the simulation.
-                start_year: 0 # The start year for the simulation run.
+                - start_year: 0 # The start year for the simulation run.
+                  end_year: 20 # The end year for the simulation.
 
     - directory: outputs
       contents:
