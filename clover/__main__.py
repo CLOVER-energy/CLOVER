@@ -325,7 +325,7 @@ def main(args: List[Any]) -> None:
     except Exception as e:
         print(
             "Generating necessary profiles .................................    "
-            "[  FAILED  ]\n"
+            + f"{FAILED}"
         )
         logger.error(
             "%sAn unexpected error occurred generating the load profiles. See %s for "
@@ -348,8 +348,8 @@ def main(args: List[Any]) -> None:
         )
     except Exception as e:
         print(
-            "Generating necessary profiles ................................. "
-            "[  FAILED  ]\n"
+            "Generating necessary profiles .................................    "
+            + f"{FAILED}"
         )
         logger.error(
             "%sAn unexpected error occurred generating the grid profiles. See %s for "
@@ -428,7 +428,7 @@ def main(args: List[Any]) -> None:
                 total_solar_output,
             )
         except Exception as e:
-            print("[  FAILED  ]\n")
+            print(FAILED)
             logger.error(
                 "%sAn unexpected error occurred running a CLOVER simulation. See %s for "
                 "details: %s%s",
