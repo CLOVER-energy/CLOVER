@@ -185,9 +185,9 @@ def _get_storage_profile(
     scenario: Scenario,
     solar_lifetime: int,
     total_solar_output: pd.DataFrame,
-    end_year: int = 4,
+    end_hour: int = 4,
     pv_size: int = 10,
-    start_year: int = 0,
+    start_hour: int = 0,
     total_load: pd.DataFrame,
 ) -> pd.DataFrame:
     """
@@ -224,17 +224,14 @@ def _get_storage_profile(
         kerosene_usage                  Number of kerosene lamps in use (if no power available)
     """
 
-    # Initialise simulation parameters
-    start_hour = start_year * 8760
-    end_hour = end_year * 8760
-
     # Initialise power generation, including degradation of PV
     pv_generation_array = total_solar_output * pv_size
     solar_degradation_array = solar_degradation(solar_lifetime)[
         0 : (end_hour - start_hour)
     ]
     pv_generation = pd.DataFrame(
-        np.asarray(pv_generation_array) * np.asarray(solar_degradation_array)
+        np.asarray(pv_generation_array[start_hour:end_hour])
+        * np.asarray(solar_degradation_array)
     )
     grid_status = pd.DataFrame(grid_profile[start_hour:end_hour].values)
     load_profile = pd.DataFrame(
@@ -345,6 +342,8 @@ def run_simulation(
             The lifetime of the solar system being considered.
         - storage_size:
             Amount of storage in kWh
+        - total_load:
+            The total load in Watts.
         - total_solar_output:
             The total energy outputted by the solar system.
 
@@ -383,6 +382,10 @@ def run_simulation(
     # Start timer to see how long simulation will take
     timer_start = datetime.datetime.now()
 
+    # Initialise simulation parameters
+    start_hour = simulation.start_year * 8760
+    end_hour = simulation.end_year * 8760
+
     # Get input profiles
     (
         load_energy,
@@ -398,9 +401,9 @@ def run_simulation(
         scenario=scenario,
         solar_lifetime=solar_lifetime,
         total_solar_output=total_solar_output,
-        end_year=simulation.end_year,
+        end_hour=end_hour,
         pv_size=pv_size,
-        start_year=simulation.start_year,
+        start_hour=start_hour,
         total_load=total_load,
     )
     households = pd.DataFrame(
@@ -535,8 +538,10 @@ def run_simulation(
     unmet_energy = ((unmet_energy > 0) * unmet_energy).abs()
 
     # Find how many kerosene lamps are in use
-    kerosene_usage = blackout_times.mul(kerosene_profile.values)
-    kerosene_mitigation = (1 - blackout_times).mul(kerosene_profile.values)
+    kerosene_usage = blackout_times.mul(kerosene_profile[start_hour:end_hour].values)
+    kerosene_mitigation = (1 - blackout_times).mul(
+        kerosene_profile[start_hour:end_hour].values
+    )
 
     # System performance outputs
     blackout_times.columns = ["Blackouts"]
