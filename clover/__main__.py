@@ -418,8 +418,11 @@ def main(args: List[Any]) -> None:
     if operating_mode == OperatingMode.SIMULATION:
         for index, simulation in enumerate(simulations):
             print(
-                f"Beginning CLOVER simulation run {index + 1} of {len(simulations)}"
-                + ".........................    ",
+                "Beginning CLOVER simulation run {} of {} {}    ".format(
+                    str(index + 1),
+                    str(len(simulations)),
+                    "." * (26 - (len(str(index + 1)) + len(str(len(simulations))))),
+                ),
                 end="",
             )
             try:
@@ -476,9 +479,9 @@ def main(args: List[Any]) -> None:
                 system_details,
             )
 
-        print(
-            f"Beginning CLOVER simulation run ...............................    {DONE}"
-        )
+        import pdb
+
+        pdb.set_trace()
 
     # ******* #
     # *  4  * #
