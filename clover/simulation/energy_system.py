@@ -511,7 +511,7 @@ def run_simulation(
     blackout_times = ((unmet_energy > 0) * 1).astype(float)
 
     # Use backup diesel generator
-    if scenario.diesel_scenario == DieselMode.BACKUP:
+    if scenario.diesel_scenario.mode == DieselMode.BACKUP:
         diesel_energy, diesel_times = Diesel().get_diesel_energy_and_times(
             unmet_energy, blackout_times, scenario.diesel_scenario.backup_threshold
         )

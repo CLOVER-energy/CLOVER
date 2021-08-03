@@ -19,24 +19,28 @@ import os
 import numpy as np
 import pandas as pd
 
-from ..__utils__ import LOCATIONS_FOLDER_NAME
+from .. import fileparser
+
+from ..__utils__ import LOCATIONS_FOLDER_NAME, get_logger, read_yaml
+
+__all__ = ("Diesel",)
 
 
 class Diesel:
     def __init__(self):
         self.size = 1
-        self.location = "Bahraich"
+        self.location = "test_location"
         self.CLOVER_filepath = os.getcwd()
         self.location_filepath = os.path.join(
             self.CLOVER_filepath, LOCATIONS_FOLDER_NAME, self.location
         )
-        self.generation_filepath = os.path.join(self.location_filepath, "Generation")
-        self.diesel_filepath = os.path.join(
-            self.generation_filepath, "Diesel", "Diesel inputs.csv"
+        self.generation_filepath = os.path.join(
+            self.location_filepath, fileparser.INPUTS_DIRECTORY, "generation"
         )
-        self.diesel_inputs = pd.read_csv(
-            self.diesel_filepath, header=None, index_col=0
-        ).round(decimals=3)
+        self.diesel_filepath = os.path.join(
+            self.generation_filepath, "diesel", "diesel_inputs.yaml"
+        )
+        self.diesel_inputs = read_yaml(self.diesel_filepath, get_logger("diesel"))
 
     #%%
     #   Energy threshold, above which the generator should switch on
@@ -98,8 +102,8 @@ class Diesel:
         Outputs:
             fuel_usage      Hourly profile of diesel fuel usage (litres)
         """
-        diesel_consumption = float(self.diesel_inputs[1]["Diesel consumption"])
-        diesel_minimum_load = float(self.diesel_inputs[1]["Diesel minimum load"])
+        diesel_consumption = float(self.diesel_inputs["diesel_consumption"])
+        diesel_minimum_load = float(self.diesel_inputs["minimum_load"])
         capacity = float(capacity)
         load_factor = diesel_energy / capacity
         above_minimum = load_factor * (load_factor > diesel_minimum_load)
