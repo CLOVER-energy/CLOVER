@@ -97,12 +97,14 @@ def _create_file(
     # Repeat lines where appropriate.
     if filename.endswith(".csv"):
         for match in REPEATED_LINE_REGEX.finditer(contents):
-            re.sub(
+            contents = re.sub(
                 r"{}:{}".format(
                     match.group("multiplier"), match.group("line_to_repeat")
                 ),
-                "{}\n".format(match.group("line_to_repeat"))
-                * int(match.group("multiplier")),
+                "\n".join(
+                    ["{}".format(match.group("line_to_repeat"))]
+                    * int(match.group("multiplier"))
+                ),
                 contents,
             )
 
