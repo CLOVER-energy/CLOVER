@@ -65,31 +65,31 @@
               contents:
                 - file: "grid_inputs.csv"
                   contents: |-
-                    Name,none,all,example,eight_hours
-                    0,0,1,0.8,0.33
-                    1,0,1,0.8,0.33
-                    2,0,1,0.8,0.33
-                    3,0,1,0.8,0.33
-                    4,0,1,0.8,0.33
-                    5,0,1,0.8,0.33
-                    6,0,1,0.5,0.33
-                    7,0,1,0.3,0.33
-                    8,0,1,0.3,0.33
-                    9,0,1,0.3,0.33
-                    10,0,1,0.5,0.33
-                    11,0,1,0.5,0.33
-                    12,0,1,0.5,0.33
-                    13,0,1,0.5,0.33
-                    14,0,1,0.5,0.33
-                    15,0,1,0.5,0.33
-                    16,0,1,0.5,0.33
-                    17,0,1,0.1,0.33
-                    18,0,1,0.1,0.33
-                    19,0,1,0.1,0.33
-                    20,0,1,0.1,0.33
-                    21,0,1,0.5,0.33
-                    22,0,1,0.7,0.33
-                    23,0,1,0.7,0.33
+                    Name,none,all,example,eight_hours,default
+                    0,0,1,0,0.33,0.57
+                    1,0,1,0,0.33,0.61
+                    2,0,1,0,0.33,0.54
+                    3,0,1,0,0.33,0.5
+                    4,0,1,0,0.33,0.48
+                    5,0,1,0,0.33,0.48
+                    6,0,1,0,0.33,0.46
+                    7,0,1,0,0.33,0.34
+                    8,0,1,1,0.33,0.25
+                    9,0,1,1,0.33,0.3
+                    10,0,1,1,0.33,0.35
+                    11,0,1,1,0.33,0.35
+                    12,0,1,1,0.33,0.33
+                    13,0,1,1,0.33,0.29
+                    14,0,1,1,0.33,0.32
+                    15,0,1,1,0.33,0.35
+                    16,0,1,1,0.33,0.35
+                    17,0,1,1,0.33,0.32
+                    18,0,1,0,0.33,0.39
+                    19,0,1,0,0.33,0.14
+                    20,0,1,0,0.33,0.18
+                    21,0,1,0,0.33,0.46
+                    22,0,1,0,0.33,0.47
+                    23,0,1,0,0.33,0.51
             - directory: solar
               contents:
                 - file: "solar_generation_inputs.yaml"
@@ -487,24 +487,51 @@
                 latitude: 27.6 # Degrees of latitude (North +ve)
                 longitude: 81.6 # Degrees of longitude (East +ve)
 
-        - directory: Optimisation
+        - directory: optimisation
           contents:
-            - file: "Optimisation inputs.csv"
+            - file: "optimisation_inputs.yaml"
               contents: |-
-                Scenario length,12,years,
-                Iteration length,4,years,
-                PV size (min),1,kWp,
-                PV size (max),1,kWp,
-                PV size (step),1,kWp,
-                PV size (increase),0,kWp,Set to 0 to ignore
-                Storage size (min),1,kWh,
-                Storage size (max),1,kWh,
-                Storage size (step),1,kWh,
-                Storage size (increase),0,kWh,Set to 0 to ignore
-                Threshold criterion,Blackouts,Name of column from appraisal,
-                Threshold value,0.05,Max/min value permitted (see guidance),
-                Optimisation criterion,Cumulative system cost ($),Name of column from appraisal,
-            - directory: "Saved optimisations"
+                ---
+                ################################################################################
+                # optimisation_inputs.yaml - Specifications for running optimisations.         #
+                #                                                                              #
+                # Author: Phil Sandwell, Ben Winchester                                        #
+                # Copyright: Phil Sandwell & Ben Winchester, 2021                              #
+                # Date created: 14/07/2021                                                     #
+                # License: Open source                                                         #
+                ################################################################################
+
+                iteration_length: 4 # [years]
+                number_of_iterations: 3 # number of iterations to carry out
+                pv_size:
+                  min: 1 # [kWp]
+                  max: 1 # [kWp]
+                  step: 1 # [kWp]
+                  increase: 0 # [kWp], set this to 0 to ignore.
+                storage_size:
+                  min: 1 # [kWp]
+                  max: 1 # [kWp]
+                  step: 1 # [kWp]
+                  increase: 0 # [kWp], set this to 0 to ignore.
+
+            - file: "optimisations.yaml"
+              contents: |-
+                ---
+                ################################################################################
+                # optimisations.yaml - Information on the optimisations to run.                #
+                #                                                                              #
+                # Author: Phil Sandwell, Ben Winchester                                        #
+                # Copyright: Phil Sandwell & Ben Winchester, 2021                              #
+                # Date created: 14/07/2021                                                     #
+                # License: Open source                                                         #
+                ################################################################################
+
+                - optimisation_criteria:
+                    - name: lcue # Name of the column from appraisal, [$/kWh]
+                      minimise: true
+                  threshold_criteria:
+                    - blackouts: 0.1 # Max/min value permitted (see guidance)
+
         - directory: scenario
           contents:
             - file: scenario_inputs.yaml
@@ -526,7 +553,7 @@
                   backup:
                     threshold: 0.1 # Maximum acceptible blackouts (0.0-1.0)
                 grid: true # "true" or "false"
-                grid_type: bahraich # The grid profile to use
+                grid_type: default # The grid profile to use
                 prioritise_self_generation: true # "true" or "false"
                 demands:
                   domestic: true # "true" or "false"

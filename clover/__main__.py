@@ -392,18 +392,28 @@ def main(args: List[Any]) -> None:
     )
 
     # Load the relevant grid profile.
-    with open(
-        os.path.join(
-            auto_generated_files_directory,
-            "grid",
-            f"{scenario.grid_type}_grid_status.csv",
-        ),
-        "r",
-    ) as f:
-        grid_profile = pd.read_csv(
-            f,
-            index_col=0,
+    try:
+        with open(
+            os.path.join(
+                auto_generated_files_directory,
+                "grid",
+                f"{scenario.grid_type}_grid_status.csv",
+            ),
+            "r",
+        ) as f:
+            grid_profile = pd.read_csv(
+                f,
+                index_col=0,
+            )
+    except FileNotFoundError as e:
+        logger.error(
+            "%sGrid profile file for profile '%s' could not be found: %s%s",
+            BColours.fail,
+            scenario.grid_type,
+            str(e),
+            BColours.endc,
         )
+        raise
 
     # Load the relevant kerosene profile.
     with open(
