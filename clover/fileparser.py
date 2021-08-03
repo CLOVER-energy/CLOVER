@@ -15,7 +15,7 @@ fileparser.py - The argument-parsing module for CLOVER.
 import os
 
 from logging import Logger
-from typing import Any, Dict, Set, Tuple
+from typing import Any, Dict, List, Set, Tuple
 
 import pandas as pd
 
@@ -24,7 +24,6 @@ from .simulation import energy_system
 
 from .__utils__ import (
     BColours,
-    Device,
     KEROSENE_DEVICE_NAME,
     Location,
     LOCATIONS_FOLDER_NAME,
@@ -89,6 +88,14 @@ KEROSENE_USAGE_FILE = os.path.join("load", "device_usage", "kerosene_in_use.csv"
 #   The relative path to the location inputs file.
 LOCATION_INPUTS_FILE = os.path.join("location_data", "location_inputs.yaml")
 
+# Optimisation inputs file:
+#   The relative path to the optimisation-input information file.
+OPTIMISATION_INPUTS_FILE = os.path.join("optimisation", "optimisation_inputs.yaml")
+
+# Optimisations file:
+#   The relative path to the optimisations file.
+OPTIMISATIONS_FILE = os.path.join("optimisation", "optimisations.yaml")
+
 # Scenario inputs file:
 #   The relative path to the scenario inputs file.
 SCENARIO_INPUTS_FILE = os.path.join("scenario", "scenario_inputs.yaml")
@@ -106,14 +113,15 @@ def parse_input_files(
     location: str,
     logger: Logger,
 ) -> Tuple[
-    Dict[Device, pd.DataFrame],
+    Dict[load.load.Device, pd.DataFrame],
     Dict[str, Any],
     energy_system.Minigrid,
     Dict[str, Any],
     Dict[str, Any],
     pd.DataFrame,
+    List[Optimisation],
     Scenario,
-    Simulation,
+    List[Simulation],
     Dict[str, Any],
     Dict[str, str],
 ]:
@@ -151,8 +159,8 @@ def parse_input_files(
         inputs_directory_relative_path,
         DEVICE_INPUTS_FILE,
     )
-    devices: Set[Device] = {
-        Device.from_dict(entry)
+    devices: Set[load.load.Device] = {
+        load.load.Device.from_dict(entry)
         for entry in read_yaml(
             device_inputs_filepath,
             logger,
@@ -171,7 +179,7 @@ def parse_input_files(
         devices.add(load.DEFAULT_KEROSENE_DEVICE)
         logger.info("Default kerosene device added.")
 
-    device_utilisations: Dict[Device, pd.DataFrame] = dict()
+    device_utilisations: Dict[load.load.Device, pd.DataFrame] = dict()
     for device in devices:
         try:
             with open(
