@@ -2,7 +2,7 @@
 ########################################################################################
 # optimisation.py - Optimisation module.                                               #
 #                                                                                      #
-# Authors: Phil Sandwell                                               #
+# Authors: Phil Sandwell                                                               #
 # Copyright: Phil Sandwell, 2018                                                       #
 # License: Open source                                                                 #
 # Most recent update: 14/07/2021                                                       #

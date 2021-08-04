@@ -85,7 +85,6 @@ CLOVER_HEADER_STRING = """
                  For more information, contact Phil Sandwell at
                            philip.sandwell@gmail.com
 
-
 """
 
 # Done message:
@@ -490,6 +489,9 @@ def main(args: List[Any]) -> None:
                 system_performance_outputs,
                 system_details,
             )
+
+    if operating_mode == OperatingMode.OPTIMISATION:
+        run_optimisation()
 
     # ******* #
     # *  4  * #
