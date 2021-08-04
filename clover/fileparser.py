@@ -119,8 +119,8 @@ def parse_input_files(
     Dict[str, Any],
     Dict[str, Any],
     pd.DataFrame,
-    OptimisationParameters,
-    Set[Optimisation],
+    Optional[OptimisationParameters],
+    Optional[Set[Optimisation]],
     Scenario,
     Set[Simulation],
     Dict[str, Any],
@@ -299,6 +299,8 @@ def parse_input_files(
             raise
         logger.info("Optimisations file successfully parsed.")
     else:
+        optimisations = None
+        optimisations_filepath = None
         logger.info("Optimisations file path not provided, skipping.")
 
     scenario_inputs_filepath = os.path.join(

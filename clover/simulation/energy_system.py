@@ -8,7 +8,7 @@
 # License: Open source                                                                 #
 
 # For more information, please email:                                                  #
-#   philip.sandwell@gmail.com                                                        #
+#   philip.sandwell@gmail.com                                                          #
 ########################################################################################
 """
 minigrid.py - The energy-system module for CLOVER.
