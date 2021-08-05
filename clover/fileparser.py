@@ -22,6 +22,7 @@ from typing import Any, Dict, Optional, Set, Tuple
 import pandas as pd
 
 from . import load
+from .generation.diesel import DieselBackupGenerator
 from .simulation import energy_system
 from .optimisation.optimisation import Optimisation, OptimisationParameters
 
@@ -114,7 +115,7 @@ def parse_input_files(
     optimisations_file: Optional[str],
 ) -> Tuple[
     Dict[load.load.Device, pd.DataFrame],
-    Dict[str, Any],
+    DieselBackupGenerator,
     energy_system.Minigrid,
     Dict[str, Any],
     Dict[str, Any],
@@ -218,6 +219,18 @@ def parse_input_files(
         diesel_inputs_filepath,
         logger,
     )
+    try:
+        diesel_backup_generator = DieselBackupGenerator(
+            diesel_inputs["diesel_consumption"], diesel_inputs["minimum_load"]
+        )
+    except KeyError as e:
+        logger.error(
+            "%sMissing information in diesel inputs file: %s%s",
+            BColours.fail,
+            str(e),
+            BColours.endc,
+        )
+        raise
     logger.info("Diesel inputs successfully parsed.")
 
     energy_system_inputs_filepath = os.path.join(
@@ -361,7 +374,7 @@ def parse_input_files(
 
     return (
         device_utilisations,
-        diesel_inputs,
+        diesel_backup_generator,
         minigrid,
         finance_inputs,
         ghg_inputs,

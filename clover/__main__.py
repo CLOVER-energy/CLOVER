@@ -266,7 +266,7 @@ def main(args: List[Any]) -> None:
     try:
         (
             device_utilisations,
-            diesel_inputs,
+            diesel_backup_generator,
             minigrid,
             finance_inputs,
             ghg_inputs,
@@ -442,6 +442,7 @@ def main(args: List[Any]) -> None:
                     system_performance_outputs,
                     system_details,
                 ) = energy_system.run_simulation(
+                    diesel_backup_generator,
                     minigrid,
                     grid_profile,
                     kerosene_usage,
