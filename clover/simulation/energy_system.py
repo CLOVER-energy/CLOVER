@@ -36,8 +36,8 @@ from ..__utils__ import (
     Scenario,
     Simulation,
 )
+from ..generation.diesel import DieselBackupGenerator, get_diesel_energy_and_times, get_diesel_fuel_usage
 from ..generation.solar import solar_degradation
-from ..generation.diesel import Diesel
 from ..load.load import population_hourly
 
 from .storage import Battery
@@ -305,6 +305,7 @@ def _get_storage_profile(
 
 
 def run_simulation(
+    diesel_backup_generator: DieselBackupGenerator,
     minigrid: Minigrid,
     grid_profile: pd.DataFrame,
     kerosene_usage: pd.DataFrame,
@@ -324,6 +325,8 @@ def run_simulation(
     stated in the input files.
 
     Inputs:
+        - diesel_backup_generator:
+            The backup diesel generator for the system being modelled.
         - minigrid:
             The energy system being considered.
         - grid_profile:
@@ -515,14 +518,14 @@ def run_simulation(
 
     # Use backup diesel generator
     if scenario.diesel_scenario.mode == DieselMode.BACKUP:
-        diesel_energy, diesel_times = Diesel().get_diesel_energy_and_times(
+        diesel_energy, diesel_times = get_diesel_energy_and_times(
             unmet_energy, blackout_times, scenario.diesel_scenario.backup_threshold
         )
         diesel_capacity = math.ceil(np.max(diesel_energy))
         diesel_fuel_usage = pd.DataFrame(
-            Diesel()
-            .get_diesel_fuel_usage(diesel_capacity, diesel_energy, diesel_times)
-            .values
+            get_diesel_fuel_usage(
+                diesel_capacity, diesel_backup_generator, diesel_energy, diesel_times
+            ).values
         )
         unmet_energy = pd.DataFrame(unmet_energy.values - diesel_energy.values)
         diesel_energy = diesel_energy.abs()
