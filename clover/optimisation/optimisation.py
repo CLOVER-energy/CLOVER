@@ -47,6 +47,7 @@ from atpbar import atpbar
 from ..impact import finance
 from ..impact import ghgs
 from ..simulation import energy_system
+
 from ..__utils__ import (
     BColours,
     Scenario,
@@ -55,6 +56,7 @@ from ..__utils__ import (
     LOCATIONS_FOLDER_NAME,
     Simulation,
 )
+from ..generation.diesel import DieselBackupGenerator
 
 __all__ = (
     "multiple_optimisation_step",
@@ -423,7 +425,6 @@ def _simulation_iteration(
 
     # Check if largest system is sufficient
     _, simulation, _ = energy_system.run_simulation(
-        diesel_backup_generator,
         minigrid,
         grid_profile,
         kerosene_usage,
@@ -445,7 +446,6 @@ def _simulation_iteration(
             np.ceil(storage_size_max / storage_size_step) * storage_size_step
         )
         simulation = energy_system.run_simulation(
-            diesel_backup_generator,
             minigrid,
             grid_profile,
             kerosene_usage,
@@ -484,7 +484,6 @@ def _simulation_iteration(
         iteration_storage_size = storage_size_max
         while iteration_storage_size >= storage_size_min:
             simulation = energy_system.run_simulation(
-                diesel_backup_generator,
                 minigrid,
                 grid_profile,
                 kerosene_usage,
@@ -510,7 +509,6 @@ def _simulation_iteration(
         #   Check minimum case where no extra storage is required
         if iteration_storage_size < storage_size_min:
             simulation = energy_system.run_simulation(
-                diesel_backup_generator,
                 minigrid,
                 grid_profile,
                 kerosene_usage,
@@ -535,7 +533,6 @@ def _simulation_iteration(
             while iteration_storage_size >= storage_size_min:
 
                 simulation = energy_system.run_simulation(
-                    diesel_backup_generator,
                     minigrid,
                     grid_profile,
                     kerosene_usage,
@@ -561,7 +558,6 @@ def _simulation_iteration(
                 iteration_storage_size >= 0
             ):
                 simulation = energy_system.run_simulation(
-                    diesel_backup_generator,
                     minigrid,
                     grid_profile,
                     kerosene_usage,
@@ -987,7 +983,6 @@ class OptimisationOld:
             iteration_PV_size = np.ceil(PV_size_max + PV_size_step)
             while iteration_PV_size >= PV_size_min:
                 simulation = energy_system.run_simulation(
-                    diesel_backup_generator,
                     minigrid,
                     grid_profile,
                     kerosene_usage,
@@ -1012,7 +1007,6 @@ class OptimisationOld:
                     break
             if np.ceil(PV_size_max / PV_size_step) * PV_size_step != PV_size_max:
                 simulation = energy_system.run_simulation(
-                    diesel_backup_generator,
                     minigrid,
                     grid_profile,
                     kerosene_usage,
@@ -1043,7 +1037,6 @@ class OptimisationOld:
             iteration_storage_size = np.ceil(storage_size_max + storage_size_step)
             while iteration_storage_size >= storage_size_min:
                 simulation = energy_system.run_simulation(
-                    diesel_backup_generator,
                     minigrid,
                     grid_profile,
                     kerosene_usage,
@@ -1071,7 +1064,6 @@ class OptimisationOld:
                 != storage_size_max
             ):
                 simulation = energy_system.run_simulation(
-                    diesel_backup_generator,
                     minigrid,
                     grid_profile,
                     kerosene_usage,
@@ -1771,7 +1763,6 @@ class OptimisationOld:
                 #   Run simulation
                 simulation_number += 1
                 simulation = energy_system.run_simulation(
-                    diesel_backup_generator,
                     minigrid,
                     grid_profile,
                     kerosene_usage,

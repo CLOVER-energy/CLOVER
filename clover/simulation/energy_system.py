@@ -36,7 +36,11 @@ from ..__utils__ import (
     Scenario,
     Simulation,
 )
-from ..generation.diesel import DieselBackupGenerator, get_diesel_energy_and_times, get_diesel_fuel_usage
+from ..generation.diesel import (
+    DieselBackupGenerator,
+    get_diesel_energy_and_times,
+    get_diesel_fuel_usage,
+)
 from ..generation.solar import solar_degradation
 from ..load.load import population_hourly
 
@@ -74,6 +78,9 @@ class Minigrid:
     .. attribute:: dc_transmission_efficiency
         The DC transmission efficiency, if applicable.
 
+    .. attribute:: diesel_backup_generator
+        The diesel backup generator associated with the minigrid system.
+
     """
 
     ac_to_ac_conversion_efficiency: Optional[float]
@@ -83,13 +90,20 @@ class Minigrid:
     dc_to_ac_conversion_efficiency: Optional[float]
     dc_to_dc_conversion_efficiency: Optional[float]
     dc_transmission_efficiency: Optional[float]
+    diesel_backup_generator: Optional[DieselBackupGenerator]
 
     @classmethod
-    def from_dict(cls, minigrid_inputs: Dict[str, Any]) -> Any:
+    def from_dict(
+        cls,
+        diesel_backup_generator: DieselBackupGenerator,
+        minigrid_inputs: Dict[str, Any],
+    ) -> Any:
         """
         Returns a :class:`Minigrid` instance based on the inputs provided.
 
         Inputs:
+            - diesel_backup_generator:
+                The diesel backup generator to use for the run.
             - minigrid_inputs:
                 The inputs for the minigrid/energy system, extracted from the input
                 file.
@@ -131,6 +145,7 @@ class Minigrid:
             minigrid_inputs["dc_network"]["transmission_efficiency"]
             if "dc_network" in minigrid_inputs
             else None,
+            diesel_backup_generator,
         )
 
 
@@ -305,7 +320,6 @@ def _get_storage_profile(
 
 
 def run_simulation(
-    diesel_backup_generator: DieselBackupGenerator,
     minigrid: Minigrid,
     grid_profile: pd.DataFrame,
     kerosene_usage: pd.DataFrame,
@@ -524,7 +538,10 @@ def run_simulation(
         diesel_capacity = math.ceil(np.max(diesel_energy))
         diesel_fuel_usage = pd.DataFrame(
             get_diesel_fuel_usage(
-                diesel_capacity, diesel_backup_generator, diesel_energy, diesel_times
+                diesel_capacity,
+                minigrid.diesel_backup_generator,
+                diesel_energy,
+                diesel_times,
             ).values
         )
         unmet_energy = pd.DataFrame(unmet_energy.values - diesel_energy.values)
