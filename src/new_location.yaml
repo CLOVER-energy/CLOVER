@@ -150,12 +150,13 @@
                   infrastructure_cost: 2000 # [$]
                 households:
                   connection_cost: 100 # [$/household]
-                  kerosene_cost: 0.008 # [$/hour]
                 inverter:
                   cost: 200 # [$/kW]
                   cost_decrease: 2 # [% p.a.]
                   lifetime: 4 # [years]
                   size_increment: 1 # [kW]
+                kerosene:
+                  cost: 0.008 # [$/hour]
                 pv:
                   cost: 500 # [$/kWp]
                   cost_decrease: 5 # [% p.a.]

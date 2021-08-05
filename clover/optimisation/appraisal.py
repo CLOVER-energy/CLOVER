@@ -27,11 +27,12 @@ import pandas as pd
 
 from ..__utils__ import hourly_profile_to_daily_sum, Location, SystemDetails
 from ..impact.finance import (
+    ImpactingComponent,
     connections_expenditure,
     diesel_fuel_expenditure,
     discounted_energy_total,
     discounted_equipment_cost,
-    grid_expenditure,
+    expenditure,
     independent_expenditure,
     total_om,
 )
@@ -141,41 +142,50 @@ def _simulation_financial_appraisal(
         start_year=start_year,
         end_year=end_year,
     )
-    grid_costs = grid_expenditure(
+    grid_costs = expenditure(
+        ImpactingComponent.GRID,
         finance_inputs,
         simulation_results["Grid energy (kWh)"],
         logger,
         start_year=start_year,
         end_year=end_year,
     )
-    kerosene_costs = Finance().get_kerosene_expenditure(
-        kerosene_lamps_in_use_hourly=simulation_results["Kerosene lamps"],
+    kerosene_costs = expenditure(
+        ImpactingComponent.KEROSENE,
+        finance_inputs,
+        simulation_results["Kerosene lamps"],
+        logger,
         start_year=start_year,
         end_year=end_year,
     )
-    kerosene_costs_mitigated = Finance().get_kerosene_expenditure_mitigated(
-        kerosene_lamps_mitigated_hourly=simulation_results["Kerosene mitigation"],
+    kerosene_costs_mitigated = expenditure(
+        ImpactingComponent.KEROSENE,
+        finance_inputs,
+        simulation_results["Kerosene mitigation"],
+        logger,
         start_year=start_year,
         end_year=end_year,
     )
-    #   Total cost incurred during simulation period (discounted)
+
+    # Total cost incurred during simulation period (discounted)
     total_cost = (
         equipment_costs
         + connections_cost
-        + OM_costs
+        + om_costs
         + diesel_costs
         + grid_costs
         + kerosene_costs
     )
     total_system_cost = (
-        equipment_costs + connections_cost + OM_costs + diesel_costs + grid_costs
+        equipment_costs + connections_cost + om_costs + diesel_costs + grid_costs
     )
-    #   Return outputs
+
+    # Return outputs
     system_outputs["Total cost ($)"] = total_cost
     system_outputs["Total system cost ($)"] = total_system_cost
     system_outputs["New equipment cost ($)"] = equipment_costs
     system_outputs["New connection cost ($)"] = connections_cost
-    system_outputs["O&M cost ($)"] = OM_costs
+    system_outputs["O&M cost ($)"] = om_costs
     system_outputs["Diesel cost ($)"] = diesel_costs
     system_outputs["Grid cost ($)"] = grid_costs
     system_outputs["Kerosene cost ($)"] = kerosene_costs
@@ -271,7 +281,8 @@ def appraise_system(
     finance_inputs: Dict[str, Any],
     location: Location,
     logger: Logger,
-    simulation,
+    simulation: pd.DataFrame,
+    system_details: SystemDetails,
     yearly_load_statistics: pd.DataFrame,
     previous_systems: pd.DataFrame = pd.DataFrame([]),
 ) -> pd.DataFrame:
@@ -335,6 +346,7 @@ def appraise_system(
         location,
         logger,
         simulation,
+        system_details,
         yearly_load_statistics,
         previous_systems=previous_systems,
     )
