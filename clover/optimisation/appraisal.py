@@ -30,8 +30,8 @@ from ..impact.finance import (
     ImpactingComponent,
     connections_expenditure,
     diesel_fuel_expenditure,
-    discounted_energy_total,
     discounted_equipment_cost,
+    discounted_total,
     expenditure,
     independent_expenditure,
     total_om,
@@ -230,7 +230,7 @@ def _simulation_technical_appraisal(
     total_energy_daily = hourly_profile_to_daily_sum(
         simulation_results["Total energy used (kWh)"]
     )
-    discounted_energy = discounted_energy_total(
+    discounted_energy = discounted_total(
         finance_inputs,
         logger,
         total_energy_daily,
@@ -331,8 +331,9 @@ def appraise_system(
         {"System details": "System results"}, axis="index"
     )
     technical_results = _simulation_technical_appraisal(
-        finance_inputs, logger, simulation
+        finance_inputs, logger, simulation, system_details
     )
+
     financial_results = _simulation_financial_appraisal(
         finance_inputs,
         location,
