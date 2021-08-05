@@ -57,6 +57,7 @@ from ..__utils__ import (
     Simulation,
 )
 from ..generation.diesel import DieselBackupGenerator
+from .appraisal import appraise_system
 
 __all__ = (
     "multiple_optimisation_step",
@@ -438,13 +439,21 @@ def _simulation_iteration(
         total_solar_power_produced,
     )
 
-    new_appraisal = _system_appraisal(simulation, previous_systems)
+    new_appraisal = appraise_system(
+        finance_inputs,
+        location,
+        logger,
+        simulation,
+        system_details,
+        yearly_load_statistics,
+        previous_systems,
+    )
 
     # Increase system size until largest system is sufficient (if necessary)
-    while self.check_threshold(new_appraisal).empty == True:
-        PV_size_max = np.ceil(PV_size_max / PV_size_step) * PV_size_step
+    while self.check_threshold(new_appraisal).empty:
+        PV_size_max = np.ceil(pv_sizes.max / pv_sizes.min) * pv_sizes.step
         storage_size_max = (
-            np.ceil(storage_size_max / storage_size_step) * storage_size_step
+            np.ceil(storage_sizes.max / storage_sizes.step) * storage_sizes.step
         )
         simulation = energy_system.run_simulation(
             minigrid,
@@ -459,7 +468,7 @@ def _simulation_iteration(
             total_load,
             total_solar_power_produced,
         )
-        new_appraisal = self.system_appraisal(simulation, previous_systems)
+        new_appraisal = system_appraisal(simulation, previous_systems)
 
         PV_size_max += PV_size_step
         storage_size_max += storage_size_step
@@ -1037,7 +1046,7 @@ class OptimisationOld:
             #   Increase  and iterate over storage size
             iteration_storage_size = np.ceil(storage_size_max + storage_size_step)
             while iteration_storage_size >= storage_size_min:
-                simulation = energy_system.run_simulation(
+                _, simulation, system_details = energy_system.run_simulation(
                     minigrid,
                     grid_profile,
                     kerosene_usage,
