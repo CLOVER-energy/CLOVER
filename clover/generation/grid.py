@@ -19,14 +19,13 @@ This module generates grid-availability profiles for CLOVER.
 
 import os
 import random
-import threading
 
 from logging import Logger
 from typing import Dict, List
 
 import pandas as pd
 
-from atpbar import atpbar
+from atpbar import atpbar  # type: ignore
 
 __all__ = (
     "get_lifetime_grid_status",
@@ -96,7 +95,7 @@ def get_lifetime_grid_status(
         )
 
         with open(grid_filename, "w") as f:
-            grid_times.to_csv(f)
+            grid_times.to_csv(f)  # type: ignore
         logger.info(
             "Grid-availability profile for %s successfullly saved to %s.",
             grid_name,

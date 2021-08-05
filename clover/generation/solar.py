@@ -27,13 +27,13 @@ import time
 
 from json.decoder import JSONDecodeError
 from logging import Logger
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 
 import numpy as np
 import pandas as pd
 import requests
 
-from atpbar import atpbar
+from atpbar import atpbar  # type: ignore
 
 from ..__utils__ import get_logger, Location
 
@@ -131,7 +131,7 @@ def _get_solar_generation_from_rn(
         #            'metadata': False,
         #            'raw': False
     }
-    session_url = session.get(url, params=args)
+    session_url = session.get(url, params=args)  # type: ignore
 
     # Parse JSON to get a pandas.DataFrame
     try:
@@ -148,9 +148,9 @@ def _get_solar_generation_from_rn(
     data_frame = data_frame.reset_index(drop=True)
 
     # Remove leap days
-    if year in {2004, 2008, 2012, 2016, 2020}:
+    if year % 4 == 0:
         feb_29 = (31 + 28) * 24
-        data_frame = data_frame.drop(list(range(feb_29, feb_29 + 24)))
+        data_frame = data_frame.drop(list(range(feb_29, feb_29 + 24)))  # type: ignore
         data_frame = data_frame.reset_index(drop=True)
     return data_frame
 
@@ -328,7 +328,7 @@ def total_solar_output(
         output = pd.concat([output, output], ignore_index=True)
         with open(total_solar_output_filename, "w") as f:
             output.to_csv(
-                f,
+                f,  # type: ignore
                 header=None,  # type: ignore
             )
 

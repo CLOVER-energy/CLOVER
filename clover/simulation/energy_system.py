@@ -23,12 +23,14 @@ import datetime
 import math
 import os
 
+from logging import Logger
 from typing import Any, Dict, Optional, Tuple
 
-import numpy as np
-import pandas as pd
+import numpy as np  # type: ignore
+import pandas as pd  # type: ignore
 
 from ..__utils__ import (
+    BColours,
     DieselMode,
     DemandType,
     DistributionNetwork,
@@ -173,11 +175,11 @@ def _get_processed_load_profile(scenario: Scenario, total_load: pd.DataFrame):
 
     if scenario.demands.commercial:
         if total_minigrid_load is not None:
-            total_minigrid_load.add(
+            total_minigrid_load.add(  # type: ignore
                 pd.DataFrame(total_load[DemandType.COMMERCIAL.value].values)
             )
         else:
-            total_minigrid_load = total_load[DemandType.COMMERCIAL.value]
+            total_minigrid_load = total_load[DemandType.COMMERCIAL.value]  # type: ignore
 
     if scenario.demands.public:
         if total_minigrid_load is not None:
@@ -185,7 +187,7 @@ def _get_processed_load_profile(scenario: Scenario, total_load: pd.DataFrame):
                 pd.DataFrame(total_load[DemandType.PUBLIC.value].values)
             )
         else:
-            total_minigrid_load = total_load[DemandType.PUBLIC.value]
+            total_minigrid_load = total_load[DemandType.PUBLIC.value]  # type: ignore
 
     if total_minigrid_load is None:
         raise Exception("At least one load type must be specified.")
@@ -325,6 +327,7 @@ def run_simulation(
     grid_profile: pd.DataFrame,
     kerosene_usage: pd.DataFrame,
     location: Location,
+    logger: Logger,
     pv_size: float,
     scenario: Scenario,
     simulation: Simulation,
@@ -396,6 +399,16 @@ def run_simulation(
                 Final storage size              Equivalent capacity of battery storage (kWh) after simulation
                 Diesel capacity                 Capacity of diesel generation installed (kW)
     """
+
+    if minigrid.battery is None:
+        logger.error(
+            "%sNo battery information available when calling the energy system.%s",
+            BColours.fail,
+            BColours.endc,
+        )
+        raise Exception(
+            "No battery information available when calling the energy system."
+        )
 
     # Start timer to see how long simulation will take
     timer_start = datetime.datetime.now()
@@ -600,14 +613,11 @@ def run_simulation(
                 8760 * (simulation.end_year - simulation.start_year)
             ]
         ),
-        float(
-            storage_size * np.min(battery_health["Battery health"])
-        ),
+        float(storage_size * np.min(battery_health["Battery health"])),
         pv_size,
         float(storage_size),
         simulation.start_year,
     )
-
 
     # End simulation timer
     timer_end = datetime.datetime.now()
