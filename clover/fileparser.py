@@ -115,7 +115,6 @@ def parse_input_files(
     optimisations_file: Optional[str],
 ) -> Tuple[
     Dict[load.load.Device, pd.DataFrame],
-    DieselBackupGenerator,
     energy_system.Minigrid,
     Dict[str, Any],
     Dict[str, Any],
@@ -237,7 +236,7 @@ def parse_input_files(
         inputs_directory_relative_path, ENERGY_SYSTEM_INPUTS_FILE
     )
     minigrid = energy_system.Minigrid.from_dict(
-        read_yaml(energy_system_inputs_filepath, logger)
+        diesel_backup_generator, read_yaml(energy_system_inputs_filepath, logger)
     )
     logger.info("Energy-system inputs successfully parsed.")
 
@@ -374,7 +373,6 @@ def parse_input_files(
 
     return (
         device_utilisations,
-        diesel_backup_generator,
         minigrid,
         finance_inputs,
         ghg_inputs,

@@ -28,30 +28,12 @@ import pandas as pd
 from .. import fileparser
 
 from ..__utils__ import LOCATIONS_FOLDER_NAME, get_logger, read_yaml
+from ..simulation.diesel import DieselBackupGenerator
 
 __all__ = (
-    "DieselBackupGenerator",
     "get_diesel_energy_and_times",
     "get_diesel_fuel_usage",
 )
-
-
-@dataclasses.dataclass
-class DieselBackupGenerator:
-    """
-    Represents a diesel backup generator.
-
-    .. attribute:: diesel_consumption
-        The diesel consumption of the generator, measured in litres per kW produced.
-
-    .. attribute:: minimum_load
-        The minimum capacity of the generator, defined between 0 (able to operate with
-        any load) and 1 (only able to operate at maximum load).
-
-    """
-
-    diesel_consumption: float
-    minimum_load: float
 
 
 def _find_deficit_threshold(
