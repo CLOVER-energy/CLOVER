@@ -23,6 +23,7 @@ import enum
 import os
 
 from logging import Logger
+from re import I
 from typing import Any, Dict
 
 import numpy as np
@@ -31,13 +32,16 @@ import pandas as pd
 from ..__utils__ import (
     BColours,
     Location,
+    hourly_profile_to_daily_sum,
 )
 
 __all_ = (
     "connections_expenditure",
+    "diesel_fuel_expenditure",
     "discounted_total",
     "discounted_equipment_cost",
     "get_total_equipment_cost",
+    "grid_expenditure",
     "independent_expenditure",
     "total_om",
 )
@@ -95,6 +99,10 @@ class ImpactingComponent(enum.Enum):
         Denotes the balance-of-systems aspect of the system.
     - DIESEL:
         Denotes the diesel component of the system.
+    - DIESEL_FUEL:
+        Denotes the diesel fuel component of the system.
+    - GRID:
+        Denotes the grid component of the system.
     - INVERTER:
         Denotes the inverter component of the system.
     - MISC:
@@ -108,6 +116,8 @@ class ImpactingComponent(enum.Enum):
 
     BOS = "bos"
     DIESEL = "diesel"
+    DIESEL_FUEL = "diesel_fuel"
+    GRID = "grid"
     INVERTER = "inverter"
     MISC = "misc_costs"
     PV = "pv"
@@ -502,6 +512,61 @@ def connections_expenditure(
     return total_discounted_cost
 
 
+def diesel_fuel_expenditure(
+    diesel_fuel_usage_hourly: pd.DataFrame,
+    finance_inputs: Dict[str, Any],
+    logger: Logger,
+    *,
+    start_year: int = 0,
+    end_year: int = 20
+):
+    """
+    Calculates cost of diesel fuel used by the system
+
+    Inputs:
+        - diesel_fuel_usage_hourly:
+            Output from Energy_System().simulation(...)
+        - finance_inputs:
+            The finance input information.
+        - logger:
+            The logger to use for the run.
+        - start_year:
+            Start year of simulation period
+        - end_year:
+            End year of simulation period
+
+    Outputs:
+        Discounted cost
+
+    """
+
+    diesel_fuel_usage_daily = hourly_profile_to_daily_sum(diesel_fuel_usage_hourly)
+    start_day = start_year * 365
+    end_day = end_year * 365
+    diesel_price_daily = []
+    r_y = 0.01 * finance_inputs[ImpactingComponent.DIESEL_FUEL][COST_DECREASE]
+    r_d = ((1.0 + r_y) ** (1.0 / 365.0)) - 1.0
+    diesel_price_daily = pd.DataFrame(
+        [
+            finance_inputs[ImpactingComponent.DIEsEL_FUEL][COST] * (1.0 - r_d) ** day
+            for day in range(start_day, end_day)
+        ]
+    )
+
+    total_daily_cost = pd.DataFrame(
+        diesel_fuel_usage_daily.values * diesel_price_daily.values
+    )
+    total_discounted_cost = discounted_total(
+        finance_inputs,
+        logger,
+        total_daily_cost,
+        start_year=start_year,
+        end_year=end_year,
+    )
+
+    return total_discounted_cost
+
+
 def discounted_total(
     finance_inputs: Dict[str, Any],
     logger: Logger,
@@ -579,6 +644,44 @@ def discounted_equipment_cost(
     discount_fraction = (1.0 - finance_inputs[DISCOUNT_RATE]) ** installation_year
 
     return undiscounted_cost * discount_fraction
+
+
+def grid_expenditure(
+    finance_inputs: Dict[str, Any],
+    grid_energy_hourly: pd.DataFrame,
+    logger: Logger,
+    *,
+    start_year=0,
+    end_year=20
+):
+    """
+    Calculates cost of grid electricity used by the system
+
+    Inputs:
+        - finance_inputs:
+            The financial input information.
+        - grid_energy_hourly:
+            Output from Energy_System().simulation(...)
+        - start_year:
+            Start year of simulation period
+        - end_year:
+            End year of simulation period
+
+    Outputs:
+        Discounted cost
+
+    """
+
+    grid_cost = grid_energy_hourly * finance_inputs[ImpactingComponent.GRID][COST]
+    total_daily_cost = hourly_profile_to_daily_sum(grid_cost)
+    total_discounted_cost = discounted_total(
+        finance_inputs,
+        logger,
+        total_daily_cost,
+        start_year=start_year,
+        end_year=end_year,
+    )
+    return total_discounted_cost
 
 
 def independent_expenditure(
@@ -768,58 +871,6 @@ def total_om(
 #         kerosene_lamps_mitigated_hourly * self.finance_inputs.loc["Kerosene cost"]
 #     )
 #     total_daily_cost = hourly_profile_to_daily_sum(kerosene_cost)
-#     total_discounted_cost = self.discounted_cost_total(
-#         total_daily_cost, start_year, end_year
-#     )
-#     return total_discounted_cost
-
-
-# def get_grid_expenditure(self, grid_energy_hourly, start_year=0, end_year=20):
-#     """
-#     Function:
-#         Calculates cost of grid electricity used by the system
-#     Inputs:
-#         grid_energy_hourly                  Output from Energy_System().simulation(...)
-#         start_year                          Start year of simulation period
-#         end_year                            End year of simulation period
-#     Outputs:
-#         Discounted cost
-#     """
-#     grid_cost = grid_energy_hourly * self.finance_inputs.loc["Grid cost"]
-#     total_daily_cost = hourly_profile_to_daily_sum(grid_cost)
-#     total_discounted_cost = self.discounted_cost_total(
-#         total_daily_cost, start_year, end_year
-#     )
-#     return total_discounted_cost
-
-
-# def get_diesel_fuel_expenditure(
-#     self, diesel_fuel_usage_hourly, start_year=0, end_year=20
-# ):
-#     """
-#     Function:
-#         Calculates cost of diesel fuel used by the system
-#     Inputs:
-#         diesel_fuel_usage_hourly            Output from Energy_System().simulation(...)
-#         start_year                          Start year of simulation period
-#         end_year                            End year of simulation period
-#     Outputs:
-#         Discounted cost
-#     """
-#     diesel_fuel_usage_daily = hourly_profile_to_daily_sum(diesel_fuel_usage_hourly)
-#     start_day = start_year * 365
-#     end_day = end_year * 365
-#     diesel_price_daily = []
-#     original_diesel_price = self.finance_inputs.loc["Diesel fuel cost"]
-#     r_y = 0.01 * self.finance_inputs.loc["Diesel fuel cost decrease"]
-#     r_d = ((1.0 + r_y) ** (1.0 / 365.0)) - 1.0
-#     for t in range(start_day, end_day):
-#         diesel_price = original_diesel_price * (1.0 - r_d) ** t
-#         diesel_price_daily.append(diesel_price)
-#     diesel_price_daily = pd.DataFrame(diesel_price_daily)
-#     total_daily_cost = pd.DataFrame(
-#         diesel_fuel_usage_daily.values * diesel_price_daily.values
-#     )
 #     total_discounted_cost = self.discounted_cost_total(
 #         total_daily_cost, start_year, end_year
 #     )

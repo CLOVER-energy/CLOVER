@@ -25,11 +25,13 @@ from typing import Any, Dict
 import numpy as np
 import pandas as pd
 
-from ..__utils__ import hourly_profile_to_daily_sum, Location
+from ..__utils__ import hourly_profile_to_daily_sum, Location, SystemDetails
 from ..impact.finance import (
     connections_expenditure,
+    diesel_fuel_expenditure,
     discounted_energy_total,
     discounted_equipment_cost,
+    grid_expenditure,
     independent_expenditure,
     total_om,
 )
@@ -40,6 +42,7 @@ def _simulation_financial_appraisal(
     location: Location,
     logger: Logger,
     simulation,
+    system_details: SystemDetails,
     yearly_load_statistics: pd.DataFrame,
     previous_systems: pd.DataFrame = pd.DataFrame([]),
 ) -> pd.DataFrame:
@@ -115,25 +118,33 @@ def _simulation_financial_appraisal(
     )
 
     # Calculate costs of connecting new households (discounted)
-    connections_cost = connections_expenditure(finance_inputs, simulation_results["Households"], installation_year)
+    connections_cost = connections_expenditure(
+        finance_inputs, simulation_results["Households"], installation_year
+    )
 
     # Calculate operating costs of the system during this simulation (discounted)
-    om_costs = total_om(system_details[DIESEL_CAPACITY], )
-    OM_costs = Finance().get_total_OM(
-        PV_array_size=simulation_details.loc["System details"]["Initial PV size"],
-        storage_size=simulation_details.loc["System details"]["Initial storage size"],
-        diesel_size=simulation_details.loc["System details"]["Diesel capacity"],
+    om_costs = total_om(
+        system_details.diesel_capacity,
+        finance_inputs,
+        logger,
+        system_details.initial_pv_size,
+        system_details.initial_storage_size,
         start_year=start_year,
         end_year=end_year,
     )
-    #   Calculate running costs of the system (discounted)
-    diesel_costs = Finance().get_diesel_fuel_expenditure(
-        diesel_fuel_usage_hourly=simulation_results["Diesel fuel usage (l)"],
+
+    # Calculate running costs of the system (discounted)
+    diesel_costs = diesel_fuel_expenditure(
+        simulation_results["Diesel fuel usage (l)"],
+        finance_inputs,
+        logger,
         start_year=start_year,
         end_year=end_year,
     )
-    grid_costs = Finance().get_grid_expenditure(
-        grid_energy_hourly=simulation_results["Grid energy (kWh)"],
+    grid_costs = grid_expenditure(
+        finance_inputs,
+        simulation_results["Grid energy (kWh)"],
+        logger,
         start_year=start_year,
         end_year=end_year,
     )
