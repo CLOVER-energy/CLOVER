@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 ########################################################################################
-# diesel.py - Diesel generation module  .                                              #
+# diesel.py - Diesel generation module.                                                #
 #                                                                                      #
 # Author: Phil Sandwell                                                                #
 # Copyright: Phil Sandwell, 2021                                                       #

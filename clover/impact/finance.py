@@ -1,8 +1,8 @@
 #!/usr/bin/python3
 ########################################################################################
-# diesel.py - Diesel generation module  .                                              #
+# finance.py - Financial impact assessment module.                                     #
 #                                                                                      #
-# Author: Phil Sandwell, Be                                                            #
+# Author: Phil Sandwell, Ben Winchester                                                #
 # Copyright: Phil Sandwell, 2021                                                       #
 # License: Open source                                                                 #
 # Most recent update: 05/08/2021                                                       #
@@ -22,18 +22,29 @@ information and system-sizing information provided.
 import enum
 import os
 
+from logging import Logger
 from typing import Any, Dict
 
 import numpy as np
 import pandas as pd
 
-from ..__utils__ import hourly_profile_to_daily_sum, LOCATIONS_FOLDER_NAME
+from ..__utils__ import (
+    BColours,
+    Location,
+)
 
 __all_ = (
-    "component_cost",
-    "component_installation_cost" "get_misc_costs",
+    "connections_expenditure",
+    "discounted_total",
+    "discounted_equipment_cost",
     "get_total_equipment_cost",
+    "independent_expenditure",
+    "total_om",
 )
+
+# Connection cost:
+#   Keyword used to denote the connection cost for a household within the community.
+CONNECTION_COST = "connection_cost"
 
 # Cost:
 #   Keyword used to denote the cost of a component.
@@ -43,6 +54,18 @@ COST: str = "cost"
 #   Keyword used to denote the cost decrease of a component.
 COST_DECREASE: str = "cost_decrease"
 
+# Discount rate:
+#   Keyword used to denote the discount rate.
+DISCOUNT_RATE = "discount_rate"
+
+# General OM:
+#   Keyword used to denote general O&M costs of the system.
+GENERAL_OM = "general_o&m"
+
+# Households:
+#   Keyword used to denote households within the community.
+HOUSEHOLDS = "households"
+
 # Installation cost:
 #   Keyword used to denote the installation cost of a component.
 INSTALLATION_COST: str = "cost"
@@ -50,6 +73,18 @@ INSTALLATION_COST: str = "cost"
 # Installation cost decrease:
 #   Keyword used to denote the installation cost decrease of a component.
 INSTALLATION_COST_DECREASE: str = "cost_decrease"
+
+# Lifetime:
+#   Keyword to denote the lifetime of a component.
+LIFETIME = "lifetime"
+
+# OM:
+#   Keyword used to denote O&M costs.
+OM = "o&m"
+
+# Size increment:
+#   Keyword to denote increments in the size of a component.
+SIZE_INCREMENT = "size_increment"
 
 
 class ImpactingComponent(enum.Enum):
@@ -60,6 +95,8 @@ class ImpactingComponent(enum.Enum):
         Denotes the balance-of-systems aspect of the system.
     - DIESEL:
         Denotes the diesel component of the system.
+    - INVERTER:
+        Denotes the inverter component of the system.
     - MISC:
         Denotes misc. costs.
     - PV:
@@ -71,12 +108,18 @@ class ImpactingComponent(enum.Enum):
 
     BOS = "bos"
     DIESEL = "diesel"
+    INVERTER = "inverter"
     MISC = "misc_costs"
     PV = "pv"
     STORAGE = "storage"
 
 
-def component_cost(
+####################
+# Helper functions #
+####################
+
+
+def _component_cost(
     component_cost: float,
     component_cost_decrease: float,
     component_size: float,
@@ -108,7 +151,7 @@ def component_cost(
     return system_wide_cost * (1 - annual_reduction) ** installation_year
 
 
-def component_installation_cost(
+def _component_installation_cost(
     component_size: float,
     installation_cost: float,
     installation_cost_decrease: float,
@@ -148,9 +191,173 @@ def component_installation_cost(
     )
 
 
-def get_misc_costs(
-    diesel_size: float, misc_costs: float, pv_array_size: float
+def _component_om(
+    component_om_cost: float,
+    component_size: float,
+    finance_inputs: Dict[str, Any],
+    logger: Logger,
+    *,
+    start_year: int,
+    end_year: int
 ) -> float:
+    """
+    Computes the O&M cost of a component.
+
+    """
+
+    om_cost_daily = (component_size * component_om_cost) / 365
+    total_daily_cost = pd.DataFrame([om_cost_daily] * (end_year - start_year) * 265)
+
+    return discounted_total(
+        finance_inputs,
+        logger,
+        total_daily_cost,
+        start_year=start_year,
+        end_year=end_year,
+    )
+
+
+def _daily_discount_rate(discount_rate: float) -> float:
+    """
+    Calculates equivalent discount rate at a daily resolution
+
+    Inputs:
+        - discount_rate:
+            The discount rate.
+
+    Outputs:
+        - The daily discount rate.
+
+    """
+
+    return ((1.0 + discount_rate) ** (1.0 / 365.0)) - 1.0
+
+
+def _discounted_fraction(
+    discount_rate: float, *, start_year: int = 0, end_year: int = 20
+) -> pd.DataFrame:
+    """
+    Calculates the discounted fraction at a daily resolution
+
+    Inputs:
+        - discount_rate:
+            The discount rate.
+        - start_year:
+            Start year of simulation period
+        - end_year:
+            End year of simulation period
+
+    Outputs:
+        Discounted fraction for each day of the simulation as a
+        :class:`pandas.DataFrame` instance.
+
+    """
+
+    # Intialise various variables.
+    start_day = int(start_year * 365)
+    end_day = int(end_year * 365)
+
+    # Convert the discount rate into the denominator.
+    r_d = _daily_discount_rate(discount_rate)
+    denominator = 1.0 + r_d
+
+    # Compute a list containing all the discounted fractions over the time period.
+    discounted_fraction_array = [
+        denominator ** -time for time in range(start_day, end_day)
+    ]
+
+    return pd.DataFrame(discounted_fraction_array)
+
+
+def _inverter_expenditure(
+    finance_inputs: Dict[str, Any],
+    location: Location,
+    yearly_load_statistics: pd.DataFrame,
+    *,
+    start_year: int,
+    end_year: int
+) -> float:
+    """
+    Calculates cost of inverters based on load calculations
+
+    Inputs:
+        - finance_inputs:
+            The finance-input information for the system.
+        - location:
+            The location being considered.
+        - yearly_load_statistics:
+            The yearly-load statistics for the system.
+        - start_year:
+            Start year of simulation period
+        - end_year:
+            End year of simulation period
+
+    Outputs:
+        Discounted cost
+
+    """
+
+    # Initialise inverter replacement periods
+    replacement_period = finance_inputs[ImpactingComponent.INVERTER][LIFETIME]
+    replacement_intervals = pd.DataFrame(
+        np.arange(0, location.max_years, replacement_period)
+    )
+    replacement_intervals.columns = ["Installation year"]
+
+    # Check if inverter should be replaced in the specified time interval
+    if replacement_intervals.loc[
+        replacement_intervals["Installation year"].isin(range(start_year, end_year))
+    ].empty:
+        inverter_discounted_cost = float(0.0)
+        return inverter_discounted_cost
+
+    # Initialise inverter sizing calculation
+    max_power = []
+    inverter_step = finance_inputs[ImpactingComponent.INVERTER][SIZE_INCREMENT]
+    inverter_size = []
+    for i in range(len(replacement_intervals)):
+        # Calculate maximum power in interval years
+        start = replacement_intervals["Installation year"].iloc[i]
+        end = start + replacement_period
+        max_power_interval = yearly_load_statistics["Maximum"].iloc[start:end].max()
+        max_power.append(max_power_interval)
+        # Calculate resulting inverter size
+        inverter_size_interval = (
+            np.ceil(0.001 * max_power_interval / inverter_step) * inverter_step
+        )
+        inverter_size.append(inverter_size_interval)
+    inverter_size = pd.DataFrame(inverter_size)
+    inverter_size.columns = ["Inverter size (kW)"]
+    inverter_info = pd.concat([replacement_intervals, inverter_size], axis=1)
+    # Calculate
+    inverter_info["Discount rate"] = [
+        (1 - finance_inputs[DISCOUNT_RATE])
+        ** inverter_info["Installation year"].iloc[i]
+        for i in range(len(inverter_info))
+    ]
+    inverter_info["Inverter cost ($/kW)"] = [
+        finance_inputs[ImpactingComponent.INVERTER][COST]
+        * (1 - 0.01 * finance_inputs[ImpactingComponent.INVERTER][COST_DECREASE])
+        ** inverter_info["Installation year"].iloc[i]
+        for i in range(len(inverter_info))
+    ]
+    inverter_info["Discounted expenditure ($)"] = [
+        inverter_info["Discount rate"].iloc[i]
+        * inverter_info["Inverter size (kW)"].iloc[i]
+        * inverter_info["Inverter cost ($/kW)"].iloc[i]
+        for i in range(len(inverter_info))
+    ]
+    inverter_discounted_cost = np.sum(
+        inverter_info.loc[
+            inverter_info["Installation year"].isin(
+                np.array(range(start_year, end_year))
+            )
+        ]["Discounted expenditure ($)"]
+    ).round(2)
+    return inverter_discounted_cost
+
+
+def _misc_costs(diesel_size: float, misc_costs: float, pv_array_size: float) -> float:
     """
     Calculates cost of miscellaneous capacity-related costs
 
@@ -170,8 +377,12 @@ def get_misc_costs(
     return misc_costs
 
 
+###############################
+# Externally facing functions #
+###############################
+
+
 def get_total_equipment_cost(
-    self,
     diesel_size: float,
     finance_inputs: Dict[str, Any],
     pv_array_size: float,
@@ -198,25 +409,25 @@ def get_total_equipment_cost(
     """
 
     # Calculate the various system costs.
-    bos_cost = component_cost(
+    bos_cost = _component_cost(
         finance_inputs[ImpactingComponent.BOS][COST],
         finance_inputs[ImpactingComponent.BOS][COST_DECREASE],
         pv_array_size,
         installation_year,
     )
-    diesel_cost = component_cost(
+    diesel_cost = _component_cost(
         finance_inputs[ImpactingComponent.DIESEL][COST],
         finance_inputs[ImpactingComponent.DIESEL][COST_DECREASE],
         diesel_size,
         installation_year,
     )
-    pv_cost = component_cost(
+    pv_cost = _component_cost(
         finance_inputs[ImpactingComponent.PV][COST],
         finance_inputs[ImpactingComponent.PV][COST_DECREASE],
         pv_array_size,
         installation_year,
     )
-    storage_cost = component_cost(
+    storage_cost = _component_cost(
         finance_inputs[ImpactingComponent.STORAGE][COST],
         finance_inputs[ImpactingComponent.STORAGE][COST_DECREASE],
         storage_size,
@@ -224,13 +435,13 @@ def get_total_equipment_cost(
     )
 
     # Calculate the installation costs.
-    diesel_installation_cost = component_installation_cost(
+    diesel_installation_cost = _component_installation_cost(
         pv_array_size,
         finance_inputs[ImpactingComponent.DIESEL][INSTALLATION_COST],
         finance_inputs[ImpactingComponent.DIESEL][INSTALLATION_COST_DECREASE],
         installation_year,
     )
-    pv_installation_cost = component_installation_cost(
+    pv_installation_cost = _component_installation_cost(
         pv_array_size,
         finance_inputs[ImpactingComponent.PV][INSTALLATION_COST],
         finance_inputs[ImpactingComponent.PV][INSTALLATION_COST_DECREASE],
@@ -238,7 +449,7 @@ def get_total_equipment_cost(
     )
     total_installation_cost = diesel_installation_cost + pv_installation_cost
 
-    misc_costs = get_misc_costs(
+    misc_costs = _misc_costs(
         diesel_size, finance_inputs[ImpactingComponent.MISC], pv_array_size
     )
     return (
@@ -251,57 +462,238 @@ def get_total_equipment_cost(
     )
 
 
+def connections_expenditure(
+    finance_inputs: Dict[str, Any], households: pd.DataFrame, installation_year=0
+):
+    """
+    Calculates cost of connecting households to the system
+
+    Inputs:
+        - finance_inputs:
+            The finance input information.
+        - households:
+            DataFrame of households from Energy_System().simulation(...)
+        - year:
+            Installation year
+
+    Outputs:
+        Discounted cost
+
+    """
+
+    new_connections = np.max(households) - np.min(households)
+    undiscounted_cost = float(
+        finance_inputs[HOUSEHOLDS][CONNECTION_COST] * new_connections
+    )
+    discount_fraction = (1.0 - finance_inputs[DISCOUNT_RATE]) ** installation_year
+    total_discounted_cost = undiscounted_cost * discount_fraction
+
+    # Section in comments allows a more accurate consideration of the discounted cost
+    # for new connections, but substantially increases the processing time.
+
+    # new_connections = [0]
+    # for t in range(int(households.shape[0])-1):
+    #     new_connections.append(households['Households'][t+1] - households['Households'][t])
+    # new_connections = pd.DataFrame(new_connections)
+    # new_connections_daily = hourly_profile_to_daily_sum(new_connections)
+    # total_daily_cost = connection_cost * new_connections_daily
+    # total_discounted_cost = self.discounted_cost_total(total_daily_cost,start_year,end_year)
+
+    return total_discounted_cost
+
+
+def discounted_total(
+    finance_inputs: Dict[str, Any],
+    logger: Logger,
+    total_daily: pd.DataFrame,
+    *,
+    start_year: int = 0,
+    end_year: int = 20
+):
+    """
+    Calculates the total discounted cost of some parameter.
+
+    Inputs:
+        - finance_inputs:
+            The finance input information.
+        - logger:
+            The logger to use for the run.
+        - total_daily:
+            Undiscounted energy at a daily resolution
+        - start_year:
+            Start year of simulation period
+        - end_year:
+            End year of simulation period
+
+    Outputs:
+        The discounted energy total cost.
+
+    """
+
+    try:
+        discount_rate = finance_inputs[DISCOUNT_RATE]
+    except KeyError:
+        logger.error(
+            "%sNo discount rate in the finance inputs, missing key: %s%s",
+            BColours.fail,
+            DISCOUNT_RATE,
+            BColours.endc,
+        )
+        raise
+
+    discounted_fraction = _discounted_fraction(
+        discount_rate, start_year=start_year, end_year=end_year
+    )
+    discounted_energy = discounted_fraction * total_daily
+    return np.sum(discounted_energy)[0]
+
+
+def discounted_equipment_cost(
+    diesel_size: float,
+    finance_inputs: Dict[str, Any],
+    pv_array_size: float,
+    storage_size: float,
+    installation_year=0,
+):
+    """
+    Calculates cost of all equipment costs
+
+    Inputs:
+        - diesel_size:
+            Capacity of diesel generator being installed
+        - finance_inputs:
+            The finance input information.
+        - pv_array_size:
+            Capacity of PV being installed
+        - storage_size:
+            Capacity of battery storage being installed
+        - installation_year:
+            Installation year
+    Outputs:
+        Discounted cost
+    """
+
+    undiscounted_cost = get_total_equipment_cost(
+        diesel_size, finance_inputs, pv_array_size, storage_size, installation_year
+    )
+    discount_fraction = (1.0 - finance_inputs[DISCOUNT_RATE]) ** installation_year
+
+    return undiscounted_cost * discount_fraction
+
+
+def independent_expenditure(
+    finance_inputs: Dict[str, Any],
+    location: Location,
+    yearly_load_statistics: pd.DataFrame,
+    *,
+    start_year: int,
+    end_year: int
+):
+    """
+    Calculates cost of equipment which is independent of simulation periods
+
+    Inputs:
+        - finance_inputs:
+            The financial input information.
+        - location:
+            The location currently being considered.
+        - yearly_load_statistics:
+            The yearly load statistics information.
+        - start_year:
+            Start year of simulation period
+        - end_year:
+            End year of simulation period
+
+    Outputs:
+        Discounted cost
+
+    """
+
+    inverter_expenditure = _inverter_expenditure(
+        finance_inputs,
+        location,
+        yearly_load_statistics,
+        start_year=start_year,
+        end_year=end_year,
+    )
+    total_expenditure = inverter_expenditure  # ... + other components as required
+    return total_expenditure
+
+
+def total_om(
+    diesel_size: float,
+    finance_inputs: Dict[str, Any],
+    logger: Logger,
+    pv_array_size: float,
+    storage_size: float,
+    *,
+    start_year: int = 0,
+    end_year: int = 20
+):
+    """
+    Calculates total O&M cost over the simulation period
+
+    Inputs:
+        - diesel_size:
+            Capacity of diesel generator installed
+        - finance_inputs:
+            Finance input information.
+        - logger:
+            The logger to use for the run.
+        - pv_array_size:
+            Capacity of PV installed
+        - storage_size:
+            Capacity of battery storage installed
+        - start_year:
+            Start year of simulation period
+        - end_year:
+            End year of simulation period
+
+    Outputs:
+        Discounted cost
+
+    """
+
+    pv_om = _component_om(
+        finance_inputs[ImpactingComponent.PV][OM],
+        pv_array_size,
+        finance_inputs,
+        logger,
+        start_year=start_year,
+        end_year=end_year,
+    )
+    storage_om = _component_om(
+        finance_inputs[ImpactingComponent.STORAGE][OM],
+        storage_size,
+        finance_inputs,
+        logger,
+        start_year=start_year,
+        end_year=end_year,
+    )
+    diesel_om = _component_om(
+        finance_inputs[ImpactingComponent.DIESEL][OM],
+        diesel_size,
+        finance_inputs,
+        logger,
+        start_year=start_year,
+        end_year=end_year,
+    )
+    general_om = _component_om(
+        finance_inputs[GENERAL_OM],
+        1,
+        finance_inputs,
+        logger,
+        start_year=start_year,
+        end_year=end_year,
+    )
+    return pv_om + storage_om + diesel_om + general_om
+
+
 # #%%
 # # ==============================================================================
 # #   EQUIPMENT EXPENDITURE (DISCOUNTED)
 # #       Find system equipment capital expenditure (discounted) for new equipment
 # # ==============================================================================
-# def discounted_equipment_cost(self, PV_array_size, storage_size, diesel_size, year=0):
-#     """
-#     Function:
-#         Calculates cost of all equipment costs
-#     Inputs:
-#         PV_array_size       Capacity of PV being installed
-#         storage_size        Capacity of battery storage being installed
-#         diesel_size         Capacity of diesel generator being installed
-#         year                Installation year
-#     Outputs:
-#         Discounted cost
-#     """
-#     undiscounted_cost = self.get_total_equipment_cost(
-#         PV_array_size, storage_size, diesel_size, year
-#     )
-#     discount_fraction = (1.0 - self.finance_inputs.loc["Discount rate"]) ** year
-#     return undiscounted_cost * discount_fraction
-
-
-# def get_connections_expenditure(self, households, year=0):
-#     """
-#     Function:
-#         Calculates cost of connecting households to the system
-#     Inputs:
-#         households          DataFrame of households from Energy_System().simulation(...)
-#         year                Installation year
-#     Outputs:
-#         Discounted cost
-#     """
-#     households = pd.DataFrame(households)
-#     connection_cost = self.finance_inputs.loc["Connection cost"]
-#     new_connections = np.max(households) - np.min(households)
-#     undiscounted_cost = float(connection_cost * new_connections)
-#     discount_fraction = (1.0 - self.finance_inputs.loc["Discount rate"]) ** year
-#     total_discounted_cost = undiscounted_cost * discount_fraction
-#     #   Section in comments allows a more accurate consideration of the discounted
-#     #        cost for new connections, but substantially increases the processing time.
-
-#     #        new_connections = [0]
-#     #        for t in range(int(households.shape[0])-1):
-#     #            new_connections.append(households['Households'][t+1] - households['Households'][t])
-#     #        new_connections = pd.DataFrame(new_connections)
-#     #        new_connections_daily = hourly_profile_to_daily_sum(new_connections)
-#     #        total_daily_cost = connection_cost * new_connections_daily
-#     #        total_discounted_cost = self.discounted_cost_total(total_daily_cost,start_year,end_year)
-#     return total_discounted_cost
 
 
 # #   Grid extension components
@@ -329,93 +721,6 @@ def get_total_equipment_cost(
 # #   EQUIPMENT EXPENDITURE (DISCOUNTED) ON INDEPENDENT EXPENDITURE
 # #       Find expenditure (discounted) on items independent of simulation periods
 # # =============================================================================
-
-
-# def get_independent_expenditure(self, start_year, end_year):
-#     """
-#     Function:
-#         Calculates cost of equipment which is independent of simulation periods
-#     Inputs:
-#         start_year        Start year of simulation period
-#         end_year          End year of simulation period
-#     Outputs:
-#         Discounted cost
-#     """
-#     inverter_expenditure = self.get_inverter_expenditure(start_year, end_year)
-#     total_expenditure = inverter_expenditure  # ... + other components as required
-#     return total_expenditure
-
-
-# def get_inverter_expenditure(self, start_year, end_year):
-#     """
-#     Function:
-#         Calculates cost of inverters based on load calculations
-#     Inputs:
-#         start_year        Start year of simulation period
-#         end_year          End year of simulation period
-#     Outputs:
-#         Discounted cost
-#     """
-#     #   Initialise inverter replacement periods
-#     replacement_period = int(self.finance_inputs.loc["Inverter lifetime"])
-#     system_lifetime = int(self.location_inputs["Years"])
-#     replacement_intervals = pd.DataFrame(
-#         np.arange(0, system_lifetime, replacement_period)
-#     )
-#     replacement_intervals.columns = ["Installation year"]
-#     #   Check if inverter should be replaced in the specified time interval
-#     if (
-#         replacement_intervals.loc[
-#             replacement_intervals["Installation year"].isin(range(start_year, end_year))
-#         ].empty
-#         == True
-#     ):
-#         inverter_discounted_cost = float(0.0)
-#         return inverter_discounted_cost
-#     #   Initialise inverter sizing calculation
-#     max_power = []
-#     inverter_step = float(self.finance_inputs.loc["Inverter size increment"])
-#     inverter_size = []
-#     for i in range(len(replacement_intervals)):
-#         #   Calculate maximum power in interval years
-#         start = replacement_intervals["Installation year"].iloc[i]
-#         end = start + replacement_period
-#         max_power_interval = self.inverter_inputs["Maximum"].iloc[start:end].max()
-#         max_power.append(max_power_interval)
-#         #   Calculate resulting inverter size
-#         inverter_size_interval = (
-#             np.ceil(0.001 * max_power_interval / inverter_step) * inverter_step
-#         )
-#         inverter_size.append(inverter_size_interval)
-#     inverter_size = pd.DataFrame(inverter_size)
-#     inverter_size.columns = ["Inverter size (kW)"]
-#     inverter_info = pd.concat([replacement_intervals, inverter_size], axis=1)
-#     #   Calculate
-#     inverter_info["Discount rate"] = [
-#         (1 - self.finance_inputs.loc["Discount rate"])
-#         ** inverter_info["Installation year"].iloc[i]
-#         for i in range(len(inverter_info))
-#     ]
-#     inverter_info["Inverter cost ($/kW)"] = [
-#         self.finance_inputs.loc["Inverter cost"]
-#         * (1 - 0.01 * self.finance_inputs.loc["Inverter cost decrease"])
-#         ** inverter_info["Installation year"].iloc[i]
-#         for i in range(len(inverter_info))
-#     ]
-#     inverter_info["Discounted expenditure ($)"] = [
-#         inverter_info["Discount rate"].iloc[i]
-#         * inverter_info["Inverter size (kW)"].iloc[i]
-#         * inverter_info["Inverter cost ($/kW)"].iloc[i]
-#         for i in range(len(inverter_info))
-#     ]
-#     inverter_discounted_cost = np.sum(
-#         inverter_info.loc[
-#             inverter_info["Installation year"].isin(
-#                 np.array(range(start_year, end_year))
-#             )
-#         ]["Discounted expenditure ($)"]
-#     ).round(2)
-#     return inverter_discounted_cost
 
 
 # #%%
@@ -523,175 +828,9 @@ def get_total_equipment_cost(
 
 # #%%
 # # ==============================================================================
-# #   OPERATION AND MAINTENANCE EXPENDITURE (DISCOUNTED)
-# #      Find O&M costs (discounted) incurred during simulation
-# # ==============================================================================
-# #   PV O&M for entire PV array
-# def get_PV_OM(self, PV_array_size, start_year=0, end_year=20):
-#     """
-#     Function:
-#         Calculates O&M cost of PV the simulation period
-#     Inputs:
-#         PV_array_size           Capacity of PV installed
-#         start_year              Start year of simulation period
-#         end_year                End year of simulation period
-#     Outputs:
-#         Discounted cost
-#     """
-#     PV_OM_cost = PV_array_size * self.finance_inputs.loc["PV O&M"]  # $ per year
-#     PV_OM_cost_daily = PV_OM_cost / 365.0  # $ per day
-#     total_daily_cost = pd.DataFrame([PV_OM_cost_daily] * (end_year - start_year) * 365)
-#     return self.discounted_cost_total(total_daily_cost, start_year, end_year)
-
-
-# #   Storage O&M for entire storage system
-# def get_storage_OM(self, storage_size, start_year=0, end_year=20):
-#     """
-#     Function:
-#         Calculates O&M cost of storage the simulation period
-#     Inputs:
-#         storage_size            Capacity of battery storage installed
-#         start_year              Start year of simulation period
-#         end_year                End year of simulation period
-#     Outputs:
-#         Discounted cost
-#     """
-#     storage_OM_cost = (
-#         storage_size * self.finance_inputs.loc["Storage O&M"]
-#     )  # $ per year
-#     storage_OM_cost_daily = storage_OM_cost / 365.0  # $ per day
-#     total_daily_cost = pd.DataFrame(
-#         [storage_OM_cost_daily] * (end_year - start_year) * 365
-#     )
-#     return self.discounted_cost_total(total_daily_cost, start_year, end_year)
-
-
-# #   Diesel O&M for entire diesel genset
-# def get_diesel_OM(self, diesel_size, start_year=0, end_year=20):
-#     """
-#     Function:
-#         Calculates O&M cost of diesel generation the simulation period
-#     Inputs:
-#         diesel_size             Capacity of diesel generator installed
-#         start_year              Start year of simulation period
-#         end_year                End year of simulation period
-#     Outputs:
-#         Discounted cost
-#     """
-#     diesel_OM_cost = diesel_size * self.finance_inputs.loc["Diesel O&M"]  # $ per year
-#     diesel_OM_cost_daily = diesel_OM_cost / 365.0  # $ per day
-#     total_daily_cost = pd.DataFrame(
-#         [diesel_OM_cost_daily] * (end_year - start_year) * 365
-#     )
-#     return self.discounted_cost_total(total_daily_cost, start_year, end_year)
-
-
-# #   General O&M for entire energy system (e.g. for staff, land hire etc.)
-# def get_general_OM(self, start_year=0, end_year=20):
-#     """
-#     Function:
-#         Calculates O&M cost of general components the simulation period
-#     Inputs:
-#         start_year              Start year of simulation period
-#         end_year                End year of simulation period
-#     Outputs:
-#         Discounted cost
-#     """
-#     general_OM_cost = self.finance_inputs.loc["General O&M"]  # $ per year
-#     general_OM_cost_daily = general_OM_cost / 365.0  # $ per day
-#     total_daily_cost = pd.DataFrame(
-#         [general_OM_cost_daily] * (end_year - start_year) * 365
-#     )
-#     return self.discounted_cost_total(total_daily_cost, start_year, end_year)
-
-
-# #   Total O&M for entire system
-# def get_total_OM(
-#     self, PV_array_size, storage_size, diesel_size, start_year=0, end_year=20
-# ):
-#     """
-#     Function:
-#         Calculates total O&M cost over the simulation period
-#     Inputs:
-#         PV_array_size           Capacity of PV installed
-#         storage_size            Capacity of battery storage installed
-#         diesel_size             Capacity of diesel generator installed
-#         start_year              Start year of simulation period
-#         end_year                End year of simulation period
-#     Outputs:
-#         Discounted cost
-#     """
-#     PV_OM = self.get_PV_OM(PV_array_size, start_year, end_year)
-#     storage_OM = self.get_storage_OM(storage_size, start_year, end_year)
-#     diesel_OM = self.get_diesel_OM(diesel_size, start_year, end_year)
-#     general_OM = self.get_general_OM(start_year, end_year)
-#     return PV_OM + storage_OM + diesel_OM + general_OM
-
-
-# #%%
-# # ==============================================================================
 # #   FINANCING CALCULATIONS
 # #       Functions to calculate discount rates and discounted expenditures
 # # ==============================================================================
-# def daily_discount_rate(self):
-#     """
-#     Function:
-#         Calculates equivalent discount rate at a daily resolution
-#     """
-#     r_y = self.finance_inputs.loc["Discount rate"]
-#     return ((1.0 + r_y) ** (1.0 / 365.0)) - 1.0
-
-
-# def discounted_fraction(self, start_year=0, end_year=20):
-#     """
-#     Function:
-#         Calculates the discounted fraction at a daily resolution
-#     Inputs:
-#         start_year              Start year of simulation period
-#         end_year                End year of simulation period
-#     Outputs:
-#         Discounted fraction for each day of the simulation
-#     """
-#     start_day = int(start_year * 365)
-#     end_day = int(end_year * 365)
-#     discounted_fraction_array = []
-#     r_d = self.daily_discount_rate()
-#     denominator = 1.0 + r_d
-#     for t in range(start_day, end_day):
-#         discounted_fraction_array.append(denominator ** -t)
-#     return pd.DataFrame(discounted_fraction_array)
-
-
-# def discounted_cost_total(self, total_cost_daily, start_year=0, end_year=20):
-#     """
-#     Function:
-#         Calculates the discounted expenditure
-#     Inputs:
-#         total_cost_daily        Undiscounted costs at a daily resolution
-#         start_year              Start year of simulation period
-#         end_year                End year of simulation period
-#     Outputs:
-#         Discounted cost total
-#     """
-#     discounted_fraction = self.discounted_fraction(start_year, end_year)
-#     discounted_cost = discounted_fraction * total_cost_daily
-#     return np.sum(discounted_cost)[0]
-
-
-# def discounted_energy_total(self, total_energy_daily, start_year=0, end_year=20):
-#     """
-#     Function:
-#         Calculates the discounted energy
-#     Inputs:
-#         total_energy_daily      Undiscounted energy at a daily resolution
-#         start_year              Start year of simulation period
-#         end_year                End year of simulation period
-#     Outputs:
-#         Discounted energy total
-#     """
-#     discounted_fraction = self.discounted_fraction(start_year, end_year)
-#     discounted_energy = discounted_fraction * total_energy_daily
-#     return np.sum(discounted_energy)[0]
 
 
 # #   Calculate LCUE using total discounted costs ($) and discounted energy (kWh)

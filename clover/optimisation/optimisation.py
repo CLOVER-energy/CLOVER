@@ -357,8 +357,6 @@ class StorageSystemSize:
     step: float
 
 
-
-
 def _simulation_iteration(
     grid_profile: pd.DataFrame,
     kerosene_usage: pd.DataFrame,
@@ -1095,126 +1093,6 @@ class OptimisationOld:
     #       overall performance of the energy systems that have been simulated.
     # =============================================================================
 
-    def simulation_financial_appraisal(
-        self, simulation, previous_systems=pd.DataFrame([])
-    ):
-        """
-        Function:
-            Appraises the financial performance of a minigrid system
-        Inputs:
-            simulation          Outputs of Energy_System().simulation(...)
-            previous_systems    Report from previously installed system (not require
-                                    if no system was previously deployed)
-        Outputs:
-            system_outputs      DataFrame of key financial data e.g. costs for equipment,
-                                    O&M and running costs, kerosene spending and mitigation
-        """
-        #   Initialise
-        simulation_results = simulation[0]
-        simulation_details = simulation[1]
-        start_year = int(simulation_details.loc["System details"]["Start year"])
-        end_year = int(simulation_details.loc["System details"]["End year"])
-        intallation_year = start_year
-        system_outputs = pd.DataFrame(index=["System results"])
-        #   Check to see if a system was previously installed
-        if previous_systems.empty == True:
-            previous_system = pd.DataFrame(
-                {
-                    "Final PV size": 0.0,
-                    "Final storage size": 0.0,
-                    "Diesel capacity": 0.0,
-                    "Total system cost ($)": 0.0,
-                    "Discounted energy (kWh)": 0.0,
-                },
-                index=["System details"],
-            )
-        else:
-            previous_system = previous_systems.tail(1).reset_index(drop=True)
-            previous_system = previous_system.rename(
-                {0: "System details"}, axis="index"
-            )
-        #   Calculate new PV, storage and diesel installations
-        PV_addition = (
-            simulation_details.loc["System details"]["Initial PV size"]
-            - previous_system.loc["System details"]["Final PV size"]
-        )
-        storage_addition = (
-            simulation_details.loc["System details"]["Initial storage size"]
-            - previous_system.loc["System details"]["Final storage size"]
-        )
-        diesel_addition = (
-            simulation_details.loc["System details"]["Diesel capacity"]
-            - previous_system.loc["System details"]["Diesel capacity"]
-        )
-        #   Calculate new equipment costs (discounted)
-        equipment_costs = (
-            Finance().discounted_equipment_cost(
-                PV_array_size=PV_addition,
-                storage_size=storage_addition,
-                diesel_size=diesel_addition,
-                year=intallation_year,
-            )
-            + Finance().get_independent_expenditure(start_year, end_year)
-        )
-        #   Calculate costs of connecting new households (discounted)
-        connections_cost = Finance().get_connections_expenditure(
-            households=simulation_results["Households"], year=intallation_year
-        )
-        #   Calculate operating costs of the system during this simulation (discounted)
-        OM_costs = Finance().get_total_OM(
-            PV_array_size=simulation_details.loc["System details"]["Initial PV size"],
-            storage_size=simulation_details.loc["System details"][
-                "Initial storage size"
-            ],
-            diesel_size=simulation_details.loc["System details"]["Diesel capacity"],
-            start_year=start_year,
-            end_year=end_year,
-        )
-        #   Calculate running costs of the system (discounted)
-        diesel_costs = Finance().get_diesel_fuel_expenditure(
-            diesel_fuel_usage_hourly=simulation_results["Diesel fuel usage (l)"],
-            start_year=start_year,
-            end_year=end_year,
-        )
-        grid_costs = Finance().get_grid_expenditure(
-            grid_energy_hourly=simulation_results["Grid energy (kWh)"],
-            start_year=start_year,
-            end_year=end_year,
-        )
-        kerosene_costs = Finance().get_kerosene_expenditure(
-            kerosene_lamps_in_use_hourly=simulation_results["Kerosene lamps"],
-            start_year=start_year,
-            end_year=end_year,
-        )
-        kerosene_costs_mitigated = Finance().get_kerosene_expenditure_mitigated(
-            kerosene_lamps_mitigated_hourly=simulation_results["Kerosene mitigation"],
-            start_year=start_year,
-            end_year=end_year,
-        )
-        #   Total cost incurred during simulation period (discounted)
-        total_cost = (
-            equipment_costs
-            + connections_cost
-            + OM_costs
-            + diesel_costs
-            + grid_costs
-            + kerosene_costs
-        )
-        total_system_cost = (
-            equipment_costs + connections_cost + OM_costs + diesel_costs + grid_costs
-        )
-        #   Return outputs
-        system_outputs["Total cost ($)"] = total_cost
-        system_outputs["Total system cost ($)"] = total_system_cost
-        system_outputs["New equipment cost ($)"] = equipment_costs
-        system_outputs["New connection cost ($)"] = connections_cost
-        system_outputs["O&M cost ($)"] = OM_costs
-        system_outputs["Diesel cost ($)"] = diesel_costs
-        system_outputs["Grid cost ($)"] = grid_costs
-        system_outputs["Kerosene cost ($)"] = kerosene_costs
-        system_outputs["Kerosene cost mitigated ($)"] = kerosene_costs_mitigated
-        return system_outputs.round(2)
-
     def simulation_environmental_appraisal(
         self, simulation, previous_systems=pd.DataFrame([])
     ):
@@ -1234,7 +1112,7 @@ class OptimisationOld:
         simulation_details = simulation[1]
         start_year = int(simulation_details.loc["System details"]["Start year"])
         end_year = int(simulation_details.loc["System details"]["End year"])
-        intallation_year = start_year
+        installation_year = start_year
         system_outputs = pd.DataFrame(index=["System results"])
         #   Check to see if a system was previously installed
         if previous_systems.empty == True:
@@ -1272,13 +1150,13 @@ class OptimisationOld:
                 PV_array_size=PV_addition,
                 storage_size=storage_addition,
                 diesel_size=diesel_addition,
-                year=intallation_year,
+                year=installation_year,
             )
             + GHGs().get_independent_GHGs(start_year, end_year)
         )
         #   Calculate GHGs of connecting new households
         connections_GHGs = GHGs().get_connections_GHGs(
-            households=simulation_results["Households"], year=intallation_year
+            households=simulation_results["Households"], year=installation_year
         )
         #   Calculate operating GHGs of the system during this simulation
         OM_GHGs = GHGs().get_total_OM(
@@ -1334,7 +1212,6 @@ class OptimisationOld:
         system_outputs["Kerosene GHGs (kgCO2eq)"] = kerosene_GHGs
         system_outputs["Kerosene GHGs mitigated (kgCO2eq)"] = kerosene_GHGs_mitigated
         return system_outputs.round(2)
-
 
     #%%
     # =============================================================================
