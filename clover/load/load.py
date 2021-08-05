@@ -30,9 +30,10 @@ from typing import Any, Dict, Set, Tuple
 import numpy as np
 import pandas as pd
 
-from atpbar import atpbar
+from atpbar import atpbar  # type: ignore
 
 from ..__utils__ import (
+    BColours,
     DemandType,
     KEROSENE_DEVICE_NAME,
     Location,
@@ -306,12 +307,14 @@ def _yearly_load_statistics(total_load: pd.DataFrame, years: int) -> pd.DataFram
         )
     )
 
-    yearly_maximum = pd.DataFrame(total_load_yearly.max(axis=1))
-    yearly_maximum.columns = [MAXIMUM]
-    yearly_mean = pd.DataFrame(total_load_yearly.mean(axis=1).round(0))
-    yearly_mean.columns = [MEAN]
-    yearly_median = pd.DataFrame(np.percentile(total_load_yearly, 50, axis=1))
-    yearly_median.columns = [MEDIAN]
+    yearly_maximum = pd.DataFrame(total_load_yearly.max(axis=1))  # type: ignore
+    yearly_maximum.columns = [MAXIMUM]  # type: ignore
+    yearly_mean = pd.DataFrame(total_load_yearly.mean(axis=1).round(0))  # type: ignore
+    yearly_mean.columns = [MEAN]  # type: ignore
+    yearly_median = pd.DataFrame(  # type: ignore
+        np.percentile(total_load_yearly, 50, axis=1)
+    )
+    yearly_median.columns = [MEDIAN]  # type: ignore
     yearly_load_statistics = pd.concat(
         [yearly_maximum, yearly_mean, yearly_median], axis=1
     )
@@ -469,7 +472,7 @@ def compute_total_hourly_load(
 
         logger.info("Total load for all devices successfully computed.")
         total_load = pd.concat([domestic_load, commercial_load, public_load], axis=1)
-        total_load.columns = [
+        total_load.columns = [  # type: ignore
             DemandType.DOMESTIC.value,
             DemandType.COMMERCIAL.value,
             DemandType.PUBLIC.value,
@@ -477,7 +480,7 @@ def compute_total_hourly_load(
 
         logger.info("Saving total load.")
         with open(total_load_filepath, "w") as f:
-            total_load.to_csv(f)
+            total_load.to_csv(f)  # type: ignore
         logger.info("Total device load successfully saved to %s.", total_load_filepath)
 
     # Attempt to read the yearly load statistics from a file and compute if it doesn't
@@ -497,7 +500,7 @@ def compute_total_hourly_load(
 
         logger.info("Saving yearly load statistics.")
         with open(yearly_load_statistics_filepath, "w") as f:
-            yearly_load_statistics.to_csv(f)
+            yearly_load_statistics.to_csv(f)  # type: ignore
         logger.info("Yearly load statistics successfully saved.")
 
     return total_load, yearly_load_statistics
@@ -577,7 +580,9 @@ def process_device_hourly_power(
     else:
         # Compute the hourly load profile.
         logger.info("Computing hourly power usage for %s.", device.name)
-        device_load = hourly_device_usage.mul(float(device.electric_power))
+        device_load = hourly_device_usage.mul(  # type: ignore
+            float(device.electric_power)
+        )
         logger.info("Hourly power usage for %s successfully computed.", device.name)
 
         # Reset the index on the device load.
@@ -590,7 +595,7 @@ def process_device_hourly_power(
             hourly_usage_filepath,
             "w",
         ) as f:
-            device_load.to_csv(f)
+            device_load.to_csv(f)  # type: ignore
 
         logger.info(
             "Hourly power proifle for %s successfully saved to %s.",
@@ -602,7 +607,7 @@ def process_device_hourly_power(
 
 
 def process_device_hourly_usage(
-    device: Dict[str, Any],
+    device: Device,
     *,
     daily_device_ownership: pd.DataFrame,
     daily_device_utilisation: pd.DataFrame,
@@ -665,17 +670,28 @@ def process_device_hourly_usage(
         # This processes a random distribution for usage based on the device ownership and
         # utilisation on any given day for all days within the simulation range.
         #
-        hourly_device_usage = pd.concat(
-            [
-                pd.DataFrame(
-                    np.random.binomial(
-                        float(daily_device_ownership.iloc[day]),
-                        daily_device_utilisation.iloc[day],
+        try:
+            hourly_device_usage = pd.concat(
+                [
+                    pd.DataFrame(
+                        np.random.binomial(
+                            float(daily_device_ownership.iloc[day]),  # type: ignore
+                            daily_device_utilisation.iloc[day],
+                        )
                     )
-                )
-                for day in range(0, 365 * years)
-            ]
-        )
+                    for day in range(0, 365 * years)
+                ]
+            )
+        except ValueError as e:
+            logger.error(
+                "%sError computing device hourly usage profile for %s: type error in "
+                "variables: %s%s",
+                BColours.fail,
+                device.name,
+                str(e),
+                BColours.endc,
+            )
+            raise
 
         logger.info("Hourly usage profile for %s successfully calculated.", device.name)
 
@@ -686,7 +702,7 @@ def process_device_hourly_usage(
             filepath,
             "w",
         ) as f:
-            hourly_device_usage.to_csv(f)
+            hourly_device_usage.to_csv(f)  # type: ignore
 
         logger.info(
             "Hourly usage proifle for %s successfully saved to %s.",
@@ -766,7 +782,7 @@ def process_device_ownership(
             daily_ownership_filepath,
             "w",
         ) as f:
-            daily_ownership.to_csv(f)
+            daily_ownership.to_csv(f)  # type: ignore
         logger.info(
             "Monthly deivice-ownership profile for %s successfully saved to %s.",
             device.name,
@@ -840,7 +856,7 @@ def process_device_utilisation(
 
         # Save this to the output file.
         with open(filepath, "w") as f:
-            interpolated_daily_profile.to_csv(f)
+            interpolated_daily_profile.to_csv(f)  # type: ignore
         logger.info(
             "Daily deivice-utilisation profile for %s successfully saved to %s.",
             device.name,
