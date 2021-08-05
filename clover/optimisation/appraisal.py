@@ -67,7 +67,6 @@ def _simulation_financial_appraisal(
     """
 
     # Initialise
-    installation_year = start_year
     system_outputs = pd.DataFrame(index=["System results"])
 
     # Check to see if a system was previously installed
@@ -88,16 +87,13 @@ def _simulation_financial_appraisal(
 
     # Calculate new PV, storage and diesel installations
     pv_addition = (
-        simulation_details.loc["System details"]["Initial PV size"]
-        - previous_system.loc["System details"]["Final PV size"]
+        system_details.initial_system_size - previous_system_details.final_pv_size
     )
     storage_addition = (
-        simulation_details.loc["System details"]["Initial storage size"]
-        - previous_system.loc["System details"]["Final storage size"]
+        system_details.initial_storage_size - previous_system_details.final_storage_size
     )
     diesel_addition = (
-        simulation_details.loc["System details"]["Diesel capacity"]
-        - previous_system.loc["System details"]["Diesel capacity"]
+        system_details.diesel_capacity - previous_system_details.diesel_capacity
     )
     #   Calculate new equipment costs (discounted)
     equipment_costs = discounted_equipment_cost(
@@ -105,13 +101,13 @@ def _simulation_financial_appraisal(
         finance_inputs,
         pv_addition,
         storage_addition,
-        installation_year,
+        system_details.start_year,
     ) + independent_expenditure(
         finance_inputs,
         location,
         yearly_load_statistics,
-        start_year=start_year,
-        end_year=end_year,
+        start_year=system_details.start_year,
+        end_year=system_details.end_year,
     )
 
     # Calculate costs of connecting new households (discounted)
@@ -126,8 +122,8 @@ def _simulation_financial_appraisal(
         logger,
         system_details.initial_pv_size,
         system_details.initial_storage_size,
-        start_year=start_year,
-        end_year=end_year,
+        start_year=system_details.start_year,
+        end_year=system_details.end_year,
     )
 
     # Calculate running costs of the system (discounted)
@@ -135,32 +131,32 @@ def _simulation_financial_appraisal(
         simulation_results["Diesel fuel usage (l)"],
         finance_inputs,
         logger,
-        start_year=start_year,
-        end_year=end_year,
+        start_year=system_details.start_year,
+        end_year=system_details.end_year,
     )
     grid_costs = expenditure(
         ImpactingComponent.GRID,
         finance_inputs,
         simulation_results["Grid energy (kWh)"],
         logger,
-        start_year=start_year,
-        end_year=end_year,
+        start_year=system_details.start_year,
+        end_year=system_details.end_year,
     )
     kerosene_costs = expenditure(
         ImpactingComponent.KEROSENE,
         finance_inputs,
         simulation_results["Kerosene lamps"],
         logger,
-        start_year=start_year,
-        end_year=end_year,
+        start_year=system_details.start_year,
+        end_year=system_details.end_year,
     )
     kerosene_costs_mitigated = expenditure(
         ImpactingComponent.KEROSENE,
         finance_inputs,
         simulation_results["Kerosene mitigation"],
         logger,
-        start_year=start_year,
-        end_year=end_year,
+        start_year=system_details.start_year,
+        end_year=system_details.end_year,
     )
 
     # Total cost incurred during simulation period (discounted)
@@ -190,7 +186,10 @@ def _simulation_financial_appraisal(
 
 
 def _simulation_technical_appraisal(
-    finance_inputs: Dict[str, Any], logger: Logger, simulation_results: pd.DataFrame, system_details: SystemDetails,
+    finance_inputs: Dict[str, Any],
+    logger: Logger,
+    simulation_results: pd.DataFrame,
+    system_details: SystemDetails,
 ):
     """
     Appraises the technical performance of a minigrid system
@@ -235,8 +234,8 @@ def _simulation_technical_appraisal(
         finance_inputs,
         logger,
         total_energy_daily,
-        start_year=start_year,
-        end_year=end_year,
+        start_year=system_details.start_year,
+        end_year=system_details.end_year,
     )
 
     # Calculate proportion of kerosene displaced (defaults to zero if kerosene is not
@@ -320,6 +319,7 @@ def appraise_system(
             },
             index=["System results"],
         )
+        previous_system_details = SystemDetails(0, None, 0, 0, None, None, None, None)
     else:
         previous_system = previous_systems.tail(1).reset_index(drop=True)
         previous_system = previous_system.rename({0: "System results"}, axis="index")
