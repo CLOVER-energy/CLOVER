@@ -35,6 +35,7 @@ from ..__utils__ import (
     Location,
     Scenario,
     Simulation,
+    SystemDetails,
 )
 from ..generation.diesel import (
     DieselBackupGenerator,
@@ -590,22 +591,23 @@ def run_simulation(
     total_energy_used.columns = ["Total energy used (kWh)"]
 
     # System details
-    system_details = {
-        "start_year": simulation.start_year,
-        "end_year": simulation.end_year,
-        "initial_pv_size": pv_size,
-        "initial_storage_size": float(storage_size),
-        "final_pv_size": pv_size
+    system_details = SystemDetails(
+        diesel_capacity,
+        simulation.end_year,
+        pv_size
         * float(
             solar_degradation(solar_lifetime)[0][
                 8760 * (simulation.end_year - simulation.start_year)
             ]
         ),
-        "final_storage_size": float(
+        float(
             storage_size * np.min(battery_health["Battery health"])
         ),
-        "diesel_capacity": diesel_capacity,
-    }
+        pv_size,
+        float(storage_size),
+        simulation.start_year,
+    )
+
 
     # End simulation timer
     timer_end = datetime.datetime.now()

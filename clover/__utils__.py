@@ -24,7 +24,7 @@ import enum
 import logging
 import os
 
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Union
 
 import numpy as np
 import pandas as pd
@@ -48,6 +48,7 @@ __all__ = (
     "save_simulation",
     "Scenario",
     "Simulation",
+    "SystemDetails",
 )
 
 
@@ -618,7 +619,7 @@ def save_simulation(
     )
     logger.info("Saving simulation details.")
     with open(simulation_details_filepath, "w") as f:
-        yaml.dump(system_details, f, indent=4)
+        yaml.dump(system_details.to_dict(), f, indent=4)
     logger.info(
         "Simulation details successfully saved to %s.", simulation_details_filepath
     )
@@ -757,3 +758,65 @@ class Simulation:
         """
 
         return cls(simulation_inputs["end_year"], simulation_inputs["start_year"])
+
+
+@dataclasses.dataclass
+class SystemDetails:
+    """
+    Contains system-detail information.
+
+    .. attribute:: diesel_capacity
+        The diesel capacity of the system.
+
+    .. attribute:: end_year
+        The end year of the simulation.
+
+    .. attribute:: final_pv_size
+        The final pv size of the system.
+
+    .. attribute:: final_storage_size
+        The final storage size of the system.
+
+    .. attribute:: initial_pv_size
+        The initial pv size of the system.
+
+    .. attribute:: initial_storage_size
+        The initial storage size of the system.
+
+    .. attribute:: start_year
+        The start year of the system.
+
+    .. attribute:: file_information
+        Information on the input files used for the run.
+
+    """
+
+    diesel_capacity: float
+    end_year: int
+    final_pv_size: float
+    final_storage_size: float
+    initial_pv_size: float
+    initial_storage_size: float
+    start_year: int
+    file_information: Optional[Dict[str, str]] = None
+
+    def to_dict(self) -> Dict[str, Union[str, Dict[str, str]]]:
+        """
+        Returns a `dict` containing information the :class:`SystemDetails`' information.
+
+        Outputs:
+            A `dict` containing the information stored within the :class:`SystemDetails`
+            instance.
+
+        """
+
+        return {
+            "diesel_capacity": self.diesel_capacity,
+            "end_year": self.end_year,
+            "final_pv_size": self.final_pv_size,
+            "final_storage_size": self.final_storage_size,
+            "initial_pv_size": self.initial_pv_size,
+            "initial_storage_size": self.initial_storage_size,
+            "input_files": self.file_information,
+            "start_year": self.start_year,
+        }

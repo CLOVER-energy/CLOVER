@@ -95,10 +95,6 @@ DONE = "[   DONE   ]"
 #   The message to display when a task has failed.
 FAILED = "[  FAILED  ]"
 
-# Input files key:
-#   The key to use when saving the input file information.
-INPUT_FILES_KEY = "input_files"
-
 # Logger name:
 #   The name to use for the main logger for CLOVER
 LOGGER_NAME = "clover"
@@ -324,7 +320,7 @@ def main(args: List[Any]) -> None:
     # load_logger = get_logger(load.LOAD_LOGGER_NAME)
 
     try:
-        total_load, _ = load.process_load_profiles(
+        total_load, yearly_load_statistics = load.process_load_profiles(
             auto_generated_files_directory,
             device_utilisations,
             location,
@@ -474,7 +470,7 @@ def main(args: List[Any]) -> None:
             )
 
             # Add the input file information to the system details file.
-            system_details[INPUT_FILES_KEY] = input_file_info
+            system_details.file_information = input_file_info
 
             # Save the simulation output.
             save_simulation(
