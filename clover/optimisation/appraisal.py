@@ -42,7 +42,7 @@ def _simulation_financial_appraisal(
     finance_inputs: Dict[str, Any],
     location: Location,
     logger: Logger,
-    simulation,
+    simulation_results,
     system_details: SystemDetails,
     yearly_load_statistics: pd.DataFrame,
     previous_systems: pd.DataFrame = pd.DataFrame([]),
@@ -67,10 +67,6 @@ def _simulation_financial_appraisal(
     """
 
     # Initialise
-    simulation_results = simulation[0]
-    simulation_details = simulation[1]
-    start_year = int(simulation_details.loc["System details"]["Start year"])
-    end_year = int(simulation_details.loc["System details"]["End year"])
     installation_year = start_year
     system_outputs = pd.DataFrame(index=["System results"])
 
@@ -194,7 +190,7 @@ def _simulation_financial_appraisal(
 
 
 def _simulation_technical_appraisal(
-    finance_inputs: Dict[str, Any], logger: Logger, simulation
+    finance_inputs: Dict[str, Any], logger: Logger, simulation_results: pd.DataFrame, system_details: SystemDetails,
 ):
     """
     Appraises the technical performance of a minigrid system
@@ -215,10 +211,6 @@ def _simulation_technical_appraisal(
     """
 
     # Initialise
-    simulation_results = simulation[0]
-    simulation_details = simulation[1]
-    start_year = simulation_details.loc["System details"]["Start year"]
-    end_year = simulation_details.loc["System details"]["End year"]
     system_outputs = pd.DataFrame(index=["System results"])
 
     # Calculate system blackouts
