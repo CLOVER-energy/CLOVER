@@ -40,8 +40,9 @@ __all_ = (
     "diesel_fuel_expenditure",
     "discounted_total",
     "discounted_equipment_cost",
+    "expenditure",
     "get_total_equipment_cost",
-    "grid_expenditure",
+    "ImpactingComponent",
     "independent_expenditure",
     "total_om",
 )
@@ -105,6 +106,8 @@ class ImpactingComponent(enum.Enum):
         Denotes the grid component of the system.
     - INVERTER:
         Denotes the inverter component of the system.
+    - KEROSENE:
+        Denotes the kerosene component of the system.
     - MISC:
         Denotes misc. costs.
     - PV:
@@ -119,6 +122,7 @@ class ImpactingComponent(enum.Enum):
     DIESEL_FUEL = "diesel_fuel"
     GRID = "grid"
     INVERTER = "inverter"
+    KEROSENE = "kerosene"
     MISC = "misc_costs"
     PV = "pv"
     STORAGE = "storage"
@@ -646,21 +650,24 @@ def discounted_equipment_cost(
     return undiscounted_cost * discount_fraction
 
 
-def grid_expenditure(
-    finance_inputs: Dict[str, Any],
-    grid_energy_hourly: pd.DataFrame,
+def expenditure(
+    component: ImpactingComponent,
+    finance_inputs,
+    hourly_usage: pd.DataFrame,
     logger: Logger,
     *,
-    start_year=0,
-    end_year=20
+    start_year: int = 0,
+    end_year: int = 20
 ):
     """
-    Calculates cost of grid electricity used by the system
+    Calculates cost of the usage of a component.
 
     Inputs:
+        - component:
+            The component to consider.
         - finance_inputs:
             The financial input information.
-        - grid_energy_hourly:
+        - hourly_usage:
             Output from Energy_System().simulation(...)
         - start_year:
             Start year of simulation period
@@ -672,8 +679,8 @@ def grid_expenditure(
 
     """
 
-    grid_cost = grid_energy_hourly * finance_inputs[ImpactingComponent.GRID][COST]
-    total_daily_cost = hourly_profile_to_daily_sum(grid_cost)
+    hourly_cost = hourly_usage * finance_inputs[component][COST]
+    total_daily_cost = hourly_profile_to_daily_sum(hourly_cost)
     total_discounted_cost = discounted_total(
         finance_inputs,
         logger,
@@ -831,51 +838,6 @@ def total_om(
 # #   EXPENDITURE (DISCOUNTED) ON RUNNING COSTS
 # #       Find expenditure (discounted) incurred during the simulation period
 # # ==============================================================================
-# def get_kerosene_expenditure(
-#     self, kerosene_lamps_in_use_hourly, start_year=0, end_year=20
-# ):
-#     """
-#     Function:
-#         Calculates cost of kerosene usage
-#     Inputs:
-#         kerosene_lamps_in_use_hourly        Output from Energy_System().simulation(...)
-#         start_year                          Start year of simulation period
-#         end_year                            End year of simulation period
-#     Outputs:
-#         Discounted cost
-#     """
-#     kerosene_cost = (
-#         kerosene_lamps_in_use_hourly * self.finance_inputs.loc["Kerosene cost"]
-#     )
-#     total_daily_cost = hourly_profile_to_daily_sum(kerosene_cost)
-#     total_discounted_cost = self.discounted_cost_total(
-#         total_daily_cost, start_year, end_year
-#     )
-#     return total_discounted_cost
-
-
-# def get_kerosene_expenditure_mitigated(
-#     self, kerosene_lamps_mitigated_hourly, start_year=0, end_year=20
-# ):
-#     """
-#     Function:
-#         Calculates cost of kerosene usage that has been avoided by using the system
-#     Inputs:
-#         kerosene_lamps_mitigated_hourly     Output from Energy_System().simulation(...)
-#         start_year                          Start year of simulation period
-#         end_year                            End year of simulation period
-#     Outputs:
-#         Discounted cost
-#     """
-#     kerosene_cost = (
-#         kerosene_lamps_mitigated_hourly * self.finance_inputs.loc["Kerosene cost"]
-#     )
-#     total_daily_cost = hourly_profile_to_daily_sum(kerosene_cost)
-#     total_discounted_cost = self.discounted_cost_total(
-#         total_daily_cost, start_year, end_year
-#     )
-#     return total_discounted_cost
-
 
 # #%%
 # # ==============================================================================
