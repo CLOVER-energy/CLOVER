@@ -573,58 +573,6 @@ def read_yaml(filepath: str, logger: logging.Logger) -> Dict[Any, Any]:
     return file_contents
 
 
-def save_simulation(
-    filename: Optional[str],
-    logger: logging.Logger,
-    output_directory: str,
-    simulation: pd.DataFrame,
-    system_details: Dict[str, Any],
-):
-    """
-    Saves simulation outputs to a .csv file
-
-    Inputs:
-        - filename:
-            The .csv file name to use (defaults to timestamp).
-        - logger:
-            The logger to use for the run.
-        - output_directory:
-            The directory into which the files should be saved.
-        - simulation:
-            DataFrame output from Energy_System().simulation(...).
-        - system_details:
-            Information about the run to save.
-
-    """
-
-    # If the filename is not provided, then generate it.
-    if filename is None:
-        filename = datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
-
-    # Add the file extension if appropriate.
-    filepath = os.path.join(output_directory, filename)
-    if not filepath.endswith(".csv"):
-        filepath += ".csv"
-
-    # Save the simulation data in a CSV file.
-    logger.info("Saving simulation output.")
-    with open(filepath, "w") as f:
-        simulation.to_csv(f)  # type: ignore
-    logger.info("Simulation successfully saved to %s.", filepath)
-    print(f"Simulation saved to {filepath}.")
-
-    # Save the system data.
-    simulation_details_filepath = os.path.join(
-        output_directory, filename + "_info.yaml"
-    )
-    logger.info("Saving simulation details.")
-    with open(simulation_details_filepath, "w") as f:
-        yaml.dump(system_details.to_dict(), f, indent=4)
-    logger.info(
-        "Simulation details successfully saved to %s.", simulation_details_filepath
-    )
-
-
 @dataclasses.dataclass
 class Scenario:
     """
@@ -800,7 +748,7 @@ class SystemDetails:
     start_year: int
     file_information: Optional[Dict[str, str]] = None
 
-    def to_dict(self) -> Dict[str, Union[str, Dict[str, str]]]:
+    def to_dict(self) -> Dict[str, Optional[Union[int, float, str, Dict[str, str]]]]:
         """
         Returns a `dict` containing information the :class:`SystemDetails`' information.
 
@@ -820,3 +768,55 @@ class SystemDetails:
             "input_files": self.file_information,
             "start_year": self.start_year,
         }
+
+
+def save_simulation(
+    filename: Optional[str],
+    logger: logging.Logger,
+    output_directory: str,
+    simulation: pd.DataFrame,
+    system_details: SystemDetails,
+):
+    """
+    Saves simulation outputs to a .csv file
+
+    Inputs:
+        - filename:
+            The .csv file name to use (defaults to timestamp).
+        - logger:
+            The logger to use for the run.
+        - output_directory:
+            The directory into which the files should be saved.
+        - simulation:
+            DataFrame output from Energy_System().simulation(...).
+        - system_details:
+            Information about the run to save.
+
+    """
+
+    # If the filename is not provided, then generate it.
+    if filename is None:
+        filename = datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
+
+    # Add the file extension if appropriate.
+    filepath = os.path.join(output_directory, filename)
+    if not filepath.endswith(".csv"):
+        filepath += ".csv"
+
+    # Save the simulation data in a CSV file.
+    logger.info("Saving simulation output.")
+    with open(filepath, "w") as f:
+        simulation.to_csv(f)  # type: ignore
+    logger.info("Simulation successfully saved to %s.", filepath)
+    print(f"Simulation saved to {filepath}.")
+
+    # Save the system data.
+    simulation_details_filepath = os.path.join(
+        output_directory, filename + "_info.yaml"
+    )
+    logger.info("Saving simulation details.")
+    with open(simulation_details_filepath, "w") as f:
+        yaml.dump(system_details.to_dict(), f, indent=4)
+    logger.info(
+        "Simulation details successfully saved to %s.", simulation_details_filepath
+    )
