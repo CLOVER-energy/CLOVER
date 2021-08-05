@@ -477,8 +477,8 @@ def get_total_equipment_cost(
 
 
 def connections_expenditure(
-    finance_inputs: Dict[str, Any], households: pd.DataFrame, installation_year=0
-):
+    finance_inputs: Dict[str, Any], households: pd.DataFrame, installation_year: int = 0
+) -> float:
     """
     Calculates cost of connecting households to the system
 
@@ -499,7 +499,9 @@ def connections_expenditure(
     undiscounted_cost = float(
         finance_inputs[HOUSEHOLDS][CONNECTION_COST] * new_connections
     )
-    discount_fraction = (1.0 - finance_inputs[DISCOUNT_RATE]) ** installation_year
+    discount_fraction: float = (
+        1.0 - finance_inputs[DISCOUNT_RATE]
+    ) ** installation_year
     total_discounted_cost = undiscounted_cost * discount_fraction
 
     # Section in comments allows a more accurate consideration of the discounted cost
@@ -523,7 +525,7 @@ def diesel_fuel_expenditure(
     *,
     start_year: int = 0,
     end_year: int = 20
-):
+) -> float:
     """
     Calculates cost of diesel fuel used by the system
 
@@ -578,7 +580,7 @@ def discounted_total(
     *,
     start_year: int = 0,
     end_year: int = 20
-):
+) -> float:
     """
     Calculates the total discounted cost of some parameter.
 
@@ -623,7 +625,7 @@ def discounted_equipment_cost(
     pv_array_size: float,
     storage_size: float,
     installation_year=0,
-):
+) -> float:
     """
     Calculates cost of all equipment costs
 

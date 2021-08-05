@@ -19,11 +19,13 @@ simulations.
 
 """
 
-from logging import Logger
-from typing import Any, Dict
+import dataclasses
 
-import numpy as np
-import pandas as pd
+from logging import Logger
+from typing import Any, Dict, List, Optional, Tuple
+
+import numpy as np  # type: ignore
+import pandas as pd  # type: ignore
 
 from ..__utils__ import hourly_profile_to_daily_sum, Location, SystemDetails
 from ..impact.finance import (
@@ -38,6 +40,111 @@ from ..impact.finance import (
 )
 
 
+@dataclasses.dataclass
+class FinancialAppraisal:
+    """
+    Contains financial-appraisal information.
+
+    .. attribute:: diesel_cost
+        The cost of diesel fuel used, measured in USD.
+
+    .. attribute:: grid_cost
+        The cost of grid energy used, measured in USD.
+
+    .. attribute:: kerosene_cost
+        The cost of kerosene used, measured in USD.
+
+    .. attribute:: kerosene_cost_mitigated
+        The value of the kerosene which was not used, measured in USD.
+
+    .. attribute:: new_connection_cost
+        <<description needed>>, measured in USD
+
+    .. attribute:: new_equipment_cost
+        <<description needed>>, measured in USD
+
+    .. attribute:: om_cost
+        The O&M cost, measured in USD.
+
+    .. attribute:: total_cost
+        <<description needed>>, measured in USD
+
+    .. attribute:: total_system_cost
+        <<description needed>>, measured in USD
+
+    """
+
+    diesel_cost: float
+    grid_cost: float
+    kerosene_cost: float
+    kerosene_cost_mitigated: float
+    new_connection_cost: float
+    new_equipment_cost: float
+    om_cost: float
+    total_cost: float
+    total_system_cost: float
+
+
+@dataclasses.dataclass
+class TechnicalAppraisal:
+    """
+    Contains financial-appraisal information.
+
+    .. attribute:: blackouts
+        <<description needed>>, measured in USD
+
+    .. attribute:: diesel_energy
+        <<description needed>>, measured in USD
+
+    .. attribute:: diesel_fuel_usage
+        <<description needed>>, measured in USD
+
+    .. attribute:: discounted_energy
+        <<description needed>>, measured in USD
+
+    .. attribute:: grid_energy
+        <<description needed>>, measured in USD
+
+    .. attribute:: kerosene_displacement
+        <<description needed>>, measured in USD
+
+    .. attribute:: new_connection_cost
+        <<description needed>>, measured in USD
+
+    .. attribute:: renewable_energy
+        <<description needed>>, measured in USD
+
+    .. attribute:: renewable_energy_fraction
+        <<description needed>>, measured in USD
+
+    .. attribute:: storage_energy
+        <<description needed>>, measured in USD
+
+    .. attribute:: total_energy
+        <<description needed>>, measured in USD
+
+    .. attribute:: unmet_energy
+        <<description needed>>, measured in USD
+
+    .. attribute:: unmet_energy_fraction
+        <<description needed>>, measured in USD
+
+    """
+
+    blackouts: float
+    diesel_energy: float
+    diesel_fuel_usage: float
+    discounted_energy: float
+    grid_energy: float
+    kerosene_displacement: float
+    renewable_energy: float
+    renewable_energy_fraction: float
+    storage_energy: float
+    total_energy: float
+    unmet_energy: float
+    unmet_energy_fraction: float
+
+
 def _simulation_financial_appraisal(
     finance_inputs: Dict[str, Any],
     location: Location,
@@ -45,8 +152,8 @@ def _simulation_financial_appraisal(
     simulation_results,
     system_details: SystemDetails,
     yearly_load_statistics: pd.DataFrame,
-    previous_systems: pd.DataFrame = pd.DataFrame([]),
-) -> pd.DataFrame:
+    previous_system_details: SystemDetails,
+) -> FinancialAppraisal:
     """
     Appraises the financial performance of a minigrid system.
 
@@ -65,25 +172,6 @@ def _simulation_financial_appraisal(
         The financial appraisal of the system.
 
     """
-
-    # Initialise
-    system_outputs = pd.DataFrame(index=["System results"])
-
-    # Check to see if a system was previously installed
-    if previous_systems.empty:
-        previous_system = pd.DataFrame(
-            {
-                "Final PV size": 0.0,
-                "Final storage size": 0.0,
-                "Diesel capacity": 0.0,
-                "Total system cost ($)": 0.0,
-                "Discounted energy (kWh)": 0.0,
-            },
-            index=["System details"],
-        )
-    else:
-        previous_system = previous_systems.tail(1).reset_index(drop=True)
-        previous_system = previous_system.rename({0: "System details"}, axis="index")
 
     # Calculate new PV, storage and diesel installations
     pv_addition = (
@@ -112,7 +200,9 @@ def _simulation_financial_appraisal(
 
     # Calculate costs of connecting new households (discounted)
     connections_cost = connections_expenditure(
-        finance_inputs, simulation_results["Households"], installation_year
+        finance_inputs,
+        simulation_results["Households"],
+        system_details.start_year,
     )
 
     # Calculate operating costs of the system during this simulation (discounted)
@@ -173,16 +263,16 @@ def _simulation_financial_appraisal(
     )
 
     # Return outputs
-    system_outputs["Total cost ($)"] = total_cost
-    system_outputs["Total system cost ($)"] = total_system_cost
-    system_outputs["New equipment cost ($)"] = equipment_costs
-    system_outputs["New connection cost ($)"] = connections_cost
-    system_outputs["O&M cost ($)"] = om_costs
-    system_outputs["Diesel cost ($)"] = diesel_costs
-    system_outputs["Grid cost ($)"] = grid_costs
-    system_outputs["Kerosene cost ($)"] = kerosene_costs
-    system_outputs["Kerosene cost mitigated ($)"] = kerosene_costs_mitigated
-    return system_outputs.round(2)
+    return FinancialAppraisal(
+        diesel_costs.round(2),
+        grid_costs.round(2),
+        kerosene_costs.round(2),
+        kerosene_costs_mitigated.round(2),
+        connections_cost.round(2),
+        equipment_costs.round(2),
+        total_cost.round(2),
+        total_system_cost.round(2),
+    )
 
 
 def _simulation_technical_appraisal(
@@ -190,7 +280,7 @@ def _simulation_technical_appraisal(
     logger: Logger,
     simulation_results: pd.DataFrame,
     system_details: SystemDetails,
-):
+) -> TechnicalAppraisal:
     """
     Appraises the technical performance of a minigrid system
 
@@ -208,9 +298,6 @@ def _simulation_technical_appraisal(
             unmet energy, blackout percentage, discounted energy.
 
     """
-
-    # Initialise
-    system_outputs = pd.DataFrame(index=["System results"])
 
     # Calculate system blackouts
     system_blackouts = np.mean(simulation_results["Blackouts"])
@@ -252,20 +339,20 @@ def _simulation_technical_appraisal(
     total_diesel_fuel = np.sum(simulation_results["Diesel fuel usage (l)"])
 
     # Return outputs
-    system_outputs["Blackouts"] = system_blackouts
-    system_outputs["Unmet energy fraction"] = unmet_fraction
-    system_outputs["Renewables fraction"] = renewables_fraction
-    system_outputs["Total energy (kWh)"] = total_energy
-    system_outputs["Unmet energy (kWh)"] = total_unmet_energy
-    system_outputs["Renewable energy (kWh)"] = total_renewables_used
-    system_outputs["Storage energy (kWh)"] = total_storage_used
-    system_outputs["Grid energy (kWh)"] = total_grid_used
-    system_outputs["Diesel energy (kWh)"] = total_diesel_used
-    system_outputs["Discounted energy (kWh)"] = discounted_energy
-    system_outputs["Kerosene displacement"] = kerosene_displacement
-    system_outputs["Diesel fuel usage (l)"] = total_diesel_fuel
-
-    return system_outputs.round(3)
+    return TechnicalAppraisal(
+        system_blackouts.round(3),
+        total_diesel_used.round(3),
+        total_diesel_fuel.round(3),
+        discounted_energy.round(3),
+        total_grid_used.round(3),
+        kerosene_displacement.round(3),
+        total_renewables_used.round(3),
+        renewables_fraction.round(3),
+        total_storage_used.round(3),
+        total_energy.round(3),
+        total_unmet_energy.round(3),
+        unmet_fraction.round(3).round(3),
+    )
 
 
 def appraise_system(
@@ -275,7 +362,7 @@ def appraise_system(
     simulation: pd.DataFrame,
     system_details: SystemDetails,
     yearly_load_statistics: pd.DataFrame,
-    previous_systems: pd.DataFrame = pd.DataFrame([]),
+    previous_systems: Optional[List[Tuple[pd.DataFrame, SystemDetails]]] = None,
 ) -> pd.DataFrame:
     """
     Appraises the total performance of a minigrid system for all performance metrics
@@ -301,6 +388,23 @@ def appraise_system(
     """
 
     # Check to see if a system was previously installed
+    if previous_systems is None:
+        # previous_system = pd.DataFrame(
+        #     {
+        #         "Final PV size": 0.0,
+        #         "Final storage size": 0.0,
+        #         "Diesel capacity": 0.0,
+        #         "Total system cost ($)": 0.0,
+        #         "Discounted energy (kWh)": 0.0,
+        #     },
+        #     index=["System details"],
+        # )
+        previous_system_details: SystemDetails = SystemDetails(
+            0, None, 0, 0, None, None, None, discounted_energy=0, total_system_cost=None
+        )
+    else:
+        previous_system_details = previous_systems[-1][1]
+
     if previous_systems.empty:
         previous_system = pd.DataFrame(
             {

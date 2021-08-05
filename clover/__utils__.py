@@ -746,7 +746,9 @@ class SystemDetails:
     initial_pv_size: float
     initial_storage_size: float
     start_year: int
+    discounted_energy: Optional[float] = None
     file_information: Optional[Dict[str, str]] = None
+    total_system_cost: Optional[float] = None
 
     def to_dict(self) -> Dict[str, Optional[Union[int, float, str, Dict[str, str]]]]:
         """
@@ -758,7 +760,7 @@ class SystemDetails:
 
         """
 
-        return {
+        system_details_as_dict = {
             "diesel_capacity": self.diesel_capacity,
             "end_year": self.end_year,
             "final_pv_size": self.final_pv_size,
@@ -768,6 +770,13 @@ class SystemDetails:
             "input_files": self.file_information,
             "start_year": self.start_year,
         }
+
+        if self.discounted_energy is not None:
+            system_details_as_dict["discounted_energy"] = self.discounted_energy
+        if self.total_system_cost is not none:
+            system_details_as_dict["total_system_cost"] = self.total_system_cost
+
+        return system_details_as_dict
 
 
 def save_simulation(
