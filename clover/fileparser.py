@@ -17,7 +17,7 @@ from clover.scripts.new_location import DIRECTORY
 import os
 
 from logging import Logger
-from typing import Any, Dict, Optional, Set, Tuple
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 import pandas as pd
 
@@ -123,7 +123,7 @@ def parse_input_files(
     Optional[OptimisationParameters],
     Optional[Set[Optimisation]],
     Scenario,
-    Set[Simulation],
+    List[Simulation],
     Dict[str, Any],
     Dict[str, str],
 ]:
@@ -149,7 +149,7 @@ def parse_input_files(
             - optimisation_inputs,
             - optimisations, the `set` of optimisations to run,
             - scenario,
-            - simulations, the `set` of simulations to run,
+            - simulations, the `list` of simulations to run,
             - solar_generation_inputs,
             - a `dict` containing information about the input files used.
 
@@ -344,7 +344,7 @@ def parse_input_files(
         simulations_inputs_filepath,
         logger,
     )
-    simulations = {Simulation.from_dict(entry) for entry in simulations_file_contents}
+    simulations = [Simulation.from_dict(entry) for entry in simulations_file_contents]
 
     solar_generation_inputs_filepath = os.path.join(
         inputs_directory_relative_path,
