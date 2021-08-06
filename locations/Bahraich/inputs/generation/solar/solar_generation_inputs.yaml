@@ -18,4 +18,4 @@ end_year: 2016 # The absolute end year for gathering solar data.
 lifetime: 20 # [years] - Lifetime of the PV system.
 start_year: 2007 # The absolute start year for gathering solar data.
 tilt: 29 # [degrees above horizontal]
-token: 082ba129a4a22049735c9f1347fb851211113b23 # renewables.ninja API token
+token: INSERT_RENEWABLES_NINJA_API_TOKEN_HERE # renewables.ninja API token

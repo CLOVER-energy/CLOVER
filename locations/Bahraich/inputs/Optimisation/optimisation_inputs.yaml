@@ -1,0 +1,20 @@
+---
+################################################################################
+# optimisation_inputs.yaml - Specifications for running optimisations.         #
+#                                                                              #
+# Author: Phil Sandwell, Ben Winchester                                        #
+# Copyright: Phil Sandwell & Ben Winchester, 2021                              #
+# Date created: 14/07/2021                                                     #
+# License: Open source                                                         #
+################################################################################
+
+iteration_length: 4 # [years]
+number_of_iterations: 3 # number of iterations to carry out
+pv_size:
+  min: 1 # [kWp]
+  max: 1 # [kWp]
+  step: 1 # [kWp]
+storage_size:
+  min: 1 # [kWh]
+  max: 1 # [kWh]
+  step: 1 # [kWh]
