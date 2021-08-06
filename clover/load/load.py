@@ -30,7 +30,7 @@ from typing import Any, Dict, Set, Tuple
 import numpy as np
 import pandas as pd
 
-from atpbar import atpbar  # type: ignore
+from tqdm import tqdm  # type: ignore
 
 from ..__utils__ import (
     BColours,
@@ -450,7 +450,7 @@ def compute_total_hourly_load(
         public_load = pd.DataFrame(np.zeros((years * 365 * 24, 1)))
 
         # Sum over the device loads.
-        for device in atpbar(devices, name="total load profile"):
+        for device in tqdm(devices, desc="total load profile", leave=True):
             if device.demand_type == DemandType.DOMESTIC:
                 domestic_load = pd.DataFrame(
                     domestic_load.values + device_hourly_loads[device.name].values
@@ -933,7 +933,7 @@ def process_load_profiles(
 
     device_hourly_loads: Dict[str, pd.DataFrame] = dict()
 
-    for device in atpbar(device_utilisations, name="load profiles"):
+    for device in tqdm(device_utilisations, desc="load profiles", leave=True):
         # Only re-load the various profiles if the total profile doesn't already exist.
         if (
             os.path.isfile(

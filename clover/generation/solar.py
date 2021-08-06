@@ -33,7 +33,7 @@ import numpy as np
 import pandas as pd
 import requests
 
-from atpbar import atpbar  # type: ignore
+from tqdm import tqdm  # type: ignore
 
 from ..__utils__ import get_logger, Location
 
@@ -309,7 +309,7 @@ def total_solar_output(
 
     else:
         # Get data for each year using iteration, and add that data to the output file
-        for year_index in atpbar(np.arange(10), name="total solar profile"):
+        for year_index in tqdm(np.arange(10), desc="total solar profile", leave=True):
             iteration_year = start_year + year_index
             with open(
                 os.path.join(
@@ -402,12 +402,13 @@ class SolarDataThread(threading.Thread):
         # A counter is used to keep track of calls to renewables.ninja to prevent
         # overloading.
         try:
-            for year in atpbar(
+            for year in tqdm(
                 range(
                     self.solar_generation_inputs["start_year"],
                     self.solar_generation_inputs["end_year"] + 1,
                 ),
-                name="solar profiles",
+                desc="solar profiles",
+                leave=True,
             ):
                 # If the solar-data file for the year already exists, skip.
                 filename = f"solar_generation_{year}.csv"
