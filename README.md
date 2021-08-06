@@ -27,7 +27,7 @@ To install using `conda`, from the root of the repository, run:
 ```
 conda install --file requirements.txt
 ```
-Note, on some systems, Anaconda i sunabe to find the requirements.txt file. In these cases, it is necesary to use the full and absolute path to the file. E.G.,
+Note, on some systems, Anaconda is unable to find the requirements.txt file. In these cases, it is necessary to use the full and absolute path to the file. E.G.,
 ```
 conda install --file C:\\Users\<User>\...\requirements.txt
 ```
