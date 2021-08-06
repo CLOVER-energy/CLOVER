@@ -25,7 +25,7 @@ from typing import Dict, List
 
 import pandas as pd
 
-from atpbar import atpbar  # type: ignore
+from tqdm import tqdm  # type: ignore
 
 __all__ = (
     "get_lifetime_grid_status",
@@ -62,7 +62,7 @@ def get_lifetime_grid_status(
     grid_profiles: Dict[str, pd.DataFrame] = dict()
 
     # Loop through all the various grid profiles that have been defined.
-    for grid_index in atpbar(range(grid_inputs.shape[1]), name="grid profiles"):
+    for grid_index in tqdm(range(grid_inputs.shape[1]), desc="grid profiles", leave=True):
         grid_name = grid_types[grid_index]
         grid_filename = os.path.join(
             generation_directory, f"{grid_name}_grid_status.csv"

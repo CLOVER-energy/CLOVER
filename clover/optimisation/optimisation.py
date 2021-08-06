@@ -42,7 +42,7 @@ from typing import Any, Dict, Optional, Tuple
 import numpy as np
 import pandas as pd
 
-from atpbar import atpbar
+from tqdm import tqdm
 
 from ..impact import finance
 from ..impact import ghgs
@@ -734,9 +734,10 @@ def multiple_optimisation_step(
         )
 
     #   Iterate over each optimisation step
-    for _ in atpbar(
+    for _ in tqdm(
         range(int(optimisation_parameters.number_of_iterations)),
-        name="optimisation steps",
+        desc="optimisation steps",
+        leave=True,
     ):
         step_results = _optimisation_step(
             grid_profile,

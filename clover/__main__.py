@@ -28,8 +28,6 @@ from typing import Any, Dict, List, Set
 
 import pandas as pd
 
-from atpbar import atpbar
-
 from . import argparser
 from .fileparser import (
     INPUTS_DIRECTORY,

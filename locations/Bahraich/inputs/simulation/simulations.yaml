@@ -11,5 +11,5 @@
 # NOTE: Currently, simulations can only be run for a maximum of 20 years.
 #
 
-end_year: 20 # The end year for the simulation.
-start_year: 0 # The start year for the simulation run.
+- end_year: 20 # The end year for the simulation.
+  start_year: 0 # The start year for the simulation run.
