@@ -19,10 +19,9 @@ in.
 """
 
 import dataclasses
+import enum
 import math
 import os
-
-# import threading
 
 from logging import Logger
 from typing import Any, Dict, Set, Tuple
@@ -45,6 +44,7 @@ __all__ = (
     "DEFAULT_KEROSENE_DEVICE",
     "Device",
     "LOAD_LOGGER_NAME",
+    "LoadType",
     "population_hourly",
     "process_device_hourly_power",
     "process_device_hourly_usage",
@@ -167,7 +167,7 @@ class Device:
         return cls(
             device_input["available"],
             demand_type,
-            device_input["electric_power"],
+            device_input[LoadType.ELECTRIC.value],
             device_input["final_ownership"],
             device_input["initial_ownership"],
             device_input["innovation"],
@@ -182,6 +182,18 @@ class Device:
 DEFAULT_KEROSENE_DEVICE = Device(
     False, DemandType.DOMESTIC, 1, 0, 0, 0, 0, KEROSENE_DEVICE_NAME
 )
+
+
+class LoadType(enum.Enum):
+    """
+    Specifies the type of load being investigated.
+
+    - ELECTRIC:
+        Represents an electric load.
+
+    """
+
+    ELECTRIC = "electric_power"
 
 
 def _cumulative_sales_daily(
@@ -530,12 +542,12 @@ def process_device_hourly_power(
     *,
     generated_device_load_filepath: str,
     hourly_device_usage: pd.DataFrame,
+    load_type: LoadType,
     logger: Logger,
-    power_type: str,
     regenerate: bool,
 ) -> pd.DataFrame:
     """
-    Calculate the hourly usage of the device.
+    Calculate the hourly power consumption of the device.
 
     Inputs:
         - device:
@@ -572,10 +584,20 @@ def process_device_hourly_power(
     else:
         # Compute the hourly load profile.
         logger.info("Computing hourly power usage for %s.", device.name)
-        device_load = hourly_device_usage.mul(  # type: ignore
-            float(device.electric_power)
-        )
-        logger.info("Hourly power usage for %s successfully computed.", device.name)
+        if load_type == LoadType.ELECTRIC:
+            device_load = hourly_device_usage.mul(  # type: ignore
+                float(device.electric_power)
+            )
+            logger.info(
+                "Electric hourly power usage for %s successfully computed.", device.name
+            )
+        else:
+            logger.error(
+                "%sUnsuported load type used: %s%s",
+                BColours.fail,
+                load_type.value,
+                BColours.endc,
+            )
 
         # Reset the index on the device load.
         device_load = device_load.reset_index(drop=True)
@@ -843,43 +865,10 @@ def process_device_utilisation(
     return interpolated_daily_profile
 
 
-# class Load:
-#     def __init__(self):
-#         location = "Bahraich"
-#         self.CLOVER_filepath = os.getcwd()
-#         location_filepath = os.path.join(
-#             self.CLOVER_filepath, LOCATIONS_FOLDER_NAME, location
-#         )
-#         location_inputs = pd.read_csv(
-#             os.path.join(location_filepath, "Location Data", "Location inputs.csv"),
-#             header=None,
-#             index_col=0,
-#         )[1]
-#         device_filepath = os.path.join(location_filepath, "Load")
-#         device_ownership_filepath = os.path.join(device_filepath, "Device ownership")
-#         device_inputs = pd.read_csv(os.path.join(device_filepath, "Devices.csv"))
-#         device_utilisation_filepath = os.path.join(
-#             device_filepath, "Device utilisation"
-#         )
-#         device_usage_filepath = os.path.join(device_filepath, "Devices in use")
-#         device_load_filepath = os.path.join(device_filepath, "Device load")
-
-#     # =============================================================================
-#     #       Calculate the load of devices in the community
-#     # =============================================================================
-
-#     # =============================================================================
-#     #       Calculate the maximum loads for each year
-#     # =============================================================================
-
-#     # =============================================================================
-#     #      Calculate the total number of each device owned by the community
-#     # =============================================================================
-
-
 def process_load_profiles(
     auto_generated_files_directory: str,
     device_utilisations: Dict[Device, pd.DataFrame],
+    load_type: LoadType,
     location: Location,
     logger: Logger,
     regenerate: bool,
@@ -895,6 +884,8 @@ def process_load_profiles(
             The directory in which auto-generated files should be saved.
         - device_utilisations:
             The processed device utilisation information.
+        - load_type:
+            The type of load being investigated.
         - location:
             The location currently being considered.
         - logger:
@@ -978,8 +969,8 @@ def process_load_profiles(
                 auto_generated_files_directory, "load", "device_load"
             ),
             hourly_device_usage=hourly_device_usage,
+            load_type=load_type,
             logger=logger,
-            power_type="electric_power",
             regenerate=regenerate,
         )
         logger.info(

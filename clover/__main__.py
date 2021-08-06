@@ -322,6 +322,7 @@ def main(args: List[Any]) -> None:
         total_load, yearly_load_statistics = load.process_load_profiles(
             auto_generated_files_directory,
             device_utilisations,
+            load.LoadType.ELECTRIC,
             location,
             logger,
             parsed_args.regenerate,
