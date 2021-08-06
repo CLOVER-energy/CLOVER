@@ -125,8 +125,8 @@ class Minigrid:
             minigrid_inputs["conversion"]["ac_to_ac"]
             if "ac_to_dc" in minigrid_inputs["conversion"]
             else None,
-            minigrid_inputs["ac_network"]["transmission_efficiency"]
-            if "ac_network" in minigrid_inputs
+            minigrid_inputs["ac_transmission_efficiency"]
+            if "ac_transmission_efficiency" in minigrid_inputs
             else None,
             Battery(
                 minigrid_inputs["battery"]["c_rate_charging"],
@@ -147,8 +147,8 @@ class Minigrid:
             minigrid_inputs["conversion"]["ac_to_ac"]
             if "dc_to_dc" in minigrid_inputs["conversion"]
             else None,
-            minigrid_inputs["dc_network"]["transmission_efficiency"]
-            if "dc_network" in minigrid_inputs
+            minigrid_inputs["dc_transmission_efficiency"]
+            if "dc_transmission_efficiency" in minigrid_inputs
             else None,
             diesel_backup_generator,
         )
