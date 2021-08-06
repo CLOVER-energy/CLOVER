@@ -1,8 +1,6 @@
-atpbar>=1.1.4
 numpy>=1.20.1
 pandas>=1.2.3
 PyYAML>=5.4.1
-requests>=2.26.0
-scipy>=1.7.0
-types-requests>=2.25.0
-yamllint>=1.15.0
+requests>=2.25.1
+scipy>=1.6.2
+tqdm>=4.59.0
