@@ -43,7 +43,7 @@ New locations can be set up in one of two ways:
   ```
   ./bin/new_location.sh <new_location_name>
   ```
-* By basing the location on an eisting location. To do this, call the `new_location` helper script with the `--from-existing` flag:
+* By basing the location on an existing location. To do this, call the `new_location` helper script with the `--from-existing` flag:
   ```
   python -m clover.scripts.new_location <new_location_name> --from-existing <existing_location>
   ```
