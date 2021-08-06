@@ -27,10 +27,11 @@ grid:
   final_ghgs: 0.4 # [kgCO2/kWh]
 households:
   connection_ghgs: 10 # [kgCO2/household]
-  kerosene_ghgs: 0.055 # [kgCO2/hour]
 inverter:
   ghgs: 75 # [kgCO2/kW]
   ghg_decrease: # [2,% p.a.]
+kerosene:
+  ghgs: 0.055 # [kgCO2/hour]
 pv:
   ghgs: 3000 # [kgCO2/kWp]
   ghg_decrease: 5 # [% p.a.]
