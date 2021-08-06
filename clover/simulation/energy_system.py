@@ -39,7 +39,7 @@ from ..__utils__ import (
     Simulation,
     SystemDetails,
 )
-from ..generation.diesel import (
+from ..simulation.diesel import (
     DieselBackupGenerator,
     get_diesel_energy_and_times,
     get_diesel_fuel_usage,

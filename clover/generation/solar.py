@@ -224,10 +224,7 @@ def get_solar_output(
 
 
 def save_solar_output(
-    filepath: str,
-    gen_year: int,
-    logger: Logger,
-    solar_data: pd.DataFrame,
+    filepath: str, gen_year: int, logger: Logger, solar_data: pd.DataFrame,
 ) -> None:
     """
     Saves PV generation data as a named .csv file in the location generation file.
@@ -246,8 +243,7 @@ def save_solar_output(
     """
 
     solar_data.to_csv(
-        filepath,
-        header=None,  # type: ignore
+        filepath, header=None,  # type: ignore
     )
 
     logger.info(
@@ -389,9 +385,7 @@ class SolarDataThread(threading.Thread):
 
         super().__init__()
 
-    def run(
-        self,
-    ) -> None:
+    def run(self,) -> None:
         """
         Execute a solar-data thread.
 
@@ -422,10 +416,7 @@ class SolarDataThread(threading.Thread):
                 self.logger.info("Fetching solar data for year %s.", year)
                 try:
                     solar_data = get_solar_output(
-                        self.location,
-                        self.logger,
-                        self.solar_generation_inputs,
-                        year,
+                        self.location, self.logger, self.solar_generation_inputs, year,
                     )
                 except KeyError as e:  # pylint: disable=invalid-name
                     self.logger.error("Missing data from input files: %s", str(e))
@@ -433,10 +424,7 @@ class SolarDataThread(threading.Thread):
 
                 self.logger.info("Solar data successfully fetched, saving.")
                 save_solar_output(
-                    filepath,
-                    year,
-                    self.logger,
-                    solar_data,
+                    filepath, year, self.logger, solar_data,
                 )
 
                 # The system waits to prevent overloading the renewables.ninja API and being
