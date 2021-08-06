@@ -227,14 +227,15 @@
                 ################################################################################
 
                 # A template device is provided below:
-                # - device: light
-                #   available: true
-                #   electric_power: 3
-                #   initial_ownership: 2
-                #   final_ownership: 4
-                #   innovation: 0.04
-                #   imitation: 0.5
-                #   type: domestic
+                # - device: light # device name
+                #   available: true # whether the device is available to the community
+                #   electric_power: 3 # the electric power consumption in Watts
+                #   initial_ownership: 2 # the initial number of devices owned per household
+                #   final_ownership: 4 # the final number of devices owned per household
+                #   innovation: 0.04 # the rate of new households spontaneousl purchasing one
+                #   imitation: 0.5 # the rate of new households copying neighbours
+                #   type: domestic # the type of the device demand
+                #   water_usage: # the water consumption of the device, when on, in litres/hour
                 #
 
                 - device: light
@@ -612,7 +613,6 @@
 
                 - start_year: 0 # The start year for the simulation run.
                   end_year: 20 # The end year for the simulation.
-
     - directory: outputs
       contents:
         - directory: simulation_outputs
