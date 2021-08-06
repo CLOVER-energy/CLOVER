@@ -71,7 +71,7 @@ def parse_args(args: List[Any]) -> argparse.Namespace:
         "Otherwise, existing profiles will be used if present.",
     )
 
-    # Argumnets in common to both simulations and optimisations
+    # Arguments in common to both simulations and optimisations
     action_arguments = parser.add_argument_group(
         "simulation and optimisation arguments",
     )
