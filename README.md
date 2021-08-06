@@ -12,14 +12,7 @@ An example location, "Bahraich," in India, is included in the initial download f
 
 ### Setting up your Python environment
 
-CLOVER is a scientific package and, as such, uses Python packages that may not have come installed by default on your system. These packages can be easily installed, provided that you are connected to the internet, either using `pip`, the python package manager, or `conda`, a virtual-environment-based system:
-
-#### Pip method
-
-To install using `pip` or `pip3`, from the root of the repository, run:
-```
-pip3 install -r requirements.txt
-```
+CLOVER is a scientific package and, as such, uses Python packages that may not have come installed by default on your system. These packages can be easily installed, provided that you are connected to the internet, either using `pip`, the python package manager, or `conda`, a virtual-environment-based system. Instructions for `conda` are provided below:
 
 #### Anaconda method
 
@@ -125,4 +118,4 @@ where `<float>` indicates that a floating point object, i.e., a number, is an ac
 
 ***
 
-For more information, contact Phil Sandwell (philip.sandwell@gmail.com)
+For more information, contact Phil Sandwell (philip.sandwell@gmail.com) or Ben Winchester (benedict.winchester@gmail.com).
