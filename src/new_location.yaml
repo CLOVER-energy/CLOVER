@@ -217,7 +217,7 @@
         - directory: load
           contents:
             - file: devices.yaml
-              contents: |-
+              contents: |+
                 ---
                 ################################################################################
                 # devices.yaml - Device input information.                                     #
@@ -396,7 +396,8 @@
                   contents: |-
                     0.00581,0.00572,0.00554,0.00534,0.00520,0.00516,0.00522,0.00531,0.00539,0.00548,0.00561,0.00575
                     0.00140,0.00138,0.00134,0.00129,0.00126,0.00125,0.00126,0.00128,0.00130,0.00132,0.00135,0.00139
-                    3:0.00000,0.00000,0.00000,0.00000,0.00000,0.00000,0.00000,0.00000,0.00000,0.00000,0.00000,0.00000
+                    2:0.00000,0.00000,0.00000,0.00000,0.00000,0.00000,0.00000,0.00000,0.00000,0.00000,0.00000,0.00000
+                    0.00000,0.00000,0.00003,0.00024,0.00086,0.00116,0.00075,0.00034,0.00014,0.00006,0.00001,0.00000
                     0.00011,0.00025,0.00098,0.00369,0.00748,0.00881,0.00695,0.00445,0.00271,0.00158,0.00061,0.00019
                     0.00233,0.00382,0.00821,0.01606,0.02258,0.02441,0.02179,0.01760,0.01381,0.01052,0.00635,0.00323
                     0.01323,0.01689,0.02436,0.03354,0.03948,0.04094,0.03882,0.03505,0.03119,0.02741,0.02157,0.01556
@@ -487,7 +488,6 @@
                 max_years: 20 # The maximum number of years of simulation
                 latitude: 27.6 # Degrees of latitude (North +ve)
                 longitude: 81.6 # Degrees of longitude (East +ve)
-
         - directory: optimisation
           contents:
             - file: "optimisation_inputs.yaml"
@@ -495,29 +495,6 @@
                 ---
                 ################################################################################
                 # optimisation_inputs.yaml - Specifications for running optimisations.         #
-                #                                                                              #
-                # Author: Phil Sandwell, Ben Winchester                                        #
-                # Copyright: Phil Sandwell & Ben Winchester, 2021                              #
-                # Date created: 14/07/2021                                                     #
-                # License: Open source                                                         #
-                ################################################################################
-
-                iteration_length: 4 # [years]
-                number_of_iterations: 3 # number of iterations to carry out
-                pv_size:
-                  min: 1 # [kWp]
-                  max: 1 # [kWp]
-                  step: 1 # [kWp]
-                storage_size:
-                  min: 1 # [kWh]
-                  max: 1 # [kWh]
-                  step: 1 # [kWh]
-
-            - file: "optimisations.yaml"
-              contents: |-
-                ---
-                ################################################################################
-                # optimisations.yaml - Information on the optimisations to run.                #
                 #                                                                              #
                 # Author: Phil Sandwell, Ben Winchester                                        #
                 # Copyright: Phil Sandwell & Ben Winchester, 2021                              #
@@ -544,11 +521,23 @@
                 #   kerosene_displacement
                 #   kerosene_cost_mitigated         $
                 #   kerosene_ghgs_mitigated         kgCO2eq
+                #
 
-                - optimisation_criteria:
-                    - lcue: minimise # Name of the column and whether to maximise/minimise.
-                  threshold_criteria:
-                    - blackouts: 0.1 # Max/min value permitted (see guidance)
+                iteration_length: 4 # [years]
+                number_of_iterations: 3 # number of iterations to carry out
+                pv_size:
+                  min: 1 # [kWp]
+                  max: 1 # [kWp]
+                  step: 1 # [kWp]
+                storage_size:
+                  min: 1 # [kWh]
+                  max: 1 # [kWh]
+                  step: 1 # [kWh]
+                optimisations:
+                  - optimisation_criteria:
+                      - lcue: minimise # Name of the column and whether to maximise/minimise.
+                    threshold_criteria:
+                      - blackouts: 0.1 # Max/min value permitted (see guidance)
 
         - directory: scenario
           contents:
@@ -578,11 +567,10 @@
                   commercial: true # "true" or "false"
                   public: true # "true" or "false"
                 distribution_network: dc # DC ("dc") or AC ("ac") distribution network
-
         - directory: simulation
           contents:
             - file: "energy_system.yaml"
-              contents: |-
+              contents: |+
                 ---
                 ################################################################################
                 # energy_system.yaml - Parameters for specifying a CLOVER energy system.       #

@@ -94,6 +94,10 @@ LOCATION_INPUTS_FILE = os.path.join("location_data", "location_inputs.yaml")
 #   The relative path to the optimisation-input information file.
 OPTIMISATION_INPUTS_FILE = os.path.join("optimisation", "optimisation_inputs.yaml")
 
+# Optimisations:
+#   Key used to extract the list of optimisations from the input file.
+OPTIMISATIONS = "optimisations"
+
 # Scenario inputs file:
 #   The relative path to the scenario inputs file.
 SCENARIO_INPUTS_FILE = os.path.join("scenario", "scenario_inputs.yaml")
@@ -108,7 +112,7 @@ SOLAR_INPUTS_FILE = os.path.join("generation", "solar", "solar_generation_inputs
 
 
 def parse_input_files(
-    location: str, logger: Logger, optimisations_file: Optional[str],
+    location: str, logger: Logger
 ) -> Tuple[
     Dict[load.load.Device, pd.DataFrame],
     energy_system.Minigrid,
@@ -130,8 +134,6 @@ def parse_input_files(
             The name of the location being considered.
         - logger:
             The logger to use for the run.
-        - optimisations_file:
-            The path to the optimisations file to use.
 
     Outputs:
         - A tuple containing:
@@ -263,28 +265,20 @@ def parse_input_files(
         raise
     logger.info("Optimisation inputs successfully parsed.")
 
-    if optimisations_file is not None:
-        optimisations_filepath = os.path.join(
-            inputs_directory_relative_path, optimisations_file
+    try:
+        optimisations = {
+            Optimisation.from_dict(logger, entry)
+            for entry in optimisation_inputs[OPTIMISATIONS]
+        }
+    except Exception as e:
+        logger.error(
+            "%sError generating optimisations from inputs file: %s%s",
+            BColours.fail,
+            str(e),
+            BColours.endc,
         )
-        optimisations_inputs = read_yaml(optimisations_filepath, logger)
-        try:
-            optimisations = {
-                Optimisation.from_dict(logger, entry) for entry in optimisations_inputs
-            }
-        except Exception as e:
-            logger.error(
-                "%sError generating optimisations from inputs file: %s%s",
-                BColours.fail,
-                str(e),
-                BColours.endc,
-            )
-            raise
-        logger.info("Optimisations file successfully parsed.")
-    else:
-        optimisations = None
-        optimisations_filepath = None
-        logger.info("Optimisations file path not provided, skipping.")
+        raise
+    logger.info("Optimisations file successfully parsed.")
 
     scenario_inputs_filepath = os.path.join(
         inputs_directory_relative_path, SCENARIO_INPUTS_FILE,
@@ -324,7 +318,6 @@ def parse_input_files(
         "grid_inputs": grid_inputs_filepath,
         "location_inputs": location_inputs_filepath,
         "optimisation_inputs": optimisation_inputs_filepath,
-        "optimisations": optimisations_filepath,
         "scenario": scenario_inputs_filepath,
         "simularion": simulations_inputs_filepath,
         "solar_inputs": solar_generation_inputs_filepath,

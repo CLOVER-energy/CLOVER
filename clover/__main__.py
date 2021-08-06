@@ -194,7 +194,7 @@ def main(args: List[Any]) -> None:
     if not argparser.validate_args(logger, parsed_args):
         logger.error(
             "%sInvalid command-line arguments. Check that all required arguments have "
-            "been specified. See %s for details.%s",
+            "been specified correctly. See %s for details.%s",
             BColours.fail,
             "{}.log".format(os.path.join(LOGGER_DIRECTORY, LOGGER_NAME)),
             BColours.endc,
@@ -272,7 +272,7 @@ def main(args: List[Any]) -> None:
             simulations,
             solar_generation_inputs,
             input_file_info,
-        ) = parse_input_files(parsed_args.location, logger, parsed_args.optimisation)
+        ) = parse_input_files(parsed_args.location, logger)
     except FileNotFoundError as e:
         print(FAILED)
         logger.error(

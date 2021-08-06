@@ -81,7 +81,6 @@ Within your location folder you will find a subfolder named `inputs`. This conta
 * Complete the `inputs/impact/finance_inputs.yaml` with the financial details of your location;
 * Complete the `inputs/impact/ghg_inpus.yaml` with the GHG-emission details of your location;
 * Complete the `inputs/optimisation/optimisation_inputs.yaml` with the various parameters used to define the scope of the optimisations;
-* Complete `inputs/optimisatio/optimisations.yaml` with the list of optimisations that you wish to run.
 
 See the user guide, available within the repository, for more information on these input files.
 
