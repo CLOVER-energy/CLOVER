@@ -22,7 +22,7 @@ from typing import Any, Dict, List, Optional, Set, Tuple
 import pandas as pd
 
 from . import load
-from .generation.diesel import DieselBackupGenerator
+from .simulation.diesel import DieselBackupGenerator
 from .simulation import energy_system
 from .optimisation.optimisation import Optimisation, OptimisationParameters
 
