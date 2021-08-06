@@ -734,8 +734,14 @@ class SystemDetails:
     .. attribute:: start_year
         The start year of the system.
 
+    .. attribute:: discounted_energy
+        The total amount of discounted energy consumed in kWh.
+
     .. attribute:: file_information
         Information on the input files used for the run.
+
+    .. attribute:: total_systme_cost
+        The total cost of the system, measured in USD.
 
     """
 

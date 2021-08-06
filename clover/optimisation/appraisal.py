@@ -39,6 +39,8 @@ from ..impact.finance import (
     total_om,
 )
 
+__all__ = ("appraise_system",)
+
 
 @dataclasses.dataclass
 class FinancialAppraisal:
@@ -359,10 +361,10 @@ def appraise_system(
     finance_inputs: Dict[str, Any],
     location: Location,
     logger: Logger,
+    previous_system_details: SystemDetails,
     simulation: pd.DataFrame,
     system_details: SystemDetails,
     yearly_load_statistics: pd.DataFrame,
-    previous_systems: Optional[List[Tuple[pd.DataFrame, SystemDetails]]] = None,
 ) -> pd.DataFrame:
     """
     Appraises the total performance of a minigrid system for all performance metrics
@@ -387,46 +389,23 @@ def appraise_system(
 
     """
 
-    # Check to see if a system was previously installed
-    if previous_systems is None:
-        # previous_system = pd.DataFrame(
-        #     {
-        #         "Final PV size": 0.0,
-        #         "Final storage size": 0.0,
-        #         "Diesel capacity": 0.0,
-        #         "Total system cost ($)": 0.0,
-        #         "Discounted energy (kWh)": 0.0,
-        #     },
-        #     index=["System details"],
-        # )
-        previous_system_details: SystemDetails = SystemDetails(
-            0, None, 0, 0, None, None, None, discounted_energy=0, total_system_cost=None
-        )
-    else:
-        previous_system_details = previous_systems[-1][1]
-
-    if previous_systems.empty:
-        previous_system = pd.DataFrame(
-            {
-                "Final PV size": 0.0,
-                "Final storage size": 0.0,
-                "Diesel capacity": 0.0,
-                "Total system cost ($)": 0.0,
-                "Total system GHGs (kgCO2eq)": 0.0,
-                "Discounted energy (kWh)": 0.0,
-                "Cumulative cost ($)": 0.0,
-                "Cumulative system cost ($)": 0.0,
-                "Cumulative GHGs (kgCO2eq)": 0.0,
-                "Cumulative system GHGs (kgCO2eq)": 0.0,
-                "Cumulative energy (kWh)": 0.0,
-                "Cumulative discounted energy (kWh)": 0.0,
-            },
-            index=["System results"],
-        )
-        previous_system_details = SystemDetails(0, None, 0, 0, None, None, None, None)
-    else:
-        previous_system = previous_systems.tail(1).reset_index(drop=True)
-        previous_system = previous_system.rename({0: "System results"}, axis="index")
+    previous_system = pd.DataFrame(
+        {
+            "Final PV size": 0.0,
+            "Final storage size": 0.0,
+            "Diesel capacity": 0.0,
+            "Total system cost ($)": 0.0,
+            "Total system GHGs (kgCO2eq)": 0.0,
+            "Discounted energy (kWh)": 0.0,
+            "Cumulative cost ($)": 0.0,
+            "Cumulative system cost ($)": 0.0,
+            "Cumulative GHGs (kgCO2eq)": 0.0,
+            "Cumulative system GHGs (kgCO2eq)": 0.0,
+            "Cumulative energy (kWh)": 0.0,
+            "Cumulative discounted energy (kWh)": 0.0,
+        },
+        index=["System results"],
+    )
 
     combined_outputs = pd.DataFrame(index=["System results"])
 
