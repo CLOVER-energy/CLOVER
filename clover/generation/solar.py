@@ -408,7 +408,6 @@ class SolarDataThread(threading.Thread):
                     self.solar_generation_inputs["end_year"] + 1,
                 ),
                 desc="solar profiles",
-                leave=True,
             ):
                 # If the solar-data file for the year already exists, skip.
                 filename = f"solar_generation_{year}.csv"

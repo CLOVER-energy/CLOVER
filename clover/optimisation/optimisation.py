@@ -362,6 +362,7 @@ def _simulation_iteration(
     grid_profile: pd.DataFrame,
     kerosene_usage: pd.DataFrame,
     location: Location,
+    logger: Logger,
     minigrid: energy_system.Minigrid,
     optimisation_parameters: OptimisationParameters,
     previous_systems: pd.DataFrame,
@@ -386,6 +387,8 @@ def _simulation_iteration(
             The kerosene-usage profile.
         - location:
             The location being considered.
+        - loger:
+            The logger to use for the run.
         - minigrid:
             The energy system being considered.
         - optimisation_parameters:
@@ -430,6 +433,7 @@ def _simulation_iteration(
         grid_profile,
         kerosene_usage,
         location,
+        logger,
         pv_sizes.max,
         scenario,
         Simulation(end_year, start_year),
