@@ -1,75 +1,128 @@
 # CLOVER
-CLOVER minigrid simulation and optimisation for supporting rural electrification in developing countries
-CLOVER Quick Start Guide
 
-This guide provides a very brief guide to using CLOVER as quickly as possible following the initial download. The file structure has two branches: 
-	▪	a “Scripts” branch which contains Python files that the user runs and uses to generate outputs and perform simulations, 
-	▪	a “Locations” branch that the describes individual locations and specifics of a given scenario being investigated. 
+CLOVER minigrid simulation and optimisation for supporting rural electrification in developing countries.
 
-An example location, “Bahraich” in India, is included in the initial download for reference. New locations can be set up using the generic “New_Location” folder structure. Functions are stated below without explicit definition of their input arguments for brevity. 
+## CLOVER Quick Start Guide
 
-	1.	General Setup
-		a.	In each file in the “Scripts” branch, update:
-			i.	“self.location” to the name of your location
-			ii.	“self.CLOVER_filepath” to the file path of your CLOVER folder
-			iii.	Update the file path syntax as necessary
-			iv.	Do this for all scripts
-		b.	In the “Locations” folder, copy a new version of the “New_Location” file structure and rename it to your chosen location
-		c.	Go to https://www.renewables.ninja/register to register a free account to gain your API token 
-	2.	Establish your location
-		a.	In your location folder (e.g. “Bahraich”), open the “Location Data” folder
-		b.	Complete the “Location inputs.csv” template with the details of your location and your API token 
-	3.	Get PV generation data
-		a.	In your location folder, open the “Generation” folder and then the “PV” folder
-		b.	Complete the “PV generation inputs.csv” template with the details of your location
-		c.	Run Solar().save_solar_output(gen_year) for each year of ten consecutive years
-			i.	This function requires the internet access to connect to the renewables.ninja site
-			ii.	The renewables.ninja site has a limit on the number of downloads in a given time period, so needs to be done manually for each year
-			iii.	Choose any period of ten years for which renewables.ninja has data
-		d.	Run Solar().total_solar_output(start_year) to combine your yearly solar outputs into a single file of twenty years
-	4.	Get grid availability data
-		a.	In your location folder, open the “Generation” folder and then the “Grid” folder
-		b.	Complete the “Grid inputs.csv” template with the details of your location
-			i.	Grid profiles are a 1x24 matrix of hourly probabilities (0-1) that the grid is available
-			ii.	Input all grid profiles at the same time
-		c.	Run Grid().get_lifetime_grid_status() to automatically generate grid availability for all specified profiles
-	5.	Get diesel backup generation data
-		a.	In your location folder, open the “Generation” folder and then the “Diesel” folder
-		b.	Complete the “Diesel generation inputs.csv” template with the details of your location
-	6.	Get load data
-		a.	In your location folder, open the “Load” folder
-		b.	Complete the “Devices.csv” template with the details of your location
-		c.	In the “Devices utilisation” folder, complete the utilisation profiles for each device e.g. “light_times.csv”
-			i.	Utilisation profiles are a 12x24 (monthly x hourly) matrix of probabilities that the specified device is in use in that hour
-			ii.	Each device in  “Devices.csv” must have a corresponding utilisation profile
-		d.	Run Load().number_of_devices_daily() to get the number of each device in the community on a given day
-		e.	Run Load().get_device_daily_profile() to get the daily utilisation profile (365x24 matrix) for each device
-		f.	Run Load().devices_in_use_hourly() to generate the number of devices in use for each hour
-		g.	Run Load().device_load_hourly() to get the load of each device
-		h.	Run Load().total_load_hourly() to get the total community load, segregated into “Domestic”, “Commercial” and “Public” demand types
-	7.	Set up the energy system
-		a.	In your location folder, open the “Simulation” folder
-		b.	Complete the “Energy system inputs.csv” template with the details of your location
-		c.	In your location folder, open the “Scenario” folder
-		d.	Complete the “Scenario inputs.csv” template with the details of your location
-	8.	Perform a simulation
-		a.	Run Energy_System().simulation(start_year, end_year, PV_size, storage_size) with your chosen system
-		b.	Record the outputs as a variable to investigate the outputs in more detail
-		c.	Save the outputs using Energy_System().save_simulation(simulation_name,filename)
-		d.	Open a saved simulation using Energy_System().open_simulation(filename)
-	9.	Input financial information
-		a. 	In your location folder, open the "Impact" folder
-		b. 	Complete the "Financial inputs.csv" with details of your location
-	10.	Input GHG information
-		a. 	In your location folder, open the "Impact" folder
-		b. 	Complete the "GHG inputs.csv" with details of your location
-	11.	Set up the optimisation process
-		a.	In your location folder, open the "Optimisation" folder
-		b.	Complete the “Optimisation inputs.csv” template with the details of your location
-	12.	Perform an optimisation
-		a. 	Run Optimisation().multiple_optimisation_step()
-		b.	Record the outputs as a variable to investigate the outputs in more detail
-		c.	Save the outputs using Optimisation().save_optimisation(optimisation_name,filename)
-		d.	Open a saved optimisation using Optimisation().open_optimisation(filename)
+This guide provides a very brief introduction to get your CLOVER installation up and running as quickly as possible following the initial download. The file structure has two main branches: 
+* a python branch, `scripts`, which contains CLOVER's source code which is used to perform simulations and generate outputs,
+* and a data branch, `locations`, which contains informaiton describing the locations being modelled and contains parameters to outline the simulations and optimisations that should be run.
+
+An example location, "Bahraich," in India, is included in the initial download for reference.
+
+### Setting up your Python environment
+
+CLOVER is a scientific package and, as such, uses Python packages that may not have come installed by default on your system. These packages can be easily installed, provided that you are connected to the internet, either using `pip`, the python package manager, or `conda`, a virtual-environment-based system:
+
+#### Pip method
+
+To install using `pip` or `pip3`, from the root of the repository, run:
+```
+pip3 install -r requirements.txt
+```
+
+#### Anaconda method
+
+To install using `conda`, from the root of the repository, run:
+```
+conda install --file requirements.txt
+```
+Note, on some systems, Anaconda i sunabe to find the requirements.txt file. In these cases, it is necesary to use the full and absolute path to the file. E.G.,
+```
+conda install --file C:\\Users\<User>\...\requirements.txt
+```
+
+### Setting up a new location
+
+New locations can be set up in one of two ways:
+* By creating a new location from scratch and inputting all necessary information. To do this, call the `new_location` helper script with just the name of your new location:
+  ```
+  python -m clover.scripts.new_location <new_location_name>
+  ```
+  or, if on a Linux machine,
+  ```
+  ./bin/new_location.sh <new_location_name>
+  ```
+* By basing the location on an eisting location. To do this, call the `new_location` helper script with the `--from-existing` flag:
+  ```
+  python -m clover.scripts.new_location <new_location_name> --from-existing <existing_location>
+  ```
+  or, if on a Linux machine,
+  ```
+  ./bin/new_location.sh <new_location_name> --from-existing <existing_location>
+  ```
+  
+#### Updating an existing location
+
+As part of the ongoing development of CLOVER, new features will be introduced. In order to incorporate these into existing CLOVER locations on your system, you can use the `new_location` script provided to update these locations:
+```
+python -m clover.scripts.new_location <location_name> --update
+```
+CLOVER will search through your location and attempt to replace missing files and include new files that have been brought in by an update.
+
+### Renewables.ninja
+
+Go to https://www.renewables.ninja/register to register a free account to gain your API token. This will be needed in order for CLOVER to correctly fetch and utilise solar profiles.
+
+### Completing input files
+
+Within your location folder you will find a subfolder named `inputs`. This contains the various input files which are used by CLOVER. These need to be completed in order for CLOVER to run. Some files are needed only for optimisations while some are needed for both optimisations and simulations.
+
+#### Simulation and optimisation files
+
+* Ensure that `inputs/generation/solar_generation_inputs.yaml` contains your renewables.ninja API token and that the other parameters within the file are set correctly	;
+* Complete `inputs/location_data/location_inputs.yaml` with the details of your location;
+* Complete the `inputs/generation/grid/grid_inputs.csv` template with the details of your location:
+  * Grid profiles are a 1x24 matrix of hourly probabilities (0-1) that the grid is available,
+  * Input all grid profiles at the same time;
+* Complete `inputs/generation/diesel/diesel_inputs.yaml` with information about your diesel generator;
+* Complete `inputs/load/devices.yaml`	with the devices that your location needs and the parameters as appropriate. **NOTE:** CLOVER considers kerosene as a mitigated source. The best practice for leaving kerosene out of your location is to set the `initial_ownership` and `final_ownership` of the kerosene device included by default to `0`.
+* In the `inputs/load/device_utilisation` folder, complete the utilisation profiles for each device e.g. `light_times.csv`:
+  * Utilisation profiles are a 12x24 (monthly x hourly) matrix of probabilities that the specified device is in use in that hour,
+  * Each device in  “Devices.csv” must have a corresponding utilisation profile;
+* In the `inputs/simulation` folder, complete the `energy_system.yaml` file with the details of your location's energy system;
+* In the `inputs/simulation` folder, complete the `simulations.yaml` file with the details of the simulation bounds that you wish to run.
+
+#### Optimisation-only files
+
+* Complete the `inputs/impact/finance_inputs.yaml` with the financial details of your location;
+* Complete the `inputs/impact/ghg_inpus.yaml` with the GHG-emission details of your location;
+* Complete the `inputs/optimisation/optimisation_inputs.yaml` with the various parameters used to define the scope of the optimisations;
+* Complete `inputs/optimisatio/optimisations.yaml` with the list of optimisations that you wish to run.
+
+See the user guide, available within the repository, for more information on these input files.
+
+### Running CLOVER
+
+The operation of CLOVER can be broken down into two steps:
+1. Fetching and generating profiles
+2. Carrying out simulations and optimisations as appropriate.
+
+When running a CLOVER simulation or optimisation, profiles will be generated if they are not present. However, these can also be generated on their own, without running a simultaion.
+
+#### Profile generation
+
+To generate the profiles on their own, run CLOVER with the name of the location only:
+```
+python -m clover --location <location_name>
+```
+or, on a Linux machine:
+```
+./bin/clover.sh --location <location_name>
+```
+
+#### Running a simulation
+
+When running a CLOVER simulation, the size of the PV and storage systems needs to be specified on the comand-line:
+```
+python -m clover --location <location_name> --simulation --pv-system-size <float> --storage-size <float>
+```
+or, on a Linux machine:
+```
+./bin/clover.sh --location <location_name> --simulation --pv-system-size <float> --storage-size <float>
+```
+where `<float>` indicates that a floating point object, i.e., a number, is an acceptable input. The number should not have quotation marks around it.
+
+***
 
 For more information, contact Phil Sandwell (philip.sandwell@gmail.com)
