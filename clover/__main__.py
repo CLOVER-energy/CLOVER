@@ -18,6 +18,7 @@ the clover module from the command-line interface.
 """
 
 from argparse import Namespace
+from datetime import time
 import logging
 import os
 import sys
@@ -27,6 +28,8 @@ from multiprocessing import Pool
 from typing import Any, Dict, List, Set
 
 import pandas as pd
+
+from tqdm import tqdm
 
 from . import argparser
 from .fileparser import (
@@ -208,9 +211,7 @@ def main(args: List[Any]) -> None:
 
     # Define common variables.
     auto_generated_files_directory = os.path.join(
-        LOCATIONS_FOLDER_NAME,
-        parsed_args.location,
-        AUTO_GENERATED_FILES_DIRECTORY,
+        LOCATIONS_FOLDER_NAME, parsed_args.location, AUTO_GENERATED_FILES_DIRECTORY,
     )
 
     # Determine the operating mode for the run.
@@ -395,10 +396,7 @@ def main(args: List[Any]) -> None:
             ),
             "r",
         ) as f:
-            grid_profile = pd.read_csv(
-                f,
-                index_col=0,
-            )
+            grid_profile = pd.read_csv(f, index_col=0,)
     except FileNotFoundError as e:
         logger.error(
             "%sGrid profile file for profile '%s' could not be found: %s%s",
@@ -418,17 +416,14 @@ def main(args: List[Any]) -> None:
         # Remove the index from the file.
         kerosene_usage.reset_index(drop=True)
 
+    print(
+        "Beginning CLOVER simulation runs {}    ".format("." * 30,), end="\n",
+    )
+    simulation_times: List[str] = []
+
     # * Run a simulation or optimisation as appropriate.
     if operating_mode == OperatingMode.SIMULATION:
-        for index, simulation in enumerate(simulations):
-            print(
-                "Beginning CLOVER simulation run {} of {} {}    ".format(
-                    str(index + 1),
-                    str(len(simulations)),
-                    "." * (26 - (len(str(index + 1)) + len(str(len(simulations))))),
-                ),
-                end="",
-            )
+        for simulation in tqdm(simulations, desc="simulations"):
             try:
                 (
                     time_delta,
@@ -439,6 +434,7 @@ def main(args: List[Any]) -> None:
                     grid_profile,
                     kerosene_usage,
                     location,
+                    logger,
                     parsed_args.pv_system_size,
                     scenario,
                     simulation,
@@ -448,7 +444,9 @@ def main(args: List[Any]) -> None:
                     total_solar_output,
                 )
             except Exception as e:
-                print(FAILED)
+                print(
+                    "Beginning CLOVER simulation runs {}    {}".format("." * 30, FAILED)
+                )
                 logger.error(
                     "%sAn unexpected error occurred running a CLOVER simulation. See %s for "
                     "details: %s%s",
@@ -458,13 +456,14 @@ def main(args: List[Any]) -> None:
                     BColours.endc,
                 )
                 raise
-            print(DONE)
-            print(
-                "Time taken for simulation: {0:.2f} seconds per year.".format(
-                    (time_delta.microseconds * 0.000001)
-                    / float(simulation.end_year - simulation.start_year)
-                ),
-                end="\n",
+
+            # Add the time to the counter.
+            simulation_times.append(
+                "{} s/year".format(
+                    time_delta.microseconds
+                    * 0.0000010
+                    / (simulation.end_year - simulation.start_year)
+                )
             )
 
             # Add the input file information to the system details file.
@@ -483,8 +482,16 @@ def main(args: List[Any]) -> None:
                 system_details,
             )
 
+        print("Beginning CLOVER simulation runs {}    {}".format("." * 30, DONE))
+
+        print(
+            "Time taken for simulations: {}".format(", ".join(simulation_times)),
+            end="\n",
+        )
+
     if operating_mode == OperatingMode.OPTIMISATION:
-        run_optimisation()
+        pass
+        # run_optimisation()
 
     # ******* #
     # *  4  * #
