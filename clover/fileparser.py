@@ -12,8 +12,6 @@ fileparser.py - The argument-parsing module for CLOVER.
 
 """
 
-from clover import optimisation
-from clover.scripts.new_location import DIRECTORY
 import os
 
 from logging import Logger
