@@ -114,9 +114,10 @@ def parse_args(args: List[Any]) -> argparse.Namespace:
     optimisation_parser = parser.add_argument_group("optimisation-only arguments",)
     optimisation_parser.add_argument(
         "--optimisation",
-        type=str,
-        help="The location of the optimisation file to use for the run, specifying the "
-        "various optimisations to be carried out.",
+        action="store_true",
+        default=False,
+        help="If specified, CLOVER will carry out optimisations in accordance with "
+        "the `optimisation_inputs` file.",
     )
 
     return parser.parse_args(args)
@@ -162,5 +163,13 @@ def validate_args(logger: logging.Logger, parsed_args: argparse.Namespace) -> bo
                 BColours.endc,
             )
             raise MissingParametersError("storage size")
+
+    if parsed_args.simulation and parsed_args.optimisation:
+        logger.error(
+            "%sCannot run both a simulation and an optimisation.%s",
+            BColours.fail,
+            BColours.endc,
+        )
+        return False
 
     return True
