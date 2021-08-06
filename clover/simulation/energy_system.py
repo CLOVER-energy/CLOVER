@@ -29,6 +29,8 @@ from typing import Any, Dict, Optional, Tuple
 import numpy as np  # type: ignore
 import pandas as pd  # type: ignore
 
+from tqdm import tqdm
+
 from ..__utils__ import (
     BColours,
     DieselMode,
@@ -459,7 +461,9 @@ def run_simulation(
     storage_power_supplied = []
 
     # Begin simulation, iterating over timesteps
-    for t in range(0, int(storage_profile.size)):
+    for t in tqdm(
+        range(int(storage_profile.size)), desc="hourly computation", leave=False
+    ):
         # Check if any storage is being used
         if storage_size == 0:
             simulation_hours = int(storage_profile.size)
