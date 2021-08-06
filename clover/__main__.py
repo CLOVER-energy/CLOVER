@@ -211,7 +211,9 @@ def main(args: List[Any]) -> None:
 
     # Define common variables.
     auto_generated_files_directory = os.path.join(
-        LOCATIONS_FOLDER_NAME, parsed_args.location, AUTO_GENERATED_FILES_DIRECTORY,
+        LOCATIONS_FOLDER_NAME,
+        parsed_args.location,
+        AUTO_GENERATED_FILES_DIRECTORY,
     )
 
     # Determine the operating mode for the run.
@@ -397,7 +399,10 @@ def main(args: List[Any]) -> None:
             ),
             "r",
         ) as f:
-            grid_profile = pd.read_csv(f, index_col=0,)
+            grid_profile = pd.read_csv(
+                f,
+                index_col=0,
+            )
     except FileNotFoundError as e:
         logger.error(
             "%sGrid profile file for profile '%s' could not be found: %s%s",
@@ -418,7 +423,10 @@ def main(args: List[Any]) -> None:
         kerosene_usage.reset_index(drop=True)
 
     print(
-        "Beginning CLOVER simulation runs {}    ".format("." * 30,), end="\n",
+        "Beginning CLOVER simulation runs {}    ".format(
+            "." * 30,
+        ),
+        end="\n",
     )
     simulation_times: List[str] = []
 
