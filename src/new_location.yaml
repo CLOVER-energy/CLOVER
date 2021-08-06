@@ -115,11 +115,10 @@
                     start_year: 2007 # The absolute start year for gathering solar data.
                     tilt: 29 # [degrees above horizontal]
                     token: "YOUR API TOKEN HERE" # renewables.ninja API token
-
         - directory: impact
           contents:
             - file: "finance_inputs.yaml"
-              contents: |-
+              contents: |+
                 ################################################################################
                 # finance_inputs.yaml - Finance input information.                             #
                 #                                                                              #
@@ -167,9 +166,8 @@
                   cost: 400 # [$/kWh]
                   cost_decrease: 5 # [% p.a.]
                   o&m: 10 # [$/kWh p.a.]
-
             - file: ghg_inputs.yaml
-              contents: |-
+              contents: |+
                 ################################################################################
                 # ghg_inputs.yaml - GHG input information.                                     #
                 #                                                                              #
@@ -199,10 +197,11 @@
                   final_ghgs: 0.4 # [kgCO2/kWh]
                 households:
                   connection_ghgs: 10 # [kgCO2/household]
-                  kerosene_ghgs: 0.055 # [kgCO2/hour]
                 inverter:
                   ghgs: 75 # [kgCO2/kW]
                   ghg_decrease: # [2,% p.a.]
+                kerosene:
+                  ghgs: 0.055 # [kgCO2/hour]
                 pv:
                   ghgs: 3000 # [kgCO2/kWp]
                   ghg_decrease: 5 # [% p.a.]
@@ -213,7 +212,6 @@
                   ghgs: 110 # [kgCO2/kWh]
                   o&m_ghgs: 5 # [kgCO2/kWh p.a.]
                   ghg_decrease: 5 # [% p.a.]
-
         - directory: load
           contents:
             - file: devices.yaml
