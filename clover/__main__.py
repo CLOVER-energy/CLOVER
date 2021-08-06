@@ -320,7 +320,7 @@ def main(args: List[Any]) -> None:
     # load_logger = get_logger(load.LOAD_LOGGER_NAME)
 
     try:
-        total_load, yearly_load_statistics = load.process_load_profiles(
+        total_electric_load, yearly_load_statistics = load.process_load_profiles(
             auto_generated_files_directory,
             device_utilisations,
             load.LoadType.ELECTRIC,
@@ -342,6 +342,34 @@ def main(args: List[Any]) -> None:
             BColours.endc,
         )
         raise
+
+    try:
+        total_clean_water_load, yearly_load_statistics = load.process_load_profiles(
+            auto_generated_files_directory,
+            device_utilisations,
+            load.LoadType.CLEAN_WATER,
+            location,
+            logger,
+            parsed_args.regenerate,
+        )
+    except Exception as e:
+        print(
+            "Generating necessary profiles .................................    "
+            + f"{FAILED}"
+        )
+        logger.error(
+            "%sAn unexpected error occurred generating the load profiles. See %s for "
+            "details: %s%s",
+            BColours.fail,
+            "{}.log".format(os.path.join(LOGGER_DIRECTORY, LOGGER_NAME)),
+            str(e),
+            BColours.endc,
+        )
+        raise
+
+    import pdb
+
+    pdb.set_trace()
 
     # Generate the grid-availability profiles.
     logger.info("Generating grid-availability profiles.")
@@ -448,7 +476,7 @@ def main(args: List[Any]) -> None:
                     simulation,
                     solar_generation_inputs["lifetime"],
                     parsed_args.storage_size,
-                    0.001 * total_load,
+                    0.001 * total_electric_load,
                     total_solar_output,
                 )
             except Exception as e:
@@ -467,7 +495,7 @@ def main(args: List[Any]) -> None:
 
             # Add the time to the counter.
             simulation_times.append(
-                "{} s/year".format(
+                "{0:.3f} s/year".format(
                     time_delta.microseconds
                     * 0.0000010
                     / (simulation.end_year - simulation.start_year)
