@@ -56,7 +56,7 @@ from ..__utils__ import (
     LOCATIONS_FOLDER_NAME,
     Simulation,
 )
-from ..generation.diesel import DieselBackupGenerator
+from ..simulation.diesel import DieselBackupGenerator
 from .appraisal import appraise_system
 
 __all__ = (
