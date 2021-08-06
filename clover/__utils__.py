@@ -779,7 +779,7 @@ class SystemDetails:
 
         if self.discounted_energy is not None:
             system_details_as_dict["discounted_energy"] = self.discounted_energy
-        if self.total_system_cost is not none:
+        if self.total_system_cost is not None:
             system_details_as_dict["total_system_cost"] = self.total_system_cost
 
         return system_details_as_dict
@@ -823,7 +823,7 @@ def save_simulation(
     with open(filepath, "w") as f:
         simulation.to_csv(f)  # type: ignore
     logger.info("Simulation successfully saved to %s.", filepath)
-    print(f"Simulation saved to {filepath}.")
+    # print(f"Simulation saved to {filepath}.")
 
     # Save the system data.
     simulation_details_filepath = os.path.join(
