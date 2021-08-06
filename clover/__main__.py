@@ -314,7 +314,6 @@ def main(args: List[Any]) -> None:
         "Solar-data thread successfully instantiated. See %s for details.",
         "{}.log".format(os.path.join(LOGGER_DIRECTORY, solar.SOLAR_LOGGER_NAME)),
     )
-    logger.info("Solar-data thread not run due to time efficiencies.")
 
     # Generate and save the device-ownership profiles.
     logger.info("Processing device informaiton.")
