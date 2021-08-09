@@ -35,10 +35,15 @@
         - directory: grid
         - directory: load
           contents:
-            - directory: device_load
             - directory: device_ownership
             - directory: device_usage
             - directory: device_utilisation
+            - directory: clean_water
+              contents:
+                - directory: device_load
+            - directory: electric
+              contents:
+                - directory: device_load
         - directory: solar
     - directory: inputs
       contents:

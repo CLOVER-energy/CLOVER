@@ -103,6 +103,9 @@ class Device:
     .. attribute:: name
         The name of the device.
 
+    .. attribute:: water_usage
+        The water usage of the device, measured in litres per hour.
+
     """
 
     available: bool
@@ -113,6 +116,7 @@ class Device:
     innovation: float
     imitation: float
     name: str
+    water_usage: float
 
     def __hash__(self) -> int:
         """
@@ -143,6 +147,7 @@ class Device:
             + f"initial_ownership={self.initial_ownership}, "
             + f"innovation={self.innovation}, "
             + f"imitation={self.imitation}, "
+            + f"water_usage={self.water_usage} litres/hour"
             + ")"
         )
 
@@ -173,6 +178,7 @@ class Device:
             device_input["innovation"],
             device_input["imitation"],
             device_input["device"],
+            device_input["water_usage"] if "water_usage" in device_input else 0,
         )
 
 
@@ -180,7 +186,7 @@ class Device:
 #   The default kerosene device to use in the event that no kerosene information is
 #   provided.
 DEFAULT_KEROSENE_DEVICE = Device(
-    False, DemandType.DOMESTIC, 1, 0, 0, 0, 0, KEROSENE_DEVICE_NAME
+    False, DemandType.DOMESTIC, 1, 0, 0, 0, 0, KEROSENE_DEVICE_NAME, 0
 )
 
 
@@ -607,6 +613,9 @@ def process_device_hourly_power(
             logger.info(
                 "Electric hourly power usage for %s successfully computed.", device.name
             )
+        elif load_type == LoadType.CLEAN_WATER:
+            device_load = hourly_device_usage.mul(float(device.water_usage))
+            logger.info("Water usage for %s successfully computed.", device.name)
         else:
             logger.error(
                 "%sUnsuported load type used: %s%s",
@@ -934,7 +943,7 @@ def process_load_profiles(
     if load_type == LoadType.ELECTRIC:
         load_name: str = "electric"
     elif load_type == LoadType.CLEAN_WATER:
-        load_name: str = "clean water"
+        load_name: str = "clean_water"
     else:
         logger.error(
             "%sUnknown load type when calling the load module to generate profiles: %s%s",
@@ -949,7 +958,9 @@ def process_load_profiles(
         )
 
     for device in tqdm(
-        device_utilisations, desc=f"{load_name} load profiles", leave=True
+        device_utilisations,
+        desc=f"{load_name.replace('_', ' ')} load profiles",
+        leave=True,
     ):
         # If the device is not available, then skip it.
         if not device.available:
@@ -961,7 +972,6 @@ def process_load_profiles(
             generated_device_ownership_directory=os.path.join(
                 auto_generated_files_directory,
                 "load",
-                load_type.value,
                 "device_ownership",
             ),
             location=location,
@@ -980,7 +990,6 @@ def process_load_profiles(
             generated_device_utilisation_directory=os.path.join(
                 auto_generated_files_directory,
                 "load",
-                load_type.value,
                 "device_utilisation",
             ),
             location=location,
@@ -998,7 +1007,7 @@ def process_load_profiles(
             daily_device_ownership=daily_device_ownership,
             daily_device_utilisation=daily_device_utilisaion,
             generated_device_usage_filepath=os.path.join(
-                auto_generated_files_directory, "load", load_type.value, "device_usage"
+                auto_generated_files_directory, "load", "device_usage"
             ),
             logger=logger,
             years=location.max_years,
@@ -1013,7 +1022,7 @@ def process_load_profiles(
         device_hourly_loads[device.name] = process_device_hourly_power(
             device,
             generated_device_load_filepath=os.path.join(
-                auto_generated_files_directory, "load", load_type.value, "device_load"
+                auto_generated_files_directory, "load", load_name, "device_load"
             ),
             hourly_device_usage=hourly_device_usage,
             load_type=load_type,
@@ -1030,7 +1039,7 @@ def process_load_profiles(
         device_hourly_loads=device_hourly_loads,
         devices=set(device_utilisations.keys()),
         generated_device_load_filepath=os.path.join(
-            auto_generated_files_directory, "load", "device_load"
+            auto_generated_files_directory, "load", load_name, "device_load"
         ),
         logger=logger,
         years=location.max_years,

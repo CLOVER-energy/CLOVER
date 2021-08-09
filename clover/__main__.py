@@ -449,16 +449,16 @@ def main(args: List[Any]) -> None:
         # Remove the index from the file.
         kerosene_usage.reset_index(drop=True)
 
-    print(
-        "Beginning CLOVER simulation runs {}    ".format(
-            "." * 30,
-        ),
-        end="\n",
-    )
-    simulation_times: List[str] = []
-
     # * Run a simulation or optimisation as appropriate.
     if operating_mode == OperatingMode.SIMULATION:
+        print(
+            "Beginning CLOVER simulation runs {}    ".format(
+                "." * 30,
+            ),
+            end="\n",
+        )
+        simulation_times: List[str] = []
+
         for simulation in tqdm(simulations, desc="simulations"):
             try:
                 (
@@ -528,6 +528,9 @@ def main(args: List[Any]) -> None:
     if operating_mode == OperatingMode.OPTIMISATION:
         pass
         # run_optimisation()
+
+    if operating_mode == OperatingMode.PROFILE_GENERATION:
+        print("No simulations or optimisations to be carried out.")
 
     # ******* #
     # *  4  * #
