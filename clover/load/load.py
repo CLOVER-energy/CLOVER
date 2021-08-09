@@ -103,7 +103,7 @@ class Device:
     .. attribute:: name
         The name of the device.
 
-    .. attribute:: water_usage
+    .. attribute:: clean_water_usage
         The water usage of the device, measured in litres per hour.
 
     """
@@ -116,7 +116,7 @@ class Device:
     innovation: float
     imitation: float
     name: str
-    water_usage: Optional[float]
+    clean_water_usage: Optional[float]
 
     def __hash__(self) -> int:
         """
@@ -147,7 +147,7 @@ class Device:
             + f"initial_ownership={self.initial_ownership}, "
             + f"innovation={self.innovation}, "
             + f"imitation={self.imitation}, "
-            + f"water_usage={self.water_usage} litres/hour"
+            + f"clean_water_usage={self.clean_water_usage} litres/hour"
             + ")"
         )
 
@@ -608,7 +608,7 @@ def process_device_hourly_power(
                 "Electric hourly power usage for %s successfully computed.", device.name
             )
         elif load_type == LoadType.CLEAN_WATER:
-            if device.water_usage is None:
+            if device.clean_water_usage is None:
                 raise Exception(
                     "%sInternal error processing device '%s', water usage "
                     "unexpectedly `None`.%s",
@@ -618,7 +618,7 @@ def process_device_hourly_power(
                 )
 
             device_load = hourly_device_usage.mul(  # type: ignore
-                float(device.water_usage)
+                float(device.clean_water_usage)
             )
             logger.info("Water usage for %s successfully computed.", device.name)
         else:
@@ -957,7 +957,7 @@ def process_load_profiles(
         relevant_device_utilisations = {
             device: device_utilisation
             for device, device_utilisation in device_utilisations.items()
-            if device.water_usage is not None
+            if device.clean_water_usage is not None
         }
 
     else:
