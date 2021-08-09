@@ -587,7 +587,7 @@
                   backup:
                     threshold: 0.1 # Maximum acceptible blackouts (0.0-1.0)
                 grid: true # "true" or "false"
-                grid_type: default # The grid profile to use
+                grid_type: bahraich # The grid profile to use
                 prioritise_self_generation: true # "true" or "false"
                 demands:
                   domestic: true # "true" or "false"
@@ -596,6 +596,10 @@
                 distribution_network: dc # DC ("dc") or AC ("ac") distribution network
                 load_types:
                   - electric
+                  - clean_water
+                clean_water:
+                  sources:
+                    - bore_hole
         - directory: simulation
           contents:
             - file: "energy_system.yaml"

@@ -20,9 +20,7 @@ from typing import Any, Dict, List, Optional, Set, Tuple
 import pandas as pd
 
 from . import load
-from .simulation.diesel import DieselBackupGenerator
 from .simulation import energy_system
-from .optimisation.optimisation import Optimisation, OptimisationParameters
 
 from .__utils__ import (
     BColours,
@@ -33,6 +31,9 @@ from .__utils__ import (
     Scenario,
     Simulation,
 )
+from .conversion.conversion import Convertor
+from .optimisation.optimisation import Optimisation, OptimisationParameters
+from .simulation.diesel import DieselBackupGenerator
 
 __all__ = (
     "INPUTS_DIRECTORY",
@@ -41,6 +42,12 @@ __all__ = (
     "parse_input_files",
 )
 
+
+# Conversion inputs file:
+#   The relative path to the conversion-inputs file.
+CONVERSION_INPUTS_FILE = os.path.join(
+    "generation", "conversion", "conversion_inputs.yaml"
+)
 
 # Device inputs file:
 #   The relative path to the device-inputs file.
@@ -114,6 +121,7 @@ SOLAR_INPUTS_FILE = os.path.join("generation", "solar", "solar_generation_inputs
 def parse_input_files(
     location: str, logger: Logger
 ) -> Tuple[
+    List[Convertor],
     Dict[load.load.Device, pd.DataFrame],
     energy_system.Minigrid,
     Dict[str, Any],
@@ -158,6 +166,20 @@ def parse_input_files(
         INPUTS_DIRECTORY,
     )
 
+    # Parse the conversion inputs file.
+    conversion_file_relative_path = os.path.join(
+        inputs_directory_relative_path, CONVERSION_INPUTS_FILE
+    )
+    if os.path.isfile(conversion_file_relative_path):
+        convertors: List[Convertor] = [
+            Convertor.from_data(entry, logger)
+            for entry in read_yaml(conversion_file_relative_path, logger)
+        ]
+        logger.info("Conversion inputs successfully parsed.")
+    else:
+        logger.info("No conversion file, skipping convertor parsing.")
+
+    # Parse the device inputs file.
     device_inputs_filepath = os.path.join(
         inputs_directory_relative_path,
         DEVICE_INPUTS_FILE,
@@ -347,6 +369,7 @@ def parse_input_files(
 
     # Generate a dictionary with information about the input files used.
     input_file_info = {
+        "convertors": conversion_file_relative_path,
         "devices": device_inputs_filepath,
         "diesel_inputs": diesel_inputs_filepath,
         "energy_system": energy_system_inputs_filepath,
@@ -361,6 +384,7 @@ def parse_input_files(
     }
 
     return (
+        convertors,
         device_utilisations,
         minigrid,
         finance_inputs,

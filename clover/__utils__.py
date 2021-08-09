@@ -302,7 +302,7 @@ class LoadType(enum.Enum):
 # Load name to load type mapping:
 #   Maps the load name to the load type, used for parsing scenario files.
 LOAD_NAME_TO_LOAD_TYPE_MAPPING = {
-    "electric": LoadType.ELECTRIC,
+    "electric_power": LoadType.ELECTRIC,
     "clean_water": LoadType.CLEAN_WATER,
 }
 

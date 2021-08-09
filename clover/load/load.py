@@ -179,7 +179,7 @@ class Device:
             device_input["imitation"],
             device_input["device"],
             device_input["clean_water_usage"]
-            if LoadType.CLEAN_WATER.value in device_input
+            if "clean_water_usage" in device_input
             else None,
         )
 
