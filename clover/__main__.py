@@ -27,9 +27,9 @@ from functools import partial
 from multiprocessing import Pool
 from typing import Any, Dict, List, Set
 
-import pandas as pd
+import pandas as pd  # type: ignore
 
-from tqdm import tqdm
+from tqdm import tqdm  # type: ignore
 
 from . import argparser
 from .fileparser import (
