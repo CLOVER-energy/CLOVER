@@ -172,13 +172,13 @@ class Device:
         return cls(
             device_input["available"],
             demand_type,
-            device_input[LoadType.ELECTRIC.value],
+            device_input["electric_power"],
             device_input["final_ownership"],
             device_input["initial_ownership"],
             device_input["innovation"],
             device_input["imitation"],
             device_input["device"],
-            device_input[LoadType.CLEAN_WATER.value]
+            device_input["clean_water_usage"]
             if LoadType.CLEAN_WATER.value in device_input
             else None,
         )
