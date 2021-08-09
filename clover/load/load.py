@@ -19,7 +19,6 @@ in.
 """
 
 import dataclasses
-import enum
 import math
 import os
 
@@ -35,6 +34,7 @@ from ..__utils__ import (
     BColours,
     DemandType,
     KEROSENE_DEVICE_NAME,
+    LoadType,
     Location,
     monthly_profile_to_daily_profile,
 )
@@ -190,22 +190,6 @@ class Device:
 DEFAULT_KEROSENE_DEVICE = Device(
     False, DemandType.DOMESTIC, 1, 0, 0, 0, 0, KEROSENE_DEVICE_NAME, 0
 )
-
-
-class LoadType(enum.Enum):
-    """
-    Specifies the type of load being investigated.
-
-    - CLEAN_WATER:
-        Represents a clean-water load.
-
-    - ELECTRIC:
-        Represents an electric load.
-
-    """
-
-    CLEAN_WATER = "water_usage"
-    ELECTRIC = "electric_power"
 
 
 def _cumulative_sales_daily(
@@ -609,6 +593,14 @@ def process_device_hourly_power(
         # Compute the hourly load profile.
         logger.info("Computing hourly power usage for %s.", device.name)
         if load_type == LoadType.ELECTRIC:
+            if device.electric_power is None:
+                raise Exception(
+                    "%sInternal error processing device '%s', electric power "
+                    "unexpectedly `None`.%s",
+                    BColours.fail,
+                    device.name,
+                    BColours.endc,
+                )
             device_load = hourly_device_usage.mul(  # type: ignore
                 float(device.electric_power)
             )
@@ -616,7 +608,18 @@ def process_device_hourly_power(
                 "Electric hourly power usage for %s successfully computed.", device.name
             )
         elif load_type == LoadType.CLEAN_WATER:
-            device_load = hourly_device_usage.mul(float(device.water_usage))
+            if device.water_usage is None:
+                raise Exception(
+                    "%sInternal error processing device '%s', water usage "
+                    "unexpectedly `None`.%s",
+                    BColours.fail,
+                    device.name,
+                    BColours.endc,
+                )
+
+            device_load = hourly_device_usage.mul(  # type: ignore
+                float(device.water_usage)
+            )
             logger.info("Water usage for %s successfully computed.", device.name)
         else:
             logger.error(
@@ -950,8 +953,8 @@ def process_load_profiles(
             if device.electric_power is not None
         }
     elif load_type == LoadType.CLEAN_WATER:
-        load_name: str = "clean_water"
-        relevant_device_utilisations: Dict[Device, pd.DataFrame] = {
+        load_name = "clean_water"
+        relevant_device_utilisations = {
             device: device_utilisation
             for device, device_utilisation in device_utilisations.items()
             if device.water_usage is not None
