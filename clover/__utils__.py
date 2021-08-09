@@ -31,8 +31,6 @@ import pandas as pd
 import scipy  # type: ignore
 import yaml
 
-from .load.load import LoadType
-
 
 __all__ = (
     "BColours",
@@ -41,6 +39,7 @@ __all__ = (
     "get_logger",
     "hourly_profile_to_daily_sum",
     "KEROSENE_DEVICE_NAME",
+    "LoadType",
     "LOCATIONS_FOLDER_NAME",
     "LOGGER_DIRECTORY",
     "monthly_profile_to_daily_profile",
@@ -282,6 +281,30 @@ def hourly_profile_to_daily_sum(hourly_profile: pd.DataFrame):
     daily_profile = pd.DataFrame(hourly_profile.values.reshape((days, 24)))
     # return pd.DataFrame(np.sum(daily_profile, 1))
     return daily_profile.sum()
+
+
+class LoadType(enum.Enum):
+    """
+    Specifies the type of load being investigated.
+
+    - CLEAN_WATER:
+        Represents a clean-water load.
+
+    - ELECTRIC:
+        Represents an electric load.
+
+    """
+
+    CLEAN_WATER = "water_usage"
+    ELECTRIC = "electric_power"
+
+
+# Load name to load type mapping:
+#   Maps the load name to the load type, used for parsing scenario files.
+LOAD_NAME_TO_LOAD_TYPE_MAPPING = {
+    "electric": LoadType.ELECTRIC,
+    "clean_water": LoadType.CLEAN_WATER,
+}
 
 
 @dataclasses.dataclass
@@ -652,7 +675,8 @@ class Scenario:
         )
 
         load_types = {
-            LoadType(load_type) for load_type in scenario_inputs["load_types"]
+            LoadType(LOAD_NAME_TO_LOAD_TYPE_MAPPING[load_name])
+            for load_name in scenario_inputs["load_types"]
         }
 
         return cls(
@@ -777,7 +801,9 @@ class SystemDetails:
 
         """
 
-        system_details_as_dict = {
+        system_details_as_dict: Dict[
+            str, Optional[Union[int, float, str, Dict[str, str]]]
+        ] = {
             "diesel_capacity": self.diesel_capacity,
             "end_year": self.end_year,
             "final_pv_size": self.final_pv_size,
