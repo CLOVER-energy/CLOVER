@@ -49,6 +49,25 @@
       contents:
         - directory: generation
           contents:
+            - directory: conversion
+              contents:
+                - file: "conversion_inputs.yaml"
+                  contents: |+
+                    ---
+                    ################################################################################
+                    # conversion_inputs.yaml.yaml - Parameters for defining converting devices.    #
+                    #                                                                              #
+                    # Author: Ben Winchester                                                       #
+                    # Copyright: Phil Sandwell & Ben Winchester, 2021                              #
+                    # Date created: 09/08/2021                                                     #
+                    # License: Open source                                                         #
+                    ################################################################################
+
+                    - name: bore_hole
+                      inputs:
+                        - electric_power: 600 # [W]
+                      outputs:
+                        - clean_water: 830 # [litres/hour]
             - directory: diesel
               contents:
                 - file: "diesel_inputs.yaml"
