@@ -72,7 +72,7 @@ def _find_deficit_threshold(
     """
 
     # Find the blackout percentage
-    blackout_percentage = np.mean(blackouts)[0]
+    blackout_percentage = np.mean(blackouts)[0]  # type: ignore
 
     # Find the difference in reliability
     reliability_difference = blackout_percentage - backup_threshold
@@ -115,7 +115,7 @@ def get_diesel_energy_and_times(
         unmet_energy, blackouts, backup_threshold
     )
 
-    diesel_energy = (unmet_energy >= energy_threshold) * unmet_energy
+    diesel_energy = (unmet_energy >= energy_threshold).mul(unmet_energy)  # type: ignore
     diesel_times = (unmet_energy >= energy_threshold) * 1
     diesel_times = diesel_times.astype(float)
 
@@ -149,13 +149,13 @@ def get_diesel_fuel_usage(
 
     """
 
-    load_factor = diesel_energy / capacity
+    load_factor = diesel_energy.div(capacity)  # type: ignore
     above_minimum = load_factor * (load_factor > diesel_backup_generator.minimum_load)
     below_minimum = diesel_backup_generator.minimum_load * (
         load_factor <= diesel_backup_generator.minimum_load
     )
-    load_factor = (
-        pd.DataFrame(above_minimum.values + below_minimum.values) * diesel_times
+    load_factor = pd.DataFrame(above_minimum.values + below_minimum.values).mul(  # type: ignore
+        diesel_times
     )
 
     fuel_usage = load_factor * capacity * diesel_backup_generator.diesel_consumption
