@@ -478,6 +478,7 @@ def main(args: List[Any]) -> None:
                     system_performance_outputs,
                     system_details,
                 ) = energy_system.run_simulation(
+                    convertors,
                     minigrid,
                     grid_profile,
                     kerosene_usage,
@@ -490,6 +491,7 @@ def main(args: List[Any]) -> None:
                     parsed_args.storage_size,
                     0.001 * total_electric_load,
                     total_solar_output,
+                    total_clean_water_load,
                 )
             except Exception as e:
                 print(

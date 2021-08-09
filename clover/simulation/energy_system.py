@@ -24,7 +24,7 @@ import math
 import os
 
 from logging import Logger
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np  # type: ignore
 import pandas as pd  # type: ignore
@@ -36,18 +36,20 @@ from ..__utils__ import (
     DieselMode,
     DemandType,
     DistributionNetwork,
+    LoadType,
     Location,
     Scenario,
     Simulation,
     SystemDetails,
 )
+from ..conversion.conversion import Convertor
+from ..generation.solar import solar_degradation
+from ..load.load import population_hourly
 from ..simulation.diesel import (
     DieselBackupGenerator,
     get_diesel_energy_and_times,
     get_diesel_fuel_usage,
 )
-from ..generation.solar import solar_degradation
-from ..load.load import population_hourly
 
 from .storage import Battery
 
@@ -263,11 +265,6 @@ def _get_electric_storage_profile(
         * np.asarray(solar_degradation_array)
     )
     grid_status = pd.DataFrame(grid_profile[start_hour:end_hour].values)
-    load_profile = pd.DataFrame(
-        _get_processed_load_profile(scenario, total_electric_load)[
-            start_hour:end_hour
-        ].values
-    )
 
     # Consider power distribution network
     if scenario.distribution_network == DistributionNetwork.DC:
@@ -281,7 +278,7 @@ def _get_electric_storage_profile(
         # grid_conversion_efficiency = minigrid.ac_to_ac_conversion
 
     # Consider transmission efficiency
-    load_energy = load_profile.div(transmission_efficiency)
+    load_energy = total_electric_load.div(transmission_efficiency)
     pv_energy = pv_generation.mul(transmission_efficiency)
 
     # Combine energy from all renewables sources
@@ -335,15 +332,28 @@ def _get_electric_storage_profile(
     )
 
 
-def _get_water_storage_profile() -> Tuple[pd.DataFrame, pd.DataFrame]:
+def _get_water_storage_profile(
+    convertors: List[Convertor],
+    scenario: Scenario,
+    total_clean_water_load: pd.DataFrame,
+    *,
+    start_hour: int,
+    end_hour: int,
+) -> Tuple[pd.DataFrame, pd.DataFrame]:
     """
     Gets the storage profile for the clean-water system.
 
     Inputs:
         - convertors:
             The list of convertors available to the system.
-        - total_water_load:
+        - scenario:
+            The current scenario being considered.
+        - total_clean_water_load:
             The total clean-water load placed on the system.
+        - start_hour:
+            The start hour of the simulation.
+        - end_hour:
+            The end hour of the simulation.
 
     Outputs:
         - power_consumed:
@@ -353,8 +363,42 @@ def _get_water_storage_profile() -> Tuple[pd.DataFrame, pd.DataFrame]:
 
     """
 
+    water_convertors: List[Convertor] = sorted(
+        [
+            convertor
+            for convertor in convertors
+            if convertor.input_load_type == LoadType.ELECTRIC
+            and convertor.output_load_type == LoadType.CLEAN_WATER
+        ]
+    )
+    unmet_water = _get_processed_load_profile(scenario, total_clean_water_load)[
+        start_hour:end_hour
+    ]
+    power_consumed: pd.DataFrame = pd.DataFrame([0] * unmet_water.size)
+
+    # While there is unmet water demand and there are still water convertors available:
+    while any(unmet_water.values > 0) and len(water_convertors) > 0:
+        current_convertor = water_convertors.pop(0)
+
+        # Compute the delivered water as the minimum of the values in the unmet water
+        # and the total water that is deliverable from this conversion device.
+        delivered_water = pd.DataFrame(
+            [
+                min(entry, current_convertor.maximum_output_capacity)
+                for entry in unmet_water[0]
+            ]
+        )
+
+        # Compute the power that was consumed and the remaining unmet water demand.
+        power_consumed += delivered_water.mul(current_convertor.consumption)
+        unmet_water -= delivered_water
+
+    # Return the unmet water and power consumed.
+    return power_consumed, unmet_water
+
 
 def run_simulation(
+    convertors: List[Convertor],
     minigrid: Minigrid,
     grid_profile: pd.DataFrame,
     kerosene_usage: pd.DataFrame,
@@ -367,6 +411,7 @@ def run_simulation(
     storage_size: float,
     total_electric_load: pd.DataFrame,
     total_solar_power_produced: pd.DataFrame,
+    total_clean_water_load: pd.DataFrame,
 ) -> Tuple[float, pd.DataFrame, Dict[str, Any]]:
     """
     Simulates a minigrid system
@@ -375,6 +420,8 @@ def run_simulation(
     stated in the input files.
 
     Inputs:
+        - convertors:
+            The `list` of :class:`Convertor` instances available to be used.
         - diesel_backup_generator:
             The backup diesel generator for the system being modelled.
         - minigrid:
@@ -399,6 +446,8 @@ def run_simulation(
             The total load in Watts.
         - total_solar_power_produced:
             The total energy outputted by the solar system.
+        - total_clean_water_load:
+            The total water load placed on the system.
 
     Outputs:
         - The time taken for the simulation.
@@ -453,14 +502,26 @@ def run_simulation(
     # Clean water #
     ###############
 
-    (
-        power_consumed,
-        unmet_water,
-    ) = _get_water_storage_profile()
+    if LoadType.CLEAN_WATER in scenario.load_types:
+        clean_water_power_consumed, unmet_clean_water = _get_water_storage_profile(
+            convertors,
+            scenario,
+            total_clean_water_load,
+            start_hour=start_hour,
+            end_hour=end_hour,
+        )
+    else:
+        clean_water_power_consumed = pd.DataFrame([0] * (end_hour - start_hour))
+        unmet_clean_water = None
 
     ###############
     # Electricity #
     ###############
+
+    processed_total_electric_load = (
+        _get_processed_load_profile(scenario, total_electric_load)[start_hour:end_hour]
+        + clean_water_power_consumed
+    )
 
     # Get electric input profiles
     (
@@ -480,7 +541,7 @@ def run_simulation(
         end_hour=end_hour,
         pv_size=pv_size,
         start_hour=start_hour,
-        total_electric_load=total_electric_load,
+        total_electric_load=processed_total_electric_load,
     )
     households = pd.DataFrame(
         population_hourly(location)[
@@ -617,6 +678,11 @@ def run_simulation(
     blackout_times = ((unmet_energy > 0) * 1).astype(float)
     # Ensure all unmet energy is calculated correctly, removing any negative values
     unmet_energy = ((unmet_energy > 0) * unmet_energy).abs()
+
+    # Determine the clean water which was not delivered due to there not being enough
+    # electricity.
+    if unmet_clean_water is not None:
+        unmet_clean_water.mul(blackout_times)
 
     # Find how many kerosene lamps are in use
     kerosene_usage = blackout_times.mul(kerosene_profile[start_hour:end_hour].values)

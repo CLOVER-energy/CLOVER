@@ -76,6 +76,49 @@ class Convertor:
         self.name = name
         self.output_load_type = output_load_type
 
+    def __eq__(self, other) -> bool:
+        """
+        Returns whether two :class:`Conversion` instances are equal.
+
+        The comparison is made on the consumption and whether their input and output
+        types are the same.
+
+        Outputs:
+            - Whether the two instances are equal.
+
+        """
+
+        return (
+            (self.consumption == other.consumption)
+            and self.input_load_type == other.input_load_type
+            and self.output_load_type == other.output_load_type
+        )
+
+    def __lt__(self, other) -> bool:
+        """
+        Returns whether the current instance is less than another instance.
+
+        The comparison is made purely on the consumption.
+
+        Outputs:
+            - Whether the current instance is less than the other in consumption.
+
+        Raises:
+            - An Exception if the two instances are not of the same type and an attempt
+              was made at this comparison.
+
+        """
+
+        if (
+            self.input_load_type != other.input_load_type
+            or self.output_load_type != other.output_load_type
+        ):
+            raise Exception(
+                "An attempt was made to compare two conversion instances that use different input and output types."
+            )
+
+        return self.consumption == other.consumption
+
     def __repr__(self) -> str:
         """
         Returns a nice-looking `str` representing the :class:`Convertor` instance.
