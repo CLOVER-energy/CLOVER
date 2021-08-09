@@ -441,79 +441,62 @@ def compute_total_hourly_load(
         generated_device_load_filepath, "yearly_load_statistics.csv"
     )
 
-    if os.path.isfile(total_load_filepath) and not regenerate:
-        with open(total_load_filepath, "r") as f:
-            total_load = pd.read_csv(f, index_col=0)
-        logger.info(
-            "Total-load data successfully read from existing file: %s",
-            total_load_filepath,
-        )
+    logger.info("Total load data must be recomputed, calculating total load data.")
 
-    else:
-        logger.info("Total load data file not found, calculating total load data.")
+    # Instantiate empty dataframes.
+    domestic_load = pd.DataFrame(np.zeros((years * 365 * 24, 1)))
+    commercial_load = pd.DataFrame(np.zeros((years * 365 * 24, 1)))
+    public_load = pd.DataFrame(np.zeros((years * 365 * 24, 1)))
 
-        # Instantiate empty dataframes.
-        domestic_load = pd.DataFrame(np.zeros((years * 365 * 24, 1)))
-        commercial_load = pd.DataFrame(np.zeros((years * 365 * 24, 1)))
-        public_load = pd.DataFrame(np.zeros((years * 365 * 24, 1)))
+    # Sum over the device loads.
+    for device in tqdm(devices, desc="total load profile", leave=True):
+        # Skip the device if it is not available in the community.
+        if not device.available:
+            continue
 
-        # Sum over the device loads.
-        for device in tqdm(devices, desc="total load profile", leave=True):
-            # Skip the device if it is not available in the community.
-            if not device.available:
-                continue
+        if device.demand_type == DemandType.DOMESTIC:
+            domestic_load = pd.DataFrame(
+                domestic_load.values + device_hourly_loads[device.name].values
+            )
+        elif device.demand_type == DemandType.COMMERCIAL:
+            commercial_load = pd.DataFrame(
+                commercial_load.values + device_hourly_loads[device.name].values
+            )
+        elif device.demand_type == DemandType.PUBLIC:
+            public_load = pd.DataFrame(
+                public_load.values + device_hourly_loads[device.name].values
+            )
+        else:
+            logger.error(
+                "Demand type of device %s is unknown. Type: %s.",
+                device.name,
+                device.demand_type,
+            )
 
-            if device.demand_type == DemandType.DOMESTIC:
-                domestic_load = pd.DataFrame(
-                    domestic_load.values + device_hourly_loads[device.name].values
-                )
-            elif device.demand_type == DemandType.COMMERCIAL:
-                commercial_load = pd.DataFrame(
-                    commercial_load.values + device_hourly_loads[device.name].values
-                )
-            elif device.demand_type == DemandType.PUBLIC:
-                public_load = pd.DataFrame(
-                    public_load.values + device_hourly_loads[device.name].values
-                )
-            else:
-                logger.error(
-                    "Demand type of device %s is unknown. Type: %s.",
-                    device.name,
-                    device.demand_type,
-                )
+    logger.info("Total load for all devices successfully computed.")
+    total_load = pd.concat([domestic_load, commercial_load, public_load], axis=1)
+    total_load.columns = [  # type: ignore
+        DemandType.DOMESTIC.value,
+        DemandType.COMMERCIAL.value,
+        DemandType.PUBLIC.value,
+    ]
 
-        logger.info("Total load for all devices successfully computed.")
-        total_load = pd.concat([domestic_load, commercial_load, public_load], axis=1)
-        total_load.columns = [  # type: ignore
-            DemandType.DOMESTIC.value,
-            DemandType.COMMERCIAL.value,
-            DemandType.PUBLIC.value,
-        ]
-
-        logger.info("Saving total load.")
-        with open(total_load_filepath, "w") as f:
-            total_load.to_csv(f)  # type: ignore
-        logger.info("Total device load successfully saved to %s.", total_load_filepath)
+    logger.info("Saving total load.")
+    with open(total_load_filepath, "w") as f:
+        total_load.to_csv(f)  # type: ignore
+    logger.info("Total device load successfully saved to %s.", total_load_filepath)
 
     # Attempt to read the yearly load statistics from a file and compute if it doesn't
     # exist.
-    if os.path.isfile(yearly_load_statistics_filepath) and not regenerate:
-        with open(yearly_load_statistics_filepath, "r") as f:
-            yearly_load_statistics = pd.read_csv(f, index_col=0)
-        logger.info(
-            "Yearly load statistics successfully read from file %s.",
-            yearly_load_statistics_filepath,
-        )
-    else:
-        logger.info(
-            "Yearly load statistics file not found, calculating yearly load statistics."
-        )
-        yearly_load_statistics = _yearly_load_statistics(total_load, years)
+    logger.info(
+        "Yearly load statistics must be recomputed, calculating yearly load statistics."
+    )
+    yearly_load_statistics = _yearly_load_statistics(total_load, years)
 
-        logger.info("Saving yearly load statistics.")
-        with open(yearly_load_statistics_filepath, "w") as f:
-            yearly_load_statistics.to_csv(f)  # type: ignore
-        logger.info("Yearly load statistics successfully saved.")
+    logger.info("Saving yearly load statistics.")
+    with open(yearly_load_statistics_filepath, "w") as f:
+        yearly_load_statistics.to_csv(f)  # type: ignore
+    logger.info("Yearly load statistics successfully saved.")
 
     return total_load, yearly_load_statistics
 
