@@ -456,6 +456,11 @@
                     0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25
                     0.15,0.15,0.15,0.15,0.15,0.15,0.15,0.15,0.15,0.15,0.15,0.15
                     0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00
+                - file: washing_machine_times.csv
+                  contents: |-
+                    8:0,0,0,0,0,0,0,0,0,0,0,0
+                    14:0.06,0.06,0.06,0.06,0.06,0.06,0.06,0.06,0.06,0.06,0.06,0.06
+                    2:0,0,0,0,0,0,0,0,0,0,0,0
                 - file: workshop_times.csv
                   contents: |-
                     7:0.008,0.006,0.008,0.008,0.006,0.006,0.006,0.006,0.006,0.008,0.008,0.008
@@ -495,7 +500,7 @@
         - directory: optimisation
           contents:
             - file: "optimisation_inputs.yaml"
-              contents: |-
+              contents: |+
                 ---
                 ################################################################################
                 # optimisation_inputs.yaml - Specifications for running optimisations.         #
@@ -542,7 +547,6 @@
                       - lcue: minimise # Name of the column and whether to maximise/minimise.
                     threshold_criteria:
                       - blackouts: 0.1 # Max/min value permitted (see guidance)
-
         - directory: scenario
           contents:
             - file: scenario_inputs.yaml
