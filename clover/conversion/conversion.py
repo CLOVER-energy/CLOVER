@@ -19,7 +19,7 @@ another.
 """
 
 from logging import Logger
-from typing import Any, Dict, List, Union
+from typing import Any, Dict, List, Type, Union
 
 from ..__utils__ import BColours, LOAD_NAME_TO_LOAD_TYPE_MAPPING, LoadType
 
@@ -50,7 +50,7 @@ class Convertor:
         input_load_type: LoadType,
         maximum_output_capacity: float,
         name: str,
-        output_load_type: float,
+        output_load_type: LoadType,
     ) -> None:
         """
         Instantiate a :class:`Convertor` instance.
@@ -70,11 +70,11 @@ class Convertor:
 
         """
 
-        self.consumption = consumption
-        self.input_load_type = input_load_type
-        self.maximum_output_capacity = maximum_output_capacity
-        self.name = name
-        self.output_load_type = output_load_type
+        self.consumption: float = consumption
+        self.input_load_type: LoadType = input_load_type
+        self.maximum_output_capacity: float = maximum_output_capacity
+        self.name: str = name
+        self.output_load_type: LoadType = output_load_type
 
     def __eq__(self, other) -> bool:
         """
@@ -150,9 +150,7 @@ class Convertor:
         )
 
     @classmethod
-    def from_data(
-        cls, input_data: Dict[str, Union[str, List[Dict[str, float]]]], logger: Logger
-    ) -> Any:
+    def from_data(cls, input_data: Dict[str, Union[str, float]], logger: Logger) -> Any:
         """
         Generates a :class:`Convertor` instance based on the input data provided.
 
@@ -192,15 +190,31 @@ class Convertor:
                 str(e),
                 BColours.endc,
             )
+            raise Exception(
+                f"{BColours.fail}Output load type invalid: {str(e)}{BColours.endc}"
+            )
 
         # Determine the power consumption of the device.
         maximum_output = input_data["maximum_output"]
-        consumption = maximum_output / input_data[input_load_types[0]]
+        corresponding_input = input_data[input_load_types[0]]
+        if not isinstance(maximum_output, float) or not isinstance(
+            corresponding_input, float
+        ):
+            logger.error(
+                "%sInvalid entry in conversion file, check all value types are "
+                "correct.%s",
+                BColours.fail,
+                BColours.endc,
+            )
+            raise Exception(
+                f"{BColours.fail}Invalid value type in conversion file.{BColours.endc}"
+            )
+        consumption = maximum_output / corresponding_input
 
         return cls(
             consumption,
             input_load_type,
             maximum_output,
-            input_data["name"],
+            str(input_data["name"]),
             output_load_type,
         )

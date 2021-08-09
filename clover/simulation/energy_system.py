@@ -29,7 +29,7 @@ from typing import Any, Dict, List, Optional, Tuple
 import numpy as np  # type: ignore
 import pandas as pd  # type: ignore
 
-from tqdm import tqdm
+from tqdm import tqdm  # type: ignore
 
 from ..__utils__ import (
     BColours,
@@ -189,7 +189,7 @@ def _get_processed_load_profile(scenario: Scenario, total_load: pd.DataFrame):
 
     if scenario.demands.public:
         if processed_total_load is not None:
-            processed_total_load.add(
+            processed_total_load.add(  # type: ignore
                 pd.DataFrame(total_load[DemandType.PUBLIC.value].values)
             )
         else:
@@ -213,7 +213,9 @@ def _get_electric_storage_profile(
     pv_size: int = 10,
     start_hour: int = 0,
     total_electric_load: pd.DataFrame,
-) -> pd.DataFrame:
+) -> Tuple[
+    pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame
+]:
     """
     Gets the storage profile (energy in/out the battery) and other system energies.
 
@@ -257,23 +259,27 @@ def _get_electric_storage_profile(
 
     # Initialise power generation, including degradation of PV
     pv_generation_array = total_solar_power_produced * pv_size
-    solar_degradation_array = solar_degradation(solar_lifetime)[
+    solar_degradation_array = solar_degradation(solar_lifetime)[  # type: ignore
         0 : (end_hour - start_hour)
     ]
     pv_generation = pd.DataFrame(
-        np.asarray(pv_generation_array[start_hour:end_hour])
+        np.asarray(pv_generation_array[start_hour:end_hour])  # type: ignore
         * np.asarray(solar_degradation_array)
     )
-    grid_status = pd.DataFrame(grid_profile[start_hour:end_hour].values)
+    grid_status = pd.DataFrame(grid_profile[start_hour:end_hour].values)  # type: ignore
 
     # Consider power distribution network
     if scenario.distribution_network == DistributionNetwork.DC:
-        pv_generation = pv_generation.mul(minigrid.dc_to_dc_conversion_efficiency)
+        pv_generation = pv_generation.mul(  # type: ignore
+            minigrid.dc_to_dc_conversion_efficiency
+        )
         transmission_efficiency = minigrid.dc_transmission_efficiency
         # grid_conversion_eff = minigrid.ac_to_dc_conversion
 
     else:
-        pv_generation = pv_generation.mul(minigrid.dc_to_ac_conversion_efficiency)
+        pv_generation = pv_generation.mul(  # type: ignore
+            minigrid.dc_to_ac_conversion_efficiency
+        )
         transmission_efficiency = minigrid.ac_transmission_efficiency
         # grid_conversion_efficiency = minigrid.ac_to_ac_conversion
 
@@ -289,7 +295,7 @@ def _get_electric_storage_profile(
     if scenario.prioritise_self_generation:
         # Take energy from PV first
         remaining_profile = pd.DataFrame(renewables_energy.values - load_energy.values)
-        renewables_energy_used_directly = pd.DataFrame(
+        renewables_energy_used_directly: pd.DataFrame = pd.DataFrame(
             (remaining_profile > 0) * load_energy.values
             + (remaining_profile < 0) * renewables_energy.values
         )
@@ -300,7 +306,9 @@ def _get_electric_storage_profile(
             * -1.0
             * grid_status.values
         )
-        storage_profile = pd.DataFrame(remaining_profile.values + grid_energy.values)
+        storage_profile: pd.DataFrame = pd.DataFrame(
+            remaining_profile.values + grid_energy.values
+        )
 
     else:
         # Take energy from grid first
@@ -308,8 +316,10 @@ def _get_electric_storage_profile(
         # as needed for load
         remaining_profile = (grid_energy <= 0).mul(load_energy)
         # Then take energy from PV
-        storage_profile = renewables_energy.values.subtrace(remaining_profile.values)
-        renewables_energy_used_directly = (
+        storage_profile = pd.DataFrame(
+            renewables_energy.values.subtrace(remaining_profile.values)
+        )
+        renewables_energy_used_directly = pd.DataFrame(
             (storage_profile > 0)
             .mul(remaining_profile)
             .add((storage_profile < 0).mul(renewables_energy))
@@ -412,7 +422,7 @@ def run_simulation(
     total_electric_load: pd.DataFrame,
     total_solar_power_produced: pd.DataFrame,
     total_clean_water_load: pd.DataFrame,
-) -> Tuple[float, pd.DataFrame, Dict[str, Any]]:
+) -> Tuple[float, pd.DataFrame, SystemDetails]:
     """
     Simulates a minigrid system
 
@@ -451,34 +461,47 @@ def run_simulation(
 
     Outputs:
         - The time taken for the simulation.
-        - tuple([system_performance_outputs,system_details]):
-            system_performance_outputs          Hourly performance of the simulated system
-                load_energy                     Amount of energy (kWh) required to satisfy the loads
-                total_energy_used               Amount of energy (kWh) used by the system
-                unmet_energy                    Amount of energy (kWh) unmet by the system
-                blackout_times                  Times with power is available (0) or unavailable (1)
-                renewables_energy_used_directly Amount of energy (kWh) from renewables used directly to satisfy load (kWh)
-                storage_power_supplied          Amount of energy (kWh) supplied by battery storage
-                grid_energy                     Amount of energy (kWh) supplied by the grid
-                diesel_energy                   Amount of energy (kWh) supplied from diesel generator
-                diesel_times                    Times when diesel generator is on (1) or off (0)
-                diesel_fuel_usage               Amount of diesel (l) used by the generator
-                storage_profile                 Amount of energy (kWh) into (+ve) and out of (-ve) the battery
-                renewables_energy               Amount of energy (kWh) provided by renewables to the system
-                hourly_storage                  Amount of energy (kWh) in the battery
-                energy_surplus                  Amount of energy (kWh) dumped owing to overgeneration
-                battery_health                  Relative capactiy of the battery compared to new (0.0-1.0)
-                households                      Number of households in the community
-                kerosene_usage                  Number of kerosene lamps in use (if no power available)
-                kerosene_mitigation             Number of kerosene lamps not used (when power is available)
-            system details                      Information about the installed system
-                Start year                      Start year of the simulation
-                End year                        End year of the simulation
-                Initial PV size                 Capacity of PV installed (kWp)
-                Initial storage size            Capacity of battery storage installed (kWh)
-                Final PV size                   Equivalent capacity of PV (kWp) after simulation
-                Final storage size              Equivalent capacity of battery storage (kWh) after simulation
-                Diesel capacity                 Capacity of diesel generation installed (kW)
+        - System performance outputs:
+            - system_performance_outputs:
+                Hourly performance of the simulated system
+            - load_energy:
+                Amount of energy (kWh) required to satisfy the loads
+            - total_energy_used:
+                Amount of energy (kWh) used by the system
+            - unmet_energy:
+                Amount of energy (kWh) unmet by the system
+            - blackout_times:
+                Times with power is available (0) or unavailable (1)
+            - renewables_energy_used_directly:
+                Amount of energy (kWh) from renewables used directly to satisfy load (kWh)
+            - storage_power_supplied:
+                Amount of energy (kWh) supplied by battery storage
+            - grid_energy:
+                Amount of energy (kWh) supplied by the grid
+            - diesel_energy:
+                Amount of energy (kWh) supplied from diesel generator
+            - diesel_times:
+                Times when diesel generator is on (1) or off (0)
+            - diesel_fuel_usage:
+                Amount of diesel (l) used by the generator
+            - storage_profile:
+                Amount of energy (kWh) into (+ve) and out of (-ve) the battery
+            - renewables_energy:
+                Amount of energy (kWh) provided by renewables to the system
+            - hourly_storage:
+                Amount of energy (kWh) in the battery
+            - energy_surplus:
+                Amount of energy (kWh) dumped owing to overgeneration
+            - battery_health:
+                Relative capactiy of the battery compared to new (0.0-1.0)
+            - households:
+                Number of households in the community
+            - kerosene_usage:
+                Number of kerosene lamps in use (if no power available)
+            - kerosene_mitigation:
+                Number of kerosene lamps not used (when power is available)
+        - System details about the run.
+
     """
 
     if minigrid.battery is None:
@@ -801,13 +824,19 @@ class MinigridOld:
 
     def lifetime_simulation(self, optimisation_report):
         """
-        Function:
-            Simulates a minigrid system over the course of its lifetime to get the complete technical
-                performance of the system
+        Simulates a minigrid over its lifetime.
+
+        Simulates a minigrid system over the course of its lifetime to get the complete
+        technical performance of the system
+
         Inputs:
-            optimisation_report     Report of outputs from Optimisation().multiple_optimisation_step()
+            - optimisation_report:
+                Report of outputs from Optimisation().multiple_optimisation_step()
+
         Outputs:
-            lifetime_output         The lifetime technical performance of the system
+            - lifetime_output:
+                The lifetime technical performance of the system
+
         """
         # Initialise
         optimisation_report = optimisation_report.reset_index(drop=True)

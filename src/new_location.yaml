@@ -64,10 +64,10 @@
                     ################################################################################
 
                     - name: bore_hole
-                      inputs:
-                        - electric_power: 600 # [W]
-                      outputs:
-                        - clean_water: 830 # [litres/hour]
+                      electric_power: 600 # [W]
+                      output: clean_water
+                      maximum_output: 830 # [litres/hour]
+
             - directory: diesel
               contents:
                 - file: "diesel_inputs.yaml"

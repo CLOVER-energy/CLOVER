@@ -16,11 +16,14 @@ contained and considered within this module.
 
 """
 
+import dataclasses
+
 from typing import Any, Dict
 
 __all__ = ("Battery",)
 
 
+@dataclasses.dataclass
 class Battery:
     """
     Represents a battery within CLOVER.
@@ -55,56 +58,15 @@ class Battery:
 
     """
 
-    def __init__(
-        self,
-        charge_rate: float,
-        conversion_in: float,
-        conversion_out: float,
-        cycle_lifetime: int,
-        discharge_rate: float,
-        leakage: float,
-        lifetime_loss: float,
-        maximum_charge: float,
-        minimum_charge: float,
-    ) -> None:
-        """
-        Instantiate a :class:`Battery` instance based on the parameters passed in.
-
-        Inputs:
-            - charge_rate
-                The rate of charge of the battery.
-            - conversion_in
-                The efficiency of conversion of energy being inputted to the battery, defined
-                between 0 (no energy converted) and 1 (all energy converted without losses).
-            - conversion_out
-                The efficiency of conversion of energy being drawn out from the battery, defined
-                between 0 (no energy converted) and 1 (all energy converted without losses).
-            - cycle_lifetime
-                The number of cycles for which the battery can perform.
-            - discharge_rate
-                The rate of discharge of the battery.
-            - leakage
-                The rate of charge leakage from the battery.
-            - lifetime_loss
-                The lifetime loss from the battery.
-            - maximum_charge
-                The maximum charge level of the battery, defined between 0 (able to hold no
-                charge) and 1 (able to fully charge).
-            - minimum_charge
-                The minimum charge level of the battery, defined between 0 (able to fully
-                discharge) and 1 (unable to discharge any amount).
-
-        """
-
-        self.charge_rate = charge_rate
-        self.conversion_in = conversion_in
-        self.conversion_out = conversion_out
-        self.cycle_lifetime = cycle_lifetime
-        self.discharge_rate = discharge_rate
-        self.leakage = leakage
-        self.lifetime_loss = lifetime_loss
-        self.maximum_charge = maximum_charge
-        self.minimum_charge = minimum_charge
+    charge_rate: float
+    conversion_in: float
+    conversion_out: float
+    cycle_lifetime: int
+    discharge_rate: float
+    leakage: float
+    lifetime_loss: float
+    maximum_charge: float
+    minimum_charge: float
 
     def __str__(self) -> str:
         """
