@@ -240,7 +240,7 @@
                 #   innovation: 0.04 # the rate of new households spontaneousl purchasing one
                 #   imitation: 0.5 # the rate of new households copying neighbours
                 #   type: domestic # the type of the device demand
-                #   water_usage: # the water consumption of the device, when on, in litres/hour
+                #   clean_water_usage: # the water consumption of the device, when on, in litres/hour
                 #
 
                 - device: light

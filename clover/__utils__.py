@@ -295,7 +295,7 @@ class LoadType(enum.Enum):
 
     """
 
-    CLEAN_WATER = "water_usage"
+    CLEAN_WATER = "clean_water_usage"
     ELECTRIC = "electric_power"
 
 
