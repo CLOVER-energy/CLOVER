@@ -45,6 +45,7 @@ from .simulation import energy_system
 
 from .__utils__ import (
     BColours,
+    LoadType,
     get_logger,
     LOCATIONS_FOLDER_NAME,
     LOGGER_DIRECTORY,
@@ -319,59 +320,67 @@ def main(args: List[Any]) -> None:
     logger.info("Processing device informaiton.")
     # load_logger = get_logger(load.LOAD_LOGGER_NAME)
 
-    try:
-        (
-            total_electric_load,
-            electric_yearly_load_statistics,
-        ) = load.process_load_profiles(
-            auto_generated_files_directory,
-            device_utilisations,
-            load.LoadType.ELECTRIC,
-            location,
-            logger,
-            parsed_args.regenerate,
-        )
-    except Exception as e:
-        print(
-            "Generating necessary profiles .................................    "
-            + f"{FAILED}"
-        )
-        logger.error(
-            "%sAn unexpected error occurred generating the load profiles. See %s for "
-            "details: %s%s",
-            BColours.fail,
-            "{}.log".format(os.path.join(LOGGER_DIRECTORY, LOGGER_NAME)),
-            str(e),
-            BColours.endc,
-        )
-        raise
+    if LoadType.ELECTRIC in scenario.load_types:
+        try:
+            (
+                total_electric_load,
+                electric_yearly_load_statistics,
+            ) = load.process_load_profiles(
+                auto_generated_files_directory,
+                device_utilisations,
+                load.LoadType.ELECTRIC,
+                location,
+                logger,
+                parsed_args.regenerate,
+            )
+        except Exception as e:
+            print(
+                "Generating necessary profiles .................................    "
+                + f"{FAILED}"
+            )
+            logger.error(
+                "%sAn unexpected error occurred generating the load profiles. See %s for "
+                "details: %s%s",
+                BColours.fail,
+                "{}.log".format(os.path.join(LOGGER_DIRECTORY, LOGGER_NAME)),
+                str(e),
+                BColours.endc,
+            )
+            raise
+    else:
+        total_electric_load = None
+        electric_yearly_load_statistics = None
 
-    try:
-        (
-            total_clean_water_load,
-            clean_water_yearly_load_statistics,
-        ) = load.process_load_profiles(
-            auto_generated_files_directory,
-            device_utilisations,
-            load.LoadType.CLEAN_WATER,
-            location,
-            logger,
-            parsed_args.regenerate,
-        )
-    except Exception as e:
-        print(
-            "Generating necessary profiles .................................    "
-            + f"{FAILED}"
-        )
-        logger.error(
-            "%sAn unexpected error occurred generating the load profiles. See %s for "
-            "details: %s%s",
-            BColours.fail,
-            "{}.log".format(os.path.join(LOGGER_DIRECTORY, LOGGER_NAME)),
-            str(e),
-            BColours.endc,
-        )
-        raise
+    if LoadType.CLEAN_WATER in scenario.load_types:
+        try:
+            (
+                total_clean_water_load,
+                clean_water_yearly_load_statistics,
+            ) = load.process_load_profiles(
+                auto_generated_files_directory,
+                device_utilisations,
+                load.LoadType.CLEAN_WATER,
+                location,
+                logger,
+                parsed_args.regenerate,
+            )
+        except Exception as e:
+            print(
+                "Generating necessary profiles .................................    "
+                + f"{FAILED}"
+            )
+            logger.error(
+                "%sAn unexpected error occurred generating the load profiles. See %s for "
+                "details: %s%s",
+                BColours.fail,
+                "{}.log".format(os.path.join(LOGGER_DIRECTORY, LOGGER_NAME)),
+                str(e),
+                BColours.endc,
+            )
+            raise
+    else:
+        total_clean_water_load = None
+        clean_water_yearly_load_statistics = None
 
     # Generate the grid-availability profiles.
     logger.info("Generating grid-availability profiles.")
