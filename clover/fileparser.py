@@ -25,6 +25,7 @@ from .simulation import energy_system
 from .__utils__ import (
     BColours,
     KEROSENE_DEVICE_NAME,
+    LoadType,
     Location,
     LOCATIONS_FOLDER_NAME,
     read_yaml,
@@ -171,12 +172,16 @@ def parse_input_files(
         inputs_directory_relative_path, CONVERSION_INPUTS_FILE
     )
     if os.path.isfile(conversion_file_relative_path):
-        convertors: List[Convertor] = [
+        parsed_convertors: List[Convertor] = [
             Convertor.from_data(entry, logger)
             for entry in read_yaml(conversion_file_relative_path, logger)
         ]
+        convertors: Dict[str, Convertor] = {
+            convertor.name: convertor for convertor in parsed_convertors
+        }
         logger.info("Conversion inputs successfully parsed.")
     else:
+        convertors = dict()
         logger.info("No conversion file, skipping convertor parsing.")
 
     # Parse the device inputs file.
@@ -345,6 +350,34 @@ def parse_input_files(
             BColours.endc,
         )
         raise
+
+    # Determine the available convertors from the scenarios file.
+    if LoadType.CLEAN_WATER.value in scenario_inputs:
+        try:
+            available_convertors = [
+                convertors[entry]
+                for entry in scenario_inputs[LoadType.CLEAN_WATER.value]["sources"]
+            ]
+        except KeyError as e:
+            logger.error(
+                "%sUnknown clean-water source(s) specified in the scenario file: %s%s",
+                BColours.fail,
+                ", ".join(
+                    [
+                        entry
+                        for entry in scenario_inputs[LoadType.CLEAN_WATER.value][
+                            "sources"
+                        ]
+                    ]
+                ),
+                BColours.endc,
+            )
+            raise Exception(
+                f"{BColours.fail}Unknown clean-water source(s) in the scenario file: "
+                + f"{BColours.endc}"
+            )
+    else:
+        available_convertors = []
     logger.info("Scenario inputs successfully parsed.")
 
     simulations_inputs_filepath = os.path.join(
@@ -384,7 +417,7 @@ def parse_input_files(
     }
 
     return (
-        convertors,
+        available_convertors,
         device_utilisations,
         minigrid,
         finance_inputs,
