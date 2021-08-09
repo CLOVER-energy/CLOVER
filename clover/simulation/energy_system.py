@@ -199,7 +199,7 @@ def _get_processed_load_profile(scenario: Scenario, total_load: pd.DataFrame):
     return processed_total_load
 
 
-def _get_storage_profile(
+def _get_electric_storage_profile(
     *,
     grid_profile: pd.DataFrame,
     kerosene_usage: pd.DataFrame,
@@ -210,7 +210,7 @@ def _get_storage_profile(
     end_hour: int = 4,
     pv_size: int = 10,
     start_hour: int = 0,
-    total_load: pd.DataFrame,
+    total_electric_load: pd.DataFrame,
 ) -> pd.DataFrame:
     """
     Gets the storage profile (energy in/out the battery) and other system energies.
@@ -234,8 +234,8 @@ def _get_storage_profile(
             Amount of PV in kWp
         - start_year:
             Start year of this simulation period
-        - total_load:
-            The total load for the system.
+        - total_electric_load:
+            The total electric load for the system.
 
     Outputs:
         - load_energy:
@@ -264,7 +264,9 @@ def _get_storage_profile(
     )
     grid_status = pd.DataFrame(grid_profile[start_hour:end_hour].values)
     load_profile = pd.DataFrame(
-        _get_processed_load_profile(scenario, total_load)[start_hour:end_hour].values
+        _get_processed_load_profile(scenario, total_electric_load)[
+            start_hour:end_hour
+        ].values
     )
 
     # Consider power distribution network
@@ -333,6 +335,25 @@ def _get_storage_profile(
     )
 
 
+def _get_water_storage_profile() -> Tuple[pd.DataFrame, pd.DataFrame]:
+    """
+    Gets the storage profile for the clean-water system.
+
+    Inputs:
+        - convertors:
+            The list of convertors available to the system.
+        - total_water_load:
+            The total clean-water load placed on the system.
+
+    Outputs:
+        - power_consumed:
+            The electric power consumed in providing the water demand.
+        - unmet_water:
+            The unmet water demand.
+
+    """
+
+
 def run_simulation(
     minigrid: Minigrid,
     grid_profile: pd.DataFrame,
@@ -344,7 +365,7 @@ def run_simulation(
     simulation: Simulation,
     solar_lifetime: int,
     storage_size: float,
-    total_load: pd.DataFrame,
+    total_electric_load: pd.DataFrame,
     total_solar_power_produced: pd.DataFrame,
 ) -> Tuple[float, pd.DataFrame, Dict[str, Any]]:
     """
@@ -374,7 +395,7 @@ def run_simulation(
             The lifetime of the solar system being considered.
         - storage_size:
             Amount of storage in kWh
-        - total_load:
+        - total_electric_load:
             The total load in Watts.
         - total_solar_power_produced:
             The total energy outputted by the solar system.
@@ -428,7 +449,20 @@ def run_simulation(
     start_hour = simulation.start_year * 8760
     end_hour = simulation.end_year * 8760
 
-    # Get input profiles
+    ###############
+    # Clean water #
+    ###############
+
+    (
+        power_consumed,
+        unmet_water,
+    ) = _get_water_storage_profile()
+
+    ###############
+    # Electricity #
+    ###############
+
+    # Get electric input profiles
     (
         load_energy,
         renewables_energy,
@@ -436,7 +470,7 @@ def run_simulation(
         grid_energy,
         storage_profile,
         kerosene_profile,
-    ) = _get_storage_profile(
+    ) = _get_electric_storage_profile(
         grid_profile=grid_profile,
         kerosene_usage=kerosene_usage,
         minigrid=minigrid,
@@ -446,7 +480,7 @@ def run_simulation(
         end_hour=end_hour,
         pv_size=pv_size,
         start_hour=start_hour,
-        total_load=total_load,
+        total_electric_load=total_electric_load,
     )
     households = pd.DataFrame(
         population_hourly(location)[
