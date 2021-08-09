@@ -263,6 +263,7 @@ def main(args: List[Any]) -> None:
 
     try:
         (
+            convertors,
             device_utilisations,
             minigrid,
             finance_inputs,
