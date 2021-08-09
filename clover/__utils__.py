@@ -24,12 +24,14 @@ import enum
 import logging
 import os
 
-from typing import Any, Dict, Optional, Union
+from typing import Any, Dict, Optional, Set, Union
 
 import numpy as np
 import pandas as pd
 import scipy  # type: ignore
 import yaml
+
+from .load.load import LoadType
 
 
 __all__ = (
@@ -597,6 +599,9 @@ class Scenario:
         The type of grid being modelled, i.e., whether the grid is full, etc. These
         options are written in the grid inputs file as headers.
 
+    .. attribute:: load_types
+        The load types being modelled.
+
     .. attribute:: prioritise_self_generation
         Whether self generation should be prioritised.
 
@@ -611,6 +616,7 @@ class Scenario:
     distribution_network: DistributionNetwork
     grid: bool
     grid_type: str
+    load_types: Set[LoadType]
     prioritise_self_generation: bool
     pv: bool
 
@@ -645,6 +651,10 @@ class Scenario:
             scenario_inputs["distribution_network"]
         )
 
+        load_types = {
+            LoadType(load_type) for load_type in scenario_inputs["load_types"]
+        }
+
         return cls(
             scenario_inputs["battery"],
             demands,
@@ -652,6 +662,7 @@ class Scenario:
             distribution_network,
             scenario_inputs["grid"],
             scenario_inputs["grid_type"],
+            load_types,
             scenario_inputs["prioritise_self_generation"],
             scenario_inputs["pv"],
         )
