@@ -170,31 +170,33 @@ def _get_processed_load_profile(scenario: Scenario, total_load: pd.DataFrame):
 
     """
 
-    total_minigrid_load: Optional[pd.DataFrame] = None
+    processed_total_load: Optional[pd.DataFrame] = None
 
     if scenario.demands.domestic:
-        total_minigrid_load = pd.DataFrame(total_load[DemandType.DOMESTIC.value].values)
+        processed_total_load = pd.DataFrame(
+            total_load[DemandType.DOMESTIC.value].values
+        )
 
     if scenario.demands.commercial:
-        if total_minigrid_load is not None:
-            total_minigrid_load.add(  # type: ignore
+        if processed_total_load is not None:
+            processed_total_load.add(  # type: ignore
                 pd.DataFrame(total_load[DemandType.COMMERCIAL.value].values)
             )
         else:
-            total_minigrid_load = total_load[DemandType.COMMERCIAL.value]  # type: ignore
+            processed_total_load = total_load[DemandType.COMMERCIAL.value]  # type: ignore
 
     if scenario.demands.public:
-        if total_minigrid_load is not None:
-            total_minigrid_load.add(
+        if processed_total_load is not None:
+            processed_total_load.add(
                 pd.DataFrame(total_load[DemandType.PUBLIC.value].values)
             )
         else:
-            total_minigrid_load = total_load[DemandType.PUBLIC.value]  # type: ignore
+            processed_total_load = total_load[DemandType.PUBLIC.value]  # type: ignore
 
-    if total_minigrid_load is None:
+    if processed_total_load is None:
         raise Exception("At least one load type must be specified.")
 
-    return total_minigrid_load
+    return processed_total_load
 
 
 def _get_storage_profile(
@@ -236,12 +238,19 @@ def _get_storage_profile(
             The total load for the system.
 
     Outputs:
-        load_energy                     Amount of energy (kWh) required to satisfy the loads
-        renewables_energy               Amount of energy (kWh) provided by renewables to the system
-        renewables_energy_used_directly Amount of energy (kWh) from renewables used directly to satisfy load (kWh)
-        grid_energy                     Amount of energy (kWh) supplied by the grid
-        storage_profile                 Amount of energy (kWh) into (+ve) and out of (-ve) the battery
-        kerosene_usage                  Number of kerosene lamps in use (if no power available)
+        - load_energy:
+            Amount of energy (kWh) required to satisfy theloads
+        - renewables_energy:
+            Amount of energy (kWh) provided by renewables to the system
+        - renewables_energy_used_directly:
+            Amount of energy (kWh) from renewables used directly to satisfy load (kWh)
+        - grid_energy:
+            Amount of energy (kWh) supplied by the grid
+        - storage_profile:
+            Amount of energy (kWh) into (+ve) and out of (-ve) the battery
+        - kerosene_usage:
+            Number of kerosene lamps in use (if no power available)
+
     """
 
     # Initialise power generation, including degradation of PV
