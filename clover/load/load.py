@@ -24,7 +24,7 @@ import math
 import os
 
 from logging import Logger
-from typing import Any, Dict, Set, Tuple
+from typing import Any, Dict, Optional, Set, Tuple
 
 import numpy as np
 import pandas as pd
@@ -110,13 +110,13 @@ class Device:
 
     available: bool
     demand_type: DemandType
-    electric_power: float
+    electric_power: Optional[float]
     final_ownership: float
     initial_ownership: float
     innovation: float
     imitation: float
     name: str
-    water_usage: float
+    water_usage: Optional[float]
 
     def __hash__(self) -> int:
         """
@@ -178,7 +178,9 @@ class Device:
             device_input["innovation"],
             device_input["imitation"],
             device_input["device"],
-            device_input["water_usage"] if "water_usage" in device_input else 0,
+            device_input[LoadType.CLEAN_WATER.value]
+            if LoadType.CLEAN_WATER.value in device_input
+            else None,
         )
 
 
@@ -942,8 +944,19 @@ def process_load_profiles(
     device_hourly_loads: Dict[str, pd.DataFrame] = dict()
     if load_type == LoadType.ELECTRIC:
         load_name: str = "electric"
+        relevant_device_utilisations: Dict[Device, pd.DataFrame] = {
+            device: device_utilisation
+            for device, device_utilisation in device_utilisations.items()
+            if device.electric_power is not None
+        }
     elif load_type == LoadType.CLEAN_WATER:
         load_name: str = "clean_water"
+        relevant_device_utilisations: Dict[Device, pd.DataFrame] = {
+            device: device_utilisation
+            for device, device_utilisation in device_utilisations.items()
+            if device.water_usage is not None
+        }
+
     else:
         logger.error(
             "%sUnknown load type when calling the load module to generate profiles: %s%s",
@@ -958,7 +971,7 @@ def process_load_profiles(
         )
 
     for device in tqdm(
-        device_utilisations,
+        relevant_device_utilisations,
         desc=f"{load_name.replace('_', ' ')} load profiles",
         leave=True,
     ):
@@ -986,7 +999,7 @@ def process_load_profiles(
         # Compute the device utilisation.
         daily_device_utilisaion = process_device_utilisation(
             device,
-            device_utilisations=device_utilisations,
+            device_utilisations=relevant_device_utilisations,
             generated_device_utilisation_directory=os.path.join(
                 auto_generated_files_directory,
                 "load",
@@ -1037,7 +1050,7 @@ def process_load_profiles(
     logger.info("Computing the total device hourly load.")
     total_load, yearly_statistics = compute_total_hourly_load(
         device_hourly_loads=device_hourly_loads,
-        devices=set(device_utilisations.keys()),
+        devices=set(relevant_device_utilisations.keys()),
         generated_device_load_filepath=os.path.join(
             auto_generated_files_directory, "load", load_name, "device_load"
         ),

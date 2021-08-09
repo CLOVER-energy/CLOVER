@@ -320,7 +320,10 @@ def main(args: List[Any]) -> None:
     # load_logger = get_logger(load.LOAD_LOGGER_NAME)
 
     try:
-        total_electric_load, yearly_load_statistics = load.process_load_profiles(
+        (
+            total_electric_load,
+            electric_yearly_load_statistics,
+        ) = load.process_load_profiles(
             auto_generated_files_directory,
             device_utilisations,
             load.LoadType.ELECTRIC,
@@ -344,7 +347,10 @@ def main(args: List[Any]) -> None:
         raise
 
     try:
-        total_clean_water_load, yearly_load_statistics = load.process_load_profiles(
+        (
+            total_clean_water_load,
+            clean_water_yearly_load_statistics,
+        ) = load.process_load_profiles(
             auto_generated_files_directory,
             device_utilisations,
             load.LoadType.CLEAN_WATER,
@@ -366,10 +372,6 @@ def main(args: List[Any]) -> None:
             BColours.endc,
         )
         raise
-
-    import pdb
-
-    pdb.set_trace()
 
     # Generate the grid-availability profiles.
     logger.info("Generating grid-availability profiles.")
