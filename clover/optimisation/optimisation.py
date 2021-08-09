@@ -1159,12 +1159,15 @@ class OptimisationOld:
             - previous_system.loc["System details"]["Diesel capacity"]
         )
         #   Calculate new equipment GHGs
-        equipment_GHGs = GHGs().get_total_equipment_GHGs(
-            PV_array_size=PV_addition,
-            storage_size=storage_addition,
-            diesel_size=diesel_addition,
-            year=installation_year,
-        ) + GHGs().get_independent_GHGs(start_year, end_year)
+        equipment_GHGs = (
+            GHGs().get_total_equipment_GHGs(
+                PV_array_size=PV_addition,
+                storage_size=storage_addition,
+                diesel_size=diesel_addition,
+                year=installation_year,
+            )
+            + GHGs().get_independent_GHGs(start_year, end_year)
+        )
         #   Calculate GHGs of connecting new households
         connections_GHGs = GHGs().get_connections_GHGs(
             households=simulation_results["Households"], year=installation_year
