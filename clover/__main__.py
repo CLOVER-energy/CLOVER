@@ -542,15 +542,16 @@ def main(args: List[Any]) -> None:
             else:
                 filename = parsed_args.output
 
-            # Compute the key results.
-            key_results = analysis.get_key_results(
-                grid_inputs[scenario.grid_type],
-                system_performance_outputs,
-                total_solar_output,
-            )
+            if parsed_args.analyse:
+                # Compute the key results.
+                key_results = analysis.get_key_results(
+                    grid_inputs[scenario.grid_type],
+                    simulation.end_year - simulation.start_year,
+                    system_performance_outputs,
+                    total_solar_output,
+                )
 
-            # Generate and save the various plots.
-            if parsed_args.generate_plots:
+                # Generate and save the various plots.
                 analysis.plot_outputs(
                     grid_inputs[scenario.grid_type],
                     grid_profile,
