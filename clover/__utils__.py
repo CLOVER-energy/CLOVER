@@ -872,10 +872,6 @@ def save_simulation(
 
     """
 
-    # If the filename is not provided, then generate it.
-    if filename is None:
-        filename = datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
-
     # Add the file extension if appropriate.
     filepath = os.path.join(output_directory, filename)
     if not filepath.endswith(".csv"):

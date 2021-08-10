@@ -102,20 +102,22 @@ def parse_args(args: List[Any]) -> argparse.Namespace:
     )
 
     # Simulation-specific arguments.
-    simulation_parser = parser.add_argument_group(
-        "simulation-only arguments",
-    )
+    simulation_parser = parser.add_argument_group("simulation-only arguments",)
     simulation_parser.add_argument(
         "--simulation",
         action="store_true",
         default=False,
         help="If specified, CLOVER will carry out a single simulation.",
     )
+    simulation_parser.add_argument(
+        "--generate-plots",
+        action="store_true",
+        default=False,
+        help="If specified, plots will be generated and saved for the simulation.",
+    )
 
     # Optimisation arguments
-    optimisation_parser = parser.add_argument_group(
-        "optimisation-only arguments",
-    )
+    optimisation_parser = parser.add_argument_group("optimisation-only arguments",)
     optimisation_parser.add_argument(
         "--optimisation",
         action="store_true",
