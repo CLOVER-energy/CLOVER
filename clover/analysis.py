@@ -87,6 +87,7 @@ def plot_outputs(
     grid_profile: pd.DataFrame,
     initial_clean_water_hourly_loads: Optional[Dict[str, pd.DataFrame]],
     initial_electric_hourly_loads: Dict[str, pd.DataFrame],
+    num_years: int,
     output_directory: str,
     simulation_filename: str,
     total_clean_water_load: pd.DataFrame,
@@ -109,6 +110,8 @@ def plot_outputs(
         - initial_electric_hourly_loads:
             The hourly load profiles of each device for the initial period of the
             simulation run.
+        - num_years:
+            The number of years for which the simulation was run.
         - output_directory:
             The directory into which to save the output information.
         - simulation_filename:
@@ -328,6 +331,69 @@ def plot_outputs(
         os.path.join(figures_directory, "electric_demand_annual_variation.png"),
         transparent=True,
     )
+    plt.close()
+
+    # Plot the demand growth over the simulation period.
+    domestic_demand = np.sum(
+        np.reshape(
+            0.001
+            * total_electric_load[0 : num_years * HOURS_PER_YEAR][
+                DemandType.DOMESTIC.value
+            ].values,
+            (num_years, HOURS_PER_YEAR),
+        ),
+        axis=1,
+    )
+    commercial_demand = np.sum(
+        np.reshape(
+            0.001
+            * total_electric_load[0 : num_years * HOURS_PER_YEAR][
+                DemandType.COMMERCIAL.value
+            ].values,
+            (num_years, HOURS_PER_YEAR),
+        ),
+        axis=1,
+    )
+    public_demand = np.sum(
+        np.reshape(
+            0.001
+            * total_electric_load[0 : num_years * HOURS_PER_YEAR][
+                DemandType.PUBLIC.value
+            ].values,
+            (num_years, HOURS_PER_YEAR),
+        ),
+        axis=1,
+    )
+    total_demand = np.sum(
+        0.001
+        * np.reshape(
+            np.sum(total_electric_load[0 : num_years * HOURS_PER_YEAR].values, axis=1),
+            (num_years, HOURS_PER_YEAR),
+        ),
+        axis=1,
+    )
+    plt.plot(
+        range(num_years), domestic_demand, label=DemandType.DOMESTIC.value, color="blue"
+    )
+    plt.plot(
+        range(num_years),
+        commercial_demand,
+        label=DemandType.COMMERCIAL.value,
+        color="orange",
+    )
+    plt.plot(
+        range(num_years), public_demand, label=DemandType.PUBLIC.value, color="green"
+    )
+    plt.plot(range(num_years), total_demand, label="total", color="red")
+    plt.legend(loc="upper left")
+    plt.xticks(range(0, num_years + 1, 2))
+    plt.xlabel("Year of investigation period")
+    plt.ylabel("Energy demand / MWh/year")
+    plt.title("Load growth of the community")
+    plt.savefig(
+        os.path.join(figures_directory, "electric_load_growth.png"), transparent=True,
+    )
+    plt.close()
 
     # Plot the initial clean-water load of each device.
     if initial_clean_water_hourly_loads is not None:
@@ -466,3 +532,77 @@ def plot_outputs(
             os.path.join(figures_directory, "clean_water_demand_annual_variation.png"),
             transparent=True,
         )
+        plt.close()
+
+        # Plot the clean-water demand load growth.
+        # Plot the demand growth over the simulation period.
+        domestic_demand = np.sum(
+            np.reshape(
+                0.001
+                * total_clean_water_load[0 : num_years * HOURS_PER_YEAR][
+                    DemandType.DOMESTIC.value
+                ].values,
+                (num_years, HOURS_PER_YEAR),
+            ),
+            axis=1,
+        )
+        commercial_demand = np.sum(
+            np.reshape(
+                0.001
+                * total_clean_water_load[0 : num_years * HOURS_PER_YEAR][
+                    DemandType.COMMERCIAL.value
+                ].values,
+                (num_years, HOURS_PER_YEAR),
+            ),
+            axis=1,
+        )
+        public_demand = np.sum(
+            np.reshape(
+                0.001
+                * total_clean_water_load[0 : num_years * HOURS_PER_YEAR][
+                    DemandType.PUBLIC.value
+                ].values,
+                (num_years, HOURS_PER_YEAR),
+            ),
+            axis=1,
+        )
+        total_demand = np.sum(
+            np.reshape(
+                np.sum(
+                    0.001
+                    * total_clean_water_load[0 : num_years * HOURS_PER_YEAR].values,
+                    axis=1,
+                ),
+                (num_years, HOURS_PER_YEAR),
+            ),
+            axis=1,
+        )
+        plt.plot(
+            range(num_years),
+            domestic_demand,
+            label=DemandType.DOMESTIC.value,
+            color="blue",
+        )
+        plt.plot(
+            range(num_years),
+            commercial_demand,
+            label=DemandType.COMMERCIAL.value,
+            color="orange",
+        )
+        plt.plot(
+            range(num_years),
+            public_demand,
+            label=DemandType.PUBLIC.value,
+            color="green",
+        )
+        plt.plot(range(num_years), total_demand, label="total", color="red")
+        plt.legend(loc="upper left")
+        plt.xticks(range(0, num_years + 1, 2))
+        plt.xlabel("Year of investigation period")
+        plt.ylabel("Clean-water demand / Cubic meters/year")
+        plt.title("Load growth of the community")
+        plt.savefig(
+            os.path.join(figures_directory, "clean_water_load_growth.png"),
+            transparent=True,
+        )
+        plt.close()
