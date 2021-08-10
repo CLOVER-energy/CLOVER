@@ -535,6 +535,7 @@ def main(args: List[Any]) -> None:
             # Save the simulation output.
             save_simulation(
                 parsed_args.output,
+                key_results,
                 logger,
                 os.path.join(
                     LOCATIONS_FOLDER_NAME,
