@@ -26,11 +26,13 @@ import os
 
 from typing import Any, Dict, Optional, Set, Union
 
+import json
 import numpy as np
 import pandas as pd
 import scipy  # type: ignore
 import yaml
 
+from .analysis import KeyResults
 
 __all__ = (
     "BColours",
@@ -845,6 +847,7 @@ class SystemDetails:
 
 def save_simulation(
     filename: Optional[str],
+    key_results: KeyResults,
     logger: logging.Logger,
     output_directory: str,
     simulation: pd.DataFrame,
@@ -856,6 +859,8 @@ def save_simulation(
     Inputs:
         - filename:
             The .csv file name to use (defaults to timestamp).
+        - key_results:
+            The key results from the run.
         - logger:
             The logger to use for the run.
         - output_directory:
@@ -881,15 +886,22 @@ def save_simulation(
     with open(filepath, "w") as f:
         simulation.to_csv(f)  # type: ignore
     logger.info("Simulation successfully saved to %s.", filepath)
-    # print(f"Simulation saved to {filepath}.")
 
     # Save the system data.
     simulation_details_filepath = os.path.join(
-        output_directory, filename + "_info.yaml"
+        output_directory, filename + "_info.json"
     )
     logger.info("Saving simulation details.")
     with open(simulation_details_filepath, "w") as f:
-        yaml.dump(system_details.to_dict(), f, indent=4)
+        json.dump(system_details.to_dict(), f, indent=4)
     logger.info(
         "Simulation details successfully saved to %s.", simulation_details_filepath
     )
+
+    # Save the key results.
+    key_results_filepath = os.path.join(
+        output_directory, filename + "_key_results.json"
+    )
+    logger.info("Saving key results from the simulation.")
+    with open(key_results_filepath, "w") as f:
+        json.dump(key_results.to_dict(), f, indent=4)
