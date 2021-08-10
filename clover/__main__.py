@@ -31,7 +31,7 @@ import pandas as pd  # type: ignore
 
 from tqdm import tqdm  # type: ignore
 
-from . import argparser
+from . import analysis, argparser
 from .fileparser import (
     INPUTS_DIRECTORY,
     KEROSENE_TIMES_FILE,
@@ -47,6 +47,7 @@ from .__utils__ import (
     BColours,
     LoadType,
     get_logger,
+    InputFileError,
     LOCATIONS_FOLDER_NAME,
     LOGGER_DIRECTORY,
     OperatingMode,
@@ -212,9 +213,7 @@ def main(args: List[Any]) -> None:
 
     # Define common variables.
     auto_generated_files_directory = os.path.join(
-        LOCATIONS_FOLDER_NAME,
-        parsed_args.location,
-        AUTO_GENERATED_FILES_DIRECTORY,
+        LOCATIONS_FOLDER_NAME, parsed_args.location, AUTO_GENERATED_FILES_DIRECTORY,
     )
 
     # Determine the operating mode for the run.
@@ -353,6 +352,23 @@ def main(args: List[Any]) -> None:
         electric_yearly_load_statistics = None
 
     if LoadType.CLEAN_WATER in scenario.load_types:
+        # Raise an error if there are no clean-water devices specified.
+        if (
+            len(
+                {
+                    device
+                    for device in device_utilisations
+                    if device.clean_water_usage is not None
+                }
+            )
+            == 0
+        ):
+            raise InputFileError(
+                "devices input flie",
+                "No clean-water input devices were specified despite the scenario "
+                "containing a clean-water system.",
+            )
+
         try:
             (
                 total_clean_water_load,
@@ -438,10 +454,7 @@ def main(args: List[Any]) -> None:
             ),
             "r",
         ) as f:
-            grid_profile = pd.read_csv(
-                f,
-                index_col=0,
-            )
+            grid_profile = pd.read_csv(f, index_col=0,)
     except FileNotFoundError as e:
         logger.error(
             "%sGrid profile file for profile '%s' could not be found: %s%s",
@@ -464,10 +477,7 @@ def main(args: List[Any]) -> None:
     # * Run a simulation or optimisation as appropriate.
     if operating_mode == OperatingMode.SIMULATION:
         print(
-            "Beginning CLOVER simulation runs {}    ".format(
-                "." * 30,
-            ),
-            end="\n",
+            "Beginning CLOVER simulation runs {}    ".format("." * 30,), end="\n",
         )
         simulation_times: List[str] = []
 
@@ -518,6 +528,9 @@ def main(args: List[Any]) -> None:
 
             # Add the input file information to the system details file.
             system_details.file_information = input_file_info
+
+            # Compute the key results.
+            key_results = analysis.get_key_results(total_solar_output)
 
             # Save the simulation output.
             save_simulation(
