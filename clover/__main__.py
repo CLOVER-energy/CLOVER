@@ -546,7 +546,11 @@ def main(args: List[Any]) -> None:
             # Generate and save the various plots.
             if parsed_args.generate_plots:
                 analysis.plot_outputs(
-                    grid_profile, output_directory, filename, total_solar_output
+                    grid_inputs[scenario.grid_type],
+                    grid_profile,
+                    output_directory,
+                    filename,
+                    total_solar_output,
                 )
             else:
                 print("No analysis to be carried out.")
