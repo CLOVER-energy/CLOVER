@@ -2,8 +2,8 @@
 ########################################################################################
 # analysis.py - In-built analysis module for CLOVER.                                   #
 #                                                                                      #
-# Author: Ben Winchester                                                               #
-# Copyright: Ben Winchester, 2021                                                      #
+# Authors: Phil Sandwell, Ben Winchester                                               #
+# Copyright: Phil Sandwell, 2021                                                       #
 # Date created: 13/07/2021                                                             #
 # License: Open source                                                                 #
 ########################################################################################
@@ -250,6 +250,85 @@ def plot_outputs(
     )
     plt.close()
 
+    # Plot the annual variation of the electricity demand.
+    _, axis = plt.subplots(1, 2, figsize=(8, 4))
+    domestic_demand = np.sum(
+        np.reshape(
+            total_electric_load[0:HOURS_PER_YEAR][DemandType.DOMESTIC.value].values,
+            (365, 24),
+        ),
+        axis=1,
+    )
+    commercial_demand = np.sum(
+        np.reshape(
+            total_electric_load[0:HOURS_PER_YEAR][DemandType.COMMERCIAL.value].values,
+            (365, 24),
+        ),
+        axis=1,
+    )
+    public_demand = np.sum(
+        np.reshape(
+            total_electric_load[0:HOURS_PER_YEAR][DemandType.PUBLIC.value].values,
+            (365, 24),
+        ),
+        axis=1,
+    )
+    total_demand = np.sum(
+        np.reshape(
+            np.sum(total_electric_load[0:HOURS_PER_YEAR].values, axis=1), (365, 24),
+        ),
+        axis=1,
+    )
+    axis[0].plot(
+        range(365),
+        pd.DataFrame(domestic_demand).rolling(5).mean(),
+        label="Domestic",
+        color="blue",
+    )
+    axis[0].plot(
+        range(365),
+        pd.DataFrame(commercial_demand).rolling(5).mean(),
+        label="Commercial",
+        color="orange",
+    )
+    axis[0].plot(
+        range(365),
+        pd.DataFrame(public_demand).rolling(5).mean(),
+        label="Public",
+        color="green",
+    )
+    axis[0].plot(range(365), domestic_demand, alpha=0.5, color="blue")
+    axis[0].plot(range(365), commercial_demand, alpha=0.5, color="orange")
+    axis[0].plot(range(365), public_demand, alpha=0.5, color="green")
+    axis[0].legend(loc="best")
+    axis[0].set(
+        xticks=(range(0, 366, 60)),
+        yticks=range(0, 26, 5),
+        xlabel="Day of simulation period",
+        ylabel="Load / kWh/day",
+        title="Energy demand of each load type",
+    )
+    axis[1].plot(
+        range(365),
+        pd.DataFrame(total_demand).rolling(5).mean(),
+        label="Total",
+        color="red",
+    )
+    axis[1].plot(range(365), total_demand, alpha=0.5, color="red")
+    axis[1].legend(loc="best")
+    axis[1].set(
+        xticks=(range(0, 366, 60)),
+        yticks=range(15, 41, 5),
+        xlabel="Day of simulation period",
+        ylabel="Load / kWh/day",
+        title="Total community energy demand",
+    )
+    plt.tight_layout()
+    plt.savefig(
+        os.path.join(figures_directory, "electric_demand_annual_variation.png"),
+        transparent=True,
+    )
+
     # Plot the initial clean-water load of each device.
     if initial_clean_water_hourly_loads is not None:
         for device, load in initial_clean_water_hourly_loads.items():
@@ -302,3 +381,88 @@ def plot_outputs(
         )
         plt.close()
 
+        # Plot the annual variation of the electricity demand.
+        _, axis = plt.subplots(1, 2, figsize=(8, 4))
+        domestic_demand = np.sum(
+            np.reshape(
+                total_clean_water_load[0:HOURS_PER_YEAR][
+                    DemandType.DOMESTIC.value
+                ].values,
+                (365, 24),
+            ),
+            axis=1,
+        )
+        commercial_demand = np.sum(
+            np.reshape(
+                total_clean_water_load[0:HOURS_PER_YEAR][
+                    DemandType.COMMERCIAL.value
+                ].values,
+                (365, 24),
+            ),
+            axis=1,
+        )
+        public_demand = np.sum(
+            np.reshape(
+                total_clean_water_load[0:HOURS_PER_YEAR][
+                    DemandType.PUBLIC.value
+                ].values,
+                (365, 24),
+            ),
+            axis=1,
+        )
+        total_demand = np.sum(
+            np.reshape(
+                np.sum(total_clean_water_load[0:HOURS_PER_YEAR].values, axis=1),
+                (365, 24),
+            ),
+            axis=1,
+        )
+        axis[0].plot(
+            range(365),
+            pd.DataFrame(domestic_demand).rolling(5).mean(),
+            label="Domestic",
+            color="blue",
+        )
+        axis[0].plot(
+            range(365),
+            pd.DataFrame(commercial_demand).rolling(5).mean(),
+            label="Commercial",
+            color="orange",
+        )
+        axis[0].plot(
+            range(365),
+            pd.DataFrame(public_demand).rolling(5).mean(),
+            label="Public",
+            color="green",
+        )
+        axis[0].plot(range(365), domestic_demand, alpha=0.5, color="blue")
+        axis[0].plot(range(365), commercial_demand, alpha=0.5, color="orange")
+        axis[0].plot(range(365), public_demand, alpha=0.5, color="green")
+        axis[0].legend(loc="best")
+        axis[0].set(
+            xticks=(range(0, 366, 60)),
+            yticks=range(0, 26, 5),
+            xlabel="Day of simulation period",
+            ylabel="Load / litres/hour",
+            title="Clean-water demand of each load type",
+        )
+        axis[1].plot(
+            range(365),
+            pd.DataFrame(total_demand).rolling(5).mean(),
+            label="Total",
+            color="red",
+        )
+        axis[1].plot(range(365), total_demand, alpha=0.5, color="red")
+        axis[1].legend(loc="best")
+        axis[1].set(
+            xticks=(range(0, 366, 60)),
+            yticks=range(15, 41, 5),
+            xlabel="Day of simulation period",
+            ylabel="Load / litres/hour",
+            title="Clean-water demand of each load type",
+        )
+        plt.tight_layout()
+        plt.savefig(
+            os.path.join(figures_directory, "clean_water_demand_annual_variation.png"),
+            transparent=True,
+        )
