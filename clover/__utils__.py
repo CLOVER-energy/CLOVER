@@ -333,6 +333,14 @@ class KeyResults:
 
     """
 
+    average_daily_diesel_energy_supplied: Optional[float] = None
+    average_daily_dumped_energy: Optional[float] = None
+    average_daily_energy_consumption: Optional[float] = None
+    average_daily_grid_energy_supplied: Optional[float] = None
+    average_daily_renewables_energy_supplied: Optional[float] = None
+    average_daily_renewables_energy_used: Optional[float] = None
+    average_daily_stored_energy_supplied: Optional[float] = None
+    average_daily_unmet_energy: Optional[float] = None
     average_pv_generation: Optional[float] = None
     blackouts: Optional[float] = None
     cumulative_pv_generation: Optional[float] = None
@@ -350,14 +358,47 @@ class KeyResults:
         """
 
         data_dict: Dict[str, float] = dict()
+
+        if self.average_daily_diesel_energy_supplied is not None:
+            data_dict[
+                "Average daily diesel energy supplied / kWh"
+            ] = self.average_daily_diesel_energy_supplied
+        if self.average_daily_dumped_energy is not None:
+            data_dict[
+                "Average daily dumped energy / kWh"
+            ] = self.average_daily_grid_energy_supplied
+        if self.average_daily_energy_consumption is not None:
+            data_dict[
+                "Average daily energy consumption / kWh"
+            ] = self.average_daily_energy_consumption
+        if self.average_daily_grid_energy_supplied is not None:
+            data_dict[
+                "Average daily grid energy supplied / kWh"
+            ] = self.average_daily_grid_energy_supplied
+        if self.average_daily_renewables_energy_supplied is not None:
+            data_dict[
+                "Average daily renewables energy suppied / kWh"
+            ] = self.average_daily_renewables_energy_supplied
+        if self.average_daily_renewables_energy_used is not None:
+            data_dict[
+                "Average daily renewables energy used / kWh"
+            ] = self.average_daily_renewables_energy_used
+        if self.average_daily_stored_energy_supplied is not None:
+            data_dict[
+                "Average daily stored energy supplied / kWh"
+            ] = self.average_daily_stored_energy_supplied
+        if self.average_daily_unmet_energy is not None:
+            data_dict[
+                "Average daily unmet energy / kWh"
+            ] = self.average_daily_unmet_energy
         if self.average_pv_generation is not None:
             data_dict["Average pv generation / kWh/day"] = self.average_pv_generation
-        if self.blackouts is None:
+        if self.blackouts is not None:
             data_dict["Blackouts"] = self.blackouts
         if self.cumulative_pv_generation is not None:
             data_dict["Cumulative pv generation / kWh"] = self.cumulative_pv_generation
         if self.diesel_times is not None:
-            data_dict["Diesel times"] = self.diesel_timess
+            data_dict["Diesel times"] = self.diesel_times
         if self.grid_daily_hours is not None:
             data_dict["Average grid availability / hours/day"] = self.grid_daily_hours
 

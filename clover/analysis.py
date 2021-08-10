@@ -50,6 +50,7 @@ PLOT_RESOLUTION = 300
 
 def get_key_results(
     grid_input_profile: pd.DataFrame,
+    num_years: int,
     simulation_results: pd.DataFrame,
     total_solar_output: pd.DataFrame,
 ) -> KeyResults:
@@ -59,6 +60,8 @@ def get_key_results(
         Inputs:
         - grid_input_profile:
             The relevant grid input profile for the simulation that was run.
+        - num_years:
+            The number of years for which the simulation was run.
         - simulation_results:
             The results of the simulation.
         - total_solar_output:
@@ -83,11 +86,41 @@ def get_key_results(
     # Compute the grid results.
     key_results.grid_daily_hours = np.sum(grid_input_profile, axis=0)
 
-    # Compute the blackout times.
-    key_results.blackouts = round(simulation_results["Blackouts"].mean(), 3)
+    # Compute the simulation related averages and sums.
+    key_results.average_daily_diesel_energy_supplied = simulation_results[
+        "Diesel energy (kWh)"
+    ].sum() / (365 * num_years)
 
-    # Compute the diesel times.
+    key_results.average_daily_dumped_energy = simulation_results[
+        "Dumped energy (kWh)"
+    ].sum() / (365 * num_years)
+
+    key_results.average_daily_energy_consumption = simulation_results[
+        "Total energy used (kWh)"
+    ].sum() / (365 * num_years)
+
+    key_results.average_daily_grid_energy_supplied = simulation_results[
+        "Grid energy (kWh)"
+    ].sum() / (365 * num_years)
+
+    key_results.average_daily_renewables_energy_supplied = simulation_results[
+        "Renewables energy supplied (kWh)"
+    ].sum() / (365 * num_years)
+
+    key_results.average_daily_renewables_energy_used = simulation_results[
+        "Renewables energy used (kWh)"
+    ].sum() / (365 * num_years)
+
+    key_results.average_daily_stored_energy_supplied = simulation_results[
+        "Storage energy supplied (kWh)"
+    ].sum() / (365 * num_years)
+
+    key_results.average_daily_unmet_energy = simulation_results[
+        "Unmet energy (kWh)"
+    ].sum() / (365 * num_years)
+
     key_results.diesel_times = round(simulation_results["Diesel times"].mean(), 3)
+    key_results.blackouts = round(simulation_results["Blackouts"].mean(), 3)
 
     return key_results
 
