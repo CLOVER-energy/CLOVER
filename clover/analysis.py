@@ -49,14 +49,18 @@ PLOT_RESOLUTION = 300
 
 
 def get_key_results(
-    grid_input_profile: pd.DataFrame, total_solar_output: pd.DataFrame
+    grid_input_profile: pd.DataFrame,
+    simulation_results: pd.DataFrame,
+    total_solar_output: pd.DataFrame,
 ) -> KeyResults:
     """
     Computes the key results of the simulation.
 
         Inputs:
-            - grid_input_profile:
+        - grid_input_profile:
             The relevant grid input profile for the simulation that was run.
+        - simulation_results:
+            The results of the simulation.
         - total_solar_output:
             The total solar power produced by the PV installation.
 
@@ -78,6 +82,12 @@ def get_key_results(
 
     # Compute the grid results.
     key_results.grid_daily_hours = np.sum(grid_input_profile, axis=0)
+
+    # Compute the blackout times.
+    key_results.blackouts = round(simulation_results["Blackouts"].mean(), 3)
+
+    # Compute the diesel times.
+    key_results.diesel_times = round(simulation_results["Diesel times"].mean(), 3)
 
     return key_results
 

@@ -544,7 +544,9 @@ def main(args: List[Any]) -> None:
 
             # Compute the key results.
             key_results = analysis.get_key_results(
-                grid_inputs[scenario.grid_type], total_solar_output
+                grid_inputs[scenario.grid_type],
+                system_performance_outputs,
+                total_solar_output,
             )
 
             # Generate and save the various plots.
