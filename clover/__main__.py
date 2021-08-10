@@ -17,12 +17,12 @@ the clover module from the command-line interface.
 
 """
 
-from argparse import Namespace
-from datetime import time
+import datetime
 import logging
 import os
 import sys
 
+from argparse import Namespace
 from functools import partial
 from multiprocessing import Pool
 from typing import Any, Dict, List, Set
@@ -529,19 +529,34 @@ def main(args: List[Any]) -> None:
             # Add the input file information to the system details file.
             system_details.file_information = input_file_info
 
+            # If the output filename is not provided, then generate it.
+            output_directory = os.path.join(
+                LOCATIONS_FOLDER_NAME, parsed_args.location, SIMULATION_OUTPUTS_FOLDER,
+            )
+            if parsed_args.output is None:
+                filename: str = datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
+            else:
+                filename = parsed_args.output
+
             # Compute the key results.
-            key_results = analysis.get_key_results(total_solar_output)
+            key_results = analysis.get_key_results(
+                grid_inputs[scenario.grid_type], total_solar_output
+            )
+
+            # Generate and save the various plots.
+            if parsed_args.generate_plots:
+                analysis.plot_outputs(
+                    grid_profile, output_directory, filename, total_solar_output
+                )
+            else:
+                print("No analysis to be carried out.")
 
             # Save the simulation output.
             save_simulation(
-                parsed_args.output,
+                filename,
                 key_results,
                 logger,
-                os.path.join(
-                    LOCATIONS_FOLDER_NAME,
-                    parsed_args.location,
-                    SIMULATION_OUTPUTS_FOLDER,
-                ),
+                output_directory,
                 system_performance_outputs,
                 system_details,
             )
@@ -563,9 +578,6 @@ def main(args: List[Any]) -> None:
     # ******* #
     # *  4  * #
     # ******* #
-
-    # * Run any and all analysis as appropriate.
-    print("No analysis to be carried out.")
 
     print(
         "Finished. See {} for output files.".format(
