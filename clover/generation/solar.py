@@ -311,7 +311,9 @@ def total_solar_output(
 
     else:
         # Get data for each year using iteration, and add that data to the output file
-        for year_index in tqdm(np.arange(10), desc="total solar profile", leave=True):
+        for year_index in tqdm(
+            np.arange(10), desc="total solar profile", leave=True, unit="year"
+        ):
             iteration_year = start_year + year_index
             with open(
                 os.path.join(
@@ -408,6 +410,7 @@ class SolarDataThread(threading.Thread):
                     self.solar_generation_inputs["end_year"] + 1,
                 ),
                 desc="solar profiles",
+                unit="year",
             ):
                 # If the solar-data file for the year already exists, skip.
                 filename = f"solar_generation_{year}.csv"
