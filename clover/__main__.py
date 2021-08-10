@@ -323,6 +323,7 @@ def main(args: List[Any]) -> None:
     if LoadType.ELECTRIC in scenario.load_types:
         try:
             (
+                initial_electric_hourly_loads,
                 total_electric_load,
                 electric_yearly_load_statistics,
             ) = load.process_load_profiles(
@@ -348,6 +349,7 @@ def main(args: List[Any]) -> None:
             )
             raise
     else:
+        initial_electric_hourly_loads = None
         total_electric_load = None
         electric_yearly_load_statistics = None
 
@@ -371,6 +373,7 @@ def main(args: List[Any]) -> None:
 
         try:
             (
+                initial_clean_water_hourly_loads,
                 total_clean_water_load,
                 clean_water_yearly_load_statistics,
             ) = load.process_load_profiles(
@@ -396,6 +399,7 @@ def main(args: List[Any]) -> None:
             )
             raise
     else:
+        initial_clean_water_hourly_loads = None
         total_clean_water_load = None
         clean_water_yearly_load_statistics = None
 
@@ -481,7 +485,7 @@ def main(args: List[Any]) -> None:
         )
         simulation_times: List[str] = []
 
-        for simulation in tqdm(simulations, desc="simulations"):
+        for simulation in tqdm(simulations, desc="simulations", unit="sim."):
             try:
                 (
                     time_delta,
@@ -548,8 +552,12 @@ def main(args: List[Any]) -> None:
                 analysis.plot_outputs(
                     grid_inputs[scenario.grid_type],
                     grid_profile,
+                    initial_clean_water_hourly_loads,
+                    initial_electric_hourly_loads,
                     output_directory,
                     filename,
+                    total_clean_water_load,
+                    0.001 * total_electric_load,
                     total_solar_output,
                 )
             else:

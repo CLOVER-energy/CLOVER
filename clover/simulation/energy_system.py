@@ -605,7 +605,10 @@ def run_simulation(
 
     # Begin simulation, iterating over timesteps
     for t in tqdm(
-        range(int(storage_profile.size)), desc="hourly computation", leave=False
+        range(int(storage_profile.size)),
+        desc="hourly computation",
+        leave=False,
+        unit="hour",
     ):
         # Check if any storage is being used
         if storage_size == 0:
