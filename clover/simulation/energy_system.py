@@ -36,6 +36,7 @@ from ..__utils__ import (
     DieselMode,
     DemandType,
     DistributionNetwork,
+    InputFileError,
     LoadType,
     Location,
     Scenario,
@@ -205,6 +206,7 @@ def _get_electric_storage_profile(
     *,
     grid_profile: pd.DataFrame,
     kerosene_usage: pd.DataFrame,
+    logger: Logger,
     minigrid: Minigrid,
     scenario: Scenario,
     solar_lifetime: int,
@@ -224,6 +226,8 @@ def _get_electric_storage_profile(
             The relevant grid profile, based on the scenario, for the simulation.
         - kerosene_usage:
             The kerosene usage.
+        - logger:
+            The logger to use for the run.
         - minigrid:
             The energy system being modelled.
         - scenario:
@@ -283,8 +287,19 @@ def _get_electric_storage_profile(
         transmission_efficiency = minigrid.ac_transmission_efficiency
         # grid_conversion_efficiency = minigrid.ac_to_ac_conversion
 
+    if transmission_efficiency is None:
+        logger.error(
+            "%sNo valid transmission efficiency was determined based on the energy system inputs. Check this before continuing.%s",
+            BColours.fail,
+            BColours.endc,
+        )
+        raise InputFileError(
+            "energy system inputs",
+            "No valid transmission efficiency was determined based on the energy system inputs. Check this before continuing.",
+        )
+
     # Consider transmission efficiency
-    load_energy = total_electric_load.div(transmission_efficiency)
+    load_energy = total_electric_load / transmission_efficiency
     pv_energy = pv_generation.mul(transmission_efficiency)
 
     # Combine energy from all renewables sources
@@ -557,6 +572,7 @@ def run_simulation(
     ) = _get_electric_storage_profile(
         grid_profile=grid_profile,
         kerosene_usage=kerosene_usage,
+        logger=logger,
         minigrid=minigrid,
         scenario=scenario,
         solar_lifetime=solar_lifetime,

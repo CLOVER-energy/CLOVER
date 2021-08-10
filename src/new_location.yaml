@@ -358,6 +358,14 @@
                   innovation: 0
                   imitation: 0
                   type: public
+                - device: washing_machine
+                  available: false
+                  electric_power: 3000
+                  initial_ownership: 0.01
+                  final_ownership: 0.05
+                  innovation: 0.02
+                  imitation: 0.2
+                  type: domestic
 
             - directory: device_utilisation
               contents:
@@ -624,10 +632,8 @@
                   lifetime_loss: 0.2 # Fractional loss over lifetime (0.0 - 1.0)
                   c_rate_discharging: 0.33 # Discharge rate
                   c_rate_charging: 0.33 # Charge rate
-                dc_network:
-                  transmission_efficiency: 0.95 # Efficiency of DC distribution network
-                ac_network:
-                  transmission_efficiency: 0.95 # Efficiency of AC distribution network
+                dc_transmission_efficiency: 0.95 # Efficiency of DC distribution network
+                ac_transmission_efficiency: 0.95 # Efficiency of AC distribution network
                 conversion:
                   dc_to_ac: 0.95 # Conversion efficiency (0.0-1.0)
                   dc_to_dc: 0.95 # Conversion efficiency (0.0-1.0)
