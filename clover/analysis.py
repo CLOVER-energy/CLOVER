@@ -124,6 +124,7 @@ def get_key_results(
 
 
 def plot_outputs(
+    grid_input_profile: pd.DataFrame,
     grid_profile: pd.DataFrame,
     output_directory: str,
     simulation_filename: str,
@@ -135,6 +136,8 @@ def plot_outputs(
     NOTE: To add an output to be plotted, simply add to this function.
 
     Inputs:
+        - grid_input_profile:
+            The relevant grid input profile for the simulation that was run.
         - grid_profile:
             The relevant grid profile for the simulation that was run.
         - output_directory:
@@ -206,6 +209,23 @@ def plot_outputs(
     plt.tight_layout()
     plt.savefig(
         os.path.join(figures_directory, "grid_availability_heatmap.png"),
+        transparent=True,
+    )
+    plt.close()
+
+    # Plot the input vs. randomised grid avialability profiles.
+    plt.plot(range(24), grid_input_profile, color="k", label="Input")
+    plt.plot(range(24), np.mean(rehaped_data, axis=0), color="r", label="Output")
+    plt.legend()
+    plt.xticks(range(0, 24, 2))
+    plt.yticks(np.arange(0, 1.1, 0.2))
+    plt.xlabel("Hour of day")
+    plt.ylabel("Probability")
+    plt.title("Probability of grid electricity being available")
+    plt.savefig(
+        os.path.join(
+            figures_directory, "grid_availability_randomisation_comparison.png"
+        ),
         transparent=True,
     )
     plt.close()
