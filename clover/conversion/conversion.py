@@ -197,18 +197,34 @@ class Convertor:
         # Determine the power consumption of the device.
         maximum_output = input_data["maximum_output"]
         corresponding_input = input_data[input_load_types[0]]
-        if not isinstance(maximum_output, float) or not isinstance(
-            corresponding_input, float
-        ):
+        try:
+            maximum_output = float(maximum_output)
+        except TypeError as e:
             logger.error(
                 "%sInvalid entry in conversion file, check all value types are "
-                "correct.%s",
+                "correct: %s%s",
                 BColours.fail,
+                str(e),
                 BColours.endc,
             )
             raise Exception(
-                f"{BColours.fail}Invalid value type in conversion file.{BColours.endc}"
+                f"{BColours.fail}Invalid value type in conversion file: {str(e)}{BColours.endc}"
             )
+
+        try:
+            corresponding_input = float(corresponding_input)
+        except TypeError as e:
+            logger.error(
+                "%sInvalid entry in conversion file, check all value types are "
+                "correct: %s%s",
+                BColours.fail,
+                str(e),
+                BColours.endc,
+            )
+            raise Exception(
+                f"{BColours.fail}Invalid value type in conversion file: {str(e)}{BColours.endc}"
+            )
+
         consumption = maximum_output / corresponding_input
 
         return cls(

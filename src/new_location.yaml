@@ -595,11 +595,11 @@
                   public: true # "true" or "false"
                 distribution_network: dc # DC ("dc") or AC ("ac") distribution network
                 load_types:
-                  - electric
-                  - clean_water
-                clean_water:
-                  sources:
-                    - bore_hole
+                  - electric_power
+                #   - clean_water
+                # clean_water:
+                #   sources:
+                #     - bore_hole
         - directory: simulation
           contents:
             - file: "energy_system.yaml"
