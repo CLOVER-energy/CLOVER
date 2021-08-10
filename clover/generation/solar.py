@@ -35,7 +35,7 @@ import requests
 
 from tqdm import tqdm  # type: ignore
 
-from ..__utils__ import get_logger, Location
+from ..__utils__ import BColours, get_logger, InputFileError, Location
 
 __all__ = (
     "get_solar_output",
@@ -138,11 +138,17 @@ def _get_solar_generation_from_rn(
         parsed_response = json.loads(session_url.text)
     except JSONDecodeError as e:  # pylint: disable=invalid-name
         logger.error(
-            "Failed to parse renewables.ninja data. Check that you correctly specified "
-            "your API key: %s",
+            "%sFailed to parse renewables.ninja data. Check that you correctly specified "
+            "your API key: %s%s",
+            BColours.fail,
             str(e),
+            BColours.endc,
         )
-        raise
+        raise InputFileError(
+            "solar inputs",
+            "Failed to parse renewables.ninja data. Check that you correctly specified "
+            "your API key",
+        ) from None
 
     data_frame = pd.read_json(json.dumps(parsed_response["data"]), orient="index")
     data_frame = data_frame.reset_index(drop=True)
@@ -224,10 +230,7 @@ def get_solar_output(
 
 
 def save_solar_output(
-    filepath: str,
-    gen_year: int,
-    logger: Logger,
-    solar_data: pd.DataFrame,
+    filepath: str, gen_year: int, logger: Logger, solar_data: pd.DataFrame,
 ) -> None:
     """
     Saves PV generation data as a named .csv file in the location generation file.
@@ -246,8 +249,7 @@ def save_solar_output(
     """
 
     solar_data.to_csv(
-        filepath,
-        header=None,  # type: ignore
+        filepath, header=None,  # type: ignore
     )
 
     logger.info(
@@ -389,9 +391,7 @@ class SolarDataThread(threading.Thread):
 
         super().__init__()
 
-    def run(
-        self,
-    ) -> None:
+    def run(self,) -> None:
         """
         Execute a solar-data thread.
 
@@ -422,10 +422,7 @@ class SolarDataThread(threading.Thread):
                 self.logger.info("Fetching solar data for year %s.", year)
                 try:
                     solar_data = get_solar_output(
-                        self.location,
-                        self.logger,
-                        self.solar_generation_inputs,
-                        year,
+                        self.location, self.logger, self.solar_generation_inputs, year,
                     )
                 except KeyError as e:  # pylint: disable=invalid-name
                     self.logger.error("Missing data from input files: %s", str(e))
@@ -433,10 +430,7 @@ class SolarDataThread(threading.Thread):
 
                 self.logger.info("Solar data successfully fetched, saving.")
                 save_solar_output(
-                    filepath,
-                    year,
-                    self.logger,
-                    solar_data,
+                    filepath, year, self.logger, solar_data,
                 )
 
                 # The system waits to prevent overloading the renewables.ninja API and being

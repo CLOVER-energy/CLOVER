@@ -38,6 +38,7 @@ __all__ = (
     "DemandType",
     "get_logger",
     "hourly_profile_to_daily_sum",
+    "InputFileError",
     "KEROSENE_DEVICE_NAME",
     "LoadType",
     "LOCATIONS_FOLDER_NAME",
@@ -281,6 +282,26 @@ def hourly_profile_to_daily_sum(hourly_profile: pd.DataFrame):
     daily_profile = pd.DataFrame(hourly_profile.values.reshape((days, 24)))
     # return pd.DataFrame(np.sum(daily_profile, 1))
     return daily_profile.sum()
+
+
+class InputFileError(Exception):
+    """Raised when there is an error in an input file."""
+
+    def __init__(self, input_file: str, msg: str) -> None:
+        """
+        Instantiate a :class:`InputFileError` instance.
+
+        Inputs:
+            - input_file:
+                The name of the input file which contained the invalid data.
+            - msg:
+                The error message to append.
+
+        """
+
+        super().__init__(
+            f"Error parsing input file '{input_file}', invalid data in file: {msg}"
+        )
 
 
 class LoadType(enum.Enum):
