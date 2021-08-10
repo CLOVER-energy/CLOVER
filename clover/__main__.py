@@ -554,6 +554,7 @@ def main(args: List[Any]) -> None:
                     grid_profile,
                     initial_clean_water_hourly_loads,
                     initial_electric_hourly_loads,
+                    simulation.end_year - simulation.start_year,
                     output_directory,
                     filename,
                     total_clean_water_load,
