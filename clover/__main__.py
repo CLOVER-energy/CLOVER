@@ -333,14 +333,25 @@ def main(args: List[Any]) -> None:
         logger.info("All input files successfully parsed.")
         print(DONE)
 
-    # Generate and save the solar data for each year as a background task.
     print("Generating necessary profiles", end="\n")
+
+    # Generate and save the weather data for each year as a background task.
+    if LoadType.CLEAN_WATER in scenario.load_types:
+        logger.info("Beggining weather-data fetching.")
+        num_ninjas = 2
+    else:
+        num_ninjas = 1
+
+    # Generate and save the solar data for each year as a background task.
     logger.info("Beginning solar-data fetching.")
     solar_data_thread = solar.SolarDataThread(
         os.path.join(auto_generated_files_directory, "solar"),
+        generation_inputs,
         location,
+        solar.SOLAR_LOGGER_NAME,
         parsed_args.regenerate,
         solar_generation_inputs,
+        num_ninjas,
     )
     solar_data_thread.start()
     logger.info(

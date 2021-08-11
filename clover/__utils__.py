@@ -32,7 +32,7 @@ import pandas as pd
 import scipy  # type: ignore
 import yaml
 
-from tqdm import tqdm
+from tqdm import tqdm  # type: ignore
 
 __all__ = (
     "BColours",
