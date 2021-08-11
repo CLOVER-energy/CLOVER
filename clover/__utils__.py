@@ -32,6 +32,8 @@ import pandas as pd
 import scipy  # type: ignore
 import yaml
 
+from tqdm import tqdm
+
 __all__ = (
     "BColours",
     "CUT_OFF_TIME",
@@ -993,17 +995,6 @@ def save_simulation(
     simulation_output_folder = os.path.join(output_directory, output)
     os.makedirs(simulation_output_folder, exist_ok=True)
 
-    # Save the simulation data in a CSV file.
-    logger.info("Saving simulation output.")
-    with open(
-        os.path.join(
-            simulation_output_folder, f"simulation_output_{simulation_number}"
-        ),
-        "w",
-    ) as f:
-        simulation.to_csv(f)  # type: ignore
-    logger.info("Simulation successfully saved to %s.", simulation_output_folder)
-
     # Add the key results to the system data.
     simulation_details_dict: Dict[str, Any] = system_details.to_dict()
     simulation_details_dict["analysis_results"] = key_results.to_dict()
@@ -1023,6 +1014,19 @@ def save_simulation(
         f"simulation_{simulation_number}"
     ] = simulation_details_dict
 
+    # with tqdm(total=2, desc="saving output files", leave=False, unit="file") as pbar:
+    # Save the simulation data in a CSV file.
+    logger.info("Saving simulation output.")
+    with open(
+        os.path.join(
+            simulation_output_folder, f"simulation_output_{simulation_number}"
+        ),
+        "w",
+    ) as f:
+        simulation.to_csv(f)  # type: ignore
+    logger.info("Simulation successfully saved to %s.", simulation_output_folder)
+    # pbar.update(1)
+
     # Save the system data.
     logger.info("Saving simulation details.")
     with open(simulation_details_filepath, "w") as f:
@@ -1030,3 +1034,4 @@ def save_simulation(
     logger.info(
         "Simulation details successfully saved to %s.", simulation_details_filepath
     )
+    # pbar.update(1)
