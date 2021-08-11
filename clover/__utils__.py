@@ -396,7 +396,9 @@ class KeyResults:
         if self.blackouts is not None:
             data_dict["Blackouts"] = self.blackouts
         if self.cumulative_pv_generation is not None:
-            data_dict["Cumulative pv generation / kWh"] = self.cumulative_pv_generation
+            data_dict["Cumulative pv generation / kWh"] = round(
+                self.cumulative_pv_generation, 3
+            )
         if self.diesel_times is not None:
             data_dict["Diesel times"] = self.diesel_times
         if self.grid_daily_hours is not None:
@@ -926,20 +928,24 @@ class SystemDetails:
         system_details_as_dict: Dict[
             str, Optional[Union[int, float, str, Dict[str, str]]]
         ] = {
-            "diesel_capacity": self.diesel_capacity,
-            "end_year": self.end_year,
-            "final_pv_size": self.final_pv_size,
-            "final_storage_size": self.final_storage_size,
-            "initial_pv_size": self.initial_pv_size,
-            "initial_storage_size": self.initial_storage_size,
-            "input_files": self.file_information,
-            "start_year": self.start_year,
+            "diesel_capacity": round(self.diesel_capacity, 3),
+            "end_year": round(self.end_year, 3),
+            "final_pv_size": round(self.final_pv_size, 3),
+            "final_storage_size": round(self.final_storage_size, 3),
+            "initial_pv_size": round(self.initial_pv_size, 3),
+            "initial_storage_size": round(self.initial_storage_size, 3),
+            "input_files": round(self.file_information, 3),
+            "start_year": round(self.start_year, 3),
         }
 
         if self.discounted_energy is not None:
-            system_details_as_dict["discounted_energy"] = self.discounted_energy
+            system_details_as_dict["discounted_energy"] = round(
+                self.discounted_energy, 3
+            )
         if self.total_system_cost is not None:
-            system_details_as_dict["total_system_cost"] = self.total_system_cost
+            system_details_as_dict["total_system_cost"] = round(
+                self.total_system_cost, 3
+            )
 
         return system_details_as_dict
 
