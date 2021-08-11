@@ -298,6 +298,7 @@ def main(args: List[Any]) -> None:
             device_utilisations,
             minigrid,
             finance_inputs,
+            generation_inputs,
             ghg_inputs,
             grid_inputs,
             location,
@@ -480,7 +481,9 @@ def main(args: List[Any]) -> None:
     logger.info("Generating and saving total solar output file.")
     total_solar_output = solar.total_solar_output(
         os.path.join(auto_generated_files_directory, "solar"),
+        parsed_args.regenerate,
         solar_generation_inputs["start_year"],
+        location.max_years,
     )
     logger.info("Total solar output successfully computed and saved.")
 
