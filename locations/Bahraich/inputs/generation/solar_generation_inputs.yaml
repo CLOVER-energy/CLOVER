@@ -14,8 +14,5 @@
 #
 
 azimuthal_orientation: 180 # [degrees from North]
-end_year: 2016 # The absolute end year for gathering solar data.
 lifetime: 20 # [years] - Lifetime of the PV system.
-start_year: 2007 # The absolute start year for gathering solar data.
 tilt: 29 # [degrees above horizontal]
-token: "YOUR API TOKEN HERE" # renewables.ninja API token
