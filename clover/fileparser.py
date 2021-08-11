@@ -46,9 +46,7 @@ __all__ = (
 
 # Conversion inputs file:
 #   The relative path to the conversion-inputs file.
-CONVERSION_INPUTS_FILE = os.path.join(
-    "generation", "conversion", "conversion_inputs.yaml"
-)
+CONVERSION_INPUTS_FILE = os.path.join("generation", "conversion_inputs.yaml")
 
 # Device inputs file:
 #   The relative path to the device-inputs file.
@@ -64,7 +62,7 @@ DEVICE_UTILISATIONS_INPUT_DIRECTORY = os.path.join("load", "device_utilisation")
 
 # Diesel inputs file:
 #   The relative path to the diesel-inputs file.
-DIESEL_INPUTS_FILE = os.path.join("generation", "diesel", "diesel_inputs.yaml")
+DIESEL_INPUTS_FILE = os.path.join("generation", "diesel_inputs.yaml")
 
 # Energy-system inputs file:
 #   The relative path to the energy-system-inputs file.
@@ -74,13 +72,17 @@ ENERGY_SYSTEM_INPUTS_FILE = os.path.join("simulation", "energy_system.yaml")
 #   The relative path to the finance-inputs file.
 FINANCE_INPUTS_FILE = os.path.join("impact", "finance_inputs.yaml")
 
+# Generation inputs file:
+#   The relative path to the generation-inputs file.
+GENERATION_INPUTS_FILE = os.path.join("generation", "generation_inputs.yaml")
+
 # GHG inputs file:
 #   The relative path to the GHG inputs file.
 GHG_INPUTS_FILE = os.path.join("impact", "ghg_inputs.yaml")
 
 # Grid inputs file:
 #   The relative path to the grid-inputs file.
-GRID_INPUTS_FILE = os.path.join("generation", "grid", "grid_inputs.csv")
+GRID_INPUTS_FILE = os.path.join("generation", "grid_inputs.csv")
 
 # Inputs directory:
 #   The directory containing user inputs.
@@ -116,7 +118,7 @@ SIMULATIONS_INPUTS_FILE = os.path.join("simulation", "simulations.yaml")
 
 # Solar inputs file:
 #   The relative path to the solar inputs file.
-SOLAR_INPUTS_FILE = os.path.join("generation", "solar", "solar_generation_inputs.yaml")
+SOLAR_INPUTS_FILE = os.path.join("generation", "solar_generation_inputs.yaml")
 
 
 def parse_input_files(
@@ -407,6 +409,7 @@ def parse_input_files(
         "diesel_inputs": diesel_inputs_filepath,
         "energy_system": energy_system_inputs_filepath,
         "finance_inputs": finance_inputs_filepath,
+        "generation_inputs": generation_inputs_filepath,
         "ghg_inputs": ghg_inputs_filepath,
         "grid_inputs": grid_inputs_filepath,
         "location_inputs": location_inputs_filepath,
@@ -421,6 +424,7 @@ def parse_input_files(
         device_utilisations,
         minigrid,
         finance_inputs,
+        generation_inputs,
         ghg_inputs,
         grid_inputs,
         location,

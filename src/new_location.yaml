@@ -49,96 +49,88 @@
       contents:
         - directory: generation
           contents:
-            - directory: conversion
-              contents:
-                - file: "conversion_inputs.yaml"
-                  contents: |+
-                    ---
-                    ################################################################################
-                    # conversion_inputs.yaml.yaml - Parameters for defining converting devices.    #
-                    #                                                                              #
-                    # Author: Ben Winchester                                                       #
-                    # Copyright: Phil Sandwell & Ben Winchester, 2021                              #
-                    # Date created: 09/08/2021                                                     #
-                    # License: Open source                                                         #
-                    ################################################################################
+            - file: "conversion_inputs.yaml"
+              contents: |+
+                ---
+                ################################################################################
+                # conversion_inputs.yaml.yaml - Parameters for defining converting devices.    #
+                #                                                                              #
+                # Author: Ben Winchester                                                       #
+                # Copyright: Phil Sandwell & Ben Winchester, 2021                              #
+                # Date created: 09/08/2021                                                     #
+                # License: Open source                                                         #
+                ################################################################################
 
-                    - name: bore_hole
-                      electric_power: 600 # [W]
-                      output: clean_water
-                      maximum_output: 830 # [litres/hour]
+                - name: bore_hole
+                  electric_power: 600 # [W]
+                  output: clean_water
+                  maximum_output: 830 # [litres/hour]
 
-            - directory: diesel
-              contents:
-                - file: "diesel_inputs.yaml"
-                  contents: |+
-                    ---
-                    ################################################################################
-                    # diesel_inputs.yaml - Diesel-generator input parameters.                      #
-                    #                                                                              #
-                    # Author: Phil Sandwell, Ben Winchester                                        #
-                    # Copyright: Phil Sandwell & Ben Winchester, 2021                              #
-                    # Date created: 14/07/2021                                                     #
-                    # License: Open source                                                         #
-                    ################################################################################
+            - file: "diesel_inputs.yaml"
+              contents: |+
+                ---
+                ################################################################################
+                # diesel_inputs.yaml - Diesel-generator input parameters.                      #
+                #                                                                              #
+                # Author: Phil Sandwell, Ben Winchester                                        #
+                # Copyright: Phil Sandwell & Ben Winchester, 2021                              #
+                # Date created: 14/07/2021                                                     #
+                # License: Open source                                                         #
+                ################################################################################
 
-                    diesel_consumption: 0.4 # [litres per kW capacity per hour]
-                    minimum_load: 0.35 # Minimum capacity factor (0.0 - 1.0)
+                diesel_consumption: 0.4 # [litres per kW capacity per hour]
+                minimum_load: 0.35 # Minimum capacity factor (0.0 - 1.0)
 
-            - directory: grid
-              contents:
-                - file: "grid_inputs.csv"
-                  contents: |-
-                    Name,none,all,example,eight_hours,default
-                    0,0,1,0,0.33,0.57
-                    1,0,1,0,0.33,0.61
-                    2,0,1,0,0.33,0.54
-                    3,0,1,0,0.33,0.5
-                    4,0,1,0,0.33,0.48
-                    5,0,1,0,0.33,0.48
-                    6,0,1,0,0.33,0.46
-                    7,0,1,0,0.33,0.34
-                    8,0,1,1,0.33,0.25
-                    9,0,1,1,0.33,0.3
-                    10,0,1,1,0.33,0.35
-                    11,0,1,1,0.33,0.35
-                    12,0,1,1,0.33,0.33
-                    13,0,1,1,0.33,0.29
-                    14,0,1,1,0.33,0.32
-                    15,0,1,1,0.33,0.35
-                    16,0,1,1,0.33,0.35
-                    17,0,1,1,0.33,0.32
-                    18,0,1,0,0.33,0.39
-                    19,0,1,0,0.33,0.14
-                    20,0,1,0,0.33,0.18
-                    21,0,1,0,0.33,0.46
-                    22,0,1,0,0.33,0.47
-                    23,0,1,0,0.33,0.51
-            - directory: solar
-              contents:
-                - file: "solar_generation_inputs.yaml"
-                  contents: |+
-                    ---
-                    ################################################################################
-                    # solar_generation_inputs.yaml - PV-data-generation parameters.                #
-                    #                                                                              #
-                    # Author: Phil Sandwell, Ben Winchester                                        #
-                    # Copyright: Phil Sandwell & Ben Winchester, 2021                              #
-                    # Date created: 14/07/2021                                                     #
-                    # License: Open source                                                         #
-                    ################################################################################
+            - file: "grid_inputs.csv"
+              contents: |-
+                Name,none,all,example,eight_hours,default
+                0,0,1,0,0.33,0.57
+                1,0,1,0,0.33,0.61
+                2,0,1,0,0.33,0.54
+                3,0,1,0,0.33,0.5
+                4,0,1,0,0.33,0.48
+                5,0,1,0,0.33,0.48
+                6,0,1,0,0.33,0.46
+                7,0,1,0,0.33,0.34
+                8,0,1,1,0.33,0.25
+                9,0,1,1,0.33,0.3
+                10,0,1,1,0.33,0.35
+                11,0,1,1,0.33,0.35
+                12,0,1,1,0.33,0.33
+                13,0,1,1,0.33,0.29
+                14,0,1,1,0.33,0.32
+                15,0,1,1,0.33,0.35
+                16,0,1,1,0.33,0.35
+                17,0,1,1,0.33,0.32
+                18,0,1,0,0.33,0.39
+                19,0,1,0,0.33,0.14
+                20,0,1,0,0.33,0.18
+                21,0,1,0,0.33,0.46
+                22,0,1,0,0.33,0.47
+                23,0,1,0,0.33,0.51
+            - file: "solar_generation_inputs.yaml"
+              contents: |+
+                ---
+                ################################################################################
+                # solar_generation_inputs.yaml - PV-data-generation parameters.                #
+                #                                                                              #
+                # Author: Phil Sandwell, Ben Winchester                                        #
+                # Copyright: Phil Sandwell & Ben Winchester, 2021                              #
+                # Date created: 14/07/2021                                                     #
+                # License: Open source                                                         #
+                ################################################################################
 
-                    # NOTE: The renewables.ninja API token must be entered under the `token` field.
-                    # For more information, consult the User Guide, available within the repository
-                    # and online.
-                    #
+                # NOTE: The renewables.ninja API token must be entered under the `token` field.
+                # For more information, consult the User Guide, available within the repository
+                # and online.
+                #
 
-                    azimuthal_orientation: 180 # [degrees from North]
-                    end_year: 2016 # The absolute end year for gathering solar data.
-                    lifetime: 20 # [years] - Lifetime of the PV system.
-                    start_year: 2007 # The absolute start year for gathering solar data.
-                    tilt: 29 # [degrees above horizontal]
-                    token: "YOUR API TOKEN HERE" # renewables.ninja API token
+                azimuthal_orientation: 180 # [degrees from North]
+                end_year: 2016 # The absolute end year for gathering solar data.
+                lifetime: 20 # [years] - Lifetime of the PV system.
+                start_year: 2007 # The absolute start year for gathering solar data.
+                tilt: 29 # [degrees above horizontal]
+                token: "YOUR API TOKEN HERE" # renewables.ninja API token
         - directory: impact
           contents:
             - file: "finance_inputs.yaml"
