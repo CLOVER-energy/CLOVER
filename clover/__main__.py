@@ -218,6 +218,13 @@ def main(args: List[Any]) -> None:
         AUTO_GENERATED_FILES_DIRECTORY,
     )
 
+    # If the output filename is not provided, then generate it.
+    output_directory = os.path.join(
+        LOCATIONS_FOLDER_NAME,
+        parsed_args.location,
+        SIMULATION_OUTPUTS_FOLDER,
+    )
+
     # Determine the operating mode for the run.
     operating_mode = _get_operating_mode(parsed_args)
     if operating_mode == OperatingMode.SIMULATION:
@@ -237,6 +244,29 @@ def main(args: List[Any]) -> None:
             "Neither `simulation` or `optimisation` specified, running profile "
             f"generation only for {parsed_args.location}."
         )
+
+    # If the output folder already exists, then confirm from the user that they wish to
+    # overwrite its contents.
+    if parsed_args.output is not None:
+        if os.path.isdir(os.path.join(output_directory, parsed_args.output)):
+            try:
+                confirm_overwrite = {"y": True, "n": False, "Y": True, "N": False}[
+                    input(
+                        f"Output folder, {parsed_args.output}, already exists, Overwrite? [y/n] "
+                    )
+                ]
+            except KeyError:
+                logger.error(
+                    "Either 'y' or 'n' must be specified to confirm overwrite. Quitting."
+                )
+                raise
+        if confirm_overwrite:
+            output = parsed_args.output
+        else:
+            output = input("Specify new output folder name: ")
+        print(f"Output directory {output} will be used for simulation results.")
+    else:
+        output: str = datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
 
     # Verify the location as containing all the required files.
     print("Verifying location information ................................    ", end="")
@@ -542,17 +572,6 @@ def main(args: List[Any]) -> None:
 
             # Add the input file information to the system details file.
             system_details.file_information = input_file_info
-
-            # If the output filename is not provided, then generate it.
-            output_directory = os.path.join(
-                LOCATIONS_FOLDER_NAME,
-                parsed_args.location,
-                SIMULATION_OUTPUTS_FOLDER,
-            )
-            if parsed_args.output is None:
-                output: str = datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
-            else:
-                output = parsed_args.output
 
             # Compute the key results.
             key_results = analysis.get_key_results(
