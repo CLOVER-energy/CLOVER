@@ -258,11 +258,10 @@ def plot_outputs(
     # Plot the initial electric load of each device.
     for device, load in initial_electric_hourly_loads.items():
         plt.plot(range(CUT_OFF_TIME), load, label=device)
-        plt.xticks(range(0, CUT_OFF_TIME - 1, 6))
-        plt.yticks(range(0, 1000, 50))
+        plt.xticks(range(0, CUT_OFF_TIME - 1, min(6, CUT_OFF_TIME - 1)))
         plt.xlabel("Hour of simulation")
         plt.ylabel("Device load / W")
-        plt.title("Load demand of each device")
+        plt.title("Electric load demand of each device")
         plt.tight_layout()
     plt.legend()
     plt.savefig(
@@ -293,8 +292,7 @@ def plot_outputs(
         label="total",
     )
     plt.legend(loc="upper right")
-    plt.xticks(list(range(0, CUT_OFF_TIME - 1, 4)))
-    plt.yticks(list(range(0, 4501, 500)))
+    plt.xticks(list(range(0, CUT_OFF_TIME - 1, min(4, CUT_OFF_TIME - 1))))
     plt.xlabel("Hour of simulation")
     plt.ylabel("Electric power demand / W")
     plt.title(f"Load profile of the community for the first {CUT_OFF_TIME} hours")
@@ -438,7 +436,7 @@ def plot_outputs(
     )
     plt.plot(range(num_years), total_demand, label="total", color="red")
     plt.legend(loc="upper left")
-    plt.xticks(range(0, num_years + 1, 2))
+    plt.xticks(range(0, num_years, 2 if num_years > 2 else 1))
     plt.xlabel("Year of investigation period")
     plt.ylabel("Energy demand / MWh/year")
     plt.title("Load growth of the community")
@@ -453,11 +451,10 @@ def plot_outputs(
         for device, load in initial_clean_water_hourly_loads.items():
             plt.plot(range(CUT_OFF_TIME), load, label=device)
             # labels.append(device)
-            plt.xticks(range(0, CUT_OFF_TIME - 1, 6))
-            plt.yticks(range(0, 1000, 50))
+            plt.xticks(range(0, CUT_OFF_TIME - 1, min(6, CUT_OFF_TIME - 2)))
             plt.xlabel("Hour of simulation")
             plt.ylabel("Device load / litres/hour")
-            plt.title("Load demand of each device")
+            plt.title("Clean water demand of each device")
             plt.tight_layout()
         plt.legend()
         plt.savefig(
@@ -488,7 +485,7 @@ def plot_outputs(
             label="total",
         )
         plt.legend(loc="upper right")
-        plt.xticks(list(range(0, CUT_OFF_TIME - 1, 4)))
+        plt.xticks(list(range(0, CUT_OFF_TIME - 1, min(4, CUT_OFF_TIME - 2))))
         plt.xlabel("Hour of simulation")
         plt.ylabel("Clean water demand / litres/hour")
         plt.title(
@@ -560,7 +557,6 @@ def plot_outputs(
         axis[0].legend(loc="best")
         axis[0].set(
             xticks=(range(0, 366, 60)),
-            yticks=range(0, 26, 5),
             xlabel="Day of simulation period",
             ylabel="Load / litres/hour",
             title="Clean-water demand of each load type",
@@ -575,7 +571,6 @@ def plot_outputs(
         axis[1].legend(loc="best")
         axis[1].set(
             xticks=(range(0, 366, 60)),
-            yticks=range(15, 41, 5),
             xlabel="Day of simulation period",
             ylabel="Load / litres/hour",
             title="Clean-water demand of each load type",
@@ -650,7 +645,7 @@ def plot_outputs(
         )
         plt.plot(range(num_years), total_demand, label="total", color="red")
         plt.legend(loc="upper left")
-        plt.xticks(range(0, num_years + 1, 2))
+        plt.xticks(range(0, num_years, 2 if num_years > 2 else 1))
         plt.xlabel("Year of investigation period")
         plt.ylabel("Clean-water demand / Cubic meters/year")
         plt.title("Load growth of the community")

@@ -13,5 +13,5 @@
 export PYTHONPATH=$PYTHONPATH:clover
 python3 -m clover $@ \
     && echo "CLOVER successfully executed." \
-    || echo "CLOVER failed, see /logs for details. For more in-depth analysis, run \
-    with python."
+    || echo "CLOVER failed, see /logs for details. For more in-depth analysis, run "\
+    "with python."
