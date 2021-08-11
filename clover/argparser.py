@@ -64,6 +64,13 @@ def parse_args(args: List[Any]) -> argparse.Namespace:
     # Arguments used only when specifying how profiles should be generated or used.
     profile_arguments = parser.add_argument_group("profile arguments")
     profile_arguments.add_argument(
+        "--refetch",
+        action="store_true",
+        default=False,
+        help="If specified, CLOVER will refetch the various profiles used from the "
+        "renewables.ninja API. Otherwise, existing profiles will be used if present.",
+    )
+    profile_arguments.add_argument(
         "--regenerate",
         action="store_true",
         default=False,

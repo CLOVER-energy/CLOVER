@@ -21,7 +21,7 @@ for use locally within CLOVER.
 
 from typing import Any, Dict
 
-import pandas as pd
+import pandas as pd  # type: ignore
 
 
 from .__utils__ import BaseRenewablesNinjaThread, total_profile_output
@@ -29,14 +29,14 @@ from ..__utils__ import Location
 
 __all__ = (
     "WeatherDataThread",
-    "WEATHER_LOGGER_THREAD",
+    "WEATHER_LOGGER_NAME",
     "total_weather_output",
 )
 
 
 # Weather logger name:
 #   The name to use for the weather logger.
-WEATHER_DATA_THREAD = "weather_generation"
+WEATHER_LOGGER_NAME = "weather_generation"
 
 
 class WeatherDataThread(
@@ -54,24 +54,41 @@ class WeatherDataThread(
         location: Location,
         logger_name: str,
         regenerate: bool,
-        solar_generation_inputs: Dict[str, Any],
         sleep_multiplier: int = 1,
     ):
         """
-        Instantiate a :class:`SolarDataThread` instance.
+        Instantiate a :class:`WeatherDataThread` instance.
+
+        The weather variables that can be fetched are:
+            - var_t2m:
+                Surface temperature in degrees Celcius.
+            - var_prectotland:
+                Precipitation in mm/hour.
+            - var_precsnoland
+                Snowfall in mm/hour.
+            - var_snomas:
+                The mass of snow per land area in mm/m^2.
+            - var_rhoa:
+                The air density, at ground level, measured in kg/m^3.
+            - var_swgdn:
+                The solar irradiance at ground level, measured in W/m^2.
+            - var_swtdn:
+                The solar irradiance at the top of the atmosphere, measured in W/m^2.
+            - var_cldtot:
+                The cloud cover fraction, defined between 0 and 1.
 
         """
 
-        # Add the additional parameters which are need when calling the solar data.
+        # Add the additional parameters which are need when calling the weather data.
         renewables_ninja_params = {
             "lat": float(location.latitude),
             "lon": float(location.longitude),
             "local_time": "false",
-            "capacity": 1.0,
-            "system_loss": 0,
-            "tracking": 0,
-            "tilt": solar_generation_inputs["tilt"],
-            "azim": solar_generation_inputs["azimuthal_orientation"],
+            "header": "true",
+            "var_t2m": "true",
+            "var_prectotland": "true",
+            "var_swgdn": "true",
+            "var_cldtot": "true",
         }
         super().__init__(
             auto_generated_files_directory,
@@ -84,10 +101,10 @@ class WeatherDataThread(
         )
 
 
-def total_solar_output(*args, **kwargs) -> pd.DataFrame:
+def total_weather_output(*args, **kwargs) -> pd.DataFrame:
     """
-    Wrapper function to wrap the total solar output.
+    Wrapper function to wrap the total weather output.
 
     """
 
-    return total_profile_output(*args, **kwargs, profile_name="solar")
+    return total_profile_output(*args, **kwargs, profile_name="weather")
