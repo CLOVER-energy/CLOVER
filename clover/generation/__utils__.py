@@ -38,7 +38,7 @@ import requests  # type: ignore
 
 from tqdm import tqdm  # type: ignore
 
-from ..__utils__ import BColours, get_logger, InputFileError, Location
+from ..__utils__ import BColours, get_logger, Location, RenewablesNinjaError
 
 __all__ = (
     "BaseRenewablesNinjaThread",
@@ -144,11 +144,7 @@ def _get_profile_from_rn(
             str(e),
             BColours.endc,
         )
-        raise InputFileError(
-            "generation inputs",
-            "Failed to parse renewables.ninja data. Check that you correctly specified "
-            "your API key",
-        ) from None
+        raise RenewablesNinjaError() from None
 
     data_frame = pd.read_json(json.dumps(parsed_response["data"]), orient="index")
     data_frame = data_frame.reset_index(drop=True)

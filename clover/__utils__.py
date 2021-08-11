@@ -51,6 +51,7 @@ __all__ = (
     "open_simulation",
     "OperatingMode",
     "read_yaml",
+    "RenewablesNinjaError",
     "save_simulation",
     "Scenario",
     "Simulation",
@@ -726,6 +727,28 @@ def read_yaml(filepath: str, logger: logging.Logger) -> Dict[Any, Any]:
         )
         raise
     return file_contents
+
+
+class RenewablesNinjaError(Exception):
+    """Raised when there is an error in an input file."""
+
+    def __init__(self) -> None:
+        """
+        Instantiate a :class:`InputFileError` instance.
+
+        Inputs:
+            - input_file:
+                The name of the input file which contained the invalid data.
+            - msg:
+                The error message to append.
+
+        """
+
+        super().__init__(
+            "Failed to parse renewables.ninja data. Check that you correctly specified "
+            "your API key and that you have not exceeded the hourly quota of 50 "
+            "profiles."
+        )
 
 
 @dataclasses.dataclass
