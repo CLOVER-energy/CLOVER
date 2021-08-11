@@ -938,7 +938,7 @@ class SystemDetails:
             "final_storage_size": round(self.final_storage_size, 3),
             "initial_pv_size": round(self.initial_pv_size, 3),
             "initial_storage_size": round(self.initial_storage_size, 3),
-            "input_files": round(self.file_information, 3),
+            "input_files": self.file_information,
             "start_year": round(self.start_year, 3),
         }
 
@@ -955,58 +955,78 @@ class SystemDetails:
 
 
 def save_simulation(
-    filename: Optional[str],
     key_results: KeyResults,
     logger: logging.Logger,
+    output: str,
     output_directory: str,
     simulation: pd.DataFrame,
+    simulation_number: int,
     system_details: SystemDetails,
 ):
     """
     Saves simulation outputs to a .csv file
 
     Inputs:
-        - filename:
-            The .csv file name to use (defaults to timestamp).
         - key_results:
             The key results from the run.
         - logger:
             The logger to use for the run.
+        - output:
+            The output name to use when labelling the simulation: this is the name given
+            to the output folder in which the system files are saved.
         - output_directory:
             The directory into which the files should be saved.
         - simulation:
             DataFrame output from Energy_System().simulation(...).
+        - simulation_number:
+            The number of the simulation being run.
         - system_details:
             Information about the run to save.
 
     """
 
-    # Add the file extension if appropriate.
-    filepath = os.path.join(output_directory, filename)
-    if not filepath.endswith(".csv"):
-        filepath += ".csv"
+    # Remove the file extension if appropriate.
+    if output.endswith(".csv"):
+        output = output_directory.rsplit(".csv", 1)[0]
+
+    # Create the output directory.
+    simulation_output_folder = os.path.join(output_directory, output)
+    os.makedirs(simulation_output_folder, exist_ok=True)
 
     # Save the simulation data in a CSV file.
     logger.info("Saving simulation output.")
-    with open(filepath, "w") as f:
+    with open(
+        os.path.join(
+            simulation_output_folder, f"simulation_output_{simulation_number}"
+        ),
+        "w",
+    ) as f:
         simulation.to_csv(f)  # type: ignore
-    logger.info("Simulation successfully saved to %s.", filepath)
+    logger.info("Simulation successfully saved to %s.", simulation_output_folder)
+
+    # Add the key results to the system data.
+    simulation_details_dict: Dict[str, Any] = system_details.to_dict()
+    simulation_details_dict["analysis_results"] = key_results.to_dict()
 
     # Save the system data.
     simulation_details_filepath = os.path.join(
-        output_directory, filename + "_info.json"
+        simulation_output_folder, "info_file.json"
     )
+    if os.path.isfile(simulation_details_filepath):
+        with open(simulation_details_filepath, "r") as f:
+            existing_simulation_details = json.load(f)
+    else:
+        existing_simulation_details = dict()
+
+    # Update the system info with the new simulation information.
+    existing_simulation_details[
+        f"simulation_{simulation_number}"
+    ] = simulation_details_dict
+
+    # Save the system data.
     logger.info("Saving simulation details.")
     with open(simulation_details_filepath, "w") as f:
-        json.dump(system_details.to_dict(), f, indent=4)
+        json.dump(existing_simulation_details, f, indent=4)
     logger.info(
         "Simulation details successfully saved to %s.", simulation_details_filepath
     )
-
-    # Save the key results.
-    key_results_filepath = os.path.join(
-        output_directory, filename + "_key_results.json"
-    )
-    logger.info("Saving key results from the simulation.")
-    with open(key_results_filepath, "w") as f:
-        json.dump(key_results.to_dict(), f, indent=4)

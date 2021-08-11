@@ -558,7 +558,7 @@ def run_simulation(
 
     processed_total_electric_load = (
         _get_processed_load_profile(scenario, total_electric_load)[start_hour:end_hour]
-        + clean_water_power_consumed
+        + 0.001 * clean_water_power_consumed
     )
 
     # Get electric input profiles

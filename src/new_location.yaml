@@ -360,7 +360,7 @@
                   type: public
                 - device: washing_machine
                   available: false
-                  electric_power: 3000
+                  electric_power: 250
                   initial_ownership: 0.01
                   final_ownership: 0.05
                   innovation: 0.02
