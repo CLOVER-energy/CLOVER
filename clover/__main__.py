@@ -25,7 +25,7 @@ import sys
 from argparse import Namespace
 from functools import partial
 from multiprocessing import Pool
-from typing import Any, Dict, List, Set
+from typing import Any, Dict, List, Optional, Set
 
 import pandas as pd  # type: ignore
 
@@ -38,7 +38,7 @@ from .fileparser import (
     KEROSENE_USAGE_FILE,
     parse_input_files,
 )
-from .generation import grid, solar
+from .generation import grid, solar, weather
 from .load import load
 from .scripts import new_location
 from .simulation import energy_system
@@ -338,9 +338,28 @@ def main(args: List[Any]) -> None:
 
     # Generate and save the weather data for each year as a background task.
     if LoadType.CLEAN_WATER in scenario.load_types:
+        # Set up the system to call renewables.ninja at a slower rate.
+        num_ninjas = 2
         logger.info("Beggining weather-data fetching.")
-        num_ninjas = 1
+        weather_data_thread: Optional[
+            weather.WeatherDataThread
+        ] = weather.WeatherDataThread(
+            os.path.join(auto_generated_files_directory, "weather"),
+            generation_inputs,
+            location,
+            weather.WEATHER_LOGGER_NAME,
+            parsed_args.refetch,
+            num_ninjas,
+        )
+        weather_data_thread.start()
+        logger.info(
+            "Weather-data thread successfully instantiated. See %s for details.",
+            "{}.log".format(
+                os.path.join(LOGGER_DIRECTORY, weather.WEATHER_LOGGER_NAME)
+            ),
+        )
     else:
+        weather_data_thread = None
         num_ninjas = 1
 
     # Generate and save the solar data for each year as a background task.
@@ -350,7 +369,7 @@ def main(args: List[Any]) -> None:
         generation_inputs,
         location,
         solar.SOLAR_LOGGER_NAME,
-        parsed_args.regenerate,
+        parsed_args.refetch,
         solar_generation_inputs,
         num_ninjas,
     )
@@ -476,6 +495,8 @@ def main(args: List[Any]) -> None:
     # Wait for all threads to finish before proceeding.
     logger.info("Waiting for all setup threads to finish before proceeding.")
     solar_data_thread.join()
+    if weather_data_thread is not None:
+        weather_data_thread.join()
     logger.info("All setup threads finished.")
 
     logger.info("Generating and saving total solar output file.")

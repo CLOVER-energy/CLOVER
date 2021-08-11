@@ -45,6 +45,7 @@
               contents:
                 - directory: device_load
         - directory: solar
+        - directory: weather
     - directory: inputs
       contents:
         - directory: generation

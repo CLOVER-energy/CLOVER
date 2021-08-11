@@ -456,7 +456,7 @@ def total_profile_output(
     # If the total solar output file already exists then simply read this in.
     if os.path.isfile(total_output_filename) and not regenerate:
         with open(total_output_filename, "r") as f:
-            output = pd.read_csv(f, header=None, index_col=0)
+            total_output = pd.read_csv(f, header=None, index_col=0)
 
     else:
         # Get data for each year using iteration, and add that data to the output file
@@ -482,14 +482,13 @@ def total_profile_output(
             output = pd.concat([output, iteration_year_data], ignore_index=True)
 
         # Repeat the initial data in consecutive periods
-        import pdb
-
-        pdb.set_trace()
-        output = pd.concat([output] * ceil(num_years / 10), ignore_index=True)
+        total_output = pd.DataFrame([])
+        for _ in range(int(ceil(num_years / 10))):
+            total_output = pd.concat([total_output, output], ignore_index=True)
         with open(total_output_filename, "w") as f:
-            output.to_csv(
+            total_output.to_csv(
                 f,  # type: ignore
                 header=None,  # type: ignore
             )
 
-    return output
+    return total_output
