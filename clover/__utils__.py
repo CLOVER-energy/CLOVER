@@ -360,49 +360,53 @@ class KeyResults:
         data_dict: Dict[str, float] = dict()
 
         if self.average_daily_diesel_energy_supplied is not None:
-            data_dict[
-                "Average daily diesel energy supplied / kWh"
-            ] = self.average_daily_diesel_energy_supplied
+            data_dict["Average daily diesel energy supplied / kWh"] = round(
+                self.average_daily_diesel_energy_supplied, 3
+            )
         if self.average_daily_dumped_energy is not None:
-            data_dict[
-                "Average daily dumped energy / kWh"
-            ] = self.average_daily_grid_energy_supplied
+            data_dict["Average daily dumped energy / kWh"] = round(
+                self.average_daily_grid_energy_supplied, 3
+            )
         if self.average_daily_energy_consumption is not None:
-            data_dict[
-                "Average daily energy consumption / kWh"
-            ] = self.average_daily_energy_consumption
+            data_dict["Average daily energy consumption / kWh"] = round(
+                self.average_daily_energy_consumption, 3
+            )
         if self.average_daily_grid_energy_supplied is not None:
-            data_dict[
-                "Average daily grid energy supplied / kWh"
-            ] = self.average_daily_grid_energy_supplied
+            data_dict["Average daily grid energy supplied / kWh"] = round(
+                self.average_daily_grid_energy_supplied, 3
+            )
         if self.average_daily_renewables_energy_supplied is not None:
-            data_dict[
-                "Average daily renewables energy suppied / kWh"
-            ] = self.average_daily_renewables_energy_supplied
+            data_dict["Average daily renewables energy suppied / kWh"] = round(
+                self.average_daily_renewables_energy_supplied, 3
+            )
         if self.average_daily_renewables_energy_used is not None:
-            data_dict[
-                "Average daily renewables energy used / kWh"
-            ] = self.average_daily_renewables_energy_used
+            data_dict["Average daily renewables energy used / kWh"] = round(
+                self.average_daily_renewables_energy_used, 3
+            )
         if self.average_daily_stored_energy_supplied is not None:
-            data_dict[
-                "Average daily stored energy supplied / kWh"
-            ] = self.average_daily_stored_energy_supplied
+            data_dict["Average daily stored energy supplied / kWh"] = round(
+                self.average_daily_stored_energy_supplied, 3
+            )
         if self.average_daily_unmet_energy is not None:
-            data_dict[
-                "Average daily unmet energy / kWh"
-            ] = self.average_daily_unmet_energy
+            data_dict["Average daily unmet energy / kWh"] = round(
+                self.average_daily_unmet_energy, 3
+            )
         if self.average_pv_generation is not None:
-            data_dict["Average pv generation / kWh/day"] = self.average_pv_generation
+            data_dict["Average pv generation / kWh/day"] = round(
+                self.average_pv_generation, 3
+            )
         if self.blackouts is not None:
-            data_dict["Blackouts"] = self.blackouts
+            data_dict["Blackouts"] = round(self.blackouts, 3)
         if self.cumulative_pv_generation is not None:
             data_dict["Cumulative pv generation / kWh"] = round(
                 self.cumulative_pv_generation, 3
             )
         if self.diesel_times is not None:
-            data_dict["Diesel times"] = self.diesel_times
+            data_dict["Diesel times"] = round(self.diesel_times, 3)
         if self.grid_daily_hours is not None:
-            data_dict["Average grid availability / hours/day"] = self.grid_daily_hours
+            data_dict["Average grid availability / hours/day"] = round(
+                self.grid_daily_hours, 3
+            )
 
         return data_dict
 
