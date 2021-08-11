@@ -482,6 +482,9 @@ def total_profile_output(
             output = pd.concat([output, iteration_year_data], ignore_index=True)
 
         # Repeat the initial data in consecutive periods
+        import pdb
+
+        pdb.set_trace()
         output = pd.concat([output] * ceil(num_years / 10), ignore_index=True)
         with open(total_output_filename, "w") as f:
             output.to_csv(

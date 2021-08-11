@@ -339,7 +339,7 @@ def main(args: List[Any]) -> None:
     # Generate and save the weather data for each year as a background task.
     if LoadType.CLEAN_WATER in scenario.load_types:
         logger.info("Beggining weather-data fetching.")
-        num_ninjas = 2
+        num_ninjas = 1
     else:
         num_ninjas = 1
 

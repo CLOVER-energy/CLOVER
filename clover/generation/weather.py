@@ -1,19 +1,20 @@
 #!/usr/bin/python3
 ########################################################################################
-# solar.py - Solar generation module  .                                                #
+# weather.py - Weather generation module  .                                            #
 #                                                                                      #
-# Author: Phil Sandwell                                                                #
-# Copyright: Phil Sandwell, 2021                                                       #
+# Author: Ben Winchester                                                               #
+# Copyright: Ben Winchester, 2021                                                      #
+# Date created: 11/08/2021                                                             #
 # License: Open source                                                                 #
-# Most recent update: 14/07/2021                                                       #
+# Most recent update: 11/08/2021                                                       #
 #                                                                                      #
 # For more information, please email:                                                  #
 #     philip.sandwell@gmail.com                                                        #
 ########################################################################################
 """
-solar.py - The solar-profile-generation module for CLOVER.
+weather.py - The weather-profile-generation module for CLOVER.
 
-This module fetches solar profiles from renewables.ninja, parses them and saves them
+This module fetches weather profiles from renewables.ninja, parses them and saves them
 for use locally within CLOVER.
 
 """
@@ -22,51 +23,27 @@ from typing import Any, Dict
 
 import pandas as pd
 
+
 from .__utils__ import BaseRenewablesNinjaThread, total_profile_output
 from ..__utils__ import Location
 
 __all__ = (
-    "SolarDataThread",
-    "solar_degradation",
-    "SOLAR_LOGGER_NAME",
-    "total_solar_output",
+    "WeatherDataThread",
+    "WEATHER_LOGGER_THREAD",
+    "total_weather_output",
 )
 
 
-# Solar logger name:
-#   The name to use for the solar logger.
-SOLAR_LOGGER_NAME = "solar_generation"
+# Weather logger name:
+#   The name to use for the weather logger.
+WEATHER_DATA_THREAD = "weather_generation"
 
 
-def solar_degradation(lifetime: int) -> pd.DataFrame:
-    """
-    Calculates the solar degredation.
-
-    Inputs:
-        - lifetime:
-            The lifetime of the solar setup in years.
-
-    Outputs:
-        - The lifetime degredation of the solar setup.
-
-    """
-
-    # lifetime = self.input_data.loc["lifetime"]
-    hourly_degradation = 0.20 / (lifetime * 365 * 24)
-    lifetime_degradation = []
-
-    for i in range((20 * 365 * 24) + 1):
-        equiv = 1.0 - i * hourly_degradation
-        lifetime_degradation.append(equiv)
-
-    return pd.DataFrame(lifetime_degradation)
-
-
-class SolarDataThread(
-    BaseRenewablesNinjaThread, profile_name="solar", profile_key="pv"
+class WeatherDataThread(
+    BaseRenewablesNinjaThread, profile_name="weather", profile_key="weather"
 ):
     """
-    Class to use when calling the solar data thread.
+    Class to use when calling the weather data thread.
 
     """
 
