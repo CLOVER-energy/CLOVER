@@ -29,6 +29,7 @@ import time
 
 from json.decoder import JSONDecodeError
 from logging import Logger
+from math import ceil
 from typing import Any, Dict
 
 import numpy as np  # type: ignore
@@ -39,7 +40,10 @@ from tqdm import tqdm  # type: ignore
 
 from ..__utils__ import BColours, get_logger, InputFileError, Location
 
-__all__ = ("BaseRenewablesNinjaThread",)
+__all__ = (
+    "BaseRenewablesNinjaThread",
+    "total_profile_output",
+)
 
 
 # Api base:
@@ -414,3 +418,75 @@ class BaseRenewablesNinjaThread(threading.Thread):
                 "{}".format(os.path.join("logs", f"{self.logger_name}.log")),
             )
             raise
+
+
+def total_profile_output(
+    generation_directory: str,
+    regenerate: bool,
+    start_year: int = 2007,
+    num_years: int = 20,
+    *,
+    profile_name: str,
+) -> pd.DataFrame:
+    """
+    Generates total output data by taking the input years and repeating them.
+
+    Inputs:
+        - generation_directory:
+            The directory in which generated profiles are saved.
+        - regenerate:
+            Whether to regenerate the profiles.
+        - start_year:
+            The year for which to begin the simulation.
+        - num_years:
+            The number of year for which to run the simulation.
+        - profile_name:
+            The name to use for saving the profiles.
+    Outputs:
+        .csv file for twenty years of PV output data
+    """
+
+    output = pd.DataFrame([])
+
+    total_output_filename = os.path.join(
+        generation_directory,
+        f"{profile_name}_generation_{num_years}_years.csv",
+    )
+
+    # If the total solar output file already exists then simply read this in.
+    if os.path.isfile(total_output_filename) and not regenerate:
+        with open(total_output_filename, "r") as f:
+            output = pd.read_csv(f, header=None, index_col=0)
+
+    else:
+        # Get data for each year using iteration, and add that data to the output file
+        for year_index in tqdm(
+            np.arange(min(10, num_years)),
+            desc="total solar profile",
+            leave=True,
+            unit="year",
+        ):
+            iteration_year = start_year + year_index
+            with open(
+                os.path.join(
+                    generation_directory,
+                    f"{profile_name}_generation_{iteration_year}.csv",
+                ),
+                "r",
+            ) as f:
+                iteration_year_data = pd.read_csv(
+                    f,
+                    header=None,  # type: ignore
+                    index_col=0,
+                )
+            output = pd.concat([output, iteration_year_data], ignore_index=True)
+
+        # Repeat the initial data in consecutive periods
+        output = pd.concat([output] * ceil(num_years / 10), ignore_index=True)
+        with open(total_output_filename, "w") as f:
+            output.to_csv(
+                f,  # type: ignore
+                header=None,  # type: ignore
+            )
+
+    return output

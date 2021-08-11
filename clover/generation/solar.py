@@ -33,7 +33,7 @@ import requests
 
 from tqdm import tqdm  # type: ignore
 
-from .__utils__ import BaseRenewablesNinjaThread
+from .__utils__ import BaseRenewablesNinjaThread, total_profile_output
 from ..__utils__ import Location
 
 __all__ = (
@@ -71,64 +71,6 @@ def solar_degradation(lifetime: int) -> pd.DataFrame:
         lifetime_degradation.append(equiv)
 
     return pd.DataFrame(lifetime_degradation)
-
-
-def total_solar_output(
-    generation_directory: str, regenerate: bool, start_year: int = 2007
-) -> pd.DataFrame:
-    """
-    Generates 20 years of solar output data by taking 10 consecutive years repeated.
-
-    Inputs:
-        - generation_directory:
-            The directory in which generated solar profiles are saved.
-        - regenerate:
-            Whether to regenerate the profiles.
-        - start_year:
-            The year for which to begin the simulation.
-    Outputs:
-        .csv file for twenty years of PV output data
-    """
-
-    output = pd.DataFrame([])
-
-    total_solar_output_filename = os.path.join(
-        generation_directory, "solar_generation_20_years.csv"
-    )
-
-    # If the total solar output file already exists then simply read this in.
-    if os.path.isfile(total_solar_output_filename) and not regenerate:
-        with open(total_solar_output_filename, "r") as f:
-            output = pd.read_csv(f, header=None, index_col=0)
-
-    else:
-        # Get data for each year using iteration, and add that data to the output file
-        for year_index in tqdm(
-            np.arange(10), desc="total solar profile", leave=True, unit="year"
-        ):
-            iteration_year = start_year + year_index
-            with open(
-                os.path.join(
-                    generation_directory, f"solar_generation_{iteration_year}.csv"
-                ),
-                "r",
-            ) as f:
-                iteration_year_data = pd.read_csv(
-                    f,
-                    header=None,  # type: ignore
-                    index_col=0,
-                )
-            output = pd.concat([output, iteration_year_data], ignore_index=True)
-
-        # Repeat the initial 10 years in two consecutive periods
-        output = pd.concat([output, output], ignore_index=True)
-        with open(total_solar_output_filename, "w") as f:
-            output.to_csv(
-                f,  # type: ignore
-                header=None,  # type: ignore
-            )
-
-    return output
 
 
 class SolarDataThread(
@@ -174,3 +116,12 @@ class SolarDataThread(
             sleep_multiplier,
             renewables_ninja_params=renewables_ninja_params,
         )
+
+
+def total_solar_output(*args, **kwargs) -> pd.DataFrame:
+    """
+    Wrapper function to wrap the total solar output.
+
+    """
+
+    return total_profile_output(*args, **kwargs, profile_name="solar")

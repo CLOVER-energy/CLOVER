@@ -30,7 +30,6 @@ functions which can be used to carry out an optimisation:
 
 """
 
-from clover.generation.solar import total_solar_output
 import dataclasses
 import datetime
 import enum

@@ -273,6 +273,12 @@ def parse_input_files(
     finance_inputs = read_yaml(finance_inputs_filepath, logger)
     logger.info("Finance inputs successfully parsed.")
 
+    generation_inputs_filepath = os.path.join(
+        inputs_directory_relative_path, GENERATION_INPUTS_FILE
+    )
+    generation_inputs = read_yaml(generation_inputs_filepath, logger)
+    logger.info("Generation inputs successfully parsed.")
+
     ghg_inputs_filepath = os.path.join(inputs_directory_relative_path, GHG_INPUTS_FILE)
     ghg_inputs = read_yaml(ghg_inputs_filepath, logger)
     logger.info("GHG inputs successfully parsed.")
