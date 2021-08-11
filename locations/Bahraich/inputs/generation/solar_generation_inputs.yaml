@@ -19,4 +19,3 @@ lifetime: 20 # [years] - Lifetime of the PV system.
 start_year: 2007 # The absolute start year for gathering solar data.
 tilt: 29 # [degrees above horizontal]
 token: "YOUR API TOKEN HERE" # renewables.ninja API token
-
