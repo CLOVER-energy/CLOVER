@@ -213,7 +213,9 @@ def main(args: List[Any]) -> None:
 
     # Define common variables.
     auto_generated_files_directory = os.path.join(
-        LOCATIONS_FOLDER_NAME, parsed_args.location, AUTO_GENERATED_FILES_DIRECTORY,
+        LOCATIONS_FOLDER_NAME,
+        parsed_args.location,
+        AUTO_GENERATED_FILES_DIRECTORY,
     )
 
     # Determine the operating mode for the run.
@@ -458,7 +460,10 @@ def main(args: List[Any]) -> None:
             ),
             "r",
         ) as f:
-            grid_profile = pd.read_csv(f, index_col=0,)
+            grid_profile = pd.read_csv(
+                f,
+                index_col=0,
+            )
     except FileNotFoundError as e:
         logger.error(
             "%sGrid profile file for profile '%s' could not be found: %s%s",
@@ -481,11 +486,16 @@ def main(args: List[Any]) -> None:
     # * Run a simulation or optimisation as appropriate.
     if operating_mode == OperatingMode.SIMULATION:
         print(
-            "Beginning CLOVER simulation runs {}    ".format("." * 30,), end="\n",
+            "Beginning CLOVER simulation runs {}    ".format(
+                "." * 30,
+            ),
+            end="\n",
         )
         simulation_times: List[str] = []
 
-        for simulation in tqdm(simulations, desc="simulations", unit="sim."):
+        for simulation_number, simulation in enumerate(
+            tqdm(simulations, desc="simulations", unit="simulation"), 1
+        ):
             try:
                 (
                     time_delta,
@@ -535,22 +545,24 @@ def main(args: List[Any]) -> None:
 
             # If the output filename is not provided, then generate it.
             output_directory = os.path.join(
-                LOCATIONS_FOLDER_NAME, parsed_args.location, SIMULATION_OUTPUTS_FOLDER,
+                LOCATIONS_FOLDER_NAME,
+                parsed_args.location,
+                SIMULATION_OUTPUTS_FOLDER,
             )
             if parsed_args.output is None:
-                filename: str = datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
+                output: str = datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
             else:
-                filename = parsed_args.output
+                output = parsed_args.output
+
+            # Compute the key results.
+            key_results = analysis.get_key_results(
+                grid_inputs[scenario.grid_type],
+                simulation.end_year - simulation.start_year,
+                system_performance_outputs,
+                total_solar_output,
+            )
 
             if parsed_args.analyse:
-                # Compute the key results.
-                key_results = analysis.get_key_results(
-                    grid_inputs[scenario.grid_type],
-                    simulation.end_year - simulation.start_year,
-                    system_performance_outputs,
-                    total_solar_output,
-                )
-
                 # Generate and save the various plots.
                 analysis.plot_outputs(
                     grid_inputs[scenario.grid_type],
@@ -559,7 +571,8 @@ def main(args: List[Any]) -> None:
                     initial_electric_hourly_loads,
                     simulation.end_year - simulation.start_year,
                     output_directory,
-                    filename,
+                    output,
+                    simulation_number,
                     total_clean_water_load,
                     0.001 * total_electric_load,
                     total_solar_output,
@@ -569,11 +582,12 @@ def main(args: List[Any]) -> None:
 
             # Save the simulation output.
             save_simulation(
-                filename,
                 key_results,
                 logger,
+                output,
                 output_directory,
                 system_performance_outputs,
+                simulation_number,
                 system_details,
             )
 

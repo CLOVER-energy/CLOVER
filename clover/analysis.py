@@ -132,7 +132,8 @@ def plot_outputs(
     initial_electric_hourly_loads: Dict[str, pd.DataFrame],
     num_years: int,
     output_directory: str,
-    simulation_filename: str,
+    simulation_name: str,
+    simulation_number: int,
     total_clean_water_load: pd.DataFrame,
     total_electric_load: pd.DataFrame,
     total_solar_output: pd.DataFrame,
@@ -157,8 +158,10 @@ def plot_outputs(
             The number of years for which the simulation was run.
         - output_directory:
             The directory into which to save the output information.
-        - simulation_filename:
+        - simulation_name:
             The filename used when saving the simulation.
+        - simulation_number:
+            The number of the simulation being run.
         - total_clean_water_load:
             The total clean water load placed on the system.
         - total_electric_load:
@@ -169,7 +172,10 @@ def plot_outputs(
     """
 
     # Create an output directory for the various plots to be saved in.
-    figures_directory = os.path.join(output_directory, simulation_filename)
+    figures_directory = os.path.join(
+        output_directory, simulation_name, f"simulation_{simulation_number}_plots"
+    )
+    os.makedirs(os.path.join(output_directory, simulation_name), exist_ok=True)
     os.makedirs(figures_directory, exist_ok=True)
 
     # Plot the first year of solar generation as a heatmap.
@@ -260,7 +266,8 @@ def plot_outputs(
         plt.tight_layout()
     plt.legend()
     plt.savefig(
-        os.path.join(figures_directory, "electric_device_loads.png"), transparent=True,
+        os.path.join(figures_directory, "electric_device_loads.png"),
+        transparent=True,
     )
     plt.close()
 
@@ -292,7 +299,8 @@ def plot_outputs(
     plt.ylabel("Electric power demand / W")
     plt.title(f"Load profile of the community for the first {CUT_OFF_TIME} hours")
     plt.savefig(
-        os.path.join(figures_directory, "electric_demands.png"), transparent=True,
+        os.path.join(figures_directory, "electric_demands.png"),
+        transparent=True,
     )
     plt.close()
 
@@ -321,7 +329,8 @@ def plot_outputs(
     )
     total_demand = np.sum(
         np.reshape(
-            np.sum(total_electric_load[0:HOURS_PER_YEAR].values, axis=1), (365, 24),
+            np.sum(total_electric_load[0:HOURS_PER_YEAR].values, axis=1),
+            (365, 24),
         ),
         axis=1,
     )
@@ -434,7 +443,8 @@ def plot_outputs(
     plt.ylabel("Energy demand / MWh/year")
     plt.title("Load growth of the community")
     plt.savefig(
-        os.path.join(figures_directory, "electric_load_growth.png"), transparent=True,
+        os.path.join(figures_directory, "electric_load_growth.png"),
+        transparent=True,
     )
     plt.close()
 

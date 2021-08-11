@@ -202,7 +202,9 @@ def _simulation_financial_appraisal(
 
     # Calculate costs of connecting new households (discounted)
     connections_cost = connections_expenditure(
-        finance_inputs, simulation_results["Households"], system_details.start_year,
+        finance_inputs,
+        simulation_results["Households"],
+        system_details.start_year,
     )
 
     # Calculate operating costs of the system during this simulation (discounted)
