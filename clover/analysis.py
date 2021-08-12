@@ -46,7 +46,7 @@ HOURS_PER_YEAR = 8760
 
 # Plot resolution:
 #   The resolution, in dpi, to use for plotting figures.
-PLOT_RESOLUTION = 300
+PLOT_RESOLUTION = 600
 
 
 def get_key_results(
@@ -305,8 +305,7 @@ def plot_outputs(
         plt.ylabel("Electric power demand / W")
         plt.title(f"Load profile of the community for the first {CUT_OFF_TIME} hours")
         plt.savefig(
-            os.path.join(figures_directory, "electric_demands.png"),
-            transparent=True,
+            os.path.join(figures_directory, "electric_demands.png"), transparent=True,
         )
         plt.close()
         pbar.update(1)
@@ -338,8 +337,7 @@ def plot_outputs(
         )
         total_demand = np.sum(
             np.reshape(
-                np.sum(total_electric_load[0:HOURS_PER_YEAR].values, axis=1),
-                (365, 24),
+                np.sum(total_electric_load[0:HOURS_PER_YEAR].values, axis=1), (365, 24),
             ),
             axis=1,
         )

@@ -1037,24 +1037,25 @@ def save_simulation(
         f"simulation_{simulation_number}"
     ] = simulation_details_dict
 
-    # with tqdm(total=2, desc="saving output files", leave=False, unit="file") as pbar:
-    # Save the simulation data in a CSV file.
-    logger.info("Saving simulation output.")
-    with open(
-        os.path.join(
-            simulation_output_folder, f"simulation_output_{simulation_number}"
-        ),
-        "w",
-    ) as f:
-        simulation.to_csv(f)  # type: ignore
-    logger.info("Simulation successfully saved to %s.", simulation_output_folder)
-    # pbar.update(1)
+    with tqdm(total=2, desc="saving output files", leave=False, unit="file") as pbar:
+        # Save the simulation data in a CSV file.
+        logger.info("Saving simulation output.")
 
-    # Save the system data.
-    logger.info("Saving simulation details.")
-    with open(simulation_details_filepath, "w") as f:
-        json.dump(existing_simulation_details, f, indent=4)
-    logger.info(
-        "Simulation details successfully saved to %s.", simulation_details_filepath
-    )
-    # pbar.update(1)
+        # Save the system data.
+        logger.info("Saving simulation details.")
+        with open(simulation_details_filepath, "w") as f:
+            json.dump(existing_simulation_details, f, indent=4)
+        logger.info(
+            "Simulation details successfully saved to %s.", simulation_details_filepath
+        )
+        pbar.update(1)
+
+        with open(
+            os.path.join(
+                simulation_output_folder, f"simulation_output_{simulation_number}.csv"
+            ),
+            "w",
+        ) as f:
+            simulation.to_csv(f)  # type: ignore
+        logger.info("Simulation successfully saved to %s.", simulation_output_folder)
+        pbar.update(1)
