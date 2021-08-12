@@ -150,7 +150,7 @@ class Convertor:
         )
 
     @classmethod
-    def from_data(cls, input_data: Dict[str, Union[str, float]], logger: Logger) -> Any:
+    def from_dict(cls, input_data: Dict[str, Union[str, float]], logger: Logger) -> Any:
         """
         Generates a :class:`Convertor` instance based on the input data provided.
 
