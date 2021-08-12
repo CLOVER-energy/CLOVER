@@ -315,6 +315,10 @@ def main(args: List[Any]) -> None:
             BColours.endc,
         )
         raise
+    except InputFileError as e:
+        print(FAILED)
+        logger.error("Input file error occured: %s", str(e))
+        raise
     except Exception as e:
         print(FAILED)
         logger.error(
@@ -393,6 +397,12 @@ def main(args: List[Any]) -> None:
                 logger,
                 parsed_args.regenerate,
             )
+        except InputFileError:
+            print(
+                "Generating necessary profiles .................................    "
+                + f"{FAILED}"
+            )
+            raise
         except Exception as e:
             print(
                 "Generating necessary profiles .................................    "
@@ -443,6 +453,12 @@ def main(args: List[Any]) -> None:
                 logger,
                 parsed_args.regenerate,
             )
+        except InputFileError:
+            print(
+                "Generating necessary profiles .................................    "
+                + f"{FAILED}"
+            )
+            raise
         except Exception as e:
             print(
                 "Generating necessary profiles .................................    "
@@ -471,6 +487,12 @@ def main(args: List[Any]) -> None:
             logger,
             location.max_years,
         )
+    except InputFileError:
+        print(
+            "Generating necessary profiles .................................    "
+            + f"{FAILED}"
+        )
+        raise
     except Exception as e:
         print(
             "Generating necessary profiles .................................    "

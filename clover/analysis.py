@@ -473,10 +473,6 @@ def plot_outputs(
         plt.close()
         pbar.update(1)
 
-        import pdb
-
-        pdb.set_trace()
-
         total_used = np.mean(
             np.reshape(
                 simulation_output[0:HOURS_PER_YEAR]["Total energy used (kWh)"].values,
@@ -550,6 +546,7 @@ def plot_outputs(
             os.path.join(figures_directory, "electricity_use_on_average_day.png"),
             transparent=True,
         )
+        plt.close()
 
         # Plot the initial clean-water load of each device.
         if initial_clean_water_hourly_loads is not None:
@@ -765,3 +762,36 @@ def plot_outputs(
             )
             plt.close()
             pbar.update(1)
+
+            total_used = np.mean(
+                np.reshape(
+                    simulation_output[0:HOURS_PER_YEAR][
+                        "Total clean water supplied (l)"
+                    ].values,
+                    (365, 24),
+                ),
+                axis=0,
+            )
+            unmet_clean_water = np.mean(
+                np.reshape(
+                    simulation_output[0:HOURS_PER_YEAR][
+                        "Unmet clean water demand (l)"
+                    ].values,
+                    (365, 24),
+                ),
+                axis=0,
+            )
+
+            plt.plot(total_used, label="Total used")
+            plt.plot(unmet_clean_water, label="Unmet")
+            plt.legend()
+            plt.xlim(0, 23)
+            plt.xticks(range(0, 24, 1))
+            plt.xlabel("Hour of day")
+            plt.ylabel("Clean-water usage / litres/hour")
+            plt.title("Water supply and demand on an average day")
+            plt.savefig(
+                os.path.join(figures_directory, "clean_water_use_on_average_day.png"),
+                transparent=True,
+            )
+            plt.close()
