@@ -140,11 +140,6 @@
                 # License: Open source                                                         #
                 ################################################################################
 
-                # NOTE: The renewables.ninja API token must be entered under the `token` field.
-                # For more information, consult the User Guide, available within the repository
-                # and online.
-                #
-
                 azimuthal_orientation: 180 # [degrees from North]
                 lifetime: 20 # [years] - Lifetime of the PV system.
                 tilt: 29 # [degrees above horizontal]
