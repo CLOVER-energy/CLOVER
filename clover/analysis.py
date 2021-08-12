@@ -183,7 +183,7 @@ def plot_outputs(
     os.makedirs(figures_directory, exist_ok=True)
 
     with tqdm(
-        total=16 if initial_clean_water_hourly_loads is not None else 8,
+        total=20 if initial_clean_water_hourly_loads is not None else 10,
         desc="plots",
         leave=False,
         unit="plot",
@@ -547,6 +547,135 @@ def plot_outputs(
             transparent=True,
         )
         plt.close()
+        pbar.update(1)
+
+        blackouts = np.mean(
+            np.reshape(
+                simulation_output[0:HOURS_PER_YEAR]["Blackouts"].values, (365, 24),
+            ),
+            axis=0,
+        )
+        storage_energy = np.mean(
+            np.reshape(
+                simulation_output[0:HOURS_PER_YEAR][
+                    "Storage energy supplied (kWh)"
+                ].values
+                > 0,
+                (365, 24),
+            ),
+            axis=0,
+        )
+        solar_usage = np.mean(
+            np.reshape(
+                simulation_output[0:HOURS_PER_YEAR][
+                    "Renewables energy used (kWh)"
+                ].values,
+                (365, 24),
+            ),
+            axis=0,
+        )
+        diesel_times = np.mean(
+            np.reshape(
+                simulation_output[0:HOURS_PER_YEAR]["Diesel times"].values, (365, 24),
+            ),
+            axis=0,
+        )
+
+        plt.plot(blackouts, label="Blackouts")
+        plt.plot(solar_usage, label="Solar")
+        plt.plot(storage_energy, label="Storage")
+        plt.plot(grid_energy, label="Grid")
+        plt.plot(diesel_times, label="Diesel")
+        plt.legend()
+        plt.xlim(0, 23)
+        plt.xticks(range(0, 24, 1))
+        plt.ylim(0, 1)
+        plt.yticks(np.arange(0, 1.1, 0.25))
+        plt.xlabel("Hour of day")
+        plt.ylabel("Probability")
+        plt.title("Energy availability on an average day")
+        plt.savefig(
+            os.path.join(
+                figures_directory, "electricity_avilability_on_average_day.png"
+            ),
+            transparent=True,
+        )
+        plt.close()
+        pbar.update(1)
+
+        # Plot the seasonal variation in electricity supply sources.
+        grid_energy = np.reshape(
+            simulation_output[0:HOURS_PER_YEAR]["Grid energy (kWh)"].values, (365, 24),
+        )
+        storage_energy = np.reshape(
+            simulation_output[0:HOURS_PER_YEAR]["Storage energy supplied (kWh)"].values,
+            (365, 24),
+        )
+        renewable_energy = np.reshape(
+            simulation_output[0:HOURS_PER_YEAR]["Renewables energy used (kWh)"].values,
+            (365, 24),
+        )
+        diesel_energy = np.reshape(
+            simulation_output[0:HOURS_PER_YEAR]["Diesel times"].values, (365, 24),
+        )
+
+        fig, ([ax1, ax2], [ax3, ax4]) = plt.subplots(2, 2)  # ,sharex=True, sharey=True)
+        sns.heatmap(
+            renewable_energy, vmin=0.0, vmax=4.0, cmap="Reds", cbar=True, ax=ax1
+        )
+        ax1.set(
+            xticks=range(0, 25, 6),
+            xticklabels=range(0, 25, 6),
+            yticks=range(0, 365, 60),
+            yticklabels=range(0, 365, 60),
+            xlabel="Hour of day",
+            ylabel="Day of year",
+            title="Solar",
+        )
+        sns.heatmap(
+            storage_energy, vmin=0.0, vmax=4.0, cmap="Greens", cbar=True, ax=ax2
+        )
+        ax2.set(
+            xticks=range(0, 25, 6),
+            xticklabels=range(0, 25, 6),
+            yticks=range(0, 365, 60),
+            yticklabels=range(0, 365, 60),
+            xlabel="Hour of day",
+            ylabel="Day of year",
+            title="Storage",
+        )
+        sns.heatmap(grid_energy, vmin=0.0, vmax=4.0, cmap="Blues", cbar=True, ax=ax3)
+        ax3.set(
+            xticks=range(0, 25, 6),
+            xticklabels=range(0, 25, 6),
+            yticks=range(0, 365, 60),
+            yticklabels=range(0, 365, 60),
+            xlabel="Hour of day",
+            ylabel="Day of year",
+            title="Grid",
+        )
+        sns.heatmap(diesel_energy, vmin=0.0, vmax=4.0, cmap="Greys", cbar=True, ax=ax4)
+        ax4.set(
+            xticks=range(0, 25, 6),
+            xticklabels=range(0, 25, 6),
+            yticks=range(0, 365, 60),
+            yticklabels=range(0, 365, 60),
+            xlabel="Hour of day",
+            ylabel="Day of year",
+            title="Diesel",
+        )
+        plt.tight_layout()
+        fig.suptitle("Electricity from different sources (kWh)")
+        fig.subplots_adjust(top=0.87)
+        plt.xticks(rotation=0)
+        plt.savefig(
+            os.path.join(
+                figures_directory, "seasonal_electricity_supply_variations.png"
+            ),
+            transparent=True,
+        )
+        plt.close()
+        pbar.update(1)
 
         total_used = simulation_output.iloc[0:24]["Total energy used (kWh)"]
         renewable_energy = simulation_output.iloc[0:24]["Renewables energy used (kWh)"]
@@ -842,6 +971,45 @@ def plot_outputs(
             plt.title("Water supply and demand on the first day")
             plt.savefig(
                 os.path.join(figures_directory, "clean_water_use_on_first_day.png"),
+                transparent=True,
+            )
+            plt.close()
+            pbar.update(1)
+
+            blackouts = np.mean(
+                np.reshape(
+                    simulation_output[0:HOURS_PER_YEAR][
+                        "Water supply blackouts"
+                    ].values,
+                    (365, 24),
+                ),
+                axis=0,
+            )
+            direct_electric_supply = np.mean(
+                np.reshape(
+                    simulation_output[0:HOURS_PER_YEAR][
+                        "Water supplied by direct electricity (l)"
+                    ].values
+                    > 0,
+                    (365, 24),
+                ),
+                axis=0,
+            )
+
+            plt.plot(blackouts, label="Blackouts")
+            plt.plot(direct_electric_supply, label="Direct electric")
+            plt.legend()
+            plt.xlim(0, 23)
+            plt.xticks(range(0, 24, 1))
+            plt.ylim(0, 1)
+            plt.yticks(np.arange(0, 1.1, 0.25))
+            plt.xlabel("Hour of day")
+            plt.ylabel("Probability")
+            plt.title("Clean-water availability on an average day")
+            plt.savefig(
+                os.path.join(
+                    figures_directory, "clean_water_avilability_on_average_day.png"
+                ),
                 transparent=True,
             )
             plt.close()
