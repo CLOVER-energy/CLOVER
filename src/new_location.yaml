@@ -618,7 +618,7 @@
                 #     - bore_hole
         - directory: simulation
           contents:
-            - file: "battery.yaml"
+            - file: "battery_inputs.yaml"
               contents: |+
                 ---
                 ################################################################################
