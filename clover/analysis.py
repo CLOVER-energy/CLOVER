@@ -183,7 +183,7 @@ def plot_outputs(
     os.makedirs(figures_directory, exist_ok=True)
 
     with tqdm(
-        total=14 if initial_clean_water_hourly_loads is not None else 7,
+        total=16 if initial_clean_water_hourly_loads is not None else 8,
         desc="plots",
         leave=False,
         unit="plot",
@@ -548,6 +548,36 @@ def plot_outputs(
         )
         plt.close()
 
+        total_used = simulation_output.iloc[0:24]["Total energy used (kWh)"]
+        renewable_energy = simulation_output.iloc[0:24]["Renewables energy used (kWh)"]
+        storage_energy = simulation_output.iloc[0:24]["Storage energy supplied (kWh)"]
+        grid_energy = simulation_output.iloc[0:24]["Grid energy (kWh)"]
+        diesel_energy = simulation_output.iloc[0:24]["Diesel energy (kWh)"]
+        unmet_energy = simulation_output.iloc[0:24]["Unmet energy (kWh)"]
+        renewables_supplied = simulation_output.iloc[0:24][
+            "Renewables energy supplied (kWh)"
+        ]
+
+        plt.plot(total_used, label="Total used")
+        plt.plot(renewable_energy, label="Solar used directly")
+        plt.plot(storage_energy, label="Storage")
+        plt.plot(grid_energy, label="Grid")
+        plt.plot(diesel_energy, label="Diesel")
+        plt.plot(unmet_energy, label="Unmet")
+        plt.plot(renewables_supplied, label="Solar generated")
+        plt.legend()
+        plt.xlim(0, 23)
+        plt.xticks(range(0, 24, 1))
+        plt.xlabel("Hour of day")
+        plt.ylabel("Average energy / kWh/hour")
+        plt.title("Energy supply and demand on the frist day")
+        plt.savefig(
+            os.path.join(figures_directory, "electricity_use_on_first_day.png"),
+            transparent=True,
+        )
+        plt.close()
+        pbar.update(1)
+
         # Plot the initial clean-water load of each device.
         if initial_clean_water_hourly_loads is not None:
             for device, load in initial_clean_water_hourly_loads.items():
@@ -795,3 +825,24 @@ def plot_outputs(
                 transparent=True,
             )
             plt.close()
+            pbar.update(1)
+
+            total_used = simulation_output.iloc[0:24]["Total clean water supplied (l)"]
+            unmet_clean_water = simulation_output.iloc[0:24][
+                "Unmet clean water demand (l)"
+            ]
+
+            plt.plot(total_used, label="Total used")
+            plt.plot(unmet_clean_water, label="Unmet")
+            plt.legend()
+            plt.xlim(0, 23)
+            plt.xticks(range(0, 24, 1))
+            plt.xlabel("Hour of day")
+            plt.ylabel("Clean-water usage / litres/hour")
+            plt.title("Water supply and demand on the first day")
+            plt.savefig(
+                os.path.join(figures_directory, "clean_water_use_on_first_day.png"),
+                transparent=True,
+            )
+            plt.close()
+            pbar.update(1)
