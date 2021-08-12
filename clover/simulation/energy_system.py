@@ -358,29 +358,20 @@ def _get_electric_storage_profile(
 
 
 def _get_water_storage_profile(
-    convertors: List[Convertor],
-    scenario: Scenario,
-    total_clean_water_load: pd.DataFrame,
-    *,
-    start_hour: int,
-    end_hour: int,
-) -> Tuple[pd.DataFrame, pd.DataFrame]:
+    convertors: List[Convertor], processed_total_clean_water_load: pd.DataFrame,
+) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """
     Gets the storage profile for the clean-water system.
 
     Inputs:
         - convertors:
             The list of convertors available to the system.
-        - scenario:
-            The current scenario being considered.
-        - total_clean_water_load:
+        - processed_total_clean_water_load:
             The total clean-water load placed on the system.
-        - start_hour:
-            The start hour of the simulation.
-        - end_hour:
-            The end hour of the simulation.
 
     Outputs:
+        - demand_met_through_electric_power:
+            The demand which was met through electric power taken from the minigrid.
         - power_consumed:
             The electric power consumed in providing the water demand.
         - unmet_water:
@@ -396,9 +387,9 @@ def _get_water_storage_profile(
             and convertor.output_load_type == LoadType.CLEAN_WATER
         ]
     )
-    unmet_water = _get_processed_load_profile(scenario, total_clean_water_load)[
-        start_hour:end_hour
-    ]
+    unmet_water = processed_total_clean_water_load.copy()
+
+    demand_met_through_electric_power = pd.DataFrame([0] * unmet_water.size)
     power_consumed: pd.DataFrame = pd.DataFrame([0] * unmet_water.size)
 
     # While there is unmet water demand and there are still water convertors available:
@@ -415,11 +406,12 @@ def _get_water_storage_profile(
         )
 
         # Compute the power that was consumed and the remaining unmet water demand.
+        demand_met_through_electric_power += delivered_water
         power_consumed += delivered_water.mul(current_convertor.consumption)
         unmet_water -= delivered_water
 
     # Return the unmet water and power consumed.
-    return power_consumed, unmet_water
+    return demand_met_through_electric_power, power_consumed, unmet_water
 
 
 def run_simulation(
@@ -541,14 +533,16 @@ def run_simulation(
     ###############
 
     if LoadType.CLEAN_WATER in scenario.load_types:
-        clean_water_power_consumed, unmet_clean_water = _get_water_storage_profile(
-            convertors,
-            scenario,
-            total_clean_water_load,
-            start_hour=start_hour,
-            end_hour=end_hour,
-        )
+        processed_total_clean_water_load = _get_processed_load_profile(
+            scenario, total_clean_water_load
+        )[start_hour:end_hour]
+        (
+            clean_water_demand_met_through_electric_power,
+            clean_water_power_consumed,
+            unmet_clean_water,
+        ) = _get_water_storage_profile(convertors, processed_total_clean_water_load)
     else:
+        clean_water_demand_met_through_electric_power = None
         clean_water_power_consumed = pd.DataFrame([0] * (end_hour - start_hour))
         unmet_clean_water = None
 
@@ -721,16 +715,30 @@ def run_simulation(
     # Ensure all unmet energy is calculated correctly, removing any negative values
     unmet_energy = ((unmet_energy > 0) * unmet_energy).abs()
 
-    # Determine the clean water which was not delivered due to there not being enough
-    # electricity.
-    if unmet_clean_water is not None:
-        unmet_clean_water.mul(blackout_times)
-
     # Find how many kerosene lamps are in use
     kerosene_usage = blackout_times.mul(kerosene_profile[start_hour:end_hour].values)
     kerosene_mitigation = (1 - blackout_times).mul(
         kerosene_profile[start_hour:end_hour].values
     )
+
+    if LoadType.CLEAN_WATER in scenario.load_types:
+        # Determine the clean water which was not delivered due to there not being
+        # enough electricity.
+        blackout_water = clean_water_demand_met_through_electric_power.mul(
+            blackout_times
+        )
+        clean_water_demand_met_through_electric_power -= blackout_water
+        unmet_clean_water += blackout_water
+
+        # Clean-water system performance outputs
+        blackout_water.columns = ["Water supply blackouts"]
+        clean_water_demand_met_through_electric_power.columns = [
+            "Total clean water supplied (l)"
+        ]
+        clean_water_power_consumed.columns = [
+            "Power consumed providing clean water (kWh)"
+        ]
+        unmet_clean_water.columns = ["Unmet clean water demand (l)"]
 
     # System performance outputs
     blackout_times.columns = ["Blackouts"]
@@ -779,29 +787,38 @@ def run_simulation(
     time_delta = timer_end - timer_start
 
     # Return all outputs
-    system_performance_outputs = pd.concat(
-        [
-            load_energy,
-            total_energy_used,
-            unmet_energy,
-            blackout_times,
-            renewables_energy_used_directly,
-            storage_power_supplied,
-            grid_energy,
-            diesel_energy,
-            diesel_times,
-            diesel_fuel_usage,
-            storage_profile,
-            renewables_energy,
-            hourly_storage,
-            energy_surplus,
-            battery_health,
-            households,
-            kerosene_usage,
-            kerosene_mitigation,
-        ],
-        axis=1,
-    )
+    system_performance_outputs_list = [
+        load_energy,
+        total_energy_used,
+        unmet_energy,
+        blackout_times,
+        renewables_energy_used_directly,
+        storage_power_supplied,
+        grid_energy,
+        diesel_energy,
+        diesel_times,
+        diesel_fuel_usage,
+        storage_profile,
+        renewables_energy,
+        hourly_storage,
+        energy_surplus,
+        battery_health,
+        households,
+        kerosene_usage,
+        kerosene_mitigation,
+    ]
+
+    if LoadType.CLEAN_WATER in scenario.load_types:
+        system_performance_outputs_list.extend(
+            [
+                blackout_water,
+                clean_water_demand_met_through_electric_power,
+                clean_water_power_consumed,
+                unmet_clean_water,
+            ]
+        )
+
+    system_performance_outputs = pd.concat(system_performance_outputs_list, axis=1,)
 
     return time_delta, system_performance_outputs, system_details
 
