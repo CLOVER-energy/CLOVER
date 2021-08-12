@@ -182,16 +182,16 @@ def _get_processed_load_profile(scenario: Scenario, total_load: pd.DataFrame):
 
     if scenario.demands.commercial:
         if processed_total_load is not None:
-            processed_total_load.add(  # type: ignore
-                pd.DataFrame(total_load[DemandType.COMMERCIAL.value].values)
+            processed_total_load += pd.DataFrame(
+                total_load[DemandType.COMMERCIAL.value].values
             )
         else:
             processed_total_load = total_load[DemandType.COMMERCIAL.value]  # type: ignore
 
     if scenario.demands.public:
         if processed_total_load is not None:
-            processed_total_load.add(  # type: ignore
-                pd.DataFrame(total_load[DemandType.PUBLIC.value].values)
+            processed_total_load += pd.DataFrame(
+                total_load[DemandType.PUBLIC.value].values
             )
         else:
             processed_total_load = total_load[DemandType.PUBLIC.value]  # type: ignore
