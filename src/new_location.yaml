@@ -618,6 +618,28 @@
                 #     - bore_hole
         - directory: simulation
           contents:
+            - file: "battery.yaml"
+              contents: |+
+                ---
+                ################################################################################
+                # battery.yaml - Parameters for specifying a battery within CLOVER.            #
+                #                                                                              #
+                # Author: Phil Sandwell, Ben Winchester                                        #
+                # Copyright: Phil Sandwell & Ben Winchester, 2021                              #
+                # Date created: 12/08/2021                                                     #
+                # License: Open source                                                         #
+                ################################################################################
+
+                - name: default_battery
+                  maximum_charge: 0.9 # State of charge (0.0 - 1.0)
+                  minimum_charge: 0.4 # State of charge (0.0 - 1.0)
+                  leakage: 0.004 # Fractional leakage per hour
+                  conversion_in: 0.95 # Conversion efficiency (0.0 - 1.0)
+                  conversion_out: 0.95 # Conversion efficiency (0.0 - 1.0)
+                  cycle_lifetime: 1500 # Expected number of cycles over lifetime
+                  lifetime_loss: 0.2 # Fractional loss over lifetime (0.0 - 1.0)
+                  c_rate_discharging: 0.33 # Discharge rate
+                  c_rate_charging: 0.33 # Charge rate
             - file: "energy_system.yaml"
               contents: |+
                 ---
@@ -630,18 +652,9 @@
                 # License: Open source                                                         #
                 ################################################################################
 
-                battery:
-                  maximum_charge: 0.9 # State of charge (0.0 - 1.0)
-                  minimum_charge: 0.4 # State of charge (0.0 - 1.0)
-                  leakage: 0.004 # Fractional leakage per hour
-                  conversion_in: 0.95 # Conversion efficiency (0.0 - 1.0)
-                  conversion_out: 0.95 # Conversion efficiency (0.0 - 1.0)
-                  cycle_lifetime: 1500 # Expected number of cycles over lifetime
-                  lifetime_loss: 0.2 # Fractional loss over lifetime (0.0 - 1.0)
-                  c_rate_discharging: 0.33 # Discharge rate
-                  c_rate_charging: 0.33 # Charge rate
-                dc_transmission_efficiency: 0.95 # Efficiency of DC distribution network
                 ac_transmission_efficiency: 0.95 # Efficiency of AC distribution network
+                dc_transmission_efficiency: 0.95 # Efficiency of DC distribution network
+                battery: default_battery
                 conversion:
                   dc_to_ac: 0.95 # Conversion efficiency (0.0-1.0)
                   dc_to_dc: 0.95 # Conversion efficiency (0.0-1.0)
