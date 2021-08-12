@@ -617,6 +617,7 @@ def main(args: List[Any]) -> None:
                     output_directory,
                     output,
                     simulation_number,
+                    system_performance_outputs,
                     total_clean_water_load,
                     0.001 * total_electric_load,
                     total_solar_output,

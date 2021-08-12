@@ -135,6 +135,7 @@ def plot_outputs(
     output_directory: str,
     simulation_name: str,
     simulation_number: int,
+    simulation_output: pd.DataFrame,
     total_clean_water_load: pd.DataFrame,
     total_electric_load: pd.DataFrame,
     total_solar_output: pd.DataFrame,
@@ -163,6 +164,8 @@ def plot_outputs(
             The filename used when saving the simulation.
         - simulation_number:
             The number of the simulation being run.
+        - simulation_output:
+            The output of the simulation carried out.
         - total_clean_water_load:
             The total clean water load placed on the system.
         - total_electric_load:
@@ -470,60 +473,64 @@ def plot_outputs(
         plt.close()
         pbar.update(1)
 
-        total_used = np.sum(
+        import pdb
+
+        pdb.set_trace()
+
+        total_used = np.mean(
             np.reshape(
-                total_electric_load[0:HOURS_PER_YEAR]["Total energy used (kWh)"].values,
+                simulation_output[0:HOURS_PER_YEAR]["Total energy used (kWh)"].values,
                 (365, 24),
             ),
-            axis=1,
+            axis=0,
         )
-        renewable_energy = np.sum(
+        renewable_energy = np.mean(
             np.reshape(
-                total_electric_load[0:HOURS_PER_YEAR][
+                simulation_output[0:HOURS_PER_YEAR][
                     "Renewables energy used (kWh)"
                 ].values,
                 (365, 24),
             ),
-            axis=1,
+            axis=0,
         )
-        storage_energy = np.sum(
+        storage_energy = np.mean(
             np.reshape(
-                total_electric_load[0:HOURS_PER_YEAR][
+                simulation_output[0:HOURS_PER_YEAR][
                     "Storage energy supplied (kWh)"
                 ].values,
                 (365, 24),
             ),
-            axis=1,
+            axis=0,
         )
-        grid_energy = np.sum(
+        grid_energy = np.mean(
             np.reshape(
-                total_electric_load[0:HOURS_PER_YEAR]["Grid energy (kWh)"].values,
+                simulation_output[0:HOURS_PER_YEAR]["Grid energy (kWh)"].values,
                 (365, 24),
             ),
-            axis=1,
+            axis=0,
         )
-        diesel_energy = np.sum(
+        diesel_energy = np.mean(
             np.reshape(
-                total_electric_load[0:HOURS_PER_YEAR]["Diesel energy (kWh)"].values,
+                simulation_output[0:HOURS_PER_YEAR]["Diesel energy (kWh)"].values,
                 (365, 24),
             ),
-            axis=1,
+            axis=0,
         )
-        unmet_energy = np.sum(
+        unmet_energy = np.mean(
             np.reshape(
-                total_electric_load[0:HOURS_PER_YEAR]["Unmet energy (kWh)"].values,
+                simulation_output[0:HOURS_PER_YEAR]["Unmet energy (kWh)"].values,
                 (365, 24),
             ),
-            axis=1,
+            axis=0,
         )
-        renewables_supplied = np.sum(
+        renewables_supplied = np.mean(
             np.reshape(
-                total_electric_load[0:HOURS_PER_YEAR][
+                simulation_output[0:HOURS_PER_YEAR][
                     "Renewables energy supplied (kWh)"
                 ].values,
                 (365, 24),
             ),
-            axis=1,
+            axis=0,
         )
 
         plt.plot(total_used, label="Total used")
