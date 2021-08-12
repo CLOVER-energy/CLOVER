@@ -725,6 +725,15 @@ def run_simulation(
         kerosene_profile[start_hour:end_hour].values
     )
 
+    # Find total energy used by the system
+    total_energy_used = pd.DataFrame(
+        renewables_energy_used_directly.values
+        + storage_power_supplied.values
+        + grid_energy.values
+        + diesel_energy.values
+        + 0.001 * clean_water_power_consumed.values
+    )
+
     if LoadType.CLEAN_WATER in scenario.load_types:
         # Determine the clean water which was not delivered due to there not being
         # enough electricity.
@@ -739,6 +748,12 @@ def run_simulation(
         clean_water_demand_met_through_electric_power -= blackout_water
         unmet_clean_water += blackout_water
 
+        # Find out how much of the minigrid power was used providing electricity as
+        # opposed to clean water.
+        power_used_on_electricity = (
+            total_energy_used - 0.001 * clean_water_power_consumed
+        )
+
         # Clean-water system performance outputs
         blackout_water.columns = ["Water supply blackouts"]
         clean_water_demand_met_through_electric_power.columns = [
@@ -746,6 +761,9 @@ def run_simulation(
         ]
         clean_water_power_consumed.columns = [
             "Power consumed providing clean water (kWh)"
+        ]
+        power_used_on_electricity.columns = [
+            "Power consumed providing electricity (kWh)"
         ]
         total_clean_water_supplied.columns = ["Total clean water supplied (l)"]
         unmet_clean_water.columns = ["Unmet clean water demand (l)"]
@@ -766,14 +784,6 @@ def run_simulation(
     households.columns = ["Households"]
     kerosene_usage.columns = ["Kerosene lamps"]
     kerosene_mitigation.columns = ["Kerosene mitigation"]
-
-    # Find total energy used by the system
-    total_energy_used = pd.DataFrame(
-        renewables_energy_used_directly.values
-        + storage_power_supplied.values
-        + grid_energy.values
-        + diesel_energy.values
-    )
     total_energy_used.columns = ["Total energy used (kWh)"]
 
     # System details
@@ -823,7 +833,8 @@ def run_simulation(
             [
                 blackout_water,
                 clean_water_demand_met_through_electric_power,
-                clean_water_power_consumed,
+                0.001 * clean_water_power_consumed,
+                power_used_on_electricity,
                 total_clean_water_supplied,
                 unmet_clean_water,
             ]
