@@ -154,6 +154,9 @@ def _get_profile_from_rn(
         feb_29 = (31 + 28) * 24
         data_frame = data_frame.drop(list(range(feb_29, feb_29 + 24)))  # type: ignore
         data_frame = data_frame.reset_index(drop=True)
+
+    # Remove empty rows from the dataframe.
+    data_frame.dropna()
     return data_frame
 
 
@@ -232,10 +235,7 @@ def _get_profile_output(
 
 
 def _save_profile_output(
-    filepath: str,
-    gen_year: int,
-    logger: Logger,
-    profile: pd.DataFrame,
+    filepath: str, gen_year: int, logger: Logger, profile: pd.DataFrame,
 ) -> None:
     """
     Saves PV generation data as a named .csv file in the location generation file.
@@ -257,6 +257,8 @@ def _save_profile_output(
         profile.to_csv(
             f,  # type: ignore
             header=None,  # type: ignore
+            index=False,
+            line_terminator="\n",
         )
 
     logger.info(
@@ -345,9 +347,7 @@ class BaseRenewablesNinjaThread(threading.Thread):
         cls.profile_name = profile_name
         cls.profile_key = profile_key
 
-    def run(
-        self,
-    ) -> None:
+    def run(self,) -> None:
         """
         Execute a renewables-ninja data-fetching thread.
 
@@ -397,10 +397,7 @@ class BaseRenewablesNinjaThread(threading.Thread):
 
                 self.logger.info("Solar data successfully fetched, saving.")
                 _save_profile_output(
-                    filepath,
-                    year,
-                    self.logger,
-                    data,
+                    filepath, year, self.logger, data,
                 )
 
                 # The system waits to prevent overloading the renewables.ninja API and being
@@ -445,8 +442,7 @@ def total_profile_output(
     output = pd.DataFrame([])
 
     total_output_filename = os.path.join(
-        generation_directory,
-        f"{profile_name}_generation_{num_years}_years.csv",
+        generation_directory, f"{profile_name}_generation_{num_years}_years.csv",
     )
 
     # If the total solar output file already exists then simply read this in.
