@@ -20,7 +20,7 @@ from typing import Any, Dict, List, Optional, Set, Tuple
 import pandas as pd
 
 from . import load
-from .simulation import energy_system
+from .simulation import energy_system, solar
 
 from .__utils__ import (
     BColours,
@@ -132,6 +132,7 @@ def parse_input_files(
     pd.DataFrame,
     Optional[OptimisationParameters],
     Optional[Set[Optimisation]],
+    solar.PV,
     Scenario,
     List[Simulation],
     Dict[str, Any],
@@ -156,6 +157,7 @@ def parse_input_files(
             - grid_inputs,
             - optimisation_inputs,
             - optimisations, the `set` of optimisations to run,
+            - a :class:`PV` instance containing information about the PV panel,
             - scenario,
             - simulations, the `list` of simulations to run,
             - solar_generation_inputs,
@@ -173,7 +175,7 @@ def parse_input_files(
     )
     if os.path.isfile(conversion_file_relative_path):
         parsed_convertors: List[Convertor] = [
-            Convertor.from_data(entry, logger)
+            Convertor.from_dict(entry, logger)
             for entry in read_yaml(conversion_file_relative_path, logger)
         ]
         convertors: Dict[str, Convertor] = {
@@ -371,6 +373,9 @@ def parse_input_files(
     solar_generation_inputs = read_yaml(solar_generation_inputs_filepath, logger,)
     logger.info("Solar generation inputs successfully parsed.")
 
+    # Parse the pv-panel information.
+    pv_panel = solar.PV.from_dict(logger, solar_generation_inputs)
+
     # Generate a dictionary with information about the input files used.
     input_file_info = {
         "convertors": conversion_file_relative_path,
@@ -399,6 +404,7 @@ def parse_input_files(
         location,
         optimisation_parameters,
         optimisations,
+        pv_panel,
         scenario,
         simulations,
         solar_generation_inputs,

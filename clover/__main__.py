@@ -300,6 +300,7 @@ def main(args: List[Any]) -> None:
             location,
             optimisation_inputs,
             optimisations,
+            pv_panel,
             scenario,
             simulations,
             solar_generation_inputs,

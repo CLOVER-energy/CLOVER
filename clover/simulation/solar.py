@@ -67,7 +67,7 @@ class PV:
         self.thermal_coefficient = thermal_coefficient
 
     @classmethod
-    def from_data(cls, logger: Logger, solar_inputs: Dict[str, Any]) -> Any:
+    def from_dict(cls, logger: Logger, solar_inputs: Dict[str, Any]) -> Any:
         """
         Returns a :class:`PV` instance based on the input data provided.
 
@@ -86,7 +86,9 @@ class PV:
             return cls(
                 solar_inputs["reference_temperature"],
                 solar_inputs["thermal_coefficient"],
-                reference_efficiency=solar_inputs["reference_efficiency"],
+                reference_efficiency=solar_inputs["reference_efficiency"]
+                if "reference_efficiency" in solar_inputs
+                else 1,
             )
         except KeyError as e:
             logger.error("Solar inputs file is missing information: %s", str(e))

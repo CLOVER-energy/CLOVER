@@ -10,4 +10,6 @@
 
 azimuthal_orientation: 180 # [degrees from North]
 lifetime: 20 # [years] - Lifetime of the PV system.
+reference_temperature: 25 # [degrees Celcius]
+thermal_coefficient: 0.0053 # [1 / degrees Celcius]
 tilt: 29 # [degrees above horizontal]
