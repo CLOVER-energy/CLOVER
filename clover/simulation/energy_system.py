@@ -541,9 +541,13 @@ def run_simulation(
             clean_water_power_consumed,
             unmet_clean_water,
         ) = _get_water_storage_profile(convertors, processed_total_clean_water_load)
+        total_clean_water_supplied = pd.DataFrame(
+            clean_water_demand_met_through_electric_power.values
+        )
     else:
         clean_water_demand_met_through_electric_power = None
         clean_water_power_consumed = pd.DataFrame([0] * (end_hour - start_hour))
+        total_clean_water_supplied = None
         unmet_clean_water = None
 
     ###############
@@ -724,8 +728,13 @@ def run_simulation(
     if LoadType.CLEAN_WATER in scenario.load_types:
         # Determine the clean water which was not delivered due to there not being
         # enough electricity.
-        blackout_water = clean_water_demand_met_through_electric_power.mul(
-            blackout_times
+        blackout_water = pd.DataFrame(
+            [
+                1 if entry > 0 else 0
+                for entry in clean_water_demand_met_through_electric_power.mul(
+                    blackout_times
+                ).values
+            ]
         )
         clean_water_demand_met_through_electric_power -= blackout_water
         unmet_clean_water += blackout_water
@@ -733,11 +742,12 @@ def run_simulation(
         # Clean-water system performance outputs
         blackout_water.columns = ["Water supply blackouts"]
         clean_water_demand_met_through_electric_power.columns = [
-            "Total clean water supplied (l)"
+            "Water supplied by direct electricity (l)"
         ]
         clean_water_power_consumed.columns = [
             "Power consumed providing clean water (kWh)"
         ]
+        total_clean_water_supplied.columns = ["Total clean water supplied (l)"]
         unmet_clean_water.columns = ["Unmet clean water demand (l)"]
 
     # System performance outputs
@@ -814,6 +824,7 @@ def run_simulation(
                 blackout_water,
                 clean_water_demand_met_through_electric_power,
                 clean_water_power_consumed,
+                total_clean_water_supplied,
                 unmet_clean_water,
             ]
         )

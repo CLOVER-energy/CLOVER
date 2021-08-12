@@ -412,7 +412,6 @@ def compute_total_hourly_load(
     devices: Set[Device],
     generated_device_load_filepath: str,
     logger: Logger,
-    regenerate: bool,
     years: int,
 ) -> Tuple[pd.DataFrame, pd.DataFrame]:
     """
@@ -487,7 +486,7 @@ def compute_total_hourly_load(
 
     logger.info("Saving total load.")
     with open(total_load_filepath, "w") as f:
-        total_load.to_csv(f)  # type: ignore
+        total_load.to_csv(f, line_terminator="\n")  # type: ignore
     logger.info("Total device load successfully saved to %s.", total_load_filepath)
 
     # Attempt to read the yearly load statistics from a file and compute if it doesn't
@@ -1027,7 +1026,6 @@ def process_load_profiles(
         ),
         logger=logger,
         years=location.max_years,
-        regenerate=regenerate,
     )
     logger.info("Total load and yearly statistics successfully computed.")
 
