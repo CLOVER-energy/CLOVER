@@ -526,6 +526,19 @@ def main(args: List[Any]) -> None:
     )
     logger.info("Total solar output successfully computed and saved.")
 
+    logger.info("Generating and saving total weather output file.")
+    total_weather_output = weather.total_weather_output(
+        os.path.join(auto_generated_files_directory, "weather"),
+        parsed_args.regenerate,
+        generation_inputs["start_year"],
+        location.max_years,
+    )
+    total_temperature_output = total_weather_output[0]
+    total_precipitation_output = total_weather_output[1]
+    total_solar_irradiance_output = total_weather_output[2]
+    total_cloud_cover_fraction_output = total_weather_output[3]
+    logger.info("Total weather output successfully computed and saved.")
+
     logger.info("Setup complete, continuing to CLOVER simulation.")
 
     print(

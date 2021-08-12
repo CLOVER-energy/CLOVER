@@ -1014,3 +1014,47 @@ def plot_outputs(
             )
             plt.close()
             pbar.update(1)
+
+            clean_water_power_supplied = np.mean(
+                np.reshape(
+                    simulation_output[0:HOURS_PER_YEAR][
+                        "Power consumed providing clean water (kWh)"
+                    ].values,
+                    (365, 24),
+                ),
+                axis=0,
+            )
+            electric_power_supplied = np.mean(
+                np.reshape(
+                    simulation_output[0:HOURS_PER_YEAR][
+                        "Power consumed providing electricity (kWh)"
+                    ].values,
+                    (365, 24),
+                ),
+                axis=0,
+            )
+            total_power_supplied = np.mean(
+                np.reshape(
+                    simulation_output[0:HOURS_PER_YEAR][
+                        "Total energy used (kWh)"
+                    ].values,
+                    (365, 24),
+                ),
+                axis=0,
+            )
+
+            plt.plot(clean_water_power_supplied, label="Clean-water via conversion")
+            plt.plot(electric_power_supplied, label="Electric devices")
+            plt.plot(total_power_supplied, label="Total load")
+            plt.legend()
+            plt.xlim(0, 23)
+            plt.xticks(range(0, 24, 1))
+            plt.xlabel("Hour of day")
+            plt.ylabel("Use by device type.")
+            plt.title("Electriciy use by supply/device type on an average day")
+            plt.savefig(
+                os.path.join(figures_directory, "electricity_use_by_supply_type.png"),
+                transparent=True,
+            )
+            plt.close()
+            pbar.update(1)
