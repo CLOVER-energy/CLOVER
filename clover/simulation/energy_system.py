@@ -105,6 +105,7 @@ class Minigrid:
         cls,
         diesel_backup_generator: DieselBackupGenerator,
         minigrid_inputs: Dict[str, Any],
+        battery_inputs: Optional[Dict[str, Any]] = None,
     ) -> Any:
         """
         Returns a :class:`Minigrid` instance based on the inputs provided.
@@ -121,6 +122,12 @@ class Minigrid:
 
         """
 
+        # Parse the battery information.
+        batteries = {
+            entry["name"]: Battery.from_dict(entry) for entry in battery_inputs
+        }
+
+        # Return the minigrid instance.
         return cls(
             minigrid_inputs["conversion"]["ac_to_ac"]
             if "ac_to_ac" in minigrid_inputs["conversion"]
@@ -131,17 +138,7 @@ class Minigrid:
             minigrid_inputs["ac_transmission_efficiency"]
             if "ac_transmission_efficiency" in minigrid_inputs
             else None,
-            Battery(
-                minigrid_inputs["battery"]["c_rate_charging"],
-                minigrid_inputs["battery"]["conversion_in"],
-                minigrid_inputs["battery"]["conversion_out"],
-                minigrid_inputs["battery"]["cycle_lifetime"],
-                minigrid_inputs["battery"]["c_rate_discharging"],
-                minigrid_inputs["battery"]["leakage"],
-                minigrid_inputs["battery"]["lifetime_loss"],
-                minigrid_inputs["battery"]["maximum_charge"],
-                minigrid_inputs["battery"]["minimum_charge"],
-            )
+            batteries[minigrid_inputs["battery"]]
             if "battery" in minigrid_inputs
             else None,
             minigrid_inputs["conversion"]["ac_to_ac"]

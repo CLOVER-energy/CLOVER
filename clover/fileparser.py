@@ -44,6 +44,10 @@ __all__ = (
 )
 
 
+# Battery inputs file:
+#   The relative path to the battery inputs file.
+BATTERY_INPUTS_FILE = os.path.join("simulation", "battery_inputs.yaml")
+
 # Conversion inputs file:
 #   The relative path to the conversion-inputs file.
 CONVERSION_INPUTS_FILE = os.path.join("generation", "conversion_inputs.yaml")
@@ -249,11 +253,16 @@ def parse_input_files(
         raise
     logger.info("Diesel inputs successfully parsed.")
 
+    battery_inputs_filepath = os.path.join(
+        inputs_directory_relative_path, BATTERY_INPUTS_FILE
+    )
     energy_system_inputs_filepath = os.path.join(
         inputs_directory_relative_path, ENERGY_SYSTEM_INPUTS_FILE
     )
     minigrid = energy_system.Minigrid.from_dict(
-        diesel_backup_generator, read_yaml(energy_system_inputs_filepath, logger)
+        diesel_backup_generator,
+        read_yaml(energy_system_inputs_filepath, logger),
+        read_yaml(battery_inputs_filepath, logger),
     )
     logger.info("Energy-system inputs successfully parsed.")
 

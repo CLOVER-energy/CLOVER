@@ -56,6 +56,9 @@ class Battery:
         The minimum charge level of the battery, defined between 0 (able to fully
         discharge) and 1 (unable to discharge any amount).
 
+    .. attribute:: name
+        A unique name for identifying the battery.
+
     """
 
     charge_rate: float
@@ -67,6 +70,18 @@ class Battery:
     lifetime_loss: float
     maximum_charge: float
     minimum_charge: float
+    name: str
+
+    def __hash__(self) -> int:
+        """
+        Return a unique hash identifying the :class:`Battery` instance.
+
+        Outputs:
+            - Return a unique hash identifying the :class:`Battery` instance.
+
+        """
+
+        return hash(self.name)
 
     def __str__(self) -> str:
         """
@@ -79,6 +94,7 @@ class Battery:
 
         return (
             "Battery("
+            + f"name={self.name}, "
             + f"charge_rate={self.charge_rate}, "
             + f"discharge_rate={self.discharge_rate}, "
             + f"conversion_in={self.conversion_in}, "
@@ -115,4 +131,5 @@ class Battery:
             battery_data["lifetime_loss"],
             battery_data["maximum_charge"],
             battery_data["minimum_charge"],
+            battery_data["name"],
         )
