@@ -122,14 +122,20 @@ def _get_profile_from_rn(
     # Gets some data from input file
     renewables_ninja_params.update(
         {
-            "date_from": str(year) + "-01-01",
-            "date_to": str(year) + "-12-31",
+            "date_from": f"{year}-01-01",
+            "date_to": f"{year}-12-31",
             "dataset": "merra2",
             "format": "json",
             # Metadata and raw data now supported by different function in API
             #            'metadata': False,
             #            'raw': False
         }
+    )
+    logger.info(
+        "Calling renewables Ninja:\n  url: %s\n  headers: %s\n  params: %s",
+        url,
+        session.headers,
+        renewables_ninja_params,
     )
     session_url = session.get(url, params=renewables_ninja_params)  # type: ignore
 
@@ -156,7 +162,6 @@ def _get_profile_from_rn(
         data_frame = data_frame.reset_index(drop=True)
 
     # Remove empty rows from the dataframe.
-    data_frame.dropna()
     return data_frame
 
 

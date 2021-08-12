@@ -179,7 +179,12 @@ def plot_outputs(
     os.makedirs(os.path.join(output_directory, simulation_name), exist_ok=True)
     os.makedirs(figures_directory, exist_ok=True)
 
-    with tqdm(total=12, desc="plots", leave=False, unit="plot") as pbar:
+    with tqdm(
+        total=14 if initial_clean_water_hourly_loads is not None else 7,
+        desc="plots",
+        leave=False,
+        unit="plot",
+    ) as pbar:
         # Plot the first year of solar generation as a heatmap.
         rehaped_data = np.reshape(
             total_solar_output.iloc[0:HOURS_PER_YEAR].values, (365, 24)
@@ -464,6 +469,80 @@ def plot_outputs(
         )
         plt.close()
         pbar.update(1)
+
+        total_used = np.sum(
+            np.reshape(
+                total_electric_load[0:HOURS_PER_YEAR]["Total energy used (kWh)"].values,
+                (365, 24),
+            ),
+            axis=1,
+        )
+        renewable_energy = np.sum(
+            np.reshape(
+                total_electric_load[0:HOURS_PER_YEAR][
+                    "Renewables energy used (kWh)"
+                ].values,
+                (365, 24),
+            ),
+            axis=1,
+        )
+        storage_energy = np.sum(
+            np.reshape(
+                total_electric_load[0:HOURS_PER_YEAR][
+                    "Storage energy supplied (kWh)"
+                ].values,
+                (365, 24),
+            ),
+            axis=1,
+        )
+        grid_energy = np.sum(
+            np.reshape(
+                total_electric_load[0:HOURS_PER_YEAR]["Grid energy (kWh)"].values,
+                (365, 24),
+            ),
+            axis=1,
+        )
+        diesel_energy = np.sum(
+            np.reshape(
+                total_electric_load[0:HOURS_PER_YEAR]["Diesel energy (kWh)"].values,
+                (365, 24),
+            ),
+            axis=1,
+        )
+        unmet_energy = np.sum(
+            np.reshape(
+                total_electric_load[0:HOURS_PER_YEAR]["Unmet energy (kWh)"].values,
+                (365, 24),
+            ),
+            axis=1,
+        )
+        renewables_supplied = np.sum(
+            np.reshape(
+                total_electric_load[0:HOURS_PER_YEAR][
+                    "Renewables energy supplied (kWh)"
+                ].values,
+                (365, 24),
+            ),
+            axis=1,
+        )
+
+        plt.plot(total_used, label="Total used")
+        plt.plot(renewable_energy, label="Solar used directly")
+        plt.plot(storage_energy, label="Storage")
+        plt.plot(grid_energy, label="Grid")
+        plt.plot(diesel_energy, label="Diesel")
+        plt.plot(unmet_energy, label="Unmet")
+        plt.plot(renewables_supplied, label="Solar generated")
+        plt.legend()
+        plt.xlim(0, 23)
+        plt.xticks(range(0, 24, 1))
+        plt.xlabel("Hour of day")
+        plt.ylabel("Average energy / kWh/hour")
+        plt.title("Energy supply and demand on an average day")
+        plt.savefig(
+            os.path.join(figures_directory, "electricity_use_on_average_day.png"),
+            transparent=True,
+        )
 
         # Plot the initial clean-water load of each device.
         if initial_clean_water_hourly_loads is not None:
