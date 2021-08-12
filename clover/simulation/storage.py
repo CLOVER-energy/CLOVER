@@ -18,15 +18,17 @@ contained and considered within this module.
 
 import dataclasses
 
-from typing import Any, Dict
+from typing import Any, Dict, List, Optional
+
+from ..__utils__ import LoadType
 
 __all__ = ("Battery",)
 
 
 @dataclasses.dataclass
-class Battery:
+class _BaseStorage:
     """
-    Represents a battery within CLOVER.
+    Repsesents an abstract base storage unit.
 
     .. attribute:: charge_rate
         The rate of charge of the battery.
@@ -59,6 +61,9 @@ class Battery:
     .. attribute:: name
         A unique name for identifying the battery.
 
+    .. attribute:: storage_types
+        A mapping between load types and the child class instances.
+
     """
 
     charge_rate: float
@@ -71,29 +76,47 @@ class Battery:
     maximum_charge: float
     minimum_charge: float
     name: str
+    storage_types: Optional[Dict[LoadType, List[Any]]] = None
 
     def __hash__(self) -> int:
         """
-        Return a unique hash identifying the :class:`Battery` instance.
+        Return a unique hash identifying the :class:`_BaseStorage` instance.
 
         Outputs:
-            - Return a unique hash identifying the :class:`Battery` instance.
+            - Return a unique hash identifying the :class:`_BaseStorage` instance.
 
         """
 
         return hash(self.name)
 
+    def __init_subclass__(cls, label: str, load_type: LoadType) -> None:
+        """
+        Method run when a :class:`_BaseStorage` child is instantiated.
+
+        Inputs:
+            - label:
+                A `str` that identifies the class type.
+            - load_type:
+                The type of load being modelled.
+
+        """
+
+        super().__init_subclass__()
+        cls.label = label
+        cls.load_type = load_type
+
     def __str__(self) -> str:
         """
-        Returns a nice-looking string describing the :class:`Battery` instance.
+        Returns a nice-looking string describing the :class:`_BaseStorage` instance.
 
         Outputs:
-            - A `str` giving information about the :class:`Battery` instance.
+            - A `str` giving information about the :class:`_BaseStorage` instance.
 
         """
 
         return (
-            "Battery("
+            "Storage("
+            + f"{self.label} storing {self.load_type.value} loads, "
             + f"name={self.name}, "
             + f"charge_rate={self.charge_rate}, "
             + f"discharge_rate={self.discharge_rate}, "
@@ -108,28 +131,46 @@ class Battery:
         )
 
     @classmethod
-    def from_dict(cls, battery_data: Dict[str, Any]) -> Any:
+    def from_dict(cls, storage_data: Dict[str, Any]) -> Any:
         """
-        Create a :class:`Battery` instance based on the file data passed in.
+        Create a :class:`_BaseStorage` instance based on the file data passed in.
 
         Inputs:
-            - battery_data:
-                The battery data, extracted from the relevant input file.
+            - storage_data:
+                The storage data, extracted from the relevant input file.
 
         Outputs:
-            - A :class:`Battery` instance.
+            - A :class:`_BaseStorage` instance.
 
         """
 
         return cls(
-            battery_data["c_rate_charging"],
-            battery_data["conversion_in"],
-            battery_data["conversion_out"],
-            battery_data["cycle_lifetime"],
-            battery_data["c_rate_discharging"],
-            battery_data["leakage"],
-            battery_data["lifetime_loss"],
-            battery_data["maximum_charge"],
-            battery_data["minimum_charge"],
-            battery_data["name"],
+            storage_data["c_rate_charging"],
+            storage_data["conversion_in"],
+            storage_data["conversion_out"],
+            storage_data["cycle_lifetime"],
+            storage_data["c_rate_discharging"],
+            storage_data["leakage"],
+            storage_data["lifetime_loss"],
+            storage_data["maximum_charge"],
+            storage_data["minimum_charge"],
+            storage_data["name"],
         )
+
+
+@dataclasses.dataclass
+class Battery(_BaseStorage, label="battery", load_type=LoadType.ELECTRIC):
+    """
+    Represents a battery within CLOVER.
+
+    """
+
+
+@dataclasses.dataclass
+class CleanWaterTank(
+    _BaseStorage, label="clean_water_tank", load_type=LoadType.CLEAN_WATER
+):
+    """
+    Represents a battery within CLOVER.
+
+    """
