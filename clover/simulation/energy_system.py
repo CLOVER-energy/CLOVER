@@ -355,7 +355,8 @@ def _get_electric_storage_profile(
 
 
 def _get_water_storage_profile(
-    convertors: List[Convertor], processed_total_clean_water_load: pd.DataFrame,
+    convertors: List[Convertor],
+    processed_total_clean_water_load: pd.DataFrame,
 ) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """
     Gets the storage profile for the clean-water system.
@@ -837,7 +838,10 @@ def run_simulation(
             ]
         )
 
-    system_performance_outputs = pd.concat(system_performance_outputs_list, axis=1,)
+    system_performance_outputs = pd.concat(
+        system_performance_outputs_list,
+        axis=1,
+    )
 
     return time_delta, system_performance_outputs, system_details
 
