@@ -44,7 +44,7 @@ __all__ = (
     "InputFileError",
     "KEROSENE_DEVICE_NAME",
     "KeyResults",
-    "LoadType",
+    "ResourceType",
     "LOCATIONS_FOLDER_NAME",
     "LOGGER_DIRECTORY",
     "monthly_profile_to_daily_profile",
@@ -414,7 +414,7 @@ class KeyResults:
         return data_dict
 
 
-class LoadType(enum.Enum):
+class ResourceType(enum.Enum):
     """
     Specifies the type of load being investigated.
 
@@ -432,9 +432,9 @@ class LoadType(enum.Enum):
 
 # Load name to load type mapping:
 #   Maps the load name to the load type, used for parsing scenario files.
-LOAD_NAME_TO_LOAD_TYPE_MAPPING = {
-    "electric_power": LoadType.ELECTRIC,
-    "clean_water": LoadType.CLEAN_WATER,
+RESOURCE_NAME_TO_RESOURCE_TYPE_MAPPING = {
+    "electric_power": ResourceType.ELECTRIC,
+    "clean_water": ResourceType.CLEAN_WATER,
 }
 
 
@@ -775,7 +775,7 @@ class Scenario:
         The type of grid being modelled, i.e., whether the grid is full, etc. These
         options are written in the grid inputs file as headers.
 
-    .. attribute:: load_types
+    .. attribute:: resource_types
         The load types being modelled.
 
     .. attribute:: prioritise_self_generation
@@ -792,7 +792,7 @@ class Scenario:
     distribution_network: DistributionNetwork
     grid: bool
     grid_type: str
-    load_types: Set[LoadType]
+    resource_types: Set[ResourceType]
     prioritise_self_generation: bool
     pv: bool
 
@@ -827,9 +827,9 @@ class Scenario:
             scenario_inputs["distribution_network"]
         )
 
-        load_types = {
-            LoadType(LOAD_NAME_TO_LOAD_TYPE_MAPPING[load_name])
-            for load_name in scenario_inputs["load_types"]
+        resource_types = {
+            ResourceType(RESOURCE_NAME_TO_RESOURCE_TYPE_MAPPING[resource_name])
+            for resource_name in scenario_inputs["resource_types"]
         }
 
         return cls(
@@ -839,7 +839,7 @@ class Scenario:
             distribution_network,
             scenario_inputs["grid"],
             scenario_inputs["grid_type"],
-            load_types,
+            resource_types,
             scenario_inputs["prioritise_self_generation"],
             scenario_inputs["pv"],
         )

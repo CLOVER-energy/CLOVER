@@ -22,6 +22,6 @@ demands:
   commercial: true # "true" or "false"
   public: true # "true" or "false"
 distribution_network: dc # DC ("dc") or AC ("ac") distribution network
-load_types:
+resource_types:
   - electric
   - clean_water
