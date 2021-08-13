@@ -213,12 +213,16 @@ def main(args: List[Any]) -> None:
 
     # Define common variables.
     auto_generated_files_directory = os.path.join(
-        LOCATIONS_FOLDER_NAME, parsed_args.location, AUTO_GENERATED_FILES_DIRECTORY,
+        LOCATIONS_FOLDER_NAME,
+        parsed_args.location,
+        AUTO_GENERATED_FILES_DIRECTORY,
     )
 
     # If the output filename is not provided, then generate it.
     output_directory = os.path.join(
-        LOCATIONS_FOLDER_NAME, parsed_args.location, SIMULATION_OUTPUTS_FOLDER,
+        LOCATIONS_FOLDER_NAME,
+        parsed_args.location,
+        SIMULATION_OUTPUTS_FOLDER,
     )
 
     # Determine the operating mode for the run.
@@ -527,18 +531,19 @@ def main(args: List[Any]) -> None:
     )
     logger.info("Total solar output successfully computed and saved.")
 
-    logger.info("Generating and saving total weather output file.")
-    total_weather_output = weather.total_weather_output(
-        os.path.join(auto_generated_files_directory, "weather"),
-        parsed_args.regenerate,
-        generation_inputs["start_year"],
-        location.max_years,
-    )
-    total_temperature_output = total_weather_output[0]
-    total_precipitation_output = total_weather_output[1]
-    total_solar_irradiance_output = total_weather_output[2]
-    total_cloud_cover_fraction_output = total_weather_output[3]
-    logger.info("Total weather output successfully computed and saved.")
+    if LoadType.CLEAN_WATER in scenario.load_types:
+        logger.info("Generating and saving total weather output file.")
+        total_weather_output = weather.total_weather_output(
+            os.path.join(auto_generated_files_directory, "weather"),
+            parsed_args.regenerate,
+            generation_inputs["start_year"],
+            location.max_years,
+        )
+        total_temperature_output = total_weather_output[0]
+        total_precipitation_output = total_weather_output[1]
+        total_solar_irradiance_output = total_weather_output[2]
+        total_cloud_cover_fraction_output = total_weather_output[3]
+        logger.info("Total weather output successfully computed and saved.")
 
     logger.info("Setup complete, continuing to CLOVER simulation.")
 
@@ -557,7 +562,10 @@ def main(args: List[Any]) -> None:
             ),
             "r",
         ) as f:
-            grid_profile = pd.read_csv(f, index_col=0,)
+            grid_profile = pd.read_csv(
+                f,
+                index_col=0,
+            )
     except FileNotFoundError as e:
         logger.error(
             "%sGrid profile file for profile '%s' could not be found: %s%s",
@@ -580,7 +588,10 @@ def main(args: List[Any]) -> None:
     # * Run a simulation or optimisation as appropriate.
     if operating_mode == OperatingMode.SIMULATION:
         print(
-            "Beginning CLOVER simulation runs {}    ".format("." * 30,), end="\n",
+            "Beginning CLOVER simulation runs {}    ".format(
+                "." * 30,
+            ),
+            end="\n",
         )
         simulation_times: List[str] = []
 

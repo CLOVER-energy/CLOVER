@@ -453,7 +453,7 @@ def total_profile_output(
     # If the total solar output file already exists then simply read this in.
     if os.path.isfile(total_output_filename) and not regenerate:
         with open(total_output_filename, "r") as f:
-            total_output = pd.read_csv(f, header=None,)
+            total_output = pd.read_csv(f, header=None)
 
     else:
         # Get data for each year using iteration, and add that data to the output file
