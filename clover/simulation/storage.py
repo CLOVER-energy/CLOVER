@@ -20,7 +20,7 @@ import dataclasses
 
 from typing import Any, Dict, List, Optional
 
-from ..__utils__ import LoadType
+from ..__utils__ import ResourceType
 
 __all__ = ("Battery",)
 
@@ -76,7 +76,7 @@ class _BaseStorage:
     maximum_charge: float
     minimum_charge: float
     name: str
-    storage_types: Optional[Dict[LoadType, List[Any]]] = None
+    storage_types: Optional[Dict[ResourceType, List[Any]]] = None
 
     def __hash__(self) -> int:
         """
@@ -89,21 +89,21 @@ class _BaseStorage:
 
         return hash(self.name)
 
-    def __init_subclass__(cls, label: str, load_type: LoadType) -> None:
+    def __init_subclass__(cls, label: str, resource_type: ResourceType) -> None:
         """
         Method run when a :class:`_BaseStorage` child is instantiated.
 
         Inputs:
             - label:
                 A `str` that identifies the class type.
-            - load_type:
+            - resource_type:
                 The type of load being modelled.
 
         """
 
         super().__init_subclass__()
         cls.label = label
-        cls.load_type = load_type
+        cls.resource_type = resource_type
 
     def __str__(self) -> str:
         """
@@ -116,7 +116,7 @@ class _BaseStorage:
 
         return (
             "Storage("
-            + f"{self.label} storing {self.load_type.value} loads, "
+            + f"{self.label} storing {self.resource_type.value} loads, "
             + f"name={self.name}, "
             + f"charge_rate={self.charge_rate}, "
             + f"discharge_rate={self.discharge_rate}, "
@@ -159,7 +159,7 @@ class _BaseStorage:
 
 
 @dataclasses.dataclass
-class Battery(_BaseStorage, label="battery", load_type=LoadType.ELECTRIC):
+class Battery(_BaseStorage, label="battery", resource_type=ResourceType.ELECTRIC):
     """
     Represents a battery within CLOVER.
 
@@ -168,7 +168,7 @@ class Battery(_BaseStorage, label="battery", load_type=LoadType.ELECTRIC):
 
 @dataclasses.dataclass
 class CleanWaterTank(
-    _BaseStorage, label="clean_water_tank", load_type=LoadType.CLEAN_WATER
+    _BaseStorage, label="clean_water_tank", resource_type=ResourceType.CLEAN_WATER
 ):
     """
     Represents a battery within CLOVER.

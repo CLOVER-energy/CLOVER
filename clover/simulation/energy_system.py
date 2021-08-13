@@ -37,7 +37,7 @@ from ..__utils__ import (
     DemandType,
     DistributionNetwork,
     InputFileError,
-    LoadType,
+    ResourceType,
     Location,
     Scenario,
     Simulation,
@@ -383,8 +383,8 @@ def _get_water_storage_profile(
         [
             convertor
             for convertor in convertors
-            if convertor.input_load_type == LoadType.ELECTRIC
-            and convertor.output_load_type == LoadType.CLEAN_WATER
+            if convertor.input_resource_type == ResourceType.ELECTRIC
+            and convertor.output_resource_type == ResourceType.CLEAN_WATER
         ]
     )
     unmet_water = processed_total_clean_water_load.copy()
@@ -532,7 +532,7 @@ def run_simulation(
     # Clean water #
     ###############
 
-    if LoadType.CLEAN_WATER in scenario.load_types:
+    if ResourceType.CLEAN_WATER in scenario.resource_types:
         processed_total_clean_water_load = _get_processed_load_profile(
             scenario, total_clean_water_load
         )[start_hour:end_hour]
@@ -740,7 +740,7 @@ def run_simulation(
         + 0.001 * clean_water_power_consumed.values
     )
 
-    if LoadType.CLEAN_WATER in scenario.load_types:
+    if ResourceType.CLEAN_WATER in scenario.resource_types:
         # Determine the clean water which was not delivered due to there not being
         # enough electricity.
         blackout_water = pd.DataFrame(
@@ -834,7 +834,7 @@ def run_simulation(
         kerosene_mitigation,
     ]
 
-    if LoadType.CLEAN_WATER in scenario.load_types:
+    if ResourceType.CLEAN_WATER in scenario.resource_types:
         system_performance_outputs_list.extend(
             [
                 blackout_water,

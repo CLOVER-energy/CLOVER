@@ -45,7 +45,7 @@ from .simulation import energy_system
 
 from .__utils__ import (
     BColours,
-    LoadType,
+    ResourceType,
     get_logger,
     InputFileError,
     LOCATIONS_FOLDER_NAME,
@@ -342,7 +342,7 @@ def main(args: List[Any]) -> None:
     print("Generating necessary profiles", end="\n")
 
     # Generate and save the weather data for each year as a background task.
-    if LoadType.CLEAN_WATER in scenario.load_types:
+    if ResourceType.CLEAN_WATER in scenario.resource_types:
         # Set up the system to call renewables.ninja at a slower rate.
         num_ninjas = 2
         logger.info("Beggining weather-data fetching.")
@@ -388,7 +388,7 @@ def main(args: List[Any]) -> None:
     logger.info("Processing device informaiton.")
     # load_logger = get_logger(load.LOAD_LOGGER_NAME)
 
-    if LoadType.ELECTRIC in scenario.load_types:
+    if ResourceType.ELECTRIC in scenario.resource_types:
         try:
             (
                 initial_electric_hourly_loads,
@@ -397,7 +397,7 @@ def main(args: List[Any]) -> None:
             ) = load.process_load_profiles(
                 auto_generated_files_directory,
                 device_utilisations,
-                load.LoadType.ELECTRIC,
+                load.ResourceType.ELECTRIC,
                 location,
                 logger,
                 parsed_args.regenerate,
@@ -427,7 +427,7 @@ def main(args: List[Any]) -> None:
         total_electric_load = None
         electric_yearly_load_statistics = None
 
-    if LoadType.CLEAN_WATER in scenario.load_types:
+    if ResourceType.CLEAN_WATER in scenario.resource_types:
         # Raise an error if there are no clean-water devices specified.
         if (
             len(
@@ -453,7 +453,7 @@ def main(args: List[Any]) -> None:
             ) = load.process_load_profiles(
                 auto_generated_files_directory,
                 device_utilisations,
-                load.LoadType.CLEAN_WATER,
+                load.ResourceType.CLEAN_WATER,
                 location,
                 logger,
                 parsed_args.regenerate,
@@ -531,7 +531,7 @@ def main(args: List[Any]) -> None:
     )
     logger.info("Total solar output successfully computed and saved.")
 
-    if LoadType.CLEAN_WATER in scenario.load_types:
+    if ResourceType.CLEAN_WATER in scenario.resource_types:
         logger.info("Generating and saving total weather output file.")
         total_weather_output = weather.total_weather_output(
             os.path.join(auto_generated_files_directory, "weather"),
