@@ -10,6 +10,10 @@
 
 - name: bore_hole
   electric_power: 600 # [W]
-  output: clean_water
+  output: groundwater
   maximum_output: 830 # [litres/hour]
-
+- name: reverse_osmosis
+  electric_power: 1435 # [W]
+  groundwater: 500 # [litres]
+  output: clean_water
+  maximum_output: 208 # [litres/hour]

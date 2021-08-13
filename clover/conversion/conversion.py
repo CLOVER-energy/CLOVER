@@ -21,9 +21,18 @@ another.
 from logging import Logger
 from typing import Any, Dict, List, Type, Union
 
-from ..__utils__ import BColours, RESOURCE_NAME_TO_RESOURCE_TYPE_MAPPING, ResourceType
+from ..__utils__ import (
+    BColours,
+    InputFileError,
+    RESOURCE_NAME_TO_RESOURCE_TYPE_MAPPING,
+    ResourceType,
+)
 
-__all__ = ("Convertor",)
+__all__ = (
+    "Convertor",
+    "MultiInputConvertor",
+    "WaterSource",
+)
 
 
 class Convertor:
@@ -46,8 +55,7 @@ class Convertor:
 
     def __init__(
         self,
-        consumption: float,
-        input_resource_type: ResourceType,
+        input_resource_consumption: Dict[ResourceType, float],
         maximum_output_capacity: float,
         name: str,
         output_resource_type: ResourceType,
@@ -59,8 +67,8 @@ class Convertor:
             - consunmption:
                 The amount of input load type which is consumed per unit output load
                 produced.
-            - input_resource_type:
-                The type of load inputted to the device.
+            - input_resource_types:
+                The types of load inputted to the device.
             - maximum_output_capcity:
                 The maximum output capacity of the device.
             - name:
@@ -70,8 +78,9 @@ class Convertor:
 
         """
 
-        self.consumption: float = consumption
-        self.input_resource_type: ResourceType = input_resource_type
+        self.input_resource_consumption: Dict[
+            ResourceType, float
+        ] = input_resource_consumption
         self.maximum_output_capacity: float = maximum_output_capacity
         self.name: str = name
         self.output_resource_type: ResourceType = output_resource_type
@@ -89,8 +98,7 @@ class Convertor:
         """
 
         return (
-            (self.consumption == other.consumption)
-            and self.input_resource_type == other.input_resource_type
+            self.input_resource_consumption == other.input_resource_consumption
             and self.output_resource_type == other.output_resource_type
         )
 
@@ -109,12 +117,10 @@ class Convertor:
 
         """
 
-        if (
-            self.input_resource_type != other.input_resource_type
-            or self.output_resource_type != other.output_resource_type
-        ):
+        if self.output_resource_type != other.output_resource_type:
             raise Exception(
-                "An attempt was made to compare two conversion instances that use different input and output types."
+                "An attempt was made to compare two conversion instances that use "
+                "different output types."
             )
 
         return self.consumption == other.consumption
@@ -142,12 +148,44 @@ class Convertor:
         return (
             "Convertor("
             + f"name={self.name}"
-            + f", input_resource_type={self.input_resource_type.value}"
-            + f", output_resource_type={self.output_resource_type.value}"
-            + f", consumption={self.consumption} units_out/unit_in"
-            + f", maximum_output_capacity={self.maximum_output_capacity}"
+            + ", input_resource_consumption=({})".format(
+                ", ".join(
+                    [
+                        f"{key.value}={value}"
+                        for key, value in self.input_resource_consumption.items()
+                    ]
+                )
+            )
+            + f", output_resource_type = {self.output_resource_type.value}"
+            + f", maximum_output_capacity = {self.maximum_output_capacity}"
             + ")"
         )
+
+    @property
+    def consumption(self) -> float:
+        """
+        Used only when dealing with a single input resource type.
+
+        Outputs:
+            - The consumption of the input resource type.
+
+        """
+
+        if len(self.input_resource_consumption) > 1:
+            raise InputFileError(
+                "conversion inputs",
+                "Multiple inputs were defined where only one was expected on a "
+                + f"convertor instance: {self.name}",
+            )
+
+        return list(self.input_resource_consumption.values())[0]
+
+
+class MultiInputConvertor(Convertor):
+    """
+    Represents a convertor that is capable of having multiple input resource types.
+
+    """
 
     @classmethod
     def from_dict(cls, input_data: Dict[str, Union[str, float]], logger: Logger) -> Any:
@@ -164,30 +202,15 @@ class Convertor:
         """
 
         # Determine the input load type.
-        input_resource_types: List[str] = [
+        input_resource_list: List[str] = [
             key for key in input_data if key in RESOURCE_NAME_TO_RESOURCE_TYPE_MAPPING
         ]
-        if len(input_resource_types) > 1:
-            logger.error(
-                "%sCurrently only one load type is supported.%s",
-                BColours.fail,
-                BColours.endc,
-            )
-            raise Exception(
-                f"{BColours.fail}Currently only one load type is supported in the "
-                + f"conversion inputs file.{BColours.endc}"
-            )
-
-        input_resource_type = ResourceType(
-            RESOURCE_NAME_TO_RESOURCE_TYPE_MAPPING[input_resource_types[0]]
-        )
-
         # Determine the output load type.
         try:
             output_resource_type = ResourceType(input_data["output"])
         except KeyError as e:
             logger.error(
-                "%sOutput load type of convertor not valid: %s%s",
+                "%sOutput load type of water pump is not valid: %s%s",
                 BColours.fail,
                 str(e),
                 BColours.endc,
@@ -198,7 +221,101 @@ class Convertor:
 
         # Determine the power consumption of the device.
         maximum_output = input_data["maximum_output"]
-        corresponding_input = input_data[input_resource_types[0]]
+        try:
+            maximum_output = float(maximum_output)
+        except TypeError as e:
+            logger.error(
+                "%sInvalid entry in conversion file, check all value types are "
+                "correct: %s%s",
+                BColours.fail,
+                str(e),
+                BColours.endc,
+            )
+            raise Exception(
+                f"{BColours.fail}Invalid value type in conversion file: {str(e)}{BColours.endc}"
+            )
+
+        input_resource_consumption: Dict[ResourceType, float] = dict()
+
+        for input_resource in input_resource_list:
+            try:
+                input_resource_consumption[
+                    ResourceType(RESOURCE_NAME_TO_RESOURCE_TYPE_MAPPING[input_resource])
+                ] = float(input_data[input_resource])
+            except TypeError as e:
+                logger.error(
+                    "%sInvalid entry in conversion file, check all value types are "
+                    "correct: %s%s",
+                    BColours.fail,
+                    str(e),
+                    BColours.endc,
+                )
+                raise Exception(
+                    f"{BColours.fail}Invalid value type in conversion file: {str(e)}{BColours.endc}"
+                )
+
+        return cls(
+            input_resource_consumption,
+            maximum_output,
+            str(input_data["name"]),
+            output_resource_type,
+        )
+
+
+class WaterSource(Convertor):
+    """Represents a water source which takes in electricity and outputs water."""
+
+    @classmethod
+    def from_dict(cls, input_data: Dict[str, Union[str, float]], logger: Logger) -> Any:
+        """
+        Generates a :class:`Convertor` instance based on the input data provided.
+
+        Inputs:
+            - input_data:
+                The input data, parsed from the input file.
+
+        Outputs:
+            - A :class:`Convertor` instance based on the input data.
+
+        """
+
+        # Determine the input load type.
+        input_resource_list: List[str] = [
+            key for key in input_data if key in RESOURCE_NAME_TO_RESOURCE_TYPE_MAPPING
+        ]
+        if len(input_resource_list) > 1:
+            logger.info(
+                "%sCurrently only one input is allowed for water pumps.%s",
+                BColours.fail,
+                BColours.endc,
+            )
+            raise InputFileError(
+                "conversion inputs",
+                f"{BColours.fail}Currently only one load type is supported in the "
+                + f"conversion inputs file.{BColours.endc}",
+            )
+
+        input_resource_type = ResourceType(
+            RESOURCE_NAME_TO_RESOURCE_TYPE_MAPPING[input_resource_list[0]]
+        )
+
+        # Determine the output load type.
+        try:
+            output_resource_type = ResourceType(input_data["output"])
+        except KeyError as e:
+            logger.error(
+                "%sOutput load type of water pump is not valid: %s%s",
+                BColours.fail,
+                str(e),
+                BColours.endc,
+            )
+            raise Exception(
+                f"{BColours.fail}Output load type invalid: {str(e)}{BColours.endc}"
+            )
+
+        # Determine the power consumption of the device.
+        maximum_output = input_data["maximum_output"]
+        corresponding_input = input_data[input_resource_list[0]]
         try:
             maximum_output = float(maximum_output)
         except TypeError as e:
@@ -230,8 +347,7 @@ class Convertor:
         consumption = maximum_output / corresponding_input
 
         return cls(
-            consumption,
-            input_resource_type,
+            {input_resource_type: consumption},
             maximum_output,
             str(input_data["name"]),
             output_resource_type,

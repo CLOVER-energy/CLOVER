@@ -24,4 +24,3 @@ demands:
 distribution_network: dc # DC ("dc") or AC ("ac") distribution network
 resource_types:
   - electric
-  - clean_water

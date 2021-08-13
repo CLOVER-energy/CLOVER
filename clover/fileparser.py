@@ -24,6 +24,7 @@ from .simulation import energy_system, solar
 
 from .__utils__ import (
     BColours,
+    InputFileError,
     KEROSENE_DEVICE_NAME,
     ResourceType,
     Location,
@@ -32,7 +33,7 @@ from .__utils__ import (
     Scenario,
     Simulation,
 )
-from .conversion.conversion import Convertor
+from .conversion.conversion import Convertor, MultiInputConvertor, WaterSource
 from .optimisation.optimisation import Optimisation, OptimisationParameters
 from .simulation.diesel import DieselBackupGenerator
 
@@ -180,10 +181,19 @@ def parse_input_files(
         inputs_directory_relative_path, CONVERSION_INPUTS_FILE
     )
     if os.path.isfile(conversion_file_relative_path):
-        parsed_convertors: List[Convertor] = [
-            Convertor.from_dict(entry, logger)
-            for entry in read_yaml(conversion_file_relative_path, logger)
-        ]
+        parsed_convertors: List[Convertor] = []
+        conversion_inputs = read_yaml(conversion_file_relative_path, logger)
+        for entry in conversion_inputs:
+            try:
+                parsed_convertors.append(WaterSource.from_dict(entry, logger))
+            except InputFileError:
+                logger.info(
+                    "Failed to create a single-input convertor, trying a multiple "
+                    "input convertor."
+                )
+                parsed_convertors.append(MultiInputConvertor.from_dict(entry, logger))
+            else:
+                logger.info("Parsed single-input convertor from input data.")
         convertors: Dict[str, Convertor] = {
             convertor.name: convertor for convertor in parsed_convertors
         }
@@ -372,11 +382,16 @@ def parse_input_files(
 
     # Determine the available convertors from the scenarios file.
     if ResourceType.CLEAN_WATER.value in scenario_inputs:
+        available_convertors: List[Convertor] = []
         try:
-            available_convertors = [
-                convertors[entry]
-                for entry in scenario_inputs[ResourceType.CLEAN_WATER.value]["sources"]
-            ]
+            available_convertors.extend(
+                [
+                    convertors[entry]
+                    for entry in scenario_inputs[ResourceType.CLEAN_WATER.value][
+                        "sources"
+                    ]
+                ]
+            )
         except KeyError as e:
             logger.error(
                 "%sUnknown clean-water source(s) specified in the scenario file: %s%s",
@@ -393,6 +408,34 @@ def parse_input_files(
             )
             raise Exception(
                 f"{BColours.fail}Unknown clean-water source(s) in the scenario file: "
+                + f"{BColours.endc}"
+            )
+
+        try:
+            available_convertors.extend(
+                [
+                    convertors[entry]
+                    for entry in scenario_inputs[ResourceType.UNCLEAN_WATER.value][
+                        "sources"
+                    ]
+                ]
+            )
+        except KeyError as e:
+            logger.error(
+                "%sUnknown unclean-water source(s) specified in the scenario file: %s%s",
+                BColours.fail,
+                ", ".join(
+                    [
+                        entry
+                        for entry in scenario_inputs[ResourceType.CLEAN_WATER.value][
+                            "sources"
+                        ]
+                    ]
+                ),
+                BColours.endc,
+            )
+            raise Exception(
+                f"{BColours.fail}Unknown unclean-water source(s) in the scenario file: "
                 + f"{BColours.endc}"
             )
     else:

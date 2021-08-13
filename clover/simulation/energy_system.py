@@ -383,8 +383,8 @@ def _get_water_storage_profile(
         [
             convertor
             for convertor in convertors
-            if convertor.input_resource_type == ResourceType.ELECTRIC
-            and convertor.output_resource_type == ResourceType.CLEAN_WATER
+            if list(convertor.input_resource_consumption) == [ResourceType.ELECTRIC]
+            and convertor.output_resource_type == ResourceType.UNCLEAN_WATER
         ]
     )
     unmet_water = processed_total_clean_water_load.copy()
@@ -407,7 +407,9 @@ def _get_water_storage_profile(
 
         # Compute the power that was consumed and the remaining unmet water demand.
         demand_met_through_electric_power += delivered_water
-        power_consumed += delivered_water.mul(current_convertor.consumption)
+        power_consumed += delivered_water.mul(
+            current_convertor.input_resource_consumption[ResourceType.ELECTRIC]
+        )
         unmet_water -= delivered_water
 
     # Return the unmet water and power consumed.

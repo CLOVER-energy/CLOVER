@@ -109,7 +109,9 @@ def parse_args(args: List[Any]) -> argparse.Namespace:
     )
 
     # Simulation-specific arguments.
-    simulation_parser = parser.add_argument_group("simulation-only arguments",)
+    simulation_parser = parser.add_argument_group(
+        "simulation-only arguments",
+    )
     simulation_parser.add_argument(
         "--simulation",
         action="store_true",
@@ -125,7 +127,9 @@ def parse_args(args: List[Any]) -> argparse.Namespace:
     )
 
     # Optimisation arguments
-    optimisation_parser = parser.add_argument_group("optimisation-only arguments",)
+    optimisation_parser = parser.add_argument_group(
+        "optimisation-only arguments",
+    )
     optimisation_parser.add_argument(
         "--optimisation",
         action="store_true",
