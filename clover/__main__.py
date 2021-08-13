@@ -615,9 +615,9 @@ def main(args: List[Any]) -> None:
                     simulation,
                     solar_generation_inputs["lifetime"],
                     parsed_args.storage_size,
+                    total_clean_water_load,
                     0.001 * total_electric_load,
                     total_solar_output,
-                    total_clean_water_load,
                 )
             except Exception as e:
                 print(

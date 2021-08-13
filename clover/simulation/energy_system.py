@@ -424,9 +424,9 @@ def run_simulation(
     simulation: Simulation,
     solar_lifetime: int,
     storage_size: float,
+    total_clean_water_load: pd.DataFrame,
     total_electric_load: pd.DataFrame,
     total_solar_power_produced: pd.DataFrame,
-    total_clean_water_load: pd.DataFrame,
 ) -> Tuple[float, pd.DataFrame, SystemDetails]:
     """
     Simulates a minigrid system
@@ -457,12 +457,12 @@ def run_simulation(
             The lifetime of the solar system being considered.
         - storage_size:
             Amount of storage in kWh
+        - total_clean_water_load:
+            The total water load placed on the system.
         - total_electric_load:
             The total load in Watts.
         - total_solar_power_produced:
             The total energy outputted by the solar system.
-        - total_clean_water_load:
-            The total water load placed on the system.
 
     Outputs:
         - The time taken for the simulation.
