@@ -58,7 +58,7 @@ from ..__utils__ import (
 )
 from ..conversion.conversion import Convertor
 from ..simulation.diesel import DieselBackupGenerator
-from .appraisal import appraise_system
+from .appraisal import appraise_system, SystemAppraisal
 
 __all__ = (
     "multiple_optimisation_step",
@@ -621,9 +621,7 @@ def _simulation_iteration(
             continue
 
         # Store the new appraisal if it is sufficient.
-        system_appraisals = pd.concat(
-            [system_appraisals, new_appraisal], axis=0
-        )
+        system_appraisals = pd.concat([system_appraisals, new_appraisal], axis=0)
 
     # Check minimum case where no extra storage is required
     _, simulation, system_details = energy_system.run_simulation(
@@ -655,59 +653,55 @@ def _simulation_iteration(
 
     # ::: GOT TO HERE :::
 
-        if self.check_threshold(new_appraisal).empty == False:
-            system_appraisals = pd.concat(
-                [system_appraisals, new_appraisal], axis=0
-            )
-        pv_size_max -= PV_size_step
-        #   Check minimum case where no extra PV is required
-        if (pv_size_max < PV_size_min) & (pv_size_max >= 0):
-            iteration_storage_size = storage_size_max
-            while iteration_storage_size >= storage_size_min:
+    if self.check_threshold(new_appraisal).empty == False:
+        system_appraisals = pd.concat([system_appraisals, new_appraisal], axis=0)
+    pv_size_max -= PV_size_step
+    #   Check minimum case where no extra PV is required
+    if (pv_size_max < PV_size_min) & (pv_size_max >= 0):
+        iteration_storage_size = storage_size_max
+        while iteration_storage_size >= storage_size_min:
 
-                simulation = energy_system.run_simulation(
-                    minigrid,
-                    grid_profile,
-                    kerosene_usage,
-                    location,
-                    pv_sizes.min,
-                    scenario,
-                    Simulation(end_year, start_year),
-                    solar_lifetime,
-                    iteration_storage_size,
-                    total_load,
-                    total_solar_power_produced,
+            simulation = energy_system.run_simulation(
+                minigrid,
+                grid_profile,
+                kerosene_usage,
+                location,
+                pv_sizes.min,
+                scenario,
+                Simulation(end_year, start_year),
+                solar_lifetime,
+                iteration_storage_size,
+                total_load,
+                total_solar_power_produced,
+            )
+            new_appraisal = self.system_appraisal(simulation, previous_systems)
+            if self.check_threshold(new_appraisal).empty == False:
+                system_appraisals = pd.concat(
+                    [system_appraisals, new_appraisal], axis=0
                 )
-                new_appraisal = self.system_appraisal(simulation, previous_systems)
-                if self.check_threshold(new_appraisal).empty == False:
-                    system_appraisals = pd.concat(
-                        [system_appraisals, new_appraisal], axis=0
-                    )
-                else:
-                    break
-                iteration_storage_size -= storage_size_step
-            #   Check minimum case where no extra storage is required
-            if (iteration_storage_size < storage_size_min) & (
-                iteration_storage_size >= 0
-            ):
-                simulation = energy_system.run_simulation(
-                    minigrid,
-                    grid_profile,
-                    kerosene_usage,
-                    location,
-                    pv_sizes.max,
-                    scenario,
-                    Simulation(end_year, start_year),
-                    solar_lifetime,
-                    storage_size.min,
-                    total_load,
-                    total_solar_power_produced,
+            else:
+                break
+            iteration_storage_size -= storage_size_step
+        #   Check minimum case where no extra storage is required
+        if (iteration_storage_size < storage_size_min) & (iteration_storage_size >= 0):
+            simulation = energy_system.run_simulation(
+                minigrid,
+                grid_profile,
+                kerosene_usage,
+                location,
+                pv_sizes.max,
+                scenario,
+                Simulation(end_year, start_year),
+                solar_lifetime,
+                storage_size.min,
+                total_load,
+                total_solar_power_produced,
+            )
+            new_appraisal = self.system_appraisal(simulation, previous_systems)
+            if self.check_threshold(new_appraisal).empty == False:
+                system_appraisals = pd.concat(
+                    [system_appraisals, new_appraisal], axis=0
                 )
-                new_appraisal = self.system_appraisal(simulation, previous_systems)
-                if self.check_threshold(new_appraisal).empty == False:
-                    system_appraisals = pd.concat(
-                        [system_appraisals, new_appraisal], axis=0
-                    )
 
     return (
         end_year,
