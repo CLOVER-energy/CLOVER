@@ -428,13 +428,15 @@ class ResourceType(enum.Enum):
 
     CLEAN_WATER = "clean_water"
     ELECTRIC = "electricity"
+    UNCLEAN_WATER = "groundwater"
 
 
 # Load name to load type mapping:
 #   Maps the load name to the load type, used for parsing scenario files.
 RESOURCE_NAME_TO_RESOURCE_TYPE_MAPPING = {
-    "electric_power": ResourceType.ELECTRIC,
     "clean_water": ResourceType.CLEAN_WATER,
+    "electric_power": ResourceType.ELECTRIC,
+    "groundwater": ResourceType.UNCLEAN_WATER,
 }
 
 
