@@ -286,13 +286,15 @@ def _get_electric_storage_profile(
 
     if transmission_efficiency is None:
         logger.error(
-            "%sNo valid transmission efficiency was determined based on the energy system inputs. Check this before continuing.%s",
+            "%sNo valid transmission efficiency was determined based on the energy "
+            "system inputs. Check this before continuing.%s",
             BColours.fail,
             BColours.endc,
         )
         raise InputFileError(
             "energy system inputs",
-            "No valid transmission efficiency was determined based on the energy system inputs. Check this before continuing.",
+            "No valid transmission efficiency was determined based on the energy "
+            "system inputs. Check this before continuing.",
         )
 
     # Consider transmission efficiency
@@ -599,82 +601,88 @@ def run_simulation(
     energy_deficit = []
     storage_power_supplied = []
 
-    # Begin simulation, iterating over timesteps
-    for t in tqdm(
-        range(int(storage_profile.size)),
-        desc="hourly computation",
-        leave=False,
-        unit="hour",
-    ):
-        # Check if any storage is being used
-        if storage_size == 0:
-            simulation_hours = int(storage_profile.size)
-            hourly_storage = pd.DataFrame([0] * simulation_hours)
-            storage_power_supplied = pd.DataFrame([0] * simulation_hours)
-            energy_surplus = ((storage_profile > 0) * storage_profile).abs()
-            energy_deficit = ((storage_profile < 0) * storage_profile).abs()
-            battery_health = pd.DataFrame([0] * simulation_hours)
-            break
-        battery_energy_flow = storage_profile.iloc[t][0]
-        if t == 0:
-            new_hourly_storage = initial_storage + battery_energy_flow
-        else:
-            if battery_energy_flow >= 0.0:  # Battery charging
-                new_hourly_storage = hourly_storage[t - 1] * (
-                    1.0 - minigrid.battery.leakage
-                ) + minigrid.battery.conversion_in * min(
-                    battery_energy_flow,
-                    minigrid.battery.charge_rate * (max_storage - min_storage),
-                )
-            else:  # Battery discharging
-                new_hourly_storage = hourly_storage[t - 1] * (
-                    1.0 - minigrid.battery.leakage
-                ) + (1.0 / minigrid.battery.conversion_out) * max(
-                    battery_energy_flow,
-                    (-1.0)
-                    * minigrid.battery.discharge_rate
-                    * (max_storage - min_storage),
-                )
+    # Do not do the itteration if no storage is being used
+    if storage_size == 0:
+        simulation_hours = int(storage_profile.size)
+        hourly_storage = pd.DataFrame([0] * simulation_hours)
+        storage_power_supplied = pd.DataFrame([0] * simulation_hours)
+        energy_surplus = ((storage_profile > 0) * storage_profile).abs()
+        energy_deficit = ((storage_profile < 0) * storage_profile).abs()
+        battery_health = pd.DataFrame([0] * simulation_hours)
 
-        # Dumped energy and unmet demand
-        energy_surplus.append(
-            max(new_hourly_storage - max_storage, 0.0)
-        )  # Battery too full
-        energy_deficit.append(
-            max(min_storage - new_hourly_storage, 0.0)
-        )  # Battery too empty
+    else:
+        # Begin simulation, iterating over timesteps
+        for t in tqdm(
+            range(int(storage_profile.size)),
+            desc="hourly computation",
+            leave=False,
+            unit="hour",
+        ):
+            battery_energy_flow = storage_profile.iloc[t][0]
+            if t == 0:
+                new_hourly_storage = initial_storage + battery_energy_flow
+            else:
+                # Battery charging
+                if battery_energy_flow >= 0.0:
+                    new_hourly_storage = hourly_storage[t - 1] * (
+                        1.0 - minigrid.battery.leakage
+                    ) + minigrid.battery.conversion_in * min(
+                        battery_energy_flow,
+                        minigrid.battery.charge_rate * (max_storage - min_storage),
+                    )
+                # Battery discharging
+                else:
+                    new_hourly_storage = hourly_storage[t - 1] * (
+                        1.0 - minigrid.battery.leakage
+                    ) + (1.0 / minigrid.battery.conversion_out) * max(
+                        battery_energy_flow,
+                        (-1.0)
+                        * minigrid.battery.discharge_rate
+                        * (max_storage - min_storage),
+                    )
 
-        # Battery capacities and blackouts (if battery is too full or empty)
-        if new_hourly_storage >= max_storage:
-            new_hourly_storage = max_storage
-        elif new_hourly_storage <= min_storage:
-            new_hourly_storage = min_storage
-        # Update hourly_storage
-        hourly_storage.append(new_hourly_storage)
+            # Dumped energy and unmet demand
+            energy_surplus.append(
+                max(new_hourly_storage - max_storage, 0.0)
+            )  # Battery too full
+            energy_deficit.append(
+                max(min_storage - new_hourly_storage, 0.0)
+            )  # Battery too empty
 
-        # Update battery health
-        if t == 0:
-            storage_power_supplied.append(0.0 - battery_energy_flow)
-        else:
-            storage_power_supplied.append(
-                max(
-                    hourly_storage[t - 1] * (1.0 - minigrid.battery.leakage)
-                    - hourly_storage[t],
-                    0.0,
+            # Battery capacities and blackouts (if battery is too full or empty)
+            if new_hourly_storage >= max_storage:
+                new_hourly_storage = max_storage
+            if new_hourly_storage <= min_storage:
+                new_hourly_storage = min_storage
+
+            # Update hourly_storage
+            hourly_storage.append(new_hourly_storage)
+
+            # Update battery health
+            if t == 0:
+                storage_power_supplied.append(0.0 - battery_energy_flow)
+            else:
+                storage_power_supplied.append(
+                    max(
+                        hourly_storage[t - 1] * (1.0 - minigrid.battery.leakage)
+                        - hourly_storage[t],
+                        0.0,
+                    )
                 )
+            cumulative_storage_power = (
+                cumulative_storage_power + storage_power_supplied[t]
             )
-        cumulative_storage_power = cumulative_storage_power + storage_power_supplied[t]
 
-        storage_degradation = 1.0 - minigrid.battery.lifetime_loss * (
-            cumulative_storage_power / max_energy_throughput
-        )
-        max_storage = (
-            storage_degradation * storage_size * minigrid.battery.maximum_charge
-        )
-        min_storage = (
-            storage_degradation * storage_size * minigrid.battery.minimum_charge
-        )
-        battery_health.append(storage_degradation)
+            storage_degradation = 1.0 - minigrid.battery.lifetime_loss * (
+                cumulative_storage_power / max_energy_throughput
+            )
+            max_storage = (
+                storage_degradation * storage_size * minigrid.battery.maximum_charge
+            )
+            min_storage = (
+                storage_degradation * storage_size * minigrid.battery.minimum_charge
+            )
+            battery_health.append(storage_degradation)
 
     # Consolidate outputs from iteration stage
     storage_power_supplied = pd.DataFrame(storage_power_supplied)

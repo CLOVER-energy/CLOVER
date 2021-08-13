@@ -39,7 +39,10 @@ from ..impact.finance import (
     total_om,
 )
 
-__all__ = ("appraise_system",)
+__all__ = (
+    "appraise_system",
+    "SystemAppraisal",
+)
 
 
 @dataclasses.dataclass
@@ -147,6 +150,11 @@ class TechnicalAppraisal:
     unmet_energy_fraction: float
 
 
+@dataclasses.dataclass
+class SystemAppraisal:
+    pass
+
+
 def _simulation_financial_appraisal(
     finance_inputs: Dict[str, Any],
     location: Location,
@@ -202,7 +210,9 @@ def _simulation_financial_appraisal(
 
     # Calculate costs of connecting new households (discounted)
     connections_cost = connections_expenditure(
-        finance_inputs, simulation_results["Households"], system_details.start_year,
+        finance_inputs,
+        simulation_results["Households"],
+        system_details.start_year,
     )
 
     # Calculate operating costs of the system during this simulation (discounted)
