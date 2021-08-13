@@ -364,16 +364,6 @@
                   innovation: 0
                   imitation: 0
                   type: public
-                - device: washing_machine
-                  available: false
-                  electric_power: 250
-                  initial_ownership: 0.01
-                  final_ownership: 0.05
-                  innovation: 0.02
-                  imitation: 0.2
-                  type: domestic
-                  clean_water_usage: 50
-
             - directory: device_utilisation
               contents:
                 - file: fan_times.csv
@@ -490,12 +480,6 @@
                     0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25
                     0.15,0.15,0.15,0.15,0.15,0.15,0.15,0.15,0.15,0.15,0.15,0.15
                     0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00
-                - file: washing_machine_times.csv
-                  contents: |-
-                    8:0,0,0,0,0,0,0,0,0,0,0,0
-                    14:0.06,0.06,0.06,0.06,0.06,0.06,0.06,0.06,0.06,0.06,0.06,0.06
-                    0,0,0,0,0,0,0,0,0,0,0,0
-                    0,0,0,0,0,0,0,0,0,0,0,0
                 - file: workshop_times.csv
                   contents: |-
                     7:0.008,0.006,0.008,0.008,0.006,0.006,0.006,0.006,0.006,0.008,0.008,0.008
