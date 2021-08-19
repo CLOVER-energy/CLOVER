@@ -931,6 +931,24 @@ def plot_outputs(
                 ),
                 axis=0,
             )
+            backup_clean_water = np.mean(
+                np.reshape(
+                    simulation_output[0:HOURS_PER_YEAR][
+                        "Clean water supplied via backup desalination (l)"
+                    ].values,
+                    (365, 24),
+                ),
+                axis=0,
+            )
+            storage_clean_water = np.mean(
+                np.reshape(
+                    simulation_output[0:HOURS_PER_YEAR][
+                        "Clean water supplied via tank storage (l)"
+                    ].values,
+                    (365, 24),
+                ),
+                axis=0,
+            )
             unmet_clean_water = np.mean(
                 np.reshape(
                     simulation_output[0:HOURS_PER_YEAR][
@@ -942,6 +960,8 @@ def plot_outputs(
             )
 
             plt.plot(total_used, label="Total used")
+            plt.plot(backup_clean_water, label="Backup desalination")
+            plt.plot(storage_clean_water, label="Storage")
             plt.plot(unmet_clean_water, label="Unmet")
             plt.legend()
             plt.xlim(0, 23)
