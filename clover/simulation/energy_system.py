@@ -24,7 +24,7 @@ import math
 import os
 
 from logging import Logger
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import numpy as np  # type: ignore
 import pandas as pd  # type: ignore
@@ -51,8 +51,7 @@ from ..simulation.diesel import (
     get_diesel_energy_and_times,
     get_diesel_fuel_usage,
 )
-
-from .storage import Battery
+from .storage import Battery, CleanWaterTank
 
 __all__ = (
     "Minigrid",
@@ -89,6 +88,9 @@ class Minigrid:
     .. attribute:: diesel_backup_generator
         The diesel backup generator associated with the minigrid system.
 
+    .. attribute:: tanks
+        Any clean- or hot-water tanks contained in the minigrid system.
+
     """
 
     ac_to_ac_conversion_efficiency: Optional[float]
@@ -99,6 +101,7 @@ class Minigrid:
     dc_to_dc_conversion_efficiency: Optional[float]
     dc_transmission_efficiency: Optional[float]
     diesel_backup_generator: Optional[DieselBackupGenerator]
+    tanks: Optional[List[Union[CleanWaterTank]]]
 
     @classmethod
     def from_dict(
@@ -106,6 +109,7 @@ class Minigrid:
         diesel_backup_generator: DieselBackupGenerator,
         minigrid_inputs: Dict[str, Any],
         battery_inputs: Optional[Dict[str, Any]] = None,
+        tank_inputs: Optional[List[Dict[str, Any]]] = None,
     ) -> Any:
         """
         Returns a :class:`Minigrid` instance based on the inputs provided.
@@ -125,6 +129,11 @@ class Minigrid:
         # Parse the battery information.
         batteries = {
             entry["name"]: Battery.from_dict(entry) for entry in battery_inputs
+        }
+
+        # Parse the tank information.
+        tanks = {
+            entry["name"]: CleanWaterTank.from_dict(entry) for entry in tank_inputs
         }
 
         # Return the minigrid instance.
@@ -151,6 +160,11 @@ class Minigrid:
             if "dc_transmission_efficiency" in minigrid_inputs
             else None,
             diesel_backup_generator,
+            [
+                tanks[entry]
+                for entry in minigrid_inputs["tanks"]
+                if "tanks" in minigrid_inputs
+            ],
         )
 
 
@@ -357,8 +371,7 @@ def _get_electric_storage_profile(
 
 
 def _get_water_storage_profile(
-    convertors: List[Convertor],
-    processed_total_clean_water_load: pd.DataFrame,
+    convertors: List[Convertor], processed_total_clean_water_load: pd.DataFrame,
 ) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """
     Gets the storage profile for the clean-water system.
@@ -848,10 +861,7 @@ def run_simulation(
             ]
         )
 
-    system_performance_outputs = pd.concat(
-        system_performance_outputs_list,
-        axis=1,
-    )
+    system_performance_outputs = pd.concat(system_performance_outputs_list, axis=1,)
 
     return time_delta, system_performance_outputs, system_details
 
