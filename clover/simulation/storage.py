@@ -61,22 +61,13 @@ class _BaseStorage:
     .. attribute:: name
         A unique name for identifying the battery.
 
-    .. attribute:: storage_types
-        A mapping between load types and the child class instances.
-
     """
 
-    charge_rate: float
-    conversion_in: float
-    conversion_out: float
     cycle_lifetime: int
-    discharge_rate: float
     leakage: float
-    lifetime_loss: float
     maximum_charge: float
     minimum_charge: float
     name: str
-    storage_types: Optional[Dict[ResourceType, List[Any]]] = None
 
     def __hash__(self) -> int:
         """
@@ -118,13 +109,8 @@ class _BaseStorage:
             "Storage("
             + f"{self.label} storing {self.resource_type.value} loads, "
             + f"name={self.name}, "
-            + f"charge_rate={self.charge_rate}, "
-            + f"discharge_rate={self.discharge_rate}, "
-            + f"conversion_in={self.conversion_in}, "
-            + f"conversion_out={self.conversion_out}, "
             + f"cycle_lifetime={self.cycle_lifetime} cycles, "
             + f"leakage={self.leakage}, "
-            + f"lifetime_loss={self.lifetime_loss}, "
             + f"maximum_charge={self.maximum_charge}, "
             + f"minimum_charge={self.minimum_charge}"
             + ")"
@@ -145,13 +131,8 @@ class _BaseStorage:
         """
 
         return cls(
-            storage_data["c_rate_charging"],
-            storage_data["conversion_in"],
-            storage_data["conversion_out"],
             storage_data["cycle_lifetime"],
-            storage_data["c_rate_discharging"],
             storage_data["leakage"],
-            storage_data["lifetime_loss"],
             storage_data["maximum_charge"],
             storage_data["minimum_charge"],
             storage_data["name"],
@@ -165,12 +146,119 @@ class Battery(_BaseStorage, label="battery", resource_type=ResourceType.ELECTRIC
 
     """
 
+    charge_rate: float
+    conversion_in: float
+    conversion_out: float
+    discharge_rate: float
+    lifetime_loss: float
+
+    def __str__(self) -> str:
+        """
+        Returns a nice-looking string describing the :class:`_BaseStorage` instance.
+
+        Outputs:
+            - A `str` giving information about the :class:`_BaseStorage` instance.
+
+        """
+
+        return (
+            "Battery("
+            + f"{self.label} storing {self.resource_type.value} loads, "
+            + f"name={self.name}, "
+            + f"cycle_lifetime={self.cycle_lifetime} cycles, "
+            + f"leakage={self.leakage}, "
+            + f"maximum_charge={self.maximum_charge}, "
+            + f"minimum_charge={self.minimum_charge}, "
+            + f"charge_rate={self.charge_rate}, "
+            + f"discharge_rate={self.discharge_rate}, "
+            + f"conversion_in={self.conversion_in}, "
+            + f"conversion_out={self.conversion_out}, "
+            + f"lifetime_loss={self.lifetime_loss}"
+            + ")"
+        )
+
+    @classmethod
+    def from_dict(cls, storage_data: Dict[str, Any]) -> Any:
+        """
+        Create a :class:`Battery` instance based on the file data passed in.
+
+        Inputs:
+            - storage_data:
+                The battery data, extracted from the relevant input file.
+
+        Outputs:
+            - A :class:`Battery` instance.
+
+        """
+
+        return cls(
+            storage_data["cycle_lifetime"],
+            storage_data["leakage"],
+            storage_data["maximum_charge"],
+            storage_data["minimum_charge"],
+            storage_data["name"],
+            storage_data["c_rate_charging"],
+            storage_data["conversion_in"],
+            storage_data["conversion_out"],
+            storage_data["c_rate_discharging"],
+            storage_data["lifetime_loss"],
+        )
+
 
 @dataclasses.dataclass
 class CleanWaterTank(
     _BaseStorage, label="clean_water_tank", resource_type=ResourceType.CLEAN_WATER
 ):
     """
-    Represents a battery within CLOVER.
+    Represents a clean-water tank within CLOVER.
+
+    .. attribute:: mass
+        The mass of clean water stored within the tank.
 
     """
+
+    mass: float
+
+    def __str__(self) -> str:
+        """
+        Returns a nice-looking string describing the :class:`_BaseStorage` instance.
+
+        Outputs:
+            - A `str` giving information about the :class:`_BaseStorage` instance.
+
+        """
+
+        return (
+            "CleanWaterTank("
+            + f"{self.label} storing {self.resource_type.value} loads, "
+            + f"name={self.name}, "
+            + f"cycle_lifetime={self.cycle_lifetime} cycles, "
+            + f"leakage={self.leakage}, "
+            + f"maximum_charge={self.maximum_charge}, "
+            + f"minimum_charge={self.minimum_charge}, "
+            + f"capacity={self.mass} litres"
+            + ")"
+        )
+
+    @classmethod
+    def from_dict(cls, storage_data: Dict[str, Any]) -> Any:
+        """
+        Create a :class:`Tank` instance based on the file data passed in.
+
+        Inputs:
+            - storage_data:
+                The tank data, extracted from the relevant input file.
+
+        Outputs:
+            - A :class:`Tank` instance.
+
+        """
+
+        return cls(
+            storage_data["cycle_lifetime"],
+            storage_data["leakage"],
+            storage_data["maximum_charge"],
+            storage_data["minimum_charge"],
+            storage_data["name"],
+            storage_data["mass"],
+        )

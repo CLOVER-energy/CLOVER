@@ -654,6 +654,8 @@
                   dc_to_dc: 0.95 # Conversion efficiency (0.0-1.0)
                   ac_to_dc: 0.8 # Conversion efficiency (0.0-1.0)
                   ac_to_ac: 0.98 # Conversion efficiency (0.0-1.0)
+                tanks:
+                  - cold_water_tank
             - file: "simulations.yaml"
               contents: |+
                 ---
@@ -668,6 +670,34 @@
 
                 - start_year: 0 # The start year for the simulation run.
                   end_year: 20 # The end year for the simulation.
+            - file: "tank_inputs.yaml"
+              contents: |+
+                ---
+                ################################################################################
+                # tank_inputs.yaml - Parameters for specifying a tank within CLOVER.           #
+                #                                                                              #
+                # Author: Phil Sandwell, Ben Winchester                                        #
+                # Copyright: Phil Sandwell & Ben Winchester, 2021                              #
+                # Date created: 19/08/2021                                                     #
+                # License: Open source                                                         #
+                ################################################################################
+
+                - name: cold_water_tank
+                  cycle_lifetime: 1500 # Expected number of cycles over lifetime
+                  leakage: 0 # Fractional leakage per hour
+                  mass: 150 # [kg or litres]
+                  maximum_charge: 1 # State of charge (0.0 - 1.0)
+                  minimum_charge: 0 # State of charge (0.0 - 1.0)
+                  resource_type: clean_water
+                # - name: hot_water_tank
+                #   area: 1.9 # [m^2]
+                #   cycle_lifetime: 1500 # Expected number of cycles over lifetime
+                #   heat_loss_coefficient: 1.9 # [W/m^2*K]
+                #   leakage: 0 # Fractional leakage per hour
+                #   mass: 150 # [kg or litres]
+                #   maximum_charge: 1 # State of charge (0.0 - 1.0)
+                #   minimum_charge: 0 # State of charge (0.0 - 1.0)
+                #   resource_type: hot_water
     - directory: outputs
       contents:
         - directory: simulation_outputs
