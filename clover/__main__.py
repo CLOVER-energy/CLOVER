@@ -626,8 +626,7 @@ def main(args: List[Any]) -> None:
             # Add the time to the counter.
             simulation_times.append(
                 "{0:.3f} s/year".format(
-                    time_delta.microseconds
-                    * 0.0000010
+                    (time_delta.seconds + time_delta.microseconds * 0.000001)
                     / (simulation.end_year - simulation.start_year)
                 )
             )
