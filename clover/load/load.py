@@ -494,7 +494,7 @@ def compute_total_hourly_load(
 
     logger.info("Saving total load.")
     with open(total_load_filepath, "w") as f:
-        total_load.to_csv(f, line_terminator="\n")  # type: ignore
+        total_load.to_csv(f, line_terminator="")  # type: ignore
     logger.info("Total device load successfully saved to %s.", total_load_filepath)
 
     # Attempt to read the yearly load statistics from a file and compute if it doesn't
@@ -506,7 +506,7 @@ def compute_total_hourly_load(
 
     logger.info("Saving yearly load statistics.")
     with open(yearly_load_statistics_filepath, "w") as f:
-        yearly_load_statistics.to_csv(f)  # type: ignore
+        yearly_load_statistics.to_csv(f, index=False, line_terminator="")  # type: ignore
     logger.info("Yearly load statistics successfully saved.")
 
     return total_load, yearly_load_statistics
@@ -577,7 +577,7 @@ def process_device_hourly_power(
     # If the hourly power usage file already exists, load the data in.
     if os.path.isfile(hourly_usage_filepath) and not regenerate:
         with open(hourly_usage_filepath, "r") as f:
-            device_load: pd.DataFrame = pd.read_csv(f, index_col=0)
+            device_load: pd.DataFrame = pd.read_csv(f)
         logger.info(
             "Hourly power profile for %s successfully read from file %s.",
             device.name,
@@ -633,7 +633,7 @@ def process_device_hourly_power(
             hourly_usage_filepath,
             "w",
         ) as f:
-            device_load.to_csv(f)  # type: ignore
+            device_load.to_csv(f, index=False, line_terminator="")  # type: ignore
 
         logger.info(
             "Hourly power proifle for %s successfully saved to %s.",
@@ -684,7 +684,7 @@ def process_device_hourly_usage(
     # If the device hourly usage already exists, then read the data in from the file.
     if os.path.isfile(filepath) and not regenerate:
         with open(filepath, "r") as f:
-            hourly_device_usage = pd.read_csv(f, index_col=0)
+            hourly_device_usage = pd.read_csv(f)
         logger.info(
             "Hourly device usage for %s successfully read from file: %s",
             device.name,
@@ -740,7 +740,7 @@ def process_device_hourly_usage(
             filepath,
             "w",
         ) as f:
-            hourly_device_usage.to_csv(f)  # type: ignore
+            hourly_device_usage.to_csv(f, index=False, line_terminator="")  # type: ignore
 
         logger.info(
             "Hourly usage proifle for %s successfully saved to %s.",
@@ -793,7 +793,7 @@ def process_device_ownership(
     # If the daily ownership file already exists, then read the data from the file.
     if os.path.isfile(daily_ownership_filepath) and not regenerate:
         with open(daily_ownership_filepath, "r") as f:
-            daily_ownership = pd.read_csv(f, index_col=0)
+            daily_ownership = pd.read_csv(f)
         logger.info(
             "Monthly device-ownership profile for %s successfully read from %s.",
             device.name,
@@ -820,7 +820,7 @@ def process_device_ownership(
             daily_ownership_filepath,
             "w",
         ) as f:
-            daily_ownership.to_csv(f)  # type: ignore
+            daily_ownership.to_csv(f, index=False, line_terminator="")  # type: ignore
         logger.info(
             "Monthly deivice-ownership profile for %s successfully saved to %s.",
             device.name,
@@ -874,7 +874,7 @@ def process_device_utilisation(
     # If the file already exists, simply read in the data.
     if os.path.isfile(filepath) and not regenerate:
         with open(filepath, "r") as f:
-            interpolated_daily_profile = pd.read_csv(f, index_col=0)
+            interpolated_daily_profile = pd.read_csv(f)
         logger.info(
             "Daily device-utilisation profile for %s successfully read from file %s.",
             device.name,
@@ -894,7 +894,7 @@ def process_device_utilisation(
 
         # Save this to the output file.
         with open(filepath, "w") as f:
-            interpolated_daily_profile.to_csv(f)  # type: ignore
+            interpolated_daily_profile.to_csv(f, index=False, line_terminator="")  # type: ignore
         logger.info(
             "Daily deivice-utilisation profile for %s successfully saved to %s.",
             device.name,
