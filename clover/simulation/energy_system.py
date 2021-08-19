@@ -76,6 +76,9 @@ class Minigrid:
     .. attribute:: battery
         The battery being modelled, if applicable.
 
+    .. attribute:: clean_water_tank
+        The clean-water tank being modelled, if applicable.
+
     .. attribute:: dc_to_ac_conversion_efficiency
         The conversion efficiency from DC to AC.
 
@@ -88,20 +91,17 @@ class Minigrid:
     .. attribute:: diesel_backup_generator
         The diesel backup generator associated with the minigrid system.
 
-    .. attribute:: tanks
-        Any clean- or hot-water tanks contained in the minigrid system.
-
     """
 
     ac_to_ac_conversion_efficiency: Optional[float]
     ac_to_dc_conversion_efficiency: Optional[float]
     ac_transmission_efficiency: Optional[float]
     battery: Optional[Battery]
+    clean_water_tank: Optional[CleanWaterTank]
     dc_to_ac_conversion_efficiency: Optional[float]
     dc_to_dc_conversion_efficiency: Optional[float]
     dc_transmission_efficiency: Optional[float]
     diesel_backup_generator: Optional[DieselBackupGenerator]
-    tanks: Optional[List[Union[CleanWaterTank]]]
 
     @classmethod
     def from_dict(
@@ -150,6 +150,9 @@ class Minigrid:
             batteries[minigrid_inputs["battery"]]
             if "battery" in minigrid_inputs
             else None,
+            tanks[minigrid_inputs["clean_water_tank"]]
+            if "clean_water_tank" in minigrid_inputs
+            else None,
             minigrid_inputs["conversion"]["ac_to_ac"]
             if "dc_to_ac" in minigrid_inputs["conversion"]
             else None,
@@ -160,11 +163,6 @@ class Minigrid:
             if "dc_transmission_efficiency" in minigrid_inputs
             else None,
             diesel_backup_generator,
-            [
-                tanks[entry]
-                for entry in minigrid_inputs["tanks"]
-                if "tanks" in minigrid_inputs
-            ],
         )
 
 
@@ -370,62 +368,85 @@ def _get_electric_battery_storage_profile(
 
 
 def _get_water_storage_profile(
-    convertors: List[Convertor], processed_total_clean_water_load: pd.DataFrame,
+    processed_total_clean_water_load: pd.DataFrame,
+    renewable_clean_water_produced: pd.DataFrame,
 ) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """
     Gets the storage profile for the clean-water system.
 
     Inputs:
-        - convertors:
-            The list of convertors available to the system.
+        - minigrid:
+            The minigrid being modelled.
         - processed_total_clean_water_load:
             The total clean-water load placed on the system.
+        - renewable_clean_water_produced:
+            The total clean water produced directly from renewables, i.e., solar-based
+            or solar-thermal-based desalination technologies.
+        - scenario:
+            The scenario being considered.
 
     Outputs:
-        - demand_met_through_electric_power:
-            The demand which was met through electric power taken from the minigrid.
         - power_consumed:
             The electric power consumed in providing the water demand.
-        - unmet_water:
-            The unmet water demand.
+        - renewable_clean_water_used_directly:
+            The renewable clean water which was directly consumed.
+        - tank_storage_profile:
+            The amount of water (litres) into (+ve) and out of (-ve) the clean-water
+            tanks.
 
     """
 
-    water_convertors: List[Convertor] = sorted(
-        [
-            convertor
-            for convertor in convertors
-            if list(convertor.input_resource_consumption) == [ResourceType.ELECTRIC]
-            and convertor.output_resource_type == ResourceType.UNCLEAN_WATER
-        ]
+    # Clean water is either produced directly or drawn from the storage tanks.
+    remaining_profile = pd.DataFrame(
+        renewable_clean_water_produced.values - processed_total_clean_water_load.values
     )
-    unmet_water = processed_total_clean_water_load.copy()
+    renewable_clean_water_used_directly: pd.DataFrame = pd.DataFrame(
+        (remaining_profile > 0) * processed_total_clean_water_load.values
+        + (remaining_profile < 0) * renewable_clean_water_produced.values
+    )
+    tank_storage_profile: pd.DataFrame = pd.DataFrame(remaining_profile.values)
 
-    demand_met_through_electric_power = pd.DataFrame([0] * unmet_water.size)
-    power_consumed: pd.DataFrame = pd.DataFrame([0] * unmet_water.size)
+    return (
+        pd.DataFrame([0] * processed_total_clean_water_load.size),
+        renewable_clean_water_used_directly,
+        tank_storage_profile,
+    )
 
-    # While there is unmet water demand and there are still water convertors available:
-    while any(unmet_water.values > 0) and len(water_convertors) > 0:
-        current_convertor = water_convertors.pop(0)
+    # water_convertors: List[Convertor] = sorted(
+    #     [
+    #         convertor
+    #         for convertor in convertors
+    #         if list(convertor.input_resource_consumption) == [ResourceType.ELECTRIC]
+    #         and convertor.output_resource_type == ResourceType.UNCLEAN_WATER
+    #     ]
+    # )
+    # unmet_water = processed_total_clean_water_load.copy()
 
-        # Compute the delivered water as the minimum of the values in the unmet water
-        # and the total water that is deliverable from this conversion device.
-        delivered_water = pd.DataFrame(
-            [
-                min(entry, current_convertor.maximum_output_capacity)
-                for entry in unmet_water[0]
-            ]
-        )
+    # demand_met_through_electric_power = pd.DataFrame([0] * unmet_water.size)
+    # power_consumed: pd.DataFrame = pd.DataFrame([0] * unmet_water.size)
 
-        # Compute the power that was consumed and the remaining unmet water demand.
-        demand_met_through_electric_power += delivered_water
-        power_consumed += delivered_water.mul(
-            current_convertor.input_resource_consumption[ResourceType.ELECTRIC]
-        )
-        unmet_water -= delivered_water
+    # # While there is unmet water demand and there are still water convertors available:
+    # while any(unmet_water.values > 0) and len(water_convertors) > 0:
+    #     current_convertor = water_convertors.pop(0)
 
-    # Return the unmet water and power consumed.
-    return demand_met_through_electric_power, power_consumed, unmet_water
+    #     # Compute the delivered water as the minimum of the values in the unmet water
+    #     # and the total water that is deliverable from this conversion device.
+    #     delivered_water = pd.DataFrame(
+    #         [
+    #             min(entry, current_convertor.maximum_output_capacity)
+    #             for entry in unmet_water[0]
+    #         ]
+    #     )
+
+    #     # Compute the power that was consumed and the remaining unmet water demand.
+    #     demand_met_through_electric_power += delivered_water
+    #     power_consumed += delivered_water.mul(
+    #         current_convertor.input_resource_consumption[ResourceType.ELECTRIC]
+    #     )
+    #     unmet_water -= delivered_water
+
+    # # Return the unmet water and power consumed.
+    # return demand_met_through_electric_power, power_consumed, unmet_water
 
 
 def run_simulation(
@@ -435,6 +456,7 @@ def run_simulation(
     kerosene_usage: pd.DataFrame,
     location: Location,
     logger: Logger,
+    number_of_clean_water_tanks: int,
     pv_size: float,
     scenario: Scenario,
     simulation: Simulation,
@@ -463,6 +485,8 @@ def run_simulation(
             The kerosene-usage profile.
         - location:
             The location being considered.
+        - number_of_clean_water_tanks:
+            The number of clean-water tanks installed in the system.
         - pv_size:
             Amount of PV in kWp
         - scenario:
@@ -509,7 +533,7 @@ def run_simulation(
                 Amount of energy (kWh) into (+ve) and out of (-ve) the battery
             - renewables_energy:
                 Amount of energy (kWh) provided by renewables to the system
-            - hourly_storage:
+            - hourly_battery_storage:
                 Amount of energy (kWh) in the battery
             - energy_surplus:
                 Amount of energy (kWh) dumped owing to overgeneration
@@ -547,22 +571,28 @@ def run_simulation(
     ###############
 
     if ResourceType.CLEAN_WATER in scenario.resource_types:
+        # Process the load profile based on the relevant scenario.
         processed_total_clean_water_load = _get_processed_load_profile(
             scenario, total_clean_water_load
         )[start_hour:end_hour]
+
+        # Determine the water-tank storage profile.
         (
-            clean_water_demand_met_through_electric_power,
             clean_water_power_consumed,
-            unmet_clean_water,
-        ) = _get_water_storage_profile(convertors, processed_total_clean_water_load)
+            renewable_clean_water_used_directly,
+            tank_storage_profile,
+        ) = _get_water_storage_profile(
+            processed_total_clean_water_load,
+            pd.DataFrame([0] * processed_total_clean_water_load.size),
+        )
         total_clean_water_supplied = pd.DataFrame(
-            clean_water_demand_met_through_electric_power.values
+            renewable_clean_water_used_directly.values
         )
     else:
-        clean_water_demand_met_through_electric_power = None
         clean_water_power_consumed = pd.DataFrame([0] * (end_hour - start_hour))
+        renewable_clean_water_used_directly = None
+        tank_storage_profile = None
         total_clean_water_supplied = None
-        unmet_clean_water = None
 
     ###############
     # Electricity #
@@ -603,29 +633,70 @@ def run_simulation(
     )
 
     # Initialise battery storage parameters
-    max_energy_throughput = electric_storage_size * minigrid.battery.cycle_lifetime
-    initial_storage = electric_storage_size * minigrid.battery.maximum_charge
-    max_battery_storage = electric_storage_size * minigrid.battery.maximum_charge
-    min_battery_storage = electric_storage_size * minigrid.battery.minimum_charge
-    cumulative_battery_storage_power = 0.0
-    hourly_storage = []
-    new_hourly_storage = []
-    battery_health = []
+    max_energy_throughput: float = electric_storage_size * minigrid.battery.cycle_lifetime
+    initial_battery_storage: float = electric_storage_size * minigrid.battery.maximum_charge
+    max_battery_storage: float = electric_storage_size * minigrid.battery.maximum_charge
+    min_battery_storage: float = electric_storage_size * minigrid.battery.minimum_charge
+    cumulative_battery_storage_power: float = 0.0
+    hourly_battery_storage: List[float] = []
+    new_hourly_battery_storage: float = 0.0
+    battery_health: List[float] = []
+
+    # Initialise tank storage parameters
+    hourly_tank_storage: List[float] = []
+    initial_tank_storage: float = 0.0
+    max_tank_storage: float = number_of_clean_water_tanks * minigrid.clean_water_tank.mass * minigrid.clean_water_tank.maximum_charge
+    min_tank_storage: float = number_of_clean_water_tanks * minigrid.clean_water_tank.mass * minigrid.clean_water_tank.minimum_charge
 
     # Initialise energy accounting parameters
-    energy_surplus = []
-    energy_deficit = []
-    storage_power_supplied = []
+    energy_surplus: List[float] = []
+    energy_deficit: List[float] = []
+    storage_power_supplied: List[float] = []
+
+    # Intialise tank accounting parameters
+    excess_energy_used_desalinating: List[float] = []
+    power_used_suppying_clean_water_demand: List[float] = []
+    storage_water_supplied: List[float] = []
+    water_surplus: List[float] = []
+    water_deficit: List[float] = []
+
+    # Initialise deslination convertors.
+    electric_desalinators: List[Convertor] = sorted(
+        [
+            convertor
+            for convertor in convertors
+            if list(convertor.input_resource_consumption)
+            == [ResourceType.ELECTRIC, ResourceType.UNCLEAN_WATER]
+            and convertor.output_resource_type == ResourceType.CLEAN_WATER
+        ]
+    )
+    water_pumps: List[Convertor] = sorted(
+        [
+            convertor
+            for convertor in convertors
+            if list(convertor.input_resource_consumption) == [ResourceType.ELECTRIC]
+            and convertor.output_resource_type == ResourceType.UNCLEAN_WATER
+        ]
+    )
+
+    # Compute the amount of energy required per litre desalinated.
+    energy_per_desalinated_litre = (
+        electric_desalinators[0].input_resource_consumption[ResourceType.ELECTRIC]
+        + electric_desalinators[0].input_resource_consumption[
+            ResourceType.UNCLEAN_WATER
+        ]
+        * water_pumps[0].input_resource_consumption[ResourceType.ELECTRIC]
+    )
 
     # Do not do the itteration if no storage is being used
     if electric_storage_size == 0:
         simulation_hours = int(battery_storage_profile.size)
-        hourly_storage = pd.DataFrame([0] * simulation_hours)
+        hourly_battery_storage = pd.DataFrame([0] * simulation_hours)
         storage_power_supplied = pd.DataFrame([0] * simulation_hours)
         energy_surplus = ((battery_storage_profile > 0) * battery_storage_profile).abs()
         energy_deficit = ((battery_storage_profile < 0) * battery_storage_profile).abs()
         battery_health = pd.DataFrame([0] * simulation_hours)
-
+    # Carry out the itteration if there is some storage involved in the system.
     else:
         # Begin simulation, iterating over timesteps
         for t in tqdm(
@@ -634,13 +705,19 @@ def run_simulation(
             leave=False,
             unit="hour",
         ):
+            ###############
+            # Electricity #
+            ###############
+
             battery_energy_flow = battery_storage_profile.iloc[t][0]
             if t == 0:
-                new_hourly_storage = initial_storage + battery_energy_flow
+                new_hourly_battery_storage = (
+                    initial_battery_storage + battery_energy_flow
+                )
             else:
                 # Battery charging
                 if battery_energy_flow >= 0.0:
-                    new_hourly_storage = hourly_storage[t - 1] * (
+                    new_hourly_battery_storage = hourly_battery_storage[t - 1] * (
                         1.0 - minigrid.battery.leakage
                     ) + minigrid.battery.conversion_in * min(
                         battery_energy_flow,
@@ -649,7 +726,7 @@ def run_simulation(
                     )
                 # Battery discharging
                 else:
-                    new_hourly_storage = hourly_storage[t - 1] * (
+                    new_hourly_battery_storage = hourly_battery_storage[t - 1] * (
                         1.0 - minigrid.battery.leakage
                     ) + (1.0 / minigrid.battery.conversion_out) * max(
                         battery_energy_flow,
@@ -658,22 +735,93 @@ def run_simulation(
                         * (max_battery_storage - min_battery_storage),
                     )
 
+            excess_energy = max(new_hourly_battery_storage - max_battery_storage, 0.0)
+
+            ###############
+            # Clean water #
+            ###############
+
+            if ResourceType.CLEAN_WATER in scenario.resource_types:
+                tank_water_flow = tank_storage_profile.iloc[t][0]
+
+                # Compute the new tank level based on the previous level and the flow.
+                if t == 0:
+                    new_hourly_tank_storage = initial_tank_storage + tank_water_flow
+                else:
+                    new_hourly_tank_storage = (
+                        hourly_tank_storage[t - 1]
+                        * (1.0 - minigrid.clean_water_tank.leakage)
+                        + tank_water_flow
+                    )
+
+                # Use the excess energy to desalinate if there is space.
+                if excess_energy > 0:
+                    # Compute the amount of water that was desalinated.
+                    desalinated_water = max(
+                        energy_per_desalinated_litre / excess_energy, max_tank_storage
+                    )
+
+                    # Add this to the tank.
+                    new_hourly_tank_storage += desalinated_water
+
+                    # Compute the remaining excess energy and the energy used in
+                    # desalination.
+                    energy_consumed = energy_per_desalinated_litre * desalinated_water
+                    excess_energy_used_desalinating.append(energy_consumed)
+                    excess_energy -= energy_consumed
+                    power_used_suppying_clean_water_demand.append(energy_consumed)
+
+                    # Ensure that the excess energy is normalised correctly.
+                    excess_energy = max(excess_energy, 0.0)
+
+                # If there is no excess energy, then set these vars to zero.
+                else:
+                    power_used_suppying_clean_water_demand.append(0)
+
+                water_surplus.append(
+                    max(new_hourly_tank_storage - max_tank_storage, 0.0)
+                )
+                water_deficit.append(
+                    max(min_tank_storage - new_hourly_tank_storage, 0.0)
+                )
+
+                new_hourly_tank_storage = min(new_hourly_tank_storage, max_tank_storage)
+                new_hourly_tank_storage = max(new_hourly_tank_storage, min_tank_storage)
+
+                hourly_tank_storage.append(new_hourly_tank_storage)
+
+                if t == 0:
+                    storage_water_supplied.append(0.0 - tank_water_flow)
+                else:
+                    storage_water_supplied.append(
+                        max(
+                            hourly_tank_storage[t - 1]
+                            * (1.0 - minigrid.clean_water_tank.leakage)
+                            - hourly_tank_storage[t],
+                            0.0,
+                        )
+                    )
+
+            ###############
+            # Electricity #
+            ###############
+
             # Dumped energy and unmet demand
-            energy_surplus.append(
-                max(new_hourly_storage - max_battery_storage, 0.0)
-            )  # Battery too full
+            energy_surplus.append(excess_energy)  # Battery too full
             energy_deficit.append(
-                max(min_battery_storage - new_hourly_storage, 0.0)
+                max(min_battery_storage - new_hourly_battery_storage, 0.0)
             )  # Battery too empty
 
             # Battery capacities and blackouts (if battery is too full or empty)
-            if new_hourly_storage >= max_battery_storage:
-                new_hourly_storage = max_battery_storage
-            if new_hourly_storage <= min_battery_storage:
-                new_hourly_storage = min_battery_storage
+            new_hourly_battery_storage = min(
+                new_hourly_battery_storage, max_battery_storage
+            )
+            new_hourly_battery_storage = max(
+                new_hourly_battery_storage, min_battery_storage
+            )
 
-            # Update hourly_storage
-            hourly_storage.append(new_hourly_storage)
+            # Update hourly_battery_storage
+            hourly_battery_storage.append(new_hourly_battery_storage)
 
             # Update battery health
             if t == 0:
@@ -681,8 +829,8 @@ def run_simulation(
             else:
                 storage_power_supplied.append(
                     max(
-                        hourly_storage[t - 1] * (1.0 - minigrid.battery.leakage)
-                        - hourly_storage[t],
+                        hourly_battery_storage[t - 1] * (1.0 - minigrid.battery.leakage)
+                        - hourly_battery_storage[t],
                         0.0,
                     )
                 )
@@ -762,41 +910,56 @@ def run_simulation(
     if ResourceType.CLEAN_WATER in scenario.resource_types:
         # Determine the clean water which was not delivered due to there not being
         # enough electricity.
-        blackout_water = pd.DataFrame(
-            [
-                1 if entry > 0 else 0
-                for entry in clean_water_demand_met_through_electric_power.mul(
-                    blackout_times
-                ).values
-            ]
-        )
-        clean_water_demand_met_through_electric_power -= blackout_water
-        unmet_clean_water += blackout_water
+        # blackout_water = pd.DataFrame(
+        #     [
+        #         1 if entry > 0 else 0
+        #         for entry in clean_water_demand_met_through_electric_power.mul(
+        #             blackout_times
+        #         ).values
+        #     ]
+        # )
+        # clean_water_demand_met_through_electric_power -= blackout_water
+        # unmet_clean_water += blackout_water
 
         # Find out how much of the minigrid power was used providing electricity as
         # opposed to clean water.
+        # Consolidate outputs from the hourly computation.
+        power_used_suppying_clean_water_demand = pd.DataFrame(
+            power_used_suppying_clean_water_demand
+        )
+        storage_water_supplied = pd.DataFrame(storage_water_supplied)
+
         power_used_on_electricity = (
-            total_energy_used - 0.001 * clean_water_power_consumed
+            total_energy_used - power_used_suppying_clean_water_demand
+        )
+
+        # Compute the outputs from the itteration stage
+        total_clean_water_supplied = pd.DataFrame(
+            renewable_clean_water_used_directly.values + storage_water_supplied
+        )
+
+        # Compute when the water demand went unmet.
+        unmet_clean_water = pd.DataFrame(
+            processed_total_clean_water_load.values
+            - renewable_clean_water_used_directly.values
+            - storage_water_supplied.values
         )
 
         # Clean-water system performance outputs
-        blackout_water.columns = ["Water supply blackouts"]
-        clean_water_demand_met_through_electric_power.columns = [
-            "Water supplied by direct electricity (l)"
-        ]
-        clean_water_power_consumed.columns = [
+        power_used_suppying_clean_water_demand.columns = [
             "Power consumed providing clean water (kWh)"
         ]
         power_used_on_electricity.columns = [
             "Power consumed providing electricity (kWh)"
         ]
+        storage_water_supplied.columns = ["Clean water supplied via tank storage (l)"]
         total_clean_water_supplied.columns = ["Total clean water supplied (l)"]
         unmet_clean_water.columns = ["Unmet clean water demand (l)"]
 
     # System performance outputs
     blackout_times.columns = ["Blackouts"]
-    hourly_storage = pd.DataFrame(hourly_storage)
-    hourly_storage.columns = ["Hourly storage (kWh)"]
+    hourly_battery_storage = pd.DataFrame(hourly_battery_storage)
+    hourly_battery_storage.columns = ["Hourly storage (kWh)"]
     energy_surplus = pd.DataFrame(energy_surplus)
     energy_surplus.columns = ["Dumped energy (kWh)"]
     unmet_energy.columns = ["Unmet energy (kWh)"]
@@ -845,7 +1008,7 @@ def run_simulation(
         diesel_fuel_usage,
         battery_storage_profile,
         renewables_energy,
-        hourly_storage,
+        hourly_battery_storage,
         energy_surplus,
         battery_health,
         households,
@@ -856,10 +1019,9 @@ def run_simulation(
     if ResourceType.CLEAN_WATER in scenario.resource_types:
         system_performance_outputs_list.extend(
             [
-                blackout_water,
-                clean_water_demand_met_through_electric_power,
-                0.001 * clean_water_power_consumed,
+                power_used_suppying_clean_water_demand,
                 power_used_on_electricity,
+                storage_water_supplied,
                 total_clean_water_supplied,
                 unmet_clean_water,
             ]

@@ -335,6 +335,14 @@ def main(args: List[Any]) -> None:
         logger.info("All input files successfully parsed.")
         print(DONE)
 
+    if ResourceType.CLEAN_WATER in scenario.resource_types:
+        if minigrid.clean_water_tank is None:
+            raise InputFileError(
+                "energy system inputs",
+                "No clean-water tank was provided despite there needing to be a tank "
+                "specified for dealing with clean-water demands.",
+            )
+
     print("Generating necessary profiles", end="\n")
 
     # Generate and save the weather data for each year as a background task.
@@ -600,6 +608,7 @@ def main(args: List[Any]) -> None:
                     kerosene_usage,
                     location,
                     logger,
+                    parsed_args.num_clean_water_tanks,
                     parsed_args.pv_system_size,
                     scenario,
                     simulation,
