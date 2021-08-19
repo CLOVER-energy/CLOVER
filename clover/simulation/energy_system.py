@@ -895,6 +895,9 @@ def run_simulation(
         )
         unmet_energy = pd.DataFrame(unmet_energy.values - diesel_energy.values)
         diesel_energy = diesel_energy.abs()
+    elif scenario.diesel_scenario.mode == DieselMode.CYCLE_CHARGING:
+        logger.error("%sCycle charing is not currently supported.%s", BColours.fail, BColours.endc)
+        pass
     else:
         diesel_energy = pd.DataFrame([0.0] * int(battery_storage_profile.size))
         diesel_times = pd.DataFrame([0.0] * int(battery_storage_profile.size))
