@@ -581,7 +581,7 @@ def main(args: List[Any]) -> None:
     with open(
         os.path.join(auto_generated_files_directory, KEROSENE_USAGE_FILE), "r"
     ) as f:
-        kerosene_usage = pd.read_csv(f, index_col=0)
+        kerosene_usage = pd.read_csv(f)
 
         # Remove the index from the file.
         kerosene_usage.reset_index(drop=True)

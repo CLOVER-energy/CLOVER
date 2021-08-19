@@ -645,8 +645,37 @@ def run_simulation(
     # Initialise tank storage parameters
     hourly_tank_storage: List[float] = []
     initial_tank_storage: float = 0.0
-    max_tank_storage: float = number_of_clean_water_tanks * minigrid.clean_water_tank.mass * minigrid.clean_water_tank.maximum_charge
-    min_tank_storage: float = number_of_clean_water_tanks * minigrid.clean_water_tank.mass * minigrid.clean_water_tank.minimum_charge
+    if ResourceType.CLEAN_WATER in scenario.resource_types:
+        max_tank_storage: float = number_of_clean_water_tanks * minigrid.clean_water_tank.mass * minigrid.clean_water_tank.maximum_charge
+        min_tank_storage: float = number_of_clean_water_tanks * minigrid.clean_water_tank.mass * minigrid.clean_water_tank.minimum_charge
+
+        # Initialise deslination convertors.
+        electric_desalinators: List[Convertor] = sorted(
+            [
+                convertor
+                for convertor in convertors
+                if list(convertor.input_resource_consumption)
+                == [ResourceType.ELECTRIC, ResourceType.UNCLEAN_WATER]
+                and convertor.output_resource_type == ResourceType.CLEAN_WATER
+            ]
+        )
+        water_pumps: List[Convertor] = sorted(
+            [
+                convertor
+                for convertor in convertors
+                if list(convertor.input_resource_consumption) == [ResourceType.ELECTRIC]
+                and convertor.output_resource_type == ResourceType.UNCLEAN_WATER
+            ]
+        )
+
+        # Compute the amount of energy required per litre desalinated.
+        energy_per_desalinated_litre = (
+            electric_desalinators[0].input_resource_consumption[ResourceType.ELECTRIC]
+            + electric_desalinators[0].input_resource_consumption[
+                ResourceType.UNCLEAN_WATER
+            ]
+            * water_pumps[0].input_resource_consumption[ResourceType.ELECTRIC]
+        )
 
     # Initialise energy accounting parameters
     energy_surplus: List[float] = []
@@ -659,34 +688,6 @@ def run_simulation(
     storage_water_supplied: List[float] = []
     water_surplus: List[float] = []
     water_deficit: List[float] = []
-
-    # Initialise deslination convertors.
-    electric_desalinators: List[Convertor] = sorted(
-        [
-            convertor
-            for convertor in convertors
-            if list(convertor.input_resource_consumption)
-            == [ResourceType.ELECTRIC, ResourceType.UNCLEAN_WATER]
-            and convertor.output_resource_type == ResourceType.CLEAN_WATER
-        ]
-    )
-    water_pumps: List[Convertor] = sorted(
-        [
-            convertor
-            for convertor in convertors
-            if list(convertor.input_resource_consumption) == [ResourceType.ELECTRIC]
-            and convertor.output_resource_type == ResourceType.UNCLEAN_WATER
-        ]
-    )
-
-    # Compute the amount of energy required per litre desalinated.
-    energy_per_desalinated_litre = (
-        electric_desalinators[0].input_resource_consumption[ResourceType.ELECTRIC]
-        + electric_desalinators[0].input_resource_consumption[
-            ResourceType.UNCLEAN_WATER
-        ]
-        * water_pumps[0].input_resource_consumption[ResourceType.ELECTRIC]
-    )
 
     # Do not do the itteration if no storage is being used
     if electric_storage_size == 0:
