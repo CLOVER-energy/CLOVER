@@ -655,7 +655,7 @@ def run_simulation(
 
     # Intialise tank accounting parameters
     excess_energy_used_desalinating: List[float] = []
-    power_used_suppying_clean_water_demand: List[float] = []
+    excess_power_used_suppying_clean_water_demand: List[float] = []
     storage_water_supplied: List[float] = []
     water_surplus: List[float] = []
     water_deficit: List[float] = []
@@ -680,7 +680,7 @@ def run_simulation(
     )
 
     # Compute the amount of energy required per litre desalinated.
-    energy_per_desalinated_litre = (
+    energy_per_desalinated_litre = 0.001 * (
         electric_desalinators[0].input_resource_consumption[ResourceType.ELECTRIC]
         + electric_desalinators[0].input_resource_consumption[
             ResourceType.UNCLEAN_WATER
@@ -769,14 +769,20 @@ def run_simulation(
                     energy_consumed = energy_per_desalinated_litre * desalinated_water
                     excess_energy_used_desalinating.append(energy_consumed)
                     excess_energy -= energy_consumed
-                    power_used_suppying_clean_water_demand.append(energy_consumed)
+                    excess_power_used_suppying_clean_water_demand.append(
+                        energy_consumed
+                    )
 
                     # Ensure that the excess energy is normalised correctly.
                     excess_energy = max(excess_energy, 0.0)
 
-                # If there is no excess energy, then set these vars to zero.
+                # If there is no excess energy, then carry out desalination to meet the
+                # demand as per a standard electric device.
                 else:
-                    power_used_suppying_clean_water_demand.append(0)
+                    # If there is unmet demand, then carry out desalination and pumping to
+                    # fulfil the demand.
+                    # @@@ Compute additional energy used desalinating here.
+                    excess_power_used_suppying_clean_water_demand.append(0)
 
                 water_surplus.append(
                     max(new_hourly_tank_storage - max_tank_storage, 0.0)
@@ -802,12 +808,16 @@ def run_simulation(
                         )
                     )
 
+                # @@@ Add additional energy used desalinating to the battery demand here
+
             ###############
             # Electricity #
             ###############
 
             # Dumped energy and unmet demand
-            energy_surplus.append(excess_energy)  # Battery too full
+            energy_surplus.append(
+                max(new_hourly_battery_storage - max_battery_storage, 0.0)
+            )  # Battery too full
             energy_deficit.append(
                 max(min_battery_storage - new_hourly_battery_storage, 0.0)
             )  # Battery too empty
@@ -860,6 +870,7 @@ def run_simulation(
     unmet_energy = pd.DataFrame(
         (
             load_energy.values
+            # @@@ Register additional energy used desalinating here.
             - renewables_energy_used_directly.values
             - grid_energy.values
             - storage_power_supplied.values
@@ -924,13 +935,13 @@ def run_simulation(
         # Find out how much of the minigrid power was used providing electricity as
         # opposed to clean water.
         # Consolidate outputs from the hourly computation.
-        power_used_suppying_clean_water_demand = pd.DataFrame(
-            power_used_suppying_clean_water_demand
+        excess_power_used_suppying_clean_water_demand = 0.001 * pd.DataFrame(
+            excess_power_used_suppying_clean_water_demand
         )
         storage_water_supplied = pd.DataFrame(storage_water_supplied)
 
         power_used_on_electricity = (
-            total_energy_used - power_used_suppying_clean_water_demand
+            total_energy_used - excess_power_used_suppying_clean_water_demand
         )
 
         # Compute the outputs from the itteration stage
@@ -946,8 +957,8 @@ def run_simulation(
         )
 
         # Clean-water system performance outputs
-        power_used_suppying_clean_water_demand.columns = [
-            "Power consumed providing clean water (kWh)"
+        excess_power_used_suppying_clean_water_demand.columns = [
+            "Excess power consumed desalinating clean water (kWh)"
         ]
         power_used_on_electricity.columns = [
             "Power consumed providing electricity (kWh)"
@@ -1019,7 +1030,7 @@ def run_simulation(
     if ResourceType.CLEAN_WATER in scenario.resource_types:
         system_performance_outputs_list.extend(
             [
-                power_used_suppying_clean_water_demand,
+                excess_power_used_suppying_clean_water_demand,
                 power_used_on_electricity,
                 storage_water_supplied,
                 total_clean_water_supplied,
