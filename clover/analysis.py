@@ -310,11 +310,10 @@ def plot_outputs(
         plt.legend(loc="upper right")
         plt.xticks(list(range(0, CUT_OFF_TIME - 1, min(4, CUT_OFF_TIME - 1))))
         plt.xlabel("Hour of simulation")
-        plt.ylabel("Electric power demand / W")
+        plt.ylabel("Electric power demand / kW")
         plt.title(f"Load profile of the community for the first {CUT_OFF_TIME} hours")
         plt.savefig(
-            os.path.join(figures_directory, "electric_demands.png"),
-            transparent=True,
+            os.path.join(figures_directory, "electric_demands.png"), transparent=True,
         )
         plt.close()
         pbar.update(1)
@@ -346,8 +345,7 @@ def plot_outputs(
         )
         total_demand = np.sum(
             np.reshape(
-                np.sum(total_electric_load[0:HOURS_PER_YEAR].values, axis=1),
-                (365, 24),
+                np.sum(total_electric_load[0:HOURS_PER_YEAR].values, axis=1), (365, 24),
             ),
             axis=1,
         )
@@ -553,8 +551,7 @@ def plot_outputs(
 
         blackouts = np.mean(
             np.reshape(
-                simulation_output[0:HOURS_PER_YEAR]["Blackouts"].values,
-                (365, 24),
+                simulation_output[0:HOURS_PER_YEAR]["Blackouts"].values, (365, 24),
             ),
             axis=0,
         )
@@ -579,8 +576,7 @@ def plot_outputs(
         )
         diesel_times = np.mean(
             np.reshape(
-                simulation_output[0:HOURS_PER_YEAR]["Diesel times"].values,
-                (365, 24),
+                simulation_output[0:HOURS_PER_YEAR]["Diesel times"].values, (365, 24),
             ),
             axis=0,
         )
@@ -609,8 +605,7 @@ def plot_outputs(
 
         # Plot the seasonal variation in electricity supply sources.
         grid_energy = np.reshape(
-            simulation_output[0:HOURS_PER_YEAR]["Grid energy (kWh)"].values,
-            (365, 24),
+            simulation_output[0:HOURS_PER_YEAR]["Grid energy (kWh)"].values, (365, 24),
         )
         storage_energy = np.reshape(
             simulation_output[0:HOURS_PER_YEAR]["Storage energy supplied (kWh)"].values,
@@ -621,8 +616,7 @@ def plot_outputs(
             (365, 24),
         )
         diesel_energy = np.reshape(
-            simulation_output[0:HOURS_PER_YEAR]["Diesel times"].values,
-            (365, 24),
+            simulation_output[0:HOURS_PER_YEAR]["Diesel times"].values, (365, 24),
         )
 
         fig, ([ax1, ax2], [ax3, ax4]) = plt.subplots(2, 2)  # ,sharex=True, sharey=True)
@@ -982,58 +976,67 @@ def plot_outputs(
             plt.close()
             pbar.update(1)
 
-            blackouts = np.mean(
-                np.reshape(
-                    simulation_output[0:HOURS_PER_YEAR][
-                        "Water supply blackouts"
-                    ].values,
-                    (365, 24),
-                ),
-                axis=0,
-            )
-            direct_electric_supply = np.mean(
-                np.reshape(
-                    simulation_output[0:HOURS_PER_YEAR][
-                        "Water supplied by direct electricity (l)"
-                    ].values
-                    > 0,
-                    (365, 24),
-                ),
-                axis=0,
-            )
+            # blackouts = np.mean(
+            #     np.reshape(
+            #         simulation_output[0:HOURS_PER_YEAR][
+            #             "Water supply blackouts"
+            #         ].values,
+            #         (365, 24),
+            #     ),
+            #     axis=0,
+            # )
+            # direct_electric_supply = np.mean(
+            #     np.reshape(
+            #         simulation_output[0:HOURS_PER_YEAR][
+            #             "Water supplied by direct electricity (l)"
+            #         ].values
+            #         > 0,
+            #         (365, 24),
+            #     ),
+            #     axis=0,
+            # )
 
-            plt.plot(blackouts, label="Blackouts")
-            plt.plot(direct_electric_supply, label="Direct electric")
-            plt.legend()
-            plt.xlim(0, 23)
-            plt.xticks(range(0, 24, 1))
-            plt.ylim(0, 1)
-            plt.yticks(np.arange(0, 1.1, 0.25))
-            plt.xlabel("Hour of day")
-            plt.ylabel("Probability")
-            plt.title("Clean-water availability on an average day")
-            plt.savefig(
-                os.path.join(
-                    figures_directory, "clean_water_avilability_on_average_day.png"
-                ),
-                transparent=True,
-            )
-            plt.close()
-            pbar.update(1)
+            # plt.plot(blackouts, label="Blackouts")
+            # plt.plot(direct_electric_supply, label="Direct electric")
+            # plt.legend()
+            # plt.xlim(0, 23)
+            # plt.xticks(range(0, 24, 1))
+            # plt.ylim(0, 1)
+            # plt.yticks(np.arange(0, 1.1, 0.25))
+            # plt.xlabel("Hour of day")
+            # plt.ylabel("Probability")
+            # plt.title("Clean-water availability on an average day")
+            # plt.savefig(
+            #     os.path.join(
+            #         figures_directory, "clean_water_avilability_on_average_day.png"
+            #     ),
+            #     transparent=True,
+            # )
+            # plt.close()
+            # pbar.update(1)
 
-            clean_water_power_supplied = np.mean(
-                np.reshape(
-                    simulation_output[0:HOURS_PER_YEAR][
-                        "Power consumed providing clean water (kWh)"
-                    ].values,
-                    (365, 24),
-                ),
-                axis=0,
-            )
+            # clean_water_power_supplied = np.mean(
+            #     np.reshape(
+            #         simulation_output[0:HOURS_PER_YEAR][
+            #             "Power consumed providing clean water (kWh)"
+            #         ].values,
+            #         (365, 24),
+            #     ),
+            #     axis=0,
+            # )
             electric_power_supplied = np.mean(
                 np.reshape(
                     simulation_output[0:HOURS_PER_YEAR][
                         "Power consumed providing electricity (kWh)"
+                    ].values,
+                    (365, 24),
+                ),
+                axis=0,
+            )
+            surplus_power_consumed = np.mean(
+                np.reshape(
+                    simulation_output[0:HOURS_PER_YEAR][
+                        "Excess power consumed desalinating clean water (kWh)"
                     ].values,
                     (365, 24),
                 ),
@@ -1049,8 +1052,12 @@ def plot_outputs(
                 axis=0,
             )
 
-            plt.plot(clean_water_power_supplied, label="Clean-water via conversion")
+            # plt.plot(clean_water_power_supplied, label="Clean-water via conversion")
             plt.plot(electric_power_supplied, label="Electric devices")
+            plt.plot(
+                surplus_power_consumed,
+                label="Dumped energy used to provide clean water",
+            )
             plt.plot(total_power_supplied, label="Total load")
             plt.legend()
             plt.xlim(0, 23)
