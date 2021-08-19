@@ -213,19 +213,19 @@ def _get_processed_load_profile(scenario: Scenario, total_load: pd.DataFrame):
     return processed_total_load
 
 
-def _get_electric_storage_profile(
+def _get_electric_battery_storage_profile(
     *,
     grid_profile: pd.DataFrame,
     kerosene_usage: pd.DataFrame,
     logger: Logger,
     minigrid: Minigrid,
+    processed_total_electric_load: pd.DataFrame,
     scenario: Scenario,
     solar_lifetime: int,
     total_solar_power_produced: pd.DataFrame,
     end_hour: int = 4,
     pv_size: int = 10,
     start_hour: int = 0,
-    total_electric_load: pd.DataFrame,
 ) -> Tuple[
     pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame
 ]:
@@ -241,6 +241,8 @@ def _get_electric_storage_profile(
             The logger to use for the run.
         - minigrid:
             The energy system being modelled.
+        - processed_total_electric_load:
+            The total electric load for the system.
         - scenario:
             The scenatio being considered.
         - solar_lifetime:
@@ -253,8 +255,6 @@ def _get_electric_storage_profile(
             Amount of PV in kWp
         - start_year:
             Start year of this simulation period
-        - total_electric_load:
-            The total electric load for the system.
 
     Outputs:
         - load_energy:
@@ -265,7 +265,7 @@ def _get_electric_storage_profile(
             Amount of energy (kWh) from renewables used directly to satisfy load (kWh)
         - grid_energy:
             Amount of energy (kWh) supplied by the grid
-        - storage_profile:
+        - battery_storage_profile:
             Amount of energy (kWh) into (+ve) and out of (-ve) the battery
         - kerosene_usage:
             Number of kerosene lamps in use (if no power available)
@@ -281,7 +281,6 @@ def _get_electric_storage_profile(
         np.asarray(pv_generation_array[start_hour:end_hour])  # type: ignore
         * np.asarray(solar_degradation_array)
     )
-    grid_status = pd.DataFrame(grid_profile[start_hour:end_hour].values)  # type: ignore
 
     # Consider power distribution network
     if scenario.distribution_network == DistributionNetwork.DC:
@@ -312,7 +311,7 @@ def _get_electric_storage_profile(
         )
 
     # Consider transmission efficiency
-    load_energy = total_electric_load / transmission_efficiency
+    load_energy = processed_total_electric_load / transmission_efficiency
     pv_energy = pv_generation.mul(transmission_efficiency)
 
     # Combine energy from all renewables sources
@@ -332,32 +331,32 @@ def _get_electric_storage_profile(
         grid_energy = pd.DataFrame(
             ((remaining_profile < 0) * remaining_profile).values
             * -1.0
-            * grid_status.values
+            * grid_profile.values
         )
-        storage_profile: pd.DataFrame = pd.DataFrame(
+        battery_storage_profile: pd.DataFrame = pd.DataFrame(
             remaining_profile.values + grid_energy.values
         )
 
     else:
         # Take energy from grid first
-        grid_energy = load_energy.mul(grid_status)
+        grid_energy = load_energy.mul(grid_profile)
         # as needed for load
         remaining_profile = (grid_energy <= 0).mul(load_energy)
         # Then take energy from PV
-        storage_profile = pd.DataFrame(
+        battery_storage_profile = pd.DataFrame(
             renewables_energy.values.subtrace(remaining_profile.values)
         )
         renewables_energy_used_directly = pd.DataFrame(
-            (storage_profile > 0)
+            (battery_storage_profile > 0)
             .mul(remaining_profile)
-            .add((storage_profile < 0).mul(renewables_energy))
+            .add((battery_storage_profile < 0).mul(renewables_energy))
         )
 
     load_energy.columns = ["Load energy (kWh)"]
     renewables_energy.columns = ["Renewables energy supplied (kWh)"]
     renewables_energy_used_directly.columns = ["Renewables energy used (kWh)"]
     grid_energy.columns = ["Grid energy (kWh)"]
-    storage_profile.columns = ["Storage profile (kWh)"]
+    battery_storage_profile.columns = ["Storage profile (kWh)"]
     kerosene_usage.columns = ["Kerosene lamps"]
 
     return (
@@ -365,7 +364,7 @@ def _get_electric_storage_profile(
         renewables_energy,
         renewables_energy_used_directly,
         grid_energy,
-        storage_profile,
+        battery_storage_profile,
         kerosene_usage,
     )
 
@@ -440,7 +439,7 @@ def run_simulation(
     scenario: Scenario,
     simulation: Simulation,
     solar_lifetime: int,
-    storage_size: float,
+    electric_storage_size: float,
     total_clean_water_load: pd.DataFrame,
     total_electric_load: pd.DataFrame,
     total_solar_power_produced: pd.DataFrame,
@@ -472,7 +471,7 @@ def run_simulation(
             The simulation to run.
         - solar_lifetime:
             The lifetime of the solar system being considered.
-        - storage_size:
+        - electric_storage_size:
             Amount of storage in kWh
         - total_clean_water_load:
             The total water load placed on the system.
@@ -506,7 +505,7 @@ def run_simulation(
                 Times when diesel generator is on (1) or off (0)
             - diesel_fuel_usage:
                 Amount of diesel (l) used by the generator
-            - storage_profile:
+            - battery_storage_profile:
                 Amount of energy (kWh) into (+ve) and out of (-ve) the battery
             - renewables_energy:
                 Amount of energy (kWh) provided by renewables to the system
@@ -569,9 +568,11 @@ def run_simulation(
     # Electricity #
     ###############
 
-    processed_total_electric_load = (
-        _get_processed_load_profile(scenario, total_electric_load)[start_hour:end_hour]
-        + 0.001 * clean_water_power_consumed
+    processed_total_electric_load = pd.DataFrame(
+        _get_processed_load_profile(scenario, total_electric_load)[
+            start_hour:end_hour
+        ].values
+        + 0.001 * clean_water_power_consumed.values
     )
 
     # Get electric input profiles
@@ -580,20 +581,20 @@ def run_simulation(
         renewables_energy,
         renewables_energy_used_directly,
         grid_energy,
-        storage_profile,
+        battery_storage_profile,
         kerosene_profile,
-    ) = _get_electric_storage_profile(
-        grid_profile=grid_profile,
-        kerosene_usage=kerosene_usage,
+    ) = _get_electric_battery_storage_profile(
+        grid_profile=grid_profile[start_hour:end_hour],
+        kerosene_usage=kerosene_usage[start_hour:end_hour],
         logger=logger,
         minigrid=minigrid,
+        processed_total_electric_load=processed_total_electric_load,
         scenario=scenario,
         solar_lifetime=solar_lifetime,
         total_solar_power_produced=total_solar_power_produced,
         end_hour=end_hour,
         pv_size=pv_size,
         start_hour=start_hour,
-        total_electric_load=processed_total_electric_load,
     )
     households = pd.DataFrame(
         population_hourly(location)[
@@ -602,11 +603,11 @@ def run_simulation(
     )
 
     # Initialise battery storage parameters
-    max_energy_throughput = storage_size * minigrid.battery.cycle_lifetime
-    initial_storage = storage_size * minigrid.battery.maximum_charge
-    max_storage = storage_size * minigrid.battery.maximum_charge
-    min_storage = storage_size * minigrid.battery.minimum_charge
-    cumulative_storage_power = 0.0
+    max_energy_throughput = electric_storage_size * minigrid.battery.cycle_lifetime
+    initial_storage = electric_storage_size * minigrid.battery.maximum_charge
+    max_battery_storage = electric_storage_size * minigrid.battery.maximum_charge
+    min_battery_storage = electric_storage_size * minigrid.battery.minimum_charge
+    cumulative_battery_storage_power = 0.0
     hourly_storage = []
     new_hourly_storage = []
     battery_health = []
@@ -617,23 +618,23 @@ def run_simulation(
     storage_power_supplied = []
 
     # Do not do the itteration if no storage is being used
-    if storage_size == 0:
-        simulation_hours = int(storage_profile.size)
+    if electric_storage_size == 0:
+        simulation_hours = int(battery_storage_profile.size)
         hourly_storage = pd.DataFrame([0] * simulation_hours)
         storage_power_supplied = pd.DataFrame([0] * simulation_hours)
-        energy_surplus = ((storage_profile > 0) * storage_profile).abs()
-        energy_deficit = ((storage_profile < 0) * storage_profile).abs()
+        energy_surplus = ((battery_storage_profile > 0) * battery_storage_profile).abs()
+        energy_deficit = ((battery_storage_profile < 0) * battery_storage_profile).abs()
         battery_health = pd.DataFrame([0] * simulation_hours)
 
     else:
         # Begin simulation, iterating over timesteps
         for t in tqdm(
-            range(int(storage_profile.size)),
+            range(int(battery_storage_profile.size)),
             desc="hourly computation",
             leave=False,
             unit="hour",
         ):
-            battery_energy_flow = storage_profile.iloc[t][0]
+            battery_energy_flow = battery_storage_profile.iloc[t][0]
             if t == 0:
                 new_hourly_storage = initial_storage + battery_energy_flow
             else:
@@ -643,7 +644,8 @@ def run_simulation(
                         1.0 - minigrid.battery.leakage
                     ) + minigrid.battery.conversion_in * min(
                         battery_energy_flow,
-                        minigrid.battery.charge_rate * (max_storage - min_storage),
+                        minigrid.battery.charge_rate
+                        * (max_battery_storage - min_battery_storage),
                     )
                 # Battery discharging
                 else:
@@ -653,22 +655,22 @@ def run_simulation(
                         battery_energy_flow,
                         (-1.0)
                         * minigrid.battery.discharge_rate
-                        * (max_storage - min_storage),
+                        * (max_battery_storage - min_battery_storage),
                     )
 
             # Dumped energy and unmet demand
             energy_surplus.append(
-                max(new_hourly_storage - max_storage, 0.0)
+                max(new_hourly_storage - max_battery_storage, 0.0)
             )  # Battery too full
             energy_deficit.append(
-                max(min_storage - new_hourly_storage, 0.0)
+                max(min_battery_storage - new_hourly_storage, 0.0)
             )  # Battery too empty
 
             # Battery capacities and blackouts (if battery is too full or empty)
-            if new_hourly_storage >= max_storage:
-                new_hourly_storage = max_storage
-            if new_hourly_storage <= min_storage:
-                new_hourly_storage = min_storage
+            if new_hourly_storage >= max_battery_storage:
+                new_hourly_storage = max_battery_storage
+            if new_hourly_storage <= min_battery_storage:
+                new_hourly_storage = min_battery_storage
 
             # Update hourly_storage
             hourly_storage.append(new_hourly_storage)
@@ -684,20 +686,24 @@ def run_simulation(
                         0.0,
                     )
                 )
-            cumulative_storage_power = (
-                cumulative_storage_power + storage_power_supplied[t]
+            cumulative_battery_storage_power = (
+                cumulative_battery_storage_power + storage_power_supplied[t]
             )
 
-            storage_degradation = 1.0 - minigrid.battery.lifetime_loss * (
-                cumulative_storage_power / max_energy_throughput
+            battery_storage_degradation = 1.0 - minigrid.battery.lifetime_loss * (
+                cumulative_battery_storage_power / max_energy_throughput
             )
-            max_storage = (
-                storage_degradation * storage_size * minigrid.battery.maximum_charge
+            max_battery_storage = (
+                battery_storage_degradation
+                * electric_storage_size
+                * minigrid.battery.maximum_charge
             )
-            min_storage = (
-                storage_degradation * storage_size * minigrid.battery.minimum_charge
+            min_battery_storage = (
+                battery_storage_degradation
+                * electric_storage_size
+                * minigrid.battery.minimum_charge
             )
-            battery_health.append(storage_degradation)
+            battery_health.append(battery_storage_degradation)
 
     # Consolidate outputs from iteration stage
     storage_power_supplied = pd.DataFrame(storage_power_supplied)
@@ -730,9 +736,9 @@ def run_simulation(
         unmet_energy = pd.DataFrame(unmet_energy.values - diesel_energy.values)
         diesel_energy = diesel_energy.abs()
     else:
-        diesel_energy = pd.DataFrame([0.0] * int(storage_profile.size))
-        diesel_times = pd.DataFrame([0.0] * int(storage_profile.size))
-        diesel_fuel_usage = pd.DataFrame([0.0] * int(storage_profile.size))
+        diesel_energy = pd.DataFrame([0.0] * int(battery_storage_profile.size))
+        diesel_times = pd.DataFrame([0.0] * int(battery_storage_profile.size))
+        diesel_fuel_usage = pd.DataFrame([0.0] * int(battery_storage_profile.size))
         diesel_capacity = 0.0
 
     # Find new blackout times, according to when there is unmet energy
@@ -741,10 +747,8 @@ def run_simulation(
     unmet_energy = ((unmet_energy > 0) * unmet_energy).abs()
 
     # Find how many kerosene lamps are in use
-    kerosene_usage = blackout_times.mul(kerosene_profile[start_hour:end_hour].values)
-    kerosene_mitigation = (1 - blackout_times).mul(
-        kerosene_profile[start_hour:end_hour].values
-    )
+    kerosene_usage = blackout_times.mul(kerosene_profile.values)
+    kerosene_mitigation = (1 - blackout_times).mul(kerosene_profile.values)
 
     # Find total energy used by the system
     total_energy_used = pd.DataFrame(
@@ -817,9 +821,9 @@ def run_simulation(
                 8760 * (simulation.end_year - simulation.start_year)
             ]
         ),
-        float(storage_size * np.min(battery_health["Battery health"])),
+        float(electric_storage_size * np.min(battery_health["Battery health"])),
         pv_size,
-        float(storage_size),
+        float(electric_storage_size),
         simulation.start_year,
     )
 
@@ -839,7 +843,7 @@ def run_simulation(
         diesel_energy,
         diesel_times,
         diesel_fuel_usage,
-        storage_profile,
+        battery_storage_profile,
         renewables_energy,
         hourly_storage,
         energy_surplus,
@@ -927,7 +931,9 @@ class MinigridOld:
                 start_year=int(optimisation_report["Start year"][sim]),
                 end_year=int(optimisation_report["End year"][sim]),
                 pv_size=float(optimisation_report["Initial PV size"][sim]),
-                storage_size=float(optimisation_report["Initial storage size"][sim]),
+                electric_storage_size=float(
+                    optimisation_report["Initial storage size"][sim]
+                ),
             )
             lifetime_output = pd.concat(
                 [lifetime_output, system_performance_outputs[0]], axis=0
