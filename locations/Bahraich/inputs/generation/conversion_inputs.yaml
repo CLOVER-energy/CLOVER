@@ -12,6 +12,9 @@
   electric_power: 600 # [W]
   output: groundwater
   maximum_output: 830 # [litres/hour]
+
+# Reverse osmosis specs from:
+# https://www.sciencedirect.com/science/article/pii/S0255270116304329
 - name: reverse_osmosis
   electric_power: 1435 # [W]
   groundwater: 500 # [litres]
