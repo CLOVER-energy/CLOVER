@@ -412,42 +412,6 @@ def _get_water_storage_profile(
         tank_storage_profile,
     )
 
-    # water_convertors: List[Convertor] = sorted(
-    #     [
-    #         convertor
-    #         for convertor in convertors
-    #         if list(convertor.input_resource_consumption) == [ResourceType.ELECTRIC]
-    #         and convertor.output_resource_type == ResourceType.UNCLEAN_WATER
-    #     ]
-    # )
-    # unmet_water = processed_total_clean_water_load.copy()
-
-    # demand_met_through_electric_power = pd.DataFrame([0] * unmet_water.size)
-    # power_consumed: pd.DataFrame = pd.DataFrame([0] * unmet_water.size)
-
-    # # While there is unmet water demand and there are still water convertors available:
-    # while any(unmet_water.values > 0) and len(water_convertors) > 0:
-    #     current_convertor = water_convertors.pop(0)
-
-    #     # Compute the delivered water as the minimum of the values in the unmet water
-    #     # and the total water that is deliverable from this conversion device.
-    #     delivered_water = pd.DataFrame(
-    #         [
-    #             min(entry, current_convertor.maximum_output_capacity)
-    #             for entry in unmet_water[0]
-    #         ]
-    #     )
-
-    #     # Compute the power that was consumed and the remaining unmet water demand.
-    #     demand_met_through_electric_power += delivered_water
-    #     power_consumed += delivered_water.mul(
-    #         current_convertor.input_resource_consumption[ResourceType.ELECTRIC]
-    #     )
-    #     unmet_water -= delivered_water
-
-    # # Return the unmet water and power consumed.
-    # return demand_met_through_electric_power, power_consumed, unmet_water
-
 
 def run_simulation(
     convertors: List[Convertor],
@@ -767,7 +731,6 @@ def run_simulation(
                     desalinated_water = min(
                         excess_energy / energy_per_desalinated_litre, max_tank_storage
                     )
-                    water_supplied_by_excess_energy.iloc[t] = desalinated_water
 
                     # Add this to the tank.
                     new_hourly_tank_storage += desalinated_water
@@ -775,19 +738,44 @@ def run_simulation(
                     # Compute the remaining excess energy and the energy used in
                     # desalination.
                     energy_consumed = energy_per_desalinated_litre * desalinated_water
-                    excess_energy_used_desalinating.iloc[t] = energy_consumed
-                    excess_energy -= energy_consumed
+                    new_hourly_battery_storage -= energy_consumed
 
                     # Ensure that the excess energy is normalised correctly.
-                    excess_energy = max(excess_energy, 0.0)
+                    excess_energy = max(
+                        new_hourly_battery_storage - max_battery_storage, 0.0
+                    )
 
-                # If there is no excess energy, then carry out desalination to meet the
-                # demand as per a standard electric device.
-                else:
+                    # Store this as water and electricity supplied using excess power.
+                    excess_energy_used_desalinating.iloc[t] = energy_consumed
+                    water_supplied_by_excess_energy.iloc[t] = desalinated_water
+
+                # If there is still unmet water demand, then carry out desalination and
+                # pumping to fulfil the demand.
+                if new_hourly_tank_storage < 0:
                     # If there is unmet demand, then carry out desalination and pumping to
                     # fulfil the demand.
-                    # @@@ Compute additional energy used desalinating here.
-                    pass
+                    current_unmet_water_demand = -new_hourly_tank_storage
+
+                    # Compute the electricity consumed meeting this demand.
+                    energy_consumed = (
+                        energy_per_desalinated_litre * current_unmet_water_demand
+                    )
+
+                    # Withdraw this energy from the batteries.
+                    new_hourly_battery_storage -= (
+                        1.0 / minigrid.battery.conversion_out
+                    ) * energy_consumed
+
+                    # Ensure that the excess energy is normalised correctly.
+                    excess_energy = max(
+                        new_hourly_battery_storage - max_battery_storage, 0.0
+                    )
+
+                    # Store this as water and electricity supplied by backup.
+                    clean_water_power_consumed.iloc[t] += energy_consumed
+                    backup_desalinator_water_supplied.iloc[
+                        t
+                    ] = current_unmet_water_demand
 
                 new_hourly_tank_storage = min(new_hourly_tank_storage, max_tank_storage)
                 new_hourly_tank_storage = max(new_hourly_tank_storage, min_tank_storage)
@@ -803,40 +791,6 @@ def run_simulation(
                         - hourly_tank_storage.iloc[t][0],
                         0.0,
                     )
-
-                # instantaneous_unmet_water = max(
-                #     min_tank_storage - new_hourly_tank_storage, 0.0
-                # )
-
-                # # If there is unmet water demand, then run this off the backup system.
-                # if instantaneous_unmet_water > 0:
-                #     # Compute the energy consumed by desalinating this water and take
-                #     # this from the batteries.
-                #     energy_demand = (
-                #         energy_per_desalinated_litre * instantaneous_unmet_water
-                #     )
-                #     energy_consumed = max(
-                #         energy_demand,
-                #         (-1.0)
-                #         * minigrid.battery.discharge_rate
-                #         * (max_battery_storage - min_battery_storage),
-                #     )
-                #     clean_water_power_consumed.iloc[t][0] += energy_consumed
-                #     new_hourly_battery_storage -= (
-                #         1.0 / minigrid.battery.conversion_out
-                #     ) * energy_consumed
-
-                #     # Add this to the backup water that was supplied.
-                #     backup_desalinator_water_supplied.append(
-                #         energy_per_desalinated_litre * instantaneous_unmet_water
-                #     )
-                # else:
-                #     backup_desalinator_water_supplied.append(0)
-
-                # water_surplus.append(
-                #     max(new_hourly_tank_storage - max_tank_storage, 0.0)
-                # )
-                # water_deficit.append(instantaneous_unmet_water)
 
             ###############
             # Electricity #
@@ -896,7 +850,7 @@ def run_simulation(
     unmet_energy = pd.DataFrame(
         (
             load_energy.values
-            # @@@ Register additional energy used desalinating here.
+            + clean_water_power_consumed.values
             - renewables_energy_used_directly.values
             - grid_energy.values
             - storage_power_supplied.values
@@ -926,7 +880,6 @@ def run_simulation(
             BColours.fail,
             BColours.endc,
         )
-        pass
     else:
         diesel_energy = pd.DataFrame([0.0] * int(battery_storage_profile.size))
         diesel_times = pd.DataFrame([0.0] * int(battery_storage_profile.size))
@@ -955,22 +908,6 @@ def run_simulation(
     )
 
     if ResourceType.CLEAN_WATER in scenario.resource_types:
-        # Determine the clean water which was not delivered due to there not being
-        # enough electricity.
-        # blackout_water = pd.DataFrame(
-        #     [
-        #         1 if entry > 0 else 0
-        #         for entry in clean_water_demand_met_through_electric_power.mul(
-        #             blackout_times
-        #         ).values
-        #     ]
-        # )
-        # clean_water_demand_met_through_electric_power -= blackout_water
-        # unmet_clean_water += blackout_water
-
-        # Find out how much of the minigrid power was used providing electricity as
-        # opposed to clean water.
-
         # Compute the amount of time for which the backup water was able to operate.
         backup_desalinator_water_supplied = backup_desalinator_water_supplied.mul(
             1 - blackout_times
