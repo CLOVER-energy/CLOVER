@@ -183,7 +183,7 @@ def plot_outputs(
     os.makedirs(figures_directory, exist_ok=True)
 
     with tqdm(
-        total=20 if initial_clean_water_hourly_loads is not None else 10,
+        total=21 if initial_clean_water_hourly_loads is not None else 10,
         desc="plots",
         leave=False,
         unit="plot",
@@ -922,10 +922,19 @@ def plot_outputs(
             plt.close()
             pbar.update(1)
 
-            total_used = np.mean(
+            total_supplied = np.mean(
                 np.reshape(
                     simulation_output[0:HOURS_PER_YEAR][
                         "Total clean water supplied (l)"
+                    ].values,
+                    (365, 24),
+                ),
+                axis=0,
+            )
+            total_used = np.mean(
+                np.reshape(
+                    simulation_output[0:HOURS_PER_YEAR][
+                        "Total clean water consumed (l)"
                     ].values,
                     (365, 24),
                 ),
@@ -949,10 +958,37 @@ def plot_outputs(
                 ),
                 axis=0,
             )
+            renewable_clean_water = np.mean(
+                np.reshape(
+                    simulation_output[0:HOURS_PER_YEAR][
+                        "Renewable clean water used directly (l)"
+                    ].values,
+                    (365, 24),
+                ),
+                axis=0,
+            )
             storage_clean_water = np.mean(
                 np.reshape(
                     simulation_output[0:HOURS_PER_YEAR][
                         "Clean water supplied via tank storage (l)"
+                    ].values,
+                    (365, 24),
+                ),
+                axis=0,
+            )
+            tank_storage = np.mean(
+                np.reshape(
+                    simulation_output[0:HOURS_PER_YEAR][
+                        "Water held in storage tanks (l)"
+                    ].values,
+                    (365, 24),
+                ),
+                axis=0,
+            )
+            total_clean_water_load = np.mean(
+                np.reshape(
+                    simulation_output[0:HOURS_PER_YEAR][
+                        "Total clean water demand (l)"
                     ].values,
                     (365, 24),
                 ),
@@ -968,11 +1004,17 @@ def plot_outputs(
                 axis=0,
             )
 
-            plt.plot(total_used, label="Total used")
-            plt.plot(backup_clean_water, label="Backup desalination")
-            plt.plot(excess_power_clean_water, label="Excess power desalination")
-            plt.plot(storage_clean_water, label="Storage")
-            plt.plot(unmet_clean_water, label="Unmet")
+            plt.plot(total_supplied, label="Total used", zorder=1)
+            plt.plot(total_used, label="Total used", zorder=2)
+            plt.plot(backup_clean_water, label="Backup desalination", zorder=3)
+            plt.plot(
+                excess_power_clean_water, label="Excess power desalination", zorder=4
+            )
+            plt.plot(renewable_clean_water, label="PV-D direct supply", zorder=5)
+            plt.plot(storage_clean_water, label="Storage", zorder=6)
+            plt.plot(tank_storage, "--", label="Water held in tanks", zorder=7)
+            plt.plot(unmet_clean_water, label="Unmet", zorder=8)
+            plt.plot(total_clean_water_load, label="Total load", zorder=9)
             plt.legend()
             plt.xlim(0, 23)
             plt.xticks(range(0, 24, 1))
@@ -992,19 +1034,29 @@ def plot_outputs(
             excess = simulation_output.iloc[0:24][
                 "Clean water supplied using excess minigrid energy (l)"
             ]
+            renewable = simulation_output.iloc[0:24][
+                "Renewable clean water used directly (l)"
+            ]
             storage = simulation_output.iloc[0:24][
                 "Clean water supplied via tank storage (l)"
             ]
+            tank_storage = simulation_output.iloc[0:24][
+                "Water held in storage tanks (l)"
+            ]
+            total_load = simulation_output.iloc[0:24]["Total clean water demand (l)"]
             total_used = simulation_output.iloc[0:24]["Total clean water supplied (l)"]
             unmet_clean_water = simulation_output.iloc[0:24][
                 "Unmet clean water demand (l)"
             ]
 
-            plt.plot(total_used, label="Total used")
-            plt.plot(backup, label="Backup desalination")
-            plt.plot(excess, label="Excess minigrid power")
-            plt.plot(storage, label="Storage")
-            plt.plot(unmet_clean_water, label="Unmet")
+            plt.plot(total_used, label="Total used", zorder=1)
+            plt.plot(backup, label="Backup desalination", zorder=2)
+            plt.plot(excess, label="Excess minigrid power", zorder=3)
+            plt.plot(renewable, label="PV-D output", zorder=4)
+            plt.plot(storage, label="Storage", zorder=5)
+            plt.plot(tank_storage, "--", label="Water held in tanks", zorder=6)
+            plt.plot(unmet_clean_water, label="Unmet", zorder=7)
+            plt.plot(total_load, label="Total load", zorder=8)
             plt.legend()
             plt.xlim(0, 23)
             plt.xticks(range(0, 24, 1))
@@ -1013,6 +1065,50 @@ def plot_outputs(
             plt.title("Water supply and demand on the first day")
             plt.savefig(
                 os.path.join(figures_directory, "clean_water_use_on_first_day.png"),
+                transparent=True,
+            )
+            plt.close()
+            pbar.update(1)
+
+            backup = simulation_output.iloc[0:48][
+                "Clean water supplied via backup desalination (l)"
+            ]
+            excess = simulation_output.iloc[0:48][
+                "Clean water supplied using excess minigrid energy (l)"
+            ]
+            renewable = simulation_output.iloc[0:48][
+                "Renewable clean water used directly (l)"
+            ]
+            storage = simulation_output.iloc[0:48][
+                "Clean water supplied via tank storage (l)"
+            ]
+            tank_storage = simulation_output.iloc[0:48][
+                "Water held in storage tanks (l)"
+            ]
+            total_load = simulation_output.iloc[0:48]["Total clean water demand (l)"]
+            total_used = simulation_output.iloc[0:48]["Total clean water supplied (l)"]
+            unmet_clean_water = simulation_output.iloc[0:48][
+                "Unmet clean water demand (l)"
+            ]
+
+            plt.plot(total_used, label="Total used", zorder=1)
+            plt.plot(backup, label="Backup desalination", zorder=2)
+            plt.plot(excess, label="Excess minigrid power", zorder=3)
+            plt.plot(renewable, label="PV-D output", zorder=4)
+            plt.plot(storage, label="Storage", zorder=5)
+            plt.plot(tank_storage, "--", label="Water held in tanks", zorder=6)
+            plt.plot(unmet_clean_water, label="Unmet", zorder=7)
+            plt.plot(total_load, label="Total load", zorder=8)
+            plt.legend()
+            plt.xlim(0, 47)
+            plt.xticks(range(0, 48, 1))
+            plt.xlabel("Hour of day")
+            plt.ylabel("Clean-water usage / litres/hour")
+            plt.title("Water supply and demand in the first 48 hours")
+            plt.savefig(
+                os.path.join(
+                    figures_directory, "clean_water_use_in_first_48_hours.png"
+                ),
                 transparent=True,
             )
             plt.close()
@@ -1109,6 +1205,126 @@ def plot_outputs(
             plt.title("Electriciy use by supply/device type on an average day")
             plt.savefig(
                 os.path.join(figures_directory, "electricity_use_by_supply_type.png"),
+                transparent=True,
+            )
+            plt.close()
+            pbar.update(1)
+
+            # Plot the seasonal variation in clean-water supply sources.
+            excess_pv_water = np.reshape(
+                simulation_output[0:HOURS_PER_YEAR][
+                    "Clean water supplied using excess minigrid energy (l)"
+                ].values
+                / 1000,
+                (365, 24),
+            )
+            storage_water = np.reshape(
+                simulation_output[0:HOURS_PER_YEAR][
+                    "Clean water supplied via tank storage (l)"
+                ].values
+                / 1000,
+                (365, 24),
+            )
+            renewable_energy = np.reshape(
+                simulation_output[0:HOURS_PER_YEAR][
+                    "Renewable clean water used directly (l)"
+                ].values
+                / 1000,
+                (365, 24),
+            )
+            unmet_water = np.reshape(
+                simulation_output[0:HOURS_PER_YEAR][
+                    "Unmet clean water demand (l)"
+                ].values
+                / 1000,
+                (365, 24),
+            )
+
+            # Normalise the arrays
+            max_water_value = max(
+                excess_pv_water.max(),
+                storage_water.max(),
+                renewable_energy.max(),
+                unmet_water.max(),
+            )
+
+            fig, ([ax1, ax2], [ax3, ax4]) = plt.subplots(
+                2, 2
+            )  # ,sharex=True, sharey=True)
+            sns.heatmap(
+                excess_pv_water,
+                vmin=0.0,
+                vmax=max_water_value,
+                cmap="Reds",
+                cbar=True,
+                ax=ax1,
+            )
+            ax1.set(
+                xticks=range(0, 25, 6),
+                xticklabels=range(0, 25, 6),
+                yticks=range(0, 365, 60),
+                yticklabels=range(0, 365, 60),
+                xlabel="Hour of day",
+                ylabel="Day of year",
+                title="Excess PV",
+            )
+            sns.heatmap(
+                storage_water,
+                vmin=0.0,
+                vmax=max_water_value,
+                cmap="Greens",
+                cbar=True,
+                ax=ax2,
+            )
+            ax2.set(
+                xticks=range(0, 25, 6),
+                xticklabels=range(0, 25, 6),
+                yticks=range(0, 365, 60),
+                yticklabels=range(0, 365, 60),
+                xlabel="Hour of day",
+                ylabel="Day of year",
+                title="Storage",
+            )
+            sns.heatmap(
+                renewable_energy,
+                vmin=0.0,
+                vmax=max_water_value,
+                cmap="Blues",
+                cbar=True,
+                ax=ax3,
+            )
+            ax3.set(
+                xticks=range(0, 25, 6),
+                xticklabels=range(0, 25, 6),
+                yticks=range(0, 365, 60),
+                yticklabels=range(0, 365, 60),
+                xlabel="Hour of day",
+                ylabel="Day of year",
+                title="PV-D/T",
+            )
+            sns.heatmap(
+                unmet_water,
+                vmin=0.0,
+                vmax=max_water_value,
+                cmap="Oranges",
+                cbar=True,
+                ax=ax4,
+            )
+            ax4.set(
+                xticks=range(0, 25, 6),
+                xticklabels=range(0, 25, 6),
+                yticks=range(0, 365, 60),
+                yticklabels=range(0, 365, 60),
+                xlabel="Hour of day",
+                ylabel="Day of year",
+                title="Unmet",
+            )
+            plt.tight_layout()
+            fig.suptitle("Water from different sources (tonnes)")
+            fig.subplots_adjust(top=0.87)
+            plt.xticks(rotation=0)
+            plt.savefig(
+                os.path.join(figures_directory, "seasonal_water_supply_variations.png"),
                 transparent=True,
             )
             plt.close()
