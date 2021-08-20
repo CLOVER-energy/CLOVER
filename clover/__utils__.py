@@ -193,6 +193,7 @@ class DieselMode(enum.Enum):
     BACKUP = "backup"
     CYCLE_CHARGING = "cycle_charging"
 
+
 @dataclasses.dataclass
 class DieselScenario:
     """

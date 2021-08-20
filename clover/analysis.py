@@ -940,6 +940,15 @@ def plot_outputs(
                 ),
                 axis=0,
             )
+            excess_power_clean_water = np.mean(
+                np.reshape(
+                    simulation_output[0:HOURS_PER_YEAR][
+                        "Clean water supplied using excess minigrid energy (l)"
+                    ].values,
+                    (365, 24),
+                ),
+                axis=0,
+            )
             storage_clean_water = np.mean(
                 np.reshape(
                     simulation_output[0:HOURS_PER_YEAR][
@@ -961,6 +970,7 @@ def plot_outputs(
 
             plt.plot(total_used, label="Total used")
             plt.plot(backup_clean_water, label="Backup desalination")
+            plt.plot(excess_power_clean_water, label="Excess power desalination")
             plt.plot(storage_clean_water, label="Storage")
             plt.plot(unmet_clean_water, label="Unmet")
             plt.legend()
@@ -976,12 +986,24 @@ def plot_outputs(
             plt.close()
             pbar.update(1)
 
+            backup = simulation_output.iloc[0:24][
+                "Clean water supplied via backup desalination (l)"
+            ]
+            excess = simulation_output.iloc[0:24][
+                "Clean water supplied using excess minigrid energy (l)"
+            ]
+            storage = simulation_output.iloc[0:24][
+                "Clean water supplied via tank storage (l)"
+            ]
             total_used = simulation_output.iloc[0:24]["Total clean water supplied (l)"]
             unmet_clean_water = simulation_output.iloc[0:24][
                 "Unmet clean water demand (l)"
             ]
 
             plt.plot(total_used, label="Total used")
+            plt.plot(backup, label="Backup desalination")
+            plt.plot(excess, label="Excess minigrid power")
+            plt.plot(storage, label="Storage")
             plt.plot(unmet_clean_water, label="Unmet")
             plt.legend()
             plt.xlim(0, 23)
