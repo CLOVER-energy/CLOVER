@@ -52,7 +52,7 @@ from .diesel import (
     get_diesel_energy_and_times,
     get_diesel_fuel_usage,
 )
-from .solar import SolarPanel, SolarPanelType
+from .solar import PVPanel
 from .storage import Battery, CleanWaterTank
 
 __all__ = (
@@ -423,10 +423,10 @@ def run_simulation(
     location: Location,
     logger: Logger,
     number_of_clean_water_tanks: int,
+    pv_panel: PVPanel,
     pv_size: float,
     scenario: Scenario,
     simulation: Simulation,
-    solar_panels: List[SolarPanel],
     electric_storage_size: float,
     total_clean_water_load: pd.DataFrame,
     total_electric_load: pd.DataFrame,
@@ -453,14 +453,14 @@ def run_simulation(
             The location being considered.
         - number_of_clean_water_tanks:
             The number of clean-water tanks installed in the system.
+        - pv_panel:
+            The pv panel being considered.
         - pv_size:
             Amount of PV in kWp
         - scenario:
             The scenario being considered.
         - simulation:
             The simulation to run.
-        - solar_panels:
-            The solar panels being considered.
         - electric_storage_size:
             Amount of storage in kWh
         - total_clean_water_load:
@@ -574,11 +574,6 @@ def run_simulation(
         + clean_water_power_consumed.values
     )
 
-    # Determine the solar panel lifetime.
-    solar_lifetime = [
-        panel for panel in solar_panels if panel.panel_type == SolarPanelType.PV
-    ][0].lifetime
-
     # Get electric input profiles
     (
         load_energy,
@@ -594,7 +589,7 @@ def run_simulation(
         minigrid=minigrid,
         processed_total_electric_load=processed_total_electric_load,
         scenario=scenario,
-        solar_lifetime=solar_lifetime,
+        solar_lifetime=pv_panel.lifetime,
         total_solar_power_produced=total_solar_power_produced,
         end_hour=end_hour,
         pv_size=pv_size,

@@ -808,6 +808,9 @@ class Scenario:
     .. attribute:: pv
         Whether PV is being included in the scenario.
 
+    .. attribute:: pv_panel_name
+        The name of the pv panel being considered.
+
     """
 
     battery: bool
@@ -820,6 +823,7 @@ class Scenario:
     resource_types: Set[ResourceType]
     prioritise_self_generation: bool
     pv: bool
+    pv_panel_name: str
 
     @classmethod
     def from_dict(cls, scenario_inputs: Dict[str, Any]) -> Any:
@@ -874,6 +878,7 @@ class Scenario:
             resource_types,
             scenario_inputs["prioritise_self_generation"],
             scenario_inputs["pv"],
+            scenario_inputs["pv_panel"],
         )
 
 

@@ -141,9 +141,9 @@ def parse_input_files(
     pd.DataFrame,
     Optional[OptimisationParameters],
     Optional[Set[Optimisation]],
+    solar.PVPanel,
     Scenario,
     List[Simulation],
-    List[solar.SolarPanel],
     Dict[str, str],
 ]:
     """
@@ -475,6 +475,22 @@ def parse_input_files(
         if panel_input["type"] == solar.SolarPanelType.PV.value:
             solar_panels.append(solar.PVPanel.from_dict(logger, panel_input))
 
+    # Return the solar panel being modelled.
+    try:
+        pv_panel = [
+            panel
+            for panel in solar_panels
+            if panel.panel_type == solar.SolarPanelType.PV
+            and panel.name == scenario.pv_panel_name
+        ][0]
+    except IndexError:
+        logger.error(
+            "%sPV panel %s not found in pv panel inputs.%s",
+            BColours.fail,
+            scenario.pv_panel_name,
+            BColours.endc,
+        )
+
     # Generate a dictionary with information about the input files used.
     input_file_info = {
         "convertors": conversion_file_relative_path,
@@ -503,8 +519,8 @@ def parse_input_files(
         location,
         optimisation_parameters,
         optimisations,
+        pv_panel,
         scenario,
         simulations,
-        solar_panels,
         input_file_info,
     )

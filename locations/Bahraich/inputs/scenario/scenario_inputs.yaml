@@ -9,6 +9,7 @@
 ################################################################################
 
 pv: true # "true" or "false"
+pv_panel: default_solar
 battery: true # "true" or "false"
 diesel:
   mode: backup # "backup" only option currently
