@@ -100,6 +100,7 @@ class Convertor:
         return (
             self.input_resource_consumption == other.input_resource_consumption
             and self.output_resource_type == other.output_resource_type
+            and self.consumption == other.consumption
         )
 
     def __lt__(self, other) -> bool:
@@ -123,7 +124,7 @@ class Convertor:
                 "different output types."
             )
 
-        return self.consumption == other.consumption
+        return self.consumption < other.consumption
 
     def __repr__(self) -> str:
         """
@@ -186,6 +187,26 @@ class MultiInputConvertor(Convertor):
     Represents a convertor that is capable of having multiple input resource types.
 
     """
+
+    def __lt__(self, other) -> bool:
+        """
+        Returns whether the current instance is less than another instance.
+
+        The comparison is made purely on the consumption.
+
+        Outputs:
+            - Whether the current instance is less than the other in consumption.
+
+        Raises:
+            - An Exception if the two instances are not of the same type and an attempt
+              was made at this comparison.
+
+        """
+
+        return (
+            list(self.input_resource_consumption.values())[0]
+            < list(other.input_resource_consumption.values())[0]
+        )
 
     @classmethod
     def from_dict(cls, input_data: Dict[str, Union[str, float]], logger: Logger) -> Any:
