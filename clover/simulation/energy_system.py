@@ -47,11 +47,12 @@ from ..__utils__ import (
 from ..conversion.conversion import Convertor
 from ..generation.solar import solar_degradation
 from ..load.load import population_hourly
-from ..simulation.diesel import (
+from .diesel import (
     DieselBackupGenerator,
     get_diesel_energy_and_times,
     get_diesel_fuel_usage,
 )
+from .solar import SolarPanel, SolarPanelType
 from .storage import Battery, CleanWaterTank
 
 __all__ = (
@@ -425,7 +426,7 @@ def run_simulation(
     pv_size: float,
     scenario: Scenario,
     simulation: Simulation,
-    solar_lifetime: int,
+    solar_panels: List[SolarPanel],
     electric_storage_size: float,
     total_clean_water_load: pd.DataFrame,
     total_electric_load: pd.DataFrame,
@@ -458,8 +459,8 @@ def run_simulation(
             The scenario being considered.
         - simulation:
             The simulation to run.
-        - solar_lifetime:
-            The lifetime of the solar system being considered.
+        - solar_panels:
+            The solar panels being considered.
         - electric_storage_size:
             Amount of storage in kWh
         - total_clean_water_load:
@@ -572,6 +573,11 @@ def run_simulation(
         ].values
         + clean_water_power_consumed.values
     )
+
+    # Determine the solar panel lifetime.
+    solar_lifetime = [
+        panel for panel in solar_panels if panel.panel_type == SolarPanelType.PV
+    ][0].lifetime
 
     # Get electric input profiles
     (

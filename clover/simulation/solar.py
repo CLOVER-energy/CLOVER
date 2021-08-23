@@ -18,85 +18,120 @@ performance under environmental conditions needs to be calculated.
 
 """
 
+import dataclasses
+import enum
+
 from logging import Logger
 from typing import Any, Dict
 
 from ..__utils__ import BColours, InputFileError
 
 
-__all__ = ("PV",)
+__all__ = (
+    "PVPanel",
+    "SolarPanel",
+    "SolarPanelType",
+)
 
 
-class PV:
+class SolarPanelType(enum.Enum):
     """
-    Represents a PV panel being modelled.
+    Specifies the type of solar panel being considered.
 
-    .. attribute:: reference_efficiency
-        The reference efficiency of the panel.
+    - PV:
+        Denotes that a PV panel is being considered.
+    - SOLAR_THERMAL:
+        Denotes that a solar-thermal panel is being considered.
+
+    """
+
+    PV = "pv"
+    SOLAR_THERMAL = "solar_thermal"
+
+
+@dataclasses.dataclass
+class SolarPanel:
+    """
+    Represents a solar panel being considered.
+
+    .. attribute:: azimuthal_orientation
+        The azimuthal orientation of the panel, defined in degrees from North.
+
+    .. attribute:: lifetime
+        The lifetime of the panel in years.
+
+    .. attribute:: name
+        The name of the panel being considered.
+
+    .. attribite:: panel_type
+        The type of panel being considered.
 
     .. attribute:: reference_temperature
-        The reference temperature of the panel, measured in Celcius.
+        The reference temperature of the PV layer of the panel, measured in degrees
+        Celcius.
 
     .. attribute:: thermal_coefficient
-        The thermal coefficient of the panel, measured in Kelvin^(-1).
+        The thermal coefficient of performance of the PV layer of the panel, measured in
+        kelvin^(-1).
+
+    .. attribute:: tilt
+        The angle between the panel and the horizontal.
 
     """
 
-    def __init__(
-        self,
-        reference_temperature: float,
-        thermal_coefficient: float,
-        *,
-        reference_efficiency: float = 1,
-    ) -> None:
+    azimuthal_orientation: float
+    lifetime: int
+    name: str
+    reference_temperature: float
+    thermal_coefficient: float
+    tilt: float
+
+    def __init_subclass__(cls, panel_type: SolarPanelType) -> None:
         """
-        Instnatiate a :class:`PV` instance based on the information provided.
+        The init_subclass hook, run on instantiation of the :class:`SolarPanel`.
 
         Inputs:
-            - reference_efficiency:
-                The reference efficiency of the panel.
-            - reference_temperature:
-                The reference temperature of the panel, measured in Celcius.
-            - thermal_coefficient:
-                The thermal coefficient of the panel, measured in Kelvin^(-1).
+            - panel_type:
+                The type of panel being considered.
+
+        Outputs:
+            An instantiated :class:`SolarPanel` instance.
 
         """
 
-        self.reference_efficiency = reference_efficiency
-        self.reference_temperature = reference_temperature
-        self.thermal_coefficient = thermal_coefficient
+        cls.panel_type = panel_type
+
+        return super().__init_subclass__()
+
+
+class PVPanel(SolarPanel, panel_type=SolarPanelType.PV):
+    """
+    Represents a photovoltaic panel.
+
+    """
 
     @classmethod
     def from_dict(cls, logger: Logger, solar_inputs: Dict[str, Any]) -> Any:
         """
-        Returns a :class:`PV` instance based on the input data provided.
+        Instantiate a :class:`PVPanel` instance based on the input data.
 
         Inputs:
-            - logger:
-                The logger to use for the run.
             - solar_inputs:
-                The solar input data relevant to this instance.
+                The solar input data for the panel.
 
         Outputs:
-            - A :class:`PV` instance based on the data provided.
+            A :class:`PVPanel` instance.
 
         """
 
-        try:
-            return cls(
-                solar_inputs["reference_temperature"],
-                solar_inputs["thermal_coefficient"],
-                reference_efficiency=solar_inputs["reference_efficiency"]
-                if "reference_efficiency" in solar_inputs
-                else 1,
-            )
-        except KeyError as e:
-            logger.error("Solar inputs file is missing information: %s", str(e))
-            raise InputFileError(
-                "solar inputs",
-                f"{BColours.fail}Missing data in the solar inputs file: {str(e)}"
-                + f"{BColours.endc}",
-            ) from None
+        return cls(
+            solar_inputs["azimuthal_orientation"],
+            solar_inputs["lifetime"],
+            solar_inputs["name"],
+            solar_inputs["reference_temperature"],
+            solar_inputs["thermal_coefficient"],
+            solar_inputs["tilt"],
+        )
 
     def electrical_efficiency(self, pv_temperature: float) -> float:
         """

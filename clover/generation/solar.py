@@ -18,12 +18,16 @@ for use locally within CLOVER.
 
 """
 
-from typing import Any, Dict
+import dataclasses
+import enum
+
+from typing import Any, Dict, List
 
 import pandas as pd
 
+from ..__utils__ import InputFileError, Location
 from .__utils__ import BaseRenewablesNinjaThread, total_profile_output
-from ..__utils__ import Location
+from ..simulation.solar import SolarPanel, SolarPanelType
 
 __all__ = (
     "SolarDataThread",
@@ -77,13 +81,26 @@ class SolarDataThread(
         location: Location,
         logger_name: str,
         regenerate: bool,
-        solar_generation_inputs: Dict[str, Any],
+        solar_panels: List[SolarPanel],
         sleep_multiplier: int = 1,
     ):
         """
         Instantiate a :class:`SolarDataThread` instance.
 
         """
+
+        # @@@ Temporary code until alternative solar-power method is written.
+        pv_panels = [
+            panel for panel in solar_panels if panel.panel_type == SolarPanelType.PV
+        ]
+        try:
+            pv_panel = pv_panels[0]
+        except IndexError:
+            raise InputFileError(
+                "solar generation inputs",
+                "No PV panel was specified in the solar generation inputs. This is "
+                "currently still necessary for the generation of solar data.",
+            )
 
         # Add the additional parameters which are need when calling the solar data.
         renewables_ninja_params = {
@@ -93,8 +110,8 @@ class SolarDataThread(
             "capacity": 1.0,
             "system_loss": 0,
             "tracking": 0,
-            "tilt": solar_generation_inputs["tilt"],
-            "azim": solar_generation_inputs["azimuthal_orientation"],
+            "tilt": pv_panel.tilt,
+            "azim": pv_panel.azimuthal_orientation,
         }
         super().__init__(
             auto_generated_files_directory,

@@ -304,10 +304,9 @@ def main(args: List[Any]) -> None:
             location,
             optimisation_inputs,
             optimisations,
-            pv_panel,
             scenario,
             simulations,
-            solar_generation_inputs,
+            solar_panels,
             input_file_info,
         ) = parse_input_files(parsed_args.location, logger)
     except FileNotFoundError as e:
@@ -383,7 +382,7 @@ def main(args: List[Any]) -> None:
         location,
         solar.SOLAR_LOGGER_NAME,
         parsed_args.refetch,
-        solar_generation_inputs,
+        solar_panels,
         num_ninjas,
     )
     solar_data_thread.start()
@@ -622,7 +621,7 @@ def main(args: List[Any]) -> None:
                     parsed_args.pv_system_size,
                     scenario,
                     simulation,
-                    solar_generation_inputs["lifetime"],
+                    solar_panels,
                     parsed_args.storage_size,
                     total_clean_water_load,
                     0.001 * total_electric_load,
