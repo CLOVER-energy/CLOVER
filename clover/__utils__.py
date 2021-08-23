@@ -36,9 +36,11 @@ from tqdm import tqdm  # type: ignore
 
 __all__ = (
     "BColours",
+    "CleanWaterMode",
     "CUT_OFF_TIME",
     "daily_sum_to_monthly_sum",
     "DemandType",
+    "DieselMode",
     "get_logger",
     "hourly_profile_to_daily_sum",
     "InputFileError",
@@ -89,16 +91,16 @@ class BColours:
     """
     Contains various colours used for pretty-printing out to the command-line on stdout.
 
-    .. attribute:: FAIL
+    - FAIL:
         Used for a failure message.
 
-    .. attributes:: WARNING, OKBLUE
+    - WARNING, OKBLUE:
         Various colours used.
 
-    .. attribute:: ENDC
+    - ENDC:
         Used to reset the colour of the terminal output.
 
-    .. attribute:: BOLD, UNDERLINE
+    - BOLD, UNDERLINE:
         Used to format the text.
 
     """
@@ -109,6 +111,22 @@ class BColours:
     endc = "\033[0m"
     bolc = "\033[1m"
     underline = "\033[4m"
+
+
+class CleanWaterMode(enum.Enum):
+    """
+    Used to specify the clean-water mode for the system.
+
+    - BACKUP:
+        The clean-water demand will only be fulfiled using minigrid power as backup.
+
+    - PRIORITISE:
+        The clean-water demand will be fulfiled always.
+
+    """
+
+    BACKUP = "backup"
+    PRIORITISE = "prioritise"
 
 
 def daily_sum_to_monthly_sum(daily_profile):
@@ -762,6 +780,9 @@ class Scenario:
     .. attribute:: battery
         Whether battery storage is being included in the scenario.
 
+    .. attribute:: clean_water_mode
+        The clean-water mode.
+
     .. attribute:: demands
         The demands being modelled.
 
@@ -790,6 +811,7 @@ class Scenario:
     """
 
     battery: bool
+    clean_water_mode: Optional[CleanWaterMode]
     demands: Demands
     diesel_scenario: DieselScenario
     distribution_network: DistributionNetwork
@@ -812,6 +834,12 @@ class Scenario:
             - A :class:`Scenario` instance based on the input data provided.
 
         """
+
+        clean_water_mode = (
+            CleanWaterMode(scenario_inputs[ResourceType.CLEAN_WATER.value]["mode"])
+            if ResourceType.CLEAN_WATER.value in scenario_inputs
+            else None
+        )
 
         demands = Demands(
             scenario_inputs["demands"][DemandType.COMMERCIAL.value],
@@ -837,6 +865,7 @@ class Scenario:
 
         return cls(
             scenario_inputs["battery"],
+            clean_water_mode,
             demands,
             diesel_scenario,
             distribution_network,

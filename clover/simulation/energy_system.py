@@ -33,6 +33,7 @@ from tqdm import tqdm  # type: ignore
 
 from ..__utils__ import (
     BColours,
+    CleanWaterMode,
     DieselMode,
     DemandType,
     DistributionNetwork,
@@ -768,31 +769,34 @@ def run_simulation(
 
                 # If there is still unmet water demand, then carry out desalination and
                 # pumping to fulfil the demand.
-                # if new_hourly_tank_storage < 0:
-                #     # If there is unmet demand, then carry out desalination and pumping to
-                #     # fulfil the demand.
-                #     current_unmet_water_demand = -new_hourly_tank_storage
+                if (
+                    new_hourly_tank_storage < 0
+                    and scenario.clean_water_mode == CleanWaterMode.PRIORITISE
+                ):
+                    # If there is unmet demand, then carry out desalination and pumping to
+                    # fulfil the demand.
+                    current_unmet_water_demand = -new_hourly_tank_storage
 
-                #     # Compute the electricity consumed meeting this demand.
-                #     energy_consumed = (
-                #         energy_per_desalinated_litre * current_unmet_water_demand
-                #     )
+                    # Compute the electricity consumed meeting this demand.
+                    energy_consumed = (
+                        energy_per_desalinated_litre * current_unmet_water_demand
+                    )
 
-                #     # Withdraw this energy from the batteries.
-                #     new_hourly_battery_storage -= (
-                #         1.0 / minigrid.battery.conversion_out
-                #     ) * energy_consumed
+                    # Withdraw this energy from the batteries.
+                    new_hourly_battery_storage -= (
+                        1.0 / minigrid.battery.conversion_out
+                    ) * energy_consumed
 
-                #     # Ensure that the excess energy is normalised correctly.
-                #     excess_energy = max(
-                #         new_hourly_battery_storage - max_battery_storage, 0.0
-                #     )
+                    # Ensure that the excess energy is normalised correctly.
+                    excess_energy = max(
+                        new_hourly_battery_storage - max_battery_storage, 0.0
+                    )
 
-                #     # Store this as water and electricity supplied by backup.
-                #     clean_water_power_consumed.iloc[t] += energy_consumed
-                #     backup_desalinator_water_supplied.iloc[
-                #         t
-                #     ] = current_unmet_water_demand
+                    # Store this as water and electricity supplied by backup.
+                    clean_water_power_consumed.iloc[t] += energy_consumed
+                    backup_desalinator_water_supplied.iloc[
+                        t
+                    ] = current_unmet_water_demand
 
                 new_hourly_tank_storage = min(new_hourly_tank_storage, max_tank_storage)
                 new_hourly_tank_storage = max(new_hourly_tank_storage, min_tank_storage)
