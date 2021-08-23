@@ -141,10 +141,9 @@ def parse_input_files(
     pd.DataFrame,
     Optional[OptimisationParameters],
     Optional[Set[Optimisation]],
-    solar.PV,
     Scenario,
     List[Simulation],
-    Dict[str, Any],
+    List[solar.SolarPanel],
     Dict[str, str],
 ]:
     """
@@ -166,10 +165,10 @@ def parse_input_files(
             - grid_inputs,
             - optimisation_inputs,
             - optimisations, the `set` of optimisations to run,
-            - a :class:`PV` instance containing information about the PV panel,
             - scenario,
             - simulations, the `list` of simulations to run,
-            - solar_generation_inputs,
+            - a `list` of :class:`solar.SolarPanel` instances and their children which
+              contain information about the PV panels being considered,
             - a `dict` containing information about the input files used.
 
     """
@@ -471,7 +470,10 @@ def parse_input_files(
     logger.info("Solar generation inputs successfully parsed.")
 
     # Parse the pv-panel information.
-    pv_panel = solar.PV.from_dict(logger, solar_generation_inputs)
+    solar_panels: List[solar.SolarPanel] = []
+    for panel_input in solar_generation_inputs["panels"]:
+        if panel_input["type"] == solar.SolarPanelType.PV.value:
+            solar_panels.append(solar.PVPanel.from_dict(logger, panel_input))
 
     # Generate a dictionary with information about the input files used.
     input_file_info = {
@@ -501,9 +503,8 @@ def parse_input_files(
         location,
         optimisation_parameters,
         optimisations,
-        pv_panel,
         scenario,
         simulations,
-        solar_generation_inputs,
+        solar_panels,
         input_file_info,
     )
