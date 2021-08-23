@@ -147,11 +147,14 @@
                 # License: Open source                                                         #
                 ################################################################################
 
-                azimuthal_orientation: 180 # [degrees from North]
-                lifetime: 20 # [years] - Lifetime of the PV system.
-                reference_temperature: 25 # [degrees Celcius]
-                thermal_coefficient: 0.0053 # [1 / degrees Celcius]
-                tilt: 29 # [degrees above horizontal]
+                panels:
+                  - name: default_solar
+                    azimuthal_orientation: 180 # [degrees from North]
+                    lifetime: 20 # [years] - Lifetime of the PV system.
+                    reference_temperature: 25 # [degrees Celcius]
+                    thermal_coefficient: 0.0053 # [1 / degrees Celcius]
+                    tilt: 29 # [degrees above horizontal]
+                    type: pv # Panel type, either 'pv', 'solar_thermal' or 'solar_desalination'
         - directory: impact
           contents:
             - file: "finance_inputs.yaml"
@@ -588,6 +591,7 @@
                 ################################################################################
 
                 pv: true # "true" or "false"
+                pv_panel: default_solar
                 battery: true # "true" or "false"
                 diesel:
                   mode: backup # "backup" only option currently
