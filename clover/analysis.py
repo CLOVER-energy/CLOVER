@@ -712,6 +712,19 @@ def plot_outputs(
         plt.plot(renewables_supplied, label="Solar generated", zorder=6)
         plt.plot(storage_energy, label="Storage", zorder=7)
         plt.plot(unmet_energy, label="Unmet", zorder=8)
+        if initial_clean_water_hourly_loads is not None:
+            clean_water_energy_via_excess = simulation_output.iloc[0:24][
+                "Excess power consumed desalinating clean water (kWh)"
+            ]
+            clean_water_energy_via_backup = simulation_output.iloc[0:24][
+                "Power consumed providing clean water (kWh)"
+            ]
+            plt.plot(
+                clean_water_energy_via_excess, label="Excess -> clean water", zorder=9
+            )
+            plt.plot(
+                clean_water_energy_via_backup, label="Backup -> clean water", zorder=10
+            )
         plt.legend()
         plt.xlim(0, 23)
         plt.xticks(range(0, 24, 1))

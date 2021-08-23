@@ -670,6 +670,9 @@ def run_simulation(
     )
     excess_energy_used_desalinating: pd.DataFrame = pd.DataFrame([0] * simulation_hours)
     storage_water_supplied: pd.DataFrame = pd.DataFrame([0] * simulation_hours)
+    water_demand_met_by_excess_energy: pd.DataFrame = pd.DataFrame(
+        [0] * simulation_hours
+    )
     water_supplied_by_excess_energy: pd.DataFrame = pd.DataFrame([0] * simulation_hours)
     water_surplus: pd.DataFrame = pd.DataFrame([0] * simulation_hours)
     water_deficit: List[float] = []
@@ -723,10 +726,6 @@ def run_simulation(
 
             excess_energy = max(battery_energy_flow - max_battery_storage, 0.0)
 
-            # import pdb
-
-            # pdb.set_trace(header=f"time: {t}, excess: {excess_energy:.3f}")
-
             ###############
             # Clean water #
             ###############
@@ -736,9 +735,9 @@ def run_simulation(
 
                 # Compute the new tank level based on the previous level and the flow.
                 if t == 0:
-                    new_hourly_tank_storage = initial_tank_storage + tank_water_flow
+                    current_net_water_flow = initial_tank_storage + tank_water_flow
                 else:
-                    new_hourly_tank_storage = (
+                    current_net_water_flow = (
                         hourly_tank_storage.iloc[t - 1][0]
                         * (1.0 - minigrid.clean_water_tank.leakage)
                         + tank_water_flow
@@ -746,13 +745,22 @@ def run_simulation(
 
                 # Use the excess energy to desalinate if there is space.
                 if excess_energy > 0:
-                    # Compute the amount of water that was desalinated.
-                    desalinated_water = min(
-                        excess_energy / energy_per_desalinated_litre, max_tank_storage
+                    # Compute the maximum amount of water that can be desalinated.
+                    max_desalinated_water = min(
+                        excess_energy / energy_per_desalinated_litre,
+                        electric_desalinators[0].maximum_output_capacity,
                     )
 
-                    # Add this to the tank.
-                    new_hourly_tank_storage += desalinated_water
+                    # Add this to the tank and fulfil the demand if relevant.
+                    current_hourly_tank_storage = (
+                        current_net_water_flow + max_desalinated_water
+                    )
+
+                    # Compute the amount of water that was actually desalinated.
+                    desalinated_water = min(
+                        max_desalinated_water,
+                        max_tank_storage - current_net_water_flow,
+                    )
 
                     # Compute the remaining excess energy and the energy used in
                     # desalination.
@@ -766,17 +774,22 @@ def run_simulation(
 
                     # Store this as water and electricity supplied using excess power.
                     excess_energy_used_desalinating.iloc[t] = energy_consumed
+                    water_demand_met_by_excess_energy.iloc[t] = max(
+                        0, -current_net_water_flow
+                    )
                     water_supplied_by_excess_energy.iloc[t] = desalinated_water
+                else:
+                    current_hourly_tank_storage = current_net_water_flow
 
                 # If there is still unmet water demand, then carry out desalination and
                 # pumping to fulfil the demand.
                 if (
-                    new_hourly_tank_storage < 0
+                    current_hourly_tank_storage < 0
                     and scenario.clean_water_mode == CleanWaterMode.PRIORITISE
                 ):
                     # If there is unmet demand, then carry out desalination and pumping to
                     # fulfil the demand.
-                    current_unmet_water_demand = -new_hourly_tank_storage
+                    current_unmet_water_demand = -current_hourly_tank_storage
 
                     # Compute the electricity consumed meeting this demand.
                     energy_consumed = (
@@ -799,10 +812,14 @@ def run_simulation(
                         t
                     ] = current_unmet_water_demand
 
-                new_hourly_tank_storage = min(new_hourly_tank_storage, max_tank_storage)
-                new_hourly_tank_storage = max(new_hourly_tank_storage, min_tank_storage)
+                current_hourly_tank_storage = min(
+                    current_hourly_tank_storage, max_tank_storage
+                )
+                current_hourly_tank_storage = max(
+                    current_hourly_tank_storage, min_tank_storage
+                )
 
-                hourly_tank_storage.iloc[t] = new_hourly_tank_storage
+                hourly_tank_storage.iloc[t] = current_hourly_tank_storage
 
                 if t == 0:
                     storage_water_supplied.iloc[t] = 0.0 - tank_water_flow
