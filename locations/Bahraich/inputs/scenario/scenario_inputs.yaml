@@ -23,4 +23,4 @@ demands:
   public: true # "true" or "false"
 distribution_network: dc # DC ("dc") or AC ("ac") distribution network
 resource_types:
-  - electric
+  - electric_power
