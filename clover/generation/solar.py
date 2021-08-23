@@ -27,7 +27,7 @@ import pandas as pd
 
 from ..__utils__ import InputFileError, Location
 from .__utils__ import BaseRenewablesNinjaThread, total_profile_output
-from ..simulation.solar import SolarPanel, SolarPanelType
+from ..simulation.solar import PVPanel
 
 __all__ = (
     "SolarDataThread",
@@ -81,26 +81,13 @@ class SolarDataThread(
         location: Location,
         logger_name: str,
         regenerate: bool,
-        solar_panels: List[SolarPanel],
+        pv_panel: PVPanel,
         sleep_multiplier: int = 1,
     ):
         """
         Instantiate a :class:`SolarDataThread` instance.
 
         """
-
-        # @@@ Temporary code until alternative solar-power method is written.
-        pv_panels = [
-            panel for panel in solar_panels if panel.panel_type == SolarPanelType.PV
-        ]
-        try:
-            pv_panel = pv_panels[0]
-        except IndexError:
-            raise InputFileError(
-                "solar generation inputs",
-                "No PV panel was specified in the solar generation inputs. This is "
-                "currently still necessary for the generation of solar data.",
-            )
 
         # Add the additional parameters which are need when calling the solar data.
         renewables_ninja_params = {
