@@ -610,9 +610,9 @@ def run_simulation(
     max_battery_storage: float = electric_storage_size * minigrid.battery.maximum_charge
     min_battery_storage: float = electric_storage_size * minigrid.battery.minimum_charge
     cumulative_battery_storage_power: float = 0.0
-    hourly_battery_storage: List[float] = []
+    hourly_battery_storage: pd.DataFrame = pd.DataFrame([0] * simulation_hours)
     new_hourly_battery_storage: float = 0.0
-    battery_health: List[float] = []
+    battery_health: pd.DataFrame = pd.DataFrame([0] * simulation_hours)
 
     # Initialise tank storage parameters
     hourly_tank_storage: pd.DataFrame = pd.DataFrame([0] * simulation_hours)
@@ -660,9 +660,9 @@ def run_simulation(
         )
 
     # Initialise energy accounting parameters
-    energy_surplus: List[float] = []
-    energy_deficit: List[float] = []
-    storage_power_supplied: List[float] = []
+    energy_surplus: pd.DataFrame = pd.DataFrame([0] * simulation_hours)
+    energy_deficit: pd.DataFrame = pd.DataFrame([0] * simulation_hours)
+    storage_power_supplied: pd.DataFrame = pd.DataFrame([0] * simulation_hours)
 
     # Intialise tank accounting parameters
     backup_desalinator_water_supplied: pd.DataFrame = pd.DataFrame(
@@ -676,11 +676,8 @@ def run_simulation(
 
     # Do not do the itteration if no storage is being used
     if electric_storage_size == 0:
-        hourly_battery_storage = pd.DataFrame([0] * simulation_hours)
-        storage_power_supplied = pd.DataFrame([0] * simulation_hours)
         energy_surplus = ((battery_storage_profile > 0) * battery_storage_profile).abs()
         energy_deficit = ((battery_storage_profile < 0) * battery_storage_profile).abs()
-        battery_health = pd.DataFrame([0] * simulation_hours)
     # Carry out the itteration if there is some storage involved in the system.
     else:
         # Begin simulation, iterating over timesteps
@@ -702,7 +699,9 @@ def run_simulation(
             else:
                 # Battery charging
                 if battery_energy_flow >= 0.0:
-                    new_hourly_battery_storage = hourly_battery_storage[t - 1] * (
+                    new_hourly_battery_storage = hourly_battery_storage.iloc[t - 1][
+                        0
+                    ] * (
                         1.0 - minigrid.battery.leakage
                     ) + minigrid.battery.conversion_in * min(
                         battery_energy_flow,
@@ -711,9 +710,11 @@ def run_simulation(
                     )
                 # Battery discharging
                 else:
-                    new_hourly_battery_storage = hourly_battery_storage[t - 1] * (
-                        1.0 - minigrid.battery.leakage
-                    ) + (1.0 / minigrid.battery.conversion_out) * max(
+                    new_hourly_battery_storage = hourly_battery_storage.iloc[t - 1][
+                        0
+                    ] * (1.0 - minigrid.battery.leakage) + (
+                        1.0 / minigrid.battery.conversion_out
+                    ) * max(
                         battery_energy_flow,
                         (-1.0)
                         * minigrid.battery.discharge_rate
@@ -818,9 +819,9 @@ def run_simulation(
             ###############
 
             # Dumped energy and unmet demand
-            energy_surplus.append(excess_energy)  # Battery too full
-            energy_deficit.append(
-                max(min_battery_storage - new_hourly_battery_storage, 0.0)
+            energy_surplus.iloc[t] = excess_energy  # Battery too full
+            energy_deficit.iloc[t] = max(
+                min_battery_storage - new_hourly_battery_storage, 0.0
             )  # Battery too empty
 
             # Battery capacities and blackouts (if battery is too full or empty)
@@ -832,22 +833,19 @@ def run_simulation(
             )
 
             # Update hourly_battery_storage
-            hourly_battery_storage.append(new_hourly_battery_storage)
+            hourly_battery_storage.iloc[t] = new_hourly_battery_storage
 
             # Update battery health
             if t == 0:
-                storage_power_supplied.append(0.0 - battery_energy_flow)
+                storage_power_supplied.iloc[t] = 0.0 - battery_energy_flow
             else:
-                storage_power_supplied.append(
-                    max(
-                        hourly_battery_storage[t - 1] * (1.0 - minigrid.battery.leakage)
-                        - hourly_battery_storage[t],
-                        0.0,
-                    )
+                storage_power_supplied.iloc[t] = max(
+                    hourly_battery_storage.iloc[t - 1][0]
+                    * (1.0 - minigrid.battery.leakage)
+                    - hourly_battery_storage.iloc[t][0],
+                    0.0,
                 )
-            cumulative_battery_storage_power = (
-                cumulative_battery_storage_power + storage_power_supplied[t]
-            )
+            cumulative_battery_storage_power += storage_power_supplied.iloc[t][0]
 
             battery_storage_degradation = 1.0 - minigrid.battery.lifetime_loss * (
                 cumulative_battery_storage_power / max_energy_throughput
@@ -862,10 +860,7 @@ def run_simulation(
                 * electric_storage_size
                 * minigrid.battery.minimum_charge
             )
-            battery_health.append(battery_storage_degradation)
-
-    # Consolidate outputs from iteration stage
-    storage_power_supplied = pd.DataFrame(storage_power_supplied)
+            battery_health.iloc[t] = battery_storage_degradation
 
     # Find unmet energy
     unmet_energy = pd.DataFrame(
@@ -988,14 +983,11 @@ def run_simulation(
 
     # System performance outputs
     blackout_times.columns = ["Blackouts"]
-    hourly_battery_storage = pd.DataFrame(hourly_battery_storage)
     hourly_battery_storage.columns = ["Hourly storage (kWh)"]
-    energy_surplus = pd.DataFrame(energy_surplus)
     energy_surplus.columns = ["Dumped energy (kWh)"]
     unmet_energy.columns = ["Unmet energy (kWh)"]
     storage_power_supplied.columns = ["Storage energy supplied (kWh)"]
     diesel_energy.columns = ["Diesel energy (kWh)"]
-    battery_health = pd.DataFrame(battery_health)
     battery_health.columns = ["Battery health"]
     diesel_times.columns = ["Diesel times"]
     diesel_fuel_usage.columns = ["Diesel fuel usage (l)"]
