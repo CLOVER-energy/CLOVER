@@ -1032,7 +1032,7 @@ def run_simulation(
         simulation.end_year,
         pv_size
         * float(
-            solar_degradation(solar_lifetime)[0][
+            solar_degradation(pv_panel.lifetime)[0][
                 8760 * (simulation.end_year - simulation.start_year)
             ]
         ),
