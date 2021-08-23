@@ -343,7 +343,9 @@ def _yearly_load_statistics(total_load: pd.DataFrame, years: int) -> pd.DataFram
 
 
 def _number_of_devices_daily(
-    device: Device, location: Location, logger: Logger,
+    device: Device,
+    location: Location,
+    logger: Logger,
 ) -> pd.DataFrame:
     """
     Calculates the number of devices owned by the community on each day
@@ -365,14 +367,18 @@ def _number_of_devices_daily(
 
     if device.available:
         logger.info(
-            "Calculating ownership for device %s.", device.name,
+            "Calculating ownership for device %s.",
+            device.name,
         )
         population_growth_rate = _population_growth_daily(
-            location.community_growth_rate, location.community_size, location.max_years,
+            location.community_growth_rate,
+            location.community_size,
+            location.max_years,
         )
         if device.final_ownership != device.initial_ownership:
             logger.info(
-                "%s ownership changes over time, calculating.", device.name,
+                "%s ownership changes over time, calculating.",
+                device.name,
             )
             cum_sales = _cumulative_sales_daily(
                 device.initial_ownership,
@@ -387,13 +393,15 @@ def _number_of_devices_daily(
 
         else:
             logger.info(
-                "%s ownership remains constant.", device.name,
+                "%s ownership remains constant.",
+                device.name,
             )
             daily_ownership = pd.DataFrame(
                 np.floor(population_growth_rate * device.initial_ownership)
             )
         logger.info(
-            "Ownership for device %s calculated.", device.name,
+            "Ownership for device %s calculated.",
+            device.name,
         )
 
     else:
@@ -621,7 +629,10 @@ def process_device_hourly_power(
         # Save the hourly power profile.
         logger.info("Saving hourly power usage for %s.", device.name)
 
-        with open(hourly_usage_filepath, "w",) as f:
+        with open(
+            hourly_usage_filepath,
+            "w",
+        ) as f:
             device_load.to_csv(f, index=False, line_terminator="")  # type: ignore
 
         logger.info(
@@ -725,7 +736,10 @@ def process_device_hourly_usage(
         # Save the hourly-usage profile.
         logger.info("Saving hourly usage profile for %s.", device.name)
 
-        with open(filepath, "w",) as f:
+        with open(
+            filepath,
+            "w",
+        ) as f:
             hourly_device_usage.to_csv(f, index=False, line_terminator="")  # type: ignore
 
         logger.info(
@@ -772,7 +786,8 @@ def process_device_ownership(
 
     daily_ownership_filename = f"{device.name}_daily_ownership.csv"
     daily_ownership_filepath = os.path.join(
-        generated_device_ownership_directory, daily_ownership_filename,
+        generated_device_ownership_directory,
+        daily_ownership_filename,
     )
 
     # If the daily ownership file already exists, then read the data from the file.
@@ -790,14 +805,21 @@ def process_device_ownership(
         logger.info("Computing device ownership for %s.", device.name)
 
         # Compute the daily device usage.
-        daily_ownership = _number_of_devices_daily(device, location, logger,)
+        daily_ownership = _number_of_devices_daily(
+            device,
+            location,
+            logger,
+        )
         logger.info(
             "Monthly device ownership profile for %s successfully computed.",
             device.name,
         )
 
         # Save the usage to the output file.
-        with open(daily_ownership_filepath, "w",) as f:
+        with open(
+            daily_ownership_filepath,
+            "w",
+        ) as f:
             daily_ownership.to_csv(f, index=False, line_terminator="")  # type: ignore
         logger.info(
             "Monthly deivice-ownership profile for %s successfully saved to %s.",
@@ -862,7 +884,8 @@ def process_device_utilisation(
     else:
         logger.info("Computing device-utilisation profile for %s.", device.name)
         interpolated_daily_profile = _device_daily_profile(
-            device_utilisations[device], location.max_years,
+            device_utilisations[device],
+            location.max_years,
         )
         logger.info(
             "Daily device-utilisation profile for %s successfully computed.",
@@ -960,14 +983,17 @@ def process_load_profiles(
         daily_device_ownership = process_device_ownership(
             device,
             generated_device_ownership_directory=os.path.join(
-                auto_generated_files_directory, "load", "device_ownership",
+                auto_generated_files_directory,
+                "load",
+                "device_ownership",
             ),
             location=location,
             logger=logger,
             regenerate=regenerate,
         )
         logger.info(
-            "Device ownership information for %s successfully computed.", device.name,
+            "Device ownership information for %s successfully computed.",
+            device.name,
         )
 
         # Compute the device utilisation.
@@ -975,14 +1001,17 @@ def process_load_profiles(
             device,
             device_utilisations=relevant_device_utilisations,
             generated_device_utilisation_directory=os.path.join(
-                auto_generated_files_directory, "load", "device_utilisation",
+                auto_generated_files_directory,
+                "load",
+                "device_utilisation",
             ),
             location=location,
             logger=logger,
             regenerate=regenerate,
         )
         logger.info(
-            "Device utilisation information for %s successfully computed.", device.name,
+            "Device utilisation information for %s successfully computed.",
+            device.name,
         )
 
         # Compute the device usage.
@@ -1014,7 +1043,8 @@ def process_load_profiles(
             regenerate=regenerate,
         )
         logger.info(
-            "Device hourly load information for %s successfully computed.", device.name,
+            "Device hourly load information for %s successfully computed.",
+            device.name,
         )
 
     logger.info("Computing the total device hourly load.")
