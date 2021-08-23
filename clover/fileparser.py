@@ -474,6 +474,8 @@ def parse_input_files(
     for panel_input in solar_generation_inputs["panels"]:
         if panel_input["type"] == solar.SolarPanelType.PV.value:
             solar_panels.append(solar.PVPanel.from_dict(logger, panel_input))
+        if panel_input["type"] == solar.SolarPanelType.PV_T.value:
+            solar_panels.append(solar.HybridPVTPanel.from_dict(logger, panel_input))
 
     # Return the solar panel being modelled.
     try:
