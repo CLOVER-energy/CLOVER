@@ -592,6 +592,10 @@
 
                 pv: true # "true" or "false"
                 pv_panel: default_solar
+                # pv_t: false
+                # pv_t_panel: default_pv_t_panel
+                # pv_d: false
+                # pv_d_panel: default_pv_d_panel
                 battery: true # "true" or "false"
                 diesel:
                   mode: backup # "backup" only option currently

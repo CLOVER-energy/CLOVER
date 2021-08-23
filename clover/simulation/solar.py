@@ -28,6 +28,7 @@ from ..__utils__ import BColours, InputFileError
 
 
 __all__ = (
+    "HybridPVTPanel",
     "PVPanel",
     "SolarPanel",
     "SolarPanelType",
@@ -40,13 +41,13 @@ class SolarPanelType(enum.Enum):
 
     - PV:
         Denotes that a PV panel is being considered.
-    - SOLAR_THERMAL:
-        Denotes that a solar-thermal panel is being considered.
+    - PV_T:
+        Denotes that a PV-T panel is being considered.
 
     """
 
     PV = "pv"
-    SOLAR_THERMAL = "solar_thermal"
+    PV_T = "pv_t"
 
 
 @dataclasses.dataclass
@@ -151,3 +152,10 @@ class PVPanel(SolarPanel, panel_type=SolarPanelType.PV):
             - self.thermal_coefficient  # [1/K]
             * (pv_temperature - self.reference_temperature)  # [K]
         )
+
+
+class HybridPVTPanel(PVPanel, panel_type=SolarPanelType.PV_T):
+    """
+    Represents a PV-T panel.
+
+    """
