@@ -305,6 +305,7 @@ def plot_outputs(
         plt.plot(
             range(CUT_OFF_TIME),
             np.sum(total_electric_load[0:CUT_OFF_TIME], axis=1),
+            "--",
             label="total",
         )
         plt.legend(loc="upper right")
@@ -383,10 +384,11 @@ def plot_outputs(
         axis[1].plot(
             range(365),
             pd.DataFrame(total_demand).rolling(5).mean(),
+            "--",
             label="Total",
             color="red",
         )
-        axis[1].plot(range(365), total_demand, alpha=0.5, color="red")
+        axis[1].plot(range(365), total_demand, "--", alpha=0.5, color="red")
         axis[1].legend(loc="best")
         axis[1].set(
             xticks=(range(0, 366, 60)),
@@ -462,7 +464,7 @@ def plot_outputs(
             label=DemandType.PUBLIC.value,
             color="green",
         )
-        plt.plot(range(num_years), total_demand, label="total", color="red")
+        plt.plot(range(num_years), total_demand, "--", label="total", color="red")
         plt.legend(loc="upper left")
         plt.xticks(range(0, num_years, 2 if num_years > 2 else 1))
         plt.xlabel("Year of investigation period")
@@ -538,7 +540,7 @@ def plot_outputs(
             axis=0,
         )
 
-        plt.plot(total_used, label="Total used")
+        plt.plot(total_used, "--", label="Total used")
         plt.plot(renewable_energy, label="Solar used directly")
         plt.plot(storage_energy, label="Storage")
         plt.plot(grid_energy, label="Grid")
@@ -702,7 +704,7 @@ def plot_outputs(
             "Renewables energy supplied (kWh)"
         ]
 
-        plt.plot(total_used, label="Total used")
+        plt.plot(total_used, "--", label="Total used")
         plt.plot(renewable_energy, label="Solar used directly")
         plt.plot(storage_energy, label="Storage")
         plt.plot(grid_energy, label="Grid")
@@ -760,6 +762,7 @@ def plot_outputs(
             plt.plot(
                 range(CUT_OFF_TIME),
                 np.sum(total_clean_water_load[0:CUT_OFF_TIME], axis=1),
+                "--",
                 label="total",
             )
             plt.legend(loc="upper right")
@@ -843,10 +846,11 @@ def plot_outputs(
             axis[1].plot(
                 range(365),
                 pd.DataFrame(total_demand).rolling(5).mean(),
+                "--",
                 label="Total",
                 color="red",
             )
-            axis[1].plot(range(365), total_demand, alpha=0.5, color="red")
+            axis[1].plot(range(365), total_demand, "--", alpha=0.5, color="red")
             axis[1].legend(loc="best")
             axis[1].set(
                 xticks=(range(0, 366, 60)),
@@ -925,7 +929,7 @@ def plot_outputs(
                 label=DemandType.PUBLIC.value,
                 color="green",
             )
-            plt.plot(range(num_years), total_demand, label="total", color="red")
+            plt.plot(range(num_years), total_demand, "--", label="total", color="red")
             plt.legend(loc="upper left")
             plt.xticks(range(0, num_years, 2 if num_years > 2 else 1))
             plt.xlabel("Year of investigation period")
@@ -1020,17 +1024,17 @@ def plot_outputs(
                 axis=0,
             )
 
-            plt.plot(total_supplied, "--", label="Total supplied", zorder=1)
-            plt.plot(total_used, "--", label="Total used", zorder=2)
-            plt.plot(backup_clean_water, label="Backup desalination", zorder=3)
+            plt.plot(total_used, "--", label="Total used", zorder=1)
+            plt.plot(backup_clean_water, label="Backup desalination", zorder=2)
             plt.plot(
-                excess_power_clean_water, label="Excess power desalination", zorder=4
+                excess_power_clean_water, label="Excess power desalination", zorder=3
             )
-            plt.plot(renewable_clean_water, label="PV-D direct supply", zorder=5)
-            plt.plot(storage_clean_water, label="Storage", zorder=6)
-            plt.plot(tank_storage, "--", label="Water held in tanks", zorder=7)
-            plt.plot(unmet_clean_water, label="Unmet", zorder=8)
-            plt.plot(total_clean_water_load, "--", label="Total load", zorder=9)
+            plt.plot(renewable_clean_water, label="PV-D direct supply", zorder=4)
+            plt.plot(storage_clean_water, label="Storage", zorder=5)
+            plt.plot(tank_storage, "--", label="Water held in tanks", zorder=6)
+            plt.plot(unmet_clean_water, label="Unmet", zorder=7)
+            plt.plot(total_clean_water_load, "--", label="Total load", zorder=8)
+            plt.plot(total_supplied, "--", label="Total supplied", zorder=9)
             plt.legend()
             plt.xlim(0, 23)
             plt.xticks(range(0, 24, 1))
@@ -1065,7 +1069,7 @@ def plot_outputs(
                 "Unmet clean water demand (l)"
             ]
 
-            plt.plot(total_used, label="Total used", zorder=1)
+            plt.plot(total_used, "--", label="Total used", zorder=1)
             plt.plot(backup, label="Backup desalination", zorder=2)
             plt.plot(excess, label="Excess minigrid power", zorder=3)
             plt.plot(renewable, label="PV-D output", zorder=4)
@@ -1107,7 +1111,7 @@ def plot_outputs(
                 "Unmet clean water demand (l)"
             ]
 
-            # plt.plot(total_used, label="Total used", zorder=1)
+            plt.plot(total_used, "--", label="Total used", zorder=1)
             plt.plot(backup, label="Backup desalination", zorder=2)
             plt.plot(excess, label="Excess minigrid power", zorder=3)
             plt.plot(renewable, label="PV-D output", zorder=4)
@@ -1218,7 +1222,7 @@ def plot_outputs(
             plt.plot(electric_power_supplied, label="Electric devices")
             plt.plot(
                 surplus_power_consumed,
-                label="Dumped energy used to provide clean water",
+                label="Clean water via dumped energy",
             )
             plt.plot(total_power_supplied, "--", label="Total load")
             plt.legend()
@@ -1235,6 +1239,13 @@ def plot_outputs(
             pbar.update(1)
 
             # Plot the seasonal variation in clean-water supply sources.
+            backup_water = np.reshape(
+                simulation_output[0:HOURS_PER_YEAR][
+                    "Clean water supplied via backup desalination (l)"
+                ].values
+                / 1000,
+                (365, 24),
+            )
             excess_pv_water = np.reshape(
                 simulation_output[0:HOURS_PER_YEAR][
                     "Clean water supplied using excess minigrid energy (l)"
@@ -1264,21 +1275,14 @@ def plot_outputs(
                 (365, 24),
             )
 
-            # Normalise the arrays
-            max_water_value = max(
-                excess_pv_water.max(),
-                storage_water.max(),
-                renewable_energy.max(),
-                unmet_water.max(),
-            )
-
-            fig, ([ax1, ax2], [ax3, ax4]) = plt.subplots(
-                2, 2
+            fig, ([ax1, ax2, unused_ax], [ax3, ax4, ax5]) = plt.subplots(
+                2, 3
             )  # ,sharex=True, sharey=True)
+            unused_ax.set_visible(False)
             sns.heatmap(
                 excess_pv_water,
                 vmin=0.0,
-                vmax=max_water_value,
+                vmax=excess_pv_water.max(),
                 cmap="Reds",
                 cbar=True,
                 ax=ax1,
@@ -1295,7 +1299,7 @@ def plot_outputs(
             sns.heatmap(
                 storage_water,
                 vmin=0.0,
-                vmax=max_water_value,
+                vmax=storage_water.max(),
                 cmap="Greens",
                 cbar=True,
                 ax=ax2,
@@ -1312,7 +1316,7 @@ def plot_outputs(
             sns.heatmap(
                 renewable_energy,
                 vmin=0.0,
-                vmax=max_water_value,
+                vmax=renewable_energy.max(),
                 cmap="Blues",
                 cbar=True,
                 ax=ax3,
@@ -1327,9 +1331,9 @@ def plot_outputs(
                 title="PV-D/T",
             )
             sns.heatmap(
-                unmet_water,
+                backup_water,
                 vmin=0.0,
-                vmax=max_water_value,
+                vmax=backup_water.max(),
                 cmap="Oranges",
                 cbar=True,
                 ax=ax4,
@@ -1341,8 +1345,30 @@ def plot_outputs(
                 yticklabels=range(0, 365, 60),
                 xlabel="Hour of day",
                 ylabel="Day of year",
+                title="Backup",
+            )
+            sns.heatmap(
+                unmet_water,
+                vmin=0.0,
+                vmax=unmet_water.max(),
+                cmap="Greys",
+                cbar=True,
+                ax=ax5,
+            )
+            ax5.set(
+                xticks=range(0, 25, 6),
+                xticklabels=range(0, 25, 6),
+                yticks=range(0, 365, 60),
+                yticklabels=range(0, 365, 60),
+                xlabel="Hour of day",
+                ylabel="Day of year",
                 title="Unmet",
             )
+
+            # Adjust the positioning of the plots
+            # ax4.set_position([0.24, 0.125, 0.228, 0.343])
+            # ax5.set_position([0.55, 0.125, 0.228, 0.343])
+
             plt.tight_layout()
             fig.suptitle("Water from different sources (tonnes)")
             fig.subplots_adjust(top=0.87)
