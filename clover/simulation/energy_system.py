@@ -649,14 +649,26 @@ def run_simulation(
         )
 
         # Compute the amount of energy required per litre desalinated.
-        energy_per_desalinated_litre = 0.001 * (
-            electric_desalinators[0].input_resource_consumption[ResourceType.ELECTRIC]
-            / electric_desalinators[0].maximum_output_capacity
-            + electric_desalinators[0].input_resource_consumption[
-                ResourceType.UNCLEAN_WATER
+        energy_per_desalinated_litre = 0.001 * np.mean(
+            [
+                desalinator.input_resource_consumption[ResourceType.ELECTRIC]
+                / desalinator.maximum_output_capacity
+                + desalinator.input_resource_consumption[ResourceType.UNCLEAN_WATER]
+                * water_pumps[0].input_resource_consumption[ResourceType.ELECTRIC]
+                / desalinator.maximum_output_capacity
+                for desalinator in electric_desalinators
             ]
-            * water_pumps[0].input_resource_consumption[ResourceType.ELECTRIC]
-            / electric_desalinators[0].maximum_output_capacity
+        )
+
+        # Compute the maximum throughput
+        maximum_water_throughput = min(
+            sum(
+                [
+                    desalinator.maximum_output_capacity
+                    for desalinator in electric_desalinators
+                ]
+            ),
+            sum([water_pumps[0].maximum_output_capacity]),
         )
 
     # Initialise energy accounting parameters
@@ -748,7 +760,7 @@ def run_simulation(
                     # Compute the maximum amount of water that can be desalinated.
                     max_desalinated_water = min(
                         excess_energy / energy_per_desalinated_litre,
-                        electric_desalinators[0].maximum_output_capacity,
+                        maximum_water_throughput,
                     )
 
                     # Add this to the tank and fulfil the demand if relevant.
