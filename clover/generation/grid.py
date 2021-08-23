@@ -63,7 +63,10 @@ def get_lifetime_grid_status(
 
     # Loop through all the various grid profiles that have been defined.
     for grid_index in tqdm(
-        range(grid_inputs.shape[1]), desc="grid profiles", leave=True, unit="grid",
+        range(grid_inputs.shape[1]),
+        desc="grid profiles",
+        leave=True,
+        unit="grid",
     ):
         grid_name = grid_types[grid_index]
         grid_filename = os.path.join(
