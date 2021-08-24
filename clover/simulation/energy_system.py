@@ -93,6 +93,9 @@ class Minigrid:
     .. attribute:: diesel_backup_generator
         The diesel backup generator associated with the minigrid system.
 
+    .. attribute:: pv_panel
+        The PV panel being considered.
+
     """
 
     ac_to_ac_conversion_efficiency: Optional[float]
@@ -104,12 +107,14 @@ class Minigrid:
     dc_to_dc_conversion_efficiency: Optional[float]
     dc_transmission_efficiency: Optional[float]
     diesel_backup_generator: Optional[DieselBackupGenerator]
+    pv_panel: PVPanel
 
     @classmethod
     def from_dict(
         cls,
         diesel_backup_generator: DieselBackupGenerator,
         minigrid_inputs: Dict[str, Any],
+        pv_panel: PVPanel,
         battery_inputs: Optional[Dict[str, Any]] = None,
         tank_inputs: Optional[List[Dict[str, Any]]] = None,
     ) -> Any:
@@ -122,6 +127,12 @@ class Minigrid:
             - minigrid_inputs:
                 The inputs for the minigrid/energy system, extracted from the input
                 file.
+            - pv_panel:
+                 The :class:`PVPanel` instance to use for the run.
+            - battery_inputs:
+                The battery input information.
+            - tank_inputs:
+                The tank input information.
 
         Outputs:
             - A :class:`Minigrid` instance based on the inputs provided.
@@ -165,6 +176,7 @@ class Minigrid:
             if "dc_transmission_efficiency" in minigrid_inputs
             else None,
             diesel_backup_generator,
+            pv_panel,
         )
 
 
@@ -423,7 +435,6 @@ def run_simulation(
     location: Location,
     logger: Logger,
     number_of_clean_water_tanks: int,
-    pv_panel: PVPanel,
     pv_size: float,
     scenario: Scenario,
     simulation: Simulation,
@@ -453,8 +464,6 @@ def run_simulation(
             The location being considered.
         - number_of_clean_water_tanks:
             The number of clean-water tanks installed in the system.
-        - pv_panel:
-            The pv panel being considered.
         - pv_size:
             Amount of PV in kWp
         - scenario:
@@ -551,8 +560,7 @@ def run_simulation(
             renewable_clean_water_used_directly,
             tank_storage_profile,
         ) = _get_water_storage_profile(
-            processed_total_clean_water_load,
-            pd.DataFrame([0] * simulation_hours),
+            processed_total_clean_water_load, pd.DataFrame([0] * simulation_hours),
         )
         total_clean_water_supplied = pd.DataFrame(
             renewable_clean_water_used_directly.values
@@ -589,7 +597,7 @@ def run_simulation(
         minigrid=minigrid,
         processed_total_electric_load=processed_total_electric_load,
         scenario=scenario,
-        solar_lifetime=pv_panel.lifetime,
+        solar_lifetime=minigrid.pv_panel.lifetime,
         total_solar_power_produced=total_solar_power_produced,
         end_hour=end_hour,
         pv_size=pv_size,
@@ -1032,7 +1040,7 @@ def run_simulation(
         simulation.end_year,
         pv_size
         * float(
-            solar_degradation(pv_panel.lifetime)[0][
+            solar_degradation(minigrid.pv_panel.lifetime)[0][
                 8760 * (simulation.end_year - simulation.start_year)
             ]
         ),
@@ -1087,10 +1095,7 @@ def run_simulation(
             ]
         )
 
-    system_performance_outputs = pd.concat(
-        system_performance_outputs_list,
-        axis=1,
-    )
+    system_performance_outputs = pd.concat(system_performance_outputs_list, axis=1,)
 
     return time_delta, system_performance_outputs, system_details
 
