@@ -19,156 +19,139 @@ simulations.
 
 """
 
-import dataclasses
-
 from logging import Logger
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, Optional
 
 import numpy as np  # type: ignore
 import pandas as pd  # type: ignore
 
+from ..impact import finance, ghgs
+
+from .__utils__ import (
+    CumulativeResults,
+    EnvironmentalAppraisal,
+    FinancialAppraisal,
+    OptimisationCriterion,
+    SystemAppraisal,
+    TechnicalAppraisal,
+    ThresholdCriterion,
+)
 from ..__utils__ import hourly_profile_to_daily_sum, Location, SystemDetails
-from ..impact.finance import (
-    ImpactingComponent,
-    connections_expenditure,
-    diesel_fuel_expenditure,
-    discounted_equipment_cost,
-    discounted_total,
-    expenditure,
-    independent_expenditure,
-    total_om,
-)
+from ..impact.__utils__ import ImpactingComponent
 
-__all__ = (
-    "appraise_system",
-    "SystemAppraisal",
-)
+__all__ = ("appraise_system",)
 
 
-@dataclasses.dataclass
-class FinancialAppraisal:
+def _simulation_environmental_appraisal(
+    electric_yearly_load_statistics: pd.DataFrame,
+    end_year: int,
+    ghg_inputs: Dict[str, Any],
+    location: Location,
+    previous_system_details: SystemDetails,
+    simulation_results: pd.DataFrame,
+    start_year: int,
+    system_details: SystemDetails,
+) -> EnvironmentalAppraisal:
     """
-    Contains financial-appraisal information.
+    Appraises the environmental impact of a minigrid system
 
-    .. attribute:: diesel_cost
-        The cost of diesel fuel used, measured in USD.
+    Inputs:
+        - electric_yearly_load_statistics:
+            The yearly electric load statistics.
+        - end_year:
+            The end year of the simulation period.
+        - ghg_inputs:
+            The GHG input information.
+        - location:
+            The location being considered.
+        - previous_system_details:
+            The system details of the previous system simulated.
+        - simulation_results:
+            The system that was just simulated.
+        - start_year:
+            The start year for the simulation period.
+        - system_details:
+            The deatils of the system that was just simulated.
 
-    .. attribute:: grid_cost
-        The cost of grid energy used, measured in USD.
-
-    .. attribute:: kerosene_cost
-        The cost of kerosene used, measured in USD.
-
-    .. attribute:: kerosene_cost_mitigated
-        The value of the kerosene which was not used, measured in USD.
-
-    .. attribute:: new_connection_cost
-        <<description needed>>, measured in USD
-
-    .. attribute:: new_equipment_cost
-        <<description needed>>, measured in USD
-
-    .. attribute:: om_cost
-        The O&M cost, measured in USD.
-
-    .. attribute:: total_cost
-        <<description needed>>, measured in USD
-
-    .. attribute:: total_system_cost
-        <<description needed>>, measured in USD
+    Outputs:
+        An :class:`EnvironmentalAppraisal` containing the key environmental results.
 
     """
 
-    diesel_cost: float
-    grid_cost: float
-    kerosene_cost: float
-    kerosene_cost_mitigated: float
-    new_connection_cost: float
-    new_equipment_cost: float
-    om_cost: float
-    total_cost: float
-    total_system_cost: float
+    # Calculate new PV, storage and diesel installations
+    pv_addition = system_details.initial_pv_size - previous_system_details.final_pv_size
+    storage_addition = (
+        system_details.initial_storage_size - previous_system_details.diesel_capacity
+    )
+    diesel_addition = (
+        system_details.diesel_capacity - previous_system_details.diesel_capacity
+    )
 
+    # Calculate new equipment GHGs
+    equipment_ghgs = ghgs.calculate_total_equipment_ghgs(
+        diesel_addition, ghg_inputs, pv_addition, storage_addition
+    ) + ghgs.calculate_independent_ghgs(
+        electric_yearly_load_statistics, end_year, ghg_inputs, location, start_year
+    )
 
-@dataclasses.dataclass
-class TechnicalAppraisal:
-    """
-    Contains financial-appraisal information.
+    # Calculate GHGs of connecting new households
+    connections_ghgs = ghgs.calculate_connections_ghgs(
+        ghg_inputs, simulation_results["Households"]
+    )
 
-    .. attribute:: blackouts
-        <<description needed>>, measured in USD
+    # Calculate operating GHGs of the system during this simulation
+    om_ghgs = ghgs.calculate_total_om(
+        system_details.diesel_capacity,
+        ghg_inputs,
+        system_details.initial_pv_size,
+        system_details.initial_storage_size,
+        start_year,
+        end_year,
+    )
 
-    .. attribute:: diesel_energy
-        <<description needed>>, measured in USD
+    # Calculate running GHGs of the system
+    diesel_fuel_ghgs = ghgs.calculate_diesel_fuel_ghgs(
+        simulation_results["Diesel fuel usage (l)"], ghg_inputs
+    )
+    grid_ghgs = ghgs.calculate_grid_ghgs(
+        ghg_inputs,
+        simulation_results["Grid energy (kWh)"],
+        location,
+        start_year,
+        end_year,
+    )
+    kerosene_ghgs = ghgs.calculate_kerosene_ghgs(
+        ghg_inputs, simulation_results["Kerosene lamps"]
+    )
+    kerosene_ghgs_mitigated = ghgs.calculate_kerosene_ghgs_mitigated(
+        ghg_inputs, simulation_results["Kerosene mitigation"]
+    )
 
-    .. attribute:: diesel_fuel_usage
-        <<description needed>>, measured in USD
+    # Total GHGs incurred during simulation period
+    total_ghgs = (
+        equipment_ghgs
+        + connections_ghgs
+        + om_ghgs
+        + diesel_fuel_ghgs
+        + grid_ghgs
+        + kerosene_ghgs
+    )
+    total_system_ghgs = (
+        equipment_ghgs + connections_ghgs + om_ghgs + diesel_fuel_ghgs + grid_ghgs
+    )
 
-    .. attribute:: discounted_energy
-        <<description needed>>, measured in USD
-
-    .. attribute:: grid_energy
-        <<description needed>>, measured in USD
-
-    .. attribute:: kerosene_displacement
-        <<description needed>>, measured in USD
-
-    .. attribute:: new_connection_cost
-        <<description needed>>, measured in USD
-
-    .. attribute:: renewable_energy
-        <<description needed>>, measured in USD
-
-    .. attribute:: renewable_energy_fraction
-        <<description needed>>, measured in USD
-
-    .. attribute:: storage_energy
-        <<description needed>>, measured in USD
-
-    .. attribute:: total_energy
-        <<description needed>>, measured in USD
-
-    .. attribute:: unmet_energy
-        <<description needed>>, measured in USD
-
-    .. attribute:: unmet_energy_fraction
-        <<description needed>>, measured in USD
-
-    """
-
-    blackouts: float
-    diesel_energy: float
-    diesel_fuel_usage: float
-    discounted_energy: float
-    grid_energy: float
-    kerosene_displacement: float
-    renewable_energy: float
-    renewable_energy_fraction: float
-    storage_energy: float
-    total_energy: float
-    unmet_energy: float
-    unmet_energy_fraction: float
-
-
-@dataclasses.dataclass
-class SystemAppraisal:
-    """
-    Contains information appraising the system.
-
-    .. attribute:: financial_appraisal
-        A :class:`FinancialAppraisal` of the system.
-
-    .. attribute:: system_details
-        The details of the system.
-
-    .. attribute:: technical_appraisal
-        A :class:`TechnicalAppraisal` of the system.
-    
-    """
-
-    financial_appraisal: FinancialAppraisal
-    system_details: SystemDetails
-    technical_appraisal: TechnicalAppraisal
+    # Return outputs
+    return EnvironmentalAppraisal(
+        round(diesel_fuel_ghgs, 3),
+        round(grid_ghgs, 3),
+        round(kerosene_ghgs, 3),
+        round(kerosene_ghgs_mitigated, 3),
+        round(connections_ghgs, 3),
+        round(equipment_ghgs, 3),
+        round(om_ghgs, 3),
+        round(total_ghgs, 3),
+        round(total_system_ghgs, 3),
+    )
 
 
 def _simulation_financial_appraisal(
@@ -200,9 +183,7 @@ def _simulation_financial_appraisal(
     """
 
     # Calculate new PV, storage and diesel installations
-    pv_addition = (
-        system_details.initial_system_size - previous_system_details.final_pv_size
-    )
+    pv_addition = system_details.initial_pv_size - previous_system_details.final_pv_size
     storage_addition = (
         system_details.initial_storage_size - previous_system_details.final_storage_size
     )
@@ -210,13 +191,13 @@ def _simulation_financial_appraisal(
         system_details.diesel_capacity - previous_system_details.diesel_capacity
     )
     #   Calculate new equipment costs (discounted)
-    equipment_costs = discounted_equipment_cost(
+    equipment_costs = finance.discounted_equipment_cost(
         diesel_addition,
         finance_inputs,
         pv_addition,
         storage_addition,
         system_details.start_year,
-    ) + independent_expenditure(
+    ) + finance.independent_expenditure(
         finance_inputs,
         location,
         yearly_load_statistics,
@@ -225,12 +206,12 @@ def _simulation_financial_appraisal(
     )
 
     # Calculate costs of connecting new households (discounted)
-    connections_cost = connections_expenditure(
+    connections_cost = finance.connections_expenditure(
         finance_inputs, simulation_results["Households"], system_details.start_year,
     )
 
     # Calculate operating costs of the system during this simulation (discounted)
-    om_costs = total_om(
+    om_costs = finance.total_om(
         system_details.diesel_capacity,
         finance_inputs,
         logger,
@@ -241,14 +222,14 @@ def _simulation_financial_appraisal(
     )
 
     # Calculate running costs of the system (discounted)
-    diesel_costs = diesel_fuel_expenditure(
+    diesel_costs = finance.diesel_fuel_expenditure(
         simulation_results["Diesel fuel usage (l)"],
         finance_inputs,
         logger,
         start_year=system_details.start_year,
         end_year=system_details.end_year,
     )
-    grid_costs = expenditure(
+    grid_costs = finance.expenditure(
         ImpactingComponent.GRID,
         finance_inputs,
         simulation_results["Grid energy (kWh)"],
@@ -256,7 +237,7 @@ def _simulation_financial_appraisal(
         start_year=system_details.start_year,
         end_year=system_details.end_year,
     )
-    kerosene_costs = expenditure(
+    kerosene_costs = finance.expenditure(
         ImpactingComponent.KEROSENE,
         finance_inputs,
         simulation_results["Kerosene lamps"],
@@ -264,7 +245,7 @@ def _simulation_financial_appraisal(
         start_year=system_details.start_year,
         end_year=system_details.end_year,
     )
-    kerosene_costs_mitigated = expenditure(
+    kerosene_costs_mitigated = finance.expenditure(
         ImpactingComponent.KEROSENE,
         finance_inputs,
         simulation_results["Kerosene mitigation"],
@@ -288,14 +269,15 @@ def _simulation_financial_appraisal(
 
     # Return outputs
     return FinancialAppraisal(
-        diesel_costs.round(2),
-        grid_costs.round(2),
-        kerosene_costs.round(2),
-        kerosene_costs_mitigated.round(2),
-        connections_cost.round(2),
-        equipment_costs.round(2),
-        total_cost.round(2),
-        total_system_cost.round(2),
+        round(diesel_costs, 3),
+        round(grid_costs, 3),
+        round(kerosene_costs, 3),
+        round(kerosene_costs_mitigated, 3),
+        round(connections_cost, 3),
+        round(equipment_costs, 3),
+        round(om_costs, 3),
+        round(total_cost, 3),
+        round(total_system_cost, 3),
     )
 
 
@@ -324,7 +306,7 @@ def _simulation_technical_appraisal(
     """
 
     # Calculate system blackouts
-    system_blackouts = np.mean(simulation_results["Blackouts"])
+    system_blackouts = np.mean(simulation_results["Blackouts"].values)
 
     # Total energy used
     total_energy = np.sum(simulation_results["Total energy used (kWh)"])
@@ -341,7 +323,7 @@ def _simulation_technical_appraisal(
     total_energy_daily = hourly_profile_to_daily_sum(
         simulation_results["Total energy used (kWh)"]
     )
-    discounted_energy = discounted_total(
+    discounted_energy = finance.discounted_energy_total(
         finance_inputs,
         logger,
         total_energy_daily,
@@ -364,45 +346,56 @@ def _simulation_technical_appraisal(
 
     # Return outputs
     return TechnicalAppraisal(
-        system_blackouts.round(3),
-        total_diesel_used.round(3),
-        total_diesel_fuel.round(3),
-        discounted_energy.round(3),
-        total_grid_used.round(3),
-        kerosene_displacement.round(3),
-        total_renewables_used.round(3),
-        renewables_fraction.round(3),
-        total_storage_used.round(3),
-        total_energy.round(3),
-        total_unmet_energy.round(3),
-        unmet_fraction.round(3).round(3),
+        round(system_blackouts, 3),
+        round(total_diesel_used, 3),
+        round(total_diesel_fuel, 3),
+        round(discounted_energy, 3),
+        round(total_grid_used, 3),
+        round(kerosene_displacement, 3),
+        round(total_renewables_used, 3),
+        round(renewables_fraction, 3),
+        round(total_storage_used, 3),
+        round(total_energy, 3),
+        round(total_unmet_energy, 3),
+        round(unmet_fraction, 3),
     )
 
 
 def appraise_system(
+    electric_yearly_load_statistics: pd.DataFrame,
+    end_year: int,
     finance_inputs: Dict[str, Any],
+    ghg_inputs: Dict[str, Any],
     location: Location,
     logger: Logger,
-    previous_system_details: SystemDetails,
-    simulation: pd.DataFrame,
+    previous_system: Optional[SystemAppraisal],
+    simulation_results: pd.DataFrame,
+    start_year: int,
     system_details: SystemDetails,
-    yearly_load_statistics: pd.DataFrame,
 ) -> SystemAppraisal:
     """
     Appraises the total performance of a minigrid system for all performance metrics
 
     Inputs:
+        - electric_yearly_load_statistics:
+            The yearly electric load statistics.
+        - end_year:
+            The end year for the simulation that was just run.
         - finance_inputs:
             The finance input information.
         - location:
             The location currently being considered.
         - logger:
             The logger to use for the run.
-        - simulation
-            Outputs of Energy_System().simulation(...)
-        - previous_systems:
+        - previous_system:
             Report from previously installed system (not required if no system was
             previously deployed)
+        - simulation_results
+            Outputs of Energy_System().simulation(...)
+        - start_year:
+            The start year for the simulation that was just run.
+        - system_details:
+            The system details about the system that was just simulated.
 
     Outputs:
         - system_outputs:
@@ -411,98 +404,91 @@ def appraise_system(
 
     """
 
-    previous_system = pd.DataFrame(
-        {
-            "Final PV size": 0.0,
-            "Final storage size": 0.0,
-            "Diesel capacity": 0.0,
-            "Total system cost ($)": 0.0,
-            "Total system GHGs (kgCO2eq)": 0.0,
-            "Discounted energy (kWh)": 0.0,
-            "Cumulative cost ($)": 0.0,
-            "Cumulative system cost ($)": 0.0,
-            "Cumulative GHGs (kgCO2eq)": 0.0,
-            "Cumulative system GHGs (kgCO2eq)": 0.0,
-            "Cumulative energy (kWh)": 0.0,
-            "Cumulative discounted energy (kWh)": 0.0,
-        },
-        index=["System results"],
-    )
-
-    combined_outputs = pd.DataFrame(index=["System results"])
+    if previous_system is None:
+        previous_system = SystemAppraisal(
+            CumulativeResults(0, 0, 0, 0, 0, 0),
+            EnvironmentalAppraisal(0, 0, 0, 0, 0, 0, 0, 0, 0),
+            FinancialAppraisal(0, 0, 0, 0, 0, 0, 0, 0, 0,),
+            SystemDetails(0, 0, 0, 0, 0, 0, 0,),
+            TechnicalAppraisal(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,),
+        )
 
     # Get results which will be carried forward into optimisation process
-    system_details = simulation[1].rename(
-        {"System details": "System results"}, axis="index"
-    )
-    technical_results = _simulation_technical_appraisal(
-        finance_inputs, logger, simulation, system_details
+    technical_appraisal = _simulation_technical_appraisal(
+        finance_inputs, logger, simulation_results, system_details
     )
 
-    financial_results = _simulation_financial_appraisal(
+    financial_appraisal = _simulation_financial_appraisal(
         finance_inputs,
         location,
         logger,
-        simulation,
+        simulation_results,
         system_details,
-        yearly_load_statistics,
-        previous_systems=previous_systems,
+        electric_yearly_load_statistics,
+        previous_system_details=previous_system.system_details,
     )
-    environmental_results = self.simulation_environmental_appraisal(
-        simulation, previous_systems=previous_systems
+    environmental_appraisal = _simulation_environmental_appraisal(
+        electric_yearly_load_statistics,
+        end_year,
+        ghg_inputs,
+        location,
+        previous_system.system_details,
+        simulation_results,
+        start_year,
+        system_details,
     )
 
-    #   Get results that rely on metrics of different kinds and several different iteration periods
+    # Get results that rely on metrics of different kinds and several different iteration periods
     cumulative_costs = (
-        financial_results["Total cost ($)"] + previous_system["Cumulative cost ($)"]
+        financial_appraisal.total_cost + previous_system.cumulative_results.cost
     )
     cumulative_system_costs = (
-        financial_results["Total system cost ($)"]
-        + previous_system["Cumulative system cost ($)"]
+        financial_appraisal.total_system_cost
+        + previous_system.cumulative_results.system_cost
     )
-    cumulative_GHGs = (
-        environmental_results["Total GHGs (kgCO2eq)"]
-        + previous_system["Cumulative GHGs (kgCO2eq)"]
+    cumulative_ghgs = (
+        environmental_appraisal.total_ghgs + previous_system.cumulative_results.ghgs
     )
-    cumulative_system_GHGs = (
-        environmental_results["Total system GHGs (kgCO2eq)"]
-        + previous_system["Cumulative system GHGs (kgCO2eq)"]
+    cumulative_system_ghgs = (
+        environmental_appraisal.total_system_ghgs
+        + previous_system.cumulative_results.system_ghgs
     )
     cumulative_energy = (
-        technical_results["Total energy (kWh)"]
-        + previous_system["Cumulative energy (kWh)"]
+        technical_appraisal.total_energy + previous_system.cumulative_results.energy
     )
     cumulative_discounted_energy = (
-        technical_results["Discounted energy (kWh)"]
-        + previous_system["Cumulative discounted energy (kWh)"]
+        technical_appraisal.discounted_energy
+        + previous_system.cumulative_results.discounted_energy
     )
-    #   Combined metrics
-    LCUE = float(cumulative_system_costs / cumulative_discounted_energy)
-    emissions_intensity = 1000.0 * float(
-        cumulative_system_GHGs / cumulative_energy
-    )  # in grams
+
+    # Combined metrics
+    lcue = float(cumulative_system_costs / cumulative_discounted_energy)
+    emissions_intensity = 1000.0 * float(cumulative_system_ghgs / cumulative_energy)
+
     #   Format outputs
-    combined_outputs["Cumulative cost ($)"] = cumulative_costs
-    combined_outputs["Cumulative system cost ($)"] = cumulative_system_costs
-    combined_outputs["Cumulative GHGs (kgCO2eq)"] = cumulative_GHGs
-    combined_outputs["Cumulative system GHGs (kgCO2eq)"] = cumulative_system_GHGs
-    combined_outputs["Cumulative energy (kWh)"] = cumulative_energy
-    combined_outputs[
-        "Cumulative discounted energy (kWh)"
-    ] = cumulative_discounted_energy
-    combined_outputs["LCUE ($/kWh)"] = np.round(LCUE, 3)
-    combined_outputs["Emissions intensity (gCO2/kWh)"] = np.round(
-        emissions_intensity, 3
+    cumulative_results = CumulativeResults(
+        cumulative_costs,
+        cumulative_discounted_energy,
+        cumulative_energy,
+        cumulative_ghgs,
+        cumulative_system_costs,
+        cumulative_system_ghgs,
     )
-    #   Return results
-    system_outputs = pd.concat(
-        [
-            system_details,
-            combined_outputs,
-            technical_results,
-            financial_results,
-            environmental_results,
-        ],
-        axis=1,
+
+    # Combine the outputs into a single system appraisal instance.
+    system_appraisal = SystemAppraisal(
+        cumulative_results,
+        environmental_appraisal,
+        financial_appraisal,
+        system_details,
+        technical_appraisal,
+        optimisation_criteria={
+            OptimisationCriterion.EMISSIONS_INTENSITY: round(emissions_intensity, 3),
+            OptimisationCriterion.LCUE: round(lcue, 3),
+        },
+        threshold_criteria={
+            ThresholdCriterion.BLACKOUTS: round(technical_appraisal.blackouts, 3)
+        },
     )
-    return system_outputs
+
+    return system_appraisal

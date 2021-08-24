@@ -138,6 +138,7 @@ def parse_input_files(
     energy_system.Minigrid,
     Dict[str, Any],
     Dict[str, Any],
+    Dict[str, Any],
     pd.DataFrame,
     Optional[OptimisationParameters],
     Optional[Set[Optimisation]],
@@ -331,7 +332,7 @@ def parse_input_files(
     logger.info("Generation inputs successfully parsed.")
 
     ghg_inputs_filepath = os.path.join(inputs_directory_relative_path, GHG_INPUTS_FILE)
-    ghg_inputs = read_yaml(ghg_inputs_filepath, logger)
+    ghg_data = read_yaml(ghg_inputs_filepath, logger)
     logger.info("GHG inputs successfully parsed.")
 
     grid_inputs_filepath = os.path.join(
@@ -484,7 +485,7 @@ def parse_input_files(
         minigrid,
         finance_inputs,
         generation_inputs,
-        ghg_inputs,
+        ghg_data,
         grid_inputs,
         location,
         optimisation_parameters,

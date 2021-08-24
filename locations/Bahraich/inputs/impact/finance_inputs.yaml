@@ -9,7 +9,8 @@
 
 discount_rate: 0.1 # Fraction between 0 and 1.
 general_o&m: 500 # [$ p.a.]
-misc_costs: 0 # [$/kW]
+misc:
+  cost: 0 # [$/kW]
 bos:
   cost: 200 # [$/kW]
   cost_decrease: 2 # [% p.a.]

@@ -23,9 +23,7 @@ import os
 import sys
 
 from argparse import Namespace
-from functools import partial
-from multiprocessing import Pool
-from typing import Any, Dict, List, Optional, Set
+from typing import Any, List, Optional
 
 import pandas as pd  # type: ignore
 
@@ -46,6 +44,8 @@ from .optimisation.optimisation import multiple_optimisation_step
 
 from .__utils__ import (
     BColours,
+    DONE,
+    FAILED,
     ResourceType,
     get_logger,
     InputFileError,
@@ -90,14 +90,6 @@ CLOVER_HEADER_STRING = """
                            philip.sandwell@gmail.com
 
 """
-
-# Done message:
-#   The message to display when a task was successful.
-DONE = "[   DONE   ]"
-
-# Failed message:
-#   The message to display when a task has failed.
-FAILED = "[  FAILED  ]"
 
 # Logger name:
 #   The name to use for the main logger for CLOVER
@@ -700,6 +692,7 @@ def main(args: List[Any]) -> None:
                 time_delta, optimisation_results = multiple_optimisation_step(
                     convertors,
                     finance_inputs,
+                    ghg_inputs,
                     grid_profile,
                     kerosene_usage,
                     location,
@@ -709,7 +702,6 @@ def main(args: List[Any]) -> None:
                     optimisation,
                     optimisation_inputs,
                     scenario,
-                    minigrid.pv_panel.lifetime,
                     total_clean_water_load,
                     total_electric_load,
                     total_solar_output,
@@ -736,16 +728,23 @@ def main(args: List[Any]) -> None:
             optimisation_times.append(
                 "{0:.3f} s/year".format(
                     (time_delta.seconds + time_delta.microseconds * 0.000001)
-                    / (simulation.end_year - simulation.start_year)
+                    / (
+                        optimisation_results[-1].system_details.end_year
+                        - optimisation_results[0].system_details.start_year
+                    )
                 )
             )
 
         print("Beginning CLOVER optimisation runs {}    {}".format("." * 28, DONE))
 
         print(
-            "Time taken for simulations: {}".format(", ".join(optimisation_times)),
+            "Time taken for optimisations: {}".format(", ".join(optimisation_times)),
             end="\n",
         )
+
+        import pdb
+
+        pdb.set_trace()
 
     if operating_mode == OperatingMode.PROFILE_GENERATION:
         print("No simulations or optimisations to be carried out.")

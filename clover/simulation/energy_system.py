@@ -24,7 +24,7 @@ import math
 import os
 
 from logging import Logger
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np  # type: ignore
 import pandas as pd  # type: ignore
@@ -442,7 +442,7 @@ def run_simulation(
     total_clean_water_load: pd.DataFrame,
     total_electric_load: pd.DataFrame,
     total_solar_power_produced: pd.DataFrame,
-) -> Tuple[float, pd.DataFrame, SystemDetails]:
+) -> Tuple[datetime.timedelta, pd.DataFrame, SystemDetails]:
     """
     Simulates a minigrid system
 
