@@ -152,7 +152,23 @@ class TechnicalAppraisal:
 
 @dataclasses.dataclass
 class SystemAppraisal:
-    pass
+    """
+    Contains information appraising the system.
+
+    .. attribute:: financial_appraisal
+        A :class:`FinancialAppraisal` of the system.
+
+    .. attribute:: system_details
+        The details of the system.
+
+    .. attribute:: technical_appraisal
+        A :class:`TechnicalAppraisal` of the system.
+    
+    """
+
+    financial_appraisal: FinancialAppraisal
+    system_details: SystemDetails
+    technical_appraisal: TechnicalAppraisal
 
 
 def _simulation_financial_appraisal(
@@ -210,9 +226,7 @@ def _simulation_financial_appraisal(
 
     # Calculate costs of connecting new households (discounted)
     connections_cost = connections_expenditure(
-        finance_inputs,
-        simulation_results["Households"],
-        system_details.start_year,
+        finance_inputs, simulation_results["Households"], system_details.start_year,
     )
 
     # Calculate operating costs of the system during this simulation (discounted)
@@ -373,7 +387,7 @@ def appraise_system(
     simulation: pd.DataFrame,
     system_details: SystemDetails,
     yearly_load_statistics: pd.DataFrame,
-) -> pd.DataFrame:
+) -> SystemAppraisal:
     """
     Appraises the total performance of a minigrid system for all performance metrics
 

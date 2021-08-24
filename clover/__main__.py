@@ -42,6 +42,7 @@ from .generation import grid, solar, weather
 from .load import load
 from .scripts import new_location
 from .simulation import energy_system
+from .optimisation.optimisation import multiple_optimisation_step
 
 from .__utils__ import (
     BColours,
@@ -620,7 +621,8 @@ def main(args: List[Any]) -> None:
                     "Beginning CLOVER simulation runs {}    {}".format("." * 30, FAILED)
                 )
                 logger.error(
-                    "%sAn unexpected error occurred running a CLOVER simulation. See %s for "
+                    "%sAn unexpected error occurred running a CLOVER simulation. See "
+                    "%s for "
                     "details: %s%s",
                     BColours.fail,
                     "{}.log".format(os.path.join(LOGGER_DIRECTORY, LOGGER_NAME)),
@@ -686,8 +688,64 @@ def main(args: List[Any]) -> None:
         )
 
     if operating_mode == OperatingMode.OPTIMISATION:
-        pass
-        # run_optimisation()
+        print(
+            "Beginning CLOVER optimisation runs {}    ".format("." * 28,), end="\n",
+        )
+        optimisation_times: List[str] = []
+
+        for optimisation_number, optimisation in enumerate(
+            tqdm(optimisations, desc="optimisations", unit="optimisation"), 1
+        ):
+            try:
+                time_delta, optimisation_results = multiple_optimisation_step(
+                    convertors,
+                    finance_inputs,
+                    grid_profile,
+                    kerosene_usage,
+                    location,
+                    logger,
+                    minigrid,
+                    parsed_args.num_clean_water_tanks,
+                    optimisation,
+                    optimisation_inputs,
+                    scenario,
+                    minigrid.pv_panel.lifetime,
+                    total_clean_water_load,
+                    total_electric_load,
+                    total_solar_output,
+                    electric_yearly_load_statistics,
+                )
+            except Exception as e:
+                print(
+                    "Beginning CLOVER optimisation runs {}    {}".format(
+                        "." * 28, FAILED
+                    )
+                )
+                logger.error(
+                    "%sAn unexpected error occurred running a CLOVER optimisation. See "
+                    "%s for "
+                    "details: %s%s",
+                    BColours.fail,
+                    "{}.log".format(os.path.join(LOGGER_DIRECTORY, LOGGER_NAME)),
+                    str(e),
+                    BColours.endc,
+                )
+                raise
+
+            # Add the time to the counter.
+            optimisation_times.append(
+                "{0:.3f} s/year".format(
+                    (time_delta.seconds + time_delta.microseconds * 0.000001)
+                    / (simulation.end_year - simulation.start_year)
+                )
+            )
+
+        print("Beginning CLOVER optimisation runs {}    {}".format("." * 28, DONE))
+
+        print(
+            "Time taken for simulations: {}".format(", ".join(optimisation_times)),
+            end="\n",
+        )
 
     if operating_mode == OperatingMode.PROFILE_GENERATION:
         print("No simulations or optimisations to be carried out.")
