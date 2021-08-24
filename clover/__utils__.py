@@ -811,9 +811,6 @@ class Scenario:
     .. attribute:: pv_d
         Whether PV-D is being included in the scenario.
 
-    .. attribute:: pv_panel_name
-        The name of the pv panel being considered.
-
     .. attribute:: pv_t
         Whether PV-T is being included in the scenario.
 
@@ -830,7 +827,6 @@ class Scenario:
     prioritise_self_generation: bool
     pv: bool
     pv_d: bool
-    pv_panel_name: str
     pv_t: bool
 
     @classmethod
@@ -887,7 +883,6 @@ class Scenario:
             scenario_inputs["prioritise_self_generation"],
             scenario_inputs["pv"],
             scenario_inputs["pv_d"] if "pv_d" in scenario_inputs else False,
-            scenario_inputs["pv_panel"],
             scenario_inputs["pv_t"] if "pv_t" in scenario_inputs else False,
         )
 

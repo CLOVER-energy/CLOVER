@@ -141,7 +141,6 @@ def parse_input_files(
     pd.DataFrame,
     Optional[OptimisationParameters],
     Optional[Set[Optimisation]],
-    solar.PVPanel,
     Scenario,
     List[Simulation],
     Dict[str, str],
@@ -174,9 +173,7 @@ def parse_input_files(
     """
 
     inputs_directory_relative_path = os.path.join(
-        LOCATIONS_FOLDER_NAME,
-        location,
-        INPUTS_DIRECTORY,
+        LOCATIONS_FOLDER_NAME, location, INPUTS_DIRECTORY,
     )
 
     # Parse the conversion inputs file.
@@ -207,15 +204,11 @@ def parse_input_files(
 
     # Parse the device inputs file.
     device_inputs_filepath = os.path.join(
-        inputs_directory_relative_path,
-        DEVICE_INPUTS_FILE,
+        inputs_directory_relative_path, DEVICE_INPUTS_FILE,
     )
     devices: Set[load.load.Device] = {
         load.load.Device.from_dict(entry)
-        for entry in read_yaml(
-            device_inputs_filepath,
-            logger,
-        )
+        for entry in read_yaml(device_inputs_filepath, logger,)
     }
     logger.info("Device inputs successfully parsed.")
 
@@ -242,9 +235,7 @@ def parse_input_files(
                 "r",
             ) as f:
                 device_utilisations[device] = pd.read_csv(
-                    f,
-                    header=None,
-                    index_col=None,
+                    f, header=None, index_col=None,
                 )
         except FileNotFoundError:
             logger.error(
@@ -257,13 +248,9 @@ def parse_input_files(
             raise
 
     diesel_inputs_filepath = os.path.join(
-        inputs_directory_relative_path,
-        DIESEL_INPUTS_FILE,
+        inputs_directory_relative_path, DIESEL_INPUTS_FILE,
     )
-    diesel_inputs = read_yaml(
-        diesel_inputs_filepath,
-        logger,
-    )
+    diesel_inputs = read_yaml(diesel_inputs_filepath, logger,)
     try:
         diesel_backup_generator = DieselBackupGenerator(
             diesel_inputs["diesel_consumption"], diesel_inputs["minimum_load"]
@@ -278,18 +265,54 @@ def parse_input_files(
         raise
     logger.info("Diesel inputs successfully parsed.")
 
-    battery_inputs_filepath = os.path.join(
-        inputs_directory_relative_path, BATTERY_INPUTS_FILE
-    )
+    # Parse the energy system input.
     energy_system_inputs_filepath = os.path.join(
         inputs_directory_relative_path, ENERGY_SYSTEM_INPUTS_FILE
+    )
+    energy_system_inputs = read_yaml(energy_system_inputs_filepath, logger)
+
+    # Parse the solar input information.
+    solar_generation_inputs_filepath = os.path.join(
+        inputs_directory_relative_path, SOLAR_INPUTS_FILE,
+    )
+    solar_generation_inputs = read_yaml(solar_generation_inputs_filepath, logger,)
+    logger.info("Solar generation inputs successfully parsed.")
+
+    # Parse the pv-panel information.
+    solar_panels: List[solar.SolarPanel] = []
+    for panel_input in solar_generation_inputs["panels"]:
+        if panel_input["type"] == solar.SolarPanelType.PV.value:
+            solar_panels.append(solar.PVPanel.from_dict(logger, panel_input))
+        if panel_input["type"] == solar.SolarPanelType.PV_T.value:
+            solar_panels.append(solar.HybridPVTPanel.from_dict(logger, panel_input))
+
+    # Return the solar panel being modelled.
+    try:
+        pv_panel = [
+            panel
+            for panel in solar_panels
+            if panel.panel_type == solar.SolarPanelType.PV
+            and panel.name == energy_system_inputs["pv_panel"]
+        ][0]
+    except IndexError:
+        logger.error(
+            "%sPV panel %s not found in pv panel inputs.%s",
+            BColours.fail,
+            energy_system_inputs["pv_panel"],
+            BColours.endc,
+        )
+    logger.info("Solar panel information successfully parsed.")
+
+    battery_inputs_filepath = os.path.join(
+        inputs_directory_relative_path, BATTERY_INPUTS_FILE
     )
     tank_inputs_filepath = os.path.join(
         inputs_directory_relative_path, TANK_INPUTS_FILE
     )
     minigrid = energy_system.Minigrid.from_dict(
         diesel_backup_generator,
-        read_yaml(energy_system_inputs_filepath, logger),
+        energy_system_inputs,
+        pv_panel,
         read_yaml(battery_inputs_filepath, logger),
         read_yaml(tank_inputs_filepath, logger),
     )
@@ -312,29 +335,16 @@ def parse_input_files(
     logger.info("GHG inputs successfully parsed.")
 
     grid_inputs_filepath = os.path.join(
-        inputs_directory_relative_path,
-        GRID_INPUTS_FILE,
+        inputs_directory_relative_path, GRID_INPUTS_FILE,
     )
-    with open(
-        grid_inputs_filepath,
-        "r",
-    ) as grid_inputs_file:
-        grid_inputs = pd.read_csv(
-            grid_inputs_file,
-            index_col=0,
-        )
+    with open(grid_inputs_filepath, "r",) as grid_inputs_file:
+        grid_inputs = pd.read_csv(grid_inputs_file, index_col=0,)
     logger.info("Grid inputs successfully parsed.")
 
     location_inputs_filepath = os.path.join(
-        inputs_directory_relative_path,
-        LOCATION_INPUTS_FILE,
+        inputs_directory_relative_path, LOCATION_INPUTS_FILE,
     )
-    location = Location.from_dict(
-        read_yaml(
-            location_inputs_filepath,
-            logger,
-        )
-    )
+    location = Location.from_dict(read_yaml(location_inputs_filepath, logger,))
     logger.info("Location inputs successfully parsed.")
 
     optimisation_inputs_filepath = os.path.join(
@@ -369,13 +379,9 @@ def parse_input_files(
     logger.info("Optimisations file successfully parsed.")
 
     scenario_inputs_filepath = os.path.join(
-        inputs_directory_relative_path,
-        SCENARIO_INPUTS_FILE,
+        inputs_directory_relative_path, SCENARIO_INPUTS_FILE,
     )
-    scenario_inputs = read_yaml(
-        scenario_inputs_filepath,
-        logger,
-    )
+    scenario_inputs = read_yaml(scenario_inputs_filepath, logger,)
     try:
         scenario = Scenario.from_dict(scenario_inputs)
     except Exception as e:
@@ -450,48 +456,10 @@ def parse_input_files(
     logger.info("Scenario inputs successfully parsed.")
 
     simulations_inputs_filepath = os.path.join(
-        inputs_directory_relative_path,
-        SIMULATIONS_INPUTS_FILE,
+        inputs_directory_relative_path, SIMULATIONS_INPUTS_FILE,
     )
-    simulations_file_contents = read_yaml(
-        simulations_inputs_filepath,
-        logger,
-    )
+    simulations_file_contents = read_yaml(simulations_inputs_filepath, logger,)
     simulations = [Simulation.from_dict(entry) for entry in simulations_file_contents]
-
-    solar_generation_inputs_filepath = os.path.join(
-        inputs_directory_relative_path,
-        SOLAR_INPUTS_FILE,
-    )
-    solar_generation_inputs = read_yaml(
-        solar_generation_inputs_filepath,
-        logger,
-    )
-    logger.info("Solar generation inputs successfully parsed.")
-
-    # Parse the pv-panel information.
-    solar_panels: List[solar.SolarPanel] = []
-    for panel_input in solar_generation_inputs["panels"]:
-        if panel_input["type"] == solar.SolarPanelType.PV.value:
-            solar_panels.append(solar.PVPanel.from_dict(logger, panel_input))
-        if panel_input["type"] == solar.SolarPanelType.PV_T.value:
-            solar_panels.append(solar.HybridPVTPanel.from_dict(logger, panel_input))
-
-    # Return the solar panel being modelled.
-    try:
-        pv_panel = [
-            panel
-            for panel in solar_panels
-            if panel.panel_type == solar.SolarPanelType.PV
-            and panel.name == scenario.pv_panel_name
-        ][0]
-    except IndexError:
-        logger.error(
-            "%sPV panel %s not found in pv panel inputs.%s",
-            BColours.fail,
-            scenario.pv_panel_name,
-            BColours.endc,
-        )
 
     # Generate a dictionary with information about the input files used.
     input_file_info = {
@@ -521,7 +489,6 @@ def parse_input_files(
         location,
         optimisation_parameters,
         optimisations,
-        pv_panel,
         scenario,
         simulations,
         input_file_info,
