@@ -41,6 +41,8 @@ __all__ = (
     "daily_sum_to_monthly_sum",
     "DemandType",
     "DieselMode",
+    "DONE",
+    "FAILED",
     "get_logger",
     "hourly_profile_to_daily_sum",
     "InputFileError",
@@ -61,9 +63,17 @@ __all__ = (
 )
 
 
+# Done message:
+#   The message to display when a task was successful.
+DONE = "[   DONE   ]"
+
 # Cut off time:
 #   The time up and to which information about the load of each device will be returned.
 CUT_OFF_TIME = 72  # [hours]
+
+# Failed message:
+#   The message to display when a task has failed.
+FAILED = "[  FAILED  ]"
 
 # Kerosene device name:
 #   The name used to denote the kerosene device.
@@ -309,7 +319,7 @@ def hourly_profile_to_daily_sum(hourly_profile: pd.DataFrame):
     days = int(hourly_profile.shape[0] / (24))
     daily_profile = pd.DataFrame(hourly_profile.values.reshape((days, 24)))
     # return pd.DataFrame(np.sum(daily_profile, 1))
-    return daily_profile.sum()
+    return daily_profile.sum(axis=1)
 
 
 class InputFileError(Exception):
@@ -964,14 +974,8 @@ class SystemDetails:
     .. attribute:: start_year
         The start year of the system.
 
-    .. attribute:: discounted_energy
-        The total amount of discounted energy consumed in kWh.
-
     .. attribute:: file_information
         Information on the input files used for the run.
-
-    .. attribute:: total_systme_cost
-        The total cost of the system, measured in USD.
 
     """
 
@@ -982,9 +986,7 @@ class SystemDetails:
     initial_pv_size: float
     initial_storage_size: float
     start_year: int
-    discounted_energy: Optional[float] = None
     file_information: Optional[Dict[str, str]] = None
-    total_system_cost: Optional[float] = None
 
     def to_dict(self) -> Dict[str, Optional[Union[int, float, str, Dict[str, str]]]]:
         """
@@ -1008,15 +1010,6 @@ class SystemDetails:
             "input_files": self.file_information,
             "start_year": round(self.start_year, 3),
         }
-
-        if self.discounted_energy is not None:
-            system_details_as_dict["discounted_energy"] = round(
-                self.discounted_energy, 3
-            )
-        if self.total_system_cost is not None:
-            system_details_as_dict["total_system_cost"] = round(
-                self.total_system_cost, 3
-            )
 
         return system_details_as_dict
 

@@ -19,16 +19,13 @@ information and system-sizing information provided.
 
 """
 
-import enum
-import os
-
 from logging import Logger
-from re import I
 from typing import Any, Dict
 
 import numpy as np
 import pandas as pd
 
+from .__utils__ import ImpactingComponent, LIFETIME, SIZE_INCREMENT
 from ..__utils__ import (
     BColours,
     Location,
@@ -38,7 +35,7 @@ from ..__utils__ import (
 __all_ = (
     "connections_expenditure",
     "diesel_fuel_expenditure",
-    "discounted_total",
+    "discounted_energy_total",
     "discounted_equipment_cost",
     "expenditure",
     "get_total_equipment_cost",
@@ -67,10 +64,6 @@ DISCOUNT_RATE = "discount_rate"
 #   Keyword used to denote general O&M costs of the system.
 GENERAL_OM = "general_o&m"
 
-# Households:
-#   Keyword used to denote households within the community.
-HOUSEHOLDS = "households"
-
 # Installation cost:
 #   Keyword used to denote the installation cost of a component.
 INSTALLATION_COST: str = "cost"
@@ -79,53 +72,9 @@ INSTALLATION_COST: str = "cost"
 #   Keyword used to denote the installation cost decrease of a component.
 INSTALLATION_COST_DECREASE: str = "cost_decrease"
 
-# Lifetime:
-#   Keyword to denote the lifetime of a component.
-LIFETIME = "lifetime"
-
 # OM:
 #   Keyword used to denote O&M costs.
 OM = "o&m"
-
-# Size increment:
-#   Keyword to denote increments in the size of a component.
-SIZE_INCREMENT = "size_increment"
-
-
-class ImpactingComponent(enum.Enum):
-    """
-    Used to keep tracek of components within the systems that have associated impacts.
-
-    - BOS:
-        Denotes the balance-of-systems aspect of the system.
-    - DIESEL:
-        Denotes the diesel component of the system.
-    - DIESEL_FUEL:
-        Denotes the diesel fuel component of the system.
-    - GRID:
-        Denotes the grid component of the system.
-    - INVERTER:
-        Denotes the inverter component of the system.
-    - KEROSENE:
-        Denotes the kerosene component of the system.
-    - MISC:
-        Denotes misc. costs.
-    - PV:
-        Denotes the PV component of the system.
-    - STORAGE:
-        Denotes the storage component of the system.
-
-    """
-
-    BOS = "bos"
-    DIESEL = "diesel"
-    DIESEL_FUEL = "diesel_fuel"
-    GRID = "grid"
-    INVERTER = "inverter"
-    KEROSENE = "kerosene"
-    MISC = "misc_costs"
-    PV = "pv"
-    STORAGE = "storage"
 
 
 ####################
@@ -222,7 +171,7 @@ def _component_om(
     om_cost_daily = (component_size * component_om_cost) / 365
     total_daily_cost = pd.DataFrame([om_cost_daily] * (end_year - start_year) * 265)
 
-    return discounted_total(
+    return discounted_energy_total(
         finance_inputs,
         logger,
         total_daily_cost,
@@ -312,7 +261,7 @@ def _inverter_expenditure(
     """
 
     # Initialise inverter replacement periods
-    replacement_period = finance_inputs[ImpactingComponent.INVERTER][LIFETIME]
+    replacement_period = finance_inputs[ImpactingComponent.INVERTER.value][LIFETIME]
     replacement_intervals = pd.DataFrame(
         np.arange(0, location.max_years, replacement_period)
     )
@@ -327,7 +276,7 @@ def _inverter_expenditure(
 
     # Initialise inverter sizing calculation
     max_power = []
-    inverter_step = finance_inputs[ImpactingComponent.INVERTER][SIZE_INCREMENT]
+    inverter_step = finance_inputs[ImpactingComponent.INVERTER.value][SIZE_INCREMENT]
     inverter_size = []
     for i in range(len(replacement_intervals)):
         # Calculate maximum power in interval years
@@ -350,8 +299,8 @@ def _inverter_expenditure(
         for i in range(len(inverter_info))
     ]
     inverter_info["Inverter cost ($/kW)"] = [
-        finance_inputs[ImpactingComponent.INVERTER][COST]
-        * (1 - 0.01 * finance_inputs[ImpactingComponent.INVERTER][COST_DECREASE])
+        finance_inputs[ImpactingComponent.INVERTER.value][COST]
+        * (1 - 0.01 * finance_inputs[ImpactingComponent.INVERTER.value][COST_DECREASE])
         ** inverter_info["Installation year"].iloc[i]
         for i in range(len(inverter_info))
     ]
@@ -387,6 +336,7 @@ def _misc_costs(diesel_size: float, misc_costs: float, pv_array_size: float) -> 
         The undiscounted cost.
 
     """
+
     misc_costs = (pv_array_size + diesel_size) * misc_costs
     return misc_costs
 
@@ -424,26 +374,26 @@ def get_total_equipment_cost(
 
     # Calculate the various system costs.
     bos_cost = _component_cost(
-        finance_inputs[ImpactingComponent.BOS][COST],
-        finance_inputs[ImpactingComponent.BOS][COST_DECREASE],
+        finance_inputs[ImpactingComponent.BOS.value][COST],
+        finance_inputs[ImpactingComponent.BOS.value][COST_DECREASE],
         pv_array_size,
         installation_year,
     )
     diesel_cost = _component_cost(
-        finance_inputs[ImpactingComponent.DIESEL][COST],
-        finance_inputs[ImpactingComponent.DIESEL][COST_DECREASE],
+        finance_inputs[ImpactingComponent.DIESEL.value][COST],
+        finance_inputs[ImpactingComponent.DIESEL.value][COST_DECREASE],
         diesel_size,
         installation_year,
     )
     pv_cost = _component_cost(
-        finance_inputs[ImpactingComponent.PV][COST],
-        finance_inputs[ImpactingComponent.PV][COST_DECREASE],
+        finance_inputs[ImpactingComponent.PV.value][COST],
+        finance_inputs[ImpactingComponent.PV.value][COST_DECREASE],
         pv_array_size,
         installation_year,
     )
     storage_cost = _component_cost(
-        finance_inputs[ImpactingComponent.STORAGE][COST],
-        finance_inputs[ImpactingComponent.STORAGE][COST_DECREASE],
+        finance_inputs[ImpactingComponent.STORAGE.value][COST],
+        finance_inputs[ImpactingComponent.STORAGE.value][COST_DECREASE],
         storage_size,
         installation_year,
     )
@@ -451,20 +401,20 @@ def get_total_equipment_cost(
     # Calculate the installation costs.
     diesel_installation_cost = _component_installation_cost(
         pv_array_size,
-        finance_inputs[ImpactingComponent.DIESEL][INSTALLATION_COST],
-        finance_inputs[ImpactingComponent.DIESEL][INSTALLATION_COST_DECREASE],
+        finance_inputs[ImpactingComponent.DIESEL.value][INSTALLATION_COST],
+        finance_inputs[ImpactingComponent.DIESEL.value][INSTALLATION_COST_DECREASE],
         installation_year,
     )
     pv_installation_cost = _component_installation_cost(
         pv_array_size,
-        finance_inputs[ImpactingComponent.PV][INSTALLATION_COST],
-        finance_inputs[ImpactingComponent.PV][INSTALLATION_COST_DECREASE],
+        finance_inputs[ImpactingComponent.PV.value][INSTALLATION_COST],
+        finance_inputs[ImpactingComponent.PV.value][INSTALLATION_COST_DECREASE],
         installation_year,
     )
     total_installation_cost = diesel_installation_cost + pv_installation_cost
 
     misc_costs = _misc_costs(
-        diesel_size, finance_inputs[ImpactingComponent.MISC], pv_array_size
+        diesel_size, finance_inputs[ImpactingComponent.MISC.value][COST], pv_array_size
     )
     return (
         pv_cost
@@ -497,7 +447,8 @@ def connections_expenditure(
 
     new_connections = np.max(households) - np.min(households)
     undiscounted_cost = float(
-        finance_inputs[HOUSEHOLDS][CONNECTION_COST] * new_connections
+        finance_inputs[ImpactingComponent.HOUSEHOLDS.value][CONNECTION_COST]
+        * new_connections
     )
     discount_fraction: float = (
         1.0 - finance_inputs[DISCOUNT_RATE]
@@ -550,11 +501,12 @@ def diesel_fuel_expenditure(
     start_day = start_year * 365
     end_day = end_year * 365
     diesel_price_daily = []
-    r_y = 0.01 * finance_inputs[ImpactingComponent.DIESEL_FUEL][COST_DECREASE]
+    r_y = 0.01 * finance_inputs[ImpactingComponent.DIESEL_FUEL.value][COST_DECREASE]
     r_d = ((1.0 + r_y) ** (1.0 / 365.0)) - 1.0
     diesel_price_daily = pd.DataFrame(
         [
-            finance_inputs[ImpactingComponent.DIEsEL_FUEL][COST] * (1.0 - r_d) ** day
+            finance_inputs[ImpactingComponent.DIESEL_FUEL.value][COST]
+            * (1.0 - r_d) ** day
             for day in range(start_day, end_day)
         ]
     )
@@ -562,7 +514,7 @@ def diesel_fuel_expenditure(
     total_daily_cost = pd.DataFrame(
         diesel_fuel_usage_daily.values * diesel_price_daily.values
     )
-    total_discounted_cost = discounted_total(
+    total_discounted_cost = discounted_energy_total(
         finance_inputs,
         logger,
         total_daily_cost,
@@ -573,7 +525,7 @@ def diesel_fuel_expenditure(
     return total_discounted_cost
 
 
-def discounted_total(
+def discounted_energy_total(
     finance_inputs: Dict[str, Any],
     logger: Logger,
     total_daily: pd.DataFrame,
@@ -681,9 +633,9 @@ def expenditure(
 
     """
 
-    hourly_cost = hourly_usage * finance_inputs[component][COST]
+    hourly_cost = hourly_usage * finance_inputs[component.value][COST]
     total_daily_cost = hourly_profile_to_daily_sum(hourly_cost)
-    total_discounted_cost = discounted_total(
+    total_discounted_cost = discounted_energy_total(
         finance_inputs,
         logger,
         total_daily_cost,
@@ -767,7 +719,7 @@ def total_om(
     """
 
     pv_om = _component_om(
-        finance_inputs[ImpactingComponent.PV][OM],
+        finance_inputs[ImpactingComponent.PV.value][OM],
         pv_array_size,
         finance_inputs,
         logger,
@@ -775,7 +727,7 @@ def total_om(
         end_year=end_year,
     )
     storage_om = _component_om(
-        finance_inputs[ImpactingComponent.STORAGE][OM],
+        finance_inputs[ImpactingComponent.STORAGE.value][OM],
         storage_size,
         finance_inputs,
         logger,
@@ -783,7 +735,7 @@ def total_om(
         end_year=end_year,
     )
     diesel_om = _component_om(
-        finance_inputs[ImpactingComponent.DIESEL][OM],
+        finance_inputs[ImpactingComponent.DIESEL.value][OM],
         diesel_size,
         finance_inputs,
         logger,

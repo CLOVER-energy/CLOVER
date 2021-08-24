@@ -30,10 +30,7 @@ functions which can be used to carry out an optimisation:
 
 """
 
-import dataclasses
 import datetime
-import enum
-from mmap import ACCESS_DEFAULT
 import os
 
 from logging import Logger
@@ -44,342 +41,37 @@ import pandas as pd
 
 from tqdm import tqdm
 
-from ..impact import finance
-from ..impact import ghgs
 from ..simulation import energy_system
 
 from ..__utils__ import (
-    BColours,
+    DONE,
     Scenario,
-    hourly_profile_to_daily_sum,
     Location,
     LOCATIONS_FOLDER_NAME,
     Simulation,
     SystemDetails,
 )
 from ..conversion.conversion import Convertor
-from ..simulation.diesel import DieselBackupGenerator
 from .appraisal import appraise_system, SystemAppraisal
-
-__all__ = (
-    "multiple_optimisation_step",
-    "Optimisation",
-    "OptimisationParameters",
+from .__utils__ import (
+    CriterionMode,
+    Optimisation,
+    OptimisationCriterion,
+    OptimisationParameters,
+    PVSystemSize,
+    StorageSystemSize,
+    ThresholdCriterion,
+    ThresholdMode,
 )
 
-
-class CriterionMode(enum.Enum):
-    """
-    The mode of optimisation of the criterion.
-
-    - MAXIMISE:
-        Denotes that the optimisation criterion is to be maximised.
-
-    - MINIMISE:
-        Denotes that the optimisation criterion is to be minimised.
-
-    """
-
-    MAXIMISE = "maximise"
-    MINIMISE = "minimise"
-
-    def __str__(self) -> str:
-        """
-        Returns a nice-looking `str` representing the :class:`CriterionMode`.
-
-        Outputs:
-            - A nice-looking `str` representing the :class:`CriterionMode`
-              instance.
-
-        """
-
-        return f"CriterionMode(mode={self.value})"
-
-
-class OptimisationCriterion(enum.Enum):
-    """
-    The optimisation criteria values that are allowed.
-
-    - LCUE:
-        Denotes the levilised code of electricity.
-
-    """
-
-    LCUE = "lcue"
-
-    def __str__(self) -> str:
-        """
-        Returns a nice-looking `str` representing the :class:`OptimisationCriterion`.
-
-        Outputs:
-            - A nice-looking `str` representing the :class:`OptimisationCriterion`
-              instance.
-
-        """
-
-        return f"OptimisationCriterion({self.value})"
-
-
-class ThersholdCriterion(enum.Enum):
-    """
-    The thershold criteria values that are allowed.
-
-    - BLACKOUTS:
-        Denotes the proportion of time for which a blackout occurs.
-
-    """
-
-    BLACKOUTS = "blackouts"
-
-    def __str__(self) -> str:
-        """
-        Returns a nice-looking `str` representation of the :class:`ThresholdCriterion`.
-
-        Outputs:
-            - A nice-looking `str` representing the :class:`ThresholdCriterion`
-              instance.
-
-        """
-
-        return f"ThresholdCriterion({self.value})"
-
-
-class ThresholdMode(enum.Enum):
-    """
-    Represents whether a threshold value is a maximum or minimum limit on the system.
-
-    - MAXIMUM:
-        Denotes that the threshold is a maximum to be placed on the system.
-    - MINIMUM:
-        Denotes that the threshold is a minimum to be placed on the system.
-
-    """
-
-    MAXIMUM = "maximum"
-    MINIMUM = "minimum"
-
-
-@dataclasses.dataclass
-class Optimisation:
-    """
-    Represents an optimisation to be carried out.
-
-    .. attribute:: optimisation_criteria
-        A `dict` mapping optimisation criteria to whether they should be maximised or
-        minimised.
-
-    .. attribute:: threshold_criteria
-        A `dict` mapping threshold criteria to their values.
-
-    """
-
-    optimisation_criteria: Dict[OptimisationCriterion, CriterionMode]
-    thershold_criteria: Dict[ThersholdCriterion, float]
-
-    def __str__(self) -> str:
-        """
-        Returns a nice-looking `str` summarising the :class:`Optimisation` instance.
-
-        Outputs:
-            - A nice-looking `str` summarising the information contained within the
-              :class:`Optimisation` instance.
-
-        """
-
-        return (
-            "Optimisation("
-            + f"optimisation_crtieria: {self.optimisation_criteria}"
-            + f", thershold_criteria: {self.thershold_criteria}"
-            + ")"
-        )
-
-    def __hash__(self) -> int:
-        """
-        Returns an `int` representing the :class:`Optimisation` instance for sorting.
-
-        In order to efficiently store :class:`Optimisation` instances, a unique hash is
-        required. This method computes such a hash and returns it.
-
-        Outputs:
-            - A unique `int` representing the :class:`Optimisation` instance.
-
-        """
-
-        return hash(str(self))
-
-    @classmethod
-    def from_dict(cls, logger: Logger, optimisation_data: Dict[str, Any]) -> Any:
-        """
-        Creates a :class:`Optimisation` instance based on the input data.
-
-        Inputs:
-            - logger:
-                The logger to use for the run.
-            - optimisation_data:
-                The optimisation data, extracted from the input file.
-
-        Outputs:
-            - A :class:`Optimisation` instance based on the input data.
-
-        """
-
-        try:
-            optimisation_criteria = {
-                OptimisationCriterion(key): CriterionMode(value)
-                for entry in optimisation_data["optimisation_criteria"]
-                for key, value in entry.items()
-            }
-        except KeyError as e:
-            logger.error(
-                "%sError processing optimisation criteria, missing entry: %s%s",
-                BColours.fail,
-                str(e),
-                BColours.endc,
-            )
-            raise
-
-        try:
-            threshold_criteria = {
-                ThersholdCriterion(key): value
-                for entry in optimisation_data["threshold_criteria"]
-                for key, value in entry.items()
-            }
-        except KeyError as e:
-            logger.error(
-                "%sError processing threshold criteria, missing entry: %s%s",
-                BColours.fail,
-                str(e),
-                BColours.endc,
-            )
-            raise
-
-        return cls(optimisation_criteria, threshold_criteria)
-
-
-@dataclasses.dataclass
-class OptimisationParameters:
-    """
-    Parameters that define the scope of the optimisation.
-
-    .. attribute:: iteration_length
-        The length of each iteration to be run.
-
-    .. attribute:: number_of_iterations
-        The number of iterations to run.
-
-    .. attribute:: pv_size_max
-        The maximum size of PV capacity to be considered, used only as an initial value,
-        measured in kWp.
-
-    .. attribute:: pv_size_min
-        The minimum size of PV capacity to be considered, measured in kWp.
-
-    .. attribute:: pv_size_step
-        The optimisation resolution for the PV size, measured in kWp.
-
-    .. attribute:: storage_size_max
-        The maximum size of storage capacity to be considered, used only as an initial
-        value, measured in kWh.
-
-    .. attribute:: storage_size_min
-        The minimum size of storage capacity to be considered, measured in kWh.
-
-    .. attribute:: storage_size_step
-        The optimisation restolution for the storage size, measured in kWh.
-
-    """
-
-    iteration_length: int
-    number_of_iterations: int
-    pv_size_max: float
-    pv_size_min: float
-    pv_size_step: float
-    storage_size_max: float
-    storage_size_min: float
-    storage_size_step: float
-
-    @classmethod
-    def from_dict(cls, optimisation_inputs: Dict[str, Any]) -> Any:
-        """
-        Returns a :class:`OptimisationParameters` instance based on the input info.
-
-        Outputs:
-            - A :class:`OptimisationParameters` instanced based on the information
-            passed in.
-
-        """
-
-        return cls(
-            optimisation_inputs["iteration_length"],
-            optimisation_inputs["number_of_iterations"],
-            optimisation_inputs["pv_size"]["max"],
-            optimisation_inputs["pv_size"]["min"],
-            optimisation_inputs["pv_size"]["step"],
-            optimisation_inputs["storage_size"]["max"],
-            optimisation_inputs["storage_size"]["min"],
-            optimisation_inputs["storage_size"]["step"],
-        )
-
-    @property
-    def scenario_length(self) -> int:
-        """
-        Calculates and returns the scenario length for the optimisation.
-
-        Outputs:
-            - The scenario length for the optimisation.
-
-        """
-
-        return self.iteration_length * self.number_of_iterations
-
-
-@dataclasses.dataclass
-class PVSystemSize:
-    """
-    Used to wrap the pv-system-size information.
-
-    .. attribute:: max
-        The maximum size of the system, measured in kWp.
-
-    .. attribute:: min
-        The minimum size of the system, measured in kWp.
-
-    .. attribute:: step
-        The step to use for the system, measured in kWp.
-
-    """
-
-    max: float
-    min: float
-    step: float
-
-
-@dataclasses.dataclass
-class StorageSystemSize:
-    """
-    Used to wrap the storage-system-size information.
-
-    .. attribute:: max
-        The maximum size of the system, measured in kWh.
-
-    .. attribute:: min
-        The minimum size of the system, measured in kWh.
-
-    .. attribute:: step
-        The step to use for the system, measured in kWh.
-
-    """
-
-    max: float
-    min: float
-    step: float
+__all__ = ("multiple_optimisation_step",)
 
 
 # Threshold-criterion-to-mode mapping:
 #   Maps the threshold criteria to the modes, i.e., whether they are maximisable or
 #   minimisable.
-THRESHOLD_CRITERION_TO_MODE: Dict[ThersholdCriterion, ThresholdMode] = {
-    ThersholdCriterion.BLACKOUTS: ThresholdMode.MAXIMUM,
+THRESHOLD_CRITERION_TO_MODE: Dict[ThresholdCriterion, ThresholdMode] = {
+    ThresholdCriterion.BLACKOUTS: ThresholdMode.MAXIMUM,
 }
 
 
@@ -401,7 +93,7 @@ def _fetch_optimum_system(
 
     """
 
-    optimum_systems: Dict[OptimisationCriterion:SystemAppraisal] = dict()
+    optimum_systems: Dict[OptimisationCriterion, SystemAppraisal] = dict()
 
     # Run through the various optimisation criteria.
     for (
@@ -409,7 +101,7 @@ def _fetch_optimum_system(
         criterion_mode,
     ) in optimisation.optimisation_criteria.items():
         # Sort by the optimisation criterion.
-        sorted_systems = sufficient_systems.sort(
+        sufficient_systems.sort(
             key=lambda appraisal: appraisal.optimisation_criteria[
                 optimisation_criterion
             ],
@@ -417,7 +109,7 @@ def _fetch_optimum_system(
         )
 
         # Add the optimum system, keyed by the optimisation criterion.
-        optimum_systems[optimisation_criterion] = sorted_systems[0]
+        optimum_systems[optimisation_criterion] = sufficient_systems[0]
 
     return optimum_systems
 
@@ -426,6 +118,7 @@ def _single_line_simulation(
     convertors: List[Convertor],
     end_year: int,
     finance_inputs: Dict[str, Any],
+    ghg_inputs: Dict[str, Any],
     grid_profile: pd.DataFrame,
     kerosene_usage: pd.DataFrame,
     pv_system_size: PVSystemSize,
@@ -433,11 +126,11 @@ def _single_line_simulation(
     location: Location,
     logger: Logger,
     minigrid: energy_system.Minigrid,
+    num_clean_water_tanks: int,
     optimisation: Optimisation,
     potential_system: SystemAppraisal,
-    previous_system: SystemDetails,
+    previous_system: SystemAppraisal,
     scenario: Scenario,
-    solar_lifetime: int,
     start_year: int,
     total_clean_water_load: pd.DataFrame,
     total_electric_load: pd.DataFrame,
@@ -485,7 +178,7 @@ def _single_line_simulation(
     ):
         test_storage_size = float(storage_size.max + storage_size.step)
     else:
-        test_storage_size = (
+        test_storage_size = float(
             np.ceil(storage_size.max / storage_size.step) * storage_size.step
         )
 
@@ -494,23 +187,28 @@ def _single_line_simulation(
         logger.info("Increasing storage size.")
 
         # Increase  and iterate over PV size
-        for iteration_pv_size in range(
-            pv_system_size.min,
-            np.ceil(pv_system_size.max + pv_system_size.step),
-            pv_system_size.step,
+        for iteration_pv_size in tqdm(
+            range(
+                pv_system_size.min,
+                float(np.ceil(pv_system_size.max + pv_system_size.step)),
+                pv_system_size.step,
+            ),
+            desc="probing pv sizes",
+            leave=False,
+            unit="simulation",
         ):
             # Sun a simulation.
-            _, simulation, system_details = energy_system.run_simulation(
+            _, simulation_results, system_details = energy_system.run_simulation(
                 convertors,
                 minigrid,
                 grid_profile,
                 kerosene_usage,
                 location,
                 logger,
+                num_clean_water_tanks,
                 iteration_pv_size,
                 scenario,
                 Simulation(end_year, start_year),
-                solar_lifetime,
                 test_storage_size,
                 total_clean_water_load,
                 total_electric_load,
@@ -519,13 +217,16 @@ def _single_line_simulation(
 
             # Appraise the system.
             new_appraisal = appraise_system(
+                yearly_electric_load_statistics,
+                end_year,
                 finance_inputs,
+                ghg_inputs,
                 location,
                 logger,
-                simulation,
-                system_details,
-                yearly_electric_load_statistics,
                 previous_system,
+                simulation_results,
+                start_year,
+                system_details,
             )
 
             if _get_sufficient_appraisals(optimisation, [new_appraisal]) == []:
@@ -538,17 +239,17 @@ def _single_line_simulation(
             np.ceil(pv_system_size.max / pv_system_size.step) * pv_system_size.step
             != pv_system_size.max
         ):
-            _, simulation, system_details = energy_system.run_simulation(
+            _, simulation_results, system_details = energy_system.run_simulation(
                 convertors,
                 minigrid,
                 grid_profile,
                 kerosene_usage,
                 location,
                 logger,
+                num_clean_water_tanks,
                 pv_system_size.max,
                 scenario,
                 Simulation(end_year, start_year),
-                solar_lifetime,
                 test_storage_size,
                 total_clean_water_load,
                 total_electric_load,
@@ -557,13 +258,16 @@ def _single_line_simulation(
 
             # Appraise the system.
             new_appraisal = appraise_system(
+                yearly_electric_load_statistics,
+                end_year,
                 finance_inputs,
+                ghg_inputs,
                 location,
                 logger,
-                simulation,
-                system_details,
-                yearly_electric_load_statistics,
                 previous_system,
+                simulation_results,
+                start_year,
+                system_details,
             )
 
             if _get_sufficient_appraisals(optimisation, [new_appraisal]) != []:
@@ -579,32 +283,37 @@ def _single_line_simulation(
     ):
         test_pv_size = float(pv_system_size.max + pv_system_size.step)
     else:
-        test_pv_size = (
+        test_pv_size = float(
             np.ceil(pv_system_size.max / pv_system_size.step) * pv_system_size.step
         )
 
     #   If PV was maxed out:
-    if potential_system.system_details.initial_pv_size == pv_size_max:
+    if potential_system.system_details.initial_pv_size == pv_system_size.max:
         logger.info("Increasing PV size.")
 
         # Increase  and iterate over storage size
-        for iteration_storage_size in range(
-            storage_size.min,
-            np.ceil(storage_size.max + storage_size.step),
-            storage_size.step,
+        for iteration_storage_size in tqdm(
+            range(
+                storage_size.min,
+                float(np.ceil(storage_size.max + storage_size.step)),
+                storage_size.step,
+            ),
+            desc="probing storage sizes",
+            leave=False,
+            unit="simulation",
         ):
             # Sun a simulation.
-            _, simulation, system_details = energy_system.run_simulation(
+            _, simulation_results, system_details = energy_system.run_simulation(
                 convertors,
                 minigrid,
                 grid_profile,
                 kerosene_usage,
                 location,
                 logger,
+                num_clean_water_tanks,
                 test_pv_size,
                 scenario,
                 Simulation(end_year, start_year),
-                solar_lifetime,
                 iteration_storage_size,
                 total_clean_water_load,
                 total_electric_load,
@@ -613,13 +322,16 @@ def _single_line_simulation(
 
             # Appraise the system.
             new_appraisal = appraise_system(
+                yearly_electric_load_statistics,
+                end_year,
                 finance_inputs,
+                ghg_inputs,
                 location,
                 logger,
-                simulation,
-                system_details,
-                yearly_electric_load_statistics,
                 previous_system,
+                simulation_results,
+                start_year,
+                system_details,
             )
 
             if _get_sufficient_appraisals(optimisation, [new_appraisal]) == []:
@@ -633,17 +345,17 @@ def _single_line_simulation(
             != storage_size.max
         ):
             # Sun a simulation.
-            _, simulation, system_details = energy_system.run_simulation(
+            _, simulation_results, system_details = energy_system.run_simulation(
                 convertors,
                 minigrid,
                 grid_profile,
                 kerosene_usage,
                 location,
                 logger,
+                num_clean_water_tanks,
                 test_pv_size,
                 scenario,
                 Simulation(end_year, start_year),
-                solar_lifetime,
                 storage_size.max,
                 total_clean_water_load,
                 total_electric_load,
@@ -652,13 +364,16 @@ def _single_line_simulation(
 
             # Appraise the system.
             new_appraisal = appraise_system(
+                yearly_electric_load_statistics,
+                end_year,
                 finance_inputs,
+                ghg_inputs,
                 location,
                 logger,
-                simulation,
-                system_details,
-                yearly_electric_load_statistics,
                 previous_system,
+                simulation_results,
+                start_year,
+                system_details,
             )
 
             if _get_sufficient_appraisals(optimisation, [new_appraisal]) != []:
@@ -678,6 +393,7 @@ def _find_optimum_system(
     convertors: List[Convertor],
     end_year: int,
     finance_inputs: Dict[str, Any],
+    ghg_inputs: Dict[str, Any],
     grid_profile: pd.DataFrame,
     kerosene_usage: pd.DataFrame,
     largest_pv_system_size: PVSystemSize,
@@ -685,10 +401,10 @@ def _find_optimum_system(
     location: Location,
     logger: Logger,
     minigrid: energy_system.Minigrid,
+    num_clean_water_tanks: int,
     optimisation: Optimisation,
     previous_system: SystemDetails,
     scenario: Scenario,
-    solar_lifetime: int,
     start_year: int,
     system_appraisals: List[SystemAppraisal],
     total_clean_water_load: pd.DataFrame,
@@ -724,8 +440,11 @@ def _find_optimum_system(
 
     # Check to find optimum system
     optimum_systems = _fetch_optimum_system(optimisation, system_appraisals)
+    logger.info("Optimum systems determined.")
 
-    for optimisation_criterion, optimum_system in optimum_systems.items():
+    for optimisation_criterion, optimum_system in tqdm(
+        optimum_systems.items(), desc="checking upper bound", leave=False, unit="system"
+    ):
         # Check if optimum system was the largest system simulated
         while (
             optimum_system.system_details.initial_pv_size == largest_pv_system_size.max
@@ -742,6 +461,7 @@ def _find_optimum_system(
                 convertors,
                 end_year,
                 finance_inputs,
+                ghg_inputs,
                 grid_profile,
                 kerosene_usage,
                 largest_pv_system_size,
@@ -749,11 +469,11 @@ def _find_optimum_system(
                 location,
                 logger,
                 minigrid,
+                num_clean_water_tanks,
                 optimisation,
                 optimum_system,
                 previous_system,
                 scenario,
-                solar_lifetime,
                 start_year,
                 total_clean_water_load,
                 total_electric_load,
@@ -810,19 +530,19 @@ def _get_sufficient_appraisals(
             if (
                 THRESHOLD_CRITERION_TO_MODE[threshold_criterion]
                 == ThresholdMode.MAXIMUM
-                and appraisal.threshold_criteria[threshold_criterion] <= threshold_value
             ):
-                criteria_met.add(True)
-            else:
-                criteria_met.add(False)
+                if appraisal.threshold_criteria[threshold_criterion] <= threshold_value:
+                    criteria_met.add(True)
+                else:
+                    criteria_met.add(False)
             if (
                 THRESHOLD_CRITERION_TO_MODE[threshold_criterion]
                 == ThresholdMode.MINIMUM
-                and appraisal.threshold_criteria[threshold_criterion] >= threshold_value
             ):
-                criteria_met.add(True)
-            else:
-                criteria_met.add(False)
+                if appraisal.threshold_criteria[threshold_criterion] >= threshold_value:
+                    criteria_met.add(True)
+                else:
+                    criteria_met.add(False)
 
         # Store the system to return provided it is sufficient.
         if all(criteria_met):
@@ -834,6 +554,7 @@ def _get_sufficient_appraisals(
 def _simulation_iteration(
     convertors: List[Convertor],
     finance_inputs: Dict[str, Any],
+    ghg_inputs: Dict[str, Any],
     grid_profile: pd.DataFrame,
     kerosene_usage: pd.DataFrame,
     location: Location,
@@ -845,7 +566,6 @@ def _simulation_iteration(
     previous_system: SystemDetails,
     pv_sizes: PVSystemSize,
     scenario: Scenario,
-    solar_lifetime: int,
     start_year: int,
     storage_sizes: StorageSystemSize,
     total_clean_water_load: pd.DataFrame,
@@ -874,7 +594,7 @@ def _simulation_iteration(
             The kerosene-usage profile.
         - location:
             The location being considered.
-        - loger:
+        - logger:
             The logger to use for the run.
         - minigrid:
             The energy system being considered.
@@ -927,7 +647,11 @@ def _simulation_iteration(
     end_year: int = start_year + int(optimisation_parameters.iteration_length)
 
     # Check if largest system is sufficient
-    _, simulation, system_details = energy_system.run_simulation(
+    logger.info("Checking whether the largest system is sufficient.")
+    tqdm.write(
+        "Determining largest suitable system {}    ".format("." * 27,), end="\n",
+    )
+    _, simulation_results, system_details = energy_system.run_simulation(
         convertors,
         minigrid,
         grid_profile,
@@ -944,14 +668,17 @@ def _simulation_iteration(
         total_solar_power_produced,
     )
 
-    new_appraisal: SystemAppraisal = appraise_system(
+    largest_system_appraisal: SystemAppraisal = appraise_system(
+        yearly_electric_load_statistics,
+        end_year,
         finance_inputs,
+        ghg_inputs,
         location,
         logger,
-        simulation,
-        system_details,
-        yearly_electric_load_statistics,
         previous_system,
+        simulation_results,
+        start_year,
+        system_details,
     )
 
     # Instantiate in preparation of the while loop.
@@ -959,25 +686,30 @@ def _simulation_iteration(
     storage_size_max = storage_sizes.max
 
     # Increase system size until largest system is sufficient (if necessary)
-    while _get_sufficient_appraisals(optimisation, [new_appraisal]) == []:
+    while _get_sufficient_appraisals(optimisation, [largest_system_appraisal]) == []:
         # Round out the various variables.
-        pv_size_max = np.ceil(pv_size_max / pv_sizes.step) * pv_sizes.step
-        storage_size_max = (
+        pv_size_max = float(np.ceil(pv_size_max / pv_sizes.step) * pv_sizes.step)
+        storage_size_max = float(
             np.ceil(storage_size_max / storage_sizes.step) * storage_sizes.step
+        )
+        logger.info(
+            "Probing system upper bounds: pv_size: %s, storage_size: %s",
+            pv_size_max,
+            storage_size_max,
         )
 
         # Run a simulation and appraise it.
-        _, simulation, system_details = energy_system.run_simulation(
+        _, simulation_results, system_details = energy_system.run_simulation(
             convertors,
             minigrid,
             grid_profile,
             kerosene_usage,
             location,
             logger,
+            num_clean_water_tanks,
             pv_size_max,
             scenario,
             Simulation(end_year, start_year),
-            solar_lifetime,
             storage_size_max,
             total_clean_water_load,
             total_electric_load,
@@ -985,47 +717,70 @@ def _simulation_iteration(
         )
 
         largest_system_appraisal = appraise_system(
+            yearly_electric_load_statistics,
+            end_year,
             finance_inputs,
+            ghg_inputs,
             location,
             logger,
-            simulation,
-            system_details,
-            yearly_electric_load_statistics,
             previous_system,
+            simulation_results,
+            start_year,
+            system_details,
+        )
+
+        logger.info(
+            "System was found to be insufficient. Threshold criteria: %s",
+            largest_system_appraisal.threshold_criteria,
         )
 
         # Increment the system sizes.
         pv_size_max += pv_sizes.step
         storage_size_max += storage_sizes.step
 
+    tqdm.write(
+        "Determining largest suitable system {}    {}".format("." * 27, DONE), end="\n",
+    )
+    system_appraisals.append(largest_system_appraisal)
+
     # Round the maximum PV and storage sizes to be increments of the steps involved.
-    pv_size_max = np.ceil(pv_size_max / pv_sizes.step) * pv_sizes.step
-    storage_size_max = (
+    pv_size_max = float(np.ceil(pv_size_max / pv_sizes.step)) * pv_sizes.step
+    storage_size_max = float(
         np.ceil(storage_size_max / storage_sizes.step) * storage_sizes.step
+    )
+    logger.info(
+        "Largest system size determined: pv_size: %s, storage_size: %s",
+        pv_size_max,
+        storage_size_max,
     )
 
     simulation_sizes = [
         (pv_size, storage_size)
-        for pv_size in range(pv_sizes.min, pv_size_max, pv_sizes.step)
+        for pv_size in range(pv_sizes.min, int(pv_size_max), pv_sizes.step)
         for storage_size in range(
-            storage_sizes.min, storage_size_max, storage_sizes.step
+            storage_sizes.min, int(storage_size_max), storage_sizes.step
         )
     ]
 
     # Move down system sizes
-    for pv_size, storage_size in simulation_sizes:
+    for pv_size, storage_size in tqdm(
+        simulation_sizes, desc="system size options", leave=False, unit="simulation"
+    ):
+        logger.info(
+            "Probing system: pv_size: %s, storage_size: %s", pv_size, storage_size
+        )
         # Run a simulation and appraise it.
-        _, simulation, system_details = energy_system.run_simulation(
+        _, simulation_results, system_details = energy_system.run_simulation(
             convertors,
             minigrid,
             grid_profile,
             kerosene_usage,
             location,
             logger,
+            num_clean_water_tanks,
             pv_size,
             scenario,
             Simulation(end_year, start_year),
-            solar_lifetime,
             storage_size,
             total_clean_water_load,
             total_electric_load,
@@ -1033,21 +788,27 @@ def _simulation_iteration(
         )
 
         new_appraisal = appraise_system(
+            yearly_electric_load_statistics,
+            end_year,
             finance_inputs,
+            ghg_inputs,
             location,
             logger,
-            simulation,
-            system_details,
-            yearly_electric_load_statistics,
             previous_system,
+            simulation_results,
+            start_year,
+            system_details,
         )
 
         if _get_sufficient_appraisals(optimisation, [new_appraisal]) == []:
+            logger.info("No sufficient systems at this resolution.")
             continue
 
         # Store the new appraisal if it is sufficient.
+        logger.info("Sufficient system found, storing.")
         system_appraisals.append(new_appraisal)
 
+    logger.info("Optimisation bounds explored.")
     return (
         end_year,
         PVSystemSize(pv_size_max, pv_sizes.min, pv_sizes.step),
@@ -1062,6 +823,7 @@ def _simulation_iteration(
 def _optimisation_step(
     convertors: List[Convertor],
     finance_inputs: Dict[str, Any],
+    ghg_inputs: Dict[str, Any],
     grid_profile: pd.DataFrame,
     kerosene_usage: pd.DataFrame,
     location: Location,
@@ -1073,7 +835,6 @@ def _optimisation_step(
     previous_systems: pd.DataFrame,
     pv_sizes: PVSystemSize,
     scenario: Scenario,
-    solar_lifetime: int,
     start_year: int,
     storage_sizes: StorageSystemSize,
     total_clean_water_load: pd.DataFrame,
@@ -1131,6 +892,7 @@ def _optimisation_step(
     """
 
     # Run a simulation iteration to probe the various systems available.
+    logger.info("Optimisation step called.")
     (
         end_year,
         pv_system_size,
@@ -1142,6 +904,7 @@ def _optimisation_step(
     ) = _simulation_iteration(
         convertors,
         finance_inputs,
+        ghg_inputs,
         grid_profile,
         kerosene_usage,
         location,
@@ -1153,7 +916,6 @@ def _optimisation_step(
         previous_systems,
         pv_sizes,
         scenario,
-        solar_lifetime,
         start_year,
         storage_sizes,
         total_clean_water_load,
@@ -1161,12 +923,14 @@ def _optimisation_step(
         total_solar_power_produced,
         yearly_electric_load_statistics,
     )
+    logger.info("Simulation iterations executed successfully.")
 
     # Determine the optimum systems that fulfil each of the optimisation criteria.
     optimum_systems = _find_optimum_system(
         convertors,
         end_year,
         finance_inputs,
+        ghg_inputs,
         grid_profile,
         kerosene_usage,
         pv_system_size,
@@ -1174,10 +938,10 @@ def _optimisation_step(
         location,
         logger,
         minigrid,
+        num_clean_water_tanks,
         optimisation,
         previous_system,
         scenario,
-        solar_lifetime,
         start_year,
         sufficient_systems,
         total_clean_water_load,
@@ -1185,14 +949,16 @@ def _optimisation_step(
         total_solar_power_produced,
         yearly_electric_load_statistics,
     )
+    logger.info("Optimum systems determined.")
 
     # @@@ For now, the optimum system for a single threshold criterion will be returned.
-    return optimum_systems.values()[0]
+    return list(optimum_systems.values())[0]
 
 
 def multiple_optimisation_step(
     convertors: List[Convertor],
-    finance_inputs: pd.DataFrame,
+    finance_inputs: Dict[str, Any],
+    ghg_inputs: Dict[str, Any],
     grid_profile: pd.DataFrame,
     kerosene_usage: pd.DataFrame,
     location: Location,
@@ -1202,7 +968,6 @@ def multiple_optimisation_step(
     optimisation: Optimisation,
     optimisation_parameters: OptimisationParameters,
     scenario: Scenario,
-    solar_lifetime: int,
     total_clean_water_load: pd.DataFrame,
     total_electric_load: pd.DataFrame,
     total_solar_power_produced: pd.DataFrame,
@@ -1262,18 +1027,23 @@ def multiple_optimisation_step(
 
     # Start timer to see how long simulation will take
     timer_start = datetime.datetime.now()
+    logger.info("Multiple optimisation step process begun.")
 
     # Initialise
-    results: List[SystemAppraisal]
+    results: List[SystemAppraisal] = []
 
     # Use the optimisation-parameter values for the first loop.
     if pv_sizes is None:
+        logger.info("No pv sizes passed in, using default optimisation parameters.")
         pv_sizes = PVSystemSize(
             optimisation_parameters.pv_size_max,
             optimisation_parameters.pv_size_min,
             optimisation_parameters.pv_size_step,
         )
     if storage_sizes is None:
+        logger.info(
+            "No storage sizes passed in, using default optimisation parameters."
+        )
         storage_sizes = StorageSystemSize(
             optimisation_parameters.storage_size_max,
             optimisation_parameters.storage_size_min,
@@ -1287,10 +1057,12 @@ def multiple_optimisation_step(
         leave=True,
         unit="step",
     ):
+        logger.info("Beginning optimisation step.")
         # Fetch the optimum systems for this step.
         optimum_system = _optimisation_step(
             convertors,
             finance_inputs,
+            ghg_inputs,
             grid_profile,
             kerosene_usage,
             location,
@@ -1302,7 +1074,6 @@ def multiple_optimisation_step(
             previous_system,
             pv_sizes,
             scenario,
-            solar_lifetime,
             start_year,
             storage_sizes,
             total_clean_water_load,
@@ -1311,11 +1082,13 @@ def multiple_optimisation_step(
             yearly_electric_load_statistics,
         )
 
+        logger.info("Optimisation step complete, optimum system determined.")
+
         results.append(optimum_system)
 
         # Prepare inputs for next optimisation step
         start_year += optimisation_parameters.iteration_length
-        previous_system = optimum_system.system_details
+        previous_system = optimum_system
         pv_size_min = optimum_system.system_details.final_pv_size
         storage_size_min = optimum_system.system_details.final_storage_size
         pv_size_max = float(
@@ -1326,15 +1099,15 @@ def multiple_optimisation_step(
             optimum_system.system_details.final_storage_size
             + optimisation_parameters.storage_size_step
         )
-        pv_sizes = (
-            pv_size_min,
-            pv_size_max,
-            optimisation_parameters.pv_size_step,
+        pv_sizes = PVSystemSize(
+            int(pv_size_max),
+            int(pv_size_min),
+            int(optimisation_parameters.pv_size_step),
         )
-        storage_sizes = (
-            storage_size_min,
-            storage_size_max,
-            optimisation_parameters.storage_size_step,
+        storage_sizes = StorageSystemSize(
+            int(storage_size_min),
+            int(storage_size_max),
+            int(optimisation_parameters.storage_size_step),
         )
 
     # End simulation timer
@@ -1455,123 +1228,6 @@ class OptimisationOld:
     #       These system appraisal functions evaluate the technical, financial and
     #       overall performance of the energy systems that have been simulated.
     # =============================================================================
-
-    def simulation_environmental_appraisal(
-        self, simulation, previous_systems=pd.DataFrame([])
-    ):
-        """
-        Function:
-            Appraises the environmental impact of a minigrid system
-        Inputs:
-            simulation          Outputs of Energy_System().simulation(...)
-            previous_systems    Report from previously installed system (not require
-                                    if no system was previously deployed)
-        Outputs:
-            system_outputs      DataFrame of key environmental data e.g. GHGs from equipment,
-                                    O&M, kerosene spending and mitigation
-        """
-        #   Initialise
-        simulation_results = simulation[0]
-        simulation_details = simulation[1]
-        start_year = int(simulation_details.loc["System details"]["Start year"])
-        end_year = int(simulation_details.loc["System details"]["End year"])
-        installation_year = start_year
-        system_outputs = pd.DataFrame(index=["System results"])
-        #   Check to see if a system was previously installed
-        if previous_systems.empty == True:
-            previous_system = pd.DataFrame(
-                {
-                    "Final PV size": 0.0,
-                    "Final storage size": 0.0,
-                    "Diesel capacity": 0.0,
-                    "Total system cost ($)": 0.0,
-                    "Discounted energy (kWh)": 0.0,
-                },
-                index=["System details"],
-            )
-        else:
-            previous_system = previous_systems.tail(1).reset_index(drop=True)
-            previous_system = previous_system.rename(
-                {0: "System details"}, axis="index"
-            )
-        #   Calculate new PV, storage and diesel installations
-        PV_addition = (
-            simulation_details.loc["System details"]["Initial PV size"]
-            - previous_system.loc["System details"]["Final PV size"]
-        )
-        storage_addition = (
-            simulation_details.loc["System details"]["Initial storage size"]
-            - previous_system.loc["System details"]["Final storage size"]
-        )
-        diesel_addition = (
-            simulation_details.loc["System details"]["Diesel capacity"]
-            - previous_system.loc["System details"]["Diesel capacity"]
-        )
-        #   Calculate new equipment GHGs
-        equipment_GHGs = GHGs().get_total_equipment_GHGs(
-            PV_array_size=PV_addition,
-            storage_size=storage_addition,
-            diesel_size=diesel_addition,
-            year=installation_year,
-        ) + GHGs().get_independent_GHGs(start_year, end_year)
-        #   Calculate GHGs of connecting new households
-        connections_GHGs = GHGs().get_connections_GHGs(
-            households=simulation_results["Households"], year=installation_year
-        )
-        #   Calculate operating GHGs of the system during this simulation
-        OM_GHGs = GHGs().get_total_OM(
-            PV_array_size=simulation_details.loc["System details"]["Initial PV size"],
-            storage_size=simulation_details.loc["System details"][
-                "Initial storage size"
-            ],
-            diesel_size=simulation_details.loc["System details"]["Diesel capacity"],
-            start_year=start_year,
-            end_year=end_year,
-        )
-        #   Calculate running GHGs of the system
-        diesel_GHGs = GHGs().get_diesel_fuel_GHGs(
-            diesel_fuel_usage_hourly=simulation_results["Diesel fuel usage (l)"],
-            start_year=start_year,
-            end_year=end_year,
-        )
-        grid_GHGs = GHGs().get_grid_GHGs(
-            grid_energy_hourly=simulation_results["Grid energy (kWh)"],
-            start_year=start_year,
-            end_year=end_year,
-        )
-        kerosene_GHGs = GHGs().get_kerosene_GHGs(
-            kerosene_lamps_in_use_hourly=simulation_results["Kerosene lamps"],
-            start_year=start_year,
-            end_year=end_year,
-        )
-        kerosene_GHGs_mitigated = GHGs().get_kerosene_GHGs_mitigated(
-            kerosene_lamps_mitigated_hourly=simulation_results["Kerosene mitigation"],
-            start_year=start_year,
-            end_year=end_year,
-        )
-        #   Total GHGs incurred during simulation period
-        total_GHGs = (
-            equipment_GHGs
-            + connections_GHGs
-            + OM_GHGs
-            + diesel_GHGs
-            + grid_GHGs
-            + kerosene_GHGs
-        )
-        total_system_GHGs = (
-            equipment_GHGs + connections_GHGs + OM_GHGs + diesel_GHGs + grid_GHGs
-        )
-        #   Return outputs
-        system_outputs["Total GHGs (kgCO2eq)"] = total_GHGs
-        system_outputs["Total system GHGs (kgCO2eq)"] = total_system_GHGs
-        system_outputs["New equipment GHGs (kgCO2eq)"] = equipment_GHGs
-        system_outputs["New connection GHGs (kgCO2eq)"] = connections_GHGs
-        system_outputs["O&M GHGs (kgCO2eq)"] = OM_GHGs
-        system_outputs["Diesel GHGs (kgCO2eq)"] = diesel_GHGs
-        system_outputs["Grid GHGs (kgCO2eq)"] = grid_GHGs
-        system_outputs["Kerosene GHGs (kgCO2eq)"] = kerosene_GHGs
-        system_outputs["Kerosene GHGs mitigated (kgCO2eq)"] = kerosene_GHGs_mitigated
-        return system_outputs.round(2)
 
     #%%
     # =============================================================================
@@ -1819,7 +1475,9 @@ class OptimisationOld:
                     total_load,
                     total_solar_power_produced,
                 )
-                new_appraisal = self.system_appraisal(simulation, previous_systems)
+                new_appraisal = self.system_appraisal(
+                    simulation_results, previous_systems
+                )
                 system_appraisals = pd.concat(
                     [
                         system_appraisals,

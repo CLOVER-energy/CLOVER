@@ -159,6 +159,7 @@
           contents:
             - file: "finance_inputs.yaml"
               contents: |+
+                ---
                 ################################################################################
                 # finance_inputs.yaml - Finance input information.                             #
                 #                                                                              #
@@ -170,7 +171,8 @@
 
                 discount_rate: 0.1 # Fraction between 0 and 1.
                 general_o&m: 500 # [$ p.a.]
-                misc_costs: 0 # [$/kW]
+                misc:
+                  cost: 0 # [$/kW]
                 bos:
                   cost: 200 # [$/kW]
                   cost_decrease: 2 # [% p.a.]
@@ -208,6 +210,7 @@
                   o&m: 10 # [$/kWh p.a.]
             - file: ghg_inputs.yaml
               contents: |+
+                ---
                 ################################################################################
                 # ghg_inputs.yaml - GHG input information.                                     #
                 #                                                                              #
@@ -217,15 +220,17 @@
                 # License: Open source                                                         #
                 ################################################################################
 
-                general_o&m_ghgs: 200 # [kgCO2 p.a.]
-                misc_ghgs: 0 # [kgCO2/kW]
+                general:
+                  o&m_ghgs: 200 # [kgCO2 p.a.]
+                misc:
+                  ghgs: 0 # [kgCO2/kW]
                 bos:
                   ghgs: 200 # [kgCO2/kW]
                   ghg_decrease: 2 # [% p.a.]
                 diesel_fuel:
                   ghgs: 2 # [kgCO2/litre]
                   o&m_ghgs: 10 # [kgCO2/kW p.a.]
-                dieel_generator:
+                diesel_generator:
                   ghgs: 2000 # [kgCO2/kW]
                   ghg_decrease: 0 # [% p.a.]
                   installation_ghgs: 50 # [kgCO2/kW]
@@ -239,7 +244,9 @@
                   connection_ghgs: 10 # [kgCO2/household]
                 inverter:
                   ghgs: 75 # [kgCO2/kW]
-                  ghg_decrease: # [2,% p.a.]
+                  ghg_decrease: 2 # [2,% p.a.]
+                  lifetime: 4 # [years]
+                  size_increment: 1 # [kW]
                 kerosene:
                   ghgs: 0.055 # [kgCO2/hour]
                 pv:
