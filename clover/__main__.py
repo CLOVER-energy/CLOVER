@@ -703,7 +703,7 @@ def main(args: List[Any]) -> None:
                     optimisation_inputs,
                     scenario,
                     total_clean_water_load,
-                    total_electric_load,
+                    0.001 * total_electric_load,
                     total_solar_output,
                     electric_yearly_load_statistics,
                 )
