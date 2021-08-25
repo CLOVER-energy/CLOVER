@@ -84,7 +84,7 @@
   imitation: 0.1
   type: domestic
 - device: mill
-  available: true
+  available: false
   electric_power: 750
   initial_ownership: 0.01
   final_ownership: 0.1
@@ -92,7 +92,7 @@
   imitation: 0.2
   type: commercial
 - device: workshop
-  available: true
+  available: false
   electric_power: 350
   initial_ownership: 0.05
   final_ownership: 0.05
@@ -100,7 +100,7 @@
   imitation: 0.2
   type: commercial
 - device: sme
-  available: true
+  available: false
   electric_power: 200
   initial_ownership: 0.05
   final_ownership: 0.03
@@ -108,7 +108,7 @@
   imitation: 0.25
   type: commercial
 - device: streetlight
-  available: true
+  available: false
   electric_power: 25
   initial_ownership: 0.2
   final_ownership: 0.2
