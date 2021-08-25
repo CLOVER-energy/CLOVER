@@ -483,6 +483,9 @@ def appraise_system(
         system_details,
         technical_appraisal,
         optimisation_criteria={
+            OptimisationCriterion.BLACKOUTS: round(technical_appraisal.blackouts, 3),
+            OptimisationCriterion.CUMULATIVE_COST: round(cumulative_results.cost, 3),
+            OptimisationCriterion.CUMULATIVE_GHGS: round(cumulative_results.ghgs, 3),
             OptimisationCriterion.EMISSIONS_INTENSITY: round(emissions_intensity, 3),
             OptimisationCriterion.LCUE: round(lcue, 3),
         },

@@ -11,8 +11,12 @@
 ac_transmission_efficiency: 0.95 # Efficiency of AC distribution network
 dc_transmission_efficiency: 0.95 # Efficiency of DC distribution network
 battery: default_battery
+# clean_water_tank: cold_water_tank
 conversion:
   dc_to_ac: 0.95 # Conversion efficiency (0.0-1.0)
   dc_to_dc: 0.95 # Conversion efficiency (0.0-1.0)
   ac_to_dc: 0.8 # Conversion efficiency (0.0-1.0)
   ac_to_ac: 0.98 # Conversion efficiency (0.0-1.0)
+pv_panel: default_solar
+# pv_t_panel: default_pv_t_panel
+# pv_d_panel: default_pv_d_panel

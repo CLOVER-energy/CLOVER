@@ -572,17 +572,17 @@
                 number_of_iterations: 3 # number of iterations to carry out
                 pv_size:
                   min: 1 # [kWp]
-                  max: 1 # [kWp]
+                  max: 10 # [kWp]
                   step: 1 # [kWp]
                 storage_size:
-                  min: 1 # [kWh]
-                  max: 1 # [kWh]
+                  min: 10 # [kWh]
+                  max: 20 # [kWh]
                   step: 1 # [kWh]
                 optimisations:
                   - optimisation_criteria:
                       - lcue: minimise # Name of the column and whether to maximise/minimise.
                     threshold_criteria:
-                      - blackouts: 0.1 # Max/min value permitted (see guidance)
+                      - blackouts: 0.05 # Max/min value permitted (see guidance)
         - directory: scenario
           contents:
             - file: scenario_inputs.yaml
@@ -671,6 +671,9 @@
                   dc_to_dc: 0.95 # Conversion efficiency (0.0-1.0)
                   ac_to_dc: 0.8 # Conversion efficiency (0.0-1.0)
                   ac_to_ac: 0.98 # Conversion efficiency (0.0-1.0)
+                pv_panel: default_solar
+                # pv_t_panel: default_pv_t_panel
+                # pv_d_panel: default_pv_d_panel
             - file: "simulations.yaml"
               contents: |+
                 ---

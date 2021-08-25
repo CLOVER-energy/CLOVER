@@ -197,16 +197,72 @@ class OptimisationCriterion(enum.Enum):
     """
     The optimisation criteria values that are allowed.
 
+    - BLACKOUTS:
+        Denotes the portion of time for which the system experienced a blackout.
+
+    - CUMULATIVE_COST:
+        Denotes the cumulative cost incurred.
+
+    - CUMULATIVE_GHGS:
+        Denotes the cumulative GHGs emitted.
+
+    - CUMULATIVE_SYSTEM_COST:
+        Denotes the cumulative cost of the system.
+
+    - CUMULATIVE_SYSTEM_GHGS:
+        Denotes the cumulative GHGs emitted by the system.    
+
     - EMISSIONS_INTENSITY:
         Denotes the intensity of GHG emissions emitted.
+
+    - KEROSENE_COST_MITIGATED:
+        The cost of kerosene which was not incurred through use of the system.
+
+    - KEROSENE_DISPLACEMENT:
+        The amount of kerosene usage that was displaced.
+
+    - KEROSENE_GHGS_MITIGATED:
+        The mitigated GHGs by not consuming kerosene.
 
     - LCUE:
         Denotes the levilised code of electricity.
 
+    - RENEWABLES_FRACTION:
+        The fraction of energy which was emitted renewably.
+
+    - TOTAL_COST:
+        The total cost incurred.
+
+    - TOTAL_GHGS:
+        The total GHGs emitted.
+
+    - TOTAL_SYSTEM_COST:
+        The total cost of the system.
+
+    - TOTAL_SYSTEM_GHGS:
+        The total GHGs emitted by the system.
+
+    - UNMET_ENERGY_FRACTION:
+        The fraction of energy which went unmet.
+
     """
 
+    BLACKOUTS = "blackouts"
+    CUMULATIVE_COST = "cumulative_cost"
+    CUMULATIVE_GHGS = "cumulative_ghgs"
+    CUMULATIVE_SYSTEM_COST = "cumulative_system_cost"
+    CUMULATIVE_SYSTEM_GHGS = "cumulative_system_ghgs"
     EMISSIONS_INTENSITY = "emissions_intensity"
+    KEROSENE_COST_MITIGATED = "kerosene_cost_mitigated"
+    KEROSENE_DISPLACEMENT = "kerosene_displacement"
+    KEROSENE_GHGS_MITIGATED = "kerosene_ghgs_mitigated"
     LCUE = "lcue"
+    RENEWABLES_FRACTION = "renewables_fraction"
+    TOTAL_COST = "total_cost"
+    TOTAL_GHGS = "total_ghgs"
+    TOTAL_SYSTEM_COST = "total_system_cost"
+    TOTAL_SYSTEM_GHGS = "total_system_ghgs"
+    UNMET_ENERGY_FRACTION = "unmet_energy_fraction"
 
     def __str__(self) -> str:
         """
