@@ -189,9 +189,9 @@ def _single_line_simulation(
         # Increase  and iterate over PV size
         for iteration_pv_size in tqdm(
             range(
-                pv_system_size.min,
-                float(np.ceil(pv_system_size.max + pv_system_size.step)),
-                pv_system_size.step,
+                int(pv_system_size.min),
+                int(np.ceil(pv_system_size.max + pv_system_size.step)),
+                int(pv_system_size.step),
             ),
             desc="probing pv sizes",
             leave=False,
@@ -294,9 +294,9 @@ def _single_line_simulation(
         # Increase  and iterate over storage size
         for iteration_storage_size in tqdm(
             range(
-                storage_size.min,
-                float(np.ceil(storage_size.max + storage_size.step)),
-                storage_size.step,
+                int(storage_size.min),
+                int(np.ceil(storage_size.max + storage_size.step)),
+                int(storage_size.step),
             ),
             desc="probing storage sizes",
             leave=False,
@@ -754,59 +754,71 @@ def _simulation_iteration(
         storage_size_max,
     )
 
-    simulation_sizes = [
-        (pv_size, storage_size)
-        for pv_size in range(pv_sizes.min, int(pv_size_max), pv_sizes.step)
-        for storage_size in range(
-            storage_sizes.min, int(storage_size_max), storage_sizes.step
-        )
-    ]
+    simulation_pv_sizes = sorted(
+        range(int(pv_sizes.min), int(pv_size_max + pv_sizes.step), int(pv_sizes.step)),
+        reverse=True,
+    )
+
+    simulation_storage_sizes = sorted(
+        range(
+            int(storage_sizes.min),
+            int(storage_size_max + storage_sizes.step),
+            int(storage_sizes.step),
+        ),
+        reverse=True,
+    )
 
     # Move down system sizes
-    for pv_size, storage_size in tqdm(
-        simulation_sizes, desc="system size options", leave=False, unit="simulation"
+    for pv_size in tqdm(
+        simulation_pv_sizes, desc="pv size options", leave=False, unit="pv size"
     ):
-        logger.info(
-            "Probing system: pv_size: %s, storage_size: %s", pv_size, storage_size
-        )
-        # Run a simulation and appraise it.
-        _, simulation_results, system_details = energy_system.run_simulation(
-            convertors,
-            minigrid,
-            grid_profile,
-            kerosene_usage,
-            location,
-            logger,
-            num_clean_water_tanks,
-            pv_size,
-            scenario,
-            Simulation(end_year, start_year),
-            storage_size,
-            total_clean_water_load,
-            total_electric_load,
-            total_solar_power_produced,
-        )
+        for storage_size in tqdm(
+            simulation_storage_sizes,
+            desc="storage size options",
+            leave=False,
+            unit="simulation",
+        ):
+            logger.info(
+                "Probing system: pv_size: %s, storage_size: %s", pv_size, storage_size
+            )
+            # Run a simulation and appraise it.
+            _, simulation_results, system_details = energy_system.run_simulation(
+                convertors,
+                minigrid,
+                grid_profile,
+                kerosene_usage,
+                location,
+                logger,
+                num_clean_water_tanks,
+                pv_size,
+                scenario,
+                Simulation(end_year, start_year),
+                storage_size,
+                total_clean_water_load,
+                total_electric_load,
+                total_solar_power_produced,
+            )
 
-        new_appraisal = appraise_system(
-            yearly_electric_load_statistics,
-            end_year,
-            finance_inputs,
-            ghg_inputs,
-            location,
-            logger,
-            previous_system,
-            simulation_results,
-            start_year,
-            system_details,
-        )
+            new_appraisal = appraise_system(
+                yearly_electric_load_statistics,
+                end_year,
+                finance_inputs,
+                ghg_inputs,
+                location,
+                logger,
+                previous_system,
+                simulation_results,
+                start_year,
+                system_details,
+            )
 
-        if _get_sufficient_appraisals(optimisation, [new_appraisal]) == []:
-            logger.info("No sufficient systems at this resolution.")
-            continue
+            if _get_sufficient_appraisals(optimisation, [new_appraisal]) == []:
+                logger.info("No sufficient systems at this resolution.")
+                break
 
-        # Store the new appraisal if it is sufficient.
-        logger.info("Sufficient system found, storing.")
-        system_appraisals.append(new_appraisal)
+            # Store the new appraisal if it is sufficient.
+            logger.info("Sufficient system found, storing.")
+            system_appraisals.append(new_appraisal)
 
     logger.info("Optimisation bounds explored.")
     return (

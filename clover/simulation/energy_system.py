@@ -625,6 +625,9 @@ def run_simulation(
 
     # Initialise tank storage parameters
     if ResourceType.CLEAN_WATER in scenario.resource_types:
+        clean_water_power_consumed: Dict[int, float] = clean_water_power_consumed[
+            0
+        ].to_dict()
         hourly_tank_storage: Dict[int, float] = {}
         initial_tank_storage: float = 0.0
         max_tank_storage: float = (
@@ -792,6 +795,9 @@ def run_simulation(
                     )
                     water_supplied_by_excess_energy[t] = desalinated_water
                 else:
+                    excess_energy_used_desalinating[t] = 0
+                    water_demand_met_by_excess_energy[t] = 0
+                    water_supplied_by_excess_energy[t] = 0
                     current_hourly_tank_storage = current_net_water_flow
 
                 # If there is still unmet water demand, then carry out desalination and
@@ -907,16 +913,19 @@ def run_simulation(
     ).sort_index()
 
     if ResourceType.CLEAN_WATER in scenario.resource_types:
-        hourly_tank_storage: pd.DataFrame = pd.DataFrame(
-            hourly_tank_storage.values(), index=hourly_tank_storage.keys()
-        ).sort_index()
         backup_desalinator_water_supplied: pd.DataFrame = pd.DataFrame(
             backup_desalinator_water_supplied.values(),
             index=backup_desalinator_water_supplied.keys(),
         ).sort_index()
+        clean_water_power_consumed: pd.DataFrame = pd.DataFrame(
+            clean_water_power_consumed.values(), index=clean_water_power_consumed.keys()
+        ).sort_index()
         excess_energy_used_desalinating: pd.DataFrame = pd.DataFrame(
             excess_energy_used_desalinating.values(),
             index=excess_energy_used_desalinating.keys(),
+        ).sort_index()
+        hourly_tank_storage: pd.DataFrame = pd.DataFrame(
+            hourly_tank_storage.values(), index=hourly_tank_storage.keys()
         ).sort_index()
         storage_water_supplied: pd.DataFrame = pd.DataFrame(
             storage_water_supplied.values(), index=storage_water_supplied.keys()
