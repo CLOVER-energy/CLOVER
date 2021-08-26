@@ -718,4 +718,5 @@
                 #   resource_type: hot_water
     - directory: outputs
       contents:
+        - directory: optimisation_outputs
         - directory: simulation_outputs
