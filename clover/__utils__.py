@@ -53,7 +53,7 @@ __all__ = (
     "monthly_profile_to_daily_profile",
     "open_simulation",
     "OperatingMode",
-    "OptimisationCriterion",
+    "Criterion",
     "OptimisationParameters",
     "read_yaml",
     "RenewablesNinjaError",
@@ -62,7 +62,7 @@ __all__ = (
     "Simulation",
     "SystemAppraisal",
     "SystemDetails",
-    "ThresholdCriterion",
+    "Criterion",
 )
 
 
@@ -618,7 +618,7 @@ class OperatingMode(enum.Enum):
     SIMULATION = "simulation"
 
 
-class OptimisationCriterion(enum.Enum):
+class Criterion(enum.Enum):
     """
     The optimisation criteria values that are allowed.
 
@@ -691,15 +691,15 @@ class OptimisationCriterion(enum.Enum):
 
     def __str__(self) -> str:
         """
-        Returns a nice-looking `str` representing the :class:`OptimisationCriterion`.
+        Returns a nice-looking `str` representing the :class:`Criterion`.
 
         Outputs:
-            - A nice-looking `str` representing the :class:`OptimisationCriterion`
+            - A nice-looking `str` representing the :class:`Criterion`
               instance.
 
         """
 
-        return f"OptimisationCriterion({self.value})"
+        return f"Criterion({self.value})"
 
 
 @dataclasses.dataclass
@@ -1198,30 +1198,6 @@ class SystemDetails:
         return system_details_as_dict
 
 
-class ThresholdCriterion(enum.Enum):
-    """
-    The thershold criteria values that are allowed.
-
-    - BLACKOUTS:
-        Denotes the proportion of time for which a blackout occurs.
-
-    """
-
-    BLACKOUTS = "blackouts"
-
-    def __str__(self) -> str:
-        """
-        Returns a nice-looking `str` representation of the :class:`ThresholdCriterion`.
-
-        Outputs:
-            - A nice-looking `str` representing the :class:`ThresholdCriterion`
-              instance.
-
-        """
-
-        return f"ThresholdCriterion({self.value})"
-
-
 @dataclasses.dataclass
 class CumulativeResults:
     """
@@ -1509,12 +1485,8 @@ class SystemAppraisal:
     .. attribute:: technical_appraisal
         A :class:`TechnicalAppraisal` of the system.
 
-    .. attribute:: optimisation_criteria
-        A mapping between the :class:`OptimisationCriterion` instances that could be
-        relevant and their associated values for the system being appraised.
-
-    .. attribute:: threshold_criteria
-        A mapping between the :class:`ThresholdCriteron` instances that could be
+    .. attribute:: criteria
+        A mapping between the :class:`Criterion` instances that could be
         relevant and their associated values for the system being appraised.
 
     """
@@ -1524,8 +1496,7 @@ class SystemAppraisal:
     financial_appraisal: FinancialAppraisal
     system_details: SystemDetails
     technical_appraisal: TechnicalAppraisal
-    optimisation_criteria: Optional[Dict[OptimisationCriterion, float]] = None
-    threshold_criteria: Optional[Dict[ThresholdCriterion, float]] = None
+    criteria: Optional[Dict[Criterion, float]] = None
 
     def to_dict(self) -> Dict[str, Any]:
         """
@@ -1542,13 +1513,7 @@ class SystemAppraisal:
             "financial_appraisal": self.financial_appraisal.to_dict(),
             "system_details": self.system_details.to_dict(),
             "technical_appraisal": self.technical_appraisal.to_dict(),
-            "optimisation_criteria": {
-                str(key.value): value
-                for key, value in self.optimisation_criteria.items()
-            },
-            "threshold_criteria": {
-                str(key.value): value for key, value in self.threshold_criteria.items()
-            },
+            "criteria": {str(key.value): value for key, value in self.criteria.items()},
         }
 
 

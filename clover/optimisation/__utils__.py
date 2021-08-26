@@ -25,9 +25,9 @@ from typing import Any, Dict
 
 from ..__utils__ import (
     BColours,
-    OptimisationCriterion,
+    Criterion,
     OptimisationParameters,
-    ThresholdCriterion,
+    Criterion,
 )
 
 __all__ = (
@@ -97,8 +97,8 @@ class Optimisation:
 
     """
 
-    optimisation_criteria: Dict[OptimisationCriterion, CriterionMode]
-    thershold_criteria: Dict[ThresholdCriterion, float]
+    optimisation_criteria: Dict[Criterion, CriterionMode]
+    threshold_criteria: Dict[Criterion, float]
 
     def __str__(self) -> str:
         """
@@ -113,7 +113,7 @@ class Optimisation:
         return (
             "Optimisation("
             + f"optimisation_crtieria: {self.optimisation_criteria}"
-            + f", thershold_criteria: {self.thershold_criteria}"
+            + f", threshold_criteria: {self.threshold_criteria}"
             + ")"
         )
 
@@ -149,7 +149,7 @@ class Optimisation:
 
         try:
             optimisation_criteria = {
-                OptimisationCriterion(key): CriterionMode(value)
+                Criterion(key): CriterionMode(value)
                 for entry in optimisation_data["optimisation_criteria"]
                 for key, value in entry.items()
             }
@@ -164,7 +164,7 @@ class Optimisation:
 
         try:
             threshold_criteria = {
-                ThresholdCriterion(key): value
+                Criterion(key): value
                 for entry in optimisation_data["threshold_criteria"]
                 for key, value in entry.items()
             }
