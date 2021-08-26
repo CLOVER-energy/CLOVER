@@ -48,6 +48,7 @@ from ..__utils__ import (
     Scenario,
     Location,
     LOCATIONS_FOLDER_NAME,
+    OptimisationParameters,
     Simulation,
     SystemDetails,
 )
@@ -57,7 +58,6 @@ from .__utils__ import (
     CriterionMode,
     Optimisation,
     OptimisationCriterion,
-    OptimisationParameters,
     PVSystemSize,
     StorageSystemSize,
     ThresholdCriterion,

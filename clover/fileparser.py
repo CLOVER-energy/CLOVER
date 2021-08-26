@@ -29,12 +29,13 @@ from .__utils__ import (
     ResourceType,
     Location,
     LOCATIONS_FOLDER_NAME,
+    OptimisationParameters,
     read_yaml,
     Scenario,
     Simulation,
 )
 from .conversion.conversion import Convertor, MultiInputConvertor, WaterSource
-from .optimisation.optimisation import Optimisation, OptimisationParameters
+from .optimisation.optimisation import Optimisation
 from .simulation.diesel import DieselBackupGenerator
 
 __all__ = (
@@ -140,6 +141,7 @@ def parse_input_files(
     Dict[str, Any],
     Dict[str, Any],
     pd.DataFrame,
+    Location,
     Optional[OptimisationParameters],
     Optional[Set[Optimisation]],
     Scenario,

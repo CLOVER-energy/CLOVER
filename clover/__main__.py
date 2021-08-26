@@ -101,6 +101,10 @@ LOGGER_NAME = "clover"
 #   jobs.
 NUM_WORKERS = 8
 
+# Optimisation outputs folder:
+#   The output folder into which to save the optimisation outputs.
+OPTIMISATION_OUTPUTS_FOLDER = os.path.join("outputs", "optimisation_outputs")
+
 # Simulation outputs folder:
 #   The folder into which outputs should be saved.
 SIMULATION_OUTPUTS_FOLDER = os.path.join("outputs", "simulation_outputs")
@@ -211,8 +215,11 @@ def main(args: List[Any]) -> None:
     )
 
     # If the output filename is not provided, then generate it.
-    output_directory = os.path.join(
+    simulation_output_directory = os.path.join(
         LOCATIONS_FOLDER_NAME, parsed_args.location, SIMULATION_OUTPUTS_FOLDER,
+    )
+    optimisation_output_directory = os.path.join(
+        LOCATIONS_FOLDER_NAME, parsed_args.location, OPTIMISATION_OUTPUTS_FOLDER
     )
 
     # Determine the operating mode for the run.
@@ -238,7 +245,7 @@ def main(args: List[Any]) -> None:
     # If the output folder already exists, then confirm from the user that they wish to
     # overwrite its contents.
     if parsed_args.output is not None:
-        if os.path.isdir(os.path.join(output_directory, parsed_args.output)):
+        if os.path.isdir(os.path.join(simulation_output_directory, parsed_args.output)):
             try:
                 confirm_overwrite = {"y": True, "n": False, "Y": True, "N": False}[
                     input(
@@ -658,7 +665,7 @@ def main(args: List[Any]) -> None:
                     initial_clean_water_hourly_loads,
                     initial_electric_hourly_loads,
                     simulation.end_year - simulation.start_year,
-                    output_directory,
+                    simulation_output_directory,
                     output,
                     simulation_number,
                     system_performance_outputs,
@@ -674,7 +681,7 @@ def main(args: List[Any]) -> None:
                 key_results,
                 logger,
                 output,
-                output_directory,
+                simulation_output_directory,
                 system_performance_outputs,
                 simulation_number,
                 system_details,
@@ -743,12 +750,17 @@ def main(args: List[Any]) -> None:
                 )
             )
 
+            # Add the input file information to the system details file.
+            for appraisal in optimisation_results:
+                appraisal.system_details.file_information = input_file_info
+
             # Save the optimisation output.
             save_optimisation(
                 logger,
-                output,
-                output_directory,
+                optimisation_inputs,
                 optimisation_number,
+                output,
+                optimisation_output_directory,
                 optimisation_results,
             )
 
@@ -758,10 +770,6 @@ def main(args: List[Any]) -> None:
             "Time taken for optimisations: {}".format(", ".join(optimisation_times)),
             end="\n",
         )
-
-        import pdb
-
-        pdb.set_trace()
 
     if operating_mode == OperatingMode.PROFILE_GENERATION:
         print("No simulations or optimisations to be carried out.")
