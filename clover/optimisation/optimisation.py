@@ -186,18 +186,21 @@ def _single_line_simulation(
     if potential_system.system_details.initial_storage_size == storage_size.max:
         logger.info("Increasing storage size.")
 
-        # Increase  and iterate over PV size
+        # Increase and iterate over PV size
         for iteration_pv_size in tqdm(
-            range(
-                int(pv_system_size.min),
-                int(np.ceil(pv_system_size.max + pv_system_size.step)),
-                int(pv_system_size.step),
+            sorted(
+                range(
+                    int(pv_system_size.min),
+                    int(np.ceil(pv_system_size.max + pv_system_size.step)),
+                    int(pv_system_size.step),
+                ),
+                reverse=True,
             ),
             desc="probing pv sizes",
             leave=False,
             unit="simulation",
         ):
-            # Sun a simulation.
+            # Run a simulation.
             _, simulation_results, system_details = energy_system.run_simulation(
                 convertors,
                 minigrid,
@@ -230,7 +233,7 @@ def _single_line_simulation(
             )
 
             if _get_sufficient_appraisals(optimisation, [new_appraisal]) == []:
-                continue
+                break
             system_appraisals.append(new_appraisal)
 
         # If the maximum PV system size isn't a round number of steps, carry out a
@@ -293,16 +296,19 @@ def _single_line_simulation(
 
         # Increase  and iterate over storage size
         for iteration_storage_size in tqdm(
-            range(
-                int(storage_size.min),
-                int(np.ceil(storage_size.max + storage_size.step)),
-                int(storage_size.step),
+            sorted(
+                range(
+                    int(storage_size.min),
+                    int(np.ceil(storage_size.max + storage_size.step)),
+                    int(storage_size.step),
+                ),
+                reverse=True,
             ),
             desc="probing storage sizes",
             leave=False,
             unit="simulation",
         ):
-            # Sun a simulation.
+            # Run a simulation.
             _, simulation_results, system_details = energy_system.run_simulation(
                 convertors,
                 minigrid,
@@ -335,7 +341,8 @@ def _single_line_simulation(
             )
 
             if _get_sufficient_appraisals(optimisation, [new_appraisal]) == []:
-                continue
+                break
+
             system_appraisals.append(new_appraisal)
 
         # If the maximum storage size wasn't a round number of steps, then carry out a
@@ -344,7 +351,7 @@ def _single_line_simulation(
             np.ceil(storage_size.max / storage_size.step) * storage_size.step
             != storage_size.max
         ):
-            # Sun a simulation.
+            # Run a simulation.
             _, simulation_results, system_details = energy_system.run_simulation(
                 convertors,
                 minigrid,
@@ -440,7 +447,15 @@ def _find_optimum_system(
 
     # Check to find optimum system
     optimum_systems = _fetch_optimum_system(optimisation, system_appraisals)
-    logger.info("Optimum systems determined.")
+    logger.info(
+        "Optimum system(s) determined:%s",
+        "\n".join(
+            [
+                f"criterion: {criterion}\nsystem_details: {system.system_details}"
+                for criterion, system in optimum_systems.items()
+            ]
+        ),
+    )
 
     for optimisation_criterion, optimum_system in tqdm(
         optimum_systems.items(), desc="checking upper bound", leave=False, unit="system"
@@ -487,7 +502,10 @@ def _find_optimum_system(
             )
 
             # Compare previous optimum system and new potential
-            system_comparison = pd.concat([optimum_system, potential_optimum_system])
+            system_comparison = [
+                optimum_system,
+                list(potential_optimum_system.values())[0],
+            ]
             optimum_system = _fetch_optimum_system(optimisation, system_comparison)[
                 optimisation_criterion
             ]

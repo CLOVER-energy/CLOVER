@@ -52,6 +52,7 @@ from .__utils__ import (
     LOCATIONS_FOLDER_NAME,
     LOGGER_DIRECTORY,
     OperatingMode,
+    save_optimisation,
     save_simulation,
 )
 
@@ -540,7 +541,14 @@ def main(args: List[Any]) -> None:
         total_cloud_cover_fraction_output = total_weather_output[3]
         logger.info("Total weather output successfully computed and saved.")
 
-    logger.info("Setup complete, continuing to CLOVER simulation.")
+    logger.info(
+        "Setup complete, continuing to CLOVER %s.",
+        "simulation"
+        if operating_mode == OperatingMode.SIMULATION
+        else "optimisation"
+        if operating_mode == OperatingMode.OPTIMISATION
+        else "main flow",
+    )
 
     print(
         f"Generating necessary profiles .................................    {DONE}",
@@ -733,6 +741,15 @@ def main(args: List[Any]) -> None:
                         - optimisation_results[0].system_details.start_year
                     )
                 )
+            )
+
+            # Save the optimisation output.
+            save_optimisation(
+                logger,
+                output,
+                output_directory,
+                optimisation_number,
+                optimisation_results,
             )
 
         print("Beginning CLOVER optimisation runs {}    {}".format("." * 28, DONE))

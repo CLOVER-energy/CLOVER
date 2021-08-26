@@ -19,12 +19,11 @@ issues and increase the ease of code alterations.
 """
 
 import dataclasses
-import datetime
 import enum
 import logging
 import os
 
-from typing import Any, Dict, Optional, Set, Union
+from typing import Any, Dict, List, Optional, Set, Union
 
 import json
 import numpy as np
@@ -54,12 +53,15 @@ __all__ = (
     "monthly_profile_to_daily_profile",
     "open_simulation",
     "OperatingMode",
+    "OptimisationCriterion",
     "read_yaml",
     "RenewablesNinjaError",
     "save_simulation",
     "Scenario",
     "Simulation",
+    "SystemAppraisal",
     "SystemDetails",
+    "ThresholdCriterion",
 )
 
 
@@ -615,6 +617,90 @@ class OperatingMode(enum.Enum):
     SIMULATION = "simulation"
 
 
+class OptimisationCriterion(enum.Enum):
+    """
+    The optimisation criteria values that are allowed.
+
+    - BLACKOUTS:
+        Denotes the portion of time for which the system experienced a blackout.
+
+    - CUMULATIVE_COST:
+        Denotes the cumulative cost incurred.
+
+    - CUMULATIVE_GHGS:
+        Denotes the cumulative GHGs emitted.
+
+    - CUMULATIVE_SYSTEM_COST:
+        Denotes the cumulative cost of the system.
+
+    - CUMULATIVE_SYSTEM_GHGS:
+        Denotes the cumulative GHGs emitted by the system.
+
+    - EMISSIONS_INTENSITY:
+        Denotes the intensity of GHG emissions emitted.
+
+    - KEROSENE_COST_MITIGATED:
+        The cost of kerosene which was not incurred through use of the system.
+
+    - KEROSENE_DISPLACEMENT:
+        The amount of kerosene usage that was displaced.
+
+    - KEROSENE_GHGS_MITIGATED:
+        The mitigated GHGs by not consuming kerosene.
+
+    - LCUE:
+        Denotes the levilised code of electricity.
+
+    - RENEWABLES_FRACTION:
+        The fraction of energy which was emitted renewably.
+
+    - TOTAL_COST:
+        The total cost incurred.
+
+    - TOTAL_GHGS:
+        The total GHGs emitted.
+
+    - TOTAL_SYSTEM_COST:
+        The total cost of the system.
+
+    - TOTAL_SYSTEM_GHGS:
+        The total GHGs emitted by the system.
+
+    - UNMET_ENERGY_FRACTION:
+        The fraction of energy which went unmet.
+
+    """
+
+    BLACKOUTS = "blackouts"
+    CUMULATIVE_COST = "cumulative_cost"
+    CUMULATIVE_GHGS = "cumulative_ghgs"
+    CUMULATIVE_SYSTEM_COST = "cumulative_system_cost"
+    CUMULATIVE_SYSTEM_GHGS = "cumulative_system_ghgs"
+    EMISSIONS_INTENSITY = "emissions_intensity"
+    KEROSENE_COST_MITIGATED = "kerosene_cost_mitigated"
+    KEROSENE_DISPLACEMENT = "kerosene_displacement"
+    KEROSENE_GHGS_MITIGATED = "kerosene_ghgs_mitigated"
+    LCUE = "lcue"
+    RENEWABLES_FRACTION = "renewables_fraction"
+    TOTAL_COST = "total_cost"
+    TOTAL_GHGS = "total_ghgs"
+    TOTAL_SYSTEM_COST = "total_system_cost"
+    TOTAL_SYSTEM_GHGS = "total_system_ghgs"
+    UNMET_ENERGY_FRACTION = "unmet_energy_fraction"
+
+    def __str__(self) -> str:
+        """
+        Returns a nice-looking `str` representing the :class:`OptimisationCriterion`.
+
+        Outputs:
+            - A nice-looking `str` representing the :class:`OptimisationCriterion`
+              instance.
+
+        """
+
+        return f"OptimisationCriterion({self.value})"
+
+
 # class ProgressBarQueue(queue.Queue):
 #     """
 #     A child of :class:`queue.Queue` used for tracking progress.
@@ -1014,6 +1100,416 @@ class SystemDetails:
         return system_details_as_dict
 
 
+class ThresholdCriterion(enum.Enum):
+    """
+    The thershold criteria values that are allowed.
+
+    - BLACKOUTS:
+        Denotes the proportion of time for which a blackout occurs.
+
+    """
+
+    BLACKOUTS = "blackouts"
+
+    def __str__(self) -> str:
+        """
+        Returns a nice-looking `str` representation of the :class:`ThresholdCriterion`.
+
+        Outputs:
+            - A nice-looking `str` representing the :class:`ThresholdCriterion`
+              instance.
+
+        """
+
+        return f"ThresholdCriterion({self.value})"
+
+
+@dataclasses.dataclass
+class CumulativeResults:
+    """
+    Contains cumulative results about the system.
+
+    .. attribute:: cost
+        The cumulative cost, measured in USD.
+
+    .. attribute:: discounted_energy
+        The discounted energy produced, measured in kWh.
+
+    .. attribute:: energy
+        The energy produced, measured in kWh.
+
+    .. attribute:: ghgs
+        The total green-house gasses emitted by the system, mesaured in kgCO2eq.
+
+    .. attribute:: system_cost
+        The cumulative cost of the system, measured in USD.
+
+    .. attribute:: system_ghgs
+        The total system-related GHGs, mesaured in kgCO2eq.
+
+    """
+
+    cost: float
+    discounted_energy: float
+    energy: float
+    ghgs: float
+    system_cost: float
+    system_ghgs: float
+
+    def to_dict(self) -> Dict[str, Any]:
+        """
+        Returns a dictionary representation of the :class:`CumulativeResults` instance.
+
+        Outputs:
+            A `dict` representing the :class:`CumulativeResults` for storage purposes.
+
+        """
+
+        return {
+            "cumulative_cost": self.cost,
+            "cumulative_discounted_energy": self.discounted_energy,
+            "cumulative_energy": self.energy,
+            "cumulative_ghgs": self.ghgs,
+            "cumulative_system_cost": self.system_cost,
+            "cumulative_system_ghgs": self.system_ghgs,
+        }
+
+
+@dataclasses.dataclass
+class EnvironmentalAppraisal:
+    """
+    Contains environmental-appraisal information.
+
+    .. attribute:: diesel_ghgs
+        The diesel-fuel GHGs emitted.
+
+    .. attribute:: grid_ghgs
+        The grid GHGs emitted.
+
+    .. attribute:: kerosene_ghgs
+        The GHGs emitted by burning kerosene.
+
+    .. attribute:: kerosene_ghgs_mitigated
+        The GHGs mitigated by not burning kerosene lamps.
+
+    .. attribute:: new_connection_ghgs
+        The GHGs emitted by installing new connections.
+
+    .. attribute:: new_equipment_ghgs
+        The GHGs emitted by the new equipment installed.
+
+    .. attribute:: om_ghgs
+        The O&M GHGs emitted by the system.
+
+    .. attribute:: total_ghgs
+        The total GHGs emitted.
+
+    .. attribute:: total_system_ghgs
+        The total system-related GHGs.
+
+    """
+
+    diesel_ghgs: float
+    grid_ghgs: float
+    kerosene_ghgs: float
+    kerosene_ghgs_mitigated: float
+    new_connection_ghgs: float
+    new_equipment_ghgs: float
+    om_ghgs: float
+    total_ghgs: float
+    total_system_ghgs: float
+
+    def to_dict(self) -> Dict[str, Any]:
+        """
+        Returns a dictionary representation of the :class:`EnvironmentalAppraisal` instance.
+
+        Outputs:
+            A `dict` representing the :class:`EnvironmentalAppraisal` for storage purposes.
+
+        """
+
+        return {
+            "diesel_ghgs": self.diesel_ghgs,
+            "grid_ghgs": self.grid_ghgs,
+            "kerosene_ghgs": self.kerosene_ghgs,
+            "kerosene_ghgs_mitigated": self.kerosene_ghgs_mitigated,
+            "new_connection_ghgs": self.new_connection_ghgs,
+            "new_equipment_ghgs": self.new_equipment_ghgs,
+            "om_ghgs": self.om_ghgs,
+            "total_ghgs": self.total_ghgs,
+            "total_system_ghgs": self.total_system_ghgs,
+        }
+
+
+@dataclasses.dataclass
+class FinancialAppraisal:
+    """
+    Contains financial-appraisal information.
+
+    .. attribute:: diesel_cost
+        The cost of diesel fuel used, measured in USD.
+
+    .. attribute:: grid_cost
+        The cost of grid energy used, measured in USD.
+
+    .. attribute:: kerosene_cost
+        The cost of kerosene used, measured in USD.
+
+    .. attribute:: kerosene_cost_mitigated
+        The value of the kerosene which was not used, measured in USD.
+
+    .. attribute:: new_connection_cost
+        <<description needed>>, measured in USD
+
+    .. attribute:: new_equipment_cost
+        <<description needed>>, measured in USD
+
+    .. attribute:: om_cost
+        The O&M cost, measured in USD.
+
+    .. attribute:: total_cost
+        <<description needed>>, measured in USD
+
+    .. attribute:: total_system_cost
+        <<description needed>>, measured in USD
+
+    """
+
+    diesel_cost: float
+    grid_cost: float
+    kerosene_cost: float
+    kerosene_cost_mitigated: float
+    new_connection_cost: float
+    new_equipment_cost: float
+    om_cost: float
+    total_cost: float
+    total_system_cost: float
+
+    def to_dict(self) -> Dict[str, Any]:
+        """
+        Returns a dictionary representation of the :class:`FinancialAppraisal` instance.
+
+        Outputs:
+            A `dict` representing the :class:`FinancialAppraisal` for storage purposes.
+
+        """
+
+        return {
+            "diesel_cost": self.diesel_cost,
+            "grid_cost": self.grid_cost,
+            "kerosene_cost": self.kerosene_cost,
+            "kerosene_cost_mitigated": self.kerosene_cost_mitigated,
+            "new_connection_cost": self.new_connection_cost,
+            "new_equipment_cost": self.new_equipment_cost,
+            "om_cost": self.om_cost,
+            "total_cost": self.total_cost,
+            "total_system_cost": self.total_system_cost,
+        }
+
+
+@dataclasses.dataclass
+class TechnicalAppraisal:
+    """
+    Contains financial-appraisal information.
+
+    .. attribute:: blackouts
+        <<description needed>>, measured in USD
+
+    .. attribute:: diesel_energy
+        <<description needed>>, measured in USD
+
+    .. attribute:: diesel_fuel_usage
+        <<description needed>>, measured in USD
+
+    .. attribute:: discounted_energy
+        <<description needed>>, measured in USD
+
+    .. attribute:: grid_energy
+        <<description needed>>, measured in USD
+
+    .. attribute:: kerosene_displacement
+        <<description needed>>, measured in USD
+
+    .. attribute:: new_connection_cost
+        <<description needed>>, measured in USD
+
+    .. attribute:: renewable_energy
+        <<description needed>>, measured in USD
+
+    .. attribute:: renewable_energy_fraction
+        <<description needed>>, measured in USD
+
+    .. attribute:: storage_energy
+        <<description needed>>, measured in USD
+
+    .. attribute:: total_energy
+        <<description needed>>, measured in USD
+
+    .. attribute:: unmet_energy
+        <<description needed>>, measured in USD
+
+    .. attribute:: unmet_energy_fraction
+        <<description needed>>, measured in USD
+
+    """
+
+    blackouts: float
+    diesel_energy: float
+    diesel_fuel_usage: float
+    discounted_energy: float
+    grid_energy: float
+    kerosene_displacement: float
+    renewable_energy: float
+    renewable_energy_fraction: float
+    storage_energy: float
+    total_energy: float
+    unmet_energy: float
+    unmet_energy_fraction: float
+
+    def to_dict(self) -> Dict[str, Any]:
+        """
+        Returns a dictionary representation of the :class:`TechnicalAppraisal` instance.
+
+        Outputs:
+            A `dict` representing the :class:`TechnicalAppraisal` for storage purposes.
+
+        """
+
+        return {
+            "blackouts": self.blackouts,
+            "diesel_energy": self.diesel_energy,
+            "diesel_fuel_usage": self.diesel_fuel_usage,
+            "discounted_energy": self.discounted_energy,
+            "grid_energy": self.grid_energy,
+            "kerosene_displacement": self.kerosene_displacement,
+            "renewable_energy": self.renewable_energy,
+            "renewable_energy_fraction": self.renewable_energy_fraction,
+            "storage_energy": self.storage_energy,
+            "total_energy": self.total_energy,
+            "unmet_energy": self.unmet_energy,
+            "unmet_energy_fraction": self.unmet_energy_fraction,
+        }
+
+
+@dataclasses.dataclass
+class SystemAppraisal:
+    """
+    Contains information appraising the system.
+
+    .. attribute:: cumulative_results
+        The cumulative results of the systems that are being appraised.
+
+    .. attribute:: environmental_appraisal
+        A :class:`EnvironmentalAppraisal` of the system.
+
+    .. attribute:: financial_appraisal
+        A :class:`FinancialAppraisal` of the system.
+
+    .. attribute:: system_details
+        The details of the system.
+
+    .. attribute:: technical_appraisal
+        A :class:`TechnicalAppraisal` of the system.
+
+    .. attribute:: optimisation_criteria
+        A mapping between the :class:`OptimisationCriterion` instances that could be
+        relevant and their associated values for the system being appraised.
+
+    .. attribute:: threshold_criteria
+        A mapping between the :class:`ThresholdCriteron` instances that could be
+        relevant and their associated values for the system being appraised.
+
+    """
+
+    cumulative_results: CumulativeResults
+    environmental_appraisal: EnvironmentalAppraisal
+    financial_appraisal: FinancialAppraisal
+    system_details: SystemDetails
+    technical_appraisal: TechnicalAppraisal
+    optimisation_criteria: Optional[Dict[OptimisationCriterion, float]] = None
+    threshold_criteria: Optional[Dict[ThresholdCriterion, float]] = None
+
+    def to_dict(self) -> Dict[str, Any]:
+        """
+        Returns a dictionary representation of the :class:`SystemAppraisal` instance.
+
+        Outputs:
+            A `dict` representing the :class:`SystemAppraisal` for storage purposes.
+
+        """
+
+        return {
+            "cumulative_results": self.cumulative_results.to_dict(),
+            "environmental_appraisal": self.environmental_appraisal.to_dict(),
+            "financial_appraisal": self.financial_appraisal.to_dict(),
+            "system_details": self.system_details.to_dict(),
+            "technical_appraisal": self.technical_appraisal.to_dict(),
+            "optimisation_criteria": {
+                str(key.value): value
+                for key, value in self.optimisation_criteria.items()
+            },
+            "threshold_criteria": {
+                str(key.value): value for key, value in self.threshold_criteria.items()
+            },
+        }
+
+
+def save_optimisation(
+    logger: logging.Logger,
+    output: str,
+    output_directory: str,
+    optimisation_number: int,
+    system_appraisals: List[SystemAppraisal],
+):
+    """
+    Saves simulation outputs to a .csv file
+
+    Inputs:
+        - logger:
+            The logger to use for the run.
+        - output:
+            The output name to use when labelling the simulation: this is the name given
+            to the output folder in which the system files are saved.
+        - output_directory:
+            The directory into which the files should be saved.
+        - optimisation_number:
+            The number of the optimisation that has just been carried out.
+        - system_appraisals:
+            A `list` of the :class:`SystemAppraisal` instances which specify the
+            optimum systems at each time step.
+
+    """
+
+    # Remove the file extension if appropriate.
+    if output.endswith(".json"):
+        output = output.rsplit(".json", 1)[0]
+
+    # Create the output directory.
+    optimisation_output_folder = os.path.join(output_directory, output)
+    os.makedirs(optimisation_output_folder, exist_ok=True)
+
+    # Add the key results to the system data.
+    system_appraisals_dict = {
+        index: appraisal.to_dict() for index, appraisal in enumerate(system_appraisals)
+    }
+
+    with tqdm(total=1, desc="saving output files", leave=False, unit="file") as pbar:
+        # Save the optimisation data.
+        logger.info("Saving optimisation output.")
+        with open(
+            os.path.join(
+                optimisation_output_folder,
+                f"optimisation_output_{optimisation_number}.json",
+            ),
+            "w",
+        ) as f:
+            json.dump(system_appraisals_dict, f, indent=4)
+        logger.info(
+            "Optimisation successfully saved to %s.", optimisation_output_folder
+        )
+        pbar.update(1)
+
+
 def save_simulation(
     key_results: KeyResults,
     logger: logging.Logger,
@@ -1047,7 +1543,7 @@ def save_simulation(
 
     # Remove the file extension if appropriate.
     if output.endswith(".csv"):
-        output = output_directory.rsplit(".csv", 1)[0]
+        output = output.rsplit(".csv", 1)[0]
 
     # Create the output directory.
     simulation_output_folder = os.path.join(output_directory, output)
