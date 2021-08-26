@@ -28,16 +28,15 @@ import pandas as pd  # type: ignore
 from ..impact import finance, ghgs
 
 from ..__utils__ import (
+    Criterion,
     CumulativeResults,
     EnvironmentalAppraisal,
     FinancialAppraisal,
     hourly_profile_to_daily_sum,
     Location,
-    OptimisationCriterion,
     SystemAppraisal,
     SystemDetails,
     TechnicalAppraisal,
-    ThresholdCriterion,
 )
 from ..impact.__utils__ import ImpactingComponent
 
@@ -484,15 +483,15 @@ def appraise_system(
         financial_appraisal,
         system_details,
         technical_appraisal,
-        optimisation_criteria={
-            OptimisationCriterion.BLACKOUTS: round(technical_appraisal.blackouts, 3),
-            OptimisationCriterion.CUMULATIVE_COST: round(cumulative_results.cost, 3),
-            OptimisationCriterion.CUMULATIVE_GHGS: round(cumulative_results.ghgs, 3),
-            OptimisationCriterion.EMISSIONS_INTENSITY: round(emissions_intensity, 3),
-            OptimisationCriterion.LCUE: round(lcue, 3),
-        },
-        threshold_criteria={
-            ThresholdCriterion.BLACKOUTS: round(technical_appraisal.blackouts, 3)
+        criteria={
+            Criterion.BLACKOUTS: round(technical_appraisal.blackouts, 3),
+            Criterion.CUMULATIVE_COST: round(cumulative_results.cost, 3),
+            Criterion.CUMULATIVE_GHGS: round(cumulative_results.ghgs, 3),
+            Criterion.EMISSIONS_INTENSITY: round(emissions_intensity, 3),
+            Criterion.LCUE: round(lcue, 3),
+            Criterion.UNMET_ENERGY_FRACTION: round(
+                technical_appraisal.unmet_energy_fraction, 3
+            ),
         },
     )
 

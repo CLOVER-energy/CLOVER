@@ -57,10 +57,10 @@ from .appraisal import appraise_system, SystemAppraisal
 from .__utils__ import (
     CriterionMode,
     Optimisation,
-    OptimisationCriterion,
+    Criterion,
     PVSystemSize,
     StorageSystemSize,
-    ThresholdCriterion,
+    Criterion,
     ThresholdMode,
 )
 
@@ -70,14 +70,16 @@ __all__ = ("multiple_optimisation_step",)
 # Threshold-criterion-to-mode mapping:
 #   Maps the threshold criteria to the modes, i.e., whether they are maximisable or
 #   minimisable.
-THRESHOLD_CRITERION_TO_MODE: Dict[ThresholdCriterion, ThresholdMode] = {
-    ThresholdCriterion.BLACKOUTS: ThresholdMode.MAXIMUM,
+THRESHOLD_CRITERION_TO_MODE: Dict[Criterion, ThresholdMode] = {
+    Criterion.BLACKOUTS: ThresholdMode.MAXIMUM,
+    Criterion.EMISSIONS_INTENSITY: ThresholdMode.MAXIMUM,
+    Criterion.UNMET_ENERGY_FRACTION: ThresholdMode.MAXIMUM,
 }
 
 
 def _fetch_optimum_system(
     optimisation: Optimisation, sufficient_systems: List[SystemAppraisal]
-) -> Dict[OptimisationCriterion, SystemAppraisal]:
+) -> Dict[Criterion, SystemAppraisal]:
     """
     Identifies the optimum system from a group of sufficient systems
 
@@ -93,23 +95,18 @@ def _fetch_optimum_system(
 
     """
 
-    optimum_systems: Dict[OptimisationCriterion, SystemAppraisal] = dict()
+    optimum_systems: Dict[Criterion, SystemAppraisal] = dict()
 
     # Run through the various optimisation criteria.
-    for (
-        optimisation_criterion,
-        criterion_mode,
-    ) in optimisation.optimisation_criteria.items():
+    for (criterion, criterion_mode) in optimisation.optimisation_criteria.items():
         # Sort by the optimisation criterion.
         sufficient_systems.sort(
-            key=lambda appraisal: appraisal.optimisation_criteria[
-                optimisation_criterion
-            ],
+            key=lambda appraisal: appraisal.criteria[criterion],
             reverse=(criterion_mode == CriterionMode.MAXIMISE),
         )
 
         # Add the optimum system, keyed by the optimisation criterion.
-        optimum_systems[optimisation_criterion] = sufficient_systems[0]
+        optimum_systems[criterion] = sufficient_systems[0]
 
     return optimum_systems
 
@@ -446,6 +443,7 @@ def _find_optimum_system(
     """
 
     # Check to find optimum system
+    logger.info("Determining optimum system from %s systems.", len(system_appraisals))
     optimum_systems = _fetch_optimum_system(optimisation, system_appraisals)
     logger.info(
         "Optimum system(s) determined:%s",
@@ -497,6 +495,10 @@ def _find_optimum_system(
             )
 
             # Determine the optimum system from the new systems simulated.
+            logger.info(
+                "Determining optimum system from %s systems.",
+                len(new_system_appraisals),
+            )
             potential_optimum_system = _fetch_optimum_system(
                 optimisation, new_system_appraisals
             )
@@ -506,6 +508,9 @@ def _find_optimum_system(
                 optimum_system,
                 list(potential_optimum_system.values())[0],
             ]
+            logger.info(
+                "Determining optimum system from %s systems.", len(system_comparison)
+            )
             optimum_system = _fetch_optimum_system(optimisation, system_comparison)[
                 optimisation_criterion
             ]
@@ -542,14 +547,14 @@ def _get_sufficient_appraisals(
         for (
             threshold_criterion,
             threshold_value,
-        ) in optimisation.thershold_criteria.items():
+        ) in optimisation.threshold_criteria.items():
             # Add a `True` marker if the threshold criteria are met, otherwise add
             # False.
             if (
                 THRESHOLD_CRITERION_TO_MODE[threshold_criterion]
                 == ThresholdMode.MAXIMUM
             ):
-                if appraisal.threshold_criteria[threshold_criterion] <= threshold_value:
+                if appraisal.criteria[threshold_criterion] <= threshold_value:
                     criteria_met.add(True)
                 else:
                     criteria_met.add(False)
@@ -557,7 +562,7 @@ def _get_sufficient_appraisals(
                 THRESHOLD_CRITERION_TO_MODE[threshold_criterion]
                 == ThresholdMode.MINIMUM
             ):
-                if appraisal.threshold_criteria[threshold_criterion] >= threshold_value:
+                if appraisal.criteria[threshold_criterion] >= threshold_value:
                     criteria_met.add(True)
                 else:
                     criteria_met.add(False)
@@ -749,7 +754,7 @@ def _simulation_iteration(
 
         logger.info(
             "System was found to be insufficient. Threshold criteria: %s",
-            largest_system_appraisal.threshold_criteria,
+            largest_system_appraisal.criteria,
         )
 
         # Increment the system sizes.
