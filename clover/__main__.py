@@ -184,11 +184,12 @@ def main(args: List[Any]) -> None:
 
     """
 
-    logger = get_logger(LOGGER_NAME)
+    # Parse the command-line arguments and instantiate the logger.
+    parsed_args = argparser.parse_args(args)
+    logger = get_logger(f"{parsed_args.location}_{LOGGER_NAME}")
     logger.info("CLOVER run initiated. Options specified: %s", " ".join(args))
 
-    # Parse and validate the command-line arguments.
-    parsed_args = argparser.parse_args(args)
+    # Validate the command-line arguments.
     logger.info("Command-line arguments successfully parsed.")
 
     if not argparser.validate_args(logger, parsed_args):
@@ -355,7 +356,7 @@ def main(args: List[Any]) -> None:
             os.path.join(auto_generated_files_directory, "weather"),
             generation_inputs,
             location,
-            weather.WEATHER_LOGGER_NAME,
+            f"{parsed_args.location}_{weather.WEATHER_LOGGER_NAME}",
             parsed_args.refetch,
             num_ninjas,
         )
@@ -376,7 +377,7 @@ def main(args: List[Any]) -> None:
         os.path.join(auto_generated_files_directory, "solar"),
         generation_inputs,
         location,
-        solar.SOLAR_LOGGER_NAME,
+        f"{parsed_args.location}_{solar.SOLAR_LOGGER_NAME}",
         parsed_args.refetch,
         minigrid.pv_panel,
         num_ninjas,
