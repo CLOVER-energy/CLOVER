@@ -54,6 +54,7 @@ __all__ = (
     "open_simulation",
     "OperatingMode",
     "OptimisationCriterion",
+    "OptimisationParameters",
     "read_yaml",
     "RenewablesNinjaError",
     "save_simulation",
@@ -699,6 +700,103 @@ class OptimisationCriterion(enum.Enum):
         """
 
         return f"OptimisationCriterion({self.value})"
+
+
+@dataclasses.dataclass
+class OptimisationParameters:
+    """
+    Parameters that define the scope of the optimisation.
+
+    .. attribute:: iteration_length
+        The length of each iteration to be run.
+
+    .. attribute:: number_of_iterations
+        The number of iterations to run.
+
+    .. attribute:: pv_size_max
+        The maximum size of PV capacity to be considered, used only as an initial value,
+        measured in kWp.
+
+    .. attribute:: pv_size_min
+        The minimum size of PV capacity to be considered, measured in kWp.
+
+    .. attribute:: pv_size_step
+        The optimisation resolution for the PV size, measured in kWp.
+
+    .. attribute:: storage_size_max
+        The maximum size of storage capacity to be considered, used only as an initial
+        value, measured in kWh.
+
+    .. attribute:: storage_size_min
+        The minimum size of storage capacity to be considered, measured in kWh.
+
+    .. attribute:: storage_size_step
+        The optimisation restolution for the storage size, measured in kWh.
+
+    """
+
+    iteration_length: int
+    number_of_iterations: int
+    pv_size_max: float
+    pv_size_min: float
+    pv_size_step: float
+    storage_size_max: float
+    storage_size_min: float
+    storage_size_step: float
+
+    @classmethod
+    def from_dict(cls, optimisation_inputs: Dict[str, Any]) -> Any:
+        """
+        Returns a :class:`OptimisationParameters` instance based on the input info.
+
+        Outputs:
+            - A :class:`OptimisationParameters` instanced based on the information
+            passed in.
+
+        """
+
+        return cls(
+            optimisation_inputs["iteration_length"],
+            optimisation_inputs["number_of_iterations"],
+            optimisation_inputs["pv_size"]["max"],
+            optimisation_inputs["pv_size"]["min"],
+            optimisation_inputs["pv_size"]["step"],
+            optimisation_inputs["storage_size"]["max"],
+            optimisation_inputs["storage_size"]["min"],
+            optimisation_inputs["storage_size"]["step"],
+        )
+
+    @property
+    def scenario_length(self) -> int:
+        """
+        Calculates and returns the scenario length for the optimisation.
+
+        Outputs:
+            - The scenario length for the optimisation.
+
+        """
+
+        return self.iteration_length * self.number_of_iterations
+
+    def to_dict(self) -> Dict[str, Union[int, float]]:
+        """
+        Returns a `dict` representation of the :class:`OptimisationParameters` instance.
+
+        Outputs:
+            A `dict` containing the :class:`OptimisationParameters` information.
+
+        """
+
+        return {
+            "iteration_length": round(self.iteration_length, 3),
+            "number_of_iterations": round(self.number_of_iterations, 3),
+            "pv_size_max": round(self.pv_size_max, 3),
+            "pv_size_min": round(self.pv_size_min, 3),
+            "pv_size_step": round(self.pv_size_step, 3),
+            "storage_size_max": round(self.storage_size_max, 3),
+            "storage_size_min": round(self.storage_size_min, 3),
+            "storage_size_step": round(self.storage_size_step, 3),
+        }
 
 
 # class ProgressBarQueue(queue.Queue):
@@ -1456,9 +1554,10 @@ class SystemAppraisal:
 
 def save_optimisation(
     logger: logging.Logger,
+    optimisation_inputs: OptimisationParameters,
+    optimisation_number: int,
     output: str,
     output_directory: str,
-    optimisation_number: int,
     system_appraisals: List[SystemAppraisal],
 ):
     """
@@ -1467,13 +1566,15 @@ def save_optimisation(
     Inputs:
         - logger:
             The logger to use for the run.
+        - optimisation_inputs:
+            The optimisation input information.
+        - optimisation_number:
+            The number of the optimisation that has just been carried out.
         - output:
             The output name to use when labelling the simulation: this is the name given
             to the output folder in which the system files are saved.
         - output_directory:
             The directory into which the files should be saved.
-        - optimisation_number:
-            The number of the optimisation that has just been carried out.
         - system_appraisals:
             A `list` of the :class:`SystemAppraisal` instances which specify the
             optimum systems at each time step.
@@ -1490,7 +1591,14 @@ def save_optimisation(
 
     # Add the key results to the system data.
     system_appraisals_dict = {
-        index: appraisal.to_dict() for index, appraisal in enumerate(system_appraisals)
+        f"iteration_{index}": appraisal.to_dict()
+        for index, appraisal in enumerate(system_appraisals)
+    }
+
+    # Add the optimisation parameter information.
+    output_dict = {
+        "optimisation_inputs": optimisation_inputs.to_dict(),
+        "system_appraisals": system_appraisals_dict,
     }
 
     with tqdm(total=1, desc="saving output files", leave=False, unit="file") as pbar:
@@ -1503,7 +1611,7 @@ def save_optimisation(
             ),
             "w",
         ) as f:
-            json.dump(system_appraisals_dict, f, indent=4)
+            json.dump(output_dict, f, indent=4)
         logger.info(
             "Optimisation successfully saved to %s.", optimisation_output_folder
         )

@@ -21,9 +21,14 @@ import dataclasses
 import enum
 
 from logging import Logger
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 
-from ..__utils__ import BColours, OptimisationCriterion, ThresholdCriterion
+from ..__utils__ import (
+    BColours,
+    OptimisationCriterion,
+    OptimisationParameters,
+    ThresholdCriterion,
+)
 
 __all__ = (
     "CriterionMode",
@@ -173,83 +178,6 @@ class Optimisation:
             raise
 
         return cls(optimisation_criteria, threshold_criteria)
-
-
-@dataclasses.dataclass
-class OptimisationParameters:
-    """
-    Parameters that define the scope of the optimisation.
-
-    .. attribute:: iteration_length
-        The length of each iteration to be run.
-
-    .. attribute:: number_of_iterations
-        The number of iterations to run.
-
-    .. attribute:: pv_size_max
-        The maximum size of PV capacity to be considered, used only as an initial value,
-        measured in kWp.
-
-    .. attribute:: pv_size_min
-        The minimum size of PV capacity to be considered, measured in kWp.
-
-    .. attribute:: pv_size_step
-        The optimisation resolution for the PV size, measured in kWp.
-
-    .. attribute:: storage_size_max
-        The maximum size of storage capacity to be considered, used only as an initial
-        value, measured in kWh.
-
-    .. attribute:: storage_size_min
-        The minimum size of storage capacity to be considered, measured in kWh.
-
-    .. attribute:: storage_size_step
-        The optimisation restolution for the storage size, measured in kWh.
-
-    """
-
-    iteration_length: int
-    number_of_iterations: int
-    pv_size_max: float
-    pv_size_min: float
-    pv_size_step: float
-    storage_size_max: float
-    storage_size_min: float
-    storage_size_step: float
-
-    @classmethod
-    def from_dict(cls, optimisation_inputs: Dict[str, Any]) -> Any:
-        """
-        Returns a :class:`OptimisationParameters` instance based on the input info.
-
-        Outputs:
-            - A :class:`OptimisationParameters` instanced based on the information
-            passed in.
-
-        """
-
-        return cls(
-            optimisation_inputs["iteration_length"],
-            optimisation_inputs["number_of_iterations"],
-            optimisation_inputs["pv_size"]["max"],
-            optimisation_inputs["pv_size"]["min"],
-            optimisation_inputs["pv_size"]["step"],
-            optimisation_inputs["storage_size"]["max"],
-            optimisation_inputs["storage_size"]["min"],
-            optimisation_inputs["storage_size"]["step"],
-        )
-
-    @property
-    def scenario_length(self) -> int:
-        """
-        Calculates and returns the scenario length for the optimisation.
-
-        Outputs:
-            - The scenario length for the optimisation.
-
-        """
-
-        return self.iteration_length * self.number_of_iterations
 
 
 @dataclasses.dataclass
