@@ -20,10 +20,10 @@ information and system-sizing information provided.
 """
 
 from logging import Logger
-from typing import Any, Dict
+from typing import Any, Dict, List
 
-import numpy as np
-import pandas as pd
+import numpy as np  # type: ignore
+import pandas as pd  # type: ignore
 
 from .__utils__ import ImpactingComponent, LIFETIME, SIZE_INCREMENT
 from ..__utils__ import (
@@ -265,11 +265,13 @@ def _inverter_expenditure(
     replacement_intervals = pd.DataFrame(
         np.arange(0, location.max_years, replacement_period)
     )
-    replacement_intervals.columns = ["Installation year"]
+    replacement_intervals.columns = pd.Index(["Installation year"])
 
     # Check if inverter should be replaced in the specified time interval
     if replacement_intervals.loc[
-        replacement_intervals["Installation year"].isin(range(start_year, end_year))
+        replacement_intervals["Installation year"].isin(
+            list(range(start_year, end_year))
+        )
     ].empty:
         inverter_discounted_cost = float(0.0)
         return inverter_discounted_cost
@@ -277,7 +279,7 @@ def _inverter_expenditure(
     # Initialise inverter sizing calculation
     max_power = []
     inverter_step = finance_inputs[ImpactingComponent.INVERTER.value][SIZE_INCREMENT]
-    inverter_size = []
+    inverter_size: List[float] = []
     for i in range(len(replacement_intervals)):
         # Calculate maximum power in interval years
         start = replacement_intervals["Installation year"].iloc[i]
@@ -285,13 +287,13 @@ def _inverter_expenditure(
         max_power_interval = yearly_load_statistics["Maximum"].iloc[start:end].max()
         max_power.append(max_power_interval)
         # Calculate resulting inverter size
-        inverter_size_interval = (
+        inverter_size_interval: float = (
             np.ceil(0.001 * max_power_interval / inverter_step) * inverter_step
         )
         inverter_size.append(inverter_size_interval)
-    inverter_size = pd.DataFrame(inverter_size)
-    inverter_size.columns = ["Inverter size (kW)"]
-    inverter_info = pd.concat([replacement_intervals, inverter_size], axis=1)
+    inverter_size_data_frame: pd.DataFrame = pd.DataFrame(inverter_size)
+    inverter_size_data_frame.columns = pd.Index(["Inverter size (kW)"])
+    inverter_info = pd.concat([replacement_intervals, inverter_size_data_frame], axis=1)
     # Calculate
     inverter_info["Discount rate"] = [
         (1 - finance_inputs[DISCOUNT_RATE])
@@ -311,9 +313,9 @@ def _inverter_expenditure(
         for i in range(len(inverter_info))
     ]
     inverter_discounted_cost = np.sum(
-        inverter_info.loc[
+        inverter_info.loc[  # type: ignore
             inverter_info["Installation year"].isin(
-                np.array(range(start_year, end_year))
+                list(np.array(range(start_year, end_year)))
             )
         ]["Discounted expenditure ($)"]
     ).round(2)
@@ -500,10 +502,9 @@ def diesel_fuel_expenditure(
     diesel_fuel_usage_daily = hourly_profile_to_daily_sum(diesel_fuel_usage_hourly)
     start_day = start_year * 365
     end_day = end_year * 365
-    diesel_price_daily = []
     r_y = 0.01 * finance_inputs[ImpactingComponent.DIESEL_FUEL.value][COST_DECREASE]
     r_d = ((1.0 + r_y) ** (1.0 / 365.0)) - 1.0
-    diesel_price_daily = pd.DataFrame(
+    diesel_price_daily: pd.DataFrame = pd.DataFrame(
         [
             finance_inputs[ImpactingComponent.DIESEL_FUEL.value][COST]
             * (1.0 - r_d) ** day
@@ -567,8 +568,8 @@ def discounted_energy_total(
     discounted_fraction = _discounted_fraction(
         discount_rate, start_year=start_year, end_year=end_year
     )
-    discounted_energy = discounted_fraction * total_daily
-    return np.sum(discounted_energy)[0]
+    discounted_energy = discounted_fraction * total_daily  # type: ignore
+    return np.sum(discounted_energy)[0]  # type: ignore
 
 
 def discounted_equipment_cost(

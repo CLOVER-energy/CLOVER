@@ -312,19 +312,27 @@ def _simulation_technical_appraisal(
     system_blackouts = np.mean(simulation_results["Blackouts"].values)
 
     # Total energy used
-    total_energy = np.sum(simulation_results["Total energy used (kWh)"])
-    total_load_energy = np.sum(simulation_results["Load energy (kWh)"])
-    total_renewables_used = np.sum(simulation_results["Renewables energy used (kWh)"])
-    total_storage_used = np.sum(simulation_results["Storage energy supplied (kWh)"])
-    total_grid_used = np.sum(simulation_results["Grid energy (kWh)"])
-    total_diesel_used = np.sum(simulation_results["Diesel energy (kWh)"])
-    total_unmet_energy = np.sum(simulation_results["Unmet energy (kWh)"])
+    total_energy = np.sum(simulation_results["Total energy used (kWh)"])  # type: ignore
+    total_load_energy = np.sum(simulation_results["Load energy (kWh)"])  # type: ignore
+    total_renewables_used = np.sum(
+        simulation_results["Renewables energy used (kWh)"]  # type: ignore
+    )
+    total_storage_used = np.sum(
+        simulation_results["Storage energy supplied (kWh)"]  # type: ignore
+    )
+    total_grid_used = np.sum(simulation_results["Grid energy (kWh)"])  # type: ignore
+    total_diesel_used = np.sum(
+        simulation_results["Diesel energy (kWh)"]  # type: ignore
+    )
+    total_unmet_energy = np.sum(
+        simulation_results["Unmet energy (kWh)"]  # type: ignore
+    )
     renewables_fraction = (total_renewables_used + total_storage_used) / total_energy
     unmet_fraction = total_unmet_energy / total_load_energy
 
     # Calculate total discounted energy
     total_energy_daily = hourly_profile_to_daily_sum(
-        simulation_results["Total energy used (kWh)"]
+        pd.DataFrame(simulation_results["Total energy used (kWh)"])
     )
     discounted_energy = finance.discounted_energy_total(
         finance_inputs,
@@ -336,16 +344,20 @@ def _simulation_technical_appraisal(
 
     # Calculate proportion of kerosene displaced (defaults to zero if kerosene is not
     # originally used
-    if np.sum(simulation_results["Kerosene lamps"]) > 0.0:
-        kerosene_displacement = (np.sum(simulation_results["Kerosene mitigation"])) / (
-            np.sum(simulation_results["Kerosene mitigation"])
-            + np.sum(simulation_results["Kerosene lamps"])
+    if np.sum(simulation_results["Kerosene lamps"]) > 0.0:  # type: ignore
+        kerosene_displacement = (
+            np.sum(simulation_results["Kerosene mitigation"])  # type: ignore
+        ) / (
+            np.sum(simulation_results["Kerosene mitigation"])  # type: ignore
+            + np.sum(simulation_results["Kerosene lamps"])  # type: ignore
         )
     else:
         kerosene_displacement = 0.0
 
     # Calculate diesel fuel usage
-    total_diesel_fuel = np.sum(simulation_results["Diesel fuel usage (l)"])
+    total_diesel_fuel = np.sum(
+        simulation_results["Diesel fuel usage (l)"]  # type: ignore
+    )
 
     # Return outputs
     return TechnicalAppraisal(

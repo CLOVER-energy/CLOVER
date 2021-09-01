@@ -1,4 +1,5 @@
 #!/usr/bin/python3
+# type: ignore
 ########################################################################################
 # analysis.py - In-built analysis module for CLOVER.                                   #
 #                                                                                      #
@@ -16,17 +17,16 @@ corresponding to the sugetsed analysis within the user guide.
 
 """
 
-import dataclasses
 import os
 
 from typing import Dict, Optional
 
-import numpy as np
-import pandas as pd
-import seaborn as sns
+import numpy as np  # type: ignore
+import pandas as pd  # type: ignore
+import seaborn as sns  # type: ignore
 
-import matplotlib.pyplot as plt
-from tqdm import tqdm
+import matplotlib.pyplot as plt  # type: ignore
+from tqdm import tqdm  # type: ignore
 
 from .__utils__ import CUT_OFF_TIME, DemandType, KeyResults
 
@@ -208,8 +208,8 @@ def plot_outputs(
             ylabel="Day of year",
             title="Output per kWp of solar capacity",
         )
-        plt.xticks(rotation=0)
-        plt.tight_layout()
+        plt.xticks(rotation=0)  # type: ignore
+        plt.tight_layout()  # type: ignore
         plt.savefig(
             os.path.join(figures_directory, "solar_output_hetamap.png"),
             transparent=True,
@@ -243,8 +243,8 @@ def plot_outputs(
             ylabel="Day of year",
             title="Grid availability of the selected profile.",
         )
-        plt.xticks(rotation=0)
-        plt.tight_layout()
+        plt.xticks(rotation=0)  # type: ignore
+        plt.tight_layout()  # type: ignore
         plt.savefig(
             os.path.join(figures_directory, "grid_availability_heatmap.png"),
             transparent=True,
@@ -277,7 +277,7 @@ def plot_outputs(
         plt.xlabel("Hour of simulation")
         plt.ylabel("Device load / W")
         plt.title("Electric load demand of each device")
-        plt.tight_layout()
+        plt.tight_layout()  # type: ignore
         plt.legend()
         plt.savefig(
             os.path.join(figures_directory, "electric_device_loads.png"),
@@ -397,7 +397,7 @@ def plot_outputs(
             ylabel="Load / kWh/day",
             title="Total community energy demand",
         )
-        plt.tight_layout()
+        plt.tight_layout()  # type: ignore
         plt.savefig(
             os.path.join(figures_directory, "electric_demand_annual_variation.png"),
             transparent=True,
@@ -680,10 +680,10 @@ def plot_outputs(
             ylabel="Day of year",
             title="Diesel",
         )
-        plt.tight_layout()
+        plt.tight_layout()  # type: ignore
         fig.suptitle("Electricity from different sources (kWh)")
         fig.subplots_adjust(top=0.87)
-        plt.xticks(rotation=0)
+        plt.xticks(rotation=0)  # type: ignore
         plt.savefig(
             os.path.join(
                 figures_directory, "seasonal_electricity_supply_variations.png"
@@ -747,7 +747,7 @@ def plot_outputs(
                 plt.xlabel("Hour of simulation")
                 plt.ylabel("Device load / litres/hour")
                 plt.title("Clean water demand of each device")
-                plt.tight_layout()
+                plt.tight_layout()  # type: ignore
             plt.legend()
             plt.savefig(
                 os.path.join(figures_directory, "clean_water_device_loads.png"),
@@ -871,7 +871,7 @@ def plot_outputs(
                 ylabel="Load / litres/hour",
                 title="Clean-water demand of each load type",
             )
-            plt.tight_layout()
+            plt.tight_layout()  # type: ignore
             plt.savefig(
                 os.path.join(
                     figures_directory, "clean_water_demand_annual_variation.png"
@@ -1382,10 +1382,10 @@ def plot_outputs(
             # ax4.set_position([0.24, 0.125, 0.228, 0.343])
             # ax5.set_position([0.55, 0.125, 0.228, 0.343])
 
-            plt.tight_layout()
+            plt.tight_layout()  # type: ignore
             fig.suptitle("Water from different sources (tonnes)")
             fig.subplots_adjust(top=0.87)
-            plt.xticks(rotation=0)
+            plt.xticks(rotation=0)  # type: ignore
             plt.savefig(
                 os.path.join(figures_directory, "seasonal_water_supply_variations.png"),
                 transparent=True,

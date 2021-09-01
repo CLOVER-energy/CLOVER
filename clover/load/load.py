@@ -328,13 +328,11 @@ def _yearly_load_statistics(total_load: pd.DataFrame, years: int) -> pd.DataFram
     )
 
     yearly_maximum = pd.DataFrame(total_load_yearly.max(axis=1))  # type: ignore
-    yearly_maximum.columns = [MAXIMUM]  # type: ignore
+    yearly_maximum.columns = pd.Index([MAXIMUM])
     yearly_mean = pd.DataFrame(total_load_yearly.mean(axis=1).round(0))  # type: ignore
-    yearly_mean.columns = [MEAN]  # type: ignore
-    yearly_median = pd.DataFrame(  # type: ignore
-        np.percentile(total_load_yearly, 50, axis=1)
-    )
-    yearly_median.columns = [MEDIAN]  # type: ignore
+    yearly_mean.columns = pd.Index([MEAN])
+    yearly_median = pd.DataFrame(np.percentile(total_load_yearly, 50, axis=1))
+    yearly_median.columns = pd.Index([MEDIAN])
     yearly_load_statistics = pd.concat(
         [yearly_maximum, yearly_mean, yearly_median], axis=1
     )
@@ -397,7 +395,7 @@ def _number_of_devices_daily(
                 device.name,
             )
             daily_ownership = pd.DataFrame(
-                np.floor(population_growth_rate * device.initial_ownership)
+                np.floor(population_growth_rate * device.initial_ownership)  # type: ignore
             )
         logger.info(
             "Ownership for device %s calculated.",
@@ -486,11 +484,13 @@ def compute_total_hourly_load(
 
     logger.info("Total load for all devices successfully computed.")
     total_load = pd.concat([domestic_load, commercial_load, public_load], axis=1)
-    total_load.columns = [  # type: ignore
-        DemandType.DOMESTIC.value,
-        DemandType.COMMERCIAL.value,
-        DemandType.PUBLIC.value,
-    ]
+    total_load.columns = pd.Index(
+        [
+            DemandType.DOMESTIC.value,
+            DemandType.COMMERCIAL.value,
+            DemandType.PUBLIC.value,
+        ]
+    )
 
     logger.info("Saving total load.")
     with open(total_load_filepath, "w") as f:
@@ -1061,7 +1061,7 @@ def process_load_profiles(
 
     return (
         {
-            device_name: load[0:CUT_OFF_TIME]
+            device_name: load[0:CUT_OFF_TIME]  # type: ignore
             for device_name, load in device_hourly_loads.items()
         },
         total_load,
