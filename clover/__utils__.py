@@ -530,7 +530,7 @@ class Location:
     time_difference: float
 
     @classmethod
-    def from_dict(cls, location_inputs: Dict[str, Any]) -> Any:
+    def from_dict(cls, location_inputs: Dict[Union[int, str], Any]) -> Any:
         """
         Creates a :class:`Location` instance based on the inputs provided.
 
@@ -762,7 +762,7 @@ class OptimisationParameters:
     storage_size_step: float
 
     @classmethod
-    def from_dict(cls, optimisation_inputs: Dict[str, Any]) -> Any:
+    def from_dict(cls, optimisation_inputs: Dict[Union[int, str], Any]) -> Any:
         """
         Returns a :class:`OptimisationParameters` instance based on the input info.
 
@@ -942,7 +942,7 @@ class OptimisationParameters:
 
 def read_yaml(
     filepath: str, logger: logging.Logger
-) -> Union[Dict[Union[int, str], Any], List[Dict[Union[int, str], Any]]]:
+) -> Union[Dict[Union[int, str], Any], List[Dict[Union[int, str], Any]],]:
     """
     Reads a YAML file and returns the contents.
 
@@ -1043,7 +1043,7 @@ class Scenario:
     pv_t: bool
 
     @classmethod
-    def from_dict(cls, scenario_inputs: Dict[str, Any]) -> Any:
+    def from_dict(cls, scenario_inputs: Dict[Union[int, str], Any]) -> Any:
         """
         Returns a :class:`Scenario` instance based on the input data.
 
@@ -1135,7 +1135,7 @@ class Simulation:
         )
 
     @classmethod
-    def from_dict(cls, simulation_inputs: Dict[str, Any]) -> Any:
+    def from_dict(cls, simulation_inputs: Dict[Union[int, str], Any]) -> Any:
         """
         Returns a :class:`Simulation` instance based on the input data.
 

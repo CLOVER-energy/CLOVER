@@ -21,7 +21,7 @@ for use locally within CLOVER.
 import dataclasses
 import enum
 
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Union
 
 import pandas as pd
 
@@ -77,7 +77,7 @@ class SolarDataThread(
     def __init__(
         self,
         auto_generated_files_directory: str,
-        generation_inputs: Dict[Any, Any],
+        generation_inputs: Dict[str, Any],
         location: Location,
         logger_name: str,
         regenerate: bool,

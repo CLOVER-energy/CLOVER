@@ -24,7 +24,7 @@ import math
 import os
 
 from logging import Logger
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import numpy as np  # type: ignore
 import pandas as pd  # type: ignore
@@ -113,10 +113,10 @@ class Minigrid:
     def from_dict(
         cls,
         diesel_backup_generator: DieselBackupGenerator,
-        minigrid_inputs: Dict[str, Any],
+        minigrid_inputs: Dict[Union[int, str], Any],
         pv_panel: PVPanel,
-        battery_inputs: Optional[List[Dict[str, Any]]] = None,
-        tank_inputs: Optional[List[Dict[str, Any]]] = None,
+        battery_inputs: Optional[List[Dict[Union[int, str], Any]]] = None,
+        tank_inputs: Optional[List[Dict[Union[int, str], Any]]] = None,
     ) -> Any:
         """
         Returns a :class:`Minigrid` instance based on the inputs provided.
