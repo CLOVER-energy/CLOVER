@@ -28,6 +28,8 @@ from typing import Any, List
 import re
 
 from ..__utils__ import (
+    InputFileError,
+    InternalError,
     get_logger,
     LOCATIONS_FOLDER_NAME,
     read_yaml,
@@ -211,8 +213,13 @@ def create_new_location(
     new_location_data = read_yaml(NEW_LOCATION_DATA_FILE, logger)
     logger.info("Data file successfully read.")
 
+    if not isinstance(new_location_data, list):
+        raise InternalError(
+            "New location data source file is no longer of type `list`."
+        )
+
     # Process the new-location data into a usable format.
-    new_location_directory = new_location_data[0][DIRECTORY].format(
+    new_location_directory = str(new_location_data[0][DIRECTORY]).format(
         location=location, locations_folder_name=LOCATIONS_FOLDER_NAME
     )
 

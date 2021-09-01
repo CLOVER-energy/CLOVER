@@ -209,7 +209,7 @@ class MultiInputConvertor(Convertor):
         )
 
     @classmethod
-    def from_dict(cls, input_data: Dict[str, Union[str, float]], logger: Logger) -> Any:
+    def from_dict(cls, input_data: Dict[Union[int, str], Any], logger: Logger) -> Any:
         """
         Generates a :class:`Convertor` instance based on the input data provided.
 
@@ -222,9 +222,16 @@ class MultiInputConvertor(Convertor):
 
         """
 
+        if not all(isinstance(key, str) for key in input_data):
+            raise InputFileError(
+                "conversion inputs", "All conversion input keys must be of type `str`."
+            )
+
         # Determine the input load type.
         input_resource_list: List[str] = [
-            key for key in input_data if key in RESOURCE_NAME_TO_RESOURCE_TYPE_MAPPING
+            str(key)
+            for key in input_data
+            if key in RESOURCE_NAME_TO_RESOURCE_TYPE_MAPPING
         ]
         # Determine the output load type.
         try:
@@ -287,7 +294,7 @@ class WaterSource(Convertor):
     """Represents a water source which takes in electricity and outputs water."""
 
     @classmethod
-    def from_dict(cls, input_data: Dict[str, Union[str, float]], logger: Logger) -> Any:
+    def from_dict(cls, input_data: Dict[Union[int, str], Any], logger: Logger) -> Any:
         """
         Generates a :class:`Convertor` instance based on the input data provided.
 
@@ -300,9 +307,16 @@ class WaterSource(Convertor):
 
         """
 
+        if not all(isinstance(key, str) for key in input_data):
+            raise InputFileError(
+                "conversion inputs", "All conversion input keys must be of type `str`."
+            )
+
         # Determine the input load type.
         input_resource_list: List[str] = [
-            key for key in input_data if key in RESOURCE_NAME_TO_RESOURCE_TYPE_MAPPING
+            str(key)
+            for key in input_data
+            if key in RESOURCE_NAME_TO_RESOURCE_TYPE_MAPPING
         ]
         if len(input_resource_list) > 1:
             logger.info(

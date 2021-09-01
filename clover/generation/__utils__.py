@@ -30,7 +30,7 @@ import time
 from json.decoder import JSONDecodeError
 from logging import Logger
 from math import ceil
-from typing import Any, Dict
+from typing import Any, Dict, Union
 
 import numpy as np  # type: ignore
 import pandas as pd  # type: ignore
@@ -306,7 +306,7 @@ class BaseRenewablesNinjaThread(threading.Thread):
     def __init__(
         self,
         auto_generated_files_directory: str,
-        generation_inputs: Dict[Any, Any],
+        generation_inputs: Dict[str, Any],
         location: Location,
         logger_name: str,
         regenerate: bool,
@@ -337,7 +337,9 @@ class BaseRenewablesNinjaThread(threading.Thread):
         """
 
         self.auto_generated_files_directory: str = auto_generated_files_directory
-        self.generation_inputs: Dict[Any, Any] = generation_inputs
+        self.generation_inputs: Dict[
+            str, Union[bool, int, str, float]
+        ] = generation_inputs
         self.location: Location = location
         self.logger: Logger = get_logger(logger_name)
         self.logger_name: str = logger_name
@@ -391,8 +393,8 @@ class BaseRenewablesNinjaThread(threading.Thread):
         try:
             for year in tqdm(
                 range(
-                    self.generation_inputs["start_year"],
-                    self.generation_inputs["end_year"] + 1,
+                    int(self.generation_inputs["start_year"]),
+                    int(self.generation_inputs["end_year"]) + 1,
                 ),
                 desc=f"{self.profile_name} profiles",  # type: ignore
                 unit="year",
@@ -414,7 +416,7 @@ class BaseRenewablesNinjaThread(threading.Thread):
                 )
                 try:
                     data = _get_profile_output(
-                        self.generation_inputs["token"],
+                        str(self.generation_inputs["token"]),
                         self.location,
                         self.logger,
                         self.profile_key,  # type: ignore

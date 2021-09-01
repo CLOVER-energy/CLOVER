@@ -18,9 +18,9 @@ contained and considered within this module.
 
 import dataclasses
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional, Union
 
-from ..__utils__ import InternalError, ResourceType
+from ..__utils__ import ResourceType
 
 __all__ = ("Battery",)
 
@@ -136,7 +136,7 @@ class _BaseStorage:
         )
 
     @classmethod
-    def from_dict(cls, storage_data: Dict[str, Any]) -> Any:
+    def from_dict(cls, storage_data: Dict[Union[int, str], Any]) -> Any:
         """
         Create a :class:`_BaseStorage` instance based on the file data passed in.
 
@@ -255,7 +255,7 @@ class Battery(_BaseStorage, label="battery", resource_type=ResourceType.ELECTRIC
         )
 
     @classmethod
-    def from_dict(cls, storage_data: Dict[str, Any]) -> Any:
+    def from_dict(cls, storage_data: Dict[Union[int, str], Any]) -> Any:
         """
         Create a :class:`Battery` instance based on the file data passed in.
 
@@ -349,7 +349,7 @@ class CleanWaterTank(
         )
 
     @classmethod
-    def from_dict(cls, storage_data: Dict[str, Any]) -> Any:
+    def from_dict(cls, storage_data: Dict[Union[int, str], Any]) -> Any:
         """
         Create a :class:`Tank` instance based on the file data passed in.
 

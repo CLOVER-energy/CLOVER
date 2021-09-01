@@ -19,7 +19,7 @@ for use locally within CLOVER.
 
 """
 
-from typing import Any, Dict
+from typing import Any, Dict, Union
 
 import pandas as pd  # type: ignore
 
@@ -50,7 +50,7 @@ class WeatherDataThread(
     def __init__(
         self,
         auto_generated_files_directory: str,
-        generation_inputs: Dict[Any, Any],
+        generation_inputs: Dict[str, Any],
         location: Location,
         logger_name: str,
         regenerate: bool,

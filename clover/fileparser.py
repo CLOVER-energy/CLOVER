@@ -15,9 +15,9 @@ fileparser.py - The argument-parsing module for CLOVER.
 import os
 
 from logging import Logger
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any, Dict, List, Optional, Set, Tuple, Union
 
-import pandas as pd
+import pandas as pd  # type: ignore
 
 from . import load
 from .simulation import energy_system, solar
@@ -25,6 +25,7 @@ from .simulation import energy_system, solar
 from .__utils__ import (
     BColours,
     InputFileError,
+    InternalError,
     KEROSENE_DEVICE_NAME,
     ResourceType,
     Location,
@@ -132,18 +133,18 @@ TANK_INPUTS_FILE = os.path.join("simulation", "tank_inputs.yaml")
 
 
 def parse_input_files(
-    location: str, logger: Logger
+    location_name: str, logger: Logger
 ) -> Tuple[
     List[Convertor],
     Dict[load.load.Device, pd.DataFrame],
     energy_system.Minigrid,
-    Dict[str, Any],
-    Dict[str, Any],
+    Dict[str, Union[float, int, str]],
+    Dict[str, Union[int, str]],
     Dict[str, Any],
     pd.DataFrame,
     Location,
     Optional[OptimisationParameters],
-    Optional[Set[Optimisation]],
+    Set[Optimisation],
     Scenario,
     List[Simulation],
     Dict[str, str],
@@ -152,8 +153,8 @@ def parse_input_files(
     Parse the various input files and return content-related information.
 
     Inputs:
-        - location:
-            The name of the location being considered.
+        - location_name:
+            The name of the location_name being considered.
         - logger:
             The logger to use for the run.
 
@@ -177,7 +178,7 @@ def parse_input_files(
 
     inputs_directory_relative_path = os.path.join(
         LOCATIONS_FOLDER_NAME,
-        location,
+        location_name,
         INPUTS_DIRECTORY,
     )
 
@@ -189,6 +190,10 @@ def parse_input_files(
         parsed_convertors: List[Convertor] = []
         conversion_inputs = read_yaml(conversion_file_relative_path, logger)
         for entry in conversion_inputs:
+            if not isinstance(entry, dict):
+                raise InputFileError(
+                    "conversion inputs", "Convertors not correctly defined."
+                )
             try:
                 parsed_convertors.append(WaterSource.from_dict(entry, logger))
             except InputFileError:
@@ -213,7 +218,7 @@ def parse_input_files(
         DEVICE_INPUTS_FILE,
     )
     devices: Set[load.load.Device] = {
-        load.load.Device.from_dict(entry)
+        load.load.Device.from_dict(entry)  # type: ignore
         for entry in read_yaml(
             device_inputs_filepath,
             logger,
@@ -266,6 +271,8 @@ def parse_input_files(
         diesel_inputs_filepath,
         logger,
     )
+    if not isinstance(diesel_inputs, dict):
+        raise InputFileError("diesel inputs", "Diesel inputs are not of type `dict`.")
     try:
         diesel_backup_generator = DieselBackupGenerator(
             diesel_inputs["diesel_consumption"], diesel_inputs["minimum_load"]
@@ -285,6 +292,11 @@ def parse_input_files(
         inputs_directory_relative_path, ENERGY_SYSTEM_INPUTS_FILE
     )
     energy_system_inputs = read_yaml(energy_system_inputs_filepath, logger)
+    if not isinstance(energy_system_inputs, dict):
+        raise InputFileError(
+            "energy system inputs", "Energy system inputs are not of type `dict`."
+        )
+    logger.info("Energy system inputs successfully parsed.")
 
     # Parse the solar input information.
     solar_generation_inputs_filepath = os.path.join(
@@ -295,6 +307,10 @@ def parse_input_files(
         solar_generation_inputs_filepath,
         logger,
     )
+    if not isinstance(solar_generation_inputs, dict):
+        raise InputFileError(
+            "solar generation inputs", "Solar generation inputs are not of type `dict`."
+        )
     logger.info("Solar generation inputs successfully parsed.")
 
     # Parse the pv-panel information.
@@ -307,8 +323,8 @@ def parse_input_files(
 
     # Return the solar panel being modelled.
     try:
-        pv_panel: solar.PVPanel = [  # type: ignore
-            panel
+        pv_panel: solar.PVPanel = [
+            panel  # type: ignore
             for panel in solar_panels
             if panel.panel_type == solar.SolarPanelType.PV  # type: ignore
             and panel.name == energy_system_inputs["pv_panel"]
@@ -325,32 +341,51 @@ def parse_input_files(
     battery_inputs_filepath = os.path.join(
         inputs_directory_relative_path, BATTERY_INPUTS_FILE
     )
+    battery_inputs = read_yaml(battery_inputs_filepath, logger)
+    if not isinstance(battery_inputs, list):
+        raise InputFileError(
+            "battery inputs", "Battery input file is not of type `list`."
+        )
+    logger.info("Battery inputs successfully parsed.")
+
     tank_inputs_filepath = os.path.join(
         inputs_directory_relative_path, TANK_INPUTS_FILE
     )
+    tank_inputs = read_yaml(tank_inputs_filepath, logger)
+    if not isinstance(tank_inputs, list):
+        raise InputFileError("tank inputs", "Tank inputs file is not of type `list`.")
+
     minigrid = energy_system.Minigrid.from_dict(
         diesel_backup_generator,
         energy_system_inputs,
         pv_panel,
-        read_yaml(battery_inputs_filepath, logger),
-        read_yaml(tank_inputs_filepath, logger),
+        battery_inputs,
+        tank_inputs,
     )
     logger.info("Energy-system inputs successfully parsed.")
 
     finance_inputs_filepath = os.path.join(
         inputs_directory_relative_path, FINANCE_INPUTS_FILE
     )
-    finance_inputs = read_yaml(finance_inputs_filepath, logger)
+    finance_inputs: Dict[str, Union[float, int, str]] = read_yaml(  # type: ignore
+        finance_inputs_filepath, logger
+    )
+    if not isinstance(finance_inputs, dict):
+        raise InputFileError(
+            "finance inputs", "Finance inputs must be of type `dict` not `list`."
+        )
     logger.info("Finance inputs successfully parsed.")
 
     generation_inputs_filepath = os.path.join(
         inputs_directory_relative_path, GENERATION_INPUTS_FILE
     )
-    generation_inputs = read_yaml(generation_inputs_filepath, logger)
+    generation_inputs: Dict[str, Union[int, str]] = read_yaml(  # type: ignore
+        generation_inputs_filepath, logger
+    )
     logger.info("Generation inputs successfully parsed.")
 
     ghg_inputs_filepath = os.path.join(inputs_directory_relative_path, GHG_INPUTS_FILE)
-    ghg_data = read_yaml(ghg_inputs_filepath, logger)
+    ghg_data: Dict[str, Any] = read_yaml(ghg_inputs_filepath, logger)  # type: ignore
     logger.info("GHG inputs successfully parsed.")
 
     grid_inputs_filepath = os.path.join(
@@ -361,7 +396,7 @@ def parse_input_files(
         grid_inputs_filepath,
         "r",
     ) as grid_inputs_file:
-        grid_inputs = pd.read_csv(
+        grid_inputs: pd.DataFrame = pd.read_csv(
             grid_inputs_file,
             index_col=0,
         )
@@ -371,18 +406,29 @@ def parse_input_files(
         inputs_directory_relative_path,
         LOCATION_INPUTS_FILE,
     )
-    location = Location.from_dict(
-        read_yaml(
-            location_inputs_filepath,
-            logger,
-        )
+    location_inputs = read_yaml(
+        location_inputs_filepath,
+        logger,
     )
+    if not isinstance(location_inputs, dict):
+        raise InputFileError(
+            "location inputs", "Location inputs is not of type `dict`."
+        )
+    location: Location = Location.from_dict(location_inputs)
+    if not isinstance(location, Location):
+        raise InternalError(
+            "Location was not returned when calling `Location.from_dict`."
+        )
     logger.info("Location inputs successfully parsed.")
 
     optimisation_inputs_filepath = os.path.join(
         inputs_directory_relative_path, OPTIMISATION_INPUTS_FILE
     )
     optimisation_inputs = read_yaml(optimisation_inputs_filepath, logger)
+    if not isinstance(optimisation_inputs, dict):
+        raise InputFileError(
+            "optimisation inputs", "Optimisation inputs is not of type `dict`."
+        )
     try:
         optimisation_parameters = OptimisationParameters.from_dict(optimisation_inputs)
     except Exception as e:
@@ -396,7 +442,7 @@ def parse_input_files(
     logger.info("Optimisation inputs successfully parsed.")
 
     try:
-        optimisations = {
+        optimisations: Set[Optimisation] = {
             Optimisation.from_dict(logger, entry)
             for entry in optimisation_inputs[OPTIMISATIONS]
         }
@@ -418,8 +464,12 @@ def parse_input_files(
         scenario_inputs_filepath,
         logger,
     )
+    if not isinstance(scenario_inputs, dict):
+        raise InputFileError(
+            "scenario inputs", "Scenario inputs is not of type `dict`."
+        )
     try:
-        scenario = Scenario.from_dict(scenario_inputs)
+        scenario: Scenario = Scenario.from_dict(scenario_inputs)
     except Exception as e:
         logger.error(
             "%sError generating scenario from inputs file: %s%s",
@@ -499,10 +549,16 @@ def parse_input_files(
         simulations_inputs_filepath,
         logger,
     )
-    simulations = [Simulation.from_dict(entry) for entry in simulations_file_contents]
+    if not isinstance(simulations_file_contents, list):
+        raise InputFileError(
+            "simulation inputs", "Simulation inputs must be of type `list`."
+        )
+    simulations: List[Simulation] = [
+        Simulation.from_dict(entry) for entry in simulations_file_contents
+    ]
 
     # Generate a dictionary with information about the input files used.
-    input_file_info = {
+    input_file_info: Dict[str, str] = {
         "convertors": conversion_file_relative_path,
         "devices": device_inputs_filepath,
         "diesel_inputs": diesel_inputs_filepath,
