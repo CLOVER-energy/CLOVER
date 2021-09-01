@@ -418,7 +418,7 @@ def _find_optimum_system(
 ):
     """
     Finds the optimum system from a group of sufficient systems.
-    
+
     This function determines the optimum system from s group of sufficient systems. It
     contains functionality that enables it to increase the system size if necessary if
     the simulation is an edge case
@@ -672,7 +672,10 @@ def _simulation_iteration(
     # Check if largest system is sufficient
     logger.info("Checking whether the largest system is sufficient.")
     tqdm.write(
-        "Determining largest suitable system {}    ".format("." * 27,), end="\n",
+        "Determining largest suitable system {}    ".format(
+            "." * 27,
+        ),
+        end="\n",
     )
     _, simulation_results, system_details = energy_system.run_simulation(
         convertors,
@@ -762,7 +765,8 @@ def _simulation_iteration(
         storage_size_max += storage_sizes.step
 
     tqdm.write(
-        "Determining largest suitable system {}    {}".format("." * 27, DONE), end="\n",
+        "Determining largest suitable system {}    {}".format("." * 27, DONE),
+        end="\n",
     )
     system_appraisals.append(largest_system_appraisal)
 
