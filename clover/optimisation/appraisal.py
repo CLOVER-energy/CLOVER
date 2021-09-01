@@ -208,7 +208,9 @@ def _simulation_financial_appraisal(
 
     # Calculate costs of connecting new households (discounted)
     connections_cost = finance.connections_expenditure(
-        finance_inputs, simulation_results["Households"], system_details.start_year,
+        finance_inputs,
+        simulation_results["Households"],
+        system_details.start_year,
     )
 
     # Calculate operating costs of the system during this simulation (discounted)
@@ -409,9 +411,40 @@ def appraise_system(
         previous_system = SystemAppraisal(
             CumulativeResults(0, 0, 0, 0, 0, 0),
             EnvironmentalAppraisal(0, 0, 0, 0, 0, 0, 0, 0, 0),
-            FinancialAppraisal(0, 0, 0, 0, 0, 0, 0, 0, 0,),
-            SystemDetails(0, 0, 0, 0, 0, 0, 0,),
-            TechnicalAppraisal(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,),
+            FinancialAppraisal(
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+            ),
+            SystemDetails(
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+            ),
+            TechnicalAppraisal(
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+            ),
         )
 
     # Get results which will be carried forward into optimisation process

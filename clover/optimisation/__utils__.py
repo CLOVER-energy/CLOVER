@@ -220,4 +220,3 @@ class StorageSystemSize:
     max: float
     min: float
     step: float
-

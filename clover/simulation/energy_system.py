@@ -560,7 +560,8 @@ def run_simulation(
             renewable_clean_water_used_directly,
             tank_storage_profile,
         ) = _get_water_storage_profile(
-            processed_total_clean_water_load, pd.DataFrame([0] * simulation_hours),
+            processed_total_clean_water_load,
+            pd.DataFrame([0] * simulation_hours),
         )
         total_clean_water_supplied = pd.DataFrame(
             renewable_clean_water_used_directly.values
@@ -828,6 +829,9 @@ def run_simulation(
                     # Store this as water and electricity supplied by backup.
                     clean_water_power_consumed[t] += energy_consumed
                     backup_desalinator_water_supplied[t] = current_unmet_water_demand
+                else:
+                    clean_water_power_consumed[t] = 0
+                    backup_desalinator_water_supplied[t] = 0
 
                 current_hourly_tank_storage = min(
                     current_hourly_tank_storage, max_tank_storage
@@ -1146,7 +1150,10 @@ def run_simulation(
             ]
         )
 
-    system_performance_outputs = pd.concat(system_performance_outputs_list, axis=1,)
+    system_performance_outputs = pd.concat(
+        system_performance_outputs_list,
+        axis=1,
+    )
 
     return time_delta, system_performance_outputs, system_details
 

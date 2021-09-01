@@ -14,6 +14,8 @@
 # Ignore output files
 *output_*
 **/output*
+*.png
+*.jpg
 # HPC log files
 *e[0-9]*
 *o[0-9]*
