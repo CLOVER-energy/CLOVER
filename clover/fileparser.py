@@ -229,7 +229,7 @@ def parse_input_files(
             BColours.warning,
             BColours.endc,
         )
-        devices.add(load.DEFAULT_KEROSENE_DEVICE)
+        devices.add(load.load.DEFAULT_KEROSENE_DEVICE)
         logger.info("Default kerosene device added.")
 
     device_utilisations: Dict[load.load.Device, pd.DataFrame] = dict()
@@ -307,10 +307,10 @@ def parse_input_files(
 
     # Return the solar panel being modelled.
     try:
-        pv_panel = [
+        pv_panel: solar.PVPanel = [  # type: ignore
             panel
             for panel in solar_panels
-            if panel.panel_type == solar.SolarPanelType.PV
+            if panel.panel_type == solar.SolarPanelType.PV  # type: ignore
             and panel.name == energy_system_inputs["pv_panel"]
         ][0]
     except IndexError:

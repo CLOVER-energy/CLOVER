@@ -18,7 +18,7 @@ emitted by the system, need to be assed.
 
 """
 
-from typing import Any, Dict
+from typing import Any, Dict, List
 
 import numpy as np
 import pandas as pd
@@ -208,7 +208,7 @@ def calculate_total_equipment_ghgs(
     )
 
 
-def calculate_connections_ghgs(ghg_inputs: Dict[str, Any], households: pd.DataFrame):
+def calculate_connections_ghgs(ghg_inputs: Dict[str, Any], households: pd.Series):
     """
     Calculates ghgs of connecting households to the system
 
@@ -224,10 +224,10 @@ def calculate_connections_ghgs(ghg_inputs: Dict[str, Any], households: pd.DataFr
     """
 
     # Ensure that the correct type is being used.
-    households = pd.DataFrame(households)
+    households_data_frame: pd.DataFrame = pd.DataFrame(households)
 
     # Compute the number of new households that were added to the system.
-    new_connections = np.max(households) - np.min(households)
+    new_connections = np.max(households_data_frame) - np.min(households_data_frame)
 
     # Calculate the associated ghgs.
     connection_ghgs = ghg_inputs[ImpactingComponent.HOUSEHOLDS.value][CONNECTION_GHGS]
@@ -327,21 +327,20 @@ def calculate_inverter_ghgs(
     replacement_intervals = pd.DataFrame(
         np.arange(0, location.max_years, replacement_period)
     )
-    replacement_intervals.columns = ["Installation year"]
+    replacement_intervals.columns = pd.Index(["Installation year"])
 
     # Check if inverter should be replaced in the specified time interval
-    if (
-        replacement_intervals.loc[
-            replacement_intervals["Installation year"].isin(range(start_year, end_year))
-        ].empty
-        == True
-    ):
+    if replacement_intervals.loc[
+        replacement_intervals["Installation year"].isin(
+            list(range(start_year, end_year))
+        )
+    ].empty:
         return float(0.0)
 
     # Initialise inverter sizing calculation
     max_power = []
     inverter_step = float(ghg_inputs[ImpactingComponent.INVERTER.value][SIZE_INCREMENT])
-    inverter_size = []
+    inverter_size: List[float] = []
     for i in range(len(replacement_intervals)):
         # Calculate maximum power in interval years
         start = replacement_intervals["Installation year"].iloc[i]
@@ -352,14 +351,14 @@ def calculate_inverter_ghgs(
         max_power.append(max_power_interval)
 
         # Calculate resulting inverter size
-        inverter_size_interval = (
+        inverter_size_interval: float = (
             np.ceil(0.001 * max_power_interval / inverter_step) * inverter_step
         )
         inverter_size.append(inverter_size_interval)
 
-    inverter_size = pd.DataFrame(inverter_size)
-    inverter_size.columns = ["Inverter size (kW)"]
-    inverter_info = pd.concat([replacement_intervals, inverter_size], axis=1)
+    inverter_size_data_frame: pd.DataFrame = pd.DataFrame(inverter_size)
+    inverter_size_data_frame.columns = pd.Index(["Inverter size (kW)"])
+    inverter_info = pd.concat([replacement_intervals, inverter_size_data_frame], axis=1)
 
     # Calculate the associated ghgs
     inverter_info["Inverter ghgs (kgCO2/kW)"] = [
@@ -374,9 +373,9 @@ def calculate_inverter_ghgs(
         for i in range(len(inverter_info))
     ]
     inverter_ghgs = np.sum(
-        inverter_info.loc[
+        inverter_info.loc[  # type: ignore
             inverter_info["Installation year"].isin(
-                np.array(range(start_year, end_year))
+                list(np.array(range(start_year, end_year)))
             )
         ]["Total ghgs (kgCO2)"]
     ).round(2)
@@ -385,7 +384,7 @@ def calculate_inverter_ghgs(
 
 
 def calculate_kerosene_ghgs(
-    ghg_inputs: Dict[str, Any], kerosene_lamps_in_use_hourly: pd.DataFrame
+    ghg_inputs: Dict[str, Any], kerosene_lamps_in_use_hourly: pd.Series
 ):
     """
     Calculates ghgs of kerosene usage.
@@ -408,7 +407,7 @@ def calculate_kerosene_ghgs(
 
 
 def calculate_kerosene_ghgs_mitigated(
-    ghg_inputs: Dict[str, Any], kerosene_lamps_mitigated_hourly: pd.DataFrame
+    ghg_inputs: Dict[str, Any], kerosene_lamps_mitigated_hourly: pd.Series
 ):
     """
     Calculates ghgs of kerosene usage that has been avoided by using the system.
@@ -432,7 +431,7 @@ def calculate_kerosene_ghgs_mitigated(
 
 def calculate_grid_ghgs(
     ghg_inputs: Dict[str, Any],
-    grid_energy_hourly: pd.DataFrame,
+    grid_energy_hourly: pd.Series,
     location: Location,
     start_year=0,
     end_year=20,
@@ -480,11 +479,11 @@ def calculate_grid_ghgs(
         total_daily_energy.values * daily_emissions_intensity.values
     )
 
-    return float(np.sum(daily_emissions, axis=0))
+    return float(np.sum(daily_emissions, axis=0))  # type: ignore
 
 
 def calculate_diesel_fuel_ghgs(
-    diesel_fuel_usage_hourly: pd.DataFrame, ghg_inputs: Dict[str, Any]
+    diesel_fuel_usage_hourly: pd.Series, ghg_inputs: Dict[str, Any]
 ) -> float:
     """
     Calculates ghgs of diesel fuel used by the system
@@ -501,7 +500,7 @@ def calculate_diesel_fuel_ghgs(
     """
 
     diesel_fuel_ghgs = ghg_inputs[ImpactingComponent.DIESEL_FUEL.value][GHGS]
-    return float(np.sum(diesel_fuel_usage_hourly) * diesel_fuel_ghgs)
+    return float(np.sum(diesel_fuel_usage_hourly) * diesel_fuel_ghgs)  # type: ignore
 
 
 def calculate_om_ghgs(

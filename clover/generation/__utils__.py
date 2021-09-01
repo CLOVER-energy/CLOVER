@@ -38,7 +38,13 @@ import requests  # type: ignore
 
 from tqdm import tqdm  # type: ignore
 
-from ..__utils__ import BColours, get_logger, Location, RenewablesNinjaError
+from ..__utils__ import (
+    BColours,
+    InternalError,
+    get_logger,
+    Location,
+    RenewablesNinjaError,
+)
 
 __all__ = (
     "BaseRenewablesNinjaThread",
@@ -352,8 +358,8 @@ class BaseRenewablesNinjaThread(threading.Thread):
         """
 
         super().__init_subclass__()
-        cls.profile_name = profile_name
-        cls.profile_key = profile_key
+        cls.profile_name = profile_name  # type: ignore
+        cls.profile_key = profile_key  # type: ignore
 
     def run(
         self,
@@ -363,9 +369,21 @@ class BaseRenewablesNinjaThread(threading.Thread):
 
         """
 
+        if self.profile_name is None:  # type: ignore
+            self.logger.error(
+                "%sRenewables Ninja base thread executed directly: execute child "
+                "threads instead.%s",
+                BColours.fail,
+                BColours.endc,
+            )
+            raise InternalError(
+                "Renewables Ninja threads cannot be called directly, only child "
+                "threads can be executed."
+            )
+
         self.logger.info(
             "RenewablesNinja data thread instantiated for %s profiles.",
-            self.profile_name,
+            self.profile_name,  # type: ignore
         )
 
         # A counter is used to keep track of calls to renewables.ninja to prevent
@@ -376,11 +394,11 @@ class BaseRenewablesNinjaThread(threading.Thread):
                     self.generation_inputs["start_year"],
                     self.generation_inputs["end_year"] + 1,
                 ),
-                desc=f"{self.profile_name} profiles",
+                desc=f"{self.profile_name} profiles",  # type: ignore
                 unit="year",
             ):
                 # If the data file for the year already exists, skip.
-                filename = f"{self.profile_name}_generation_{year}.csv"
+                filename = f"{self.profile_name}_generation_{year}.csv"  # type: ignore
                 filepath = os.path.join(self.auto_generated_files_directory, filename)
 
                 if os.path.isfile(filepath) and not self.regenerate:
@@ -390,14 +408,16 @@ class BaseRenewablesNinjaThread(threading.Thread):
                     continue
 
                 self.logger.info(
-                    "Fetching %s data for year %s.", self.profile_name, year
+                    "Fetching %s data for year %s.",
+                    self.profile_name,  # type: ignore
+                    year,
                 )
                 try:
                     data = _get_profile_output(
                         self.generation_inputs["token"],
                         self.location,
                         self.logger,
-                        self.profile_key,
+                        self.profile_key,  # type: ignore
                         self.renewables_ninja_params,
                         year,
                     )

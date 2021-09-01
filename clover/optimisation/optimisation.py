@@ -36,10 +36,10 @@ import os
 from logging import Logger
 from typing import Any, Dict, List, Optional, Tuple
 
-import numpy as np
-import pandas as pd
+import numpy as np  # type: ignore
+import pandas as pd  # type: ignore
 
-from tqdm import tqdm
+from tqdm import tqdm  # type: ignore
 
 from ..simulation import energy_system
 
@@ -126,7 +126,7 @@ def _single_line_simulation(
     num_clean_water_tanks: int,
     optimisation: Optimisation,
     potential_system: SystemAppraisal,
-    previous_system: SystemAppraisal,
+    previous_system: Optional[SystemAppraisal],
     scenario: Scenario,
     start_year: int,
     total_clean_water_load: pd.DataFrame,
@@ -407,7 +407,7 @@ def _find_optimum_system(
     minigrid: energy_system.Minigrid,
     num_clean_water_tanks: int,
     optimisation: Optimisation,
-    previous_system: SystemDetails,
+    previous_system: Optional[SystemAppraisal],
     scenario: Scenario,
     start_year: int,
     system_appraisals: List[SystemAppraisal],
@@ -586,7 +586,7 @@ def _simulation_iteration(
     num_clean_water_tanks: int,
     optimisation: Optimisation,
     optimisation_parameters: OptimisationParameters,
-    previous_system: SystemDetails,
+    previous_system: Optional[SystemAppraisal],
     pv_sizes: PVSystemSize,
     scenario: Scenario,
     start_year: int,
@@ -600,7 +600,7 @@ def _simulation_iteration(
     PVSystemSize,
     StorageSystemSize,
     SystemAppraisal,
-    SystemDetails,
+    Optional[SystemAppraisal],
     int,
     List[SystemAppraisal],
 ]:
@@ -871,7 +871,7 @@ def _optimisation_step(
     num_clean_water_tanks: int,
     optimisation: Optimisation,
     optimisation_parameters: OptimisationParameters,
-    previous_systems: pd.DataFrame,
+    previous_system: Optional[SystemAppraisal],
     pv_sizes: PVSystemSize,
     scenario: Scenario,
     start_year: int,
@@ -936,7 +936,7 @@ def _optimisation_step(
         end_year,
         pv_system_size,
         storage_system_size,
-        largest_system_appraisal,
+        _,
         previous_system,
         start_year,
         sufficient_systems,
@@ -952,7 +952,7 @@ def _optimisation_step(
         num_clean_water_tanks,
         optimisation,
         optimisation_parameters,
-        previous_systems,
+        previous_system,
         pv_sizes,
         scenario,
         start_year,
@@ -1014,9 +1014,9 @@ def multiple_optimisation_step(
     *,
     input_pv_sizes: Optional[PVSystemSize] = None,
     input_storage_sizes: Optional[StorageSystemSize] = None,
-    previous_system: Optional[SystemDetails] = None,
+    previous_system: Optional[SystemAppraisal] = None,
     start_year: int = 0,
-) -> Tuple[float, List[SystemAppraisal]]:
+) -> Tuple[datetime.timedelta, List[SystemAppraisal]]:
     """
     Carries out multiple optimisation steps of the continuous lifetime optimisation.
 

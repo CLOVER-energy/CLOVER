@@ -83,6 +83,7 @@ class SolarPanel:
     azimuthal_orientation: float
     lifetime: int
     name: str
+    reference_efficiency: float
     reference_temperature: float
     thermal_coefficient: float
     tilt: float
@@ -100,7 +101,7 @@ class SolarPanel:
 
         """
 
-        cls.panel_type = panel_type
+        cls.panel_type = panel_type  # type: ignore
 
         return super().__init_subclass__()
 
@@ -129,6 +130,7 @@ class PVPanel(SolarPanel, panel_type=SolarPanelType.PV):
             solar_inputs["azimuthal_orientation"],
             solar_inputs["lifetime"],
             solar_inputs["name"],
+            solar_inputs["reference_efficiency"],
             solar_inputs["reference_temperature"],
             solar_inputs["thermal_coefficient"],
             solar_inputs["tilt"],

@@ -45,6 +45,7 @@ __all__ = (
     "get_logger",
     "hourly_profile_to_daily_sum",
     "InputFileError",
+    "InternalError",
     "KEROSENE_DEVICE_NAME",
     "KeyResults",
     "ResourceType",
@@ -345,6 +346,22 @@ class InputFileError(Exception):
         )
 
 
+class InternalError(Exception):
+    """Raised when an internal error occurs in CLOVER."""
+
+    def __init__(self, msg: str) -> None:
+        """
+        Instantiate a :class:`InternalError` instance.
+
+        Inputs:
+            - msg:
+                The message to append to the internal error.
+
+        """
+
+        super().__init__(f"An error occured internally within CLOVER: {msg}")
+
+
 @dataclasses.dataclass
 class KeyResults:
     """
@@ -400,7 +417,7 @@ class KeyResults:
             )
         if self.average_daily_dumped_energy is not None:
             data_dict["Average daily dumped energy / kWh"] = round(
-                self.average_daily_grid_energy_supplied, 3
+                self.average_daily_dumped_energy, 3
             )
         if self.average_daily_energy_consumption is not None:
             data_dict["Average daily energy consumption / kWh"] = round(
@@ -923,7 +940,9 @@ class OptimisationParameters:
 #             time.sleep(1)
 
 
-def read_yaml(filepath: str, logger: logging.Logger) -> Dict[Any, Any]:
+def read_yaml(
+    filepath: str, logger: logging.Logger
+) -> Union[Dict[Union[int, str], Any], List[Dict[Union[int, str], Any]]]:
     """
     Reads a YAML file and returns the contents.
 
@@ -1496,7 +1515,7 @@ class SystemAppraisal:
     financial_appraisal: FinancialAppraisal
     system_details: SystemDetails
     technical_appraisal: TechnicalAppraisal
-    criteria: Optional[Dict[Criterion, float]] = None
+    criteria: Dict[Criterion, float] = dict()
 
     def to_dict(self) -> Dict[str, Any]:
         """

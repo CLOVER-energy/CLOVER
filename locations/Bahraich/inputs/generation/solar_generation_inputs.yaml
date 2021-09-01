@@ -12,6 +12,7 @@ panels:
   - name: default_solar
     azimuthal_orientation: 180 # [degrees from North]
     lifetime: 20 # [years] - Lifetime of the PV system.
+    reference_efficiency: 0.125 # [panel electricy efficiency between 0 and 1]
     reference_temperature: 25 # [degrees Celcius]
     thermal_coefficient: 0.0053 # [1 / degrees Celcius]
     tilt: 29 # [degrees above horizontal]
