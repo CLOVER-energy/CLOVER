@@ -22,8 +22,8 @@ information and system-sizing information provided.
 from logging import Logger
 from typing import Any, Dict, List
 
-import numpy as np  # type: ignore
-import pandas as pd  # type: ignore
+import numpy as np  # type: ignore  # pylint: disable=import-error
+import pandas as pd  # type: ignore  # pylint: disable=import-error
 
 from .__utils__ import ImpactingComponent, LIFETIME, SIZE_INCREMENT
 from ..__utils__ import (

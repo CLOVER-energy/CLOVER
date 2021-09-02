@@ -32,11 +32,11 @@ from logging import Logger
 from math import ceil
 from typing import Any, Dict, Union
 
-import numpy as np  # type: ignore
-import pandas as pd  # type: ignore
-import requests  # type: ignore
+import numpy as np  # type: ignore  # pylint: disable=import-error
+import pandas as pd  # type: ignore  # pylint: disable=import-error
+import requests  # type: ignore  # pylint: disable=import-error
 
-from tqdm import tqdm  # type: ignore
+from tqdm import tqdm  # type: ignore  # pylint: disable=import-error
 
 from ..__utils__ import (
     BColours,
@@ -427,7 +427,10 @@ class BaseRenewablesNinjaThread(threading.Thread):
                     self.logger.error("Missing data from input files: %s", str(e))
                     raise
 
-                self.logger.info("Solar data successfully fetched, saving.")
+                self.logger.info(
+                    "Renewables.ninja for %s data successfully fetched, saving.",
+                    self.profile_name,  # type: ignore
+                )
                 _save_profile_output(
                     filepath,
                     year,
@@ -481,7 +484,7 @@ def total_profile_output(
         f"{profile_name}_generation_{num_years}_years.csv",
     )
 
-    # If the total solar output file already exists then simply read this in.
+    # If the total output file already exists then simply read this in.
     if os.path.isfile(total_output_filename) and not regenerate:
         with open(total_output_filename, "r") as f:
             total_output = pd.read_csv(f, header=None)
@@ -490,7 +493,7 @@ def total_profile_output(
         # Get data for each year using iteration, and add that data to the output file
         for year_index in tqdm(
             np.arange(min(10, num_years)),
-            desc="total solar profile",
+            desc=f"total {profile_name} profile",
             leave=True,
             unit="year",
         ):

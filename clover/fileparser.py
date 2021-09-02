@@ -17,7 +17,7 @@ import os
 from logging import Logger
 from typing import Any, Dict, List, Optional, Set, Tuple, Union
 
-import pandas as pd  # type: ignore
+import pandas as pd  # type: ignore  # pylint: disable=import-error
 
 from . import load
 from .simulation import energy_system, solar
@@ -496,19 +496,14 @@ def parse_input_files(
                 "%sUnknown clean-water source(s) specified in the scenario file: %s%s",
                 BColours.fail,
                 ", ".join(
-                    [
-                        entry
-                        for entry in scenario_inputs[ResourceType.CLEAN_WATER.value][
-                            "sources"
-                        ]
-                    ]
+                    list(scenario_inputs[ResourceType.CLEAN_WATER.value]["sources"])
                 ),
                 BColours.endc,
             )
             raise Exception(
                 f"{BColours.fail}Unknown clean-water source(s) in the scenario file: "
                 + f"{BColours.endc}"
-            )
+            ) from None
 
         try:
             available_convertors.extend(
@@ -524,19 +519,14 @@ def parse_input_files(
                 "%sUnknown unclean-water source(s) specified in the scenario file: %s%s",
                 BColours.fail,
                 ", ".join(
-                    [
-                        entry
-                        for entry in scenario_inputs[ResourceType.CLEAN_WATER.value][
-                            "sources"
-                        ]
-                    ]
+                    list(scenario_inputs[ResourceType.CLEAN_WATER.value]["sources"])
                 ),
                 BColours.endc,
             )
             raise Exception(
                 f"{BColours.fail}Unknown unclean-water source(s) in the scenario file: "
                 + f"{BColours.endc}"
-            )
+            ) from None
     else:
         available_convertors = []
     logger.info("Scenario inputs successfully parsed.")

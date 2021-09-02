@@ -18,14 +18,11 @@ for use locally within CLOVER.
 
 """
 
-import dataclasses
-import enum
+from typing import Any, Dict
 
-from typing import Any, Dict, List, Union
+import pandas as pd  # pylint: disable=import-error
 
-import pandas as pd
-
-from ..__utils__ import InputFileError, Location
+from ..__utils__ import Location
 from .__utils__ import BaseRenewablesNinjaThread, total_profile_output
 from ..simulation.solar import PVPanel
 

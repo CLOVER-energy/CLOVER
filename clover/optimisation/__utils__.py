@@ -27,7 +27,6 @@ from ..__utils__ import (
     BColours,
     Criterion,
     OptimisationParameters,
-    Criterion,
 )
 
 __all__ = (

@@ -19,9 +19,9 @@ for use locally within CLOVER.
 
 """
 
-from typing import Any, Dict, Union
+from typing import Any, Dict
 
-import pandas as pd  # type: ignore
+import pandas as pd  # type: ignore  # pylint: disable=import-error
 
 
 from .__utils__ import BaseRenewablesNinjaThread, total_profile_output

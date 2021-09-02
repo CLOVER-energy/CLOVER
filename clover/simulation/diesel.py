@@ -22,8 +22,8 @@ import dataclasses
 
 from typing import Tuple
 
-import numpy as np
-import pandas as pd
+import numpy as np  # pylint: disable=import-error
+import pandas as pd  # pylint: disable=import-error
 
 
 __all__ = (

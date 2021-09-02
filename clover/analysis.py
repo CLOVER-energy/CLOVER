@@ -21,12 +21,12 @@ import os
 
 from typing import Dict, Optional
 
-import numpy as np  # type: ignore
-import pandas as pd  # type: ignore
-import seaborn as sns  # type: ignore
+import numpy as np  # type: ignore  # pylint: disable=import-error
+import pandas as pd  # type: ignore  # pylint: disable=import-error
+import seaborn as sns  # type: ignore  # pylint: disable=import-error
 
-import matplotlib.pyplot as plt  # type: ignore
-from tqdm import tqdm  # type: ignore
+import matplotlib.pyplot as plt  # type: ignore  # pylint: disable=import-error
+from tqdm import tqdm  # type: ignore  # pylint: disable=import-error
 
 from .__utils__ import CUT_OFF_TIME, DemandType, KeyResults
 

@@ -26,10 +26,10 @@ import os
 from logging import Logger
 from typing import Any, Dict, List, Optional, Tuple, Union
 
-import numpy as np  # type: ignore
-import pandas as pd  # type: ignore
+import numpy as np  # type: ignore  # pylint: disable=import-error
+import pandas as pd  # type: ignore  # pylint: disable=import-error
 
-from tqdm import tqdm  # type: ignore
+from tqdm import tqdm  # type: ignore  # pylint: disable=import-error
 
 from ..__utils__ import (
     BColours,
@@ -364,7 +364,7 @@ def _get_electric_battery_storage_profile(
         remaining_profile = (grid_energy <= 0).mul(load_energy)  # type: ignore
         # Then take energy from PV
         battery_storage_profile = pd.DataFrame(
-            renewables_energy.values.subtrace(remaining_profile.values)
+            renewables_energy.values.subtrace(remaining_profile.values)  # type: ignore
         )
         renewables_energy_used_directly = pd.DataFrame(
             (battery_storage_profile > 0)  # type: ignore
@@ -429,7 +429,8 @@ def _get_water_storage_profile(
     tank_storage_profile: pd.DataFrame = pd.DataFrame(remaining_profile.values)
 
     return (
-        0.001 * pd.DataFrame([0] * processed_total_clean_water_load.size),
+        0.001  # type: ignore
+        * pd.DataFrame([0] * processed_total_clean_water_load.size),  # type: ignore
         renewable_clean_water_used_directly,
         tank_storage_profile,
     )
@@ -447,7 +448,7 @@ def run_simulation(
     scenario: Scenario,
     simulation: Simulation,
     electric_storage_size: float,
-    total_clean_water_load: pd.DataFrame,
+    total_clean_water_load: Optional[pd.DataFrame],
     total_electric_load: pd.DataFrame,
     total_solar_power_produced: pd.DataFrame,
 ) -> Tuple[datetime.timedelta, pd.DataFrame, SystemDetails]:
@@ -560,6 +561,11 @@ def run_simulation(
     total_clean_water_supplied: Optional[pd.DataFrame] = None
 
     if ResourceType.CLEAN_WATER in scenario.resource_types:
+        if total_clean_water_load is None:
+            raise Exception(
+                f"{BColours.fail}A simulation was run that specified a clean-water "
+                + f"load but no clean-water load was passed in.{BColours.endc}"
+            )
         # Process the load profile based on the relevant scenario.
         processed_total_clean_water_load = pd.DataFrame(
             _get_processed_load_profile(scenario, total_clean_water_load)[
@@ -720,7 +726,7 @@ def run_simulation(
         water_demand_met_by_excess_energy: Dict[int, float] = {}
         water_supplied_by_excess_energy: Dict[int, float] = {}
         water_surplus: Dict[int, float] = {}
-        water_deficit: List[float] = []
+        # water_deficit: List[float] = []
 
     # Initialise energy accounting parameters
     energy_surplus: Dict[int, float] = {}
@@ -936,9 +942,9 @@ def run_simulation(
     battery_health_frame: pd.DataFrame = pd.DataFrame(  # type: ignore
         list(battery_health.values()), index=list(battery_health.keys())
     ).sort_index()
-    energy_deficit_frame: pd.DataFrame = pd.DataFrame(  # type: ignore
-        list(energy_deficit.values()), index=list(energy_deficit.keys())
-    ).sort_index()
+    # energy_deficit_frame: pd.DataFrame = pd.DataFrame(  # type: ignore
+    #     list(energy_deficit.values()), index=list(energy_deficit.keys())
+    # ).sort_index()
     energy_surplus_frane: pd.DataFrame = pd.DataFrame(  # type: ignore
         list(energy_surplus.values()), index=list(energy_surplus.keys())
     ).sort_index()
@@ -1181,7 +1187,7 @@ def run_simulation(
         unmet_energy,
         blackout_times,
         renewables_energy_used_directly,
-        storage_power_supplied,
+        storage_power_supplied_frame,
         grid_energy,
         diesel_energy,
         diesel_times,
@@ -1223,82 +1229,82 @@ def run_simulation(
     return time_delta, system_performance_outputs, system_details
 
 
-#%%
-class MinigridOld:
-    """
-    Represents an energy system in the context of CLOVER.
+# #%%
+# class MinigridOld:
+#     """
+#     Represents an energy system in the context of CLOVER.
 
-    """
+#     """
 
-    def __init__(self):
-        """
-        Instantiate a :class:`minigrid.Minigrid` instance.
+#     def __init__(self):
+#         """
+#         Instantiate a :class:`minigrid.Minigrid` instance.
 
-        """
+#         """
 
-        self.kerosene_data_filepath = os.path.join(
-            self.location_filepath, "Load", "Devices in use", "kerosene_in_use.csv"
-        )
-        self.kerosene_usage = pd.read_csv(
-            self.kerosene_data_filepath, index_col=0
-        ).reset_index(drop=True)
+#         self.kerosene_data_filepath = os.path.join(
+#             self.location_filepath, "Load", "Devices in use", "kerosene_in_use.csv"
+#         )
+#         self.kerosene_usage = pd.read_csv(
+#             self.kerosene_data_filepath, index_col=0
+#         ).reset_index(drop=True)
 
-    #%%
-    # =============================================================================
-    # SIMULATION FUNCTIONS
-    #       This function simulates the energy system of a given capacity and to
-    #       the parameters stated in the input files.
-    # =============================================================================
+#     #%%
+#     # =============================================================================
+#     # SIMULATION FUNCTIONS
+#     #       This function simulates the energy system of a given capacity and to
+#     #       the parameters stated in the input files.
+#     # =============================================================================
 
-    #%%
-    # =============================================================================
-    # GENERAL FUNCTIONS
-    #       These functions allow users to save simulations and open previous ones,
-    #       and resimulate the entire lifetime of a previously-optimised system
-    #       including consideration of increasing capacity.
-    # =============================================================================
+#     #%%
+#     # =============================================================================
+#     # GENERAL FUNCTIONS
+#     #       These functions allow users to save simulations and open previous ones,
+#     #       and resimulate the entire lifetime of a previously-optimised system
+#     #       including consideration of increasing capacity.
+#     # =============================================================================
 
-    def lifetime_simulation(self, optimisation_report):
-        """
-        Simulates a minigrid over its lifetime.
+#     def lifetime_simulation(self, optimisation_report):
+#         """
+#         Simulates a minigrid over its lifetime.
 
-        Simulates a minigrid system over the course of its lifetime to get the complete
-        technical performance of the system
+#         Simulates a minigrid system over the course of its lifetime to get the complete
+#         technical performance of the system
 
-        Inputs:
-            - optimisation_report:
-                Report of outputs from Optimisation().multiple_optimisation_step()
+#         Inputs:
+#             - optimisation_report:
+#                 Report of outputs from Optimisation().multiple_optimisation_step()
 
-        Outputs:
-            - lifetime_output:
-                The lifetime technical performance of the system
+#         Outputs:
+#             - lifetime_output:
+#                 The lifetime technical performance of the system
 
-        """
-        # Initialise
-        optimisation_report = optimisation_report.reset_index(drop=True)
-        lifetime_output = pd.DataFrame([])
-        simulation_periods = np.size(optimisation_report, 0)
-        # Iterate over all simulation periods
-        for sim in range(simulation_periods):
-            system_performance_outputs = self.simulation(
-                start_year=int(optimisation_report["Start year"][sim]),
-                end_year=int(optimisation_report["End year"][sim]),
-                pv_size=float(optimisation_report["Initial PV size"][sim]),
-                electric_storage_size=float(
-                    optimisation_report["Initial storage size"][sim]
-                ),
-            )
-            lifetime_output = pd.concat(
-                [lifetime_output, system_performance_outputs[0]], axis=0
-            )
-        return lifetime_output.reset_index(drop=True)
+#         """
+#         # Initialise
+#         optimisation_report = optimisation_report.reset_index(drop=True)
+#         lifetime_output = pd.DataFrame([])
+#         simulation_periods = np.size(optimisation_report, 0)
+#         # Iterate over all simulation periods
+#         for sim in range(simulation_periods):
+#             system_performance_outputs = self.simulation(
+#                 start_year=int(optimisation_report["Start year"][sim]),
+#                 end_year=int(optimisation_report["End year"][sim]),
+#                 pv_size=float(optimisation_report["Initial PV size"][sim]),
+#                 electric_storage_size=float(
+#                     optimisation_report["Initial storage size"][sim]
+#                 ),
+#             )
+#             lifetime_output = pd.concat(
+#                 [lifetime_output, system_performance_outputs[0]], axis=0
+#             )
+#         return lifetime_output.reset_index(drop=True)
 
-    #%%
-    # =============================================================================
-    # ENERGY BALANCE FUNCTIONS
-    #       These functions identify the sources and uses of energy in the system,
-    #       such as generation, loads and the overall balance
-    # =============================================================================
-    #%% Energy balance
+#     #%%
+#     # =============================================================================
+#     # ENERGY BALANCE FUNCTIONS
+#     #       These functions identify the sources and uses of energy in the system,
+#     #       such as generation, loads and the overall balance
+#     # =============================================================================
+#     #%% Energy balance
 
-    #%% Energy usage
+#     #%% Energy usage

@@ -23,11 +23,11 @@ import os
 import sys
 
 from argparse import Namespace
-from typing import Any, List, Optional
+from typing import Any, Dict, List, Optional
 
-import pandas as pd  # type: ignore
+import pandas as pd  # type: ignore  # pylint: disable=import-error
 
-from tqdm import tqdm  # type: ignore
+from tqdm import tqdm  # type: ignore  # pylint: disable=import-error
 
 from . import analysis, argparser
 from .fileparser import (
@@ -46,6 +46,7 @@ from .__utils__ import (
     BColours,
     DONE,
     FAILED,
+    InternalError,
     ResourceType,
     get_logger,
     InputFileError,
@@ -263,12 +264,12 @@ def main(args: List[Any]) -> None:
                 )
                 raise
         if confirm_overwrite:
-            output = parsed_args.output
+            output: str = str(parsed_args.output)
         else:
             output = input("Specify new output folder name: ")
         print(f"Output directory {output} will be used for simulation results.")
     else:
-        output: str = datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
+        output = datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
 
     # Verify the location as containing all the required files.
     print("Verifying location information ................................    ", end="")
@@ -364,6 +365,10 @@ def main(args: List[Any]) -> None:
             parsed_args.refetch,
             num_ninjas,
         )
+        if weather_data_thread is None:
+            raise InternalError(
+                "Weather data thread failed to successfully instantiate."
+            )
         weather_data_thread.start()
         logger.info(
             "Weather-data thread successfully instantiated. See %s for details.",
@@ -395,6 +400,10 @@ def main(args: List[Any]) -> None:
     # Generate and save the device-ownership profiles.
     logger.info("Processing device informaiton.")
     # load_logger = get_logger(load.LOAD_LOGGER_NAME)
+
+    initial_electric_hourly_loads: Optional[Dict[str, pd.DataFrame]] = None
+    total_electric_load: Optional[pd.DataFrame] = None
+    electric_yearly_load_statistics: Optional[pd.DataFrame] = None
 
     if ResourceType.ELECTRIC in scenario.resource_types:
         try:
@@ -430,10 +439,12 @@ def main(args: List[Any]) -> None:
                 BColours.endc,
             )
             raise
-    else:
-        initial_electric_hourly_loads = None
-        total_electric_load = None
-        electric_yearly_load_statistics = None
+
+    initial_clean_water_hourly_loads: Optional[Dict[str, pd.DataFrame]] = None
+    total_clean_water_load: Optional[pd.DataFrame] = None
+    clean_water_yearly_load_statistics: Optional[  # pylint: disable=unused-variable
+        pd.DataFrame
+    ] = None
 
     if ResourceType.CLEAN_WATER in scenario.resource_types:
         # Raise an error if there are no clean-water devices specified.
@@ -486,10 +497,6 @@ def main(args: List[Any]) -> None:
                 BColours.endc,
             )
             raise
-    else:
-        initial_clean_water_hourly_loads = None
-        total_clean_water_load = None
-        clean_water_yearly_load_statistics = None
 
     # Generate the grid-availability profiles.
     logger.info("Generating grid-availability profiles.")
@@ -547,10 +554,10 @@ def main(args: List[Any]) -> None:
             generation_inputs["start_year"],
             location.max_years,
         )
-        total_temperature_output = total_weather_output[0]
-        total_precipitation_output = total_weather_output[1]
-        total_solar_irradiance_output = total_weather_output[2]
-        total_cloud_cover_fraction_output = total_weather_output[3]
+        total_temperature_output = total_weather_output[0]  # type: ignore  # pylint: disable=unused-variable
+        total_precipitation_output = total_weather_output[1]  # type: ignore  # pylint: disable=unused-variable
+        total_solar_irradiance_output = total_weather_output[2]  # type: ignore  # pylint: disable=unused-variable
+        total_cloud_cover_fraction_output = total_weather_output[3]  # type: ignore  # pylint: disable=unused-variable
         logger.info("Total weather output successfully computed and saved.")
 
     logger.info(
@@ -631,7 +638,7 @@ def main(args: List[Any]) -> None:
                     simulation,
                     parsed_args.storage_size,
                     total_clean_water_load,
-                    0.001 * total_electric_load,
+                    0.001 * total_electric_load,  # type: ignore
                     total_solar_output,
                 )
             except Exception as e:
@@ -661,7 +668,7 @@ def main(args: List[Any]) -> None:
             system_details.file_information = input_file_info
 
             # Compute the key results.
-            key_results = analysis.get_key_results(
+            key_results = analysis.get_key_results(  # type: ignore
                 grid_inputs[scenario.grid_type],
                 simulation.end_year - simulation.start_year,
                 system_performance_outputs,
@@ -670,7 +677,7 @@ def main(args: List[Any]) -> None:
 
             if parsed_args.analyse:
                 # Generate and save the various plots.
-                analysis.plot_outputs(
+                analysis.plot_outputs(  # type: ignore
                     grid_inputs[scenario.grid_type],
                     grid_profile,
                     initial_clean_water_hourly_loads,
@@ -681,7 +688,7 @@ def main(args: List[Any]) -> None:
                     simulation_number,
                     system_performance_outputs,
                     total_clean_water_load,
-                    0.001 * total_electric_load,
+                    0.001 * total_electric_load,  # type: ignore
                     total_solar_output,
                 )
             else:
@@ -714,6 +721,18 @@ def main(args: List[Any]) -> None:
         )
         optimisation_times: List[str] = []
 
+        if optimisation_inputs is None:
+            raise InputFileError(
+                "optimisation inputs",
+                "Optimisation inputs were not specified despite an optimisation being "
+                "called.",
+            )
+        if electric_yearly_load_statistics is None:
+            raise InternalError(
+                "Electric yearly load statistics were not correctly computed despite "
+                "being needed for an optimisation."
+            )
+
         for optimisation_number, optimisation in enumerate(
             tqdm(optimisations, desc="optimisations", unit="optimisation"), 1
         ):
@@ -732,7 +751,7 @@ def main(args: List[Any]) -> None:
                     optimisation_inputs,
                     scenario,
                     total_clean_water_load,
-                    0.001 * total_electric_load,
+                    0.001 * total_electric_load,  # type: ignore
                     total_solar_output,
                     electric_yearly_load_statistics,
                 )
