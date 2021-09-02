@@ -20,4 +20,4 @@ jobs:
           pip install types-PyYAML
       - name: Analysing the code with mypy
         run: |
-          python -m mypy clover --install-types
+          python -m mypy clover
