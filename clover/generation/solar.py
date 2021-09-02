@@ -96,6 +96,7 @@ class SolarDataThread(
             "tracking": 0,
             "tilt": pv_panel.tilt,
             "azim": pv_panel.azimuthal_orientation,
+            "raw": "true",
         }
         super().__init__(
             auto_generated_files_directory,
