@@ -24,8 +24,6 @@ import enum
 from logging import Logger
 from typing import Any, Dict
 
-from ..__utils__ import BColours, InputFileError
-
 
 __all__ = (
     "HybridPVTPanel",
@@ -125,6 +123,8 @@ class PVPanel(SolarPanel, panel_type=SolarPanelType.PV):
             A :class:`PVPanel` instance.
 
         """
+
+        logger.info("Attempting to create PVPanel from solar input data.")
 
         return cls(
             solar_inputs["azimuthal_orientation"],

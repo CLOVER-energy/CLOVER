@@ -20,8 +20,8 @@ emitted by the system, need to be assed.
 
 from typing import Any, Dict, List
 
-import numpy as np
-import pandas as pd
+import numpy as np  # pylint: disable=import-error
+import pandas as pd  # pylint: disable=import-error
 
 from .__utils__ import SIZE_INCREMENT, ImpactingComponent, LIFETIME
 from ..__utils__ import Location, hourly_profile_to_daily_sum

@@ -25,10 +25,10 @@ import os
 from logging import Logger
 from typing import Any, Dict, Optional, Set, Tuple
 
-import numpy as np
-import pandas as pd
+import numpy as np  # pylint: disable=import-error
+import pandas as pd  # pylint: disable=import-error
 
-from tqdm import tqdm  # type: ignore
+from tqdm import tqdm  # type: ignore  # pylint: disable=import-error
 
 from ..__utils__ import (
     BColours,
@@ -589,11 +589,8 @@ def process_device_hourly_power(
         if resource_type == ResourceType.ELECTRIC:
             if device.electric_power is None:
                 raise Exception(
-                    "%sInternal error processing device '%s', electric power "
-                    "unexpectedly `None`.%s",
-                    BColours.fail,
-                    device.name,
-                    BColours.endc,
+                    f"{BColours.fail}Internal error processing device "
+                    + f"'{device.name}', electric power unexpectedly `None`.{BColours.endc}",
                 )
             device_load = hourly_device_usage.mul(  # type: ignore
                 float(device.electric_power)
@@ -604,11 +601,8 @@ def process_device_hourly_power(
         elif resource_type == ResourceType.CLEAN_WATER:
             if device.clean_water_usage is None:
                 raise Exception(
-                    "%sInternal error processing device '%s', water usage "
-                    "unexpectedly `None`.%s",
-                    BColours.fail,
-                    device.name,
-                    BColours.endc,
+                    f"{BColours.fail}Internal error processing device "
+                    + f"'{device.name}', water usage unexpectedly `None`.{BColours.endc}",
                 )
 
             device_load = hourly_device_usage.mul(  # type: ignore

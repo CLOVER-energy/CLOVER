@@ -23,12 +23,11 @@ import os
 import shutil
 import sys
 
-from typing import Any, List
+from typing import Any, List, Optional
 
 import re
 
 from ..__utils__ import (
-    InputFileError,
     InternalError,
     get_logger,
     LOCATIONS_FOLDER_NAME,
@@ -42,9 +41,6 @@ __all__ = (
     "FILE",
     "NEW_LOCATION_DATA_FILE",
 )
-
-
-from ..__utils__ import get_logger, LOCATIONS_FOLDER_NAME
 
 
 # The keyword used to denote the contents of a file or folder.
@@ -187,7 +183,7 @@ def _parse_args(args: List[Any]) -> argparse.Namespace:
 
 
 def create_new_location(
-    from_existing: str,
+    from_existing: Optional[str],
     location: str,
     logger: logging.Logger,
     update: bool,

@@ -26,12 +26,12 @@ import os
 from typing import Any, Dict, List, Optional, Set, Union
 
 import json
-import numpy as np
-import pandas as pd
-import scipy  # type: ignore
-import yaml
+import numpy as np  # pylint: disable=import-error
+import pandas as pd  # pylint: disable=import-error
+import scipy  # type: ignore  # pylint: disable=import-error
+import yaml  # pylint: disable=import-error
 
-from tqdm import tqdm  # type: ignore
+from tqdm import tqdm  # type: ignore  # pylint: disable=import-error
 
 __all__ = (
     "BColours",
@@ -1515,7 +1515,7 @@ class SystemAppraisal:
     financial_appraisal: FinancialAppraisal
     system_details: SystemDetails
     technical_appraisal: TechnicalAppraisal
-    criteria: Dict[Criterion, float] = dict()
+    criteria: Optional[Dict[Criterion, float]] = None
 
     def to_dict(self) -> Dict[str, Any]:
         """
@@ -1532,7 +1532,9 @@ class SystemAppraisal:
             "financial_appraisal": self.financial_appraisal.to_dict(),
             "system_details": self.system_details.to_dict(),
             "technical_appraisal": self.technical_appraisal.to_dict(),
-            "criteria": {str(key.value): value for key, value in self.criteria.items()},
+            "criteria": {str(key.value): value for key, value in self.criteria.items()}
+            if self.criteria is not None
+            else "None",
         }
 
 

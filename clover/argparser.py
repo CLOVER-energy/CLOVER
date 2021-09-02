@@ -17,7 +17,7 @@ import logging
 
 from typing import Any, List
 
-from .__utils__ import BColours, OperatingMode
+from .__utils__ import BColours
 
 __all__ = (
     "parse_args",

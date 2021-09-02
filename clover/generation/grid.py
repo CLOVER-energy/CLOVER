@@ -23,9 +23,9 @@ import random
 from logging import Logger
 from typing import Dict, List
 
-import pandas as pd
+import pandas as pd  # pylint: disable=import-error
 
-from tqdm import tqdm  # type: ignore
+from tqdm import tqdm  # type: ignore  # pylint: disable=import-error
 
 __all__ = (
     "get_lifetime_grid_status",

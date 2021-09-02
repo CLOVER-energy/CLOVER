@@ -19,7 +19,7 @@ another.
 """
 
 from logging import Logger
-from typing import Any, Dict, List, Type, Union
+from typing import Any, Dict, List, Union
 
 from ..__utils__ import (
     BColours,
@@ -245,7 +245,7 @@ class MultiInputConvertor(Convertor):
             )
             raise Exception(
                 f"{BColours.fail}Output load type invalid: {str(e)}{BColours.endc}"
-            )
+            ) from None
 
         # Determine the power consumption of the device.
         maximum_output = input_data["maximum_output"]
@@ -261,7 +261,7 @@ class MultiInputConvertor(Convertor):
             )
             raise Exception(
                 f"{BColours.fail}Invalid value type in conversion file: {str(e)}{BColours.endc}"
-            )
+            ) from None
 
         input_resource_consumption: Dict[ResourceType, float] = dict()
 
@@ -280,7 +280,7 @@ class MultiInputConvertor(Convertor):
                 )
                 raise Exception(
                     f"{BColours.fail}Invalid value type in conversion file: {str(e)}{BColours.endc}"
-                )
+                ) from None
 
         return cls(
             input_resource_consumption,
@@ -346,7 +346,7 @@ class WaterSource(Convertor):
             )
             raise Exception(
                 f"{BColours.fail}Output load type invalid: {str(e)}{BColours.endc}"
-            )
+            ) from None
 
         # Determine the power consumption of the device.
         maximum_output = input_data["maximum_output"]
@@ -363,7 +363,7 @@ class WaterSource(Convertor):
             )
             raise Exception(
                 f"{BColours.fail}Invalid value type in conversion file: {str(e)}{BColours.endc}"
-            )
+            ) from None
 
         try:
             corresponding_input = float(corresponding_input)
@@ -377,7 +377,7 @@ class WaterSource(Convertor):
             )
             raise Exception(
                 f"{BColours.fail}Invalid value type in conversion file: {str(e)}{BColours.endc}"
-            )
+            ) from None
 
         consumption = maximum_output / corresponding_input
 

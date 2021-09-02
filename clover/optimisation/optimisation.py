@@ -31,36 +31,33 @@ functions which can be used to carry out an optimisation:
 """
 
 import datetime
-import os
 
 from logging import Logger
 from typing import Any, Dict, List, Optional, Tuple
 
-import numpy as np  # type: ignore
-import pandas as pd  # type: ignore
+import numpy as np  # type: ignore  # pylint: disable=import-error
+import pandas as pd  # type: ignore  # pylint: disable=import-error
 
-from tqdm import tqdm  # type: ignore
+from tqdm import tqdm  # type: ignore  # pylint: disable=import-error
 
 from ..simulation import energy_system
 
 from ..__utils__ import (
     DONE,
+    InternalError,
     Scenario,
     Location,
-    LOCATIONS_FOLDER_NAME,
     OptimisationParameters,
     Simulation,
-    SystemDetails,
 )
 from ..conversion.conversion import Convertor
 from .appraisal import appraise_system, SystemAppraisal
 from .__utils__ import (
+    Criterion,
     CriterionMode,
     Optimisation,
-    Criterion,
     PVSystemSize,
     StorageSystemSize,
-    Criterion,
     ThresholdMode,
 )
 
@@ -101,7 +98,7 @@ def _fetch_optimum_system(
     for (criterion, criterion_mode) in optimisation.optimisation_criteria.items():
         # Sort by the optimisation criterion.
         sufficient_systems.sort(
-            key=lambda appraisal: appraisal.criteria[criterion],
+            key=lambda appraisal, crit=criterion: appraisal.criteria[crit],  # type: ignore
             reverse=(criterion_mode == CriterionMode.MAXIMISE),
         )
 
@@ -129,7 +126,7 @@ def _single_line_simulation(
     previous_system: Optional[SystemAppraisal],
     scenario: Scenario,
     start_year: int,
-    total_clean_water_load: pd.DataFrame,
+    total_clean_water_load: Optional[pd.DataFrame],
     total_electric_load: pd.DataFrame,
     total_solar_power_produced: pd.DataFrame,
     yearly_electric_load_statistics: pd.DataFrame,
@@ -411,7 +408,7 @@ def _find_optimum_system(
     scenario: Scenario,
     start_year: int,
     system_appraisals: List[SystemAppraisal],
-    total_clean_water_load: pd.DataFrame,
+    total_clean_water_load: Optional[pd.DataFrame],
     total_electric_load: pd.DataFrame,
     total_solar_power_produced: pd.DataFrame,
     yearly_electric_load_statistics: pd.DataFrame,
@@ -543,6 +540,10 @@ def _get_sufficient_appraisals(
 
     # Cycle through the provided appraisals.
     for appraisal in system_appraisals:
+        if appraisal.criteria is None:
+            raise InternalError(
+                "A system appraisal was returned which does not have criteria defined."
+            )
         criteria_met = set()
         for (
             threshold_criterion,
@@ -591,7 +592,7 @@ def _simulation_iteration(
     scenario: Scenario,
     start_year: int,
     storage_sizes: StorageSystemSize,
-    total_clean_water_load: pd.DataFrame,
+    total_clean_water_load: Optional[pd.DataFrame],
     total_electric_load: pd.DataFrame,
     total_solar_power_produced: pd.DataFrame,
     yearly_electric_load_statistics: pd.DataFrame,
@@ -876,7 +877,7 @@ def _optimisation_step(
     scenario: Scenario,
     start_year: int,
     storage_sizes: StorageSystemSize,
-    total_clean_water_load: pd.DataFrame,
+    total_clean_water_load: Optional[pd.DataFrame],
     total_electric_load: pd.DataFrame,
     total_solar_power_produced: pd.DataFrame,
     yearly_electric_load_statistics: pd.DataFrame,
@@ -1007,7 +1008,7 @@ def multiple_optimisation_step(
     optimisation: Optimisation,
     optimisation_parameters: OptimisationParameters,
     scenario: Scenario,
-    total_clean_water_load: pd.DataFrame,
+    total_clean_water_load: Optional[pd.DataFrame],
     total_electric_load: pd.DataFrame,
     total_solar_power_produced: pd.DataFrame,
     yearly_electric_load_statistics: pd.DataFrame,
@@ -1164,373 +1165,403 @@ def multiple_optimisation_step(
     return time_delta, results
 
 
-#%%
-class OptimisationOld:
-    def __init__(self):
-        self.location = "Bahraich"
-        self.CLOVER_filepath = os.getcwd()
-        self.location_filepath = os.path.join(
-            self.CLOVER_filepath, LOCATIONS_FOLDER_NAME, self.location
-        )
-        self.optimisation_filepath = os.path.join(
-            self.location_filepath, "Optimisation", "Optimisation inputs.csv"
-        )
-        self.optimisation_inputs = pd.read_csv(
-            self.optimisation_filepath, header=None, index_col=0
-        ).round(decimals=3)
-        self.maximum_criteria = [
-            "Blackouts",
-            "LCUE ($/kWh)",
-            "Emissions intensity (gCO2/kWh)",
-            "Unmet energy fraction",
-            "Cumulative cost ($)",
-            "Cumulative system cost ($)",
-            "Total cost ($)",
-            "Total system cost ($)",
-            "Cumulative GHGs (kgCO2eq)",
-            "Cumulative system GHGs (kgCO2eq)",
-            "Total GHGs (kgCO2eq)",
-            "Total system GHGs (kgCO2eq)",
-        ]
-        self.minimum_criteria = [
-            "Renewables fraction",
-            "Kerosene displacement",
-            "Kerosene cost mitigated ($)",
-            "Kerosene GHGs mitigated (kgCO2eq)",
-        ]
-        self.optimum_criterion = str(
-            self.optimisation_inputs[1]["Optimisation criterion"]
-        )
-        self.optimisation_storage = os.path.join(
-            self.location_filepath, "Optimisation", "Saved optimisations"
-        )
+# #%%
+# class OptimisationOld:
+#     def __init__(self):
+#         self.location = "Bahraich"
+#         self.CLOVER_filepath = os.getcwd()
+#         self.location_filepath = os.path.join(
+#             self.CLOVER_filepath, LOCATIONS_FOLDER_NAME, self.location
+#         )
+#         self.optimisation_filepath = os.path.join(
+#             self.location_filepath, "Optimisation", "Optimisation inputs.csv"
+#         )
+#         self.optimisation_inputs = pd.read_csv(
+#             self.optimisation_filepath, header=None, index_col=0
+#         ).round(decimals=3)
+#         self.maximum_criteria = [
+#             "Blackouts",
+#             "LCUE ($/kWh)",
+#             "Emissions intensity (gCO2/kWh)",
+#             "Unmet energy fraction",
+#             "Cumulative cost ($)",
+#             "Cumulative system cost ($)",
+#             "Total cost ($)",
+#             "Total system cost ($)",
+#             "Cumulative GHGs (kgCO2eq)",
+#             "Cumulative system GHGs (kgCO2eq)",
+#             "Total GHGs (kgCO2eq)",
+#             "Total system GHGs (kgCO2eq)",
+#         ]
+#         self.minimum_criteria = [
+#             "Renewables fraction",
+#             "Kerosene displacement",
+#             "Kerosene cost mitigated ($)",
+#             "Kerosene GHGs mitigated (kgCO2eq)",
+#         ]
+#         self.optimum_criterion = str(
+#             self.optimisation_inputs[1]["Optimisation criterion"]
+#         )
+#         self.optimisation_storage = os.path.join(
+#             self.location_filepath, "Optimisation", "Saved optimisations"
+#         )
 
-    #%%
+#     #%%
 
-    def changing_parameter_optimisation(
-        self, parameter, parameter_values=[], results_folder_name=[]
-    ):
-        """
-        Function:
-            Allows the user to change a parameter in the "Optimisation inputs.csv" file automatically
-                and run many optimisation runs, saving each one.
-        Inputs:
-            parameter               Parameter to be changed
-            parameter_values        Values for the threshold criterion in the form [min, max, step]
-            results_folder_name     Folder where the results will be saved
-        Outputs:
-            Saved outputs of the optimisations for each parameter value, and a separate saved
-            summary of all outputs for comparison.
-        """
-        #   Initialise
-        parameter = str(parameter)
-        summarised_results = pd.DataFrame()
-        if results_folder_name != None:
-            results_folder = str(results_folder_name)
-        else:
-            results_folder = self.optimisation_storage + str(
-                datetime.datetime.now().strftime("%Y-%m-%d %H-%M-%S")
-            )
-        #   Iterate over the range of threshold steps
-        value_counter = 1
-        for parameter_value in parameter_values:
-            print(
-                "\nParameter value "
-                + str(value_counter)
-                + " of "
-                + str(len(parameter_values))
-            )
-            value_counter += 1
-            #   Set the threshold value for this step
-            self.change_parameter(parameter, parameter_value)
-            #   Perform optimisation
-            optimisation_results = self.multiple_optimisation_step()
-            #   Save optimisation
-            optimisation_filename = os.path.join(
-                results_folder, parameter + " = {:.2f}".format(parameter_value)
-            )
-            self.save_optimisation(
-                optimisation_name=optimisation_results, filename=optimisation_filename
-            )
-            new_results = self.summarise_optimisation_results(optimisation_results)
-            summarised_results = pd.concat([summarised_results, new_results], axis=0)
-        #   Format and save output summary
-        parameter_values = pd.DataFrame({"Parameter value": parameter_values})
-        summary_output = pd.concat(
-            [
-                parameter_values.reset_index(drop=True),
-                summarised_results.reset_index(drop=True),
-            ],
-            axis=1,
-        )
-        summary_filename = os.path.join(
-            results_folder, parameter + " lifetime summary of results"
-        )
-        self.save_optimisation(summary_output, filename=summary_filename)
+#     def changing_parameter_optimisation(
+#         self, parameter: str, parameter_values=[], results_folder_name=[]
+#     ):
+#         """
+#         Allows the user to change a parameter in the output file.
 
-    #%%
-    # =============================================================================
-    # SYSTEM APPRAISALS
-    #       These system appraisal functions evaluate the technical, financial and
-    #       overall performance of the energy systems that have been simulated.
-    # =============================================================================
+#         Allows the user to change a parameter in the "Optimisation inputs.csv" file
+#         automatically and run many optimisation runs, saving each one.
 
-    #%%
-    # =============================================================================
-    # GENERAL FUNCTIONS
-    #       These functions perform various general processes for the optimisation
-    #       functions including checking thresholds, saving optimisations as .csv
-    #       files and summarising results.
-    # =============================================================================
-    def change_parameter(self, parameter, new_parameter_value):
-        """
-        Function:
-            Edits .csv file to change parameter value in "Optimisation inputs.csv"
-        Inputs:
-            parameter               Name of the parameter to be changed
-            new_parameter_value     Value for the parameter to be changed
-        Outputs:
-            Updated "Optimisation inputs.csv" file with the new parameter
-        """
-        parameter = str(parameter)
-        new_optimisation_inputs = self.optimisation_inputs
-        new_optimisation_inputs[1][parameter] = float(new_parameter_value)
-        new_optimisation_inputs.to_csv(
-            self.location_filepath + "/Optimisation/Optimisation inputs.csv",
-            header=None,
-        )
+#         Inputs:
+#             - parameter:
+#                 Parameter to be changed
+#             - parameter_values:
+#                 Values for the threshold criterion in the form [min, max, step]
+#             - results_folder_name:
+#                 Folder where the results will be saved
 
-    def save_optimisation(self, optimisation_name, filename=None):
-        """
-        Function:
-            Saves optimisation outputs to a .csv file
-        Inputs:
-            optimisation_name     DataFrame output from Optimisation().multiple_optimisation_step(...)
-            filename              Name of .csv file to be saved as (defaults to timestamp)
-        Outputs:
-            Optimisation saved to .csv file
-        """
-        if filename != None:
-            optimisation_name.to_csv(
-                os.path.join(self.optimisation_storage, str(filename) + ".csv")
-            )
-        else:
-            filename = str(datetime.datetime.now().strftime("%Y-%m-%d %H-%M-%S"))
-            optimisation_name.to_csv(
-                os.path.join(self.optimisation_storage, filename + ".csv")
-            )
-        print("\nOptimisation saved as " + filename + ".csv")
+#         Outputs:
+#             Saved outputs of the optimisations for each parameter value, and a separate
+#             saved summary of all outputs for comparison.
 
-    def open_optimisation(self, filename):
-        """
-        Function:
-            Opens a previously saved optimisation from a .csv file
-        Inputs:
-            filename            Name of the .csv file to be opened (not including .csv)
-        Outputs:
-            DataFrame of previously performed optimisation
-        """
-        output = pd.read_csv(
-            os.path.join(self.optimisation_storage, str(filename) + ".csv", index_col=0)
-        )
-        return output
+#         """
 
-    def summarise_optimisation_results(self, optimisation_results):
-        """
-        Function:
-            Summarise the steps of the optimisation results into a output for the
-                lifetime of the system
-        Inputs:
-            optimisation_results    Results of Optimisation().multiple_optimisation_step(...)
-        Outputs:
-            result                  Aggregated results for the lifetime of the system
-        """
-        #   Data where the inital and/or final entries are most relevant
-        start_year = int(optimisation_results["Start year"].iloc[0])
-        end_year = int(optimisation_results["End year"].iloc[-1])
-        step_length = int(
-            optimisation_results["End year"].iloc[0]
-            - optimisation_results["Start year"].iloc[0]
-        )
-        optimisation_length = end_year - start_year
-        max_PV = optimisation_results["Initial PV size"].iloc[-1]
-        max_storage = optimisation_results["Initial storage size"].iloc[-1]
-        max_diesel = optimisation_results["Diesel capacity"].iloc[-1]
-        LCUE = optimisation_results["LCUE ($/kWh)"].iloc[-1]
-        emissions_intensity = optimisation_results[
-            "Emissions intensity (gCO2/kWh)"
-        ].iloc[-1]
-        total_GHGs = optimisation_results["Cumulative GHGs (kgCO2eq)"].iloc[-1]
-        total_system_GHGs = optimisation_results[
-            "Cumulative system GHGs (kgCO2eq)"
-        ].iloc[-1]
-        #   Data where the mean is most relevant
-        blackouts = np.mean(optimisation_results["Blackouts"])
-        kerosene_displacement = np.mean(optimisation_results["Kerosene displacement"])
-        #   Data where the sum is most relevant
-        total_energy = np.sum(optimisation_results["Total energy (kWh)"])
-        unmet_energy = np.sum(optimisation_results["Unmet energy (kWh)"])
-        renewable_energy = np.sum(optimisation_results["Renewable energy (kWh)"])
-        storage_energy = np.sum(optimisation_results["Storage energy (kWh)"])
-        grid_energy = np.sum(optimisation_results["Grid energy (kWh)"])
-        diesel_energy = np.sum(optimisation_results["Diesel energy (kWh)"])
-        discounted_energy = np.sum(optimisation_results["Discounted energy (kWh)"])
-        diesel_fuel_usage = np.sum(optimisation_results["Diesel fuel usage (l)"])
-        total_cost = np.sum(optimisation_results["Total cost ($)"])
-        total_system_cost = np.sum(optimisation_results["Total system cost ($)"])
-        new_equipment_cost = np.sum(optimisation_results["New equipment cost ($)"])
-        new_connection_cost = np.sum(optimisation_results["New connection cost ($)"])
-        OM_cost = np.sum(optimisation_results["O&M cost ($)"])
-        diesel_cost = np.sum(optimisation_results["Diesel cost ($)"])
-        grid_cost = np.sum(optimisation_results["Grid cost ($)"])
-        kerosene_cost = np.sum(optimisation_results["Kerosene cost ($)"])
-        kerosene_cost_mitigated = np.sum(
-            optimisation_results["Kerosene cost mitigated ($)"]
-        )
-        OM_GHGs = np.sum(optimisation_results["O&M GHGs (kgCO2eq)"])
-        diesel_GHGs = np.sum(optimisation_results["Diesel GHGs (kgCO2eq)"])
-        grid_GHGs = np.sum(optimisation_results["Grid GHGs (kgCO2eq)"])
-        kerosene_GHGs = np.sum(optimisation_results["Kerosene GHGs (kgCO2eq)"])
-        kerosene_mitigated_GHGs = np.sum(
-            optimisation_results["Kerosene GHGs mitigated (kgCO2eq)"]
-        )
+#         # Initialise
+#         summarised_results = pd.DataFrame()
+#         if results_folder_name != None:
+#             results_folder = str(results_folder_name)
+#         else:
+#             results_folder = self.optimisation_storage + str(
+#                 datetime.datetime.now().strftime("%Y-%m-%d %H-%M-%S")
+#             )
 
-        #   Data which requires combinations of summary results
-        unmet_fraction = round(unmet_energy / total_energy, 3)
-        renewables_fraction = round(renewable_energy / total_energy, 3)
-        storage_fraction = round(storage_energy / total_energy, 3)
-        diesel_fraction = round(diesel_energy / total_energy, 3)
-        grid_fraction = round(grid_energy / total_energy, 3)
-        #   Combine results into output
-        results = pd.DataFrame(
-            {
-                "Start year": start_year,
-                "End year": end_year,
-                "Step length": step_length,
-                "Optimisation length": optimisation_length,
-                "Maximum PV size": max_PV,
-                "Maximum storage size": max_storage,
-                "Maximum diesel capacity": max_diesel,
-                "LCUE ($/kWh)": LCUE,
-                "Emissions intensity (gCO2/kWh)": emissions_intensity,
-                "Blackouts": blackouts,
-                "Unmet fraction": unmet_fraction,
-                "Renewables fraction": renewables_fraction,
-                "Storage fraction": storage_fraction,
-                "Diesel fraction": diesel_fraction,
-                "Grid fraction": grid_fraction,
-                "Total energy (kWh)": total_energy,
-                "Unmet energy (kWh)": unmet_energy,
-                "Renewable energy (kWh)": renewable_energy,
-                "Storage energy (kWh)": storage_energy,
-                "Grid energy (kWh)": grid_energy,
-                "Diesel energy (kWh)": diesel_energy,
-                "Discounted energy (kWh)": discounted_energy,
-                "Total cost ($)": total_cost,
-                "Total system cost ($)": total_system_cost,
-                "New equipment cost ($)": new_equipment_cost,
-                "New connection cost ($)": new_connection_cost,
-                "O&M cost ($)": OM_cost,
-                "Diesel cost ($)": diesel_cost,
-                "Grid cost ($)": grid_cost,
-                "Kerosene cost ($)": kerosene_cost,
-                "Kerosene cost mitigated ($)": kerosene_cost_mitigated,
-                "Kerosene displacement": kerosene_displacement,
-                "Diesel fuel usage (l)": diesel_fuel_usage,
-                "Total GHGs (kgCO2eq)": total_GHGs,
-                "Total system GHGs (kgCO2eq)": total_system_GHGs,
-                "Total GHGs (kgCO2eq)": total_GHGs,
-                "O&M GHGs (kgCO2eq)": OM_GHGs,
-                "Diesel GHGs (kgCO2eq)": diesel_GHGs,
-                "Grid GHGs (kgCO2eq)": grid_GHGs,
-                "Kerosene GHGs (kgCO2eq)": kerosene_GHGs,
-                "Kerosene GHGs mitigated (kgCO2eq)": kerosene_mitigated_GHGs,
-            },
-            index=["Lifetime results"],
-        )
-        return results
+#         # Iterate over the range of threshold steps
+#         value_counter = 1
+#         for parameter_value in parameter_values:
+#             print(
+#                 "\nParameter value "
+#                 + str(value_counter)
+#                 + " of "
+#                 + str(len(parameter_values))
+#             )
+#             value_counter += 1
+#             #   Set the threshold value for this step
+#             self.change_parameter(parameter, parameter_value)
+#             #   Perform optimisation
+#             optimisation_results = self.multiple_optimisation_step()
+#             #   Save optimisation
+#             optimisation_filename = os.path.join(
+#                 results_folder, parameter + " = {:.2f}".format(parameter_value)
+#             )
+#             self.save_optimisation(
+#                 optimisation_name=optimisation_results, filename=optimisation_filename
+#             )
+#             new_results = self.summarise_optimisation_results(optimisation_results)
+#             summarised_results = pd.concat([summarised_results, new_results], axis=0)
 
-    #%%
-    # =============================================================================
-    # UNSUPPORTED FUNCTIONS
-    #       This process is similar to the optimisation process used by previous
-    #       versions of CLOVER. It has been replaced by the new optimisation process
-    #       and will no longer be updated.
-    # =============================================================================
-    def complete_simulation_iteration(
-        self,
-        PV_sizes=[],
-        storage_sizes=[],
-        previous_systems=pd.DataFrame([]),
-        start_year=0,
-    ):
-        """
-        Function:
-            *** THIS FUNCTION IS OUTDATED AND HAS BEEN REPLACED BY Opimisation().find_optimum_system(...) ***
-            *** THIS FUNCTION IS INCLUDED FOR INTEREST AND WILL NO LONGER BE UPDATED ***
+#         # Format and save output summary
+#         parameter_values = pd.DataFrame({"Parameter value": parameter_values})
+#         summary_output = pd.concat(
+#             [
+#                 parameter_values.reset_index(drop=True),
+#                 summarised_results.reset_index(drop=True),
+#             ],
+#             axis=1,
+#         )
+#         summary_filename = os.path.join(
+#             results_folder, parameter + " lifetime summary of results"
+#         )
+#         self.save_optimisation(summary_output, filename=summary_filename)
 
-            Iterates simulations over a range of PV and storage sizes to give appraisals of each system.
-                Identical to the previous CLOVER method of simulation i.e. every system within a given range
-        Inputs:
-            PV_sizes            Range of PV sizes in the form [minimum, maximum, step size]
-            storage_sizes       Range of storage sizes in the form [minimum, maximum, step size]
-            previous_system     Appraisal of the system already in place before this simulation period
-            start_year          Start year of this simulation period
-        Outputs:
-            appraisals          DataFrame of system results
-        """
-        #   Initialise
-        PV_sizes = pd.DataFrame(PV_sizes)
-        storage_sizes = pd.DataFrame(storage_sizes)
-        system_appraisals = pd.DataFrame([])
-        simulation_number = 0
-        end_year = start_year + int(self.optimisation_inputs[1]["Iteration length"])
-        #   Check to see if PV sizes have been set
-        if PV_sizes.empty == True:
-            PV_size_min = float(self.optimisation_inputs[1]["PV size (min)"])
-            pv_size_max = float(self.optimisation_inputs[1]["PV size (max)"])
-            PV_size_step = float(self.optimisation_inputs[1]["PV size (step)"])
-        #   Check to see if storage sizes have been set
-        if storage_sizes.empty == True:
-            storage_size_min = float(self.optimisation_inputs[1]["Storage size (min)"])
-            storage_size_max = float(self.optimisation_inputs[1]["Storage size (max)"])
-            storage_size_step = float(
-                self.optimisation_inputs[1]["Storage size (step)"]
-            )
+#     #%%
+#     # =============================================================================
+#     # SYSTEM APPRAISALS
+#     #       These system appraisal functions evaluate the technical, financial and
+#     #       overall performance of the energy systems that have been simulated.
+#     # =============================================================================
 
-        #   Iterate over PV sizes
-        for PV in np.arange(PV_size_min, pv_size_max + PV_size_step, PV_size_step):
-            #   Iterate over storage sizes
-            for storage in np.arange(
-                storage_size_min,
-                storage_size_max + storage_size_step,
-                storage_size_step,
-            ):
-                #   Run simulation
-                simulation_number += 1
-                simulation = energy_system.run_simulation(
-                    minigrid,
-                    grid_profile,
-                    kerosene_usage,
-                    location,
-                    PV,
-                    scenario,
-                    Simulation(end_year, start_year),
-                    solar_lifetime,
-                    storage,
-                    total_load,
-                    total_solar_power_produced,
-                )
-                new_appraisal = self.system_appraisal(
-                    simulation_results, previous_systems
-                )
-                system_appraisals = pd.concat(
-                    [
-                        system_appraisals,
-                        new_appraisal.rename(
-                            {"System results": simulation_number}, axis="index"
-                        ),
-                    ],
-                    axis=0,
-                )
-        return system_appraisals
+#     #%%
+#     # =============================================================================
+#     # GENERAL FUNCTIONS
+#     #       These functions perform various general processes for the optimisation
+#     #       functions including checking thresholds, saving optimisations as .csv
+#     #       files and summarising results.
+#     # =============================================================================
+#     def change_parameter(self, parameter, new_parameter_value):
+#         """
+#         Function:
+#             Edits .csv file to change parameter value in "Optimisation inputs.csv"
+#         Inputs:
+#             parameter               Name of the parameter to be changed
+#             new_parameter_value     Value for the parameter to be changed
+#         Outputs:
+#             Updated "Optimisation inputs.csv" file with the new parameter
+#         """
+#         parameter = str(parameter)
+#         new_optimisation_inputs = self.optimisation_inputs
+#         new_optimisation_inputs[1][parameter] = float(new_parameter_value)
+#         new_optimisation_inputs.to_csv(
+#             self.location_filepath + "/Optimisation/Optimisation inputs.csv",
+#             header=None,
+#         )
+
+#     def save_optimisation(self, optimisation_name, filename=None):
+#         """
+#         Saves optimisation outputs to a .csv file
+
+#         Inputs:
+#             - optimisation_name:
+#                 DataFrame output from Optimisation().multiple_optimisation_step(...)
+#             - filename:
+#                 Name of .csv file to be saved as (defaults to timestamp)
+
+#         Outputs:
+#             Optimisation saved to .csv file
+
+#         """
+
+#         if filename != None:
+#             optimisation_name.to_csv(
+#                 os.path.join(self.optimisation_storage, str(filename) + ".csv")
+#             )
+#         else:
+#             filename = str(datetime.datetime.now().strftime("%Y-%m-%d %H-%M-%S"))
+#             optimisation_name.to_csv(
+#                 os.path.join(self.optimisation_storage, filename + ".csv")
+#             )
+#         print("\nOptimisation saved as " + filename + ".csv")
+
+#     def open_optimisation(self, filename):
+#         """
+#         Opens a previously saved optimisation from a .csv file
+
+#         Inputs:
+#             - filename:
+#                 Name of the .csv file to be opened (not including .csv)
+
+#         Outputs:
+#             - DataFrame of previously performed optimisation
+
+#         """
+
+#         output = pd.read_csv(
+#             os.path.join(self.optimisation_storage, str(filename) + ".csv", index_col=0)
+#         )
+
+#         return output
+
+#     def summarise_optimisation_results(self, optimisation_results):
+#         """
+#         Summarises the optimisation step results into a output for the system lifetime
+
+#         Inputs:
+#             - optimisation_results:
+#                 Results of Optimisation().multiple_optimisation_step(...)
+
+#         Outputs:
+#             - result:
+#                 Aggregated results for the lifetime of the system
+
+#         """
+
+#         # Data where the inital and/or final entries are most relevant
+#         start_year = int(optimisation_results["Start year"].iloc[0])
+#         end_year = int(optimisation_results["End year"].iloc[-1])
+#         step_length = int(
+#             optimisation_results["End year"].iloc[0]
+#             - optimisation_results["Start year"].iloc[0]
+#         )
+#         optimisation_length = end_year - start_year
+#         max_PV = optimisation_results["Initial PV size"].iloc[-1]
+#         max_storage = optimisation_results["Initial storage size"].iloc[-1]
+#         max_diesel = optimisation_results["Diesel capacity"].iloc[-1]
+#         LCUE = optimisation_results["LCUE ($/kWh)"].iloc[-1]
+#         emissions_intensity = optimisation_results[
+#             "Emissions intensity (gCO2/kWh)"
+#         ].iloc[-1]
+#         total_GHGs = optimisation_results["Cumulative GHGs (kgCO2eq)"].iloc[-1]
+#         total_system_GHGs = optimisation_results[
+#             "Cumulative system GHGs (kgCO2eq)"
+#         ].iloc[-1]
+#         #   Data where the mean is most relevant
+#         blackouts = np.mean(optimisation_results["Blackouts"])
+#         kerosene_displacement = np.mean(optimisation_results["Kerosene displacement"])
+#         #   Data where the sum is most relevant
+#         total_energy = np.sum(optimisation_results["Total energy (kWh)"])
+#         unmet_energy = np.sum(optimisation_results["Unmet energy (kWh)"])
+#         renewable_energy = np.sum(optimisation_results["Renewable energy (kWh)"])
+#         storage_energy = np.sum(optimisation_results["Storage energy (kWh)"])
+#         grid_energy = np.sum(optimisation_results["Grid energy (kWh)"])
+#         diesel_energy = np.sum(optimisation_results["Diesel energy (kWh)"])
+#         discounted_energy = np.sum(optimisation_results["Discounted energy (kWh)"])
+#         diesel_fuel_usage = np.sum(optimisation_results["Diesel fuel usage (l)"])
+#         total_cost = np.sum(optimisation_results["Total cost ($)"])
+#         total_system_cost = np.sum(optimisation_results["Total system cost ($)"])
+#         new_equipment_cost = np.sum(optimisation_results["New equipment cost ($)"])
+#         new_connection_cost = np.sum(optimisation_results["New connection cost ($)"])
+#         OM_cost = np.sum(optimisation_results["O&M cost ($)"])
+#         diesel_cost = np.sum(optimisation_results["Diesel cost ($)"])
+#         grid_cost = np.sum(optimisation_results["Grid cost ($)"])
+#         kerosene_cost = np.sum(optimisation_results["Kerosene cost ($)"])
+#         kerosene_cost_mitigated = np.sum(
+#             optimisation_results["Kerosene cost mitigated ($)"]
+#         )
+#         OM_GHGs = np.sum(optimisation_results["O&M GHGs (kgCO2eq)"])
+#         diesel_GHGs = np.sum(optimisation_results["Diesel GHGs (kgCO2eq)"])
+#         grid_GHGs = np.sum(optimisation_results["Grid GHGs (kgCO2eq)"])
+#         kerosene_GHGs = np.sum(optimisation_results["Kerosene GHGs (kgCO2eq)"])
+#         kerosene_mitigated_GHGs = np.sum(
+#             optimisation_results["Kerosene GHGs mitigated (kgCO2eq)"]
+#         )
+
+#         #   Data which requires combinations of summary results
+#         unmet_fraction = round(unmet_energy / total_energy, 3)
+#         renewables_fraction = round(renewable_energy / total_energy, 3)
+#         storage_fraction = round(storage_energy / total_energy, 3)
+#         diesel_fraction = round(diesel_energy / total_energy, 3)
+#         grid_fraction = round(grid_energy / total_energy, 3)
+#         #   Combine results into output
+#         results = pd.DataFrame(
+#             {
+#                 "Start year": start_year,
+#                 "End year": end_year,
+#                 "Step length": step_length,
+#                 "Optimisation length": optimisation_length,
+#                 "Maximum PV size": max_PV,
+#                 "Maximum storage size": max_storage,
+#                 "Maximum diesel capacity": max_diesel,
+#                 "LCUE ($/kWh)": LCUE,
+#                 "Emissions intensity (gCO2/kWh)": emissions_intensity,
+#                 "Blackouts": blackouts,
+#                 "Unmet fraction": unmet_fraction,
+#                 "Renewables fraction": renewables_fraction,
+#                 "Storage fraction": storage_fraction,
+#                 "Diesel fraction": diesel_fraction,
+#                 "Grid fraction": grid_fraction,
+#                 "Total energy (kWh)": total_energy,
+#                 "Unmet energy (kWh)": unmet_energy,
+#                 "Renewable energy (kWh)": renewable_energy,
+#                 "Storage energy (kWh)": storage_energy,
+#                 "Grid energy (kWh)": grid_energy,
+#                 "Diesel energy (kWh)": diesel_energy,
+#                 "Discounted energy (kWh)": discounted_energy,
+#                 "Total cost ($)": total_cost,
+#                 "Total system cost ($)": total_system_cost,
+#                 "New equipment cost ($)": new_equipment_cost,
+#                 "New connection cost ($)": new_connection_cost,
+#                 "O&M cost ($)": OM_cost,
+#                 "Diesel cost ($)": diesel_cost,
+#                 "Grid cost ($)": grid_cost,
+#                 "Kerosene cost ($)": kerosene_cost,
+#                 "Kerosene cost mitigated ($)": kerosene_cost_mitigated,
+#                 "Kerosene displacement": kerosene_displacement,
+#                 "Diesel fuel usage (l)": diesel_fuel_usage,
+#                 "Total GHGs (kgCO2eq)": total_GHGs,
+#                 "Total system GHGs (kgCO2eq)": total_system_GHGs,
+#                 "Total GHGs (kgCO2eq)": total_GHGs,
+#                 "O&M GHGs (kgCO2eq)": OM_GHGs,
+#                 "Diesel GHGs (kgCO2eq)": diesel_GHGs,
+#                 "Grid GHGs (kgCO2eq)": grid_GHGs,
+#                 "Kerosene GHGs (kgCO2eq)": kerosene_GHGs,
+#                 "Kerosene GHGs mitigated (kgCO2eq)": kerosene_mitigated_GHGs,
+#             },
+#             index=["Lifetime results"],
+#         )
+#         return results
+
+#     #%%
+#     # =============================================================================
+#     # UNSUPPORTED FUNCTIONS
+#     #       This process is similar to the optimisation process used by previous
+#     #       versions of CLOVER. It has been replaced by the new optimisation process
+#     #       and will no longer be updated.
+#     # =============================================================================
+#     def complete_simulation_iteration(
+#         self,
+#         PV_sizes=[],
+#         storage_sizes=[],
+#         previous_systems=pd.DataFrame([]),
+#         start_year=0,
+#     ):
+#         """
+#         @@@ THIS FUNCTION IS OUTDATED AND HAS BEEN REPLACED BY find_optimum_system(...)
+#         @@@ THIS FUNCTION IS INCLUDED FOR INTEREST AND WILL NO LONGER BE UPDATED
+
+#         Iterates simulations over a range of PV and storage sizes to give appraisals of
+#         each system. Identical to the previous CLOVER method of simulation i.e. every
+#         system within a given range
+
+#         Inputs:
+#             - PV_sizes:
+#                 Range of PV sizes in the form [minimum, maximum, step size]
+#             - storage_sizes:
+#                 Range of storage sizes in the form [minimum, maximum, step size]
+#             - previous_system:
+#                 Appraisal of the system already in place before this simulation period
+#             - start_year:
+#                 Start year of this simulation period
+
+#         Outputs:
+#             appraisals          DataFrame of system results
+
+#         """
+#         #   Initialise
+#         PV_sizes = pd.DataFrame(PV_sizes)
+#         storage_sizes = pd.DataFrame(storage_sizes)
+#         system_appraisals = pd.DataFrame([])
+#         simulation_number = 0
+#         end_year = start_year + int(self.optimisation_inputs[1]["Iteration length"])
+#         #   Check to see if PV sizes have been set
+#         if PV_sizes.empty == True:
+#             PV_size_min = float(self.optimisation_inputs[1]["PV size (min)"])
+#             pv_size_max = float(self.optimisation_inputs[1]["PV size (max)"])
+#             PV_size_step = float(self.optimisation_inputs[1]["PV size (step)"])
+#         #   Check to see if storage sizes have been set
+#         if storage_sizes.empty == True:
+#             storage_size_min = float(self.optimisation_inputs[1]["Storage size (min)"])
+#             storage_size_max = float(self.optimisation_inputs[1]["Storage size (max)"])
+#             storage_size_step = float(
+#                 self.optimisation_inputs[1]["Storage size (step)"]
+#             )
+
+#         #   Iterate over PV sizes
+#         for PV in np.arange(PV_size_min, pv_size_max + PV_size_step, PV_size_step):
+#             #   Iterate over storage sizes
+#             for storage in np.arange(
+#                 storage_size_min,
+#                 storage_size_max + storage_size_step,
+#                 storage_size_step,
+#             ):
+#                 #   Run simulation
+#                 simulation_number += 1
+#                 simulation = energy_system.run_simulation(
+#                     minigrid,
+#                     grid_profile,
+#                     kerosene_usage,
+#                     location,
+#                     PV,
+#                     scenario,
+#                     Simulation(end_year, start_year),
+#                     solar_lifetime,
+#                     storage,
+#                     total_load,
+#                     total_solar_power_produced,
+#                 )
+#                 new_appraisal = self.system_appraisal(
+#                     simulation_results, previous_systems
+#                 )
+#                 system_appraisals = pd.concat(
+#                     [
+#                         system_appraisals,
+#                         new_appraisal.rename(
+#                             {"System results": simulation_number}, axis="index"
+#                         ),
+#                     ],
+#                     axis=0,
+#                 )
+#         return system_appraisals
