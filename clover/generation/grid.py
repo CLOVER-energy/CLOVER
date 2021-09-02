@@ -23,7 +23,7 @@ import random
 from logging import Logger
 from typing import Dict, List
 
-import pandas as pd  # pylint: disable=import-error
+import pandas as pd  # type: ignore # pylint: disable=import-error
 
 from tqdm import tqdm  # type: ignore  # pylint: disable=import-error
 

@@ -26,7 +26,7 @@ from logging import Logger
 from typing import Any, Dict, Optional, Set, Tuple
 
 import numpy as np  # pylint: disable=import-error
-import pandas as pd  # pylint: disable=import-error
+import pandas as pd  # type: ignore  # pylint: disable=import-error
 
 from tqdm import tqdm  # type: ignore  # pylint: disable=import-error
 
@@ -706,7 +706,7 @@ def process_device_hourly_usage(
             hourly_device_usage = pd.concat(
                 [
                     pd.DataFrame(
-                        np.random.binomial(
+                        np.random.binomial(  # type: ignore
                             float(daily_device_ownership.iloc[day]),  # type: ignore
                             daily_device_utilisation.iloc[day],
                         )
