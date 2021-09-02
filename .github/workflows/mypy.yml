@@ -17,8 +17,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
           pip install mypy
-          mypy --install-types
           pip install types-PyYAML
       - name: Analysing the code with mypy
         run: |
-          python -m mypy clover
+          python -m mypy clover --install-types
