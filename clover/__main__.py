@@ -263,11 +263,13 @@ def main(args: List[Any]) -> None:
                     "Either 'y' or 'n' must be specified to confirm overwrite. Quitting."
                 )
                 raise
-        if confirm_overwrite:
-            output: str = str(parsed_args.output)
+            if confirm_overwrite:
+                output: str = str(parsed_args.output)
+            else:
+                output = input("Specify new output folder name: ")
+            print(f"Output directory {output} will be used for simulation results.")
         else:
-            output = input("Specify new output folder name: ")
-        print(f"Output directory {output} will be used for simulation results.")
+            output = str(parsed_args.output)
     else:
         output = datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
 
