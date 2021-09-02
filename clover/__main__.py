@@ -721,6 +721,9 @@ def main(args: List[Any]) -> None:
         )
         optimisation_times: List[str] = []
 
+        # Enforce that the optimisation inputs are set correctly before attempting an
+        # optimisation.
+
         if optimisation_inputs is None:
             raise InputFileError(
                 "optimisation inputs",
@@ -731,6 +734,17 @@ def main(args: List[Any]) -> None:
             raise InternalError(
                 "Electric yearly load statistics were not correctly computed despite "
                 "being needed for an optimisation."
+            )
+
+        if (
+            optimisation_inputs.number_of_iterations
+            * optimisation_inputs.iteration_length
+            > location.max_years
+        ):
+            raise InputFileError(
+                "optimisation inputs",
+                "An optimisation was requested that runs over the maximum lifetime of "
+                "the system.",
             )
 
         for optimisation_number, optimisation in enumerate(
