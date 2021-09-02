@@ -27,7 +27,7 @@ from typing import Any, Dict, List, Optional, Set, Union
 
 import json
 import numpy as np  # pylint: disable=import-error
-import pandas as # type: ignore  pd  # pylint: disable=import-error
+import pandas as pd  # type: ignore  # pylint: disable=import-error
 import scipy  # type: ignore  # pylint: disable=import-error
 import yaml  # type: ignore  # pylint: disable=import-error
 
