@@ -21,7 +21,6 @@ and profile files that have been parsed/generated.
 import dataclasses
 import datetime
 import math
-import os
 
 from logging import Logger
 from typing import Any, Dict, List, Optional, Tuple, Union
@@ -145,7 +144,7 @@ class Minigrid:
                 entry["name"]: Battery.from_dict(entry) for entry in battery_inputs
             }
         else:
-            batteries = dict()
+            batteries = {}
 
         # Parse the tank information.
         if tank_inputs is not None:
@@ -153,7 +152,7 @@ class Minigrid:
                 entry["name"]: CleanWaterTank.from_dict(entry) for entry in tank_inputs
             }
         else:
-            tanks = dict()
+            tanks = {}
 
         # Return the minigrid instance.
         return cls(

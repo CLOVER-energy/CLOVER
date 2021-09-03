@@ -263,7 +263,7 @@ class MultiInputConvertor(Convertor):
                 f"{BColours.fail}Invalid value type in conversion file: {str(e)}{BColours.endc}"
             ) from None
 
-        input_resource_consumption: Dict[ResourceType, float] = dict()
+        input_resource_consumption: Dict[ResourceType, float] = {}
 
         for input_resource in input_resource_list:
             try:

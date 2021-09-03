@@ -241,7 +241,7 @@ def _cumulative_sales_daily(
     maximisation_ratio = maximum_market_proportion - current_market_proportion
     daily_innovation = innovation / 365
     daily_imitation = imitation / 365
-    cum_sales = dict()
+    cum_sales = {}
     for day in range(0, 365 * years):
         num = 1 - math.exp(-1 * (daily_innovation + daily_imitation) * day)
         den = 1 + (daily_imitation / daily_innovation) * math.exp(
@@ -934,7 +934,7 @@ def process_load_profiles(
 
     """
 
-    device_hourly_loads: Dict[str, pd.DataFrame] = dict()
+    device_hourly_loads: Dict[str, pd.DataFrame] = {}
     if resource_type == ResourceType.ELECTRIC:
         resource_name: str = "electric"
         relevant_device_utilisations: Dict[Device, pd.DataFrame] = {

@@ -92,7 +92,7 @@ def _fetch_optimum_system(
 
     """
 
-    optimum_systems: Dict[Criterion, SystemAppraisal] = dict()
+    optimum_systems: Dict[Criterion, SystemAppraisal] = {}
 
     # Run through the various optimisation criteria.
     for (criterion, criterion_mode) in optimisation.optimisation_criteria.items():
