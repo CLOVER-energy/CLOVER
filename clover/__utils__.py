@@ -409,7 +409,7 @@ class KeyResults:
 
         """
 
-        data_dict: Dict[str, float] = dict()
+        data_dict: Dict[str, float] = {}
 
         if self.average_daily_diesel_energy_supplied is not None:
             data_dict["Average daily diesel energy supplied / kWh"] = round(
@@ -1655,7 +1655,7 @@ def save_simulation(
         with open(simulation_details_filepath, "r") as f:
             existing_simulation_details = json.load(f)
     else:
-        existing_simulation_details = dict()
+        existing_simulation_details = {}
 
     # Update the system info with the new simulation information.
     existing_simulation_details[

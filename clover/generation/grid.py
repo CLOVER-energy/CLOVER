@@ -59,7 +59,7 @@ def get_lifetime_grid_status(
     grid_types: List[str] = list(grid_inputs)
 
     # Set up a holder dictionary to contain the grid information.
-    grid_profiles: Dict[str, pd.DataFrame] = dict()
+    grid_profiles: Dict[str, pd.DataFrame] = {}
 
     # Loop through all the various grid profiles that have been defined.
     for grid_index in tqdm(

@@ -209,7 +209,7 @@ def parse_input_files(
         }
         logger.info("Conversion inputs successfully parsed.")
     else:
-        convertors = dict()
+        convertors = {}
         logger.info("No conversion file, skipping convertor parsing.")
 
     # Parse the device inputs file.
@@ -237,7 +237,7 @@ def parse_input_files(
         devices.add(load.load.DEFAULT_KEROSENE_DEVICE)
         logger.info("Default kerosene device added.")
 
-    device_utilisations: Dict[load.load.Device, pd.DataFrame] = dict()
+    device_utilisations: Dict[load.load.Device, pd.DataFrame] = {}
     for device in devices:
         try:
             with open(
