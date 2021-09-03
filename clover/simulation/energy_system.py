@@ -292,9 +292,7 @@ def _get_electric_battery_storage_profile(
 
     # Initialise power generation, including degradation of PV
     pv_generation_array = total_solar_power_produced * pv_size
-    solar_degradation_array = solar_degradation(solar_lifetime)[  # type: ignore
-        0 : (end_hour - start_hour)
-    ]
+    solar_degradation_array = solar_degradation(solar_lifetime)[0 : (end_hour - start_hour)][0]  # type: ignore
     pv_generation = pd.DataFrame(
         np.asarray(pv_generation_array[start_hour:end_hour])  # type: ignore
         * np.asarray(solar_degradation_array)
