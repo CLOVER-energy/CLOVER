@@ -1068,7 +1068,7 @@ def run_simulation(
             + storage_power_supplied_frame.values
             + grid_energy.values
             + diesel_energy.values
-            + clean_water_power_consumed.values
+            # + clean_water_power_consumed.values
             + excess_energy_used_desalinating_frame.values
         )
 
