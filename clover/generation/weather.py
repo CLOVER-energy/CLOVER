@@ -19,6 +19,8 @@ for use locally within CLOVER.
 
 """
 
+import enum
+
 from typing import Any, Dict
 
 import pandas as pd  # type: ignore  # pylint: disable=import-error
@@ -28,15 +30,40 @@ from .__utils__ import BaseRenewablesNinjaThread, total_profile_output
 from ..__utils__ import Location
 
 __all__ = (
+    "total_weather_output",
+    "WeatherCondition",
     "WeatherDataThread",
     "WEATHER_LOGGER_NAME",
-    "total_weather_output",
 )
 
 
 # Weather logger name:
 #   The name to use for the weather logger.
 WEATHER_LOGGER_NAME = "weather_generation"
+
+
+class WeatherCondition(enum.Enum):
+    """
+    Stores weather condition information for extracting data from renewables ninja.
+
+    - CLOUD_COVER:
+        Denotes the cloud-cover fraction.
+
+    - IRRADIANCE:
+        Denotes the surface irradiance.
+
+    - PRECIPITATION:
+        Denotes the surface precipitation.
+
+    - TEMPERATURE:
+        Denotes the surface temperature in degrees Celcius.
+
+    """
+
+    CLOUD_COVER = "cloud_cover"
+    IRRADIANCE = "surface_radiation"
+    PRECIPITATION = "precipitation"
+    TEMPERATURE = "temperature"
 
 
 class WeatherDataThread(
