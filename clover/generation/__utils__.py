@@ -132,6 +132,7 @@ def _get_profile_from_rn(
             "date_to": f"{year}-12-31",
             "dataset": "merra2",
             "format": "json",
+            "header": "true",
             # Metadata and raw data now supported by different function in API
             #            'metadata': False,
             #            'raw': False
@@ -270,7 +271,6 @@ def _save_profile_output(
     with open(filepath, "w") as f:
         profile.to_csv(
             f,  # type: ignore
-            header=None,  # type: ignore
             index=False,
             line_terminator="\n",
         )
@@ -487,7 +487,7 @@ def total_profile_output(
     # If the total output file already exists then simply read this in.
     if os.path.isfile(total_output_filename) and not regenerate:
         with open(total_output_filename, "r") as f:
-            total_output = pd.read_csv(f, header=None)
+            total_output = pd.read_csv(f)
 
     else:
         # Get data for each year using iteration, and add that data to the output file
@@ -507,7 +507,6 @@ def total_profile_output(
             ) as f:
                 iteration_year_data = pd.read_csv(
                     f,
-                    header=None,  # type: ignore
                 )
             output = pd.concat([output, iteration_year_data], ignore_index=True)
 
@@ -518,7 +517,6 @@ def total_profile_output(
         with open(total_output_filename, "w") as f:
             total_output.to_csv(
                 f,  # type: ignore
-                header=None,  # type: ignore
                 index=False,
                 line_terminator="\n",
             )

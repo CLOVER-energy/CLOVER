@@ -556,10 +556,6 @@ def main(args: List[Any]) -> None:
             generation_inputs["start_year"],
             location.max_years,
         )
-        total_temperature_output = total_weather_output[0]  # type: ignore  # pylint: disable=unused-variable
-        total_precipitation_output = total_weather_output[1]  # type: ignore  # pylint: disable=unused-variable
-        total_solar_irradiance_output = total_weather_output[2]  # type: ignore  # pylint: disable=unused-variable
-        total_cloud_cover_fraction_output = total_weather_output[3]  # type: ignore  # pylint: disable=unused-variable
         logger.info("Total weather output successfully computed and saved.")
 
     logger.info(
@@ -641,7 +637,7 @@ def main(args: List[Any]) -> None:
                     parsed_args.storage_size,
                     total_clean_water_load,
                     0.001 * total_electric_load,  # type: ignore
-                    total_solar_output,
+                    total_solar_output[solar.SolarDataType.ELECTRICITY.value],
                 )
             except Exception as e:
                 print(
@@ -674,7 +670,7 @@ def main(args: List[Any]) -> None:
                 grid_inputs[scenario.grid_type],
                 simulation.end_year - simulation.start_year,
                 system_performance_outputs,
-                total_solar_output,
+                total_solar_output[solar.SolarDataType.ELECTRICITY.value],
             )
 
             if parsed_args.analyse:
@@ -691,7 +687,7 @@ def main(args: List[Any]) -> None:
                     system_performance_outputs,
                     total_clean_water_load,
                     0.001 * total_electric_load,  # type: ignore
-                    total_solar_output,
+                    total_solar_output[solar.SolarDataType.ELECTRICITY.value],
                 )
             else:
                 logger.info("No analysis to be carried out.")
@@ -768,7 +764,7 @@ def main(args: List[Any]) -> None:
                     scenario,
                     total_clean_water_load,
                     0.001 * total_electric_load,  # type: ignore
-                    total_solar_output,
+                    total_solar_output[solar.SolarDataType.ELECTRICITY.value],
                     electric_yearly_load_statistics,
                 )
             except Exception as e:

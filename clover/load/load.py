@@ -577,7 +577,7 @@ def process_device_hourly_power(
     # If the hourly power usage file already exists, load the data in.
     if os.path.isfile(hourly_usage_filepath) and not regenerate:
         with open(hourly_usage_filepath, "r") as f:
-            device_load: pd.DataFrame = pd.read_csv(f)
+            device_load: pd.DataFrame = pd.read_csv(f, header=None)
         logger.info(
             "Hourly power profile for %s successfully read from file %s.",
             device.name,
@@ -627,7 +627,7 @@ def process_device_hourly_power(
             hourly_usage_filepath,
             "w",
         ) as f:
-            device_load.to_csv(f, index=False, line_terminator="")  # type: ignore
+            device_load.to_csv(f, header=None, index=False, line_terminator="")  # type: ignore
 
         logger.info(
             "Hourly power proifle for %s successfully saved to %s.",
@@ -678,7 +678,7 @@ def process_device_hourly_usage(
     # If the device hourly usage already exists, then read the data in from the file.
     if os.path.isfile(filepath) and not regenerate:
         with open(filepath, "r") as f:
-            hourly_device_usage = pd.read_csv(f)
+            hourly_device_usage = pd.read_csv(f, header=None)
         logger.info(
             "Hourly device usage for %s successfully read from file: %s",
             device.name,
@@ -734,7 +734,7 @@ def process_device_hourly_usage(
             filepath,
             "w",
         ) as f:
-            hourly_device_usage.to_csv(f, index=False, line_terminator="")  # type: ignore
+            hourly_device_usage.to_csv(f, header=None, index=False, line_terminator="")  # type: ignore
 
         logger.info(
             "Hourly usage proifle for %s successfully saved to %s.",
@@ -787,7 +787,7 @@ def process_device_ownership(
     # If the daily ownership file already exists, then read the data from the file.
     if os.path.isfile(daily_ownership_filepath) and not regenerate:
         with open(daily_ownership_filepath, "r") as f:
-            daily_ownership = pd.read_csv(f)
+            daily_ownership = pd.read_csv(f, header=None)
         logger.info(
             "Monthly device-ownership profile for %s successfully read from %s.",
             device.name,
@@ -814,7 +814,7 @@ def process_device_ownership(
             daily_ownership_filepath,
             "w",
         ) as f:
-            daily_ownership.to_csv(f, index=False, line_terminator="")  # type: ignore
+            daily_ownership.to_csv(f, header=None, index=False, line_terminator="")  # type: ignore
         logger.info(
             "Monthly deivice-ownership profile for %s successfully saved to %s.",
             device.name,
@@ -868,7 +868,7 @@ def process_device_utilisation(
     # If the file already exists, simply read in the data.
     if os.path.isfile(filepath) and not regenerate:
         with open(filepath, "r") as f:
-            interpolated_daily_profile = pd.read_csv(f)
+            interpolated_daily_profile = pd.read_csv(f, header=None)
         logger.info(
             "Daily device-utilisation profile for %s successfully read from file %s.",
             device.name,
@@ -888,7 +888,7 @@ def process_device_utilisation(
 
         # Save this to the output file.
         with open(filepath, "w") as f:
-            interpolated_daily_profile.to_csv(f, index=False, line_terminator="")  # type: ignore
+            interpolated_daily_profile.to_csv(f, header=None, index=False, line_terminator="")  # type: ignore
         logger.info(
             "Daily deivice-utilisation profile for %s successfully saved to %s.",
             device.name,
