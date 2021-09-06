@@ -239,7 +239,7 @@ def _get_electric_battery_storage_profile(
     processed_total_electric_load: pd.DataFrame,
     scenario: Scenario,
     solar_lifetime: int,
-    total_solar_power_produced: pd.DataFrame,
+    total_solar_power_produced: pd.Series,
     end_hour: int = 4,
     pv_size: float = 10,
     start_hour: int = 0,
@@ -449,7 +449,7 @@ def run_simulation(
     electric_storage_size: float,
     total_clean_water_load: Optional[pd.DataFrame],
     total_electric_load: pd.DataFrame,
-    total_solar_power_produced: pd.DataFrame,
+    total_solar_power_produced: pd.Series,
 ) -> Tuple[datetime.timedelta, pd.DataFrame, SystemDetails]:
     """
     Simulates a minigrid system
