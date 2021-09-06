@@ -128,7 +128,7 @@ def _single_line_simulation(
     start_year: int,
     total_clean_water_load: Optional[pd.DataFrame],
     total_electric_load: pd.DataFrame,
-    total_solar_power_produced: pd.DataFrame,
+    total_solar_power_produced: pd.Series,
     yearly_electric_load_statistics: pd.DataFrame,
 ) -> Tuple[PVSystemSize, StorageSystemSize, List[SystemAppraisal]]:
     """
@@ -410,7 +410,7 @@ def _find_optimum_system(
     system_appraisals: List[SystemAppraisal],
     total_clean_water_load: Optional[pd.DataFrame],
     total_electric_load: pd.DataFrame,
-    total_solar_power_produced: pd.DataFrame,
+    total_solar_power_produced: pd.Series,
     yearly_electric_load_statistics: pd.DataFrame,
 ):
     """
@@ -594,7 +594,7 @@ def _simulation_iteration(
     storage_sizes: StorageSystemSize,
     total_clean_water_load: Optional[pd.DataFrame],
     total_electric_load: pd.DataFrame,
-    total_solar_power_produced: pd.DataFrame,
+    total_solar_power_produced: pd.Series,
     yearly_electric_load_statistics: pd.DataFrame,
 ) -> Tuple[
     int,
@@ -879,7 +879,7 @@ def _optimisation_step(
     storage_sizes: StorageSystemSize,
     total_clean_water_load: Optional[pd.DataFrame],
     total_electric_load: pd.DataFrame,
-    total_solar_power_produced: pd.DataFrame,
+    total_solar_power_produced: pd.Series,
     yearly_electric_load_statistics: pd.DataFrame,
 ) -> SystemAppraisal:
     """
@@ -1010,7 +1010,7 @@ def multiple_optimisation_step(
     scenario: Scenario,
     total_clean_water_load: Optional[pd.DataFrame],
     total_electric_load: pd.DataFrame,
-    total_solar_power_produced: pd.DataFrame,
+    total_solar_power_produced: pd.Series,
     yearly_electric_load_statistics: pd.DataFrame,
     *,
     input_pv_sizes: Optional[PVSystemSize] = None,
