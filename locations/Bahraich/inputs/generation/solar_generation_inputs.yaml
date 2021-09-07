@@ -16,3 +16,9 @@ panels:
     thermal_coefficient: 0.0053 # [1 / degrees Celcius]
     tilt: 29 # [degrees above horizontal]
     type: pv # Panel type, either 'pv', 'solar_thermal' or 'solar_desalination'
+  # - name: default_pvt
+  #   azimuthal_orientation: 180 # [degrees from North]
+  #   lifetime: 20 # [years] - Lifetime of the PV system.
+  #   pv: default_pv
+  #   tilt: 29 # [degrees above horizontal]
+  #   type: pv_t # Panel type, either 'pv' or 'pv_t'
