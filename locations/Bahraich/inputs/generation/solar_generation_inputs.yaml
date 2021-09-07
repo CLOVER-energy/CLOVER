@@ -9,7 +9,7 @@
 ################################################################################
 
 panels:
-  - name: default_solar
+  - name: default_pv
     azimuthal_orientation: 180 # [degrees from North]
     lifetime: 20 # [years] - Lifetime of the PV system.
     reference_temperature: 25 # [degrees Celcius]

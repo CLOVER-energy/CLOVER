@@ -148,7 +148,7 @@
                 ################################################################################
 
                 panels:
-                  - name: default_solar
+                  - name: default_pv
                     azimuthal_orientation: 180 # [degrees from North]
                     lifetime: 20 # [years] - Lifetime of the PV system.
                     reference_temperature: 25 # [degrees Celcius]
@@ -666,7 +666,7 @@
                   dc_to_dc: 0.95 # Conversion efficiency (0.0-1.0)
                   ac_to_dc: 0.8 # Conversion efficiency (0.0-1.0)
                   ac_to_ac: 0.98 # Conversion efficiency (0.0-1.0)
-                pv_panel: default_solar
+                pv_panel: default_pv
             - file: "simulations.yaml"
               contents: |+
                 ---
