@@ -51,7 +51,7 @@ from .diesel import (
     get_diesel_energy_and_times,
     get_diesel_fuel_usage,
 )
-from .solar import PVPanel
+from .solar import HybridPVTPanel, PVPanel
 from .storage import Battery, CleanWaterTank
 
 __all__ = (
@@ -95,6 +95,9 @@ class Minigrid:
     .. attribute:: pv_panel
         The PV panel being considered.
 
+    .. attribute:: pvt_panel
+        The PV-T panel being considered, if applicable.
+
     """
 
     ac_to_ac_conversion_efficiency: Optional[float]
@@ -107,6 +110,7 @@ class Minigrid:
     dc_transmission_efficiency: Optional[float]
     diesel_backup_generator: Optional[DieselBackupGenerator]
     pv_panel: PVPanel
+    pvt_panel: Optional[HybridPVTPanel]
 
     @classmethod
     def from_dict(
@@ -114,6 +118,7 @@ class Minigrid:
         diesel_backup_generator: DieselBackupGenerator,
         minigrid_inputs: Dict[Union[int, str], Any],
         pv_panel: PVPanel,
+        pvt_panel: Optional[HybridPVTPanel],
         battery_inputs: Optional[List[Dict[Union[int, str], Any]]] = None,
         tank_inputs: Optional[List[Dict[Union[int, str], Any]]] = None,
     ) -> Any:
@@ -127,7 +132,9 @@ class Minigrid:
                 The inputs for the minigrid/energy system, extracted from the input
                 file.
             - pv_panel:
-                 The :class:`PVPanel` instance to use for the run.
+                The :class:`PVPanel` instance to use for the run.
+            - pvt_panel:
+                The :class:`HybridPVTPanel` instance to use for the run, if appropriate.
             - battery_inputs:
                 The battery input information.
             - tank_inputs:
@@ -182,6 +189,7 @@ class Minigrid:
             else None,
             diesel_backup_generator,
             pv_panel,
+            pvt_panel,
         )
 
 
@@ -239,7 +247,7 @@ def _get_electric_battery_storage_profile(
     processed_total_electric_load: pd.DataFrame,
     scenario: Scenario,
     solar_lifetime: int,
-    total_solar_power_produced: pd.Series,
+    pv_power_produced: pd.Series,
     end_hour: int = 4,
     pv_size: float = 10,
     start_hour: int = 0,
@@ -264,8 +272,8 @@ def _get_electric_battery_storage_profile(
             The scenatio being considered.
         - solar_lifetime:
             The lifetime of the solar setup.
-        - total_solar_power_produced:
-            The total solar power output over the time period.
+        - pv_power_produced:
+            The total solar power output over the time period per kWp of installed PV.
         - end_year:
             End year of this simulation period
         - pv_size:
@@ -290,7 +298,7 @@ def _get_electric_battery_storage_profile(
     """
 
     # Initialise power generation, including degradation of PV
-    pv_generation_array = total_solar_power_produced * pv_size
+    pv_generation_array = pv_power_produced * pv_size
     solar_degradation_array = solar_degradation(solar_lifetime)[  # type: ignore
         0 : (end_hour - start_hour)
     ][0]
@@ -449,7 +457,7 @@ def run_simulation(
     electric_storage_size: float,
     total_clean_water_load: Optional[pd.DataFrame],
     total_electric_load: pd.DataFrame,
-    total_solar_power_produced: pd.Series,
+    pv_power_produced: pd.Series,
 ) -> Tuple[datetime.timedelta, pd.DataFrame, SystemDetails]:
     """
     Simulates a minigrid system
@@ -484,8 +492,8 @@ def run_simulation(
             The total water load placed on the system.
         - total_electric_load:
             The total load in Watts.
-        - total_solar_power_produced:
-            The total energy outputted by the solar system.
+        - pv_power_produced:
+            The total energy outputted by the solar system per kWp of PV.
 
     Outputs:
         - The time taken for the simulation.
@@ -615,7 +623,7 @@ def run_simulation(
         processed_total_electric_load=processed_total_electric_load,
         scenario=scenario,
         solar_lifetime=minigrid.pv_panel.lifetime,
-        total_solar_power_produced=total_solar_power_produced,
+        pv_power_produced=pv_power_produced,
         end_hour=end_hour,
         pv_size=pv_size,
         start_hour=start_hour,
