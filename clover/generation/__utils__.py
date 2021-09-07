@@ -428,9 +428,25 @@ class BaseRenewablesNinjaThread(threading.Thread):
                     raise
 
                 self.logger.info(
-                    "Renewables.ninja for %s data successfully fetched, saving.",
+                    "Renewables.ninja for %s data successfully fetched.",
                     self.profile_name,  # type: ignore
                 )
+
+                # Compute the total irradiance if the data is solar data.
+                if self.profile_name == "solar":  # type: ignore
+                    try:
+                        data["irradiance_total"] = (
+                            data["irradiance_direct"] + data["irradiance_diffuse"]
+                        )
+                    except KeyError as e:
+                        self.logger.error(
+                            "Failed to compute total irradiance for solar data "
+                            "profile: %s",
+                            str(e),
+                        )
+                        raise
+
+                self.logger.info("Saving Renewables.ninja profile.")
                 _save_profile_output(
                     filepath,
                     year,
