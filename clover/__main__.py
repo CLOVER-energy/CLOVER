@@ -56,6 +56,7 @@ from .__utils__ import (
     save_optimisation,
     save_simulation,
 )
+from .simulation.solar import HybridPVTPanel
 
 # Auto-generated-files directory:
 #   The name of the directory in which to save auto-generated files, relative to the
@@ -540,7 +541,7 @@ def main(args: List[Any]) -> None:
     logger.info("All setup threads finished.")
 
     logger.info("Generating and saving total solar output file.")
-    total_solar_output = solar.total_solar_output(
+    total_solar_data = solar.total_solar_output(
         os.path.join(auto_generated_files_directory, "solar"),
         parsed_args.regenerate,
         generation_inputs["start_year"],
@@ -550,7 +551,7 @@ def main(args: List[Any]) -> None:
 
     if ResourceType.CLEAN_WATER in scenario.resource_types:
         logger.info("Generating and saving total weather output file.")
-        total_weather_output = weather.total_weather_output(
+        total_weather_data = weather.total_weather_output(
             os.path.join(auto_generated_files_directory, "weather"),
             parsed_args.regenerate,
             generation_inputs["start_year"],
@@ -637,7 +638,7 @@ def main(args: List[Any]) -> None:
                     parsed_args.storage_size,
                     total_clean_water_load,
                     0.001 * total_electric_load,  # type: ignore
-                    total_solar_output[solar.SolarDataType.ELECTRICITY.value],
+                    total_solar_data[solar.SolarDataType.ELECTRICITY.value],
                 )
             except Exception as e:
                 print(
@@ -670,7 +671,7 @@ def main(args: List[Any]) -> None:
                 grid_inputs[scenario.grid_type],
                 simulation.end_year - simulation.start_year,
                 system_performance_outputs,
-                total_solar_output[solar.SolarDataType.ELECTRICITY.value],
+                total_solar_data[solar.SolarDataType.ELECTRICITY.value],
             )
 
             if parsed_args.analyse:
@@ -687,7 +688,7 @@ def main(args: List[Any]) -> None:
                     system_performance_outputs,
                     total_clean_water_load,
                     0.001 * total_electric_load,  # type: ignore
-                    total_solar_output[solar.SolarDataType.ELECTRICITY.value],
+                    total_solar_data[solar.SolarDataType.ELECTRICITY.value],
                 )
             else:
                 logger.info("No analysis to be carried out.")
@@ -764,7 +765,7 @@ def main(args: List[Any]) -> None:
                     scenario,
                     total_clean_water_load,
                     0.001 * total_electric_load,  # type: ignore
-                    total_solar_output[solar.SolarDataType.ELECTRICITY.value],
+                    total_solar_data[solar.SolarDataType.ELECTRICITY.value],
                     electric_yearly_load_statistics,
                 )
             except Exception as e:

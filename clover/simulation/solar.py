@@ -24,6 +24,8 @@ import enum
 from logging import Logger
 from typing import Any, Dict, List, Tuple
 
+import pandas as pd  # type: ignore  # pylint: disable=missing-import
+
 
 __all__ = (
     "HybridPVTPanel",
@@ -146,11 +148,8 @@ class HybridPVTPanel(SolarPanel, panel_type=SolarPanelType.PV_T):
 
     """
 
-    mass_flow_rate: float
-
-    @classmethod
-    def from_dict(
-        cls,
+    def __init__(
+        self,
         logger: Logger,
         solar_inputs: Dict[str, Any],
         solar_panels: List[SolarPanel],
@@ -180,7 +179,7 @@ class HybridPVTPanel(SolarPanel, panel_type=SolarPanelType.PV_T):
                 solar_inputs["name"],
             )
 
-        return cls(
+        super().__init__(
             solar_inputs["azimuthal_orientation"],
             solar_inputs["lifetime"],
             solar_inputs["name"],
@@ -189,9 +188,11 @@ class HybridPVTPanel(SolarPanel, panel_type=SolarPanelType.PV_T):
             solar_inputs["tilt"],
         )
 
+        self.mass_flow_rate = solar_inputs["mass_flow_rate"]
+
     def fractional_performance(
-        self, ambient_temperature: float, irradiance: float, wind_speed: float
-    ) -> Tuple[float, float]:
+        self, ambient_temperature: pd.Series, irradiance: pd.Series, wind_speed: pd.Series
+    ) -> Tuple[None, pd.Series]:
         """
         Computes the fractional performance of the :class:`HybridPVTPanel`.
 
@@ -227,4 +228,4 @@ class HybridPVTPanel(SolarPanel, panel_type=SolarPanelType.PV_T):
         )
 
         # Return this, along with the output temperature of HTF leaving the collector.
-        return 0, fractional_electrical_performance
+        return None, fractional_electrical_performance

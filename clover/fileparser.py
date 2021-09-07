@@ -323,12 +323,12 @@ def parse_input_files(
     for panel_input in solar_generation_inputs["panels"]:
         if panel_input["type"] == solar.SolarPanelType.PV_T.value:
             solar_panels.append(
-                solar.HybridPVTPanel.from_dict(
+                solar.HybridPVTPanel(
                     logger, panel_input, solar_panels
                 )
             )
 
-    # Return the solar panel being modelled.
+    # Return the PV panel being modelled.
     try:
         pv_panel: solar.PVPanel = [
             panel  # type: ignore
@@ -343,6 +343,28 @@ def parse_input_files(
             energy_system_inputs["pv_panel"],
             BColours.endc,
         )
+        raise
+
+    # Return the PVT panel being modelled, if appropriate.
+    if "pvt_panel" in energy_system_inputs:
+        try:
+            pvt_panel: Optional[solar.HybridPVTPanel] = [
+                panel  # type: ignore
+                for panel in solar_panels
+                if panel.panel_type == solar.SolarPanelType.PV_T  # type: ignore
+                and panel.name == energy_system_inputs["pvt_panel"]
+            ][0]
+        except IndexError:
+            logger.error(
+                "%sPV-T panel %s not found in pv panel inputs.%s",
+                BColours.fail,
+                energy_system_inputs["pvt_panel"],
+                BColours.endc,
+            )
+            raise
+    else:
+        pvt_panel = None
+
     logger.info("Solar panel information successfully parsed.")
 
     battery_inputs_filepath = os.path.join(
@@ -366,6 +388,7 @@ def parse_input_files(
         diesel_backup_generator,
         energy_system_inputs,
         pv_panel,
+        pvt_panel,
         battery_inputs,
         tank_inputs,
     )
