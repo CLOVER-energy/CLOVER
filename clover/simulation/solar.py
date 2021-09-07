@@ -22,7 +22,7 @@ import dataclasses
 import enum
 
 from logging import Logger
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Tuple
 
 
 __all__ = (
@@ -141,7 +141,12 @@ class HybridPVTPanel(SolarPanel, panel_type=SolarPanelType.PV_T):
     """
     Represents a PV-T panel.
 
+    .. attribute:: mass_flow_rate
+        The mass-flow rate of heat-transfer fluid through the PV-T collector.
+
     """
+
+    mass_flow_rate: float
 
     @classmethod
     def from_dict(
@@ -172,7 +177,7 @@ class HybridPVTPanel(SolarPanel, panel_type=SolarPanelType.PV_T):
             logger.error(
                 "Could not find corresponding PV-layer data for layer %s for panel %s.",
                 solar_inputs["pv"],
-                solar_inputs["name"]
+                solar_inputs["name"],
             )
 
         return cls(
@@ -183,3 +188,43 @@ class HybridPVTPanel(SolarPanel, panel_type=SolarPanelType.PV_T):
             pv_layer.thermal_coefficient,
             solar_inputs["tilt"],
         )
+
+    def fractional_performance(
+        self, ambient_temperature: float, irradiance: float, wind_speed: float
+    ) -> Tuple[float, float]:
+        """
+        Computes the fractional performance of the :class:`HybridPVTPanel`.
+
+        Additional Credits:
+            The PV-T collector model used here was developed in-house by
+            Benedict Winchester, benedict.winchester@gmail.com
+
+        Inputs:
+            - ambient_temperature:
+                The ambient temperature surrounding the collector, measured in degrees
+                Celcius.
+            - irradiance:
+                The total irradiance incident on the collector, both direct and diffuse,
+                measured in W/m^2.
+            - wind_speed:
+                The wind speed at the collector location, measured in meters per second.
+
+        Outputs:
+            - collector_output_temperature:
+                The output temperature of the HTF leaving the collector.
+            - fractional_electrical_performance:
+                The fractional electrical performance of the collector, where 1
+                corresponds to the rated performance under standard test conditions.
+
+        """
+
+        # Compute the temperature of the collector using the reduced PV-T model.
+        collector_temperature = ambient_temperature + 0.035 * irradiance
+
+        # Compute the fractional electrical performance of the collector.
+        fractional_electrical_performance = 1 - self.thermal_coefficient * (
+            collector_temperature - self.reference_temperature
+        )
+
+        # Return this, along with the output temperature of HTF leaving the collector.
+        return 0, fractional_electrical_performance
