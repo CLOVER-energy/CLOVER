@@ -22,7 +22,7 @@ import dataclasses
 import enum
 
 from logging import Logger
-from typing import Any, Dict
+from typing import Any, Dict, List
 
 
 __all__ = (
@@ -115,6 +115,8 @@ class PVPanel(SolarPanel, panel_type=SolarPanelType.PV):
         Instantiate a :class:`PVPanel` instance based on the input data.
 
         Inputs:
+            - logger:
+                The logger to use for the run.
             - solar_inputs:
                 The solar input data for the panel.
 
@@ -135,8 +137,49 @@ class PVPanel(SolarPanel, panel_type=SolarPanelType.PV):
         )
 
 
-class HybridPVTPanel(PVPanel, panel_type=SolarPanelType.PV_T):
+class HybridPVTPanel(SolarPanel, panel_type=SolarPanelType.PV_T):
     """
     Represents a PV-T panel.
 
     """
+
+    @classmethod
+    def from_dict(
+        cls,
+        logger: Logger,
+        solar_inputs: Dict[str, Any],
+        solar_panels: List[SolarPanel],
+    ) -> Any:
+        """
+        Instantiate a :class:`HybridPVTPanel` instance based on the input data.
+
+        Inputs:
+            - logger:
+                The logger to use for the run.
+            - solar_inputs:
+                The solar input data specific to this panel.
+            - solar_panels:
+                The full set of solar generation data.
+
+        """
+
+        # Attempt to extract information about the corresponding PV layer.
+        try:
+            pv_layer = [
+                panel for panel in solar_panels if panel.name == solar_inputs["pv"]
+            ][0]
+        except IndexError:
+            logger.error(
+                "Could not find corresponding PV-layer data for layer %s for panel %s.",
+                solar_inputs["pv"],
+                solar_inputs["name"]
+            )
+
+        return cls(
+            solar_inputs["azimuthal_orientation"],
+            solar_inputs["lifetime"],
+            solar_inputs["name"],
+            pv_layer.reference_temperature,
+            pv_layer.thermal_coefficient,
+            solar_inputs["tilt"],
+        )

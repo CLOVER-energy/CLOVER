@@ -313,13 +313,20 @@ def parse_input_files(
         )
     logger.info("Solar generation inputs successfully parsed.")
 
-    # Parse the pv-panel information.
+    # Parse the PV-panel information.
     solar_panels: List[solar.SolarPanel] = []
     for panel_input in solar_generation_inputs["panels"]:
         if panel_input["type"] == solar.SolarPanelType.PV.value:
             solar_panels.append(solar.PVPanel.from_dict(logger, panel_input))
+
+    # Parse the PV-T panel information
+    for panel_input in solar_generation_inputs["panels"]:
         if panel_input["type"] == solar.SolarPanelType.PV_T.value:
-            solar_panels.append(solar.HybridPVTPanel.from_dict(logger, panel_input))
+            solar_panels.append(
+                solar.HybridPVTPanel.from_dict(
+                    logger, panel_input, solar_panels
+                )
+            )
 
     # Return the solar panel being modelled.
     try:
