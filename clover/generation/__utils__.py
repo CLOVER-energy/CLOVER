@@ -161,7 +161,6 @@ def _get_profile_from_rn(
         {
             "date_from": f"{year}-01-01",
             "date_to": f"{year}-12-31",
-            "dataset": "merra2",
             "format": "json",
             "header": "true",
             # Metadata and raw data now supported by different function in API

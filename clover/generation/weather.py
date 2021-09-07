@@ -108,6 +108,7 @@ class WeatherDataThread(
 
         # Add the additional parameters which are need when calling the weather data.
         renewables_ninja_params = {
+            "dataset": "merra2",
             "lat": float(location.latitude),
             "lon": float(location.longitude),
             "local_time": "false",
