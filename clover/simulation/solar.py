@@ -197,7 +197,10 @@ class HybridPVTPanel(SolarPanel, panel_type=SolarPanelType.PV_T):
         self.mass_flow_rate = solar_inputs["mass_flow_rate"]
 
     def fractional_performance(
-        self, ambient_temperature: pd.Series, irradiance: pd.Series, wind_speed: pd.Series
+        self,
+        ambient_temperature: pd.Series,
+        irradiance: pd.Series,
+        wind_speed: pd.Series,
     ) -> Tuple[None, pd.Series]:
         """
         Computes the fractional performance of the :class:`HybridPVTPanel`.

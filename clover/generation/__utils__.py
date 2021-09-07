@@ -63,7 +63,6 @@ API_BASE = "https://www.renewables.ninja/api/"
 RENEWABLES_NINJA_SLEEP_TIME = 12
 
 
-
 class SolarDataType(enum.Enum):
     """
     Denotes the types of solar data being stored.
@@ -90,7 +89,6 @@ class SolarDataType(enum.Enum):
     ELECTRICITY = "electricity"
     TEMPERATURE = "temperature"
     TOTAL_IRRADIANCE = "irradiance_total"
-
 
 
 def _get_profile_from_rn(
