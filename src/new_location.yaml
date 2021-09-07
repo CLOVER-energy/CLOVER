@@ -67,7 +67,7 @@
                   output: groundwater
                   maximum_output: 830 # [litres/hour]
                                 
-                # Reverse osmosis specs from:
+                # Reverse osmosis specification from:
                 # https://www.sciencedirect.com/science/article/pii/S0255270116304329
                 - name: reverse_osmosis
                   electric_power: 1435 # [W]
@@ -572,13 +572,13 @@
                 iteration_length: 4 # [years]
                 number_of_iterations: 3 # number of iterations to carry out
                 pv_size:
-                  min: 1 # [kWp]
-                  max: 10 # [kWp]
-                  step: 1 # [kWp]
+                  min: 5 # [kWp]
+                  max: 25 # [kWp]
+                  step: 5 # [kWp]
                 storage_size:
                   min: 10 # [kWh]
-                  max: 20 # [kWh]
-                  step: 1 # [kWh]
+                  max: 40 # [kWh]
+                  step: 5 # [kWh]
                 optimisations:
                   - optimisation_criteria:
                       - lcue: minimise # Name of the column and whether to maximise/minimise.
@@ -599,11 +599,6 @@
                 ################################################################################
 
                 pv: true # "true" or "false"
-                pv_panel: default_solar
-                # pv_t: false
-                # pv_t_panel: default_pv_t_panel
-                # pv_d: false
-                # pv_d_panel: default_pv_d_panel
                 battery: true # "true" or "false"
                 diesel:
                   mode: backup # "backup" only option currently
@@ -673,8 +668,6 @@
                   ac_to_dc: 0.8 # Conversion efficiency (0.0-1.0)
                   ac_to_ac: 0.98 # Conversion efficiency (0.0-1.0)
                 pv_panel: default_solar
-                # pv_t_panel: default_pv_t_panel
-                # pv_d_panel: default_pv_d_panel
             - file: "simulations.yaml"
               contents: |+
                 ---
@@ -708,15 +701,6 @@
                   maximum_charge: 1 # State of charge (0.0 - 1.0)
                   minimum_charge: 0 # State of charge (0.0 - 1.0)
                   resource_type: clean_water
-                # - name: hot_water_tank
-                #   area: 1.9 # [m^2]
-                #   cycle_lifetime: 1500 # Expected number of cycles over lifetime
-                #   heat_loss_coefficient: 1.9 # [W/m^2*K]
-                #   leakage: 0 # Fractional leakage per hour
-                #   mass: 150 # [kg or litres]
-                #   maximum_charge: 1 # State of charge (0.0 - 1.0)
-                #   minimum_charge: 0 # State of charge (0.0 - 1.0)
-                #   resource_type: hot_water
     - directory: outputs
       contents:
         - directory: optimisation_outputs

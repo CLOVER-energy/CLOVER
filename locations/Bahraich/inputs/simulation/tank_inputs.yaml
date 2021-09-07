@@ -15,12 +15,3 @@
   maximum_charge: 1 # State of charge (0.0 - 1.0)
   minimum_charge: 0 # State of charge (0.0 - 1.0)
   resource_type: clean_water
-# - name: hot_water_tank
-#   area: 1.9 # [m^2]
-#   cycle_lifetime: 1500 # Expected number of cycles over lifetime
-#   heat_loss_coefficient: 1.9 # [W/m^2*K]
-#   leakage: 0 # Fractional leakage per hour
-#   mass: 150 # [kg or litres]
-#   maximum_charge: 1 # State of charge (0.0 - 1.0)
-#   minimum_charge: 0 # State of charge (0.0 - 1.0)
-#   resource_type: hot_water
