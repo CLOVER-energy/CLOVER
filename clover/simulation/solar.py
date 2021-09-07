@@ -81,7 +81,6 @@ class SolarPanel:
     azimuthal_orientation: float
     lifetime: int
     name: str
-    reference_efficiency: float
     reference_temperature: float
     thermal_coefficient: float
     tilt: float
@@ -130,29 +129,9 @@ class PVPanel(SolarPanel, panel_type=SolarPanelType.PV):
             solar_inputs["azimuthal_orientation"],
             solar_inputs["lifetime"],
             solar_inputs["name"],
-            solar_inputs["reference_efficiency"],
             solar_inputs["reference_temperature"],
             solar_inputs["thermal_coefficient"],
             solar_inputs["tilt"],
-        )
-
-    def electrical_efficiency(self, pv_temperature: float) -> float:
-        """
-        Returns the electrical efficiency of the PV panel based on its temperature.
-
-        :param pv_temperature:
-            The temperature of the PV layer, measured in Kelvin.
-
-        :return:
-            A decimal giving the percentage efficiency of the PV panel between 0 (0%
-            efficiency), and 1 (100% efficiency).
-
-        """
-
-        return self.reference_efficiency * (  # [unitless]
-            1
-            - self.thermal_coefficient  # [1/K]
-            * (pv_temperature - self.reference_temperature)  # [K]
         )
 
 
