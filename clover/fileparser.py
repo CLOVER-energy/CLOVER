@@ -322,11 +322,7 @@ def parse_input_files(
     # Parse the PV-T panel information
     for panel_input in solar_generation_inputs["panels"]:
         if panel_input["type"] == solar.SolarPanelType.PV_T.value:
-            solar_panels.append(
-                solar.HybridPVTPanel(
-                    logger, panel_input, solar_panels
-                )
-            )
+            solar_panels.append(solar.HybridPVTPanel(logger, panel_input, solar_panels))
 
     # Return the PV panel being modelled.
     try:

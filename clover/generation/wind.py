@@ -94,6 +94,7 @@ def total_wind_output(*args, **kwargs) -> pd.DataFrame:
 
     return total_profile_output(*args, **kwargs, profile_name="wind")
 
+
 class WindDataType(enum.Enum):
     """
     Stores weather condition information for extracting data from renewables ninja.
