@@ -36,7 +36,7 @@ from .fileparser import (
     KEROSENE_USAGE_FILE,
     parse_input_files,
 )
-from .generation import grid, solar, weather
+from .generation import grid, solar, weather, wind
 from .load import load
 from .scripts import new_location
 from .simulation import energy_system
@@ -214,16 +214,12 @@ def main(args: List[Any]) -> None:
 
     # Define common variables.
     auto_generated_files_directory = os.path.join(
-        LOCATIONS_FOLDER_NAME,
-        parsed_args.location,
-        AUTO_GENERATED_FILES_DIRECTORY,
+        LOCATIONS_FOLDER_NAME, parsed_args.location, AUTO_GENERATED_FILES_DIRECTORY,
     )
 
     # If the output filename is not provided, then generate it.
     simulation_output_directory = os.path.join(
-        LOCATIONS_FOLDER_NAME,
-        parsed_args.location,
-        SIMULATION_OUTPUTS_FOLDER,
+        LOCATIONS_FOLDER_NAME, parsed_args.location, SIMULATION_OUTPUTS_FOLDER,
     )
     optimisation_output_directory = os.path.join(
         LOCATIONS_FOLDER_NAME, parsed_args.location, OPTIMISATION_OUTPUTS_FOLDER
@@ -353,11 +349,34 @@ def main(args: List[Any]) -> None:
 
     print("Generating necessary profiles", end="\n")
 
+    # Determine the number of background tasks to carry out.
+    num_ninjas: int = 1 + (1 if scenario.pv_t else 0) + (
+        1 if ResourceType.CLEAN_WATER in scenario.resource_types else 0
+    )
+
+    # Generate and save the wind data for each year as a background task.
+    if scenario.pv_t:
+        logger.info("Beginning wind-data fetching.")
+        wind_data_thread: Optional[wind.WindDataThread] = wind.WindDataThread(
+            os.path.join(auto_generated_files_directory, "wind"),
+            generation_inputs,
+            location,
+            f"{parsed_args.location}_{wind.WIND_LOGGER_NAME}",
+            parsed_args.refetch,
+            num_ninjas,
+        )
+        if wind_data_thread is None:
+            raise InternalError("Wind data thread failed to successfully instantiate.")
+        wind_data_thread.start()
+        logger.info(
+            "Wind-data thread successfully instantiated. See %s for details.",
+            "{}.log".format(os.path.join(LOGGER_DIRECTORY, wind.WIND_LOGGER_NAME)),
+        )
+
     # Generate and save the weather data for each year as a background task.
     if ResourceType.CLEAN_WATER in scenario.resource_types:
         # Set up the system to call renewables.ninja at a slower rate.
-        num_ninjas = 2
-        logger.info("Beggining weather-data fetching.")
+        logger.info("Begining weather-data fetching.")
         weather_data_thread: Optional[
             weather.WeatherDataThread
         ] = weather.WeatherDataThread(
@@ -381,7 +400,6 @@ def main(args: List[Any]) -> None:
         )
     else:
         weather_data_thread = None
-        num_ninjas = 1
 
     # Generate and save the solar data for each year as a background task.
     logger.info("Beginning solar-data fetching.")
@@ -538,6 +556,8 @@ def main(args: List[Any]) -> None:
     solar_data_thread.join()
     if weather_data_thread is not None:
         weather_data_thread.join()
+    if wind_data_thread is not None:
+        wind_data_thread.join()
     logger.info("All setup threads finished.")
 
     logger.info("Generating and saving total solar output file.")
@@ -558,6 +578,18 @@ def main(args: List[Any]) -> None:
             location.max_years,
         )
         logger.info("Total weather output successfully computed and saved.")
+
+    if scenario.pv_t:
+        logger.info("Generating and saving total wind data output file.")
+        total_wind_data = wind.total_wind_output(
+            os.path.join(auto_generated_files_directory, "wind"),
+            parsed_args.regenerate,
+            generation_inputs["start_year"],
+            location.max_years,
+        )
+        logger.info("Total wind output successfully computed and saved.")
+
+
 
     logger.info(
         "Setup complete, continuing to CLOVER %s.",
@@ -583,10 +615,7 @@ def main(args: List[Any]) -> None:
             ),
             "r",
         ) as f:
-            grid_profile = pd.read_csv(
-                f,
-                index_col=0,
-            )
+            grid_profile = pd.read_csv(f, index_col=0,)
     except FileNotFoundError as e:
         logger.error(
             "%sGrid profile file for profile '%s' could not be found: %s%s",
@@ -609,10 +638,7 @@ def main(args: List[Any]) -> None:
     # * Run a simulation or optimisation as appropriate.
     if operating_mode == OperatingMode.SIMULATION:
         print(
-            "Beginning CLOVER simulation runs {}    ".format(
-                "." * 30,
-            ),
-            end="\n",
+            "Beginning CLOVER simulation runs {}    ".format("." * 30,), end="\n",
         )
         simulation_times: List[str] = []
 
@@ -713,10 +739,7 @@ def main(args: List[Any]) -> None:
 
     if operating_mode == OperatingMode.OPTIMISATION:
         print(
-            "Beginning CLOVER optimisation runs {}    ".format(
-                "." * 28,
-            ),
-            end="\n",
+            "Beginning CLOVER optimisation runs {}    ".format("." * 28,), end="\n",
         )
         optimisation_times: List[str] = []
 
