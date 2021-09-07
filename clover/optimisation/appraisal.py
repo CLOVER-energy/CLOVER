@@ -309,7 +309,7 @@ def _simulation_technical_appraisal(
     """
 
     # Calculate system blackouts
-    system_blackouts = np.mean(simulation_results["Blackouts"].values)
+    system_blackouts: float = float(np.mean(simulation_results["Blackouts"].values))
 
     # Total energy used
     total_energy = np.sum(simulation_results["Total energy used (kWh)"])  # type: ignore
