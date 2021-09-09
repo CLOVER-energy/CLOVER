@@ -57,10 +57,6 @@ class SolarPanel:
     """
     Represents a solar panel being considered.
 
-    .. attribute:: area
-        The area of panel per unit step. E.G., for PV systems, this corresponds to the
-        area of the panel that produces 1kWp of electrical output.
-
     .. attribute:: azimuthal_orientation
         The azimuthal orientation of the panel, defined in degrees from North.
 
@@ -86,7 +82,6 @@ class SolarPanel:
 
     """
 
-    area: Optional[float]
     azimuthal_orientation: float
     lifetime: int
     name: str
@@ -137,7 +132,6 @@ class PVPanel(SolarPanel, panel_type=SolarPanelType.PV):
         logger.info("Attempting to create PVPanel from solar input data.")
 
         return cls(
-            solar_inputs["area"] if "area" in solar_inputs else None,
             solar_inputs["azimuthal_orientation"],
             solar_inputs["lifetime"],
             solar_inputs["name"],
