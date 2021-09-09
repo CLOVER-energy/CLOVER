@@ -17,6 +17,7 @@ the clover module from the command-line interface.
 
 """
 
+from clover.generation.__utils__ import SolarDataType
 import datetime
 import logging
 import os
@@ -603,6 +604,33 @@ def main(args: List[Any]) -> None:
         if operating_mode == OperatingMode.OPTIMISATION
         else "main flow",
     )
+
+    # Compute the PV-T electricity generation profile.
+    if ResourceType.CLEAN_WATER in scenario.resource_types and operating_mode in (
+        OperatingMode.SIMULATION,
+        OperatingMode.OPTIMISATION,
+    ):
+        try:
+            (
+                _,
+                fractional_electric_performance,
+            ) = minigrid.pvt_panel.fractional_performance(
+                total_solar_data[SolarDataType.TEMPERATURE.value],
+                1000 * total_solar_data[SolarDataType.TOTAL_IRRADIANCE.value],
+                total_wind_data[wind.WindDataType.WIND_SPEED.value],
+            )
+        except TypeError:
+            logger.error(
+                "The PV-T system size must be specified explicitly on the command line."
+            )
+            raise Exception(
+                "Missing command-line argument: --pvt-system-size."
+            ) from None
+        pvt_electric_power = (
+            parsed_args.pvt_system_size
+            * minigrid.pvt_panel.pv_unit
+            * fractional_electric_performance
+        )
 
     print(
         f"Generating necessary profiles .................................    {DONE}",

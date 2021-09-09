@@ -95,7 +95,8 @@ def parse_args(args: List[Any]) -> argparse.Namespace:
     action_arguments.add_argument(
         "--pv-system-size",
         type=float,
-        help="The size of the PV system being modelled in kWp.",
+        help="The size of the PV system being modelled in PV panel units, defaulting "
+        "to kWp.",
     )
     action_arguments.add_argument(
         "--scenario",
@@ -105,7 +106,8 @@ def parse_args(args: List[Any]) -> argparse.Namespace:
     action_arguments.add_argument(
         "--storage-size",
         type=float,
-        help="The size of the battery system being modelled in kWh.",
+        help="The size of the battery system being modelled in battery units, "
+        "defaulting to kWh.",
     )
 
     # Simulation-specific arguments.
@@ -117,6 +119,11 @@ def parse_args(args: List[Any]) -> argparse.Namespace:
         default=0,
         type=int,
         help="The number of clean-water tanks to be included in the system.",
+    )
+    clean_water_parser.add_argument(
+        "--pvt-system-size",
+        type=float,
+        help="The size of the PV-T system being modelled in PV-T panel units.",
     )
 
     # Simulation-specific arguments.
