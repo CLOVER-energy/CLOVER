@@ -25,6 +25,11 @@ from ..__utils__ import ResourceType
 __all__ = ("Battery",)
 
 
+# Default storage unit:
+#   The default unit size, in kWh, of the batteries being considered.
+DEFAULT_STORAGE_UNIT = 1  # [kWh]
+
+
 class _BaseStorage:
     """
     Repsesents an abstract base storage unit.
@@ -178,6 +183,9 @@ class Battery(_BaseStorage, label="battery", resource_type=ResourceType.ELECTRIC
     .. attribute:: lifetime_loss
         The overall loss in capacity of the :class:`Battery` over its lifetime.
 
+    .. attribute:: storage_unit
+        The storage_unit of the :class:`Battery`, measured in kWh.
+
     """
 
     def __init__(
@@ -192,6 +200,8 @@ class Battery(_BaseStorage, label="battery", resource_type=ResourceType.ELECTRIC
         conversion_out: float,
         discharge_rate: float,
         lifetime_loss: float,
+        storage_unit: float,
+        storage_unit_overrided: bool,
     ) -> None:
         """
         Instantiate a :class:`Battery` instance.
@@ -219,6 +229,11 @@ class Battery(_BaseStorage, label="battery", resource_type=ResourceType.ELECTRIC
                 The rate of discharge of the :class:`Battery`.
             - lifetime_loss:
                 The loss in capacity of the :class:`Battery` over its lifetime.
+            - storage_unit:
+                The storage_unit of the :class:`Battery` in kWh.
+            - storage_unit_overrided:
+                Whether the default storage unit has been overrided (True) or not
+                (False).
 
         """
 
@@ -228,6 +243,8 @@ class Battery(_BaseStorage, label="battery", resource_type=ResourceType.ELECTRIC
         self.conversion_out: float = conversion_out
         self.discharge_rate: float = discharge_rate
         self.lifetime_loss: float = lifetime_loss
+        self.storage_unit = storage_unit
+        self.storage_unit_overrided = storage_unit_overrided
 
     def __str__(self) -> str:
         """
@@ -250,7 +267,8 @@ class Battery(_BaseStorage, label="battery", resource_type=ResourceType.ELECTRIC
             + f"discharge_rate={self.discharge_rate}, "
             + f"conversion_in={self.conversion_in}, "
             + f"conversion_out={self.conversion_out}, "
-            + f"lifetime_loss={self.lifetime_loss}"
+            + f"lifetime_loss={self.lifetime_loss}, "
+            + f"size={self.storage_unit} kWh"
             + ")"
         )
 
@@ -279,6 +297,10 @@ class Battery(_BaseStorage, label="battery", resource_type=ResourceType.ELECTRIC
             storage_data["conversion_out"],
             storage_data["c_rate_discharging"],
             storage_data["lifetime_loss"],
+            storage_data["storage_unit"]
+            if "storage_unit" in storage_data
+            else DEFAULT_STORAGE_UNIT,
+            "storage_unit" in storage_data,
         )
 
 

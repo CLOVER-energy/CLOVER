@@ -487,7 +487,7 @@ def run_simulation(
         - simulation:
             The simulation to run.
         - electric_storage_size:
-            Amount of storage in kWh
+            Amount of storage in terms of the number of batteries included.
         - total_clean_water_load:
             The total water load placed on the system.
         - total_electric_load:
@@ -636,13 +636,25 @@ def run_simulation(
 
     # Initialise battery storage parameters
     max_energy_throughput: float = (
-        electric_storage_size * minigrid.battery.cycle_lifetime
+        electric_storage_size
+        * minigrid.battery.cycle_lifetime
+        * minigrid.battery.storage_unit
     )
     initial_battery_storage: float = (
-        electric_storage_size * minigrid.battery.maximum_charge
+        electric_storage_size
+        * minigrid.battery.maximum_charge
+        * minigrid.battery.storage_unit
     )
-    max_battery_storage: float = electric_storage_size * minigrid.battery.maximum_charge
-    min_battery_storage: float = electric_storage_size * minigrid.battery.minimum_charge
+    max_battery_storage: float = (
+        electric_storage_size
+        * minigrid.battery.maximum_charge
+        * minigrid.battery.storage_unit
+    )
+    min_battery_storage: float = (
+        electric_storage_size
+        * minigrid.battery.minimum_charge
+        * minigrid.battery.storage_unit
+    )
     cumulative_battery_storage_power: float = 0.0
     hourly_battery_storage: Dict[int, float] = {}
     new_hourly_battery_storage: float = 0.0
@@ -937,11 +949,13 @@ def run_simulation(
                 battery_storage_degradation
                 * electric_storage_size
                 * minigrid.battery.maximum_charge
+                * minigrid.battery.storage_unit
             )
             min_battery_storage = (
                 battery_storage_degradation
                 * electric_storage_size
                 * minigrid.battery.minimum_charge
+                * minigrid.battery.storage_unit
             )
             battery_health[t] = battery_storage_degradation
 
@@ -1181,9 +1195,13 @@ def run_simulation(
                 8760 * (simulation.end_year - simulation.start_year)
             ]
         ),
-        float(electric_storage_size * np.min(battery_health_frame["Battery health"])),
+        float(
+            electric_storage_size
+            * minigrid.battery.storage_unit
+            * np.min(battery_health_frame["Battery health"])
+        ),
         pv_size,
-        float(electric_storage_size),
+        float(electric_storage_size * minigrid.battery.storage_unit),
         simulation.start_year,
     )
 

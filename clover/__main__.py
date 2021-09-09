@@ -642,6 +642,11 @@ def main(args: List[Any]) -> None:
         # Remove the index from the file.
         kerosene_usage.reset_index(drop=True)
 
+    # Determine whether any default sizes have been overrided.
+    overrided_default_sizes: bool = (
+        minigrid.pv_panel.pv_unit_overrided or minigrid.battery.storage_unit
+    )
+
     # * Run a simulation or optimisation as appropriate.
     if operating_mode == OperatingMode.SIMULATION:
         print(
@@ -653,8 +658,25 @@ def main(args: List[Any]) -> None:
         simulation_times: List[str] = []
 
         simulation_string: str = (
-            f"- {parsed_args.pv_system_size} kWp of PV"
-            + f"\n- {parsed_args.storage_size} kWh of storage"
+            f"- {parsed_args.pv_system_size * minigrid.pv_panel.pv_unit} kWp of PV"
+            + (
+                (
+                    f" ({parsed_args.pv_system_size}x "
+                    + f"{minigrid.pv_panel.pv_unit} kWp panels)"
+                )
+                if overrided_default_sizes
+                else ""
+            )
+            + f"\n- {parsed_args.storage_size * minigrid.battery.storage_unit} kWh of "
+            + "storage"
+            + (
+                (
+                    f" ({parsed_args.storage_size}x "
+                    + f"{minigrid.battery.storage_unit} kWh batteries)"
+                )
+                if overrided_default_sizes
+                else ""
+            )
             + "\n- {}x {} litres clean-water storage".format(
                 parsed_args.num_clean_water_tanks, minigrid.clean_water_tank.mass
             )
@@ -685,7 +707,8 @@ def main(args: List[Any]) -> None:
                     parsed_args.storage_size,
                     total_clean_water_load,
                     0.001 * total_electric_load,  # type: ignore
-                    total_solar_data[solar.SolarDataType.ELECTRICITY.value],
+                    total_solar_data[solar.SolarDataType.ELECTRICITY.value]
+                    * minigrid.pv_panel.pv_unit,
                 )
             except Exception as e:
                 print(
@@ -718,7 +741,8 @@ def main(args: List[Any]) -> None:
                 grid_inputs[scenario.grid_type],
                 simulation.end_year - simulation.start_year,
                 system_performance_outputs,
-                total_solar_data[solar.SolarDataType.ELECTRICITY.value],
+                total_solar_data[solar.SolarDataType.ELECTRICITY.value]
+                * minigrid.pv_panel.pv_unit,
             )
 
             if parsed_args.analyse:
@@ -735,7 +759,8 @@ def main(args: List[Any]) -> None:
                     system_performance_outputs,
                     total_clean_water_load,
                     0.001 * total_electric_load,  # type: ignore
-                    total_solar_data[solar.SolarDataType.ELECTRICITY.value],
+                    total_solar_data[solar.SolarDataType.ELECTRICITY.value]
+                    * minigrid.pv_panel.pv_unit,
                 )
             else:
                 logger.info("No analysis to be carried out.")
@@ -794,11 +819,11 @@ def main(args: List[Any]) -> None:
             )
 
         optimisation_string: str = (
-            "- PV resolution of {} units (1 kWp per unit)".format(
-                optimisation_inputs.pv_size_step
+            "- PV resolution of {} units ({} kWp per unit)".format(
+                optimisation_inputs.pv_size_step, minigrid.pv_panel.pv_unit
             )
-            + "\n- Storage resolution of {} units (1 kWh per unit)".format(
-                optimisation_inputs.storage_size_step
+            + "\n- Storage resolution of {} units ({} kWh per unit)".format(
+                optimisation_inputs.storage_size_step, minigrid.battery.storage_unit
             )
             + (
                 (
@@ -833,7 +858,8 @@ def main(args: List[Any]) -> None:
                     scenario,
                     total_clean_water_load,
                     0.001 * total_electric_load,  # type: ignore
-                    total_solar_data[solar.SolarDataType.ELECTRICITY.value],
+                    total_solar_data[solar.SolarDataType.ELECTRICITY.value]
+                    * minigrid.pv_panel.pv_unit,
                     electric_yearly_load_statistics,
                 )
             except Exception as e:
