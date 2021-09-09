@@ -77,6 +77,9 @@ class SolarPanel:
     .. attribute:: pv_unit
         The unit of PV power being considered, defaulting to 1 kWp.
 
+    .. attribute:: pv_unit_overrided
+        Whether the default PV unit was overrided (True) or not (False).
+
     .. attribute:: reference_temperature
         The reference temperature of the PV layer of the panel, measured in degrees
         Celcius.
@@ -94,6 +97,7 @@ class SolarPanel:
     lifetime: int
     name: str
     pv_unit: float
+    pv_unit_overrided: bool
     reference_temperature: Optional[float]
     thermal_coefficient: Optional[float]
     tilt: float
@@ -142,11 +146,13 @@ class PVPanel(SolarPanel, panel_type=SolarPanelType.PV):
 
         if "pv_unit" in solar_inputs:
             pv_unit: float = solar_inputs["pv_unit"]
+            pv_unit_overrided: bool = True
             logger.info(
                 "`pv_unit` variable specified, using a pv unit of %s kWp", pv_unit
             )
         else:
             pv_unit = DEFAULT_PV_UNIT
+            pv_unit_overrided = False
             logger.info("No `pv_unit` keyword specified, defaulting to %s kWp", pv_unit)
 
         return cls(
@@ -154,6 +160,7 @@ class PVPanel(SolarPanel, panel_type=SolarPanelType.PV):
             solar_inputs["lifetime"],
             solar_inputs["name"],
             pv_unit,
+            pv_unit_overrided,
             solar_inputs["reference_temperature"]
             if "reference_temperature" in solar_inputs
             else None,
@@ -229,6 +236,7 @@ class HybridPVTPanel(SolarPanel, panel_type=SolarPanelType.PV_T):
             solar_inputs["lifetime"],
             solar_inputs["name"],
             solar_inputs["pv_unit"],
+            True,
             pv_layer.reference_temperature,
             pv_layer.thermal_coefficient,
             solar_inputs["tilt"],
