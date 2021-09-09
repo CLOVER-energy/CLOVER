@@ -1108,10 +1108,14 @@ def run_simulation(
         )
         unmet_clean_water = unmet_clean_water * (unmet_clean_water > 0)  # type: ignore
 
+        # Find the new clean-water blackout times, according to when there is unmet demand
+        clean_water_blackout_times = ((unmet_clean_water > 0) * 1).astype(float)
+
         # Clean-water system performance outputs
         backup_desalinator_water_frame.columns = pd.Index(
             ["Clean water supplied via backup desalination (l)"]
         )
+        clean_water_blackout_times.columns = pd.Index(["Clean water blackouts"])
         clean_water_power_consumed.columns = pd.Index(
             ["Power consumed providing clean water (kWh)"]
         )
@@ -1213,6 +1217,7 @@ def run_simulation(
         system_performance_outputs_list.extend(
             [
                 backup_desalinator_water_frame,
+                clean_water_blackout_times,
                 clean_water_power_consumed,
                 excess_energy_used_desalinating_frame,
                 hourly_tank_storage_frame,

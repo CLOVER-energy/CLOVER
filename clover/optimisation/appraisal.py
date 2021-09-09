@@ -310,6 +310,11 @@ def _simulation_technical_appraisal(
 
     # Calculate system blackouts
     system_blackouts: float = float(np.mean(simulation_results["Blackouts"].values))
+    clean_water_blackouts: float = (
+        float(np.mean(simulation_results["Clean water blackouts"].values))
+        if "Clean water blackouts" in simulation_results
+        else None
+    )
 
     # Total energy used
     total_energy = np.sum(simulation_results["Total energy used (kWh)"])  # type: ignore
@@ -362,6 +367,7 @@ def _simulation_technical_appraisal(
     # Return outputs
     return TechnicalAppraisal(
         round(system_blackouts, 3),
+        round(clean_water_blackouts, 3),
         round(total_diesel_used, 3),
         round(total_diesel_fuel, 3),
         round(discounted_energy, 3),
@@ -456,6 +462,7 @@ def appraise_system(
                 0,
                 0,
                 0,
+                0,
             ),
         )
 
@@ -530,6 +537,9 @@ def appraise_system(
         technical_appraisal,
         criteria={
             Criterion.BLACKOUTS: round(technical_appraisal.blackouts, 3),
+            Criterion.CLEAN_WATER_BLACKOUTS: round(
+                technical_appraisal.clean_water_blackouts, 3
+            ),
             Criterion.CUMULATIVE_COST: round(cumulative_results.cost, 3),
             Criterion.CUMULATIVE_GHGS: round(cumulative_results.ghgs, 3),
             Criterion.EMISSIONS_INTENSITY: round(emissions_intensity, 3),
