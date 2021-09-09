@@ -178,6 +178,10 @@ class HybridPVTPanel(SolarPanel, panel_type=SolarPanelType.PV_T):
     .. attribute:: mass_flow_rate
         The mass-flow rate of heat-transfer fluid through the PV-T collector.
 
+    .. attribute:: thermal_unit
+        The unit of thermal panel that the panel can output which is being considered,
+        measured in kWth.
+
     """
 
     def __init__(
@@ -243,6 +247,7 @@ class HybridPVTPanel(SolarPanel, panel_type=SolarPanelType.PV_T):
         )
 
         self.mass_flow_rate = solar_inputs["mass_flow_rate"]
+        self.thermal_unit = solar_inputs["thermal_unit"]
 
     def fractional_performance(
         self,
