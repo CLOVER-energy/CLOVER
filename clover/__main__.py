@@ -653,8 +653,13 @@ def main(args: List[Any]) -> None:
         simulation_times: List[str] = []
 
         simulation_string: str = (
-            f"- {parsed_args.pv_system_size} kWp of PV\n"
-            + f"- {parsed_args.storage_size} kWh of storage"
+            f"- {parsed_args.pv_system_size} kWp of PV"
+            + f"\n- {parsed_args.storage_size} kWh of storage"
+            + "\n- {}x {} litres clean-water storage".format(
+                parsed_args.num_clean_water_tanks, minigrid.clean_water_tank.mass
+            )
+            if ResourceType.CLEAN_WATER in scenario.resource_types
+            else ""
         )
         print(f"Running a simulation with:\n{simulation_string}")
 
@@ -789,11 +794,23 @@ def main(args: List[Any]) -> None:
             )
 
         optimisation_string: str = (
-            "- PV resolution of {} units (1 kWp per unit)\n".format(
+            "- PV resolution of {} units (1 kWp per unit)".format(
                 optimisation_inputs.pv_size_step
             )
-            + "- Storage resolution of {} units (1 kWh per unit)".format(
+            + "\n- Storage resolution of {} units (1 kWh per unit)".format(
                 optimisation_inputs.storage_size_step
+            )
+            + (
+                (
+                    "\n- Clean-water tank resolution of {} ".format(
+                        optimisation_inputs.clean_water_tanks_step
+                    )
+                    + "units (1 tank of size {} litres per unit)".format(
+                        minigrid.clean_water_tank.mass
+                    )
+                )
+                if ResourceType.CLEAN_WATER in scenario.resource_types
+                else ""
             )
         )
         print(f"Running an optimisation with:\n{optimisation_string}")
@@ -811,7 +828,6 @@ def main(args: List[Any]) -> None:
                     location,
                     logger,
                     minigrid,
-                    parsed_args.num_clean_water_tanks,
                     optimisation,
                     optimisation_inputs,
                     scenario,

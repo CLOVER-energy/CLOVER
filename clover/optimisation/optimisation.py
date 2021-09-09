@@ -43,8 +43,10 @@ from tqdm import tqdm  # type: ignore  # pylint: disable=import-error
 from ..simulation import energy_system
 
 from ..__utils__ import (
+    CleanWaterMode,
     DONE,
     InternalError,
+    ResourceType,
     Scenario,
     Location,
     OptimisationParameters,
@@ -58,6 +60,7 @@ from .__utils__ import (
     Optimisation,
     PVSystemSize,
     StorageSystemSize,
+    TankSize,
     ThresholdMode,
 )
 
@@ -109,6 +112,7 @@ def _fetch_optimum_system(
 
 
 def _single_line_simulation(
+    clean_water_tanks: Optional[TankSize],
     convertors: List[Convertor],
     end_year: int,
     finance_inputs: Dict[str, Any],
@@ -120,7 +124,6 @@ def _single_line_simulation(
     location: Location,
     logger: Logger,
     minigrid: energy_system.Minigrid,
-    num_clean_water_tanks: int,
     optimisation: Optimisation,
     potential_system: SystemAppraisal,
     previous_system: Optional[SystemAppraisal],
@@ -130,7 +133,7 @@ def _single_line_simulation(
     total_electric_load: pd.DataFrame,
     total_solar_power_produced: pd.Series,
     yearly_electric_load_statistics: pd.DataFrame,
-) -> Tuple[PVSystemSize, StorageSystemSize, List[SystemAppraisal]]:
+) -> Tuple[Optional[TankSize], PVSystemSize, StorageSystemSize, List[SystemAppraisal]]:
     """
     Preforms an additional round of simulations.
 
@@ -176,6 +179,12 @@ def _single_line_simulation(
             np.ceil(storage_size.max / storage_size.step) * storage_size.step
         )
 
+    # Set up a max clean-water tank variable to use if none were specified.
+    if clean_water_tanks is None:
+        test_clean_water_tanks = 0
+    else:
+        test_clean_water_tanks = clean_water_tanks.max
+
     # If storage was maxed out:
     if potential_system.system_details.initial_storage_size == storage_size.max:
         logger.info("Increasing storage size.")
@@ -202,7 +211,7 @@ def _single_line_simulation(
                 kerosene_usage,
                 location,
                 logger,
-                num_clean_water_tanks,
+                test_clean_water_tanks,
                 iteration_pv_size,
                 scenario,
                 Simulation(end_year, start_year),
@@ -243,7 +252,7 @@ def _single_line_simulation(
                 kerosene_usage,
                 location,
                 logger,
-                num_clean_water_tanks,
+                test_clean_water_tanks,
                 pv_system_size.max,
                 scenario,
                 Simulation(end_year, start_year),
@@ -284,7 +293,7 @@ def _single_line_simulation(
             np.ceil(pv_system_size.max / pv_system_size.step) * pv_system_size.step
         )
 
-    #   If PV was maxed out:
+    # If PV was maxed out:
     if potential_system.system_details.initial_pv_size == pv_system_size.max:
         logger.info("Increasing PV size.")
 
@@ -310,7 +319,7 @@ def _single_line_simulation(
                 kerosene_usage,
                 location,
                 logger,
-                num_clean_water_tanks,
+                test_clean_water_tanks,
                 test_pv_size,
                 scenario,
                 Simulation(end_year, start_year),
@@ -353,7 +362,7 @@ def _single_line_simulation(
                 kerosene_usage,
                 location,
                 logger,
-                num_clean_water_tanks,
+                test_clean_water_tanks,
                 test_pv_size,
                 scenario,
                 Simulation(end_year, start_year),
@@ -391,6 +400,7 @@ def _single_line_simulation(
 
 
 def _find_optimum_system(
+    clean_water_tanks: Optional[TankSize],
     convertors: List[Convertor],
     end_year: int,
     finance_inputs: Dict[str, Any],
@@ -402,7 +412,6 @@ def _find_optimum_system(
     location: Location,
     logger: Logger,
     minigrid: energy_system.Minigrid,
-    num_clean_water_tanks: int,
     optimisation: Optimisation,
     previous_system: Optional[SystemAppraisal],
     scenario: Scenario,
@@ -421,6 +430,8 @@ def _find_optimum_system(
     the simulation is an edge case
 
     Inputs:
+        - clean_water_tanks:
+            Range of clean-water tank sizes.
         - end_year:
             The end year of the simulation run currently being considered.
         - largest_pv_system_size:
@@ -464,10 +475,12 @@ def _find_optimum_system(
         ):
             # Do single line optimisation to see if larger system is superior
             (
+                largest_clean_water_size,
                 largest_pv_system_size,
                 largest_storage_system_size,
                 new_system_appraisals,
             ) = _single_line_simulation(
+                clean_water_tanks,
                 convertors,
                 end_year,
                 finance_inputs,
@@ -479,7 +492,6 @@ def _find_optimum_system(
                 location,
                 logger,
                 minigrid,
-                num_clean_water_tanks,
                 optimisation,
                 optimum_system,
                 previous_system,
@@ -576,6 +588,7 @@ def _get_sufficient_appraisals(
 
 
 def _simulation_iteration(
+    clean_water_tanks: Optional[TankSize],
     convertors: List[Convertor],
     finance_inputs: Dict[str, Any],
     ghg_inputs: Dict[str, Any],
@@ -584,7 +597,6 @@ def _simulation_iteration(
     location: Location,
     logger: Logger,
     minigrid: energy_system.Minigrid,
-    num_clean_water_tanks: int,
     optimisation: Optimisation,
     optimisation_parameters: OptimisationParameters,
     previous_system: Optional[SystemAppraisal],
@@ -612,6 +624,8 @@ def _simulation_iteration(
     increases system size when no sufficient system exists.
 
     Inputs:
+        - clean_water_tanks:
+            Range of clean-water tanks.
         - grid_profile:
             The grid-availability profile.
         - kerosene_usage:
@@ -622,8 +636,6 @@ def _simulation_iteration(
             The logger to use for the run.
         - minigrid:
             The energy system being considered.
-        - num_clean_water_tanks:
-            The number of clean-water tanks being considered.
         - optimisation:
             The :class:`Optimisation` currently being run.
         - optimisation_parameters:
@@ -685,7 +697,7 @@ def _simulation_iteration(
         kerosene_usage,
         location,
         logger,
-        num_clean_water_tanks,
+        clean_water_tanks.max if clean_water_tanks is not None else 0,
         pv_sizes.max,
         scenario,
         Simulation(end_year, start_year),
@@ -709,6 +721,10 @@ def _simulation_iteration(
     )
 
     # Instantiate in preparation of the while loop.
+    if ResourceType.CLEAN_WATER in scenario.resource_types:
+        clean_water_tanks_max: int = clean_water_tanks.max
+    else:
+        clean_water_tanks_max = 0
     pv_size_max = pv_sizes.max
     storage_size_max = storage_sizes.max
 
@@ -720,9 +736,12 @@ def _simulation_iteration(
             np.ceil(storage_size_max / storage_sizes.step) * storage_sizes.step
         )
         logger.info(
-            "Probing system upper bounds: pv_size: %s, storage_size: %s",
+            "Probing system upper bounds: pv_size: %s, storage_size: %s%s",
             pv_size_max,
             storage_size_max,
+            f", num clean-water tanks: {clean_water_tanks_max}"
+            if ResourceType.CLEAN_WATER in scenario.resource_types
+            else "",
         )
 
         # Run a simulation and appraise it.
@@ -733,7 +752,7 @@ def _simulation_iteration(
             kerosene_usage,
             location,
             logger,
-            num_clean_water_tanks,
+            clean_water_tanks_max,
             pv_size_max,
             scenario,
             Simulation(end_year, start_year),
@@ -762,6 +781,8 @@ def _simulation_iteration(
         )
 
         # Increment the system sizes.
+        if ResourceType.CLEAN_WATER in scenario.resource_types:
+            clean_water_tanks_max += clean_water_tanks.step
         pv_size_max += pv_sizes.step
         storage_size_max += storage_sizes.step
 
@@ -777,10 +798,24 @@ def _simulation_iteration(
         np.ceil(storage_size_max / storage_sizes.step) * storage_sizes.step
     )
     logger.info(
-        "Largest system size determined: pv_size: %s, storage_size: %s",
+        "Largest system size determined: pv_size: %s, storage_size: %s%s",
         pv_size_max,
         storage_size_max,
+        f", num clean-water tanks: {clean_water_tanks_max}"
+        if ResourceType.CLEAN_WATER in scenario.resource_types
+        else "",
     )
+
+    if clean_water_tanks is not None:
+        simulation_clean_water_tanks: Optional[List[int]] = sorted(
+            range(
+                clean_water_tanks.min,
+                clean_water_tanks_max + clean_water_tanks.step,
+                clean_water_tanks.step,
+            )
+        )
+    else:
+        simulation_clean_water_tanks = [0]
 
     simulation_pv_sizes = sorted(
         range(int(pv_sizes.min), int(pv_size_max + pv_sizes.step), int(pv_sizes.step)),
@@ -804,49 +839,63 @@ def _simulation_iteration(
             simulation_storage_sizes,
             desc="storage size options",
             leave=False,
-            unit="simulation",
+            unit="storage size options"
+            if ResourceType.CLEAN_WATER in scenario.resource_types
+            else "simulation",
         ):
-            logger.info(
-                "Probing system: pv_size: %s, storage_size: %s", pv_size, storage_size
-            )
-            # Run a simulation and appraise it.
-            _, simulation_results, system_details = energy_system.run_simulation(
-                convertors,
-                minigrid,
-                grid_profile,
-                kerosene_usage,
-                location,
-                logger,
-                num_clean_water_tanks,
-                pv_size,
-                scenario,
-                Simulation(end_year, start_year),
-                storage_size,
-                total_clean_water_load,
-                total_electric_load,
-                total_solar_power_produced,
-            )
+            for num_clean_water_tanks in tqdm(
+                simulation_clean_water_tanks,
+                desc="clean water tank options",
+                disable=ResourceType.CLEAN_WATER not in scenario.resource_types,
+                leave=False,
+                unit="simulation",
+            ):
+                logger.info(
+                    "Probing system: pv_size: %s, storage_size: %s%s",
+                    pv_size,
+                    storage_size,
+                    f", num clean-water tanks: {num_clean_water_tanks}"
+                    if ResourceType.CLEAN_WATER in scenario.resource_types
+                    else "",
+                )
+                # Run a simulation and appraise it.
+                _, simulation_results, system_details = energy_system.run_simulation(
+                    convertors,
+                    minigrid,
+                    grid_profile,
+                    kerosene_usage,
+                    location,
+                    logger,
+                    num_clean_water_tanks,
+                    pv_size,
+                    scenario,
+                    Simulation(end_year, start_year),
+                    storage_size,
+                    total_clean_water_load,
+                    total_electric_load,
+                    total_solar_power_produced,
+                )
 
-            new_appraisal = appraise_system(
-                yearly_electric_load_statistics,
-                end_year,
-                finance_inputs,
-                ghg_inputs,
-                location,
-                logger,
-                previous_system,
-                simulation_results,
-                start_year,
-                system_details,
-            )
+                new_appraisal = appraise_system(
+                    yearly_electric_load_statistics,
+                    end_year,
+                    finance_inputs,
+                    ghg_inputs,
+                    location,
+                    logger,
+                    previous_system,
+                    simulation_results,
+                    start_year,
+                    system_details,
+                )
 
-            if _get_sufficient_appraisals(optimisation, [new_appraisal]) == []:
-                logger.info("No sufficient systems at this resolution.")
-                break
+                if _get_sufficient_appraisals(optimisation, [new_appraisal]) == []:
+                    logger.info("No sufficient systems at this resolution.")
+                    break
 
-            # Store the new appraisal if it is sufficient.
-            logger.info("Sufficient system found, storing.")
-            system_appraisals.append(new_appraisal)
+                # Store the new appraisal if it is sufficient.
+                logger.info("Sufficient system found, storing.")
+                system_appraisals.append(new_appraisal)
 
     logger.info("Optimisation bounds explored.")
     return (
@@ -861,6 +910,7 @@ def _simulation_iteration(
 
 
 def _optimisation_step(
+    clean_water_tanks: Optional[TankSize],
     convertors: List[Convertor],
     finance_inputs: Dict[str, Any],
     ghg_inputs: Dict[str, Any],
@@ -869,7 +919,6 @@ def _optimisation_step(
     location: Location,
     logger: Logger,
     minigrid: energy_system.Minigrid,
-    num_clean_water_tanks: int,
     optimisation: Optimisation,
     optimisation_parameters: OptimisationParameters,
     previous_system: Optional[SystemAppraisal],
@@ -886,6 +935,8 @@ def _optimisation_step(
     One optimisation step of the continuous lifetime optimisation
 
     Inputs:
+        - clean_water_tanks:
+            Range of clean-water tank sizes.
         - convertors:
             The `list` of convertors available to the system.
         - finance_inputs:
@@ -898,8 +949,6 @@ def _optimisation_step(
             The location being considered.
         - minigrid:
             The energy system being considered.
-        - num_clean_water_tanks:
-            The number of clean water tanks being considered.
         - optimisation:
             The optimisation currently being considered.
         - optimisation_parameters:
@@ -942,6 +991,7 @@ def _optimisation_step(
         start_year,
         sufficient_systems,
     ) = _simulation_iteration(
+        clean_water_tanks,
         convertors,
         finance_inputs,
         ghg_inputs,
@@ -950,7 +1000,6 @@ def _optimisation_step(
         location,
         logger,
         minigrid,
-        num_clean_water_tanks,
         optimisation,
         optimisation_parameters,
         previous_system,
@@ -967,6 +1016,7 @@ def _optimisation_step(
 
     # Determine the optimum systems that fulfil each of the optimisation criteria.
     optimum_systems = _find_optimum_system(
+        clean_water_tanks,
         convertors,
         end_year,
         finance_inputs,
@@ -978,7 +1028,6 @@ def _optimisation_step(
         location,
         logger,
         minigrid,
-        num_clean_water_tanks,
         optimisation,
         previous_system,
         scenario,
@@ -1004,7 +1053,6 @@ def multiple_optimisation_step(
     location: Location,
     logger: Logger,
     minigrid: energy_system.Minigrid,
-    num_clean_water_tanks: int,
     optimisation: Optimisation,
     optimisation_parameters: OptimisationParameters,
     scenario: Scenario,
@@ -1013,6 +1061,7 @@ def multiple_optimisation_step(
     total_solar_power_produced: pd.Series,
     yearly_electric_load_statistics: pd.DataFrame,
     *,
+    input_clean_water_tanks: Optional[TankSize] = None,
     input_pv_sizes: Optional[PVSystemSize] = None,
     input_storage_sizes: Optional[StorageSystemSize] = None,
     previous_system: Optional[SystemAppraisal] = None,
@@ -1023,31 +1072,32 @@ def multiple_optimisation_step(
 
     Inputs:
         - convertors:
-            The `list` of convertors available to the system.
+            The `list` of convertors available to the system;
         - grid_profile:
-            The grid-availability profile.
+            The grid-availability profile;
         - kerosene_usage:
-            The kerosene-usage profile.
+            The kerosene-usage profile;
         - location:
-            The location being considered.
+            The location being considered;
         - minigrid:
-            The energy system being considered.
-        - num_clean_water_tanks:
-            The number of clean water tanks being considered.
+            The energy system being considered;
         - optimisation:
-            The optimisation currently being carried out.
+            The optimisation currently being carried out;
         - optimisation_parameters:
-            A :class:`OptimisationParameters` instance outlining the optimisation bounds.
+            A :class:`OptimisationParameters` instance outlining the optimisation
+            bounds;
         - scenario:
-            The scenatio being considered.
+            The scenatio being considered;
         - solar_lifetime:
-            The lifetime of the solar setup.
+            The lifetime of the solar setup;
         - total_load:
-            The total load on the system.
+            The total load on the system;
         - total_solar_power_produced:
-            The total solar power output over the time period.
+            The total solar power output over the time period;
         - yearly_electric_load_statistics:
-            The yearly electric load statistic information.
+            The yearly electric load statistic information;
+        - input_clean_water_tanks:
+            Range of tank sizes in the form [minimum, maximum, step size];
         - input_pv_sizes:
             Range of PV sizes in the form [minimum, maximum, step size];
         - input_storage_sizes:
@@ -1059,7 +1109,7 @@ def multiple_optimisation_step(
 
     Outputs:
         - time_delta:
-            The time taken for the optimisation run.
+            The time taken for the optimisation run;
         - results:
             The results of each Optimisation().optimisation_step(...)
 
@@ -1073,6 +1123,18 @@ def multiple_optimisation_step(
     results: List[SystemAppraisal] = []
 
     # Use the optimisation-parameter values for the first loop.
+    if (
+        input_clean_water_tanks is None
+        and ResourceType.CLEAN_WATER in scenario.resource_types
+    ):
+        logger.info(
+            "No clean-water tank sizes passed in, using default optimisation parameters."
+        )
+        input_clean_water_tanks = TankSize(
+            optimisation_parameters.clean_water_tanks_max,
+            optimisation_parameters.clean_water_tanks_min,
+            optimisation_parameters.clean_water_tanks_step,
+        )
     if input_pv_sizes is None:
         logger.info("No pv sizes passed in, using default optimisation parameters.")
         input_pv_sizes = PVSystemSize(
@@ -1090,7 +1152,7 @@ def multiple_optimisation_step(
             optimisation_parameters.storage_size_step,
         )
 
-    #   Iterate over each optimisation step
+    # Iterate over each optimisation step
     for _ in tqdm(
         range(int(optimisation_parameters.number_of_iterations)),
         desc="optimisation steps",
@@ -1100,6 +1162,13 @@ def multiple_optimisation_step(
         logger.info("Beginning optimisation step.")
         # Fetch the optimum systems for this step.
         optimum_system = _optimisation_step(
+            TankSize(
+                input_clean_water_tanks.max,
+                input_clean_water_tanks.min,
+                input_clean_water_tanks.step,
+            )
+            if ResourceType.CLEAN_WATER in scenario.resource_types
+            else None,
             convertors,
             finance_inputs,
             ghg_inputs,
@@ -1108,7 +1177,6 @@ def multiple_optimisation_step(
             location,
             logger,
             minigrid,
-            num_clean_water_tanks,
             optimisation,
             optimisation_parameters,
             previous_system,
