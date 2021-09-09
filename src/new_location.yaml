@@ -67,7 +67,7 @@
                   electric_power: 600 # [W]
                   output: groundwater
                   maximum_output: 830 # [litres/hour]
-                                
+
                 # Reverse osmosis specification from:
                 # https://www.sciencedirect.com/science/article/pii/S0255270116304329
                 - name: reverse_osmosis
@@ -152,17 +152,10 @@
                   - name: default_pv
                     azimuthal_orientation: 180 # [degrees from North]
                     lifetime: 20 # [years] - Lifetime of the PV system.
-                    reference_temperature: 25 # [degrees Celcius]
-                    thermal_coefficient: 0.0053 # [1 / degrees Celcius]
+                    # reference_temperature: 25 # [degrees Celcius]
+                    # thermal_coefficient: 0.0053 # [1 / degrees Celcius]
                     tilt: 29 # [degrees above horizontal]
-                    type: pv # Panel type, either 'pv', 'solar_thermal' or 'solar_desalination'
-                  # - name: default_pvt
-                  #   azimuthal_orientation: 180 # [degrees from North]
-                  #   lifetime: 20 # [years] - Lifetime of the PV system.
-                  #   mass_flow_rate: 7.5 # [litres/hour]
-                  #   pv: default_pv
-                  #   tilt: 29 # [degrees above horizontal]
-                  #   type: pv_t # Panel type, either 'pv' or 'pv_t'
+                    type: pv # Panel type, either 'pv' or 'pv_t'
         - directory: impact
           contents:
             - file: "finance_inputs.yaml"
@@ -605,6 +598,11 @@
                 # License: Open source                                                         #
                 ################################################################################
 
+                # Valid 'resource_types' are 'electric_power' or 'clean_water'.
+                # NOTE: If using 'clean_water', then there must be at least one device specified
+                # within the devices file which places a clean-water demand on the system.
+                #
+
                 pv: true # "true" or "false"
                 battery: true # "true" or "false"
                 diesel:
@@ -621,14 +619,6 @@
                 distribution_network: dc # DC ("dc") or AC ("ac") distribution network
                 resource_types:
                   - electric_power
-                #   - clean_water
-                # groundwater:
-                #   sources:
-                #     - bore_hole
-                # clean_water:
-                #   sources:
-                #     - reverse_osmosis
-                #   mode: backup
         - directory: simulation
           contents:
             - file: "battery_inputs.yaml"
