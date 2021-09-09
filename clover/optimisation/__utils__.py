@@ -26,7 +26,6 @@ from typing import Any, Dict
 from ..__utils__ import (
     BColours,
     Criterion,
-    OptimisationParameters,
 )
 
 __all__ = (
@@ -35,6 +34,7 @@ __all__ = (
     "OptimisationParameters",
     "PVSystemSize",
     "StorageSystemSize",
+    "TankSize",
     "ThresholdMode",
 )
 
@@ -213,6 +213,27 @@ class StorageSystemSize:
 
     .. attribute:: step
         The step to use for the system, measured in kWh.
+
+    """
+
+    max: float
+    min: float
+    step: float
+
+
+@dataclasses.dataclass
+class TankSize:
+    """
+    Used to wrap the tank size information.
+
+    .. atttribute:: max
+        The maximum size of the tank system, measured in number of tanks.
+
+    .. attribute:: min
+        The minimum size of the tank system, measured in number of tanks.
+
+    .. attribute:: step
+        The step to use for the tank system, measured in number of tanks.
 
     """
 

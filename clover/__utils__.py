@@ -724,6 +724,18 @@ class OptimisationParameters:
     """
     Parameters that define the scope of the optimisation.
 
+    .. attribute:: clean_water_tanks_max
+        The maximum size of clean-water tank capacity to be considered, used only as an
+        initial value, measured in number of tanks.
+
+    .. attribute:: clean_water_tanks_min
+        The minimum size of clean-water tank capacity to be considered, used only as an
+        initial value, measured in number of tanks.
+
+    .. attribute:: clean_water_tanks_step
+        The optimisation resolution for the clean water tanks, measured in clean-water
+        tanks.
+
     .. attribute:: iteration_length
         The length of each iteration to be run.
 
@@ -752,6 +764,9 @@ class OptimisationParameters:
 
     """
 
+    clean_water_tanks_max: Optional[int]
+    clean_water_tanks_min: Optional[int]
+    clean_water_tanks_step: Optional[int]
     iteration_length: int
     number_of_iterations: int
     pv_size_max: float
@@ -773,6 +788,15 @@ class OptimisationParameters:
         """
 
         return cls(
+            int(optimisation_inputs["clean_water_tanks"]["max"])
+            if "clean_water_tanks" in optimisation_inputs
+            else None,
+            int(optimisation_inputs["clean_water_tanks"]["min"])
+            if "clean_water_tanks" in optimisation_inputs
+            else None,
+            int(optimisation_inputs["clean_water_tanks"]["step"])
+            if "clean_water_tanks" in optimisation_inputs
+            else None,
             optimisation_inputs["iteration_length"],
             optimisation_inputs["number_of_iterations"],
             optimisation_inputs["pv_size"]["max"],
@@ -805,6 +829,9 @@ class OptimisationParameters:
         """
 
         return {
+            "clean_water_tanks_max": int(self.clean_water_tanks_max),
+            "clean_water_tanks_min": int(self.clean_water_tanks_min),
+            "clean_water_tanks_step": int(self.clean_water_tanks_step),
             "iteration_length": round(self.iteration_length, 3),
             "number_of_iterations": round(self.number_of_iterations, 3),
             "pv_size_max": round(self.pv_size_max, 3),
