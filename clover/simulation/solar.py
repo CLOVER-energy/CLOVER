@@ -22,9 +22,11 @@ import dataclasses
 import enum
 
 from logging import Logger
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 import pandas as pd  # type: ignore  # pylint: disable=missing-import
+
+from ..__utils__ import InputFileError
 
 
 __all__ = (
@@ -88,8 +90,8 @@ class SolarPanel:
     azimuthal_orientation: float
     lifetime: int
     name: str
-    reference_temperature: float
-    thermal_coefficient: float
+    reference_temperature: Optional[float]
+    thermal_coefficient: Optional[float]
     tilt: float
 
     def __init_subclass__(cls, panel_type: SolarPanelType) -> None:
@@ -139,8 +141,12 @@ class PVPanel(SolarPanel, panel_type=SolarPanelType.PV):
             solar_inputs["azimuthal_orientation"],
             solar_inputs["lifetime"],
             solar_inputs["name"],
-            solar_inputs["reference_temperature"],
-            solar_inputs["thermal_coefficient"],
+            solar_inputs["reference_temperature"]
+            if "reference_temperature" in solar_inputs
+            else None,
+            solar_inputs["thermal_coefficient"]
+            if "thermal_coefficient" in solar_inputs
+            else None,
             solar_inputs["tilt"],
         )
 
@@ -183,6 +189,19 @@ class HybridPVTPanel(SolarPanel, panel_type=SolarPanelType.PV_T):
                 "Could not find corresponding PV-layer data for layer %s for panel %s.",
                 solar_inputs["pv"],
                 solar_inputs["name"],
+            )
+
+        if pv_layer.reference_temperature is None:
+            logger.error("PV reference temperature must be defined if using PV-T.")
+            raise InputFileError(
+                "solar generation inputs",
+                "PV reference temperature must be defined if using PV-T",
+            )
+        if pv_layer.thermal_coefficient is None:
+            logger.error("PV thermal coefficient must be defined if using PV-T.")
+            raise InputFileError(
+                "solar generation inputs",
+                "PV thermal coefficient must be defined if using PV-T",
             )
 
         super().__init__(

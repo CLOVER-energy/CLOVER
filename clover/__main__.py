@@ -233,13 +233,13 @@ def main(args: List[Any]) -> None:
     operating_mode = _get_operating_mode(parsed_args)
     if operating_mode == OperatingMode.SIMULATION:
         logger.info(
-            "A single CLOVER simulation will be run for locatation '%s'.",
+            "A single CLOVER simulation will be run for locatation '%s'",
             parsed_args.location,
         )
         print(f"A single CLOVER simulation will be run for {parsed_args.location}.")
     if operating_mode == OperatingMode.OPTIMISATION:
         logger.info(
-            "A CLOVER optimisation will be run for location '%s'.", parsed_args.location
+            "A CLOVER optimisation will be run for location '%s'", parsed_args.location
         )
         print(f"A CLOVER optimisation will be run for {parsed_args.location}.")
     if operating_mode == OperatingMode.PROFILE_GENERATION:
@@ -652,6 +652,12 @@ def main(args: List[Any]) -> None:
         )
         simulation_times: List[str] = []
 
+        simulation_string: str = (
+            f"- {parsed_args.pv_system_size} kWp of PV\n"
+            + f"- {parsed_args.storage_size} kWh of storage"
+        )
+        print(f"Running a simulation with:\n{simulation_string}")
+
         for simulation_number, simulation in enumerate(
             tqdm(simulations, desc="simulations", unit="simulation"), 1
         ):
@@ -781,6 +787,16 @@ def main(args: List[Any]) -> None:
                 "An optimisation was requested that runs over the maximum lifetime of "
                 "the system.",
             )
+
+        optimisation_string: str = (
+            "- PV resolution of {} units (1 kWp per unit)\n".format(
+                optimisation_inputs.pv_size_step
+            )
+            + "- Storage resolution of {} units (1 kWh per unit)".format(
+                optimisation_inputs.storage_size_step
+            )
+        )
+        print(f"Running an optimisation with:\n{optimisation_string}")
 
         for optimisation_number, optimisation in enumerate(
             tqdm(optimisations, desc="optimisations", unit="optimisation"), 1
