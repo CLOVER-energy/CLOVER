@@ -551,6 +551,7 @@
                 # Valid optimisation criteria, usually set to "minimise":
                 #   CRITERION                       UNIT
                 #   blackouts
+                #   clean_water_blackouts
                 #   lcue                            $/kWh
                 #   emissions_intensity             gCO2/kWh
                 #   unmet_energy_fraction

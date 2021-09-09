@@ -37,6 +37,11 @@ __all__ = (
 )
 
 
+# Default PV unit:
+#   The default PV unit size to use, measured in kWp.
+DEFAULT_PV_UNIT = 1  # [kWp]
+
+
 class SolarPanelType(enum.Enum):
     """
     Specifies the type of solar panel being considered.
@@ -69,6 +74,9 @@ class SolarPanel:
     .. attribite:: panel_type
         The type of panel being considered.
 
+    .. attribute:: pv_unit
+        The unit of PV power being considered, defaulting to 1 kWp.
+
     .. attribute:: reference_temperature
         The reference temperature of the PV layer of the panel, measured in degrees
         Celcius.
@@ -85,6 +93,7 @@ class SolarPanel:
     azimuthal_orientation: float
     lifetime: int
     name: str
+    pv_unit: float
     reference_temperature: Optional[float]
     thermal_coefficient: Optional[float]
     tilt: float
@@ -131,10 +140,20 @@ class PVPanel(SolarPanel, panel_type=SolarPanelType.PV):
 
         logger.info("Attempting to create PVPanel from solar input data.")
 
+        if "pv_unit" in solar_inputs:
+            pv_unit: float = solar_inputs["pv_unit"]
+            logger.info(
+                "`pv_unit` variable specified, using a pv unit of %s kWp", pv_unit
+            )
+        else:
+            pv_unit = DEFAULT_PV_UNIT
+            logger.info("No `pv_unit` keyword specified, defaulting to %s kWp", pv_unit)
+
         return cls(
             solar_inputs["azimuthal_orientation"],
             solar_inputs["lifetime"],
             solar_inputs["name"],
+            pv_unit,
             solar_inputs["reference_temperature"]
             if "reference_temperature" in solar_inputs
             else None,
@@ -198,10 +217,18 @@ class HybridPVTPanel(SolarPanel, panel_type=SolarPanelType.PV_T):
                 "PV thermal coefficient must be defined if using PV-T",
             )
 
+        if "pv_unit" not in solar_inputs:
+            logger.error("PV unit size must be specified for PV-T panels.")
+            raise InputFileError(
+                "solar generation inputs",
+                "PV unit size must be specified when considering PV-T panels.",
+            )
+
         super().__init__(
             solar_inputs["azimuthal_orientation"],
             solar_inputs["lifetime"],
             solar_inputs["name"],
+            solar_inputs["pv_unit"],
             pv_layer.reference_temperature,
             pv_layer.thermal_coefficient,
             solar_inputs["tilt"],

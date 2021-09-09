@@ -123,6 +123,13 @@ def get_key_results(
     key_results.diesel_times = round(simulation_results["Diesel times"].mean(), 3)
     key_results.blackouts = round(simulation_results["Blackouts"].mean(), 3)
 
+    # Compute the clean-water key results.
+    key_results.clean_water_blackouts = (
+        round(simulation_results["Clean water blackouts"].mean(), 3)
+        if "Clean water blackouts" in simulation_results
+        else None
+    )
+
     return key_results
 
 

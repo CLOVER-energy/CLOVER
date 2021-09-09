@@ -72,6 +72,7 @@ __all__ = ("multiple_optimisation_step",)
 #   minimisable.
 THRESHOLD_CRITERION_TO_MODE: Dict[Criterion, ThresholdMode] = {
     Criterion.BLACKOUTS: ThresholdMode.MAXIMUM,
+    Criterion.CLEAN_WATER_BLACKOUTS: ThresholdMode.MAXIMUM,
     Criterion.EMISSIONS_INTENSITY: ThresholdMode.MAXIMUM,
     Criterion.UNMET_ENERGY_FRACTION: ThresholdMode.MAXIMUM,
 }
@@ -777,7 +778,10 @@ def _simulation_iteration(
 
         logger.info(
             "System was found to be insufficient. Threshold criteria: %s",
-            largest_system_appraisal.criteria,
+            {
+                str(key): value
+                for key, value in largest_system_appraisal.criteria.items()
+            },
         )
 
         # Increment the system sizes.
