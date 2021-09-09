@@ -35,6 +35,19 @@ __all__ = (
 )
 
 
+# Maximum output:
+#   Keyword used for parsing maximum output information.
+MAXIMUM_OUTPUT = "maximum_output"
+
+# Name:
+#   Keyword used for parsing convertor name information.
+NAME = "name"
+
+# Output:
+#   Keyword used for parsing output information.
+OUTPUT = "output"
+
+
 class Convertor:
     """
     Represents a device that is able to convert one form of energy into another.
@@ -235,7 +248,7 @@ class MultiInputConvertor(Convertor):
         ]
         # Determine the output load type.
         try:
-            output_resource_type = ResourceType(input_data["output"])
+            output_resource_type = ResourceType(input_data[OUTPUT])
         except KeyError as e:
             logger.error(
                 "%sOutput load type of water pump is not valid: %s%s",
@@ -248,7 +261,7 @@ class MultiInputConvertor(Convertor):
             ) from None
 
         # Determine the power consumption of the device.
-        maximum_output = input_data["maximum_output"]
+        maximum_output = input_data[MAXIMUM_OUTPUT]
         try:
             maximum_output = float(maximum_output)
         except TypeError as e:
@@ -285,7 +298,7 @@ class MultiInputConvertor(Convertor):
         return cls(
             input_resource_consumption,
             maximum_output,
-            str(input_data["name"]),
+            str(input_data[NAME]),
             output_resource_type,
         )
 
@@ -336,7 +349,7 @@ class WaterSource(Convertor):
 
         # Determine the output load type.
         try:
-            output_resource_type = ResourceType(input_data["output"])
+            output_resource_type = ResourceType(input_data[OUTPUT])
         except KeyError as e:
             logger.error(
                 "%sOutput load type of water pump is not valid: %s%s",
@@ -349,7 +362,7 @@ class WaterSource(Convertor):
             ) from None
 
         # Determine the power consumption of the device.
-        maximum_output = input_data["maximum_output"]
+        maximum_output = input_data[MAXIMUM_OUTPUT]
         corresponding_input = input_data[input_resource_list[0]]
         try:
             maximum_output = float(maximum_output)
@@ -384,6 +397,6 @@ class WaterSource(Convertor):
         return cls(
             {input_resource_type: consumption},
             maximum_output,
-            str(input_data["name"]),
+            str(input_data[NAME]),
             output_resource_type,
         )

@@ -104,13 +104,17 @@ LOGGER_NAME = "clover"
 #   jobs.
 NUM_WORKERS = 8
 
+# Outputs folder:
+#   The folder into which outputs should be saved.
+OUTPUTS_FOLDER = "outputs"
+
 # Optimisation outputs folder:
 #   The output folder into which to save the optimisation outputs.
-OPTIMISATION_OUTPUTS_FOLDER = os.path.join("outputs", "optimisation_outputs")
+OPTIMISATION_OUTPUTS_FOLDER = os.path.join(OUTPUTS_FOLDER, "optimisation_outputs")
 
 # Simulation outputs folder:
 #   The folder into which outputs should be saved.
-SIMULATION_OUTPUTS_FOLDER = os.path.join("outputs", "simulation_outputs")
+SIMULATION_OUTPUTS_FOLDER = os.path.join(OUTPUTS_FOLDER, "simulation_outputs")
 
 
 def _get_operating_mode(parsed_args: Namespace) -> OperatingMode:

@@ -48,6 +48,10 @@ HOURS_PER_YEAR = 8760
 #   The resolution, in dpi, to use for plotting figures.
 PLOT_RESOLUTION = 600
 
+# Simulation plots directory:
+#   The directory in which simulation plots should be saved.
+SIMULATION_PLOTS_DIRECTORY = "simulation_{simulation_number}_plots"
+
 
 def get_key_results(
     grid_input_profile: pd.DataFrame,
@@ -184,7 +188,9 @@ def plot_outputs(
 
     # Create an output directory for the various plots to be saved in.
     figures_directory = os.path.join(
-        output_directory, simulation_name, f"simulation_{simulation_number}_plots"
+        output_directory,
+        simulation_name,
+        SIMULATION_PLOTS_DIRECTORY.format(simulation_number=simulation_number),
     )
     os.makedirs(os.path.join(output_directory, simulation_name), exist_ok=True)
     os.makedirs(figures_directory, exist_ok=True)
