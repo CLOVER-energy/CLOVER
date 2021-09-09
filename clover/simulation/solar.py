@@ -22,7 +22,7 @@ import dataclasses
 import enum
 
 from logging import Logger
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 
 __all__ = (
@@ -81,9 +81,8 @@ class SolarPanel:
     azimuthal_orientation: float
     lifetime: int
     name: str
-    reference_efficiency: float
-    reference_temperature: float
-    thermal_coefficient: float
+    reference_temperature: Optional[float]
+    thermal_coefficient: Optional[float]
     tilt: float
 
     def __init_subclass__(cls, panel_type: SolarPanelType) -> None:
@@ -130,9 +129,12 @@ class PVPanel(SolarPanel, panel_type=SolarPanelType.PV):
             solar_inputs["azimuthal_orientation"],
             solar_inputs["lifetime"],
             solar_inputs["name"],
-            solar_inputs["reference_efficiency"],
-            solar_inputs["reference_temperature"],
-            solar_inputs["thermal_coefficient"],
+            solar_inputs["reference_temperature"]
+            if "reference_temperature" in solar_inputs
+            else None,
+            solar_inputs["thermal_coefficient"]
+            if "thermal_coefficient" in solar_inputs
+            else None,
             solar_inputs["tilt"],
         )
 
