@@ -463,9 +463,9 @@ class BaseRenewablesNinjaThread(threading.Thread):
                 # Compute the total irradiance if the data is solar data.
                 if self.profile_name == "solar":  # type: ignore
                     try:
-                        data[SolarDataType.TOTAL_IRRADIANCE] = (
-                            data[SolarDataType.DIRECT_IRRADIANCE]
-                            + data[SolarDataType.DIFFUSE_IRRADIANCE]
+                        data[SolarDataType.TOTAL_IRRADIANCE.value] = (
+                            data[SolarDataType.DIRECT_IRRADIANCE.value]
+                            + data[SolarDataType.DIFFUSE_IRRADIANCE.value]
                         )
                     except KeyError as e:
                         self.logger.error(
