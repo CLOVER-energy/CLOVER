@@ -573,13 +573,13 @@
                 iteration_length: 4 # [years]
                 number_of_iterations: 3 # number of iterations to carry out
                 pv_size:
-                  min: 5 # [kWp]
-                  max: 25 # [kWp]
-                  step: 5 # [kWp]
+                  min: 5 # [PV units], [kWp] by default
+                  max: 25 # [PV units], [kWp] by default
+                  step: 5 # [PV units], [kWp] by default
                 storage_size:
-                  min: 10 # [kWh]
-                  max: 40 # [kWh]
-                  step: 5 # [kWh]
+                  min: 10 # [storage units], [kWh] by default
+                  max: 40 # [storage units], [kWh] by default
+                  step: 5 # [storage units], [kWh] by default
                 optimisations:
                   - optimisation_criteria:
                       - lcue: minimise # Name of the column and whether to maximise/minimise.
