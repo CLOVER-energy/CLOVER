@@ -128,11 +128,16 @@ def get_key_results(
     key_results.blackouts = round(simulation_results["Blackouts"].mean(), 3)
 
     # Compute the clean-water key results.
-    key_results.clean_water_blackouts = (
-        round(simulation_results["Clean water blackouts"].mean(), 3)
-        if "Clean water blackouts" in simulation_results
-        else None
-    )
+    if "Clean water blackouts" in simulation_results:
+        key_results.clean_water_blackouts = (
+            round(simulation_results["Clean water blackouts"].mean(), 3)
+        )
+
+    # Compute the PV-T key results.
+    if "PV-T electric energy supplied (kWh)" in simulation_results:
+        key_results.average_pvt_electric_generation = (
+            round(simulation_results["PV-T electric energy supplied (kWh)"].mean(), 3)
+        )
 
     return key_results
 
@@ -527,7 +532,7 @@ def plot_outputs(
             ),
             axis=0,
         )
-        renewables_supplied = np.mean(
+        pv_supplied = np.mean(
             np.reshape(
                 simulation_output[0:HOURS_PER_YEAR][
                     "Renewables energy supplied (kWh)"
@@ -536,6 +541,15 @@ def plot_outputs(
             ),
             axis=0,
         )
+        pvt_electricity_supplied = np.mean(
+            np.reshape(
+                simulation_output[0:HOURS_PER_YEAR][
+                    "PV-T electric energy supplied (kWh)"
+                ].values,
+                (365, 24),
+            ),
+            axis=0
+        ) if "PV-T electric energy supplied (kWh)" in simulation_output else None
         storage_energy = np.mean(
             np.reshape(
                 simulation_output[0:HOURS_PER_YEAR][
@@ -554,13 +568,18 @@ def plot_outputs(
         )
 
         plt.plot(total_used, "--", label="Total used", zorder=1)
-        plt.plot(diesel_energy, label="Diesel", zorder=2)
-        plt.plot(dumped, label="Dumped", zorder=3)
-        plt.plot(grid_energy, label="Grid", zorder=4)
-        plt.plot(renewable_energy, label="Solar used directly", zorder=5)
-        plt.plot(renewables_supplied, label="Solar generated", zorder=6)
-        plt.plot(storage_energy, label="Storage", zorder=7)
-        plt.plot(unmet_energy, label="Unmet", zorder=8)
+        plt.plot(unmet_energy, label="Unmet", zorder=2)
+        plt.plot(diesel_energy, label="Diesel", zorder=3)
+        plt.plot(dumped, label="Dumped", zorder=4)
+        plt.plot(grid_energy, label="Grid", zorder=5)
+        plt.plot(storage_energy, label="Storage", zorder=6)
+        plt.plot(renewable_energy, label="Renewables used directly", zorder=7)
+        plt.plot(pv_supplied, label="PV electricity generated", zorder=8)
+        if pvt_electricity_supplied is not None:
+            plt.plot(
+                pvt_electricity_supplied, label="PV-T electricity generated",
+                zorder=9
+            )
         plt.legend()
         plt.xlim(0, 23)
         plt.xticks(range(0, 24, 1))
@@ -609,7 +628,7 @@ def plot_outputs(
         )
 
         plt.plot(blackouts, label="Blackouts")
-        plt.plot(solar_usage, label="Solar")
+        plt.plot(solar_usage, label="Renewables")
         plt.plot(storage_energy, label="Storage")
         plt.plot(grid_energy, label="Grid")
         plt.plot(diesel_times, label="Diesel")
@@ -659,7 +678,7 @@ def plot_outputs(
             yticklabels=range(0, 365, 60),
             xlabel="Hour of day",
             ylabel="Day of year",
-            title="Solar",
+            title="Renewables",
         )
         sns.heatmap(
             storage_energy, vmin=0.0, vmax=4.0, cmap="Greens", cbar=True, ax=ax2
@@ -713,18 +732,27 @@ def plot_outputs(
         diesel_energy = simulation_output.iloc[0:24]["Diesel energy (kWh)"]
         dumped_energy = simulation_output.iloc[0:24]["Dumped energy (kWh)"]
         unmet_energy = simulation_output.iloc[0:24]["Unmet energy (kWh)"]
-        renewables_supplied = simulation_output.iloc[0:24][
-            "Renewables energy supplied (kWh)"
+        pv_supplied = simulation_output.iloc[0:24][
+            "PV energy supplied (kWh)"
         ]
+        pvt_electricity_supplied = simulation_output.iloc[0:24][
+            "PV-T electric energy supplied (kWh)"
+        ] if "PV-T electric energy supplied (kWh)" in simulation_output else None
 
         plt.plot(total_used, "--", label="Total used", zorder=1)
         plt.plot(diesel_energy, label="Diesel", zorder=2)
         plt.plot(dumped_energy, label="Dumped", zorder=3)
         plt.plot(grid_energy, label="Grid", zorder=4)
         plt.plot(renewable_energy, label="Solar used directly", zorder=5)
-        plt.plot(renewables_supplied, label="Solar generated", zorder=6)
-        plt.plot(storage_energy, label="Storage", zorder=7)
-        plt.plot(unmet_energy, label="Unmet", zorder=8)
+        plt.plot(storage_energy, label="Storage", zorder=6)
+        plt.plot(unmet_energy, label="Unmet", zorder=7)
+        plt.plot(pv_supplied, label="PV generated", zorder=8)
+        if "PV-T electric energy supplied (kWh)" in simulation_output:
+            plt.plot(
+                pvt_electricity_supplied,
+                label="PV-T electricity generated",
+                zorder=9
+            )
         if initial_clean_water_hourly_loads is not None:
             clean_water_energy_via_excess = simulation_output.iloc[0:24][
                 "Excess power consumed desalinating clean water (kWh)"

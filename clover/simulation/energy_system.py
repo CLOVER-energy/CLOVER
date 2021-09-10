@@ -246,10 +246,11 @@ def _get_electric_battery_storage_profile(
     minigrid: Minigrid,
     processed_total_electric_load: pd.DataFrame,
     scenario: Scenario,
-    solar_lifetime: int,
     pv_power_produced: pd.Series,
+    pvt_electric_power_produced: pd.Series,
     end_hour: int = 4,
     pv_size: float = 10,
+    pvt_size: float = 0,
     start_hour: int = 0,
 ) -> Tuple[
     pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame
@@ -270,42 +271,62 @@ def _get_electric_battery_storage_profile(
             The total electric load for the system.
         - scenario:
             The scenatio being considered.
-        - solar_lifetime:
-            The lifetime of the solar setup.
         - pv_power_produced:
-            The total solar power output over the time period per kWp of installed PV.
+            The total solar power output over the time period per unit of installed PV.
+        - pvt_electric_power_produced:
+            The total electric power output over the time period per unit of installed
+            PV-T.
         - end_year:
-            End year of this simulation period
+            End year of this simulation period.
         - pv_size:
-            Amount of PV in kWp
+            Amount of PV in units of PV.
+        - pvt_size:
+            Amount of PV-T in units of PV-T.
         - start_year:
-            Start year of this simulation period
+            Start year of this simulation period.
 
     Outputs:
-        - load_energy:
-            Amount of energy (kWh) required to satisfy theloads
-        - renewables_energy:
-            Amount of energy (kWh) provided by renewables to the system
-        - renewables_energy_used_directly:
-            Amount of energy (kWh) from renewables used directly to satisfy load (kWh)
-        - grid_energy:
-            Amount of energy (kWh) supplied by the grid
         - battery_storage_profile:
-            Amount of energy (kWh) into (+ve) and out of (-ve) the battery
+            Amount of energy (kWh) into (+ve) and out of (-ve) the battery.
+        - grid_energy:
+            Amount of energy (kWh) supplied by the grid.
         - kerosene_usage:
-            Number of kerosene lamps in use (if no power available)
+            Number of kerosene lamps in use (if no power available).
+        - load_energy:
+            Amount of energy (kWh) required to satisfy the loads.
+        - pvt_energy:
+            Amount of energy (kWh) provided by PV to the system.
+        - pvt_energy:
+            Amount of electric energy (kWh) provided by PV-T to the system.
+        - renewables_energy:
+            Amount of energy (kWh) provided by renewables to the system.
+        - renewables_energy_used_directly:
+            Amount of energy (kWh) from renewables used directly to satisfy load (kWh).
 
     """
 
     # Initialise power generation, including degradation of PV
     pv_generation_array = pv_power_produced * pv_size
-    solar_degradation_array = solar_degradation(solar_lifetime)[  # type: ignore
+    solar_degradation_array = solar_degradation(minigrid.pv_panel.lifetime)[  # type: ignore
         0 : (end_hour - start_hour)
     ][0]
     pv_generation = pd.DataFrame(
         np.asarray(pv_generation_array[start_hour:end_hour])  # type: ignore
         * np.asarray(solar_degradation_array)
     )
+
+    # Initialise PV-T power generation, including degradation of PV
+    if minigrid.pvt_panel is not None:
+        pvt_electric_generation_array = pvt_electric_power_produced * pvt_size
+        pvt_degradation_array = solar_degradation(minigrid.pvt_panel.lifetime)[  # type: ignore
+            0 : (end_hour - start_hour)
+        ]
+        pvt_electric_generation: Optional[pd.DataFrame] = pd.DataFrame(
+            np.asarray(pvt_electric_generation_array[start_hour:end_hour])  # type: ignore
+            * np.asarray(pvt_degradation_array[0])
+        )
+    else:
+        pvt_electric_generation = None
 
     # Consider power distribution network
     if scenario.distribution_network == DistributionNetwork.DC:
@@ -340,9 +361,13 @@ def _get_electric_battery_storage_profile(
         processed_total_electric_load / transmission_efficiency  # type: ignore
     )
     pv_energy = pv_generation * transmission_efficiency
+    if minigrid.pvt_panel is not None:
+        pvt_electric_energy = pvt_electric_generation * transmission_efficiency
+    else:
+        pvt_electric_energy = pd.DataFrame([0] * pv_energy.size)
 
     # Combine energy from all renewables sources
-    renewables_energy: pd.DataFrame = pv_energy  # + wind_energy + ...
+    renewables_energy: pd.DataFrame = pv_energy + pvt_electric_energy # + wind_energy + ...
     # Add more renewable sources here as required
 
     # Check for self-generation prioritisation
@@ -379,20 +404,24 @@ def _get_electric_battery_storage_profile(
             .add((battery_storage_profile < 0).mul(renewables_energy))  # type: ignore
         )
 
+    battery_storage_profile.columns = pd.Index(["Storage profile (kWh)"])
+    grid_energy.columns = pd.Index(["Grid energy (kWh)"])
+    kerosene_usage.columns = pd.Index(["Kerosene lamps"])
     load_energy.columns = pd.Index(["Load energy (kWh)"])
+    pv_energy.columns = pd.Index(["PV energy supplied (kWh)"])
+    pvt_electric_energy.columns = pd.Index(["PV-T electric energy supplied (kWh)"])
     renewables_energy.columns = pd.Index(["Renewables energy supplied (kWh)"])
     renewables_energy_used_directly.columns = pd.Index(["Renewables energy used (kWh)"])
-    grid_energy.columns = pd.Index(["Grid energy (kWh)"])
-    battery_storage_profile.columns = pd.Index(["Storage profile (kWh)"])
-    kerosene_usage.columns = pd.Index(["Kerosene lamps"])
 
     return (
+        battery_storage_profile,
+        grid_energy,
+        kerosene_usage,
         load_energy,
+        pv_energy,
+        pvt_electric_energy,
         renewables_energy,
         renewables_energy_used_directly,
-        grid_energy,
-        battery_storage_profile,
-        kerosene_usage,
     )
 
 
@@ -452,12 +481,14 @@ def run_simulation(
     logger: Logger,
     number_of_clean_water_tanks: int,
     pv_size: float,
+    pvt_size: float,
     scenario: Scenario,
     simulation: Simulation,
     electric_storage_size: float,
     total_clean_water_load: Optional[pd.DataFrame],
     total_electric_load: pd.DataFrame,
     pv_power_produced: pd.Series,
+    pvt_electric_power_produced: pd.Series,
 ) -> Tuple[datetime.timedelta, pd.DataFrame, SystemDetails]:
     """
     Simulates a minigrid system
@@ -481,7 +512,7 @@ def run_simulation(
         - number_of_clean_water_tanks:
             The number of clean-water tanks installed in the system.
         - pv_size:
-            Amount of PV in kWp
+            Amount of PV in PV units.
         - scenario:
             The scenario being considered.
         - simulation:
@@ -493,7 +524,9 @@ def run_simulation(
         - total_electric_load:
             The total load in Watts.
         - pv_power_produced:
-            The total energy outputted by the solar system per kWp of PV.
+            The total energy outputted by the solar system per PV unit.
+        - pvt_power_produced:
+            The total electric energy outputted by the PV-T system per PV-T unit. 
 
     Outputs:
         - The time taken for the simulation.
@@ -609,12 +642,14 @@ def run_simulation(
 
     # Get electric input profiles
     (
+        battery_storage_profile,
+        grid_energy,
+        kerosene_profile,
         load_energy,
+        pv_energy,
+        pvt_energy,
         renewables_energy,
         renewables_energy_used_directly,
-        grid_energy,
-        battery_storage_profile,
-        kerosene_profile,
     ) = _get_electric_battery_storage_profile(
         grid_profile=grid_profile[start_hour:end_hour],  # type: ignore
         kerosene_usage=kerosene_usage[start_hour:end_hour],  # type: ignore
@@ -622,10 +657,11 @@ def run_simulation(
         minigrid=minigrid,
         processed_total_electric_load=processed_total_electric_load,
         scenario=scenario,
-        solar_lifetime=minigrid.pv_panel.lifetime,
         pv_power_produced=pv_power_produced,
+        pvt_electric_power_produced=pvt_electric_power_produced,
         end_hour=end_hour,
         pv_size=pv_size,
+        pvt_size=pvt_size,
         start_hour=start_hour,
     )
     households = pd.DataFrame(
@@ -1222,6 +1258,7 @@ def run_simulation(
         diesel_times,
         diesel_fuel_usage,
         battery_storage_profile,
+        pv_energy,
         renewables_energy,
         hourly_battery_storage_frame,
         energy_surplus_frane,
@@ -1241,6 +1278,7 @@ def run_simulation(
                 hourly_tank_storage_frame,
                 power_used_on_electricity,
                 processed_total_clean_water_load,
+                pvt_energy,
                 renewable_clean_water_used_directly,
                 storage_water_supplied_frame,
                 total_clean_water_supplied,

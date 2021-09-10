@@ -740,6 +740,9 @@ def main(args: List[Any]) -> None:
                     logger,
                     parsed_args.num_clean_water_tanks,
                     parsed_args.pv_system_size,
+                    parsed_args.pvt_system_size
+                    if parsed_args.pvt_system_size is not None
+                    else 0,
                     scenario,
                     simulation,
                     parsed_args.storage_size,
@@ -747,6 +750,7 @@ def main(args: List[Any]) -> None:
                     0.001 * total_electric_load,  # type: ignore
                     total_solar_data[solar.SolarDataType.ELECTRICITY.value]
                     * minigrid.pv_panel.pv_unit,
+                    pvt_electric_power_per_unit
                 )
             except Exception as e:
                 print(
@@ -872,7 +876,7 @@ def main(args: List[Any]) -> None:
                         minigrid.pvt_panel.thermal_unit
                     )
                 )
-                if parsed_args.pvt_system_size is not None
+                if optimisation_inputs.pvt_size_step is not None
                 else ""
             )
             + (
