@@ -725,7 +725,10 @@ def _simulation_iteration(
     )
 
     # Instantiate in preparation of the while loop.
-    if ResourceType.CLEAN_WATER in scenario.resource_types and clean_water_tanks is not None:
+    if (
+        ResourceType.CLEAN_WATER in scenario.resource_types
+        and clean_water_tanks is not None
+    ):
         clean_water_tanks_max: int = clean_water_tanks.max
     else:
         clean_water_tanks_max = 0
@@ -794,7 +797,10 @@ def _simulation_iteration(
         )
 
         # Increment the system sizes.
-        if ResourceType.CLEAN_WATER in scenario.resource_types and clean_water_tanks is not None:
+        if (
+            ResourceType.CLEAN_WATER in scenario.resource_types
+            and clean_water_tanks is not None
+        ):
             clean_water_tanks_max += clean_water_tanks.step
         pv_size_max += pv_sizes.step
         storage_size_max += storage_sizes.step
@@ -1140,7 +1146,11 @@ def multiple_optimisation_step(
         input_clean_water_tanks is None
         and ResourceType.CLEAN_WATER in scenario.resource_types
     ):
-        if optimisation_parameters.clean_water_tanks_max is None or optimisation_parameters.clean_water_tanks_min is None or optimisation_parameters.clean_water_tanks_step is None:
+        if (
+            optimisation_parameters.clean_water_tanks_max is None
+            or optimisation_parameters.clean_water_tanks_min is None
+            or optimisation_parameters.clean_water_tanks_step is None
+        ):
             raise InternalError(
                 "{}Optimisation parameters do not have clean-water tank params ".format(
                     BColours.fail

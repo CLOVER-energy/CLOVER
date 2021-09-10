@@ -108,14 +108,25 @@ MIN = "min"
 # Month mid-day:
 #   The "day" in the year that falls in the middle of the month.
 MONTH_MID_DAY: List[int] = [
-    0, 14, 45, 72, 104, 133, 164, 194, 225, 256, 286, 317, 344, 364
+    0,
+    14,
+    45,
+    72,
+    104,
+    133,
+    164,
+    194,
+    225,
+    256,
+    286,
+    317,
+    344,
+    364,
 ]
 
 # Month start day:
 #   The "day" in the year that falls at the start of each month.
-MONTH_START_DAY: List[int] = [
-    0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334
-]
+MONTH_START_DAY: List[int] = [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334]
 
 # Number of iterations:
 #   The number of iterations to consider in the optimisation.
@@ -877,7 +888,9 @@ class OptimisationParameters:
             int(optimisation_inputs[OptimisationComponent.CLEAN_WATER_TANKS.value][MIN])
             if OptimisationComponent.CLEAN_WATER_TANKS.value in optimisation_inputs
             else None,
-            int(optimisation_inputs[OptimisationComponent.CLEAN_WATER_TANKS.value][STEP])
+            int(
+                optimisation_inputs[OptimisationComponent.CLEAN_WATER_TANKS.value][STEP]
+            )
             if OptimisationComponent.CLEAN_WATER_TANKS.value in optimisation_inputs
             else None,
             optimisation_inputs[ITERATION_LENGTH],
