@@ -602,11 +602,9 @@ def main(args: List[Any]) -> None:
 
     logger.info(
         "Setup complete, continuing to CLOVER %s.",
-        "simulation"
-        if operating_mode == OperatingMode.SIMULATION
-        else "optimisation"
-        if operating_mode == OperatingMode.OPTIMISATION
-        else "main flow",
+        "main flow"
+        if operating_mode == OperatingMode.PROFILE_GENERATION
+        else operating_mode.value
     )
 
     # Compute the PV-T electricity generation profile.
@@ -630,9 +628,8 @@ def main(args: List[Any]) -> None:
             raise Exception(
                 "Missing command-line argument: --pvt-system-size."
             ) from None
-        pvt_electric_power = (
-            parsed_args.pvt_system_size
-            * minigrid.pvt_panel.pv_unit
+        pvt_electric_power_per_unit = (
+            minigrid.pvt_panel.pv_unit
             * fractional_electric_performance
         )
 
@@ -707,6 +704,15 @@ def main(args: List[Any]) -> None:
                     + f"{minigrid.battery.storage_unit} kWh batteries)"
                 )
                 if overrided_default_sizes
+                else ""
+            )
+            + (
+                "\n- {} PV-T panel units ({} kWp PV and {} kWth per unit)".format(
+                    parsed_args.pvt_system_size,
+                    minigrid.pvt_panel.pv_unit,
+                    minigrid.pvt_panel.thermal_unit
+                )
+                if parsed_args.pvt_system_size is not None
                 else ""
             )
             + "\n- {}x {} litres clean-water storage".format(
@@ -856,6 +862,18 @@ def main(args: List[Any]) -> None:
             )
             + "\n- Storage resolution of {} units ({} kWh per unit)".format(
                 optimisation_inputs.storage_size_step, minigrid.battery.storage_unit
+            )
+            + (
+                (
+                    "\n- PV-T resolution of "
+                    + "{} units ({} kWp and {} kWth per unit)".format(
+                        optimisation_inputs.pvt_size_step,
+                        minigrid.pvt_panel.pv_unit,
+                        minigrid.pvt_panel.thermal_unit
+                    )
+                )
+                if parsed_args.pvt_system_size is not None
+                else ""
             )
             + (
                 (
