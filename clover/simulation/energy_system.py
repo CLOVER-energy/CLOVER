@@ -309,7 +309,9 @@ def _get_electric_battery_storage_profile(
     pv_generation_array = pv_power_produced * pv_size
     solar_degradation_array = solar_degradation(minigrid.pv_panel.lifetime)[  # type: ignore
         0 : (end_hour - start_hour)
-    ][0]
+    ][
+        0
+    ]
     pv_generation = pd.DataFrame(
         np.asarray(pv_generation_array[start_hour:end_hour])  # type: ignore
         * np.asarray(solar_degradation_array)
@@ -367,7 +369,9 @@ def _get_electric_battery_storage_profile(
         pvt_electric_energy = pd.DataFrame([0] * pv_energy.size)
 
     # Combine energy from all renewables sources
-    renewables_energy: pd.DataFrame = pv_energy + pvt_electric_energy # + wind_energy + ...
+    renewables_energy: pd.DataFrame = (
+        pv_energy + pvt_electric_energy
+    )  # + wind_energy + ...
     # Add more renewable sources here as required
 
     # Check for self-generation prioritisation
@@ -526,7 +530,7 @@ def run_simulation(
         - pv_power_produced:
             The total energy outputted by the solar system per PV unit.
         - pvt_power_produced:
-            The total electric energy outputted by the PV-T system per PV-T unit. 
+            The total electric energy outputted by the PV-T system per PV-T unit.
 
     Outputs:
         - The time taken for the simulation.

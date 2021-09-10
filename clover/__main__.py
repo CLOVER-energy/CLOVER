@@ -604,7 +604,7 @@ def main(args: List[Any]) -> None:
         "Setup complete, continuing to CLOVER %s.",
         "main flow"
         if operating_mode == OperatingMode.PROFILE_GENERATION
-        else operating_mode.value
+        else operating_mode.value,
     )
 
     # Compute the PV-T electricity generation profile.
@@ -629,8 +629,7 @@ def main(args: List[Any]) -> None:
                 "Missing command-line argument: --pvt-system-size."
             ) from None
         pvt_electric_power_per_unit = (
-            minigrid.pvt_panel.pv_unit
-            * fractional_electric_performance
+            minigrid.pvt_panel.pv_unit * fractional_electric_performance
         )
 
     print(
@@ -710,7 +709,7 @@ def main(args: List[Any]) -> None:
                 "\n- {} PV-T panel units ({} kWp PV and {} kWth per unit)".format(
                     parsed_args.pvt_system_size,
                     minigrid.pvt_panel.pv_unit,
-                    minigrid.pvt_panel.thermal_unit
+                    minigrid.pvt_panel.thermal_unit,
                 )
                 if parsed_args.pvt_system_size is not None
                 else ""
@@ -750,7 +749,7 @@ def main(args: List[Any]) -> None:
                     0.001 * total_electric_load,  # type: ignore
                     total_solar_data[solar.SolarDataType.ELECTRICITY.value]
                     * minigrid.pv_panel.pv_unit,
-                    pvt_electric_power_per_unit
+                    pvt_electric_power_per_unit,
                 )
             except Exception as e:
                 print(
@@ -873,7 +872,7 @@ def main(args: List[Any]) -> None:
                     + "{} units ({} kWp and {} kWth per unit)".format(
                         optimisation_inputs.pvt_size_step,
                         minigrid.pvt_panel.pv_unit,
-                        minigrid.pvt_panel.thermal_unit
+                        minigrid.pvt_panel.thermal_unit,
                     )
                 )
                 if optimisation_inputs.pvt_size_step is not None
