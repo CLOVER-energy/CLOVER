@@ -419,11 +419,13 @@ class KeyResults:
     average_daily_dumped_energy: Optional[float] = None
     average_daily_energy_consumption: Optional[float] = None
     average_daily_grid_energy_supplied: Optional[float] = None
+    average_daily_pv_energy_supplied: Optional[float] = None
     average_daily_renewables_energy_supplied: Optional[float] = None
     average_daily_renewables_energy_used: Optional[float] = None
     average_daily_stored_energy_supplied: Optional[float] = None
     average_daily_unmet_energy: Optional[float] = None
     average_pv_generation: Optional[float] = None
+    average_pvt_electric_generation: Optional[float] = None
     blackouts: Optional[float] = None
     clean_water_blackouts: Optional[float] = None
     cumulative_pv_generation: Optional[float] = None
@@ -477,6 +479,10 @@ class KeyResults:
         if self.average_pv_generation is not None:
             data_dict["Average pv generation / kWh/day"] = round(
                 self.average_pv_generation, 3
+            )
+        if self.average_pvt_electric_generation is not None:
+            data_dict["Average pv-t electric generation / kWh/day"] = round(
+                self.average_pvt_electric_generation, 3
             )
         if self.blackouts is not None:
             data_dict["Blackouts"] = round(self.blackouts, 3)

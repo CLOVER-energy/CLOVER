@@ -184,13 +184,13 @@ class PVSystemSize:
     Used to wrap the pv-system-size information.
 
     .. attribute:: max
-        The maximum size of the system, measured in kWp.
+        The maximum size of the system, measured in PV units.
 
     .. attribute:: min
-        The minimum size of the system, measured in kWp.
+        The minimum size of the system, measured in PV units.
 
     .. attribute:: step
-        The step to use for the system, measured in kWp.
+        The step to use for the system, measured in PV units.
 
     """
 
@@ -205,13 +205,13 @@ class StorageSystemSize:
     Used to wrap the storage-system-size information.
 
     .. attribute:: max
-        The maximum size of the system, measured in kWh.
+        The maximum size of the system, measured in storage units, i.e., batteries.
 
     .. attribute:: min
-        The minimum size of the system, measured in kWh.
+        The minimum size of the system, measured in storage units, i.e., batteries.
 
     .. attribute:: step
-        The step to use for the system, measured in kWh.
+        The step to use for the system, measured in storage units, i.e., batteries.
 
     """
 
