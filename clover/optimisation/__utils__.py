@@ -31,7 +31,6 @@ from ..__utils__ import (
 __all__ = (
     "CriterionMode",
     "Optimisation",
-    "OptimisationParameters",
     "PVSystemSize",
     "StorageSystemSize",
     "TankSize",
@@ -237,6 +236,6 @@ class TankSize:
 
     """
 
-    max: float
-    min: float
-    step: float
+    max: int
+    min: int
+    step: int

@@ -310,8 +310,8 @@ def _simulation_technical_appraisal(
 
     # Calculate system blackouts
     system_blackouts: float = float(np.mean(simulation_results["Blackouts"].values))
-    clean_water_blackouts: float = (
-        float(np.mean(simulation_results["Clean water blackouts"].values))
+    clean_water_blackouts: Optional[float] = (
+        round(float(np.mean(simulation_results["Clean water blackouts"].values)), 3)
         if "Clean water blackouts" in simulation_results
         else None
     )
@@ -367,7 +367,7 @@ def _simulation_technical_appraisal(
     # Return outputs
     return TechnicalAppraisal(
         round(system_blackouts, 3),
-        round(clean_water_blackouts, 3),
+        clean_water_blackouts,
         round(total_diesel_used, 3),
         round(total_diesel_fuel, 3),
         round(discounted_energy, 3),
@@ -528,6 +528,22 @@ def appraise_system(
         cumulative_system_ghgs,
     )
 
+    criteria = {
+        Criterion.BLACKOUTS: round(technical_appraisal.blackouts, 3),
+        Criterion.CUMULATIVE_COST: round(cumulative_results.cost, 3),
+        Criterion.CUMULATIVE_GHGS: round(cumulative_results.ghgs, 3),
+        Criterion.EMISSIONS_INTENSITY: round(emissions_intensity, 3),
+        Criterion.LCUE: round(lcue, 3),
+        Criterion.UNMET_ENERGY_FRACTION: round(
+            technical_appraisal.unmet_energy_fraction, 3
+        ),
+    }
+
+    if technical_appraisal.clean_water_blackouts is not None:
+        criteria[Criterion.CLEAN_WATER_BLACKOUTS] = round(
+            technical_appraisal.clean_water_blackouts, 3
+        )
+
     # Combine the outputs into a single system appraisal instance.
     system_appraisal = SystemAppraisal(
         cumulative_results,
@@ -535,19 +551,7 @@ def appraise_system(
         financial_appraisal,
         system_details,
         technical_appraisal,
-        criteria={
-            Criterion.BLACKOUTS: round(technical_appraisal.blackouts, 3),
-            Criterion.CLEAN_WATER_BLACKOUTS: round(
-                technical_appraisal.clean_water_blackouts, 3
-            ),
-            Criterion.CUMULATIVE_COST: round(cumulative_results.cost, 3),
-            Criterion.CUMULATIVE_GHGS: round(cumulative_results.ghgs, 3),
-            Criterion.EMISSIONS_INTENSITY: round(emissions_intensity, 3),
-            Criterion.LCUE: round(lcue, 3),
-            Criterion.UNMET_ENERGY_FRACTION: round(
-                technical_appraisal.unmet_energy_fraction, 3
-            ),
-        },
+        criteria=criteria,
     )
 
     return system_appraisal

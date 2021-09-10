@@ -43,7 +43,7 @@ from tqdm import tqdm  # type: ignore  # pylint: disable=import-error
 from ..simulation import energy_system
 
 from ..__utils__ import (
-    CleanWaterMode,
+    BColours,
     DONE,
     InternalError,
     ResourceType,
@@ -155,6 +155,8 @@ def _single_line_simulation(
             The system that was previously installed
 
     Outputs:
+        - clean_water_tanks:
+            The clean-water tank size of the largest system considered.
         - pv_system_size:
             The pv system size of the largest system considered.
         - storage_size:
@@ -182,7 +184,7 @@ def _single_line_simulation(
 
     # Set up a max clean-water tank variable to use if none were specified.
     if clean_water_tanks is None:
-        test_clean_water_tanks = 0
+        test_clean_water_tanks: int = 0
     else:
         test_clean_water_tanks = clean_water_tanks.max
 
@@ -394,6 +396,7 @@ def _single_line_simulation(
         pv_system_size.max = test_pv_size
 
     return (
+        clean_water_tanks,
         pv_system_size,
         storage_size,
         system_appraisals,
@@ -698,7 +701,7 @@ def _simulation_iteration(
         kerosene_usage,
         location,
         logger,
-        clean_water_tanks.max if clean_water_tanks is not None else 0,
+        clean_water_tanks.max if clean_water_tanks is not None else int(0),
         pv_sizes.max,
         scenario,
         Simulation(end_year, start_year),
@@ -722,7 +725,7 @@ def _simulation_iteration(
     )
 
     # Instantiate in preparation of the while loop.
-    if ResourceType.CLEAN_WATER in scenario.resource_types:
+    if ResourceType.CLEAN_WATER in scenario.resource_types and clean_water_tanks is not None:
         clean_water_tanks_max: int = clean_water_tanks.max
     else:
         clean_water_tanks_max = 0
@@ -776,6 +779,12 @@ def _simulation_iteration(
             system_details,
         )
 
+        if largest_system_appraisal.criteria is None:
+            raise InternalError(
+                "{}Threshold criteria not set on system appraisal.{}".format(
+                    BColours.fail, BColours.endc
+                )
+            )
         logger.info(
             "System was found to be insufficient. Threshold criteria: %s",
             {
@@ -785,7 +794,7 @@ def _simulation_iteration(
         )
 
         # Increment the system sizes.
-        if ResourceType.CLEAN_WATER in scenario.resource_types:
+        if ResourceType.CLEAN_WATER in scenario.resource_types and clean_water_tanks is not None:
             clean_water_tanks_max += clean_water_tanks.step
         pv_size_max += pv_sizes.step
         storage_size_max += storage_sizes.step
@@ -1131,6 +1140,15 @@ def multiple_optimisation_step(
         input_clean_water_tanks is None
         and ResourceType.CLEAN_WATER in scenario.resource_types
     ):
+        if optimisation_parameters.clean_water_tanks_max is None or optimisation_parameters.clean_water_tanks_min is None or optimisation_parameters.clean_water_tanks_step is None:
+            raise InternalError(
+                "{}Optimisation parameters do not have clean-water tank params ".format(
+                    BColours.fail
+                )
+                + "despite clean-water being specified in the scenario.{}".format(
+                    BColours.endc
+                )
+            )
         logger.info(
             "No clean-water tank sizes passed in, using default optimisation parameters."
         )

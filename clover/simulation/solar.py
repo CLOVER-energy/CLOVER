@@ -189,7 +189,7 @@ class HybridPVTPanel(SolarPanel, panel_type=SolarPanelType.PV_T):
         logger: Logger,
         solar_inputs: Dict[str, Any],
         solar_panels: List[SolarPanel],
-    ) -> Any:
+    ) -> None:
         """
         Instantiate a :class:`HybridPVTPanel` instance based on the input data.
 

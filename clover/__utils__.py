@@ -69,35 +69,62 @@ __all__ = (
 
 # Done message:
 #   The message to display when a task was successful.
-DONE = "[   DONE   ]"
+DONE: str = "[   DONE   ]"
 
 # Cut off time:
 #   The time up and to which information about the load of each device will be returned.
-CUT_OFF_TIME = 72  # [hours]
+CUT_OFF_TIME: int = 72  # [hours]
 
 # Failed message:
 #   The message to display when a task has failed.
-FAILED = "[  FAILED  ]"
+FAILED: str = "[  FAILED  ]"
+
+# Iteration length:
+#   Used when parsing information about the iteration length to use in optimisations.
+ITERATION_LENGTH: str = "iteration_length"
 
 # Kerosene device name:
 #   The name used to denote the kerosene device.
-KEROSENE_DEVICE_NAME = "kerosene"
+KEROSENE_DEVICE_NAME: str = "kerosene"
 
 # Locations folder name:
 #   The name of the locations folder.
-LOCATIONS_FOLDER_NAME = "locations"
+LOCATIONS_FOLDER_NAME: str = "locations"
 
 # Logger directory:
 #   The directory in which to save logs.
-LOGGER_DIRECTORY = "logs"
+LOGGER_DIRECTORY: str = "logs"
+
+# Max:
+#   Keyword used when parsing information about the maximum system size to consider in
+#   optimisations.
+MAX = "max"
+
+# Min:
+#   Keyword used when parsing information about the minimum system size to consider in
+#   optimisations.
+MIN = "min"
 
 # Month mid-day:
 #   The "day" in the year that falls in the middle of the month.
-MONTH_MID_DAY = [0, 14, 45, 72, 104, 133, 164, 194, 225, 256, 286, 317, 344, 364]
+MONTH_MID_DAY: List[int] = [
+    0, 14, 45, 72, 104, 133, 164, 194, 225, 256, 286, 317, 344, 364
+]
 
 # Month start day:
 #   The "day" in the year that falls at the start of each month.
-MONTH_START_DAY = [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334]
+MONTH_START_DAY: List[int] = [
+    0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334
+]
+
+# Number of iterations:
+#   The number of iterations to consider in the optimisation.
+NUMBER_OF_ITERATIONS: str = "number_of_iterations"
+
+# Step:
+#   Keyword used when parsing information about the system size step to consider in
+#   optimisations.
+STEP = "step"
 
 
 @dataclasses.dataclass
@@ -731,6 +758,32 @@ class Criterion(enum.Enum):
 
 
 @dataclasses.dataclass
+class OptimisationComponent(enum.Enum):
+    """
+    Contains information about the components which are variable in an optimisation.
+
+    - CLEAN_WATER_TANKS:
+        Denotes the number of clean-water tanks in the system.
+
+    - PV_SIZE:
+        Denotes the size of the PV system, measured in PV units.
+
+    - PVT_SIZE:
+        Denotes the size of the PV-T system, measured in PV-T units.
+
+    - STORAGE_SIZE:
+        Denotes the size of the storage system, measured in storage units, i.e.,
+        batteries.
+
+    """
+
+    CLEAN_WATER_TANKS = "clean_water_tanks"
+    PV_SIZE = "pv_size"
+    PVT_SIZE = "pvt_size"
+    STORAGE_SIZE = "storage_size"
+
+
+@dataclasses.dataclass
 class OptimisationParameters:
     """
     Parameters that define the scope of the optimisation.
@@ -755,23 +808,33 @@ class OptimisationParameters:
 
     .. attribute:: pv_size_max
         The maximum size of PV capacity to be considered, used only as an initial value,
-        measured in kWp.
+        measured in PV units.
 
     .. attribute:: pv_size_min
-        The minimum size of PV capacity to be considered, measured in kWp.
+        The minimum size of PV capacity to be considered, measured in PV units.
 
     .. attribute:: pv_size_step
-        The optimisation resolution for the PV size, measured in kWp.
+        The optimisation resolution for the PV size, measured in PV units.
+
+    .. attribute:: pvt_size_max
+        The maximum size of PV capacity to be considered, used only as an initial value,
+        measured in units of PV-T.
+
+    .. attribute:: pvt_size_min
+        The minimum size of PV capacity to be considered, measured in units of PV-T.
+
+    .. attribute:: pvt_size_step
+        The optimisation resolution for the PV-T size, measured in units of PV-T.
 
     .. attribute:: storage_size_max
         The maximum size of storage capacity to be considered, used only as an initial
-        value, measured in kWh.
+        value, measured in batteries.
 
     .. attribute:: storage_size_min
-        The minimum size of storage capacity to be considered, measured in kWh.
+        The minimum size of storage capacity to be considered, measured in batteries.
 
     .. attribute:: storage_size_step
-        The optimisation restolution for the storage size, measured in kWh.
+        The optimisation restolution for the storage size, measured in batteries.
 
     """
 
@@ -783,6 +846,9 @@ class OptimisationParameters:
     pv_size_max: float
     pv_size_min: float
     pv_size_step: float
+    pvt_size_max: Optional[float]
+    pvt_size_min: Optional[float]
+    pvt_size_step: Optional[float]
     storage_size_max: float
     storage_size_min: float
     storage_size_step: float
@@ -799,23 +865,32 @@ class OptimisationParameters:
         """
 
         return cls(
-            int(optimisation_inputs["clean_water_tanks"]["max"])
-            if "clean_water_tanks" in optimisation_inputs
+            int(optimisation_inputs[OptimisationComponent.CLEAN_WATER_TANKS.value][MAX])
+            if OptimisationComponent.CLEAN_WATER_TANKS.value in optimisation_inputs
             else None,
-            int(optimisation_inputs["clean_water_tanks"]["min"])
-            if "clean_water_tanks" in optimisation_inputs
+            int(optimisation_inputs[OptimisationComponent.CLEAN_WATER_TANKS.value][MIN])
+            if OptimisationComponent.CLEAN_WATER_TANKS.value in optimisation_inputs
             else None,
-            int(optimisation_inputs["clean_water_tanks"]["step"])
-            if "clean_water_tanks" in optimisation_inputs
+            int(optimisation_inputs[OptimisationComponent.CLEAN_WATER_TANKS.value][STEP])
+            if OptimisationComponent.CLEAN_WATER_TANKS.value in optimisation_inputs
             else None,
-            optimisation_inputs["iteration_length"],
-            optimisation_inputs["number_of_iterations"],
-            optimisation_inputs["pv_size"]["max"],
-            optimisation_inputs["pv_size"]["min"],
-            optimisation_inputs["pv_size"]["step"],
-            optimisation_inputs["storage_size"]["max"],
-            optimisation_inputs["storage_size"]["min"],
-            optimisation_inputs["storage_size"]["step"],
+            optimisation_inputs[ITERATION_LENGTH],
+            optimisation_inputs[NUMBER_OF_ITERATIONS],
+            optimisation_inputs[OptimisationComponent.PV_SIZE.value][MAX],
+            optimisation_inputs[OptimisationComponent.PV_SIZE.value][MIN],
+            optimisation_inputs[OptimisationComponent.PV_SIZE.value][STEP],
+            optimisation_inputs[OptimisationComponent.PVT_SIZE.value][MAX]
+            if OptimisationComponent.PVT_SIZE.value in optimisation_inputs
+            else None,
+            optimisation_inputs[OptimisationComponent.PVT_SIZE.value][MIN]
+            if OptimisationComponent.PVT_SIZE.value in optimisation_inputs
+            else None,
+            optimisation_inputs[OptimisationComponent.PVT_SIZE.value][STEP]
+            if OptimisationComponent.PVT_SIZE.value in optimisation_inputs
+            else None,
+            optimisation_inputs[OptimisationComponent.STORAGE_SIZE.value][MAX],
+            optimisation_inputs[OptimisationComponent.STORAGE_SIZE.value][MIN],
+            optimisation_inputs[OptimisationComponent.STORAGE_SIZE.value][STEP],
         )
 
     @property
@@ -839,18 +914,39 @@ class OptimisationParameters:
 
         """
 
-        return {
-            "clean_water_tanks_max": int(self.clean_water_tanks_max),
-            "clean_water_tanks_min": int(self.clean_water_tanks_min),
-            "clean_water_tanks_step": int(self.clean_water_tanks_step),
-            "iteration_length": round(self.iteration_length, 3),
-            "number_of_iterations": round(self.number_of_iterations, 3),
+        optimisation_parameters_dict = {
+            "clean_water_tanks_max": int(self.clean_water_tanks_max)
+            if self.clean_water_tanks_max is not None
+            else None,
+            "clean_water_tanks_min": int(self.clean_water_tanks_min)
+            if self.clean_water_tanks_min is not None
+            else None,
+            "clean_water_tanks_step": int(self.clean_water_tanks_step)
+            if self.clean_water_tanks_step is not None
+            else None,
+            ITERATION_LENGTH: round(self.iteration_length, 3),
+            NUMBER_OF_ITERATIONS: round(self.number_of_iterations, 3),
             "pv_size_max": round(self.pv_size_max, 3),
             "pv_size_min": round(self.pv_size_min, 3),
             "pv_size_step": round(self.pv_size_step, 3),
+            "pvt_size_max": int(self.pvt_size_max)
+            if self.pvt_size_max is not None
+            else None,
+            "pvt_size_min": int(self.pvt_size_min)
+            if self.pvt_size_min is not None
+            else None,
+            "pvt_size_step": int(self.pvt_size_step)
+            if self.pvt_size_step is not None
+            else None,
             "storage_size_max": round(self.storage_size_max, 3),
             "storage_size_min": round(self.storage_size_min, 3),
             "storage_size_step": round(self.storage_size_step, 3),
+        }
+
+        return {
+            key: value
+            for key, value in optimisation_parameters_dict.items()
+            if value is not None
         }
 
 
