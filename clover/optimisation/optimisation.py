@@ -1077,6 +1077,7 @@ def multiple_optimisation_step(
     scenario: Scenario,
     total_clean_water_load: Optional[pd.DataFrame],
     total_electric_load: pd.DataFrame,
+    total_pvt_electric_power_produced: pd.Series,
     total_solar_power_produced: pd.Series,
     yearly_electric_load_statistics: pd.DataFrame,
     *,
@@ -1109,10 +1110,13 @@ def multiple_optimisation_step(
             The scenatio being considered;
         - solar_lifetime:
             The lifetime of the solar setup;
-        - total_load:
-            The total load on the system;
+        - total_electric_load:
+            The total electric load on the system;
+        - total_pvt_electric_power_produced:
+            The total electric power output from the PV-T system over the time period
+            per unit PV-T installed;
         - total_solar_power_produced:
-            The total solar power output over the time period;
+            The total solar power output over the time period per unit PV installed;
         - yearly_electric_load_statistics:
             The yearly electric load statistic information;
         - input_clean_water_tanks:

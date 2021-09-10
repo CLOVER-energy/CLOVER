@@ -911,6 +911,7 @@ def main(args: List[Any]) -> None:
                     scenario,
                     total_clean_water_load,
                     0.001 * total_electric_load,  # type: ignore
+                    pvt_electric_power_per_unit,
                     total_solar_data[solar.SolarDataType.ELECTRICITY.value]
                     * minigrid.pv_panel.pv_unit,
                     electric_yearly_load_statistics,
