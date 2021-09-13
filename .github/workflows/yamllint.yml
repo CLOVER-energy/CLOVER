@@ -1,0 +1,23 @@
+name: Yamllint
+
+on: [push]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Python 3.7
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.7
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install yamllint
+          pip install Pyyaml
+      - name: Analysing the code with yamllint
+        run: |
+          yamllint -c .yamllint-config.yaml locations/
