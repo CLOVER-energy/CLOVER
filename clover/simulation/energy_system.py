@@ -253,7 +253,14 @@ def _get_electric_battery_storage_profile(
     pvt_size: float = 0,
     start_hour: int = 0,
 ) -> Tuple[
-    pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame
+    pd.DataFrame,
+    pd.DataFrame,
+    pd.DataFrame,
+    pd.DataFrame,
+    pd.DataFrame,
+    pd.DataFrame,
+    pd.DataFrame,
+    pd.DataFrame
 ]:
     """
     Gets the storage profile (energy in/out the battery) and other system energies.
@@ -363,8 +370,8 @@ def _get_electric_battery_storage_profile(
         processed_total_electric_load / transmission_efficiency  # type: ignore
     )
     pv_energy = pv_generation * transmission_efficiency
-    if minigrid.pvt_panel is not None:
-        pvt_electric_energy = pvt_electric_generation * transmission_efficiency
+    if pvt_electric_generation is not None:
+        pvt_electric_energy: pd.DataFrame = pvt_electric_generation * transmission_efficiency
     else:
         pvt_electric_energy = pd.DataFrame([0] * pv_energy.size)
 
