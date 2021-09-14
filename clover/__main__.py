@@ -672,7 +672,7 @@ def main(args: List[Any]) -> None:
 
     # Determine whether any default sizes have been overrided.
     overrided_default_sizes: bool = (
-        minigrid.pv_panel.pv_unit_overrided or minigrid.battery.storage_unit
+        minigrid.pv_panel.pv_unit_overrided if minigrid.pv_panel is not None else False or minigrid.battery.storage_unit if minigrid.battery is not None else False
     )
 
     # * Run a simulation or optimisation as appropriate.
