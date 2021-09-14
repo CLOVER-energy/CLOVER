@@ -117,4 +117,8 @@ where `<float>` indicates that a floating point object, i.e., a number, is an ac
 
 ***
 
+##### Analysis
+
+When running CLOVER simulations, in-built graph plotting can be carried out by CLOVER. To activate this functionality, simply use the `--analyse` flag when initialising a CLOVER simulation from the command-line interface.
+
 For more information, contact Phil Sandwell (philip.sandwell@gmail.com) or Ben Winchester (benedict.winchester@gmail.com).
