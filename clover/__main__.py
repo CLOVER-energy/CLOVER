@@ -57,7 +57,6 @@ from .__utils__ import (
     save_optimisation,
     save_simulation,
 )
-from .simulation.solar import HybridPVTPanel
 
 # Auto-generated-files directory:
 #   The name of the directory in which to save auto-generated files, relative to the
@@ -90,8 +89,9 @@ CLOVER_HEADER_STRING = """
        Continuous Lifetime Optimisation of Variable Electricity Resources
                          Copyright Phil Sandwell, 2018
 
-                 For more information, contact Phil Sandwell at
-                           philip.sandwell@gmail.com
+                         For more information, contact
+                   Phil Sandwell (philip.sandwell@gmail.com)
+               or Ben Winchester (benedict.winchester@gmail.com)
 
 """
 

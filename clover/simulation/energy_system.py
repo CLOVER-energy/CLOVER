@@ -1238,18 +1238,32 @@ def run_simulation(
     system_details = SystemDetails(
         diesel_capacity,
         simulation.end_year,
+        number_of_clean_water_tanks
+        if ResourceType.CLEAN_WATER in scenario.resource_types
+        else None,
         pv_size
         * float(
             solar_degradation(minigrid.pv_panel.lifetime)[0][  # type: ignore
                 8760 * (simulation.end_year - simulation.start_year)
             ]
         ),
+        pv_size
+        * float(
+            solar_degradation(minigrid.pvt_panel.lifetime)[0][  # type: ignore
+                8760 * (simulation.end_year - simulation.start_year)
+            ]
+        ) if minigrid.pvt_panel is not None
+        else None,
         float(
             electric_storage_size
             * minigrid.battery.storage_unit
             * np.min(battery_health_frame["Battery health"])
         ),
+        number_of_clean_water_tanks
+        if ResourceType.CLEAN_WATER in scenario.resource_types
+        else None,
         pv_size,
+        pvt_size if minigrid.pvt_panel is not None else None,
         float(electric_storage_size * minigrid.battery.storage_unit),
         simulation.start_year,
     )
