@@ -147,7 +147,9 @@ def _single_line_simulation(
     total_electric_load: pd.DataFrame,
     total_solar_power_produced: pd.Series,
     yearly_electric_load_statistics: pd.DataFrame,
-) -> Tuple[Optional[TankSize], SolarSystemSize, StorageSystemSize, List[SystemAppraisal]]:
+) -> Tuple[
+    Optional[TankSize], SolarSystemSize, StorageSystemSize, List[SystemAppraisal]
+]:
     """
     Preforms an additional round of simulations.
 
@@ -1194,10 +1196,7 @@ def multiple_optimisation_step(
             optimisation_parameters.pv_size_min,
             optimisation_parameters.pv_size_step,
         )
-    if (
-        input_pvt_sizes is None
-        and ResourceType.CLEAN_WATER in scenario.resource_types
-    ):
+    if input_pvt_sizes is None and ResourceType.CLEAN_WATER in scenario.resource_types:
         if (
             optimisation_parameters.pvt_size_max is None
             or optimisation_parameters.pvt_size_min is None
@@ -1207,19 +1206,15 @@ def multiple_optimisation_step(
                 "{}Optimisation parameters do not have pvt-size params despite ".format(
                     BColours.fail
                 )
-                + "clean-water being specified in the scenario.{}".format(
-                    BColours.endc
-                )
+                + "clean-water being specified in the scenario.{}".format(BColours.endc)
             )
-        logger.info(
-            "No pv-t sizes passed in, using default optimisation parameters."
-        )
+        logger.info("No pv-t sizes passed in, using default optimisation parameters.")
         input_pvt_sizes = SolarSystemSize(
             optimisation_parameters.pvt_size_max,
             optimisation_parameters.pvt_size_min,
             optimisation_parameters.pvt_size_step,
         )
-    
+
     if input_storage_sizes is None:
         logger.info(
             "No storage sizes passed in, using default optimisation parameters."
@@ -1259,14 +1254,10 @@ def multiple_optimisation_step(
             optimisation_parameters,
             previous_system,
             SolarSystemSize(
-                input_pv_sizes.max,
-                input_pv_sizes.min,
-                input_pv_sizes.step
+                input_pv_sizes.max, input_pv_sizes.min, input_pv_sizes.step
             ),
             SolarSystemSize(
-                input_pvt_sizes.max,
-                input_pvt_sizes.min,
-                input_pvt_sizes.step
+                input_pvt_sizes.max, input_pvt_sizes.min, input_pvt_sizes.step
             ),
             scenario,
             start_year,

@@ -260,7 +260,7 @@ def _get_electric_battery_storage_profile(
     pd.DataFrame,
     pd.DataFrame,
     pd.DataFrame,
-    pd.DataFrame
+    pd.DataFrame,
 ]:
     """
     Gets the storage profile (energy in/out the battery) and other system energies.
@@ -371,7 +371,9 @@ def _get_electric_battery_storage_profile(
     )
     pv_energy = pv_generation * transmission_efficiency
     if pvt_electric_generation is not None:
-        pvt_electric_energy: pd.DataFrame = pvt_electric_generation * transmission_efficiency
+        pvt_electric_energy: pd.DataFrame = (
+            pvt_electric_generation * transmission_efficiency
+        )
     else:
         pvt_electric_energy = pd.DataFrame([0] * pv_energy.size)
 
