@@ -14,9 +14,9 @@ misc:
 bos:
   ghgs: 200 # [kgCO2/kW]
   ghg_decrease: 2 # [% p.a.]
-# diesel_fuel:
-#   ghgs: 2 # [kgCO2/litre]
-#   o&m_ghgs: 10 # [kgCO2/kW p.a.]
+diesel_fuel:
+  ghgs: 2 # [kgCO2/litre]
+  o&m_ghgs: 10 # [kgCO2/kW p.a.]
 diesel_generator:
   ghgs: 2000 # [kgCO2/kW]
   ghg_decrease: 0 # [% p.a.]

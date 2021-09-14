@@ -73,7 +73,20 @@ __all__ = ("multiple_optimisation_step",)
 THRESHOLD_CRITERION_TO_MODE: Dict[Criterion, ThresholdMode] = {
     Criterion.BLACKOUTS: ThresholdMode.MAXIMUM,
     Criterion.CLEAN_WATER_BLACKOUTS: ThresholdMode.MAXIMUM,
+    Criterion.CUMULATIVE_COST: ThresholdMode.MAXIMUM,
+    Criterion.CUMULATIVE_GHGS: ThresholdMode.MAXIMUM,
+    Criterion.CUMULATIVE_SYSTEM_COST: ThresholdMode.MAXIMUM,
+    Criterion.CUMULATIVE_SYSTEM_COST: ThresholdMode.MAXIMUM,
     Criterion.EMISSIONS_INTENSITY: ThresholdMode.MAXIMUM,
+    Criterion.KEROSENE_COST_MITIGATED: ThresholdMode.MINIMUM,
+    Criterion.KEROSENE_DISPLACEMENT: ThresholdMode.MINIMUM,
+    Criterion.KEROSENE_GHGS_MITIGATED: ThresholdMode.MINIMUM,
+    Criterion.LCUE: ThresholdMode.MAXIMUM,
+    Criterion.RENEWABLES_FRACTION: ThresholdMode.MINIMUM,
+    Criterion.TOTAL_COST: ThresholdMode.MAXIMUM,
+    Criterion.TOTAL_GHGS: ThresholdMode.MAXIMUM,
+    Criterion.TOTAL_SYSTEM_COST: ThresholdMode.MAXIMUM,
+    Criterion.TOTAL_SYSTEM_GHGS: ThresholdMode.MAXIMUM,
     Criterion.UNMET_ENERGY_FRACTION: ThresholdMode.MAXIMUM,
 }
 
