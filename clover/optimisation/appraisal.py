@@ -97,7 +97,13 @@ def _simulation_environmental_appraisal(
 
     # Calculate new equipment GHGs
     equipment_ghgs = ghgs.calculate_total_equipment_ghgs(
-        clean_water_tank_addition, diesel_addition, ghg_inputs, logger, pv_addition, pvt_addition, storage_addition
+        clean_water_tank_addition,
+        diesel_addition,
+        ghg_inputs,
+        logger,
+        pv_addition,
+        pvt_addition,
+        storage_addition,
     ) + ghgs.calculate_independent_ghgs(
         electric_yearly_load_statistics, end_year, ghg_inputs, location, start_year
     )
@@ -239,7 +245,9 @@ def _simulation_financial_appraisal(
         finance_inputs,
         logger,
         system_details.initial_pv_size,
-        system_details.initial_pvt_size if system_details.initial_pvt_size is not None else 0,
+        system_details.initial_pvt_size
+        if system_details.initial_pvt_size is not None
+        else 0,
         system_details.initial_storage_size,
         start_year=system_details.start_year,
         end_year=system_details.end_year,
@@ -346,9 +354,13 @@ def _simulation_technical_appraisal(
     total_pv_energy = np.sum(
         simulation_results["PV energy supplied (kWh)"]  # type: ignore
     )
-    total_pvt_energy = np.sum(
-        simulation_results["PV-T electric energy supplied (kWh)"]  # type: ignore
-    ) if "PV-T electric energy supplied (kWh)" in simulation_results else None
+    total_pvt_energy = (
+        np.sum(
+            simulation_results["PV-T electric energy supplied (kWh)"]  # type: ignore
+        )
+        if "PV-T electric energy supplied (kWh)" in simulation_results
+        else None
+    )
     total_storage_used = np.sum(
         simulation_results["Storage energy supplied (kWh)"]  # type: ignore
     )
@@ -464,16 +476,29 @@ def appraise_system(
         )
 
     # Compute the additions made to the system.
-    clean_water_tank_addition: float = system_details.initial_num_clean_water_tanks - previous_system.system_details.final_num_clean_water_tanks if system_details.initial_num_clean_water_tanks is not None and previous_system.system_details.final_num_clean_water_tanks is not None else 0
+    clean_water_tank_addition: float = (
+        system_details.initial_num_clean_water_tanks
+        - previous_system.system_details.final_num_clean_water_tanks
+        if system_details.initial_num_clean_water_tanks is not None
+        and previous_system.system_details.final_num_clean_water_tanks is not None
+        else 0
+    )
     diesel_addition = (
         system_details.diesel_capacity - previous_system.system_details.diesel_capacity
     )
-    pv_addition = system_details.initial_pv_size - previous_system.system_details.final_pv_size
-    pvt_addition: float = system_details.initial_pvt_size - previous_system.system_details.final_pvt_size if system_details.initial_pvt_size is not None and previous_system.system_details.final_pvt_size is not None else 0
-    storage_addition = (
-        system_details.initial_storage_size - previous_system.system_details.final_storage_size
+    pv_addition = (
+        system_details.initial_pv_size - previous_system.system_details.final_pv_size
     )
-
+    pvt_addition: float = (
+        system_details.initial_pvt_size - previous_system.system_details.final_pvt_size
+        if system_details.initial_pvt_size is not None
+        and previous_system.system_details.final_pvt_size is not None
+        else 0
+    )
+    storage_addition = (
+        system_details.initial_storage_size
+        - previous_system.system_details.final_storage_size
+    )
 
     # Get results which will be carried forward into optimisation process
     technical_appraisal = _simulation_technical_appraisal(
