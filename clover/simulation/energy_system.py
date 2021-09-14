@@ -1252,7 +1252,8 @@ def run_simulation(
             solar_degradation(minigrid.pvt_panel.lifetime)[0][  # type: ignore
                 8760 * (simulation.end_year - simulation.start_year)
             ]
-        ) if minigrid.pvt_panel is not None
+        )
+        if minigrid.pvt_panel is not None
         else None,
         float(
             electric_storage_size

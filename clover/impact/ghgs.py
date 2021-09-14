@@ -189,16 +189,17 @@ def calculate_total_equipment_ghgs(
     # Calculate system ghgs.
     bos_ghgs = calculate_ghgs(pv_array_size, ghg_inputs, ImpactingComponent.BOS, year)
 
-    if ImpactingComponent.CLEAN_WATER_TANK.value not in ghg_inputs and clean_water_tanks > 0:
+    if (
+        ImpactingComponent.CLEAN_WATER_TANK.value not in ghg_inputs
+        and clean_water_tanks > 0
+    ):
         logger.error(
-            "%sNo PV-T GHG input information provided.%s",
-            BColours.fail,
-            BColours.endc
+            "%sNo PV-T GHG input information provided.%s", BColours.fail, BColours.endc
         )
         raise InputFileError(
             "finance inputs",
             "No PV-T financial input information provided and a non-zero number of PV-T"
-            "panels are being considered."
+            "panels are being considered.",
         )
     clean_water_tank_ghgs: float = 0
     if clean_water_tanks > 0:
@@ -217,14 +218,12 @@ def calculate_total_equipment_ghgs(
 
     if ImpactingComponent.PV_T.value not in ghg_inputs and pvt_array_size > 0:
         logger.error(
-            "%sNo PV-T GHG input information provided.%s",
-            BColours.fail,
-            BColours.endc
+            "%sNo PV-T GHG input information provided.%s", BColours.fail, BColours.endc
         )
         raise InputFileError(
             "finance inputs",
             "No PV-T financial input information provided and a non-zero number of PV-T"
-            "panels are being considered."
+            "panels are being considered.",
         )
     pvt_ghgs: float = 0
     if pvt_array_size > 0:
@@ -252,14 +251,12 @@ def calculate_total_equipment_ghgs(
 
     if ImpactingComponent.PV_T.value not in ghg_inputs and pvt_array_size > 0:
         logger.error(
-            "%sNo PV-T GHG input information provided.%s",
-            BColours.fail,
-            BColours.endc
+            "%sNo PV-T GHG input information provided.%s", BColours.fail, BColours.endc
         )
         raise InputFileError(
             "finance inputs",
             "No PV-T financial input information provided and a non-zero number of PV-T"
-            "panels are being considered."
+            "panels are being considered.",
         )
     pvt_installation_ghgs: float = 0
     if pvt_array_size > 0:

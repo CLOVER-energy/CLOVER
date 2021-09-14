@@ -1392,13 +1392,9 @@ class SystemDetails:
                 self.final_num_clean_water_tanks, 3
             )
         if self.initial_pvt_size is not None:
-            system_details_as_dict["initial_pvt_size"] = round(
-                self.initial_pvt_size, 3
-            )
+            system_details_as_dict["initial_pvt_size"] = round(self.initial_pvt_size, 3)
         if self.final_pvt_size is not None:
-            system_details_as_dict["final_pvt_size"] = round(
-                self.final_pvt_size, 3
-            )
+            system_details_as_dict["final_pvt_size"] = round(self.final_pvt_size, 3)
 
         return system_details_as_dict
 

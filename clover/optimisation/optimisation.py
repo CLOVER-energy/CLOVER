@@ -151,11 +151,7 @@ def _single_line_simulation(
     total_pvt_electric_power_produced: pd.Series,
     yearly_electric_load_statistics: pd.DataFrame,
 ) -> Tuple[
-    TankSize,
-    SolarSystemSize,
-    SolarSystemSize,
-    StorageSystemSize,
-    List[SystemAppraisal]
+    TankSize, SolarSystemSize, SolarSystemSize, StorageSystemSize, List[SystemAppraisal]
 ]:
     """
     Preforms an additional round of simulations.
@@ -246,7 +242,11 @@ def _single_line_simulation(
                         unit="simulation",
                     ):
                         # Run a simulation.
-                        _, simulation_results, system_details = energy_system.run_simulation(
+                        (
+                            _,
+                            simulation_results,
+                            system_details,
+                        ) = energy_system.run_simulation(
                             convertors,
                             minigrid,
                             grid_profile,
@@ -279,12 +279,19 @@ def _single_line_simulation(
                             system_details,
                         )
 
-                        if _get_sufficient_appraisals(optimisation, [new_appraisal]) == []:
+                        if (
+                            _get_sufficient_appraisals(optimisation, [new_appraisal])
+                            == []
+                        ):
                             break
                         system_appraisals.append(new_appraisal)
                 else:
                     # Run a simulation.
-                    _, simulation_results, system_details = energy_system.run_simulation(
+                    (
+                        _,
+                        simulation_results,
+                        system_details,
+                    ) = energy_system.run_simulation(
                         convertors,
                         minigrid,
                         grid_profile,
@@ -329,7 +336,11 @@ def _single_line_simulation(
                     unit="simulation",
                 ):
                     # Run a simulation.
-                    _, simulation_results, system_details = energy_system.run_simulation(
+                    (
+                        _,
+                        simulation_results,
+                        system_details,
+                    ) = energy_system.run_simulation(
                         convertors,
                         minigrid,
                         grid_profile,
@@ -366,10 +377,15 @@ def _single_line_simulation(
                         break
                     system_appraisals.append(new_appraisal)
             else:
-                logger.error("%sNo PV or PV-T system sizes to iterate over.%s", BColours.fail, BColours.endc)
+                logger.error(
+                    "%sNo PV or PV-T system sizes to iterate over.%s",
+                    BColours.fail,
+                    BColours.endc,
+                )
                 raise InputFileError(
                     "optimisation inputs",
-                    "Either PV or PV-T ranges must be specified for iteration. Neither ""were specified."
+                    "Either PV or PV-T ranges must be specified for iteration. Neither "
+                    "were specified.",
                 )
 
         # If the maximum PV system size isn't a round number of steps, carry out a
@@ -471,7 +487,10 @@ def _single_line_simulation(
         )
 
     # If PV was maxed out:
-    if potential_system.system_details.initial_pv_size == pv_system_size.max and pv_system_size.max > 0:
+    if (
+        potential_system.system_details.initial_pv_size == pv_system_size.max
+        and pv_system_size.max > 0
+    ):
         logger.info("Increasing PV size.")
 
         # Increase  and iterate over storage size
@@ -585,7 +604,10 @@ def _single_line_simulation(
         )
 
     # If PV-T was maxed out:
-    if potential_system.system_details.initial_pvt_size == pvt_system_size.max and pvt_system_size.max > 0:
+    if (
+        potential_system.system_details.initial_pvt_size == pvt_system_size.max
+        and pvt_system_size.max > 0
+    ):
         logger.info("Increasing PV-T size.")
 
         # Increase  and iterate over storage size
@@ -1124,9 +1146,7 @@ def _simulation_iteration(
     logger.info(
         "Largest system size determined: pv_size: %s, %sstorage_size: %s%s",
         pv_size_max,
-        f"pvt-size: {pvt_size_max}, "
-        if minigrid.pvt_panel is not None
-        else "",
+        f"pvt-size: {pvt_size_max}, " if minigrid.pvt_panel is not None else "",
         storage_size_max,
         f", num clean-water tanks: {clean_water_tanks_max}"
         if ResourceType.CLEAN_WATER in scenario.resource_types
@@ -1139,7 +1159,7 @@ def _simulation_iteration(
             clean_water_tanks_max + clean_water_tanks.step,
             clean_water_tanks.step,
         ),
-        reverse=True
+        reverse=True,
     )
 
     simulation_pv_sizes: List[int] = sorted(
@@ -1149,9 +1169,7 @@ def _simulation_iteration(
 
     simulation_pvt_sizes: List[int] = sorted(
         range(
-            int(pvt_sizes.min),
-            int(pvt_size_max + pvt_sizes.step),
-            int(pvt_sizes.step)
+            int(pvt_sizes.min), int(pvt_size_max + pvt_sizes.step), int(pvt_sizes.step)
         ),
         reverse=True,
     )
@@ -1178,7 +1196,8 @@ def _simulation_iteration(
                     desc="storage size options",
                     leave=False,
                     unit="storage size options"
-                    if len(simulation_clean_water_tanks) > 1 and len(simulation_pvt_sizes) > 1
+                    if len(simulation_clean_water_tanks) > 1
+                    and len(simulation_pvt_sizes) > 1
                     else "simulation",
                 ):
                     # Only look through the various PV-T sizes if there are multiple to
@@ -1199,7 +1218,8 @@ def _simulation_iteration(
                                 for num_clean_water_tanks in tqdm(
                                     simulation_clean_water_tanks,
                                     desc="clean water tank options",
-                                    disable=ResourceType.CLEAN_WATER not in scenario.resource_types,
+                                    disable=ResourceType.CLEAN_WATER
+                                    not in scenario.resource_types,
                                     leave=False,
                                     unit="simulation",
                                 ):
@@ -1211,11 +1231,16 @@ def _simulation_iteration(
                                         else "",
                                         storage_size,
                                         f", num clean-water tanks: {num_clean_water_tanks}"
-                                        if ResourceType.CLEAN_WATER in scenario.resource_types
+                                        if ResourceType.CLEAN_WATER
+                                        in scenario.resource_types
                                         else "",
                                     )
                                     # Run a simulation and appraise it.
-                                    _, simulation_results, system_details = energy_system.run_simulation(
+                                    (
+                                        _,
+                                        simulation_results,
+                                        system_details,
+                                    ) = energy_system.run_simulation(
                                         convertors,
                                         minigrid,
                                         grid_profile,
@@ -1247,8 +1272,15 @@ def _simulation_iteration(
                                         system_details,
                                     )
 
-                                    if _get_sufficient_appraisals(optimisation, [new_appraisal]) == []:
-                                        logger.info("No sufficient systems at this resolution.")
+                                    if (
+                                        _get_sufficient_appraisals(
+                                            optimisation, [new_appraisal]
+                                        )
+                                        == []
+                                    ):
+                                        logger.info(
+                                            "No sufficient systems at this resolution."
+                                        )
                                         break
 
                                     # Store the new appraisal if it is sufficient.
@@ -1264,11 +1296,16 @@ def _simulation_iteration(
                                     else "",
                                     storage_size,
                                     f", num clean-water tanks: {simulation_clean_water_tanks[0]}"
-                                    if ResourceType.CLEAN_WATER in scenario.resource_types
+                                    if ResourceType.CLEAN_WATER
+                                    in scenario.resource_types
                                     else "",
                                 )
                                 # Run a simulation and appraise it.
-                                _, simulation_results, system_details = energy_system.run_simulation(
+                                (
+                                    _,
+                                    simulation_results,
+                                    system_details,
+                                ) = energy_system.run_simulation(
                                     convertors,
                                     minigrid,
                                     grid_profile,
@@ -1300,8 +1337,15 @@ def _simulation_iteration(
                                     system_details,
                                 )
 
-                                if _get_sufficient_appraisals(optimisation, [new_appraisal]) == []:
-                                    logger.info("No sufficient systems at this resolution.")
+                                if (
+                                    _get_sufficient_appraisals(
+                                        optimisation, [new_appraisal]
+                                    )
+                                    == []
+                                ):
+                                    logger.info(
+                                        "No sufficient systems at this resolution."
+                                    )
                                     break
 
                                 # Store the new appraisal if it is sufficient.
@@ -1315,7 +1359,8 @@ def _simulation_iteration(
                             for num_clean_water_tanks in tqdm(
                                 simulation_clean_water_tanks,
                                 desc="clean water tank options",
-                                disable=ResourceType.CLEAN_WATER not in scenario.resource_types,
+                                disable=ResourceType.CLEAN_WATER
+                                not in scenario.resource_types,
                                 leave=False,
                                 unit="simulation",
                             ):
@@ -1327,11 +1372,16 @@ def _simulation_iteration(
                                     else "",
                                     storage_size,
                                     f", num clean-water tanks: {num_clean_water_tanks}"
-                                    if ResourceType.CLEAN_WATER in scenario.resource_types
+                                    if ResourceType.CLEAN_WATER
+                                    in scenario.resource_types
                                     else "",
                                 )
                                 # Run a simulation and appraise it.
-                                _, simulation_results, system_details = energy_system.run_simulation(
+                                (
+                                    _,
+                                    simulation_results,
+                                    system_details,
+                                ) = energy_system.run_simulation(
                                     convertors,
                                     minigrid,
                                     grid_profile,
@@ -1363,8 +1413,15 @@ def _simulation_iteration(
                                     system_details,
                                 )
 
-                                if _get_sufficient_appraisals(optimisation, [new_appraisal]) == []:
-                                    logger.info("No sufficient systems at this resolution.")
+                                if (
+                                    _get_sufficient_appraisals(
+                                        optimisation, [new_appraisal]
+                                    )
+                                    == []
+                                ):
+                                    logger.info(
+                                        "No sufficient systems at this resolution."
+                                    )
                                     break
 
                                 # Store the new appraisal if it is sufficient.
@@ -1384,7 +1441,11 @@ def _simulation_iteration(
                                 else "",
                             )
                             # Run a simulation and appraise it.
-                            _, simulation_results, system_details = energy_system.run_simulation(
+                            (
+                                _,
+                                simulation_results,
+                                system_details,
+                            ) = energy_system.run_simulation(
                                 convertors,
                                 minigrid,
                                 grid_profile,
@@ -1416,7 +1477,12 @@ def _simulation_iteration(
                                 system_details,
                             )
 
-                            if _get_sufficient_appraisals(optimisation, [new_appraisal]) == []:
+                            if (
+                                _get_sufficient_appraisals(
+                                    optimisation, [new_appraisal]
+                                )
+                                == []
+                            ):
                                 logger.info("No sufficient systems at this resolution.")
                                 break
 
@@ -1443,7 +1509,8 @@ def _simulation_iteration(
                             for num_clean_water_tanks in tqdm(
                                 simulation_clean_water_tanks,
                                 desc="clean water tank options",
-                                disable=ResourceType.CLEAN_WATER not in scenario.resource_types,
+                                disable=ResourceType.CLEAN_WATER
+                                not in scenario.resource_types,
                                 leave=False,
                                 unit="simulation",
                             ):
@@ -1455,11 +1522,16 @@ def _simulation_iteration(
                                     else "",
                                     storage_size,
                                     f", num clean-water tanks: {num_clean_water_tanks}"
-                                    if ResourceType.CLEAN_WATER in scenario.resource_types
+                                    if ResourceType.CLEAN_WATER
+                                    in scenario.resource_types
                                     else "",
                                 )
                                 # Run a simulation and appraise it.
-                                _, simulation_results, system_details = energy_system.run_simulation(
+                                (
+                                    _,
+                                    simulation_results,
+                                    system_details,
+                                ) = energy_system.run_simulation(
                                     convertors,
                                     minigrid,
                                     grid_profile,
@@ -1491,8 +1563,15 @@ def _simulation_iteration(
                                     system_details,
                                 )
 
-                                if _get_sufficient_appraisals(optimisation, [new_appraisal]) == []:
-                                    logger.info("No sufficient systems at this resolution.")
+                                if (
+                                    _get_sufficient_appraisals(
+                                        optimisation, [new_appraisal]
+                                    )
+                                    == []
+                                ):
+                                    logger.info(
+                                        "No sufficient systems at this resolution."
+                                    )
                                     break
 
                                 # Store the new appraisal if it is sufficient.
@@ -1512,7 +1591,11 @@ def _simulation_iteration(
                                 else "",
                             )
                             # Run a simulation and appraise it.
-                            _, simulation_results, system_details = energy_system.run_simulation(
+                            (
+                                _,
+                                simulation_results,
+                                system_details,
+                            ) = energy_system.run_simulation(
                                 convertors,
                                 minigrid,
                                 grid_profile,
@@ -1544,7 +1627,12 @@ def _simulation_iteration(
                                 system_details,
                             )
 
-                            if _get_sufficient_appraisals(optimisation, [new_appraisal]) == []:
+                            if (
+                                _get_sufficient_appraisals(
+                                    optimisation, [new_appraisal]
+                                )
+                                == []
+                            ):
                                 logger.info("No sufficient systems at this resolution.")
                                 break
 
@@ -1559,7 +1647,8 @@ def _simulation_iteration(
                         for num_clean_water_tanks in tqdm(
                             simulation_clean_water_tanks,
                             desc="clean water tank options",
-                            disable=ResourceType.CLEAN_WATER not in scenario.resource_types,
+                            disable=ResourceType.CLEAN_WATER
+                            not in scenario.resource_types,
                             leave=False,
                             unit="simulation",
                         ):
@@ -1575,7 +1664,11 @@ def _simulation_iteration(
                                 else "",
                             )
                             # Run a simulation and appraise it.
-                            _, simulation_results, system_details = energy_system.run_simulation(
+                            (
+                                _,
+                                simulation_results,
+                                system_details,
+                            ) = energy_system.run_simulation(
                                 convertors,
                                 minigrid,
                                 grid_profile,
@@ -1607,7 +1700,12 @@ def _simulation_iteration(
                                 system_details,
                             )
 
-                            if _get_sufficient_appraisals(optimisation, [new_appraisal]) == []:
+                            if (
+                                _get_sufficient_appraisals(
+                                    optimisation, [new_appraisal]
+                                )
+                                == []
+                            ):
                                 logger.info("No sufficient systems at this resolution.")
                                 break
 
@@ -1628,7 +1726,11 @@ def _simulation_iteration(
                             else "",
                         )
                         # Run a simulation and appraise it.
-                        _, simulation_results, system_details = energy_system.run_simulation(
+                        (
+                            _,
+                            simulation_results,
+                            system_details,
+                        ) = energy_system.run_simulation(
                             convertors,
                             minigrid,
                             grid_profile,
@@ -1660,7 +1762,10 @@ def _simulation_iteration(
                             system_details,
                         )
 
-                        if _get_sufficient_appraisals(optimisation, [new_appraisal]) == []:
+                        if (
+                            _get_sufficient_appraisals(optimisation, [new_appraisal])
+                            == []
+                        ):
                             logger.info("No sufficient systems at this resolution.")
                             break
 
@@ -1676,7 +1781,8 @@ def _simulation_iteration(
                 desc="storage size options",
                 leave=False,
                 unit="storage size options"
-                if len(simulation_clean_water_tanks) > 1 and len(simulation_pvt_sizes) > 1
+                if len(simulation_clean_water_tanks) > 1
+                and len(simulation_pvt_sizes) > 1
                 else "simulation",
             ):
                 # Only look through the various PV-T sizes if there are multiple to
@@ -1697,7 +1803,8 @@ def _simulation_iteration(
                             for num_clean_water_tanks in tqdm(
                                 simulation_clean_water_tanks,
                                 desc="clean water tank options",
-                                disable=ResourceType.CLEAN_WATER not in scenario.resource_types,
+                                disable=ResourceType.CLEAN_WATER
+                                not in scenario.resource_types,
                                 leave=False,
                                 unit="simulation",
                             ):
@@ -1709,11 +1816,16 @@ def _simulation_iteration(
                                     else "",
                                     storage_size,
                                     f", num clean-water tanks: {num_clean_water_tanks}"
-                                    if ResourceType.CLEAN_WATER in scenario.resource_types
+                                    if ResourceType.CLEAN_WATER
+                                    in scenario.resource_types
                                     else "",
                                 )
                                 # Run a simulation and appraise it.
-                                _, simulation_results, system_details = energy_system.run_simulation(
+                                (
+                                    _,
+                                    simulation_results,
+                                    system_details,
+                                ) = energy_system.run_simulation(
                                     convertors,
                                     minigrid,
                                     grid_profile,
@@ -1745,8 +1857,15 @@ def _simulation_iteration(
                                     system_details,
                                 )
 
-                                if _get_sufficient_appraisals(optimisation, [new_appraisal]) == []:
-                                    logger.info("No sufficient systems at this resolution.")
+                                if (
+                                    _get_sufficient_appraisals(
+                                        optimisation, [new_appraisal]
+                                    )
+                                    == []
+                                ):
+                                    logger.info(
+                                        "No sufficient systems at this resolution."
+                                    )
                                     break
 
                                 # Store the new appraisal if it is sufficient.
@@ -1766,7 +1885,11 @@ def _simulation_iteration(
                                 else "",
                             )
                             # Run a simulation and appraise it.
-                            _, simulation_results, system_details = energy_system.run_simulation(
+                            (
+                                _,
+                                simulation_results,
+                                system_details,
+                            ) = energy_system.run_simulation(
                                 convertors,
                                 minigrid,
                                 grid_profile,
@@ -1798,7 +1921,12 @@ def _simulation_iteration(
                                 system_details,
                             )
 
-                            if _get_sufficient_appraisals(optimisation, [new_appraisal]) == []:
+                            if (
+                                _get_sufficient_appraisals(
+                                    optimisation, [new_appraisal]
+                                )
+                                == []
+                            ):
                                 logger.info("No sufficient systems at this resolution.")
                                 break
 
@@ -1813,7 +1941,8 @@ def _simulation_iteration(
                         for num_clean_water_tanks in tqdm(
                             simulation_clean_water_tanks,
                             desc="clean water tank options",
-                            disable=ResourceType.CLEAN_WATER not in scenario.resource_types,
+                            disable=ResourceType.CLEAN_WATER
+                            not in scenario.resource_types,
                             leave=False,
                             unit="simulation",
                         ):
@@ -1829,7 +1958,11 @@ def _simulation_iteration(
                                 else "",
                             )
                             # Run a simulation and appraise it.
-                            _, simulation_results, system_details = energy_system.run_simulation(
+                            (
+                                _,
+                                simulation_results,
+                                system_details,
+                            ) = energy_system.run_simulation(
                                 convertors,
                                 minigrid,
                                 grid_profile,
@@ -1861,7 +1994,12 @@ def _simulation_iteration(
                                 system_details,
                             )
 
-                            if _get_sufficient_appraisals(optimisation, [new_appraisal]) == []:
+                            if (
+                                _get_sufficient_appraisals(
+                                    optimisation, [new_appraisal]
+                                )
+                                == []
+                            ):
                                 logger.info("No sufficient systems at this resolution.")
                                 break
 
@@ -1882,7 +2020,11 @@ def _simulation_iteration(
                             else "",
                         )
                         # Run a simulation and appraise it.
-                        _, simulation_results, system_details = energy_system.run_simulation(
+                        (
+                            _,
+                            simulation_results,
+                            system_details,
+                        ) = energy_system.run_simulation(
                             convertors,
                             minigrid,
                             grid_profile,
@@ -1914,7 +2056,10 @@ def _simulation_iteration(
                             system_details,
                         )
 
-                        if _get_sufficient_appraisals(optimisation, [new_appraisal]) == []:
+                        if (
+                            _get_sufficient_appraisals(optimisation, [new_appraisal])
+                            == []
+                        ):
                             logger.info("No sufficient systems at this resolution.")
                             break
 
@@ -1941,7 +2086,8 @@ def _simulation_iteration(
                         for num_clean_water_tanks in tqdm(
                             simulation_clean_water_tanks,
                             desc="clean water tank options",
-                            disable=ResourceType.CLEAN_WATER not in scenario.resource_types,
+                            disable=ResourceType.CLEAN_WATER
+                            not in scenario.resource_types,
                             leave=False,
                             unit="simulation",
                         ):
@@ -1957,7 +2103,11 @@ def _simulation_iteration(
                                 else "",
                             )
                             # Run a simulation and appraise it.
-                            _, simulation_results, system_details = energy_system.run_simulation(
+                            (
+                                _,
+                                simulation_results,
+                                system_details,
+                            ) = energy_system.run_simulation(
                                 convertors,
                                 minigrid,
                                 grid_profile,
@@ -1989,7 +2139,12 @@ def _simulation_iteration(
                                 system_details,
                             )
 
-                            if _get_sufficient_appraisals(optimisation, [new_appraisal]) == []:
+                            if (
+                                _get_sufficient_appraisals(
+                                    optimisation, [new_appraisal]
+                                )
+                                == []
+                            ):
                                 logger.info("No sufficient systems at this resolution.")
                                 break
 
@@ -2010,7 +2165,11 @@ def _simulation_iteration(
                             else "",
                         )
                         # Run a simulation and appraise it.
-                        _, simulation_results, system_details = energy_system.run_simulation(
+                        (
+                            _,
+                            simulation_results,
+                            system_details,
+                        ) = energy_system.run_simulation(
                             convertors,
                             minigrid,
                             grid_profile,
@@ -2042,7 +2201,10 @@ def _simulation_iteration(
                             system_details,
                         )
 
-                        if _get_sufficient_appraisals(optimisation, [new_appraisal]) == []:
+                        if (
+                            _get_sufficient_appraisals(optimisation, [new_appraisal])
+                            == []
+                        ):
                             logger.info("No sufficient systems at this resolution.")
                             break
 
@@ -2073,7 +2235,11 @@ def _simulation_iteration(
                             else "",
                         )
                         # Run a simulation and appraise it.
-                        _, simulation_results, system_details = energy_system.run_simulation(
+                        (
+                            _,
+                            simulation_results,
+                            system_details,
+                        ) = energy_system.run_simulation(
                             convertors,
                             minigrid,
                             grid_profile,
@@ -2105,7 +2271,10 @@ def _simulation_iteration(
                             system_details,
                         )
 
-                        if _get_sufficient_appraisals(optimisation, [new_appraisal]) == []:
+                        if (
+                            _get_sufficient_appraisals(optimisation, [new_appraisal])
+                            == []
+                        ):
                             logger.info("No sufficient systems at this resolution.")
                             break
 
@@ -2115,13 +2284,22 @@ def _simulation_iteration(
                 # Otherwise, simply run a simulation at this depth.
                 else:
                     logger.error(
-                        "%sAn optimisation step was called with only one system to ""explore.\n%s%s%s%s%s",
+                        "%sAn optimisation step was called with only one system to "
+                        "explore.\n%s%s%s%s%s",
                         BColours.fail,
-                        f"pv size: {simulation_pv_sizes[0]}" if minigrid.pv_panel is not None else "",
-                        f"pv-t size: {simulation_pvt_sizes[0]}" if minigrid.pvt_panel is not None else "",
-                        f"storage size: {simulation_storage_sizes[0]}" if minigrid.battery is not None else "",
-                        f"pv size: {simulation_clean_water_tanks[0]}" if minigrid.clean_water_tank is not None else "",
-                        BColours.endc
+                        f"pv size: {simulation_pv_sizes[0]}"
+                        if minigrid.pv_panel is not None
+                        else "",
+                        f"pv-t size: {simulation_pvt_sizes[0]}"
+                        if minigrid.pvt_panel is not None
+                        else "",
+                        f"storage size: {simulation_storage_sizes[0]}"
+                        if minigrid.battery is not None
+                        else "",
+                        f"pv size: {simulation_clean_water_tanks[0]}"
+                        if minigrid.clean_water_tank is not None
+                        else "",
+                        BColours.endc,
                     )
 
     logger.info("Optimisation bounds explored.")

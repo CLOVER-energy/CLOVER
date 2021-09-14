@@ -392,16 +392,19 @@ def get_total_equipment_cost(
         installation_year,
     )
 
-    if ImpactingComponent.CLEAN_WATER_TANK.value not in finance_inputs and clean_water_tanks > 0:
+    if (
+        ImpactingComponent.CLEAN_WATER_TANK.value not in finance_inputs
+        and clean_water_tanks > 0
+    ):
         logger.error(
             "%sNo clean-water tank financial input information provided.%s",
             BColours.fail,
-            BColours.endc
+            BColours.endc,
         )
         raise InputFileError(
             "finance inputs",
             "No clean-water financial input information provided and a non-zero "
-            "number of clean-water tanks are being considered."
+            "number of clean-water tanks are being considered.",
         )
     clean_water_tank_cost: float = 0
     if clean_water_tanks > 0:
@@ -409,7 +412,7 @@ def get_total_equipment_cost(
             finance_inputs[ImpactingComponent.CLEAN_WATER_TANK.value][COST],
             finance_inputs[ImpactingComponent.CLEAN_WATER_TANK.value][COST_DECREASE],
             clean_water_tanks,
-            installation_year
+            installation_year,
         )
 
     diesel_cost = _component_cost(
@@ -430,12 +433,12 @@ def get_total_equipment_cost(
         logger.error(
             "%sNo PV-T financial input information provided.%s",
             BColours.fail,
-            BColours.endc
+            BColours.endc,
         )
         raise InputFileError(
             "finance inputs",
             "No PV-T financial input information provided and a non-zero number of PV-T"
-            "panels are being considered."
+            "panels are being considered.",
         )
     pvt_cost: float = 0
     if pvt_array_size > 0:
@@ -472,7 +475,9 @@ def get_total_equipment_cost(
         finance_inputs[ImpactingComponent.PV_T.value][INSTALLATION_COST_DECREASE],
         installation_year,
     )
-    total_installation_cost = diesel_installation_cost + pv_installation_cost + pvt_installation_cost
+    total_installation_cost = (
+        diesel_installation_cost + pv_installation_cost + pvt_installation_cost
+    )
 
     misc_costs = _misc_costs(
         diesel_size, finance_inputs[ImpactingComponent.MISC.value][COST], pv_array_size
@@ -668,7 +673,14 @@ def discounted_equipment_cost(
     """
 
     undiscounted_cost = get_total_equipment_cost(
-        clean_water_tanks, diesel_size, finance_inputs, logger, pv_array_size, pvt_array_size, storage_size, installation_year
+        clean_water_tanks,
+        diesel_size,
+        finance_inputs,
+        logger,
+        pv_array_size,
+        pvt_array_size,
+        storage_size,
+        installation_year,
     )
     discount_fraction = (1.0 - finance_inputs[DISCOUNT_RATE]) ** installation_year
 
@@ -823,24 +835,23 @@ def total_om(
         logger.error(
             "%sNo PV-T financial input information provided.%s",
             BColours.fail,
-            BColours.endc
+            BColours.endc,
         )
         raise InputFileError(
             "finance inputs",
             "No PV-T financial input information provided and a non-zero number of PV-T"
-            "panels are being considered."
+            "panels are being considered.",
         )
     pvt_om: float = 0
     if pvt_array_size > 0:
         pvt_om = _component_om(
-        finance_inputs[ImpactingComponent.PV_T.value][OM],
-        pvt_array_size,
-        finance_inputs,
-        logger,
-        start_year=start_year,
-        end_year=end_year,
-    )
-
+            finance_inputs[ImpactingComponent.PV_T.value][OM],
+            pvt_array_size,
+            finance_inputs,
+            logger,
+            start_year=start_year,
+            end_year=end_year,
+        )
 
     storage_om = _component_om(
         finance_inputs[ImpactingComponent.STORAGE.value][OM],
