@@ -115,10 +115,10 @@ or, on a Linux machine:
 ```
 where `<float>` indicates that a floating point object, i.e., a number, is an acceptable input. The number should not have quotation marks around it.
 
-***
-
 ##### Analysis
 
 When running CLOVER simulations, in-built graph plotting can be carried out by CLOVER. To activate this functionality, simply use the `--analyse` flag when initialising a CLOVER simulation from the command-line interface.
+
+***
 
 For more information, contact Phil Sandwell (philip.sandwell@gmail.com) or Ben Winchester (benedict.winchester@gmail.com).
