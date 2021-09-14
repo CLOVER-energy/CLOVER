@@ -611,7 +611,7 @@ def main(args: List[Any]) -> None:
     if ResourceType.CLEAN_WATER in scenario.resource_types and operating_mode in (
         OperatingMode.SIMULATION,
         OperatingMode.OPTIMISATION,
-    ):
+    ) and minigrid.pvt_panel is not None:
         try:
             (
                 _,
