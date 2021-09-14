@@ -1337,9 +1337,13 @@ class SystemDetails:
 
     diesel_capacity: float
     end_year: int
+    final_num_clean_water_tanks: Optional[float]
     final_pv_size: float
+    final_pvt_size: Optional[float]
     final_storage_size: float
+    initial_num_clean_water_tanks: Optional[float]
     initial_pv_size: float
+    initial_pvt_size: Optional[float]
     initial_storage_size: float
     start_year: int
     file_information: Optional[Dict[str, str]] = None
@@ -1366,6 +1370,23 @@ class SystemDetails:
             "input_files": self.file_information,
             "start_year": round(self.start_year, 3),
         }
+
+        if self.initial_num_clean_water_tanks is not None:
+            system_details_as_dict["initial_num_clean_water_tanks"] = round(
+                self.initial_num_clean_water_tanks, 3
+            )
+        if self.final_num_clean_water_tanks is not None:
+            system_details_as_dict["final_num_clean_water_tanks"] = round(
+                self.final_num_clean_water_tanks, 3
+            )
+        if self.initial_pvt_size is not None:
+            system_details_as_dict["initial_pvt_size"] = round(
+                self.initial_pvt_size, 3
+            )
+        if self.final_pvt_size is not None:
+            system_details_as_dict["final_pvt_size"] = round(
+                self.final_pvt_size, 3
+            )
 
         return system_details_as_dict
 
