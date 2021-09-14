@@ -1315,14 +1315,26 @@ class SystemDetails:
     .. attribute:: end_year
         The end year of the simulation.
 
+    .. attribute:: final_num_clean_water_tanks
+        The final number of clean-water tanks installed in the system.
+
     .. attribute:: final_pv_size
         The final pv size of the system.
+
+    .. attribute:: final_pvt_size
+        The final pv-t size of the system.
 
     .. attribute:: final_storage_size
         The final storage size of the system.
 
+    .. attribute:: initial_num_clean_water_tanks
+        The initial number of clean-water tanks installed in the system.
+
     .. attribute:: initial_pv_size
         The initial pv size of the system.
+
+    .. attribute:: initial_pvt_size
+        The initial pv-t size of the system.
 
     .. attribute:: initial_storage_size
         The initial storage size of the system.
@@ -1335,17 +1347,17 @@ class SystemDetails:
 
     """
 
-    diesel_capacity: float
-    end_year: int
-    final_num_clean_water_tanks: Optional[float]
-    final_pv_size: float
-    final_pvt_size: Optional[float]
-    final_storage_size: float
-    initial_num_clean_water_tanks: Optional[float]
-    initial_pv_size: float
-    initial_pvt_size: Optional[float]
-    initial_storage_size: float
-    start_year: int
+    diesel_capacity: float = 0
+    end_year: int = 0
+    final_num_clean_water_tanks: Optional[float] = 0
+    final_pv_size: float = 0
+    final_pvt_size: Optional[float] = 0
+    final_storage_size: float = 0
+    initial_num_clean_water_tanks: Optional[float] = 0
+    initial_pv_size: float = 0
+    initial_pvt_size: Optional[float] = 0
+    initial_storage_size: float = 0
+    start_year: int = 0
     file_information: Optional[Dict[str, str]] = None
 
     def to_dict(self) -> Dict[str, Optional[Union[int, float, str, Dict[str, str]]]]:
@@ -1416,12 +1428,12 @@ class CumulativeResults:
 
     """
 
-    cost: float
-    discounted_energy: float
-    energy: float
-    ghgs: float
-    system_cost: float
-    system_ghgs: float
+    cost: float = 0
+    discounted_energy: float = 0
+    energy: float = 0
+    ghgs: float = 0
+    system_cost: float = 0
+    system_ghgs: float = 0
 
     def to_dict(self) -> Dict[str, Any]:
         """
@@ -1476,15 +1488,15 @@ class EnvironmentalAppraisal:
 
     """
 
-    diesel_ghgs: float
-    grid_ghgs: float
-    kerosene_ghgs: float
-    kerosene_ghgs_mitigated: float
-    new_connection_ghgs: float
-    new_equipment_ghgs: float
-    om_ghgs: float
-    total_ghgs: float
-    total_system_ghgs: float
+    diesel_ghgs: float = 0
+    grid_ghgs: float = 0
+    kerosene_ghgs: float = 0
+    kerosene_ghgs_mitigated: float = 0
+    new_connection_ghgs: float = 0
+    new_equipment_ghgs: float = 0
+    om_ghgs: float = 0
+    total_ghgs: float = 0
+    total_system_ghgs: float = 0
 
     def to_dict(self) -> Dict[str, Any]:
         """
@@ -1542,15 +1554,15 @@ class FinancialAppraisal:
 
     """
 
-    diesel_cost: float
-    grid_cost: float
-    kerosene_cost: float
-    kerosene_cost_mitigated: float
-    new_connection_cost: float
-    new_equipment_cost: float
-    om_cost: float
-    total_cost: float
-    total_system_cost: float
+    diesel_cost: float = 0
+    grid_cost: float = 0
+    kerosene_cost: float = 0
+    kerosene_cost_mitigated: float = 0
+    new_connection_cost: float = 0
+    new_equipment_cost: float = 0
+    om_cost: float = 0
+    total_cost: float = 0
+    total_system_cost: float = 0
 
     def to_dict(self) -> Dict[str, Any]:
         """
@@ -1623,19 +1635,21 @@ class TechnicalAppraisal:
 
     """
 
-    blackouts: float
-    clean_water_blackouts: Optional[float]
-    diesel_energy: float
-    diesel_fuel_usage: float
-    discounted_energy: float
-    grid_energy: float
-    kerosene_displacement: float
-    renewable_energy: float
-    renewable_energy_fraction: float
-    storage_energy: float
-    total_energy: float
-    unmet_energy: float
-    unmet_energy_fraction: float
+    blackouts: float = 0
+    clean_water_blackouts: Optional[float] = 0
+    diesel_energy: float = 0
+    diesel_fuel_usage: float = 0
+    discounted_energy: float = 0
+    grid_energy: float = 0
+    kerosene_displacement: float = 0
+    pv_energy: float = 0
+    pvt_energy: Optional[float] = 0
+    renewable_energy: float = 0
+    renewable_energy_fraction: float = 0
+    storage_energy: float = 0
+    total_energy: float = 0
+    unmet_energy: float = 0
+    unmet_energy_fraction: float = 0
 
     def to_dict(self) -> Dict[str, Any]:
         """

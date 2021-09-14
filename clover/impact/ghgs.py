@@ -18,13 +18,14 @@ emitted by the system, need to be assed.
 
 """
 
+from logging import Logger
 from typing import Any, Dict, List
 
 import numpy as np  # pylint: disable=import-error
 import pandas as pd  # type: ignore  # pylint: disable=import-error
 
 from .__utils__ import SIZE_INCREMENT, ImpactingComponent, LIFETIME
-from ..__utils__ import Location, hourly_profile_to_daily_sum
+from ..__utils__ import BColours, InputFileError, Location, hourly_profile_to_daily_sum
 
 __all__ = (
     "calculate_connections_ghgs",
@@ -152,9 +153,12 @@ def calculate_misc_ghgs(capacity: float, ghg_inputs: Dict[str, Any]) -> float:
 
 
 def calculate_total_equipment_ghgs(
+    clean_water_tanks: float,
     diesel_size: float,
     ghg_inputs: Dict[str, Any],
+    logger: Logger,
     pv_array_size: float,
+    pvt_array_size: float,
     storage_size: float,
     year=0,
 ) -> float:
@@ -162,16 +166,20 @@ def calculate_total_equipment_ghgs(
     Calculates ghgs of all newly installed equipment
 
     Inputs:
+        - clean_water_tanks:
+            Capacity of clean-water tanks being installed.
         - diesel_size:
             Capacity of diesel generator being installed
         - ghg_inputs:
             GHG input information.
         - pv_array_size:
-            Capacity of PV being installed
+            Capacity of PV being installed.
+        - pvt_array_size:
+            Capacity of PV-T being installed.
         - storage_size:
-            Capacity of battery storage being installed
+            Capacity of battery storage being installed.
         - year:
-            Installation year
+            Installation year.
 
     Outputs:
         GHGs
@@ -180,31 +188,97 @@ def calculate_total_equipment_ghgs(
 
     # Calculate system ghgs.
     bos_ghgs = calculate_ghgs(pv_array_size, ghg_inputs, ImpactingComponent.BOS, year)
+
+    if ImpactingComponent.CLEAN_WATER_TANK.value not in ghg_inputs and clean_water_tanks > 0:
+        logger.error(
+            "%sNo PV-T GHG input information provided.%s",
+            BColours.fail,
+            BColours.endc
+        )
+        raise InputFileError(
+            "finance inputs",
+            "No PV-T financial input information provided and a non-zero number of PV-T"
+            "panels are being considered."
+        )
+    clean_water_tank_ghgs: float = 0
+    if clean_water_tanks > 0:
+        clean_water_tank_ghgs = calculate_ghgs(
+            clean_water_tanks,
+            ghg_inputs,
+            ImpactingComponent.CLEAN_WATER_TANK,
+            year,
+        )
+
     diesel_ghgs = calculate_ghgs(
         diesel_size, ghg_inputs, ImpactingComponent.DIESEL, year
     )
+
     pv_ghgs = calculate_ghgs(pv_array_size, ghg_inputs, ImpactingComponent.PV, year)
+
+    if ImpactingComponent.PV_T.value not in ghg_inputs and pvt_array_size > 0:
+        logger.error(
+            "%sNo PV-T GHG input information provided.%s",
+            BColours.fail,
+            BColours.endc
+        )
+        raise InputFileError(
+            "finance inputs",
+            "No PV-T financial input information provided and a non-zero number of PV-T"
+            "panels are being considered."
+        )
+    pvt_ghgs: float = 0
+    if pvt_array_size > 0:
+        pvt_ghgs = calculate_ghgs(
+            pvt_array_size,
+            ghg_inputs,
+            ImpactingComponent.PV_T,
+            year,
+        )
+
     storage_ghgs = calculate_ghgs(
         storage_size, ghg_inputs, ImpactingComponent.STORAGE, year
     )
 
     # Calculate installation ghgs.
-    pv_installation_ghgs = calculate_installation_ghgs(
-        pv_array_size, ghg_inputs, ImpactingComponent.PV, year
-    )
     diesel_installation_ghgs = calculate_installation_ghgs(
         diesel_size, ghg_inputs, ImpactingComponent.DIESEL, year
     )
+
     misc_ghgs = calculate_misc_ghgs(diesel_size + pv_array_size, ghg_inputs)
+
+    pv_installation_ghgs = calculate_installation_ghgs(
+        pv_array_size, ghg_inputs, ImpactingComponent.PV, year
+    )
+
+    if ImpactingComponent.PV_T.value not in ghg_inputs and pvt_array_size > 0:
+        logger.error(
+            "%sNo PV-T GHG input information provided.%s",
+            BColours.fail,
+            BColours.endc
+        )
+        raise InputFileError(
+            "finance inputs",
+            "No PV-T financial input information provided and a non-zero number of PV-T"
+            "panels are being considered."
+        )
+    pvt_installation_ghgs: float = 0
+    if pvt_array_size > 0:
+        pvt_installation_ghgs = calculate_installation_ghgs(
+            pvt_array_size, ghg_inputs, ImpactingComponent.PV, year
+        )
 
     return (
         bos_ghgs
-        + diesel_ghgs
-        + pv_ghgs
-        + storage_ghgs
-        + pv_installation_ghgs
+        + clean_water_tank_ghgs
         + diesel_installation_ghgs
+        + diesel_ghgs
         + misc_ghgs
+        + pv_installation_ghgs
+        + pv_ghgs
+        + pv_installation_ghgs
+        + pvt_installation_ghgs
+        + pvt_ghgs
+        + storage_ghgs
     )
 
 
