@@ -44,19 +44,28 @@ __all__ = ("appraise_system",)
 
 
 def _simulation_environmental_appraisal(
+    clean_water_tank_addition: float,
+    diesel_addition: float,
     electric_yearly_load_statistics: pd.DataFrame,
     end_year: int,
     ghg_inputs: Dict[str, Any],
     location: Location,
-    previous_system_details: SystemDetails,
-    simulation_results: pd.DataFrame,
+    logger: Logger,
+    pv_addition: float,
+    pvt_addition: float,
+    simulation_results,
     start_year: int,
+    storage_addition: float,
     system_details: SystemDetails,
 ) -> EnvironmentalAppraisal:
     """
     Appraises the environmental impact of a minigrid system
 
     Inputs:
+        - clean_water_tank_addition:
+            The additional number of clean-water tanks added this iteration.
+        - diesel_addition:
+            The additional diesel capacity added this iteration.
         - electric_yearly_load_statistics:
             The yearly electric load statistics.
         - end_year:
@@ -65,12 +74,19 @@ def _simulation_environmental_appraisal(
             The GHG input information.
         - location:
             The location being considered.
-        - previous_system_details:
-            The system details of the previous system simulated.
+        - logger:
+            The logger to use for the run.
+        - pv_addition:
+            The additional number of PV panels added this iteration.
+        - pvt_addition:
+            The additional number of PV-T panels added this iteration.
         - simulation_results:
             The system that was just simulated.
         - start_year:
             The start year for the simulation period.
+        - storage_addition:
+            The additional number of electric storage devices (batteries) added this
+            iteration.
         - system_details:
             The deatils of the system that was just simulated.
 
@@ -79,18 +95,9 @@ def _simulation_environmental_appraisal(
 
     """
 
-    # Calculate new PV, storage and diesel installations
-    pv_addition = system_details.initial_pv_size - previous_system_details.final_pv_size
-    storage_addition = (
-        system_details.initial_storage_size - previous_system_details.diesel_capacity
-    )
-    diesel_addition = (
-        system_details.diesel_capacity - previous_system_details.diesel_capacity
-    )
-
     # Calculate new equipment GHGs
     equipment_ghgs = ghgs.calculate_total_equipment_ghgs(
-        diesel_addition, ghg_inputs, pv_addition, storage_addition
+        clean_water_tank_addition, diesel_addition, ghg_inputs, logger, pv_addition, pvt_addition, storage_addition
     ) + ghgs.calculate_independent_ghgs(
         electric_yearly_load_statistics, end_year, ghg_inputs, location, start_year
     )
@@ -156,46 +163,59 @@ def _simulation_environmental_appraisal(
 
 
 def _simulation_financial_appraisal(
+    clean_water_tank_addition: float,
+    diesel_addition: float,
     finance_inputs: Dict[str, Any],
     location: Location,
     logger: Logger,
+    pv_addition: float,
+    pvt_addition: float,
     simulation_results,
+    storage_addition: float,
     system_details: SystemDetails,
     yearly_load_statistics: pd.DataFrame,
-    previous_system_details: SystemDetails,
 ) -> FinancialAppraisal:
     """
     Appraises the financial performance of a minigrid system.
 
     Inputs:
+        - clean_water_tank_addition:
+            The additional number of clean-water tanks added this iteration.
+        - diesel_addition:
+            The additional diesel capacity added this iteration.
         - finance_inputs:
             The finance input information.
+        - location:
+            The :class:`Location` being considered.
         - logger:
             The logger to use for the run.
-        - simulation
+        - pv_addition:
+            The additional number of PV panels added this iteration.
+        - pvt_addition:
+            The additional number of PV-T panels added this iteration.
+        - simulation_results:
             Outputs of Energy_System().simulation(...)
-        - previous_systems:
-            Report from previously installed system (not required if no system was
-            previously deployed)
+        - storage_addition:
+            The additional number of electric storage devices (batteries) added this
+            iteration.
+        - system_details:
+            The details of this system.
+        - yearly_load_statistics:
+            The yearly electric load statistics for the system.
 
     Outputs:
         The financial appraisal of the system.
 
     """
 
-    # Calculate new PV, storage and diesel installations
-    pv_addition = system_details.initial_pv_size - previous_system_details.final_pv_size
-    storage_addition = (
-        system_details.initial_storage_size - previous_system_details.final_storage_size
-    )
-    diesel_addition = (
-        system_details.diesel_capacity - previous_system_details.diesel_capacity
-    )
-    #   Calculate new equipment costs (discounted)
+    # Calculate new equipment costs (discounted)
     equipment_costs = finance.discounted_equipment_cost(
+        clean_water_tank_addition,
         diesel_addition,
         finance_inputs,
+        logger,
         pv_addition,
+        pvt_addition,
         storage_addition,
         system_details.start_year,
     ) + finance.independent_expenditure(
@@ -219,6 +239,7 @@ def _simulation_financial_appraisal(
         finance_inputs,
         logger,
         system_details.initial_pv_size,
+        system_details.initial_pvt_size if system_details.initial_pvt_size is not None else 0,
         system_details.initial_storage_size,
         start_year=system_details.start_year,
         end_year=system_details.end_year,
@@ -322,6 +343,12 @@ def _simulation_technical_appraisal(
     total_renewables_used = np.sum(
         simulation_results["Renewables energy used (kWh)"]  # type: ignore
     )
+    total_pv_energy = np.sum(
+        simulation_results["PV energy supplied (kWh)"]  # type: ignore
+    )
+    total_pvt_energy = np.sum(
+        simulation_results["PV-T electric energy supplied (kWh)"]  # type: ignore
+    ) if "PV-T electric energy supplied (kWh)" in simulation_results else None
     total_storage_used = np.sum(
         simulation_results["Storage energy supplied (kWh)"]  # type: ignore
     )
@@ -373,6 +400,8 @@ def _simulation_technical_appraisal(
         round(discounted_energy, 3),
         round(total_grid_used, 3),
         round(kerosene_displacement, 3),
+        round(total_pv_energy, 3),
+        round(total_pvt_energy, 3) if total_pvt_energy is not None else None,
         round(total_renewables_used, 3),
         round(renewables_fraction, 3),
         round(total_storage_used, 3),
@@ -427,48 +456,24 @@ def appraise_system(
 
     if previous_system is None:
         previous_system = SystemAppraisal(
-            CumulativeResults(0, 0, 0, 0, 0, 0),
-            EnvironmentalAppraisal(0, 0, 0, 0, 0, 0, 0, 0, 0),
-            FinancialAppraisal(
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-            ),
-            SystemDetails(
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-            ),
-            TechnicalAppraisal(
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-            ),
+            CumulativeResults(),
+            EnvironmentalAppraisal(),
+            FinancialAppraisal(),
+            SystemDetails(),
+            TechnicalAppraisal(),
         )
+
+    # Compute the additions made to the system.
+    clean_water_tank_addition: float = system_details.initial_num_clean_water_tanks - previous_system.system_details.final_num_clean_water_tanks if system_details.initial_num_clean_water_tanks is not None and previous_system.system_details.final_num_clean_water_tanks is not None else 0
+    diesel_addition = (
+        system_details.diesel_capacity - previous_system.system_details.diesel_capacity
+    )
+    pv_addition = system_details.initial_pv_size - previous_system.system_details.final_pv_size
+    pvt_addition: float = system_details.initial_pvt_size - previous_system.system_details.final_pvt_size if system_details.initial_pvt_size is not None and previous_system.system_details.final_pvt_size is not None else 0
+    storage_addition = (
+        system_details.initial_storage_size - previous_system.system_details.final_storage_size
+    )
+
 
     # Get results which will be carried forward into optimisation process
     technical_appraisal = _simulation_technical_appraisal(
@@ -476,22 +481,31 @@ def appraise_system(
     )
 
     financial_appraisal = _simulation_financial_appraisal(
+        clean_water_tank_addition,
+        diesel_addition,
         finance_inputs,
         location,
         logger,
+        pv_addition,
+        pvt_addition,
         simulation_results,
+        storage_addition,
         system_details,
         electric_yearly_load_statistics,
-        previous_system_details=previous_system.system_details,
     )
     environmental_appraisal = _simulation_environmental_appraisal(
+        clean_water_tank_addition,
+        diesel_addition,
         electric_yearly_load_statistics,
         end_year,
         ghg_inputs,
         location,
-        previous_system.system_details,
+        logger,
+        pv_addition,
+        pvt_addition,
         simulation_results,
         start_year,
+        storage_addition,
         system_details,
     )
 
