@@ -40,6 +40,8 @@ class ImpactingComponent(enum.Enum):
 
     - BOS:
         Denotes the balance-of-systems aspect of the system.
+    - CLEAN_WATER_TANK:
+        Denotes the clean-water tank component of the system.
     - DIESEL:
         Denotes the diesel component of the system.
     - DIESEL_FUEL:
@@ -59,12 +61,15 @@ class ImpactingComponent(enum.Enum):
         Denotes misc. aspects of the system.
     - PV:
         Denotes the PV component of the system.
+    - PV_T:
+        Denotes the PV-T component of the system.
     - STORAGE:
         Denotes the storage component of the system.
 
     """
 
     BOS = "bos"
+    CLEAN_WATER_TANK = "clean_water_tank"
     DIESEL = "diesel_generator"
     DIESEL_FUEL = "diesel_fuel"
     GENERAL = "general"
@@ -74,4 +79,5 @@ class ImpactingComponent(enum.Enum):
     KEROSENE = "kerosene"
     MISC = "misc"
     PV = "pv"
+    PV_T = "pv_t"
     STORAGE = "storage"
