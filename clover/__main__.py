@@ -608,10 +608,15 @@ def main(args: List[Any]) -> None:
     )
 
     # Compute the PV-T electricity generation profile.
-    if ResourceType.CLEAN_WATER in scenario.resource_types and operating_mode in (
-        OperatingMode.SIMULATION,
-        OperatingMode.OPTIMISATION,
-    ) and minigrid.pvt_panel is not None:
+    if (
+        ResourceType.CLEAN_WATER in scenario.resource_types
+        and operating_mode
+        in (
+            OperatingMode.SIMULATION,
+            OperatingMode.OPTIMISATION,
+        )
+        and minigrid.pvt_panel is not None
+    ):
         try:
             (
                 _,
@@ -672,7 +677,11 @@ def main(args: List[Any]) -> None:
 
     # Determine whether any default sizes have been overrided.
     overrided_default_sizes: bool = (
-        minigrid.pv_panel.pv_unit_overrided if minigrid.pv_panel is not None else False or minigrid.battery.storage_unit if minigrid.battery is not None else False
+        minigrid.pv_panel.pv_unit_overrided
+        if minigrid.pv_panel is not None
+        else False or minigrid.battery.storage_unit
+        if minigrid.battery is not None
+        else False
     )
 
     # * Run a simulation or optimisation as appropriate.
