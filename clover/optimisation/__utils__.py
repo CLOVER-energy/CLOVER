@@ -31,7 +31,7 @@ from ..__utils__ import (
 __all__ = (
     "CriterionMode",
     "Optimisation",
-    "PVSystemSize",
+    "SolarSystemSize",
     "StorageSystemSize",
     "TankSize",
     "ThresholdMode",
@@ -179,18 +179,18 @@ class Optimisation:
 
 
 @dataclasses.dataclass
-class PVSystemSize:
+class SolarSystemSize:
     """
-    Used to wrap the pv-system-size information.
+    Used to wrap the solar-system-size information.
 
     .. attribute:: max
-        The maximum size of the system, measured in PV units.
+        The maximum size of the system, measured in PV or PV-T units.
 
     .. attribute:: min
-        The minimum size of the system, measured in PV units.
+        The minimum size of the system, measured in PV or PV-T units.
 
     .. attribute:: step
-        The step to use for the system, measured in PV units.
+        The step to use for the system, measured in PV or PV-T units.
 
     """
 

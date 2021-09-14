@@ -58,7 +58,7 @@ from .__utils__ import (
     Criterion,
     CriterionMode,
     Optimisation,
-    PVSystemSize,
+    SolarSystemSize,
     StorageSystemSize,
     TankSize,
     ThresholdMode,
@@ -120,7 +120,7 @@ def _single_line_simulation(
     ghg_inputs: Dict[str, Any],
     grid_profile: pd.DataFrame,
     kerosene_usage: pd.DataFrame,
-    pv_system_size: PVSystemSize,
+    pv_system_size: SolarSystemSize,
     storage_size: StorageSystemSize,
     location: Location,
     logger: Logger,
@@ -134,7 +134,7 @@ def _single_line_simulation(
     total_electric_load: pd.DataFrame,
     total_solar_power_produced: pd.Series,
     yearly_electric_load_statistics: pd.DataFrame,
-) -> Tuple[Optional[TankSize], PVSystemSize, StorageSystemSize, List[SystemAppraisal]]:
+) -> Tuple[Optional[TankSize], SolarSystemSize, StorageSystemSize, List[SystemAppraisal]]:
     """
     Preforms an additional round of simulations.
 
@@ -411,7 +411,7 @@ def _find_optimum_system(
     ghg_inputs: Dict[str, Any],
     grid_profile: pd.DataFrame,
     kerosene_usage: pd.DataFrame,
-    largest_pv_system_size: PVSystemSize,
+    largest_pv_system_size: SolarSystemSize,
     largest_storage_system_size: StorageSystemSize,
     location: Location,
     logger: Logger,
@@ -604,7 +604,7 @@ def _simulation_iteration(
     optimisation: Optimisation,
     optimisation_parameters: OptimisationParameters,
     previous_system: Optional[SystemAppraisal],
-    pv_sizes: PVSystemSize,
+    pv_sizes: SolarSystemSize,
     scenario: Scenario,
     start_year: int,
     storage_sizes: StorageSystemSize,
@@ -614,7 +614,7 @@ def _simulation_iteration(
     yearly_electric_load_statistics: pd.DataFrame,
 ) -> Tuple[
     int,
-    PVSystemSize,
+    SolarSystemSize,
     StorageSystemSize,
     SystemAppraisal,
     Optional[SystemAppraisal],
@@ -919,7 +919,7 @@ def _simulation_iteration(
     logger.info("Optimisation bounds explored.")
     return (
         end_year,
-        PVSystemSize(pv_size_max, pv_sizes.min, pv_sizes.step),
+        SolarSystemSize(pv_size_max, pv_sizes.min, pv_sizes.step),
         StorageSystemSize(storage_size_max, storage_sizes.min, storage_sizes.step),
         largest_system_appraisal,
         previous_system,
@@ -941,7 +941,7 @@ def _optimisation_step(
     optimisation: Optimisation,
     optimisation_parameters: OptimisationParameters,
     previous_system: Optional[SystemAppraisal],
-    pv_sizes: PVSystemSize,
+    pv_sizes: SolarSystemSize,
     scenario: Scenario,
     start_year: int,
     storage_sizes: StorageSystemSize,
@@ -1082,7 +1082,8 @@ def multiple_optimisation_step(
     yearly_electric_load_statistics: pd.DataFrame,
     *,
     input_clean_water_tanks: Optional[TankSize] = None,
-    input_pv_sizes: Optional[PVSystemSize] = None,
+    input_pv_sizes: Optional[SolarSystemSize] = None,
+    input_pvt_sizes: Optional[SolarSystemSize] = None,
     input_storage_sizes: Optional[StorageSystemSize] = None,
     previous_system: Optional[SystemAppraisal] = None,
     start_year: int = 0,
@@ -1120,11 +1121,13 @@ def multiple_optimisation_step(
         - yearly_electric_load_statistics:
             The yearly electric load statistic information;
         - input_clean_water_tanks:
-            Range of tank sizes in the form [minimum, maximum, step size];
+            Range of tank sizes as a :class:`TankSize` instance;
         - input_pv_sizes:
-            Range of PV sizes in the form [minimum, maximum, step size];
+            Range of PV sizes as a :class:`SolarSystemSize` instance;
+        - input_pvt_sizes:
+            Range of PV-T sizes as a :class:`SolarSystemSize` instance;
         - input_storage_sizes:
-            Range of storage sizes in the form [minimum, maximum, step size];
+            Range of storage sizes as a :class:`StorageSystemSize` instance;
         - previous_system:
             Appraisal of the system already in place before this simulation period;
         - start_year:
@@ -1173,11 +1176,37 @@ def multiple_optimisation_step(
         )
     if input_pv_sizes is None:
         logger.info("No pv sizes passed in, using default optimisation parameters.")
-        input_pv_sizes = PVSystemSize(
+        input_pv_sizes = SolarSystemSize(
             optimisation_parameters.pv_size_max,
             optimisation_parameters.pv_size_min,
             optimisation_parameters.pv_size_step,
         )
+    if (
+        input_pvt_sizes is None
+        and ResourceType.CLEAN_WATER in scenario.resource_types
+    ):
+        if (
+            optimisation_parameters.pvt_size_max is None
+            or optimisation_parameters.pvt_size_min is None
+            or optimisation_parameters.pvt_size_step is None
+        ):
+            raise InternalError(
+                "{}Optimisation parameters do not have pvt-size params despite ".format(
+                    BColours.fail
+                )
+                + "clean-water being specified in the scenario.{}".format(
+                    BColours.endc
+                )
+            )
+        logger.info(
+            "No pv-t sizes passed in, using default optimisation parameters."
+        )
+        input_pvt_sizes = SolarSystemSize(
+            optimisation_parameters.pvt_size_max,
+            optimisation_parameters.pvt_size_min,
+            optimisation_parameters.pvt_size_step,
+        )
+    
     if input_storage_sizes is None:
         logger.info(
             "No storage sizes passed in, using default optimisation parameters."
@@ -1216,7 +1245,16 @@ def multiple_optimisation_step(
             optimisation,
             optimisation_parameters,
             previous_system,
-            PVSystemSize(input_pv_sizes.max, input_pv_sizes.min, input_pv_sizes.step),
+            SolarSystemSize(
+                input_pv_sizes.max,
+                input_pv_sizes.min,
+                input_pv_sizes.step
+            ),
+            SolarSystemSize(
+                input_pvt_sizes.max,
+                input_pvt_sizes.min,
+                input_pvt_sizes.step
+            ),
             scenario,
             start_year,
             StorageSystemSize(
@@ -1250,7 +1288,7 @@ def multiple_optimisation_step(
             optimisation_parameters.storage_size_max
             + optimum_system.system_details.final_storage_size
         )
-        input_pv_sizes = PVSystemSize(
+        input_pv_sizes = SolarSystemSize(
             int(pv_size_max),
             int(pv_size_min),
             int(optimisation_parameters.pv_size_step),
