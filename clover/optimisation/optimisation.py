@@ -471,7 +471,7 @@ def _single_line_simulation(
         )
 
     # If PV was maxed out:
-    if potential_system.system_details.initial_pv_size == pv_system_size.max and pv_system_size > 0:
+    if potential_system.system_details.initial_pv_size == pv_system_size.max and pv_system_size.max > 0:
         logger.info("Increasing PV size.")
 
         # Increase  and iterate over storage size
@@ -543,12 +543,14 @@ def _single_line_simulation(
                 logger,
                 test_clean_water_tanks,
                 test_pv_size,
+                pvt_system_size.max,
                 scenario,
                 Simulation(end_year, start_year),
                 storage_size.max,
                 total_clean_water_load,
                 total_electric_load,
                 total_solar_pv_power_produced,
+                total_pvt_electric_power_produced,
             )
 
             # Appraise the system.
@@ -695,7 +697,7 @@ def _single_line_simulation(
 
 
 def _find_optimum_system(
-    clean_water_tanks: Optional[TankSize],
+    clean_water_tanks: TankSize,
     convertors: List[Convertor],
     end_year: int,
     finance_inputs: Dict[str, Any],
@@ -1131,7 +1133,7 @@ def _simulation_iteration(
         else "",
     )
 
-    simulation_clean_water_tanks: Optional[List[int]] = sorted(
+    simulation_clean_water_tanks: List[int] = sorted(
         range(
             clean_water_tanks.min,
             clean_water_tanks_max + clean_water_tanks.step,
@@ -1140,12 +1142,12 @@ def _simulation_iteration(
         reverse=True
     )
 
-    simulation_pv_sizes = sorted(
+    simulation_pv_sizes: List[int] = sorted(
         range(int(pv_sizes.min), int(pv_size_max + pv_sizes.step), int(pv_sizes.step)),
         reverse=True,
     )
 
-    simulation_pvt_sizes = sorted(
+    simulation_pvt_sizes: List[int] = sorted(
         range(
             int(pvt_sizes.min),
             int(pvt_size_max + pvt_sizes.step),
@@ -1154,7 +1156,7 @@ def _simulation_iteration(
         reverse=True,
     )
 
-    simulation_storage_sizes = sorted(
+    simulation_storage_sizes: List[int] = sorted(
         range(
             int(storage_sizes.min),
             int(storage_size_max + storage_sizes.step),
@@ -2116,7 +2118,7 @@ def _simulation_iteration(
                         "%sAn optimisation step was called with only one system to ""explore.\n%s%s%s%s%s",
                         BColours.fail,
                         f"pv size: {simulation_pv_sizes[0]}" if minigrid.pv_panel is not None else "",
-                        f"pv-t size: {simulation_pvt_sizes[0]}" if minigrid.pv_t_panel is not None else "",
+                        f"pv-t size: {simulation_pvt_sizes[0]}" if minigrid.pvt_panel is not None else "",
                         f"storage size: {simulation_storage_sizes[0]}" if minigrid.battery is not None else "",
                         f"pv size: {simulation_clean_water_tanks[0]}" if minigrid.clean_water_tank is not None else "",
                         BColours.endc
@@ -2136,7 +2138,7 @@ def _simulation_iteration(
 
 
 def _optimisation_step(
-    clean_water_tanks: Optional[TankSize],
+    clean_water_tanks: TankSize,
     convertors: List[Convertor],
     finance_inputs: Dict[str, Any],
     ghg_inputs: Dict[str, Any],
