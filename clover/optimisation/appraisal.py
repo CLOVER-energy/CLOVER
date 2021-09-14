@@ -448,6 +448,10 @@ def appraise_system(
                 0,
                 0,
                 0,
+                0,
+                0,
+                0,
+                0,
             ),
             TechnicalAppraisal(
                 0,
