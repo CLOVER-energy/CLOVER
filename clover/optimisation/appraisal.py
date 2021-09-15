@@ -115,9 +115,15 @@ def _simulation_environmental_appraisal(
 
     # Calculate operating GHGs of the system during this simulation
     om_ghgs = ghgs.calculate_total_om(
+        system_details.initial_num_clean_water_tanks
+        if system_details.initial_num_clean_water_tanks is not None
+        else 0,
         system_details.diesel_capacity,
         ghg_inputs,
         system_details.initial_pv_size,
+        system_details.initial_pvt_size
+        if system_details.initial_pvt_size is not None
+        else 0,
         system_details.initial_storage_size,
         start_year,
         end_year,
@@ -241,6 +247,9 @@ def _simulation_financial_appraisal(
 
     # Calculate operating costs of the system during this simulation (discounted)
     om_costs = finance.total_om(
+        system_details.initial_num_clean_water_tanks
+        if system_details.initial_num_clean_water_tanks is not None
+        else 0,
         system_details.diesel_capacity,
         finance_inputs,
         logger,

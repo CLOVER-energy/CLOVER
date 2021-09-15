@@ -190,6 +190,10 @@ def _single_line_simulation(
     logger.info("Single-line optimisation to be carried out.")
     system_appraisals: List[SystemAppraisal] = []
 
+    import pdb
+
+    pdb.set_trace()
+
     # Check to see if storage size was an integer number of steps, and increase
     # accordingly.
     if (
@@ -377,15 +381,10 @@ def _single_line_simulation(
                         break
                     system_appraisals.append(new_appraisal)
             else:
-                logger.error(
+                logger.info(
                     "%sNo PV or PV-T system sizes to iterate over.%s",
                     BColours.fail,
                     BColours.endc,
-                )
-                raise InputFileError(
-                    "optimisation inputs",
-                    "Either PV or PV-T ranges must be specified for iteration. Neither "
-                    "were specified.",
                 )
 
         # If the maximum PV system size isn't a round number of steps, carry out a
@@ -775,10 +774,14 @@ def _find_optimum_system(
     logger.info("Determining optimum system from %s systems.", len(system_appraisals))
     optimum_systems = _fetch_optimum_system(optimisation, system_appraisals)
     logger.info(
-        "Optimum system(s) determined:%s",
+        "Optimum system(s) determined: %s",
         "\n".join(
             [
-                f"criterion: {criterion}\nsystem_details: {system.system_details}"
+                "criterion: {}, value: {}\nsystem_details: {}".format(
+                    criterion,
+                    system.criteria[criterion],
+                    system.system_details,
+                )
                 for criterion, system in optimum_systems.items()
             ]
         ),
@@ -794,6 +797,9 @@ def _find_optimum_system(
             optimum_system.system_details.initial_storage_size
             == largest_storage_system_size.max
         ):
+            import pdb
+
+            pdb.set_trace()
             # Do single line optimisation to see if larger system is superior
             (
                 largest_clean_water_size,

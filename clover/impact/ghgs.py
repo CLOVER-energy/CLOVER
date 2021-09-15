@@ -202,6 +202,7 @@ def calculate_total_equipment_ghgs(
             "panels are being considered.",
         )
     clean_water_tank_ghgs: float = 0
+    clean_water_tank_installation_ghgs: float = 0
     if clean_water_tanks > 0:
         clean_water_tank_ghgs = calculate_ghgs(
             clean_water_tanks,
@@ -209,42 +210,19 @@ def calculate_total_equipment_ghgs(
             ImpactingComponent.CLEAN_WATER_TANK,
             year,
         )
+        clean_water_tank_installation_ghgs = calculate_installation_ghgs(
+            clean_water_tanks, ghg_inputs, ImpactingComponent.CLEAN_WATER_TANK, year
+        )
+
 
     diesel_ghgs = calculate_ghgs(
         diesel_size, ghg_inputs, ImpactingComponent.DIESEL, year
     )
-
-    pv_ghgs = calculate_ghgs(pv_array_size, ghg_inputs, ImpactingComponent.PV, year)
-
-    if ImpactingComponent.PV_T.value not in ghg_inputs and pvt_array_size > 0:
-        logger.error(
-            "%sNo PV-T GHG input information provided.%s", BColours.fail, BColours.endc
-        )
-        raise InputFileError(
-            "finance inputs",
-            "No PV-T financial input information provided and a non-zero number of PV-T"
-            "panels are being considered.",
-        )
-    pvt_ghgs: float = 0
-    if pvt_array_size > 0:
-        pvt_ghgs = calculate_ghgs(
-            pvt_array_size,
-            ghg_inputs,
-            ImpactingComponent.PV_T,
-            year,
-        )
-
-    storage_ghgs = calculate_ghgs(
-        storage_size, ghg_inputs, ImpactingComponent.STORAGE, year
-    )
-
-    # Calculate installation ghgs.
     diesel_installation_ghgs = calculate_installation_ghgs(
         diesel_size, ghg_inputs, ImpactingComponent.DIESEL, year
     )
 
-    misc_ghgs = calculate_misc_ghgs(diesel_size + pv_array_size, ghg_inputs)
-
+    pv_ghgs = calculate_ghgs(pv_array_size, ghg_inputs, ImpactingComponent.PV, year)
     pv_installation_ghgs = calculate_installation_ghgs(
         pv_array_size, ghg_inputs, ImpactingComponent.PV, year
     )
@@ -258,14 +236,30 @@ def calculate_total_equipment_ghgs(
             "No PV-T financial input information provided and a non-zero number of PV-T"
             "panels are being considered.",
         )
+    pvt_ghgs: float = 0
     pvt_installation_ghgs: float = 0
     if pvt_array_size > 0:
+        pvt_ghgs = calculate_ghgs(
+            pvt_array_size,
+            ghg_inputs,
+            ImpactingComponent.PV_T,
+            year,
+        )
         pvt_installation_ghgs = calculate_installation_ghgs(
             pvt_array_size, ghg_inputs, ImpactingComponent.PV, year
         )
 
+    storage_ghgs = calculate_ghgs(
+        storage_size, ghg_inputs, ImpactingComponent.STORAGE, year
+    )
+
+
+    # Calculate misc GHGs.
+    misc_ghgs = calculate_misc_ghgs(diesel_size + pv_array_size, ghg_inputs)
+
     return (
         bos_ghgs
+        + clean_water_tank_installation_ghgs
         + clean_water_tank_ghgs
         + diesel_installation_ghgs
         + diesel_ghgs
@@ -606,9 +600,11 @@ def calculate_om_ghgs(
 
 #   Total O&M for entire system
 def calculate_total_om(
+    clean_water_tanks: float,
     diesel_size: float,
     ghg_inputs: Dict[str, Any],
     pv_array_size: float,
+    pvt_array_size: float,
     storage_size: float,
     start_year: int = 0,
     end_year: int = 20,
@@ -617,29 +613,34 @@ def calculate_total_om(
     Calculates total O&M ghgs over the simulation period
 
     Inputs:
+        - clean_water_tanks:
+            Capacity of clean-water tanks installed.
         - diesel_size:
-            Capacity of diesel generator installed
+            Capacity of diesel generator installed.
         - ghg_inputs:
             The GHG input information.
         - pv_array_size:
-            Capacity of PV installed
+            Capacity of PV installed.
+        - pvt_array_size:
+            Capacity of PV-T installed.
         - storage_size:
-            Capacity of battery storage installed
+            Capacity of battery storage installed.
         - start_year:
-            Start year of simulation period
+            Start year of simulation period.
         - end_year:
-            End year of simulation period
+            End year of simulation period.
 
     Outputs:
         GHGs
 
     """
 
-    pv_om_ghgs = calculate_om_ghgs(
-        pv_array_size, ghg_inputs, ImpactingComponent.PV, start_year, end_year
-    )
-    storage_om_ghgs = calculate_om_ghgs(
-        storage_size, ghg_inputs, ImpactingComponent.STORAGE, start_year, end_year
+    clean_water_tank_om_ghgs = calculate_om_ghgs(
+        clean_water_tanks,
+        ghg_inputs,
+        ImpactingComponent.CLEAN_WATER_TANK,
+        start_year,
+        end_year
     )
     diesel_om_ghgs = calculate_om_ghgs(
         diesel_size, ghg_inputs, ImpactingComponent.PV, start_year, end_year
@@ -647,5 +648,21 @@ def calculate_total_om(
     general_om_ghgs = calculate_om_ghgs(
         1, ghg_inputs, ImpactingComponent.GENERAL, start_year, end_year
     )
+    pv_om_ghgs = calculate_om_ghgs(
+        pv_array_size, ghg_inputs, ImpactingComponent.PV, start_year, end_year
+    )
+    pvt_om_ghgs = calculate_om_ghgs(
+        pvt_array_size, ghg_inputs, ImpactingComponent.PV_T, start_year, end_year
+    )
+    storage_om_ghgs = calculate_om_ghgs(
+        storage_size, ghg_inputs, ImpactingComponent.STORAGE, start_year, end_year
+    )
 
-    return pv_om_ghgs + storage_om_ghgs + diesel_om_ghgs + general_om_ghgs
+    return (
+        clean_water_tank_om_ghgs
+        + diesel_om_ghgs
+        + general_om_ghgs
+        + pv_om_ghgs
+        + pvt_om_ghgs
+        + storage_om_ghgs
+    )
