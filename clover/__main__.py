@@ -17,7 +17,12 @@ the clover module from the command-line interface.
 
 """
 
-from clover.generation.__utils__ import SolarDataType
+# CLOVER's author attribute:
+__author__ = "Phil Sandwell, Ben Winchester and Hamish Beath"
+
+# CLOVER's version number:
+__version__ = "5.0.0"
+
 import datetime
 import logging
 import os
@@ -57,6 +62,7 @@ from .__utils__ import (
     save_optimisation,
     save_simulation,
 )
+from .generation.__utils__ import SolarDataType
 
 # Auto-generated-files directory:
 #   The name of the directory in which to save auto-generated files, relative to the
@@ -734,6 +740,9 @@ def main(args: List[Any]) -> None:
         for simulation_number, simulation in enumerate(
             tqdm(simulations, desc="simulations", unit="simulation"), 1
         ):
+            logger.info(
+                "Carrying out simulation %s of %s.", simulation_number, len(simulations)
+            )
             try:
                 (
                     time_delta,
