@@ -56,7 +56,7 @@ FILE = "file"
 LOGGER_NAME = "new_location"
 
 # The path to the new-location data file.
-NEW_LOCATION_DATA_FILE = os.path.join("src", "new_location.yaml")
+NEW_LOCATION_DATA_FILE = os.path.join("clover", "src", "new_location.yaml")
 
 # Regex used to find lines that should be repeated, used to save YAML file space.
 REPEATED_LINE_REGEX = re.compile(r"(?P<multiplier>\d*):(?P<line_to_repeat>.*)\n")
