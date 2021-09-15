@@ -17,12 +17,6 @@ the clover module from the command-line interface.
 
 """
 
-# CLOVER's author attribute:
-__author__ = "Phil Sandwell, Ben Winchester and Hamish Beath"
-
-# CLOVER's version number:
-__version__ = "5.0.0"
-
 import datetime
 import logging
 import os
