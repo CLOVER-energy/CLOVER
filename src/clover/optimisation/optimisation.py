@@ -190,10 +190,6 @@ def _single_line_simulation(
     logger.info("Single-line optimisation to be carried out.")
     system_appraisals: List[SystemAppraisal] = []
 
-    import pdb
-
-    pdb.set_trace()
-
     # Check to see if storage size was an integer number of steps, and increase
     # accordingly.
     if (
@@ -797,9 +793,6 @@ def _find_optimum_system(
             optimum_system.system_details.initial_storage_size
             == largest_storage_system_size.max
         ):
-            import pdb
-
-            pdb.set_trace()
             # Do single line optimisation to see if larger system is superior
             (
                 largest_clean_water_size,
