@@ -37,12 +37,12 @@ inverter:
 kerosene:
   cost: 0.008 # [$/hour]
 pv:
-  cost: 500 # [$/kWp]
+  cost: 500 # [$/PV unit], [$/kWp] by default
   cost_decrease: 5 # [% p.a.]
-  installation_cost: 100 # [$/kW]
+  installation_cost: 100 # [$/PV unit], [$/kWp] by default
   installation_cost_decrease: 0 # [% p.a.]
   o&m: 5 # [$/kWp p.a.]
 storage:
-  cost: 400 # [$/kWh]
+  cost: 400 # [$/storage unit], [$/kWh] by default
   cost_decrease: 5 # [% p.a.]
-  o&m: 10 # [$/kWh p.a.]
+  o&m: 10 # [$/storage unit], [$/kWh] by default

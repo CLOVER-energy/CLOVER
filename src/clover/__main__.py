@@ -58,6 +58,8 @@ from .__utils__ import (
 )
 from .generation.__utils__ import SolarDataType
 
+__all__ = ("main",)
+
 # Auto-generated-files directory:
 #   The name of the directory in which to save auto-generated files, relative to the
 # root of the location.
