@@ -175,8 +175,11 @@ class HybridPVTPanel(SolarPanel, panel_type=SolarPanelType.PV_T):
     """
     Represents a PV-T panel.
 
-    .. attribute:: mass_flow_rate
-        The mass-flow rate of heat-transfer fluid through the PV-T collector.
+    .. attribute:: max_mass_flow_rate
+        The maximum mass-flow rate of heat-transfer fluid through the PV-T collector.
+
+    .. attribute:: min_mass_flow_rate
+        The minimum mass-flow rate of heat-transfer fluid through the PV-T collector.
 
     .. attribute:: thermal_unit
         The unit of thermal panel that the panel can output which is being considered,
@@ -246,8 +249,33 @@ class HybridPVTPanel(SolarPanel, panel_type=SolarPanelType.PV_T):
             solar_inputs["tilt"],
         )
 
-        self.mass_flow_rate = solar_inputs["mass_flow_rate"]
+        self.max_mass_flow_rate = solar_inputs["max_mass_flow_rate"]
+        self.min_mass_flow_rate = solar_inputs["min_mass_flow_rate"]
         self.thermal_unit = solar_inputs["thermal_unit"]
+
+    def __repr__(self) -> str:
+        """
+        Return a nice-looking representation of the panel.
+
+        Outputs:
+            - A nice-looking representation of the panel.
+
+        """
+
+        return (
+            "HybridPVTPanel("
+            + f"azimuthal_orientation={self.azimuthal_orientation}"
+            + f", lifetime={self.lifetime}"
+            + f", max_mass_flow_rate={self.max_mass_flow_rate}"
+            + f", min_mass_flow_rate={self.min_mass_flow_rate}"
+            + f", name={self.name}"
+            + f", pv_unit={self.pv_unit}"
+            + f", reference_temperature={self.reference_temperature}"
+            + f", thermal_coefficient={self.thermal_coefficient}"
+            + f", thermal_unit={self.thermal_unit}"
+            + f", tilt={self.tilt}"
+            + ")"
+        )
 
     def fractional_performance(
         self,
