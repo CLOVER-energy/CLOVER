@@ -527,6 +527,8 @@ class ResourceType(enum.Enum):
 
     CLEAN_WATER = "clean_water"
     ELECTRIC = "electricity"
+    HOT_CLEAN_WATER = "hot_water"
+    HOT_UNCLEAN_WATER = "hot_groundwater"
     UNCLEAN_WATER = "groundwater"
 
 
@@ -535,6 +537,8 @@ class ResourceType(enum.Enum):
 RESOURCE_NAME_TO_RESOURCE_TYPE_MAPPING = {
     "clean_water": ResourceType.CLEAN_WATER,
     "electric_power": ResourceType.ELECTRIC,
+    "hot_water": ResourceType.HOT_CLEAN_WATER,
+    "hot_untreated_water": ResourceType.HOT_UNCLEAN_WATER,
     "groundwater": ResourceType.UNCLEAN_WATER,
 }
 
