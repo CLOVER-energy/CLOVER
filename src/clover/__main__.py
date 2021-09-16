@@ -609,36 +609,6 @@ def main(args: List[Any]) -> None:
         else operating_mode.value,
     )
 
-    # Compute the PV-T electricity generation profile.
-    if (
-        ResourceType.CLEAN_WATER in scenario.resource_types
-        and operating_mode
-        in (
-            OperatingMode.SIMULATION,
-            OperatingMode.OPTIMISATION,
-        )
-        and minigrid.pvt_panel is not None
-    ):
-        try:
-            (
-                _,
-                fractional_electric_performance,
-            ) = minigrid.pvt_panel.fractional_performance(
-                total_solar_data[SolarDataType.TEMPERATURE.value],
-                1000 * total_solar_data[SolarDataType.TOTAL_IRRADIANCE.value],
-                total_wind_data[wind.WindDataType.WIND_SPEED.value],
-            )
-        except TypeError:
-            logger.error(
-                "The PV-T system size must be specified explicitly on the command line."
-            )
-            raise Exception(
-                "Missing command-line argument: --pvt-system-size."
-            ) from None
-        pvt_electric_power_per_unit = (
-            minigrid.pvt_panel.pv_unit * fractional_electric_performance
-        )
-
     print(
         f"Generating necessary profiles .................................    {DONE}",
         end="\n",
@@ -696,6 +666,68 @@ def main(args: List[Any]) -> None:
         )
         simulation_times: List[str] = []
 
+        # Compute the PV-T electricity generation profile.
+        if (
+            ResourceType.CLEAN_WATER in scenario.resource_types
+            and operating_mode
+            in (
+                OperatingMode.SIMULATION,
+                OperatingMode.OPTIMISATION,
+            )
+            and minigrid.pvt_panel is not None
+        ):
+            # Determine the thermal desalination plant being used.
+            try:
+                thermal_desalination_plant = [
+                    convertor for convertor in convertors
+                    if ResourceType.HOT_UNCLEAN_WATER in convertor.input_resource_consumption
+                    and ResourceType.CLEAN_WATER == convertor.output_resource_type
+                ][0]
+            except IndexError:
+                logger.error(
+                    "%sNo valid thermal desalination plants specified - this is currently "
+                    "the only supported use of PV-T.%s",
+                    BColours.fail,
+                    BColours.endc
+                )
+                raise InputFileError(
+                    "conversion inputs",
+                    "No valid thermal desalination plants specified."
+                ) from None
+
+            pvt_electric_power_per_unit_map: Dict[int, float] = {}
+            pvt_volume_output_supplied_map: Dict[int, float] = {}
+            try:
+                for index in tqdm(
+                    range(total_solar_data[SolarDataType.TEMPERATURE.value].size),
+                    desc="pv-t performance",
+                    unit="hour"
+                ):
+                    (
+                        _,
+                        fractional_electric_performance,
+                        volume_supplied
+                    ) = minigrid.pvt_panel.fractional_performance(
+                        total_solar_data[SolarDataType.TEMPERATURE.value][index],
+                        thermal_desalination_plant,
+                        1000 * total_solar_data[SolarDataType.TOTAL_IRRADIANCE.value][index],
+                        total_wind_data[wind.WindDataType.WIND_SPEED.value][index],
+                    )
+                    pvt_electric_power_per_unit_map[index] = fractional_electric_performance
+                    pvt_volume_output_supplied_map[index] = volume_supplied
+            except TypeError:
+                logger.error(
+                    "The PV-T system size must be specified explicitly on the command line."
+                )
+                raise Exception(
+                    "Missing command-line argument: --pvt-system-size."
+                ) from None
+            pvt_electric_power_per_unit: pd.DataFrame = pd.DataFrame(  # type: ignore
+                list(pvt_electric_power_per_unit_map.values()),
+                index=list(pvt_electric_power_per_unit_map.keys())
+            ).sort_index() * minigrid.pvt_panel.pv_unit
+            # @@@ Fix thermal unit stuff here...
+
         simulation_string: str = (
             f"- {parsed_args.pv_system_size * minigrid.pv_panel.pv_unit} kWp of PV"
             + (
@@ -752,10 +784,13 @@ def main(args: List[Any]) -> None:
                     location,
                     logger,
                     parsed_args.num_clean_water_tanks,
-                    parsed_args.pv_system_size,
+                    parsed_args.pv_system_size
+                    if parsed_args.pv_system_size is not None
+                    else 0,
                     parsed_args.pvt_system_size
                     if parsed_args.pvt_system_size is not None
                     else 0,
+                    pd.DataFrame([0] * total_solar_data[solar.SolarDataType.ELECTRICITY.value].size),
                     scenario,
                     simulation,
                     parsed_args.storage_size,

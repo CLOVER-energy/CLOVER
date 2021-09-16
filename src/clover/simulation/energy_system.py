@@ -332,7 +332,7 @@ def _get_electric_battery_storage_profile(
         ]
         pvt_electric_generation: Optional[pd.DataFrame] = pd.DataFrame(
             np.asarray(pvt_electric_generation_array[start_hour:end_hour])  # type: ignore
-            * np.asarray(pvt_degradation_array[0])
+            * np.asarray(pvt_degradation_array)
         )
     else:
         pvt_electric_generation = None
@@ -495,6 +495,7 @@ def run_simulation(
     number_of_clean_water_tanks: int,
     pv_size: float,
     pvt_size: float,
+    renewable_clean_water_produced: pd.DataFrame,
     scenario: Scenario,
     simulation: Simulation,
     electric_storage_size: float,
@@ -526,6 +527,8 @@ def run_simulation(
             The number of clean-water tanks installed in the system.
         - pv_size:
             Amount of PV in PV units.
+        - renewable_clean_water_produced:
+            The amount of clean-water produced renewably, mesaured in litres.
         - scenario:
             The scenario being considered.
         - simulation:
@@ -633,7 +636,7 @@ def run_simulation(
             tank_storage_profile,
         ) = _get_water_storage_profile(
             processed_total_clean_water_load,
-            pd.DataFrame([0] * simulation_hours),
+            renewable_clean_water_produced[start_hour:end_hour],
         )
         total_clean_water_supplied = pd.DataFrame(
             renewable_clean_water_used_directly.values
@@ -1247,7 +1250,7 @@ def run_simulation(
                 8760 * (simulation.end_year - simulation.start_year)
             ]
         ),
-        pv_size
+        pvt_size
         * float(
             solar_degradation(minigrid.pvt_panel.lifetime)[0][  # type: ignore
                 8760 * (simulation.end_year - simulation.start_year)

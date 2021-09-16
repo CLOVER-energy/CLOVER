@@ -27,6 +27,7 @@ from typing import Any, Dict, List, Optional, Tuple
 import pandas as pd  # type: ignore  # pylint: disable=missing-import
 
 from ..__utils__ import InputFileError
+from ..conversion.conversion import ThermalDesalinationPlant
 
 
 __all__ = (
@@ -279,10 +280,11 @@ class HybridPVTPanel(SolarPanel, panel_type=SolarPanelType.PV_T):
 
     def fractional_performance(
         self,
-        ambient_temperature: pd.Series,
-        irradiance: pd.Series,
-        wind_speed: pd.Series,
-    ) -> Tuple[None, pd.Series]:
+        ambient_temperature: float,
+        desalination_plant: ThermalDesalinationPlant,
+        irradiance: float,
+        wind_speed: float,
+    ) -> Tuple[None, float, None]:
         """
         Computes the fractional performance of the :class:`HybridPVTPanel`.
 
@@ -306,6 +308,8 @@ class HybridPVTPanel(SolarPanel, panel_type=SolarPanelType.PV_T):
             - fractional_electrical_performance:
                 The fractional electrical performance of the collector, where 1
                 corresponds to the rated performance under standard test conditions.
+            - mass_of_water_supplied:
+                The mass of hot-water supplied to the end system.
 
         """
 
@@ -319,5 +323,13 @@ class HybridPVTPanel(SolarPanel, panel_type=SolarPanelType.PV_T):
             * (collector_temperature - self.reference_temperature)
         ) * (irradiance / 1000)
 
+        # If the collector temperature was greater than the plant minimum temperature.
+        # if collector_output_temperature > desalination_plant.minimum_water_input_temperature:
+            # Then return the default input temperature and water supplied.
+            # return default_collector_input_temperature, fractional_electrical_performance, volume_supplied
+
+        # Otherwise, cycle the water back around.
+        # return collector_output_temperature, fractional_electrical_performance, 0
+
         # Return this, along with the output temperature of HTF leaving the collector.
-        return None, fractional_electrical_performance
+        return None, fractional_electrical_performance, None
