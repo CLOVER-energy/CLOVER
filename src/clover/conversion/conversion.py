@@ -31,6 +31,7 @@ from ..__utils__ import (
 __all__ = (
     "Convertor",
     "MultiInputConvertor",
+    "ThermalDesalinationPlant",
     "WaterSource",
 )
 
@@ -38,6 +39,18 @@ __all__ = (
 # Maximum output:
 #   Keyword used for parsing maximum output information.
 MAXIMUM_OUTPUT = "maximum_output"
+
+# Maximum water input temperature:
+#   Keyword used for parsing maximum output information.
+MAXIMUM_WATER_INPUT_TEMPERATURE = "maximum_water_input_temperature"
+
+# Minimum output:
+#   Keyword used for parsing maximum output information.
+MINIMUM_OUTPUT = "minimum_output"
+
+# Minimum water input temperature:
+#   Keyword used for parsing maximum output information.
+MINIMUM_WATER_INPUT_TEMPERATURE = "minimum_water_input_temperature"
 
 # Name:
 #   Keyword used for parsing convertor name information.
@@ -224,14 +237,14 @@ class MultiInputConvertor(Convertor):
     @classmethod
     def from_dict(cls, input_data: Dict[Union[int, str], Any], logger: Logger) -> Any:
         """
-        Generates a :class:`Convertor` instance based on the input data provided.
+        Generates a :class:`MultiInputConvertor` instance based on the input data.
 
         Inputs:
             - input_data:
                 The input data, parsed from the input file.
 
         Outputs:
-            - A :class:`Convertor` instance based on the input data.
+            - A :class:`MultiInputConvertor` instance based on the input data.
 
         """
 
@@ -298,6 +311,154 @@ class MultiInputConvertor(Convertor):
         return cls(
             input_resource_consumption,
             maximum_output,
+            str(input_data[NAME]),
+            output_resource_type,
+        )
+
+
+class ThermalDesalinationPlant(MultiInputConvertor):
+    """
+    Represents a thermal desalination plant.
+
+    .. attribute:: maximum_water_input_temperature
+        The maximum temperature of feedwater allowed by the plant, measured in degrees
+        Celcius.
+
+    .. attribute:: minimum_output_capacity
+        The minimum output flow rate of the plant.
+
+    .. attribute:: minimum_water_input_temperature
+        The minumum temperature of feedwater allowed by the plant, measured in degrees
+        Celcius.
+
+    """
+
+    def __init__(
+        self,
+        input_resource_consumption: Dict[ResourceType, float],
+        maximum_output_capacity: float,
+        maximum_water_input_temperature: float,
+        minimum_output_capacity: float,
+        minimum_water_input_temperature: float,
+        name: str,
+        output_resource_type: ResourceType,
+    ) -> None:
+        """
+        Instantiate a :class:`Convertor` instance.
+
+        Inputs:
+            - consunmption:
+                The amount of input load type which is consumed per unit output load
+                produced.
+            - input_resource_types:
+                The types of load inputted to the device.
+            - maximum_output_capcity:
+                The maximum output capacity of the device.
+            - maximum_water_input_temperature:
+                The maximum temperature of water allowed into the plant, measured in
+                degrees Celcius.
+            - minimum_output_capcity:
+                The minimum output capacity of the device.
+            - minimum_water_input_temperature:
+                The mibimum temperature of water allowed into the plant, measured in
+                degrees Celcius.            
+            - name:
+                The name of the device.
+            - output_resource_type:
+                The type of output produced by the device.
+
+        """
+
+        self.input_resource_consumption: Dict[
+            ResourceType, float
+        ] = input_resource_consumption
+        self.maximum_output_capacity: float = maximum_output_capacity
+        self.maximum_water_input_temperature: float = maximum_water_input_temperature
+        self.minimum_output_capacity: float = minimum_output_capacity
+        self.minimum_water_input_temperature: float = minimum_water_input_temperature
+        self.name: str = name
+        self.output_resource_type: ResourceType = output_resource_type
+
+    @classmethod
+    def from_dict(cls, input_data: Dict[Union[int, str], Any], logger: Logger) -> Any:
+        """
+        Generates a :class:`ThermalDesalinationPlant` instance based on the input data.
+
+        Inputs:
+            - input_data:
+                The input data, parsed from the input file.
+
+        Outputs:
+            - A :class:`ThermalDesalinationPlant` instance based on the input data.
+
+        """
+
+        if not all(isinstance(key, str) for key in input_data):
+            raise InputFileError(
+                "conversion inputs", "All conversion input keys must be of type `str`."
+            )
+
+        # Determine the input load type.
+        input_resource_list: List[str] = [
+            str(key)
+            for key in input_data
+            if key in RESOURCE_NAME_TO_RESOURCE_TYPE_MAPPING
+        ]
+        # Determine the output load type.
+        try:
+            output_resource_type = ResourceType(input_data[OUTPUT])
+        except KeyError as e:
+            logger.error(
+                "%sOutput load type of water pump is not valid: %s%s",
+                BColours.fail,
+                str(e),
+                BColours.endc,
+            )
+            raise Exception(
+                f"{BColours.fail}Output load type invalid: {str(e)}{BColours.endc}"
+            ) from None
+
+        # Determine the power consumption of the device.
+        maximum_output = input_data[MAXIMUM_OUTPUT]
+        try:
+            maximum_output = float(maximum_output)
+        except TypeError as e:
+            logger.error(
+                "%sInvalid entry in conversion file, check all value types are "
+                "correct: %s%s",
+                BColours.fail,
+                str(e),
+                BColours.endc,
+            )
+            raise Exception(
+                f"{BColours.fail}Invalid value type in conversion file: {str(e)}{BColours.endc}"
+            ) from None
+
+        input_resource_consumption: Dict[ResourceType, float] = {}
+
+        for input_resource in input_resource_list:
+            try:
+                input_resource_consumption[
+                    ResourceType(RESOURCE_NAME_TO_RESOURCE_TYPE_MAPPING[input_resource])
+                ] = float(input_data[input_resource])
+            except TypeError as e:
+                logger.error(
+                    "%sInvalid entry in conversion file, check all value types are "
+                    "correct: %s%s",
+                    BColours.fail,
+                    str(e),
+                    BColours.endc,
+                )
+                raise Exception(
+                    f"{BColours.fail}Invalid value type in conversion file: {str(e)}{BColours.endc}"
+                ) from None
+
+        return cls(
+            input_resource_consumption,
+            maximum_output,
+            float(input_data[MAXIMUM_WATER_INPUT_TEMPERATURE]),
+            float(input_data[MINIMUM_OUTPUT]),
+            float(input_data[MINIMUM_WATER_INPUT_TEMPERATURE]),
             str(input_data[NAME]),
             output_resource_type,
         )
