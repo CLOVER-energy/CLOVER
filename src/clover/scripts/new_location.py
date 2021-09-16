@@ -20,12 +20,14 @@ existing location if asked for.
 import argparse
 import logging
 import os
+import pkgutil
 import shutil
 import sys
 
 from typing import Any, List, Optional
 
 import re
+import yaml
 
 from ..__utils__ import (
     InternalError,
@@ -56,7 +58,7 @@ FILE = "file"
 LOGGER_NAME = "new_location"
 
 # The path to the new-location data file.
-NEW_LOCATION_DATA_FILE = os.path.join("src", "clover", "src", "new_location.yaml")
+NEW_LOCATION_DATA_FILE = os.path.join("src", "new_location.yaml")
 
 # Regex used to find lines that should be repeated, used to save YAML file space.
 REPEATED_LINE_REGEX = re.compile(r"(?P<multiplier>\d*):(?P<line_to_repeat>.*)\n")
@@ -206,7 +208,9 @@ def create_new_location(
     """
 
     # Read the location data.
-    new_location_data = read_yaml(NEW_LOCATION_DATA_FILE, logger)
+    new_location_data = yaml.safe_load(
+        pkgutil.get_data("clover", NEW_LOCATION_DATA_FILE)
+    )
     logger.info("Data file successfully read.")
 
     if not isinstance(new_location_data, list):
