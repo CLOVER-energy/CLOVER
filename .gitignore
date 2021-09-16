@@ -19,3 +19,6 @@
 # HPC log files
 *e[0-9]*
 *o[0-9]*
+# Ignore assembled python packages
+**/dist
+**/*.egg*
