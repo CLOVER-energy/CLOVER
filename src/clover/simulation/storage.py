@@ -22,7 +22,10 @@ from typing import Any, Dict, Optional, Union
 
 from ..__utils__ import ResourceType
 
-__all__ = ("Battery",)
+__all__ = (
+    "Battery",
+    "CleanWaterTank",
+)
 
 
 # Default storage unit:

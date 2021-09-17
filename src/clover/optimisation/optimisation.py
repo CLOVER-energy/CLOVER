@@ -45,7 +45,6 @@ from ..simulation import energy_system
 from ..__utils__ import (
     BColours,
     DONE,
-    InputFileError,
     InternalError,
     ResourceType,
     Scenario,
