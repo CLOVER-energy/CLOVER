@@ -35,6 +35,7 @@ from ..__utils__ import (
 
 __all_ = (
     "connections_expenditure",
+    "COSTS",
     "diesel_fuel_expenditure",
     "discounted_energy_total",
     "discounted_equipment_cost",
@@ -52,6 +53,10 @@ CONNECTION_COST = "connection_cost"
 # Cost:
 #   Keyword used to denote the cost of a component.
 COST: str = "cost"
+
+# Costs:
+#   Keyword used for parsing device-specific cost information.
+COSTS: str = "costs"
 
 # Cost decrease:
 #   Keyword used to denote the cost decrease of a component.

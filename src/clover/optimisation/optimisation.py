@@ -2503,6 +2503,10 @@ def _optimisation_step(
     )
     logger.info("Simulation iterations executed successfully.")
 
+    import pdb
+
+    pdb.set_trace()
+
     # Determine the optimum systems that fulfil each of the optimisation criteria.
     optimum_systems = _find_optimum_system(
         clean_water_tanks,

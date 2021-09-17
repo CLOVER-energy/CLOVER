@@ -21,6 +21,8 @@ import pandas as pd  # type: ignore  # pylint: disable=import-error
 
 from . import load
 from .generation import solar
+from .impact.finance import COSTS, ImpactingComponent
+from .impact.ghgs import EMISSIONS
 
 from .__utils__ import (
     BColours,
@@ -360,6 +362,40 @@ def parse_input_files(
             BColours.endc,
         )
         raise
+    # Determine the PV panel costs.
+    try:
+        pv_panel_costs: float = [
+            panel_data[COSTS]
+            for panel_data in solar_generation_inputs["panels"]
+            if panel_data["name"] == pv_panel.name
+        ][0]
+    except IndexError:
+        logger.error(
+            "%sFailed to determine costs for PV panel %s.%s",
+            BColours.fail,
+            energy_system_inputs["pv_panel"],
+            BColours.endc,
+        )
+        raise
+    else:
+        logger.info("PV panel costs successfully determined.")
+    # Determine the PV panel emissions.
+    try:
+        pv_panel_emissions: float = [
+            panel_data[EMISSIONS]
+            for panel_data in solar_generation_inputs["panels"]
+            if panel_data["name"] == pv_panel.name
+        ][0]
+    except IndexError:
+        logger.error(
+            "%sFailed to determine emissions for PV panel %s.%s",
+            BColours.fail,
+            energy_system_inputs["pv_panel"],
+            BColours.endc,
+        )
+        raise
+    else:
+        logger.info("PV panel emissions successfully determined.")
 
     # Return the PVT panel being modelled, if appropriate.
     if "pvt_panel" in energy_system_inputs:
@@ -370,6 +406,7 @@ def parse_input_files(
                 if panel.panel_type == solar.SolarPanelType.PV_T  # type: ignore
                 and panel.name == energy_system_inputs["pvt_panel"]
             ][0]
+            logger.info("PV-T panel successfully determined.")
         except IndexError:
             logger.error(
                 "%sPV-T panel %s not found in pv panel inputs.%s",
@@ -378,8 +415,44 @@ def parse_input_files(
                 BColours.endc,
             )
             raise
+        else:
+            logger.info("PV-T panel successfully parsed: %s.", pvt_panel.name)
+        try:
+            pvt_panel_costs: Optional[Dict[str, float]] = [
+                panel_data[COSTS]
+                for panel_data in solar_generation_inputs["panels"]
+                if panel_data["name"] == pvt_panel.name
+            ][0]
+        except IndexError:
+            logger.error(
+                "%sFailed to determine costs for PV-T panel %s.%s",
+                BColours.fail,
+                energy_system_inputs["pvt_panel"],
+                BColours.endc,
+            )
+            raise
+        else:
+            logger.info("PV-T panel costs successfully determined.")
+        try:
+            pvt_panel_emissions: Optional[Dict[str, float]] = [
+                panel_data[EMISSIONS]
+                for panel_data in solar_generation_inputs["panels"]
+                if panel_data["name"] == pvt_panel.name
+            ][0]
+        except IndexError:
+            logger.error(
+                "%sFailed to determine emissions for PV-T panel %s.%s",
+                BColours.fail,
+                energy_system_inputs["pvt_panel"],
+                BColours.endc,
+            )
+            raise
+        else:
+            logger.info("PV-T panel emissions successfully determined.")
     else:
         pvt_panel = None
+        pvt_panel_costs = None
+        pvt_panel_emissions = None
 
     logger.info("Solar panel information successfully parsed.")
 
@@ -410,18 +483,6 @@ def parse_input_files(
     )
     logger.info("Energy-system inputs successfully parsed.")
 
-    finance_inputs_filepath = os.path.join(
-        inputs_directory_relative_path, FINANCE_INPUTS_FILE
-    )
-    finance_inputs: Dict[str, Union[float, int, str]] = read_yaml(  # type: ignore
-        finance_inputs_filepath, logger
-    )
-    if not isinstance(finance_inputs, dict):
-        raise InputFileError(
-            "finance inputs", "Finance inputs must be of type `dict` not `list`."
-        )
-    logger.info("Finance inputs successfully parsed.")
-
     generation_inputs_filepath = os.path.join(
         inputs_directory_relative_path, GENERATION_INPUTS_FILE
     )
@@ -429,10 +490,6 @@ def parse_input_files(
         generation_inputs_filepath, logger
     )
     logger.info("Generation inputs successfully parsed.")
-
-    ghg_inputs_filepath = os.path.join(inputs_directory_relative_path, GHG_INPUTS_FILE)
-    ghg_data: Dict[str, Any] = read_yaml(ghg_inputs_filepath, logger)  # type: ignore
-    logger.info("GHG inputs successfully parsed.")
 
     grid_inputs_filepath = os.path.join(
         inputs_directory_relative_path,
@@ -592,6 +649,111 @@ def parse_input_files(
     simulations: List[Simulation] = [
         Simulation.from_dict(entry) for entry in simulations_file_contents
     ]
+
+    # Parse and collate the impact information.
+    finance_inputs_filepath = os.path.join(
+        inputs_directory_relative_path, FINANCE_INPUTS_FILE
+    )
+    finance_inputs: Dict[str, Union[float, int, str]] = read_yaml(  # type: ignore
+        finance_inputs_filepath, logger
+    )
+    if not isinstance(finance_inputs, dict):
+        raise InputFileError(
+            "finance inputs", "Finance inputs must be of type `dict` not `list`."
+        )
+    logger.info("Finance inputs successfully parsed.")
+
+    ghg_inputs_filepath = os.path.join(inputs_directory_relative_path, GHG_INPUTS_FILE)
+    ghg_data: Dict[str, Any] = read_yaml(ghg_inputs_filepath, logger)  # type: ignore
+    logger.info("GHG inputs successfully parsed.")
+
+    # Update the finance and GHG inputs accordingly with the PV data.
+    logger.info("Updating with PV impact data.")
+    finance_inputs[ImpactingComponent.PV.value] = pv_panel_costs
+    ghg_data[ImpactingComponent.PV.value] = pv_panel_emissions
+    logger.info("PV impact data successfully updated.")
+
+    # Update the impact inputs with the diesel data.
+    logger.info("Updating with diesel impact data.")
+    finance_inputs[ImpactingComponent.DIESEL.value] = diesel_inputs[COSTS]
+    ghg_data[ImpactingComponent.DIESEL.value] = diesel_inputs[EMISSIONS]
+    logger.info("Diesel impact data successfully updated.")
+
+    # Update the impact inputs with the battery data.
+    # Determine the battery being modelled.
+    if scenario.battery:
+        logger.info("Parsing battery impact information.")
+        try:
+            battery_costs = [
+                entry[COSTS]
+                for entry in battery_inputs
+                if entry["name"] == minigrid.battery.name
+            ][0]
+        except IndexError:
+            logger.error("Failed to determine battery cost information.")
+            raise
+        else:
+            logger.info("Battery cost information successfully parsed.")
+        try:
+            battery_emissions = [
+                entry[EMISSIONS]
+                for entry in battery_inputs
+                if entry["name"] == minigrid.battery.name
+            ][0]
+        except IndexError:
+            logger.error("Failed to determine battery emission information.")
+            raise
+        else:
+            logger.info("Battery emission information successfully parsed.")
+        logger.info("Updating with battery impact data.")
+        finance_inputs[ImpactingComponent.STORAGE.value] = battery_costs
+        ghg_data[ImpactingComponent.STORAGE.value] = battery_emissions
+        logger.info("Battery impact data successfully updated.")
+    else:
+        logger.info(
+            "Battery disblaed in scenario file, skipping battery impact parsing."
+        )
+
+    if minigrid.pvt_panel is not None and scenario.pv_t:
+        finance_inputs[ImpactingComponent.PV_T.value] = pvt_panel_costs
+        ghg_data[ImpactingComponent.PV_T.value] = pvt_panel_emissions
+    else:
+        logger.info(
+            "PV-T disblaed in scenario file, skipping PV-T impact parsing."
+        )
+
+    if ResourceType.CLEAN_WATER in scenario.resource_types:
+        logger.info("Parsing clean-water tank impact information.")
+        try:
+            clean_water_tank_costs = [
+                entry[COSTS]
+                for entry in tank_inputs
+                if entry["name"] == minigrid.clean_water_tank.name
+            ][0]
+        except IndexError:
+            logger.error("Failed to determine clean-water tank cost information.")
+            raise
+        else:
+            logger.info("Clean-water tank cost information successfully parsed.")
+        try:
+            clean_water_tank_emissions = [
+                entry[EMISSIONS]
+                for entry in tank_inputs
+                if entry["name"] == minigrid.clean_water_tank.name
+            ][0]
+        except IndexError:
+            logger.error("Failed to determine clean-water tank emission information.")
+            raise
+        else:
+            logger.info("Clean-water tank emission information successfully parsed.")
+        logger.info("Updating with clean-water tank impact data.")
+        finance_inputs[ImpactingComponent.CLEAN_WATER_TANK.value] = clean_water_tank_costs
+        ghg_data[ImpactingComponent.CLEAN_WATER_TANK.value] = clean_water_tank_emissions
+        logger.info("Clean-water tank impact data successfully updated.")
+    else:
+        logger.info(
+            "Clean-water tank disblaed in scenario file, skipping battery impact parsing."
+        )
 
     # Generate a dictionary with information about the input files used.
     input_file_info: Dict[str, str] = {
