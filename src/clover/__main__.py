@@ -385,6 +385,8 @@ def main(args: List[Any]) -> None:
             "Wind-data thread successfully instantiated. See %s for details.",
             "{}.log".format(os.path.join(LOGGER_DIRECTORY, wind.WIND_LOGGER_NAME)),
         )
+    else:
+        wind_data_thread = None
 
     # Generate and save the weather data for each year as a background task.
     if ResourceType.CLEAN_WATER in scenario.resource_types:
