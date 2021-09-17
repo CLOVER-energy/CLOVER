@@ -20,7 +20,7 @@ from typing import Any, Dict, List, Optional, Set, Tuple, Union
 import pandas as pd  # type: ignore  # pylint: disable=import-error
 
 from . import load
-from .simulation import energy_system, solar
+from .generation import solar
 
 from .__utils__ import (
     BColours,
@@ -35,9 +35,15 @@ from .__utils__ import (
     Scenario,
     Simulation,
 )
-from .conversion.conversion import Convertor, MultiInputConvertor, WaterSource
+from .conversion.conversion import (
+    Convertor,
+    MultiInputConvertor,
+    ThermalDesalinationPlant,
+    WaterSource,
+)
 from .optimisation.optimisation import Optimisation
 from .simulation.diesel import DieselBackupGenerator
+from .simulation.energy_system import Minigrid
 
 __all__ = (
     "INPUTS_DIRECTORY",
@@ -137,7 +143,7 @@ def parse_input_files(
 ) -> Tuple[
     List[Convertor],
     Dict[load.load.Device, pd.DataFrame],
-    energy_system.Minigrid,
+    Minigrid,
     Dict[str, Union[float, int, str]],
     Dict[str, Union[int, str]],
     Dict[str, Any],
@@ -198,10 +204,24 @@ def parse_input_files(
                 parsed_convertors.append(WaterSource.from_dict(entry, logger))
             except InputFileError:
                 logger.info(
-                    "Failed to create a single-input convertor, trying a multiple "
-                    "input convertor."
+                    "Failed to create a single-input convertor, trying a thermal "
+                    "desalination plant."
                 )
-                parsed_convertors.append(MultiInputConvertor.from_dict(entry, logger))
+                try:
+                    parsed_convertors.append(
+                        ThermalDesalinationPlant.from_dict(entry, logger)
+                    )
+                except KeyError:
+                    logger.info(
+                        "Failed to create a thermal desalination plant, trying "
+                        "a multi-input convertor."
+                    )
+                    parsed_convertors.append(
+                        MultiInputConvertor.from_dict(entry, logger)
+                    )
+                    logger.info("Parsed multi-input convertor from input data.")
+                else:
+                    logger.info("Parsed thermal desalination plant from input data.")
             else:
                 logger.info("Parsed single-input convertor from input data.")
         convertors: Dict[str, Convertor] = {
@@ -380,7 +400,7 @@ def parse_input_files(
     if not isinstance(tank_inputs, list):
         raise InputFileError("tank inputs", "Tank inputs file is not of type `list`.")
 
-    minigrid = energy_system.Minigrid.from_dict(
+    minigrid = Minigrid.from_dict(
         diesel_backup_generator,
         energy_system_inputs,
         pv_panel,

@@ -18,318 +18,120 @@ performance under environmental conditions needs to be calculated.
 
 """
 
-import dataclasses
-import enum
-
 from logging import Logger
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Dict, List
 
 import pandas as pd  # type: ignore  # pylint: disable=missing-import
 
-from ..__utils__ import InputFileError
-from ..conversion.conversion import ThermalDesalinationPlant
+from tqdm import tqdm  # type: ignore  # pylint: disable=missing-import
+
+from ..__utils__ import BColours, InputFileError, ResourceType
+from ..conversion.conversion import Convertor, ThermalDesalinationPlant
+from .energy_system import Minigrid
 
 
 __all__ = (
-    "HybridPVTPanel",
-    "PVPanel",
+    "calculate_pvt_output",
     "SolarPanel",
     "SolarPanelType",
 )
 
 
-# Default PV unit:
-#   The default PV unit size to use, measured in kWp.
-DEFAULT_PV_UNIT = 1  # [kWp]
-
-
-class SolarPanelType(enum.Enum):
+def calculate_pvt_output(
+    convertors: List[Convertor],
+    irradiances: pd.Series,
+    logger: Logger,
+    minigrid: Minigrid,
+    temperatures: pd.Series,
+    wind_speeds: pd.Series,
+) -> pd.DataFrame:
     """
-    Specifies the type of solar panel being considered.
+    Computes the output of a PV-T system.
 
-    - PV:
-        Denotes that a PV panel is being considered.
-    - PV_T:
-        Denotes that a PV-T panel is being considered.
+    Inputs:
+        - convertors:
+            The set of :class:`Convertor` instances available to the energy system.
+        - irradiances:
+            The :class:`pd.Series` containing irradiance information for the time
+            period being modelled.
+        - logger:
+            The logger to use for the run.
+        - minigrid:
+            The minigrid being modelled currently.
+        - temperatures:
+            The :class:`pd.Series` containing temperature information for the time
+            period being modelled.
+        - wind_speeds:
+            The :class:`pd.Series` containing wind-speed information for the time period
+            being modelled.
 
-    """
-
-    PV = "pv"
-    PV_T = "pv_t"
-
-
-@dataclasses.dataclass
-class SolarPanel:
-    """
-    Represents a solar panel being considered.
-
-    .. attribute:: azimuthal_orientation
-        The azimuthal orientation of the panel, defined in degrees from North.
-
-    .. attribute:: lifetime
-        The lifetime of the panel in years.
-
-    .. attribute:: name
-        The name of the panel being considered.
-
-    .. attribite:: panel_type
-        The type of panel being considered.
-
-    .. attribute:: pv_unit
-        The unit of PV power being considered, defaulting to 1 kWp.
-
-    .. attribute:: pv_unit_overrided
-        Whether the default PV unit was overrided (True) or not (False).
-
-    .. attribute:: reference_temperature
-        The reference temperature of the PV layer of the panel, measured in degrees
-        Celcius.
-
-    .. attribute:: thermal_coefficient
-        The thermal coefficient of performance of the PV layer of the panel, measured in
-        kelvin^(-1).
-
-    .. attribute:: tilt
-        The angle between the panel and the horizontal.
+    Outputs:
+        - pvt_electric_power_per_unit:
+            The electric power, per unit PV-T, delivered by the PV-T system.
 
     """
 
-    azimuthal_orientation: float
-    lifetime: int
-    name: str
-    pv_unit: float
-    pv_unit_overrided: bool
-    reference_temperature: Optional[float]
-    thermal_coefficient: Optional[float]
-    tilt: float
-
-    def __init_subclass__(cls, panel_type: SolarPanelType) -> None:
-        """
-        The init_subclass hook, run on instantiation of the :class:`SolarPanel`.
-
-        Inputs:
-            - panel_type:
-                The type of panel being considered.
-
-        Outputs:
-            An instantiated :class:`SolarPanel` instance.
-
-        """
-
-        cls.panel_type = panel_type  # type: ignore
-
-        return super().__init_subclass__()
-
-
-class PVPanel(SolarPanel, panel_type=SolarPanelType.PV):
-    """
-    Represents a photovoltaic panel.
-
-    """
-
-    @classmethod
-    def from_dict(cls, logger: Logger, solar_inputs: Dict[str, Any]) -> Any:
-        """
-        Instantiate a :class:`PVPanel` instance based on the input data.
-
-        Inputs:
-            - logger:
-                The logger to use for the run.
-            - solar_inputs:
-                The solar input data for the panel.
-
-        Outputs:
-            A :class:`PVPanel` instance.
-
-        """
-
-        logger.info("Attempting to create PVPanel from solar input data.")
-
-        if "pv_unit" in solar_inputs:
-            pv_unit: float = solar_inputs["pv_unit"]
-            pv_unit_overrided: bool = True
-            logger.info(
-                "`pv_unit` variable specified, using a pv unit of %s kWp", pv_unit
-            )
-        else:
-            pv_unit = DEFAULT_PV_UNIT
-            pv_unit_overrided = False
-            logger.info("No `pv_unit` keyword specified, defaulting to %s kWp", pv_unit)
-
-        return cls(
-            solar_inputs["azimuthal_orientation"],
-            solar_inputs["lifetime"],
-            solar_inputs["name"],
-            pv_unit,
-            pv_unit_overrided,
-            solar_inputs["reference_temperature"]
-            if "reference_temperature" in solar_inputs
-            else None,
-            solar_inputs["thermal_coefficient"]
-            if "thermal_coefficient" in solar_inputs
-            else None,
-            solar_inputs["tilt"],
+    if minigrid.pvt_panel is None:
+        raise InputFileError(
+            "energy system inputs",
+            "The energy system specified does not contain a PV-T panel but PV-T "
+            "modelling was requested.",
         )
 
-
-class HybridPVTPanel(SolarPanel, panel_type=SolarPanelType.PV_T):
-    """
-    Represents a PV-T panel.
-
-    .. attribute:: max_mass_flow_rate
-        The maximum mass-flow rate of heat-transfer fluid through the PV-T collector.
-
-    .. attribute:: min_mass_flow_rate
-        The minimum mass-flow rate of heat-transfer fluid through the PV-T collector.
-
-    .. attribute:: thermal_unit
-        The unit of thermal panel that the panel can output which is being considered,
-        measured in kWth.
-
-    """
-
-    def __init__(
-        self,
-        logger: Logger,
-        solar_inputs: Dict[str, Any],
-        solar_panels: List[SolarPanel],
-    ) -> None:
-        """
-        Instantiate a :class:`HybridPVTPanel` instance based on the input data.
-
-        Inputs:
-            - logger:
-                The logger to use for the run.
-            - solar_inputs:
-                The solar input data specific to this panel.
-            - solar_panels:
-                The full set of solar generation data.
-
-        """
-
-        # Attempt to extract information about the corresponding PV layer.
-        try:
-            pv_layer = [
-                panel for panel in solar_panels if panel.name == solar_inputs["pv"]
-            ][0]
-        except IndexError:
-            logger.error(
-                "Could not find corresponding PV-layer data for layer %s for panel %s.",
-                solar_inputs["pv"],
-                solar_inputs["name"],
-            )
-
-        if pv_layer.reference_temperature is None:
-            logger.error("PV reference temperature must be defined if using PV-T.")
-            raise InputFileError(
-                "solar generation inputs",
-                "PV reference temperature must be defined if using PV-T",
-            )
-        if pv_layer.thermal_coefficient is None:
-            logger.error("PV thermal coefficient must be defined if using PV-T.")
-            raise InputFileError(
-                "solar generation inputs",
-                "PV thermal coefficient must be defined if using PV-T",
-            )
-
-        if "pv_unit" not in solar_inputs:
-            logger.error("PV unit size must be specified for PV-T panels.")
-            raise InputFileError(
-                "solar generation inputs",
-                "PV unit size must be specified when considering PV-T panels.",
-            )
-
-        super().__init__(
-            solar_inputs["azimuthal_orientation"],
-            solar_inputs["lifetime"],
-            solar_inputs["name"],
-            solar_inputs["pv_unit"],
-            True,
-            pv_layer.reference_temperature,
-            pv_layer.thermal_coefficient,
-            solar_inputs["tilt"],
+    # Determine the thermal desalination plant being used.
+    try:
+        thermal_desalination_plant: ThermalDesalinationPlant = [
+            convertor
+            for convertor in convertors
+            if isinstance(convertor, ThermalDesalinationPlant)
+        ][0]
+    except IndexError:
+        logger.error(
+            "%sNo valid thermal desalination plants specified - this is currently "
+            "the only supported use of PV-T.%s",
+            BColours.fail,
+            BColours.endc,
         )
+        raise InputFileError(
+            "conversion inputs", "No valid thermal desalination plants specified."
+        ) from None
 
-        self.max_mass_flow_rate = solar_inputs["max_mass_flow_rate"]
-        self.min_mass_flow_rate = solar_inputs["min_mass_flow_rate"]
-        self.thermal_unit = solar_inputs["thermal_unit"]
-
-    def __repr__(self) -> str:
-        """
-        Return a nice-looking representation of the panel.
-
-        Outputs:
-            - A nice-looking representation of the panel.
-
-        """
-
-        return (
-            "HybridPVTPanel("
-            + f"azimuthal_orientation={self.azimuthal_orientation}"
-            + f", lifetime={self.lifetime}"
-            + f", max_mass_flow_rate={self.max_mass_flow_rate}"
-            + f", min_mass_flow_rate={self.min_mass_flow_rate}"
-            + f", name={self.name}"
-            + f", pv_unit={self.pv_unit}"
-            + f", reference_temperature={self.reference_temperature}"
-            + f", thermal_coefficient={self.thermal_coefficient}"
-            + f", thermal_unit={self.thermal_unit}"
-            + f", tilt={self.tilt}"
-            + ")"
+    # Instantiate maps for easy PV-T power lookups.
+    pvt_electric_power_per_unit_map: Dict[int, float] = {}
+    pvt_volume_output_supplied_map: Dict[int, float] = {}
+    try:
+        for index in tqdm(
+            range(len(temperatures)),
+            desc="pv-t performance",
+            unit="hour",
+        ):
+            # Compute the fractional PV-T performance and thermal PV-T outputs.
+            (
+                _,
+                fractional_electric_performance,
+                volume_supplied,
+            ) = minigrid.pvt_panel.fractional_performance(
+                temperatures[index],
+                thermal_desalination_plant,
+                1000 * irradiances[index],
+                wind_speeds[index],
+            )
+            pvt_electric_power_per_unit_map[index] = fractional_electric_performance
+            pvt_volume_output_supplied_map[index] = volume_supplied
+    except TypeError:
+        logger.error(
+            "The PV-T system size must be specified explicitly on the command line."
         )
+        raise Exception("Missing command-line argument: --pvt-system-size.") from None
 
-    def fractional_performance(
-        self,
-        ambient_temperature: float,
-        desalination_plant: ThermalDesalinationPlant,
-        irradiance: float,
-        wind_speed: float,
-    ) -> Tuple[None, float, None]:
-        """
-        Computes the fractional performance of the :class:`HybridPVTPanel`.
+    # Convert these outputs to dataframes and return.
+    pvt_electric_power_per_unit: pd.DataFrame = (
+        pd.DataFrame(  # type: ignore
+            list(pvt_electric_power_per_unit_map.values()),
+            index=list(pvt_electric_power_per_unit_map.keys()),
+        ).sort_index()
+        * minigrid.pvt_panel.pv_unit
+    )
+    # @@@ Fix thermal unit stuff here...
 
-        Additional Credits:
-            The PV-T collector model used here was developed in-house by
-            Benedict Winchester, benedict.winchester@gmail.com
-
-        Inputs:
-            - ambient_temperature:
-                The ambient temperature surrounding the collector, measured in degrees
-                Celcius.
-            - irradiance:
-                The total irradiance incident on the collector, both direct and diffuse,
-                measured in W/m^2.
-            - wind_speed:
-                The wind speed at the collector location, measured in meters per second.
-
-        Outputs:
-            - collector_output_temperature:
-                The output temperature of the HTF leaving the collector.
-            - fractional_electrical_performance:
-                The fractional electrical performance of the collector, where 1
-                corresponds to the rated performance under standard test conditions.
-            - mass_of_water_supplied:
-                The mass of hot-water supplied to the end system.
-
-        """
-
-        # Compute the temperature of the collector using the reduced PV-T model.
-        collector_temperature = ambient_temperature + 0.035 * irradiance
-
-        # Compute the fractional electrical performance of the collector.
-        fractional_electrical_performance = (
-            1
-            - self.thermal_coefficient
-            * (collector_temperature - self.reference_temperature)
-        ) * (irradiance / 1000)
-
-        # If the collector temperature was greater than the plant minimum temperature.
-        # if collector_output_temperature > desalination_plant.minimum_water_input_temperature:
-            # Then return the default input temperature and water supplied.
-            # return default_collector_input_temperature, fractional_electrical_performance, volume_supplied
-
-        # Otherwise, cycle the water back around.
-        # return collector_output_temperature, fractional_electrical_performance, 0
-
-        # Return this, along with the output temperature of HTF leaving the collector.
-        return None, fractional_electrical_performance, None
+    return pvt_electric_power_per_unit

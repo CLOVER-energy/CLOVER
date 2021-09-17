@@ -44,14 +44,13 @@ from ..__utils__ import (
     SystemDetails,
 )
 from ..conversion.conversion import Convertor
-from ..generation.solar import solar_degradation
+from ..generation.solar import HybridPVTPanel, PVPanel, solar_degradation
 from ..load.load import population_hourly
 from .diesel import (
     DieselBackupGenerator,
     get_diesel_energy_and_times,
     get_diesel_fuel_usage,
 )
-from .solar import HybridPVTPanel, PVPanel
 from .storage import Battery, CleanWaterTank
 
 __all__ = (
@@ -379,7 +378,7 @@ def _get_electric_battery_storage_profile(
 
     # Combine energy from all renewables sources
     renewables_energy: pd.DataFrame = (
-        pv_energy + pvt_electric_energy
+        pv_energy + pvt_electric_energy  # type: ignore
     )  # + wind_energy + ...
     # Add more renewable sources here as required
 
@@ -636,7 +635,7 @@ def run_simulation(
             tank_storage_profile,
         ) = _get_water_storage_profile(
             processed_total_clean_water_load,
-            renewable_clean_water_produced[start_hour:end_hour],
+            renewable_clean_water_produced[start_hour:end_hour],  # type: ignore
         )
         total_clean_water_supplied = pd.DataFrame(
             renewable_clean_water_used_directly.values
