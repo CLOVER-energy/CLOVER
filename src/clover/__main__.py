@@ -17,8 +17,11 @@ the clover module from the command-line interface.
 
 """
 
+__version__ = "5.0.0a1.dev1"
+
 import datetime
 import logging
+import math
 import os
 import sys
 
@@ -90,6 +93,7 @@ CLOVER_HEADER_STRING = """
 
        Continuous Lifetime Optimisation of Variable Electricity Resources
                          Copyright Phil Sandwell, 2018
+{version_line}
 
                          For more information, contact
                    Phil Sandwell (philip.sandwell@gmail.com)
@@ -217,7 +221,12 @@ def main(args: List[Any]) -> None:
 
     logger.info("Command-line arguments successfully validated.")
 
-    print(CLOVER_HEADER_STRING)
+    version_string = f"Version {__version__}"
+    print(CLOVER_HEADER_STRING.format(version_line = "{}{}{}".format(
+        " " * (40 - math.ceil(len(version_string) / 2)),
+        version_string,
+        " " * (40 - math.floor(len(version_string) / 2)),
+    )))
 
     # Define common variables.
     auto_generated_files_directory = os.path.join(
@@ -896,6 +905,7 @@ def main(args: List[Any]) -> None:
                     finance_inputs,
                     ghg_inputs,
                     grid_profile,
+                    total_solar_data[solar.SolarDataType.TOTAL_IRRADIANCE.value],
                     kerosene_usage,
                     location,
                     logger,
@@ -903,10 +913,14 @@ def main(args: List[Any]) -> None:
                     optimisation,
                     optimisation_inputs,
                     scenario,
+                    total_solar_data[solar.SolarDataType.TEMPERATURE.value],
                     total_clean_water_load,
                     0.001 * total_electric_load,  # type: ignore
                     total_solar_data[solar.SolarDataType.ELECTRICITY.value]
                     * minigrid.pv_panel.pv_unit,
+                    total_wind_data[wind.WindDataType.WIND_SPEED.value]
+                    if total_wind_data is not None
+                    else None,
                     electric_yearly_load_statistics,
                 )
             except Exception as e:

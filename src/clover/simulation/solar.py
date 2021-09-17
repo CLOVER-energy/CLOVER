@@ -106,6 +106,7 @@ def calculate_pvt_output(
         for index in tqdm(
             range(len(temperatures)),
             desc="pv-t performance",
+            leave=False,
             unit="hour",
         ):
             # Compute the fractional PV-T performance and thermal PV-T outputs.
