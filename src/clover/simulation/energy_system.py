@@ -37,6 +37,7 @@ from ..__utils__ import (
     DemandType,
     DistributionNetwork,
     InputFileError,
+    InternalError,
     ResourceType,
     Location,
     Scenario,
@@ -46,150 +47,19 @@ from ..__utils__ import (
 from ..conversion.conversion import Convertor
 from ..generation.solar import HybridPVTPanel, PVPanel, solar_degradation
 from ..load.load import population_hourly
+from .__utils__ import Minigrid
 from .diesel import (
     DieselBackupGenerator,
     get_diesel_energy_and_times,
     get_diesel_fuel_usage,
 )
+from .solar import calculate_pvt_output
 from .storage import Battery, CleanWaterTank
 
 __all__ = (
     "Minigrid",
     "run_simulation",
 )
-
-
-@dataclasses.dataclass
-class Minigrid:
-    """
-    Represents an energy system.
-
-    .. attribute:: ac_to_ac_conversion_efficiency
-        The conversion efficiency from AC to AC.
-
-    .. attribute:: ac_to_dc_conversion_efficiency
-        The conversion efficiency from AC to DC.
-
-    .. attribute:: ac_transmission_efficiency
-        The AC transmission efficiency, if applicable.
-
-    .. attribute:: battery
-        The battery being modelled, if applicable.
-
-    .. attribute:: clean_water_tank
-        The clean-water tank being modelled, if applicable.
-
-    .. attribute:: dc_to_ac_conversion_efficiency
-        The conversion efficiency from DC to AC.
-
-    .. attribute:: dc_to_dc_conversion_efficiency
-        The conversion efficiency from DC to DC.
-
-    .. attribute:: dc_transmission_efficiency
-        The DC transmission efficiency, if applicable.
-
-    .. attribute:: diesel_backup_generator
-        The diesel backup generator associated with the minigrid system.
-
-    .. attribute:: pv_panel
-        The PV panel being considered.
-
-    .. attribute:: pvt_panel
-        The PV-T panel being considered, if applicable.
-
-    """
-
-    ac_to_ac_conversion_efficiency: Optional[float]
-    ac_to_dc_conversion_efficiency: Optional[float]
-    ac_transmission_efficiency: Optional[float]
-    battery: Optional[Battery]
-    clean_water_tank: Optional[CleanWaterTank]
-    dc_to_ac_conversion_efficiency: Optional[float]
-    dc_to_dc_conversion_efficiency: Optional[float]
-    dc_transmission_efficiency: Optional[float]
-    diesel_backup_generator: Optional[DieselBackupGenerator]
-    pv_panel: PVPanel
-    pvt_panel: Optional[HybridPVTPanel]
-
-    @classmethod
-    def from_dict(
-        cls,
-        diesel_backup_generator: DieselBackupGenerator,
-        minigrid_inputs: Dict[Union[int, str], Any],
-        pv_panel: PVPanel,
-        pvt_panel: Optional[HybridPVTPanel],
-        battery_inputs: Optional[List[Dict[Union[int, str], Any]]] = None,
-        tank_inputs: Optional[List[Dict[Union[int, str], Any]]] = None,
-    ) -> Any:
-        """
-        Returns a :class:`Minigrid` instance based on the inputs provided.
-
-        Inputs:
-            - diesel_backup_generator:
-                The diesel backup generator to use for the run.
-            - minigrid_inputs:
-                The inputs for the minigrid/energy system, extracted from the input
-                file.
-            - pv_panel:
-                The :class:`PVPanel` instance to use for the run.
-            - pvt_panel:
-                The :class:`HybridPVTPanel` instance to use for the run, if appropriate.
-            - battery_inputs:
-                The battery input information.
-            - tank_inputs:
-                The tank input information.
-
-        Outputs:
-            - A :class:`Minigrid` instance based on the inputs provided.
-
-        """
-
-        # Parse the battery information.
-        if battery_inputs is not None:
-            batteries = {
-                entry["name"]: Battery.from_dict(entry) for entry in battery_inputs
-            }
-        else:
-            batteries = {}
-
-        # Parse the tank information.
-        if tank_inputs is not None:
-            tanks = {
-                entry["name"]: CleanWaterTank.from_dict(entry) for entry in tank_inputs
-            }
-        else:
-            tanks = {}
-
-        # Return the minigrid instance.
-        return cls(
-            minigrid_inputs["conversion"]["ac_to_ac"]
-            if "ac_to_ac" in minigrid_inputs["conversion"]
-            else None,
-            minigrid_inputs["conversion"]["ac_to_ac"]
-            if "ac_to_dc" in minigrid_inputs["conversion"]
-            else None,
-            minigrid_inputs["ac_transmission_efficiency"]
-            if "ac_transmission_efficiency" in minigrid_inputs
-            else None,
-            batteries[minigrid_inputs["battery"]]
-            if "battery" in minigrid_inputs
-            else None,
-            tanks[minigrid_inputs["clean_water_tank"]]
-            if "clean_water_tank" in minigrid_inputs
-            else None,
-            minigrid_inputs["conversion"]["ac_to_ac"]
-            if "dc_to_ac" in minigrid_inputs["conversion"]
-            else None,
-            minigrid_inputs["conversion"]["ac_to_ac"]
-            if "dc_to_dc" in minigrid_inputs["conversion"]
-            else None,
-            minigrid_inputs["dc_transmission_efficiency"]
-            if "dc_transmission_efficiency" in minigrid_inputs
-            else None,
-            diesel_backup_generator,
-            pv_panel,
-            pvt_panel,
-        )
 
 
 def _get_processed_load_profile(scenario: Scenario, total_load: pd.DataFrame):
@@ -246,7 +116,7 @@ def _get_electric_battery_storage_profile(
     processed_total_electric_load: pd.DataFrame,
     scenario: Scenario,
     pv_power_produced: pd.Series,
-    pvt_electric_power_produced: pd.Series,
+    pvt_electric_power_produced: pd.DataFrame,
     end_hour: int = 4,
     pv_size: float = 10,
     pvt_size: float = 0,
@@ -330,7 +200,7 @@ def _get_electric_battery_storage_profile(
             0 : (end_hour - start_hour)
         ]
         pvt_electric_generation: Optional[pd.DataFrame] = pd.DataFrame(
-            np.asarray(pvt_electric_generation_array[start_hour:end_hour])  # type: ignore
+            np.asarray(pvt_electric_generation_array)[start_hour:end_hour]  # type: ignore
             * np.asarray(pvt_degradation_array)
         )
     else:
@@ -486,22 +356,23 @@ def _get_water_storage_profile(
 
 def run_simulation(
     convertors: List[Convertor],
-    minigrid: Minigrid,
+    electric_storage_size: float,
     grid_profile: pd.DataFrame,
+    irradiance_data: pd.Series,
     kerosene_usage: pd.DataFrame,
     location: Location,
     logger: Logger,
+    minigrid: Minigrid,
     number_of_clean_water_tanks: int,
+    pv_power_produced: pd.Series,
     pv_size: float,
     pvt_size: float,
-    renewable_clean_water_produced: pd.DataFrame,
     scenario: Scenario,
     simulation: Simulation,
-    electric_storage_size: float,
+    temperature_data: pd.Series,
     total_clean_water_load: Optional[pd.DataFrame],
     total_electric_load: pd.DataFrame,
-    pv_power_produced: pd.Series,
-    pvt_electric_power_produced: pd.Series,
+    wind_speed_data: Optional[pd.Series],
 ) -> Tuple[datetime.timedelta, pd.DataFrame, SystemDetails]:
     """
     Simulates a minigrid system
@@ -514,34 +385,40 @@ def run_simulation(
             The `list` of :class:`Convertor` instances available to be used.
         - diesel_backup_generator:
             The backup diesel generator for the system being modelled.
-        - minigrid:
-            The energy system being considered.
+        - electric_storage_size:
+            Amount of storage in terms of the number of batteries included.
         - grid_profile:
             The grid-availability profile.
+        - irradiance_data:
+            The total solar irradiance data.
         - kerosene_usage:
             The kerosene-usage profile.
         - location:
             The location being considered.
+        - minigrid:
+            The energy system being considered.
         - number_of_clean_water_tanks:
             The number of clean-water tanks installed in the system.
         - pv_size:
             Amount of PV in PV units.
+        - pv_power_produced:
+            The total energy outputted by the solar system per PV unit.
+        - pvt_size:
+            Amount of PV-T in PV-T units.
         - renewable_clean_water_produced:
             The amount of clean-water produced renewably, mesaured in litres.
         - scenario:
             The scenario being considered.
         - simulation:
             The simulation to run.
-        - electric_storage_size:
-            Amount of storage in terms of the number of batteries included.
+        - temperature_data:
+            The temperature data series.
         - total_clean_water_load:
             The total water load placed on the system.
         - total_electric_load:
             The total load in Watts.
-        - pv_power_produced:
-            The total energy outputted by the solar system per PV unit.
-        - pvt_power_produced:
-            The total electric energy outputted by the PV-T system per PV-T unit.
+        - wind_speed_data:
+            The wind-speed data series.
 
     Outputs:
         - The time taken for the simulation.
@@ -605,6 +482,30 @@ def run_simulation(
     start_hour = simulation.start_year * 8760
     end_hour = simulation.end_year * 8760
     simulation_hours = end_hour - start_hour
+
+    ###############################
+    # Hybrid photovoltaic-thermal #
+    ###############################
+
+    if scenario.pv_t:
+        if wind_speed_data is None:
+            raise InternalError(
+                "Wind speed data required in PV-T computation and not passed to the "
+                "energy system module."
+            )
+        (
+            renewable_clean_water_produced,
+            pvt_electric_power_per_unit,
+        ) = calculate_pvt_output(
+            convertors,
+            irradiance_data[start_hour:end_hour],
+            logger,
+            minigrid,
+            temperature_data[start_hour:end_hour],
+            wind_speed_data[start_hour:end_hour],
+        )
+    else:
+        pvt_electric_power_per_unit = pd.DataFrame([0] * pv_power_produced.size)
 
     ###############
     # Clean water #
@@ -673,7 +574,7 @@ def run_simulation(
         processed_total_electric_load=processed_total_electric_load,
         scenario=scenario,
         pv_power_produced=pv_power_produced,
-        pvt_electric_power_produced=pvt_electric_power_produced,
+        pvt_electric_power_produced=pvt_electric_power_per_unit,
         end_hour=end_hour,
         pv_size=pv_size,
         pvt_size=pvt_size,

@@ -596,13 +596,15 @@ def main(args: List[Any]) -> None:
 
     if scenario.pv_t:
         logger.info("Generating and saving total wind data output file.")
-        total_wind_data = wind.total_wind_output(
+        total_wind_data: Optional[pd.DataFrame] = wind.total_wind_output(
             os.path.join(auto_generated_files_directory, "wind"),
             parsed_args.regenerate,
             generation_inputs["start_year"],
             location.max_years,
         )
         logger.info("Total wind output successfully computed and saved.")
+    else:
+        total_wind_data = None
 
     logger.info(
         "Setup complete, continuing to CLOVER %s.",
@@ -668,29 +670,6 @@ def main(args: List[Any]) -> None:
         )
         simulation_times: List[str] = []
 
-        # Compute the PV-T electricity generation profile.
-        if (
-            ResourceType.CLEAN_WATER in scenario.resource_types
-            and operating_mode
-            in (
-                OperatingMode.SIMULATION,
-                OperatingMode.OPTIMISATION,
-            )
-            and minigrid.pvt_panel is not None
-        ):
-            pvt_electric_power_per_unit = solar.calculate_pvt_output(
-                convertors,
-                total_solar_data[solar.SolarDataType.TOTAL_IRRADIANCE.value],
-                logger,
-                minigrid,
-                total_solar_data[solar.SolarDataType.TEMPERATURE.value],
-                total_wind_data[wind.WindDataType.WIND_SPEED.value],
-            )
-        else:
-            pvt_electric_power_per_unit = pd.DataFrame(
-                [0] * total_solar_data[solar.SolarDataType.ELECTRICITY.value].size
-            )
-
         simulation_string: str = (
             f"- {parsed_args.pv_system_size * minigrid.pv_panel.pv_unit} kWp of PV"
             + (
@@ -741,30 +720,30 @@ def main(args: List[Any]) -> None:
                     system_details,
                 ) = energy_system.run_simulation(
                     convertors,
-                    minigrid,
+                    parsed_args.storage_size,
                     grid_profile,
+                    total_solar_data[solar.SolarDataType.TOTAL_IRRADIANCE.value],
                     kerosene_usage,
                     location,
                     logger,
+                    minigrid,
                     parsed_args.num_clean_water_tanks,
+                    total_solar_data[solar.SolarDataType.ELECTRICITY.value]
+                    * minigrid.pv_panel.pv_unit,
                     parsed_args.pv_system_size
                     if parsed_args.pv_system_size is not None
                     else 0,
                     parsed_args.pvt_system_size
                     if parsed_args.pvt_system_size is not None
                     else 0,
-                    pd.DataFrame(
-                        [0]
-                        * total_solar_data[solar.SolarDataType.ELECTRICITY.value].size
-                    ),
                     scenario,
                     simulation,
-                    parsed_args.storage_size,
+                    total_solar_data[solar.SolarDataType.TEMPERATURE.value],
                     total_clean_water_load,
                     0.001 * total_electric_load,  # type: ignore
-                    total_solar_data[solar.SolarDataType.ELECTRICITY.value]
-                    * minigrid.pv_panel.pv_unit,
-                    pvt_electric_power_per_unit,
+                    total_wind_data[wind.WindDataType.WIND_SPEED.value]
+                    if total_wind_data is not None
+                    else None,
                 )
             except Exception as e:
                 print(
@@ -926,7 +905,6 @@ def main(args: List[Any]) -> None:
                     scenario,
                     total_clean_water_load,
                     0.001 * total_electric_load,  # type: ignore
-                    pvt_electric_power_per_unit,
                     total_solar_data[solar.SolarDataType.ELECTRICITY.value]
                     * minigrid.pv_panel.pv_unit,
                     electric_yearly_load_statistics,
