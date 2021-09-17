@@ -102,8 +102,18 @@ class SolarPanel:
     """
 
     azimuthal_orientation: float
+    cost: float
+    cost_decrease: float
+    ghg_decrease: float
+    ghgs: float
+    installation_cost: float
+    installation_cost_decrease: float
+    installation_ghg_decrease: float
+    installation_ghgs: float
     lifetime: int
     name: str
+    om_cost: float
+    om_ghgs: float
     pv_unit: float
     pv_unit_overrided: bool
     reference_temperature: Optional[float]

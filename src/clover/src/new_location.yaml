@@ -89,6 +89,17 @@
 
                 diesel_consumption: 0.4 # [litres per kW capacity per hour]
                 minimum_load: 0.35 # Minimum capacity factor (0.0 - 1.0)
+                costs:
+                  cost: 200 # [$/kW]
+                  installation_cost: 50 # [$/kW]
+                  installation_cost_decrease: 0 # [% p.a.]
+                  o&m: 20 # [$/kW p.a.]
+                  cost_decrease: 0 # [% p.a.]
+                emissions:
+                  ghgs: 2000 # [kgCO2/kW]
+                  ghg_decrease: 0 # [% p.a.]
+                  installation_ghgs: 50 # [kgCO2/kW]
+                  installation_ghg_decrease: 0 # [% p.a.]
             - file: "generation_inputs.yaml"
               contents: |+
                 ---
@@ -156,11 +167,22 @@
                     # thermal_coefficient: 0.0053 # [1 / degrees Celcius]
                     tilt: 29 # [degrees above horizontal]
                     type: pv # Panel type, either 'pv' or 'pv_t'
+                    costs:
+                      cost: 500 # [$/PV unit], [$/kWp] by default
+                      cost_decrease: 5 # [% p.a.]
+                      installation_cost: 100 # [$/PV unit], [$/kWp] by default
+                      installation_cost_decrease: 0 # [% p.a.]
+                      o&m: 5 # [$/kWp p.a.]
+                    emissions:
+                      ghgs: 3000 # [kgCO2/kWp]
+                      ghg_decrease: 5 # [% p.a.]
+                      installation_ghgs: 50 # [kgCO2/kW]
+                      installation_ghg_decrease: 0 # [% p.a.]
+                      o&m: 5 #[kgCO2/kWp p.a.]
         - directory: impact
           contents:
             - file: "finance_inputs.yaml"
               contents: |+
-                ---
                 ################################################################################
                 # finance_inputs.yaml - Finance input information.                             #
                 #                                                                              #
@@ -180,12 +202,6 @@
                 diesel_fuel:
                   cost: 0.9 # [$/litre]
                   cost_decrease: -1 # [% p.a.]
-                diesel_generator:
-                  cost: 200 # [$/kW]
-                  installation_cost: 50 # [$/kW]
-                  installation_cost_decrease: 0 # [% p.a.]
-                  o&m: 20 # [$/kW p.a.]
-                  cost_decrease: 0 # [% p.a.]
                 grid:
                   cost: 0.01 # [$/kWh]
                   extension cost: 5000 # [$/km]
@@ -199,16 +215,6 @@
                   size_increment: 1 # [kW]
                 kerosene:
                   cost: 0.008 # [$/hour]
-                pv:
-                  cost: 500 # [$/kWp]
-                  cost_decrease: 5 # [% p.a.]
-                  installation_cost: 100 # [$/kW]
-                  installation_cost_decrease: 0 # [% p.a.]
-                  o&m: 5 # [$/kWp p.a.]
-                storage:
-                  cost: 400 # [$/kWh]
-                  cost_decrease: 5 # [% p.a.]
-                  o&m: 10 # [$/kWh p.a.]
             - file: ghg_inputs.yaml
               contents: |+
                 ---
@@ -231,11 +237,6 @@
                 diesel_fuel:
                   ghgs: 2 # [kgCO2/litre]
                   o&m_ghgs: 10 # [kgCO2/kW p.a.]
-                diesel_generator:
-                  ghgs: 2000 # [kgCO2/kW]
-                  ghg_decrease: 0 # [% p.a.]
-                  installation_ghgs: 50 # [kgCO2/kW]
-                  installation_ghg_decrease: 0 # [% p.a.]
                 grid:
                   extension_ghgs: 290000 # [kgCO2/km]
                   infrastructure_GHGs: 1200000 # [kgCO2]
@@ -250,16 +251,7 @@
                   size_increment: 1 # [kW]
                 kerosene:
                   ghgs: 0.055 # [kgCO2/hour]
-                pv:
-                  ghgs: 3000 # [kgCO2/kWp]
-                  ghg_decrease: 5 # [% p.a.]
-                  installation_ghgs: 50 # [kgCO2/kW]
-                  installation_ghg_decrease: 0 # [% p.a.]
-                  o&m_ghgs: 5 #[kgCO2/kWp p.a.]
-                storage:
-                  ghgs: 110 # [kgCO2/kWh]
-                  o&m_ghgs: 5 # [kgCO2/kWh p.a.]
-                  ghg_decrease: 5 # [% p.a.]
+
         - directory: load
           contents:
             - file: devices.yaml
@@ -644,6 +636,14 @@
                   lifetime_loss: 0.2 # Fractional loss over lifetime (0.0 - 1.0)
                   c_rate_discharging: 0.33 # Discharge rate
                   c_rate_charging: 0.33 # Charge rate
+                  costs:
+                    cost: 400 # [$/storage unit], [$/kWh] by default
+                    cost_decrease: 5 # [% p.a.]
+                    o&m: 10 # [$/storage unit], [$/kWh] by default
+                  emissions:
+                    ghgs: 110 # [kgCO2/kWh]
+                    o&m_ghgs: 5 # [kgCO2/kWh p.a.]
+                    ghg_decrease: 5 # [% p.a.]
             - file: "energy_system.yaml"
               contents: |+
                 ---
@@ -700,6 +700,18 @@
                   maximum_charge: 1 # State of charge (0.0 - 1.0)
                   minimum_charge: 0 # State of charge (0.0 - 1.0)
                   resource_type: clean_water
+                  costs:
+                    cost: 100 # [$/tank]
+                    cost_decrease: 5 # [% p.a.]
+                    installation_cost: 20 # [$/tank]
+                    installation_cost_decrease: 0 # [% p.a.]
+                    o&m: 10 # [$/kWh p.a.]
+                  emissions:
+                    ghgs: 110 # [kgCO2/tank]
+                    ghg_decrease: 5 # [% p.a.]
+                    installation_ghgs: 10 # [kwCO2/tank]
+                    installation_ghg_decrease: 0
+                    o&m_ghgs: 5 # [kgCO2/tank p.a.]
     - directory: outputs
       contents:
         - directory: optimisation_outputs

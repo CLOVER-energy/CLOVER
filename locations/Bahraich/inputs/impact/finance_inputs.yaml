@@ -1,3 +1,4 @@
+---
 ################################################################################
 # finance_inputs.yaml - Finance input information.                             #
 #                                                                              #
@@ -17,12 +18,6 @@ bos:
 diesel_fuel:
   cost: 0.9 # [$/litre]
   cost_decrease: -1 # [% p.a.]
-diesel_generator:
-  cost: 200 # [$/kW]
-  installation_cost: 50 # [$/kW]
-  installation_cost_decrease: 0 # [% p.a.]
-  o&m: 20 # [$/kW p.a.]
-  cost_decrease: 0 # [% p.a.]
 grid:
   cost: 0.01 # [$/kWh]
   extension cost: 5000 # [$/km]
@@ -36,13 +31,3 @@ inverter:
   size_increment: 1 # [kW]
 kerosene:
   cost: 0.008 # [$/hour]
-pv:
-  cost: 500 # [$/PV unit], [$/kWp] by default
-  cost_decrease: 5 # [% p.a.]
-  installation_cost: 100 # [$/PV unit], [$/kWp] by default
-  installation_cost_decrease: 0 # [% p.a.]
-  o&m: 5 # [$/kWp p.a.]
-storage:
-  cost: 400 # [$/storage unit], [$/kWh] by default
-  cost_decrease: 5 # [% p.a.]
-  o&m: 10 # [$/storage unit], [$/kWh] by default
