@@ -132,6 +132,7 @@ def _single_line_simulation(
     finance_inputs: Dict[str, Any],
     ghg_inputs: Dict[str, Any],
     grid_profile: pd.DataFrame,
+    irradiance_data: pd.Series,
     kerosene_usage: pd.DataFrame,
     pv_system_size: SolarSystemSize,
     pvt_system_size: SolarSystemSize,
@@ -144,10 +145,11 @@ def _single_line_simulation(
     previous_system: Optional[SystemAppraisal],
     scenario: Scenario,
     start_year: int,
+    temperature_data: pd.Series,
     total_clean_water_load: Optional[pd.DataFrame],
     total_electric_load: pd.DataFrame,
     total_solar_pv_power_produced: pd.Series,
-    total_pvt_electric_power_produced: pd.Series,
+    wind_speed_data: Optional[pd.Series],
     yearly_electric_load_statistics: pd.DataFrame,
 ) -> Tuple[
     TankSize, SolarSystemSize, SolarSystemSize, StorageSystemSize, List[SystemAppraisal]
@@ -247,21 +249,23 @@ def _single_line_simulation(
                             system_details,
                         ) = energy_system.run_simulation(
                             convertors,
-                            minigrid,
+                            test_storage_size,
                             grid_profile,
+                            irradiance_data,
                             kerosene_usage,
                             location,
                             logger,
+                            minigrid,
                             test_clean_water_tanks,
+                            total_solar_pv_power_produced,
                             iteration_pv_size,
                             iteration_pvt_size,
                             scenario,
                             Simulation(end_year, start_year),
-                            test_storage_size,
+                            temperature_data,
                             total_clean_water_load,
                             total_electric_load,
-                            total_solar_pv_power_produced,
-                            total_pvt_electric_power_produced,
+                            wind_speed_data,
                         )
 
                         # Appraise the system.
@@ -292,21 +296,22 @@ def _single_line_simulation(
                         system_details,
                     ) = energy_system.run_simulation(
                         convertors,
-                        minigrid,
                         grid_profile,
+                        irradiance_data,
                         kerosene_usage,
                         location,
                         logger,
+                        minigrid,
                         test_clean_water_tanks,
                         iteration_pv_size,
                         pvt_system_size.max,
                         scenario,
                         Simulation(end_year, start_year),
                         test_storage_size,
+                        temperature_data,
                         total_clean_water_load,
                         total_electric_load,
                         total_solar_pv_power_produced,
-                        total_pvt_electric_power_produced,
                     )
 
                     # Appraise the system.
@@ -341,21 +346,22 @@ def _single_line_simulation(
                         system_details,
                     ) = energy_system.run_simulation(
                         convertors,
-                        minigrid,
                         grid_profile,
+                        irradiance_data,
                         kerosene_usage,
                         location,
                         logger,
+                        minigrid,
                         test_clean_water_tanks,
                         pv_system_size.max,
                         iteration_pvt_size,
                         scenario,
                         Simulation(end_year, start_year),
                         test_storage_size,
+                        temperature_data,
                         total_clean_water_load,
                         total_electric_load,
                         total_solar_pv_power_produced,
-                        total_pvt_electric_power_produced,
                     )
 
                     # Appraise the system.
@@ -392,19 +398,21 @@ def _single_line_simulation(
                 convertors,
                 minigrid,
                 grid_profile,
+                irradiance_data,
                 kerosene_usage,
                 location,
                 logger,
+                minigrid,
                 test_clean_water_tanks,
                 pv_system_size.max,
                 pvt_system_size.max,
                 scenario,
                 Simulation(end_year, start_year),
                 test_storage_size,
+                temperature_data,
                 total_clean_water_load,
                 total_electric_load,
                 total_solar_pv_power_produced,
-                total_pvt_electric_power_produced,
             )
 
             # Appraise the system.
@@ -434,19 +442,21 @@ def _single_line_simulation(
                 convertors,
                 minigrid,
                 grid_profile,
+                irradiance_data,
                 kerosene_usage,
                 location,
                 logger,
+                minigrid,
                 test_clean_water_tanks,
                 pv_system_size.max,
                 pvt_system_size.max,
                 scenario,
                 Simulation(end_year, start_year),
                 test_storage_size,
+                temperature_data,
                 total_clean_water_load,
                 total_electric_load,
                 total_solar_pv_power_produced,
-                total_pvt_electric_power_produced,
             )
 
             # Appraise the system.
@@ -506,19 +516,21 @@ def _single_line_simulation(
                 convertors,
                 minigrid,
                 grid_profile,
+                irradiance_data,
                 kerosene_usage,
                 location,
                 logger,
+                minigrid,
                 test_clean_water_tanks,
                 test_pv_size,
                 pvt_system_size.max,
                 scenario,
                 Simulation(end_year, start_year),
                 iteration_storage_size,
+                temperature_data,
                 total_clean_water_load,
                 total_electric_load,
                 total_solar_pv_power_produced,
-                total_pvt_electric_power_produced,
             )
 
             # Appraise the system.
@@ -551,19 +563,21 @@ def _single_line_simulation(
                 convertors,
                 minigrid,
                 grid_profile,
+                irradiance_data,
                 kerosene_usage,
                 location,
                 logger,
+                minigrid,
                 test_clean_water_tanks,
                 test_pv_size,
                 pvt_system_size.max,
                 scenario,
                 Simulation(end_year, start_year),
                 storage_size.max,
+                temperature_data,
                 total_clean_water_load,
                 total_electric_load,
                 total_solar_pv_power_produced,
-                total_pvt_electric_power_produced,
             )
 
             # Appraise the system.
@@ -623,19 +637,21 @@ def _single_line_simulation(
                 convertors,
                 minigrid,
                 grid_profile,
+                irradiance_data,
                 kerosene_usage,
                 location,
                 logger,
+                minigrid,
                 test_clean_water_tanks,
                 test_pv_size,
                 test_pvt_size,
                 scenario,
                 Simulation(end_year, start_year),
                 iteration_storage_size,
+                temperature_data,
                 total_clean_water_load,
                 total_electric_load,
                 total_solar_pv_power_produced,
-                total_pvt_electric_power_produced,
             )
 
             # Appraise the system.
@@ -668,19 +684,21 @@ def _single_line_simulation(
                 convertors,
                 minigrid,
                 grid_profile,
+                irradiance_data,
                 kerosene_usage,
                 location,
                 logger,
+                minigrid,
                 test_clean_water_tanks,
                 test_pv_size,
                 test_pvt_size,
                 scenario,
                 Simulation(end_year, start_year),
                 storage_size.max,
+                temperature_data,
                 total_clean_water_load,
                 total_electric_load,
                 total_solar_pv_power_produced,
-                total_pvt_electric_power_produced,
             )
 
             # Appraise the system.
@@ -719,6 +737,7 @@ def _find_optimum_system(
     finance_inputs: Dict[str, Any],
     ghg_inputs: Dict[str, Any],
     grid_profile: pd.DataFrame,
+    irradiance_data: pd.Series,
     kerosene_usage: pd.DataFrame,
     largest_pv_system_size: SolarSystemSize,
     largest_pvt_system_size: SolarSystemSize,
@@ -731,10 +750,11 @@ def _find_optimum_system(
     scenario: Scenario,
     start_year: int,
     system_appraisals: List[SystemAppraisal],
+    temperature_data: pd.Series,
     total_clean_water_load: Optional[pd.DataFrame],
     total_electric_load: pd.DataFrame,
     total_solar_pv_power_produced: pd.Series,
-    total_pvt_electric_power_produced: pd.Series,
+    wind_speed_data: Optional[pd.Series],
     yearly_electric_load_statistics: pd.DataFrame,
 ):
     """
@@ -806,6 +826,7 @@ def _find_optimum_system(
                 finance_inputs,
                 ghg_inputs,
                 grid_profile,
+                irradiance_data,
                 kerosene_usage,
                 largest_pv_system_size,
                 largest_pvt_system_size,
@@ -818,10 +839,11 @@ def _find_optimum_system(
                 previous_system,
                 scenario,
                 start_year,
+                temperature_data,
                 total_clean_water_load,
                 total_electric_load,
                 total_solar_pv_power_produced,
-                total_pvt_electric_power_produced,
+                wind_speed_data,
                 yearly_electric_load_statistics,
             )
 
@@ -929,7 +951,6 @@ def _simulation_iteration(
     storage_sizes: StorageSystemSize,
     total_clean_water_load: Optional[pd.DataFrame],
     total_electric_load: pd.DataFrame,
-    total_pvt_electric_power_produced: pd.Series,
     total_solar_pv_power_produced: pd.Series,
     yearly_electric_load_statistics: pd.DataFrame,
 ) -> Tuple[
@@ -983,8 +1004,6 @@ def _simulation_iteration(
             The total clean-water load on the system.
         - total_electric_load:
             The total load on the system.
-        - total_pvt_electric_power_produced:
-            The total PV-T electric power output over the time period.
         - total_solar_pv_power_produced:
             The total solar power output over the time period.
 
@@ -1025,19 +1044,21 @@ def _simulation_iteration(
         convertors,
         minigrid,
         grid_profile,
+        irradiance_data,
         kerosene_usage,
         location,
         logger,
+        minigrid,
         clean_water_tanks.max,
         pv_sizes.max,
         pvt_sizes.max,
         scenario,
         Simulation(end_year, start_year),
         storage_sizes.max,
+        temperature_data,
         total_clean_water_load,
         total_electric_load,
         total_solar_pv_power_produced,
-        total_pvt_electric_power_produced,
     )
 
     largest_system_appraisal: SystemAppraisal = appraise_system(
@@ -1081,19 +1102,21 @@ def _simulation_iteration(
             convertors,
             minigrid,
             grid_profile,
+            irradiance_data,
             kerosene_usage,
             location,
             logger,
+            minigrid,
             clean_water_tanks_max,
             pv_size_max,
             pvt_size_max,
             scenario,
             Simulation(end_year, start_year),
             storage_size_max,
+            temperature_data,
             total_clean_water_load,
             total_electric_load,
             total_solar_pv_power_produced,
-            total_pvt_electric_power_produced,
         )
 
         largest_system_appraisal = appraise_system(
@@ -1254,7 +1277,6 @@ def _simulation_iteration(
                                         total_clean_water_load,
                                         total_electric_load,
                                         total_solar_pv_power_produced,
-                                        total_pvt_electric_power_produced,
                                     )
 
                                     new_appraisal = appraise_system(
@@ -1319,7 +1341,6 @@ def _simulation_iteration(
                                     total_clean_water_load,
                                     total_electric_load,
                                     total_solar_pv_power_produced,
-                                    total_pvt_electric_power_produced,
                                 )
 
                                 new_appraisal = appraise_system(
@@ -1395,7 +1416,6 @@ def _simulation_iteration(
                                     total_clean_water_load,
                                     total_electric_load,
                                     total_solar_pv_power_produced,
-                                    total_pvt_electric_power_produced,
                                 )
 
                                 new_appraisal = appraise_system(
@@ -1459,7 +1479,6 @@ def _simulation_iteration(
                                 total_clean_water_load,
                                 total_electric_load,
                                 total_solar_pv_power_produced,
-                                total_pvt_electric_power_produced,
                             )
 
                             new_appraisal = appraise_system(
@@ -1545,7 +1564,6 @@ def _simulation_iteration(
                                     total_clean_water_load,
                                     total_electric_load,
                                     total_solar_pv_power_produced,
-                                    total_pvt_electric_power_produced,
                                 )
 
                                 new_appraisal = appraise_system(
@@ -1609,7 +1627,6 @@ def _simulation_iteration(
                                 total_clean_water_load,
                                 total_electric_load,
                                 total_solar_pv_power_produced,
-                                total_pvt_electric_power_produced,
                             )
 
                             new_appraisal = appraise_system(
@@ -1682,7 +1699,6 @@ def _simulation_iteration(
                                 total_clean_water_load,
                                 total_electric_load,
                                 total_solar_pv_power_produced,
-                                total_pvt_electric_power_produced,
                             )
 
                             new_appraisal = appraise_system(
@@ -1735,16 +1751,17 @@ def _simulation_iteration(
                             kerosene_usage,
                             location,
                             logger,
+                            minigrid,
                             simulation_clean_water_tanks[0],
                             pv_size,
                             pvt_size,
                             scenario,
                             Simulation(end_year, start_year),
                             storage_size,
+                            temperature_data,
                             total_clean_water_load,
                             total_electric_load,
                             total_solar_pv_power_produced,
-                            total_pvt_electric_power_produced,
                         )
 
                         new_appraisal = appraise_system(
@@ -1839,7 +1856,6 @@ def _simulation_iteration(
                                     total_clean_water_load,
                                     total_electric_load,
                                     total_solar_pv_power_produced,
-                                    total_pvt_electric_power_produced,
                                 )
 
                                 new_appraisal = appraise_system(
@@ -1903,7 +1919,6 @@ def _simulation_iteration(
                                 total_clean_water_load,
                                 total_electric_load,
                                 total_solar_pv_power_produced,
-                                total_pvt_electric_power_produced,
                             )
 
                             new_appraisal = appraise_system(
@@ -1976,7 +1991,6 @@ def _simulation_iteration(
                                 total_clean_water_load,
                                 total_electric_load,
                                 total_solar_pv_power_produced,
-                                total_pvt_electric_power_produced,
                             )
 
                             new_appraisal = appraise_system(
@@ -2029,16 +2043,17 @@ def _simulation_iteration(
                             kerosene_usage,
                             location,
                             logger,
+                            minigrid,
                             simulation_clean_water_tanks[0],
                             simulation_pv_sizes[0],
                             pvt_size,
                             scenario,
                             Simulation(end_year, start_year),
                             storage_size,
+                            temperature_data,
                             total_clean_water_load,
                             total_electric_load,
                             total_solar_pv_power_produced,
-                            total_pvt_electric_power_produced,
                         )
 
                         new_appraisal = appraise_system(
@@ -2121,7 +2136,6 @@ def _simulation_iteration(
                                 total_clean_water_load,
                                 total_electric_load,
                                 total_solar_pv_power_produced,
-                                total_pvt_electric_power_produced,
                             )
 
                             new_appraisal = appraise_system(
@@ -2174,16 +2188,17 @@ def _simulation_iteration(
                             kerosene_usage,
                             location,
                             logger,
+                            minigrid,
                             simulation_clean_water_tanks[0],
                             simulation_pv_sizes[0],
                             pvt_size,
                             scenario,
                             Simulation(end_year, start_year),
                             simulation_storage_sizes[0],
+                            temperature_data,
                             total_clean_water_load,
                             total_electric_load,
                             total_solar_pv_power_produced,
-                            total_pvt_electric_power_produced,
                         )
 
                         new_appraisal = appraise_system(
@@ -2244,16 +2259,17 @@ def _simulation_iteration(
                             kerosene_usage,
                             location,
                             logger,
+                            minigrid,
                             num_clean_water_tanks,
                             simulation_pv_sizes[0],
                             simulation_pvt_sizes[0],
                             scenario,
                             Simulation(end_year, start_year),
                             simulation_storage_sizes[0],
+                            temperature_data,
                             total_clean_water_load,
                             total_electric_load,
                             total_solar_pv_power_produced,
-                            total_pvt_electric_power_produced,
                         )
 
                         new_appraisal = appraise_system(
@@ -2319,6 +2335,7 @@ def _optimisation_step(
     finance_inputs: Dict[str, Any],
     ghg_inputs: Dict[str, Any],
     grid_profile: pd.DataFrame,
+    irradiance_data: pd.Series,
     kerosene_usage: pd.DataFrame,
     location: Location,
     logger: Logger,
@@ -2331,10 +2348,11 @@ def _optimisation_step(
     scenario: Scenario,
     start_year: int,
     storage_sizes: StorageSystemSize,
+    temperature_data: pd.Series,
     total_clean_water_load: Optional[pd.DataFrame],
     total_electric_load: pd.DataFrame,
-    total_pvt_electric_power_produced: pd.Series,
     total_solar_pv_power_produced: pd.Series,
+    wind_speed_data: Optional[pd.Series],
     yearly_electric_load_statistics: pd.DataFrame,
 ) -> SystemAppraisal:
     """
@@ -2349,6 +2367,8 @@ def _optimisation_step(
             The finance input information.
         - grid_profile:
             The grid-availability profile.
+        - irradiance_data:
+            The total irradiance throughout the period of the simulation.
         - kerosene_usage:
             The kerosene-usage profile.
         - location:
@@ -2373,12 +2393,16 @@ def _optimisation_step(
             Start year of the initial optimisation step.
         - storage_sizes:
             Range of storage sizes.
+        - temperature_data:
+            The temperature data throughout the period of the simulation.
         - total_clean_water_load:
             The total clean-water load placed on the system.
         - total_electric_load:
             The total electric load on the system.
         - total_solar_pv_power_produced:
             The total solar power output over the time period.
+        - wind_speed_data:
+            The wind-speed data throughout the period of the simulation.
         - yearly_electric_load_statistics:
             The yearly electric load statistic information.
 
@@ -2405,7 +2429,9 @@ def _optimisation_step(
         finance_inputs,
         ghg_inputs,
         grid_profile,
+        irradiance_data,
         kerosene_usage,
+        irradiance_data,
         location,
         logger,
         minigrid,
@@ -2417,10 +2443,11 @@ def _optimisation_step(
         scenario,
         start_year,
         storage_sizes,
+        temperature_data,
         total_clean_water_load,
         total_electric_load,
-        total_pvt_electric_power_produced,
         total_solar_pv_power_produced,
+        wind_speed_data,
         yearly_electric_load_statistics,
     )
     logger.info("Simulation iterations executed successfully.")
@@ -2433,6 +2460,7 @@ def _optimisation_step(
         finance_inputs,
         ghg_inputs,
         grid_profile,
+        irradiance_data,
         kerosene_usage,
         pv_system_size,
         pvt_system_size,
@@ -2445,10 +2473,11 @@ def _optimisation_step(
         scenario,
         start_year,
         sufficient_systems,
+        temperature_data,
         total_clean_water_load,
         total_electric_load,
-        total_pvt_electric_power_produced,
         total_solar_pv_power_produced,
+        wind_speed_data,
         yearly_electric_load_statistics,
     )
     logger.info("Optimum systems determined.")
@@ -2463,16 +2492,18 @@ def multiple_optimisation_step(
     ghg_inputs: Dict[str, Any],
     grid_profile: pd.DataFrame,
     kerosene_usage: pd.DataFrame,
+    irradiance_data: pd.Series,
     location: Location,
     logger: Logger,
     minigrid: energy_system.Minigrid,
     optimisation: Optimisation,
     optimisation_parameters: OptimisationParameters,
     scenario: Scenario,
+    temperature_data: pd.Series,
     total_clean_water_load: Optional[pd.DataFrame],
     total_electric_load: pd.DataFrame,
-    total_pvt_electric_power_produced: pd.Series,
     total_solar_pv_power_produced: pd.Series,
+    wind_speed_data: Optional[pd.Series],
     yearly_electric_load_statistics: pd.DataFrame,
     *,
     input_clean_water_tanks: Optional[TankSize] = None,
@@ -2490,6 +2521,8 @@ def multiple_optimisation_step(
             The `list` of convertors available to the system;
         - grid_profile:
             The grid-availability profile;
+        - irradiance_data:
+            The total irradiance throughout the period of the simulation.
         - kerosene_usage:
             The kerosene-usage profile;
         - location:
@@ -2505,13 +2538,14 @@ def multiple_optimisation_step(
             The scenatio being considered;
         - solar_lifetime:
             The lifetime of the solar setup;
+        - temperature_data:
+            The temperature data throughout the period of the simulation.
         - total_electric_load:
             The total electric load on the system;
-        - total_pvt_electric_power_produced:
-            The total electric power output from the PV-T system over the time period
-            per unit PV-T installed;
         - total_solar_pv_power_produced:
             The total solar power output over the time period per unit PV installed;
+        - wind_speed_data:
+            The wind-speed data throughout the period of the simulation.
         - yearly_electric_load_statistics:
             The yearly electric load statistic information;
         - input_clean_water_tanks:
@@ -2628,6 +2662,7 @@ def multiple_optimisation_step(
             finance_inputs,
             ghg_inputs,
             grid_profile,
+            irradiance_data,
             kerosene_usage,
             location,
             logger,
@@ -2648,10 +2683,11 @@ def multiple_optimisation_step(
                 input_storage_sizes.min,
                 input_storage_sizes.step,
             ),
+            temperature_data,
             total_clean_water_load,
             total_electric_load,
-            total_pvt_electric_power_produced,
             total_solar_pv_power_produced,
+            wind_speed_data,
             yearly_electric_load_statistics,
         )
 

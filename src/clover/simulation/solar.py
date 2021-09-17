@@ -27,7 +27,7 @@ from tqdm import tqdm  # type: ignore  # pylint: disable=missing-import
 
 from ..__utils__ import BColours, InputFileError, ResourceType
 from ..conversion.conversion import Convertor, ThermalDesalinationPlant
-from .energy_system import Minigrid
+from .__utils__ import Minigrid
 
 
 __all__ = (
@@ -66,6 +66,9 @@ def calculate_pvt_output(
             being modelled.
 
     Outputs:
+        - clean_water_produced_per_unit:
+            The amount of clean water produced per unit PV-T, delivered by the PV-T
+            system in conjunction with any desalination plants present.
         - pvt_electric_power_per_unit:
             The electric power, per unit PV-T, delivered by the PV-T system.
 
@@ -134,4 +137,4 @@ def calculate_pvt_output(
     )
     # @@@ Fix thermal unit stuff here...
 
-    return pvt_electric_power_per_unit
+    return pd.DataFrame([0] * temperatures.size), pvt_electric_power_per_unit
