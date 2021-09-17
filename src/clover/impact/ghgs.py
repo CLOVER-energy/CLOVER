@@ -36,12 +36,17 @@ __all__ = (
     "calculate_kerosene_ghgs_mitigated",
     "calculate_total_equipment_ghgs",
     "calculate_total_om",
+    "EMISSIONS",
 )
 
 
 # Connection ghgs:
 #   Keyword used for denoting connection ghgs.
 CONNECTION_GHGS = "connection_ghgs"
+
+# Emissions:
+#   Keyword used for denoting device-specific ghg information.
+EMISSIONS = "emissions"
 
 # Extension ghgs:
 #   Keyword used for denoting extension ghgs.
