@@ -1,3 +1,4 @@
+---
 ################################################################################
 # ghg_inputs.yaml - GHG input information.                                     #
 #                                                                              #
@@ -17,11 +18,6 @@ bos:
 diesel_fuel:
   ghgs: 2 # [kgCO2/litre]
   o&m_ghgs: 10 # [kgCO2/kW p.a.]
-diesel_generator:
-  ghgs: 2000 # [kgCO2/kW]
-  ghg_decrease: 0 # [% p.a.]
-  installation_ghgs: 50 # [kgCO2/kW]
-  installation_ghg_decrease: 0 # [% p.a.]
 grid:
   extension_ghgs: 290000 # [kgCO2/km]
   infrastructure_GHGs: 1200000 # [kgCO2]
@@ -36,13 +32,3 @@ inverter:
   size_increment: 1 # [kW]
 kerosene:
   ghgs: 0.055 # [kgCO2/hour]
-pv:
-  ghgs: 3000 # [kgCO2/kWp]
-  ghg_decrease: 5 # [% p.a.]
-  installation_ghgs: 50 # [kgCO2/kW]
-  installation_ghg_decrease: 0 # [% p.a.]
-  o&m_ghgs: 5 #[kgCO2/kWp p.a.]
-storage:
-  ghgs: 110 # [kgCO2/kWh]
-  o&m_ghgs: 5 # [kgCO2/kWh p.a.]
-  ghg_decrease: 5 # [% p.a.]

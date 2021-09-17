@@ -18,3 +18,11 @@
   lifetime_loss: 0.2 # Fractional loss over lifetime (0.0 - 1.0)
   c_rate_discharging: 0.33 # Discharge rate
   c_rate_charging: 0.33 # Charge rate
+  costs:
+    cost: 400 # [$/storage unit], [$/kWh] by default
+    cost_decrease: 5 # [% p.a.]
+    o&m: 10 # [$/storage unit], [$/kWh] by default
+  emissions:
+    ghgs: 110 # [kgCO2/kWh]
+    o&m_ghgs: 5 # [kgCO2/kWh p.a.]
+    ghg_decrease: 5 # [% p.a.]

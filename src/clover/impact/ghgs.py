@@ -69,7 +69,7 @@ FINAL_GHGS = "final_ghgs"
 
 # OM GHGs:
 #   Keyword for the O&M GHGs.
-OM_GHGS = "o&m_ghgs"
+OM_GHGS = "o&m"
 
 
 def calculate_ghgs(

@@ -16,3 +16,15 @@ panels:
     # thermal_coefficient: 0.0053 # [1 / degrees Celcius]
     tilt: 29 # [degrees above horizontal]
     type: pv # Panel type, either 'pv' or 'pv_t'
+    costs:
+      cost: 500 # [$/PV unit], [$/kWp] by default
+      cost_decrease: 5 # [% p.a.]
+      installation_cost: 100 # [$/PV unit], [$/kWp] by default
+      installation_cost_decrease: 0 # [% p.a.]
+      o&m: 5 # [$/kWp p.a.]
+    emissions:
+      ghgs: 3000 # [kgCO2/kWp]
+      ghg_decrease: 5 # [% p.a.]
+      installation_ghgs: 50 # [kgCO2/kW]
+      installation_ghg_decrease: 0 # [% p.a.]
+      o&m: 5 #[kgCO2/kWp p.a.]
