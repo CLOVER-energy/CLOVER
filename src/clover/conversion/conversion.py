@@ -42,7 +42,7 @@ MAXIMUM_OUTPUT = "maximum_output"
 
 # Maximum water input temperature:
 #   Keyword used for parsing maximum output information.
-MAXIMUM_WATER_INPUT_TEMPERATURE = "maximum_water_input_temperature"
+MAXIMUM_WATER_INPUT_TEMPERATURE = "max_water_input_temperature"
 
 # Minimum output:
 #   Keyword used for parsing maximum output information.
@@ -50,7 +50,7 @@ MINIMUM_OUTPUT = "minimum_output"
 
 # Minimum water input temperature:
 #   Keyword used for parsing maximum output information.
-MINIMUM_WATER_INPUT_TEMPERATURE = "minimum_water_input_temperature"
+MINIMUM_WATER_INPUT_TEMPERATURE = "min_water_input_temperature"
 
 # Name:
 #   Keyword used for parsing convertor name information.
