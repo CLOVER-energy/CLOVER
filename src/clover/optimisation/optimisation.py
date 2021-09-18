@@ -1342,6 +1342,8 @@ def _simulation_iteration(
     # Set up the various variables ready for recursive iteration.
     component_sizes: Dict[ImpactingComponent, float] = {}
     parameter_space: List[Tuple[ImpactingComponent, str, List[float]]] = []
+    system_appraisals: List[SystemAppraisal] = []
+
     simulation_clean_water_tanks: List[int] = sorted(
         range(
             clean_water_tanks.min,
@@ -1425,7 +1427,7 @@ def _simulation_iteration(
 
     # Call the recursive simulation with these parameter and component sets of
     # information.
-    system_appraisals = _recursive_iteration(
+    _ = _recursive_iteration(
         convertors,
         end_year,
         finance_inputs,
@@ -1448,12 +1450,8 @@ def _simulation_iteration(
         yearly_electric_load_statistics,
         component_sizes=component_sizes,
         parameter_space=parameter_space,
-        system_appraisals=[],
+        system_appraisals=system_appraisals,
     )
-
-    import pdb
-
-    pdb.set_trace()
 
     logger.info("Optimisation bounds explored.")
     return (
@@ -1589,10 +1587,6 @@ def _optimisation_step(
         yearly_electric_load_statistics,
     )
     logger.info("Simulation iterations executed successfully.")
-
-    import pdb
-
-    pdb.set_trace()
 
     # Determine the optimum systems that fulfil each of the optimisation criteria.
     optimum_systems = _find_optimum_system(
