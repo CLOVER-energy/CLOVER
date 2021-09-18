@@ -17,7 +17,7 @@ the clover module from the command-line interface.
 
 """
 
-__version__ = "5.0.0a1.dev2"
+__version__ = "5.0.0a1.dev3"
 
 import datetime
 import logging
@@ -363,13 +363,43 @@ def main(args: List[Any]) -> None:
         logger.info("All input files successfully parsed.")
         print(DONE)
 
-    if ResourceType.CLEAN_WATER in scenario.resource_types:
-        if minigrid.clean_water_tank is None:
-            raise InputFileError(
-                "energy system inputs",
-                "No clean-water tank was provided despite there needing to be a tank "
-                "specified for dealing with clean-water demands.",
-            )
+    # If the inputs do not match up correctly, then raise errors.
+    if (
+        ResourceType.CLEAN_WATER in scenario.resource_types
+        and minigrid.clean_water_tank is None
+    ):
+        raise InputFileError(
+            "energy system inputs",
+            "No clean-water tank was provided despite there needing to be a tank "
+            "specified for dealing with clean-water demands.",
+        )
+    if (
+        operating_mode == OperatingMode.SIMULATION
+        and (scenario.pv and parsed_args.pv_system_size is None)
+        or (not scenario.pv and parsed_args.pv_system_size is not None)
+    ):
+        raise InputFileError(
+            "scenario",
+            "PV mode in the scenario file must match the command-line usage.",
+        )
+    if (
+        operating_mode == OperatingMode.SIMULATION
+        and (scenario.pv_t and parsed_args.pvt_system_size is None)
+        or (not scenario.pv_t and parsed_args.pvt_system_size is not None)
+    ):
+        raise InputFileError(
+            "scenario",
+            "PV-T mode in the scenario file must match the command-line usage.",
+        )
+    if (
+        operating_mode == OperatingMode.SIMULATION
+        and (scenario.battery and parsed_args.storage_size is None)
+        or (not scenario.battery and parsed_args.storage_size is not None)
+    ):
+        raise InputFileError(
+            "scenario",
+            "Battery mode in the scenario file must match the command-line usage.",
+        )
 
     print("Generating necessary profiles", end="\n")
 
@@ -866,37 +896,46 @@ def main(args: List[Any]) -> None:
                 "the system.",
             )
 
-        optimisation_string: str = (
-            "- PV resolution of {} units ({} kWp per unit)".format(
-                optimisation_inputs.pv_size_step, minigrid.pv_panel.pv_unit
-            )
-            + "\n- Storage resolution of {} units ({} kWh per unit)".format(
-                optimisation_inputs.storage_size_step, minigrid.battery.storage_unit
-            )
-            + (
-                (
-                    "\n- PV-T resolution of "
-                    + "{} units ({} kWp and {} kWth per unit)".format(
-                        optimisation_inputs.pvt_size_step,
-                        minigrid.pvt_panel.pv_unit,
-                        minigrid.pvt_panel.thermal_unit,
+        optimisation_string: str = "\n".join(
+            [
+                entry
+                for entry in [
+                    "- PV resolution of {} units ({} kWp per unit)".format(
+                        optimisation_inputs.pv_size_step, minigrid.pv_panel.pv_unit
                     )
-                )
-                if optimisation_inputs.pvt_size_step is not None
-                else ""
-            )
-            + (
-                (
-                    "\n- Clean-water tank resolution of {} ".format(
-                        optimisation_inputs.clean_water_tanks_step
+                    if scenario.pv and optimisation_inputs.pv_size_step is not None
+                    else None,
+                    "- Storage resolution of {} units ({} kWh per unit)".format(
+                        optimisation_inputs.storage_size_step,
+                        minigrid.battery.storage_unit,
                     )
-                    + "units (1 tank of size {} litres per unit)".format(
-                        minigrid.clean_water_tank.mass
+                    if scenario.battery
+                    and optimisation_inputs.storage_size_step is not None
+                    else None,
+                    (
+                        "- PV-T resolution of "
+                        + "{} units ({} kWp and {} kWth per unit)".format(
+                            optimisation_inputs.pvt_size_step,
+                            minigrid.pvt_panel.pv_unit,
+                            minigrid.pvt_panel.thermal_unit,
+                        )
                     )
-                )
-                if ResourceType.CLEAN_WATER in scenario.resource_types
-                else ""
-            )
+                    if scenario.pv_t and optimisation_inputs.pvt_size_step is not None
+                    else "",
+                    (
+                        "- Clean-water tank resolution of {} ".format(
+                            optimisation_inputs.clean_water_tanks_step
+                        )
+                        + "units (1 tank of size {} litres per unit)".format(
+                            minigrid.clean_water_tank.mass
+                        )
+                    )
+                    if ResourceType.CLEAN_WATER in scenario.resource_types
+                    and optimisation_inputs.clean_water_tanks_step is not None
+                    else None,
+                ]
+                if entry is not None
+            ]
         )
         print(f"Running an optimisation with:\n{optimisation_string}")
 
