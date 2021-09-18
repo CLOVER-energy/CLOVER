@@ -718,9 +718,7 @@ def parse_input_files(
         finance_inputs[ImpactingComponent.PV_T.value] = pvt_panel_costs
         ghg_data[ImpactingComponent.PV_T.value] = pvt_panel_emissions
     else:
-        logger.info(
-            "PV-T disblaed in scenario file, skipping PV-T impact parsing."
-        )
+        logger.info("PV-T disblaed in scenario file, skipping PV-T impact parsing.")
 
     if ResourceType.CLEAN_WATER in scenario.resource_types:
         logger.info("Parsing clean-water tank impact information.")
@@ -747,7 +745,9 @@ def parse_input_files(
         else:
             logger.info("Clean-water tank emission information successfully parsed.")
         logger.info("Updating with clean-water tank impact data.")
-        finance_inputs[ImpactingComponent.CLEAN_WATER_TANK.value] = clean_water_tank_costs
+        finance_inputs[
+            ImpactingComponent.CLEAN_WATER_TANK.value
+        ] = clean_water_tank_costs
         ghg_data[ImpactingComponent.CLEAN_WATER_TANK.value] = clean_water_tank_emissions
         logger.info("Clean-water tank impact data successfully updated.")
     else:

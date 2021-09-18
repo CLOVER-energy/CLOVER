@@ -35,6 +35,9 @@ import datetime
 from logging import Logger
 from typing import Any, Dict, List, Optional, Tuple
 
+from pandas.core.frame import DataFrame
+from pandas.core.series import Series
+
 import numpy as np  # type: ignore  # pylint: disable=import-error
 import pandas as pd  # type: ignore  # pylint: disable=import-error
 
@@ -53,6 +56,7 @@ from ..__utils__ import (
     Simulation,
 )
 from ..conversion.conversion import Convertor
+from ..impact.finance import ImpactingComponent
 from .appraisal import appraise_system, SystemAppraisal
 from .__utils__ import (
     Criterion,
@@ -414,7 +418,7 @@ def _single_line_simulation(
                 temperature_data,
                 total_clean_water_load,
                 total_electric_load,
-                wind_speed_data
+                wind_speed_data,
             )
 
             # Appraise the system.
@@ -458,7 +462,7 @@ def _single_line_simulation(
                 temperature_data,
                 total_clean_water_load,
                 total_electric_load,
-                wind_speed_data
+                wind_speed_data,
             )
 
             # Appraise the system.
@@ -579,7 +583,7 @@ def _single_line_simulation(
                 temperature_data,
                 total_clean_water_load,
                 total_electric_load,
-                wind_speed_data
+                wind_speed_data,
             )
 
             # Appraise the system.
@@ -653,7 +657,7 @@ def _single_line_simulation(
                 temperature_data,
                 total_clean_water_load,
                 total_electric_load,
-                wind_speed_data
+                wind_speed_data,
             )
 
             # Appraise the system.
@@ -700,7 +704,7 @@ def _single_line_simulation(
                 temperature_data,
                 total_clean_water_load,
                 total_electric_load,
-                wind_speed_data
+                wind_speed_data,
             )
 
             # Appraise the system.
@@ -930,6 +934,152 @@ def _get_sufficient_appraisals(
         if all(criteria_met):
             sufficient_appraisals.append(appraisal)
 
+    return sufficient_appraisals
+
+
+def _recursive_iteration(
+    convertors: List[Convertor],
+    end_year: int,
+    finance_inputs: Dict[str, Any],
+    ghg_inputs: Dict[str, Any],
+    grid_profile: pd.DataFrame,
+    irradiance_data: pd.Series,
+    kerosene_usage: pd.DataFrame,
+    location: Location,
+    logger: Logger,
+    minigrid: energy_system.Minigrid,
+    optimisation: Optimisation,
+    previous_system: Optional[SystemAppraisal],
+    scenario: Scenario,
+    start_year: int,
+    temperature_data: pd.Series,
+    total_clean_water_load: pd.DataFrame,
+    total_electric_load: pd.DataFrame,
+    total_solar_pv_power_produced: pd.Series,
+    wind_speed_data: pd.Series,
+    yearly_electric_load_statistics: pd.DataFrame,
+    *,
+    component_sizes: Dict[ImpactingComponent, float],
+    parameter_space: List[Tuple[ImpactingComponent, str, List[float]]],
+    system_appraisals: List[SystemAppraisal],
+) -> List[SystemAppraisal]:
+    """
+    Recursively look for sufficient systems through a series of parameter spaces.
+
+    Inputs:
+        - component_sizes:
+            Specific values for the varoius :class:`finance.ImpactingComponent` sizes to
+            use for the simulation to be carried out.
+        - parameter_spaces:
+            A `list` containing `tuple`s as entries that specify:
+            - The :class:`finance.ImpactingComponent` that should have its sizes
+              iterated through;
+            - The unit to display to the user, as a `str`;
+            - The `list` of values to iterate through.
+        - system_appraisals:
+            The `list` containing the :class:`SystemAppraisal` instances that correspond
+            to sufficient systems.
+
+    Outputs:
+        - A `list` of sufficient systems.
+
+    """
+
+    # If there are no more things to iterate through, then run a simulation and return
+    # whether the system was sufficient.
+    if len(parameter_space) == 0:
+        (_, simulation_results, system_details,) = energy_system.run_simulation(
+            convertors,
+            component_sizes[ImpactingComponent.STORAGE],
+            grid_profile,
+            irradiance_data,
+            kerosene_usage,
+            location,
+            logger,
+            minigrid,
+            component_sizes[ImpactingComponent.CLEAN_WATER_TANK],
+            total_solar_pv_power_produced,
+            component_sizes[ImpactingComponent.PV],
+            component_sizes[ImpactingComponent.PV_T],
+            scenario,
+            Simulation(end_year, start_year),
+            temperature_data,
+            total_clean_water_load,
+            total_electric_load,
+            wind_speed_data,
+        )
+
+        new_appraisal = appraise_system(
+            yearly_electric_load_statistics,
+            end_year,
+            finance_inputs,
+            ghg_inputs,
+            location,
+            logger,
+            previous_system,
+            simulation_results,
+            start_year,
+            system_details,
+        )
+
+        return _get_sufficient_appraisals(optimisation, [new_appraisal])
+
+    # If there are things to iterate through, then iterate through these, calling the
+    # function recursively.
+    component, unit, sizes = parameter_space.pop(0)
+
+    for size in tqdm(
+        sizes,
+        desc=f"{component.value} size options",
+        leave=False,
+        unit=unit,
+    ):
+        # Update the set of fixed sizes accordingly.
+        updated_component_sizes: Dict[
+            ImpactingComponent, float
+        ] = component_sizes.copy()
+        updated_component_sizes[component] = size
+
+        # Call the function recursively.
+        sufficient_appraisals = _recursive_iteration(
+            convertors,
+            end_year,
+            finance_inputs,
+            ghg_inputs,
+            grid_profile,
+            irradiance_data,
+            kerosene_usage,
+            location,
+            logger,
+            minigrid,
+            optimisation,
+            previous_system,
+            scenario,
+            start_year,
+            temperature_data,
+            total_clean_water_load,
+            total_electric_load,
+            total_solar_pv_power_produced,
+            wind_speed_data,
+            yearly_electric_load_statistics,
+            component_sizes=updated_component_sizes,
+            parameter_space=parameter_space.copy(),
+            system_appraisals=system_appraisals,
+        )
+        if sufficient_appraisals == []:
+            logger.info("No sufficient systems at this resolution.")
+            if len(parameter_space) == 0:
+                logger.info("Probing lowest depth - skipping further size options.")
+                break
+            else:
+                logger.info("Probing non-lowest depth - continuing iteration.")
+                continue
+
+        # Store the new appraisal if it is sufficient.
+        logger.info("Sufficient system found, storing.")
+        system_appraisals.extend(sufficient_appraisals)
+
+    # Return the sufficient appraisals that were found at this resolution.
     return sufficient_appraisals
 
 
@@ -1189,6 +1339,9 @@ def _simulation_iteration(
         else "",
     )
 
+    # Set up the various variables ready for recursive iteration.
+    component_sizes: Dict[ImpactingComponent, float] = {}
+    parameter_space: List[Tuple[ImpactingComponent, str, List[float]]] = []
     simulation_clean_water_tanks: List[int] = sorted(
         range(
             clean_water_tanks.min,
@@ -1219,1154 +1372,88 @@ def _simulation_iteration(
         reverse=True,
     )
 
-    # Move down system sizes
-    if len(simulation_pv_sizes) > 1:
-        for pv_size in tqdm(
-            simulation_pv_sizes, desc="pv size options", leave=False, unit="pv size"
-        ):
-            # Only if multiple storage sizes are to be investigated should they be looked
-            # through. Otherwise, simply run the simulation at this level.
-            if len(simulation_storage_sizes) > 1:
-                for storage_size in tqdm(
-                    simulation_storage_sizes,
-                    desc="storage size options",
-                    leave=False,
-                    unit="storage size options"
-                    if len(simulation_clean_water_tanks) > 1
-                    and len(simulation_pvt_sizes) > 1
-                    else "simulation",
-                ):
-                    # Only look through the various PV-T sizes if there are multiple to
-                    # consider. Otherwise, simply run the simulation at this level.
-                    if len(simulation_pvt_sizes) > 1:
-                        for pvt_size in tqdm(
-                            simulation_pvt_sizes,
-                            desc="pv-t size options",
-                            disable=minigrid.pvt_panel is None,
-                            leave=False,
-                            unit="pv-t size options"
-                            if len(simulation_clean_water_tanks) > 1
-                            else "simulation",
-                        ):
-                            # Only investigate tank sizes if there are multiple tank sizes
-                            # specified.
-                            if len(simulation_clean_water_tanks) > 1:
-                                for num_clean_water_tanks in tqdm(
-                                    simulation_clean_water_tanks,
-                                    desc="clean water tank options",
-                                    disable=ResourceType.CLEAN_WATER
-                                    not in scenario.resource_types,
-                                    leave=False,
-                                    unit="simulation",
-                                ):
-                                    logger.info(
-                                        "Probing system: pv_size: %s, %sstorage_size: %s%s",
-                                        pv_size,
-                                        f"pvt-size: {pvt_size}, "
-                                        if minigrid.pvt_panel is not None
-                                        else "",
-                                        storage_size,
-                                        f", num clean-water tanks: {num_clean_water_tanks}"
-                                        if ResourceType.CLEAN_WATER
-                                        in scenario.resource_types
-                                        else "",
-                                    )
-                                    # Run a simulation and appraise it.
-                                    (
-                                        _,
-                                        simulation_results,
-                                        system_details,
-                                    ) = energy_system.run_simulation(
-                                        convertors,
-                                        storage_size,
-                                        grid_profile,
-                                        irradiance_data,
-                                        kerosene_usage,
-                                        location,
-                                        logger,
-                                        minigrid,
-                                        num_clean_water_tanks,
-                                        total_solar_pv_power_produced,
-                                        pv_size,
-                                        pvt_size,
-                                        scenario,
-                                        Simulation(end_year, start_year),
-                                        temperature_data,
-                                        total_clean_water_load,
-                                        total_electric_load,
-                                        wind_speed_data,
-                                    )
-
-                                    new_appraisal = appraise_system(
-                                        yearly_electric_load_statistics,
-                                        end_year,
-                                        finance_inputs,
-                                        ghg_inputs,
-                                        location,
-                                        logger,
-                                        previous_system,
-                                        simulation_results,
-                                        start_year,
-                                        system_details,
-                                    )
-
-                                    if (
-                                        _get_sufficient_appraisals(
-                                            optimisation, [new_appraisal]
-                                        )
-                                        == []
-                                    ):
-                                        logger.info(
-                                            "No sufficient systems at this resolution."
-                                        )
-                                        break
-
-                                    # Store the new appraisal if it is sufficient.
-                                    logger.info("Sufficient system found, storing.")
-                                    system_appraisals.append(new_appraisal)
-                            # Otherwise, simply run a simulation at this depth.
-                            else:
-                                logger.info(
-                                    "Probing system: pv_size: %s, %sstorage_size: %s%s",
-                                    pv_size,
-                                    f"pvt-size: {pvt_size}, "
-                                    if minigrid.pvt_panel is not None
-                                    else "",
-                                    storage_size,
-                                    f", num clean-water tanks: {simulation_clean_water_tanks[0]}"
-                                    if ResourceType.CLEAN_WATER
-                                    in scenario.resource_types
-                                    else "",
-                                )
-                                # Run a simulation and appraise it.
-                                (
-                                    _,
-                                    simulation_results,
-                                    system_details,
-                                ) = energy_system.run_simulation(
-                                    convertors,
-                                    storage_size,
-                                    grid_profile,
-                                    irradiance_data,
-                                    kerosene_usage,
-                                    location,
-                                    logger,
-                                    minigrid,
-                                    simulation_clean_water_tanks[0],
-                                    total_solar_pv_power_produced,
-                                    pv_size,
-                                    pvt_size,
-                                    scenario,
-                                    Simulation(end_year, start_year),
-                                    temperature_data,
-                                    total_clean_water_load,
-                                    total_electric_load,
-                                    wind_speed_data,
-                                )
-
-                                new_appraisal = appraise_system(
-                                    yearly_electric_load_statistics,
-                                    end_year,
-                                    finance_inputs,
-                                    ghg_inputs,
-                                    location,
-                                    logger,
-                                    previous_system,
-                                    simulation_results,
-                                    start_year,
-                                    system_details,
-                                )
-
-                                if (
-                                    _get_sufficient_appraisals(
-                                        optimisation, [new_appraisal]
-                                    )
-                                    == []
-                                ):
-                                    logger.info(
-                                        "No sufficient systems at this resolution."
-                                    )
-                                    break
-
-                                # Store the new appraisal if it is sufficient.
-                                logger.info("Sufficient system found, storing.")
-                                system_appraisals.append(new_appraisal)
-                    # Otherwise, simply run at this level.
-                    else:
-                        # Only investigate tank sizes if there are multiple tank sizes
-                        # specified.
-                        if len(simulation_clean_water_tanks) > 1:
-                            for num_clean_water_tanks in tqdm(
-                                simulation_clean_water_tanks,
-                                desc="clean water tank options",
-                                disable=ResourceType.CLEAN_WATER
-                                not in scenario.resource_types,
-                                leave=False,
-                                unit="simulation",
-                            ):
-                                logger.info(
-                                    "Probing system: pv_size: %s, %sstorage_size: %s%s",
-                                    pv_size,
-                                    f"pvt-size: {pvt_size}, "
-                                    if minigrid.pvt_panel is not None
-                                    else "",
-                                    storage_size,
-                                    f", num clean-water tanks: {num_clean_water_tanks}"
-                                    if ResourceType.CLEAN_WATER
-                                    in scenario.resource_types
-                                    else "",
-                                )
-                                # Run a simulation and appraise it.
-                                (
-                                    _,
-                                    simulation_results,
-                                    system_details,
-                                ) = energy_system.run_simulation(
-                                    convertors,
-                                    storage_size,
-                                    grid_profile,
-                                    irradiance_data,
-                                    kerosene_usage,
-                                    location,
-                                    logger,
-                                    minigrid,
-                                    num_clean_water_tanks,
-                                    total_solar_pv_power_produced,
-                                    pv_size,
-                                    pvt_size,
-                                    scenario,
-                                    Simulation(end_year, start_year),
-                                    temperature_data,
-                                    total_clean_water_load,
-                                    total_electric_load,
-                                    wind_speed_data,
-                                )
-
-                                new_appraisal = appraise_system(
-                                    yearly_electric_load_statistics,
-                                    end_year,
-                                    finance_inputs,
-                                    ghg_inputs,
-                                    location,
-                                    logger,
-                                    previous_system,
-                                    simulation_results,
-                                    start_year,
-                                    system_details,
-                                )
-
-                                if (
-                                    _get_sufficient_appraisals(
-                                        optimisation, [new_appraisal]
-                                    )
-                                    == []
-                                ):
-                                    logger.info(
-                                        "No sufficient systems at this resolution."
-                                    )
-                                    break
-
-                                # Store the new appraisal if it is sufficient.
-                                logger.info("Sufficient system found, storing.")
-                                system_appraisals.append(new_appraisal)
-                        # Otherwise, simply run a simulation at this depth.
-                        else:
-                            logger.info(
-                                "Probing system: pv_size: %s, %sstorage_size: %s%s",
-                                pv_size,
-                                f"pvt-size: {pvt_size}, "
-                                if minigrid.pvt_panel is not None
-                                else "",
-                                storage_size,
-                                f", num clean-water tanks: {simulation_clean_water_tanks[0]}"
-                                if ResourceType.CLEAN_WATER in scenario.resource_types
-                                else "",
-                            )
-                            # Run a simulation and appraise it.
-                            (
-                                _,
-                                simulation_results,
-                                system_details,
-                            ) = energy_system.run_simulation(
-                                convertors,
-                                storage_size,
-                                grid_profile,
-                                irradiance_data,
-                                kerosene_usage,
-                                location,
-                                logger,
-                                minigrid,
-                                simulation_clean_water_tanks[0],
-                                total_solar_pv_power_produced,
-                                pv_size,
-                                pvt_size,
-                                scenario,
-                                Simulation(end_year, start_year),
-                                temperature_data,
-                                total_clean_water_load,
-                                total_electric_load,
-                                wind_speed_data,
-                            )
-
-                            new_appraisal = appraise_system(
-                                yearly_electric_load_statistics,
-                                end_year,
-                                finance_inputs,
-                                ghg_inputs,
-                                location,
-                                logger,
-                                previous_system,
-                                simulation_results,
-                                start_year,
-                                system_details,
-                            )
-
-                            if (
-                                _get_sufficient_appraisals(
-                                    optimisation, [new_appraisal]
-                                )
-                                == []
-                            ):
-                                logger.info("No sufficient systems at this resolution.")
-                                break
-
-                            # Store the new appraisal if it is sufficient.
-                            logger.info("Sufficient system found, storing.")
-                            system_appraisals.append(new_appraisal)
-            # Otherwise, simply run at this level.
-            else:
-                # Only look through the various PV-T sizes if there are multiple to
-                # consider. Otherwise, simply run the simulation at this level.
-                if len(simulation_pvt_sizes) > 1:
-                    for pvt_size in tqdm(
-                        simulation_pvt_sizes,
-                        desc="pv-t size options",
-                        disable=minigrid.pvt_panel is None,
-                        leave=False,
-                        unit="pv-t size options"
-                        if len(simulation_clean_water_tanks) > 1
-                        else "simulation",
-                    ):
-                        # Only investigate tank sizes if there are multiple tank sizes
-                        # specified.
-                        if len(simulation_clean_water_tanks) > 1:
-                            for num_clean_water_tanks in tqdm(
-                                simulation_clean_water_tanks,
-                                desc="clean water tank options",
-                                disable=ResourceType.CLEAN_WATER
-                                not in scenario.resource_types,
-                                leave=False,
-                                unit="simulation",
-                            ):
-                                logger.info(
-                                    "Probing system: pv_size: %s, %sstorage_size: %s%s",
-                                    pv_size,
-                                    f"pvt-size: {pvt_size}, "
-                                    if minigrid.pvt_panel is not None
-                                    else "",
-                                    storage_size,
-                                    f", num clean-water tanks: {num_clean_water_tanks}"
-                                    if ResourceType.CLEAN_WATER
-                                    in scenario.resource_types
-                                    else "",
-                                )
-                                # Run a simulation and appraise it.
-                                (
-                                    _,
-                                    simulation_results,
-                                    system_details,
-                                ) = energy_system.run_simulation(
-                                    convertors,
-                                    storage_size,
-                                    grid_profile,
-                                    irradiance_data,
-                                    kerosene_usage,
-                                    location,
-                                    logger,
-                                    minigrid,
-                                    num_clean_water_tanks,
-                                    total_solar_pv_power_produced,
-                                    pv_size,
-                                    pvt_size,
-                                    scenario,
-                                    Simulation(end_year, start_year),
-                                    temperature_data,
-                                    total_clean_water_load,
-                                    total_electric_load,
-                                    wind_speed_data,
-                                )
-
-                                new_appraisal = appraise_system(
-                                    yearly_electric_load_statistics,
-                                    end_year,
-                                    finance_inputs,
-                                    ghg_inputs,
-                                    location,
-                                    logger,
-                                    previous_system,
-                                    simulation_results,
-                                    start_year,
-                                    system_details,
-                                )
-
-                                if (
-                                    _get_sufficient_appraisals(
-                                        optimisation, [new_appraisal]
-                                    )
-                                    == []
-                                ):
-                                    logger.info(
-                                        "No sufficient systems at this resolution."
-                                    )
-                                    break
-
-                                # Store the new appraisal if it is sufficient.
-                                logger.info("Sufficient system found, storing.")
-                                system_appraisals.append(new_appraisal)
-                        # Otherwise, simply run a simulation at this depth.
-                        else:
-                            logger.info(
-                                "Probing system: pv_size: %s, %sstorage_size: %s%s",
-                                pv_size,
-                                f"pvt-size: {pvt_size}, "
-                                if minigrid.pvt_panel is not None
-                                else "",
-                                storage_size,
-                                f", num clean-water tanks: {simulation_clean_water_tanks[0]}"
-                                if ResourceType.CLEAN_WATER in scenario.resource_types
-                                else "",
-                            )
-                            # Run a simulation and appraise it.
-                            (
-                                _,
-                                simulation_results,
-                                system_details,
-                            ) = energy_system.run_simulation(
-                                convertors,
-                                storage_size,
-                                grid_profile,
-                                irradiance_data,
-                                kerosene_usage,
-                                location,
-                                logger,
-                                minigrid,
-                                simulation_clean_water_tanks[0],
-                                total_solar_pv_power_produced,
-                                pv_size,
-                                pvt_size,
-                                scenario,
-                                Simulation(end_year, start_year),
-                                temperature_data,
-                                total_clean_water_load,
-                                total_electric_load,
-                                wind_speed_data,
-                            )
-
-                            new_appraisal = appraise_system(
-                                yearly_electric_load_statistics,
-                                end_year,
-                                finance_inputs,
-                                ghg_inputs,
-                                location,
-                                logger,
-                                previous_system,
-                                simulation_results,
-                                start_year,
-                                system_details,
-                            )
-
-                            if (
-                                _get_sufficient_appraisals(
-                                    optimisation, [new_appraisal]
-                                )
-                                == []
-                            ):
-                                logger.info("No sufficient systems at this resolution.")
-                                break
-
-                            # Store the new appraisal if it is sufficient.
-                            logger.info("Sufficient system found, storing.")
-                            system_appraisals.append(new_appraisal)
-                # Otherwise, simply run at this level.
-                else:
-                    # Only investigate tank sizes if there are multiple tank sizes
-                    # specified.
-                    if len(simulation_clean_water_tanks) > 1:
-                        for num_clean_water_tanks in tqdm(
-                            simulation_clean_water_tanks,
-                            desc="clean water tank options",
-                            disable=ResourceType.CLEAN_WATER
-                            not in scenario.resource_types,
-                            leave=False,
-                            unit="simulation",
-                        ):
-                            logger.info(
-                                "Probing system: pv_size: %s, %sstorage_size: %s%s",
-                                pv_size,
-                                f"pvt-size: {pvt_size}, "
-                                if minigrid.pvt_panel is not None
-                                else "",
-                                storage_size,
-                                f", num clean-water tanks: {num_clean_water_tanks}"
-                                if ResourceType.CLEAN_WATER in scenario.resource_types
-                                else "",
-                            )
-                            # Run a simulation and appraise it.
-                            (
-                                _,
-                                simulation_results,
-                                system_details,
-                            ) = energy_system.run_simulation(
-                                convertors,
-                                storage_size,
-                                grid_profile,
-                                irradiance_data,
-                                kerosene_usage,
-                                location,
-                                logger,
-                                minigrid,
-                                num_clean_water_tanks,
-                                total_solar_pv_power_produced,
-                                pv_size,
-                                pvt_size,
-                                scenario,
-                                Simulation(end_year, start_year),
-                                temperature_data,
-                                total_clean_water_load,
-                                total_electric_load,
-                                wind_speed_data,
-                            )
-
-                            new_appraisal = appraise_system(
-                                yearly_electric_load_statistics,
-                                end_year,
-                                finance_inputs,
-                                ghg_inputs,
-                                location,
-                                logger,
-                                previous_system,
-                                simulation_results,
-                                start_year,
-                                system_details,
-                            )
-
-                            if (
-                                _get_sufficient_appraisals(
-                                    optimisation, [new_appraisal]
-                                )
-                                == []
-                            ):
-                                logger.info("No sufficient systems at this resolution.")
-                                break
-
-                            # Store the new appraisal if it is sufficient.
-                            logger.info("Sufficient system found, storing.")
-                            system_appraisals.append(new_appraisal)
-                    # Otherwise, simply run a simulation at this depth.
-                    else:
-                        logger.info(
-                            "Probing system: pv_size: %s, %sstorage_size: %s%s",
-                            pv_size,
-                            f"pvt-size: {pvt_size}, "
-                            if minigrid.pvt_panel is not None
-                            else "",
-                            storage_size,
-                            f", num clean-water tanks: {simulation_clean_water_tanks[0]}"
-                            if ResourceType.CLEAN_WATER in scenario.resource_types
-                            else "",
-                        )
-                        # Run a simulation and appraise it.
-                        (
-                            _,
-                            simulation_results,
-                            system_details,
-                        ) = energy_system.run_simulation(
-                            convertors,
-                            storage_size,
-                            grid_profile,
-                            irradiance_data,
-                            kerosene_usage,
-                            location,
-                            logger,
-                            minigrid,
-                            simulation_clean_water_tanks[0],
-                            total_solar_pv_power_produced,
-                            pv_size,
-                            pvt_size,
-                            scenario,
-                            Simulation(end_year, start_year),
-                            temperature_data,
-                            total_clean_water_load,
-                            total_electric_load,
-                            wind_speed_data,
-                        )
-
-                        new_appraisal = appraise_system(
-                            yearly_electric_load_statistics,
-                            end_year,
-                            finance_inputs,
-                            ghg_inputs,
-                            location,
-                            logger,
-                            previous_system,
-                            simulation_results,
-                            start_year,
-                            system_details,
-                        )
-
-                        if (
-                            _get_sufficient_appraisals(optimisation, [new_appraisal])
-                            == []
-                        ):
-                            logger.info("No sufficient systems at this resolution.")
-                            break
-
-                        # Store the new appraisal if it is sufficient.
-                        logger.info("Sufficient system found, storing.")
-                        system_appraisals.append(new_appraisal)
+    # Set up the various iteration variables accordingly.
+    # Add the iterable clean-water tank sizes if appropriate.
+    if len(simulation_clean_water_tanks) > 1:
+        parameter_space.append(
+            (
+                ImpactingComponent.CLEAN_WATER_TANK,
+                "simulation",
+                simulation_clean_water_tanks,
+            )
+        )
     else:
-        # Only if multiple storage sizes are to be investigated should they be looked
-        # through. Otherwise, simply run the simulation at this level.
-        if len(simulation_storage_sizes) > 1:
-            for storage_size in tqdm(
+        component_sizes[
+            ImpactingComponent.CLEAN_WATER_TANK
+        ] = simulation_clean_water_tanks[0]
+
+    # Add the iterable PV-T sizes if appropriate.
+    if len(simulation_pvt_sizes) > 1:
+        parameter_space.append(
+            (
+                ImpactingComponent.PV_T,
+                "simulation" if len(parameter_space) == 0 else "pv-t size",
+                simulation_pvt_sizes,
+            )
+        )
+    else:
+        component_sizes[ImpactingComponent.PV_T] = simulation_pvt_sizes[0]
+
+    # Add the iterable PV sizes if appropriate.
+    if len(simulation_pv_sizes) > 1:
+        parameter_space.append(
+            (
+                ImpactingComponent.PV,
+                "simulation" if len(parameter_space) == 0 else "pv size",
+                simulation_pv_sizes,
+            )
+        )
+    else:
+        component_sizes[ImpactingComponent.PV] = simulation_pv_sizes[0]
+
+    # Add the iterable storage sizes if appropriate.
+    if len(simulation_storage_sizes) > 1:
+        parameter_space.append(
+            (
+                ImpactingComponent.STORAGE,
+                "simulation" if len(parameter_space) == 0 else "storage size",
                 simulation_storage_sizes,
-                desc="storage size options",
-                leave=False,
-                unit="storage size options"
-                if len(simulation_clean_water_tanks) > 1
-                and len(simulation_pvt_sizes) > 1
-                else "simulation",
-            ):
-                # Only look through the various PV-T sizes if there are multiple to
-                # consider. Otherwise, simply run the simulation at this level.
-                if len(simulation_pvt_sizes) > 1:
-                    for pvt_size in tqdm(
-                        simulation_pvt_sizes,
-                        desc="pv-t size options",
-                        disable=minigrid.pvt_panel is None,
-                        leave=False,
-                        unit="pv-t size options"
-                        if len(simulation_clean_water_tanks) > 1
-                        else "simulation",
-                    ):
-                        # Only investigate tank sizes if there are multiple tank sizes
-                        # specified.
-                        if len(simulation_clean_water_tanks) > 1:
-                            for num_clean_water_tanks in tqdm(
-                                simulation_clean_water_tanks,
-                                desc="clean water tank options",
-                                disable=ResourceType.CLEAN_WATER
-                                not in scenario.resource_types,
-                                leave=False,
-                                unit="simulation",
-                            ):
-                                logger.info(
-                                    "Probing system: pv_size: %s, %sstorage_size: %s%s",
-                                    pv_sizes.max,
-                                    f"pvt-size: {pvt_size}, "
-                                    if minigrid.pvt_panel is not None
-                                    else "",
-                                    storage_size,
-                                    f", num clean-water tanks: {num_clean_water_tanks}"
-                                    if ResourceType.CLEAN_WATER
-                                    in scenario.resource_types
-                                    else "",
-                                )
-                                # Run a simulation and appraise it.
-                                (
-                                    _,
-                                    simulation_results,
-                                    system_details,
-                                ) = energy_system.run_simulation(
-                                    convertors,
-                                    storage_size,
-                                    grid_profile,
-                                    irradiance_data,
-                                    kerosene_usage,
-                                    location,
-                                    logger,
-                                    minigrid,
-                                    num_clean_water_tanks,
-                                    total_solar_pv_power_produced,
-                                    pv_sizes.max,
-                                    pvt_size,
-                                    scenario,
-                                    Simulation(end_year, start_year),
-                                    temperature_data,
-                                    total_clean_water_load,
-                                    total_electric_load,
-                                    wind_speed_data,
-                                )
+            )
+        )
+    else:
+        component_sizes[ImpactingComponent.STORAGE] = simulation_storage_sizes[0]
 
-                                new_appraisal = appraise_system(
-                                    yearly_electric_load_statistics,
-                                    end_year,
-                                    finance_inputs,
-                                    ghg_inputs,
-                                    location,
-                                    logger,
-                                    previous_system,
-                                    simulation_results,
-                                    start_year,
-                                    system_details,
-                                )
+    # Call the recursive simulation with these parameter and component sets of
+    # information.
+    system_appraisals = _recursive_iteration(
+        convertors,
+        end_year,
+        finance_inputs,
+        ghg_inputs,
+        grid_profile,
+        irradiance_data,
+        kerosene_usage,
+        location,
+        logger,
+        minigrid,
+        optimisation,
+        previous_system,
+        scenario,
+        start_year,
+        temperature_data,
+        total_clean_water_load,
+        total_electric_load,
+        total_solar_pv_power_produced,
+        wind_speed_data,
+        yearly_electric_load_statistics,
+        component_sizes=component_sizes,
+        parameter_space=parameter_space,
+        system_appraisals=[],
+    )
 
-                                if (
-                                    _get_sufficient_appraisals(
-                                        optimisation, [new_appraisal]
-                                    )
-                                    == []
-                                ):
-                                    logger.info(
-                                        "No sufficient systems at this resolution."
-                                    )
-                                    break
+    import pdb
 
-                                # Store the new appraisal if it is sufficient.
-                                logger.info("Sufficient system found, storing.")
-                                system_appraisals.append(new_appraisal)
-                        # Otherwise, simply run a simulation at this depth.
-                        else:
-                            logger.info(
-                                "Probing system: pv_size: %s, %sstorage_size: %s%s",
-                                simulation_pv_sizes[0],
-                                f"pvt-size: {pvt_size}, "
-                                if minigrid.pvt_panel is not None
-                                else "",
-                                storage_size,
-                                f", num clean-water tanks: {simulation_clean_water_tanks[0]}"
-                                if ResourceType.CLEAN_WATER in scenario.resource_types
-                                else "",
-                            )
-                            # Run a simulation and appraise it.
-                            (
-                                _,
-                                simulation_results,
-                                system_details,
-                            ) = energy_system.run_simulation(
-                                convertors,
-                                storage_size,
-                                grid_profile,
-                                irradiance_data,
-                                kerosene_usage,
-                                location,
-                                logger,
-                                minigrid,
-                                simulation_clean_water_tanks[0],
-                                total_solar_pv_power_produced,
-                                simulation_pv_sizes[0],
-                                pvt_size,
-                                scenario,
-                                Simulation(end_year, start_year),
-                                temperature_data,
-                                total_clean_water_load,
-                                total_electric_load,
-                                wind_speed_data,
-                            )
-
-                            new_appraisal = appraise_system(
-                                yearly_electric_load_statistics,
-                                end_year,
-                                finance_inputs,
-                                ghg_inputs,
-                                location,
-                                logger,
-                                previous_system,
-                                simulation_results,
-                                start_year,
-                                system_details,
-                            )
-
-                            if (
-                                _get_sufficient_appraisals(
-                                    optimisation, [new_appraisal]
-                                )
-                                == []
-                            ):
-                                logger.info("No sufficient systems at this resolution.")
-                                break
-
-                            # Store the new appraisal if it is sufficient.
-                            logger.info("Sufficient system found, storing.")
-                            system_appraisals.append(new_appraisal)
-                # Otherwise, simply run at this level.
-                else:
-                    # Only investigate tank sizes if there are multiple tank sizes
-                    # specified.
-                    if len(simulation_clean_water_tanks) > 1:
-                        for num_clean_water_tanks in tqdm(
-                            simulation_clean_water_tanks,
-                            desc="clean water tank options",
-                            disable=ResourceType.CLEAN_WATER
-                            not in scenario.resource_types,
-                            leave=False,
-                            unit="simulation",
-                        ):
-                            logger.info(
-                                "Probing system: pv_size: %s, %sstorage_size: %s%s",
-                                simulation_pv_sizes[0],
-                                f"pvt-size: {pvt_size}, "
-                                if minigrid.pvt_panel is not None
-                                else "",
-                                storage_size,
-                                f", num clean-water tanks: {num_clean_water_tanks}"
-                                if ResourceType.CLEAN_WATER in scenario.resource_types
-                                else "",
-                            )
-                            # Run a simulation and appraise it.
-                            (
-                                _,
-                                simulation_results,
-                                system_details,
-                            ) = energy_system.run_simulation(
-                                convertors,
-                                storage_size,
-                                grid_profile,
-                                irradiance_data,
-                                kerosene_usage,
-                                location,
-                                logger,
-                                minigrid,
-                                num_clean_water_tanks,
-                                simulation_pv_sizes[0],
-                                total_solar_pv_power_produced,
-                                pvt_size,
-                                scenario,
-                                Simulation(end_year, start_year),
-                                temperature_data,
-                                total_clean_water_load,
-                                total_electric_load,
-                                wind_speed_data
-                            )
-
-                            new_appraisal = appraise_system(
-                                yearly_electric_load_statistics,
-                                end_year,
-                                finance_inputs,
-                                ghg_inputs,
-                                location,
-                                logger,
-                                previous_system,
-                                simulation_results,
-                                start_year,
-                                system_details,
-                            )
-
-                            if (
-                                _get_sufficient_appraisals(
-                                    optimisation, [new_appraisal]
-                                )
-                                == []
-                            ):
-                                logger.info("No sufficient systems at this resolution.")
-                                break
-
-                            # Store the new appraisal if it is sufficient.
-                            logger.info("Sufficient system found, storing.")
-                            system_appraisals.append(new_appraisal)
-                    # Otherwise, simply run a simulation at this depth.
-                    else:
-                        logger.info(
-                            "Probing system: pv_size: %s, %sstorage_size: %s%s",
-                            simulation_pv_sizes[0],
-                            f"pvt-size: {pvt_size}, "
-                            if minigrid.pvt_panel is not None
-                            else "",
-                            storage_size,
-                            f", num clean-water tanks: {simulation_clean_water_tanks[0]}"
-                            if ResourceType.CLEAN_WATER in scenario.resource_types
-                            else "",
-                        )
-                        # Run a simulation and appraise it.
-                        (
-                            _,
-                            simulation_results,
-                            system_details,
-                        ) = energy_system.run_simulation(
-                            convertors,
-                            storage_size,
-                            grid_profile,
-                            irradiance_data,
-                            kerosene_usage,
-                            location,
-                            logger,
-                            minigrid,
-                            simulation_clean_water_tanks[0],
-                            total_solar_pv_power_produced,
-                            simulation_pv_sizes[0],
-                            pvt_size,
-                            scenario,
-                            Simulation(end_year, start_year),
-                            temperature_data,
-                            total_clean_water_load,
-                            total_electric_load,
-                            wind_speed_data,
-                        )
-
-                        new_appraisal = appraise_system(
-                            yearly_electric_load_statistics,
-                            end_year,
-                            finance_inputs,
-                            ghg_inputs,
-                            location,
-                            logger,
-                            previous_system,
-                            simulation_results,
-                            start_year,
-                            system_details,
-                        )
-
-                        if (
-                            _get_sufficient_appraisals(optimisation, [new_appraisal])
-                            == []
-                        ):
-                            logger.info("No sufficient systems at this resolution.")
-                            break
-
-                        # Store the new appraisal if it is sufficient.
-                        logger.info("Sufficient system found, storing.")
-                        system_appraisals.append(new_appraisal)
-        # Otherwise, simply run at this level.
-        else:
-            # Only look through the various PV-T sizes if there are multiple to
-            # consider. Otherwise, simply run the simulation at this level.
-            if len(simulation_pvt_sizes) > 1:
-                for pvt_size in tqdm(
-                    simulation_pvt_sizes,
-                    desc="pv-t size options",
-                    disable=minigrid.pvt_panel is None,
-                    leave=False,
-                    unit="pv-t size options"
-                    if len(simulation_clean_water_tanks) > 1
-                    else "simulation",
-                ):
-                    # Only investigate tank sizes if there are multiple tank sizes
-                    # specified.
-                    if len(simulation_clean_water_tanks) > 1:
-                        for num_clean_water_tanks in tqdm(
-                            simulation_clean_water_tanks,
-                            desc="clean water tank options",
-                            disable=ResourceType.CLEAN_WATER
-                            not in scenario.resource_types,
-                            leave=False,
-                            unit="simulation",
-                        ):
-                            logger.info(
-                                "Probing system: pv_size: %s, %sstorage_size: %s%s",
-                                simulation_pv_sizes[0],
-                                f"pvt-size: {pvt_size}, "
-                                if minigrid.pvt_panel is not None
-                                else "",
-                                simulation_storage_sizes[0],
-                                f", num clean-water tanks: {num_clean_water_tanks}"
-                                if ResourceType.CLEAN_WATER in scenario.resource_types
-                                else "",
-                            )
-                            # Run a simulation and appraise it.
-                            (
-                                _,
-                                simulation_results,
-                                system_details,
-                            ) = energy_system.run_simulation(
-                                convertors,
-                                simulation_storage_sizes[0],
-                                grid_profile,
-                                irradiance_data,
-                                kerosene_usage,
-                                location,
-                                logger,
-                                minigrid,
-                                num_clean_water_tanks,
-                                total_solar_pv_power_produced,
-                                simulation_pv_sizes[0],
-                                pvt_size,
-                                scenario,
-                                Simulation(end_year, start_year),
-                                temperature_data,
-                                total_clean_water_load,
-                                total_electric_load,
-                                wind_speed_data,
-                            )
-
-                            new_appraisal = appraise_system(
-                                yearly_electric_load_statistics,
-                                end_year,
-                                finance_inputs,
-                                ghg_inputs,
-                                location,
-                                logger,
-                                previous_system,
-                                simulation_results,
-                                start_year,
-                                system_details,
-                            )
-
-                            if (
-                                _get_sufficient_appraisals(
-                                    optimisation, [new_appraisal]
-                                )
-                                == []
-                            ):
-                                logger.info("No sufficient systems at this resolution.")
-                                break
-
-                            # Store the new appraisal if it is sufficient.
-                            logger.info("Sufficient system found, storing.")
-                            system_appraisals.append(new_appraisal)
-                    # Otherwise, simply run a simulation at this depth.
-                    else:
-                        logger.info(
-                            "Probing system: pv_size: %s, %sstorage_size: %s%s",
-                            simulation_pv_sizes[0],
-                            f"pvt-size: {pvt_size}, "
-                            if minigrid.pvt_panel is not None
-                            else "",
-                            simulation_storage_sizes[0],
-                            f", num clean-water tanks: {simulation_clean_water_tanks[0]}"
-                            if ResourceType.CLEAN_WATER in scenario.resource_types
-                            else "",
-                        )
-                        # Run a simulation and appraise it.
-                        (
-                            _,
-                            simulation_results,
-                            system_details,
-                        ) = energy_system.run_simulation(
-                            convertors,
-                            simulation_storage_sizes[0],
-                            grid_profile,
-                            irradiance_data,
-                            kerosene_usage,
-                            location,
-                            logger,
-                            minigrid,
-                            simulation_clean_water_tanks[0],
-                            total_solar_pv_power_produced,
-                            simulation_pv_sizes[0],
-                            pvt_size,
-                            scenario,
-                            Simulation(end_year, start_year),
-                            temperature_data,
-                            total_clean_water_load,
-                            total_electric_load,
-                            wind_speed_data
-                        )
-
-                        new_appraisal = appraise_system(
-                            yearly_electric_load_statistics,
-                            end_year,
-                            finance_inputs,
-                            ghg_inputs,
-                            location,
-                            logger,
-                            previous_system,
-                            simulation_results,
-                            start_year,
-                            system_details,
-                        )
-
-                        if (
-                            _get_sufficient_appraisals(optimisation, [new_appraisal])
-                            == []
-                        ):
-                            logger.info("No sufficient systems at this resolution.")
-                            break
-
-                        # Store the new appraisal if it is sufficient.
-                        logger.info("Sufficient system found, storing.")
-                        system_appraisals.append(new_appraisal)
-            # Otherwise, simply run at this level.
-            else:
-                # Only investigate tank sizes if there are multiple tank sizes
-                # specified.
-                if len(simulation_clean_water_tanks) > 1:
-                    for num_clean_water_tanks in tqdm(
-                        simulation_clean_water_tanks,
-                        desc="clean water tank options",
-                        disable=ResourceType.CLEAN_WATER not in scenario.resource_types,
-                        leave=False,
-                        unit="simulation",
-                    ):
-                        logger.info(
-                            "Probing system: pv_size: %s, %sstorage_size: %s%s",
-                            simulation_pv_sizes[0],
-                            f"pvt-size: {simulation_pvt_sizes[0]}, "
-                            if minigrid.pvt_panel is not None
-                            else "",
-                            simulation_storage_sizes[0],
-                            f", num clean-water tanks: {num_clean_water_tanks}"
-                            if ResourceType.CLEAN_WATER in scenario.resource_types
-                            else "",
-                        )
-                        # Run a simulation and appraise it.
-                        (
-                            _,
-                            simulation_results,
-                            system_details,
-                        ) = energy_system.run_simulation(
-                            convertors,
-                            simulation_storage_sizes[0],
-                            grid_profile,
-                            irradiance_data,
-                            kerosene_usage,
-                            location,
-                            logger,
-                            minigrid,
-                            num_clean_water_tanks,
-                            total_solar_pv_power_produced,
-                            simulation_pv_sizes[0],
-                            simulation_pvt_sizes[0],
-                            scenario,
-                            Simulation(end_year, start_year),
-                            temperature_data,
-                            total_clean_water_load,
-                            total_electric_load,
-                            wind_speed_data
-                        )
-
-                        new_appraisal = appraise_system(
-                            yearly_electric_load_statistics,
-                            end_year,
-                            finance_inputs,
-                            ghg_inputs,
-                            location,
-                            logger,
-                            previous_system,
-                            simulation_results,
-                            start_year,
-                            system_details,
-                        )
-
-                        if (
-                            _get_sufficient_appraisals(optimisation, [new_appraisal])
-                            == []
-                        ):
-                            logger.info("No sufficient systems at this resolution.")
-                            break
-
-                        # Store the new appraisal if it is sufficient.
-                        logger.info("Sufficient system found, storing.")
-                        system_appraisals.append(new_appraisal)
-                # Otherwise, simply run a simulation at this depth.
-                else:
-                    logger.error(
-                        "%sAn optimisation step was called with only one system to "
-                        "explore.\n%s%s%s%s%s",
-                        BColours.fail,
-                        f"pv size: {simulation_pv_sizes[0]}"
-                        if minigrid.pv_panel is not None
-                        else "",
-                        f"pv-t size: {simulation_pvt_sizes[0]}"
-                        if minigrid.pvt_panel is not None
-                        else "",
-                        f"storage size: {simulation_storage_sizes[0]}"
-                        if minigrid.battery is not None
-                        else "",
-                        f"pv size: {simulation_clean_water_tanks[0]}"
-                        if minigrid.clean_water_tank is not None
-                        else "",
-                        BColours.endc,
-                    )
+    pdb.set_trace()
 
     logger.info("Optimisation bounds explored.")
     return (

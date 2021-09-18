@@ -9,7 +9,7 @@
 ################################################################################
 
 general:
-  o&m_ghgs: 200 # [kgCO2 p.a.]
+  o&m: 200 # [kgCO2 p.a.]
 misc:
   ghgs: 0 # [kgCO2/kW]
 bos:
@@ -17,7 +17,7 @@ bos:
   ghg_decrease: 2 # [% p.a.]
 diesel_fuel:
   ghgs: 2 # [kgCO2/litre]
-  o&m_ghgs: 10 # [kgCO2/kW p.a.]
+  o&m: 10 # [kgCO2/kW p.a.]
 grid:
   extension_ghgs: 290000 # [kgCO2/km]
   infrastructure_GHGs: 1200000 # [kgCO2]
