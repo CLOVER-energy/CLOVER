@@ -228,7 +228,7 @@
                 ################################################################################
 
                 general:
-                  o&m_ghgs: 200 # [kgCO2 p.a.]
+                  o&m: 200 # [kgCO2 p.a.]
                 misc:
                   ghgs: 0 # [kgCO2/kW]
                 bos:
@@ -236,7 +236,7 @@
                   ghg_decrease: 2 # [% p.a.]
                 diesel_fuel:
                   ghgs: 2 # [kgCO2/litre]
-                  o&m_ghgs: 10 # [kgCO2/kW p.a.]
+                  o&m: 10 # [kgCO2/kW p.a.]
                 grid:
                   extension_ghgs: 290000 # [kgCO2/km]
                   infrastructure_GHGs: 1200000 # [kgCO2]
@@ -642,7 +642,7 @@
                     o&m: 10 # [$/storage unit], [$/kWh] by default
                   emissions:
                     ghgs: 110 # [kgCO2/kWh]
-                    o&m_ghgs: 5 # [kgCO2/kWh p.a.]
+                    o&m: 5 # [kgCO2/kWh p.a.]
                     ghg_decrease: 5 # [% p.a.]
             - file: "energy_system.yaml"
               contents: |+
@@ -711,7 +711,7 @@
                     ghg_decrease: 5 # [% p.a.]
                     installation_ghgs: 10 # [kwCO2/tank]
                     installation_ghg_decrease: 0
-                    o&m_ghgs: 5 # [kgCO2/tank p.a.]
+                    o&m: 5 # [kgCO2/tank p.a.]
     - directory: outputs
       contents:
         - directory: optimisation_outputs

@@ -17,7 +17,7 @@ the clover module from the command-line interface.
 
 """
 
-__version__ = "5.0.0a1.dev1"
+__version__ = "5.0.0a1.dev2"
 
 import datetime
 import logging
@@ -222,11 +222,15 @@ def main(args: List[Any]) -> None:
     logger.info("Command-line arguments successfully validated.")
 
     version_string = f"Version {__version__}"
-    print(CLOVER_HEADER_STRING.format(version_line = "{}{}{}".format(
-        " " * (40 - math.ceil(len(version_string) / 2)),
-        version_string,
-        " " * (40 - math.floor(len(version_string) / 2)),
-    )))
+    print(
+        CLOVER_HEADER_STRING.format(
+            version_line="{}{}{}".format(
+                " " * (40 - math.ceil(len(version_string) / 2)),
+                version_string,
+                " " * (40 - math.floor(len(version_string) / 2)),
+            )
+        )
+    )
 
     # Define common variables.
     auto_generated_files_directory = os.path.join(

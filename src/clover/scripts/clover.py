@@ -22,6 +22,7 @@ import sys
 
 from ..__main__ import main as clover_main
 
+
 def main():
     """
     Main function of the CLOVER entry-point script.

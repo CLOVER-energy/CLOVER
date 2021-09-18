@@ -1,5 +1,6 @@
 import os
 
+
 def main():
     if not os.path.isdir("locations"):
         raise Exception("You've got no locations yet!")

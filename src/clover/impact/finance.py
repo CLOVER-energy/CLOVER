@@ -422,8 +422,12 @@ def get_total_equipment_cost(
         )
         clean_water_tank_installation_cost = _component_installation_cost(
             clean_water_tanks,
-            finance_inputs[ImpactingComponent.CLEAN_WATER_TANK.value][INSTALLATION_COST],
-            finance_inputs[ImpactingComponent.CLEAN_WATER_TANK.value][INSTALLATION_COST_DECREASE],
+            finance_inputs[ImpactingComponent.CLEAN_WATER_TANK.value][
+                INSTALLATION_COST
+            ],
+            finance_inputs[ImpactingComponent.CLEAN_WATER_TANK.value][
+                INSTALLATION_COST_DECREASE
+            ],
             installation_year,
         )
 
@@ -822,7 +826,10 @@ def total_om(
 
     """
 
-    if ImpactingComponent.CLEAN_WATER_TANK.value not in finance_inputs and clean_water_tanks > 0:
+    if (
+        ImpactingComponent.CLEAN_WATER_TANK.value not in finance_inputs
+        and clean_water_tanks > 0
+    ):
         logger.error(
             "%sNo clean-water-tank financial input information provided.%s",
             BColours.fail,

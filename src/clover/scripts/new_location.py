@@ -24,7 +24,7 @@ import pkgutil
 import shutil
 import sys
 
-from typing import Any, List, Optional
+from typing import Any, List, Optional, Pattern
 
 import re
 import yaml
@@ -45,23 +45,34 @@ __all__ = (
 )
 
 
-# The keyword used to denote the contents of a file or folder.
-CONTENTS = "contents"
+# Contents:
+#   The keyword used to denote the contents of a file or folder.
+CONTENTS: str = "contents"
 
-# The keyword used to denote a directory.
-DIRECTORY = "directory"
+# Directory:
+#   The keyword used to denote a directory.
+DIRECTORY: str = "directory"
 
-# The keyword used to denote a file.
-FILE = "file"
+# File:
+#   The keyword used to denote a file.
+FILE: str = "file"
 
-# The name of the logger to use.
-LOGGER_NAME = "new_location"
+# Logger name:
+#   The name of the logger to use.
+LOGGER_NAME: str = "new_location"
 
-# The path to the new-location data file.
-NEW_LOCATION_DATA_FILE = os.path.join("src", "new_location.yaml")
+# New-location data file:
+#   The path to the new-location data file.
+NEW_LOCATION_DATA_FILE: str = os.path.join("src", "new_location.yaml")
+
+# Raw CLOVER path:
+#   The path to the clover source directory to use when running in github mode.
+RAW_CLOVER_PATH: str = os.path.join("src", "clover")
 
 # Regex used to find lines that should be repeated, used to save YAML file space.
-REPEATED_LINE_REGEX = re.compile(r"(?P<multiplier>\d*):(?P<line_to_repeat>.*)\n")
+REPEATED_LINE_REGEX: Pattern[str] = re.compile(
+    r"(?P<multiplier>\d*):(?P<line_to_repeat>.*)\n"
+)
 
 
 def _create_file(
@@ -208,9 +219,25 @@ def create_new_location(
     """
 
     # Read the location data.
-    new_location_data = yaml.safe_load(
-        pkgutil.get_data("clover", NEW_LOCATION_DATA_FILE)
-    )
+    logger.info("Attempting to read location data from installed package info.")
+    try:
+        new_location_data = yaml.safe_load(
+            pkgutil.get_data("clover", NEW_LOCATION_DATA_FILE)
+        )
+    except AttributeError:
+        logger.info("Failed to read data as if package was installed.")
+        logger.info("Attempting to read location data from raw source file.")
+        try:
+            new_location_data = read_yaml(
+                os.path.join(RAW_CLOVER_PATH, NEW_LOCATION_DATA_FILE), logger
+            )
+        except Exception:
+            logger.error("Failed to read location data from raw source.")
+            logger.critical("Failed to determine location of the location data file.")
+            raise
+        logger.info("Successfully read location data file form local source.")
+    else:
+        logger.info("Successfully read location data file form installed package file.")
     logger.info("Data file successfully read.")
 
     if not isinstance(new_location_data, list):

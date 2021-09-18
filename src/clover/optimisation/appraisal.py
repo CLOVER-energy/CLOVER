@@ -120,6 +120,7 @@ def _simulation_environmental_appraisal(
         else 0,
         system_details.diesel_capacity,
         ghg_inputs,
+        logger,
         system_details.initial_pv_size,
         system_details.initial_pvt_size
         if system_details.initial_pvt_size is not None

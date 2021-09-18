@@ -219,7 +219,6 @@ def calculate_total_equipment_ghgs(
             clean_water_tanks, ghg_inputs, ImpactingComponent.CLEAN_WATER_TANK, year
         )
 
-
     diesel_ghgs = calculate_ghgs(
         diesel_size, ghg_inputs, ImpactingComponent.DIESEL, year
     )
@@ -257,7 +256,6 @@ def calculate_total_equipment_ghgs(
     storage_ghgs = calculate_ghgs(
         storage_size, ghg_inputs, ImpactingComponent.STORAGE, year
     )
-
 
     # Calculate misc GHGs.
     misc_ghgs = calculate_misc_ghgs(diesel_size + pv_array_size, ghg_inputs)
@@ -608,6 +606,7 @@ def calculate_total_om(
     clean_water_tanks: float,
     diesel_size: float,
     ghg_inputs: Dict[str, Any],
+    logger: Logger,
     pv_array_size: float,
     pvt_array_size: float,
     storage_size: float,
@@ -624,6 +623,8 @@ def calculate_total_om(
             Capacity of diesel generator installed.
         - ghg_inputs:
             The GHG input information.
+        - logger:
+            The :class:`logging.Logger` to use for the run.
         - pv_array_size:
             Capacity of PV installed.
         - pvt_array_size:
@@ -640,13 +641,27 @@ def calculate_total_om(
 
     """
 
-    clean_water_tank_om_ghgs = calculate_om_ghgs(
-        clean_water_tanks,
-        ghg_inputs,
-        ImpactingComponent.CLEAN_WATER_TANK,
-        start_year,
-        end_year
-    )
+    if (
+        ImpactingComponent.CLEAN_WATER_TANK.value not in ghg_inputs
+        and clean_water_tanks > 0
+    ):
+        logger.error(
+            "%sNo PV-T GHG input information provided.%s", BColours.fail, BColours.endc
+        )
+        raise InputFileError(
+            "ghg inputs",
+            "No PV-T financial input information provided and a non-zero number of PV-T"
+            "panels are being considered.",
+        )
+    clean_water_tank_om_ghgs: float = 0
+    if clean_water_tanks > 0:
+        clean_water_tank_om_ghgs = calculate_om_ghgs(
+            clean_water_tanks,
+            ghg_inputs,
+            ImpactingComponent.CLEAN_WATER_TANK,
+            start_year,
+            end_year,
+        )
     diesel_om_ghgs = calculate_om_ghgs(
         diesel_size, ghg_inputs, ImpactingComponent.PV, start_year, end_year
     )
@@ -656,9 +671,20 @@ def calculate_total_om(
     pv_om_ghgs = calculate_om_ghgs(
         pv_array_size, ghg_inputs, ImpactingComponent.PV, start_year, end_year
     )
-    pvt_om_ghgs = calculate_om_ghgs(
-        pvt_array_size, ghg_inputs, ImpactingComponent.PV_T, start_year, end_year
-    )
+    if ImpactingComponent.PV_T.value not in ghg_inputs and pvt_array_size > 0:
+        logger.error(
+            "%sNo PV-T GHG input information provided.%s", BColours.fail, BColours.endc
+        )
+        raise InputFileError(
+            "ghg inputs",
+            "No PV-T financial input information provided and a non-zero number of PV-T"
+            "panels are being considered.",
+        )
+    pvt_om_ghgs: float = 0
+    if pvt_array_size > 0:
+        pvt_om_ghgs = calculate_om_ghgs(
+            pvt_array_size, ghg_inputs, ImpactingComponent.PV_T, start_year, end_year
+        )
     storage_om_ghgs = calculate_om_ghgs(
         storage_size, ghg_inputs, ImpactingComponent.STORAGE, start_year, end_year
     )

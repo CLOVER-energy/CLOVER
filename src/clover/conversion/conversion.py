@@ -361,7 +361,7 @@ class ThermalDesalinationPlant(MultiInputConvertor):
                 The minimum output capacity of the device.
             - minimum_water_input_temperature:
                 The mibimum temperature of water allowed into the plant, measured in
-                degrees Celcius.            
+                degrees Celcius.
             - name:
                 The name of the device.
             - output_resource_type:
