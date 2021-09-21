@@ -19,7 +19,7 @@ performance under environmental conditions needs to be calculated.
 """
 
 from logging import Logger
-from typing import Dict, List
+from typing import Dict, List, Tuple
 
 import pandas as pd  # type: ignore  # pylint: disable=missing-import
 
@@ -30,27 +30,27 @@ from ..conversion.conversion import Convertor, ThermalDesalinationPlant
 from .__utils__ import Minigrid
 
 
-__all__ = (
-    "calculate_pvt_output",
-    "SolarPanel",
-    "SolarPanelType",
-)
+__all__ = ("calculate_pvt_output",)
 
 
 def calculate_pvt_output(
     convertors: List[Convertor],
+    end_hour: int,
     irradiances: pd.Series,
     logger: Logger,
     minigrid: Minigrid,
+    start_hour: int,
     temperatures: pd.Series,
     wind_speeds: pd.Series,
-) -> pd.DataFrame:
+) -> Tuple[pd.DataFrame, pd.DataFrame]:
     """
     Computes the output of a PV-T system.
 
     Inputs:
         - convertors:
             The set of :class:`Convertor` instances available to the energy system.
+        - end_hour:
+            The end hour for the simulation being carried out.
         - irradiances:
             The :class:`pd.Series` containing irradiance information for the time
             period being modelled.
@@ -58,6 +58,8 @@ def calculate_pvt_output(
             The logger to use for the run.
         - minigrid:
             The minigrid being modelled currently.
+        - start_hour:
+            The start hour for the simulation being carried out.
         - temperatures:
             The :class:`pd.Series` containing temperature information for the time
             period being modelled.
@@ -104,7 +106,7 @@ def calculate_pvt_output(
     pvt_volume_output_supplied_map: Dict[int, float] = {}
     try:
         for index in tqdm(
-            range(len(temperatures)),
+            range(start_hour, end_hour),
             desc="pv-t performance",
             leave=False,
             unit="hour",

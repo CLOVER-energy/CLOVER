@@ -33,10 +33,7 @@ functions which can be used to carry out an optimisation:
 import datetime
 
 from logging import Logger
-from typing import Any, Dict, List, Optional, Tuple
-
-from pandas.core.frame import DataFrame
-from pandas.core.series import Series
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import numpy as np  # type: ignore  # pylint: disable=import-error
 import pandas as pd  # type: ignore  # pylint: disable=import-error
@@ -150,8 +147,7 @@ def _single_line_simulation(
     scenario: Scenario,
     start_year: int,
     temperature_data: pd.Series,
-    total_clean_water_load: Optional[pd.DataFrame],
-    total_electric_load: pd.DataFrame,
+    total_loads: Dict[ResourceType, Optional[pd.DataFrame]],
     total_solar_pv_power_produced: pd.Series,
     wind_speed_data: Optional[pd.Series],
     yearly_electric_load_statistics: pd.DataFrame,
@@ -267,8 +263,7 @@ def _single_line_simulation(
                             scenario,
                             Simulation(end_year, start_year),
                             temperature_data,
-                            total_clean_water_load,
-                            total_electric_load,
+                            total_loads,
                             wind_speed_data,
                         )
 
@@ -314,8 +309,7 @@ def _single_line_simulation(
                         scenario,
                         Simulation(end_year, start_year),
                         temperature_data,
-                        total_clean_water_load,
-                        total_electric_load,
+                        total_loads,
                         total_solar_pv_power_produced,
                     )
 
@@ -365,8 +359,7 @@ def _single_line_simulation(
                         scenario,
                         Simulation(end_year, start_year),
                         temperature_data,
-                        total_clean_water_load,
-                        total_electric_load,
+                        total_loads,
                         total_solar_pv_power_produced,
                     )
 
@@ -416,8 +409,7 @@ def _single_line_simulation(
                 scenario,
                 Simulation(end_year, start_year),
                 temperature_data,
-                total_clean_water_load,
-                total_electric_load,
+                total_loads,
                 wind_speed_data,
             )
 
@@ -460,8 +452,7 @@ def _single_line_simulation(
                 scenario,
                 Simulation(end_year, start_year),
                 temperature_data,
-                total_clean_water_load,
-                total_electric_load,
+                total_loads,
                 wind_speed_data,
             )
 
@@ -534,8 +525,7 @@ def _single_line_simulation(
                 scenario,
                 Simulation(end_year, start_year),
                 temperature_data,
-                total_clean_water_load,
-                total_electric_load,
+                total_loads,
                 wind_speed_data,
             )
 
@@ -581,8 +571,7 @@ def _single_line_simulation(
                 scenario,
                 Simulation(end_year, start_year),
                 temperature_data,
-                total_clean_water_load,
-                total_electric_load,
+                total_loads,
                 wind_speed_data,
             )
 
@@ -655,8 +644,7 @@ def _single_line_simulation(
                 scenario,
                 Simulation(end_year, start_year),
                 temperature_data,
-                total_clean_water_load,
-                total_electric_load,
+                total_loads,
                 wind_speed_data,
             )
 
@@ -702,8 +690,7 @@ def _single_line_simulation(
                 scenario,
                 Simulation(end_year, start_year),
                 temperature_data,
-                total_clean_water_load,
-                total_electric_load,
+                total_loads,
                 wind_speed_data,
             )
 
@@ -737,7 +724,6 @@ def _single_line_simulation(
 
 
 def _find_optimum_system(
-    clean_water_tanks: TankSize,
     convertors: List[Convertor],
     end_year: int,
     finance_inputs: Dict[str, Any],
@@ -745,6 +731,7 @@ def _find_optimum_system(
     grid_profile: pd.DataFrame,
     irradiance_data: pd.Series,
     kerosene_usage: pd.DataFrame,
+    largest_clean_water_tank_size: TankSize,
     largest_pv_system_size: SolarSystemSize,
     largest_pvt_system_size: SolarSystemSize,
     largest_storage_system_size: StorageSystemSize,
@@ -757,8 +744,7 @@ def _find_optimum_system(
     start_year: int,
     system_appraisals: List[SystemAppraisal],
     temperature_data: pd.Series,
-    total_clean_water_load: Optional[pd.DataFrame],
-    total_electric_load: pd.DataFrame,
+    total_loads: Dict[ResourceType, Optional[pd.DataFrame]],
     total_solar_pv_power_produced: pd.Series,
     wind_speed_data: Optional[pd.Series],
     yearly_electric_load_statistics: pd.DataFrame,
@@ -771,10 +757,10 @@ def _find_optimum_system(
     the simulation is an edge case
 
     Inputs:
-        - clean_water_tanks:
-            Range of clean-water tank sizes.
         - end_year:
             The end year of the simulation run currently being considered.
+        - largest_clean_water_tank_size:
+            The maximum size of clean-water tanks installed.
         - largest_pv_system_size:
             The maximum size of PV system installed.
         - largest_storage_system_size:
@@ -800,7 +786,7 @@ def _find_optimum_system(
             [
                 "criterion: {}, value: {}\nsystem_details: {}".format(
                     criterion,
-                    system.criteria[criterion],
+                    system.criteria[criterion],  # type: ignore
                     system.system_details,
                 )
                 for criterion, system in optimum_systems.items()
@@ -813,20 +799,36 @@ def _find_optimum_system(
     ):
         # Check if optimum system was the largest system simulated
         while (
-            optimum_system.system_details.initial_pv_size == largest_pv_system_size.max
-        ) or (
-            optimum_system.system_details.initial_storage_size
-            == largest_storage_system_size.max
+            (
+                optimum_system.system_details.initial_pv_size
+                == largest_pv_system_size.max
+                and scenario.pv
+            )
+            or (
+                optimum_system.system_details.initial_storage_size
+                == largest_storage_system_size.max
+                and scenario.battery
+            )
+            or (
+                optimum_system.system_details.initial_pvt_size
+                == largest_pvt_system_size.max
+                and scenario.pv_t
+            )
+            # or (
+            #     optimum_system.system_details.initial_num_clean_water_tanks
+            #     == largest_clean_water_tank_size.max
+            #     and ResourceType.CLEAN_WATER in scenario.resource_types
+            # )
         ):
             # Do single line optimisation to see if larger system is superior
             (
-                largest_clean_water_size,
+                largest_clean_water_tank_size,
                 largest_pv_system_size,
                 largest_pvt_system_size,
                 largest_storage_system_size,
                 new_system_appraisals,
             ) = _single_line_simulation(
-                clean_water_tanks,
+                largest_clean_water_tank_size,
                 convertors,
                 end_year,
                 finance_inputs,
@@ -846,8 +848,7 @@ def _find_optimum_system(
                 scenario,
                 start_year,
                 temperature_data,
-                total_clean_water_load,
-                total_electric_load,
+                total_loads,
                 total_solar_pv_power_produced,
                 wind_speed_data,
                 yearly_electric_load_statistics,
@@ -953,14 +954,15 @@ def _recursive_iteration(
     scenario: Scenario,
     start_year: int,
     temperature_data: pd.Series,
-    total_clean_water_load: pd.DataFrame,
-    total_electric_load: pd.DataFrame,
+    total_loads: Dict[ResourceType, Optional[pd.DataFrame]],
     total_solar_pv_power_produced: pd.Series,
-    wind_speed_data: pd.Series,
+    wind_speed_data: Optional[pd.Series],
     yearly_electric_load_statistics: pd.DataFrame,
     *,
     component_sizes: Dict[ImpactingComponent, float],
-    parameter_space: List[Tuple[ImpactingComponent, str, List[float]]],
+    parameter_space: List[
+        Tuple[ImpactingComponent, str, Union[List[int], List[float]]]
+    ],
     system_appraisals: List[SystemAppraisal],
 ) -> List[SystemAppraisal]:
     """
@@ -988,6 +990,12 @@ def _recursive_iteration(
     # If there are no more things to iterate through, then run a simulation and return
     # whether the system was sufficient.
     if len(parameter_space) == 0:
+        logger.info(
+            "Running simulation with component sizes: %s",
+            ", ".join(
+                [f"{key.value} size={value}" for key, value in component_sizes.items()]
+            ),
+        )
         (_, simulation_results, system_details,) = energy_system.run_simulation(
             convertors,
             component_sizes[ImpactingComponent.STORAGE],
@@ -997,15 +1005,14 @@ def _recursive_iteration(
             location,
             logger,
             minigrid,
-            component_sizes[ImpactingComponent.CLEAN_WATER_TANK],
+            int(component_sizes[ImpactingComponent.CLEAN_WATER_TANK]),
             total_solar_pv_power_produced,
             component_sizes[ImpactingComponent.PV],
             component_sizes[ImpactingComponent.PV_T],
             scenario,
             Simulation(end_year, start_year),
             temperature_data,
-            total_clean_water_load,
-            total_electric_load,
+            total_loads,
             wind_speed_data,
         )
 
@@ -1057,8 +1064,7 @@ def _recursive_iteration(
             scenario,
             start_year,
             temperature_data,
-            total_clean_water_load,
-            total_electric_load,
+            total_loads,
             total_solar_pv_power_produced,
             wind_speed_data,
             yearly_electric_load_statistics,
@@ -1103,13 +1109,13 @@ def _simulation_iteration(
     start_year: int,
     storage_sizes: StorageSystemSize,
     temperature_data: pd.Series,
-    total_clean_water_load: Optional[pd.DataFrame],
-    total_electric_load: pd.DataFrame,
+    total_loads: Dict[ResourceType, Optional[pd.DataFrame]],
     total_solar_pv_power_produced: pd.Series,
-    wind_speed_data: pd.Series,
+    wind_speed_data: Optional[pd.Series],
     yearly_electric_load_statistics: pd.DataFrame,
 ) -> Tuple[
     int,
+    TankSize,
     SolarSystemSize,
     SolarSystemSize,
     StorageSystemSize,
@@ -1163,10 +1169,8 @@ def _simulation_iteration(
             Range of storage sizes.
         - temperature_data:
             The temperature data series.
-        - total_clean_water_load:
-            The total clean-water load on the system.
-        - total_electric_load:
-            The total load on the system.
+        - total_loads:
+            A mapping between the :class:`ResourceType` and its associated total load.
         - total_solar_pv_power_produced:
             The total solar power output over the time period.
         - wind_speed_data:
@@ -1175,11 +1179,13 @@ def _simulation_iteration(
     Outputs:
         - end_year:
             The end year of this step, used in the simulations;
-        - pv_system_size:
+        - largest_clean_water_tank_size:
+            The clean-water tank size of the largest system simulated;
+        - largest_pv_system_size:
             The pv-system size of the largest system simulated;
-        - pvt_system_size:
+        - largest_pvt_system_size:
             The pvt-system size of the largest system simulated;
-        - storage_system_size:
+        - largest_storage_system_size:
             The storage-system size of the largest system simulated;
         - largest_system_appraisal:
             The largest system that was considered;
@@ -1221,8 +1227,7 @@ def _simulation_iteration(
         scenario,
         Simulation(end_year, start_year),
         temperature_data,
-        total_clean_water_load,
-        total_electric_load,
+        total_loads,
         wind_speed_data,
     )
 
@@ -1279,8 +1284,7 @@ def _simulation_iteration(
             scenario,
             Simulation(end_year, start_year),
             temperature_data,
-            total_clean_water_load,
-            total_electric_load,
+            total_loads,
             wind_speed_data,
         )
 
@@ -1341,8 +1345,9 @@ def _simulation_iteration(
 
     # Set up the various variables ready for recursive iteration.
     component_sizes: Dict[ImpactingComponent, float] = {}
-    parameter_space: List[Tuple[ImpactingComponent, str, List[float]]] = []
-    system_appraisals: List[SystemAppraisal] = []
+    parameter_space: List[
+        Tuple[ImpactingComponent, str, Union[List[float], List[int]]]
+    ] = []
 
     simulation_clean_water_tanks: List[int] = sorted(
         range(
@@ -1443,8 +1448,7 @@ def _simulation_iteration(
         scenario,
         start_year,
         temperature_data,
-        total_clean_water_load,
-        total_electric_load,
+        total_loads,
         total_solar_pv_power_produced,
         wind_speed_data,
         yearly_electric_load_statistics,
@@ -1456,6 +1460,7 @@ def _simulation_iteration(
     logger.info("Optimisation bounds explored.")
     return (
         end_year,
+        TankSize(clean_water_tanks_max, clean_water_tanks.min, clean_water_tanks.step),
         SolarSystemSize(pv_size_max, pv_sizes.min, pv_sizes.step),
         SolarSystemSize(pvt_size_max, pvt_sizes.min, pvt_sizes.step),
         StorageSystemSize(storage_size_max, storage_sizes.min, storage_sizes.step),
@@ -1486,8 +1491,7 @@ def _optimisation_step(
     start_year: int,
     storage_sizes: StorageSystemSize,
     temperature_data: pd.Series,
-    total_clean_water_load: Optional[pd.DataFrame],
-    total_electric_load: pd.DataFrame,
+    total_loads: Dict[ResourceType, Optional[pd.DataFrame]],
     total_solar_pv_power_produced: pd.Series,
     wind_speed_data: Optional[pd.Series],
     yearly_electric_load_statistics: pd.DataFrame,
@@ -1532,10 +1536,8 @@ def _optimisation_step(
             Range of storage sizes.
         - temperature_data:
             The temperature data throughout the period of the simulation.
-        - total_clean_water_load:
-            The total clean-water load placed on the system.
-        - total_electric_load:
-            The total electric load on the system.
+        - total_loads:
+            A mapping between the :class:`ResourceType` and its associated total load.
         - total_solar_pv_power_produced:
             The total solar power output over the time period.
         - wind_speed_data:
@@ -1553,6 +1555,7 @@ def _optimisation_step(
     logger.info("Optimisation step called.")
     (
         end_year,
+        clean_water_tanks,
         pv_system_size,
         pvt_system_size,
         storage_system_size,
@@ -1580,8 +1583,7 @@ def _optimisation_step(
         start_year,
         storage_sizes,
         temperature_data,
-        total_clean_water_load,
-        total_electric_load,
+        total_loads,
         total_solar_pv_power_produced,
         wind_speed_data,
         yearly_electric_load_statistics,
@@ -1590,7 +1592,6 @@ def _optimisation_step(
 
     # Determine the optimum systems that fulfil each of the optimisation criteria.
     optimum_systems = _find_optimum_system(
-        clean_water_tanks,
         convertors,
         end_year,
         finance_inputs,
@@ -1598,6 +1599,7 @@ def _optimisation_step(
         grid_profile,
         irradiance_data,
         kerosene_usage,
+        clean_water_tanks,
         pv_system_size,
         pvt_system_size,
         storage_system_size,
@@ -1610,8 +1612,7 @@ def _optimisation_step(
         start_year,
         sufficient_systems,
         temperature_data,
-        total_clean_water_load,
-        total_electric_load,
+        total_loads,
         total_solar_pv_power_produced,
         wind_speed_data,
         yearly_electric_load_statistics,
@@ -1636,8 +1637,7 @@ def multiple_optimisation_step(
     optimisation_parameters: OptimisationParameters,
     scenario: Scenario,
     temperature_data: pd.Series,
-    total_clean_water_load: Optional[pd.DataFrame],
-    total_electric_load: pd.DataFrame,
+    total_loads: Dict[ResourceType, Optional[pd.DataFrame]],
     total_solar_pv_power_produced: pd.Series,
     wind_speed_data: Optional[pd.Series],
     yearly_electric_load_statistics: pd.DataFrame,
@@ -1675,9 +1675,10 @@ def multiple_optimisation_step(
         - solar_lifetime:
             The lifetime of the solar setup;
         - temperature_data:
-            The temperature data throughout the period of the simulation.
-        - total_electric_load:
-            The total electric load on the system;
+            The temperature data throughout the period of the simulation;
+        - total_loads:
+            A mapping between :class:`ResourceType` and the associated total load placed
+            of that resource type on the system;
         - total_solar_pv_power_produced:
             The total solar power output over the time period per unit PV installed;
         - wind_speed_data:
@@ -1807,6 +1808,7 @@ def multiple_optimisation_step(
     ):
         logger.info("Beginning optimisation step.")
         # Fetch the optimum systems for this step.
+
         optimum_system = _optimisation_step(
             TankSize(
                 input_clean_water_tanks.max,
@@ -1839,8 +1841,7 @@ def multiple_optimisation_step(
                 input_storage_sizes.step,
             ),
             temperature_data,
-            total_clean_water_load,
-            total_electric_load,
+            total_loads,
             total_solar_pv_power_produced,
             wind_speed_data,
             yearly_electric_load_statistics,
@@ -1856,20 +1857,50 @@ def multiple_optimisation_step(
         # Prepare inputs for next optimisation step
         start_year += optimisation_parameters.iteration_length
         previous_system = optimum_system
+
+        # Prepare the clean-water tank parameters
+        clean_water_tanks_min = (
+            optimum_system.system_details.final_num_clean_water_tanks
+        )
+        clean_water_tanks_max = float(
+            optimisation_parameters.clean_water_tanks_max
+            + optimum_system.system_details.final_num_clean_water_tanks
+        )
+        input_clean_water_tanks = TankSize(
+            int(clean_water_tanks_min),
+            int(clean_water_tanks_max),
+            int(optimisation_parameters.clean_water_tanks_step),
+        )
+
+        # Prepare the pv-size parameters
         pv_size_min = optimum_system.system_details.final_pv_size
-        storage_size_min = optimum_system.system_details.final_storage_size
         pv_size_max = float(
             optimisation_parameters.pv_size_max
             + optimum_system.system_details.final_pv_size
-        )
-        storage_size_max = float(
-            optimisation_parameters.storage_size_max
-            + optimum_system.system_details.final_storage_size
         )
         input_pv_sizes = SolarSystemSize(
             int(pv_size_max),
             int(pv_size_min),
             int(optimisation_parameters.pv_size_step),
+        )
+
+        # Prepare the pvt-size parameters
+        pvt_size_min = optimum_system.system_details.final_pvt_size
+        pvt_size_max = float(
+            optimisation_parameters.pvt_size_max
+            + optimum_system.system_details.final_pvt_size
+        )
+        input_pvt_sizes = SolarSystemSize(
+            int(pvt_size_max),
+            int(pvt_size_min),
+            int(optimisation_parameters.pvt_size_step),
+        )
+
+        # Prepare the storage-size parameters
+        storage_size_min = optimum_system.system_details.final_storage_size
+        storage_size_max = float(
+            optimisation_parameters.storage_size_max
+            + optimum_system.system_details.final_storage_size
         )
         input_storage_sizes = StorageSystemSize(
             int(storage_size_max),
