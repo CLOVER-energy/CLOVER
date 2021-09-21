@@ -656,7 +656,7 @@ def parse_input_files(
     finance_inputs_filepath = os.path.join(
         inputs_directory_relative_path, FINANCE_INPUTS_FILE
     )
-    finance_inputs: Dict[str, Union[float, int, str]] = read_yaml(  # type: ignore
+    finance_inputs: Dict[str, Union[float, Dict[str, float]]] = read_yaml(  # type: ignore
         finance_inputs_filepath, logger
     )
     if not isinstance(finance_inputs, dict):

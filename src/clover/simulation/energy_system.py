@@ -370,8 +370,7 @@ def run_simulation(
     scenario: Scenario,
     simulation: Simulation,
     temperature_data: pd.Series,
-    total_clean_water_load: Optional[pd.DataFrame],
-    total_electric_load: pd.DataFrame,
+    total_loads: Dict[ResourceType, Optional[pd.DataFrame]],
     wind_speed_data: Optional[pd.Series],
 ) -> Tuple[datetime.timedelta, pd.DataFrame, SystemDetails]:
     """
@@ -413,10 +412,9 @@ def run_simulation(
             The simulation to run.
         - temperature_data:
             The temperature data series.
-        - total_clean_water_load:
-            The total water load placed on the system.
-        - total_electric_load:
-            The total load in Watts.
+        - total_loads:
+            A mapping between :class:`ResourceType`s and their associated total loads
+            placed on the system.
         - wind_speed_data:
             The wind-speed data series.
 
@@ -465,6 +463,7 @@ def run_simulation(
 
     """
 
+    # Currently, only systems including batteries are supported.
     if minigrid.battery is None:
         logger.error(
             "%sNo battery information available when calling the energy system.%s",
@@ -482,6 +481,13 @@ def run_simulation(
     start_hour = simulation.start_year * 8760
     end_hour = simulation.end_year * 8760
     simulation_hours = end_hour - start_hour
+    total_clean_water_load: Optional[pd.DataFrame] = total_loads[
+        ResourceType.CLEAN_WATER
+    ]
+    total_electric_load: Optional[pd.DataFrame] = total_loads[ResourceType.ELECTRIC]
+    total_hot_water_load: Optional[pd.DataFrame] = total_loads[
+        ResourceType.HOT_CLEAN_WATER
+    ]
 
     ###############################
     # Hybrid photovoltaic-thermal #
@@ -498,9 +504,11 @@ def run_simulation(
             pvt_electric_power_per_unit,
         ) = calculate_pvt_output(
             convertors,
+            end_hour,
             irradiance_data[start_hour:end_hour],
             logger,
             minigrid,
+            start_hour,
             temperature_data[start_hour:end_hour],
             wind_speed_data[start_hour:end_hour],
         )
@@ -549,6 +557,15 @@ def run_simulation(
     # Electricity #
     ###############
 
+    if total_electric_load is None:
+        logger.error(
+            "No electric load was supplied to the energy_system.run_simulation method "
+            "despite this being necessary for the simulation of energy systems."
+        )
+        raise InternalError(
+            "No electric load was supplied to the energy_system.run_simulation method "
+            "despite this being necessary for the simulation of energy systems."
+        )
     processed_total_electric_load = pd.DataFrame(
         _get_processed_load_profile(scenario, total_electric_load)[
             start_hour:end_hour

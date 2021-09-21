@@ -48,6 +48,7 @@ from .optimisation.optimisation import multiple_optimisation_step
 from .__utils__ import (
     BColours,
     DONE,
+    ELECTRIC_POWER,
     FAILED,
     InternalError,
     ResourceType,
@@ -635,6 +636,13 @@ def main(args: List[Any]) -> None:
             )
             raise
 
+    # Assemble a means of storing the relevant loads.
+    total_loads: Dict[ResourceType, Optional[pd.DataFrame]] = {
+        ResourceType.CLEAN_WATER: total_clean_water_load,
+        ResourceType.ELECTRIC: 0.001 * total_electric_load,  # type: ignore
+        ResourceType.HOT_CLEAN_WATER: total_hot_water_load,
+    }
+
     # Generate the grid-availability profiles.
     logger.info("Generating grid-availability profiles.")
     try:
@@ -840,8 +848,7 @@ def main(args: List[Any]) -> None:
                     scenario,
                     simulation,
                     total_solar_data[solar.SolarDataType.TEMPERATURE.value],
-                    total_clean_water_load,
-                    0.001 * total_electric_load,  # type: ignore
+                    total_loads,
                     total_wind_data[wind.WindDataType.WIND_SPEED.value]
                     if total_wind_data is not None
                     else None,
@@ -893,8 +900,7 @@ def main(args: List[Any]) -> None:
                     output,
                     simulation_number,
                     system_performance_outputs,
-                    total_clean_water_load,
-                    0.001 * total_electric_load,  # type: ignore
+                    total_loads,
                     total_solar_data[solar.SolarDataType.ELECTRICITY.value]
                     * minigrid.pv_panel.pv_unit,
                 )
@@ -1015,8 +1021,7 @@ def main(args: List[Any]) -> None:
                     optimisation_inputs,
                     scenario,
                     total_solar_data[solar.SolarDataType.TEMPERATURE.value],
-                    total_clean_water_load,
-                    0.001 * total_electric_load,  # type: ignore
+                    total_loads,
                     total_solar_data[solar.SolarDataType.ELECTRICITY.value]
                     * minigrid.pv_panel.pv_unit,
                     total_wind_data[wind.WindDataType.WIND_SPEED.value]
