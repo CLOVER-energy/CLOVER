@@ -1026,7 +1026,7 @@ def _recursive_iteration(
 
     # If there are things to iterate through, then iterate through these, calling the
     # function recursively.
-    component, unit, sizes = parameter_space.pop(0)
+    component, unit, sizes = parameter_space.pop()
 
     for size in tqdm(
         sizes,
