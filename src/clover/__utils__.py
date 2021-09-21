@@ -1538,19 +1538,20 @@ class FinancialAppraisal:
         The value of the kerosene which was not used, measured in USD.
 
     .. attribute:: new_connection_cost
-        <<description needed>>, measured in USD
+        The cost of connecting a new household to the grid, measured in USD
 
     .. attribute:: new_equipment_cost
-        <<description needed>>, measured in USD
+        The cost of the new equipment purchased in this optimisation cycle, measured in
+        USD
 
     .. attribute:: om_cost
         The O&M cost, measured in USD.
 
     .. attribute:: total_cost
-        <<description needed>>, measured in USD
+        The total cost of the energy system and fuel etc. used, measured in USD
 
     .. attribute:: total_system_cost
-        <<description needed>>, measured in USD
+        The total cost of the energy system, measured in USD
 
     """
 
@@ -1592,46 +1593,57 @@ class TechnicalAppraisal:
     Contains financial-appraisal information.
 
     .. attribute:: blackouts
-        <<description needed>>, measured in USD
+        The proportion of time for which the system suffered a blackout, defined between
+        0 (none of the time) and 1 (all of the time).
 
     .. attribute:: clean_water_blackouts
         The portion of time for which the clean-water system experienced a blackout.
 
     .. attribute:: diesel_energy
-        <<description needed>>, measured in USD
+        The total amount of energy which was provided by the diesel generators, measured
+        in kWh.
 
     .. attribute:: diesel_fuel_usage
-        <<description needed>>, measured in USD
+        The amount of diesel fuel usage, measured in litres.
 
     .. attribute:: discounted_energy
-        <<description needed>>, measured in USD
+        The total discounted energy consumed, measured in kWh.
 
     .. attribute:: grid_energy
-        <<description needed>>, measured in USD
+        The total energy which was supplied by the grid, measured in kWh.
 
     .. attribute:: kerosene_displacement
-        <<description needed>>, measured in USD
+        The proportion of kerosene which was displacement by the minigrid, defined
+        between 0 (all of the kerosene that would have been used was used) and 1 (none
+        of the kerosene that would have been used was used and all was mitigated by the
+        minigrid).
 
     .. attribute:: new_connection_cost
-        <<description needed>>, measured in USD
+        The cost of connecting a new household to the grid, measured in USD.
+
+    .. attribute:: pv_energy
+        The total amount of energy that was supplied by the PV system, measured in kWh.
 
     .. attribute:: renewable_energy
-        <<description needed>>, measured in USD
+        The total amount of renewable energy that was supplied by all the renewable
+        sources, measured in kWh.
 
     .. attribute:: renewable_energy_fraction
-        <<description needed>>, measured in USD
+        The fraction of energy that was supplied through renewables, defined between 0
+        (no renewable energy supplied) and 1 (all energy supplied through renewables).
 
     .. attribute:: storage_energy
-        <<description needed>>, measured in USD
+        The total energy which was supplied by the storage system, measured in kWh.
 
     .. attribute:: total_energy
-        <<description needed>>, measured in USD
+        The total energy which was used in the system, measured in kWh.
 
     .. attribute:: unmet_energy
-        <<description needed>>, measured in USD
+        The total energy which went unmet, measured in kWh.
 
     .. attribute:: unmet_energy_fraction
-        <<description needed>>, measured in USD
+        The fraction of energy demand which went unmet, defined between 0 (no unmet
+        energy) and 1 (all energy went unmet).
 
     """
 
