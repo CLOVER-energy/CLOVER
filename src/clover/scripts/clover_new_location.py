@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-#!/usr/bin/python3
 ########################################################################################
 # clover_new_location.py - Entry point for creating new locations.                     #
 #                                                                                      #

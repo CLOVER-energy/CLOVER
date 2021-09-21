@@ -48,9 +48,11 @@ from .simulation.diesel import DieselBackupGenerator
 from .simulation.energy_system import Minigrid
 
 __all__ = (
+    "GENERATION_INPUTS_FILE",
     "INPUTS_DIRECTORY",
     "KEROSENE_TIMES_FILE",
     "KEROSENE_USAGE_FILE",
+    "LOCATIONS_FOLDER_NAME",
     "parse_input_files",
 )
 

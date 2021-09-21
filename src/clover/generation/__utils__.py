@@ -49,6 +49,7 @@ from ..__utils__ import (
 
 __all__ = (
     "BaseRenewablesNinjaThread",
+    "TOKEN",
     "total_profile_output",
 )
 
@@ -61,6 +62,10 @@ API_BASE = "https://www.renewables.ninja/api/"
 #   To avoid being locked out of the renewables.ninja API, it is necessary for CLOVER to
 #   sleep between requests. The time taken for this, in seconds, is set below.
 RENEWABLES_NINJA_SLEEP_TIME = 12
+
+# Token:
+#   Keyword used when parsing the generation token.
+TOKEN = "token"
 
 
 class SolarDataType(enum.Enum):
@@ -444,7 +449,7 @@ class BaseRenewablesNinjaThread(threading.Thread):
                 )
                 try:
                     data = _get_profile_output(
-                        str(self.generation_inputs["token"]),
+                        str(self.generation_inputs[TOKEN]),
                         self.location,
                         self.logger,
                         self.profile_key,  # type: ignore
