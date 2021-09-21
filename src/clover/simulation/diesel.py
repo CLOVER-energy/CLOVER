@@ -137,7 +137,7 @@ def get_diesel_fuel_usage(
         - capacity:
             Capacity (kW) of the diesel generator.
         - diesel_backup_generator:
-
+            The diesel backup generator being modelled.
         - diesel_energy:
             Profile of energy supplued by diesel backup.
         - diesel_times:
