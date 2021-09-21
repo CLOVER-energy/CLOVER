@@ -35,6 +35,7 @@ from ..__utils__ import (
     LOCATIONS_FOLDER_NAME,
     read_yaml,
 )
+from ..fileparser import INPUTS_DIRECTORY
 
 __all__ = (
     "CONTENTS",
@@ -294,16 +295,21 @@ def create_new_location(
             )
 
         # Copy over any of the files as per the set up in the new location.
-        for directory, _, filenames in os.walk(new_location_directory):
+        for directory, _, filenames in os.walk(
+            os.path.join(existing_location_directory, INPUTS_DIRECTORY)
+        ):
             for filename in filenames:
                 try:
                     shutil.copy2(
                         os.path.join(
-                            existing_location_directory,
-                            os.path.relpath(directory, new_location_directory),
+                            directory,
                             filename,
                         ),
-                        os.path.join(directory, filename),
+                        os.path.join(
+                            new_location_directory,
+                            os.path.relpath(directory, existing_location_directory),
+                            filename,
+                        ),
                     )
                     logger.info(
                         "File copied over from existing location: %s",
@@ -321,7 +327,7 @@ def create_new_location(
             logger.info(
                 "Directory %s successfully copied over.",
                 os.path.join(
-                    existing_location_directory,
+                    os.path.relpath(directory, existing_location_directory),
                     os.path.relpath(directory, new_location_directory),
                 ),
             )

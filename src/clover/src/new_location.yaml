@@ -44,6 +44,9 @@
             - directory: electric
               contents:
                 - directory: device_load
+            - directory: hot_water
+              contents:
+                - directory: device_load
         - directory: solar
         - directory: weather
         - directory: wind

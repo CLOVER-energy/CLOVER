@@ -41,6 +41,7 @@ __all__ = (
     "DemandType",
     "DieselMode",
     "DONE",
+    "ELECTRIC_POWER",
     "FAILED",
     "get_logger",
     "hourly_profile_to_daily_sum",
@@ -67,13 +68,17 @@ __all__ = (
 )
 
 
+# Cut off time:
+#   The time up and to which information about the load of each device will be returned.
+CUT_OFF_TIME: int = 72  # [hours]
+
 # Done message:
 #   The message to display when a task was successful.
 DONE: str = "[   DONE   ]"
 
-# Cut off time:
-#   The time up and to which information about the load of each device will be returned.
-CUT_OFF_TIME: int = 72  # [hours]
+# Electric power:
+#   Keyword used for parsing electric power.
+ELECTRIC_POWER: str = "electric_power"
 
 # Failed message:
 #   The message to display when a task has failed.
@@ -536,7 +541,7 @@ class ResourceType(enum.Enum):
 #   Maps the load name to the load type, used for parsing scenario files.
 RESOURCE_NAME_TO_RESOURCE_TYPE_MAPPING = {
     "clean_water": ResourceType.CLEAN_WATER,
-    "electric_power": ResourceType.ELECTRIC,
+    ELECTRIC_POWER: ResourceType.ELECTRIC,
     "hot_water": ResourceType.HOT_CLEAN_WATER,
     "hot_untreated_water": ResourceType.HOT_UNCLEAN_WATER,
     "groundwater": ResourceType.UNCLEAN_WATER,

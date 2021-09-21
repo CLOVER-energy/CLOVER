@@ -568,8 +568,66 @@ def main(args: List[Any]) -> None:
                 + f"{FAILED}"
             )
             logger.error(
-                "%sAn unexpected error occurred generating the load profiles. See %s for "
-                "details: %s%s",
+                "%sAn unexpected error occurred generating the clean-water load "
+                "profiles. See %s for details: %s%s",
+                BColours.fail,
+                "{}.log".format(os.path.join(LOGGER_DIRECTORY, LOGGER_NAME)),
+                str(e),
+                BColours.endc,
+            )
+            raise
+
+    initial_hot_water_hourly_loads: Optional[Dict[str, pd.DataFrame]] = None
+    total_hot_water_load: Optional[pd.DataFrame] = None
+    hot_water_yearly_load_statistics: Optional[  # pylint: disable=unused-variable
+        pd.DataFrame
+    ] = None
+
+    if ResourceType.HOT_CLEAN_WATER in scenario.resource_types:
+        # Raise an error if there are no hot-water devices specified.
+        if (
+            len(
+                {
+                    device
+                    for device in device_utilisations
+                    if device.hot_water_usage is not None
+                }
+            )
+            == 0
+        ):
+            raise InputFileError(
+                "devices input flie",
+                "No hot-water input devices were specified despite the scenario "
+                "containing a clean-water system.",
+            )
+
+        try:
+            (
+                initial_hot_water_hourly_loads,
+                total_hot_water_load,
+                hot_water_yearly_load_statistics,
+            ) = load.process_load_profiles(
+                auto_generated_files_directory,
+                device_utilisations,
+                load.ResourceType.HOT_CLEAN_WATER,
+                location,
+                logger,
+                parsed_args.regenerate,
+            )
+        except InputFileError:
+            print(
+                "Generating necessary profiles .................................    "
+                + f"{FAILED}"
+            )
+            raise
+        except Exception as e:
+            print(
+                "Generating necessary profiles .................................    "
+                + f"{FAILED}"
+            )
+            logger.error(
+                "%sAn unexpected error occurred generating the hot-water load "
+                "profiles. See %s for details: %s%s",
                 BColours.fail,
                 "{}.log".format(os.path.join(LOGGER_DIRECTORY, LOGGER_NAME)),
                 str(e),
