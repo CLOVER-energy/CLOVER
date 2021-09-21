@@ -34,7 +34,9 @@ from ..__utils__ import (
     BColours,
     CUT_OFF_TIME,
     DemandType,
+    ELECTRIC_POWER,
     InputFileError,
+    InternalError,
     KEROSENE_DEVICE_NAME,
     ResourceType,
     Location,
@@ -55,6 +57,38 @@ __all__ = (
     "process_load_profiles",
 )
 
+
+# Available:
+#   Keyword used for parsing whether a device is available.
+AVAILABLE: str = "available"
+
+# Clean-water usage:
+#   Keyword used for parsing the clean-water usage of a device.
+CLEAN_WATER_USAGE: str = "clean_water_usage"
+
+# Device:
+#   Keyword used for parsing the name of a device.
+DEVICE: str = "device"
+
+# Final ownership:
+#   Keyword used for parsing the final ownership of a device.
+FINAL_OWNERSHIP: str = "final_ownership"
+
+# Hot-water usage:
+#   Keyword used for parsing the hot-water usage of a device.
+HOT_WATER_USAGE: str = "hot_water_usage"
+
+# Initial ownership:
+#   Keyword used for parsing the initial ownership of a device.
+INITIAL_OWNERSHIP: str = "initial_ownership"
+
+# Innovation:
+#   Keyword used for parsing the innovation of a device.
+INNOVATION: str = "innovation"
+
+# Imitation:
+#   Keyword used for parsing the imitation of a device.
+IMITATION: str = "imitation"
 
 # Load logger name:
 #   The name to use for the load module logger.
@@ -106,7 +140,10 @@ class Device:
         The name of the device.
 
     .. attribute:: clean_water_usage
-        The water usage of the device, measured in litres per hour.
+        The clean-water usage of the device, measured in litres per hour.
+
+    .. attribute:: hot_water_usage
+        The hot-water usage of the device, measured in litres per hour.
 
     """
 
@@ -119,6 +156,7 @@ class Device:
     imitation: float
     name: str
     clean_water_usage: Optional[float]
+    hot_water_usage: Optional[float]
 
     def __hash__(self) -> int:
         """
@@ -149,7 +187,8 @@ class Device:
             + f"initial_ownership={self.initial_ownership}, "
             + f"innovation={self.innovation}, "
             + f"imitation={self.imitation}, "
-            + f"clean_water_usage={self.clean_water_usage} litres/hour"
+            + f"clean_water_usage={self.clean_water_usage} litres/hour, "
+            + f"hot_water_usage={self.hot_water_usage} litres/hour"
             + ")"
         )
 
@@ -171,7 +210,7 @@ class Device:
 
         demand_type = DemandType(device_input["type"])
 
-        if "electric_power" not in device_input:
+        if ELECTRIC_POWER not in device_input:
             raise InputFileError(
                 "device inputs",
                 "All devices must specify an electric power value explicitly, even if "
@@ -182,17 +221,18 @@ class Device:
             )
 
         return cls(
-            device_input["available"],
+            device_input[AVAILABLE],
             demand_type,
-            device_input["electric_power"],
-            device_input["final_ownership"],
-            device_input["initial_ownership"],
-            device_input["innovation"],
-            device_input["imitation"],
-            device_input["device"],
-            device_input["clean_water_usage"]
-            if "clean_water_usage" in device_input
+            device_input[ELECTRIC_POWER],
+            device_input[FINAL_OWNERSHIP],
+            device_input[INITIAL_OWNERSHIP],
+            device_input[INNOVATION],
+            device_input[IMITATION],
+            device_input[DEVICE],
+            device_input[CLEAN_WATER_USAGE]
+            if CLEAN_WATER_USAGE in device_input
             else None,
+            device_input[HOT_WATER_USAGE] if HOT_WATER_USAGE in device_input else None,
         )
 
 
@@ -200,7 +240,7 @@ class Device:
 #   The default kerosene device to use in the event that no kerosene information is
 #   provided.
 DEFAULT_KEROSENE_DEVICE = Device(
-    False, DemandType.DOMESTIC, 1, 0, 0, 0, 0, KEROSENE_DEVICE_NAME, 0
+    False, DemandType.DOMESTIC, 1, 0, 0, 0, 0, KEROSENE_DEVICE_NAME, 0, 0
 )
 
 
@@ -575,6 +615,7 @@ def process_device_hourly_power(
     hourly_usage_filepath = os.path.join(generated_device_load_filepath, filename)
 
     # If the hourly power usage file already exists, load the data in.
+    logger.info("Processing hourly power profile for %s.", device.name)
     if os.path.isfile(hourly_usage_filepath) and not regenerate:
         with open(hourly_usage_filepath, "r") as f:
             device_load: pd.DataFrame = pd.read_csv(f, header=None)
@@ -600,15 +641,27 @@ def process_device_hourly_power(
             )
         elif resource_type == ResourceType.CLEAN_WATER:
             if device.clean_water_usage is None:
-                raise Exception(
+                raise InternalError(
                     f"{BColours.fail}Internal error processing device "
-                    + f"'{device.name}', water usage unexpectedly `None`.{BColours.endc}",
+                    + f"'{device.name}', clean-water usage unexpectedly `None`."
+                    + f"{BColours.endc}",
                 )
 
             device_load = hourly_device_usage.mul(  # type: ignore
                 float(device.clean_water_usage)
             )
             logger.info("Water usage for %s successfully computed.", device.name)
+        elif resource_type == ResourceType.HOT_CLEAN_WATER:
+            if device.hot_water_usage is None:
+                raise InternalError(
+                    f"{BColours.fail}Internal error processing device "
+                    + f"'{device.name}', hot-water usage unexpectedly `None`."
+                    + f"{BColours.endc}",
+                )
+
+            device_load = hourly_device_usage.mul(  # type: ignore
+                float(device.hot_water_usage)
+            )
         else:
             logger.error(
                 "%sUnsuported load type used: %s%s",
@@ -618,7 +671,16 @@ def process_device_hourly_power(
             )
 
         # Reset the index on the device load.
-        device_load = device_load.reset_index(drop=True)
+        try:
+            device_load = device_load.reset_index(drop=True)
+        except UnboundLocalError:
+            logger.error(
+                "%sHandling of resource load failed due to unknown load type: %s%s",
+                BColours.fail,
+                resource_type.value,
+                BColours.endc,
+            )
+            raise
 
         # Save the hourly power profile.
         logger.info("Saving hourly power usage for %s.", device.name)
@@ -948,6 +1010,13 @@ def process_load_profiles(
             device: device_utilisation
             for device, device_utilisation in device_utilisations.items()
             if device.clean_water_usage is not None
+        }
+    elif resource_type == ResourceType.HOT_CLEAN_WATER:
+        resource_name = "hot_water"
+        relevant_device_utilisations = {
+            device: device_utilisation
+            for device, device_utilisation in device_utilisations.items()
+            if device.hot_water_usage is not None
         }
 
     else:

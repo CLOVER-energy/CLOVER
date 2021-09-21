@@ -90,8 +90,8 @@ def calculate_pvt_output(
         ][0]
     except IndexError:
         logger.error(
-            "%sNo valid thermal desalination plants specified - this is currently "
-            "the only supported use of PV-T.%s",
+            "%sNo valid thermal desalination plants specified despite PV-T being "
+            "specified.%s",
             BColours.fail,
             BColours.endc,
         )
