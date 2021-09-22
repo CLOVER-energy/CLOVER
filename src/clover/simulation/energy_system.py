@@ -49,7 +49,7 @@ from ..generation.solar import HybridPVTPanel, PVPanel, solar_degradation
 from ..load.load import population_hourly
 from .__utils__ import Minigrid
 from .diesel import (
-    DieselBackupGenerator,
+    DieselGenerator,
     get_diesel_energy_and_times,
     get_diesel_fuel_usage,
 )
@@ -382,7 +382,7 @@ def run_simulation(
     Inputs:
         - convertors:
             The `list` of :class:`Convertor` instances available to be used.
-        - diesel_backup_generator:
+        - diesel_generator:
             The backup diesel generator for the system being modelled.
         - electric_storage_size:
             Amount of storage in terms of the number of batteries included.
@@ -997,7 +997,7 @@ def run_simulation(
                 "Diesel mode `backup` was selected but no backup threshold was "
                 "specified.",
             )
-        if minigrid.diesel_backup_generator is None:
+        if minigrid.diesel_generator is None:
             raise InputFileError(
                 "energy system inputs",
                 "No backup diesel generato was provided on the energy system despite "
@@ -1012,7 +1012,7 @@ def run_simulation(
         diesel_fuel_usage = pd.DataFrame(
             get_diesel_fuel_usage(
                 int(diesel_capacity),
-                minigrid.diesel_backup_generator,
+                minigrid.diesel_generator,
                 diesel_energy,
                 diesel_times,
             ).values

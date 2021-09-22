@@ -27,14 +27,14 @@ import pandas as pd  # type: ignore  # pylint: disable=import-error
 
 
 __all__ = (
-    "DieselBackupGenerator",
+    "DieselGenerator",
     "get_diesel_energy_and_times",
     "get_diesel_fuel_usage",
 )
 
 
 @dataclasses.dataclass
-class DieselBackupGenerator:
+class DieselGenerator:
     """
     Represents a diesel backup generator.
 
@@ -45,10 +45,14 @@ class DieselBackupGenerator:
         The minimum capacity of the generator, defined between 0 (able to operate with
         any load) and 1 (only able to operate at maximum load).
 
+    .. attribute:: name
+        The name of the generator.
+
     """
 
     diesel_consumption: float
     minimum_load: float
+    name: str
 
 
 def _find_deficit_threshold(
@@ -124,7 +128,7 @@ def get_diesel_energy_and_times(
 
 def get_diesel_fuel_usage(
     capacity: int,
-    diesel_backup_generator: DieselBackupGenerator,
+    diesel_generator: DieselGenerator,
     diesel_energy: pd.DataFrame,
     diesel_times: pd.DataFrame,
 ) -> pd.DataFrame:
@@ -136,7 +140,7 @@ def get_diesel_fuel_usage(
     Inputs:
         - capacity:
             Capacity (kW) of the diesel generator.
-        - diesel_backup_generator:
+        - diesel_generator:
             The diesel backup generator being modelled.
         - diesel_energy:
             Profile of energy supplued by diesel backup.
@@ -150,15 +154,15 @@ def get_diesel_fuel_usage(
     """
 
     load_factor = diesel_energy.div(capacity)  # type: ignore
-    above_minimum = load_factor * (load_factor > diesel_backup_generator.minimum_load)
-    below_minimum = diesel_backup_generator.minimum_load * (
-        load_factor <= diesel_backup_generator.minimum_load
+    above_minimum = load_factor * (load_factor > diesel_generator.minimum_load)
+    below_minimum = diesel_generator.minimum_load * (
+        load_factor <= diesel_generator.minimum_load
     )
     load_factor = pd.DataFrame(above_minimum.values + below_minimum.values).mul(  # type: ignore
         diesel_times
     )
 
-    fuel_usage = load_factor * capacity * diesel_backup_generator.diesel_consumption
+    fuel_usage = load_factor * capacity * diesel_generator.diesel_consumption
     fuel_usage = fuel_usage.astype(float)
 
     return fuel_usage
