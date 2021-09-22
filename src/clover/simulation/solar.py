@@ -21,9 +21,9 @@ performance under environmental conditions needs to be calculated.
 from logging import Logger
 from typing import Dict, List, Tuple
 
-import pandas as pd  # type: ignore  # pylint: disable=missing-import
+import pandas as pd  # type: ignore  # pylint: disable=import-error
 
-from tqdm import tqdm  # type: ignore  # pylint: disable=missing-import
+from tqdm import tqdm  # type: ignore  # pylint: disable=import-error
 
 from ..__utils__ import BColours, InputFileError, ResourceType
 from ..conversion.conversion import Convertor, ThermalDesalinationPlant

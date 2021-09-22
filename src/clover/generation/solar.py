@@ -24,7 +24,7 @@ import enum
 from logging import Logger
 from typing import Any, Dict, List, Optional, Tuple
 
-import pandas as pd  # type: ignore  # pylint: disable=missing-import
+import pandas as pd  # type: ignore  # pylint: disable=import-error
 
 from ..__utils__ import InputFileError, Location
 from ..conversion.conversion import ThermalDesalinationPlant
