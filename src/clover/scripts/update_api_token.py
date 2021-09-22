@@ -22,7 +22,7 @@ import sys
 
 from typing import Any, List
 
-import yaml  # type: ignore  # pylint: disable=missing-import
+import yaml  # type: ignore  # pylint: disable=import-error
 
 from ..__utils__ import get_logger, read_yaml
 from ..fileparser import GENERATION_INPUTS_FILE, INPUTS_DIRECTORY, LOCATIONS_FOLDER_NAME
