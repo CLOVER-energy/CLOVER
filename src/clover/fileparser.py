@@ -44,7 +44,7 @@ from .conversion.conversion import (
     WaterSource,
 )
 from .optimisation.optimisation import Optimisation
-from .simulation.diesel import DieselBackupGenerator
+from .simulation.diesel import DieselGenerator
 from .simulation.energy_system import Minigrid
 
 __all__ = (
@@ -76,6 +76,10 @@ DEVICE_UTILISATION_TEMPLATE_FILENAME = "{device}_times.csv"
 # Device utilisations input directory:
 #   The relative path to the directory contianing the device-utilisaion information.
 DEVICE_UTILISATIONS_INPUT_DIRECTORY = os.path.join("load", "device_utilisation")
+
+# Diesel generators:
+#   Keyword used for parsing diesel-generator information.
+DIESEL_GENERATORS: str = "diesel_generators"
 
 # Diesel inputs file:
 #   The relative path to the diesel-inputs file.
@@ -287,6 +291,17 @@ def parse_input_files(
             )
             raise
 
+    # Parse the energy system input.
+    energy_system_inputs_filepath = os.path.join(
+        inputs_directory_relative_path, ENERGY_SYSTEM_INPUTS_FILE
+    )
+    energy_system_inputs = read_yaml(energy_system_inputs_filepath, logger)
+    if not isinstance(energy_system_inputs, dict):
+        raise InputFileError(
+            "energy system inputs", "Energy system inputs are not of type `dict`."
+        )
+    logger.info("Energy system inputs successfully parsed.")
+
     diesel_inputs_filepath = os.path.join(
         inputs_directory_relative_path,
         DIESEL_INPUTS_FILE,
@@ -298,9 +313,12 @@ def parse_input_files(
     if not isinstance(diesel_inputs, dict):
         raise InputFileError("diesel inputs", "Diesel inputs are not of type `dict`.")
     try:
-        diesel_backup_generator = DieselBackupGenerator(
-            diesel_inputs["diesel_consumption"], diesel_inputs["minimum_load"]
-        )
+        diesel_generators: List[DieselGenerator] = [
+            DieselGenerator(
+                entry["diesel_consumption"], entry["minimum_load"], entry["name"]
+            )
+            for entry in diesel_inputs[DIESEL_GENERATORS]
+        ]
     except KeyError as e:
         logger.error(
             "%sMissing information in diesel inputs file: %s%s",
@@ -311,16 +329,37 @@ def parse_input_files(
         raise
     logger.info("Diesel inputs successfully parsed.")
 
-    # Parse the energy system input.
-    energy_system_inputs_filepath = os.path.join(
-        inputs_directory_relative_path, ENERGY_SYSTEM_INPUTS_FILE
-    )
-    energy_system_inputs = read_yaml(energy_system_inputs_filepath, logger)
-    if not isinstance(energy_system_inputs, dict):
-        raise InputFileError(
-            "energy system inputs", "Energy system inputs are not of type `dict`."
+    # Determine the diesel generator being modelled.
+    if "diesel_generator" in energy_system_inputs:
+        try:
+            diesel_generator = [
+                generator for generator in diesel_generators if generator.name == energy_system_inputs["diesel_generator"]
+            ][0]
+        except IndexError:
+            logger.error(
+                "%sNo matching diesel generator information for generator %s found in "
+                "diesel inputs file.%s",
+                BColours.fail,
+                energy_system_inputs["diesel_generator"],
+                BColours.endc
+            )
+            raise InputFileError(
+                "energy system inputs",
+                "Diesel generator '{}' not found in diesel inputs.".format(
+                    energy_system_inputs["diesel_generator"]
+                )
+            ) from None
+    else:
+        logger.error(
+            "%sDiesel generator must be specified in the energy system inputs file.%s",
+            BColours.fail,
+            BColours.endc
         )
-    logger.info("Energy system inputs successfully parsed.")
+        raise InputFileError(
+            "energy system inputs",
+            "No diesel generator was specified. Use the `diesel_generator` keyword to "
+            "select a valid diesel generator."
+        )
 
     # Parse the solar input information.
     solar_generation_inputs_filepath = os.path.join(
@@ -476,7 +515,7 @@ def parse_input_files(
         raise InputFileError("tank inputs", "Tank inputs file is not of type `list`.")
 
     minigrid = Minigrid.from_dict(
-        diesel_backup_generator,
+        diesel_generator,
         energy_system_inputs,
         pv_panel,
         pvt_panel,
@@ -677,8 +716,31 @@ def parse_input_files(
 
     # Update the impact inputs with the diesel data.
     logger.info("Updating with diesel impact data.")
-    finance_inputs[ImpactingComponent.DIESEL.value] = diesel_inputs[COSTS]
-    ghg_data[ImpactingComponent.DIESEL.value] = diesel_inputs[EMISSIONS]
+    try:
+        diesel_costs = [
+            entry[COSTS]
+            for entry in diesel_inputs["diesel_generators"]
+            if entry["name"] == minigrid.diesel_generator.name
+        ][0]
+    except IndexError:
+        logger.error("Failed to determine diesel cost information.")
+        raise
+    else:
+        logger.info("Diesel cost information successfully parsed.")
+    try:
+        diesel_emissions = [
+            entry[EMISSIONS]
+            for entry in diesel_inputs["diesel_generators"]
+            if entry["name"] == minigrid.diesel_generator.name
+        ][0]
+    except IndexError:
+        logger.error("Failed to determine diesel emission information.")
+        raise
+    else:
+        logger.info("Diesel emission information successfully parsed.")
+    logger.info("Updating with diesel impact data.")
+    finance_inputs[ImpactingComponent.DIESEL.value] = diesel_costs
+    ghg_data[ImpactingComponent.DIESEL.value] = diesel_emissions
     logger.info("Diesel impact data successfully updated.")
 
     # Update the impact inputs with the battery data.
