@@ -27,7 +27,7 @@ import dataclasses
 from typing import Any, Dict, List, Optional, Union
 
 from ..generation.solar import HybridPVTPanel, PVPanel
-from .diesel import DieselBackupGenerator
+from .diesel import DieselGenerator
 from .storage import Battery, CleanWaterTank
 
 __all__ = ("Minigrid",)
@@ -62,7 +62,7 @@ class Minigrid:
     .. attribute:: dc_transmission_efficiency
         The DC transmission efficiency, if applicable.
 
-    .. attribute:: diesel_backup_generator
+    .. attribute:: diesel_generator
         The diesel backup generator associated with the minigrid system.
 
     .. attribute:: pv_panel
@@ -81,14 +81,14 @@ class Minigrid:
     dc_to_ac_conversion_efficiency: Optional[float]
     dc_to_dc_conversion_efficiency: Optional[float]
     dc_transmission_efficiency: Optional[float]
-    diesel_backup_generator: Optional[DieselBackupGenerator]
+    diesel_generator: Optional[DieselGenerator]
     pv_panel: PVPanel
     pvt_panel: Optional[HybridPVTPanel]
 
     @classmethod
     def from_dict(
         cls,
-        diesel_backup_generator: DieselBackupGenerator,
+        diesel_generator: DieselGenerator,
         minigrid_inputs: Dict[Union[int, str], Any],
         pv_panel: PVPanel,
         pvt_panel: Optional[HybridPVTPanel],
@@ -99,7 +99,7 @@ class Minigrid:
         Returns a :class:`Minigrid` instance based on the inputs provided.
 
         Inputs:
-            - diesel_backup_generator:
+            - diesel_generator:
                 The diesel backup generator to use for the run.
             - minigrid_inputs:
                 The inputs for the minigrid/energy system, extracted from the input
@@ -160,7 +160,7 @@ class Minigrid:
             minigrid_inputs["dc_transmission_efficiency"]
             if "dc_transmission_efficiency" in minigrid_inputs
             else None,
-            diesel_backup_generator,
+            diesel_generator,
             pv_panel,
             pvt_panel,
         )

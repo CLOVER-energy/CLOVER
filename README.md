@@ -30,7 +30,7 @@ conda install --file C:\\Users\<User>\...\requirements.txt
 New locations can be set up in one of two ways:
 * By creating a new location from scratch and inputting all necessary information. To do this, call the `new_location` helper script with just the name of your new location:
   ```
-  python -m clover.scripts.new_location <new_location_name>
+  python -m src.clover.scripts.new_location <new_location_name>
   ```
   or, if on a Linux machine,
   ```
@@ -38,7 +38,7 @@ New locations can be set up in one of two ways:
   ```
 * By basing the location on an existing location. To do this, call the `new_location` helper script with the `--from-existing` flag:
   ```
-  python -m clover.scripts.new_location <new_location_name> --from-existing <existing_location>
+  python -m src.clover.scripts.new_location <new_location_name> --from-existing <existing_location>
   ```
   or, if on a Linux machine,
   ```
@@ -49,7 +49,7 @@ New locations can be set up in one of two ways:
 
 As part of the ongoing development of CLOVER, new features will be introduced. In order to incorporate these into existing CLOVER locations on your system, you can use the `new_location` script provided to update these locations:
 ```
-python -m clover.scripts.new_location <location_name> --update
+python -m src.clover.scripts.new_location <location_name> --update
 ```
 CLOVER will search through your location and attempt to replace missing files and include new files that have been brought in by an update.
 
@@ -96,7 +96,7 @@ When running a CLOVER simulation or optimisation, profiles will be generated if 
 
 To generate the profiles on their own, run CLOVER with the name of the location only:
 ```
-python -m clover --location <location_name>
+python -m src.clover --location <location_name>
 ```
 or, on a Linux machine:
 ```
@@ -107,7 +107,7 @@ or, on a Linux machine:
 
 When running a CLOVER simulation, the size of the PV and storage systems needs to be specified on the comand-line:
 ```
-python -m clover --location <location_name> --simulation --pv-system-size <float> --storage-size <float>
+python -m src.clover --location <location_name> --simulation --pv-system-size <float> --storage-size <float>
 ```
 or, on a Linux machine:
 ```
