@@ -28,7 +28,7 @@ import seaborn as sns  # type: ignore  # pylint: disable=import-error
 import matplotlib.pyplot as plt  # type: ignore  # pylint: disable=import-error
 from tqdm import tqdm  # type: ignore  # pylint: disable=import-error
 
-from .__utils__ import CUT_OFF_TIME, DemandType, KeyResults
+from .__utils__ import CUT_OFF_TIME, DemandType, KeyResults, ResourceType
 
 __all__ = (
     "get_key_results",
@@ -152,8 +152,7 @@ def plot_outputs(
     simulation_name: str,
     simulation_number: int,
     simulation_output: pd.DataFrame,
-    total_clean_water_load: pd.DataFrame,
-    total_electric_load: pd.DataFrame,
+    total_loads: Dict[ResourceType, pd.DataFrame],
     total_solar_output: pd.DataFrame,
 ) -> None:
     """
@@ -182,10 +181,9 @@ def plot_outputs(
             The number of the simulation being run.
         - simulation_output:
             The output of the simulation carried out.
-        - total_clean_water_load:
-            The total clean water load placed on the system.
-        - total_electric_load:
-            The total electric load placed on the system.
+        - total_loads:
+            The total loads, keyed by :class:`.__utils__.ResourceType`, placed on the
+            system.
         - total_solar_output:
             The total solar power produced by the PV installation.
 
@@ -199,6 +197,9 @@ def plot_outputs(
     )
     os.makedirs(os.path.join(output_directory, simulation_name), exist_ok=True)
     os.makedirs(figures_directory, exist_ok=True)
+
+    total_clean_water_load = total_loads[ResourceType.CLEAN_WATER]
+    total_electric_load = total_loads[ResourceType.ELECTRIC]
 
     with tqdm(
         total=21 if initial_clean_water_hourly_loads is not None else 10,
