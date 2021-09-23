@@ -333,7 +333,9 @@ def parse_input_files(
     if "diesel_generator" in energy_system_inputs:
         try:
             diesel_generator = [
-                generator for generator in diesel_generators if generator.name == energy_system_inputs["diesel_generator"]
+                generator
+                for generator in diesel_generators
+                if generator.name == energy_system_inputs["diesel_generator"]
             ][0]
         except IndexError:
             logger.error(
@@ -341,24 +343,24 @@ def parse_input_files(
                 "diesel inputs file.%s",
                 BColours.fail,
                 energy_system_inputs["diesel_generator"],
-                BColours.endc
+                BColours.endc,
             )
             raise InputFileError(
                 "energy system inputs",
                 "Diesel generator '{}' not found in diesel inputs.".format(
                     energy_system_inputs["diesel_generator"]
-                )
+                ),
             ) from None
     else:
         logger.error(
             "%sDiesel generator must be specified in the energy system inputs file.%s",
             BColours.fail,
-            BColours.endc
+            BColours.endc,
         )
         raise InputFileError(
             "energy system inputs",
             "No diesel generator was specified. Use the `diesel_generator` keyword to "
-            "select a valid diesel generator."
+            "select a valid diesel generator.",
         )
 
     # Parse the solar input information.
