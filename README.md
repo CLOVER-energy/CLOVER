@@ -134,6 +134,10 @@ or, on a Linux machine:
 ```
 ./bin/clover.sh --location <location_name>
 ```
+or, if you have installed the `clover-energy` package
+```
+clover --location <location_name>
+```
 
 #### Running a simulation
 
@@ -145,7 +149,26 @@ or, on a Linux machine:
 ```
 ./bin/clover.sh --location <location_name> --simulation --pv-system-size <float> --storage-size <float>
 ```
+or, if you have installed the `clover-energy` package
+```
+clover --location <location_name> --simulation --pv-system-size <float> --storage-size <float>
+```
 where `<float>` indicates that a floating point object, i.e., a number, is an acceptable input. The number should not have quotation marks around it.
+
+#### Running an optimisation
+
+When running a CLOVER optimisation, the size of the PV and storage systems are optimised based on the information inputted in the `optimisation_inputs.yaml` file. To run an optimisation, simply call CLOVER from the command line:
+```
+python -m src.clover --location <location_name> --optimisation
+```
+or, on a Linux machine:
+```
+./bin/clover.sh --location <location_name> --optimisation
+```
+or, if you have installed the `clover-energy` package
+```
+clover --location <location_name> --optimisation
+```
 
 ##### Analysis
 
