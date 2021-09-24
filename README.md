@@ -5,7 +5,7 @@ CLOVER minigrid simulation and optimisation for supporting rural electrification
 ## CLOVER Quick Start Guide
 
 This guide provides a very brief introduction to get your CLOVER installation up and running as quickly as possible following the initial download. The file structure has two main branches: 
-* a python branch, `scripts`, which contains CLOVER's source code which is used to perform simulations and generate outputs,
+* a python branch, `src`, which contains CLOVER's source code which is used to perform simulations and generate outputs,
 * and a data branch, `locations`, which contains informaiton describing the locations being modelled and contains parameters to outline the simulations and optimisations that should be run.
 
 An example location, "Bahraich," in India, is included in the initial download for reference.
@@ -25,6 +25,16 @@ Note, on some systems, Anaconda is unable to find the requirements.txt file. In 
 conda install --file C:\\Users\<User>\...\requirements.txt
 ```
 
+### Pip install
+
+The CLOVER package is published as an installable package, `clover-energy`, which can be installed using the python package manage, `pip`, in the usual way:
+```
+python -m pip install clover-energy
+```
+This should install all of the relevant dependencies for CLOVER as well as providing three installable executable files: `new-clover-location`, `update-api-token` and `clover`, which are described in more detail below.
+
+Note, installing CLOVER in this way will install the package to your conda environment or local computer and will not provide you with easy access to the source code files. To develop CLOVER and have access to the source code, ensure that you download the code from GitHub.
+
 ### Setting up a new location
 
 New locations can be set up in one of two ways:
@@ -36,6 +46,10 @@ New locations can be set up in one of two ways:
   ```
   ./bin/new_location.sh <new_location_name>
   ```
+  or, if you have installed the `clover-energy` package:
+  ```
+  new-clover-location <new_location_name>
+  ```
 * By basing the location on an existing location. To do this, call the `new_location` helper script with the `--from-existing` flag:
   ```
   python -m src.clover.scripts.new_location <new_location_name> --from-existing <existing_location>
@@ -44,6 +58,10 @@ New locations can be set up in one of two ways:
   ```
   ./bin/new_location.sh <new_location_name> --from-existing <existing_location>
   ```
+  or, if you have installed the `clover-energy` package:
+  ```
+  new-clover-location <new_location_name> --from-existing <existing_location>
+  ```
   
 #### Updating an existing location
 
@@ -51,11 +69,25 @@ As part of the ongoing development of CLOVER, new features will be introduced. I
 ```
 python -m src.clover.scripts.new_location <location_name> --update
 ```
-CLOVER will search through your location and attempt to replace missing files and include new files that have been brought in by an update.
+or, if you have installed the `clover-energy` package:
+```
+new-clover-location <location_name> --update
+```
+
+CLOVER will search through your location and attempt to replace missing files and include new files that have been brought in by an update. Note, CLOVER will not correct missing or invalid fields within files, these must be corrected manually and the User Guide should be consulted for more information.
 
 ### Renewables.ninja
 
 Go to https://www.renewables.ninja/register to register a free account to gain your API token. This will be needed in order for CLOVER to correctly fetch and utilise solar profiles.
+
+Once you have created a new location, you can input your API token using a CLOVER helper script:
+```
+python -m src.clover.scripts.update_api_token --location <location_name> --token <renewables_ninja_api_token>
+```
+or, if you have installed the `clover-energy` package:
+```
+update-api-token --location <location_name> --token <renewables_ninja_api_token>
+```
 
 ### Completing input files
 
