@@ -17,6 +17,6 @@ conversion:
   dc_to_dc: 0.95 # Conversion efficiency (0.0-1.0)
   ac_to_dc: 0.8 # Conversion efficiency (0.0-1.0)
   ac_to_ac: 0.98 # Conversion efficiency (0.0-1.0)
-diesel_generator: backup_diesel
+diesel_generator: default_diesel
 pv_panel: default_pv
 # pvt_panel: default_pvt

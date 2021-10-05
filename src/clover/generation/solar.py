@@ -24,9 +24,10 @@ import enum
 from logging import Logger
 from typing import Any, Dict, List, Optional, Tuple
 
+import numpy as np  # type: ignore  # pylint: disable=import-error
 import pandas as pd  # type: ignore  # pylint: disable=import-error
 
-from ..__utils__ import InputFileError, Location
+from ..__utils__ import HEAT_CAPACITY_OF_WATER, InputFileError, Location
 from ..conversion.conversion import ThermalDesalinationPlant
 from .__utils__ import BaseRenewablesNinjaThread, SolarDataType, total_profile_output
 
@@ -288,10 +289,11 @@ class HybridPVTPanel(SolarPanel, panel_type=SolarPanelType.PV_T):
     def fractional_performance(
         self,
         ambient_temperature: float,
-        desalination_plant: ThermalDesalinationPlant,
+        collector_input_temperature: float,
         irradiance: float,
+        mass_flow_rate: float,
         wind_speed: float,
-    ) -> Tuple[float, float, float]:
+    ) -> Tuple[float, float]:
         """
         Computes the fractional performance of the :class:`HybridPVTPanel`.
 
@@ -303,9 +305,14 @@ class HybridPVTPanel(SolarPanel, panel_type=SolarPanelType.PV_T):
             - ambient_temperature:
                 The ambient temperature surrounding the collector, measured in degrees
                 Celcius.
+            - collector_input_temperature:
+                The input temperature of HTF entering the collector, measured in degrees
+                Celcius.
             - irradiance:
                 The total irradiance incident on the collector, both direct and diffuse,
                 measured in W/m^2.
+            - mass_flow_rate:
+                The mass flow rate through the collector, measured in litres per hour.
             - wind_speed:
                 The wind speed at the collector location, measured in meters per second.
 
@@ -315,13 +322,11 @@ class HybridPVTPanel(SolarPanel, panel_type=SolarPanelType.PV_T):
             - fractional_electrical_performance:
                 The fractional electrical performance of the collector, where 1
                 corresponds to the rated performance under standard test conditions.
-            - mass_of_water_supplied:
-                The mass of hot-water supplied to the end system.
 
         """
 
         # Compute the temperature of the collector using the reduced PV-T model.
-        collector_temperature = ambient_temperature + 0.035 * irradiance
+        # collector_temperature = ambient_temperature + 0.035 * irradiance
 
         if self.thermal_coefficient is None:
             raise InputFileError(
@@ -336,23 +341,118 @@ class HybridPVTPanel(SolarPanel, panel_type=SolarPanelType.PV_T):
                 "instances. This needs to be specified on the appropriate PV layer.",
             )
 
+        # Compute the thermal efficiency of the collector.
+        collector_output_temperature = (
+            29.64672516158721  # a_0
+            - 18.767769464424642 * np.log(irradiance)  # a_1
+            + 2.8283543677975196 * (np.log(irradiance)) ** 2  # a_2
+            + 21.552917257145864 * np.log(mass_flow_rate)  # a_3
+            + 2.528969773517288 * (np.log(mass_flow_rate)) ** 2  # a_4
+            - 5.863788169988237 * np.log(mass_flow_rate) * np.log(irradiance)  # a_5
+            + ambient_temperature
+            * (
+                -0.4200602805841626  # a_6
+                + 0.22931781460194964 * np.log(irradiance)  # a_7
+                - 0.015892402139001244 * (np.log(irradiance)) ** 2  # a_8
+                - 0.03155966183122158 * np.log(mass_flow_rate)  # a_9
+                + 0.07856696763289088 * (np.log(mass_flow_rate)) ** 2  # a_10
+                - 0.04501398307462642
+                * np.log(mass_flow_rate)
+                * np.log(irradiance)  # a_11
+            )
+            + wind_speed ** 0.16
+            * (
+                -8.529476790056885  # a_12
+                + 3.411302278245225 * np.log(irradiance)  # a_13
+                - 0.4216667726668471 * (np.log(irradiance)) ** 2  # a_14
+                - 2.2363972399451857 * np.log(mass_flow_rate)  # a_15
+                - 0.2707504635522355 * (np.log(mass_flow_rate)) ** 2  # a_16
+                + 0.7011872178695358
+                * np.log(mass_flow_rate)
+                * np.log(irradiance)  # a_17
+            )
+            + ambient_temperature
+            * wind_speed ** 0.16
+            * (
+                0.2843016555887696  # a_18
+                - 0.09916192848741194 * np.log(irradiance)  # a_19
+                + 0.009286872190280411 * (np.log(irradiance)) ** 2  # a_20
+                + 0.009286872190280411 * np.log(mass_flow_rate)  # a_21
+                - 0.0071519996231281914 * (np.log(mass_flow_rate)) ** 2  # a_22
+                - 0.0040767400384714705
+                * np.log(mass_flow_rate)
+                * np.log(irradiance)  # a_23
+            )
+            + collector_input_temperature
+            * (
+                0.6120080384379737  # a_24
+                - 0.028932403309247557 * np.log(irradiance)  # a_25
+                + 0.0024285537116732958 * (np.log(irradiance)) ** 2  # a_26
+                + 0.31550814511058756 * np.log(mass_flow_rate)  # a_27
+                - 0.06940962035571498 * (np.log(mass_flow_rate)) ** 2  # a_28
+                + 0.0029585574435488093
+                * np.log(mass_flow_rate)
+                * np.log(irradiance)  # a_29
+            )
+        )
+
         # Compute the fractional electrical performance of the collector.
         fractional_electrical_performance = (
-            1
-            - self.thermal_coefficient
-            * (collector_temperature - self.reference_temperature)
-        ) * (irradiance / 1000)
-
-        # If the collector temperature was greater than the plant minimum temperature.
-        # if collector_output_temperature > desalination_plant.minimum_water_input_temperature:
-        # Then return the default input temperature and water supplied.
-        # return default_collector_input_temperature, fractional_electrical_performance, volume_supplied
-
-        # Otherwise, cycle the water back around.
-        # return collector_output_temperature, fractional_electrical_performance, 0
+            0.11330162094249516  # a_0
+            + 0.014638983089090027 * np.log(irradiance)  # a_1
+            - 0.0018810291362234613 * (np.log(irradiance)) ** 2  # a_2
+            - 0.007235165211261357 * np.log(mass_flow_rate)  # a_3
+            - 0.0011390318941398312 * (np.log(mass_flow_rate)) ** 2  # a_4
+            + 0.002085294980105367 * np.log(mass_flow_rate) * np.log(irradiance)  # a_5
+            + ambient_temperature
+            * (
+                0.00013225035600625062  # a_6
+                - 0.00010197844772655245 * np.log(irradiance)  # a_7
+                + 8.016691422437331e-06 * (np.log(irradiance)) ** 2  # a_8
+                + 1.9546446416553807e-05 * np.log(mass_flow_rate)  # a_9
+                - 3.192848032866139e-05 * (np.log(mass_flow_rate)) ** 2  # a_10
+                + 1.5574169292696083e-05
+                * np.log(mass_flow_rate)
+                * np.log(irradiance)  # a_11
+            )
+            + wind_speed ** 0.16
+            * (
+                0.006330506245869882  # a_12
+                - 0.002378408900749477 * np.log(irradiance)  # a_13
+                + 0.0002672677478072677 * (np.log(irradiance)) ** 2  # a_14
+                + 0.0008074828343584473 * np.log(mass_flow_rate)  # a_15
+                + 0.00016013731191544364 * (np.log(mass_flow_rate)) ** 2  # a_16
+                - 0.0002699265373718312
+                * np.log(mass_flow_rate)
+                * np.log(irradiance)  # a_17
+            )
+            + ambient_temperature
+            * wind_speed ** 0.16
+            * (
+                -0.0001557959065989755  # a_18
+                + 5.807472295886407e-05 * np.log(irradiance)  # a_19
+                - 5.720589490531354e-06 * (np.log(irradiance)) ** 2  # a_20
+                - 2.270579483917526e-05 * np.log(mass_flow_rate)  # a_21
+                + 1.9486580125142174e-06 * (np.log(mass_flow_rate)) ** 2  # a_22
+                + 3.7239999323378095e-06
+                * np.log(mass_flow_rate)
+                * np.log(irradiance)  # a_23
+            )
+            + collector_input_temperature
+            * (
+                -0.000436294396069456  # a_24
+                + 3.2731688321054284e-06 * np.log(irradiance)  # a_25
+                - 3.8752493217827176e-07 * (np.log(irradiance)) ** 2  # a_26
+                - 0.00011966004317055599 * np.log(mass_flow_rate)  # a_27
+                + 3.0482389032643045e-05 * (np.log(mass_flow_rate)) ** 2  # a_28
+                - 1.4745041309693858e-06
+                * np.log(mass_flow_rate)
+                * np.log(irradiance)  # a_29
+            )
+        )
 
         # Return this, along with the output temperature of HTF leaving the collector.
-        return 0, fractional_electrical_performance, 0
+        return collector_output_temperature, fractional_electrical_performance
 
 
 def solar_degradation(lifetime: int) -> pd.DataFrame:
