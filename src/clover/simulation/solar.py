@@ -113,17 +113,33 @@ def calculate_pvt_output(
         ):
             # Compute the fractional PV-T performance and thermal PV-T outputs.
             (
-                _,
+                collector_output_temperature,
                 fractional_electric_performance,
-                volume_supplied,
             ) = minigrid.pvt_panel.fractional_performance(
                 temperatures[index],
-                thermal_desalination_plant,
+                collector_input_temperature,
                 1000 * irradiances[index],
+                minigrid.pvt_panel.mass_flow_rate,
                 wind_speeds[index],
             )
+
+            # If the desalination plant was able to accept this water, then use this.
+            if (
+                collector_output_temperature
+                >= thermal_desalination_plant.minimum_water_input_temperature
+            ):
+                collector_input_temperature = scenario.water_supply_temperature
+                pvt_volume_output_supplied_map[
+                    index
+                ] = minigrid.pvt_panel.mass_flow_rate
+            # Otherwise, cycle this water back around.
+            else:
+                collector_input_temperature = collector_output_temperature
+                pvt_volume_output_supplied_map[
+                    index
+                ] = minigrid.pvt_panel.mass_flow_rate
+
             pvt_electric_power_per_unit_map[index] = fractional_electric_performance
-            pvt_volume_output_supplied_map[index] = volume_supplied
     except TypeError:
         logger.error(
             "The PV-T system size must be specified explicitly on the command line."
