@@ -44,6 +44,7 @@ __all__ = (
     "ELECTRIC_POWER",
     "FAILED",
     "get_logger",
+    "HEAT_CAPACITY_OF_WATER",
     "hourly_profile_to_daily_sum",
     "InputFileError",
     "InternalError",
@@ -83,6 +84,10 @@ ELECTRIC_POWER: str = "electric_power"
 # Failed message:
 #   The message to display when a task has failed.
 FAILED: str = "[  FAILED  ]"
+
+# Heat capacity of water:
+#   The heat capacity of water, measured in Joules per kilogram Kelvin.
+HEAT_CAPACITY_OF_WATER: int = 4182
 
 # Iteration length:
 #   Used when parsing information about the iteration length to use in optimisations.
