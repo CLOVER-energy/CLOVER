@@ -397,7 +397,7 @@ class HybridPVTPanel(SolarPanel, panel_type=SolarPanelType.PV_T):
         )
 
         # Compute the fractional electrical performance of the collector.
-        fractional_electrical_performance = (
+        electrical_efficiency = (
             0.11330162094249516  # a_0
             + 0.014638983089090027 * np.log(irradiance)  # a_1
             - 0.0018810291362234613 * (np.log(irradiance)) ** 2  # a_2
@@ -450,6 +450,8 @@ class HybridPVTPanel(SolarPanel, panel_type=SolarPanelType.PV_T):
                 * np.log(irradiance)  # a_29
             )
         )
+
+        fractional_electrical_performance = electrical_efficiency * irradiance / 1000
 
         # Return this, along with the output temperature of HTF leaving the collector.
         return collector_output_temperature, fractional_electrical_performance

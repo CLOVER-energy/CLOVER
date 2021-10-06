@@ -780,16 +780,23 @@ def main(args: List[Any]) -> None:
         simulation_times: List[str] = []
 
         simulation_string: str = (
-            f"- {parsed_args.pv_system_size * minigrid.pv_panel.pv_unit} kWp of PV"
-            + (
+            (
                 (
-                    f" ({parsed_args.pv_system_size}x "
-                    + f"{minigrid.pv_panel.pv_unit} kWp panels)"
+                    f"- {parsed_args.pv_system_size * minigrid.pv_panel.pv_unit} kWp of PV"
+                    + (
+                        (
+                            f" ({parsed_args.pv_system_size}x "
+                            + f"{minigrid.pv_panel.pv_unit} kWp panels)"
+                        )
+                        if overrided_default_sizes
+                        else ""
+                    )
+                    + "\n"
                 )
-                if overrided_default_sizes
+                if parsed_args.pv_system_size is not None and scenario.pv
                 else ""
             )
-            + f"\n- {parsed_args.storage_size * minigrid.battery.storage_unit} kWh of "
+            + f"- {parsed_args.storage_size * minigrid.battery.storage_unit} kWh of "
             + "storage"
             + (
                 (
@@ -799,8 +806,9 @@ def main(args: List[Any]) -> None:
                 if overrided_default_sizes
                 else ""
             )
+            + "\n"
             + (
-                "\n- {} PV-T panel units ({} kWp PV and {} kWth per unit)".format(
+                "- {} PV-T panel units ({} kWp PV and {} kWth per unit)\n".format(
                     parsed_args.pvt_system_size,
                     minigrid.pvt_panel.pv_unit,
                     minigrid.pvt_panel.thermal_unit,
@@ -808,11 +816,13 @@ def main(args: List[Any]) -> None:
                 if parsed_args.pvt_system_size is not None
                 else ""
             )
-            + "\n- {}x {} litres clean-water storage".format(
-                parsed_args.num_clean_water_tanks, minigrid.clean_water_tank.mass
+            + (
+                "- {}x {} litres clean-water storage".format(
+                    parsed_args.num_clean_water_tanks, minigrid.clean_water_tank.mass
+                )
+                if ResourceType.CLEAN_WATER in scenario.resource_types
+                else ""
             )
-            if ResourceType.CLEAN_WATER in scenario.resource_types
-            else ""
         )
         print(f"Running a simulation with:\n{simulation_string}")
 
