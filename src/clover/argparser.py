@@ -183,23 +183,6 @@ def validate_args(logger: logging.Logger, parsed_args: argparse.Namespace) -> bo
         )
         raise MissingParametersError("location")
 
-    if parsed_args.simulation:
-        if parsed_args.pv_system_size is None:
-            logger.error(
-                "%sIf running a simulation, the pv system size must be specified.%s",
-                BColours.fail,
-                BColours.endc,
-            )
-            raise MissingParametersError("pv-system-size")
-
-        if parsed_args.storage_size is None:
-            logger.error(
-                "%sIf running a simulation, the storage size must be specified.%s",
-                BColours.fail,
-                BColours.endc,
-            )
-            raise MissingParametersError("storage size")
-
     if parsed_args.simulation and parsed_args.optimisation:
         logger.error(
             "%sCannot run both a simulation and an optimisation.%s",

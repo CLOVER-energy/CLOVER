@@ -44,7 +44,7 @@ from ..__utils__ import (
     Simulation,
     SystemDetails,
 )
-from ..conversion.conversion import Convertor
+from ..conversion.conversion import Convertor, ThermalDesalinationPlant
 from ..generation.solar import HybridPVTPanel, PVPanel, solar_degradation
 from ..load.load import population_hourly
 from .__utils__ import Minigrid
@@ -200,7 +200,7 @@ def _get_electric_battery_storage_profile(
             0 : (end_hour - start_hour)
         ]
         pvt_electric_generation: Optional[pd.DataFrame] = pd.DataFrame(
-            np.asarray(pvt_electric_generation_array)[start_hour:end_hour]  # type: ignore
+            np.asarray(pvt_electric_generation_array)
             * np.asarray(pvt_degradation_array)
         )
     else:
@@ -499,18 +499,55 @@ def run_simulation(
                 "Wind speed data required in PV-T computation and not passed to the "
                 "energy system module."
             )
+
+        # Determine the thermal desalination plant being used.
+        logger.info("Determining desalination plant.")
+        try:
+            thermal_desalination_plant: ThermalDesalinationPlant = [
+                convertor
+                for convertor in convertors
+                if isinstance(convertor, ThermalDesalinationPlant)
+            ][0]
+        except IndexError:
+            logger.error(
+                "%sNo valid thermal desalination plants specified despite PV-T being "
+                "specified.%s",
+                BColours.fail,
+                BColours.endc,
+            )
+            raise InputFileError(
+                "conversion inputs", "No valid thermal desalination plants specified."
+            ) from None
+        logger.info(
+            "Desalination plant determined: %s", thermal_desalination_plant.name
+        )
+
+        # Compute the output of the PV-T system.
         (
-            renewable_clean_water_produced,
+            pvt_collector_output_temperature,
             pvt_electric_power_per_unit,
+            pvt_volume_supplied_per_unit,
         ) = calculate_pvt_output(
-            convertors,
             end_hour,
             irradiance_data[start_hour:end_hour],
             logger,
             minigrid,
+            pvt_size,
+            scenario,
             start_hour,
             temperature_data[start_hour:end_hour],
+            thermal_desalination_plant,
             wind_speed_data[start_hour:end_hour],
+        )
+
+        # Compute the clean water supplied by the desalination unit.
+        renewable_clean_water_produced = (
+            pvt_volume_supplied_per_unit
+            * pvt_size
+            * thermal_desalination_plant.maximum_output_capacity
+            / thermal_desalination_plant.input_resource_consumption[
+                ResourceType.HOT_UNCLEAN_WATER
+            ]
         )
     else:
         pvt_electric_power_per_unit = pd.DataFrame([0] * pv_power_produced.size)
@@ -544,7 +581,7 @@ def run_simulation(
             tank_storage_profile,
         ) = _get_water_storage_profile(
             processed_total_clean_water_load,
-            renewable_clean_water_produced[start_hour:end_hour],  # type: ignore
+            renewable_clean_water_produced,  # type: ignore
         )
         total_clean_water_supplied = pd.DataFrame(
             renewable_clean_water_used_directly.values
@@ -832,7 +869,7 @@ def run_simulation(
                 # pumping to fulfil the demand.
                 if (
                     current_hourly_tank_storage < 0
-                    and scenario.clean_water_mode == CleanWaterMode.PRIORITISE
+                    and scenario.clean_water_scenario.mode == CleanWaterMode.PRIORITISE
                 ):
                     # If there is unmet demand, then carry out desalination and pumping to
                     # fulfil the demand.

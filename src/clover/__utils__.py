@@ -191,6 +191,23 @@ class CleanWaterMode(enum.Enum):
     PRIORITISE = "prioritise"
 
 
+@dataclasses.dataclass
+class CleanWaterScenario:
+    """
+    Specifies the clean-water scenario being carried out.
+
+    .. attribute:: mode
+        The clean water mode being modelled.
+
+    .. attribute:: supply_temperature
+        The temperature, in degrees Celcius, of the water supply to the temperature.
+
+    """
+
+    mode: CleanWaterMode
+    supply_temperature: float
+
+
 def daily_sum_to_monthly_sum(daily_profile):
     """
     Converts an day-by-day profile to a sum for each month.
@@ -1194,10 +1211,13 @@ class Scenario:
     .. attribute:: pv_t
         Whether PV-T is being included in the scenario.
 
+    .. attribute:: water_supply_temperature
+        The supply temperature of the water input to the system.
+
     """
 
     battery: bool
-    clean_water_mode: Optional[CleanWaterMode]
+    clean_water_scenario: Optional[CleanWaterScenario]
     demands: Demands
     diesel_scenario: DieselScenario
     distribution_network: DistributionNetwork
@@ -1229,6 +1249,11 @@ class Scenario:
             else None
         )
 
+        clean_water_scenario = CleanWaterScenario(
+            clean_water_mode,
+            scenario_inputs[ResourceType.CLEAN_WATER.value]["supply_temperature"],
+        )
+
         demands = Demands(
             scenario_inputs["demands"][DemandType.COMMERCIAL.value],
             scenario_inputs["demands"][DemandType.DOMESTIC.value],
@@ -1253,7 +1278,7 @@ class Scenario:
 
         return cls(
             scenario_inputs["battery"],
-            clean_water_mode,
+            clean_water_scenario,
             demands,
             diesel_scenario,
             distribution_network,
