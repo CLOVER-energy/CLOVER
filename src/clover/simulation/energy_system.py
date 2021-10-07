@@ -565,13 +565,17 @@ def run_simulation(
         thermal_desalination_electric_power_consumed = pd.DataFrame(
             (
                 (renewable_clean_water_produced > 0)
-                * thermal_desalination_plant.input_resource_consumption[ResourceType.ELECTRIC]
+                * thermal_desalination_plant.input_resource_consumption[
+                    ResourceType.ELECTRIC
+                ]
                 * thermal_desalination_plant_utilisation
             ).values
         )
     else:
         pvt_electric_power_per_unit = pd.DataFrame([0] * pv_power_produced.size)
-        thermal_desalination_electric_power_consumed = pd.DataFrame([0] * pv_power_produced.size)
+        thermal_desalination_electric_power_consumed = pd.DataFrame(
+            [0] * pv_power_produced.size
+        )
 
     ###############
     # Clean water #
@@ -1144,7 +1148,9 @@ def run_simulation(
             + storage_water_supplied_frame.values
             + backup_desalinator_water_frame.values
             + water_supplied_by_excess_energy_frame.values
-        ).mul((1 - blackout_times))  # type: ignore
+        ).mul(
+            (1 - blackout_times)
+        )  # type: ignore
 
         water_surplus_frame = (
             total_clean_water_supplied - processed_total_clean_water_load > 0  # type: ignore
@@ -1153,12 +1159,16 @@ def run_simulation(
         )
         total_clean_water_used = (
             total_clean_water_supplied - water_surplus_frame  # type: ignore
-        ).mul((1 - blackout_times))  # type: ignore
+        ).mul(
+            (1 - blackout_times)
+        )  # type: ignore
 
         # Compute when the water demand went unmet.
         unmet_clean_water = pd.DataFrame(
             processed_total_clean_water_load.values - total_clean_water_supplied.values
-        ).mul((1 - blackout_times))  # type: ignore
+        ).mul(
+            (1 - blackout_times)
+        )  # type: ignore
         unmet_clean_water = unmet_clean_water * (unmet_clean_water > 0)  # type: ignore
 
         # Find the new clean-water blackout times, according to when there is unmet demand
