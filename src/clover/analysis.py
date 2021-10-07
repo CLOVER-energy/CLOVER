@@ -202,7 +202,7 @@ def plot_outputs(
     total_electric_load = total_loads[ResourceType.ELECTRIC]
 
     with tqdm(
-        total=21 if initial_clean_water_hourly_loads is not None else 10,
+        total=23 if initial_clean_water_hourly_loads is not None else 10,
         desc="plots",
         leave=False,
         unit="plot",
@@ -1290,6 +1290,150 @@ def plot_outputs(
             plt.savefig(
                 os.path.join(figures_directory, "electricity_use_by_supply_type.png"),
                 transparent=True,
+            )
+            plt.close()
+            pbar.update(1)
+
+            # Plot the daily collector output temperature
+            _, ax1 = plt.subplots()
+            collector_output_temperature_january = simulation_output.iloc[0:24]["PV-T output temperature (degC)"]
+            collector_output_temperature_march = simulation_output.iloc[(28 + 31)*24:(28 + 31)*24 + 24]["PV-T output temperature (degC)"]
+            collector_output_temperature_may = simulation_output.iloc[(28 + 31 + 31 + 30)*24:(28 + 31 + 31 + 30)*24 + 24]["PV-T output temperature (degC)"]
+            collector_output_temperature_july = simulation_output.iloc[(28 + 31 + 31 + 30 + 31 + 30)*24:(28 + 31 + 31 + 30 + 31 + 30)*24 + 24]["PV-T output temperature (degC)"]
+            volume_supplied_january = simulation_output.iloc[0:24]["Water heated by the PV-T (l)"]
+            volume_supplied_march = simulation_output.iloc[(28 + 31)*24:(28 + 31)*24 + 24]["Water heated by the PV-T (l)"]
+            volume_supplied_may = simulation_output.iloc[(28 + 31 + 31 + 30)*24:(28 + 31 + 31 + 30)*24 + 24]["Water heated by the PV-T (l)"]
+            volume_supplied_july = simulation_output.iloc[(28 + 31 + 31 + 30 + 31 + 30)*24:(28 + 31 + 31 + 30 + 31 + 30)*24 + 24]["Water heated by the PV-T (l)"]
+
+            ax1.plot(collector_output_temperature_january.values, label="january temp.")
+            # ax1.plot(collector_output_temperature_march.values, label="march temp.")
+            # ax1.plot(collector_output_temperature_may.values, label="may temp.")
+            ax1.plot(collector_output_temperature_july.values, label="july temp.")
+            ax1.legend()
+
+            ax2 = ax1.twinx()
+            ax2.plot(volume_supplied_january.values, "--", label="january output")
+            # ax2.plot(volume_supplied_march.values, "--", label="march output")
+            # ax2.plot(volume_supplied_may.values, "--", label="may output")
+            ax2.plot(volume_supplied_july.values, "--", label="july output")
+            ax2.legend(loc=0)
+
+            plt.xlim(0, 23)
+            plt.xlabel("Hour of day")
+            ax1.set_ylabel("Collector output temperature / degC")
+            ax2.set_ylabel("Volume heated / litres")
+            plt.title("Collector output temprature on the first day of select months")
+            plt.savefig(
+                os.path.join(
+                    figures_directory,
+                    "collector_output_temperature_on_first_month_days.png"
+                ),
+                transparent=True
+            )
+            plt.close()
+            pbar.update(1)
+
+            # Plot the average collector output temperature
+            _, ax1 = plt.subplots()
+            collector_output_temperature_january = np.mean(
+                np.reshape(
+                    simulation_output[0:31 * 24][
+                        "PV-T output temperature (degC)"
+                    ].values,
+                    (31, 24),
+                ),
+                axis=0,
+            )
+            collector_output_temperature_march = np.mean(
+                np.reshape(
+                    simulation_output[(28 + 31) * 24:(28 + 31 + 31) * 24][
+                        "PV-T output temperature (degC)"
+                    ].values,
+                    (31, 24),
+                ),
+                axis=0,
+            )
+            collector_output_temperature_may = np.mean(
+                np.reshape(
+                    simulation_output[(31 + 28 + 31 + 30) * 24:(31 + 28 + 31 + 30 + 31) * 24][
+                        "PV-T output temperature (degC)"
+                    ].values,
+                    (31, 24),
+                ),
+                axis=0,
+            )
+            collector_output_temperature_july = np.mean(
+                np.reshape(
+                    simulation_output[4344:4344 + 31 * 24][
+                        "PV-T output temperature (degC)"
+                    ].values,
+                    (31, 24),
+                ),
+                axis=0,
+            )
+
+            # Plot the average collector output temperature
+            volume_supplied_january = np.mean(
+                np.reshape(
+                    simulation_output[0:31 * 24][
+                        "Water heated by the PV-T (l)"
+                    ].values,
+                    (31, 24),
+                ),
+                axis=0,
+            )
+            volume_supplied_march = np.mean(
+                np.reshape(
+                    simulation_output[(28 + 31) * 24:(28 + 31 + 31) * 24][
+                        "Water heated by the PV-T (l)"
+                    ].values,
+                    (31, 24),
+                ),
+                axis=0,
+            )
+            volume_supplied_may = np.mean(
+                np.reshape(
+                    simulation_output[(31 + 28 + 31 + 30) * 24:(31 + 28 + 31 + 30 + 31) * 24][
+                        "Water heated by the PV-T (l)"
+                    ].values,
+                    (31, 24),
+                ),
+                axis=0,
+            )
+            volume_supplied_july = np.mean(
+                np.reshape(
+                    simulation_output[4344:4344 + 31 * 24][
+                        "Water heated by the PV-T (l)"
+                    ].values,
+                    (31, 24),
+                ),
+                axis=0,
+            )
+
+            ax1.plot(collector_output_temperature_january, label="january temp.")
+            # ax1.plot(collector_output_temperature_march, label="march temp.")
+            # ax1.plot(collector_output_temperature_may, label="may temp.")
+            ax1.plot(collector_output_temperature_july, label="july temp.")
+            ax1.legend()
+
+            ax2 = ax1.twinx()
+            ax2.plot(volume_supplied_january, "--", label="january output")
+            # ax2.plot(volume_supplied_march, "--", label="march output")
+            # ax2.plot(volume_supplied_may, "--", label="may output")
+            ax2.plot(volume_supplied_july, "--", label="july output")
+            ax2.legend(loc=0)
+
+            plt.xlim(0, 23)
+            plt.xlabel("Hour of day")
+            ax1.set_ylabel("Collector output temperature / degC")
+            ax2.set_ylabel("Volume heated / litres")
+            plt.title("Collector output temprature on an average seasonal days day")
+            plt.savefig(
+                os.path.join(
+                    figures_directory,
+                    "collector_output_temperature_on_average_month_days.png"
+                ),
+                transparent=True
             )
             plt.close()
             pbar.update(1)
