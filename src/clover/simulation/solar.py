@@ -201,7 +201,7 @@ def calculate_pvt_output(
         electrical_model = pickle.load(f)
     with open("../PVTModel/thermal_model.sav", "rb") as f:
         thermal_model = pickle.load(f)
-    
+
     try:
         for index in tqdm(
             range(start_hour, end_hour),
@@ -226,22 +226,26 @@ def calculate_pvt_output(
 
                 # AI fitted model.
                 collector_output_temperature = thermal_model.predict(
-                    [[
-                        temperatures[index],
-                        collector_input_temperature,
-                        mass_flow_rate,
-                        irradiances[index],
-                        wind_speeds[index]
-                    ]]
+                    [
+                        [
+                            temperatures[index],
+                            collector_input_temperature,
+                            mass_flow_rate,
+                            irradiances[index],
+                            wind_speeds[index],
+                        ]
+                    ]
                 )
                 fractional_electric_performance = electrical_model.predict(
-                    [[
-                        temperatures[index],
-                        collector_input_temperature,
-                        mass_flow_rate,
-                        irradiances[index],
-                        wind_speeds[index]
-                    ]]
+                    [
+                        [
+                            temperatures[index],
+                            collector_input_temperature,
+                            mass_flow_rate,
+                            irradiances[index],
+                            wind_speeds[index],
+                        ]
+                    ]
                 )
 
                 import pdb
