@@ -38,19 +38,31 @@ __all__ = (
 
 # Colour map:
 #   The preferred sns colourmap to use.
-COLOUR_MAP = "Blues"
+COLOUR_MAP: str = "Blues"
 
 # Hours per year:
 #   The number of hours in a year, used for reshaping arrays.
-HOURS_PER_YEAR = 8760
+HOURS_PER_YEAR: int = 8760
+
+# Hours until July:
+#   The number of hours until March.
+HOURS_UNTIL_JULY: int = 4344
+
+# Hours until March:
+#   The number of hours until March.
+HOURS_UNTIL_MARCH: int = 1416
+
+# Hours until May:
+#   The number of hours until May.
+HOURS_UNTIL_MAY: int = 2880
 
 # Plot resolution:
 #   The resolution, in dpi, to use for plotting figures.
-PLOT_RESOLUTION = 600
+PLOT_RESOLUTION: int = 600
 
 # Simulation plots directory:
 #   The directory in which simulation plots should be saved.
-SIMULATION_PLOTS_DIRECTORY = "simulation_{simulation_number}_plots"
+SIMULATION_PLOTS_DIRECTORY: str = "simulation_{simulation_number}_plots"
 
 
 def get_key_results(
@@ -202,7 +214,7 @@ def plot_outputs(
     total_electric_load = total_loads[ResourceType.ELECTRIC]
 
     with tqdm(
-        total=23 if initial_clean_water_hourly_loads is not None else 10,
+        total=25 if initial_clean_water_hourly_loads is not None else 10,
         desc="plots",
         leave=False,
         unit="plot",
@@ -584,6 +596,53 @@ def plot_outputs(
             plt.plot(
                 pvt_electricity_supplied, label="PV-T electricity generated", zorder=9
             )
+        if initial_clean_water_hourly_loads is not None:
+            clean_water_energy_via_excess = (
+                np.mean(
+                    np.reshape(
+                        simulation_output[0:HOURS_PER_YEAR][
+                            "PV-T electric energy supplied (kWh)"
+                        ].values,
+                        (365, 24),
+                    ),
+                    axis=0,
+                )
+                if "PV-T electric energy supplied (kWh)" in simulation_output
+                else None
+            )
+            clean_water_energy_via_backup = (
+                np.mean(
+                    np.reshape(
+                        simulation_output[0:HOURS_PER_YEAR][
+                            "Power consumed providing clean water (kWh)"
+                        ].values,
+                        (365, 24),
+                    ),
+                    axis=0,
+                )
+                if "Power consumed providing clean water (kWh)" in simulation_output
+                else None
+            )
+            thermal_desalination_energy = (
+                np.mean(
+                    np.reshape(
+                        simulation_output[0:HOURS_PER_YEAR][
+                            "Power consumed running thermal desalination (kWh)"
+                        ].values,
+                        (365, 24),
+                    ),
+                    axis=0,
+                )
+                if "Power consumed running thermal desalination (kWh)" in simulation_output
+                else None
+            )
+            plt.plot(
+                clean_water_energy_via_excess, label="Excess -> clean water", zorder=9
+            )
+            plt.plot(
+                clean_water_energy_via_backup, label="Backup -> clean water", zorder=10
+            )
+            plt.plot(thermal_desalination_energy, label="Thermal desal electric power", zorder=11)
         plt.legend()
         plt.xlim(0, 23)
         plt.xticks(range(0, 24, 1))
@@ -1002,6 +1061,7 @@ def plot_outputs(
             plt.close()
             pbar.update(1)
 
+            # Water supply and demand on an average day.
             total_supplied = np.mean(
                 np.reshape(
                     simulation_output[0:HOURS_PER_YEAR][
@@ -1108,6 +1168,221 @@ def plot_outputs(
             plt.close()
             pbar.update(1)
 
+            # Water supply and demand on an average July day.
+            total_supplied = np.mean(
+                np.reshape(
+                    simulation_output[HOURS_UNTIL_JULY:HOURS_UNTIL_JULY+31*24][
+                        "Total clean water supplied (l)"
+                    ].values,
+                    (31, 24),
+                ),
+                axis=0,
+            )
+            total_used = np.mean(
+                np.reshape(
+                    simulation_output[HOURS_UNTIL_JULY:HOURS_UNTIL_JULY+31*24][
+                        "Total clean water consumed (l)"
+                    ].values,
+                    (31, 24),
+                ),
+                axis=0,
+            )
+            backup_clean_water = np.mean(
+                np.reshape(
+                    simulation_output[HOURS_UNTIL_JULY:HOURS_UNTIL_JULY+31*24][
+                        "Clean water supplied via backup desalination (l)"
+                    ].values,
+                    (31, 24),
+                ),
+                axis=0,
+            )
+            excess_power_clean_water = np.mean(
+                np.reshape(
+                    simulation_output[HOURS_UNTIL_JULY:HOURS_UNTIL_JULY+31*24][
+                        "Clean water supplied using excess minigrid energy (l)"
+                    ].values,
+                    (31, 24),
+                ),
+                axis=0,
+            )
+            renewable_clean_water = np.mean(
+                np.reshape(
+                    simulation_output[HOURS_UNTIL_JULY:HOURS_UNTIL_JULY+31*24][
+                        "Renewable clean water used directly (l)"
+                    ].values,
+                    (31, 24),
+                ),
+                axis=0,
+            )
+            storage_clean_water = np.mean(
+                np.reshape(
+                    simulation_output[HOURS_UNTIL_JULY:HOURS_UNTIL_JULY+31*24][
+                        "Clean water supplied via tank storage (l)"
+                    ].values,
+                    (31, 24),
+                ),
+                axis=0,
+            )
+            tank_storage = np.mean(
+                np.reshape(
+                    simulation_output[HOURS_UNTIL_JULY:HOURS_UNTIL_JULY+31*24][
+                        "Water held in storage tanks (l)"
+                    ].values,
+                    (31, 24),
+                ),
+                axis=0,
+            )
+            total_clean_water_load = np.mean(
+                np.reshape(
+                    simulation_output[HOURS_UNTIL_JULY:HOURS_UNTIL_JULY+31*24][
+                        "Total clean water demand (l)"
+                    ].values,
+                    (31, 24),
+                ),
+                axis=0,
+            )
+            unmet_clean_water = np.mean(
+                np.reshape(
+                    simulation_output[HOURS_UNTIL_JULY:HOURS_UNTIL_JULY+31*24][
+                        "Unmet clean water demand (l)"
+                    ].values,
+                    (31, 24),
+                ),
+                axis=0,
+            )
+
+            plt.plot(total_used, "--", label="Total used", zorder=1)
+            plt.plot(backup_clean_water, label="Backup desalination", zorder=2)
+            plt.plot(
+                excess_power_clean_water, label="Excess power desalination", zorder=3
+            )
+            plt.plot(renewable_clean_water, label="PV-D direct supply", zorder=4)
+            plt.plot(storage_clean_water, label="Storage", zorder=5)
+            plt.plot(tank_storage, "--", label="Water held in tanks", zorder=6)
+            plt.plot(unmet_clean_water, label="Unmet", zorder=7)
+            plt.plot(total_clean_water_load, "--", label="Total load", zorder=8)
+            plt.plot(total_supplied, "--", label="Total supplied", zorder=9)
+            plt.legend()
+            plt.xlim(0, 23)
+            plt.xticks(range(0, 24, 1))
+            plt.xlabel("Hour of day")
+            plt.ylabel("Clean-water usage / litres/hour")
+            plt.title("Water supply and demand on an average day")
+            plt.savefig(
+                os.path.join(figures_directory, "clean_water_use_on_average_july_day.png"),
+                transparent=True,
+            )
+            plt.close()
+            pbar.update(1)
+
+            # Water supply and demand on an average January day.
+            total_supplied = np.mean(
+                np.reshape(
+                    simulation_output[0:24*31][
+                        "Total clean water supplied (l)"
+                    ].values,
+                    (31, 24),
+                ),
+                axis=0,
+            )
+            total_used = np.mean(
+                np.reshape(
+                    simulation_output[0:24*31][
+                        "Total clean water consumed (l)"
+                    ].values,
+                    (31, 24),
+                ),
+                axis=0,
+            )
+            backup_clean_water = np.mean(
+                np.reshape(
+                    simulation_output[0:24*31][
+                        "Clean water supplied via backup desalination (l)"
+                    ].values,
+                    (31, 24),
+                ),
+                axis=0,
+            )
+            excess_power_clean_water = np.mean(
+                np.reshape(
+                    simulation_output[0:24*31][
+                        "Clean water supplied using excess minigrid energy (l)"
+                    ].values,
+                    (31, 24),
+                ),
+                axis=0,
+            )
+            renewable_clean_water = np.mean(
+                np.reshape(
+                    simulation_output[0:24*31][
+                        "Renewable clean water used directly (l)"
+                    ].values,
+                    (31, 24),
+                ),
+                axis=0,
+            )
+            storage_clean_water = np.mean(
+                np.reshape(
+                    simulation_output[0:24*31][
+                        "Clean water supplied via tank storage (l)"
+                    ].values,
+                    (31, 24),
+                ),
+                axis=0,
+            )
+            tank_storage = np.mean(
+                np.reshape(
+                    simulation_output[0:24*31][
+                        "Water held in storage tanks (l)"
+                    ].values,
+                    (31, 24),
+                ),
+                axis=0,
+            )
+            total_clean_water_load = np.mean(
+                np.reshape(
+                    simulation_output[0:24*31][
+                        "Total clean water demand (l)"
+                    ].values,
+                    (31, 24),
+                ),
+                axis=0,
+            )
+            unmet_clean_water = np.mean(
+                np.reshape(
+                    simulation_output[0:24*31][
+                        "Unmet clean water demand (l)"
+                    ].values,
+                    (31, 24),
+                ),
+                axis=0,
+            )
+
+            plt.plot(total_used, "--", label="Total used", zorder=1)
+            plt.plot(backup_clean_water, label="Backup desalination", zorder=2)
+            plt.plot(
+                excess_power_clean_water, label="Excess power desalination", zorder=3
+            )
+            plt.plot(renewable_clean_water, label="PV-D direct supply", zorder=4)
+            plt.plot(storage_clean_water, label="Storage", zorder=5)
+            plt.plot(tank_storage, "--", label="Water held in tanks", zorder=6)
+            plt.plot(unmet_clean_water, label="Unmet", zorder=7)
+            plt.plot(total_clean_water_load, "--", label="Total load", zorder=8)
+            plt.plot(total_supplied, "--", label="Total supplied", zorder=9)
+            plt.legend()
+            plt.xlim(0, 23)
+            plt.xticks(range(0, 24, 1))
+            plt.xlabel("Hour of day")
+            plt.ylabel("Clean-water usage / litres/hour")
+            plt.title("Water supply and demand on an average day")
+            plt.savefig(
+                os.path.join(figures_directory, "clean_water_use_on_average_january_day.png"),
+                transparent=True,
+            )
+            plt.close()
+            pbar.update(1)
+
+            # Water supply and demand on the first day.
             backup = simulation_output.iloc[0:24][
                 "Clean water supplied via backup desalination (l)"
             ]
@@ -1311,13 +1586,13 @@ def plot_outputs(
             # Plot the daily collector output temperature
             _, ax1 = plt.subplots()
             collector_output_temperature_january = simulation_output.iloc[0:24]["PV-T output temperature (degC)"]
-            collector_output_temperature_march = simulation_output.iloc[(28 + 31)*24:(28 + 31)*24 + 24]["PV-T output temperature (degC)"]
-            collector_output_temperature_may = simulation_output.iloc[(28 + 31 + 31 + 30)*24:(28 + 31 + 31 + 30)*24 + 24]["PV-T output temperature (degC)"]
-            collector_output_temperature_july = simulation_output.iloc[(28 + 31 + 31 + 30 + 31 + 30)*24:(28 + 31 + 31 + 30 + 31 + 30)*24 + 24]["PV-T output temperature (degC)"]
+            collector_output_temperature_march = simulation_output.iloc[HOURS_UNTIL_MARCH:HOURS_UNTIL_MARCH + 24]["PV-T output temperature (degC)"]
+            collector_output_temperature_may = simulation_output.iloc[HOURS_UNTIL_MAY:HOURS_UNTIL_MAY+24]["PV-T output temperature (degC)"]
+            collector_output_temperature_july = simulation_output.iloc[HOURS_UNTIL_JULY:HOURS_UNTIL_JULY+24]["PV-T output temperature (degC)"]
             volume_supplied_january = simulation_output.iloc[0:24]["Water heated by the PV-T (l)"]
-            volume_supplied_march = simulation_output.iloc[(28 + 31)*24:(28 + 31)*24 + 24]["Water heated by the PV-T (l)"]
-            volume_supplied_may = simulation_output.iloc[(28 + 31 + 31 + 30)*24:(28 + 31 + 31 + 30)*24 + 24]["Water heated by the PV-T (l)"]
-            volume_supplied_july = simulation_output.iloc[(28 + 31 + 31 + 30 + 31 + 30)*24:(28 + 31 + 31 + 30 + 31 + 30)*24 + 24]["Water heated by the PV-T (l)"]
+            volume_supplied_march = simulation_output.iloc[HOURS_UNTIL_MARCH:HOURS_UNTIL_MARCH + 24]["Water heated by the PV-T (l)"]
+            volume_supplied_may = simulation_output.iloc[HOURS_UNTIL_MAY:HOURS_UNTIL_MAY+24]["Water heated by the PV-T (l)"]
+            volume_supplied_july = simulation_output.iloc[HOURS_UNTIL_JULY:HOURS_UNTIL_JULY+24]["Water heated by the PV-T (l)"]
 
             ax1.plot(collector_output_temperature_january.values, label="january temp.")
             # ax1.plot(collector_output_temperature_march.values, label="march temp.")
@@ -1360,7 +1635,7 @@ def plot_outputs(
             )
             collector_output_temperature_march = np.mean(
                 np.reshape(
-                    simulation_output[(28 + 31) * 24:(28 + 31 + 31) * 24][
+                    simulation_output[HOURS_UNTIL_MARCH:HOURS_UNTIL_MARCH * 24][
                         "PV-T output temperature (degC)"
                     ].values,
                     (31, 24),
@@ -1369,7 +1644,7 @@ def plot_outputs(
             )
             collector_output_temperature_may = np.mean(
                 np.reshape(
-                    simulation_output[(31 + 28 + 31 + 30) * 24:(31 + 28 + 31 + 30 + 31) * 24][
+                    simulation_output[HOURS_UNTIL_MAY:HOURS_UNTIL_MAY * 24][
                         "PV-T output temperature (degC)"
                     ].values,
                     (31, 24),
@@ -1378,7 +1653,7 @@ def plot_outputs(
             )
             collector_output_temperature_july = np.mean(
                 np.reshape(
-                    simulation_output[4344:4344 + 31 * 24][
+                    simulation_output[HOURS_UNTIL_JULY:HOURS_UNTIL_JULY + 31 * 24][
                         "PV-T output temperature (degC)"
                     ].values,
                     (31, 24),
@@ -1398,7 +1673,7 @@ def plot_outputs(
             )
             volume_supplied_march = np.mean(
                 np.reshape(
-                    simulation_output[(28 + 31) * 24:(28 + 31 + 31) * 24][
+                    simulation_output[HOURS_UNTIL_MARCH:HOURS_UNTIL_MARCH * 24][
                         "Water heated by the PV-T (l)"
                     ].values,
                     (31, 24),
@@ -1407,7 +1682,7 @@ def plot_outputs(
             )
             volume_supplied_may = np.mean(
                 np.reshape(
-                    simulation_output[(31 + 28 + 31 + 30) * 24:(31 + 28 + 31 + 30 + 31) * 24][
+                    simulation_output[HOURS_UNTIL_MAY:HOURS_UNTIL_MAY * 24][
                         "Water heated by the PV-T (l)"
                     ].values,
                     (31, 24),
@@ -1416,7 +1691,7 @@ def plot_outputs(
             )
             volume_supplied_july = np.mean(
                 np.reshape(
-                    simulation_output[4344:4344 + 31 * 24][
+                    simulation_output[HOURS_UNTIL_JULY:HOURS_UNTIL_JULY + 31 * 24][
                         "Water heated by the PV-T (l)"
                     ].values,
                     (31, 24),
