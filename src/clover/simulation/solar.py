@@ -18,13 +18,16 @@ performance under environmental conditions needs to be calculated.
 
 """
 
+# Bodged import
+import pickle
+
 from logging import Logger
 from typing import Dict, List, Tuple
 
 import pandas as pd  # type: ignore  # pylint: disable=import-error
 
+from sklearn.linear_model import Lasso
 from tqdm import tqdm
-
 
 from ..__utils__ import BColours, InputFileError, ResourceType, Scenario
 from ..conversion.conversion import Convertor, ThermalDesalinationPlant
@@ -192,6 +195,13 @@ def calculate_pvt_output(
     pvt_collector_output_temperature_map: Dict[int, float] = {}
     pvt_electric_power_per_unit_map: Dict[int, float] = {}
     pvt_volume_output_supplied_map: Dict[int, float] = {}
+
+    # Load in the model, bodged for now.
+    with open("../PVTModel/electrical_model.sav", "rb") as f:
+        electrical_model = pickle.load(f)
+    with open("../PVTModel/thermal_model.sav", "rb") as f:
+        thermal_model = pickle.load(f)
+    
     try:
         for index in tqdm(
             range(start_hour, end_hour),
@@ -201,17 +211,51 @@ def calculate_pvt_output(
         ):
             # Only compute outputs if there is input irradiance.
             if irradiances[index] > 0:
-                # Compute the fractional PV-T performance and thermal PV-T outputs.
-                (
-                    collector_output_temperature,
-                    fractional_electric_performance,
-                ) = minigrid.pvt_panel.fractional_performance(
-                    temperatures[index],
-                    collector_input_temperature,
-                    1000 * irradiances[index],
-                    mass_flow_rate,
-                    wind_speeds[index],
+                # Fitted python model.
+                # # Compute the fractional PV-T performance and thermal PV-T outputs.
+                # (
+                #     collector_output_temperature,
+                #     fractional_electric_performance,
+                # ) = minigrid.pvt_panel.fractional_performance(
+                #     temperatures[index],
+                #     collector_input_temperature,
+                #     1000 * irradiances[index],
+                #     mass_flow_rate,
+                #     wind_speeds[index],
+                # )
+
+                # AI fitted model.
+                collector_output_temperature = thermal_model.predict(
+                    [[
+                        temperatures[index],
+                        collector_input_temperature,
+                        mass_flow_rate,
+                        irradiances[index],
+                        wind_speeds[index]
+                    ]]
                 )
+                fractional_electric_performance = electrical_model.predict(
+                    [[
+                        temperatures[index],
+                        collector_input_temperature,
+                        mass_flow_rate,
+                        irradiances[index],
+                        wind_speeds[index]
+                    ]]
+                )
+
+                import pdb
+
+                pdb.set_trace()
+
+                # Sawtooth model.
+                # collector_output_temperature = collector_input_temperature + 25
+                # fractional_electric_performance = 0.125 * (
+                #     1
+                #     - minigrid.pvt_panel.thermal_coefficient
+                #     *(temperatures[index] - minigrid.pvt_panel.reference_temperature)
+                # )
+
                 # If the desalination plant was able to accept this water, then use this.
                 if (
                     collector_output_temperature
