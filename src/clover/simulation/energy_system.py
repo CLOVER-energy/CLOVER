@@ -489,9 +489,9 @@ def run_simulation(
         ResourceType.HOT_CLEAN_WATER
     ]
 
-    ###############################
-    # Hybrid photovoltaic-thermal #
-    ###############################
+    ########################################################
+    # Hybrid photovoltaic-thermal and thermal desalination #
+    ########################################################
 
     if scenario.pv_t:
         if wind_speed_data is None:
@@ -540,17 +540,34 @@ def run_simulation(
             wind_speed_data[start_hour:end_hour],
         )
 
+        # Compute the utilisation of the thermal desalination plant.
+        thermal_desalination_plant_utilisation: float = (
+            pvt_size
+            * max(pvt_volume_supplied_per_unit[0])
+            / thermal_desalination_plant.input_resource_consumption[
+                ResourceType.HOT_UNCLEAN_WATER
+            ]
+        )
+
         # Compute the clean water supplied by the desalination unit.
         renewable_clean_water_produced = (
-            pvt_volume_supplied_per_unit
-            * pvt_size
+            pvt_size
+            * pvt_volume_supplied_per_unit
             * thermal_desalination_plant.maximum_output_capacity
             / thermal_desalination_plant.input_resource_consumption[
                 ResourceType.HOT_UNCLEAN_WATER
             ]
         )
+
+        # Compute the power consumed by the thermal desalination plant.
+        thermal_desalination_electric_power_consumed = (
+            (renewable_clean_water_produced > 0)
+            * thermal_desalination_plant.input_resource_consumption[ResourceType.ELECTRIC]
+            * thermal_desalination_plant_utilisation
+        )
     else:
         pvt_electric_power_per_unit = pd.DataFrame([0] * pv_power_produced.size)
+        thermal_desalination_electric_power_consumed = pd.DataFrame([0] * pv_power_produced.size)
 
     ###############
     # Clean water #
@@ -608,6 +625,7 @@ def run_simulation(
             start_hour:end_hour
         ].values
         + clean_water_power_consumed.values
+        + thermal_desalination_electric_power_consumed.values
     )
 
     # Get electric input profiles
@@ -1019,6 +1037,7 @@ def run_simulation(
         (
             load_energy.values
             + clean_water_power_consumed.values
+            + thermal_desalination_electric_power_consumed.values
             - renewables_energy_used_directly.values
             - grid_energy.values
             - storage_power_supplied_frame.values
@@ -1076,6 +1095,9 @@ def run_simulation(
     clean_water_power_consumed = clean_water_power_consumed.mul(  # type: ignore
         1 - blackout_times
     )
+    thermal_desalination_electric_power_consumed = thermal_desalination_electric_power_consumed.mul(  # type: ignore
+        1 - blackout_times
+    )
 
     # Find how many kerosene lamps are in use
     kerosene_usage = blackout_times.mul(kerosene_profile.values)  # type: ignore
@@ -1103,6 +1125,7 @@ def run_simulation(
             total_energy_used
             - excess_energy_used_desalinating_frame  # type: ignore
             - clean_water_power_consumed  # type: ignore
+            - thermal_desalination_electric_power_consumed  # type: ignore
         )
 
         # Compute the outputs from the itteration stage
@@ -1111,7 +1134,7 @@ def run_simulation(
             + storage_water_supplied_frame.values
             + backup_desalinator_water_frame.values
             + water_supplied_by_excess_energy_frame.values
-        )
+        ).mul((1 - blackout_times))  # type: ignore
 
         water_surplus_frame = (
             total_clean_water_supplied - processed_total_clean_water_load > 0  # type: ignore
@@ -1120,12 +1143,12 @@ def run_simulation(
         )
         total_clean_water_used = (
             total_clean_water_supplied - water_surplus_frame  # type: ignore
-        )
+        ).mul((1 - blackout_times))  # type: ignore
 
         # Compute when the water demand went unmet.
         unmet_clean_water = pd.DataFrame(
             processed_total_clean_water_load.values - total_clean_water_supplied.values
-        )
+        ).mul((1 - blackout_times))  # type: ignore
         unmet_clean_water = unmet_clean_water * (unmet_clean_water > 0)  # type: ignore
 
         # Find the new clean-water blackout times, according to when there is unmet demand
@@ -1166,6 +1189,9 @@ def run_simulation(
         )
         storage_water_supplied_frame.columns = pd.Index(
             ["Clean water supplied via tank storage (l)"]
+        )
+        thermal_desalination_electric_power_consumed.columns = pd.Index(
+            ["Power consumed running thermal desalination (kWh)"]
         )
         total_clean_water_used.columns = pd.Index(["Total clean water consumed (l)"])
         total_clean_water_supplied.columns = pd.Index(
@@ -1279,6 +1305,7 @@ def run_simulation(
                 renewable_clean_water_produced,
                 renewable_clean_water_used_directly,
                 storage_water_supplied_frame,
+                thermal_desalination_electric_power_consumed,
                 total_clean_water_supplied,
                 total_clean_water_used,
                 unmet_clean_water,
