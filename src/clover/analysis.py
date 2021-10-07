@@ -1323,7 +1323,7 @@ def plot_outputs(
             # ax1.plot(collector_output_temperature_march.values, label="march temp.")
             # ax1.plot(collector_output_temperature_may.values, label="may temp.")
             ax1.plot(collector_output_temperature_july.values, label="july temp.")
-            ax1.legend()
+            ax1.legend(loc="upper left")
 
             ax2 = ax1.twinx()
             ax2.plot(volume_supplied_january.values, "--", label="january output")
@@ -1428,7 +1428,7 @@ def plot_outputs(
             # ax1.plot(collector_output_temperature_march, label="march temp.")
             # ax1.plot(collector_output_temperature_may, label="may temp.")
             ax1.plot(collector_output_temperature_july, label="july temp.")
-            ax1.legend()
+            ax1.legend(loc="upper left")
 
             ax2 = ax1.twinx()
             ax2.plot(volume_supplied_january, "--", label="january output")
