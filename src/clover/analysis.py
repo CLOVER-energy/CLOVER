@@ -1316,7 +1316,7 @@ def plot_outputs(
             # ax2.plot(volume_supplied_march.values, "--", label="march output")
             # ax2.plot(volume_supplied_may.values, "--", label="may output")
             ax2.plot(volume_supplied_july.values, "--", label="july output")
-            ax2.legend(loc=0)
+            ax2.legend(loc="upper right")
 
             plt.xlim(0, 23)
             plt.xlabel("Hour of day")
@@ -1421,7 +1421,7 @@ def plot_outputs(
             # ax2.plot(volume_supplied_march, "--", label="march output")
             # ax2.plot(volume_supplied_may, "--", label="may output")
             ax2.plot(volume_supplied_july, "--", label="july output")
-            ax2.legend(loc=0)
+            ax2.legend(loc="upper right")
 
             plt.xlim(0, 23)
             plt.xlabel("Hour of day")
