@@ -550,20 +550,24 @@ def run_simulation(
         )
 
         # Compute the clean water supplied by the desalination unit.
-        renewable_clean_water_produced = (
-            pvt_size
-            * pvt_volume_supplied_per_unit
-            * thermal_desalination_plant.maximum_output_capacity
-            / thermal_desalination_plant.input_resource_consumption[
-                ResourceType.HOT_UNCLEAN_WATER
-            ]
+        renewable_clean_water_produced = pd.DataFrame(
+            (
+                pvt_size
+                * pvt_volume_supplied_per_unit
+                * thermal_desalination_plant.maximum_output_capacity
+                / thermal_desalination_plant.input_resource_consumption[
+                    ResourceType.HOT_UNCLEAN_WATER
+                ]
+            ).values
         )
 
         # Compute the power consumed by the thermal desalination plant.
-        thermal_desalination_electric_power_consumed = (
-            (renewable_clean_water_produced > 0)
-            * thermal_desalination_plant.input_resource_consumption[ResourceType.ELECTRIC]
-            * thermal_desalination_plant_utilisation
+        thermal_desalination_electric_power_consumed = pd.DataFrame(
+            (
+                (renewable_clean_water_produced > 0)
+                * thermal_desalination_plant.input_resource_consumption[ResourceType.ELECTRIC]
+                * thermal_desalination_plant_utilisation
+            ).values
         )
     else:
         pvt_electric_power_per_unit = pd.DataFrame([0] * pv_power_produced.size)
@@ -1016,6 +1020,12 @@ def run_simulation(
         hourly_tank_storage_frame: pd.DataFrame = pd.DataFrame(  # type: ignore
             list(hourly_tank_storage.values()), index=list(hourly_tank_storage.keys())
         ).sort_index()
+        pvt_collector_output_temperature = pd.DataFrame(
+            pvt_collector_output_temperature.values
+        )
+        pvt_volume_supplied_per_unit = pvt_size * pd.DataFrame(
+            pvt_volume_supplied_per_unit.values
+        )
         storage_water_supplied_frame: pd.DataFrame = pd.DataFrame(  # type: ignore
             list(storage_water_supplied.values()),
             index=list(storage_water_supplied.keys()),
@@ -1177,7 +1187,6 @@ def run_simulation(
         pvt_collector_output_temperature.columns = pd.Index(
             ["PV-T output temperature (degC)"]
         )
-        pvt_volume_supplied_per_unit *= pvt_size
         pvt_volume_supplied_per_unit.columns = pd.Index(
             ["Water heated by the PV-T (l)"]
         )

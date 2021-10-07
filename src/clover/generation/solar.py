@@ -421,12 +421,12 @@ class HybridPVTPanel(SolarPanel, panel_type=SolarPanelType.PV_T):
             + 0.002085294980105367 * np.log(mass_flow_rate) * np.log(irradiance)  # a_5
             + ambient_temperature
             * (
-                0.00013225035600625062  # a_6
-                - 0.00010197844772655245 * np.log(irradiance)  # a_7
-                + 8.016691422437331e-06 * (np.log(irradiance)) ** 2  # a_8
-                + 1.9546446416553807e-05 * np.log(mass_flow_rate)  # a_9
-                - 3.192848032866139e-05 * (np.log(mass_flow_rate)) ** 2  # a_10
-                + 1.5574169292696083e-05
+                -5.4327587664333906e-05  # a_6
+                + 3.359603833658896e-06 * np.log(irradiance)  # a_7
+                + 4.3849645133036726e-07 * (np.log(irradiance)) ** 2  # a_8
+                - 2.8684459472818894e-05 * np.log(mass_flow_rate)  # a_9
+                + 1.834540733154034e-05 * (np.log(mass_flow_rate)) ** 2  # a_10
+                - 0.00015089166022780898
                 * np.log(mass_flow_rate)
                 * np.log(irradiance)  # a_11
             )
