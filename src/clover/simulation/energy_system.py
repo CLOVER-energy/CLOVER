@@ -1151,6 +1151,16 @@ def run_simulation(
         power_used_on_electricity.columns = pd.Index(
             ["Power consumed providing electricity (kWh)"]
         )
+        pvt_collector_output_temperature.columns = pd.Index(
+            ["PV-T output temperature (degC)"]
+        )
+        pvt_volume_supplied_per_unit *= pvt_size
+        pvt_volume_supplied_per_unit.columns = pd.Index(
+            ["Water heated by the PV-T (l)"]
+        )
+        renewable_clean_water_produced.columns = pd.Index(
+            ["Renewable clean water produced (l)"]
+        )
         renewable_clean_water_used_directly.columns = pd.Index(
             ["Renewable clean water used directly (l)"]
         )
@@ -1263,7 +1273,10 @@ def run_simulation(
                 hourly_tank_storage_frame,
                 power_used_on_electricity,
                 processed_total_clean_water_load,
+                pvt_collector_output_temperature,
                 pvt_energy,
+                pvt_volume_supplied_per_unit,
+                renewable_clean_water_produced,
                 renewable_clean_water_used_directly,
                 storage_water_supplied_frame,
                 total_clean_water_supplied,
