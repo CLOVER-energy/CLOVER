@@ -89,6 +89,9 @@ class SolarPanel:
     .. attribute:: pv_unit_overrided
         Whether the default PV unit was overrided (True) or not (False).
 
+    .. attribute:: reference_efficiency
+        The efficiency of the PV layer under standard test conditions.
+
     .. attribute:: reference_temperature
         The reference temperature of the PV layer of the panel, measured in degrees
         Celcius.
@@ -107,6 +110,7 @@ class SolarPanel:
     name: str
     pv_unit: float
     pv_unit_overrided: bool
+    reference_efficiency: Optional[float]
     reference_temperature: Optional[float]
     thermal_coefficient: Optional[float]
     tilt: float
@@ -170,6 +174,9 @@ class PVPanel(SolarPanel, panel_type=SolarPanelType.PV):
             solar_inputs["name"],
             pv_unit,
             pv_unit_overrided,
+            solar_inputs["reference_efficiency"]
+            if "reference_efficiency" in solar_inputs
+            else None,
             solar_inputs["reference_temperature"]
             if "reference_temperature" in solar_inputs
             else None,
@@ -227,6 +234,12 @@ class HybridPVTPanel(SolarPanel, panel_type=SolarPanelType.PV_T):
                 solar_inputs["name"],
             )
 
+        if pv_layer.reference_efficiency is None:
+            logger.error("PV reference efficiency must be defined if using PV-T.")
+            raise InputFileError(
+                "solar generation inputs",
+                "PV reference efficiency must be defined if using PV-T",
+            )
         if pv_layer.reference_temperature is None:
             logger.error("PV reference temperature must be defined if using PV-T.")
             raise InputFileError(
@@ -253,6 +266,7 @@ class HybridPVTPanel(SolarPanel, panel_type=SolarPanelType.PV_T):
             solar_inputs["name"],
             solar_inputs["pv_unit"],
             True,
+            pv_layer.reference_efficiency,
             pv_layer.reference_temperature,
             pv_layer.thermal_coefficient,
             solar_inputs["tilt"],
@@ -279,6 +293,7 @@ class HybridPVTPanel(SolarPanel, panel_type=SolarPanelType.PV_T):
             + f", min_mass_flow_rate={self.min_mass_flow_rate}"
             + f", name={self.name}"
             + f", pv_unit={self.pv_unit}"
+            + f", reference_efficiency={self.reference_efficiency}"
             + f", reference_temperature={self.reference_temperature}"
             + f", thermal_coefficient={self.thermal_coefficient}"
             + f", thermal_unit={self.thermal_unit}"
@@ -451,7 +466,10 @@ class HybridPVTPanel(SolarPanel, panel_type=SolarPanelType.PV_T):
             )
         )
 
-        fractional_electrical_performance = electrical_efficiency * irradiance / 1000
+        fractional_electrical_performance = (
+            (electrical_efficiency / self.reference_efficiency)
+            * (irradiance / 1000)
+        )
 
         # Return this, along with the output temperature of HTF leaving the collector.
         return collector_output_temperature, fractional_electrical_performance
