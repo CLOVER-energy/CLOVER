@@ -762,12 +762,16 @@ def plot_outputs(
             clean_water_energy_via_backup = simulation_output.iloc[0:24][
                 "Power consumed providing clean water (kWh)"
             ]
+            thermal_desalination_energy = simulation_output.iloc[0:24][
+                "Power consumed running thermal desalination (kWh)"
+            ]
             plt.plot(
                 clean_water_energy_via_excess, label="Excess -> clean water", zorder=9
             )
             plt.plot(
                 clean_water_energy_via_backup, label="Backup -> clean water", zorder=10
             )
+            plt.plot(thermal_desalination_energy, label="Thermal desal electric power", zorder=11)
         plt.legend()
         plt.xlim(0, 23)
         plt.xticks(range(0, 24, 1))
@@ -1263,6 +1267,15 @@ def plot_outputs(
                 ),
                 axis=0,
             )
+            thermal_desalination_energy = np.mean(
+                np.reshape(
+                    simulation_output[0:HOURS_PER_YEAR][
+                        "Power consumed running thermal desalination (kWh)"
+                    ].values,
+                    (365, 24),
+                ),
+                axis=0
+            )
             total_power_supplied = np.mean(
                 np.reshape(
                     simulation_output[0:HOURS_PER_YEAR][
@@ -1280,12 +1293,13 @@ def plot_outputs(
                 surplus_power_consumed,
                 label="Clean water via dumped energy",
             )
+            plt.plot(thermal_desalination_energy, label="Thermal desaln electricity consumption")
             plt.plot(total_power_supplied, "--", label="Total load")
             plt.legend()
             plt.xlim(0, 23)
             plt.xticks(range(0, 24, 1))
             plt.xlabel("Hour of day")
-            plt.ylabel("Use by device type.")
+            plt.ylabel("Power consumption / kWh")
             plt.title("Electriciy use by supply/device type on an average day")
             plt.savefig(
                 os.path.join(figures_directory, "electricity_use_by_supply_type.png"),
