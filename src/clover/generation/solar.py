@@ -358,54 +358,54 @@ class HybridPVTPanel(SolarPanel, panel_type=SolarPanelType.PV_T):
 
         # Compute the thermal efficiency of the collector.
         collector_output_temperature = (
-            29.64672516158721  # a_0
-            - 18.767769464424642 * np.log(irradiance)  # a_1
-            + 2.8283543677975196 * (np.log(irradiance)) ** 2  # a_2
-            + 21.552917257145864 * np.log(mass_flow_rate)  # a_3
-            + 2.528969773517288 * (np.log(mass_flow_rate)) ** 2  # a_4
-            - 5.863788169988237 * np.log(mass_flow_rate) * np.log(irradiance)  # a_5
+            29.741604978319252  # a_0
+            - 18.591187817656692 * np.log(irradiance)  # a_1
+            + 2.7665886796936974 * (np.log(irradiance)) ** 2  # a_2
+            + 21.26326604925854 * np.log(mass_flow_rate)  # a_3
+            + 2.369750239298799 * (np.log(mass_flow_rate)) ** 2  # a_4
+            - 5.682352509862814 * np.log(mass_flow_rate) * np.log(irradiance)  # a_5
             + ambient_temperature
             * (
-                -0.4200602805841626  # a_6
-                + 0.22931781460194964 * np.log(irradiance)  # a_7
-                - 0.015892402139001244 * (np.log(irradiance)) ** 2  # a_8
-                - 0.03155966183122158 * np.log(mass_flow_rate)  # a_9
-                + 0.07856696763289088 * (np.log(mass_flow_rate)) ** 2  # a_10
-                - 0.04501398307462642
+                -0.44273532578369784  # a_6
+                + 0.2028008441771341 * np.log(irradiance)  # a_7
+                - 0.011119875548502111 * (np.log(irradiance)) ** 2  # a_8
+                + 0.055071111041432544 * np.log(mass_flow_rate)  # a_9
+                + 0.08158562860833476 * (np.log(mass_flow_rate)) ** 2  # a_10
+                - 0.06020468104160886
                 * np.log(mass_flow_rate)
                 * np.log(irradiance)  # a_11
             )
             + wind_speed ** 0.16
             * (
-                -8.529476790056885  # a_12
-                + 3.411302278245225 * np.log(irradiance)  # a_13
-                - 0.4216667726668471 * (np.log(irradiance)) ** 2  # a_14
-                - 2.2363972399451857 * np.log(mass_flow_rate)  # a_15
-                - 0.2707504635522355 * (np.log(mass_flow_rate)) ** 2  # a_16
-                + 0.7011872178695358
+                -5.781350419589919  # a_12
+                + 2.1957501679949383 * np.log(irradiance)  # a_13
+                - 0.29053071799402297 * (np.log(irradiance)) ** 2  # a_14
+                - 1.8642000928076754 * np.log(mass_flow_rate)  # a_15
+                - 0.2168704193965011 * (np.log(mass_flow_rate)) ** 2  # a_16
+                + 0.6040946267503874
                 * np.log(mass_flow_rate)
                 * np.log(irradiance)  # a_17
             )
             + ambient_temperature
             * wind_speed ** 0.16
             * (
-                0.2843016555887696  # a_18
-                - 0.09916192848741194 * np.log(irradiance)  # a_19
-                + 0.009286872190280411 * (np.log(irradiance)) ** 2  # a_20
-                + 0.009286872190280411 * np.log(mass_flow_rate)  # a_21
-                - 0.0071519996231281914 * (np.log(mass_flow_rate)) ** 2  # a_22
-                - 0.0040767400384714705
+                0.3503231839458856  # a_18
+                - 0.09602338634428392 * np.log(irradiance)  # a_19
+                + 0.007427401892109994 * (np.log(irradiance)) ** 2  # a_20
+                - 0.0376976418177416 * np.log(mass_flow_rate)  # a_21
+                - 0.0069869817616982095 * (np.log(mass_flow_rate)) ** 2  # a_22
+                + 0.005502093603775405
                 * np.log(mass_flow_rate)
                 * np.log(irradiance)  # a_23
             )
             + collector_input_temperature
             * (
-                0.6120080384379737  # a_24
-                - 0.028932403309247557 * np.log(irradiance)  # a_25
-                + 0.0024285537116732958 * (np.log(irradiance)) ** 2  # a_26
-                + 0.31550814511058756 * np.log(mass_flow_rate)  # a_27
-                - 0.06940962035571498 * (np.log(mass_flow_rate)) ** 2  # a_28
-                + 0.0029585574435488093
+                0.5260015449448561  # a_24
+                + 0.008404945236477125 * np.log(irradiance)  # a_25
+                - 0.0009232365144613755 * (np.log(irradiance)) ** 2  # a_26
+                + 0.29551049432336596 * np.log(mass_flow_rate)  # a_27
+                - 0.06977464822399262 * (np.log(mass_flow_rate)) ** 2  # a_28
+                + 0.0054089335282716255
                 * np.log(mass_flow_rate)
                 * np.log(irradiance)  # a_29
             )
@@ -413,54 +413,54 @@ class HybridPVTPanel(SolarPanel, panel_type=SolarPanelType.PV_T):
 
         # Compute the fractional electrical performance of the collector.
         electrical_efficiency = (
-            0.11330162094249516  # a_0
-            + 0.014638983089090027 * np.log(irradiance)  # a_1
-            - 0.0018810291362234613 * (np.log(irradiance)) ** 2  # a_2
-            - 0.007235165211261357 * np.log(mass_flow_rate)  # a_3
-            - 0.0011390318941398312 * (np.log(mass_flow_rate)) ** 2  # a_4
-            + 0.002085294980105367 * np.log(mass_flow_rate) * np.log(irradiance)  # a_5
+            0.11639738048249704  # a_0
+            + 0.013316120967158817 * np.log(irradiance)  # a_1
+            - 0.0017275968821738896 * (np.log(irradiance)) ** 2  # a_2
+            - 0.007118345534937452 * np.log(mass_flow_rate)  # a_3
+            - 0.0009603753775774027 * (np.log(mass_flow_rate)) ** 2  # a_4
+            + 0.001963935108755282 * np.log(mass_flow_rate) * np.log(irradiance)  # a_5
             + ambient_temperature
             * (
-                -5.4327587664333906e-05  # a_6
-                + 3.359603833658896e-06 * np.log(irradiance)  # a_7
-                + 4.3849645133036726e-07 * (np.log(irradiance)) ** 2  # a_8
-                - 2.8684459472818894e-05 * np.log(mass_flow_rate)  # a_9
-                + 1.834540733154034e-05 * (np.log(mass_flow_rate)) ** 2  # a_10
-                - 0.00015089166022780898
+                0.00013088241772800534  # a_6
+                - 8.21290503977136e-05 * np.log(irradiance)  # a_7
+                + 4.953260935491807e-06 * (np.log(irradiance)) ** 2  # a_8
+                - 2.4716212339190652e-05 * np.log(mass_flow_rate)  # a_9
+                - 3.254925000717009e-05 * (np.log(mass_flow_rate)) ** 2  # a_10
+                + 2.2966026636676483e-05
                 * np.log(mass_flow_rate)
                 * np.log(irradiance)  # a_11
             )
             + wind_speed ** 0.16
             * (
-                0.006330506245869882  # a_12
-                - 0.002378408900749477 * np.log(irradiance)  # a_13
-                + 0.0002672677478072677 * (np.log(irradiance)) ** 2  # a_14
-                + 0.0008074828343584473 * np.log(mass_flow_rate)  # a_15
-                + 0.00016013731191544364 * (np.log(mass_flow_rate)) ** 2  # a_16
-                - 0.0002699265373718312
+                0.0039941028007474885  # a_12
+                - 0.0013675551372885565 * np.log(irradiance)  # a_13
+                + 0.00016088723949178542 * (np.log(irradiance)) ** 2  # a_14
+                + 0.0005934066665735958 * np.log(mass_flow_rate)  # a_15
+                + 0.00011959274164597139 * (np.log(mass_flow_rate)) ** 2  # a_16
+                - 0.00021214131631117
                 * np.log(mass_flow_rate)
                 * np.log(irradiance)  # a_17
             )
             + ambient_temperature
             * wind_speed ** 0.16
             * (
-                -0.0001557959065989755  # a_18
-                + 5.807472295886407e-05 * np.log(irradiance)  # a_19
-                - 5.720589490531354e-06 * (np.log(irradiance)) ** 2  # a_20
-                - 2.270579483917526e-05 * np.log(mass_flow_rate)  # a_21
-                + 1.9486580125142174e-06 * (np.log(mass_flow_rate)) ** 2  # a_22
-                + 3.7239999323378095e-06
+                -0.00018182934054386044  # a_18
+                + 5.080180915525177e-05 * np.log(irradiance)  # a_19
+                - 4.0790614401728095e-06 * (np.log(irradiance)) ** 2  # a_20
+                + 1.5313147039884785e-05 * np.log(mass_flow_rate)  # a_21
+                + 1.4287639500124582e-06 * (np.log(mass_flow_rate)) ** 2  # a_22
+                - 2.007075139853903e-06
                 * np.log(mass_flow_rate)
                 * np.log(irradiance)  # a_23
             )
             + collector_input_temperature
             * (
-                -0.000436294396069456  # a_24
-                + 3.2731688321054284e-06 * np.log(irradiance)  # a_25
-                - 3.8752493217827176e-07 * (np.log(irradiance)) ** 2  # a_26
-                - 0.00011966004317055599 * np.log(mass_flow_rate)  # a_27
-                + 3.0482389032643045e-05 * (np.log(mass_flow_rate)) ** 2  # a_28
-                - 1.4745041309693858e-06
+                -0.0004418125413464358  # a_24
+                + 3.6827017656719075e-06 * np.log(irradiance)  # a_25
+                - 6.512317845834291e-07 * (np.log(irradiance)) ** 2  # a_26
+                - 0.00011076377100134386 * np.log(mass_flow_rate)  # a_27
+                + 2.8315159160794437e-05 * (np.log(mass_flow_rate)) ** 2  # a_28
+                - 1.5880243199525098e-06
                 * np.log(mass_flow_rate)
                 * np.log(irradiance)  # a_29
             )

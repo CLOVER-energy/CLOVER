@@ -1635,7 +1635,7 @@ def plot_outputs(
             )
             collector_output_temperature_march = np.mean(
                 np.reshape(
-                    simulation_output[HOURS_UNTIL_MARCH:HOURS_UNTIL_MARCH * 24][
+                    simulation_output[HOURS_UNTIL_MARCH:HOURS_UNTIL_MARCH + 31 * 24][
                         "PV-T output temperature (degC)"
                     ].values,
                     (31, 24),
@@ -1644,7 +1644,7 @@ def plot_outputs(
             )
             collector_output_temperature_may = np.mean(
                 np.reshape(
-                    simulation_output[HOURS_UNTIL_MAY:HOURS_UNTIL_MAY * 24][
+                    simulation_output[HOURS_UNTIL_MAY:HOURS_UNTIL_MAY + 31  * 24][
                         "PV-T output temperature (degC)"
                     ].values,
                     (31, 24),
@@ -1673,7 +1673,7 @@ def plot_outputs(
             )
             volume_supplied_march = np.mean(
                 np.reshape(
-                    simulation_output[HOURS_UNTIL_MARCH:HOURS_UNTIL_MARCH * 24][
+                    simulation_output[HOURS_UNTIL_MARCH:HOURS_UNTIL_MARCH + 31  * 24][
                         "Water heated by the PV-T (l)"
                     ].values,
                     (31, 24),
@@ -1682,7 +1682,7 @@ def plot_outputs(
             )
             volume_supplied_may = np.mean(
                 np.reshape(
-                    simulation_output[HOURS_UNTIL_MAY:HOURS_UNTIL_MAY * 24][
+                    simulation_output[HOURS_UNTIL_MAY:HOURS_UNTIL_MAY + 31  * 24][
                         "Water heated by the PV-T (l)"
                     ].values,
                     (31, 24),
