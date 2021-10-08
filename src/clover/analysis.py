@@ -1276,7 +1276,7 @@ def plot_outputs(
             plt.xticks(range(0, 24, 1))
             plt.xlabel("Hour of day")
             plt.ylabel("Clean-water usage / litres/hour")
-            plt.title("Water supply and demand on an average day")
+            plt.title("Water supply and demand on an average July day")
             plt.savefig(
                 os.path.join(
                     figures_directory, "clean_water_use_on_average_july_day.png"
@@ -1385,7 +1385,7 @@ def plot_outputs(
             plt.xticks(range(0, 24, 1))
             plt.xlabel("Hour of day")
             plt.ylabel("Clean-water usage / litres/hour")
-            plt.title("Water supply and demand on an average day")
+            plt.title("Water supply and demand on an January average day")
             plt.savefig(
                 os.path.join(
                     figures_directory, "clean_water_use_on_average_january_day.png"

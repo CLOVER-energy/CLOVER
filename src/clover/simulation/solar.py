@@ -19,6 +19,7 @@ performance under environmental conditions needs to be calculated.
 """
 
 # Bodged import
+import collections
 import pickle
 
 from logging import Logger
@@ -194,13 +195,16 @@ def calculate_pvt_output(
     # Instantiate maps for easy PV-T power lookups.
     pvt_collector_output_temperature_map: Dict[int, float] = {}
     pvt_electric_power_per_unit_map: Dict[int, float] = {}
-    pvt_volume_output_supplied_map: Dict[int, float] = {}
+    pvt_volume_output_supplied_map: Dict[int, float] = collections.defaultdict(float)
 
     # Load in the model, bodged for now.
     with open("../PVTModel/electrical_model.sav", "rb") as f:
         electrical_model = pickle.load(f)
     with open("../PVTModel/thermal_model.sav", "rb") as f:
         thermal_model = pickle.load(f)
+    # Temporarily made here, but will be the number of times per hour that the fluid can
+    # cycle back through the PV-T.
+    CYCLES_PER_HOUR: int = 6
 
     try:
         for index in tqdm(
@@ -209,82 +213,84 @@ def calculate_pvt_output(
             leave=False,
             unit="hour",
         ):
-            # Only compute outputs if there is input irradiance.
-            if irradiances[index] > 0:
-                # Fitted python model.
-                # # Compute the fractional PV-T performance and thermal PV-T outputs.
-                # (
-                #     collector_output_temperature,
-                #     fractional_electric_performance,
-                # ) = minigrid.pvt_panel.fractional_performance(
-                #     temperatures[index],
-                #     collector_input_temperature,
-                #     1000 * irradiances[index],
-                #     mass_flow_rate,
-                #     wind_speeds[index],
-                # )
+            for _ in range(CYCLES_PER_HOUR):
+                # Only compute outputs if there is input irradiance.
+                if irradiances[index] > 0:
+                    # Fitted python model.
+                    # # Compute the fractional PV-T performance and thermal PV-T outputs.
+                    # (
+                    #     collector_output_temperature,
+                    #     fractional_electric_performance,
+                    # ) = minigrid.pvt_panel.fractional_performance(
+                    #     temperatures[index],
+                    #     collector_input_temperature,
+                    #     1000 * irradiances[index],
+                    #     mass_flow_rate,
+                    #     wind_speeds[index],
+                    # )
 
-                # AI fitted model.
-                collector_output_temperature = thermal_model.predict(
-                    [
-                        [
-                            temperatures[index],
-                            collector_input_temperature,
-                            mass_flow_rate,
-                            irradiances[index],
-                            wind_speeds[index],
-                        ]
-                    ]
-                )
-                fractional_electric_performance = electrical_model.predict(
-                    [
-                        [
-                            temperatures[index],
-                            collector_input_temperature,
-                            mass_flow_rate,
-                            irradiances[index],
-                            wind_speeds[index],
-                        ]
-                    ]
-                )
+                    # AI fitted model.
+                    collector_output_temperature = float(
+                        thermal_model.predict(
+                            [
+                                [
+                                    temperatures[index],
+                                    collector_input_temperature,
+                                    mass_flow_rate,
+                                    1000 * irradiances[index],
+                                    wind_speeds[index],
+                                ]
+                            ]
+                        )
+                    )
+                    fractional_electric_performance = float(
+                        electrical_model.predict(
+                            [
+                                [
+                                    temperatures[index],
+                                    collector_input_temperature,
+                                    mass_flow_rate,
+                                    1000 * irradiances[index],
+                                    wind_speeds[index],
+                                ]
+                            ]
+                        )
+                    )
 
-                import pdb
+                    # Sawtooth model.
+                    # collector_output_temperature = collector_input_temperature + 25
+                    # fractional_electric_performance = 0.125 * (
+                    #     1
+                    #     - minigrid.pvt_panel.thermal_coefficient
+                    #     *(temperatures[index] - minigrid.pvt_panel.reference_temperature)
+                    # )
 
-                pdb.set_trace()
-
-                # Sawtooth model.
-                # collector_output_temperature = collector_input_temperature + 25
-                # fractional_electric_performance = 0.125 * (
-                #     1
-                #     - minigrid.pvt_panel.thermal_coefficient
-                #     *(temperatures[index] - minigrid.pvt_panel.reference_temperature)
-                # )
-
-                # If the desalination plant was able to accept this water, then use this.
-                if (
-                    collector_output_temperature
-                    >= thermal_desalination_plant.minimum_water_input_temperature
-                ):
+                    # If the desalination plant was able to accept this water, then use this.
+                    if (
+                        collector_output_temperature
+                        >= thermal_desalination_plant.minimum_water_input_temperature
+                    ):
+                        collector_input_temperature = (
+                            scenario.clean_water_scenario.supply_temperature
+                        )
+                        volume_supplied = mass_flow_rate
+                    # Otherwise, cycle this water back around.
+                    else:
+                        collector_input_temperature = collector_output_temperature
+                        volume_supplied = 0
+                else:
                     collector_input_temperature = (
                         scenario.clean_water_scenario.supply_temperature
                     )
-                    volume_supplied = mass_flow_rate
-                # Otherwise, cycle this water back around.
-                else:
-                    collector_input_temperature = collector_output_temperature
+                    collector_output_temperature = collector_input_temperature
+                    fractional_electric_performance = 0
                     volume_supplied = 0
-            else:
-                collector_input_temperature = (
-                    scenario.clean_water_scenario.supply_temperature
-                )
-                collector_output_temperature = collector_input_temperature
-                fractional_electric_performance = 0
-                volume_supplied = 0
 
-            # Save the fractional electrical performance.
+                pvt_volume_output_supplied_map[index] += volume_supplied
+
+            # Save the fractional electrical performance and output temp.
             pvt_collector_output_temperature_map[index] = collector_output_temperature
             pvt_electric_power_per_unit_map[index] = fractional_electric_performance
-            pvt_volume_output_supplied_map[index] = volume_supplied
 
     except TypeError:
         logger.error(
