@@ -13,6 +13,7 @@ fileparser.py - The argument-parsing module for CLOVER.
 """
 
 import os
+import pickle
 
 from logging import Logger
 from typing import Any, Dict, List, Optional, Set, Tuple, Union
@@ -85,6 +86,10 @@ DIESEL_GENERATORS: str = "diesel_generators"
 #   The relative path to the diesel-inputs file.
 DIESEL_INPUTS_FILE = os.path.join("generation", "diesel_inputs.yaml")
 
+# Electric model file:
+#   The relative path to the electric model file.
+ELECTRIC_MODEL_FILE: str = os.path.join("src", "electric_model.sav")
+
 # Energy-system inputs file:
 #   The relative path to the energy-system-inputs file.
 ENERGY_SYSTEM_INPUTS_FILE = os.path.join("simulation", "energy_system.yaml")
@@ -144,6 +149,10 @@ SOLAR_INPUTS_FILE = os.path.join("generation", "solar_generation_inputs.yaml")
 # Tank inputs file:
 #   The relative path to the tank inputs file.
 TANK_INPUTS_FILE = os.path.join("simulation", "tank_inputs.yaml")
+
+# Thermal model file:
+#   The relative path to the thermal model file.
+THERMAL_MODEL_FILE: str = os.path.join("src", "thermal_model.sav")
 
 
 def parse_input_files(
@@ -290,6 +299,29 @@ def parse_input_files(
                 BColours.endc,
             )
             raise
+
+    scenario_inputs_filepath = os.path.join(
+        inputs_directory_relative_path,
+        SCENARIO_INPUTS_FILE,
+    )
+    scenario_inputs = read_yaml(
+        scenario_inputs_filepath,
+        logger,
+    )
+    if not isinstance(scenario_inputs, dict):
+        raise InputFileError(
+            "scenario inputs", "Scenario inputs is not of type `dict`."
+        )
+    try:
+        scenario: Scenario = Scenario.from_dict(scenario_inputs)
+    except Exception as e:
+        logger.error(
+            "%sError generating scenario from inputs file: %s%s",
+            BColours.fail,
+            str(e),
+            BColours.endc,
+        )
+        raise
 
     # Parse the energy system input.
     energy_system_inputs_filepath = os.path.join(
@@ -601,29 +633,6 @@ def parse_input_files(
         )
         raise
     logger.info("Optimisations file successfully parsed.")
-
-    scenario_inputs_filepath = os.path.join(
-        inputs_directory_relative_path,
-        SCENARIO_INPUTS_FILE,
-    )
-    scenario_inputs = read_yaml(
-        scenario_inputs_filepath,
-        logger,
-    )
-    if not isinstance(scenario_inputs, dict):
-        raise InputFileError(
-            "scenario inputs", "Scenario inputs is not of type `dict`."
-        )
-    try:
-        scenario: Scenario = Scenario.from_dict(scenario_inputs)
-    except Exception as e:
-        logger.error(
-            "%sError generating scenario from inputs file: %s%s",
-            BColours.fail,
-            str(e),
-            BColours.endc,
-        )
-        raise
 
     # Determine the available convertors from the scenarios file.
     if ResourceType.CLEAN_WATER.value in scenario_inputs:
