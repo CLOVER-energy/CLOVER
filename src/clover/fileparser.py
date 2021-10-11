@@ -20,6 +20,8 @@ from typing import Any, Dict, List, Optional, Set, Tuple, Union
 
 import pandas as pd  # type: ignore  # pylint: disable=import-error
 
+from sklearn.linear_model._coordinate_descent import Lasso
+
 from . import load
 from .generation import solar
 from .impact.finance import COSTS, ImpactingComponent
@@ -410,22 +412,34 @@ def parse_input_files(
         )
     logger.info("Solar generation inputs successfully parsed.")
 
-    # Parse the PV-T reduced model information.
-    logger.info("Parsing reduced PV-T thermal model.")
-    logger.info("Reduced PV-T thermal model successfully parsed.")
-    logger.info("Parsing reduced PV-T electric model.")
-    logger.info("Reduced PV-T electric model successfully parsed.")
-
     # Parse the PV-panel information.
     solar_panels: List[solar.SolarPanel] = []
     for panel_input in solar_generation_inputs["panels"]:
         if panel_input["type"] == solar.SolarPanelType.PV.value:
             solar_panels.append(solar.PVPanel.from_dict(logger, panel_input))
 
+    # Parse the PV-T models if relevant for the code flow.
+    if scenario.pv_t:
+        logger.info("Parsing reduced PV-T thermal model.")
+        with open(THERMAL_MODEL_FILE, "rb") as f:
+            thermal_model: Optional[Lasso] = pickle.load(f)
+        logger.info("Reduced PV-T thermal model successfully parsed.")
+        logger.info("Parsing reduced PV-T electric model.")
+        with open(ELECTRIC_MODEL_FILE, "rb") as f:
+            electric_model: Optional[Lasso] = pickle.load(f)
+        logger.info("Reduced PV-T electric model successfully parsed.")
+    else:
+        thermal_model = None
+        electric_model = None
+
     # Parse the PV-T panel information
     for panel_input in solar_generation_inputs["panels"]:
         if panel_input["type"] == solar.SolarPanelType.PV_T.value:
-            solar_panels.append(solar.HybridPVTPanel(logger, panel_input, solar_panels))
+            solar_panels.append(
+                solar.HybridPVTPanel(
+                    electric_model, logger, panel_input, solar_panels, thermal_model
+                )
+            )
 
     # Return the PV panel being modelled.
     try:
@@ -443,6 +457,7 @@ def parse_input_files(
             BColours.endc,
         )
         raise
+
     # Determine the PV panel costs.
     try:
         pv_panel_costs: float = [
@@ -460,6 +475,7 @@ def parse_input_files(
         raise
     else:
         logger.info("PV panel costs successfully determined.")
+
     # Determine the PV panel emissions.
     try:
         pv_panel_emissions: float = [
