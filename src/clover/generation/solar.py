@@ -29,7 +29,7 @@ import pandas as pd  # type: ignore  # pylint: disable=import-error
 
 from sklearn.linear_model._coordinate_descent import Lasso
 
-from ..__utils__ import HEAT_CAPACITY_OF_WATER, InputFileError, Location
+from ..__utils__ import BColours, InputFileError, Location
 from ..conversion.conversion import ThermalDesalinationPlant
 from .__utils__ import BaseRenewablesNinjaThread, SolarDataType, total_profile_output
 
@@ -212,11 +212,11 @@ class HybridPVTPanel(SolarPanel, panel_type=SolarPanelType.PV_T):
 
     def __init__(
         self,
-        electric_model: Lasso,
+        electric_model: Optional[Lasso],
         logger: Logger,
         solar_inputs: Dict[str, Any],
         solar_panels: List[SolarPanel],
-        thermal_model: Lasso,
+        thermal_model: Optional[Lasso],
     ) -> None:
         """
         Instantiate a :class:`HybridPVTPanel` instance based on the input data.
@@ -335,6 +335,8 @@ class HybridPVTPanel(SolarPanel, panel_type=SolarPanelType.PV_T):
             - input_temperature:
                 The input temperature of the HTF entering the PV-T collector, measured
                 in degrees Celcius.
+            - logger:
+                The :class:`logging.Logger` to use for the run.
             - mass_flow_rate:
                 The mass-flow rate of HTF passing through the collector, measured in
                 litres per hour.
@@ -354,6 +356,10 @@ class HybridPVTPanel(SolarPanel, panel_type=SolarPanelType.PV_T):
                 Celcius.
 
         """
+
+        if self.electric_model is None or self.thermal_model is None:
+            logger.error("%sThe PV-T instance does not have well-defined and loaded models.%s", BColours.fail, BColours.endc)
+            raise InputFileError("The PV-T instance does not have well-defined and loaded models.")
 
         input_data_frame = pd.DataFrame([[ambient_temperature, input_temperature, mass_flow_rate, solar_irradiance, wind_speed]])
 

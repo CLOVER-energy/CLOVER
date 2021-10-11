@@ -285,6 +285,9 @@ class DieselMode(enum.Enum):
     - BACKUP:
         The diesel generator is used as a 'load-following' backup generator.
 
+    - CYCLE_CHARGING:
+        The diesel generator is operated as a dynamic 'cycle-charging' generator.
+
     """
 
     BACKUP = "backup"
@@ -1000,6 +1003,19 @@ class OptimisationParameters:
         }
 
 
+class PVTMode(enum.Enum):
+    """
+    The PV-T mode being used.
+
+    - MULTI_PASS:
+        HTF passes multiple times through the PV-T collector array before being fed into
+        the hot-water tanks.
+
+    """
+
+    MULTI_PASS = "multi-pass"
+
+
 @dataclasses.dataclass
 class PVTScenario:
     """
@@ -1012,6 +1028,7 @@ class PVTScenario:
     """
 
     cycles_per_hour: float
+    mode: PVTMode
 
 
 def read_yaml(
@@ -1167,7 +1184,8 @@ class Scenario:
 
         if "pv_t" in scenario_inputs:
             pv_t_scenario: Optional[PVTScenario] = PVTScenario(
-                scenario_inputs["pv_t"]["cycles_per_hour"]
+                scenario_inputs["pv_t"]["cycles_per_hour"],
+                PVTMode(scenario_inputs["pv_t"]["mode"])
             )
         else:
             pv_t_scenario = None
