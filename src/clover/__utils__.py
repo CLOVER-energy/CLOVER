@@ -1000,128 +1000,18 @@ class OptimisationParameters:
         }
 
 
-# class ProgressBarQueue(queue.Queue):
-#     """
-#     A child of :class:`queue.Queue` used for tracking progress.
+@dataclasses.dataclass
+class PVTScenario:
+    """
+    Specifies the PV-T scenario being carried out.
 
-#     The progress bar is designed to hold messages containing tuples of the format:
-#         - Thread identifier,
-#         - Current stage index,
-#         - Number of stages until the task is completed.
+    .. attribute:: cycles_per_hour
+        The number of times, per hour, that the HTF cycles through the PV-T collector
+        system.
 
-#     """
+    """
 
-#     # Private Attributes:
-#     # .. attribute:: _previous_message_length
-#     #   Used to keep track of the previous message length to determine the number of
-#     #   line return characters needed.
-#     #
-
-#     def __init__(self) -> None:
-#         """
-#         Instantiate a progress queue.
-
-#         """
-
-#         self._previous_message_length = 1
-
-#         super().__init__()
-
-#     def _message_from_entry(self, entry: Tuple[str, str, str]) -> str:
-#         """
-#         Generates a message for the queue based on a queue entry.
-
-#         Inputs:
-#             - entry:
-#                 An entry in the queue, usually a Tuple.
-
-#         """
-
-#         # Generate integer-based data off the entries.
-#         current_marker = int(entry[1])
-#         final_marker = int(entry[2])
-#         percentage: int = int(100 * current_marker / final_marker)
-
-#         # Return the entry as a nicely-formatted progress bar.
-#         return "\r{}{}: [{}{}] {}{}%\r".format(
-#             entry[0],
-#             " " * (15 - len(str(entry[0]))),
-#             "#" * int(56 * entry[1] / entry[2]),
-#             "-" * int(56 * (1 - entry[1] / entry[2])),
-#             " " * (3 - len(str(percentage))),
-#             percentage,
-#         )
-
-#     def get_message(self) -> Optional[str]:
-#         """
-#         Returns the message to display out to the console.
-
-#         """
-
-#         message_queue = self.get()
-
-#         # If the message queue is empty, then return `None`.
-#         if len(message_queue) == 0:
-#             return None
-
-#         status_message = "{}".format("\033[A" * (self._previous_message_length + 2))
-
-#         # If the queue contains multiple entries, then report back all of these.
-#         if isinstance(message_queue, list):
-#             status_message = "\n".join(
-#                 [self._message_from_entry(entry) for entry in message_queue]
-#             )
-#             self._previous_message_length = len(message_queue)
-
-#         # If there is only one message in the queue, then print this message.
-#         else:
-#             status_message = self._message_from_entry(message_queue)
-#             self._previous_message_length = 1
-
-#         # Update the message length in lines for use next time.
-
-#         return status_message
-
-
-# class ProgressBarThread(threading.Thread):
-#     """
-#     A :class:`threading.Thread` child used for monitoring CLOVER's progress.
-
-#     """
-
-#     # Private Attributes:
-#     # .. attribute:: progress_queue
-#     #   A :class:`ProgressBarQueue` instance used for tracking the various messages
-#     #   that report the progress of running threads.
-#     #
-
-#     def __init__(self, progress_queue: ProgressBarQueue) -> None:
-#         """
-#         Instantiate a :class:`ProgressBarThread` instance.
-
-#         Inputs:
-#             - progress_queue:
-#                 The queue to use for tracking the progress of the various threads.
-
-#         """
-
-#         self._progress_queue = progress_queue
-
-#         super().__init__()
-
-#     def run(self) -> None:
-#         """
-#         Run the thread.
-
-#         """
-
-#         message = ""
-
-#         # Run until there are no messages to report, then exit.
-#         while message is not None:
-#             message = self._progress_queue.get_message()
-#             print(f"{message}", end="\r")
-#             time.sleep(1)
+    cycles_per_hour: float
 
 
 def read_yaml(
@@ -1177,8 +1067,8 @@ class Scenario:
     .. attribute:: battery
         Whether battery storage is being included in the scenario.
 
-    .. attribute:: clean_water_mode
-        The clean-water mode.
+    .. attribute:: clean_water_scenario
+        The clean-water scenario.
 
     .. attribute:: demands
         The demands being modelled.
@@ -1211,6 +1101,9 @@ class Scenario:
     .. attribute:: pv_t
         Whether PV-T is being included in the scenario.
 
+    .. attribute:: pv_t_scenario
+        The PV-T scenario.
+
     .. attribute:: water_supply_temperature
         The supply temperature of the water input to the system.
 
@@ -1228,6 +1121,7 @@ class Scenario:
     pv: bool
     pv_d: bool
     pv_t: bool
+    pv_t_scenario: Optional[PVTScenario]
 
     @classmethod
     def from_dict(cls, scenario_inputs: Dict[Union[int, str], Any]) -> Any:
@@ -1271,6 +1165,13 @@ class Scenario:
             scenario_inputs["distribution_network"]
         )
 
+        if "pv_t" in scenario_inputs:
+            pv_t_scenario: Optional[PVTScenario] = PVTScenario(
+                scenario_inputs["pv_t"]["cycles_per_hour"]
+            )
+        else:
+            pv_t_scenario = None
+
         resource_types = {
             ResourceType(RESOURCE_NAME_TO_RESOURCE_TYPE_MAPPING[resource_name])
             for resource_name in scenario_inputs["resource_types"]
@@ -1289,6 +1190,7 @@ class Scenario:
             scenario_inputs["pv"],
             scenario_inputs["pv_d"] if "pv_d" in scenario_inputs else False,
             scenario_inputs["pv_t"] if "pv_t" in scenario_inputs else False,
+            pv_t_scenario
         )
 
 
