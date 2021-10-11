@@ -378,6 +378,12 @@ def parse_input_files(
         )
     logger.info("Solar generation inputs successfully parsed.")
 
+    # Parse the PV-T reduced model information.
+    logger.info("Parsing reduced PV-T thermal model.")
+    logger.info("Reduced PV-T thermal model successfully parsed.")
+    logger.info("Parsing reduced PV-T electric model.")
+    logger.info("Reduced PV-T electric model successfully parsed.")
+
     # Parse the PV-panel information.
     solar_panels: List[solar.SolarPanel] = []
     for panel_input in solar_generation_inputs["panels"]:
