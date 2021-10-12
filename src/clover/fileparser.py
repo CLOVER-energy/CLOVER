@@ -14,6 +14,7 @@ fileparser.py - The argument-parsing module for CLOVER.
 
 import os
 import pickle
+import pkgutil
 
 from logging import Logger
 from typing import Any, Dict, List, Optional, Set, Tuple, Union
@@ -36,6 +37,8 @@ from .__utils__ import (
     Location,
     LOCATIONS_FOLDER_NAME,
     OptimisationParameters,
+    PACKAGE_NAME,
+    RAW_CLOVER_PATH,
     read_yaml,
     Scenario,
     Simulation,
@@ -315,7 +318,7 @@ def parse_input_files(
             "scenario inputs", "Scenario inputs is not of type `dict`."
         )
     try:
-        scenario: Scenario = Scenario.from_dict(scenario_inputs)
+        scenario: Scenario = Scenario.from_dict(logger, scenario_inputs)
     except Exception as e:
         logger.error(
             "%sError generating scenario from inputs file: %s%s",
@@ -420,14 +423,48 @@ def parse_input_files(
 
     # Parse the PV-T models if relevant for the code flow.
     if scenario.pv_t:
-        logger.info("Parsing reduced PV-T thermal model.")
-        with open(THERMAL_MODEL_FILE, "rb") as f:
-            thermal_model: Optional[Lasso] = pickle.load(f)
-        logger.info("Reduced PV-T thermal model successfully parsed.")
-        logger.info("Parsing reduced PV-T electric model.")
-        with open(ELECTRIC_MODEL_FILE, "rb") as f:
-            electric_model: Optional[Lasso] = pickle.load(f)
-        logger.info("Reduced PV-T electric model successfully parsed.")
+        # Read the thermal model.
+        logger.info("Attempting to read PV-T reduced thermal model from installed package info.")
+        try:
+            thermal_model: Optional[Lasso] = pickle.load(
+                pkgutil.get_data(PACKAGE_NAME, THERMAL_MODEL_FILE)
+            )
+        except (AttributeError, FileNotFoundError):
+            logger.info("Failed to read data as if package was installed.")
+            logger.info("Attempting to read PV-T reduced thermal model from raw source file.")
+            try:
+                with open(os.path.join(RAW_CLOVER_PATH, THERMAL_MODEL_FILE), "rb") as f:
+                    thermal_model: Optional[Lasso] = pickle.load(f)
+            except Exception:
+                logger.error("Failed to read PV-T reduced thermal model from raw source.")
+                logger.critical("Failed to determine PV-T reduced thermal model.")
+                raise
+            logger.info("Successfully read PV-T reduced thermal model form local source.")
+        else:
+            logger.info("Successfully read PV-T reduced thermal model form installed package file.")
+        logger.info("PV-T reduced thermal model file successfully read.")
+
+        # Read the electric model.
+        logger.info("Attempting to read PV-T reduced electric model from installed package info.")
+        try:
+            electric_model: Optional[Lasso] = pickle.load(
+                pkgutil.get_data(PACKAGE_NAME, ELECTRIC_MODEL_FILE)
+            )
+        except (AttributeError, FileNotFoundError):
+            logger.info("Failed to read data as if package was installed.")
+            logger.info("Attempting to read PV-T reduced electric model from raw source file.")
+            try:
+                with open(os.path.join(RAW_CLOVER_PATH, ELECTRIC_MODEL_FILE), "rb") as f:
+                    electric_model: Optional[Lasso] = pickle.load(f)
+            except Exception:
+                logger.error("Failed to read PV-T reduced electric model from raw source.")
+                logger.critical("Failed to determine PV-T reduced electric model.")
+                raise
+            logger.info("Successfully read PV-T reduced electric model form local source.")
+        else:
+            logger.info("Successfully read PV-T reduced electric model form installed package file.")
+        logger.info("PV-T reduced electric model file successfully read.")
+
     else:
         thermal_model = None
         electric_model = None

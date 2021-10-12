@@ -36,6 +36,7 @@ from tqdm import tqdm  # type: ignore  # pylint: disable=import-error
 __all__ = (
     "BColours",
     "CleanWaterMode",
+    "Criterion",
     "CUT_OFF_TIME",
     "daily_sum_to_monthly_sum",
     "DemandType",
@@ -50,15 +51,16 @@ __all__ = (
     "InternalError",
     "KEROSENE_DEVICE_NAME",
     "KeyResults",
-    "ResourceType",
     "LOCATIONS_FOLDER_NAME",
     "LOGGER_DIRECTORY",
     "monthly_profile_to_daily_profile",
     "open_simulation",
     "OperatingMode",
-    "Criterion",
     "OptimisationParameters",
+    "PACKAGE_NAME",
+    "RAW_CLOVER_PATH",
     "read_yaml",
+    "ResourceType",
     "RenewablesNinjaError",
     "save_simulation",
     "Scenario",
@@ -141,6 +143,15 @@ MONTH_START_DAY: List[int] = [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 
 # Number of iterations:
 #   The number of iterations to consider in the optimisation.
 NUMBER_OF_ITERATIONS: str = "number_of_iterations"
+
+# Package name:
+#   The name of the CLOVER directory, used for locating files that are installed when
+#   packaged but are accessed locally in developer code.
+PACKAGE_NAME: str = "clover"
+
+# Raw CLOVER path:
+#   The path to the clover source directory to use when running in github mode.
+RAW_CLOVER_PATH: str = os.path.join("src", "clover")
 
 # Step:
 #   Keyword used when parsing information about the system size step to consider in
@@ -1118,7 +1129,7 @@ class Scenario:
     .. attribute:: pv_t
         Whether PV-T is being included in the scenario.
 
-    .. attribute:: pv_t_scenario
+    .. attribute:: pvt_scenario
         The PV-T scenario.
 
     .. attribute:: water_supply_temperature
@@ -1138,14 +1149,20 @@ class Scenario:
     pv: bool
     pv_d: bool
     pv_t: bool
-    pv_t_scenario: Optional[PVTScenario]
+    pvt_scenario: Optional[PVTScenario]
 
     @classmethod
-    def from_dict(cls, scenario_inputs: Dict[Union[int, str], Any]) -> Any:
+    def from_dict(
+        cls,
+        logger: logging.Logger,
+        scenario_inputs: Dict[Union[int, str], Any]
+     ) -> Any:
         """
         Returns a :class:`Scenario` instance based on the input data.
 
         Inputs:
+            - logger:
+                The :class:`logging.Logger` to use for the run.
             - scenario_inputs:
                 The input data extracted from the scenario file.
 
@@ -1182,13 +1199,24 @@ class Scenario:
             scenario_inputs["distribution_network"]
         )
 
-        if "pv_t" in scenario_inputs:
-            pv_t_scenario: Optional[PVTScenario] = PVTScenario(
-                scenario_inputs["pv_t"]["cycles_per_hour"],
-                PVTMode(scenario_inputs["pv_t"]["mode"])
+        if "pv_t_scenario" in scenario_inputs:
+            pvt_scenario: Optional[PVTScenario] = PVTScenario(
+                scenario_inputs["pv_t_scenario"]["cycles_per_hour"],
+                PVTMode(scenario_inputs["pv_t_scenario"]["mode"])
+            )
+        elif scenario_inputs["pv_t"]:
+            logger.error(
+                "%sThe PV-T mode was set to `True` but no PV-T scenario was "
+                "specified.%s",
+                BColours.fail,
+                BColours.endc
+            )
+            raise InputFileError(
+                "scenario inputs",
+                "The PV-T mode was set to `True` but no PV-T scenario was specified."
             )
         else:
-            pv_t_scenario = None
+            pvt_scenario = None
 
         resource_types = {
             ResourceType(RESOURCE_NAME_TO_RESOURCE_TYPE_MAPPING[resource_name])
@@ -1208,7 +1236,7 @@ class Scenario:
             scenario_inputs["pv"],
             scenario_inputs["pv_d"] if "pv_d" in scenario_inputs else False,
             scenario_inputs["pv_t"] if "pv_t" in scenario_inputs else False,
-            pv_t_scenario
+            pvt_scenario
         )
 
 

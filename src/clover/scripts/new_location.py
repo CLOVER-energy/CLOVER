@@ -33,6 +33,8 @@ from ..__utils__ import (
     InternalError,
     get_logger,
     LOCATIONS_FOLDER_NAME,
+    PACKAGE_NAME,
+    RAW_CLOVER_PATH,
     read_yaml,
 )
 from ..fileparser import INPUTS_DIRECTORY
@@ -65,10 +67,6 @@ LOGGER_NAME: str = "new_location"
 # New-location data file:
 #   The path to the new-location data file.
 NEW_LOCATION_DATA_FILE: str = os.path.join("src", "new_location.yaml")
-
-# Raw CLOVER path:
-#   The path to the clover source directory to use when running in github mode.
-RAW_CLOVER_PATH: str = os.path.join("src", "clover")
 
 # Regex used to find lines that should be repeated, used to save YAML file space.
 REPEATED_LINE_REGEX: Pattern[str] = re.compile(
@@ -223,7 +221,7 @@ def create_new_location(
     logger.info("Attempting to read location data from installed package info.")
     try:
         new_location_data = yaml.safe_load(
-            pkgutil.get_data("clover", NEW_LOCATION_DATA_FILE)
+            pkgutil.get_data(PACKAGE_NAME, NEW_LOCATION_DATA_FILE)
         )
     except AttributeError:
         logger.info("Failed to read data as if package was installed.")
