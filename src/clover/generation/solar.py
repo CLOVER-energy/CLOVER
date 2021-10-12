@@ -197,12 +197,15 @@ class HybridPVTPanel(SolarPanel, panel_type=SolarPanelType.PV_T):
         The model of the electric performance of the collector.
 
     .. attribute:: max_mass_flow_rate
-        The maximum mass-flow rate of heat-transfer fluid through the PV-T collector.
+        The maximum mass-flow rate of heat-transfer fluid through the PV-T collector,
+        measured in litres per hour.
 
     .. attribute:: min_mass_flow_rate
-        The minimum mass-flow rate of heat-transfer fluid through the PV-T collector.
+        The minimum mass-flow rate of heat-transfer fluid through the PV-T collector,
+        measured in litres per hour.
 
     .. attribute:: thermal_model
+        The model of the thermal performance of the collector.
 
     .. attribute:: thermal_unit
         The unit of thermal panel that the panel can output which is being considered,
@@ -222,12 +225,18 @@ class HybridPVTPanel(SolarPanel, panel_type=SolarPanelType.PV_T):
         Instantiate a :class:`HybridPVTPanel` instance based on the input data.
 
         Inputs:
+            - electric_model:
+                The reduced electrical-efficiency model to use when generating the
+                electric properties of the collector.
             - logger:
                 The logger to use for the run.
             - solar_inputs:
                 The solar input data specific to this panel.
             - solar_panels:
                 The full set of solar generation data.
+            - thermal_model:
+                The reduced thermal model to use when generating the thermal properties
+                of the collector.
 
         """
 
@@ -339,7 +348,7 @@ class HybridPVTPanel(SolarPanel, panel_type=SolarPanelType.PV_T):
                 The :class:`logging.Logger` to use for the run.
             - mass_flow_rate:
                 The mass-flow rate of HTF passing through the collector, measured in
-                litres per hour.
+                kilograms per second.
             - solar_irradiance:
                 The solar irradiance incident on the surface of the collector, measured
                 in Watts per meter squared.

@@ -29,13 +29,51 @@ import pandas as pd  # type: ignore  # pylint: disable=import-error
 
 from tqdm import tqdm
 
-from ..__utils__ import BColours, InputFileError, ResourceType, Scenario
-from ..conversion.conversion import Convertor, ThermalDesalinationPlant
+from ..__utils__ import InputFileError, ResourceType, Scenario
+from ..conversion.conversion import ThermalDesalinationPlant
 from ..generation.solar import HybridPVTPanel
 from .__utils__ import Minigrid
 
 
 __all__ = ("calculate_pvt_output",)
+
+
+class MassFlowRateTooLargeError(Exception):
+    """
+    Raise when the mass-flow rate being specified is too large for the system to cope.
+
+    """
+
+    def __init__(self, msg: str) -> None:
+        """
+        Instantiate a :class:`MassFlowRateTooLargeError` instance.
+
+        Inputs:
+            - msg:
+                The message to append.
+
+        """
+
+        super().__init__(f"The mass-flow rate was too large for the system to cope with: {msg}")
+
+
+class MassFlowRateTooSmallError(Exception):
+    """
+    Raise when the mass-flow rate being specified is too small for the system to cope.
+
+    """
+
+    def __init__(self, msg: str) -> None:
+        """
+        Instantiate a :class:`MassFlowRateTooSmallError` instance.
+
+        Inputs:
+            - msg:
+                The message to append.
+
+        """
+
+        super().__init__(f"The mass-flow rate was too small for the system to operate: {msg}")
 
 
 def _pvt_mass_flow_rate(
@@ -90,7 +128,7 @@ def _pvt_mass_flow_rate(
                 / thermal_desalination_plant.maximum_output_capacity
             ),
         )
-        raise InputFileError(
+        raise MassFlowRateTooSmallError(
             "conversion/solar inputs",
             "Mismatch between PV-T and desalination-plant sizing.",
         )
@@ -109,7 +147,7 @@ def _pvt_mass_flow_rate(
                 ResourceType.HOT_UNCLEAN_WATER
             ],
         )
-        raise InputFileError(
+        raise MassFlowRateTooLargeError(
             "conversion/solar inputs",
             "Mismatch between PV-T and desalination-plant sizing.",
         )
@@ -198,58 +236,53 @@ def calculate_pvt_output(
     pvt_electric_power_per_unit_map: Dict[int, float] = {}
     pvt_volume_output_supplied_map: Dict[int, float] = collections.defaultdict(float)
 
-    try:
-        for index in tqdm(
-            range(start_hour, end_hour),
-            desc="pv-t performance",
-            leave=False,
-            unit="hour",
-        ):
-            for _ in range(minigrid.pv_t_scenario.cycles_per_hour):
-                # Only compute outputs if there is input irradiance.
-                if irradiances[index] > 0:
-                    # AI fitted model.
-                    fractional_electric_performance, collector_output_temperature = minigrid.pvt_panel.thermal_model.calculate_performance(
-                        temperatures[index],
-                        collector_input_temperature,
-                        mass_flow_rate,
-                        1000 * irradiances[index],
-                        wind_speeds[index],
-                    )
+    for index in tqdm(
+        range(start_hour, end_hour),
+        desc="pv-t performance",
+        leave=False,
+        unit="hour",
+    ):
+        for _ in range(scenario.pvt_scenario.cycles_per_hour):
+            # Only compute outputs if there is input irradiance.
+            if irradiances[index] > 0:
+                # AI fitted model.
+                fractional_electric_performance, collector_output_temperature = minigrid.pvt_panel.calculate_performance(
+                    temperatures[index],
+                    collector_input_temperature,
+                    logger,
+                    mass_flow_rate / 3600,  # [kg/s]
+                    1000 * irradiances[index],
+                    wind_speeds[index],
+                )
 
-                    # If the desalination plant was able to accept this water, then use
-                    # this.
-                    if (
-                        collector_output_temperature
-                        >= thermal_desalination_plant.minimum_water_input_temperature
-                    ):
-                        collector_input_temperature = (
-                            scenario.clean_water_scenario.supply_temperature
-                        )
-                        volume_supplied = mass_flow_rate
-                    # Otherwise, cycle this water back around.
-                    else:
-                        collector_input_temperature = collector_output_temperature
-                        volume_supplied = 0
-                else:
+                # If the desalination plant was able to accept this water, then use
+                # this.
+                if (
+                    collector_output_temperature
+                    >= thermal_desalination_plant.minimum_water_input_temperature
+                ):
                     collector_input_temperature = (
                         scenario.clean_water_scenario.supply_temperature
                     )
-                    collector_output_temperature = collector_input_temperature
-                    fractional_electric_performance = 0
+                    volume_supplied = mass_flow_rate
+                # Otherwise, cycle this water back around.
+                else:
+                    collector_input_temperature = collector_output_temperature
                     volume_supplied = 0
+            else:
+                collector_input_temperature = (
+                    scenario.clean_water_scenario.supply_temperature
+                )
+                collector_output_temperature = collector_input_temperature
+                fractional_electric_performance = 0
+                volume_supplied = 0
 
-                pvt_volume_output_supplied_map[index] += volume_supplied
+            pvt_volume_output_supplied_map[index] += volume_supplied
 
-            # Save the fractional electrical performance and output temp.
-            pvt_collector_output_temperature_map[index] = collector_output_temperature
-            pvt_electric_power_per_unit_map[index] = fractional_electric_performance
+        # Save the fractional electrical performance and output temp.
+        pvt_collector_output_temperature_map[index] = collector_output_temperature
+        pvt_electric_power_per_unit_map[index] = fractional_electric_performance
 
-    except TypeError:
-        logger.error(
-            "The PV-T system size must be specified explicitly on the command line."
-        )
-        raise Exception("Missing command-line argument: --pvt-system-size.") from None
 
     # Convert these outputs to dataframes and return.
     pvt_collector_output_temperature: pd.DataFrame = pd.DataFrame(  # type: ignore

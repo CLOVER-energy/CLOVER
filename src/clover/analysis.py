@@ -596,18 +596,21 @@ def plot_outputs(
             plt.plot(
                 pvt_electricity_supplied, label="PV-T electricity generated", zorder=9
             )
+            pvt_present: bool = True
+        else:
+            pvt_present = False
         if initial_clean_water_hourly_loads is not None:
             clean_water_energy_via_excess = (
                 np.mean(
                     np.reshape(
                         simulation_output[0:HOURS_PER_YEAR][
-                            "PV-T electric energy supplied (kWh)"
+                            "Excess power consumed desalinating clean water (kWh)"
                         ].values,
                         (365, 24),
                     ),
                     axis=0,
                 )
-                if "PV-T electric energy supplied (kWh)" in simulation_output
+                if "Excess power consumed desalinating clean water (kWh)" in simulation_output
                 else None
             )
             clean_water_energy_via_backup = (
@@ -638,15 +641,15 @@ def plot_outputs(
                 else None
             )
             plt.plot(
-                clean_water_energy_via_excess, label="Excess -> clean water", zorder=9
+                clean_water_energy_via_excess, label="Excess -> clean water", zorder=9 + (1 if pvt_present else 0)
             )
             plt.plot(
-                clean_water_energy_via_backup, label="Backup -> clean water", zorder=10
+                clean_water_energy_via_backup, label="Backup -> clean water", zorder=10 + (1 if pvt_present else 0)
             )
             plt.plot(
                 thermal_desalination_energy,
                 label="Thermal desal electric power",
-                zorder=11,
+                zorder=11 + (1 if pvt_present else 0),
             )
         plt.legend()
         plt.xlim(0, 23)
@@ -808,14 +811,14 @@ def plot_outputs(
         )
 
         plt.plot(total_used, "--", label="Total used", zorder=1)
-        plt.plot(diesel_energy, label="Diesel", zorder=2)
-        plt.plot(dumped_energy, label="Dumped", zorder=3)
-        plt.plot(grid_energy, label="Grid", zorder=4)
-        plt.plot(renewable_energy, label="Solar used directly", zorder=5)
+        plt.plot(unmet_energy, label="Unmet", zorder=2)
+        plt.plot(diesel_energy, label="Diesel", zorder=3)
+        plt.plot(dumped_energy, label="Dumped", zorder=4)
+        plt.plot(grid_energy, label="Grid", zorder=5)
         plt.plot(storage_energy, label="Storage", zorder=6)
-        plt.plot(unmet_energy, label="Unmet", zorder=7)
+        plt.plot(renewable_energy, label="Solar used directly", zorder=7)
         plt.plot(pv_supplied, label="PV generated", zorder=8)
-        if "PV-T electric energy supplied (kWh)" in simulation_output:
+        if pvt_present:
             plt.plot(
                 pvt_electricity_supplied, label="PV-T electricity generated", zorder=9
             )
@@ -830,15 +833,15 @@ def plot_outputs(
                 "Power consumed running thermal desalination (kWh)"
             ]
             plt.plot(
-                clean_water_energy_via_excess, label="Excess -> clean water", zorder=9
+                clean_water_energy_via_excess, label="Excess -> clean water", zorder=9 + (1 if pvt_present else 0)
             )
             plt.plot(
-                clean_water_energy_via_backup, label="Backup -> clean water", zorder=10
+                clean_water_energy_via_backup, label="Backup -> clean water", zorder=10 + (1 if pvt_present else 0)
             )
             plt.plot(
                 thermal_desalination_energy,
                 label="Thermal desal electric power",
-                zorder=11,
+                zorder=11 + (1 if pvt_present else 0),
             )
         plt.legend()
         plt.xlim(0, 23)

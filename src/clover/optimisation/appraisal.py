@@ -96,57 +96,87 @@ def _simulation_environmental_appraisal(
     """
 
     # Calculate new equipment GHGs
-    equipment_ghgs = ghgs.calculate_total_equipment_ghgs(
-        clean_water_tank_addition,
-        diesel_addition,
-        ghg_inputs,
-        logger,
-        pv_addition,
-        pvt_addition,
-        storage_addition,
-    ) + ghgs.calculate_independent_ghgs(
-        electric_yearly_load_statistics, end_year, ghg_inputs, location, start_year
-    )
+    try:
+        equipment_ghgs = ghgs.calculate_total_equipment_ghgs(
+            clean_water_tank_addition,
+            diesel_addition,
+            ghg_inputs,
+            logger,
+            pv_addition,
+            pvt_addition,
+            storage_addition,
+        ) + ghgs.calculate_independent_ghgs(
+            electric_yearly_load_statistics, end_year, ghg_inputs, location, start_year
+        )
+    except KeyError as e:
+        logger.error("Missing system equipment GHG input information: %s", str(e))
+        raise
 
     # Calculate GHGs of connecting new households
-    connections_ghgs = ghgs.calculate_connections_ghgs(
-        ghg_inputs, simulation_results["Households"]
-    )
+    try:
+        connections_ghgs = ghgs.calculate_connections_ghgs(
+            ghg_inputs, simulation_results["Households"]
+        )
+    except KeyError as e:
+        logger.error("Missing household connection GHG input information: %s", str(e))
+        raise
 
     # Calculate operating GHGs of the system during this simulation
-    om_ghgs = ghgs.calculate_total_om(
-        system_details.initial_num_clean_water_tanks
-        if system_details.initial_num_clean_water_tanks is not None
-        else 0,
-        system_details.diesel_capacity,
-        ghg_inputs,
-        logger,
-        system_details.initial_pv_size,
-        system_details.initial_pvt_size
-        if system_details.initial_pvt_size is not None
-        else 0,
-        system_details.initial_storage_size,
-        start_year,
-        end_year,
-    )
+    try:
+        om_ghgs = ghgs.calculate_total_om(
+            system_details.initial_num_clean_water_tanks
+            if system_details.initial_num_clean_water_tanks is not None
+            else 0,
+            system_details.diesel_capacity,
+            ghg_inputs,
+            logger,
+            system_details.initial_pv_size,
+            system_details.initial_pvt_size
+            if system_details.initial_pvt_size is not None
+            else 0,
+            system_details.initial_storage_size,
+            start_year,
+            end_year,
+        )
+    except KeyError as e:
+        logger.error("Missing O&M GHG input information: %s", str(e))
+        raise
 
     # Calculate running GHGs of the system
-    diesel_fuel_ghgs = ghgs.calculate_diesel_fuel_ghgs(
-        simulation_results["Diesel fuel usage (l)"], ghg_inputs
-    )
-    grid_ghgs = ghgs.calculate_grid_ghgs(
-        ghg_inputs,
-        simulation_results["Grid energy (kWh)"],
-        location,
-        start_year,
-        end_year,
-    )
-    kerosene_ghgs = ghgs.calculate_kerosene_ghgs(
-        ghg_inputs, simulation_results["Kerosene lamps"]
-    )
-    kerosene_ghgs_mitigated = ghgs.calculate_kerosene_ghgs_mitigated(
-        ghg_inputs, simulation_results["Kerosene mitigation"]
-    )
+    try:
+        diesel_fuel_ghgs = ghgs.calculate_diesel_fuel_ghgs(
+            simulation_results["Diesel fuel usage (l)"], ghg_inputs
+        )
+    except KeyError as e:
+        logger.error("Missing diesel-fuel GHG input information: %s", str(e))
+        raise
+
+    try:
+        grid_ghgs = ghgs.calculate_grid_ghgs(
+            ghg_inputs,
+            simulation_results["Grid energy (kWh)"],
+            location,
+            start_year,
+            end_year,
+        )
+    except KeyError as e:
+        logger.error("Missing grid GHG input information: %s", str(e))
+        raise
+    try:
+        kerosene_ghgs = ghgs.calculate_kerosene_ghgs(
+            ghg_inputs, simulation_results["Kerosene lamps"]
+        )
+    except KeyError as e:
+        logger.error("Missing kerosene GHG input information: %s", str(e))
+        raise
+
+    try:
+        kerosene_ghgs_mitigated = ghgs.calculate_kerosene_ghgs_mitigated(
+            ghg_inputs, simulation_results["Kerosene mitigation"]
+        )
+    except KeyError as e:
+        logger.error("Missing kerosene GHG input information: %s", str(e))
+        raise
 
     # Total GHGs incurred during simulation period
     total_ghgs = (
