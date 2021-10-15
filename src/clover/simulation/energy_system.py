@@ -618,6 +618,23 @@ def run_simulation(
         clean_water_power_consumed = pd.DataFrame([0] * simulation_hours)
         renewable_clean_water_used_directly = pd.DataFrame([0] * simulation_hours)
 
+    #############
+    # Hot water #
+    #############
+
+    if ResourceType.HOT_CLEAN_WATER in scenario.resource_types:
+        if total_hot_water_load is None:
+            raise Exception(
+                f"{BColours.fail}A simulation was run that specified a hot-water load "
+                + f"but no hot-water load was passed in.{BColours.endc}"
+            )
+        # Process the load profile based on the relevant scenario.
+        processed_total_hot_water_load = pd.DataFrame(
+            _get_processed_load_profile(scenario, total_hot_water_load)[
+                start_hour: end_hour
+            ].values
+        )
+
     ###############
     # Electricity #
     ###############
@@ -1234,6 +1251,9 @@ def run_simulation(
             + diesel_energy.values
         )
 
+    if ResourceType.HOT_CLEAN_WATER in scenario.resource_types:
+        processed_total_hot_water_load.columns = pd.Index(["Total hot-water demand (l)"])
+
     # System performance outputs
     blackout_times.columns = pd.Index(["Blackouts"])
     hourly_battery_storage_frame.columns = pd.Index(["Hourly storage (kWh)"])
@@ -1333,6 +1353,13 @@ def run_simulation(
                 unmet_clean_water,
                 water_supplied_by_excess_energy_frame,
                 water_surplus_frame,
+            ]
+        )
+
+    if ResourceType.HOT_CLEAN_WATER in scenario.resource_types:
+        system_performance_outputs_list.extend(
+            [
+                processed_total_hot_water_load
             ]
         )
 
