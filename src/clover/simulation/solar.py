@@ -54,7 +54,9 @@ class MassFlowRateTooLargeError(Exception):
 
         """
 
-        super().__init__(f"The mass-flow rate was too large for the system to cope with: {msg}")
+        super().__init__(
+            f"The mass-flow rate was too large for the system to cope with: {msg}"
+        )
 
 
 class MassFlowRateTooSmallError(Exception):
@@ -73,7 +75,9 @@ class MassFlowRateTooSmallError(Exception):
 
         """
 
-        super().__init__(f"The mass-flow rate was too small for the system to operate: {msg}")
+        super().__init__(
+            f"The mass-flow rate was too small for the system to operate: {msg}"
+        )
 
 
 def _pvt_mass_flow_rate(
@@ -129,7 +133,6 @@ def _pvt_mass_flow_rate(
             ),
         )
         raise MassFlowRateTooSmallError(
-            "conversion/solar inputs",
             "Mismatch between PV-T and desalination-plant sizing.",
         )
     if (
@@ -246,7 +249,10 @@ def calculate_pvt_output(
             # Only compute outputs if there is input irradiance.
             if irradiances[index] > 0:
                 # AI fitted model.
-                fractional_electric_performance, collector_output_temperature = minigrid.pvt_panel.calculate_performance(
+                (
+                    fractional_electric_performance,
+                    collector_output_temperature,
+                ) = minigrid.pvt_panel.calculate_performance(
                     temperatures[index],
                     collector_input_temperature,
                     logger,
@@ -282,7 +288,6 @@ def calculate_pvt_output(
         # Save the fractional electrical performance and output temp.
         pvt_collector_output_temperature_map[index] = collector_output_temperature
         pvt_electric_power_per_unit_map[index] = fractional_electric_performance
-
 
     # Convert these outputs to dataframes and return.
     pvt_collector_output_temperature: pd.DataFrame = pd.DataFrame(  # type: ignore

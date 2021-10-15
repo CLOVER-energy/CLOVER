@@ -524,7 +524,7 @@ def run_simulation(
 
         # @@@ Catch the mass-flow rate errors here and report back what needs to change
         #     wrt the system sizing.
-        
+
         # Compute the output of the PV-T system.
         (
             pvt_collector_output_temperature,
@@ -631,7 +631,7 @@ def run_simulation(
         # Process the load profile based on the relevant scenario.
         processed_total_hot_water_load = pd.DataFrame(
             _get_processed_load_profile(scenario, total_hot_water_load)[
-                start_hour: end_hour
+                start_hour:end_hour
             ].values
         )
 
@@ -1252,7 +1252,9 @@ def run_simulation(
         )
 
     if ResourceType.HOT_CLEAN_WATER in scenario.resource_types:
-        processed_total_hot_water_load.columns = pd.Index(["Total hot-water demand (l)"])
+        processed_total_hot_water_load.columns = pd.Index(
+            ["Total hot-water demand (l)"]
+        )
 
     # System performance outputs
     blackout_times.columns = pd.Index(["Blackouts"])
@@ -1357,11 +1359,7 @@ def run_simulation(
         )
 
     if ResourceType.HOT_CLEAN_WATER in scenario.resource_types:
-        system_performance_outputs_list.extend(
-            [
-                processed_total_hot_water_load
-            ]
-        )
+        system_performance_outputs_list.extend([processed_total_hot_water_load])
 
     system_performance_outputs = pd.concat(
         system_performance_outputs_list,
