@@ -216,7 +216,9 @@ def plot_outputs(
     total_hot_water_load = total_loads[ResourceType.HOT_CLEAN_WATER]
 
     with tqdm(
-        total=10 + (15 if initial_clean_water_hourly_loads is not None else 0) + (4 if initial_hot_water_hourly_loads is not None else 0),
+        total=10
+        + (15 if initial_clean_water_hourly_loads is not None else 0)
+        + (4 if initial_hot_water_hourly_loads is not None else 0),
         desc="plots",
         leave=False,
         unit="plot",
@@ -612,7 +614,8 @@ def plot_outputs(
                     ),
                     axis=0,
                 )
-                if "Excess power consumed desalinating clean water (kWh)" in simulation_output
+                if "Excess power consumed desalinating clean water (kWh)"
+                in simulation_output
                 else None
             )
             clean_water_energy_via_backup = (
@@ -643,10 +646,14 @@ def plot_outputs(
                 else None
             )
             plt.plot(
-                clean_water_energy_via_excess, label="Excess -> clean water", zorder=9 + (1 if pvt_present else 0)
+                clean_water_energy_via_excess,
+                label="Excess -> clean water",
+                zorder=9 + (1 if pvt_present else 0),
             )
             plt.plot(
-                clean_water_energy_via_backup, label="Backup -> clean water", zorder=10 + (1 if pvt_present else 0)
+                clean_water_energy_via_backup,
+                label="Backup -> clean water",
+                zorder=10 + (1 if pvt_present else 0),
             )
             plt.plot(
                 thermal_desalination_energy,
@@ -835,10 +842,14 @@ def plot_outputs(
                 "Power consumed running thermal desalination (kWh)"
             ]
             plt.plot(
-                clean_water_energy_via_excess, label="Excess -> clean water", zorder=9 + (1 if pvt_present else 0)
+                clean_water_energy_via_excess,
+                label="Excess -> clean water",
+                zorder=9 + (1 if pvt_present else 0),
             )
             plt.plot(
-                clean_water_energy_via_backup, label="Backup -> clean water", zorder=10 + (1 if pvt_present else 0)
+                clean_water_energy_via_backup,
+                label="Backup -> clean water",
+                zorder=10 + (1 if pvt_present else 0),
             )
             plt.plot(
                 thermal_desalination_energy,

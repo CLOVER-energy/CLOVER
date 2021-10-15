@@ -367,21 +367,42 @@ class HybridPVTPanel(SolarPanel, panel_type=SolarPanelType.PV_T):
         """
 
         if self.electric_model is None or self.thermal_model is None:
-            logger.error("%sThe PV-T instance does not have well-defined and loaded models.%s", BColours.fail, BColours.endc)
-            raise InputFileError("The PV-T instance does not have well-defined and loaded models.")
+            logger.error(
+                "%sThe PV-T instance does not have well-defined and loaded models.%s",
+                BColours.fail,
+                BColours.endc,
+            )
+            raise InputFileError(
+                "The PV-T instance does not have well-defined and loaded models."
+            )
 
-        input_data_frame = pd.DataFrame([[ambient_temperature, input_temperature, mass_flow_rate, solar_irradiance, wind_speed]])
+        input_data_frame = pd.DataFrame(
+            [
+                [
+                    ambient_temperature,
+                    input_temperature,
+                    mass_flow_rate,
+                    solar_irradiance,
+                    wind_speed,
+                ]
+            ]
+        )
 
         try:
             electric_efficiency = float(self.electric_model.predict(input_data_frame))
         except Exception as e:
-            logger.error("Error attempting to predict electric efficiency of the PV-T collector: %s", str(e))
+            logger.error(
+                "Error attempting to predict electric efficiency of the PV-T collector: %s",
+                str(e),
+            )
 
         try:
             output_temperature = float(self.thermal_model.predict(input_data_frame))
         except Exception as e:
-            logger.error("Error attempting to predict electric efficiency of the PV-T collector: %s", str(e))
-
+            logger.error(
+                "Error attempting to predict electric efficiency of the PV-T collector: %s",
+                str(e),
+            )
 
         return electric_efficiency, output_temperature
 

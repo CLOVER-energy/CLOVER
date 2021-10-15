@@ -1153,10 +1153,8 @@ class Scenario:
 
     @classmethod
     def from_dict(
-        cls,
-        logger: logging.Logger,
-        scenario_inputs: Dict[Union[int, str], Any]
-     ) -> Any:
+        cls, logger: logging.Logger, scenario_inputs: Dict[Union[int, str], Any]
+    ) -> Any:
         """
         Returns a :class:`Scenario` instance based on the input data.
 
@@ -1177,10 +1175,13 @@ class Scenario:
             else None
         )
 
-        clean_water_scenario = CleanWaterScenario(
-            clean_water_mode,
-            scenario_inputs[ResourceType.CLEAN_WATER.value]["supply_temperature"],
-        )
+        if ResourceType.CLEAN_WATER.value in scenario_inputs:
+            clean_water_scenario: Optional[CleanWaterScenario] = CleanWaterScenario(
+                clean_water_mode,
+                scenario_inputs[ResourceType.CLEAN_WATER.value]["supply_temperature"],
+            )
+        else:
+            clean_water_scenario = None
 
         demands = Demands(
             scenario_inputs["demands"][DemandType.COMMERCIAL.value],
@@ -1199,21 +1200,21 @@ class Scenario:
             scenario_inputs["distribution_network"]
         )
 
-        if "pv_t_scenario" in scenario_inputs:
+        if "pvt_scenario" in scenario_inputs:
             pvt_scenario: Optional[PVTScenario] = PVTScenario(
-                scenario_inputs["pv_t_scenario"]["cycles_per_hour"],
-                PVTMode(scenario_inputs["pv_t_scenario"]["mode"])
+                scenario_inputs["pvt_scenario"]["cycles_per_hour"],
+                PVTMode(scenario_inputs["pvt_scenario"]["mode"]),
             )
-        elif scenario_inputs["pv_t"]:
+        elif "pv_t" in scenario_inputs and scenario_inputs["pv_t"]:
             logger.error(
                 "%sThe PV-T mode was set to `True` but no PV-T scenario was "
                 "specified.%s",
                 BColours.fail,
-                BColours.endc
+                BColours.endc,
             )
             raise InputFileError(
                 "scenario inputs",
-                "The PV-T mode was set to `True` but no PV-T scenario was specified."
+                "The PV-T mode was set to `True` but no PV-T scenario was specified.",
             )
         else:
             pvt_scenario = None
@@ -1236,7 +1237,7 @@ class Scenario:
             scenario_inputs["pv"],
             scenario_inputs["pv_d"] if "pv_d" in scenario_inputs else False,
             scenario_inputs["pv_t"] if "pv_t" in scenario_inputs else False,
-            pvt_scenario
+            pvt_scenario,
         )
 
 

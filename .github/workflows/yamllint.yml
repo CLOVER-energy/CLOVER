@@ -20,4 +20,4 @@ jobs:
           pip install Pyyaml
       - name: Analysing the code with yamllint
         run: |
-          yamllint -c .yamllint-config.yaml locations/
+          yamllint -c .yamllint-config.yaml locations/Bahraich/ src/

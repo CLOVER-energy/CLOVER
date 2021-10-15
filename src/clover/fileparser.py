@@ -424,45 +424,67 @@ def parse_input_files(
     # Parse the PV-T models if relevant for the code flow.
     if scenario.pv_t:
         # Read the thermal model.
-        logger.info("Attempting to read PV-T reduced thermal model from installed package info.")
+        logger.info(
+            "Attempting to read PV-T reduced thermal model from installed package info."
+        )
         try:
             thermal_model: Optional[Lasso] = pickle.load(
                 pkgutil.get_data(PACKAGE_NAME, THERMAL_MODEL_FILE)
             )
-        except (AttributeError, FileNotFoundError):
+        except (AttributeError, FileNotFoundError, TypeError):
             logger.info("Failed to read data as if package was installed.")
-            logger.info("Attempting to read PV-T reduced thermal model from raw source file.")
+            logger.info(
+                "Attempting to read PV-T reduced thermal model from raw source file."
+            )
             try:
                 with open(os.path.join(RAW_CLOVER_PATH, THERMAL_MODEL_FILE), "rb") as f:
                     thermal_model: Optional[Lasso] = pickle.load(f)
             except Exception:
-                logger.error("Failed to read PV-T reduced thermal model from raw source.")
+                logger.error(
+                    "Failed to read PV-T reduced thermal model from raw source."
+                )
                 logger.critical("Failed to determine PV-T reduced thermal model.")
                 raise
-            logger.info("Successfully read PV-T reduced thermal model form local source.")
+            logger.info(
+                "Successfully read PV-T reduced thermal model form local source."
+            )
         else:
-            logger.info("Successfully read PV-T reduced thermal model form installed package file.")
+            logger.info(
+                "Successfully read PV-T reduced thermal model form installed package file."
+            )
         logger.info("PV-T reduced thermal model file successfully read.")
 
         # Read the electric model.
-        logger.info("Attempting to read PV-T reduced electric model from installed package info.")
+        logger.info(
+            "Attempting to read PV-T reduced electric model from installed package info."
+        )
         try:
             electric_model: Optional[Lasso] = pickle.load(
                 pkgutil.get_data(PACKAGE_NAME, ELECTRIC_MODEL_FILE)
             )
-        except (AttributeError, FileNotFoundError):
+        except (AttributeError, FileNotFoundError, TypeError):
             logger.info("Failed to read data as if package was installed.")
-            logger.info("Attempting to read PV-T reduced electric model from raw source file.")
+            logger.info(
+                "Attempting to read PV-T reduced electric model from raw source file."
+            )
             try:
-                with open(os.path.join(RAW_CLOVER_PATH, ELECTRIC_MODEL_FILE), "rb") as f:
+                with open(
+                    os.path.join(RAW_CLOVER_PATH, ELECTRIC_MODEL_FILE), "rb"
+                ) as f:
                     electric_model: Optional[Lasso] = pickle.load(f)
             except Exception:
-                logger.error("Failed to read PV-T reduced electric model from raw source.")
+                logger.error(
+                    "Failed to read PV-T reduced electric model from raw source."
+                )
                 logger.critical("Failed to determine PV-T reduced electric model.")
                 raise
-            logger.info("Successfully read PV-T reduced electric model form local source.")
+            logger.info(
+                "Successfully read PV-T reduced electric model form local source."
+            )
         else:
-            logger.info("Successfully read PV-T reduced electric model form installed package file.")
+            logger.info(
+                "Successfully read PV-T reduced electric model form installed package file."
+            )
         logger.info("PV-T reduced electric model file successfully read.")
 
     else:
