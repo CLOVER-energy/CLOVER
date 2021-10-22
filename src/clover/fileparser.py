@@ -30,6 +30,7 @@ from .impact.ghgs import EMISSIONS
 
 from .__utils__ import (
     BColours,
+    DesalinationScenario,
     InputFileError,
     InternalError,
     KEROSENE_DEVICE_NAME,
@@ -70,6 +71,12 @@ BATTERY_INPUTS_FILE = os.path.join("simulation", "battery_inputs.yaml")
 # Conversion inputs file:
 #   The relative path to the conversion-inputs file.
 CONVERSION_INPUTS_FILE = os.path.join("generation", "conversion_inputs.yaml")
+
+# Desalination scenario inputs file:
+#   The relative path to the desalination-scenario inputs file.
+DESALINATION_SCENARIO_INPUTS_FILE = os.path.join(
+    "scenario", "desalination_scenario.yaml"
+)
 
 # Device inputs file:
 #   The relative path to the device-inputs file.
@@ -305,6 +312,32 @@ def parse_input_files(
             )
             raise
 
+    desalination_scenario_inputs_filepath = os.path.join(
+        inputs_directory_relative_path,
+        DESALINATION_SCENARIO_INPUTS_FILE,
+    )
+    desalination_scenario_inputs = read_yaml(
+        desalination_scenario_inputs_filepath,
+        logger,
+    )
+    if not isinstance(desalination_scenario_inputs, dict):
+        raise InputFileError(
+            "scenario inputs", "Desalination scenario inputs is not of type `dict`."
+        )
+    try:
+        desalination_scenario: DesalinationScenario = DesalinationScenario.from_dict(
+            desalination_scenario_inputs, logger
+        )
+    except Exception as e:
+        logger.error(
+            "%sError generating deslination scenario from inputs file: %s%s",
+            BColours.fail,
+            str(e),
+            BColours.endc,
+        )
+        raise
+    logger.info("Desalination scenario successfully parsed.")
+
     scenario_inputs_filepath = os.path.join(
         inputs_directory_relative_path,
         SCENARIO_INPUTS_FILE,
@@ -318,7 +351,9 @@ def parse_input_files(
             "scenario inputs", "Scenario inputs is not of type `dict`."
         )
     try:
-        scenario: Scenario = Scenario.from_dict(logger, scenario_inputs)
+        scenario: Scenario = Scenario.from_dict(
+            desalination_scenario, logger, scenario_inputs
+        )
     except Exception as e:
         logger.error(
             "%sError generating scenario from inputs file: %s%s",

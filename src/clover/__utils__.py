@@ -210,13 +210,9 @@ class CleanWaterScenario:
     .. attribute:: mode
         The clean water mode being modelled.
 
-    .. attribute:: supply_temperature
-        The temperature, in degrees Celcius, of the water supply to the temperature.
-
     """
 
     mode: CleanWaterMode
-    supply_temperature: float
 
 
 def daily_sum_to_monthly_sum(daily_profile):
@@ -564,23 +560,62 @@ class ResourceType(enum.Enum):
     - ELECTRIC:
         Represents an electric load.
 
+    - HOT_CLEAN_WATER:
+        Represents water which has either been cleaned within the minigrid or supplied
+        as clean to the system and which has been heated.
+
+    - HOT_UNCLEAN_WATER:
+        Represents feedwater which has been heated by the minigrid but which has not yet
+        been treated.
+
+    - MISC:
+        Used internaly to fulfil Pythonic class definitions.
+
+    - UNCLEAN_WATER:
+        Represents feedwater which has not yet been warmed or heated by the minigrid.
+
     """
 
     CLEAN_WATER = "clean_water"
     ELECTRIC = "electricity"
     HOT_CLEAN_WATER = "hot_water"
     HOT_UNCLEAN_WATER = "hot_feedwater"
+    MISC = "misc"
     UNCLEAN_WATER = "feedwater"
 
 
-# Load name to load type mapping:
+# Resource name to resource type mapping:
 #   Maps the load name to the load type, used for parsing scenario files.
 RESOURCE_NAME_TO_RESOURCE_TYPE_MAPPING = {
     "clean_water": ResourceType.CLEAN_WATER,
     ELECTRIC_POWER: ResourceType.ELECTRIC,
+    "feedwater": ResourceType.UNCLEAN_WATER,
     "hot_water": ResourceType.HOT_CLEAN_WATER,
     "hot_untreated_water": ResourceType.HOT_UNCLEAN_WATER,
-    "feedwater": ResourceType.UNCLEAN_WATER,
+}
+
+
+class HTFMode(enum.Enum):
+    """
+    Specifies the type of material being used as the PV-T HTF.
+
+    - CLOSED_HTF:
+        Denotes that a closed (i.e., self-contained) HTF is being used.
+
+    - FEEDWATER_HEATING:
+        Denotes that feedwater is being heated directly.
+
+    """
+
+    CLOSED_HTF = "htf"
+    FEEDWATER_HEATING = ResourceType.UNCLEAN_WATER.value
+
+
+# HTF name to HTF type mapping:
+#   Maps the HTF name to the HTF type, used for parsing desalination scenario files.
+HTF_NAME_TO_HTF_TYPE_MAPPING = {
+    "feedwater": HTFMode.FEEDWATER_HEATING,
+    "htf": HTFMode.CLOSED_HTF,
 }
 
 
@@ -1032,14 +1067,12 @@ class PVTScenario:
     """
     Specifies the PV-T scenario being carried out.
 
-    .. attribute:: cycles_per_hour
-        The number of times, per hour, that the HTF cycles through the PV-T collector
-        system.
+    .. attribute:: heats
+        The resource which is heated by the PV-T system.
 
     """
 
-    cycles_per_hour: float
-    mode: PVTMode
+    heats: HTFMode
 
 
 def read_yaml(
@@ -1088,15 +1121,122 @@ class RenewablesNinjaError(Exception):
 
 
 @dataclasses.dataclass
+class DesalinationScenario:
+    """
+    Represents the deslination-related scenario being run.
+
+    .. attribute:: clean_water_scenario
+        The clean-water scenario.
+
+    .. attribute:: feedwater_supply_temperature
+        The supply temperature of the feedwater input to the system.
+
+    .. attribute:: pvt_scenario
+        The PV-T scenario.
+
+    """
+
+    clean_water_scenario: CleanWaterScenario
+    feedwater_supply_temperature: float
+    pvt_scenario: PVTScenario
+
+    @classmethod
+    def from_dict(
+        cls, desalination_inputs: Dict[Union[int, str], Any], logger: logging.Logger
+    ) -> Any:
+        """
+        Returns a :class:`DeslinationScenario` instance based on the input data.
+
+        Inputs:
+            - desalination_inputs:
+                The input data extracted from the scenario file.
+            - logger:
+                The :class:`logging.Logger` to use for the run.
+
+        Outputs:
+            - A :class:`DeslinationScenario` instance based on the input data provided.
+
+        """
+
+        try:
+            clean_water_mode = CleanWaterMode(
+                desalination_inputs[ResourceType.CLEAN_WATER.value]["mode"]
+            )
+        except ValueError:
+            logger.error(
+                "%sInvalid clean-water mode specified: %s%s",
+                BColours.fail,
+                desalination_inputs[ResourceType.CLEAN_WATER.value]["mode"],
+                BColours.endc,
+            )
+            raise InputFileError(
+                "desalination scenario",
+                "Invalid clean-water mode specified in clean-water scenario.",
+            ) from None
+        except KeyError:
+            logger.error(
+                "%sMissing clean-water information in deslination scenario file.%s",
+                BColours.fail,
+                BColours.endc,
+            )
+            raise InputFileError(
+                "desalination scenario", "Missing clean-water scenario information."
+            ) from None
+
+        clean_water_scenario: Optional[CleanWaterScenario] = CleanWaterScenario(
+            clean_water_mode,
+        )
+
+        try:
+            pvt_scenario: Optional[PVTScenario] = PVTScenario(
+                HTFMode(desalination_inputs["pvt_scenario"]["heats"])
+            )
+        except ValueError:
+            logger.error(
+                "%sInvalid HTF mode specified: %s%s",
+                BColours.fail,
+                desalination_inputs["pvt_scenario"]["heats"],
+                BColours.endc,
+            )
+            raise InputFileError(
+                "desalination scenario", "Invalid HTF mode specified in PV-T scenario."
+            ) from None
+        except KeyError:
+            logger.error(
+                "%sMissing PV-T information in deslination scenario file.%s",
+                BColours.fail,
+                BColours.endc,
+            )
+            raise InputFileError(
+                "desalination scenario", "Missing PV-T scenario information."
+            ) from None
+
+        try:
+            feedwater_supply_temperature = desalination_inputs[
+                ResourceType.UNCLEAN_WATER.value
+            ]["supply_temperature"]
+        except KeyError:
+            logger.error(
+                "%sMissing feedwater supply temperature information in desalination "
+                "inputs.%s",
+                BColours.fail,
+                BColours.endc,
+            )
+
+        return cls(
+            clean_water_scenario,
+            feedwater_supply_temperature,
+            pvt_scenario,
+        )
+
+
+@dataclasses.dataclass
 class Scenario:
     """
     Represents a scenario being run.
 
     .. attribute:: battery
         Whether battery storage is being included in the scenario.
-
-    .. attribute:: clean_water_scenario
-        The clean-water scenario.
 
     .. attribute:: demands
         The demands being modelled.
@@ -1129,17 +1269,11 @@ class Scenario:
     .. attribute:: pv_t
         Whether PV-T is being included in the scenario.
 
-    .. attribute:: pvt_scenario
-        The PV-T scenario.
-
-    .. attribute:: water_supply_temperature
-        The supply temperature of the water input to the system.
-
     """
 
     battery: bool
-    clean_water_scenario: Optional[CleanWaterScenario]
     demands: Demands
+    desalination_scenario: Optional[DesalinationScenario]
     diesel_scenario: DieselScenario
     distribution_network: DistributionNetwork
     grid: bool
@@ -1149,16 +1283,20 @@ class Scenario:
     pv: bool
     pv_d: bool
     pv_t: bool
-    pvt_scenario: Optional[PVTScenario]
 
     @classmethod
     def from_dict(
-        cls, logger: logging.Logger, scenario_inputs: Dict[Union[int, str], Any]
+        cls,
+        desalination_scenario: Optional[DesalinationScenario],
+        logger: logging.Logger,
+        scenario_inputs: Dict[Union[int, str], Any],
     ) -> Any:
         """
         Returns a :class:`Scenario` instance based on the input data.
 
         Inputs:
+            - desalination_scenario:
+                The :class:`DesalinationScenario` to use for the run.
             - logger:
                 The :class:`logging.Logger` to use for the run.
             - scenario_inputs:
@@ -1168,20 +1306,6 @@ class Scenario:
             - A :class:`Scenario` instance based on the input data provided.
 
         """
-
-        clean_water_mode = (
-            CleanWaterMode(scenario_inputs[ResourceType.CLEAN_WATER.value]["mode"])
-            if ResourceType.CLEAN_WATER.value in scenario_inputs
-            else None
-        )
-
-        if ResourceType.CLEAN_WATER.value in scenario_inputs:
-            clean_water_scenario: Optional[CleanWaterScenario] = CleanWaterScenario(
-                clean_water_mode,
-                scenario_inputs[ResourceType.CLEAN_WATER.value]["supply_temperature"],
-            )
-        else:
-            clean_water_scenario = None
 
         demands = Demands(
             scenario_inputs["demands"][DemandType.COMMERCIAL.value],
@@ -1200,25 +1324,6 @@ class Scenario:
             scenario_inputs["distribution_network"]
         )
 
-        if "pvt_scenario" in scenario_inputs:
-            pvt_scenario: Optional[PVTScenario] = PVTScenario(
-                scenario_inputs["pvt_scenario"]["cycles_per_hour"],
-                PVTMode(scenario_inputs["pvt_scenario"]["mode"]),
-            )
-        elif "pv_t" in scenario_inputs and scenario_inputs["pv_t"]:
-            logger.error(
-                "%sThe PV-T mode was set to `True` but no PV-T scenario was "
-                "specified.%s",
-                BColours.fail,
-                BColours.endc,
-            )
-            raise InputFileError(
-                "scenario inputs",
-                "The PV-T mode was set to `True` but no PV-T scenario was specified.",
-            )
-        else:
-            pvt_scenario = None
-
         resource_types = {
             ResourceType(RESOURCE_NAME_TO_RESOURCE_TYPE_MAPPING[resource_name])
             for resource_name in scenario_inputs["resource_types"]
@@ -1226,8 +1331,8 @@ class Scenario:
 
         return cls(
             scenario_inputs["battery"],
-            clean_water_scenario,
             demands,
+            desalination_scenario,
             diesel_scenario,
             distribution_network,
             scenario_inputs["grid"],
@@ -1237,7 +1342,6 @@ class Scenario:
             scenario_inputs["pv"],
             scenario_inputs["pv_d"] if "pv_d" in scenario_inputs else False,
             scenario_inputs["pv_t"] if "pv_t" in scenario_inputs else False,
-            pvt_scenario,
         )
 
 
