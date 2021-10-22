@@ -42,7 +42,7 @@ MAXIMUM_OUTPUT = "maximum_output"
 
 # Maximum water input temperature:
 #   Keyword used for parsing maximum output information.
-MAXIMUM_WATER_INPUT_TEMPERATURE = "max_water_input_temperature"
+MAXIMUM_HTF_TEMPERATURE = "max_htf_temperature"
 
 # Minimum output:
 #   Keyword used for parsing maximum output information.
@@ -50,7 +50,7 @@ MINIMUM_OUTPUT = "minimum_output"
 
 # Minimum water input temperature:
 #   Keyword used for parsing maximum output information.
-MINIMUM_WATER_INPUT_TEMPERATURE = "min_water_input_temperature"
+MINIMUM_HTF_TEMPERATURE = "min_htf_temperature"
 
 # Name:
 #   Keyword used for parsing convertor name information.
@@ -320,16 +320,16 @@ class ThermalDesalinationPlant(MultiInputConvertor):
     """
     Represents a thermal desalination plant.
 
-    .. attribute:: maximum_water_input_temperature
-        The maximum temperature of feedwater allowed by the plant, measured in degrees
+    .. attribute:: maximum_htf_temperature
+        The maximum temperature of HTF allowed by the plant, measured in degrees
+        Celcius.
+
+    .. attribute:: minimum_htf_temperature
+        The minumum temperature of HTF allowed by the plant, measured in degrees
         Celcius.
 
     .. attribute:: minimum_output_capacity
         The minimum output flow rate of the plant.
-
-    .. attribute:: minimum_water_input_temperature
-        The minumum temperature of feedwater allowed by the plant, measured in degrees
-        Celcius.
 
     """
 
@@ -337,9 +337,9 @@ class ThermalDesalinationPlant(MultiInputConvertor):
         self,
         input_resource_consumption: Dict[ResourceType, float],
         maximum_output_capacity: float,
-        maximum_water_input_temperature: float,
+        maximum_htf_temperature: float,
+        minimum_htf_temperature: float,
         minimum_output_capacity: float,
-        minimum_water_input_temperature: float,
         name: str,
         output_resource_type: ResourceType,
     ) -> None:
@@ -354,14 +354,14 @@ class ThermalDesalinationPlant(MultiInputConvertor):
                 The types of load inputted to the device.
             - maximum_output_capcity:
                 The maximum output capacity of the device.
-            - maximum_water_input_temperature:
+            - maximum_htf_temperature:
                 The maximum temperature of water allowed into the plant, measured in
+                degrees Celcius.
+            - minimum_htf_temperature:
+                The mibimum temperature of water allowed into the plant, measured in
                 degrees Celcius.
             - minimum_output_capcity:
                 The minimum output capacity of the device.
-            - minimum_water_input_temperature:
-                The mibimum temperature of water allowed into the plant, measured in
-                degrees Celcius.
             - name:
                 The name of the device.
             - output_resource_type:
@@ -373,9 +373,9 @@ class ThermalDesalinationPlant(MultiInputConvertor):
             ResourceType, float
         ] = input_resource_consumption
         self.maximum_output_capacity: float = maximum_output_capacity
-        self.maximum_water_input_temperature: float = maximum_water_input_temperature
+        self.maximum_htf_temperature: float = maximum_htf_temperature
+        self.minimum_htf_temperature: float = minimum_htf_temperature
         self.minimum_output_capacity: float = minimum_output_capacity
-        self.minimum_water_input_temperature: float = minimum_water_input_temperature
         self.name: str = name
         self.output_resource_type: ResourceType = output_resource_type
 
@@ -456,9 +456,9 @@ class ThermalDesalinationPlant(MultiInputConvertor):
         return cls(
             input_resource_consumption,
             maximum_output,
-            float(input_data[MAXIMUM_WATER_INPUT_TEMPERATURE]),
+            float(input_data[MAXIMUM_HTF_TEMPERATURE]),
+            float(input_data[MINIMUM_HTF_TEMPERATURE]),
             float(input_data[MINIMUM_OUTPUT]),
-            float(input_data[MINIMUM_WATER_INPUT_TEMPERATURE]),
             str(input_data[NAME]),
             output_resource_type,
         )

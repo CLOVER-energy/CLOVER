@@ -265,7 +265,7 @@ def calculate_pvt_output(
                 # this.
                 if (
                     collector_output_temperature
-                    >= thermal_desalination_plant.minimum_water_input_temperature
+                    >= thermal_desalination_plant.min_htf_temperature
                 ):
                     collector_input_temperature = (
                         scenario.clean_water_scenario.supply_temperature
