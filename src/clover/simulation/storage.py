@@ -25,6 +25,8 @@ from ..__utils__ import ResourceType
 __all__ = (
     "Battery",
     "CleanWaterTank",
+    "HotWaterTank",
+    "WaterTank",
 )
 
 
@@ -90,12 +92,10 @@ class _BaseStorage:
         """
 
         self.cycle_lifetime: int = cycle_lifetime
-        self.label: Optional[str] = None
         self.leakage: float = leakage
         self.maximum_charge: float = maximum_charge
         self.minimum_charge: float = minimum_charge
         self.name: str = name
-        self.resource_type: Optional[ResourceType] = None
 
     def __hash__(self) -> int:
         """
@@ -275,6 +275,23 @@ class Battery(_BaseStorage, label="battery", resource_type=ResourceType.ELECTRIC
             + ")"
         )
 
+    def __repr__(self) -> str:
+        """
+        Defines the default representation of the :class:`Battery` instance.
+
+        Outputs:
+            - A `str` giving the default representation of the :class:`Battery`
+              instance.
+
+        """
+
+        return (
+            "Battery("
+            + f"{self.label} storing {self.resource_type.value} loads, "
+            + f"name={self.name}"
+            + ")"
+        )
+
     @classmethod
     def from_dict(cls, storage_data: Dict[Union[int, str], Any]) -> Any:
         """
@@ -314,9 +331,6 @@ class CleanWaterTank(
     """
     Represents a clean-water tank within CLOVER.
 
-    .. attribute:: mass
-        The mass of clean water stored within the tank.
-
     """
 
     def __init__(
@@ -333,17 +347,17 @@ class CleanWaterTank(
 
         Inputs:
             - cycle_lifetime:
-                The number of cycles for which the :class:`Battery` instance can
+                The number of cycles for which the :class:`CleanWaterTank` instance can
                 perform.
             - leakage:
                 The rate of leakage from the storage.
             - maximum_charge:
-                The maximum level that can be held by the :class:`Battery`.
+                The maximum level that can be held by the :class:`CleanWaterTank`.
             - minimum_charge:
-                The minimum level to which the :class:`Battery` instance can
+                The minimum level to which the :class:`CleanWaterTank` instance can
                 discharge.
             - name:
-                The name to assign to the :class:`Battery` instance.
+                The name to assign to the :class:`CleanWaterTank` instance.
             - mass:
                 The mass of water that can be held in the clean-water tank.
 
@@ -354,10 +368,10 @@ class CleanWaterTank(
 
     def __str__(self) -> str:
         """
-        Returns a nice-looking string describing the :class:`_BaseStorage` instance.
+        Returns a nice-looking string describing the :class:`CleanWaterTank` instance.
 
         Outputs:
-            - A `str` giving information about the :class:`_BaseStorage` instance.
+            - A `str` giving information about the :class:`CleanWaterTank` instance.
 
         """
 
@@ -365,25 +379,42 @@ class CleanWaterTank(
             "CleanWaterTank("
             + f"{self.label} storing {self.resource_type.value} loads, "  # type: ignore
             + f"name={self.name}, "
+            + f"capacity={self.mass} litres, "
             + f"cycle_lifetime={self.cycle_lifetime} cycles, "
             + f"leakage={self.leakage}, "
             + f"maximum_charge={self.maximum_charge}, "
-            + f"minimum_charge={self.minimum_charge}, "
-            + f"capacity={self.mass} litres"
+            + f"minimum_charge={self.minimum_charge}"
+            + ")"
+        )
+
+    def __repr__(self) -> str:
+        """
+        Defines the default representation of the :class:`CleanWaterTank` instance.
+
+        Outputs:
+            - A `str` giving the default representation of the :class:`CleanWaterTank`
+              instance.
+
+        """
+
+        return (
+            "CleanWaterTank("
+            + f"{self.label} storing {self.resource_type.value} loads, "
+            + f"name={self.name}"
             + ")"
         )
 
     @classmethod
     def from_dict(cls, storage_data: Dict[Union[int, str], Any]) -> Any:
         """
-        Create a :class:`Tank` instance based on the file data passed in.
+        Create a :class:`CleanWaterTank` instance based on the file data passed in.
 
         Inputs:
             - storage_data:
                 The tank data, extracted from the relevant input file.
 
         Outputs:
-            - A :class:`Tank` instance.
+            - A :class:`CleanWaterTank` instance.
 
         """
 
@@ -394,4 +425,143 @@ class CleanWaterTank(
             storage_data["minimum_charge"],
             storage_data["name"],
             storage_data["mass"],
+        )
+
+
+@dataclasses.dataclass
+class HotWaterTank(
+    CleanWaterTank, label="hot_water_tank", resource_type=ResourceType.HOT_CLEAN_WATER
+):
+    """
+    Represents a hot-water tank within CLOVER.
+
+    .. attribute:: area
+        The area of the hot-water tank, measured in meters squared.
+
+    .. attribute:: heat_loss_coefficient
+        The heat loss from the tank, measured in Watts per meter squared per Kelvin.
+
+    .. attribute:: heat_transfer_coefficient
+        The heat transfer coefficient from the tank to its surroundings, measured in
+        Watts per Kelvin.
+
+    """
+
+    def __init__(
+        self,
+        cycle_lifetime: int,
+        leakage: float,
+        maximum_charge: float,
+        minimum_charge: float,
+        name: str,
+        mass: float,
+        area: float,
+        heat_loss_coefficient: float,
+    ) -> None:
+        """
+        Instantiate a :class:`CleanWaterTank`.
+
+        Inputs:
+            - cycle_lifetime:
+                The number of cycles for which the :class:`HotWaterTank` instance can
+                perform.
+            - leakage:
+                The rate of leakage from the storage.
+            - maximum_charge:
+                The maximum level that can be held by the :class:`HotWaterTank`.
+            - minimum_charge:
+                The minimum level to which the :class:`HotWaterTank` instance can
+                discharge.
+            - name:
+                The name to assign to the :class:`HotWaterTank` instance.
+            - mass:
+                The mass of water that can be held in the clean-water tank.
+            - area:
+                The surface area of the tank,
+
+        """
+
+        super().__init__(
+            cycle_lifetime, leakage, maximum_charge, minimum_charge, name, mass
+        )
+        self.area = (area,)
+        self.heat_loss_coefficient = heat_loss_coefficient
+
+    @property
+    def heat_transfer_coefficient(self) -> float:
+        """
+        Return the heat-transfer coefficient from the :class:`HotWaterTank`.
+
+        Outputs:
+            - The heat-transfer coefficient from the :class:`HotWaterTank` to its
+              surroundings, measured in Watts per Kelvin.
+
+        """
+
+        return self.heat_loss_coefficient * self.area
+
+    def __str__(self) -> str:
+        """
+        Returns a nice-looking string describing the :class:`HotWaterTank` instance.
+
+        Outputs:
+            - A `str` giving information about the :class:`HotWaterTank` instance.
+
+        """
+
+        return (
+            "HotWaterTank("
+            + f"{self.label} storing {self.resource_type.value} loads, "  # type: ignore
+            + f"name={self.name}, "
+            + f"area={self.area} m^2, "
+            + f"capacity={self.mass} litres, "
+            + f"cycle_lifetime={self.cycle_lifetime} cycles, "
+            + f"heat_loss_coefficient={self.heat_loss_coefficient} W/m^2K, "
+            + f"heat_transfer_coefficient={self.heat_transfer_coefficient} W/K, "
+            + f"leakage={self.leakage}, "
+            + f"maximum_charge={self.maximum_charge}, "
+            + f"minimum_charge={self.minimum_charge}"
+            + ")"
+        )
+
+    def __repr__(self) -> str:
+        """
+        Defines the default representation of the :class:`HotWaterTank` instance.
+
+        Outputs:
+            - A `str` giving the default representation of the :class:`HotWaterTank`
+              instance.
+
+        """
+
+        return (
+            "HotWaterTank("
+            + f"{self.label} storing {self.resource_type.value} loads, "
+            + f"name={self.name}"
+            + ")"
+        )
+
+    @classmethod
+    def from_dict(cls, storage_data: Dict[Union[int, str], Any]) -> Any:
+        """
+        Create a :class:`HotWaterTank` instance based on the file data passed in.
+
+        Inputs:
+            - storage_data:
+                The tank data, extracted from the relevant input file.
+
+        Outputs:
+            - A :class:`HotWaterTank` instance.
+
+        """
+
+        return cls(
+            storage_data["cycle_lifetime"],
+            storage_data["leakage"],
+            storage_data["maximum_charge"],
+            storage_data["minimum_charge"],
+            storage_data["name"],
+            storage_data["mass"],
+            storage_data["area"],
+            storage_data["heat_loss_coefficient"],
         )

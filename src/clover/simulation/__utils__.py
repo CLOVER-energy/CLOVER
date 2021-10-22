@@ -24,13 +24,24 @@ that is passed in to the module.
 
 import dataclasses
 
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Set, Union
+
+from ..__utils__ import (
+    RESOURCE_NAME_TO_RESOURCE_TYPE_MAPPING,
+    CleanWaterScenario,
+    InputFileError,
+    ResourceType,
+)
 
 from ..generation.solar import HybridPVTPanel, PVPanel
 from .diesel import DieselGenerator
-from .storage import Battery, CleanWaterTank
+from .storage import Battery, CleanWaterTank, HotWaterTank
 
 __all__ = ("Minigrid",)
+
+# Resource Type:
+#   Used for parsing resource-type information.
+RESOURCE_TYPE = "resource_type"
 
 
 @dataclasses.dataclass
@@ -65,6 +76,9 @@ class Minigrid:
     .. attribute:: diesel_generator
         The diesel backup generator associated with the minigrid system.
 
+    .. attribute:: hot_water_tank
+        The hot-water tank being modelled, if applicable.
+
     .. attribute:: pv_panel
         The PV panel being considered.
 
@@ -82,6 +96,7 @@ class Minigrid:
     dc_to_dc_conversion_efficiency: Optional[float]
     dc_transmission_efficiency: Optional[float]
     diesel_generator: Optional[DieselGenerator]
+    hot_water_tank: Optional[HotWaterTank]
     pv_panel: PVPanel
     pvt_panel: Optional[HybridPVTPanel]
 
@@ -126,11 +141,38 @@ class Minigrid:
         else:
             batteries = {}
 
+        tanks: Dict[str, Union[CleanWaterTank, HotWaterTank]] = {}
         # Parse the tank information.
         if tank_inputs is not None:
-            tanks = {
-                entry["name"]: CleanWaterTank.from_dict(entry) for entry in tank_inputs
-            }
+            for entry in tank_inputs:
+                if (
+                    RESOURCE_NAME_TO_RESOURCE_TYPE_MAPPING[entry[RESOURCE_TYPE]]
+                    == ResourceType.CLEAN_WATER
+                ):
+                    try:
+                        tanks[entry["name"]] = CleanWaterTank.from_dict(entry)
+                    except KeyError as e:
+                        raise InputFileError(
+                            "tank inputs",
+                            f"Error parsing clean-water tank {entry['name']}: {str(e)}",
+                        )
+                elif (
+                    RESOURCE_NAME_TO_RESOURCE_TYPE_MAPPING[entry[RESOURCE_TYPE]]
+                    == ResourceType.HOT_CLEAN_WATER
+                ):
+                    try:
+                        tanks[entry["name"]] = HotWaterTank.from_dict(entry)
+                    except KeyError as e:
+                        raise InputFileError(
+                            "tank inputs",
+                            f"Error parsing hot-water tank {entry['name']}: {str(e)}",
+                        )
+                else:
+                    raise InputFileError(
+                        "tank inputs",
+                        f"The tank '{entry['name']}' uses an unknown resource type: "
+                        + f"{entry[RESOURCE_TYPE]}",
+                    )
         else:
             tanks = {}
 
@@ -161,6 +203,9 @@ class Minigrid:
             if "dc_transmission_efficiency" in minigrid_inputs
             else None,
             diesel_generator,
+            tanks[minigrid_inputs["hot_water_tank"]]
+            if "hot_water_tank" in minigrid_inputs
+            else None,
             pv_panel,
             pvt_panel,
         )
