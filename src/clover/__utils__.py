@@ -569,8 +569,8 @@ class ResourceType(enum.Enum):
     CLEAN_WATER = "clean_water"
     ELECTRIC = "electricity"
     HOT_CLEAN_WATER = "hot_water"
-    HOT_UNCLEAN_WATER = "hot_groundwater"
-    UNCLEAN_WATER = "groundwater"
+    HOT_UNCLEAN_WATER = "hot_feedwater"
+    UNCLEAN_WATER = "feedwater"
 
 
 # Load name to load type mapping:
@@ -580,7 +580,7 @@ RESOURCE_NAME_TO_RESOURCE_TYPE_MAPPING = {
     ELECTRIC_POWER: ResourceType.ELECTRIC,
     "hot_water": ResourceType.HOT_CLEAN_WATER,
     "hot_untreated_water": ResourceType.HOT_UNCLEAN_WATER,
-    "groundwater": ResourceType.UNCLEAN_WATER,
+    "feedwater": ResourceType.UNCLEAN_WATER,
 }
 
 
