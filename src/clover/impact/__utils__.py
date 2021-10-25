@@ -51,6 +51,10 @@ class ImpactingComponent(enum.Enum):
         component.
     - GRID:
         Denotes the grid component of the system.
+    - HEAT_EXCHANGER:
+        Denotes the heat exchanger component of the system.
+    - HOT_WATER_TANK:
+        Denotes the hot-water tank component of the system.
     - HOUSEHOLDS:
         Denotes households.
     - INVERTER:
@@ -74,7 +78,9 @@ class ImpactingComponent(enum.Enum):
     DIESEL_FUEL = "diesel_fuel"
     GENERAL = "general"
     GRID = "grid"
+    HEAT_EXCHANGER = "heat_exchanger"
     HOUSEHOLDS = "households"
+    HOT_WATER_TANK = "hot_water_tank"
     INVERTER = "inverter"
     KEROSENE = "kerosene"
     MISC = "misc"

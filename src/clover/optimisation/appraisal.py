@@ -129,6 +129,9 @@ def _simulation_environmental_appraisal(
             else 0,
             system_details.diesel_capacity,
             ghg_inputs,
+            system_details.initial_num_hot_water_tanks
+            if system_details.initial_num_hot_water_tanks is not None
+            else 0,
             logger,
             system_details.initial_pv_size,
             system_details.initial_pvt_size

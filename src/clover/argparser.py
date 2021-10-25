@@ -55,6 +55,11 @@ def parse_args(args: List[Any]) -> argparse.Namespace:
 
     parser = argparse.ArgumentParser()
 
+    # Misc. arguments.
+    parser.add_argument(
+        "--verbose", "-v", action="store_true", default=False, help=argparse.SUPPRESS
+    )
+
     # Mandatory arguments regardless of the use case.
     mandatory_arguments = parser.add_argument_group("mandatory arguments")
     mandatory_arguments.add_argument(

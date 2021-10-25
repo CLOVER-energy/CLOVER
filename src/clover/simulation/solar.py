@@ -27,9 +27,17 @@ from typing import Dict, List, Tuple
 
 import pandas as pd  # type: ignore  # pylint: disable=import-error
 
+from scipy import linalg
 from tqdm import tqdm
 
-from ..__utils__ import InputFileError, ResourceType, Scenario
+from ..__utils__ import (
+    BColours,
+    HTFMode,
+    InputFileError,
+    ResourceType,
+    Scenario,
+    ZERO_CELCIUS_OFFSET,
+)
 from ..conversion.conversion import ThermalDesalinationPlant
 from ..generation.solar import HybridPVTPanel
 from .__utils__ import Minigrid
@@ -175,7 +183,7 @@ def calculate_pvt_output(
     temperatures: pd.Series,
     thermal_desalination_plant: ThermalDesalinationPlant,
     wind_speeds: pd.Series,
-) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """
     Computes the output of a PV-T system.
 
@@ -209,8 +217,10 @@ def calculate_pvt_output(
             The output temperature of the PV-T collectors at each time step.
         - pvt_electric_power_per_unit:
             The electric power, per unit PV-T, delivered by the PV-T system.
-        - pvt_volume_supplied_per_unit:
-            The amount of hot water produced per unit PV-T, delivered by the PV-T
+        - tank_temperature:
+            The tank temperatures throughout the simulation, measured in degrees C.
+        - tank_volume_supplied:
+            The amount of hot water supplied by the hot-water tanks to the desalination
             system.
 
     """
@@ -226,18 +236,40 @@ def calculate_pvt_output(
             "modelling was requested.",
         )
 
-    # Determine the mass-flow rate through the collector.
-    mass_flow_rate = _pvt_mass_flow_rate(
-        logger, minigrid.pvt_panel, pvt_system_size, thermal_desalination_plant
-    )
+    # @@@
+    # FIXME
+    mass_flow_rate = 4
 
     # Instantiate loop parameters.
-    collector_input_temperature = scenario.clean_water_scenario.supply_temperature
+    best_guess_collector_input_temperature = (
+        scenario.desalination_scenario.feedwater_supply_temperature
+    )
+    base_a_00 = 0
+    base_a_01 = (
+        mass_flow_rate
+        * scenario.desalination_scenario.pvt_scenario.htf_heat_capacity
+        * minigrid.heat_exchanger.efficiency
+        + minigrid.hot_water_tank.mass * minigrid.hot_water_tank.heat_capacity / 3600
+        + minigrid.hot_water_tank.heat_transfer_coefficient
+    )
+    base_a_10 = 1
+    base_a_11 = -minigrid.heat_exchanger.efficiency
 
     # Instantiate maps for easy PV-T power lookups.
     pvt_collector_output_temperature_map: Dict[int, float] = {}
     pvt_electric_power_per_unit_map: Dict[int, float] = {}
-    pvt_volume_output_supplied_map: Dict[int, float] = collections.defaultdict(float)
+    tank_temperature_map: Dict[int, float] = collections.defaultdict(float)
+    tank_volume_supplied_map: Dict[int, float] = collections.defaultdict(float)
+
+    if scenario.desalination_scenario.pvt_scenario.heats != HTFMode.CLOSED_HTF:
+        logger.error(
+            "%sCurrently, closed HTF PV-T modelling is supported only.%s",
+            BColours.fail,
+            BColours.endc,
+        )
+        raise InputFileError(
+            "desalination scenario", "The PV-T heating mode requested is not supported."
+        )
 
     for index in tqdm(
         range(start_hour, end_hour),
@@ -245,49 +277,110 @@ def calculate_pvt_output(
         leave=False,
         unit="hour",
     ):
-        for _ in range(scenario.pvt_scenario.cycles_per_hour):
-            # Only compute outputs if there is input irradiance.
-            if irradiances[index] > 0:
-                # AI fitted model.
+        # Only compute outputs if there is input irradiance.
+        if irradiances[index] > 0:
+            solution_found: bool = False
+            # Keep processing until the temperatures are consistent.
+            while not solution_found:
+                # Run the AI reduced model.
                 (
                     fractional_electric_performance,
                     collector_output_temperature,
                 ) = minigrid.pvt_panel.calculate_performance(
                     temperatures[index],
-                    collector_input_temperature,
+                    best_guess_collector_input_temperature,
                     logger,
-                    mass_flow_rate / 3600,  # [kg/s]
+                    mass_flow_rate,  # [kg/s]
                     1000 * irradiances[index],
                     wind_speeds[index],
                 )
 
-                # If the desalination plant was able to accept this water, then use
-                # this.
-                if (
-                    collector_output_temperature
-                    >= thermal_desalination_plant.min_htf_temperature
-                ):
-                    collector_input_temperature = (
-                        scenario.clean_water_scenario.supply_temperature
-                    )
-                    volume_supplied = mass_flow_rate
-                # Otherwise, cycle this water back around.
-                else:
-                    collector_input_temperature = collector_output_temperature
-                    volume_supplied = 0
-            else:
-                collector_input_temperature = (
-                    scenario.clean_water_scenario.supply_temperature
+                # Construct the matrix equation to solve for AX = B.
+                b_0 = minigrid.hot_water_tank.heat_transfer_coefficient * (
+                    temperatures[index] + ZERO_CELCIUS_OFFSET
+                ) + mass_flow_rate * scenario.desalination_scenario.pvt_scenario.htf_heat_capacity * minigrid.heat_exchanger.efficiency * (
+                    collector_output_temperature + ZERO_CELCIUS_OFFSET
                 )
-                collector_output_temperature = collector_input_temperature
-                fractional_electric_performance = 0
-                volume_supplied = 0
+                b_1 = (1 - minigrid.heat_exchanger.efficiency) * (
+                    collector_output_temperature + ZERO_CELCIUS_OFFSET
+                )
 
-            pvt_volume_output_supplied_map[index] += volume_supplied
+                # Supply heat if the tank temperature was hot enough at the previous
+                # time step.
+                if index > 0:
+                    if (
+                        tank_temperature_map[index - 1]
+                        > thermal_desalination_plant.minimum_htf_temperature
+                    ):
+                        # The tank should supply temperature at this time step.
+                        volume_supplied = (
+                            thermal_desalination_plant.input_resource_consumption[
+                                ResourceType.HOT_UNCLEAN_WATER
+                            ]
+                        )
+
+                        # The supply of this water will reduce the tank temperature.
+                        b_0 += (
+                            volume_supplied
+                            * minigrid.hot_water_tank.heat_capacity
+                            * (
+                                scenario.desalination_scenario.feedwater_supply_temperature
+                                - tank_temperature_map[index - 1]
+                            )
+                        )
+                    else:
+                        volume_supplied = 0
+
+                    # The previous tank temperature will affect the current temperature.
+                    b_0 += (
+                        minigrid.hot_water_tank.mass
+                        * minigrid.hot_water_tank.heat_capacity
+                        * (tank_temperature_map[index - 1] + ZERO_CELCIUS_OFFSET)
+                        / 3600
+                    )
+
+                else:
+                    # The initial tank temperature will affect the current temperature.
+                    b_0 += (
+                        minigrid.hot_water_tank.mass
+                        * minigrid.hot_water_tank.heat_capacity
+                        * (
+                            scenario.desalination_scenario.feedwater_supply_temperature
+                            + ZERO_CELCIUS_OFFSET
+                        )
+                        / 3600
+                    )
+
+                # Solve the matrix equation to compute the new best-guess collector
+                # input temperature.
+                collector_input_temperature, tank_temperature = linalg.solve(
+                    a=[[base_a_00, base_a_01], [base_a_10, base_a_11]], b=[b_0, b_1]
+                )
+                collector_input_temperature -= ZERO_CELCIUS_OFFSET
+                tank_temperature -= ZERO_CELCIUS_OFFSET
+
+                if (
+                    abs(
+                        collector_input_temperature
+                        - best_guess_collector_input_temperature
+                    )
+                    < 0.1
+                ):
+                    solution_found = True
+
+                best_guess_collector_input_temperature = collector_input_temperature
+
+        else:
+            collector_output_temperature = best_guess_collector_input_temperature
+            fractional_electric_performance = 0
+            tank_temperature = 0
+            volume_supplied = 0
 
         # Save the fractional electrical performance and output temp.
         pvt_collector_output_temperature_map[index] = collector_output_temperature
         pvt_electric_power_per_unit_map[index] = fractional_electric_performance
+        tank_temperature_map[index] = tank_temperature
+        tank_volume_supplied_map[index] = volume_supplied
 
     # Convert these outputs to dataframes and return.
     pvt_collector_output_temperature: pd.DataFrame = pd.DataFrame(  # type: ignore
@@ -301,17 +394,18 @@ def calculate_pvt_output(
         ).sort_index()
         * minigrid.pvt_panel.pv_unit
     )
-    pvt_volume_output_supplied_per_unit: pd.DataFrame = (
-        pd.DataFrame(
-            list(pvt_volume_output_supplied_map.values()),
-            index=list(pvt_volume_output_supplied_map.keys()),
-        ).sort_index()
-        * minigrid.pvt_panel.thermal_unit
-    )
-    # @@@ Fix units here between W in PV-T unit and mass-flow rate.
+    tank_temperature: pd.DataFrame = pd.DataFrame(
+        list(tank_temperature_map.values()),
+        index=list(tank_temperature_map.keys()),
+    ).sort_index()
+    tnak_volume_output_supplied_per_unit: pd.DataFrame = pd.DataFrame(
+        list(tank_volume_supplied_map.values()),
+        index=list(tank_volume_supplied_map.keys()),
+    ).sort_index()
 
     return (
         pvt_collector_output_temperature,
         pvt_electric_power_per_unit,
-        pvt_volume_output_supplied_per_unit,
+        tank_temperature,
+        tank_volume_supplied_map,
     )

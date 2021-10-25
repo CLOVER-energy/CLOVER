@@ -200,7 +200,7 @@ def main(args: List[Any]) -> None:
 
     # Parse the command-line arguments and instantiate the logger.
     parsed_args = argparser.parse_args(args)
-    logger = get_logger(f"{parsed_args.location}_{LOGGER_NAME}")
+    logger = get_logger(f"{parsed_args.location}_{LOGGER_NAME}", parsed_args.verbose)
     logger.info("CLOVER run initiated. Options specified: %s", " ".join(args))
 
     # Validate the command-line arguments.

@@ -47,6 +47,7 @@ __all__ = (
     "get_logger",
     "HEAT_CAPACITY_OF_WATER",
     "hourly_profile_to_daily_sum",
+    "HTFMode",
     "InputFileError",
     "InternalError",
     "KEROSENE_DEVICE_NAME",
@@ -54,6 +55,7 @@ __all__ = (
     "LOCATIONS_FOLDER_NAME",
     "LOGGER_DIRECTORY",
     "monthly_profile_to_daily_profile",
+    "NAME",
     "open_simulation",
     "OperatingMode",
     "OptimisationParameters",
@@ -68,6 +70,7 @@ __all__ = (
     "SystemAppraisal",
     "SystemDetails",
     "Criterion",
+    "ZERO_CELCIUS_OFFSET",
 )
 
 
@@ -140,6 +143,10 @@ MONTH_MID_DAY: List[int] = [
 #   The "day" in the year that falls at the start of each month.
 MONTH_START_DAY: List[int] = [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334]
 
+# Name:
+#   Keyword used for parsing convertor name information.
+NAME = "name"
+
 # Number of iterations:
 #   The number of iterations to consider in the optimisation.
 NUMBER_OF_ITERATIONS: str = "number_of_iterations"
@@ -157,6 +164,10 @@ RAW_CLOVER_PATH: str = os.path.join("src", "clover")
 #   Keyword used when parsing information about the system size step to consider in
 #   optimisations.
 STEP = "step"
+
+# Zero celcius offset:
+#   Used for offsetting zero degrees celcius in Kelvin.
+ZERO_CELCIUS_OFFSET: float = 273.15
 
 
 @dataclasses.dataclass
@@ -210,9 +221,13 @@ class CleanWaterScenario:
     .. attribute:: mode
         The clean water mode being modelled.
 
+    .. attribute:: sources
+        A `set` of the names of clean-water sources specified.
+
     """
 
     mode: CleanWaterMode
+    sources: Set[str]
 
 
 def daily_sum_to_monthly_sum(daily_profile):
@@ -334,7 +349,7 @@ class DistributionNetwork(enum.Enum):
     DC = "dc"
 
 
-def get_logger(logger_name: str) -> logging.Logger:
+def get_logger(logger_name: str, verbose: bool = False) -> logging.Logger:
     """
     Set-up and return a logger.
 
@@ -342,6 +357,8 @@ def get_logger(logger_name: str) -> logging.Logger:
         - logger_name:
             The name for the logger, which is also used to denote the filename with a
             "<logger_name>.log" format.
+        - verbose:
+            Whether the log level should be verbose (True) or standard (False).
 
     Outputs:
         - The logger for the component.
@@ -350,7 +367,7 @@ def get_logger(logger_name: str) -> logging.Logger:
 
     # Create a logger and logging directory.
     logger = logging.getLogger(logger_name)
-    logger.setLevel(logging.INFO)
+    logger.setLevel(logging.DEBUG if verbose else logging.INFO)
     os.makedirs(LOGGER_DIRECTORY, exist_ok=True)
 
     # Create a formatter.
@@ -372,7 +389,7 @@ def get_logger(logger_name: str) -> logging.Logger:
     file_handler = logging.FileHandler(
         os.path.join(LOGGER_DIRECTORY, f"{logger_name}.log")
     )
-    file_handler.setLevel(logging.INFO)
+    file_handler.setLevel(logging.DEBUG if verbose else logging.INFO)
     file_handler.setFormatter(formatter)
 
     # Add the file handler to the logger.
@@ -1070,9 +1087,13 @@ class PVTScenario:
     .. attribute:: heats
         The resource which is heated by the PV-T system.
 
+    .. attribute:: htf_heat_capacity
+        The capacity of the HTF being used.
+
     """
 
     heats: HTFMode
+    htf_heat_capacity: float
 
 
 def read_yaml(
@@ -1134,11 +1155,15 @@ class DesalinationScenario:
     .. attribute:: pvt_scenario
         The PV-T scenario.
 
+    .. attribute:: unclean_water_sources
+        A `set` of `str` giving the unclean water sources.
+
     """
 
     clean_water_scenario: CleanWaterScenario
     feedwater_supply_temperature: float
     pvt_scenario: PVTScenario
+    unclean_water_sources: Set[str]
 
     @classmethod
     def from_dict(
@@ -1185,11 +1210,15 @@ class DesalinationScenario:
 
         clean_water_scenario: Optional[CleanWaterScenario] = CleanWaterScenario(
             clean_water_mode,
+            set(desalination_inputs[ResourceType.CLEAN_WATER.value]["sources"]),
         )
 
         try:
             pvt_scenario: Optional[PVTScenario] = PVTScenario(
-                HTFMode(desalination_inputs["pvt_scenario"]["heats"])
+                HTFMode(desalination_inputs["pvt_scenario"]["heats"]),
+                desalination_inputs["pvt_scenario"]["htf_heat_capacity"]
+                if "htf_heat_capacity" in desalination_inputs["pvt_scenario"]
+                else HEAT_CAPACITY_OF_WATER,
             )
         except ValueError:
             logger.error(
@@ -1223,10 +1252,25 @@ class DesalinationScenario:
                 BColours.endc,
             )
 
+        try:
+            unclean_water_sources = set(
+                desalination_inputs[ResourceType.UNCLEAN_WATER.value]["sources"]
+            )
+        except KeyError:
+            logger.error(
+                "%sFeedwater sources not specified in desalinaiton inputs file.%s",
+                BColours.fail,
+                BColours.endc,
+            )
+            raise InputFileError(
+                "desalination scenario", "Feedwater sources not specified correctly."
+            ) from None
+
         return cls(
             clean_water_scenario,
             feedwater_supply_temperature,
             pvt_scenario,
+            unclean_water_sources,
         )
 
 
@@ -1410,6 +1454,9 @@ class SystemDetails:
     .. attribute:: final_num_clean_water_tanks
         The final number of clean-water tanks installed in the system.
 
+    .. attribute:: final_num_hot_water_tanks
+        The final number of hot-water tanks installed in the system.
+
     .. attribute:: final_pv_size
         The final pv size of the system.
 
@@ -1421,6 +1468,9 @@ class SystemDetails:
 
     .. attribute:: initial_num_clean_water_tanks
         The initial number of clean-water tanks installed in the system.
+
+    .. attribute:: initial_num_hot_water_tanks
+        The initial number of hot-water tanks installed in the system.
 
     .. attribute:: initial_pv_size
         The initial pv size of the system.
@@ -1442,10 +1492,12 @@ class SystemDetails:
     diesel_capacity: float = 0
     end_year: int = 0
     final_num_clean_water_tanks: Optional[float] = 0
+    final_num_hot_water_tanks: Optional[float] = 0
     final_pv_size: float = 0
     final_pvt_size: Optional[float] = 0
     final_storage_size: float = 0
     initial_num_clean_water_tanks: Optional[float] = 0
+    initial_num_hot_water_tanks: Optional[float] = 0
     initial_pv_size: float = 0
     initial_pvt_size: Optional[float] = 0
     initial_storage_size: float = 0
@@ -1482,6 +1534,14 @@ class SystemDetails:
         if self.final_num_clean_water_tanks is not None:
             system_details_as_dict["final_num_clean_water_tanks"] = round(
                 self.final_num_clean_water_tanks, 3
+            )
+        if self.initial_num_hot_water_tanks is not None:
+            system_details_as_dict["initial_num_hot_water_tanks"] = round(
+                self.initial_num_hot_water_tanks, 3
+            )
+        if self.final_num_hot_water_tanks is not None:
+            system_details_as_dict["final_num_hot_water_tanks"] = round(
+                self.final_num_hot_water_tanks, 3
             )
         if self.initial_pvt_size is not None:
             system_details_as_dict["initial_pvt_size"] = round(self.initial_pvt_size, 3)
