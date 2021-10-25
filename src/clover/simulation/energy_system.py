@@ -1,12 +1,12 @@
 #!/usr/bin/python3
 ########################################################################################
-# minigrid.py - Energy-system main module for CLOVER.                             #
+# minigrid.py - Energy-system main module for CLOVER.                                  #
 #                                                                                      #
 # Authors: Phil Sandwell, Ben Winchester                                               #
 # Copyright: Phil Sandwell, 2018                                                       #
 # Date created: 13/07/2021                                                             #
 # License: Open source                                                                 #
-
+#                                                                                      #
 # For more information, please email:                                                  #
 #   philip.sandwell@gmail.com                                                          #
 ########################################################################################
@@ -18,7 +18,6 @@ and profile files that have been parsed/generated.
 
 """
 
-import dataclasses
 import datetime
 import math
 
@@ -529,7 +528,8 @@ def run_simulation(
         (
             pvt_collector_output_temperature,
             pvt_electric_power_per_unit,
-            pvt_volume_supplied_per_unit,
+            tank_temperature,
+            tank_volume_supplied,
         ) = calculate_pvt_output(
             end_hour,
             irradiance_data[start_hour:end_hour],
@@ -542,6 +542,10 @@ def run_simulation(
             thermal_desalination_plant,
             wind_speed_data[start_hour:end_hour],
         )
+
+        import pdb
+
+        pdb.set_trace()
 
         # Compute the utilisation of the thermal desalination plant.
         thermal_desalination_plant_utilisation: float = (
@@ -1278,6 +1282,9 @@ def run_simulation(
         number_of_clean_water_tanks
         if ResourceType.CLEAN_WATER in scenario.resource_types
         else None,
+        number_of_hot_water_tanks
+        if scenario.desalination_scenario.pvt_scenario.heats == HTFMode.CLOSED_HTF
+        else None,
         pv_size
         * float(
             solar_degradation(minigrid.pv_panel.lifetime)[0][  # type: ignore
@@ -1299,6 +1306,9 @@ def run_simulation(
         ),
         number_of_clean_water_tanks
         if ResourceType.CLEAN_WATER in scenario.resource_types
+        else None,
+        number_of_hot_water_tanks
+        if scenario.desalination_scenario.pvt_scenario.heats == HTFMode.CLOSED_HTF
         else None,
         pv_size,
         pvt_size if minigrid.pvt_panel is not None else None,

@@ -30,11 +30,13 @@ from ..__utils__ import (
     RESOURCE_NAME_TO_RESOURCE_TYPE_MAPPING,
     CleanWaterScenario,
     InputFileError,
+    NAME,
     ResourceType,
 )
 
 from ..generation.solar import HybridPVTPanel, PVPanel
 from .diesel import DieselGenerator
+from .exchanger import Exchanger
 from .storage import Battery, CleanWaterTank, HotWaterTank
 
 __all__ = ("Minigrid",)
@@ -76,6 +78,9 @@ class Minigrid:
     .. attribute:: diesel_generator
         The diesel backup generator associated with the minigrid system.
 
+    .. attribute:: heat_exchanger
+        The heat exchanger associated with the minigrid system.
+
     .. attribute:: hot_water_tank
         The hot-water tank being modelled, if applicable.
 
@@ -96,6 +101,7 @@ class Minigrid:
     dc_to_dc_conversion_efficiency: Optional[float]
     dc_transmission_efficiency: Optional[float]
     diesel_generator: Optional[DieselGenerator]
+    heat_exchanger: Optional[Exchanger]
     hot_water_tank: Optional[HotWaterTank]
     pv_panel: PVPanel
     pvt_panel: Optional[HybridPVTPanel]
@@ -108,6 +114,7 @@ class Minigrid:
         pv_panel: PVPanel,
         pvt_panel: Optional[HybridPVTPanel],
         battery_inputs: Optional[List[Dict[Union[int, str], Any]]] = None,
+        exchanger_inputs: Optional[List[Dict[Union[int, str], Any]]] = None,
         tank_inputs: Optional[List[Dict[Union[int, str], Any]]] = None,
     ) -> Any:
         """
@@ -125,6 +132,8 @@ class Minigrid:
                 The :class:`HybridPVTPanel` instance to use for the run, if appropriate.
             - battery_inputs:
                 The battery input information.
+            - exchanger_inputs:
+                The heat-exchanger input information.
             - tank_inputs:
                 The tank input information.
 
@@ -136,10 +145,18 @@ class Minigrid:
         # Parse the battery information.
         if battery_inputs is not None:
             batteries = {
-                entry["name"]: Battery.from_dict(entry) for entry in battery_inputs
+                entry[NAME]: Battery.from_dict(entry) for entry in battery_inputs
             }
         else:
             batteries = {}
+
+        # Parse the heat-exchanger information.
+        if exchanger_inputs is not None:
+            exchangers = {
+                entry[NAME]: Exchanger.from_dict(entry) for entry in exchanger_inputs
+            }
+        else:
+            exchangers = {}
 
         tanks: Dict[str, Union[CleanWaterTank, HotWaterTank]] = {}
         # Parse the tank information.
@@ -150,7 +167,7 @@ class Minigrid:
                     == ResourceType.CLEAN_WATER
                 ):
                     try:
-                        tanks[entry["name"]] = CleanWaterTank.from_dict(entry)
+                        tanks[entry[NAME]] = CleanWaterTank.from_dict(entry)
                     except KeyError as e:
                         raise InputFileError(
                             "tank inputs",
@@ -161,7 +178,7 @@ class Minigrid:
                     == ResourceType.HOT_CLEAN_WATER
                 ):
                     try:
-                        tanks[entry["name"]] = HotWaterTank.from_dict(entry)
+                        tanks[entry[NAME]] = HotWaterTank.from_dict(entry)
                     except KeyError as e:
                         raise InputFileError(
                             "tank inputs",
@@ -203,6 +220,9 @@ class Minigrid:
             if "dc_transmission_efficiency" in minigrid_inputs
             else None,
             diesel_generator,
+            exchangers[minigrid_inputs["heat_exchanger"]]
+            if "heat_exchanger" in minigrid_inputs
+            else None,
             tanks[minigrid_inputs["hot_water_tank"]]
             if "hot_water_tank" in minigrid_inputs
             else None,

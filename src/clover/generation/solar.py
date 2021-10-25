@@ -29,7 +29,7 @@ import pandas as pd  # type: ignore  # pylint: disable=import-error
 
 from sklearn.linear_model._coordinate_descent import Lasso
 
-from ..__utils__ import BColours, InputFileError, Location
+from ..__utils__ import BColours, InputFileError, Location, NAME
 from ..conversion.conversion import ThermalDesalinationPlant
 from .__utils__ import BaseRenewablesNinjaThread, SolarDataType, total_profile_output
 
@@ -173,7 +173,7 @@ class PVPanel(SolarPanel, panel_type=SolarPanelType.PV):
         return cls(
             solar_inputs["azimuthal_orientation"],
             solar_inputs["lifetime"],
-            solar_inputs["name"],
+            solar_inputs[NAME],
             pv_unit,
             pv_unit_overrided,
             solar_inputs["reference_efficiency"]
@@ -249,7 +249,7 @@ class HybridPVTPanel(SolarPanel, panel_type=SolarPanelType.PV_T):
             logger.error(
                 "Could not find corresponding PV-layer data for layer %s for panel %s.",
                 solar_inputs["pv"],
-                solar_inputs["name"],
+                solar_inputs[NAME],
             )
 
         if pv_layer.reference_efficiency is None:
@@ -281,7 +281,7 @@ class HybridPVTPanel(SolarPanel, panel_type=SolarPanelType.PV_T):
         super().__init__(
             solar_inputs["azimuthal_orientation"],
             solar_inputs["lifetime"],
-            solar_inputs["name"],
+            solar_inputs[NAME],
             solar_inputs["pv_unit"],
             True,
             pv_layer.reference_efficiency,

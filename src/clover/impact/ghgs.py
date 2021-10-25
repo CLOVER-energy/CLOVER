@@ -161,6 +161,7 @@ def calculate_total_equipment_ghgs(
     clean_water_tanks: float,
     diesel_size: float,
     ghg_inputs: Dict[str, Any],
+    hot_water_tanks: float,
     logger: Logger,
     pv_array_size: float,
     pvt_array_size: float,
@@ -177,6 +178,8 @@ def calculate_total_equipment_ghgs(
             Capacity of diesel generator being installed
         - ghg_inputs:
             GHG input information.
+        - hot_water_tanks:
+            Capactiy of hot-water tanks being installed.
         - pv_array_size:
             Capacity of PV being installed.
         - pvt_array_size:
@@ -202,8 +205,8 @@ def calculate_total_equipment_ghgs(
             "%sNo PV-T GHG input information provided.%s", BColours.fail, BColours.endc
         )
         raise InputFileError(
-            "finance inputs",
-            "No PV-T financial input information provided and a non-zero number of PV-T"
+            "tank inputs",
+            "No clean-water tank ghg input information provided and a non-zero number of PV-T"
             "panels are being considered.",
         )
     clean_water_tank_ghgs: float = 0
@@ -226,6 +229,33 @@ def calculate_total_equipment_ghgs(
         diesel_size, ghg_inputs, ImpactingComponent.DIESEL, year
     )
 
+    if (
+        ImpactingComponent.HOT_WATER_TANK.value not in ghg_inputs
+        and hot_water_tanks > 0
+    ):
+        logger.error(
+            "%sNo hot-water tank GHG input information provided.%s",
+            BColours.fail,
+            BColours.endc,
+        )
+        raise InputFileError(
+            "tank inputs",
+            "No hot-water tank ghg input information provided and a non-zero number of PV-T"
+            "panels are being considered.",
+        )
+    hot_water_tank_ghgs: float = 0
+    hot_water_tank_installation_ghgs: float = 0
+    if hot_water_tanks > 0:
+        hot_water_tank_ghgs = calculate_ghgs(
+            hot_water_tanks,
+            ghg_inputs,
+            ImpactingComponent.HOT_WATER_TANK,
+            year,
+        )
+        hot_water_tank_installation_ghgs = calculate_installation_ghgs(
+            hot_water_tanks, ghg_inputs, ImpactingComponent.HOT_WATER_TANK, year
+        )
+
     pv_ghgs = calculate_ghgs(pv_array_size, ghg_inputs, ImpactingComponent.PV, year)
     pv_installation_ghgs = calculate_installation_ghgs(
         pv_array_size, ghg_inputs, ImpactingComponent.PV, year
@@ -236,8 +266,8 @@ def calculate_total_equipment_ghgs(
             "%sNo PV-T GHG input information provided.%s", BColours.fail, BColours.endc
         )
         raise InputFileError(
-            "finance inputs",
-            "No PV-T financial input information provided and a non-zero number of PV-T"
+            "solar generation inputs",
+            "No PV-T ghg input information provided and a non-zero number of PV-T"
             "panels are being considered.",
         )
     pvt_ghgs: float = 0
@@ -266,6 +296,8 @@ def calculate_total_equipment_ghgs(
         + clean_water_tank_ghgs
         + diesel_installation_ghgs
         + diesel_ghgs
+        + hot_water_tank_ghgs
+        + hot_water_tank_installation_ghgs
         + misc_ghgs
         + pv_installation_ghgs
         + pv_ghgs
@@ -606,6 +638,7 @@ def calculate_total_om(
     clean_water_tanks: float,
     diesel_size: float,
     ghg_inputs: Dict[str, Any],
+    hot_water_tanks: float,
     logger: Logger,
     pv_array_size: float,
     pvt_array_size: float,
@@ -623,6 +656,8 @@ def calculate_total_om(
             Capacity of diesel generator installed.
         - ghg_inputs:
             The GHG input information.
+        - hot_water_tanks:
+            Capacity of hot-water tanks installed.
         - logger:
             The :class:`logging.Logger` to use for the run.
         - pv_array_size:
@@ -646,11 +681,13 @@ def calculate_total_om(
         and clean_water_tanks > 0
     ):
         logger.error(
-            "%sNo PV-T GHG input information provided.%s", BColours.fail, BColours.endc
+            "%sNo clean-water tank GHG input information provided.%s",
+            BColours.fail,
+            BColours.endc,
         )
         raise InputFileError(
-            "ghg inputs",
-            "No PV-T financial input information provided and a non-zero number of PV-T"
+            "tank inputs",
+            "No clean-water tank ghg input information provided and a non-zero number of PV-T"
             "panels are being considered.",
         )
     clean_water_tank_om_ghgs: float = 0
@@ -662,22 +699,50 @@ def calculate_total_om(
             start_year,
             end_year,
         )
+
     diesel_om_ghgs = calculate_om_ghgs(
         diesel_size, ghg_inputs, ImpactingComponent.PV, start_year, end_year
     )
+
     general_om_ghgs = calculate_om_ghgs(
         1, ghg_inputs, ImpactingComponent.GENERAL, start_year, end_year
     )
+
+    if (
+        ImpactingComponent.HOT_WATER_TANK.value not in ghg_inputs
+        and hot_water_tanks > 0
+    ):
+        logger.error(
+            "%sNo hot-water tank GHG input information provided.%s",
+            BColours.fail,
+            BColours.endc,
+        )
+        raise InputFileError(
+            "tank inputs",
+            "No hot-water tank ghg input information provided and a non-zero number of PV-T"
+            "panels are being considered.",
+        )
+    hot_water_tank_om_ghgs: float = 0
+    if hot_water_tanks > 0:
+        hot_water_tank_om_ghgs = calculate_om_ghgs(
+            hot_water_tanks,
+            ghg_inputs,
+            ImpactingComponent.HOT_WATER_TANK,
+            start_year,
+            end_year,
+        )
+
     pv_om_ghgs = calculate_om_ghgs(
         pv_array_size, ghg_inputs, ImpactingComponent.PV, start_year, end_year
     )
+
     if ImpactingComponent.PV_T.value not in ghg_inputs and pvt_array_size > 0:
         logger.error(
             "%sNo PV-T GHG input information provided.%s", BColours.fail, BColours.endc
         )
         raise InputFileError(
-            "ghg inputs",
-            "No PV-T financial input information provided and a non-zero number of PV-T"
+            "solar generation inputs",
+            "No PV-T ghg input information provided and a non-zero number of PV-T"
             "panels are being considered.",
         )
     pvt_om_ghgs: float = 0

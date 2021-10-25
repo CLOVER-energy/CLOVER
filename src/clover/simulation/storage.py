@@ -18,9 +18,9 @@ contained and considered within this module.
 
 import dataclasses
 
-from typing import Any, Dict, Optional, Union
+from typing import Any, Dict, Union
 
-from ..__utils__ import ResourceType
+from ..__utils__ import HEAT_CAPACITY_OF_WATER, NAME, ResourceType
 
 __all__ = (
     "Battery",
@@ -162,7 +162,7 @@ class _BaseStorage:
             storage_data["leakage"],
             storage_data["maximum_charge"],
             storage_data["minimum_charge"],
-            storage_data["name"],
+            storage_data[NAME],
         )
 
 
@@ -311,7 +311,7 @@ class Battery(_BaseStorage, label="battery", resource_type=ResourceType.ELECTRIC
             storage_data["leakage"],
             storage_data["maximum_charge"],
             storage_data["minimum_charge"],
-            storage_data["name"],
+            storage_data[NAME],
             storage_data["c_rate_charging"],
             storage_data["conversion_in"],
             storage_data["conversion_out"],
@@ -423,7 +423,7 @@ class CleanWaterTank(
             storage_data["leakage"],
             storage_data["maximum_charge"],
             storage_data["minimum_charge"],
-            storage_data["name"],
+            storage_data[NAME],
             storage_data["mass"],
         )
 
@@ -437,6 +437,10 @@ class HotWaterTank(
 
     .. attribute:: area
         The area of the hot-water tank, measured in meters squared.
+
+    .. attribute:: heat_capacity
+        The specific heat capacity of the contents of the tank, measured in Joules per
+        kilogram Kelvin, defaults to that of water at stp.
 
     .. attribute:: heat_loss_coefficient
         The heat loss from the tank, measured in Watts per meter squared per Kelvin.
@@ -456,6 +460,7 @@ class HotWaterTank(
         name: str,
         mass: float,
         area: float,
+        heat_capacity: float,
         heat_loss_coefficient: float,
     ) -> None:
         """
@@ -477,14 +482,19 @@ class HotWaterTank(
             - mass:
                 The mass of water that can be held in the clean-water tank.
             - area:
-                The surface area of the tank,
+                The surface area of the tank.
+            - heat_capacity:
+                The specific heat capacity of the contents of the :class:`HotWaterTank`.
+            - heta_loss_coefficient:
+                The heat-loss coefficient for the :class:`HotWaterTank`.
 
         """
 
         super().__init__(
             cycle_lifetime, leakage, maximum_charge, minimum_charge, name, mass
         )
-        self.area = (area,)
+        self.area = area
+        self.heat_capacity = heat_capacity
         self.heat_loss_coefficient = heat_loss_coefficient
 
     @property
@@ -516,6 +526,7 @@ class HotWaterTank(
             + f"area={self.area} m^2, "
             + f"capacity={self.mass} litres, "
             + f"cycle_lifetime={self.cycle_lifetime} cycles, "
+            + f"heat_capacity={self.heat_capacity} J/kg*K, "
             + f"heat_loss_coefficient={self.heat_loss_coefficient} W/m^2K, "
             + f"heat_transfer_coefficient={self.heat_transfer_coefficient} W/K, "
             + f"leakage={self.leakage}, "
@@ -560,8 +571,11 @@ class HotWaterTank(
             storage_data["leakage"],
             storage_data["maximum_charge"],
             storage_data["minimum_charge"],
-            storage_data["name"],
+            storage_data[NAME],
             storage_data["mass"],
             storage_data["area"],
+            storage_data["heat_capacity"]
+            if "heat_capacity" in storage_data
+            else HEAT_CAPACITY_OF_WATER,
             storage_data["heat_loss_coefficient"],
         )

@@ -24,6 +24,7 @@ from typing import Any, Dict, List, Union
 from ..__utils__ import (
     BColours,
     InputFileError,
+    NAME,
     RESOURCE_NAME_TO_RESOURCE_TYPE_MAPPING,
     ResourceType,
 )
@@ -52,10 +53,6 @@ MINIMUM_OUTPUT = "minimum_output"
 #   Keyword used for parsing maximum output information.
 MINIMUM_HTF_TEMPERATURE = "min_htf_temperature"
 
-# Name:
-#   Keyword used for parsing convertor name information.
-NAME = "name"
-
 # Output:
 #   Keyword used for parsing output information.
 OUTPUT = "output"
@@ -68,8 +65,10 @@ class Convertor:
     .. attribute:: consumption
         The amount of input load which is consumed per unit output load produced.
 
-    .. attribute:: input_resource_type
-        The type of energy which is inputted into the device.
+    .. attribute:: input_resource_consumption
+        A mapping between :class:`ResourceType` and the amount of input required, from
+        that :class:`ResourceType`, when the :class:`Convertor` is operating at its
+        maximum throughput.
 
     .. attribute:: maximum_output_capacity
         The maximum capacity of the device in producing its output.

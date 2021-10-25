@@ -358,6 +358,7 @@ def get_total_equipment_cost(
     clean_water_tanks: float,
     diesel_size: float,
     finance_inputs: Dict[str, Any],
+    hot_water_tanks: float,
     logger: Logger,
     pv_array_size: float,
     pvt_array_size: float,
@@ -374,6 +375,8 @@ def get_total_equipment_cost(
             Capacity of diesel generator being installed
         - finance_inputs:
             The finance-input information, parsed from the finance-inputs file.
+        - hot_water_tanks:
+            The number of hot-water tanks being installed.
         - logger:
             The logger to use for the run.
         - pv_array_size:
@@ -444,6 +447,38 @@ def get_total_equipment_cost(
         installation_year,
     )
 
+    if (
+        ImpactingComponent.HOT_WATER_TANK.value not in finance_inputs
+        and hot_water_tanks > 0
+    ):
+        logger.error(
+            "%sNo hot-water tank financial input information provided.%s",
+            BColours.fail,
+            BColours.endc,
+        )
+        raise InputFileError(
+            "tank inputs",
+            "No hot-water financial input information provided and a non-zero "
+            "number of clean-water tanks are being considered.",
+        )
+    hot_water_tank_cost: float = 0
+    hot_water_tank_installation_cost: float = 0
+    if hot_water_tanks > 0:
+        hot_water_tank_cost = _component_cost(
+            finance_inputs[ImpactingComponent.HOT_WATER_TANK.value][COST],
+            finance_inputs[ImpactingComponent.HOT_WATER_TANK.value][COST_DECREASE],
+            hot_water_tanks,
+            installation_year,
+        )
+        hot_water_tank_installation_cost = _component_installation_cost(
+            hot_water_tanks,
+            finance_inputs[ImpactingComponent.HOT_WATER_TANK.value][INSTALLATION_COST],
+            finance_inputs[ImpactingComponent.HOT_WATER_TANK.value][
+                INSTALLATION_COST_DECREASE
+            ],
+            installation_year,
+        )
+
     pv_cost = _component_cost(
         finance_inputs[ImpactingComponent.PV.value][COST],
         finance_inputs[ImpactingComponent.PV.value][COST_DECREASE],
@@ -494,6 +529,7 @@ def get_total_equipment_cost(
     total_installation_cost = (
         clean_water_tank_installation_cost
         + diesel_installation_cost
+        + hot_water_tank_installation_cost
         + pv_installation_cost
         + pvt_installation_cost
     )
@@ -505,6 +541,7 @@ def get_total_equipment_cost(
         bos_cost
         + clean_water_tank_cost
         + diesel_cost
+        + hot_water_tank_cost
         + misc_costs
         + pv_cost
         + pvt_cost
@@ -790,6 +827,7 @@ def total_om(
     clean_water_tanks: float,
     diesel_size: float,
     finance_inputs: Dict[str, Any],
+    hot_water_tanks: float,
     logger: Logger,
     pv_array_size: float,
     pvt_array_size: float,
@@ -808,6 +846,8 @@ def total_om(
             Capacity of diesel generator installed.
         - finance_inputs:
             Finance input information.
+        - hot_water_tanks:
+            The number of hot-water tanks installed.
         - logger:
             The logger to use for the run.
         - pv_array_size:
@@ -836,7 +876,7 @@ def total_om(
             BColours.endc,
         )
         raise InputFileError(
-            "finance inputs",
+            "tank inputs",
             "No clean-water tank financial input information provided and a non-zero "
             "number of clean-water tanks are being considered.",
         )
@@ -868,6 +908,31 @@ def total_om(
         start_year=start_year,
         end_year=end_year,
     )
+
+    if (
+        ImpactingComponent.HOT_WATER_TANK.value not in finance_inputs
+        and hot_water_tanks > 0
+    ):
+        logger.error(
+            "%sNo hot-water-tank financial input information provided.%s",
+            BColours.fail,
+            BColours.endc,
+        )
+        raise InputFileError(
+            "tank inputs",
+            "No hot-water tank financial input information provided and a non-zero "
+            "number of clean-water tanks are being considered.",
+        )
+    hot_water_tank_om: float = 0
+    if hot_water_tanks > 0:
+        hot_water_tank_om = _component_om(
+            finance_inputs[ImpactingComponent.HOT_WATER_TANK.value][OM],
+            hot_water_tanks,
+            finance_inputs,
+            logger,
+            start_year=start_year,
+            end_year=end_year,
+        )
 
     pv_om = _component_om(
         finance_inputs[ImpactingComponent.PV.value][OM],
@@ -909,7 +974,15 @@ def total_om(
         end_year=end_year,
     )
 
-    return clean_water_tank_om + diesel_om + general_om + pv_om + pvt_om + storage_om
+    return (
+        clean_water_tank_om
+        + diesel_om
+        + general_om
+        + hot_water_tank_om
+        + pv_om
+        + pvt_om
+        + storage_om
+    )
 
 
 # #%%
