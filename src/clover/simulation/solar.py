@@ -39,8 +39,8 @@ from ..__utils__ import (
     ZERO_CELCIUS_OFFSET,
 )
 from ..conversion.conversion import ThermalDesalinationPlant
-from ..generation.solar import HybridPVTPanel
 from .__utils__ import Minigrid
+from .storage import HotWaterTank
 
 
 __all__ = ("calculate_pvt_output",)
@@ -88,88 +88,47 @@ class MassFlowRateTooSmallError(Exception):
         )
 
 
-def _pvt_mass_flow_rate(
-    logger: Logger,
-    pvt_panel: HybridPVTPanel,
-    pvt_system_size: int,
+def _buffer_tank_mass_flow_rate(
+    ambient_temperature: float,
+    buffer_hot_water_tank: HotWaterTank,
     thermal_desalination_plant: ThermalDesalinationPlant,
+    previous_tank_temperature: float,
 ) -> float:
     """
-    Determines the mass-flow rate through the PV-T panels.
+    Computes the mass-flow rate of HTF from the buffer tanks to the desalination plant.
 
     Inputs:
-        - logger:
-            The :class:`logging.Logger` to use for the run.
-        - pvt_panel:
-            The :class:`HybridPVTPanel` being considered.
-        - pvt_system_size:
-            The size of the PV-T system being considered, measured in PV-T units.
+        - ambient_temperature:
+            The ambient temperature, used as the base against which heat is being
+            supplied. This is realistic as the final stage of desalination plants can be
+            no less than the ambient temprature. This is measured in degrees Celcius.
+        - buffer_hot_water_tank:
+            The HTF hot-water tank.
         - thermal_desalination_plant:
-            The :class:`ThermalDesalinationPlant` being considered.
+            The thermal desalination plant being modelled.
+        - previous_tank_tempearture:
+            The temperature of the tank at the previous time step, measured in degrees
+            Celcius. This is the temperature at which HTF is removed from the tank to
+            supply the desalination plant.
 
     Outputs:
-        The mass-flow rate of HTF through a single PV-T panel.
+        - The mass-flow rate of HTF from the bugger tanks to the desalination plant,
+          measured in litres per hour.
 
     Raises:
         - InputFileError:
-            Raised if there is a mismatch between the parameters that means that the
-            mass-flow rate cannot be determined.
+            Raised if the thermal desalination plant does not use heat from the HTF.
 
     """
 
-    if (
-        pvt_system_size * pvt_panel.max_mass_flow_rate
-        < thermal_desalination_plant.input_resource_consumption[
-            ResourceType.HOT_UNCLEAN_WATER
-        ]
-        * (
-            thermal_desalination_plant.minimum_output_capacity
-            / thermal_desalination_plant.maximum_output_capacity
+    return (
+        thermal_desalination_plant.input_resource_consumption[ResourceType.HEAT]
+        / (  # [Wth]
+            buffer_hot_water_tank.heat_capacity  # [J/kg*K]
+            * (previous_tank_temperature - ambient_temperature)  # [K]
         )
-    ):
-        logger.error(
-            "The PV-T system is not able to supply enough water to operate the thermal "
-            "desalination plant: max PV-T output: %s litres/hour, min desalination "
-            "plant input: %s litres/hour",
-            pvt_system_size * pvt_panel.max_mass_flow_rate,
-            thermal_desalination_plant.input_resource_consumption[
-                ResourceType.HOT_UNCLEAN_WATER
-            ]
-            * (
-                thermal_desalination_plant.minimum_output_capacity
-                / thermal_desalination_plant.maximum_output_capacity
-            ),
-        )
-        raise MassFlowRateTooSmallError(
-            "Mismatch between PV-T and desalination-plant sizing.",
-        )
-    if (
-        pvt_system_size * pvt_panel.min_mass_flow_rate
-        > thermal_desalination_plant.input_resource_consumption[
-            ResourceType.HOT_UNCLEAN_WATER
-        ]
-    ):
-        logger.error(
-            "The thermal desalination plant is unable to cope with the minimum "
-            "throughput from the PV-T system: minimum PV-T output: %s litres/hour, "
-            "max desalination plant input: %s lirres/hour",
-            pvt_system_size * pvt_panel.min_mass_flow_rate,
-            thermal_desalination_plant.input_resource_consumption[
-                ResourceType.HOT_UNCLEAN_WATER
-            ],
-        )
-        raise MassFlowRateTooLargeError(
-            "conversion/solar inputs",
-            "Mismatch between PV-T and desalination-plant sizing.",
-        )
-
-    return min(
-        pvt_panel.max_mass_flow_rate,
-        thermal_desalination_plant.input_resource_consumption[
-            ResourceType.HOT_UNCLEAN_WATER
-        ]
-        / pvt_system_size,
-    )
+        * 3600
+    )  # [s/h]
 
 
 def calculate_pvt_output(
@@ -238,7 +197,7 @@ def calculate_pvt_output(
 
     # @@@
     # FIXME
-    mass_flow_rate = 4
+    collector_mass_flow_rate = 4
 
     # Instantiate loop parameters.
     best_guess_collector_input_temperature = (
@@ -246,12 +205,16 @@ def calculate_pvt_output(
     )
     base_a_00 = 0
     base_a_01 = (
-        mass_flow_rate
-        * scenario.desalination_scenario.pvt_scenario.htf_heat_capacity
+        pvt_system_size
+        * collector_mass_flow_rate  # [kg/hour]
+        * scenario.desalination_scenario.pvt_scenario.htf_heat_capacity  # [J/kg*K]
         * minigrid.heat_exchanger.efficiency
-        + minigrid.hot_water_tank.mass * minigrid.hot_water_tank.heat_capacity / 3600
-        + minigrid.hot_water_tank.heat_transfer_coefficient
-    )
+        / 3600  # [s/hour]
+        + minigrid.hot_water_tank.mass  # [kg]
+        * minigrid.hot_water_tank.heat_capacity  # [J/kg*K]
+        / 3600  # [s/hour]
+        + minigrid.hot_water_tank.heat_transfer_coefficient  # [W/K]
+    )  # [W/K]
     base_a_10 = 1
     base_a_11 = -minigrid.heat_exchanger.efficiency
 
@@ -278,103 +241,102 @@ def calculate_pvt_output(
         unit="hour",
     ):
         # Only compute outputs if there is input irradiance.
-        if irradiances[index] > 0:
-            solution_found: bool = False
-            # Keep processing until the temperatures are consistent.
-            while not solution_found:
-                # Run the AI reduced model.
-                (
-                    fractional_electric_performance,
-                    collector_output_temperature,
-                ) = minigrid.pvt_panel.calculate_performance(
-                    temperatures[index],
-                    best_guess_collector_input_temperature,
-                    logger,
-                    mass_flow_rate,  # [kg/s]
-                    1000 * irradiances[index],
-                    wind_speeds[index],
-                )
+        solution_found: bool = False
+        # Keep processing until the temperatures are consistent.
+        while not solution_found:
+            # Run the AI reduced model.
+            (
+                fractional_electric_performance,
+                collector_output_temperature,
+            ) = minigrid.pvt_panel.calculate_performance(
+                temperatures[index],
+                best_guess_collector_input_temperature,
+                logger,
+                collector_mass_flow_rate,  # [kg/s]
+                1000 * irradiances[index],
+                wind_speeds[index],
+            )
 
-                # Construct the matrix equation to solve for AX = B.
-                b_0 = minigrid.hot_water_tank.heat_transfer_coefficient * (
-                    temperatures[index] + ZERO_CELCIUS_OFFSET
-                ) + mass_flow_rate * scenario.desalination_scenario.pvt_scenario.htf_heat_capacity * minigrid.heat_exchanger.efficiency * (
-                    collector_output_temperature + ZERO_CELCIUS_OFFSET
-                )
-                b_1 = (1 - minigrid.heat_exchanger.efficiency) * (
-                    collector_output_temperature + ZERO_CELCIUS_OFFSET
-                )
+            # Construct the matrix equation to solve for AX = B.
+            b_0 = minigrid.hot_water_tank.heat_transfer_coefficient * (
+                temperatures[index] + ZERO_CELCIUS_OFFSET
+            ) + (  # [W]
+                pvt_system_size
+                * collector_mass_flow_rate  # [kg/s]
+                * scenario.desalination_scenario.pvt_scenario.htf_heat_capacity  # [J/kg*K]
+                * minigrid.heat_exchanger.efficiency
+                * (collector_output_temperature + ZERO_CELCIUS_OFFSET)  # [K]
+                / 3600  # [s/hour]
+            )
+            b_1 = (1 - minigrid.heat_exchanger.efficiency) * (
+                collector_output_temperature + ZERO_CELCIUS_OFFSET
+            )  # [K]
 
-                # Supply heat if the tank temperature was hot enough at the previous
-                # time step.
-                if index > 0:
-                    if (
-                        tank_temperature_map[index - 1]
-                        > thermal_desalination_plant.minimum_htf_temperature
-                    ):
-                        # The tank should supply temperature at this time step.
-                        volume_supplied = (
-                            thermal_desalination_plant.input_resource_consumption[
-                                ResourceType.HOT_UNCLEAN_WATER
-                            ]
-                        )
+            # Supply heat if the tank temperature was hot enough at the previous
+            # time step.
+            if index > 0:
+                if (
+                    tank_temperature_map[index - 1]
+                    > thermal_desalination_plant.minimum_htf_temperature
+                ):
+                    # The tank should supply temperature at this time step.
+                    volume_supplied = _buffer_tank_mass_flow_rate(
+                        temperatures[index],
+                        minigrid.hot_water_tank,
+                        thermal_desalination_plant,
+                        tank_temperature_map[index - 1],
+                    )  # []
 
-                        # The supply of this water will reduce the tank temperature.
-                        b_0 += (
-                            volume_supplied
-                            * minigrid.hot_water_tank.heat_capacity
-                            * (
-                                scenario.desalination_scenario.feedwater_supply_temperature
-                                - tank_temperature_map[index - 1]
-                            )
-                        )
-                    else:
-                        volume_supplied = 0
-
-                    # The previous tank temperature will affect the current temperature.
+                    # The supply of this water will reduce the tank temperature.
                     b_0 += (
-                        minigrid.hot_water_tank.mass
-                        * minigrid.hot_water_tank.heat_capacity
-                        * (tank_temperature_map[index - 1] + ZERO_CELCIUS_OFFSET)
-                        / 3600
-                    )
-
-                else:
-                    # The initial tank temperature will affect the current temperature.
-                    b_0 += (
-                        minigrid.hot_water_tank.mass
-                        * minigrid.hot_water_tank.heat_capacity
+                        volume_supplied  # [kg/hour]
+                        * minigrid.hot_water_tank.heat_capacity  # [J/kg*K]
                         * (
                             scenario.desalination_scenario.feedwater_supply_temperature
-                            + ZERO_CELCIUS_OFFSET
-                        )
-                        / 3600
+                            - tank_temperature_map[index - 1]
+                        )  # [K]
+                        / 3600  # [s/hour]
                     )
+                else:
+                    volume_supplied = 0
 
-                # Solve the matrix equation to compute the new best-guess collector
-                # input temperature.
-                collector_input_temperature, tank_temperature = linalg.solve(
-                    a=[[base_a_00, base_a_01], [base_a_10, base_a_11]], b=[b_0, b_1]
+                # The previous tank temperature will affect the current temperature.
+                b_0 += (
+                    minigrid.hot_water_tank.mass  # [kg]
+                    * minigrid.hot_water_tank.heat_capacity  # [J/kg*K]
+                    * (tank_temperature_map[index - 1] + ZERO_CELCIUS_OFFSET)  # [K]
+                    / 3600  # [s/hour]
                 )
-                collector_input_temperature -= ZERO_CELCIUS_OFFSET
-                tank_temperature -= ZERO_CELCIUS_OFFSET
 
-                if (
-                    abs(
-                        collector_input_temperature
-                        - best_guess_collector_input_temperature
-                    )
-                    < 0.1
-                ):
-                    solution_found = True
+            else:
+                # The initial tank temperature will affect the current temperature.
+                b_0 += (
+                    minigrid.hot_water_tank.mass  # [kg]
+                    * minigrid.hot_water_tank.heat_capacity  # [J/kg*K]
+                    * (
+                        scenario.desalination_scenario.feedwater_supply_temperature
+                        + ZERO_CELCIUS_OFFSET
+                    )  # [K]
+                    / 3600  # [s/hour]
+                )
 
-                best_guess_collector_input_temperature = collector_input_temperature
+            # Solve the matrix equation to compute the new best-guess collector
+            # input temperature.
+            collector_input_temperature, tank_temperature = linalg.solve(
+                a=[[base_a_00, base_a_01], [base_a_10, base_a_11]], b=[b_0, b_1]
+            )
+            collector_input_temperature -= ZERO_CELCIUS_OFFSET
+            tank_temperature -= ZERO_CELCIUS_OFFSET
 
-        else:
-            collector_output_temperature = best_guess_collector_input_temperature
-            fractional_electric_performance = 0
-            tank_temperature = 0
-            volume_supplied = 0
+            if (
+                abs(
+                    collector_input_temperature - best_guess_collector_input_temperature
+                )
+                < 0.1
+            ):
+                solution_found = True
+
+            best_guess_collector_input_temperature = collector_input_temperature
 
         # Save the fractional electrical performance and output temp.
         pvt_collector_output_temperature_map[index] = collector_output_temperature
@@ -398,14 +360,18 @@ def calculate_pvt_output(
         list(tank_temperature_map.values()),
         index=list(tank_temperature_map.keys()),
     ).sort_index()
-    tnak_volume_output_supplied_per_unit: pd.DataFrame = pd.DataFrame(
+    tank_volume_output_supplied: pd.DataFrame = pd.DataFrame(
         list(tank_volume_supplied_map.values()),
         index=list(tank_volume_supplied_map.keys()),
     ).sort_index()
+
+    import pdb
+
+    pdb.set_trace()
 
     return (
         pvt_collector_output_temperature,
         pvt_electric_power_per_unit,
         tank_temperature,
-        tank_volume_supplied_map,
+        tank_volume_output_supplied,
     )

@@ -521,9 +521,6 @@ def run_simulation(
             "Desalination plant determined: %s", thermal_desalination_plant.name
         )
 
-        # @@@ Catch the mass-flow rate errors here and report back what needs to change
-        #     wrt the system sizing.
-
         # Compute the output of the PV-T system.
         (
             pvt_collector_output_temperature,
