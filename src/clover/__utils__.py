@@ -577,6 +577,9 @@ class ResourceType(enum.Enum):
     - ELECTRIC:
         Represents an electric load.
 
+    - HEAT:
+        Represents raw heat.
+
     - HOT_CLEAN_WATER:
         Represents water which has either been cleaned within the minigrid or supplied
         as clean to the system and which has been heated.
@@ -595,6 +598,7 @@ class ResourceType(enum.Enum):
 
     CLEAN_WATER = "clean_water"
     ELECTRIC = "electricity"
+    HEAT = "heat"
     HOT_CLEAN_WATER = "hot_water"
     HOT_UNCLEAN_WATER = "hot_feedwater"
     MISC = "misc"
@@ -607,6 +611,7 @@ RESOURCE_NAME_TO_RESOURCE_TYPE_MAPPING = {
     "clean_water": ResourceType.CLEAN_WATER,
     ELECTRIC_POWER: ResourceType.ELECTRIC,
     "feedwater": ResourceType.UNCLEAN_WATER,
+    "heat": ResourceType.HEAT,
     "hot_water": ResourceType.HOT_CLEAN_WATER,
     "hot_untreated_water": ResourceType.HOT_UNCLEAN_WATER,
 }

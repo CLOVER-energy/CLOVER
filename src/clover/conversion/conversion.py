@@ -23,6 +23,7 @@ from typing import Any, Dict, List, Union
 
 from ..__utils__ import (
     BColours,
+    HTFMode,
     InputFileError,
     NAME,
     RESOURCE_NAME_TO_RESOURCE_TYPE_MAPPING,
@@ -37,25 +38,29 @@ __all__ = (
 )
 
 
+# Heat source:
+#   Keyword used for parsing the heat source of thermal desalination plants.
+HEAT_SOURCE: str = "heat_source"
+
 # Maximum output:
 #   Keyword used for parsing maximum output information.
-MAXIMUM_OUTPUT = "maximum_output"
+MAXIMUM_OUTPUT: str = "maximum_output"
 
 # Maximum water input temperature:
 #   Keyword used for parsing maximum output information.
-MAXIMUM_HTF_TEMPERATURE = "max_htf_temperature"
+MAXIMUM_HTF_TEMPERATURE: str = "max_htf_temperature"
 
 # Minimum output:
 #   Keyword used for parsing maximum output information.
-MINIMUM_OUTPUT = "minimum_output"
+MINIMUM_OUTPUT: str = "minimum_output"
 
 # Minimum water input temperature:
 #   Keyword used for parsing maximum output information.
-MINIMUM_HTF_TEMPERATURE = "min_htf_temperature"
+MINIMUM_HTF_TEMPERATURE: str = "min_htf_temperature"
 
 # Output:
 #   Keyword used for parsing output information.
-OUTPUT = "output"
+OUTPUT: str = "output"
 
 
 class Convertor:
@@ -451,6 +456,19 @@ class ThermalDesalinationPlant(MultiInputConvertor):
                 raise Exception(
                     f"{BColours.fail}Invalid value type in conversion file: {str(e)}{BColours.endc}"
                 ) from None
+
+        try:
+            input_resource = HTFMode(input_data[HEAT_SOURCE])
+        except KeyError:
+            logger.info(
+                "%sThe convertor, %s, did not specify the source of heat. Cannot "
+                "create a thermal desalination plant for %s%s",
+                BColours.fail,
+                str(input_data[NAME]),
+                str(input_data[NAME]),
+                BColours.endc,
+            )
+            raise
 
         return cls(
             input_resource_consumption,
