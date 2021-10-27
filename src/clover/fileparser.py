@@ -110,7 +110,7 @@ DIESEL_INPUTS_FILE: str = os.path.join("generation", "diesel_inputs.yaml")
 
 # Electric model file:
 #   The relative path to the electric model file.
-ELECTRIC_MODEL_FILE: str = os.path.join("src", "best_electric_tree.sav")
+ELECTRIC_MODEL_FILE: str = os.path.join("src", "electric_forest.sav")
 
 # Energy-system inputs file:
 #   The relative path to the energy-system-inputs file.
@@ -188,7 +188,7 @@ TANK_INPUTS_FILE: str = os.path.join("simulation", "tank_inputs.yaml")
 
 # Thermal model file:
 #   The relative path to the thermal model file.
-THERMAL_MODEL_FILE: str = os.path.join("src", "best_thermal_tree.sav")
+THERMAL_MODEL_FILE: str = os.path.join("src", "thermal_forest.sav")
 
 
 def _determine_available_convertors(

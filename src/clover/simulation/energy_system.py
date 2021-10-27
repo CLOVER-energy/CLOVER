@@ -22,7 +22,7 @@ import datetime
 import math
 
 from logging import Logger
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Dict, List, Optional, Tuple
 
 import numpy as np  # type: ignore  # pylint: disable=import-error
 import pandas as pd  # type: ignore  # pylint: disable=import-error
@@ -35,6 +35,7 @@ from ..__utils__ import (
     DieselMode,
     DemandType,
     DistributionNetwork,
+    HTFMode,
     InputFileError,
     InternalError,
     ResourceType,
@@ -44,11 +45,10 @@ from ..__utils__ import (
     SystemDetails,
 )
 from ..conversion.conversion import Convertor, ThermalDesalinationPlant
-from ..generation.solar import HybridPVTPanel, PVPanel, solar_degradation
+from ..generation.solar import solar_degradation
 from ..load.load import population_hourly
 from .__utils__ import Minigrid
 from .diesel import (
-    DieselGenerator,
     get_diesel_energy_and_times,
     get_diesel_fuel_usage,
 )
@@ -521,6 +521,62 @@ def run_simulation(
             "Desalination plant determined: %s", thermal_desalination_plant.name
         )
 
+        # Determine the list of available feedwater sources.
+        feedwater_sources: List[Convertor] = sorted(
+            [
+                convertor
+                for convertor in convertors
+                if list(convertor.input_resource_consumption) == [ResourceType.ELECTRIC]
+                and convertor.output_resource_type == ResourceType.UNCLEAN_WATER
+            ]
+        )
+
+        if (
+            sum(
+                [
+                    feedwater_source.maximum_output_capacity
+                    for feedwater_source in feedwater_sources
+                ]
+            )
+            < thermal_desalination_plant.input_resource_consumption[
+                ResourceType.UNCLEAN_WATER
+            ]
+        ):
+            logger.error(
+                "%sThe feedwater sources are unable to supply enough throughput to "
+                "facilitate the thermal desalination plant.%s",
+                BColours.fail,
+                BColours.endc,
+            )
+            logger.info(
+                "Feedwater sources: %s",
+                ", ".join([str(source) for source in feedwater_sources]),
+            )
+            logger.info("Desalination plant: %s", thermal_desalination_plant)
+            raise InputFileError(
+                "desalination scenario",
+                "The feedwater sources cannot meet the thermal desalination plant input demand.",
+            )
+
+        logger.info("Determining required feedwater sources.")
+        feedwater_capacity: float = 0
+        required_feedwater_sources: List[Convertor] = []
+        while (
+            feedwater_capacity
+            < thermal_desalination_plant.input_resource_consumption[
+                ResourceType.UNCLEAN_WATER
+            ]
+        ):
+            required_feedwater_sources.append(feedwater_sources.pop(0))
+            feedwater_capacity += required_feedwater_sources[-1].maximum_output_capacity
+
+        feedwater_sources.extend(required_feedwater_sources)
+        logger.info("Required feedwater sources determined.")
+        logger.debug(
+            "Required feedwater sources: %s",
+            ", ".join([str(source) for source in required_feedwater_sources]),
+        )
+
         # Compute the output of the PV-T system.
         (
             pvt_collector_output_temperature,
@@ -539,44 +595,45 @@ def run_simulation(
             thermal_desalination_plant,
             wind_speed_data[start_hour:end_hour],
         )
+        logger.info("PV-T performance successfully computed.")
 
-        import pdb
-
-        pdb.set_trace()
-
-        # Compute the utilisation of the thermal desalination plant.
-        thermal_desalination_plant_utilisation: float = (
-            pvt_size
-            * max(pvt_volume_supplied_per_unit[0])
-            / thermal_desalination_plant.input_resource_consumption[
-                ResourceType.HOT_UNCLEAN_WATER
-            ]
-        )
+        # # Compute the utilisation of the thermal desalination plant.
+        # thermal_desalination_plant_utilisation: float = (
+        #     pvt_size
+        #     * max(pvt_volume_supplied_per_unit[0])
+        #     / thermal_desalination_plant.input_resource_consumption[
+        #         ResourceType.HOT_UNCLEAN_WATER
+        #     ]
+        # )
 
         # Compute the clean water supplied by the desalination unit.
-        renewable_clean_water_produced = pd.DataFrame(
-            (
-                pvt_size
-                * pvt_volume_supplied_per_unit
-                * thermal_desalination_plant.maximum_output_capacity
-                / thermal_desalination_plant.input_resource_consumption[
-                    ResourceType.HOT_UNCLEAN_WATER
-                ]
-            ).values
+        renewable_clean_water_produced = (
+            thermal_desalination_plant.maximum_output_capacity
+            * (tank_volume_supplied > 0)
         )
 
         # Compute the power consumed by the thermal desalination plant.
         thermal_desalination_electric_power_consumed = pd.DataFrame(
             (
                 (renewable_clean_water_produced > 0)
-                * thermal_desalination_plant.input_resource_consumption[
-                    ResourceType.ELECTRIC
-                ]
-                * thermal_desalination_plant_utilisation
+                * (
+                    thermal_desalination_plant.input_resource_consumption[
+                        ResourceType.ELECTRIC
+                    ]
+                    + sum(
+                        [
+                            source.input_resource_consumption[ResourceType.ELECTRIC]
+                            for source in required_feedwater_sources
+                        ]
+                    )
+                )
             ).values
         )
+
     else:
+        feedwater_sources = []
         pvt_electric_power_per_unit = pd.DataFrame([0] * pv_power_produced.size)
+        tank_temperature = pd.DataFrame([0] * pv_power_produced.size)
         thermal_desalination_electric_power_consumed = pd.DataFrame(
             [0] * pv_power_produced.size
         )
@@ -759,22 +816,13 @@ def run_simulation(
                 and convertor.output_resource_type == ResourceType.CLEAN_WATER
             ]
         )
-        water_pumps: List[Convertor] = sorted(
-            [
-                convertor
-                for convertor in convertors
-                if list(convertor.input_resource_consumption) == [ResourceType.ELECTRIC]
-                and convertor.output_resource_type == ResourceType.UNCLEAN_WATER
-            ]
-        )
-
         # Compute the amount of energy required per litre desalinated.
         energy_per_desalinated_litre = 0.001 * np.mean(
             [
                 desalinator.input_resource_consumption[ResourceType.ELECTRIC]
                 / desalinator.maximum_output_capacity
                 + desalinator.input_resource_consumption[ResourceType.UNCLEAN_WATER]
-                * water_pumps[0].input_resource_consumption[ResourceType.ELECTRIC]
+                * feedwater_sources[0].input_resource_consumption[ResourceType.ELECTRIC]
                 / desalinator.maximum_output_capacity
                 for desalinator in electric_desalinators
             ]
@@ -788,7 +836,7 @@ def run_simulation(
                     for desalinator in electric_desalinators
                 ]
             ),
-            sum([water_pumps[0].maximum_output_capacity]),
+            sum([feedwater_sources[0].maximum_output_capacity]),
         )
 
         # Intialise tank accounting parameters
@@ -916,7 +964,8 @@ def run_simulation(
                 # pumping to fulfil the demand.
                 if (
                     current_hourly_tank_storage < 0
-                    and scenario.clean_water_scenario.mode == CleanWaterMode.PRIORITISE
+                    and scenario.desalination_scenario.clean_water_scenario.mode
+                    == CleanWaterMode.PRIORITISE
                 ):
                     # If there is unmet demand, then carry out desalination and pumping to
                     # fulfil the demand.
@@ -1047,9 +1096,6 @@ def run_simulation(
         ).sort_index()
         pvt_collector_output_temperature = pd.DataFrame(
             pvt_collector_output_temperature.values
-        )
-        pvt_volume_supplied_per_unit = pvt_size * pd.DataFrame(
-            pvt_volume_supplied_per_unit.values
         )
         storage_water_supplied_frame: pd.DataFrame = pd.DataFrame(  # type: ignore
             list(storage_water_supplied.values()),
@@ -1218,9 +1264,6 @@ def run_simulation(
         pvt_collector_output_temperature.columns = pd.Index(
             ["PV-T output temperature (degC)"]
         )
-        pvt_volume_supplied_per_unit.columns = pd.Index(
-            ["Water heated by the PV-T (l)"]
-        )
         renewable_clean_water_produced.columns = pd.Index(
             ["Renewable clean water produced (l)"]
         )
@@ -1230,6 +1273,7 @@ def run_simulation(
         storage_water_supplied_frame.columns = pd.Index(
             ["Clean water supplied via tank storage (l)"]
         )
+        tank_temperature.columns = pd.Index(["Buffer tank temperature (degC)"])
         thermal_desalination_electric_power_consumed.columns = pd.Index(
             ["Power consumed running thermal desalination (kWh)"]
         )
@@ -1352,10 +1396,10 @@ def run_simulation(
                 processed_total_clean_water_load,
                 pvt_collector_output_temperature,
                 pvt_energy,
-                pvt_volume_supplied_per_unit,
                 renewable_clean_water_produced,
                 renewable_clean_water_used_directly,
                 storage_water_supplied_frame,
+                tank_temperature,
                 thermal_desalination_electric_power_consumed,
                 total_clean_water_supplied,
                 total_clean_water_used,
