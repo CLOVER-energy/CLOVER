@@ -618,10 +618,12 @@ def run_simulation(
             (
                 (renewable_clean_water_produced > 0)
                 * (
-                    thermal_desalination_plant.input_resource_consumption[
+                    0.001
+                    * thermal_desalination_plant.input_resource_consumption[
                         ResourceType.ELECTRIC
                     ]
-                    + sum(
+                    + 0.001
+                    * sum(
                         [
                             source.input_resource_consumption[ResourceType.ELECTRIC]
                             for source in required_feedwater_sources
@@ -922,7 +924,11 @@ def run_simulation(
                     )
 
                 # Use the excess energy to desalinate if there is space.
-                if excess_energy > 0:
+                if (
+                    excess_energy > 0
+                    and scenario.desalination_scenario.clean_water_scenario.mode
+                    == CleanWaterMode.BACKUP
+                ):
                     # Compute the maximum amount of water that can be desalinated.
                     max_desalinated_water = min(
                         excess_energy / energy_per_desalinated_litre,

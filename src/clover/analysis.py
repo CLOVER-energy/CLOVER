@@ -1630,17 +1630,17 @@ def plot_outputs(
                 HOURS_UNTIL_JULY : HOURS_UNTIL_JULY + 24
             ]["PV-T output temperature (degC)"]
             volume_supplied_january = simulation_output.iloc[0:24][
-                "Water heated by the PV-T (l)"
+                "Renewable clean water produced (l)"
             ]
             volume_supplied_march = simulation_output.iloc[
                 HOURS_UNTIL_MARCH : HOURS_UNTIL_MARCH + 24
-            ]["Water heated by the PV-T (l)"]
+            ]["Renewable clean water produced (l)"]
             volume_supplied_may = simulation_output.iloc[
                 HOURS_UNTIL_MAY : HOURS_UNTIL_MAY + 24
-            ]["Water heated by the PV-T (l)"]
+            ]["Renewable clean water produced (l)"]
             volume_supplied_july = simulation_output.iloc[
                 HOURS_UNTIL_JULY : HOURS_UNTIL_JULY + 24
-            ]["Water heated by the PV-T (l)"]
+            ]["Renewable clean water produced (l)"]
 
             ax1.plot(collector_output_temperature_january.values, label="january temp.")
             # ax1.plot(collector_output_temperature_march.values, label="march temp.")
@@ -1713,7 +1713,7 @@ def plot_outputs(
             volume_supplied_january = np.mean(
                 np.reshape(
                     simulation_output[0 : 31 * 24][
-                        "Water heated by the PV-T (l)"
+                        "Renewable clean water produced (l)"
                     ].values,
                     (31, 24),
                 ),
@@ -1722,7 +1722,7 @@ def plot_outputs(
             volume_supplied_march = np.mean(
                 np.reshape(
                     simulation_output[HOURS_UNTIL_MARCH : HOURS_UNTIL_MARCH + 31 * 24][
-                        "Water heated by the PV-T (l)"
+                        "Renewable clean water produced (l)"
                     ].values,
                     (31, 24),
                 ),
@@ -1731,7 +1731,7 @@ def plot_outputs(
             volume_supplied_may = np.mean(
                 np.reshape(
                     simulation_output[HOURS_UNTIL_MAY : HOURS_UNTIL_MAY + 31 * 24][
-                        "Water heated by the PV-T (l)"
+                        "Renewable clean water produced (l)"
                     ].values,
                     (31, 24),
                 ),
@@ -1740,7 +1740,7 @@ def plot_outputs(
             volume_supplied_july = np.mean(
                 np.reshape(
                     simulation_output[HOURS_UNTIL_JULY : HOURS_UNTIL_JULY + 31 * 24][
-                        "Water heated by the PV-T (l)"
+                        "Renewable clean water produced (l)"
                     ].values,
                     (31, 24),
                 ),

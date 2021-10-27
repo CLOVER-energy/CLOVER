@@ -348,8 +348,15 @@ def calculate_pvt_output(
             collector_input_temperature, tank_temperature = linalg.solve(
                 a=[[base_a_00, a_01], [base_a_10, base_a_11]], b=[b_0, b_1]
             )
-            collector_input_temperature -= ZERO_CELCIUS_OFFSET
             tank_temperature -= ZERO_CELCIUS_OFFSET
+
+            # Only use the computed collector input temperature if the sun is up.
+            if irradiances[index] > 0:
+                collector_input_temperature -= ZERO_CELCIUS_OFFSET
+            else:
+                collector_input_temperature = (
+                    scenario.desalination_scenario.feedwater_supply_temperature
+                )
 
             if (
                 abs(
