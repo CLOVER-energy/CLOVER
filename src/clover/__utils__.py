@@ -227,7 +227,7 @@ class CleanWaterScenario:
     """
 
     mode: CleanWaterMode
-    sources: Set[str]
+    sources: List[str]
 
 
 def daily_sum_to_monthly_sum(daily_profile):
@@ -1157,6 +1157,10 @@ class DesalinationScenario:
     .. attribute:: feedwater_supply_temperature
         The supply temperature of the feedwater input to the system.
 
+    .. attribute:: num_buffer_tanks
+        The number of buffer tanks between the PV-T array and the desalination plant.
+        These tanks can hold either feedwater or HTF depending on the htf mode.
+
     .. attribute:: pvt_scenario
         The PV-T scenario.
 
@@ -1167,8 +1171,9 @@ class DesalinationScenario:
 
     clean_water_scenario: CleanWaterScenario
     feedwater_supply_temperature: float
+    num_buffer_tanks: Optional[float]
     pvt_scenario: PVTScenario
-    unclean_water_sources: Set[str]
+    unclean_water_sources: List[str]
 
     @classmethod
     def from_dict(
@@ -1215,7 +1220,7 @@ class DesalinationScenario:
 
         clean_water_scenario: Optional[CleanWaterScenario] = CleanWaterScenario(
             clean_water_mode,
-            set(desalination_inputs[ResourceType.CLEAN_WATER.value]["sources"]),
+            list(desalination_inputs[ResourceType.CLEAN_WATER.value]["sources"]),
         )
 
         try:
@@ -1258,7 +1263,32 @@ class DesalinationScenario:
             )
 
         try:
-            unclean_water_sources = set(
+            num_buffer_tanks: int = int(
+                desalination_inputs[ResourceType.HOT_UNCLEAN_WATER.value][
+                    "num_buffer_tanks"
+                ]
+            )
+        except KeyError:
+            logger.info(
+                "No hot-feedwater buffer tanks provided. Attempting to determine HTF buffer tanks."
+            )
+            try:
+                num_buffer_tanks = int(
+                    desalination_inputs[HTFMode.CLOSED_HTF.value]["num_buffer_tanks"]
+                )
+            except KeyError:
+                logger.error(
+                    "%sCould not determine number of buffer tanks between PV-T and "
+                    "desalination plant.%s",
+                    BColours.fail,
+                    BColours.endc,
+                )
+                raise InputFileError(
+                    "desalination scenario", "Number of buffer tanks must be specified."
+                )
+
+        try:
+            unclean_water_sources = list(
                 desalination_inputs[ResourceType.UNCLEAN_WATER.value]["sources"]
             )
         except KeyError:
@@ -1274,6 +1304,7 @@ class DesalinationScenario:
         return cls(
             clean_water_scenario,
             feedwater_supply_temperature,
+            num_buffer_tanks,
             pvt_scenario,
             unclean_water_sources,
         )
