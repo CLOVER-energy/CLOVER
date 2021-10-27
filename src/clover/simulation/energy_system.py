@@ -53,7 +53,6 @@ from .diesel import (
     get_diesel_fuel_usage,
 )
 from .solar import calculate_pvt_output
-from .storage import Battery, CleanWaterTank
 
 __all__ = (
     "Minigrid",
@@ -597,6 +596,8 @@ def run_simulation(
         )
         logger.info("PV-T performance successfully computed.")
 
+        number_of_hot_water_tanks: int = scenario.desalination_scenario.num_buffer_tanks
+
         # # Compute the utilisation of the thermal desalination plant.
         # thermal_desalination_plant_utilisation: float = (
         #     pvt_size
@@ -632,6 +633,7 @@ def run_simulation(
 
     else:
         feedwater_sources = []
+        number_of_hot_water_tanks = 0
         pvt_electric_power_per_unit = pd.DataFrame([0] * pv_power_produced.size)
         tank_temperature = pd.DataFrame([0] * pv_power_produced.size)
         thermal_desalination_electric_power_consumed = pd.DataFrame(
@@ -1274,6 +1276,7 @@ def run_simulation(
             ["Clean water supplied via tank storage (l)"]
         )
         tank_temperature.columns = pd.Index(["Buffer tank temperature (degC)"])
+        tank_volume_supplied.columns = pd.Index(["Buffer tank output volume (l)"])
         thermal_desalination_electric_power_consumed.columns = pd.Index(
             ["Power consumed running thermal desalination (kWh)"]
         )
@@ -1400,6 +1403,7 @@ def run_simulation(
                 renewable_clean_water_used_directly,
                 storage_water_supplied_frame,
                 tank_temperature,
+                tank_volume_supplied,
                 thermal_desalination_electric_power_consumed,
                 total_clean_water_supplied,
                 total_clean_water_used,
