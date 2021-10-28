@@ -608,7 +608,7 @@ def run_simulation(
         # )
 
         # Compute the clean water supplied by the desalination unit.
-        renewable_clean_water_produced = (
+        renewable_clean_water_produced = pd.DataFrame(
             thermal_desalination_plant.maximum_output_capacity
             * (tank_volume_supplied > 0)
         )
@@ -672,9 +672,6 @@ def run_simulation(
         ) = _get_water_storage_profile(
             processed_total_clean_water_load,
             renewable_clean_water_produced,  # type: ignore
-        )
-        total_clean_water_supplied = pd.DataFrame(
-            renewable_clean_water_used_directly.values
         )
     else:
         clean_water_power_consumed = pd.DataFrame([0] * simulation_hours)
@@ -775,7 +772,10 @@ def run_simulation(
     battery_health: Dict[int, float] = {}
 
     # Initialise tank storage parameters
-    if ResourceType.CLEAN_WATER in scenario.resource_types:
+    if (
+        ResourceType.CLEAN_WATER in scenario.resource_types
+        and scenario.desalination_scenario is not None
+    ):
         clean_water_power_consumed_mapping: Dict[
             int, float
         ] = clean_water_power_consumed[  # type: ignore
@@ -810,38 +810,59 @@ def run_simulation(
                 "water demands being expected.",
             ) from None
 
-        # Initialise deslination convertors.
-        electric_desalinators: List[Convertor] = sorted(
-            [
-                convertor
-                for convertor in convertors
-                if list(convertor.input_resource_consumption)
-                == [ResourceType.ELECTRIC, ResourceType.UNCLEAN_WATER]
-                and convertor.output_resource_type == ResourceType.CLEAN_WATER
-            ]
-        )
-        # Compute the amount of energy required per litre desalinated.
-        energy_per_desalinated_litre = 0.001 * np.mean(
-            [
-                desalinator.input_resource_consumption[ResourceType.ELECTRIC]
-                / desalinator.maximum_output_capacity
-                + desalinator.input_resource_consumption[ResourceType.UNCLEAN_WATER]
-                * feedwater_sources[0].input_resource_consumption[ResourceType.ELECTRIC]
-                / desalinator.maximum_output_capacity
-                for desalinator in electric_desalinators
-            ]
-        )
-
-        # Compute the maximum throughput
-        maximum_water_throughput = min(
-            sum(
+        if (
+            scenario.desalination_scenario.clean_water_scenario.mode
+            == CleanWaterMode.BACKUP
+            or scenario.desalination_scenario.clean_water_scenario.mode
+            == CleanWaterMode.PRIORITISE
+        ):
+            # Initialise deslination convertors.
+            electric_desalinators: List[Convertor] = sorted(
                 [
-                    desalinator.maximum_output_capacity
+                    convertor
+                    for convertor in convertors
+                    if list(convertor.input_resource_consumption)
+                    == [ResourceType.ELECTRIC, ResourceType.UNCLEAN_WATER]
+                    and convertor.output_resource_type == ResourceType.CLEAN_WATER
+                ]
+            )
+
+            if len(electric_desalinators) == 0:
+                logger.error(
+                    "%sNo electric desalinators defined despite the desalination mode being %s%s",
+                    BColours.fail,
+                    scenario.desalination_scenario.clean_water_scenario.mode.value,
+                    BColours.endc,
+                )
+                raise InputFileError(
+                    "desalination scenario",
+                    "No electric desalination devices defined but are required by the scenario.",
+                )
+
+            # Compute the amount of energy required per litre desalinated.
+            energy_per_desalinated_litre = 0.001 * np.mean(
+                [
+                    desalinator.input_resource_consumption[ResourceType.ELECTRIC]
+                    / desalinator.maximum_output_capacity
+                    + desalinator.input_resource_consumption[ResourceType.UNCLEAN_WATER]
+                    * feedwater_sources[0].input_resource_consumption[
+                        ResourceType.ELECTRIC
+                    ]
+                    / desalinator.maximum_output_capacity
                     for desalinator in electric_desalinators
                 ]
-            ),
-            sum([feedwater_sources[0].maximum_output_capacity]),
-        )
+            )
+
+            # Compute the maximum throughput
+            maximum_water_throughput = min(
+                sum(
+                    [
+                        desalinator.maximum_output_capacity
+                        for desalinator in electric_desalinators
+                    ]
+                ),
+                sum([source.maximum_output_capacity for source in feedwater_sources]),
+            )
 
         # Intialise tank accounting parameters
         backup_desalinator_water_supplied: Dict[int, float] = {}
@@ -904,7 +925,7 @@ def run_simulation(
                         * (max_battery_storage - min_battery_storage),
                     )
 
-            excess_energy = max(battery_energy_flow - max_battery_storage, 0.0)
+            excess_energy = max(new_hourly_battery_storage - max_battery_storage, 0.0)
 
             ###############
             # Clean water #
@@ -1206,7 +1227,6 @@ def run_simulation(
             + storage_power_supplied_frame.values
             + grid_energy.values
             + diesel_energy.values
-            # + clean_water_power_consumed.values
             + excess_energy_used_desalinating_frame.values
         )
 
@@ -1228,7 +1248,7 @@ def run_simulation(
         )  # type: ignore
 
         water_surplus_frame = (
-            total_clean_water_supplied - processed_total_clean_water_load > 0  # type: ignore
+            (total_clean_water_supplied - processed_total_clean_water_load) > 0  # type: ignore
         ) * (
             total_clean_water_supplied - processed_total_clean_water_load  # type: ignore
         )
@@ -1241,10 +1261,13 @@ def run_simulation(
         # Compute when the water demand went unmet.
         unmet_clean_water = pd.DataFrame(
             processed_total_clean_water_load.values - total_clean_water_supplied.values
-        ).mul(
-            (1 - blackout_times)
-        )  # type: ignore
+        )
         unmet_clean_water = unmet_clean_water * (unmet_clean_water > 0)  # type: ignore
+
+        # Convert the PV-T units to kWh.
+        pvt_electric_power_per_kwh = (
+            pvt_electric_power_per_unit / minigrid.pvt_panel.pv_unit
+        )
 
         # Find the new clean-water blackout times, according to when there is unmet demand
         clean_water_blackout_times = ((unmet_clean_water > 0) * 1).astype(float)
@@ -1271,6 +1294,9 @@ def run_simulation(
         )
         pvt_collector_output_temperature.columns = pd.Index(
             ["PV-T output temperature (degC)"]
+        )
+        pvt_electric_power_per_kwh.columns = pd.Index(
+            ["PV-T electric energy supplied per kWh"]
         )
         renewable_clean_water_produced.columns = pd.Index(
             ["Renewable clean water produced (l)"]
@@ -1333,7 +1359,8 @@ def run_simulation(
         if ResourceType.CLEAN_WATER in scenario.resource_types
         else None,
         number_of_hot_water_tanks
-        if scenario.desalination_scenario.pvt_scenario.heats == HTFMode.CLOSED_HTF
+        if scenario.desalination_scenario is not None
+        and scenario.desalination_scenario.pvt_scenario.heats == HTFMode.CLOSED_HTF
         else None,
         pv_size
         * float(
@@ -1358,7 +1385,8 @@ def run_simulation(
         if ResourceType.CLEAN_WATER in scenario.resource_types
         else None,
         number_of_hot_water_tanks
-        if scenario.desalination_scenario.pvt_scenario.heats == HTFMode.CLOSED_HTF
+        if scenario.desalination_scenario is not None
+        and scenario.desalination_scenario.pvt_scenario.heats == HTFMode.CLOSED_HTF
         else None,
         pv_size,
         pvt_size if minigrid.pvt_panel is not None else None,
@@ -1404,6 +1432,7 @@ def run_simulation(
                 power_used_on_electricity,
                 processed_total_clean_water_load,
                 pvt_collector_output_temperature,
+                pvt_electric_power_per_kwh,
                 pvt_energy,
                 renewable_clean_water_produced,
                 renewable_clean_water_used_directly,
@@ -1418,7 +1447,6 @@ def run_simulation(
                 water_surplus_frame,
             ]
         )
-
     if ResourceType.HOT_CLEAN_WATER in scenario.resource_types:
         system_performance_outputs_list.extend([processed_total_hot_water_load])
 
