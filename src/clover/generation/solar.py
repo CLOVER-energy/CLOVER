@@ -46,7 +46,12 @@ __all__ = (
 
 # Default PV unit:
 #   The default PV unit size to use, measured in kWp.
-DEFAULT_PV_UNIT = 1  # [kWp]
+DEFAULT_PV_UNIT: float = 1  # [kWp]
+
+# Reference solar irradiance:
+#   The reference solar irradiance, used to compute fractional PV-T electric
+#   performance values.
+REFERENCE_SOLAR_IRRADIANCE: float = 1000  # [W/m^2]
 
 # Solar logger name:
 #   The name to use for the solar logger.
@@ -356,10 +361,10 @@ class HybridPVTPanel(SolarPanel, panel_type=SolarPanelType.PV_T):
                 The wind speed at the collector, measured in meters per second.
 
         Outputs:
-            - electrical_efficiency:
-                The electrical efficiency of the collector, defined between 0 (no light
-                converted to electricity) and 1 (all incident light converted to
-                electricity).
+            - fractional_electric_performance:
+                The fractional electric performance defined between 0 (panel is not
+                operating, i.e., no output) and 1 (panel is operating at full test
+                potential of reference efficiency under reference irradiance).
             - output_temperature:
                 The temperature of the HTF leaving the collector, measured in degrees
                 Celcius.
@@ -396,6 +401,11 @@ class HybridPVTPanel(SolarPanel, panel_type=SolarPanelType.PV_T):
                 str(e),
             )
 
+        # Convert the efficiency to a fractional performance.
+        fractional_electric_performance: float = (
+            electric_efficiency / self.reference_efficiency
+        ) * (solar_irradiance / REFERENCE_SOLAR_IRRADIANCE)
+
         try:
             output_temperature = float(self.thermal_model.predict(input_data_frame))
         except Exception as e:
@@ -404,7 +414,7 @@ class HybridPVTPanel(SolarPanel, panel_type=SolarPanelType.PV_T):
                 str(e),
             )
 
-        return electric_efficiency, output_temperature
+        return fractional_electric_performance, output_temperature
 
 
 def solar_degradation(lifetime: int) -> pd.DataFrame:

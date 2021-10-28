@@ -110,7 +110,7 @@ DIESEL_INPUTS_FILE: str = os.path.join("generation", "diesel_inputs.yaml")
 
 # Electric model file:
 #   The relative path to the electric model file.
-ELECTRIC_MODEL_FILE: str = os.path.join("src", "best_electric_tree.sav")
+ELECTRIC_MODEL_FILE: str = os.path.join("src", "electric_forest.sav")
 
 # Energy-system inputs file:
 #   The relative path to the energy-system-inputs file.
@@ -188,7 +188,7 @@ TANK_INPUTS_FILE: str = os.path.join("simulation", "tank_inputs.yaml")
 
 # Thermal model file:
 #   The relative path to the thermal model file.
-THERMAL_MODEL_FILE: str = os.path.join("src", "best_thermal_tree.sav")
+THERMAL_MODEL_FILE: str = os.path.join("src", "thermal_forest.sav")
 
 
 def _determine_available_convertors(
@@ -793,9 +793,9 @@ def _parse_scenario_inputs(
                 "scenario inputs", "Desalination scenario inputs is not of type `dict`."
             )
         try:
-            desalination_scenario: DesalinationScenario = (
-                DesalinationScenario.from_dict(desalination_scenario_inputs, logger)
-            )
+            desalination_scenario: Optional[
+                DesalinationScenario
+            ] = DesalinationScenario.from_dict(desalination_scenario_inputs, logger)
         except Exception as e:
             logger.error(
                 "%sError generating deslination scenario from inputs file: %s%s",
@@ -806,6 +806,7 @@ def _parse_scenario_inputs(
             raise
         logger.info("Desalination scenario successfully parsed.")
     else:
+        desalination_scenario = None
         logger.info("No desalination scenario provided, skipping.")
 
     # Parse the scenario input information.
@@ -1167,24 +1168,24 @@ def _parse_minigrid_inputs(
     Dict[str, float],
     Dict[str, float],
     str,
-    Dict[str, float],
-    Dict[str, float],
-    Dict[str, float],
-    Dict[str, float],
-    str,
-    str,
+    Optional[Dict[str, float]],
+    Optional[Dict[str, float]],
     Dict[str, float],
     Dict[str, float],
     str,
-    Dict[str, float],
-    Dict[str, float],
+    str,
+    Optional[Dict[str, float]],
+    Optional[Dict[str, float]],
+    Optional[str],
+    Optional[Dict[str, float]],
+    Optional[Dict[str, float]],
     Minigrid,
     Dict[str, float],
     Dict[str, float],
-    Dict[str, float],
-    Dict[str, float],
+    Optional[Dict[str, float]],
+    Optional[Dict[str, float]],
     str,
-    str,
+    Optional[str],
 ]:
     """
     Parses the energy-system-related input files.
@@ -1272,29 +1273,41 @@ def _parse_minigrid_inputs(
     )
     logger.info("Battery information successfully parsed.")
 
-    (
-        clean_water_tank_costs,
-        clean_water_tank_emissions,
-        hot_water_tank_costs,
-        hot_water_tank_emissions,
-        tank_inputs,
-        tank_inputs_filepath,
-    ) = _parse_tank_inputs(
-        energy_system_inputs,  # type: ignore
-        inputs_directory_relative_path,
-        logger,
-        scenario,
-    )
-    logger.info("Tank information successfully parsed.")
+    if scenario.desalination_scenario is not None:
+        (
+            clean_water_tank_costs,
+            clean_water_tank_emissions,
+            hot_water_tank_costs,
+            hot_water_tank_costs,
+            tank_inputs,
+            tank_inputs_filepath,
+        ) = _parse_tank_inputs(
+            energy_system_inputs,  # type: ignore
+            inputs_directory_relative_path,
+            logger,
+            scenario,
+        )
+        logger.info("Tank information successfully parsed.")
 
-    (
-        exchanger_costs,
-        exchanger_emissions,
-        exchanger_inputs,
-        exchanger_inputs_filepath,
-    ) = _parse_exchanger_inputs(
-        energy_system_inputs, inputs_directory_relative_path, logger, scenario
-    )
+        (
+            exchanger_costs,
+            exchanger_emissions,
+            exchanger_inputs,
+            exchanger_inputs_filepath,
+        ) = _parse_exchanger_inputs(
+            energy_system_inputs, inputs_directory_relative_path, logger, scenario
+        )
+    else:
+        clean_water_tank_costs = None
+        clean_water_tank_emissions = None
+        hot_water_tank_costs = None
+        hot_water_tank_emissions = None
+        tank_inputs = None
+        tank_inputs_filepath = None
+        exchanger_costs = None
+        exchanger_emissions = None
+        exchanger_inputs = None
+        exchanger_inputs_filepath = None
 
     minigrid = Minigrid.from_dict(
         diesel_generator,
@@ -1599,7 +1612,10 @@ def parse_input_files(
     ghg_data[ImpactingComponent.CLEAN_WATER_TANK.value] = clean_water_tank_emissions
     logger.info("Clean-water tank impact data successfully updated.")
 
-    if scenario.desalination_scenario.pvt_scenario.heats == HTFMode.CLOSED_HTF:
+    if (
+        scenario.desalination_scenario is not None
+        and scenario.desalination_scenario.pvt_scenario.heats == HTFMode.CLOSED_HTF
+    ):
         logger.info("Updating with hot-water tank impact data.")
         finance_inputs[ImpactingComponent.HOT_WATER_TANK.value] = hot_water_tank_costs
         ghg_data[ImpactingComponent.HOT_WATER_TANK.value] = hot_water_tank_emissions
@@ -1631,7 +1647,10 @@ def parse_input_files(
     if ResourceType.CLEAN_WATER in scenario.resource_types:
         input_file_info["tank_inputs"] = tank_inputs_filepath
 
-    if scenario.desalination_scenario.pvt_scenario.heats == HTFMode.CLOSED_HTF:
+    if (
+        scenario.desalination_scenario is not None
+        and scenario.desalination_scenario.pvt_scenario.heats == HTFMode.CLOSED_HTF
+    ):
         input_file_info["desalination_scenario"] = desalination_scenario_inputs_filepath
         input_file_info["exchanger_inputs"] = exchanger_inputs_filepath
 

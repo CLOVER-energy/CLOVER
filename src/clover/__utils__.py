@@ -211,6 +211,7 @@ class CleanWaterMode(enum.Enum):
 
     BACKUP = "backup"
     PRIORITISE = "prioritise"
+    THERMAL_ONLY = "thermal_only"
 
 
 @dataclasses.dataclass

@@ -343,20 +343,24 @@ def calculate_pvt_output(
                     / 3600  # [s/hour]
                 )
 
-            # Solve the matrix equation to compute the new best-guess collector
-            # input temperature.
-            collector_input_temperature, tank_temperature = linalg.solve(
-                a=[[base_a_00, a_01], [base_a_10, base_a_11]], b=[b_0, b_1]
-            )
-            tank_temperature -= ZERO_CELCIUS_OFFSET
-
-            # Only use the computed collector input temperature if the sun is up.
+            # Only use computation time solving the matrix equation if there is some
+            # sunlight incident on the system. Otherwise, simply compute.
             if irradiances[index] > 0:
-                collector_input_temperature -= ZERO_CELCIUS_OFFSET
+                # Solve the matrix equation to compute the new best-guess collector
+                # input temperature.
+                collector_input_temperature, tank_temperature = linalg.solve(
+                    a=[[base_a_00, a_01], [base_a_10, base_a_11]], b=[b_0, b_1]
+                )
             else:
+                # Use simple decay on the tank to compute the new temperature.
                 collector_input_temperature = (
                     scenario.desalination_scenario.feedwater_supply_temperature
                 )
+                fractional_electric_performance = 0
+                tank_temperature = b_0 / a_01
+
+            collector_input_temperature -= ZERO_CELCIUS_OFFSET
+            tank_temperature -= ZERO_CELCIUS_OFFSET
 
             if (
                 abs(
@@ -404,6 +408,39 @@ def calculate_pvt_output(
         list(tank_volume_supplied_map.values()),
         index=list(tank_volume_supplied_map.keys()),
     ).sort_index()
+
+    # with open("tmp.csv", "w") as f:
+    #     f.write(
+    #         pd.concat(
+    #             [
+    #                 pvt_collector_output_temperature,
+    #                 pvt_electric_power_per_unit,
+    #                 tank_temperature,
+    #                 tank_volume_output_supplied,
+    #             ],
+    #             axis=1,
+    #         ).to_csv()
+    #     )
+
+    # logger.warn(
+    #     "%sUsing saved PV-T profile: this should be used for debugging only.%s",
+    #     BColours.warning,
+    #     BColours.endc,
+    # )
+
+    # with open("tmp.csv", "r") as f:
+    #     filedata = pd.read_csv(f, header=None, index_col=0)
+    #     pvt_collector_output_temperature = pd.DataFrame(filedata[1].values)
+    #     pvt_electric_power_per_unit = pd.DataFrame(filedata[2].values)
+    #     tank_temperature = pd.DataFrame(filedata[3].values)
+    #     tank_volume_output_supplied = pd.DataFrame(filedata[4].values)
+
+    #     # Bodge to fix units.
+    #     pvt_electric_power_per_unit = pd.DataFrame(
+    #         pvt_electric_power_per_unit
+    #         * pd.DataFrame(irradiances.values)
+    #         / (minigrid.pvt_panel.reference_efficiency)
+    #     )
 
     return (
         pvt_collector_output_temperature,
