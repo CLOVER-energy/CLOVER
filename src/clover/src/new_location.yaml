@@ -20,6 +20,11 @@
 #
 # For large files, use the `|-` literal-style block-scalar character to tell
 # YAML that the text is split across several lines.
+
+# If specifying a file which should have a trailing empty line, use the `|+`
+# literal-style block-scalar character to tell YAML that the text is split
+# across several lines and that an additional final empty line should be
+# created.
 #
 # For files that contain many repeated lines, use the following format:
 #   contents: |-
@@ -48,6 +53,7 @@
               contents:
                 - directory: device_load
         - directory: solar
+        - directory: water_source
         - directory: weather
         - directory: wind
     - directory: inputs
@@ -125,7 +131,7 @@
                 end_year: 2016 # The absolute end year for gathering solar data.
                 start_year: 2007 # The absolute start year for gathering solar data.
                 token: "YOUR API TOKEN HERE" # renewables.ninja API token
-            - file: "grid_inputs.csv"
+            - file: "grid_times.csv"
               contents: |-
                 Name,none,all,example,eight_hours,default
                 0,0,1,0,0.33,0.57
@@ -665,6 +671,7 @@
                 ac_transmission_efficiency: 0.95 # Efficiency of AC distribution network
                 dc_transmission_efficiency: 0.95 # Efficiency of DC distribution network
                 battery: default_battery
+                # buffer_tank: buffer_tank
                 # clean_water_tank: cold_water_tank
                 conversion:
                   dc_to_ac: 0.95 # Conversion efficiency (0.0-1.0)
