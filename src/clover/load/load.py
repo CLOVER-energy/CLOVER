@@ -40,7 +40,7 @@ from ..__utils__ import (
     KEROSENE_DEVICE_NAME,
     ResourceType,
     Location,
-    monthly_profile_to_daily_profile,
+    monthly_times_to_daily_times,
 )
 
 __all__ = (
@@ -289,36 +289,6 @@ def _cumulative_sales_daily(
         )
         cum_sales[day] = maximisation_ratio * num / den + current_market_proportion
     return pd.DataFrame(list(cum_sales.values()))
-
-
-def _device_daily_profile(monthly_profile: pd.DataFrame, years: int) -> pd.DataFrame:
-    """
-    Converts the monthly utilisation profiles to daily utilisation profiles.
-
-    Inputs:
-        - monthly_profile:
-            The monthly ownership profile for the device.
-        - years:
-            The number of years for the simulation.
-
-    Outputs:
-        - The daily-device profile as a :class:`pandas.DataFrame`.
-
-    Notes:
-        Gives a daily utilisation for all devices, even those which are not
-        permitted by "Devices.csv"
-
-    """
-
-    # Convert the monthly profile to a daily profile.
-    yearly_profile = pd.DataFrame.transpose(
-        monthly_profile_to_daily_profile(monthly_profile)
-    )
-
-    # Concatenate the profile by the number of years such that it repeats.
-    concatenated_yearly_profile = pd.concat([yearly_profile] * years)
-
-    return concatenated_yearly_profile
 
 
 def _population_growth_daily(
@@ -939,7 +909,7 @@ def process_device_utilisation(
 
     else:
         logger.info("Computing device-utilisation profile for %s.", device.name)
-        interpolated_daily_profile = _device_daily_profile(
+        interpolated_daily_profile = monthly_times_to_daily_times(
             device_utilisations[device],
             location.max_years,
         )

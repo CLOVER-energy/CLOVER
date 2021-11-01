@@ -43,6 +43,7 @@ __all__ = (
     "DieselMode",
     "DONE",
     "ELECTRIC_POWER",
+    "EXCHANGER",
     "FAILED",
     "get_logger",
     "HEAT_CAPACITY_OF_WATER",
@@ -55,6 +56,7 @@ __all__ = (
     "LOCATIONS_FOLDER_NAME",
     "LOGGER_DIRECTORY",
     "monthly_profile_to_daily_profile",
+    "monthly_times_to_daily_times",
     "NAME",
     "open_simulation",
     "OperatingMode",
@@ -85,6 +87,10 @@ DONE: str = "[   DONE   ]"
 # Electric power:
 #   Keyword used for parsing electric power.
 ELECTRIC_POWER: str = "electric_power"
+
+# Exchanger:
+#   Keyword used for parsing heat-exchanger information.
+EXCHANGER: str = "heat_exchanger"
 
 # Failed message:
 #   The message to display when a task has failed.
@@ -156,6 +162,10 @@ NUMBER_OF_ITERATIONS: str = "number_of_iterations"
 #   packaged but are accessed locally in developer code.
 PACKAGE_NAME: str = "clover"
 
+# PVT Scenario:
+#   Keyword used for parsing PV-T scenario information.
+PVT_SCENARIO: str = "pvt_scenario"
+
 # Raw CLOVER path:
 #   The path to the clover source directory to use when running in github mode.
 RAW_CLOVER_PATH: str = os.path.join("src", "clover")
@@ -219,6 +229,9 @@ class CleanWaterScenario:
     """
     Specifies the clean-water scenario being carried out.
 
+    .. attribute:: conventional_sources
+        A `set` of the names of conventional drinking-water sources specified.
+
     .. attribute:: mode
         The clean water mode being modelled.
 
@@ -227,6 +240,7 @@ class CleanWaterScenario:
 
     """
 
+    conventional_sources: Set[str]
     mode: CleanWaterMode
     sources: List[str]
 
@@ -751,6 +765,42 @@ def monthly_profile_to_daily_profile(monthly_profile: pd.DataFrame) -> pd.DataFr
     # return pd.DataFrame([entry[1] for entry in sorted(daily_profile.items())])
 
 
+def monthly_times_to_daily_times(monthly_profile: pd.DataFrame, years: int) -> pd.DataFrame:
+    """
+    Converts the monthly profiles to daily profiles.
+
+    When dealing with various CLOVER inputs, utilsations or availabilities for a whole
+    month need to be converted to daily profiles with similar information. This function
+    calculates this.
+
+    Inputs:
+        - monthly_profile:
+            The monthly profile for the device.
+        - years:
+            The number of years for the simulation.
+
+    Outputs:
+        - The daily profile as a :class:`pandas.DataFrame`.
+
+    Notes:
+        Gives a daily utilisation for all devices, even those which are not permitted by
+        `devices.yaml`, when called by the load module.
+        When called from the water-source module, similarly, a daily grid availability
+        profile is generated.
+
+    """
+
+    # Convert the monthly profile to a daily profile.
+    yearly_profile = pd.DataFrame.transpose(
+        monthly_profile_to_daily_profile(monthly_profile)
+    )
+
+    # Concatenate the profile by the number of years such that it repeats.
+    concatenated_yearly_profile = pd.concat([yearly_profile] * years)
+
+    return concatenated_yearly_profile
+
+
 def open_simulation(filename: str):
     """
     Opens a previously saved simulation from a .csv file
@@ -1096,10 +1146,13 @@ class PVTScenario:
     .. attribute:: htf_heat_capacity
         The capacity of the HTF being used.
 
+    .. attribute:: mass_flow_rate
+
     """
 
     heats: HTFMode
     htf_heat_capacity: float
+    mass_flow_rate: float
 
 
 def read_yaml(
@@ -1158,10 +1211,6 @@ class DesalinationScenario:
     .. attribute:: feedwater_supply_temperature
         The supply temperature of the feedwater input to the system.
 
-    .. attribute:: num_buffer_tanks
-        The number of buffer tanks between the PV-T array and the desalination plant.
-        These tanks can hold either feedwater or HTF depending on the htf mode.
-
     .. attribute:: pvt_scenario
         The PV-T scenario.
 
@@ -1172,7 +1221,6 @@ class DesalinationScenario:
 
     clean_water_scenario: CleanWaterScenario
     feedwater_supply_temperature: float
-    num_buffer_tanks: Optional[float]
     pvt_scenario: PVTScenario
     unclean_water_sources: List[str]
 
@@ -1219,23 +1267,32 @@ class DesalinationScenario:
                 "desalination scenario", "Missing clean-water scenario information."
             ) from None
 
-        clean_water_scenario: Optional[CleanWaterScenario] = CleanWaterScenario(
+        clean_water_scenario: CleanWaterScenario = CleanWaterScenario(
+            set(
+                desalination_inputs[ResourceType.CLEAN_WATER.value][
+                    "conventional_sources"
+                ]
+            )
+            if "conventional_sources"
+            in desalination_inputs[ResourceType.CLEAN_WATER.value]
+            else set(),
             clean_water_mode,
             list(desalination_inputs[ResourceType.CLEAN_WATER.value]["sources"]),
         )
 
         try:
-            pvt_scenario: Optional[PVTScenario] = PVTScenario(
-                HTFMode(desalination_inputs["pvt_scenario"]["heats"]),
-                desalination_inputs["pvt_scenario"]["htf_heat_capacity"]
-                if "htf_heat_capacity" in desalination_inputs["pvt_scenario"]
+            pvt_scenario: PVTScenario = PVTScenario(
+                HTFMode(desalination_inputs[PVT_SCENARIO]["heats"]),
+                desalination_inputs[PVT_SCENARIO]["htf_heat_capacity"]
+                if "htf_heat_capacity" in desalination_inputs[PVT_SCENARIO]
                 else HEAT_CAPACITY_OF_WATER,
+                desalination_inputs[PVT_SCENARIO]["mass_flow_rate"],
             )
         except ValueError:
             logger.error(
                 "%sInvalid HTF mode specified: %s%s",
                 BColours.fail,
-                desalination_inputs["pvt_scenario"]["heats"],
+                desalination_inputs[PVT_SCENARIO]["heats"],
                 BColours.endc,
             )
             raise InputFileError(
@@ -1264,31 +1321,6 @@ class DesalinationScenario:
             )
 
         try:
-            num_buffer_tanks: int = int(
-                desalination_inputs[ResourceType.HOT_UNCLEAN_WATER.value][
-                    "num_buffer_tanks"
-                ]
-            )
-        except KeyError:
-            logger.info(
-                "No hot-feedwater buffer tanks provided. Attempting to determine HTF buffer tanks."
-            )
-            try:
-                num_buffer_tanks = int(
-                    desalination_inputs[HTFMode.CLOSED_HTF.value]["num_buffer_tanks"]
-                )
-            except KeyError:
-                logger.error(
-                    "%sCould not determine number of buffer tanks between PV-T and "
-                    "desalination plant.%s",
-                    BColours.fail,
-                    BColours.endc,
-                )
-                raise InputFileError(
-                    "desalination scenario", "Number of buffer tanks must be specified."
-                )
-
-        try:
             unclean_water_sources = list(
                 desalination_inputs[ResourceType.UNCLEAN_WATER.value]["sources"]
             )
@@ -1305,7 +1337,6 @@ class DesalinationScenario:
         return cls(
             clean_water_scenario,
             feedwater_supply_temperature,
-            num_buffer_tanks,
             pvt_scenario,
             unclean_water_sources,
         )

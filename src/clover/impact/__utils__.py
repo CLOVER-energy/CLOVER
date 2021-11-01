@@ -19,6 +19,7 @@ namely the GHG and finance impact modules.
 
 import enum
 
+from ..__utils__ import EXCHANGER
 
 __all__ = (
     "ImpactingComponent",
@@ -40,45 +41,63 @@ class ImpactingComponent(enum.Enum):
 
     - BOS:
         Denotes the balance-of-systems aspect of the system.
+
+    - BUFFER_TANK:
+        Denotes the buffer tank component of the system.
+
     - CLEAN_WATER_TANK:
         Denotes the clean-water tank component of the system.
+
     - DIESEL:
         Denotes the diesel component of the system.
+
     - DIESEL_FUEL:
         Denotes the diesel fuel component of the system.
+
     - GENERAL:
         Denotes impacts generally associated with the system but not a specific
         component.
+
     - GRID:
         Denotes the grid component of the system.
+
     - HEAT_EXCHANGER:
         Denotes the heat exchanger component of the system.
+
     - HOT_WATER_TANK:
         Denotes the hot-water tank component of the system.
+
     - HOUSEHOLDS:
         Denotes households.
+
     - INVERTER:
         Denotes the inverter component of the system.
+
     - KEROSENE:
         Denotes the kerosene component of the system.
+
     - MISC:
         Denotes misc. aspects of the system.
+
     - PV:
         Denotes the PV component of the system.
+
     - PV_T:
         Denotes the PV-T component of the system.
+
     - STORAGE:
         Denotes the storage component of the system.
 
     """
 
     BOS = "bos"
+    BUFFER_TANK = "buffer_tank"
     CLEAN_WATER_TANK = "clean_water_tank"
     DIESEL = "diesel_generator"
     DIESEL_FUEL = "diesel_fuel"
     GENERAL = "general"
     GRID = "grid"
-    HEAT_EXCHANGER = "heat_exchanger"
+    HEAT_EXCHANGER = EXCHANGER
     HOUSEHOLDS = "households"
     HOT_WATER_TANK = "hot_water_tank"
     INVERTER = "inverter"

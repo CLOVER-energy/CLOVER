@@ -511,7 +511,7 @@ class WaterSource(Convertor):
         ]
         if len(input_resource_list) > 1:
             logger.info(
-                "%sCurrently only one input is allowed for water pumps.%s",
+                "%sCurrently only one input is allowed for water sources.%s",
                 BColours.fail,
                 BColours.endc,
             )

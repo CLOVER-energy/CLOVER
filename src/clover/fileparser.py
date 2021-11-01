@@ -31,6 +31,7 @@ from .impact.ghgs import EMISSIONS
 from .__utils__ import (
     BColours,
     DesalinationScenario,
+    EXCHANGER,
     HTFMode,
     InputFileError,
     InternalError,
@@ -74,6 +75,12 @@ BATTERY: str = "battery"
 #   The relative path to the battery inputs file.
 BATTERY_INPUTS_FILE: str = os.path.join("simulation", "battery_inputs.yaml")
 
+# Conventional water-source-availability directory:
+#   The directory containing availability profiles for conventional water sources.
+CONVENTIONAL_WATER_SOURCE_AVAILABILITY_DIRECTORY: str = os.path.join(
+    "generation", "conventional_water_sources"
+)
+
 # Conversion inputs file:
 #   The relative path to the conversion-inputs file.
 CONVERSION_INPUTS_FILE: str = os.path.join("generation", "conversion_inputs.yaml")
@@ -116,10 +123,6 @@ ELECTRIC_MODEL_FILE: str = os.path.join("src", "electric_forest.sav")
 #   The relative path to the energy-system-inputs file.
 ENERGY_SYSTEM_INPUTS_FILE: str = os.path.join("simulation", "energy_system.yaml")
 
-# Exchanger:
-#   Keyword used for parsing heat-exchanger information.
-EXCHANGER: str = "heat_exchanger"
-
 # Exchangers:
 #   Keyword used for parsing heat-exchanger information.
 EXCHANGERS: str = "exchangers"
@@ -142,7 +145,7 @@ GHG_INPUTS_FILE: str = os.path.join("impact", "ghg_inputs.yaml")
 
 # Grid inputs file:
 #   The relative path to the grid-inputs file.
-GRID_INPUTS_FILE: str = os.path.join("generation", "grid_inputs.csv")
+GRID_TIMES_FILE: str = os.path.join("generation", "grid_times.csv")
 
 # Inputs directory:
 #   The directory containing user inputs.
@@ -189,6 +192,14 @@ TANK_INPUTS_FILE: str = os.path.join("simulation", "tank_inputs.yaml")
 # Thermal model file:
 #   The relative path to the thermal model file.
 THERMAL_MODEL_FILE: str = os.path.join("src", "thermal_forest.sav")
+
+# Water source availability template filename:
+#   A template filename for parsing water-source availability profiles.
+WATER_SOURCE_AVAILABILTY_TEMPLATE_FILENAME: str = "{water_source}_times.csv"
+
+# Water source inputs file:
+#   The relative path to the water-source inputs file.
+WATER_SOURCE_INPUTS_FILE: str = os.path.join("generation", "water_source_inputs.yaml")
 
 
 def _determine_available_convertors(
@@ -324,6 +335,41 @@ def _parse_battery_inputs(
         )
 
     return battery_costs, battery_emissions, battery_inputs, battery_inputs_filepath
+
+
+def _parse_conventional_water_source_inputs(
+    inputs_directory_relative_path: str,
+    logger: Logger,
+) -> Tuple[str, Set[load.load.Device]]:
+    """
+    Parses the device inputs file.
+
+    Inputs:
+        - inputs_directory_relative_path:
+            The relative path to the inputs folder directory.
+        - logger:
+            The :class:`logging.Logger` to use for the run.
+
+    Outputs:
+        - The relative path to the conventional-water-source inputs file;
+        - A `set` of :class:`conversion.conversion.WaterSource` instances based on the
+          input information provided.
+
+    """
+
+    water_source_inputs_filepath = os.path.join(
+        inputs_directory_relative_path,
+        WATER_SOURCE_INPUTS_FILE,
+    )
+    water_sources: Set[WaterSource] = {
+        WaterSource.from_dict(entry, logger)
+        for entry in read_yaml(
+            water_source_inputs_filepath,
+            logger,
+        )
+    }
+
+    return water_source_inputs_filepath, water_sources
 
 
 def _parse_conversion_inputs(
@@ -1039,8 +1085,8 @@ def _parse_tank_inputs(
 ) -> Tuple[
     Dict[str, float],
     Dict[str, float],
-    Dict[str, float],
-    Dict[str, float],
+    Optional[Dict[str, float]],
+    Optional[Dict[str, float]],
     Dict[str, Any],
     str,
 ]:
@@ -1119,11 +1165,11 @@ def _parse_tank_inputs(
 
         # Parse the clean-water tank costs information.
         try:
-            hot_water_tank_costs = [
+            buffer_tank_costs = [
                 entry[COSTS]
                 for entry in tank_inputs
                 if entry[NAME]
-                == energy_system_inputs[ImpactingComponent.HOT_WATER_TANK.value]
+                == energy_system_inputs[ImpactingComponent.BUFFER_TANK.value]
             ][0]
         except IndexError:
             logger.error("Failed to determine hot-water tank cost information.")
@@ -1133,11 +1179,11 @@ def _parse_tank_inputs(
 
         # Parse the clean-water tank emissions information.
         try:
-            hot_water_tank_emissions = [
+            buffer_tank_emissions = [
                 entry[EMISSIONS]
                 for entry in tank_inputs
                 if entry[NAME]
-                == energy_system_inputs[ImpactingComponent.HOT_WATER_TANK.value]
+                == energy_system_inputs[ImpactingComponent.BUFFER_TANK.value]
             ][0]
         except IndexError:
             logger.error("Failed to determine hot-water tank emission information.")
@@ -1146,15 +1192,17 @@ def _parse_tank_inputs(
             logger.info("Hot-water tank emission information successfully parsed.")
 
     else:
+        buffer_tank_costs = None
+        buffer_tank_emissions = None
         logger.info(
             "Hot-water tank disblaed in scenario file, skipping battery impact parsing."
         )
 
     return (
+        buffer_tank_costs,
+        buffer_tank_emissions,
         clean_water_tank_costs,
         clean_water_tank_emissions,
-        hot_water_tank_costs,
-        hot_water_tank_emissions,
         tank_inputs,
         tank_inputs_filepath,
     )
@@ -1170,6 +1218,8 @@ def _parse_minigrid_inputs(
     str,
     Optional[Dict[str, float]],
     Optional[Dict[str, float]],
+    Optional[Dict[str, float]],
+    Optional[Dict[str, float]],
     Dict[str, float],
     Dict[str, float],
     str,
@@ -1177,8 +1227,6 @@ def _parse_minigrid_inputs(
     Optional[Dict[str, float]],
     Optional[Dict[str, float]],
     Optional[str],
-    Optional[Dict[str, float]],
-    Optional[Dict[str, float]],
     Minigrid,
     Dict[str, float],
     Dict[str, float],
@@ -1202,14 +1250,14 @@ def _parse_minigrid_inputs(
         - Battery costs,
         - Battery emissions,
         - Battery input filepath,
+        - Buffer tank costs,
+        - Buffer tank emissions,
         - Clean water costs,
         - Clean water emissions,
         - Diesel costs,
         - Diesel emissions,
         - Diesel input filepath,
         - Energy system filepath,
-        - Hot-water tank costs,
-        - Hot-water tank emissions,
         - The :class:`Minigrid` to use for the run,
         - PV costs,
         - PV emissions,
@@ -1275,10 +1323,10 @@ def _parse_minigrid_inputs(
 
     if scenario.desalination_scenario is not None:
         (
+            buffer_tank_costs,
+            buffer_tank_emissions,
             clean_water_tank_costs,
             clean_water_tank_emissions,
-            hot_water_tank_costs,
-            hot_water_tank_costs,
             tank_inputs,
             tank_inputs_filepath,
         ) = _parse_tank_inputs(
@@ -1300,8 +1348,8 @@ def _parse_minigrid_inputs(
     else:
         clean_water_tank_costs = None
         clean_water_tank_emissions = None
-        hot_water_tank_costs = None
-        hot_water_tank_emissions = None
+        buffer_tank_costs = None
+        buffer_tank_emissions = None
         tank_inputs = None
         tank_inputs_filepath = None
         exchanger_costs = None
@@ -1323,6 +1371,8 @@ def _parse_minigrid_inputs(
         battery_costs,
         battery_emissions,
         battery_inputs_filepath,
+        buffer_tank_costs,
+        buffer_tank_emissions,
         clean_water_tank_costs,
         clean_water_tank_emissions,
         diesel_costs,
@@ -1332,8 +1382,6 @@ def _parse_minigrid_inputs(
         exchanger_costs,
         exchanger_emissions,
         exchanger_inputs_filepath,
-        hot_water_tank_costs,
-        hot_water_tank_emissions,
         minigrid,
         pv_panel_costs,
         pv_panel_emissions,
@@ -1377,7 +1425,7 @@ def parse_input_files(
             - minigrid,
             - finance_inputs,
             - ghg_inputs,
-            - grid_inputs,
+            - grid_times,
             - optimisation_inputs,
             - optimisations, the `set` of optimisations to run,
             - scenario,
@@ -1453,6 +1501,8 @@ def parse_input_files(
         battery_costs,
         battery_emissions,
         battery_inputs_filepath,
+        buffer_tank_costs,
+        buffer_tank_emissions,
         clean_water_tank_costs,
         clean_water_tank_emissions,
         diesel_costs,
@@ -1462,8 +1512,6 @@ def parse_input_files(
         exchanger_costs,
         exchanger_emissions,
         exchanger_inputs_filepath,
-        hot_water_tank_costs,
-        hot_water_tank_emissions,
         minigrid,
         pv_panel_costs,
         pv_panel_emissions,
@@ -1482,19 +1530,65 @@ def parse_input_files(
     )
     logger.info("Generation inputs successfully parsed.")
 
-    grid_inputs_filepath = os.path.join(
+    grid_times_filepath = os.path.join(
         inputs_directory_relative_path,
-        GRID_INPUTS_FILE,
+        GRID_TIMES_FILE,
     )
     with open(
-        grid_inputs_filepath,
+        grid_times_filepath,
         "r",
-    ) as grid_inputs_file:
-        grid_inputs: pd.DataFrame = pd.read_csv(
-            grid_inputs_file,
+    ) as grid_times_file:
+        grid_times: pd.DataFrame = pd.read_csv(
+            grid_times_file,
             index_col=0,
         )
-    logger.info("Grid inputs successfully parsed.")
+    logger.info("Grid times successfully parsed.")
+
+    if ResourceType.CLEAN_WATER in scenario.resource_types:
+        # Parse the water-source inputs file.
+        (
+            conventional_water_source_inputs_filepath,
+            conventional_water_sources,
+        ) = _parse_conventional_water_source_inputs(
+            inputs_directory_relative_path,
+            logger,
+        )
+        logger.info("Conventional water-source inputs file successfully parsed.")
+        logger.debug(
+            "Conventional water sources: %s",
+            ", ".join([source.name for source in conventional_water_sources]),
+        )
+
+        water_source_times: Optional[Dict[WaterSource, pd.DataFrame]] = {}
+        for source in conventional_water_sources:
+            try:
+                with open(
+                    os.path.join(
+                        inputs_directory_relative_path,
+                        CONVENTIONAL_WATER_SOURCE_AVAILABILITY_DIRECTORY,
+                        WATER_SOURCE_AVAILABILTY_TEMPLATE_FILENAME.format(
+                            water_source=source.name
+                        ),
+                    ),
+                    "r",
+                ) as f:
+                    water_source_times[source] = pd.read_csv(
+                        f,
+                        header=None,
+                        index_col=None,
+                    )
+            except FileNotFoundError:
+                logger.error(
+                    "%sError parsing water-source availability profile for %s, check "
+                    "that the profile is present and that all conventional "
+                    "water-source names are consistent.%s",
+                    BColours.fail,
+                    source.name,
+                    BColours.endc,
+                )
+                raise
+
+        logger.info("Conventional water-source times successfully parsed.")
 
     location_inputs_filepath = os.path.join(
         inputs_directory_relative_path,
@@ -1617,8 +1711,8 @@ def parse_input_files(
         and scenario.desalination_scenario.pvt_scenario.heats == HTFMode.CLOSED_HTF
     ):
         logger.info("Updating with hot-water tank impact data.")
-        finance_inputs[ImpactingComponent.HOT_WATER_TANK.value] = hot_water_tank_costs
-        ghg_data[ImpactingComponent.HOT_WATER_TANK.value] = hot_water_tank_emissions
+        finance_inputs[ImpactingComponent.BUFFER_TANK.value] = buffer_tank_costs
+        ghg_data[ImpactingComponent.BUFFER_TANK.value] = buffer_tank_emissions
         logger.info("Hot-water tank impact data successfully updated.")
 
         logger.info("Updating with heat-exchanger impact data.")
@@ -1636,7 +1730,7 @@ def parse_input_files(
         "finance_inputs": finance_inputs_filepath,
         "generation_inputs": generation_inputs_filepath,
         "ghg_inputs": ghg_inputs_filepath,
-        "grid_inputs": grid_inputs_filepath,
+        "grid_times": grid_times_filepath,
         "location_inputs": location_inputs_filepath,
         "optimisation_inputs": optimisation_inputs_filepath,
         "scenario": scenario_inputs_filepath,
@@ -1645,6 +1739,9 @@ def parse_input_files(
     }
 
     if ResourceType.CLEAN_WATER in scenario.resource_types:
+        input_file_info[
+            "conventional_water_source_inputs"
+        ] = conventional_water_source_inputs_filepath
         input_file_info["tank_inputs"] = tank_inputs_filepath
 
     if (
@@ -1683,7 +1780,7 @@ def parse_input_files(
         finance_inputs,
         generation_inputs,
         ghg_data,
-        grid_inputs,
+        grid_times,
         location,
         optimisation_parameters,
         optimisations,
