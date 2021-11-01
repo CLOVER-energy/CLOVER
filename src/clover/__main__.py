@@ -39,7 +39,8 @@ from .fileparser import (
     KEROSENE_USAGE_FILE,
     parse_input_files,
 )
-from .generation import grid, solar, weather, wind
+from .generation import solar, weather, wind
+from .grid import grid, water_source
 from .load import load
 from .scripts import new_location
 from .simulation import energy_system
@@ -327,7 +328,7 @@ def main(args: List[Any]) -> None:
             finance_inputs,
             generation_inputs,
             ghg_inputs,
-            grid_inputs,
+            grid_times,
             location,
             optimisation_inputs,
             optimisations,
@@ -578,6 +579,76 @@ def main(args: List[Any]) -> None:
             )
             raise
 
+        # Generate the conventional-clean-water source availability profiles.
+        logger.info("Generating conventional-water-source availability profiles.")
+        try:
+            water_source.get_lifetime_water_source_status(
+                os.path.join(auto_generated_files_directory, "water_source"),
+                logger,
+                location.max_years,
+                water_source_times,
+            )
+        except InputFileError:
+            print(
+                "Generating necessary profiles .................................    "
+                + f"{FAILED}"
+            )
+            raise
+        except Exception as e:
+            print(
+                "Generating necessary profiles .................................    "
+                + f"{FAILED}"
+            )
+            logger.error(
+                "%sAn unexpected error occurred generating the conventional "
+                "water-source profiles. See %s for details: %s%s",
+                BColours.fail,
+                "{}.log".format(os.path.join(LOGGER_DIRECTORY, LOGGER_NAME)),
+                str(e),
+                BColours.endc,
+            )
+            raise
+
+        conventional_water_source_profiles: Dict[str, pd.DataFrame] = {}
+
+        # Load the relevant conventional water-source profile.
+        for (
+            source
+        ) in scenario.desalination_scenario.clean_water_scenario.conventional_sources:
+            try:
+                with open(
+                    os.path.join(
+                        auto_generated_files_directory,
+                        "water_source",
+                        f"{source}_water_source_status.csv",
+                    ),
+                    "r",
+                ) as f:
+                    profile = pd.read_csv(
+                        f,
+                        index_col=0,
+                    )
+            except FileNotFoundError as e:
+                logger.error(
+                    "%sConventional water-source profile file for profile '%s' could "
+                    "not be found: %s%s",
+                    BColours.fail,
+                    scenario.grid_type,
+                    str(e),
+                    BColours.endc,
+                )
+                raise
+
+            conventional_water_source_profiles[source] = profile
+
+        logger.info("Conventional water sources successfully parsed.")
+        logger.debug(
+            "Conventional water sources: %s",
+            ", ".join(
+                [str(source) for source in conventional_water_source_profiles.keys()]
+            ),
+        )
+
     initial_hot_water_hourly_loads: Optional[Dict[str, pd.DataFrame]] = None
     total_hot_water_load: Optional[pd.DataFrame] = None
     hot_water_yearly_load_statistics: Optional[  # pylint: disable=unused-variable
@@ -648,7 +719,7 @@ def main(args: List[Any]) -> None:
     try:
         grid.get_lifetime_grid_status(
             os.path.join(auto_generated_files_directory, "grid"),
-            grid_inputs,
+            grid_times,
             logger,
             location.max_years,
         )
@@ -891,7 +962,7 @@ def main(args: List[Any]) -> None:
 
             # Compute the key results.
             key_results = analysis.get_key_results(  # type: ignore
-                grid_inputs[scenario.grid_type],
+                grid_times[scenario.grid_type],
                 simulation.end_year - simulation.start_year,
                 system_performance_outputs,
                 total_solar_data[solar.SolarDataType.ELECTRICITY.value]
@@ -901,7 +972,7 @@ def main(args: List[Any]) -> None:
             if parsed_args.analyse:
                 # Generate and save the various plots.
                 analysis.plot_outputs(  # type: ignore
-                    grid_inputs[scenario.grid_type],
+                    grid_times[scenario.grid_type],
                     grid_profile,
                     initial_clean_water_hourly_loads,
                     initial_electric_hourly_loads,

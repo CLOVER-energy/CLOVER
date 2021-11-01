@@ -27,10 +27,10 @@ import dataclasses
 from typing import Any, Dict, List, Optional, Set, Union
 
 from ..__utils__ import (
-    RESOURCE_NAME_TO_RESOURCE_TYPE_MAPPING,
-    CleanWaterScenario,
+    EXCHANGER,
     InputFileError,
     NAME,
+    RESOURCE_NAME_TO_RESOURCE_TYPE_MAPPING,
     ResourceType,
 )
 
@@ -41,9 +41,29 @@ from .storage import Battery, CleanWaterTank, HotWaterTank
 
 __all__ = ("Minigrid",)
 
+# AC-to-AC:
+#   Keyword used for parsing ac-to-ac conversion parameters.
+AC_TO_AC: str = "ac_to_ac"
+
+# AC-to-DC:
+#   Keyword used for parsing ac-to-dc conversion parameters.
+AC_TO_DC: str = "ac_to_dc"
+
+# Conversion:
+#   Keyword used for parsing grid AC-DC conversion parameters.
+CONVERSION: str = "conversion"
+
+# DC-to-AC:
+#   Keyword used for parsing dc-to-ac conversion parameters.
+DC_TO_AC: str = "dc_to_ac"
+
+# DC-to-DC:
+#   Keyword used for parsing dc-to-dc conversion parameters.
+DC_TO_DC: str = "dc_to_dc"
+
 # Resource Type:
 #   Used for parsing resource-type information.
-RESOURCE_TYPE = "resource_type"
+RESOURCE_TYPE: str = "resource_type"
 
 
 @dataclasses.dataclass
@@ -62,6 +82,11 @@ class Minigrid:
 
     .. attribute:: battery
         The battery being modelled, if applicable.
+
+    .. attribute:: buffer_tank
+        The buffer tank being modelled, if applicable. This tank contains the buffer
+        solution, be it HTF or feedwater, which is heated by PV-T before being fed into
+        the desalination plant.
 
     .. attribute:: clean_water_tank
         The clean-water tank being modelled, if applicable.
@@ -96,6 +121,7 @@ class Minigrid:
     ac_to_dc_conversion_efficiency: Optional[float]
     ac_transmission_efficiency: Optional[float]
     battery: Optional[Battery]
+    buffer_tank: Optional[HotWaterTank]
     clean_water_tank: Optional[CleanWaterTank]
     dc_to_ac_conversion_efficiency: Optional[float]
     dc_to_dc_conversion_efficiency: Optional[float]
@@ -195,11 +221,11 @@ class Minigrid:
 
         # Return the minigrid instance.
         return cls(
-            minigrid_inputs["conversion"]["ac_to_ac"]
-            if "ac_to_ac" in minigrid_inputs["conversion"]
+            minigrid_inputs[CONVERSION][AC_TO_AC]
+            if AC_TO_AC in minigrid_inputs[CONVERSION]
             else None,
-            minigrid_inputs["conversion"]["ac_to_ac"]
-            if "ac_to_dc" in minigrid_inputs["conversion"]
+            minigrid_inputs[CONVERSION][AC_TO_DC]
+            if AC_TO_DC in minigrid_inputs[CONVERSION]
             else None,
             minigrid_inputs["ac_transmission_efficiency"]
             if "ac_transmission_efficiency" in minigrid_inputs
@@ -207,21 +233,24 @@ class Minigrid:
             batteries[minigrid_inputs["battery"]]
             if "battery" in minigrid_inputs
             else None,
+            tanks[minigrid_inputs["buffer_tank"]]
+            if "buffer_tank" in minigrid_inputs
+            else None,
             tanks[minigrid_inputs["clean_water_tank"]]
             if "clean_water_tank" in minigrid_inputs
             else None,
-            minigrid_inputs["conversion"]["ac_to_ac"]
-            if "dc_to_ac" in minigrid_inputs["conversion"]
+            minigrid_inputs[CONVERSION][DC_TO_AC]
+            if DC_TO_AC in minigrid_inputs[CONVERSION]
             else None,
-            minigrid_inputs["conversion"]["ac_to_ac"]
-            if "dc_to_dc" in minigrid_inputs["conversion"]
+            minigrid_inputs[CONVERSION][DC_TO_DC]
+            if DC_TO_DC in minigrid_inputs[CONVERSION]
             else None,
             minigrid_inputs["dc_transmission_efficiency"]
             if "dc_transmission_efficiency" in minigrid_inputs
             else None,
             diesel_generator,
-            exchangers[minigrid_inputs["heat_exchanger"]]
-            if "heat_exchanger" in minigrid_inputs
+            exchangers[minigrid_inputs[EXCHANGER]]
+            if EXCHANGER in minigrid_inputs
             else None,
             tanks[minigrid_inputs["hot_water_tank"]]
             if "hot_water_tank" in minigrid_inputs

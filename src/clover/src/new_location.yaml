@@ -60,11 +60,17 @@
       contents:
         - directory: generation
           contents:
+            - directory: conventional_water_sources
+              contents:
+                - file: river_times.csv
+                  contents: |+
+                    23:0.88,0.88,0.85,0.75,0.45,0.45,0.65,0.75,0.85,0.88,0.88,0.92
+                    0.88,0.88,0.85,0.75,0.45,0.45,0.65,0.75,0.85,0.88,0.88,0.92
             - file: "conversion_inputs.yaml"
               contents: |+
                 ---
                 ################################################################################
-                # conversion_inputs.yaml.yaml - Parameters for defining converting devices.    #
+                # conversion_inputs.yaml - Parameters for defining converting devices.         #
                 #                                                                              #
                 # Author: Ben Winchester                                                       #
                 # Copyright: Phil Sandwell & Ben Winchester, 2021                              #
@@ -191,6 +197,30 @@
                       installation_ghgs: 50 # [kgCO2/kW]
                       installation_ghg_decrease: 0 # [% p.a.]
                       o&m: 5 #[kgCO2/kWp p.a.]
+            - file: water_source_inputs.yaml
+              contents: |+
+                ---
+                ################################################################################
+                # water_source_inputs.yaml - File for defining conventional water sources.     #
+                #                                                                              #
+                # Author: Ben Winchester                                                       #
+                # Copyright: Phil Sandwell & Ben Winchester, 2021                              #
+                # Date created: 01/11/2021                                                     #
+                # License: Open source                                                         #
+                ################################################################################
+
+                - name: river
+                  output: feedwater
+                  costs:
+                    cost: 0 # [$]
+                    cost_decrease: 0 # [% p.a.]
+                    o&m: 1 # [$/litre p.a.]
+                  emissions:
+                    ghgs: 0 # [kgCO2/tank]
+                    ghg_decrease: 0 # [% p.a.]
+                    o&m: 5 # [kgCO2/litre p.a.]
+                  water_quality:
+                    salinity: 440 # [ppm]
         - directory: impact
           contents:
             - file: "finance_inputs.yaml"
