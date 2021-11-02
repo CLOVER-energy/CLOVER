@@ -133,6 +133,22 @@ class Convertor:
             and self.consumption == other.consumption
         )
 
+    def __hash__(self) -> int:
+        """
+        Returns a unique `int` identifying the :class:`Convertor` instance.
+
+        Outputs:
+            A unique `int` identifying the :class:`Convertor` instance.
+
+        """
+
+        consumption_dict = {index: value for index, value in enumerate(self.input_resource_consumption.values())}
+        consumption_int = sum(value * 10 ** (5 * index) for index, value in consumption_dict.items())
+
+        return hash(
+            (consumption_int + self.maximum_output_capacity ) ** 2
+        )
+
     def __lt__(self, other) -> bool:
         """
         Returns whether the current instance is less than another instance.
@@ -484,6 +500,31 @@ class ThermalDesalinationPlant(MultiInputConvertor):
 class WaterSource(Convertor):
     """Represents a water source which takes in electricity and outputs water."""
 
+    def __str__(self) -> str:
+        """
+        Returns a nice-looking `str` representing the :class:`Convertor` instance.
+
+        Outputs:
+            - A nidee-looking `str` representing the :class:`Convertor` instance.
+
+        """
+
+        return (
+            "Convertor("
+            + f"name={self.name}"
+            + ", input_resource_consumption=({})".format(
+                ", ".join(
+                    [
+                        f"{key.value}={value} units/output unit"
+                        for key, value in self.input_resource_consumption.items()
+                    ]
+                )
+            )
+            + f", output_resource_type = {self.output_resource_type.value}"
+            + f", maximum_output_capacity = {self.maximum_output_capacity}"
+            + ")"
+        )
+
     @classmethod
     def from_dict(cls, input_data: Dict[Union[int, str], Any], logger: Logger) -> Any:
         """
@@ -570,7 +611,7 @@ class WaterSource(Convertor):
                 f"{BColours.fail}Invalid value type in conversion file: {str(e)}{BColours.endc}"
             ) from None
 
-        consumption = maximum_output / corresponding_input
+        consumption = corresponding_input / maximum_output
 
         return cls(
             {input_resource_type: consumption},

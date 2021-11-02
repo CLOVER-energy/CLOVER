@@ -17,12 +17,17 @@ This module generates availability profiles for conventional water sources for C
 
 """
 
+import os
+
 from logging import Logger
 from typing import Dict
 
+import numpy as np  # type: ignore # pylint: disable=import-error
 import pandas as pd  # type: ignore # pylint: disable=import-error
 
-from .__utils__ import get_intermittent_supply_status
+from tqdm import tqdm
+
+from ..__utils__ import BColours, Location, monthly_times_to_daily_times
 from ..conversion.conversion import WaterSource
 
 __all__ = ("get_lifetime_water_source_status",)
@@ -31,11 +36,11 @@ __all__ = ("get_lifetime_water_source_status",)
 def _process_water_source_availability(
     water_source: WaterSource,
     *,
+    availability: pd.DataFrame,
     generated_water_source_availability_directory: str,
     location: Location,
     logger: Logger,
     regenerate: bool,
-    water_source_times: Dict[WaterSource, pd.DataFrame],
 ) -> pd.DataFrame:
     """
     Process water-source data files.
@@ -47,16 +52,18 @@ def _process_water_source_availability(
     Inputs:
         - water_source:
             The data for the :class:`conversion.WaterSource` to be processed.
-        - generated_device_utilisation_directory:
-            The directory in which to store the generated device-utilisation profiles.
+        - availability:
+            A :class:`pandas.DataFrame` giving the availability of the
+            :class:`WaterSource` being considered.
+        - generated_water_source_availability_directory:
+            The directory in which to store the generated water-source availability
+            profiles.
         - location:
             The location currently being considered.
         - logger:
             The logger to use for the run.
         - regenerate:
             Whether to force-regenerate the profiles.
-        - water_source_times:
-            The set of water-source availabilities to process.
 
     Outputs:
         - The interpolated daily availability profile for each water source.
@@ -70,7 +77,7 @@ def _process_water_source_availability(
 
     daily_times_filename = f"{water_source.name}_daily_times.csv"
     filepath = os.path.join(
-        generated_device_utilisation_directory, daily_times_filename
+        generated_water_source_availability_directory, daily_times_filename
     )
 
     # If the file already exists, simply read in the data.
@@ -89,8 +96,7 @@ def _process_water_source_availability(
             "Computing water-source availability profile for %s.", water_source.name
         )
         interpolated_daily_profile = monthly_times_to_daily_times(
-            water_source_times[water_source],
-            location.max_years,
+            availability, location.max_years,
         )
         logger.info(
             "Daily water-source availability profile for %s successfully computed.",
@@ -102,18 +108,117 @@ def _process_water_source_availability(
             interpolated_daily_profile.to_csv(f, header=None, index=False, line_terminator="")  # type: ignore
         logger.info(
             "Daily water-source availability profile for %s successfully saved to %s.",
-            water_source_times.name,
+            water_source.name,
             daily_times_filename,
         )
 
     return interpolated_daily_profile
 
 
+def _process_water_soure_hourly_probability(
+    water_source: WaterSource,
+    *,
+    daily_water_source_availability: pd.DataFrame,
+    generated_water_source_availability_directory: str,
+    logger: Logger,
+    regenerate: bool,
+    years: int,
+) -> pd.DataFrame:
+    """
+    Calculate the probability that the water source is available at any given time.
+
+    Inputs:
+        - water_source:
+            The data for the :class:`conversion.WaterSource` to be processed.
+        - availability:
+            A :class:`pandas.DataFrame` giving the availability of the
+            :class:`WaterSource` being considered.
+        - generated_water_source_availability_directory:
+            The directory in which to store the generated water-source availability
+            profiles.
+        - logger:
+            The logger to use for the run.
+        - regenerate:
+            Whether to force-regenerate the profiles.
+        - years:
+            The number of years for which the simulation is being run.
+
+    Outputs:
+        - The hourly availability of the conventional :class:`WaterSource` specified as
+        a :class:`pandas.DataFrame`.
+
+    """
+
+    filename = f"{water_source.name}_availability.csv"
+    filepath = os.path.join(generated_water_source_availability_directory, filename)
+
+    # If the device hourly usage already exists, then read the data in from the file.
+    if os.path.isfile(filepath) and not regenerate:
+        with open(filepath, "r") as f:
+            hourly_availability = pd.read_csv(f, header=None)
+        logger.info(
+            "Hourly water-source availability for %s successfully read from file: %s",
+            water_source.name,
+            filepath,
+        )
+
+    else:
+        daily_water_source_availability = daily_water_source_availability.reset_index(
+            drop=True
+        )
+
+        # Calculate the hourly-usage profile.
+        logger.info("Calculating probability of %s availability", water_source.name)
+        try:
+            hourly_availability = pd.concat(
+                [
+                    pd.DataFrame(
+                        np.random.binomial(  # type: ignore
+                            1, daily_water_source_availability.iloc[day],
+                        )
+                    )
+                    for day in range(0, 365 * years)
+                ]
+            )
+        except ValueError as e:
+            logger.error(
+                "%sError computing hourly water-source availability usage profile for "
+                "%s: type error in variables: %s%s",
+                BColours.fail,
+                water_source.name,
+                str(e),
+                BColours.endc,
+            )
+            raise
+
+        logger.info(
+            "Hourly water-source availability profile for %s successfully calculated.",
+            water_source.name,
+        )
+
+        # Save the hourly-usage profile.
+        logger.info(
+            "Saving hourly water-source availability profile for %s.", water_source.name
+        )
+
+        with open(filepath, "w",) as f:
+            hourly_availability.to_csv(f, header=None, index=False, line_terminator="")  # type: ignore
+
+        logger.info(
+            "Hourly water-source availability proifle for %s successfully saved to %s.",
+            water_source.name,
+            filename,
+        )
+
+    return hourly_availability
+
+
 def get_lifetime_water_source_status(
     generation_directory: str,
+    location: Location,
     logger: Logger,
-    max_years: int,
-    water_source: pd.DataFrame,
+    regenerate: bool,
+    water_source_times: Dict[WaterSource, pd.DataFrame],
 ) -> Dict[str, pd.DataFrame]:
     """
     Calculates, and saves, the water-source availability profiles of all input types.
@@ -121,12 +226,20 @@ def get_lifetime_water_source_status(
     Inputs:
         - generation_directory:
             The directory in which auto-generated files should be saved.
-        - water_source_inputs:
-            Water-source inputs information, read from the water-source inputs file.
+        - location:
+            The :class:`Location` being considered.
         - logger:
             The logger to use for the run.
         - max_years:
             The maximum number of years for which the simulation should run.
+        - regenerate:
+            Whether to renerate (True) the profiles or use existing profiles if present
+            (False).
+        - water_source_timess:
+            Water-source inputs information, read from the water-source inputs file and
+            directory, stored as a mapping between :class:`WaterSource` instances,
+            representing the conventional :class:`WaterSource`s available to the system,
+            and :class:`pandas.DataFrame` instances giving their availability profiles.
 
     Outputs:
         - water_source_profiles:
@@ -135,4 +248,33 @@ def get_lifetime_water_source_status(
 
     """
 
-    #
+    water_source_profiles: Dict[WaterSource, pd.DataFrame] = {}
+
+    for source, availability in tqdm(
+        water_source_times.items(), desc="conventional water availability", leave=True, unit="source"
+    ):
+        # Transform the profiles into daily profiles by interpolating across the months.
+        interpolated_daily_profile = _process_water_source_availability(
+            source,
+            availability=availability,
+            generated_water_source_availability_directory=os.path.join(
+                generation_directory, "available_times"
+            ),
+            location=location,
+            logger=logger,
+            regenerate=regenerate,
+        )
+
+        # Compute the hourly water-source availability profile.
+        hourly_availability = _process_water_soure_hourly_probability(
+            source,
+            daily_water_source_availability=interpolated_daily_profile,
+            generated_water_source_availability_directory=os.path.join(generation_directory, "available_probability"),
+            logger=logger,
+            regenerate=regenerate,
+            years=location.max_years,
+        )
+
+        water_source_profiles[source] = hourly_availability
+
+    return water_source_profiles
