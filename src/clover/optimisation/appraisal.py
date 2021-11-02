@@ -44,11 +44,14 @@ __all__ = ("appraise_system",)
 
 
 def _simulation_environmental_appraisal(
-    clean_water_tank_addition: float,
+    buffer_tank_addition: int,
+    clean_water_tank_addition: int,
     diesel_addition: float,
     electric_yearly_load_statistics: pd.DataFrame,
     end_year: int,
     ghg_inputs: Dict[str, Any],
+    heat_exchanger_addition: int,
+    hot_water_tank_addition: int,
     location: Location,
     logger: Logger,
     pv_addition: float,
@@ -62,6 +65,8 @@ def _simulation_environmental_appraisal(
     Appraises the environmental impact of a minigrid system
 
     Inputs:
+        - buffer_tank_addition:
+            The additional number of buffer tanks added this iteration.
         - clean_water_tank_addition:
             The additional number of clean-water tanks added this iteration.
         - diesel_addition:
@@ -72,6 +77,10 @@ def _simulation_environmental_appraisal(
             The end year of the simulation period.
         - ghg_inputs:
             The GHG input information.
+        - heat_exchanger_addition:
+            The additional number of heat exchangers added this iteration.
+        - hot_water_tank_addition:
+            The additional number of hot-water tanks added this iteration.
         - location:
             The location being considered.
         - logger:
@@ -98,9 +107,12 @@ def _simulation_environmental_appraisal(
     # Calculate new equipment GHGs
     try:
         equipment_ghgs = ghgs.calculate_total_equipment_ghgs(
+            buffer_tank_addition,
             clean_water_tank_addition,
             diesel_addition,
             ghg_inputs,
+            heat_exchanger_addition,
+            hot_water_tank_addition,
             logger,
             pv_addition,
             pvt_addition,
@@ -124,11 +136,17 @@ def _simulation_environmental_appraisal(
     # Calculate operating GHGs of the system during this simulation
     try:
         om_ghgs = ghgs.calculate_total_om(
+            system_details.initial_num_buffer_tanks
+            if system_details.initial_num_buffer_tanks is not None
+            else 0,
             system_details.initial_num_clean_water_tanks
             if system_details.initial_num_clean_water_tanks is not None
             else 0,
             system_details.diesel_capacity,
             ghg_inputs,
+            system_details.initial_num_buffer_tanks
+            if system_details.initial_num_buffer_tanks is not None
+            else 0,
             system_details.initial_num_hot_water_tanks
             if system_details.initial_num_hot_water_tanks is not None
             else 0,
@@ -209,9 +227,12 @@ def _simulation_environmental_appraisal(
 
 
 def _simulation_financial_appraisal(
-    clean_water_tank_addition: float,
+    buffer_tank_addition: int,
+    clean_water_tank_addition: int,
     diesel_addition: float,
     finance_inputs: Dict[str, Any],
+    heat_exchanger_addition: int,
+    hot_water_tank_addition: int,
     location: Location,
     logger: Logger,
     pv_addition: float,
@@ -225,12 +246,18 @@ def _simulation_financial_appraisal(
     Appraises the financial performance of a minigrid system.
 
     Inputs:
+        - buffer_tank_addition:
+            The additional number of buffer tanks added this iteration.
         - clean_water_tank_addition:
             The additional number of clean-water tanks added this iteration.
         - diesel_addition:
             The additional diesel capacity added this iteration.
         - finance_inputs:
             The finance input information.
+        - heat_exchanger_addition:
+            The additional number of heat exchangers added this iteration.
+        - hot_water_tank_addition:
+            The additional number of hot-water tanks added this iteration.
         - location:
             The :class:`Location` being considered.
         - logger:
@@ -256,9 +283,12 @@ def _simulation_financial_appraisal(
 
     # Calculate new equipment costs (discounted)
     equipment_costs = finance.discounted_equipment_cost(
+        buffer_tank_addition,
         clean_water_tank_addition,
         diesel_addition,
         finance_inputs,
+        heat_exchanger_addition,
+        hot_water_tank_addition,
         logger,
         pv_addition,
         pvt_addition,
@@ -281,11 +311,20 @@ def _simulation_financial_appraisal(
 
     # Calculate operating costs of the system during this simulation (discounted)
     om_costs = finance.total_om(
+        system_details.initial_num_buffer_tanks
+        if system_details.initial_num_buffer_tanks is not None
+        else 0,
         system_details.initial_num_clean_water_tanks
         if system_details.initial_num_clean_water_tanks is not None
         else 0,
         system_details.diesel_capacity,
         finance_inputs,
+        system_details.initial_num_buffer_tanks
+        if system_details.initial_num_buffer_tanks is not None
+        else 0,
+        system_details.initial_num_hot_water_tanks
+        if system_details.initial_num_hot_water_tanks is not None
+        else 0,
         logger,
         system_details.initial_pv_size,
         system_details.initial_pvt_size
@@ -519,6 +558,13 @@ def appraise_system(
         )
 
     # Compute the additions made to the system.
+    buffer_tank_addition: float = (
+        system_details.initial_num_buffer_tanks
+        - previous_system.system_details.final_num_buffer_tanks
+        if system_details.initial_num_buffer_tanks is not None
+        and previous_system.system_details.final_num_buffer_tanks is not None
+        else 0
+    )
     clean_water_tank_addition: float = (
         system_details.initial_num_clean_water_tanks
         - previous_system.system_details.final_num_clean_water_tanks
@@ -528,6 +574,20 @@ def appraise_system(
     )
     diesel_addition = (
         system_details.diesel_capacity - previous_system.system_details.diesel_capacity
+    )
+    heat_exchanger_addition: float = (
+        system_details.initial_num_buffer_tanks
+        - previous_system.system_details.final_num_buffer_tanks
+        if system_details.initial_num_buffer_tanks is not None
+        and previous_system.system_details.final_num_buffer_tanks is not None
+        else 0
+    )
+    hot_water_tank_addition: float = (
+        system_details.initial_num_hot_water_tanks
+        - previous_system.system_details.final_num_hot_water_tanks
+        if system_details.initial_num_hot_water_tanks is not None
+        and previous_system.system_details.final_num_hot_water_tanks is not None
+        else 0
     )
     pv_addition = (
         system_details.initial_pv_size - previous_system.system_details.final_pv_size
@@ -549,9 +609,12 @@ def appraise_system(
     )
 
     financial_appraisal = _simulation_financial_appraisal(
+        buffer_tank_addition,
         clean_water_tank_addition,
         diesel_addition,
         finance_inputs,
+        heat_exchanger_addition,
+        hot_water_tank_addition,
         location,
         logger,
         pv_addition,
@@ -562,11 +625,14 @@ def appraise_system(
         electric_yearly_load_statistics,
     )
     environmental_appraisal = _simulation_environmental_appraisal(
+        buffer_tank_addition,
         clean_water_tank_addition,
         diesel_addition,
         electric_yearly_load_statistics,
         end_year,
         ghg_inputs,
+        heat_exchanger_addition,
+        hot_water_tank_addition,
         location,
         logger,
         pv_addition,

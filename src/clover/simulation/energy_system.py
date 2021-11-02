@@ -780,8 +780,10 @@ def run_simulation(
             processed_total_clean_water_load,
             renewable_clean_water_produced,  # type: ignore
         )
+        number_of_buffer_tanks: int = 1
     else:
         clean_water_power_consumed = pd.DataFrame([0] * simulation_hours)
+        number_of_buffer_tanks: int = 0
         renewable_clean_water_used_directly = pd.DataFrame([0] * simulation_hours)
 
     #############
@@ -800,9 +802,9 @@ def run_simulation(
                 start_hour:end_hour
             ].values
         )
-        number_of_hot_water_tanks: float = 0
+        number_of_hot_water_tanks: int = 0
     else:
-        number_of_hot_water_tanks: float = 0
+        number_of_hot_water_tanks: int = 0
 
     ###############
     # Electricity #
@@ -1464,6 +1466,9 @@ def run_simulation(
     system_details = SystemDetails(
         diesel_capacity,
         simulation.end_year,
+        number_of_buffer_tanks
+        if ResourceType.CLEAN_WATER in scenario.resource_types
+        else None,
         number_of_clean_water_tanks
         if ResourceType.CLEAN_WATER in scenario.resource_types
         else None,
@@ -1489,6 +1494,9 @@ def run_simulation(
             * minigrid.battery.storage_unit
             * np.min(battery_health_frame["Battery health"])
         ),
+        number_of_buffer_tanks
+        if ResourceType.CLEAN_WATER in scenario.resource_types
+        else None,
         number_of_clean_water_tanks
         if ResourceType.CLEAN_WATER in scenario.resource_types
         else None,

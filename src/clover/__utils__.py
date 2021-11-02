@@ -1519,6 +1519,9 @@ class SystemDetails:
     .. attribute:: end_year
         The end year of the simulation.
 
+    .. attribute:: final_num_buffer_tanks
+        The final number of buffer tanks installed in the system.
+
     .. attribute:: final_num_clean_water_tanks
         The final number of clean-water tanks installed in the system.
 
@@ -1533,6 +1536,9 @@ class SystemDetails:
 
     .. attribute:: final_storage_size
         The final storage size of the system.
+
+    .. attribute:: initial_num_buffer_tanks
+        The initial number of buffer tanks installed in the system.
 
     .. attribute:: initial_num_clean_water_tanks
         The initial number of clean-water tanks installed in the system.

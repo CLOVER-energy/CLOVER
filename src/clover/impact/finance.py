@@ -355,9 +355,11 @@ def _misc_costs(diesel_size: float, misc_costs: float, pv_array_size: float) -> 
 
 
 def get_total_equipment_cost(
+    buffer_tanks: float,
     clean_water_tanks: float,
     diesel_size: float,
     finance_inputs: Dict[str, Any],
+    heat_exchangers: float,
     hot_water_tanks: float,
     logger: Logger,
     pv_array_size: float,
@@ -369,12 +371,16 @@ def get_total_equipment_cost(
     Calculates all equipment costs.
 
     Inputs:
+        - buffer_tanks:
+            The number of buffer tanks being installed.
         - clean_water_tanks:
             The number of clean-water tanks being installed.
         - diesel_size:
             Capacity of diesel generator being installed
         - finance_inputs:
             The finance-input information, parsed from the finance-inputs file.
+        - heat_exchangers:
+            The number of heat exchangers being installed.
         - hot_water_tanks:
             The number of hot-water tanks being installed.
         - logger:
@@ -390,6 +396,7 @@ def get_total_equipment_cost(
 
     Outputs:
         The combined undiscounted cost of the system equipment.
+
     """
 
     # Calculate the various system costs.
@@ -401,6 +408,40 @@ def get_total_equipment_cost(
     )
 
     if (
+        ImpactingComponent.BUFFER_TANK.value not in finance_inputs
+        and buffer_tanks > 0
+    ):
+        logger.error(
+            "%sNo buffer tank financial input information provided.%s",
+            BColours.fail,
+            BColours.endc,
+        )
+        raise InputFileError(
+            "tank inputs",
+            "No buffer tank financial input information provided and a non-zero number "
+            "of clean-water tanks are being considered.",
+        )
+    buffer_tank_cost: float = 0
+    buffer_tank_installation_cost: float = 0
+    if buffer_tanks > 0:
+        buffer_tank_cost = _component_cost(
+            finance_inputs[ImpactingComponent.BUFFER_TANK.value][COST],
+            finance_inputs[ImpactingComponent.BUFFER_TANK.value][COST_DECREASE],
+            buffer_tanks,
+            installation_year,
+        )
+        buffer_tank_installation_cost = _component_installation_cost(
+            buffer_tanks,
+            finance_inputs[ImpactingComponent.BUFFER_TANK.value][
+                INSTALLATION_COST
+            ],
+            finance_inputs[ImpactingComponent.BUFFER_TANK.value][
+                INSTALLATION_COST_DECREASE
+            ],
+            installation_year,
+        )
+
+    if (
         ImpactingComponent.CLEAN_WATER_TANK.value not in finance_inputs
         and clean_water_tanks > 0
     ):
@@ -410,7 +451,7 @@ def get_total_equipment_cost(
             BColours.endc,
         )
         raise InputFileError(
-            "finance inputs",
+            "tank inputs",
             "No clean-water financial input information provided and a non-zero "
             "number of clean-water tanks are being considered.",
         )
@@ -446,6 +487,40 @@ def get_total_equipment_cost(
         finance_inputs[ImpactingComponent.DIESEL.value][INSTALLATION_COST_DECREASE],
         installation_year,
     )
+
+    if (
+        ImpactingComponent.HEAT_EXCHANGER.value not in finance_inputs
+        and heat_exchangers > 0
+    ):
+        logger.error(
+            "%sNo heat exchanger financial input information provided.%s",
+            BColours.fail,
+            BColours.endc,
+        )
+        raise InputFileError(
+            "heat exchanger inputs",
+            "No heat exchanger financial input information provided and a non-zero "
+            "number of clean-water tanks are being considered.",
+        )
+    heat_exchanger_cost: float = 0
+    heat_exchanger_installation_cost: float = 0
+    if heat_exchangers > 0:
+        heat_exchanger_cost = _component_cost(
+            finance_inputs[ImpactingComponent.HEAT_EXCHANGER.value][COST],
+            finance_inputs[ImpactingComponent.HEAT_EXCHANGER.value][COST_DECREASE],
+            heat_exchangers,
+            installation_year,
+        )
+        heat_exchanger_installation_cost = _component_installation_cost(
+            heat_exchangers,
+            finance_inputs[ImpactingComponent.HEAT_EXCHANGER.value][
+                INSTALLATION_COST
+            ],
+            finance_inputs[ImpactingComponent.HEAT_EXCHANGER.value][
+                INSTALLATION_COST_DECREASE
+            ],
+            installation_year,
+        )
 
     if (
         ImpactingComponent.HOT_WATER_TANK.value not in finance_inputs
@@ -527,8 +602,10 @@ def get_total_equipment_cost(
     )
 
     total_installation_cost = (
-        clean_water_tank_installation_cost
+        buffer_tank_installation_cost
+        + clean_water_tank_installation_cost
         + diesel_installation_cost
+        + heat_exchanger_installation_cost
         + hot_water_tank_installation_cost
         + pv_installation_cost
         + pvt_installation_cost
@@ -539,8 +616,10 @@ def get_total_equipment_cost(
     )
     return (
         bos_cost
+        + buffer_tank_cost
         + clean_water_tank_cost
         + diesel_cost
+        + heat_exchanger_cost
         + hot_water_tank_cost
         + misc_costs
         + pv_cost
@@ -695,9 +774,12 @@ def discounted_energy_total(
 
 
 def discounted_equipment_cost(
-    clean_water_tanks: float,
+    buffer_tanks: int,
+    clean_water_tanks: int,
     diesel_size: float,
     finance_inputs: Dict[str, Any],
+    heat_exchangers: int,
+    hot_water_tanks: int,
     logger: Logger,
     pv_array_size: float,
     pvt_array_size: float,
@@ -708,12 +790,18 @@ def discounted_equipment_cost(
     Calculates cost of all equipment costs
 
     Inputs:
+        - buffer_tanks:
+            The number of buffer tanks being installed.
         - clean_water_tanks:
             The number of clean-water tanks being installed.
         - diesel_size:
             Capacity of diesel generator being installed
         - finance_inputs:
             The finance input information.
+        - heat_exchangers:
+            The number of heat exchangers being installed.
+        - hot_water_tanks:
+            The number of hot-water tanks being installed.
         - logger:
             The logger to use for the run.
         - pv_array_size:
@@ -729,9 +817,12 @@ def discounted_equipment_cost(
     """
 
     undiscounted_cost = get_total_equipment_cost(
+        buffer_tanks,
         clean_water_tanks,
         diesel_size,
         finance_inputs,
+        heat_exchangers,
+        hot_water_tanks,
         logger,
         pv_array_size,
         pvt_array_size,
@@ -824,10 +915,12 @@ def independent_expenditure(
 
 
 def total_om(
-    clean_water_tanks: float,
+    buffer_tanks: int,
+    clean_water_tanks: int,
     diesel_size: float,
     finance_inputs: Dict[str, Any],
-    hot_water_tanks: float,
+    heat_exchangers: int,
+    hot_water_tanks: int,
     logger: Logger,
     pv_array_size: float,
     pvt_array_size: float,
@@ -840,12 +933,16 @@ def total_om(
     Calculates total O&M cost over the simulation period
 
     Inputs:
+        - buffer_tanks:
+            The number of buffer tanks installed.
         - clean_water_tanks:
             The number of clean-water tanks installed.
         - diesel_size:
             Capacity of diesel generator installed.
         - finance_inputs:
             Finance input information.
+        - heat_exchangers:
+            The number of heat exchangers installed.
         - hot_water_tanks:
             The number of hot-water tanks installed.
         - logger:
@@ -865,6 +962,31 @@ def total_om(
         Discounted cost
 
     """
+
+    if (
+        ImpactingComponent.BUFFER_TANK.value not in finance_inputs
+        and buffer_tanks > 0
+    ):
+        logger.error(
+            "%sNo buffer-tank financial input information provided.%s",
+            BColours.fail,
+            BColours.endc,
+        )
+        raise InputFileError(
+            "tank inputs",
+            "No buffer-tank financial input information provided and a non-zero number "
+            "of buffer tanks are being considered.",
+        )
+    buffer_tank_om: float = 0
+    if buffer_tanks > 0:
+        buffer_tank_om = _component_om(
+            finance_inputs[ImpactingComponent.BUFFER_TANK.value][OM],
+            buffer_tanks,
+            finance_inputs,
+            logger,
+            start_year=start_year,
+            end_year=end_year,
+        )
 
     if (
         ImpactingComponent.CLEAN_WATER_TANK.value not in finance_inputs
@@ -908,6 +1030,31 @@ def total_om(
         start_year=start_year,
         end_year=end_year,
     )
+
+    if (
+        ImpactingComponent.HEAT_EXCHANGER.value not in finance_inputs
+        and heat_exchangers > 0
+    ):
+        logger.error(
+            "%sNo heat-exchanger financial input information provided.%s",
+            BColours.fail,
+            BColours.endc,
+        )
+        raise InputFileError(
+            "heat exchanger inputs",
+            "No heat-exchanger financial input information provided and a non-zero "
+            "number of heat exchangers are being considered.",
+        )
+    heat_exchanger_om: float = 0
+    if heat_exchangers > 0:
+        heat_exchanger_om = _component_om(
+            finance_inputs[ImpactingComponent.HEAT_EXCHANGER.value][OM],
+            heat_exchangers,
+            finance_inputs,
+            logger,
+            start_year=start_year,
+            end_year=end_year,
+        )
 
     if (
         ImpactingComponent.HOT_WATER_TANK.value not in finance_inputs
@@ -975,9 +1122,11 @@ def total_om(
     )
 
     return (
-        clean_water_tank_om
+        buffer_tank_om
+        + clean_water_tank_om
         + diesel_om
         + general_om
+        + heat_exchanger_om
         + hot_water_tank_om
         + pv_om
         + pvt_om
