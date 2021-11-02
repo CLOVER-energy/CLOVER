@@ -271,14 +271,6 @@ def calculate_pvt_output(
                 * minigrid.heat_exchanger.efficiency
                 / 3600  # [s/hour]
             )  # [W/K]
-            b_0 += (
-                pvt_system_size
-                * scenario.desalination_scenario.pvt_scenario.mass_flow_rate  # [kg/hour]
-                * scenario.desalination_scenario.pvt_scenario.htf_heat_capacity  # [J/kg*K]
-                * minigrid.heat_exchanger.efficiency
-                * (collector_output_temperature + ZERO_CELCIUS_OFFSET)  # [K]
-                / 3600  # [s/hour]
-            )  # [W]
         else:
             a_01 = base_a_01
 
@@ -300,6 +292,14 @@ def calculate_pvt_output(
             )
 
             # Construct the matrix equation to solve for AX = B.
+            b_0 += (
+                pvt_system_size
+                * scenario.desalination_scenario.pvt_scenario.mass_flow_rate  # [kg/hour]
+                * scenario.desalination_scenario.pvt_scenario.htf_heat_capacity  # [J/kg*K]
+                * minigrid.heat_exchanger.efficiency
+                * (collector_output_temperature + ZERO_CELCIUS_OFFSET)  # [K]
+                / 3600  # [s/hour]
+            )  # [W]
             b_1 = (1 - minigrid.heat_exchanger.efficiency) * (
                 collector_output_temperature + ZERO_CELCIUS_OFFSET
             )  # [K]
@@ -370,6 +370,24 @@ def calculate_pvt_output(
             collector_input_temperature -= ZERO_CELCIUS_OFFSET
             tank_temperature -= ZERO_CELCIUS_OFFSET
 
+            # If the collector output temperature is predicted to be lower than the tank
+            # temperature, then simply re-cycle the HTF through the collector.
+            if collector_output_temperature < tank_temperature:
+                logger.debug(
+                    "Index: %s: Run # %s: No heat added to tank, re-cycling HTF: "
+                    "T_c,in=%s degC, T_c,out=%s degC, T_tank=%s degC",
+                    index,
+                    runs,
+                    collector_input_temperature,
+                    collector_output_temperature,
+                    tank_temperature,
+                )
+                collector_input_temperature = collector_output_temperature
+                tank_temperature = b_0 / a_01
+                runs = 0
+                solution_found = True
+
+            # If a solution has been found, then break the loop.
             if (
                 abs(
                     collector_input_temperature - best_guess_collector_input_temperature
@@ -382,7 +400,8 @@ def calculate_pvt_output(
             runs += 1
             if runs > 10:
                 logger.debug(
-                    "Index: %s: Run # %s: Solution not yet found, re-iterating: T_c,in=%s degC, T_tank=%s degC",
+                    "Index: %s: Run # %s: Solution not yet found, re-iterating: "
+                    "T_c,in=%s degC, T_tank=%s degC",
                     index,
                     runs,
                     collector_input_temperature,

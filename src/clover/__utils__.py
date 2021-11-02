@@ -1565,11 +1565,13 @@ class SystemDetails:
 
     diesel_capacity: float = 0
     end_year: int = 0
-    final_num_clean_water_tanks: Optional[float] = 0
-    final_num_hot_water_tanks: Optional[float] = 0
+    final_num_buffer_tanks: Optional[int] = 0
+    final_num_clean_water_tanks: Optional[int] = 0
+    final_num_hot_water_tanks: Optional[int] = 0
     final_pv_size: float = 0
     final_pvt_size: Optional[float] = 0
     final_storage_size: float = 0
+    initial_num_buffer_tanks: Optional[int] = 0
     initial_num_clean_water_tanks: Optional[float] = 0
     initial_num_hot_water_tanks: Optional[float] = 0
     initial_pv_size: float = 0
@@ -1601,6 +1603,14 @@ class SystemDetails:
             "start_year": round(self.start_year, 3),
         }
 
+        if self.initial_num_buffer_tanks is not None:
+            system_details_as_dict["initial_num_buffer_tanks"] = round(
+                self.initial_num_buffer_tanks, 3
+            )
+        if self.final_num_buffer_tanks is not None:
+            system_details_as_dict["final_num_buffer_tanks"] = round(
+                self.final_num_buffer_tanks, 3
+            )
         if self.initial_num_clean_water_tanks is not None:
             system_details_as_dict["initial_num_clean_water_tanks"] = round(
                 self.initial_num_clean_water_tanks, 3
