@@ -158,10 +158,12 @@ def calculate_misc_ghgs(capacity: float, ghg_inputs: Dict[str, Any]) -> float:
 
 
 def calculate_total_equipment_ghgs(
-    clean_water_tanks: float,
+    buffer_tanks: int,
+    clean_water_tanks: int,
     diesel_size: float,
     ghg_inputs: Dict[str, Any],
-    hot_water_tanks: float,
+    heat_exchangers: int,
+    hot_water_tanks: int,
     logger: Logger,
     pv_array_size: float,
     pvt_array_size: float,
@@ -172,12 +174,16 @@ def calculate_total_equipment_ghgs(
     Calculates ghgs of all newly installed equipment
 
     Inputs:
+        - buffer_tanks:
+            Number of buffer tanks being installed.
         - clean_water_tanks:
             Capacity of clean-water tanks being installed.
         - diesel_size:
             Capacity of diesel generator being installed
         - ghg_inputs:
             GHG input information.
+        - heat_exchangers:
+            Number of heat exchangers being installed.
         - hot_water_tanks:
             Capactiy of hot-water tanks being installed.
         - pv_array_size:
@@ -198,16 +204,41 @@ def calculate_total_equipment_ghgs(
     bos_ghgs = calculate_ghgs(pv_array_size, ghg_inputs, ImpactingComponent.BOS, year)
 
     if (
+        ImpactingComponent.BUFFER_TANK.value not in ghg_inputs
+        and buffer_tanks > 0
+    ):
+        logger.error(
+            "%sNo buffer-tank GHG input information provided.%s", BColours.fail, BColours.endc
+        )
+        raise InputFileError(
+            "tank inputs",
+            "No buffer tank ghg input information provided and a non-zero number of "
+            "buffer tanks are being considered.",
+        )
+    buffer_tank_ghgs: float = 0
+    buffer_tank_installation_ghgs: float = 0
+    if buffer_tanks > 0:
+        buffer_tank_ghgs = calculate_ghgs(
+            buffer_tanks,
+            ghg_inputs,
+            ImpactingComponent.BUFFER_TANK,
+            year,
+        )
+        buffer_tank_installation_ghgs = calculate_installation_ghgs(
+            buffer_tanks, ghg_inputs, ImpactingComponent.BUFFER_TANK, year
+        )
+
+    if (
         ImpactingComponent.CLEAN_WATER_TANK.value not in ghg_inputs
         and clean_water_tanks > 0
     ):
         logger.error(
-            "%sNo PV-T GHG input information provided.%s", BColours.fail, BColours.endc
+            "%sNo clean-water tank GHG input information provided.%s", BColours.fail, BColours.endc
         )
         raise InputFileError(
             "tank inputs",
-            "No clean-water tank ghg input information provided and a non-zero number of PV-T"
-            "panels are being considered.",
+            "No clean-water tank ghg input information provided and a non-zero number "
+            "of clean-water tanks are being considered.",
         )
     clean_water_tank_ghgs: float = 0
     clean_water_tank_installation_ghgs: float = 0
@@ -230,6 +261,33 @@ def calculate_total_equipment_ghgs(
     )
 
     if (
+        ImpactingComponent.HEAT_EXCHANGER.value not in ghg_inputs
+        and heat_exchangers > 0
+    ):
+        logger.error(
+            "%sNo heat-exchanger tank GHG input information provided.%s",
+            BColours.fail,
+            BColours.endc,
+        )
+        raise InputFileError(
+            "heat exchanger inputs",
+            "No heat-exchanger ghg input information provided and a non-zero number of "
+            "heat exchangers are being considered.",
+        )
+    heat_exchanger_ghgs: float = 0
+    heat_exchanger_installation_ghgs: float = 0
+    if heat_exchangers > 0:
+        heat_exchanger_ghgs = calculate_ghgs(
+            heat_exchangers,
+            ghg_inputs,
+            ImpactingComponent.HEAT_EXCHANGER,
+            year,
+        )
+        heat_exchanger_installation_ghgs = calculate_installation_ghgs(
+            heat_exchangers, ghg_inputs, ImpactingComponent.HEAT_EXCHANGER, year
+        )
+
+    if (
         ImpactingComponent.HOT_WATER_TANK.value not in ghg_inputs
         and hot_water_tanks > 0
     ):
@@ -240,8 +298,8 @@ def calculate_total_equipment_ghgs(
         )
         raise InputFileError(
             "tank inputs",
-            "No hot-water tank ghg input information provided and a non-zero number of PV-T"
-            "panels are being considered.",
+            "No hot-water tank ghg input information provided and a non-zero number of "
+            "hot-water tanks are being considered.",
         )
     hot_water_tank_ghgs: float = 0
     hot_water_tank_installation_ghgs: float = 0
@@ -292,10 +350,14 @@ def calculate_total_equipment_ghgs(
 
     return (
         bos_ghgs
+        + buffer_tank_ghgs
+        + buffer_tank_installation_ghgs
         + clean_water_tank_installation_ghgs
         + clean_water_tank_ghgs
         + diesel_installation_ghgs
         + diesel_ghgs
+        + heat_exchanger_ghgs
+        + heat_exchanger_installation_ghgs
         + hot_water_tank_ghgs
         + hot_water_tank_installation_ghgs
         + misc_ghgs
@@ -635,10 +697,12 @@ def calculate_om_ghgs(
 
 #   Total O&M for entire system
 def calculate_total_om(
-    clean_water_tanks: float,
+    buffer_tanks: int,
+    clean_water_tanks: int,
     diesel_size: float,
     ghg_inputs: Dict[str, Any],
-    hot_water_tanks: float,
+    heat_exchangers: int,
+    hot_water_tanks: int,
     logger: Logger,
     pv_array_size: float,
     pvt_array_size: float,
@@ -650,12 +714,16 @@ def calculate_total_om(
     Calculates total O&M ghgs over the simulation period
 
     Inputs:
+        - buffer_tanks:
+            Capacity of buffer tanks installed.
         - clean_water_tanks:
             Capacity of clean-water tanks installed.
         - diesel_size:
             Capacity of diesel generator installed.
         - ghg_inputs:
             The GHG input information.
+        - heat_exchangers:
+            Capacity of heat exchangers installed.
         - hot_water_tanks:
             Capacity of hot-water tanks installed.
         - logger:
@@ -677,6 +745,30 @@ def calculate_total_om(
     """
 
     if (
+        ImpactingComponent.BUFFER_TANK.value not in ghg_inputs
+        and buffer_tanks > 0
+    ):
+        logger.error(
+            "%sNo buffer tank GHG input information provided.%s",
+            BColours.fail,
+            BColours.endc,
+        )
+        raise InputFileError(
+            "tank inputs",
+            "No buffer tank ghg input information provided and a non-zero number of "
+            "buffer tanks are being considered.",
+        )
+    buffer_tank_om_ghgs: float = 0
+    if buffer_tanks > 0:
+        buffer_tank_om_ghgs = calculate_om_ghgs(
+            buffer_tanks,
+            ghg_inputs,
+            ImpactingComponent.BUFFER_TANK,
+            start_year,
+            end_year,
+        )
+
+    if (
         ImpactingComponent.CLEAN_WATER_TANK.value not in ghg_inputs
         and clean_water_tanks > 0
     ):
@@ -687,8 +779,8 @@ def calculate_total_om(
         )
         raise InputFileError(
             "tank inputs",
-            "No clean-water tank ghg input information provided and a non-zero number of PV-T"
-            "panels are being considered.",
+            "No clean-water tank ghg input information provided and a non-zero number "
+            "of clean-water tanks are being considered.",
         )
     clean_water_tank_om_ghgs: float = 0
     if clean_water_tanks > 0:
@@ -709,6 +801,30 @@ def calculate_total_om(
     )
 
     if (
+        ImpactingComponent.HEAT_EXCHANGER.value not in ghg_inputs
+        and heat_exchangers > 0
+    ):
+        logger.error(
+            "%sNo heat-exchanger GHG input information provided.%s",
+            BColours.fail,
+            BColours.endc,
+        )
+        raise InputFileError(
+            "heat exchanger inputs",
+            "No heat-exchanger ghg input information provided and a non-zero number of "
+            "heat exchangers are being considered.",
+        )
+    heat_exchanger_om_ghgs: float = 0
+    if heat_exchangers > 0:
+        heat_exchanger_om_ghgs = calculate_om_ghgs(
+            heat_exchangers,
+            ghg_inputs,
+            ImpactingComponent.HEAT_EXCHANGER,
+            start_year,
+            end_year,
+        )
+
+    if (
         ImpactingComponent.HOT_WATER_TANK.value not in ghg_inputs
         and hot_water_tanks > 0
     ):
@@ -719,8 +835,8 @@ def calculate_total_om(
         )
         raise InputFileError(
             "tank inputs",
-            "No hot-water tank ghg input information provided and a non-zero number of PV-T"
-            "panels are being considered.",
+            "No hot-water tank ghg input information provided and a non-zero number of "
+            "hot-water tanks are being considered.",
         )
     hot_water_tank_om_ghgs: float = 0
     if hot_water_tanks > 0:
@@ -755,9 +871,12 @@ def calculate_total_om(
     )
 
     return (
-        clean_water_tank_om_ghgs
+        buffer_tank_om_ghgs
+        + clean_water_tank_om_ghgs
         + diesel_om_ghgs
         + general_om_ghgs
+        + heat_exchanger_om_ghgs
+        + hot_water_tank_om_ghgs
         + pv_om_ghgs
         + pvt_om_ghgs
         + storage_om_ghgs
