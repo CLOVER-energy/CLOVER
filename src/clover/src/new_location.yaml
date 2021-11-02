@@ -54,6 +54,9 @@
                 - directory: device_load
         - directory: solar
         - directory: water_source
+          contents:
+            - directory: available_probability
+            - directory: available_times
         - directory: weather
         - directory: wind
     - directory: inputs

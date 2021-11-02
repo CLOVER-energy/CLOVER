@@ -334,6 +334,7 @@ def main(args: List[Any]) -> None:
             optimisations,
             scenario,
             simulations,
+            water_source_times,
             input_file_info,
         ) = parse_input_files(parsed_args.location, logger)
     except FileNotFoundError as e:
@@ -582,10 +583,11 @@ def main(args: List[Any]) -> None:
         # Generate the conventional-clean-water source availability profiles.
         logger.info("Generating conventional-water-source availability profiles.")
         try:
-            water_source.get_lifetime_water_source_status(
+            conventional_water_source_profiles = water_source.get_lifetime_water_source_status(
                 os.path.join(auto_generated_files_directory, "water_source"),
+                location,
                 logger,
-                location.max_years,
+                parsed_args.regenerate,
                 water_source_times,
             )
         except InputFileError:
@@ -608,38 +610,6 @@ def main(args: List[Any]) -> None:
                 BColours.endc,
             )
             raise
-
-        conventional_water_source_profiles: Dict[str, pd.DataFrame] = {}
-
-        # Load the relevant conventional water-source profile.
-        for (
-            source
-        ) in scenario.desalination_scenario.clean_water_scenario.conventional_sources:
-            try:
-                with open(
-                    os.path.join(
-                        auto_generated_files_directory,
-                        "water_source",
-                        f"{source}_water_source_status.csv",
-                    ),
-                    "r",
-                ) as f:
-                    profile = pd.read_csv(
-                        f,
-                        index_col=0,
-                    )
-            except FileNotFoundError as e:
-                logger.error(
-                    "%sConventional water-source profile file for profile '%s' could "
-                    "not be found: %s%s",
-                    BColours.fail,
-                    scenario.grid_type,
-                    str(e),
-                    BColours.endc,
-                )
-                raise
-
-            conventional_water_source_profiles[source] = profile
 
         logger.info("Conventional water sources successfully parsed.")
         logger.debug(

@@ -1407,6 +1407,7 @@ def parse_input_files(
     Set[Optimisation],
     Scenario,
     List[Simulation],
+    Dict[WaterSource, pd.DataFrame],
     Dict[str, str],
 ]:
     """
@@ -1432,6 +1433,8 @@ def parse_input_files(
             - simulations, the `list` of simulations to run,
             - a `list` of :class:`solar.SolarPanel` instances and their children which
               contain information about the PV panels being considered,
+            - a `dict` mapping the :class:`WaterSource`s available to provide
+              conventional water to the system and the seasonal availabilities,
             - a `dict` containing information about the input files used.
 
     """
@@ -1589,6 +1592,9 @@ def parse_input_files(
                 raise
 
         logger.info("Conventional water-source times successfully parsed.")
+    # Otherwise, instantiate an empty dict.
+    else:
+        water_source_times = {}
 
     location_inputs_filepath = os.path.join(
         inputs_directory_relative_path,
@@ -1786,5 +1792,6 @@ def parse_input_files(
         optimisations,
         scenario,
         simulations,
+        water_source_times,
         input_file_info,
     )
