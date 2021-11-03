@@ -203,12 +203,11 @@ def calculate_total_equipment_ghgs(
     # Calculate system ghgs.
     bos_ghgs = calculate_ghgs(pv_array_size, ghg_inputs, ImpactingComponent.BOS, year)
 
-    if (
-        ImpactingComponent.BUFFER_TANK.value not in ghg_inputs
-        and buffer_tanks > 0
-    ):
+    if ImpactingComponent.BUFFER_TANK.value not in ghg_inputs and buffer_tanks > 0:
         logger.error(
-            "%sNo buffer-tank GHG input information provided.%s", BColours.fail, BColours.endc
+            "%sNo buffer-tank GHG input information provided.%s",
+            BColours.fail,
+            BColours.endc,
         )
         raise InputFileError(
             "tank inputs",
@@ -233,7 +232,9 @@ def calculate_total_equipment_ghgs(
         and clean_water_tanks > 0
     ):
         logger.error(
-            "%sNo clean-water tank GHG input information provided.%s", BColours.fail, BColours.endc
+            "%sNo clean-water tank GHG input information provided.%s",
+            BColours.fail,
+            BColours.endc,
         )
         raise InputFileError(
             "tank inputs",
@@ -744,10 +745,7 @@ def calculate_total_om(
 
     """
 
-    if (
-        ImpactingComponent.BUFFER_TANK.value not in ghg_inputs
-        and buffer_tanks > 0
-    ):
+    if ImpactingComponent.BUFFER_TANK.value not in ghg_inputs and buffer_tanks > 0:
         logger.error(
             "%sNo buffer tank GHG input information provided.%s",
             BColours.fail,

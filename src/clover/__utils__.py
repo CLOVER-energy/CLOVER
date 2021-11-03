@@ -765,7 +765,9 @@ def monthly_profile_to_daily_profile(monthly_profile: pd.DataFrame) -> pd.DataFr
     # return pd.DataFrame([entry[1] for entry in sorted(daily_profile.items())])
 
 
-def monthly_times_to_daily_times(monthly_profile: pd.DataFrame, years: int) -> pd.DataFrame:
+def monthly_times_to_daily_times(
+    monthly_profile: pd.DataFrame, years: int
+) -> pd.DataFrame:
     """
     Converts the monthly profiles to daily profiles.
 

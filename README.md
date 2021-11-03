@@ -97,7 +97,7 @@ Within your location folder you will find a subfolder named `inputs`. This conta
 
 * Ensure that `inputs/generation/generation_inputs.yaml` contains your renewables.ninja API token and that the other parameters within the file are set correctly;
 * Complete `inputs/location_data/location_inputs.yaml` with the details of your location;
-* Complete the `inputs/generation/grid/grid_inputs.csv` template with the details of your location:
+* Complete the `inputs/generation/grid/grid_times.csv` template with the details of your location:
   * Grid profiles are a 1x24 matrix of hourly probabilities (0-1) that the grid is available,
   * Input all grid profiles at the same time;
 * Complete `inputs/generation/diesel/diesel_inputs.yaml` with information about your diesel generator;

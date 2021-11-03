@@ -407,10 +407,7 @@ def get_total_equipment_cost(
         installation_year,
     )
 
-    if (
-        ImpactingComponent.BUFFER_TANK.value not in finance_inputs
-        and buffer_tanks > 0
-    ):
+    if ImpactingComponent.BUFFER_TANK.value not in finance_inputs and buffer_tanks > 0:
         logger.error(
             "%sNo buffer tank financial input information provided.%s",
             BColours.fail,
@@ -432,9 +429,7 @@ def get_total_equipment_cost(
         )
         buffer_tank_installation_cost = _component_installation_cost(
             buffer_tanks,
-            finance_inputs[ImpactingComponent.BUFFER_TANK.value][
-                INSTALLATION_COST
-            ],
+            finance_inputs[ImpactingComponent.BUFFER_TANK.value][INSTALLATION_COST],
             finance_inputs[ImpactingComponent.BUFFER_TANK.value][
                 INSTALLATION_COST_DECREASE
             ],
@@ -513,9 +508,7 @@ def get_total_equipment_cost(
         )
         heat_exchanger_installation_cost = _component_installation_cost(
             heat_exchangers,
-            finance_inputs[ImpactingComponent.HEAT_EXCHANGER.value][
-                INSTALLATION_COST
-            ],
+            finance_inputs[ImpactingComponent.HEAT_EXCHANGER.value][INSTALLATION_COST],
             finance_inputs[ImpactingComponent.HEAT_EXCHANGER.value][
                 INSTALLATION_COST_DECREASE
             ],
@@ -963,10 +956,7 @@ def total_om(
 
     """
 
-    if (
-        ImpactingComponent.BUFFER_TANK.value not in finance_inputs
-        and buffer_tanks > 0
-    ):
+    if ImpactingComponent.BUFFER_TANK.value not in finance_inputs and buffer_tanks > 0:
         logger.error(
             "%sNo buffer-tank financial input information provided.%s",
             BColours.fail,
