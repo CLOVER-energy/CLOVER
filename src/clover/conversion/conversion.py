@@ -142,12 +142,15 @@ class Convertor:
 
         """
 
-        consumption_dict = {index: value for index, value in enumerate(self.input_resource_consumption.values())}
-        consumption_int = sum(value * 10 ** (5 * index) for index, value in consumption_dict.items())
-
-        return hash(
-            (consumption_int + self.maximum_output_capacity ) ** 2
+        consumption_dict = {
+            index: value
+            for index, value in enumerate(self.input_resource_consumption.values())
+        }
+        consumption_int = sum(
+            value * 10 ** (5 * index) for index, value in consumption_dict.items()
         )
+
+        return hash((consumption_int + self.maximum_output_capacity) ** 2)
 
     def __lt__(self, other) -> bool:
         """

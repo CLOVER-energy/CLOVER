@@ -28,6 +28,8 @@ import pandas as pd  # type: ignore  # pylint: disable=import-error
 from scipy import linalg
 from tqdm import tqdm
 
+from clover.fileparser import CONVENTIONAL_WATER_SOURCE_AVAILABILITY_DIRECTORY
+
 from ..__utils__ import (
     BColours,
     HTFMode,
@@ -369,6 +371,12 @@ def calculate_pvt_output(
 
             collector_input_temperature -= ZERO_CELCIUS_OFFSET
             tank_temperature -= ZERO_CELCIUS_OFFSET
+
+            import pdb
+
+            pdb.set_trace(
+                f"Index: {index} T_c,in: {collector_input_temperature}, T_c,out: {collector_output_temperature}, T_tank: {tank_temperature}"
+            )
 
             # If the collector output temperature is predicted to be lower than the tank
             # temperature, then simply re-cycle the HTF through the collector.

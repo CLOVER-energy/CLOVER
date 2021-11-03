@@ -96,7 +96,8 @@ def _process_water_source_availability(
             "Computing water-source availability profile for %s.", water_source.name
         )
         interpolated_daily_profile = monthly_times_to_daily_times(
-            availability, location.max_years,
+            availability,
+            location.max_years,
         )
         logger.info(
             "Daily water-source availability profile for %s successfully computed.",
@@ -174,7 +175,8 @@ def _process_water_soure_hourly_probability(
                 [
                     pd.DataFrame(
                         np.random.binomial(  # type: ignore
-                            1, daily_water_source_availability.iloc[day],
+                            1,
+                            daily_water_source_availability.iloc[day],
                         )
                     )
                     for day in range(0, 365 * years)
@@ -201,7 +203,10 @@ def _process_water_soure_hourly_probability(
             "Saving hourly water-source availability profile for %s.", water_source.name
         )
 
-        with open(filepath, "w",) as f:
+        with open(
+            filepath,
+            "w",
+        ) as f:
             hourly_availability.to_csv(f, header=None, index=False, line_terminator="")  # type: ignore
 
         logger.info(
@@ -251,7 +256,10 @@ def get_lifetime_water_source_status(
     water_source_profiles: Dict[WaterSource, pd.DataFrame] = {}
 
     for source, availability in tqdm(
-        water_source_times.items(), desc="conventional water availability", leave=True, unit="source"
+        water_source_times.items(),
+        desc="conventional water availability",
+        leave=True,
+        unit="source",
     ):
         # Transform the profiles into daily profiles by interpolating across the months.
         interpolated_daily_profile = _process_water_source_availability(
@@ -269,7 +277,9 @@ def get_lifetime_water_source_status(
         hourly_availability = _process_water_soure_hourly_probability(
             source,
             daily_water_source_availability=interpolated_daily_profile,
-            generated_water_source_availability_directory=os.path.join(generation_directory, "available_probability"),
+            generated_water_source_availability_directory=os.path.join(
+                generation_directory, "available_probability"
+            ),
             logger=logger,
             regenerate=regenerate,
             years=location.max_years,

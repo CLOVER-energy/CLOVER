@@ -583,12 +583,14 @@ def main(args: List[Any]) -> None:
         # Generate the conventional-clean-water source availability profiles.
         logger.info("Generating conventional-water-source availability profiles.")
         try:
-            conventional_water_source_profiles = water_source.get_lifetime_water_source_status(
-                os.path.join(auto_generated_files_directory, "water_source"),
-                location,
-                logger,
-                parsed_args.regenerate,
-                water_source_times,
+            conventional_water_source_profiles = (
+                water_source.get_lifetime_water_source_status(
+                    os.path.join(auto_generated_files_directory, "water_source"),
+                    location,
+                    logger,
+                    parsed_args.regenerate,
+                    water_source_times,
+                )
             )
         except InputFileError:
             print(
