@@ -117,7 +117,7 @@ DIESEL_INPUTS_FILE: str = os.path.join("generation", "diesel_inputs.yaml")
 
 # Electric model file:
 #   The relative path to the electric model file.
-ELECTRIC_MODEL_FILE: str = os.path.join("src", "electric_forest.sav")
+ELECTRIC_MODEL_FILE: str = os.path.join("src", "electric_tree.sav")
 
 # Energy-system inputs file:
 #   The relative path to the energy-system-inputs file.
@@ -191,7 +191,7 @@ TANK_INPUTS_FILE: str = os.path.join("simulation", "tank_inputs.yaml")
 
 # Thermal model file:
 #   The relative path to the thermal model file.
-THERMAL_MODEL_FILE: str = os.path.join("src", "thermal_forest.sav")
+THERMAL_MODEL_FILE: str = os.path.join("src", "thermal_tree.sav")
 
 # Water source availability template filename:
 #   A template filename for parsing water-source availability profiles.

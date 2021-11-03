@@ -218,10 +218,38 @@ def calculate_pvt_output(
     runs: int = 0
 
     # Instantiate maps for easy PV-T power lookups.
-    pvt_collector_output_temperature_map: Dict[int, float] = {}
+    pvt_collector_output_temperature_map: Dict[int, float] = collections.defaultdict(
+        lambda: scenario.desalination_scenario.feedwater_supply_temperature
+    )
     pvt_electric_power_per_unit_map: Dict[int, float] = {}
-    tank_temperature_map: Dict[int, float] = collections.defaultdict(float)
+    tank_temperature_map: Dict[int, float] = collections.defaultdict(
+        lambda: scenario.desalination_scenario.feedwater_supply_temperature
+    )
     tank_volume_supplied_map: Dict[int, float] = collections.defaultdict(float)
+
+    # Instantiate other variables required in the loop
+    best_guess_collector_input_temperature: float = (
+        scenario.desalination_scenario.feedwater_supply_temperature
+    )
+    best_guess_tank_temperature: float = (
+        scenario.desalination_scenario.feedwater_supply_temperature
+    )
+
+    # Compute the various terms which remain common across all time steps.
+    pvt_heat_transfer = (
+        scenario.desalination_scenario.pvt_scenario.mass_flow_rate  # [kg/hour]
+        * scenario.desalination_scenario.pvt_scenario.htf_heat_capacity  # [J/kg*K]
+        * minigrid.heat_exchanger.efficiency
+        / 3600  # [s/hour]
+    )  # [W/K]
+    tank_environment_heat_transfer = (
+        minigrid.buffer_tank.heat_transfer_coefficient
+    )  # [W/K]
+    tank_internal_energy = (
+        minigrid.buffer_tank.mass  # [kg]
+        * minigrid.buffer_tank.heat_capacity  # [J/kg*K]
+        / 3600  # [s/hour]
+    )
 
     if scenario.desalination_scenario.pvt_scenario.heats != HTFMode.CLOSED_HTF:
         logger.error(
@@ -239,59 +267,113 @@ def calculate_pvt_output(
         leave=False,
         unit="hour",
     ):
-        # Compute the various terms involved in
-
-        # If there is an input irradiance, then have the PV-T system flowing.
-        if irradiances[index] > 0:
-            a_01 = base_a_01 + (
-                pvt_system_size
-                * scenario.desalination_scenario.pvt_scenario.mass_flow_rate  # [kg/hour]
-                * scenario.desalination_scenario.pvt_scenario.htf_heat_capacity  # [J/kg*K]
-                * minigrid.heat_exchanger.efficiency
-                / 3600  # [s/hour]
-            )  # [W/K]
-        else:
-            a_01 = base_a_01
+        # Determine whether the PV-T is flowing.
+        desalination_plant_on: bool = (
+            tank_temperature_map[index - 1]
+            > thermal_desalination_plant.minimum_htf_temperature
+        )
+        pvt_flow_on: bool = (
+            pvt_collector_output_temperature_map[index - 1]
+            > tank_temperature_map[index - 1]
+        ) and irradiances[index] > 0
 
         # Only compute outputs if there is input irradiance.
         solution_found: bool = False
         # Keep processing until the temperatures are consistent.
         while not solution_found:
+            # Use the AI to determine the output temperature of the collector, based on
+            # the best guess of the collector input temperature.
+            if irradiances[index] > 0:
+                (
+                    fractional_electric_performance,
+                    collector_output_temperature,
+                ) = minigrid.pvt_panel.calculate_performance(
+                    temperatures[index],
+                    best_guess_collector_input_temperature,
+                    logger,
+                    scenario.desalination_scenario.pvt_scenario.mass_flow_rate,
+                    1000 * irradiances[index],
+                    wind_speeds[index],
+                )
+            else:
+                fractional_electric_performance = 0
+                collector_output_temperature = (
+                    scenario.desalination_scenario.feedwater_supply_temperature
+                )
 
-            collector_input_temperature -= ZERO_CELCIUS_OFFSET
-            tank_temperature -= ZERO_CELCIUS_OFFSET
-
-            import pdb
-
-            pdb.set_trace(
-                header=f"Index: {index} T_c,in: {collector_input_temperature}, T_c,out: {collector_output_temperature}, T_tank: {tank_temperature}"
+            # Determine the volume withdrawn from the buffer tanks
+            volume_supplied = (
+                _buffer_tank_mass_flow_rate(
+                    temperatures[index],
+                    best_guess_tank_temperature,
+                    minigrid.buffer_tank,
+                    thermal_desalination_plant,
+                )
+                * desalination_plant_on
             )
 
-            # If the collector output temperature is predicted to be lower than the tank
-            # temperature, then simply re-cycle the HTF through the collector.
-            if (
-                collector_output_temperature < tank_temperature
-                or irradiances[index] < 0
-            ):
-                logger.debug(
-                    "Index: %s: Run # %s: No heat added to tank, re-cycling HTF: "
-                    "T_c,in=%s degC, T_c,out=%s degC, T_tank=%s degC",
-                    index,
-                    runs,
-                    collector_input_temperature,
-                    collector_output_temperature,
-                    tank_temperature,
+            tank_load_enthalpy_transfer = (
+                volume_supplied  # [kg/hour]
+                * minigrid.buffer_tank.heat_capacity  # [J/kg*K]
+                / 3600  # [s/hour]
+            )  # [W/K]
+
+            # Determine the tank temperature and collector input temperature that match.
+            resultant_vector = [
+                (
+                    pvt_heat_transfer
+                    * (collector_output_temperature + ZERO_CELCIUS_OFFSET)
+                    if pvt_flow_on
+                    else 0
                 )
-                collector_input_temperature = collector_output_temperature
-                tank_temperature = b_0 / a_01
-                runs = 0
-                solution_found = True
+                + tank_environment_heat_transfer
+                * (temperatures[index] + ZERO_CELCIUS_OFFSET)
+                + tank_internal_energy
+                * (tank_temperature_map[index - 1] + ZERO_CELCIUS_OFFSET)
+                + (
+                    tank_load_enthalpy_transfer
+                    * (
+                        scenario.desalination_scenario.feedwater_supply_temperature
+                        + ZERO_CELCIUS_OFFSET
+                    )
+                    if desalination_plant_on
+                    else 0
+                ),
+                (
+                    (1 - minigrid.heat_exchanger.efficiency)
+                    * (collector_output_temperature + ZERO_CELCIUS_OFFSET)
+                ),
+            ]
+
+            matrix = [
+                [
+                    0,
+                    (
+                        (pvt_heat_transfer if pvt_flow_on else 0)
+                        + tank_environment_heat_transfer
+                        + tank_internal_energy
+                        + (tank_load_enthalpy_transfer if desalination_plant_on else 0)
+                    ),
+                ],
+                [-minigrid.heat_exchanger.efficiency, 1],
+            ]
+
+            collector_input_temperature, tank_temperature = linalg.solve(
+                a=matrix, b=resultant_vector
+            )
+
+            # Convert into Celcius.
+            collector_input_temperature -= ZERO_CELCIUS_OFFSET
+            tank_temperature -= ZERO_CELCIUS_OFFSET
 
             # If a solution has been found, then break the loop.
             if (
                 abs(
                     collector_input_temperature - best_guess_collector_input_temperature
                 )
+                < TEMPERATURE_PRECISION
+            ) and (
+                abs(tank_temperature - best_guess_tank_temperature)
                 < TEMPERATURE_PRECISION
             ):
                 runs = 0
@@ -300,14 +382,29 @@ def calculate_pvt_output(
             runs += 1
             if runs > 10:
                 logger.debug(
-                    "Index: %s: Run # %s: Solution not yet found, re-iterating: "
-                    "T_c,in=%s degC, T_tank=%s degC",
+                    "Index: %s: Run # %s: PV-T=%s, Plant=%s: Solution not yet found, "
+                    "re-iterating: T_c,in=%s degC, best-guess T_c,in=%s degC, "
+                    "T_tank=%s degC, best-guess T_tank=%s",
                     index,
                     runs,
-                    collector_input_temperature,
-                    tank_temperature,
+                    "on" if pvt_flow_on else "off",
+                    "on" if desalination_plant_on else "off",
+                    round(collector_input_temperature, 3),
+                    round(best_guess_collector_input_temperature, 3),
+                    round(tank_temperature, 3),
+                    round(best_guess_tank_temperature, 3),
                 )
+            # best_guess_collector_input_temperature += (TEMPERATURE_PRECISION / 2) * (
+            #     2
+            #     * (collector_input_temperature > best_guess_collector_input_temperature)
+            #     - 1
+            # )
+            # best_guess_tank_temperature += (TEMPERATURE_PRECISION / 2) * (
+            #     2 * (tank_temperature > best_guess_tank_temperature) - 1
+            # )
+
             best_guess_collector_input_temperature = collector_input_temperature
+            best_guess_tank_temperature = tank_temperature
 
         # Save the fractional electrical performance and output temp.
         pvt_collector_output_temperature_map[index] = collector_output_temperature
