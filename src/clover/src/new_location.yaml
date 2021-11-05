@@ -37,7 +37,15 @@
   contents:
     - directory: auto_generated
       contents:
+        - directory: clean_water
+          contents:
+            - directory: available_probability
+            - directory: available_times
         - directory: grid
+        - directory: hot_water
+          contents:
+            - directory: available_probability
+            - directory: available_times
         - directory: load
           contents:
             - directory: device_ownership
@@ -53,10 +61,6 @@
               contents:
                 - directory: device_load
         - directory: solar
-        - directory: water_source
-          contents:
-            - directory: available_probability
-            - directory: available_times
         - directory: weather
         - directory: wind
     - directory: inputs

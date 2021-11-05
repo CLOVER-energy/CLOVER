@@ -340,7 +340,7 @@ def _parse_battery_inputs(
 def _parse_conventional_water_source_inputs(
     inputs_directory_relative_path: str,
     logger: Logger,
-) -> Tuple[str, Set[load.load.Device]]:
+) -> Tuple[List[Dict[str, Any]], str, Set[load.load.Device]]:
     """
     Parses the device inputs file.
 
@@ -351,6 +351,7 @@ def _parse_conventional_water_source_inputs(
             The :class:`logging.Logger` to use for the run.
 
     Outputs:
+        - The raw water-source inputs information extracted from the input YAML file.
         - The relative path to the conventional-water-source inputs file;
         - A `set` of :class:`conversion.conversion.WaterSource` instances based on the
           input information provided.
@@ -361,15 +362,15 @@ def _parse_conventional_water_source_inputs(
         inputs_directory_relative_path,
         WATER_SOURCE_INPUTS_FILE,
     )
+    water_source_inputs = read_yaml(
+        water_source_inputs_filepath,
+        logger,
+    )
     water_sources: Set[WaterSource] = {
-        WaterSource.from_dict(entry, logger)
-        for entry in read_yaml(
-            water_source_inputs_filepath,
-            logger,
-        )
+        WaterSource.from_dict(entry, logger) for entry in water_source_inputs
     }
 
-    return water_source_inputs_filepath, water_sources
+    return water_source_inputs, water_source_inputs_filepath, water_sources
 
 
 def _parse_conversion_inputs(
@@ -1550,6 +1551,7 @@ def parse_input_files(
     if ResourceType.CLEAN_WATER in scenario.resource_types:
         # Parse the water-source inputs file.
         (
+            conventional_water_source_inputs,
             conventional_water_source_inputs_filepath,
             conventional_water_sources,
         ) = _parse_conventional_water_source_inputs(
@@ -1725,6 +1727,43 @@ def parse_input_files(
         finance_inputs[ImpactingComponent.HEAT_EXCHANGER.value] = exchanger_costs
         ghg_data[ImpactingComponent.HEAT_EXCHANGER.value] = exchanger_emissions
         logger.info("Heat-exchanger impact data successfully updated.")
+
+        logger.info("Updating with conventional water-source impact data.")
+        for source in conventional_water_sources:
+            try:
+                conventional_source_costs = [
+                    entry[COSTS]
+                    for entry in conventional_water_source_inputs
+                    if entry[NAME] == source.name
+                ][0]
+            except KeyError:
+                logger.error(
+                    "%sNo finance inputs for conventional source %s.%s",
+                    BColours.fail,
+                    source.name,
+                    BColours.endc,
+                )
+                raise
+            finance_inputs[
+                f"{ImpactingComponent.CONVENTIONAL_SOURCE.value}_{source.name}"
+            ] = conventional_source_costs
+            try:
+                conventional_source_emissions = [
+                    entry[EMISSIONS]
+                    for entry in conventional_water_source_inputs
+                    if entry[NAME] == source.name
+                ][0]
+            except KeyError:
+                logger.error(
+                    "%sNo ghg inputs for conventional source %s.%s",
+                    BColours.fail,
+                    source.name,
+                    BColours.endc,
+                )
+                raise
+            ghg_data[
+                f"{ImpactingComponent.CONVENTIONAL_SOURCE.value}_{source.name}"
+            ] = conventional_source_emissions
 
     # Generate a dictionary with information about the input files used.
     input_file_info: Dict[str, str] = {

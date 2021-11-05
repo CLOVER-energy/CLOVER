@@ -38,6 +38,7 @@ def _process_water_source_availability(
     *,
     availability: pd.DataFrame,
     generated_water_source_availability_directory: str,
+    keyword: str,
     location: Location,
     logger: Logger,
     regenerate: bool,
@@ -58,6 +59,8 @@ def _process_water_source_availability(
         - generated_water_source_availability_directory:
             The directory in which to store the generated water-source availability
             profiles.
+        - keyword:
+            A `str` used for logging purposes.
         - location:
             The location currently being considered.
         - logger:
@@ -71,7 +74,8 @@ def _process_water_source_availability(
     """
 
     logger.info(
-        "Water-source availability process instantiated for water-source %s.",
+        "%s water-source availability process instantiated for water-source %s.",
+        keyword,
         water_source.name,
     )
 
@@ -85,22 +89,26 @@ def _process_water_source_availability(
         with open(filepath, "r") as f:
             interpolated_daily_profile = pd.read_csv(f, header=None)
         logger.info(
-            "Daily water-source availability profile for %s successfully read from "
+            "Daily %s water-source availability profile for %s successfully read from "
             "file %s.",
+            keyword,
             water_source.name,
             filepath,
         )
 
     else:
         logger.info(
-            "Computing water-source availability profile for %s.", water_source.name
+            "Computing %s water-source availability profile for %s.",
+            keyword,
+            water_source.name,
         )
         interpolated_daily_profile = monthly_times_to_daily_times(
             availability,
             location.max_years,
         )
         logger.info(
-            "Daily water-source availability profile for %s successfully computed.",
+            "Daily %s water-source availability profile for %s successfully computed.",
+            keyword,
             water_source.name,
         )
 
@@ -108,7 +116,9 @@ def _process_water_source_availability(
         with open(filepath, "w") as f:
             interpolated_daily_profile.to_csv(f, header=None, index=False, line_terminator="")  # type: ignore
         logger.info(
-            "Daily water-source availability profile for %s successfully saved to %s.",
+            "Daily %s water-source availability profile for %s successfully saved to "
+            "%s.",
+            keyword,
             water_source.name,
             daily_times_filename,
         )
@@ -121,6 +131,7 @@ def _process_water_soure_hourly_probability(
     *,
     daily_water_source_availability: pd.DataFrame,
     generated_water_source_availability_directory: str,
+    keyword: str,
     logger: Logger,
     regenerate: bool,
     years: int,
@@ -137,6 +148,8 @@ def _process_water_soure_hourly_probability(
         - generated_water_source_availability_directory:
             The directory in which to store the generated water-source availability
             profiles.
+        - keyword:
+            A `str` used for logging purposes.
         - logger:
             The logger to use for the run.
         - regenerate:
@@ -158,7 +171,8 @@ def _process_water_soure_hourly_probability(
         with open(filepath, "r") as f:
             hourly_availability = pd.read_csv(f, header=None)
         logger.info(
-            "Hourly water-source availability for %s successfully read from file: %s",
+            "Hourly %s water-source availability for %s successfully read from file: %s",
+            keyword,
             water_source.name,
             filepath,
         )
@@ -184,9 +198,10 @@ def _process_water_soure_hourly_probability(
             )
         except ValueError as e:
             logger.error(
-                "%sError computing hourly water-source availability usage profile for "
-                "%s: type error in variables: %s%s",
+                "%sError computing hourly %s water-source availability usage profile "
+                "for %s: type error in variables: %s%s",
                 BColours.fail,
+                keyword,
                 water_source.name,
                 str(e),
                 BColours.endc,
@@ -194,13 +209,17 @@ def _process_water_soure_hourly_probability(
             raise
 
         logger.info(
-            "Hourly water-source availability profile for %s successfully calculated.",
+            "Hourly %s water-source availability profile for %s successfully "
+            "calculated.",
+            keyword,
             water_source.name,
         )
 
         # Save the hourly-usage profile.
         logger.info(
-            "Saving hourly water-source availability profile for %s.", water_source.name
+            "Saving hourly %s water-source availability profile for %s.",
+            keyword,
+            water_source.name,
         )
 
         with open(
@@ -210,7 +229,9 @@ def _process_water_soure_hourly_probability(
             hourly_availability.to_csv(f, header=None, index=False, line_terminator="")  # type: ignore
 
         logger.info(
-            "Hourly water-source availability proifle for %s successfully saved to %s.",
+            "Hourly %s water-source availability proifle for %s successfully saved to "
+            "%s.",
+            keyword,
             water_source.name,
             filename,
         )
@@ -220,6 +241,7 @@ def _process_water_soure_hourly_probability(
 
 def get_lifetime_water_source_status(
     generation_directory: str,
+    keyword: str,
     location: Location,
     logger: Logger,
     regenerate: bool,
@@ -231,6 +253,8 @@ def get_lifetime_water_source_status(
     Inputs:
         - generation_directory:
             The directory in which auto-generated files should be saved.
+        - keyword:
+            A `str` used for logging purposes.
         - location:
             The :class:`Location` being considered.
         - logger:
@@ -257,7 +281,7 @@ def get_lifetime_water_source_status(
 
     for source, availability in tqdm(
         water_source_times.items(),
-        desc="conventional water availability",
+        desc=f"conventional {keyword} water availability",
         leave=True,
         unit="source",
     ):
@@ -268,6 +292,7 @@ def get_lifetime_water_source_status(
             generated_water_source_availability_directory=os.path.join(
                 generation_directory, "available_times"
             ),
+            keyword=keyword,
             location=location,
             logger=logger,
             regenerate=regenerate,
@@ -280,6 +305,7 @@ def get_lifetime_water_source_status(
             generated_water_source_availability_directory=os.path.join(
                 generation_directory, "available_probability"
             ),
+            keyword=keyword,
             logger=logger,
             regenerate=regenerate,
             years=location.max_years,
