@@ -340,7 +340,7 @@ def _parse_battery_inputs(
 def _parse_conventional_water_source_inputs(
     inputs_directory_relative_path: str,
     logger: Logger,
-) -> Tuple[List[Dict[str, Any]], str, Set[load.load.Device]]:
+) -> Tuple[List[Dict[str, Any]], str, Set[WaterSource]]:
     """
     Parses the device inputs file.
 
@@ -1322,6 +1322,16 @@ def _parse_minigrid_inputs(
     )
     logger.info("Battery information successfully parsed.")
 
+    buffer_tank_costs: Optional[Dict[str, float]]
+    buffer_tank_emissions: Optional[Dict[str, float]]
+    clean_water_tank_costs: Optional[Dict[str, float]]
+    clean_water_tank_emissions: Optional[Dict[str, float]]
+    exchanger_costs: Optional[Dict[str, float]]
+    exchanger_emissions: Optional[Dict[str, float]]
+    exchanger_inputs: Optional[Dict[str, Any]]
+    exchanger_inputs_filepath: Optional[str]
+    tank_inputs: Optional[Dict[str, Any]]
+    tank_inputs_filepath: Optional[str]
     if scenario.desalination_scenario is not None:
         (
             buffer_tank_costs,
@@ -1704,6 +1714,8 @@ def parse_input_files(
     logger.info("Battery impact data successfully updated.")
 
     if minigrid.pvt_panel is not None and scenario.pv_t:
+        if pvt_panel_costs is None or pvt_panel_emissions is None:
+            raise InternalError("Error processing PV-T panel cost and emissions.")
         finance_inputs[ImpactingComponent.PV_T.value] = pvt_panel_costs
         ghg_data[ImpactingComponent.PV_T.value] = pvt_panel_emissions
     else:
@@ -1719,17 +1731,22 @@ def parse_input_files(
         and scenario.desalination_scenario.pvt_scenario.heats == HTFMode.CLOSED_HTF
     ):
         logger.info("Updating with hot-water tank impact data.")
+        if buffer_tank_costs is None or buffer_tank_emissions is None:
+            raise InternalError("Error processing buffer-tank cost and emissions.")
         finance_inputs[ImpactingComponent.BUFFER_TANK.value] = buffer_tank_costs
         ghg_data[ImpactingComponent.BUFFER_TANK.value] = buffer_tank_emissions
         logger.info("Hot-water tank impact data successfully updated.")
 
         logger.info("Updating with heat-exchanger impact data.")
+        if exchanger_costs is None or exchanger_emissions is None:
+            raise InternalError("Error processing heat-exchanger cost and emissions.")
         finance_inputs[ImpactingComponent.HEAT_EXCHANGER.value] = exchanger_costs
         ghg_data[ImpactingComponent.HEAT_EXCHANGER.value] = exchanger_emissions
         logger.info("Heat-exchanger impact data successfully updated.")
 
         logger.info("Updating with conventional water-source impact data.")
         for source in conventional_water_sources:
+            conventional_source_costs: Dict[str, float]
             try:
                 conventional_source_costs = [
                     entry[COSTS]
@@ -1747,6 +1764,7 @@ def parse_input_files(
             finance_inputs[
                 f"{ImpactingComponent.CONVENTIONAL_SOURCE.value}_{source.name}"
             ] = conventional_source_costs
+            conventional_source_emissions: Dict[str, float]
             try:
                 conventional_source_emissions = [
                     entry[EMISSIONS]

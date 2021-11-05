@@ -20,7 +20,7 @@ import sys
 from .new_location import main as new_location_main
 
 
-def main():
+def main() -> None:
     """
     Main function of the new-location entry-point script.
 
