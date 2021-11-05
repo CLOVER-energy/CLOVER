@@ -40,6 +40,7 @@ __all__ = (
     "CUT_OFF_TIME",
     "daily_sum_to_monthly_sum",
     "DemandType",
+    "dict_to_dataframe",
     "DieselMode",
     "DONE",
     "ELECTRIC_POWER",
@@ -313,6 +314,38 @@ class DemandType(enum.Enum):
     COMMERCIAL = "commercial"
     DOMESTIC = "domestic"
     PUBLIC = "public"
+
+
+def dict_to_dataframe(
+    input_dict: Dict[int, float], logger: logging.Logger
+) -> pd.DataFrame:
+    """
+    Converts a `dict` to a :class:`pandas.DataFrame`.
+
+    Inputs:
+        - input_dict:
+            The input `dict` do convert.
+        - logger:
+            The :class:`logging.Logger` to use for the run.
+
+    Outputs:
+        The converted :class:`pandas.DataFrame`.
+
+    """
+
+    if not isinstance(input_dict, dict):
+        logger.error(
+            "%sThe `dict_to_dataframe` function can only be called with a `dict`.%s",
+            BColours.fail,
+            BColours.endc,
+        )
+        raise InternalError(
+            f"Misuse of internal helper functions. See {LOGGER_DIRECTORY} for details."
+        )
+
+    return pd.DataFrame(  # type: ignore
+        list(input_dict.values()), index=list(input_dict.keys())
+    ).sort_index()
 
 
 class DieselMode(enum.Enum):
