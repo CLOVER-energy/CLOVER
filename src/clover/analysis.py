@@ -1202,7 +1202,7 @@ def plot_outputs(
             tank_storage = np.mean(
                 np.reshape(
                     simulation_output[0:HOURS_PER_YEAR][
-                        "Water held in storage tanks (l)"
+                        "Water held in clean-water storage tanks (l)"
                     ].values,
                     (365, 24),
                 ),
@@ -1321,7 +1321,7 @@ def plot_outputs(
             tank_storage = np.mean(
                 np.reshape(
                     simulation_output[HOURS_UNTIL_JULY : HOURS_UNTIL_JULY + 31 * 24][
-                        "Water held in storage tanks (l)"
+                        "Water held in clean-water storage tanks (l)"
                     ].values,
                     (31, 24),
                 ),
@@ -1442,7 +1442,7 @@ def plot_outputs(
             tank_storage = np.mean(
                 np.reshape(
                     simulation_output[0 : 24 * 31][
-                        "Water held in storage tanks (l)"
+                        "Water held in clean-water storage tanks (l)"
                     ].values,
                     (31, 24),
                 ),
@@ -1513,7 +1513,7 @@ def plot_outputs(
                 "Clean water supplied via tank storage (l)"
             ]
             tank_storage = simulation_output.iloc[0:24][
-                "Water held in storage tanks (l)"
+                "Water held in clean-water storage tanks (l)"
             ]
             total_load = simulation_output.iloc[0:24]["Total clean water demand (l)"]
             total_used = simulation_output.iloc[0:24]["Total clean water supplied (l)"]
@@ -1559,7 +1559,7 @@ def plot_outputs(
                 "Clean water supplied via tank storage (l)"
             ]
             tank_storage = simulation_output.iloc[0:48][
-                "Water held in storage tanks (l)"
+                "Water held in clean-water storage tanks (l)"
             ]
             total_load = simulation_output.iloc[0:48]["Total clean water demand (l)"]
             total_used = simulation_output.iloc[0:48]["Total clean water supplied (l)"]

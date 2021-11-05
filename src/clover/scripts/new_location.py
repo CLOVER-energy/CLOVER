@@ -220,9 +220,7 @@ def create_new_location(
     # Read the location data.
     logger.info("Attempting to read location data from installed package info.")
     try:
-        new_location_data = yaml.safe_load(
-            pkgutil.get_data(PACKAGE_NAME, NEW_LOCATION_DATA_FILE)
-        )
+        package_data = pkgutil.get_data(PACKAGE_NAME, NEW_LOCATION_DATA_FILE)
     except AttributeError:
         logger.info("Failed to read data as if package was installed.")
         logger.info("Attempting to read location data from raw source file.")
@@ -236,6 +234,9 @@ def create_new_location(
             raise
         logger.info("Successfully read location data file form local source.")
     else:
+        if package_data is None:
+            raise Exception("Package data read but no data within file.")
+        new_location_data = yaml.safe_load(package_data)
         logger.info("Successfully read location data file form installed package file.")
     logger.info("Data file successfully read.")
 

@@ -22,7 +22,7 @@ import sys
 from .update_api_token import main as update_api_token_main
 
 
-def main():
+def main() -> None:
     """
     Main function of the update-api-token entry-point script.
 

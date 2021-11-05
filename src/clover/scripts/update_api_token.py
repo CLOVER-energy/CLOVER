@@ -20,7 +20,7 @@ import argparse
 import os
 import sys
 
-from typing import Any, List
+from typing import Any, Dict, List, Union
 
 import yaml  # type: ignore  # pylint: disable=import-error
 
@@ -93,8 +93,9 @@ def main(args: List[Any]) -> None:
         )
 
     # Attempt to update the token.
+    filedata: Dict[str, Union[int, str]]
     try:
-        filedata = read_yaml(generation_file_path, logger)
+        filedata = read_yaml(generation_file_path, logger)  # type: ignore
     except Exception:
         logger.error("Error reading generation inputs file '%s'.", generation_file_path)
         raise

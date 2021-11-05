@@ -343,6 +343,9 @@ class ThermalDesalinationPlant(MultiInputConvertor):
     """
     Represents a thermal desalination plant.
 
+    .. attribute:: htf_mode
+        The mode of inputting HTF to the thermal desalination plant.
+
     .. attribute:: maximum_htf_temperature
         The maximum temperature of HTF allowed by the plant, measured in degrees
         Celcius.
@@ -358,6 +361,7 @@ class ThermalDesalinationPlant(MultiInputConvertor):
 
     def __init__(
         self,
+        htf_mode: HTFMode,
         input_resource_consumption: Dict[ResourceType, float],
         maximum_output_capacity: float,
         maximum_htf_temperature: float,
@@ -370,9 +374,8 @@ class ThermalDesalinationPlant(MultiInputConvertor):
         Instantiate a :class:`Convertor` instance.
 
         Inputs:
-            - consunmption:
-                The amount of input load type which is consumed per unit output load
-                produced.
+            - htf_mode:
+                The mode of inputting heat to the plant.
             - input_resource_types:
                 The types of load inputted to the device.
             - maximum_output_capcity:
@@ -392,15 +395,17 @@ class ThermalDesalinationPlant(MultiInputConvertor):
 
         """
 
-        self.input_resource_consumption: Dict[
-            ResourceType, float
-        ] = input_resource_consumption
-        self.maximum_output_capacity: float = maximum_output_capacity
+        super().__init__(
+            input_resource_consumption,
+            maximum_output_capacity,
+            name,
+            output_resource_type,
+        )
+
+        self.htf_mode = htf_mode
         self.maximum_htf_temperature: float = maximum_htf_temperature
         self.minimum_htf_temperature: float = minimum_htf_temperature
         self.minimum_output_capacity: float = minimum_output_capacity
-        self.name: str = name
-        self.output_resource_type: ResourceType = output_resource_type
 
     @classmethod
     def from_dict(cls, input_data: Dict[Union[int, str], Any], logger: Logger) -> Any:
@@ -477,7 +482,7 @@ class ThermalDesalinationPlant(MultiInputConvertor):
                 ) from None
 
         try:
-            input_resource = HTFMode(input_data[HEAT_SOURCE])
+            htf_mode = HTFMode(input_data[HEAT_SOURCE])
         except KeyError:
             logger.info(
                 "%sThe convertor, %s, did not specify the source of heat. Cannot "
@@ -490,6 +495,7 @@ class ThermalDesalinationPlant(MultiInputConvertor):
             raise
 
         return cls(
+            htf_mode,
             input_resource_consumption,
             maximum_output,
             float(input_data[MAXIMUM_HTF_TEMPERATURE]),
