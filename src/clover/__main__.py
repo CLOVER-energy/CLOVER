@@ -982,6 +982,7 @@ def main(args: List[Any]) -> None:
                     system_performance_outputs,
                     system_details,
                 ) = energy_system.run_simulation(
+                    conventional_clean_water_source_profiles,
                     convertors,
                     parsed_args.storage_size,
                     grid_profile,

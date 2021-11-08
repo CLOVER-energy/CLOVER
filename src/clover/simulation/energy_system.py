@@ -135,7 +135,7 @@ def _calculate_backup_diesel_generator_usage(
     minigrid: Minigrid,
     scenario: Scenario,
     unmet_energy: pd.DataFrame,
-) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+) -> Tuple[float, pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """
     Calculates the backup diesel generator usage based on the scenario.
 
@@ -148,6 +148,19 @@ def _calculate_backup_diesel_generator_usage(
             The :class:`Scenario` being used for the run.
         - unmet_energy:
             The energy demand which went unmet through renewables.
+
+    Outputs:
+        - diesel_capacity:
+            The capacity of diesel that needed to be installed to meet the demand.
+        - diesel_energy:
+            The total energy that was supplied by the diesel system.
+        - diesel_fuel_usage:
+            The total amount of fuel that was consumed byt he diesel generators.
+        - diesel_times: 
+            The times forw hich the diesel generator was operating.
+        - unmet_energy:
+            The remaining energy demand which went uynmet after the diesel generator
+            fulfilled demand to the :class:`Scenario`'s specification.
 
     """
 
@@ -180,7 +193,7 @@ def _calculate_backup_diesel_generator_usage(
     unmet_energy = pd.DataFrame(unmet_energy.values - diesel_energy.values)
     diesel_energy = diesel_energy.abs()  # type: ignore
 
-    return diesel_energy, diesel_fuel_usage, unmet_energy
+    return diesel_capacity, diesel_energy, diesel_fuel_usage, diesel_times, unmet_energy
 
 
 def _calculate_electric_desalination_parameters(
@@ -475,6 +488,13 @@ def _calculate_pvt_and_thermal_desalination_profiles(
             ).values
         )
 
+        buffer_tank_temperature = buffer_tank_temperature.reset_index(drop=True)
+        pvt_collector_output_temperature = pvt_collector_output_temperature.reset_index(drop=True)
+        pvt_electric_power_per_unit = pvt_electric_power_per_unit.reset_index(drop=True)
+        renewable_clean_water_produced = renewable_clean_water_produced.reset_index(drop=True)
+        tank_volume_supplied = tank_volume_supplied.reset_index(drop=True)
+        thermal_desalination_electric_power_consumed = thermal_desalination_electric_power_consumed.reset_index(drop=True)
+
     else:
         buffer_tank_temperature = None
         feedwater_sources = []
@@ -642,16 +662,13 @@ def _clean_water_tank_iteration_step(
 
         # If there is still unmet water demand, then carry out desalination and
         # pumping to fulfil the demand.
+        current_unmet_water_demand: float = -current_hourly_clean_water_tank_storage
         if (
-            current_hourly_clean_water_tank_storage < 0
+            current_unmet_water_demand > 0
             and scenario.desalination_scenario is not None
             and scenario.desalination_scenario.clean_water_scenario.mode
             == CleanWaterMode.PRIORITISE
         ):
-            # If there is unmet demand, then carry out desalination and pumping to
-            # fulfil the demand.
-            current_unmet_water_demand = -current_hourly_clean_water_tank_storage
-
             # Compute the electricity consumed meeting this demand.
             energy_consumed = energy_per_desalinated_litre * current_unmet_water_demand
 
@@ -676,8 +693,11 @@ def _clean_water_tank_iteration_step(
         # sources if available.
         if current_unmet_water_demand > 0:
             # Compute the clean water supplied using convnetional sources.
-            conventional_clean_water_available = sum(
-                conventional_clean_water_source_profiles.iloc[time_index]
+            conventional_clean_water_available = float(
+                sum(
+                    entry.iloc[time_index]
+                    for entry in conventional_clean_water_source_profiles.values()
+                )
             )
             conventional_clean_water_supplied = min(
                 conventional_clean_water_available, current_unmet_water_demand
@@ -734,6 +754,8 @@ def _get_electric_battery_storage_profile(
     pd.DataFrame,
     pd.DataFrame,
     pd.DataFrame,
+    pd.DataFrame,
+    pd.DataFrame,
     Dict[SolarPanelType, pd.DataFrame],
     pd.DataFrame,
 ]:
@@ -753,7 +775,8 @@ def _get_electric_battery_storage_profile(
             The total electric load for the system.
         - renewables_power_produced:
             The total electric power produced, per renewable type, as a mapping between
-            :class:`SolarPanelType` and :class:`pandas.DataFrame` instances.
+            :class:`SolarPanelType` and :class:`pandas.DataFrame` instances, with units
+            of technology size.
         - scenario:
             The scenatio being considered.
         - end_year:
@@ -774,6 +797,10 @@ def _get_electric_battery_storage_profile(
             Number of kerosene lamps in use (if no power available).
         - load_energy:
             Amount of energy (kWh) required to satisfy the loads.
+        - pvt_energy:
+            Amount of energy (kWh) provided by PV to the system.
+        - pvt_energy:
+            Amount of electric energy (kWh) provided by PV-T to the system.
         - renewables_energy:
             Amount of energy (kWh) provided by renewables to the system.
         - renewables_energy_map:
@@ -866,6 +893,7 @@ def _get_electric_battery_storage_profile(
         processed_total_electric_load / transmission_efficiency  # type: ignore
     )
     pv_energy = pv_generation * transmission_efficiency
+
     if pvt_electric_generation is not None:
         pvt_electric_energy: pd.DataFrame = (
             pvt_electric_generation * transmission_efficiency
@@ -923,6 +951,8 @@ def _get_electric_battery_storage_profile(
     kerosene_usage.columns = pd.Index(["Kerosene lamps"])
     load_energy.columns = pd.Index(["Load energy (kWh)"])
     renewables_energy.columns = pd.Index(["Renewables energy supplied (kWh)"])
+    renewables_energy_map[SolarPanelType.PV].columns = pd.Index(["PV energy supplied (kWh)"])
+    renewables_energy_map[SolarPanelType.PV_T].columns = pd.Index(["PV-T electric energy supplied (kWh)"])
     renewables_energy_used_directly.columns = pd.Index(["Renewables energy used (kWh)"])
 
     return (
@@ -1032,6 +1062,7 @@ def _get_water_storage_profile(
 def _setup_tank_storage_profiles(
     logger: Logger,
     number_of_tanks: int,
+    power_consumed: pd.DataFrame,
     resource_type: ResourceType,
     scenario: Scenario,
     tank: Optional[CleanWaterTank],
@@ -1044,6 +1075,9 @@ def _setup_tank_storage_profiles(
             The :class:`logging.Logger` to use for the run.
         - number_of_tanks:
             The number of tanks of this type to use for the run.
+        - power_consumed:
+            The electric power consumed associated with the storage of these
+            :class:`ResourceType` tanks.
         - resource_type:
             The :class:`ResourceType` held within the :class:`CleanWaterTank`.
         - scenario:
@@ -1194,7 +1228,7 @@ def _update_battery_health(
             - hourly_battery_storage[time_index],
             0.0,
         )
-    cumulative_battery_storage_power += storage_power_supplied[t]
+    cumulative_battery_storage_power += storage_power_supplied[time_index]
 
     battery_storage_degradation = 1.0 - minigrid.battery.lifetime_loss * (
         cumulative_battery_storage_power / maximum_battery_energy_throughput
@@ -1217,6 +1251,7 @@ def _update_battery_health(
 
 
 def run_simulation(
+    conventional_clean_water_source_profiles: Dict[WaterSource, pd.DataFrame],
     convertors: List[Convertor],
     electric_storage_size: float,
     grid_profile: pd.DataFrame,
@@ -1242,8 +1277,9 @@ def run_simulation(
     stated in the input files.
 
     Inputs:
-        - conventional_clean_water_profiles:
-            A mapping between
+        - conventional_clean_water_source_profiles:
+            A mapping between :class:`WaterSource` instances and the associated water
+            that can be drawn from the source throughout the duration of the simulation.
         - convertors:
             The `list` of :class:`Convertor` instances available to be used.
         - diesel_generator:
@@ -1452,6 +1488,7 @@ def run_simulation(
                 + f"but no hot-water load was passed in.{BColours.endc}"
             )
         # Process the load profile based on the relevant scenario.
+        hot_water_power_consumed = pd.DataFrame([0] * (end_hour - start_hour))
         number_of_hot_water_tanks: int = 0
         processed_total_hot_water_load = pd.DataFrame(
             _get_processed_load_profile(scenario, total_hot_water_load)[
@@ -1459,6 +1496,7 @@ def run_simulation(
             ].values
         )
     else:
+        hot_water_power_consumed = pd.DataFrame([0] * (end_hour - start_hour))
         number_of_hot_water_tanks = 0
         processed_total_hot_water_load = None
 
@@ -1486,7 +1524,10 @@ def run_simulation(
     kerosene_profile: pd.DataFrame
     load_energy: pd.DataFrame
     renewables_energy: pd.DataFrame
-    renewables_energy_map: Dict[SolarPanelType, pd.DataFrame]
+    renewables_energy_map: Dict[SolarPanelType, pd.DataFrame] = {
+        SolarPanelType.PV: pv_power_produced,
+        SolarPanelType.PV_T: pvt_electric_power_per_unit,
+    }
     renewables_energy_used_directly: pd.DataFrame
     (
         battery_storage_profile,
@@ -1553,6 +1594,7 @@ def run_simulation(
     ) = _setup_tank_storage_profiles(
         logger,
         number_of_clean_water_tanks,
+        clean_water_power_consumed,
         ResourceType.CLEAN_WATER,
         scenario,
         minigrid.clean_water_tank,
@@ -1567,6 +1609,7 @@ def run_simulation(
     ) = _setup_tank_storage_profiles(
         logger,
         number_of_hot_water_tanks,
+        hot_water_power_consumed,
         ResourceType.HOT_CLEAN_WATER,
         scenario,
         minigrid.hot_water_tank,
@@ -1684,42 +1727,42 @@ def run_simulation(
             )
 
     # Process the various outputs into dataframes.
-    battery_health_frame: pd.DataFrame = dict_to_dataframe(battery_health)
+    battery_health_frame: pd.DataFrame = dict_to_dataframe(battery_health, logger)
     # energy_deficit_frame: pd.DataFrame = dict_to_dataframe(energy_deficit)
-    energy_surplus_frane: pd.DataFrame = dict_to_dataframe(energy_surplus)
+    energy_surplus_frane: pd.DataFrame = dict_to_dataframe(energy_surplus, logger)
     hourly_battery_storage_frame: pd.DataFrame = dict_to_dataframe(
-        hourly_battery_storage
+        hourly_battery_storage, logger
     )
     storage_power_supplied_frame: pd.DataFrame = dict_to_dataframe(
-        storage_power_supplied
+        storage_power_supplied, logger
     )
 
     if ResourceType.CLEAN_WATER in scenario.resource_types:
         backup_desalinator_water_frame: pd.DataFrame = dict_to_dataframe(
-            backup_desalinator_water_supplied
+            backup_desalinator_water_supplied, logger
         )
         clean_water_demand_met_by_excess_energy: pd.DataFrame = dict_to_dataframe(
-            clean_water_demand_met_by_excess_energy
+            clean_water_demand_met_by_excess_energy, logger
         )
         clean_water_power_consumed: pd.DataFrame = dict_to_dataframe(
-            clean_water_power_consumed_mapping
+            clean_water_power_consumed_mapping, logger
         )
         clean_water_supplied_by_excess_energy_frame: pd.DataFrame = dict_to_dataframe(
-            clean_water_supplied_by_excess_energy
+            clean_water_supplied_by_excess_energy, logger
+        )
+        conventional_clean_water_supplied_frame: pd.DataFrame = dict_to_dataframe(
+            conventional_water_supplied, logger
         )
         excess_energy_used_desalinating_frame: pd.DataFrame = dict_to_dataframe(
-            excess_energy_used_desalinating
+            excess_energy_used_desalinating, logger
         )
         hourly_clean_water_tank_storage_frame: pd.DataFrame = dict_to_dataframe(
-            hourly_clean_water_tank_storage
-        )
-        pvt_collector_output_temperature: pd.DataFrame = dict_to_dataframe(
-            pvt_collector_output_temperature
+            hourly_clean_water_tank_storage, logger
         )
         storage_water_supplied_frame: pd.DataFrame = dict_to_dataframe(
-            storage_water_supplied
+            storage_water_supplied, logger
         )
-        water_surplus_frame: pd.DataFrame = dict_to_dataframe(water_surplus)
+        water_surplus_frame: pd.DataFrame = dict_to_dataframe(water_surplus, logger)
 
     # Find unmet energy
     unmet_energy = pd.DataFrame(
@@ -1735,11 +1778,16 @@ def run_simulation(
     blackout_times = ((unmet_energy > 0) * 1).astype(float)
 
     # Use backup diesel generator
+    diesel_energy: pd.DataFrame
+    diesel_fuel_usage: pd.DataFrame
+    diesel_times: pd.DataFrame
     if scenario.diesel_scenario.mode == DieselMode.BACKUP:
         diesel_fuel_usage: pd.DataFrame
         (
+            diesel_capacity,
             diesel_energy,
             diesel_fuel_usage,
+            diesel_times,
             unmet_energy,
         ) = _calculate_backup_diesel_generator_usage(
             blackout_times, minigrid, scenario, unmet_energy
@@ -1842,6 +1890,9 @@ def run_simulation(
         clean_water_power_consumed.columns = pd.Index(
             ["Power consumed providing clean water (kWh)"]
         )
+        conventional_clean_water_supplied_frame.columns = pd.Index(
+            ["Clean water supplied via conventional sources (l)"]
+        )
         excess_energy_used_desalinating_frame.columns = pd.Index(
             ["Excess power consumed desalinating clean water (kWh)"]
         )
@@ -1898,19 +1949,19 @@ def run_simulation(
         )
 
     # System performance outputs
-    blackout_times.columns = pd.Index(["Blackouts"])
-    hourly_battery_storage_frame.columns = pd.Index(["Hourly storage (kWh)"])
-    energy_surplus_frane.columns = pd.Index(["Dumped energy (kWh)"])
-    unmet_energy.columns = pd.Index(["Unmet energy (kWh)"])
-    storage_power_supplied_frame.columns = pd.Index(["Storage energy supplied (kWh)"])
-    diesel_energy.columns = pd.Index(["Diesel energy (kWh)"])
     battery_health_frame.columns = pd.Index(["Battery health"])
-    diesel_times.columns = pd.Index(["Diesel times"])
+    blackout_times.columns = pd.Index(["Blackouts"])
     diesel_fuel_usage.columns = pd.Index(["Diesel fuel usage (l)"])
+    diesel_times.columns = pd.Index(["Diesel times"])
+    energy_surplus_frane.columns = pd.Index(["Dumped energy (kWh)"])
+    hourly_battery_storage_frame.columns = pd.Index(["Hourly storage (kWh)"])
     households.columns = pd.Index(["Households"])
-    kerosene_usage.columns = pd.Index(["Kerosene lamps"])
+    diesel_energy.columns = pd.Index(["Diesel energy (kWh)"])
     kerosene_mitigation.columns = pd.Index(["Kerosene mitigation"])
+    kerosene_usage.columns = pd.Index(["Kerosene lamps"])
+    storage_power_supplied_frame.columns = pd.Index(["Storage energy supplied (kWh)"])
     total_energy_used.columns = pd.Index(["Total energy used (kWh)"])
+    unmet_energy.columns = pd.Index(["Unmet energy (kWh)"])
 
     # System details
     system_details = SystemDetails(
@@ -1960,8 +2011,8 @@ def run_simulation(
     )
 
     # Separate out the various renewable inputs.
-    pv_energy = renewables_energy_map[SolarPanelType.PV]
-    pvt_energy = renewables_energy_map[SolarPanelType.PV_T]
+    pv_energy = renewables_energy_map[SolarPanelType.PV].loc[start_hour:end_hour]
+    pvt_energy = renewables_energy_map[SolarPanelType.PV_T].loc[start_hour:end_hour]
 
     # End simulation timer
     timer_end = datetime.datetime.now()
@@ -1997,6 +2048,7 @@ def run_simulation(
                 buffer_tank_temperature,
                 clean_water_blackout_times,
                 clean_water_power_consumed,
+                conventional_clean_water_supplied_frame,
                 excess_energy_used_desalinating_frame,
                 hourly_clean_water_tank_storage_frame,
                 power_used_on_electricity,
