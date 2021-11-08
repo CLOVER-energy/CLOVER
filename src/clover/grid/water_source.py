@@ -315,6 +315,8 @@ def get_lifetime_water_source_status(
             years=location.max_years,
         )
 
-        water_source_profiles[source] = hourly_availability * source.maximum_output
+        water_source_profiles[source] = (
+            hourly_availability * source.maximum_output_capacity
+        )
 
     return water_source_profiles
