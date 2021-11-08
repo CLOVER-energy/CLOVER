@@ -275,7 +275,7 @@ def _prepate_water_system(
         ) = load.process_load_profiles(
             auto_generated_files_directory,
             device_utilisations,
-            load.ResourceType.HOT_CLEAN_WATER,
+            resource_type,
             location,
             logger,
             parsed_args.regenerate,
