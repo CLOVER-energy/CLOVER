@@ -26,11 +26,13 @@ import os
 import sys
 
 from argparse import Namespace
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 import pandas as pd  # type: ignore  # pylint: disable=import-error
 
-from tqdm import tqdm  # type: ignore  # pylint: disable=import-error
+from tqdm import tqdm
+
+from clover.conversion.conversion import WaterSource  # type: ignore  # pylint: disable=import-error
 
 from . import analysis, argparser
 from .fileparser import (
@@ -52,6 +54,7 @@ from .__utils__ import (
     ELECTRIC_POWER,
     FAILED,
     InternalError,
+    Location,
     ResourceType,
     get_logger,
     InputFileError,
@@ -187,6 +190,173 @@ def _prepare_location(location: str, logger: logging.Logger):
         )
         new_location.create_new_location(None, location, logger, True)
         logger.info("%s succesfully updated with missing files.", location)
+
+
+def _prepate_water_system(
+    auto_generated_files_directory: str,
+    device_utilisations: Dict[load.Device, pd.DataFrame],
+    location: Location,
+    logger: logging.Logger,
+    parsed_args: Namespace,
+    resource_type: ResourceType,
+    water_source_times: Dict[WaterSource, pd.DataFrame],
+) -> Tuple[
+    Dict[WaterSource, pd.DataFrame], pd.DataFrame, Dict[str, pd.DataFrame], pd.DataFrame
+]:
+    """
+    Prepares the conventional-water system.
+
+    Inputs:
+        - auto_generated_files_directory:
+            The directory into which auto-generated files should be saved.
+        - device_utilisations:
+            The utilisation profile for each :class:`load.Device` being modelled.
+        - location:
+            The :class:`Location` being considered.
+        - logger:
+            The :class:`logging.Logger` to use for the run.
+        - parsed_args:
+            The parsed command-line arguments.
+        - resource_type:
+            The :class:`ResourceType` being considered.
+        - water_source_times:
+            The availability profile of each :class:`WaterSource` being considered.
+
+    Outputs:
+        - conventional_water_source_profiles:
+            The availability profiles of the conventional water sources being
+            considered.
+        - initial_loads:
+            The initial hourly loads placed on the conventional water system.
+        - total_load:
+            The total water load for each load type placed on the conventional water
+            system.
+        - yearly_load_statistics:
+            The yearly load statistics for the conventional water system being
+            considered.
+
+    """
+    # Raise an error if there are no water devices specified.
+    if (
+        resource_type == ResourceType.HOT_CLEAN_WATER
+        and (
+            len(
+                {
+                    device
+                    for device in device_utilisations
+                    if device.hot_water_usage is not None
+                }
+            )
+            == 0
+        )
+        or resource_type == ResourceType.CLEAN_WATER
+        and (
+            len(
+                {
+                    device
+                    for device in device_utilisations
+                    if device.clean_water_usage is not None
+                }
+            )
+            == 0
+        )
+    ):
+        raise InputFileError(
+            "devices input flie",
+            f"No {resource_type.value} input devices were specified despite the "
+            + "scenario containing a clean-water system.",
+        )
+
+    try:
+        (
+            initial_loads,
+            total_load,
+            yearly_load_statistics,
+        ) = load.process_load_profiles(
+            auto_generated_files_directory,
+            device_utilisations,
+            load.ResourceType.HOT_CLEAN_WATER,
+            location,
+            logger,
+            parsed_args.regenerate,
+        )
+    except InputFileError:
+        print(
+            "Generating necessary profiles .................................    "
+            + f"{FAILED}"
+        )
+        raise
+    except Exception as e:
+        print(
+            "Generating necessary profiles .................................    "
+            + f"{FAILED}"
+        )
+        logger.error(
+            "%sAn unexpected error occurred generating the %s load profiles. See %s "
+            "for details: %s%s",
+            BColours.fail,
+            resource_type.value,
+            "{}.log".format(os.path.join(LOGGER_DIRECTORY, LOGGER_NAME)),
+            str(e),
+            BColours.endc,
+        )
+        raise
+
+    # Generate the conventional-clean-water source availability profiles.
+    logger.info(
+        "Generating conventional %s water-source availability profiles.",
+        resource_type.value,
+    )
+    try:
+        conventional_water_source_profiles = (
+            water_source.get_lifetime_water_source_status(
+                os.path.join(auto_generated_files_directory, resource_type.value),
+                resource_type.value.split("_")[0],
+                location,
+                logger,
+                parsed_args.regenerate,
+                water_source_times,
+            )
+        )
+    except InputFileError:
+        print(
+            "Generating necessary profiles .................................    "
+            + f"{FAILED}"
+        )
+        raise
+    except Exception as e:
+        print(
+            "Generating necessary profiles .................................    "
+            + f"{FAILED}"
+        )
+        logger.error(
+            "%sAn unexpected error occurred generating the conventional %s "
+            "water-source profiles. See %s for details: %s%s",
+            BColours.fail,
+            resource_type.value,
+            "{}.log".format(os.path.join(LOGGER_DIRECTORY, LOGGER_NAME)),
+            str(e),
+            BColours.endc,
+        )
+        raise
+
+    logger.info(
+        "Conventional %s water sources successfully parsed.", resource_type.value
+    )
+    logger.debug(
+        "Conventional %s water sources: %s",
+        resource_type.value,
+        ", ".join(
+            [str(source) for source in conventional_water_source_profiles.keys()]
+        ),
+    )
+
+    return (
+        conventional_water_source_profiles,
+        initial_loads,
+        total_load,
+        yearly_load_statistics,
+    )
 
 
 def main(args: List[Any]) -> None:
@@ -522,210 +692,50 @@ def main(args: List[Any]) -> None:
             )
             raise
 
+    clean_water_yearly_load_statistics: Optional[pd.DataFrame] = None
+    conventional_clean_water_source_profiles: Optional[
+        Dict[WaterSource, pd.DataFrame]
+    ] = None
     initial_clean_water_hourly_loads: Optional[Dict[str, pd.DataFrame]] = None
     total_clean_water_load: Optional[pd.DataFrame] = None
-    clean_water_yearly_load_statistics: Optional[  # pylint: disable=unused-variable
-        pd.DataFrame
-    ] = None
 
     if ResourceType.CLEAN_WATER in scenario.resource_types:
-        # Raise an error if there are no clean-water devices specified.
-        if (
-            len(
-                {
-                    device
-                    for device in device_utilisations
-                    if device.clean_water_usage is not None
-                }
-            )
-            == 0
-        ):
-            raise InputFileError(
-                "devices input flie",
-                "No clean-water input devices were specified despite the scenario "
-                "containing a clean-water system.",
-            )
-
-        try:
-            (
-                initial_clean_water_hourly_loads,
-                total_clean_water_load,
-                clean_water_yearly_load_statistics,
-            ) = load.process_load_profiles(
-                auto_generated_files_directory,
-                device_utilisations,
-                load.ResourceType.CLEAN_WATER,
-                location,
-                logger,
-                parsed_args.regenerate,
-            )
-        except InputFileError:
-            print(
-                "Generating necessary profiles .................................    "
-                + f"{FAILED}"
-            )
-            raise
-        except Exception as e:
-            print(
-                "Generating necessary profiles .................................    "
-                + f"{FAILED}"
-            )
-            logger.error(
-                "%sAn unexpected error occurred generating the clean-water load "
-                "profiles. See %s for details: %s%s",
-                BColours.fail,
-                "{}.log".format(os.path.join(LOGGER_DIRECTORY, LOGGER_NAME)),
-                str(e),
-                BColours.endc,
-            )
-            raise
-
-        # Generate the conventional-clean-water source availability profiles.
-        logger.info("Generating conventional-water-source availability profiles.")
-        try:
-            conventional_clean_water_source_profiles = (
-                water_source.get_lifetime_water_source_status(
-                    os.path.join(auto_generated_files_directory, "clean_water"),
-                    "clean",
-                    location,
-                    logger,
-                    parsed_args.regenerate,
-                    water_source_times,
-                )
-            )
-        except InputFileError:
-            print(
-                "Generating necessary profiles .................................    "
-                + f"{FAILED}"
-            )
-            raise
-        except Exception as e:
-            print(
-                "Generating necessary profiles .................................    "
-                + f"{FAILED}"
-            )
-            logger.error(
-                "%sAn unexpected error occurred generating the conventional "
-                "water-source profiles. See %s for details: %s%s",
-                BColours.fail,
-                "{}.log".format(os.path.join(LOGGER_DIRECTORY, LOGGER_NAME)),
-                str(e),
-                BColours.endc,
-            )
-            raise
-
-        logger.info("Conventional water sources successfully parsed.")
-        logger.debug(
-            "Conventional water sources: %s",
-            ", ".join(
-                [
-                    str(source)
-                    for source in conventional_clean_water_source_profiles.keys()
-                ]
-            ),
+        (
+            conventional_clean_water_source_profiles,
+            initial_clean_water_hourly_loads,
+            total_clean_water_load,
+            clean_water_yearly_load_statistics,
+        ) = _prepate_water_system(
+            auto_generated_files_directory,
+            device_utilisations,
+            location,
+            logger,
+            parsed_args,
+            ResourceType.CLEAN_WATER,
+            water_source_times,
         )
 
+    conventional_hot_water_source_profiles: Optional[
+        Dict[WaterSource, pd.DataFrame]
+    ] = None
+    hot_water_yearly_load_statistics: Optional[pd.DataFrame] = None
     initial_hot_water_hourly_loads: Optional[Dict[str, pd.DataFrame]] = None
     total_hot_water_load: Optional[pd.DataFrame] = None
-    hot_water_yearly_load_statistics: Optional[  # pylint: disable=unused-variable
-        pd.DataFrame
-    ] = None
 
     if ResourceType.HOT_CLEAN_WATER in scenario.resource_types:
-        # Raise an error if there are no hot-water devices specified.
-        if (
-            len(
-                {
-                    device
-                    for device in device_utilisations
-                    if device.hot_water_usage is not None
-                }
-            )
-            == 0
-        ):
-            raise InputFileError(
-                "devices input flie",
-                "No hot-water input devices were specified despite the scenario "
-                "containing a clean-water system.",
-            )
-
-        try:
-            (
-                initial_hot_water_hourly_loads,
-                total_hot_water_load,
-                hot_water_yearly_load_statistics,
-            ) = load.process_load_profiles(
-                auto_generated_files_directory,
-                device_utilisations,
-                load.ResourceType.HOT_CLEAN_WATER,
-                location,
-                logger,
-                parsed_args.regenerate,
-            )
-        except InputFileError:
-            print(
-                "Generating necessary profiles .................................    "
-                + f"{FAILED}"
-            )
-            raise
-        except Exception as e:
-            print(
-                "Generating necessary profiles .................................    "
-                + f"{FAILED}"
-            )
-            logger.error(
-                "%sAn unexpected error occurred generating the hot-water load "
-                "profiles. See %s for details: %s%s",
-                BColours.fail,
-                "{}.log".format(os.path.join(LOGGER_DIRECTORY, LOGGER_NAME)),
-                str(e),
-                BColours.endc,
-            )
-            raise
-
-        # Generate the conventional-clean-water source availability profiles.
-        logger.info("Generating conventional-water-source availability profiles.")
-        try:
-            conventional_hot_water_source_profiles = (
-                water_source.get_lifetime_water_source_status(
-                    os.path.join(auto_generated_files_directory, "hot_water"),
-                    "hot",
-                    location,
-                    logger,
-                    parsed_args.regenerate,
-                    water_source_times,
-                )
-            )
-        except InputFileError:
-            print(
-                "Generating necessary profiles .................................    "
-                + f"{FAILED}"
-            )
-            raise
-        except Exception as e:
-            print(
-                "Generating necessary profiles .................................    "
-                + f"{FAILED}"
-            )
-            logger.error(
-                "%sAn unexpected error occurred generating the conventional "
-                "water-source profiles. See %s for details: %s%s",
-                BColours.fail,
-                "{}.log".format(os.path.join(LOGGER_DIRECTORY, LOGGER_NAME)),
-                str(e),
-                BColours.endc,
-            )
-            raise
-
-        logger.info("Conventional water sources successfully parsed.")
-        logger.debug(
-            "Conventional water sources: %s",
-            ", ".join(
-                [
-                    str(source)
-                    for source in conventional_hot_water_source_profiles.keys()
-                ]
-            ),
+        (
+            conventional_hot_water_source_profiles,
+            initial_hot_water_hourly_loads,
+            total_hot_water_load,
+            hot_water_yearly_load_statistics,
+        ) = _prepate_water_system(
+            auto_generated_files_directory,
+            device_utilisations,
+            location,
+            logger,
+            parsed_args,
+            ResourceType.CLEAN_WATER,
+            water_source_times,
         )
 
     # Assemble a means of storing the relevant loads.
@@ -1183,10 +1193,6 @@ def main(args: List[Any]) -> None:
 
     if operating_mode == OperatingMode.PROFILE_GENERATION:
         print("No simulations or optimisations to be carried out.")
-
-    # ******* #
-    # *  4  * #
-    # ******* #
 
     print(
         "Finished. See {} for output files.".format(
