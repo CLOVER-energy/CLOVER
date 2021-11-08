@@ -353,7 +353,7 @@ def calculate_pvt_output(
                         + (tank_load_enthalpy_transfer if desalination_plant_on else 0)
                     ),
                 ],
-                [-minigrid.heat_exchanger.efficiency, 1],
+                [1, -minigrid.heat_exchanger.efficiency],
             ]
 
             collector_input_temperature, tank_temperature = linalg.solve(
