@@ -37,12 +37,12 @@
   contents:
     - directory: auto_generated
       contents:
-        - directory: clean_water
+        - directory: clean_water_source
           contents:
             - directory: available_probability
             - directory: available_times
         - directory: grid
-        - directory: hot_water
+        - directory: hot_water_source
           contents:
             - directory: available_probability
             - directory: available_times
