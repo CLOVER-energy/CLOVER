@@ -46,7 +46,7 @@ from ..__utils__ import (
     SystemDetails,
     dict_to_dataframe,
 )
-from ..conversion.conversion import Convertor, ThermalDesalinationPlant
+from ..conversion.conversion import Convertor, ThermalDesalinationPlant, WaterSource
 from ..generation.solar import SolarPanelType, solar_degradation
 from ..load.load import population_hourly
 from .__utils__ import Minigrid
@@ -502,6 +502,8 @@ def _clean_water_tank_iteration_step(
     clean_water_power_consumed_mapping: Dict[int, float],
     clean_water_demand_met_by_excess_energy: Dict[int, float],
     clean_water_supplied_by_excess_energy: Dict[int, float],
+    conventional_clean_water_source_profiles: Dict[WaterSource, pd.DataFrame],
+    conventional_water_supplied: Dict[int, float],
     energy_per_desalinated_litre: float,
     excess_energy: float,
     excess_energy_used_desalinating: Dict[int, float],
@@ -515,6 +517,7 @@ def _clean_water_tank_iteration_step(
     new_hourly_battery_storage: float,
     scenario: Scenario,
     storage_water_supplied: Dict[int, float],
+    tank_storage_profile: pd.DataFrame,
     *,
     time_index: int,
 ) -> float:
@@ -532,6 +535,13 @@ def _clean_water_tank_iteration_step(
         - clean_water_supplied_by_excess_energy:
             The clean water that was supplied by the excess energy from the renewable
             system.
+        - conventioanl_clean_water_source_profiles:
+            A mapping between :class:`WaterSource` instances, corresponding to
+            conventional sources of drinking water within the system, and their
+            associated maximum output throughout the duration of the simulation.
+        - conventional_water_supplied:
+            A mapping between time index and the amount of clean water supplied through
+            conventional sources available to the system.
         - energy_per_desalinated_litre:
             The electrical energy required to desalinate a single litre.
         - excess_energy:
@@ -661,6 +671,23 @@ def _clean_water_tank_iteration_step(
         else:
             clean_water_power_consumed_mapping[time_index] = 0
             backup_desalinator_water_supplied[time_index] = 0
+
+        # Any remaining unmet water demand should be met using conventional clean-water
+        # sources if available.
+        if current_unmet_water_demand > 0:
+            # Compute the clean water supplied using convnetional sources.
+            conventional_clean_water_available = sum(
+                conventional_clean_water_source_profiles.iloc[time_index]
+            )
+            conventional_clean_water_supplied = min(
+                conventional_clean_water_available, current_unmet_water_demand
+            )
+            current_unmet_water_demand -= conventional_clean_water_supplied
+
+            # Store this as water supplied through conventional means.
+            conventional_water_supplied[time_index] = conventional_clean_water_supplied
+        else:
+            conventional_water_supplied[time_index] = 0
 
         current_hourly_clean_water_tank_storage = min(
             current_hourly_clean_water_tank_storage,
@@ -991,6 +1018,7 @@ def _get_water_storage_profile(
         (remaining_profile > 0) * processed_total_clean_water_load.values
         + (remaining_profile < 0) * renewable_clean_water_produced.values
     )
+
     tank_storage_profile: pd.DataFrame = pd.DataFrame(remaining_profile.values)
 
     return (
@@ -1214,6 +1242,8 @@ def run_simulation(
     stated in the input files.
 
     Inputs:
+        - conventional_clean_water_profiles:
+            A mapping between
         - convertors:
             The `list` of :class:`Convertor` instances available to be used.
         - diesel_generator:
@@ -1555,6 +1585,7 @@ def run_simulation(
     backup_desalinator_water_supplied: Dict[int, float] = {}
     clean_water_demand_met_by_excess_energy: Dict[int, float] = {}
     clean_water_supplied_by_excess_energy: Dict[int, float] = {}
+    conventional_water_supplied: Dict[int, float] = {}
     excess_energy_used_desalinating: Dict[int, float] = {}
     storage_water_supplied: Dict[int, float] = {}
     water_surplus: Dict[int, float] = {}
@@ -1603,6 +1634,8 @@ def run_simulation(
                 clean_water_power_consumed_mapping,
                 clean_water_demand_met_by_excess_energy,
                 clean_water_supplied_by_excess_energy,
+                conventional_clean_water_source_profiles,
+                conventional_water_supplied,
                 energy_per_desalinated_litre,
                 excess_energy,
                 excess_energy_used_desalinating,
@@ -1616,6 +1649,7 @@ def run_simulation(
                 new_hourly_battery_storage,
                 scenario,
                 storage_power_supplied,
+                tank_storage_profile,
                 time_index=t,
             )
 

@@ -246,7 +246,7 @@ def get_lifetime_water_source_status(
     logger: Logger,
     regenerate: bool,
     water_source_times: Dict[WaterSource, pd.DataFrame],
-) -> Dict[str, pd.DataFrame]:
+) -> Dict[WaterSource, pd.DataFrame]:
     """
     Calculates, and saves, the water-source availability profiles of all input types.
 
@@ -272,7 +272,7 @@ def get_lifetime_water_source_status(
 
     Outputs:
         - water_source_profiles:
-            A dictionary mapping the water-source name to its associated availability
+            A dictionary mapping the water-source name to its associated maximum-output
             profile.
 
     """
@@ -311,6 +311,6 @@ def get_lifetime_water_source_status(
             years=location.max_years,
         )
 
-        water_source_profiles[source] = hourly_availability
+        water_source_profiles[source] = hourly_availability * source.maximum_output
 
     return water_source_profiles
