@@ -738,6 +738,48 @@ def main(args: List[Any]) -> None:
             water_source_times,
         )
 
+        # Generate the conventional-hot-water source availability profiles.
+        logger.info("Generating conventional hot-water-source availability profiles.")
+        try:
+            conventional_water_source_profiles = (
+                water_source.get_lifetime_water_source_status(
+                    os.path.join(auto_generated_files_directory, "hot_water_source"),
+                    "hot",
+                    location,
+                    logger,
+                    parsed_args.regenerate,
+                    water_source_times,
+                )
+            )
+        except InputFileError:
+            print(
+                "Generating necessary profiles .................................    "
+                + f"{FAILED}"
+            )
+            raise
+        except Exception as e:
+            print(
+                "Generating necessary profiles .................................    "
+                + f"{FAILED}"
+            )
+            logger.error(
+                "%sAn unexpected error occurred generating the conventional "
+                "hot-water-source profiles. See %s for details: %s%s",
+                BColours.fail,
+                "{}.log".format(os.path.join(LOGGER_DIRECTORY, LOGGER_NAME)),
+                str(e),
+                BColours.endc,
+            )
+            raise
+
+        logger.info("Conventional hot-water sources successfully parsed.")
+        logger.debug(
+            "Conventional hot-water sources: %s",
+            ", ".join(
+                [str(source) for source in conventional_water_source_profiles.keys()]
+            ),
+        )
+
     # Assemble a means of storing the relevant loads.
     total_loads: Dict[ResourceType, Optional[pd.DataFrame]] = {
         ResourceType.CLEAN_WATER: total_clean_water_load,

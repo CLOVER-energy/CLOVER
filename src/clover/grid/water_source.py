@@ -60,7 +60,8 @@ def _process_water_source_availability(
             The directory in which to store the generated water-source availability
             profiles.
         - keyword:
-            A `str` used for logging purposes.
+            A `str` used for differentiating the different types of conventional source
+            when printing or making log calls.
         - location:
             The location currently being considered.
         - logger:
@@ -74,7 +75,7 @@ def _process_water_source_availability(
     """
 
     logger.info(
-        "%s water-source availability process instantiated for water-source %s.",
+        "Water-source availability process instantiated for %s water-source %s.",
         keyword,
         water_source.name,
     )
@@ -149,7 +150,8 @@ def _process_water_soure_hourly_probability(
             The directory in which to store the generated water-source availability
             profiles.
         - keyword:
-            A `str` used for logging purposes.
+            A `str` used for differentiating the different types of conventional source
+            when printing or making log calls.
         - logger:
             The logger to use for the run.
         - regenerate:
@@ -171,7 +173,8 @@ def _process_water_soure_hourly_probability(
         with open(filepath, "r") as f:
             hourly_availability = pd.read_csv(f, header=None)
         logger.info(
-            "Hourly %s water-source availability for %s successfully read from file: %s",
+            "Hourly %s water-source availability for %s successfully read from file: "
+            "%s",
             keyword,
             water_source.name,
             filepath,
@@ -219,7 +222,7 @@ def _process_water_soure_hourly_probability(
         logger.info(
             "Saving hourly %s water-source availability profile for %s.",
             keyword,
-            water_source.name,
+            water_source.name
         )
 
         with open(
@@ -254,7 +257,8 @@ def get_lifetime_water_source_status(
         - generation_directory:
             The directory in which auto-generated files should be saved.
         - keyword:
-            A `str` used for logging purposes.
+            A `str` used for differentiating the different types of conventional source
+            when printing or making log calls.
         - location:
             The :class:`Location` being considered.
         - logger:
