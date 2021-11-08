@@ -1964,6 +1964,13 @@ def plot_outputs(
                 / 1000,
                 (365, 24),
             )
+            conventional_water = np.reshape(
+                simulation_output[0:HOURS_PER_YEAR][
+                    "Clean water supplied via conventional sources (l)"
+                ].values
+                / 1000,
+                (365, 24),
+            )
             excess_pv_water = np.reshape(
                 simulation_output[0:HOURS_PER_YEAR][
                     "Clean water supplied using excess minigrid energy (l)"
@@ -1993,15 +2000,16 @@ def plot_outputs(
                 (365, 24),
             )
 
-            fig, ([ax1, ax2, unused_ax], [ax3, ax4, ax5]) = plt.subplots(
+            fig, ([ax1, ax2, ax3], [ax4, ax5, ax6]) = plt.subplots(
                 2, 3
             )  # ,sharex=True, sharey=True)
-            unused_ax.set_visible(False)
+
+            # Renewably-produced clean-water heatmap.
             sns.heatmap(
-                excess_pv_water,
+                renewable_water,
                 vmin=0.0,
-                vmax=excess_pv_water.max(),
-                cmap="Reds",
+                vmax=renewable_water.max(),
+                cmap="Blues",
                 cbar=True,
                 ax=ax1,
             )
@@ -2012,13 +2020,15 @@ def plot_outputs(
                 yticklabels=range(0, 365, 60),
                 xlabel="Hour of day",
                 ylabel="Day of year",
-                title="Excess PV",
+                title="PV-D/T",
             )
+
+            # Heatmap of water produced through excess renewable electricity.
             sns.heatmap(
-                storage_water,
+                excess_pv_water,
                 vmin=0.0,
-                vmax=storage_water.max(),
-                cmap="Greens",
+                vmax=excess_pv_water.max(),
+                cmap="Reds",
                 cbar=True,
                 ax=ax2,
             )
@@ -2029,13 +2039,15 @@ def plot_outputs(
                 yticklabels=range(0, 365, 60),
                 xlabel="Hour of day",
                 ylabel="Day of year",
-                title="Storage",
+                title="Excess PV",
             )
+
+            # Heatmap of demand met through storage.
             sns.heatmap(
-                renewable_water,
+                storage_water,
                 vmin=0.0,
-                vmax=renewable_water.max(),
-                cmap="Blues",
+                vmax=storage_water.max(),
+                cmap="Greens",
                 cbar=True,
                 ax=ax3,
             )
@@ -2046,8 +2058,11 @@ def plot_outputs(
                 yticklabels=range(0, 365, 60),
                 xlabel="Hour of day",
                 ylabel="Day of year",
-                title="PV-D/T",
+                title="Storage",
             )
+
+            # Heatmap of water produced through meeting the demand by running diesel
+            # etc.
             sns.heatmap(
                 backup_water,
                 vmin=0.0,
@@ -2065,15 +2080,36 @@ def plot_outputs(
                 ylabel="Day of year",
                 title="Backup",
             )
+
+            # Heatmap of demand met through conventional means.
+            sns.heatmap(
+                conventional_water,
+                vmin=0.0,
+                vmax=conventional_water.max(),
+                cmap="Purples",
+                cbar=True,
+                ax=ax5,
+            )
+            ax5.set(
+                xticks=range(0, 25, 6),
+                xticklabels=range(0, 25, 6),
+                yticks=range(0, 365, 60),
+                yticklabels=range(0, 365, 60),
+                xlabel="Hour of day",
+                ylabel="Day of year",
+                title="Conventional",
+            )
+
+            # Heatmap of unmet clean-water demand.
             sns.heatmap(
                 unmet_water,
                 vmin=0.0,
                 vmax=unmet_water.max(),
                 cmap="Greys",
                 cbar=True,
-                ax=ax5,
+                ax=ax6,
             )
-            ax5.set(
+            ax6.set(
                 xticks=range(0, 25, 6),
                 xticklabels=range(0, 25, 6),
                 yticks=range(0, 365, 60),
