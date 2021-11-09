@@ -625,6 +625,12 @@ class ResourceType(enum.Enum):
     - ELECTRIC:
         Represents an electric load.
 
+    - GENERIC_WATER:
+        Represents water where the exact specifiction of the water is not needed. E.G.,
+        in defining parts of the energy system that work with a fluid as opposed to an
+        electrical flow, but which can be used for different types of fluid within the
+        system.
+
     - HEAT:
         Represents raw heat.
 
@@ -646,6 +652,7 @@ class ResourceType(enum.Enum):
 
     CLEAN_WATER = "clean_water"
     ELECTRIC = "electricity"
+    GENERIC_WATER = "generic_water"
     HEAT = "heat"
     HOT_CLEAN_WATER = "hot_water"
     HOT_UNCLEAN_WATER = "hot_feedwater"
@@ -662,6 +669,7 @@ RESOURCE_NAME_TO_RESOURCE_TYPE_MAPPING = {
     "heat": ResourceType.HEAT,
     "hot_water": ResourceType.HOT_CLEAN_WATER,
     "hot_untreated_water": ResourceType.HOT_UNCLEAN_WATER,
+    "water": ResourceType.GENERIC_WATER
 }
 
 

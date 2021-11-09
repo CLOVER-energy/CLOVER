@@ -38,6 +38,7 @@ from ..generation.solar import HybridPVTPanel, PVPanel
 from .diesel import DieselGenerator
 from .exchanger import Exchanger
 from .storage import Battery, CleanWaterTank, HotWaterTank
+from .transmission import Transmitter
 
 __all__ = ("Minigrid",)
 
@@ -115,6 +116,10 @@ class Minigrid:
     .. attribute:: pvt_panel
         The PV-T panel being considered, if applicable.
 
+    .. attribute:: water_pump
+        The water pump associated with the energy system, as a :class:`Transmitter`
+        instance.
+
     """
 
     ac_to_ac_conversion_efficiency: Optional[float]
@@ -131,6 +136,7 @@ class Minigrid:
     hot_water_tank: Optional[HotWaterTank]
     pv_panel: PVPanel
     pvt_panel: Optional[HybridPVTPanel]
+    water_pump: Optional[Transmitter]
 
     @classmethod
     def from_dict(
@@ -142,6 +148,7 @@ class Minigrid:
         battery_inputs: Optional[List[Dict[Union[int, str], Any]]] = None,
         exchanger_inputs: Optional[List[Dict[Union[int, str], Any]]] = None,
         tank_inputs: Optional[List[Dict[Union[int, str], Any]]] = None,
+        water_pump: Optional[Transmitter] = None,
     ) -> Any:
         """
         Returns a :class:`Minigrid` instance based on the inputs provided.
@@ -162,6 +169,9 @@ class Minigrid:
                 The heat-exchanger input information.
             - tank_inputs:
                 The tank input information.
+            - water_pump:
+                The :class`Transmitter` corresponding to the water pump associated with
+                the system.
 
         Outputs:
             - A :class:`Minigrid` instance based on the inputs provided.
@@ -257,4 +267,5 @@ class Minigrid:
             else None,
             pv_panel,
             pvt_panel,
+            water_pump,
         )

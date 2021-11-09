@@ -56,6 +56,7 @@ from .conversion.conversion import (
 from .optimisation.optimisation import Optimisation
 from .simulation.diesel import DieselGenerator
 from .simulation.energy_system import Minigrid
+from .simulation.transmission import Transmitter
 
 __all__ = (
     "GENERATION_INPUTS_FILE",
@@ -192,6 +193,18 @@ TANK_INPUTS_FILE: str = os.path.join("simulation", "tank_inputs.yaml")
 # Thermal model file:
 #   The relative path to the thermal model file.
 THERMAL_MODEL_FILE: str = os.path.join("src", "thermal_tree.sav")
+
+# Transmission inputs file:
+#   The relative path to the transmission inputs file.
+TRANSMISSION_INPUTS_FILE: str = os.path.join("simulation", "transmission_inputs.yaml")
+
+# Transmitters:
+#   Keyword used to parse transmitter information.
+TRANSMITTERS: str = "transmitters"
+
+# Water pump:
+#   Keyword used to parse water-pump information.
+WATER_PUMP: str = "water_pump"
 
 # Water source availability template filename:
 #   A template filename for parsing water-source availability profiles.
@@ -1322,6 +1335,16 @@ def _parse_minigrid_inputs(
     )
     logger.info("Battery information successfully parsed.")
 
+    # Parse the transmission inputs file.
+    transmission_inputs_filepath: str
+    transmitters: List[Transmitter]
+
+    transmission_inputs_filepath, transmitters = _parse_transmission_inputs(
+        inputs_directory_relative_path,
+        logger,
+    )
+    logger.info("Transmission inputs successfully parsed.")
+
     buffer_tank_costs: Optional[Dict[str, float]]
     buffer_tank_emissions: Optional[Dict[str, float]]
     clean_water_tank_costs: Optional[Dict[str, float]]
@@ -1356,17 +1379,29 @@ def _parse_minigrid_inputs(
         ) = _parse_exchanger_inputs(
             energy_system_inputs, inputs_directory_relative_path, logger, scenario
         )
+        logger.info("Heat exchanger information successfully parsed.")
+
+        try:
+            water_pump: Optional[Transmitter] = transmitters[energy_system_inputs[WATER_PUMP]]
+        except KeyError:
+            logger.error("%sWater pump was not defined in the energy-system inputs file.%s", BColours.fail, BColours.endc)
+            raise InputFileError(
+                "energy system inputs",
+                "Water pump not defined."
+            )
+
     else:
-        clean_water_tank_costs = None
-        clean_water_tank_emissions = None
         buffer_tank_costs = None
         buffer_tank_emissions = None
-        tank_inputs = None
-        tank_inputs_filepath = None
+        clean_water_tank_costs = None
+        clean_water_tank_emissions = None
         exchanger_costs = None
         exchanger_emissions = None
         exchanger_inputs = None
         exchanger_inputs_filepath = None
+        tank_inputs = None
+        tank_inputs_filepath = None
+        water_pump = None
 
     minigrid = Minigrid.from_dict(
         diesel_generator,
@@ -1376,6 +1411,7 @@ def _parse_minigrid_inputs(
         battery_inputs,  # type: ignore
         exchanger_inputs,  # type: ignore
         tank_inputs,  # type: ignore
+        water_pump,
     )
 
     return (
@@ -1400,7 +1436,71 @@ def _parse_minigrid_inputs(
         pvt_panel_emissions,
         solar_generation_inputs_filepath,
         tank_inputs_filepath,
+        transmission_inputs_filepath,
+        transmitters,
     )
+
+
+def _parse_transmission_inputs(
+    inputs_directory_relative_path: str,
+    logger: Logger,
+) -> Tuple[str, Dict[str, Transmitter]]:
+    """
+    Parses the transmission inputs file.
+
+    Inputs:
+        - inputs_directory_relative_path:
+            The relative path to the inputs folder directory.
+        - logger:
+            The :class:`logging.Logger` to use for the run.
+
+    Outputs:
+        - The transmission inputs relative path;
+        - A `dict` mapping convertor names (`str`) to :class:`transmission.Transmitter`
+          instances based on the input information provided.
+
+    """
+
+    # Determine the conversion inputs file path.
+    transmission_file_relative_path = os.path.join(
+        inputs_directory_relative_path, TRANSMISSION_INPUTS_FILE
+    )
+
+    # If the file exists, parse the convertors contained.
+    if os.path.isfile(transmission_file_relative_path):
+        parsed_transmitters: List[Transmitter] = []
+        transmission_inputs = read_yaml(transmission_file_relative_path, logger)
+        for entry in transmission_inputs[TRANSMITTERS]:
+            if not isinstance(entry, dict):
+                logger.error(
+                    "%Transmitter not of correct format `dict`: %s%s",
+                    BColours.fail,
+                    str(entry),
+                    BColours.endc,
+                )
+                raise InputFileError(
+                    "transmission inputs", "Transmitter not correctly defined."
+                )
+
+            # Attempt to parse as a water source.
+            try:
+                parsed_transmitters.append(Transmitter.from_dict(entry, logger))
+            except InputFileError:
+                logger.info(
+                    "Failed to parse a Transmitter from input information."
+                )
+                raise
+
+        # Convert the list to the required format.
+        transmitters: Dict[str, Transmitter] = {
+            transmitter.name: transmitter for transmitter in parsed_transmitters
+        }
+
+    else:
+        transmitters = {}
+        logger.info("No transmission file, skipping transmitter parsing.")
+
+    return transmission_file_relative_path, transmitters
 
 
 def parse_input_files(
@@ -1533,6 +1633,8 @@ def parse_input_files(
         pvt_panel_emissions,
         solar_generation_inputs_filepath,
         tank_inputs_filepath,
+        transmission_inputs_filepath,
+        transmitters,
     ) = _parse_minigrid_inputs(inputs_directory_relative_path, logger, scenario)
     logger.info("Energy-system inputs successfully parsed.")
 
@@ -1799,6 +1901,7 @@ def parse_input_files(
         "scenario": scenario_inputs_filepath,
         "simularion": simulations_inputs_filepath,
         "solar_inputs": solar_generation_inputs_filepath,
+        "transmission_inputs": transmission_inputs_filepath,
     }
 
     if ResourceType.CLEAN_WATER in scenario.resource_types:
@@ -1834,6 +1937,7 @@ def parse_input_files(
     logger.debug(
         "Simulations: %s", ", ".join([str(simulation) for simulation in simulations])
     )
+    logger.debug("Transmitters: %s", ", ".join([f"{key}: {value}" for key, value in transmitters.items()]))
     logger.debug("Input file information: %s", input_file_info)
 
     return (
