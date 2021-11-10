@@ -35,6 +35,7 @@ from ..__utils__ import (
     ResourceType,
     Scenario,
     ZERO_CELCIUS_OFFSET,
+    dict_to_dataframe,
 )
 from ..conversion.conversion import ThermalDesalinationPlant
 from .__utils__ import Minigrid
@@ -180,6 +181,8 @@ def calculate_pvt_output(
             The output temperature of the PV-T collectors at each time step.
         - pvt_electric_power_per_unit:
             The electric power, per unit PV-T, delivered by the PV-T system.
+        - pvt_pump_times_frame:
+            The times for which the PV-T pump was switched on.
         - tank_temperature:
             The tank temperatures throughout the simulation, measured in degrees C.
         - tank_volume_supplied:
@@ -222,6 +225,7 @@ def calculate_pvt_output(
         lambda: scenario.desalination_scenario.feedwater_supply_temperature
     )
     pvt_electric_power_per_unit_map: Dict[int, float] = {}
+    pvt_pump_times_map: Dict[int, bool] = {}
     tank_temperature_map: Dict[int, float] = collections.defaultdict(
         lambda: scenario.desalination_scenario.feedwater_supply_temperature
     )
@@ -402,29 +406,22 @@ def calculate_pvt_output(
         # Save the fractional electrical performance and output temp.
         pvt_collector_output_temperature_map[index] = collector_output_temperature
         pvt_electric_power_per_unit_map[index] = fractional_electric_performance
+        pvt_pump_times_map[index] = pvt_flow_on
         tank_temperature_map[index] = tank_temperature
         tank_volume_supplied_map[index] = volume_supplied
 
     # Convert these outputs to dataframes and return.
-    pvt_collector_output_temperature: pd.DataFrame = pd.DataFrame(  # type: ignore
-        list(pvt_collector_output_temperature_map.values()),
-        index=list(pvt_collector_output_temperature_map.keys()),
-    ).sort_index()
-    pvt_electric_power_per_unit: pd.DataFrame = (
-        pd.DataFrame(  # type: ignore
-            list(pvt_electric_power_per_unit_map.values()),
-            index=list(pvt_electric_power_per_unit_map.keys()),
-        ).sort_index()
-        * minigrid.pvt_panel.pv_unit
+    pvt_collector_output_temperature: pd.DataFrame = dict_to_dataframe(
+        pvt_collector_output_temperature_map, logger
     )
-    tank_temperature: pd.DataFrame = pd.DataFrame(
-        list(tank_temperature_map.values()),
-        index=list(tank_temperature_map.keys()),
-    ).sort_index()
-    tank_volume_output_supplied: pd.DataFrame = pd.DataFrame(
-        list(tank_volume_supplied_map.values()),
-        index=list(tank_volume_supplied_map.keys()),
-    ).sort_index()
+    pvt_electric_power_per_unit: pd.DataFrame = dict_to_dataframe(
+        pvt_electric_power_per_unit_map, logger
+    )
+    pvt_pump_times_frame: pd.DataFrame = dict_to_dataframe(pvt_pump_times_map, logger)
+    tank_temperature: pd.DataFrame = dict_to_dataframe(tank_temperature_map, logger)
+    tank_volume_output_supplied: pd.DataFrame = dict_to_dataframe(
+        tank_volume_supplied_map, logger
+    )
 
     # with open("tmp.csv", "w") as f:
     #     f.write(
@@ -462,6 +459,7 @@ def calculate_pvt_output(
     return (
         pvt_collector_output_temperature,
         pvt_electric_power_per_unit,
+        pvt_pump_times_frame,
         tank_temperature,
         tank_volume_output_supplied,
     )
