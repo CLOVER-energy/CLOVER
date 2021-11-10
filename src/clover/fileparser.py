@@ -19,6 +19,7 @@ import pkgutil
 from logging import Logger
 from typing import Any, Dict, List, Optional, Set, Tuple, Union
 
+import json
 import pandas as pd  # type: ignore  # pylint: disable=import-error
 
 from sklearn.linear_model._coordinate_descent import Lasso
@@ -129,8 +130,12 @@ ENERGY_SYSTEM_INPUTS_FILE: str = os.path.join("simulation", "energy_system.yaml"
 EXCHANGERS: str = "exchangers"
 
 # Exchanger inputs file:
-#    The relative path to the heat-exchanger-inputs file.
+#   The relative path to the heat-exchanger-inputs file.
 EXCHANGER_INPUTS_FILE: str = os.path.join("simulation", "heat_exchanger_inputs.yaml")
+
+# Finance impact:
+#   Default `str` used as the format for specifying unique financial impacts.
+FINANCE_IMPACT: str = "{type}_{name}"
 
 # Finance inputs file:
 #   The relative path to the finance-inputs file.
@@ -139,6 +144,10 @@ FINANCE_INPUTS_FILE: str = os.path.join("impact", "finance_inputs.yaml")
 # Generation inputs file:
 #   The relative path to the generation-inputs file.
 GENERATION_INPUTS_FILE: str = os.path.join("generation", "generation_inputs.yaml")
+
+# GHG impact:
+#   A base `str` used for specifying unique ghg impacts.
+GHG_IMPACT: str = "{type}_{name}"
 
 # GHG inputs file:
 #   The relative path to the GHG inputs file.
@@ -1248,6 +1257,10 @@ def _parse_minigrid_inputs(
     Optional[Dict[str, float]],
     str,
     Optional[str],
+    Dict[str, Dict[str, float]],
+    Dict[str, Dict[str, float]],
+    str,
+    Dict[str, Transmitter],
 ]:
     """
     Parses the energy-system-related input files.
@@ -1279,6 +1292,10 @@ def _parse_minigrid_inputs(
         - PV-T emissions,
         - Solar inputs filepath,
         - Tank inputs filepath,
+        - Transmission costs,
+        - Transmission emissions,
+        - Transmission inputs filepath,
+        - Transmitters.
 
     """
 
@@ -1337,9 +1354,14 @@ def _parse_minigrid_inputs(
 
     # Parse the transmission inputs file.
     transmission_inputs_filepath: str
-    transmitters: List[Transmitter]
+    transmitters: Dict[str, Transmitter]
 
-    transmission_inputs_filepath, transmitters = _parse_transmission_inputs(
+    (
+        transmission_costs,
+        transmission_emissions,
+        transmission_inputs_filepath,
+        transmitters,
+    ) = _parse_transmission_inputs(
         inputs_directory_relative_path,
         logger,
     )
@@ -1382,13 +1404,16 @@ def _parse_minigrid_inputs(
         logger.info("Heat exchanger information successfully parsed.")
 
         try:
-            water_pump: Optional[Transmitter] = transmitters[energy_system_inputs[WATER_PUMP]]
+            water_pump: Optional[Transmitter] = transmitters[
+                energy_system_inputs[WATER_PUMP]
+            ]
         except KeyError:
-            logger.error("%sWater pump was not defined in the energy-system inputs file.%s", BColours.fail, BColours.endc)
-            raise InputFileError(
-                "energy system inputs",
-                "Water pump not defined."
+            logger.error(
+                "%sWater pump was not defined in the energy-system inputs file.%s",
+                BColours.fail,
+                BColours.endc,
             )
+            raise InputFileError("energy system inputs", "Water pump not defined.")
 
     else:
         buffer_tank_costs = None
@@ -1436,6 +1461,8 @@ def _parse_minigrid_inputs(
         pvt_panel_emissions,
         solar_generation_inputs_filepath,
         tank_inputs_filepath,
+        transmission_costs,
+        transmission_emissions,
         transmission_inputs_filepath,
         transmitters,
     )
@@ -1444,7 +1471,12 @@ def _parse_minigrid_inputs(
 def _parse_transmission_inputs(
     inputs_directory_relative_path: str,
     logger: Logger,
-) -> Tuple[str, Dict[str, Transmitter]]:
+) -> Tuple[
+    Dict[str, Dict[str, float]],
+    Dict[str, Dict[str, float]],
+    str,
+    Dict[str, Transmitter],
+]:
     """
     Parses the transmission inputs file.
 
@@ -1456,6 +1488,8 @@ def _parse_transmission_inputs(
 
     Outputs:
         - The transmission inputs relative path;
+        - The costs associated with the transmitters;
+        - The emissions associated with the transmitters;
         - A `dict` mapping convertor names (`str`) to :class:`transmission.Transmitter`
           instances based on the input information provided.
 
@@ -1465,6 +1499,9 @@ def _parse_transmission_inputs(
     transmission_file_relative_path = os.path.join(
         inputs_directory_relative_path, TRANSMISSION_INPUTS_FILE
     )
+
+    transmission_costs: Dict[str, Dict[str, float]] = {}
+    transmission_emissions: Dict[str, Dict[str, float]] = {}
 
     # If the file exists, parse the convertors contained.
     if os.path.isfile(transmission_file_relative_path):
@@ -1486,9 +1523,7 @@ def _parse_transmission_inputs(
             try:
                 parsed_transmitters.append(Transmitter.from_dict(entry, logger))
             except InputFileError:
-                logger.info(
-                    "Failed to parse a Transmitter from input information."
-                )
+                logger.info("Failed to parse a Transmitter from input information.")
                 raise
 
         # Convert the list to the required format.
@@ -1496,11 +1531,53 @@ def _parse_transmission_inputs(
             transmitter.name: transmitter for transmitter in parsed_transmitters
         }
 
+        # Parse the transmission impact information.
+        for transmitter in transmitters.values():
+            try:
+                transmission_costs[transmitter.name] = [
+                    entry[COSTS]
+                    for entry in transmission_inputs[TRANSMITTERS]
+                    if entry[NAME] == transmitter.name
+                ][0]
+            except IndexError:
+                logger.error(
+                    "Failed to determine transmitter cost information for %s.",
+                    transmitter.name,
+                )
+                raise
+            else:
+                logger.info(
+                    "Transmitter cost information for %s successfully parsed.",
+                    transmitter.name,
+                )
+            try:
+                transmission_emissions[transmitter.name] = [
+                    entry[EMISSIONS]
+                    for entry in transmission_inputs[TRANSMITTERS]
+                    if entry[NAME] == transmitter.name
+                ][0]
+            except IndexError:
+                logger.error(
+                    "Failed to determine transmitter emission information for %s.",
+                    transmitter.name,
+                )
+                raise
+            else:
+                logger.info(
+                    "Transmitter emission information for %s successfully parsed.",
+                    transmitter.name,
+                )
+
     else:
         transmitters = {}
         logger.info("No transmission file, skipping transmitter parsing.")
 
-    return transmission_file_relative_path, transmitters
+    return (
+        transmission_costs,
+        transmission_emissions,
+        transmission_file_relative_path,
+        transmitters,
+    )
 
 
 def parse_input_files(
@@ -1633,6 +1710,8 @@ def parse_input_files(
         pvt_panel_emissions,
         solar_generation_inputs_filepath,
         tank_inputs_filepath,
+        transmission_costs,
+        transmission_emissions,
         transmission_inputs_filepath,
         transmitters,
     ) = _parse_minigrid_inputs(inputs_directory_relative_path, logger, scenario)
@@ -1828,6 +1907,22 @@ def parse_input_files(
     ghg_data[ImpactingComponent.CLEAN_WATER_TANK.value] = clean_water_tank_emissions
     logger.info("Clean-water tank impact data successfully updated.")
 
+    # Add transmitter impacts.
+    for transmitter in transmitters:
+        logger.info("Updating with %s impact data.", transmitter)
+        finance_inputs[
+            FINANCE_IMPACT.format(
+                type=ImpactingComponent.TRANSMITTER.value, name=transmitter
+            )
+        ] = transmission_costs[transmitter]
+        ghg_data[
+            GHG_IMPACT.format(
+                type=ImpactingComponent.TRANSMITTER.value, name=transmitter
+            )
+        ] = transmission_emissions[transmitter]
+        logger.info("Transmitter %s impact data successfully updated.", transmitter)
+
+    # Add desalination-specific impacts.
     if (
         scenario.desalination_scenario is not None
         and scenario.desalination_scenario.pvt_scenario.heats == HTFMode.CLOSED_HTF
@@ -1864,7 +1959,9 @@ def parse_input_files(
                 )
                 raise
             finance_inputs[
-                f"{ImpactingComponent.CONVENTIONAL_SOURCE.value}_{source.name}"
+                FINANCE_IMPACT.format(
+                    type=ImpactingComponent.CONVENTIONAL_SOURCE.value, name=source.name
+                )
             ] = conventional_source_costs
             conventional_source_emissions: Dict[str, float]
             try:
@@ -1882,7 +1979,9 @@ def parse_input_files(
                 )
                 raise
             ghg_data[
-                f"{ImpactingComponent.CONVENTIONAL_SOURCE.value}_{source.name}"
+                GHG_IMPACT.format(
+                    type=ImpactingComponent.CONVENTIONAL_SOURCE.value, name=source.name
+                )
             ] = conventional_source_emissions
 
     # Generate a dictionary with information about the input files used.
@@ -1924,8 +2023,10 @@ def parse_input_files(
     )
     logger.debug("Devices: %s", ", ".join([str(device) for device in devices]))
     logger.debug("Energy system/minigrid: %s", str(minigrid)),
-    logger.debug("Financial input information: %s", finance_inputs)
-    logger.debug("GHG input information: %s", ghg_data)
+    logger.debug(
+        "Financial input information: %s", json.dumps(finance_inputs, indent=4)
+    )
+    logger.debug("GHG input information: %s", json.dumps(ghg_data, indent=4))
     logger.debug("Location: %s", str(location))
     logger.debug("Optimisation parameters: %s", optimisation_parameters)
     logger.debug(
@@ -1937,7 +2038,10 @@ def parse_input_files(
     logger.debug(
         "Simulations: %s", ", ".join([str(simulation) for simulation in simulations])
     )
-    logger.debug("Transmitters: %s", ", ".join([f"{key}: {value}" for key, value in transmitters.items()]))
+    logger.debug(
+        "Transmitters: %s",
+        ", ".join([f"{key}: {value}" for key, value in transmitters.items()]),
+    )
     logger.debug("Input file information: %s", input_file_info)
 
     return (

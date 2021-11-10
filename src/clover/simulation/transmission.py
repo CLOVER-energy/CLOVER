@@ -21,7 +21,13 @@ import dataclasses
 from logging import Logger
 from typing import Any, Dict, List
 
-from ..__utils__ import BColours, InputFileError, NAME, RESOURCE_NAME_TO_RESOURCE_TYPE_MAPPING, ResourceType
+from ..__utils__ import (
+    BColours,
+    InputFileError,
+    NAME,
+    RESOURCE_NAME_TO_RESOURCE_TYPE_MAPPING,
+    ResourceType,
+)
 
 __all__ = ("Transmitter",)
 
@@ -114,8 +120,14 @@ class Transmitter:
             if key in RESOURCE_NAME_TO_RESOURCE_TYPE_MAPPING
         ]
         if len(input_resource_list) > 1:
-            logger.error("%sTransmitters can only be powered by a single resource.%s", BColours.fail, BColours.endc)
-            raise InputFileError("Transmitters can only be powered by a single resource.")
+            logger.error(
+                "%sTransmitters can only be powered by a single resource.%s",
+                BColours.fail,
+                BColours.endc,
+            )
+            raise InputFileError(
+                "Transmitters can only be powered by a single resource."
+            )
 
         # Determine the consumption of this resource.
         input_resource_consumption: Dict[ResourceType, float] = {}
@@ -133,10 +145,13 @@ class Transmitter:
                     BColours.endc,
                 )
                 raise InputFileError(
-                    "transmission inputs", "f{BColours.fail}Invalid value type in transmission file: {str(e)}{BColours.endc}"
+                    "transmission inputs",
+                    "f{BColours.fail}Invalid value type in transmission file: {str(e)}{BColours.endc}",
                 ) from None
 
-        consumption = input_resource_consumption[RESOURCE_NAME_TO_RESOURCE_TYPE_MAPPING[input_resource_list[0]]]
+        consumption = input_resource_consumption[
+            RESOURCE_NAME_TO_RESOURCE_TYPE_MAPPING[input_resource_list[0]]
+        ]
 
         return cls(
             consumption,

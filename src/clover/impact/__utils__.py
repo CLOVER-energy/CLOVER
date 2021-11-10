@@ -92,6 +92,9 @@ class ImpactingComponent(enum.Enum):
     - STORAGE:
         Denotes the storage component of the system.
 
+    - TRANSMITTER:
+        Denotes a component of the system responsible for storage.
+
     """
 
     BOS = "bos"
@@ -111,3 +114,4 @@ class ImpactingComponent(enum.Enum):
     PV = "pv"
     PV_T = "pv_t"
     STORAGE = "storage"
+    TRANSMITTER = "transmitter"
