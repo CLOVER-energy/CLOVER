@@ -190,14 +190,10 @@ def _process_water_soure_hourly_probability(
         try:
             hourly_availability = pd.concat(
                 [
-                    pd.DataFrame(
-                        np.random.binomial(  # type: ignore
-                            1,
-                            daily_water_source_availability.iloc[day],
-                        )
-                    )
-                    for day in range(0, 365 * years)
-                ]
+                    daily_water_source_availability[column]
+                    for column in daily_water_source_availability.columns
+                ],
+                axis=0,
             )
         except ValueError as e:
             logger.error(
@@ -211,6 +207,8 @@ def _process_water_soure_hourly_probability(
             )
             raise
 
+        hourly_availability = hourly_availability.reset_index(drop=True)
+
         logger.info(
             "Hourly %s water-source availability profile for %s successfully "
             "calculated.",
@@ -222,7 +220,7 @@ def _process_water_soure_hourly_probability(
         logger.info(
             "Saving hourly %s water-source availability profile for %s.",
             keyword,
-            water_source.name
+            water_source.name,
         )
 
         with open(
