@@ -156,7 +156,7 @@ def _calculate_backup_diesel_generator_usage(
             The total energy that was supplied by the diesel system.
         - diesel_fuel_usage:
             The total amount of fuel that was consumed byt he diesel generators.
-        - diesel_times: 
+        - diesel_times:
             The times forw hich the diesel generator was operating.
         - unmet_energy:
             The remaining energy demand which went uynmet after the diesel generator
@@ -489,11 +489,17 @@ def _calculate_pvt_and_thermal_desalination_profiles(
         )
 
         buffer_tank_temperature = buffer_tank_temperature.reset_index(drop=True)
-        pvt_collector_output_temperature = pvt_collector_output_temperature.reset_index(drop=True)
+        pvt_collector_output_temperature = pvt_collector_output_temperature.reset_index(
+            drop=True
+        )
         pvt_electric_power_per_unit = pvt_electric_power_per_unit.reset_index(drop=True)
-        renewable_clean_water_produced = renewable_clean_water_produced.reset_index(drop=True)
+        renewable_clean_water_produced = renewable_clean_water_produced.reset_index(
+            drop=True
+        )
         tank_volume_supplied = tank_volume_supplied.reset_index(drop=True)
-        thermal_desalination_electric_power_consumed = thermal_desalination_electric_power_consumed.reset_index(drop=True)
+        thermal_desalination_electric_power_consumed = (
+            thermal_desalination_electric_power_consumed.reset_index(drop=True)
+        )
 
     else:
         buffer_tank_temperature = None
@@ -951,8 +957,12 @@ def _get_electric_battery_storage_profile(
     kerosene_usage.columns = pd.Index(["Kerosene lamps"])
     load_energy.columns = pd.Index(["Load energy (kWh)"])
     renewables_energy.columns = pd.Index(["Renewables energy supplied (kWh)"])
-    renewables_energy_map[SolarPanelType.PV].columns = pd.Index(["PV energy supplied (kWh)"])
-    renewables_energy_map[SolarPanelType.PV_T].columns = pd.Index(["PV-T electric energy supplied (kWh)"])
+    renewables_energy_map[SolarPanelType.PV].columns = pd.Index(
+        ["PV energy supplied (kWh)"]
+    )
+    renewables_energy_map[SolarPanelType.PV_T].columns = pd.Index(
+        ["PV-T electric energy supplied (kWh)"]
+    )
     renewables_energy_used_directly.columns = pd.Index(["Renewables energy used (kWh)"])
 
     return (
@@ -1185,7 +1195,7 @@ def _update_battery_health(
     storage_power_supplied: Dict[int, float],
     *,
     time_index: int,
-) -> Tuple[float, float]:
+) -> Tuple[float, float, float]:
     """
     Updates the health of the batteries.
 
@@ -1211,6 +1221,8 @@ def _update_battery_health(
             The current time (hour) being considered.
 
     Outputs:
+        - cumulative_battery_storage_power:
+            The cumulative amount of electricity that has been stored in the batteries.
         - maximum_battery_storage:
             The newly calculated maximum amount of energy that can be stored in the
             batteries having acounted for battery degredation.
@@ -1247,7 +1259,11 @@ def _update_battery_health(
     )
     battery_health[time_index] = battery_storage_degradation
 
-    return maximum_battery_storage, minimum_battery_storage
+    return (
+        cumulative_battery_storage_power,
+        maximum_battery_storage,
+        minimum_battery_storage,
+    )
 
 
 def run_simulation(
@@ -1714,7 +1730,11 @@ def run_simulation(
             hourly_battery_storage[t] = new_hourly_battery_storage
 
             # Update battery health
-            maximum_battery_storage, minimum_battery_storage = _update_battery_health(
+            (
+                cumulative_battery_storage_power,
+                maximum_battery_storage,
+                minimum_battery_storage,
+            ) = _update_battery_health(
                 battery_energy_flow,
                 battery_health,
                 cumulative_battery_storage_power,
