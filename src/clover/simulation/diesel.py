@@ -83,7 +83,7 @@ def _find_deficit_threshold(
     percentile_threshold = 100.0 * (1.0 - reliability_difference)
 
     if reliability_difference > 0.0:
-        energy_threshold = np.percentile(unmet_energy, percentile_threshold)
+        energy_threshold: float = np.percentile(unmet_energy, percentile_threshold)
     else:
         energy_threshold = np.max(unmet_energy)[0] + 1.0
 
@@ -153,16 +153,18 @@ def get_diesel_fuel_usage(
 
     """
 
-    load_factor = diesel_energy.div(capacity)  # type: ignore
+    load_factor: pd.DataFrame = diesel_energy.div(capacity)  # type: ignore
     above_minimum = load_factor * (load_factor > diesel_generator.minimum_load)
     below_minimum = diesel_generator.minimum_load * (
         load_factor <= diesel_generator.minimum_load
     )
-    load_factor = pd.DataFrame(above_minimum.values + below_minimum.values).mul(  # type: ignore
+    load_factor: pd.DataFrame = pd.DataFrame(above_minimum.values + below_minimum.values).mul(  # type: ignore
         diesel_times
     )
 
-    fuel_usage = load_factor * capacity * diesel_generator.diesel_consumption
+    fuel_usage: pd.DataFrame = (
+        load_factor * capacity * diesel_generator.diesel_consumption
+    )
     fuel_usage = fuel_usage.astype(float)
 
     return fuel_usage

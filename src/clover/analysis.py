@@ -1163,6 +1163,15 @@ def plot_outputs(
                 ),
                 axis=0,
             )
+            conventional_drinking_water = np.mean(
+                np.reshape(
+                    simulation_output[0:HOURS_PER_YEAR][
+                        "Drinking water supplied via conventional sources (l)"
+                    ].values,
+                    (365, 24),
+                ),
+                axis=0,
+            )
             excess_power_clean_water = np.mean(
                 np.reshape(
                     simulation_output[0:HOURS_PER_YEAR][
@@ -1230,17 +1239,20 @@ def plot_outputs(
             plt.plot(total_used, "--", label="Total used", zorder=1)
             plt.plot(backup_clean_water, label="Backup desalination", zorder=2)
             plt.plot(
-                excess_power_clean_water, label="Excess power desalination", zorder=3
+                conventional_drinking_water, label="Conventional sources", zorder=3
             )
-            plt.plot(renewable_clean_water, label="PV-D direct use", zorder=4)
             plt.plot(
-                renewable_clean_water_produced, "--", label="PV-D output", zorder=5
+                excess_power_clean_water, label="Excess power desalination", zorder=4
             )
-            plt.plot(storage_clean_water, label="Storage", zorder=6)
-            plt.plot(tank_storage, "--", label="Water held in tanks", zorder=7)
-            plt.plot(unmet_clean_water, label="Unmet", zorder=8)
-            plt.plot(total_clean_water_load, "--", label="Total load", zorder=9)
-            plt.plot(total_supplied, "--", label="Total supplied", zorder=10)
+            plt.plot(renewable_clean_water, label="PV-D direct use", zorder=5)
+            plt.plot(
+                renewable_clean_water_produced, "--", label="PV-D output", zorder=6
+            )
+            plt.plot(storage_clean_water, label="Storage", zorder=7)
+            plt.plot(tank_storage, "--", label="Water held in tanks", zorder=8)
+            plt.plot(unmet_clean_water, label="Unmet", zorder=9)
+            plt.plot(total_clean_water_load, "--", label="Total load", zorder=10)
+            plt.plot(total_supplied, "--", label="Total supplied", zorder=11)
             plt.legend()
             plt.xlim(0, 23)
             plt.xticks(range(0, 24, 1))
@@ -1282,6 +1294,15 @@ def plot_outputs(
                 ),
                 axis=0,
             )
+            conventional_drinking_water = np.mean(
+                np.reshape(
+                    simulation_output[HOURS_UNTIL_JULY : HOURS_UNTIL_JULY + 31 * 24][
+                        "Drinking water supplied via conventional sources (l)"
+                    ].values,
+                    (31, 24),
+                ),
+                axis=0,
+            )
             excess_power_clean_water = np.mean(
                 np.reshape(
                     simulation_output[HOURS_UNTIL_JULY : HOURS_UNTIL_JULY + 31 * 24][
@@ -1349,17 +1370,20 @@ def plot_outputs(
             plt.plot(total_used, "--", label="Total used", zorder=1)
             plt.plot(backup_clean_water, label="Backup desalination", zorder=2)
             plt.plot(
-                excess_power_clean_water, label="Excess power desalination", zorder=3
+                conventional_drinking_water, label="Conventional sources", zorder=3
             )
-            plt.plot(renewable_clean_water, label="PV-D direct use", zorder=4)
             plt.plot(
-                renewable_clean_water_produced, "--", label="PV-D output", zorder=5
+                excess_power_clean_water, label="Excess power desalination", zorder=4
             )
-            plt.plot(storage_clean_water, label="Storage", zorder=6)
-            plt.plot(tank_storage, "--", label="Water held in tanks", zorder=7)
-            plt.plot(unmet_clean_water, label="Unmet", zorder=8)
-            plt.plot(total_clean_water_load, "--", label="Total load", zorder=9)
-            plt.plot(total_supplied, "--", label="Total supplied", zorder=10)
+            plt.plot(renewable_clean_water, label="PV-D direct use", zorder=5)
+            plt.plot(
+                renewable_clean_water_produced, "--", label="PV-D output", zorder=6
+            )
+            plt.plot(storage_clean_water, label="Storage", zorder=7)
+            plt.plot(tank_storage, "--", label="Water held in tanks", zorder=8)
+            plt.plot(unmet_clean_water, label="Unmet", zorder=9)
+            plt.plot(total_clean_water_load, "--", label="Total load", zorder=10)
+            plt.plot(total_supplied, "--", label="Total supplied", zorder=11)
             plt.legend()
             plt.xlim(0, 23)
             plt.xticks(range(0, 24, 1))
@@ -1403,6 +1427,15 @@ def plot_outputs(
                 ),
                 axis=0,
             )
+            conventional_drinking_water = np.mean(
+                np.reshape(
+                    simulation_output[0 : 24 * 31][
+                        "Drinking water supplied via conventional sources (l)"
+                    ].values,
+                    (31, 24),
+                ),
+                axis=0,
+            )
             excess_power_clean_water = np.mean(
                 np.reshape(
                     simulation_output[0 : 24 * 31][
@@ -1470,6 +1503,9 @@ def plot_outputs(
             plt.plot(total_used, "--", label="Total used", zorder=1)
             plt.plot(backup_clean_water, label="Backup desalination", zorder=2)
             plt.plot(
+                conventional_drinking_water, label="Conventional sources", zorder=2
+            )
+            plt.plot(
                 excess_power_clean_water, label="Excess power desalination", zorder=3
             )
             plt.plot(renewable_clean_water, label="PV-D direct use", zorder=4)
@@ -1500,6 +1536,9 @@ def plot_outputs(
             backup = simulation_output.iloc[0:24][
                 "Clean water supplied via backup desalination (l)"
             ]
+            conventional = simulation_output.iloc[0:24][
+                "Drinking water supplied via conventional sources (l)"
+            ]
             excess = simulation_output.iloc[0:24][
                 "Clean water supplied using excess minigrid energy (l)"
             ]
@@ -1523,13 +1562,14 @@ def plot_outputs(
 
             plt.plot(total_used, "--", label="Total used", zorder=1)
             plt.plot(backup, label="Backup desalination", zorder=2)
-            plt.plot(excess, label="Excess minigrid power", zorder=3)
-            plt.plot(renewable, label="PV-D direct use", zorder=4)
-            plt.plot(renewable_produced, "--", label="PV-D output", zorder=5)
-            plt.plot(storage, label="Storage", zorder=6)
-            plt.plot(tank_storage, "--", label="Water held in tanks", zorder=7)
-            plt.plot(unmet_clean_water, label="Unmet", zorder=8)
-            plt.plot(total_load, "--", label="Total load", zorder=9)
+            plt.plot(conventional, label="Conventional sources", zorder=3)
+            plt.plot(excess, label="Excess minigrid power", zorder=4)
+            plt.plot(renewable, label="PV-D direct use", zorder=5)
+            plt.plot(renewable_produced, "--", label="PV-D output", zorder=6)
+            plt.plot(storage, label="Storage", zorder=7)
+            plt.plot(tank_storage, "--", label="Water held in tanks", zorder=8)
+            plt.plot(unmet_clean_water, label="Unmet", zorder=9)
+            plt.plot(total_load, "--", label="Total load", zorder=10)
             plt.legend()
             plt.xlim(0, 23)
             plt.xticks(range(0, 24, 1))
@@ -1966,7 +2006,7 @@ def plot_outputs(
             )
             conventional_water = np.reshape(
                 simulation_output[0:HOURS_PER_YEAR][
-                    "Clean water supplied via conventional sources (l)"
+                    "Drinking water supplied via conventional sources (l)"
                 ].values
                 / 1000,
                 (365, 24),

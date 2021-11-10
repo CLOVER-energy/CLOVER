@@ -508,7 +508,7 @@ def _calculate_pvt_and_thermal_desalination_profiles(
                     )
                 )
             ).values
-            + (pvt_pump_times > 0) * minigrid.water_pump.consumption
+            + 0.001 * (pvt_pump_times > 0) * minigrid.water_pump.consumption
         )
 
         buffer_tank_temperature = buffer_tank_temperature.reset_index(drop=True)
@@ -1896,6 +1896,7 @@ def run_simulation(
             + storage_water_supplied_frame.values
             + backup_desalinator_water_frame.values
             + clean_water_supplied_by_excess_energy_frame.values
+            + conventional_clean_water_supplied_frame.values
         ).mul(
             (1 - blackout_times)
         )  # type: ignore
@@ -1934,7 +1935,7 @@ def run_simulation(
             ["Power consumed providing clean water (kWh)"]
         )
         conventional_clean_water_supplied_frame.columns = pd.Index(
-            ["Clean water supplied via conventional sources (l)"]
+            ["Drinking water supplied via conventional sources (l)"]
         )
         excess_energy_used_desalinating_frame.columns = pd.Index(
             ["Excess power consumed desalinating clean water (kWh)"]

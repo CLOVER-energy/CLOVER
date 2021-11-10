@@ -147,7 +147,7 @@ def calculate_pvt_output(
     temperatures: pd.Series,
     thermal_desalination_plant: ThermalDesalinationPlant,
     wind_speeds: pd.Series,
-) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """
     Computes the output of a PV-T system.
 

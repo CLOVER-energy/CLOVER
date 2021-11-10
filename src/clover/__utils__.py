@@ -246,7 +246,7 @@ class CleanWaterScenario:
     sources: List[str]
 
 
-def daily_sum_to_monthly_sum(daily_profile):
+def daily_sum_to_monthly_sum(daily_profile: pd.DataFrame) -> pd.DataFrame:
     """
     Converts an day-by-day profile to a sum for each month.
 
@@ -447,7 +447,7 @@ def get_logger(logger_name: str, verbose: bool = False) -> logging.Logger:
     return logger
 
 
-def hourly_profile_to_daily_sum(hourly_profile: pd.DataFrame):
+def hourly_profile_to_daily_sum(hourly_profile: pd.DataFrame) -> pd.DataFrame:
     """
     Converts an hour-by-hour profile to a sum for each day.
 
@@ -669,7 +669,7 @@ RESOURCE_NAME_TO_RESOURCE_TYPE_MAPPING = {
     "heat": ResourceType.HEAT,
     "hot_water": ResourceType.HOT_CLEAN_WATER,
     "hot_untreated_water": ResourceType.HOT_UNCLEAN_WATER,
-    "water": ResourceType.GENERIC_WATER
+    "water": ResourceType.GENERIC_WATER,
 }
 
 
@@ -844,7 +844,7 @@ def monthly_times_to_daily_times(
     return concatenated_yearly_profile
 
 
-def open_simulation(filename: str):
+def open_simulation(filename: str) -> pd.DataFrame:
     """
     Opens a previously saved simulation from a .csv file
 
@@ -857,7 +857,8 @@ def open_simulation(filename: str):
 
     """
 
-    output = pd.read_csv(os.path.join(filename), index_col=0)
+    output: pd.DataFrame = pd.read_csv(os.path.join(filename), index_col=0)
+
     return output
 
 
@@ -1200,7 +1201,7 @@ class PVTScenario:
 
 def read_yaml(
     filepath: str, logger: logging.Logger
-) -> Union[Dict[Union[int, str], Any], List[Dict[Union[int, str], Any]],]:
+) -> Union[Dict[Union[int, str], Any], List[Dict[Union[int, str], Any]]]:
     """
     Reads a YAML file and returns the contents.
 
@@ -1210,7 +1211,9 @@ def read_yaml(
     # Process the new-location data.
     try:
         with open(filepath, "r") as filedata:
-            file_contents = yaml.safe_load(filedata)
+            file_contents: Union[
+                Dict[Union[int, str], Any], List[Dict[Union[int, str], Any]]
+            ] = yaml.safe_load(filedata)
     except FileNotFoundError:
         logger.error(
             "The file specified, %s, could not be found. "
@@ -2025,7 +2028,7 @@ def save_optimisation(
     output: str,
     output_directory: str,
     system_appraisals: List[SystemAppraisal],
-):
+) -> None:
     """
     Saves simulation outputs to a .csv file
 
@@ -2092,7 +2095,7 @@ def save_simulation(
     simulation: pd.DataFrame,
     simulation_number: int,
     system_details: SystemDetails,
-):
+) -> None:
     """
     Saves simulation outputs to a .csv file
 
