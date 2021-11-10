@@ -384,6 +384,27 @@ def _calculate_pvt_and_thermal_desalination_profiles(
             "Desalination plant determined: %s", thermal_desalination_plant.name
         )
 
+        # Determine whether the water pump is capable for supplying the PV-T panels with
+        # enough throughput.
+        if (
+            scenario.desalination_scenario.pvt_scenario.mass_flow_rate * pvt_size
+            > minigrid.water_pump.throughput
+        ):
+            logger.error(
+                "%sThe water pump supplied, %s, is incapable of meeting the required "
+                "PV-T flow rate of %s litres/hour. Max pump throughput: %s litres/hour."
+                "%s",
+                BColours.fail,
+                minigrid.water_pump.name,
+                scenario.desalination_scenario.pvt_scenario.mass_flow_rate * pvt_size,
+                minigrid.water_pump.throughput,
+                BColours.endc,
+            )
+            raise InputFileError(
+                "transmission inputs",
+                "The water pump defined is unable to meet PV-T flow requirements.",
+            )
+
         # Determine the list of available feedwater sources.
         feedwater_sources: List[Convertor] = sorted(
             [
@@ -446,6 +467,7 @@ def _calculate_pvt_and_thermal_desalination_profiles(
         (
             pvt_collector_output_temperature,
             pvt_electric_power_per_unit,
+            pvt_pump_times,
             buffer_tank_temperature,
             tank_volume_supplied,
         ) = calculate_pvt_output(
@@ -486,6 +508,7 @@ def _calculate_pvt_and_thermal_desalination_profiles(
                     )
                 )
             ).values
+            + (pvt_pump_times > 0) * minigrid.water_pump.consumption
         )
 
         buffer_tank_temperature = buffer_tank_temperature.reset_index(drop=True)
