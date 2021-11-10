@@ -796,7 +796,7 @@
                 transmitters:
                   - name: default_water_pump
                     electric_power: 40 # [W]
-                    maximum_throughut: 1000 # [l/hour]
+                    maximum_throughput: 1000 # [l/hour]
                     transmits: water
                     costs:
                       cost: 120 # [$/unit]

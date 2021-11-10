@@ -221,6 +221,8 @@ def create_new_location(
     logger.info("Attempting to read location data from installed package info.")
     try:
         package_data = pkgutil.get_data(PACKAGE_NAME, NEW_LOCATION_DATA_FILE)
+        if package_data is None:
+            raise AttributeError("Package data read but no data within file.")
     except AttributeError:
         logger.info("Failed to read data as if package was installed.")
         logger.info("Attempting to read location data from raw source file.")

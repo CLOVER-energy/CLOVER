@@ -32,9 +32,8 @@ import pandas as pd  # type: ignore  # pylint: disable=import-error
 
 from tqdm import tqdm
 
-from clover.conversion.conversion import WaterSource  # type: ignore  # pylint: disable=import-error
-
 from . import analysis, argparser
+from .conversion.conversion import WaterSource
 from .fileparser import (
     INPUTS_DIRECTORY,
     KEROSENE_TIMES_FILE,
