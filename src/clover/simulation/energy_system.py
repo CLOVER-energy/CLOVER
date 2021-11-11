@@ -1730,7 +1730,7 @@ def run_simulation(
                 minimum_clean_water_tank_storage,
                 new_hourly_battery_storage,
                 scenario,
-                storage_power_supplied,
+                storage_water_supplied,
                 tank_storage_profile,
                 time_index=t,
             )
@@ -1811,6 +1811,7 @@ def run_simulation(
     unmet_energy = pd.DataFrame(
         (
             load_energy.values
+            + thermal_desalination_electric_power_consumed.values
             + clean_water_power_consumed.values
             - renewables_energy_used_directly.values
             - grid_energy.values
