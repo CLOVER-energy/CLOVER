@@ -761,7 +761,7 @@ def _clean_water_tank_iteration_step(
                 0.0,
             )
 
-        return excess_energy
+    return excess_energy
 
 
 def _get_electric_battery_storage_profile(
@@ -1239,7 +1239,7 @@ def _update_battery_health(
         - minigrid:
             The :class:`Minigrid` being modelled.
         - storage_power_supplied:
-            THe amount of power supplied by the storage system.
+            The amount of power supplied by the storage system.
         - time_index:
             The current time (hour) being considered.
 
@@ -1765,7 +1765,7 @@ def run_simulation(
                 hourly_battery_storage,
                 maximum_battery_energy_throughput,
                 minigrid,
-                storage_water_supplied,
+                storage_power_supplied,
                 time_index=t,
             )
 
@@ -1812,12 +1812,20 @@ def run_simulation(
         (
             load_energy.values
             + clean_water_power_consumed.values
-            + thermal_desalination_electric_power_consumed.values
             - renewables_energy_used_directly.values
             - grid_energy.values
             - storage_power_supplied_frame.values
         )
     )
+    if thermal_desalination_electric_power_consumed is not None:
+        unmet_energy = pd.DataFrame(
+            (
+                unmet_energy.values
+                + thermal_desalination_electric_power_consumed.values
+            )
+        )
+
+    # Determine the times for which the system experienced a blackout.
     blackout_times = ((unmet_energy > 0) * 1).astype(float)
 
     # Use backup diesel generator
