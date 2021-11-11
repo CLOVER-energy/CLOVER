@@ -40,6 +40,7 @@ __all__ = (
     "CUT_OFF_TIME",
     "daily_sum_to_monthly_sum",
     "DemandType",
+    "DesalinationScenario",
     "dict_to_dataframe",
     "DieselMode",
     "DONE",
@@ -48,6 +49,7 @@ __all__ = (
     "FAILED",
     "get_logger",
     "HEAT_CAPACITY_OF_WATER",
+    "HotWaterScenario",
     "hourly_profile_to_daily_sum",
     "HTFMode",
     "InputFileError",
@@ -76,6 +78,10 @@ __all__ = (
     "ZERO_CELCIUS_OFFSET",
 )
 
+
+# Cold water:
+#   Used for parsing cold-water related information.
+COLD_WATER: str = "cold_water"
 
 # Cut off time:
 #   The time up and to which information about the load of each device will be returned.
@@ -120,12 +126,16 @@ LOGGER_DIRECTORY: str = "logs"
 # Max:
 #   Keyword used when parsing information about the maximum system size to consider in
 #   optimisations.
-MAX = "max"
+MAX: str = "max"
 
 # Min:
 #   Keyword used when parsing information about the minimum system size to consider in
 #   optimisations.
-MIN = "min"
+MIN: str = "min"
+
+# Mode:
+#   Used for parsing various operation modes.
+MODE: str = "mode"
 
 # Month mid-day:
 #   The "day" in the year that falls in the middle of the month.
@@ -152,7 +162,7 @@ MONTH_START_DAY: List[int] = [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 
 
 # Name:
 #   Keyword used for parsing convertor name information.
-NAME = "name"
+NAME: str = "name"
 
 # Number of iterations:
 #   The number of iterations to consider in the optimisation.
@@ -171,10 +181,18 @@ PVT_SCENARIO: str = "pvt_scenario"
 #   The path to the clover source directory to use when running in github mode.
 RAW_CLOVER_PATH: str = os.path.join("src", "clover")
 
+# Skipped:
+#   Keyword used when skipping part of the CLOVER flow.
+SKIPPED: str = "[ SKIPPED ]"
+
 # Step:
 #   Keyword used when parsing information about the system size step to consider in
 #   optimisations.
-STEP = "step"
+STEP: str = "step"
+
+# Supply temperature:
+#   Used to parse supply-temperature information.
+SUPPLY_TEMPERATURE: str = "supply_temperature"
 
 # Zero celcius offset:
 #   Used for offsetting zero degrees celcius in Kelvin.
@@ -244,6 +262,25 @@ class CleanWaterScenario:
     conventional_sources: Set[str]
     mode: CleanWaterMode
     sources: List[str]
+
+
+class ColdWaterSupply(enum.Enum):
+    """
+    Specifies the source of cold water to the hot-water system.
+
+    - CLEAN_WATER:
+        Denotes that cold water is sourced from the clean-water system.
+
+    - UNLIMITED:
+        Denotes that an unlimited supply of cold water is available. I.E., the
+        desalination and/or cleaning of the feedwater to the overall water-demand system
+        is ignored and it is assumed that there exists a supply that can fulfil the
+        input needs of the hot-water system.
+
+    """
+
+    CLEAN_WATER = "clean_water"
+    UNLIMITED = "unlimited"
 
 
 def daily_sum_to_monthly_sum(daily_profile: pd.DataFrame) -> pd.DataFrame:
@@ -466,6 +503,23 @@ def hourly_profile_to_daily_sum(hourly_profile: pd.DataFrame) -> pd.DataFrame:
     return daily_profile.sum(axis=1)
 
 
+class HotWaterMode(enum.Enum):
+    """
+    Denotes the hot-water mode.
+
+    - FULFIL:
+        Denotes that hot water should always be supplied at the demand temperature.
+
+    - RENEWABLE_ONLY:
+        Denotes that hot water should only be supplied at the temperature which can be
+        reached using renewables within the system.
+
+    """
+
+    FULFIL = "fulfil"
+    RENEWABLE_ONLY = "renewable_only"
+
+
 class InputFileError(Exception):
     """Raised when there is an error in an input file."""
 
@@ -664,6 +718,7 @@ class ResourceType(enum.Enum):
 #   Maps the load name to the load type, used for parsing scenario files.
 RESOURCE_NAME_TO_RESOURCE_TYPE_MAPPING = {
     "clean_water": ResourceType.CLEAN_WATER,
+    "cold_water": ResourceType.CLEAN_WATER,
     ELECTRIC_POWER: ResourceType.ELECTRIC,
     "feedwater": ResourceType.UNCLEAN_WATER,
     "heat": ResourceType.HEAT,
@@ -680,18 +735,23 @@ class HTFMode(enum.Enum):
     - CLOSED_HTF:
         Denotes that a closed (i.e., self-contained) HTF is being used.
 
+    - COLD_WATER_HEATING:
+        Denotes that clean water is heated by the PV-T panels directly.
+
     - FEEDWATER_HEATING:
         Denotes that feedwater is being heated directly.
 
     """
 
     CLOSED_HTF = "htf"
+    COLD_WATER_HEATING = COLD_WATER
     FEEDWATER_HEATING = ResourceType.UNCLEAN_WATER.value
 
 
 # HTF name to HTF type mapping:
 #   Maps the HTF name to the HTF type, used for parsing desalination scenario files.
 HTF_NAME_TO_HTF_TYPE_MAPPING = {
+    "cold_water": HTFMode.COLD_WATER_HEATING,
     "feedwater": HTFMode.FEEDWATER_HEATING,
     "htf": HTFMode.CLOSED_HTF,
 }
@@ -1290,13 +1350,13 @@ class DesalinationScenario:
 
         try:
             clean_water_mode = CleanWaterMode(
-                desalination_inputs[ResourceType.CLEAN_WATER.value]["mode"]
+                desalination_inputs[ResourceType.CLEAN_WATER.value][MODE]
             )
         except ValueError:
             logger.error(
                 "%sInvalid clean-water mode specified: %s%s",
                 BColours.fail,
-                desalination_inputs[ResourceType.CLEAN_WATER.value]["mode"],
+                desalination_inputs[ResourceType.CLEAN_WATER.value][MODE],
                 BColours.endc,
             )
             raise InputFileError(
@@ -1357,7 +1417,7 @@ class DesalinationScenario:
         try:
             feedwater_supply_temperature = desalination_inputs[
                 ResourceType.UNCLEAN_WATER.value
-            ]["supply_temperature"]
+            ][SUPPLY_TEMPERATURE]
         except KeyError:
             logger.error(
                 "%sMissing feedwater supply temperature information in desalination "
@@ -1389,6 +1449,168 @@ class DesalinationScenario:
 
 
 @dataclasses.dataclass
+class HotWaterScenario:
+    """
+    Represents the hot-water-related scenario being run.
+
+    .. attribute:: cold_water_supply
+        How input cold water is sourced for the hot-water system.
+
+    .. attribute:: cold_water_supply_temperature
+        The supply temperature of the cold-water input to the system.
+
+    .. attribute:: pvt_scenario
+        The PV-T scenario.
+
+    """
+
+    cold_water_supply: ColdWaterSupply
+    cold_water_supply_temperature: float
+    demand_temperature: float
+    mode: HotWaterMode
+    pvt_scenario: PVTScenario
+
+    @classmethod
+    def from_dict(
+        cls, hot_water_inputs: Dict[Union[int, str], Any], logger: logging.Logger
+    ) -> Any:
+        """
+        Returns a :class:`DeslinationScenario` instance based on the input data.
+
+        Inputs:
+            - hot_water_inputs:
+                The input data extracted from the hot-water scenario file.
+            - logger:
+                The :class:`logging.Logger` to use for the run.
+
+        Outputs:
+            - A :class:`HotWaterScenario` instance based on the input data provided.
+
+        """
+
+        try:
+            cold_water_supply = ColdWaterSupply(
+                hot_water_inputs[COLD_WATER]["supply"]
+            )
+        except ValueError:
+            logger.error(
+                "%sInvalid cold-water supply specified: %s%s",
+                BColours.fail,
+                hot_water_inputs[COLD_WATER]["supply"],
+                BColours.endc,
+            )
+            raise InputFileError(
+                "hot-water scenario",
+                "Invalid clean-water mode specified in hot-water scenario.",
+            ) from None
+        except KeyError:
+            logger.error(
+                "%sMissing cold-water supply information in hot-water scenario file.%s",
+                BColours.fail,
+                BColours.endc,
+            )
+            raise InputFileError(
+                "hot-water scenario", "Missing cold-water source information."
+            ) from None
+
+        try:
+            cold_water_supply_temperature = hot_water_inputs[
+                COLD_WATER
+            ][SUPPLY_TEMPERATURE]
+        except KeyError:
+            logger.error(
+                "%sMissing cold-water supply temperature information in hot-water "
+                "inputs.%s",
+                BColours.fail,
+                BColours.endc,
+            )
+
+        try:
+            demand_temperature = hot_water_inputs[ResourceType.HOT_CLEAN_WATER.value]["demand_temperature"]
+        except ValueError:
+            logger.error(
+                "%sInvalid hot-water demand temperature specified: %s%s",
+                BColours.fail,
+                hot_water_inputs[ResourceType.HOT_CLEAN_WATER.value]["demand_temperature"],
+                BColours.endc,
+            )
+            raise InputFileError(
+                "hot-water scenario",
+                "Invalid hot-water demand temperature specified in hot-water scenario.",
+            ) from None
+        except KeyError:
+            logger.error(
+                "%sMissing hot-water demand temperature in hot-water scenario file.%s",
+                BColours.fail,
+                BColours.endc,
+            )
+            raise InputFileError(
+                "hot-water scenario", "Missing demand temperature."
+            ) from None
+
+        try:
+            hot_water_mode = HotWaterMode(
+                hot_water_inputs[ResourceType.HOT_CLEAN_WATER.value][MODE]
+            )
+        except ValueError:
+            logger.error(
+                "%sInvalid hot-water mode specified: %s%s",
+                BColours.fail,
+                hot_water_inputs[ResourceType.HOT_CLEAN_WATER.value][MODE],
+                BColours.endc,
+            )
+            raise InputFileError(
+                "hot-water scenario",
+                "Invalid hot-water mode specified in hot-water scenario.",
+            ) from None
+        except KeyError:
+            logger.error(
+                "%sMissing hot-water mode information in hot-water scenario file.%s",
+                BColours.fail,
+                BColours.endc,
+            )
+            raise InputFileError(
+                "hot-water scenario", "Missing cold-water source information."
+            ) from None
+
+        try:
+            pvt_scenario: PVTScenario = PVTScenario(
+                HTFMode(hot_water_inputs[PVT_SCENARIO]["heats"]),
+                hot_water_inputs[PVT_SCENARIO]["htf_heat_capacity"]
+                if "htf_heat_capacity" in hot_water_inputs[PVT_SCENARIO]
+                else HEAT_CAPACITY_OF_WATER,
+                hot_water_inputs[PVT_SCENARIO]["mass_flow_rate"],
+            )
+        except ValueError:
+            logger.error(
+                "%sInvalid HTF mode specified: %s%s",
+                BColours.fail,
+                hot_water_inputs[PVT_SCENARIO]["heats"],
+                BColours.endc,
+            )
+            raise InputFileError(
+                "hot-water scenario", "Invalid HTF mode specified in PV-T scenario."
+            ) from None
+        except KeyError:
+            logger.error(
+                "%sMissing PV-T information in hot-water scenario file.%s",
+                BColours.fail,
+                BColours.endc,
+            )
+            raise InputFileError(
+                "hot-water scenario", "Missing PV-T scenario information."
+            ) from None
+
+        return cls(
+            cold_water_supply,
+            cold_water_supply_temperature,
+            demand_temperature,
+            hot_water_mode,
+            pvt_scenario,
+        )
+
+
+@dataclasses.dataclass
 class Scenario:
     """
     Represents a scenario being run.
@@ -1398,6 +1620,9 @@ class Scenario:
 
     .. attribute:: demands
         The demands being modelled.
+
+    .. attribute:: desalination_scenario
+        The :class:`DesalinationScenario` for the run.
 
     .. attribute:: diesel_scenario
         The diesel scenario being modelled.
@@ -1411,6 +1636,9 @@ class Scenario:
     .. attribute:: grid_type
         The type of grid being modelled, i.e., whether the grid is full, etc. These
         options are written in the grid inputs file as headers.
+
+    .. attribute:: hot_water_scneario
+        The :class:`HotWaterScenario` for the run.
 
     .. attribute:: resource_types
         The load types being modelled.
@@ -1436,6 +1664,7 @@ class Scenario:
     distribution_network: DistributionNetwork
     grid: bool
     grid_type: str
+    hot_water_scenario: Optional[HotWaterScenario]
     resource_types: Set[ResourceType]
     prioritise_self_generation: bool
     pv: bool
@@ -1446,6 +1675,7 @@ class Scenario:
     def from_dict(
         cls,
         desalination_scenario: Optional[DesalinationScenario],
+        hot_water_scenario: Optional[HotWaterScenario],
         logger: logging.Logger,
         scenario_inputs: Dict[Union[int, str], Any],
     ) -> Any:
@@ -1473,9 +1703,9 @@ class Scenario:
 
         diesel_scenario = DieselScenario(
             scenario_inputs["diesel"]["backup"]["threshold"]
-            if scenario_inputs["diesel"]["mode"] == DieselMode.BACKUP.value
+            if scenario_inputs["diesel"][MODE] == DieselMode.BACKUP.value
             else None,
-            DieselMode(scenario_inputs["diesel"]["mode"]),
+            DieselMode(scenario_inputs["diesel"][MODE]),
         )
 
         distribution_network = DistributionNetwork(
@@ -1495,6 +1725,7 @@ class Scenario:
             distribution_network,
             scenario_inputs["grid"],
             scenario_inputs["grid_type"],
+            hot_water_scenario,
             resource_types,
             scenario_inputs["prioritise_self_generation"],
             scenario_inputs["pv"],

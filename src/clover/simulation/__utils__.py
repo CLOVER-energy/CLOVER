@@ -195,9 +195,6 @@ class Minigrid:
             exchangers = {}
 
         tanks: Dict[str, Union[CleanWaterTank, HotWaterTank]] = {}
-        import pdb
-
-        pdb.set_trace()
         # Parse the tank information.
         if tank_inputs is not None:
             for entry in tank_inputs:
