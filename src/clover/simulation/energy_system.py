@@ -226,8 +226,7 @@ def _calculate_electric_desalination_parameters(
 
     # If the mode is backup or prioritise.
     if (
-        ResourceType.CLEAN_WATER in scenario.resource_types
-        and scenario.desalination_scenario is not None
+        scenario.desalination_scenario is not None
         and scenario.desalination_scenario.clean_water_scenario.mode
         in {CleanWaterMode.BACKUP, CleanWaterMode.PRIORITISE}
     ):
@@ -630,7 +629,7 @@ def _clean_water_tank_iteration_step(
 
     """
 
-    if ResourceType.CLEAN_WATER in scenario.resource_types:
+    if scenario.desalination_scenario is not None:
         tank_water_flow = tank_storage_profile.iloc[time_index][0]  # type: ignore
 
         # Compute the new tank level based on the previous level and the flow.
@@ -1490,7 +1489,7 @@ def run_simulation(
     tank_storage_profile: Optional[pd.DataFrame] = None
     total_clean_water_supplied: Optional[pd.DataFrame] = None
 
-    if ResourceType.CLEAN_WATER in scenario.resource_types:
+    if scenario.desalination_scenario is not None:
         if total_clean_water_load is None:
             raise Exception(
                 f"{BColours.fail}A simulation was run that specified a clean-water "
@@ -1520,7 +1519,7 @@ def run_simulation(
 
     # Calculate hot-water-related profiles.
     processed_total_hot_water_load: Optional[pd.DataFrame]
-    if ResourceType.HOT_CLEAN_WATER in scenario.resource_types:
+    if scenario.hot_water_scenario is not None:
         if total_hot_water_load is None:
             raise Exception(
                 f"{BColours.fail}A simulation was run that specified a hot-water load "
@@ -1780,7 +1779,7 @@ def run_simulation(
         storage_power_supplied, logger
     )
 
-    if ResourceType.CLEAN_WATER in scenario.resource_types:
+    if scenario.desalination_scenario is not None:
         backup_desalinator_water_frame: pd.DataFrame = dict_to_dataframe(
             backup_desalinator_water_supplied, logger
         )
@@ -1877,7 +1876,7 @@ def run_simulation(
         kerosene_profile.values
     )
 
-    if ResourceType.CLEAN_WATER in scenario.resource_types:
+    if scenario.desalination_scenario is not None:
         # Compute the amount of time for which the backup water was able to operate.
         backup_desalinator_water_frame = backup_desalinator_water_frame.mul(  # type: ignore
             1 - blackout_times
@@ -1996,7 +1995,7 @@ def run_simulation(
             + diesel_energy.values
         )
 
-    if ResourceType.HOT_CLEAN_WATER in scenario.resource_types:
+    if scenario.hot_water_scenario is not None:
         processed_total_hot_water_load.columns = pd.Index(
             ["Total hot-water demand (l)"]
         )
@@ -2021,13 +2020,13 @@ def run_simulation(
         diesel_capacity,
         simulation.end_year,
         number_of_buffer_tanks
-        if ResourceType.CLEAN_WATER in scenario.resource_types
+        if scenario.desalination_scenario is not None
         else None,
         number_of_clean_water_tanks
-        if ResourceType.CLEAN_WATER in scenario.resource_types
+        if scenario.desalination_scenario is not None
         else None,
         number_of_hot_water_tanks
-        if ResourceType.HOT_CLEAN_WATER in scenario.resource_types
+        if scenario.hot_water_scenario is not None
         else None,
         pv_size
         * float(
@@ -2049,13 +2048,13 @@ def run_simulation(
             * np.min(battery_health_frame["Battery health"])
         ),
         number_of_buffer_tanks
-        if ResourceType.CLEAN_WATER in scenario.resource_types
+        if scenario.desalination_scenario is not None
         else None,
         number_of_clean_water_tanks
-        if ResourceType.CLEAN_WATER in scenario.resource_types
+        if scenario.desalination_scenario is not None
         else None,
         number_of_hot_water_tanks
-        if ResourceType.HOT_CLEAN_WATER in scenario.resource_types
+        if scenario.hot_water_scenario is not None
         else None,
         pv_size,
         pvt_size if minigrid.pvt_panel is not None else None,
@@ -2094,7 +2093,7 @@ def run_simulation(
         kerosene_mitigation,
     ]
 
-    if ResourceType.CLEAN_WATER in scenario.resource_types:
+    if scenario.desalination_scenario is not None:
         system_performance_outputs_list.extend(
             [
                 backup_desalinator_water_frame,
@@ -2121,7 +2120,7 @@ def run_simulation(
                 water_surplus_frame,
             ]
         )
-    if ResourceType.HOT_CLEAN_WATER in scenario.resource_types:
+    if scenario.hot_water_scenario is not None:
         system_performance_outputs_list.extend([processed_total_hot_water_load])
 
     system_performance_outputs = pd.concat(

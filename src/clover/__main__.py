@@ -235,6 +235,7 @@ def _prepate_water_system(
             considered.
 
     """
+
     # Raise an error if there are no water devices specified.
     if (
         resource_type == ResourceType.HOT_CLEAN_WATER
@@ -537,7 +538,7 @@ def main(args: List[Any]) -> None:
 
     # If the inputs do not match up correctly, then raise errors.
     if (
-        ResourceType.CLEAN_WATER in scenario.resource_types
+        scenario.desalination_scenario is not None
         and minigrid.clean_water_tank is None
     ):
         raise InputFileError(
@@ -556,8 +557,8 @@ def main(args: List[Any]) -> None:
         )
     if (
         operating_mode == OperatingMode.SIMULATION
-        and ((parsed_args.clean_water_pvt_system_size is not None and ResourceType.CLEAN_WATER not in scenario.resource_types and not scenario.pv_t)
-        or (parsed_args.clean_water_pvt_system_size is None and ResourceType.CLEAN_WATER in scenario.resource_types and scenario.pv_t))
+        and ((parsed_args.clean_water_pvt_system_size is not None and scenario.desalination_scenario is None and not scenario.pv_t)
+        or (parsed_args.clean_water_pvt_system_size is None and scenario.desalination_scenario is not None and scenario.pv_t))
     ):
         raise InputFileError(
             "scenario",
@@ -565,8 +566,8 @@ def main(args: List[Any]) -> None:
         )
     if (
         operating_mode == OperatingMode.SIMULATION
-        and ((parsed_args.hot_water_pvt_system_size is not None and ResourceType.HOT_CLEAN_WATER not in scenario.resource_types and not scenario.pv_t)
-        or (parsed_args.hot_water_pvt_system_size is None and ResourceType.HOT_CLEAN_WATER in scenario.resource_types and scenario.pv_t))
+        and ((parsed_args.hot_water_pvt_system_size is not None and scenario.hot_water_scenario is None and not scenario.pv_t)
+        or (parsed_args.hot_water_pvt_system_size is None and scenario.hot_water_scenario is not None in scenario.resource_types and scenario.pv_t))
     ):
         raise InputFileError(
             "scenario",
@@ -588,7 +589,7 @@ def main(args: List[Any]) -> None:
     num_ninjas: int = (
         1
         + (1 if scenario.pv_t else 0)
-        + (1 if ResourceType.CLEAN_WATER in scenario.resource_types else 0)
+        + (1 if scenario.desalination_scenario is not None else 0)
     )
 
     # Generate and save the wind data for each year as a background task.
@@ -613,7 +614,7 @@ def main(args: List[Any]) -> None:
         wind_data_thread = None
 
     # Generate and save the weather data for each year as a background task.
-    if ResourceType.CLEAN_WATER in scenario.resource_types:
+    if scenario.desalination_scenario is not None:
         # Set up the system to call renewables.ninja at a slower rate.
         logger.info("Begining weather-data fetching.")
         weather_data_thread: Optional[
@@ -707,7 +708,7 @@ def main(args: List[Any]) -> None:
     initial_clean_water_hourly_loads: Optional[Dict[str, pd.DataFrame]] = None
     total_clean_water_load: Optional[pd.DataFrame] = None
 
-    if ResourceType.CLEAN_WATER in scenario.resource_types:
+    if scenario.desalination_scenario is not None:
         (
             conventional_clean_water_source_profiles,
             initial_clean_water_hourly_loads,
@@ -730,7 +731,7 @@ def main(args: List[Any]) -> None:
     initial_hot_water_hourly_loads: Optional[Dict[str, pd.DataFrame]] = None
     total_hot_water_load: Optional[pd.DataFrame] = None
 
-    if ResourceType.HOT_CLEAN_WATER in scenario.resource_types:
+    if scenario.hot_water_scenario is not None:
         (
             conventional_hot_water_source_profiles,
             initial_hot_water_hourly_loads,
@@ -742,50 +743,8 @@ def main(args: List[Any]) -> None:
             location,
             logger,
             parsed_args,
-            ResourceType.CLEAN_WATER,
+            ResourceType.HOT_CLEAN_WATER,
             water_source_times,
-        )
-
-        # Generate the conventional-hot-water source availability profiles.
-        logger.info("Generating conventional hot-water-source availability profiles.")
-        try:
-            conventional_water_source_profiles = (
-                water_source.get_lifetime_water_source_status(
-                    os.path.join(auto_generated_files_directory, "hot_water_source"),
-                    "hot",
-                    location,
-                    logger,
-                    parsed_args.regenerate,
-                    water_source_times,
-                )
-            )
-        except InputFileError:
-            print(
-                "Generating necessary profiles .................................    "
-                + f"{FAILED}"
-            )
-            raise
-        except Exception as e:
-            print(
-                "Generating necessary profiles .................................    "
-                + f"{FAILED}"
-            )
-            logger.error(
-                "%sAn unexpected error occurred generating the conventional "
-                "hot-water-source profiles. See %s for details: %s%s",
-                BColours.fail,
-                "{}.log".format(os.path.join(LOGGER_DIRECTORY, LOGGER_NAME)),
-                str(e),
-                BColours.endc,
-            )
-            raise
-
-        logger.info("Conventional hot-water sources successfully parsed.")
-        logger.debug(
-            "Conventional hot-water sources: %s",
-            ", ".join(
-                [str(source) for source in conventional_water_source_profiles.keys()]
-            ),
         )
 
     # Assemble a means of storing the relevant loads.
@@ -845,7 +804,7 @@ def main(args: List[Any]) -> None:
     )
     logger.info("Total solar output successfully computed and saved.")
 
-    if ResourceType.CLEAN_WATER in scenario.resource_types:
+    if scenario.desalination_scenario is not None:
         logger.info("Generating and saving total weather output file.")
         total_weather_data = weather.total_weather_output(
             os.path.join(auto_generated_files_directory, "weather"),
@@ -971,7 +930,7 @@ def main(args: List[Any]) -> None:
                 "- {}x {} litres clean-water storage".format(
                     parsed_args.num_clean_water_tanks, minigrid.clean_water_tank.mass
                 )
-                if ResourceType.CLEAN_WATER in scenario.resource_types
+                if scenario.desalination_scenario is not None
                 else ""
             )
             + (
@@ -986,7 +945,7 @@ def main(args: List[Any]) -> None:
                 "- {}x {} litres hot-water storage".format(
                     parsed_args.num_hot_water_tanks, minigrid.hot_water_tank.mass
                 )
-                if ResourceType.HOT_CLEAN_WATER in scenario.resource_types
+                if scenario.hot_water_scenario is not None
                 else ""
             )
         )
@@ -1172,7 +1131,7 @@ def main(args: List[Any]) -> None:
                             minigrid.clean_water_tank.mass
                         )
                     )
-                    if ResourceType.CLEAN_WATER in scenario.resource_types
+                    if scenario.desalination_scenario is not None
                     and optimisation_inputs.clean_water_tanks_step is not None
                     else None,
                 ]

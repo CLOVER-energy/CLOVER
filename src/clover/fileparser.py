@@ -33,6 +33,7 @@ from .__utils__ import (
     BColours,
     DesalinationScenario,
     EXCHANGER,
+    HotWaterScenario,
     HTFMode,
     InputFileError,
     InternalError,
@@ -157,6 +158,10 @@ GHG_INPUTS_FILE: str = os.path.join("impact", "ghg_inputs.yaml")
 #   The relative path to the grid-inputs file.
 GRID_TIMES_FILE: str = os.path.join("generation", "grid_times.csv")
 
+# Hot-water scenario inputs file:
+#   The relative path to the hot-water scenario inputs file.
+HOT_WATER_SCENARIO_INPUTS_FILE: str = os.path.join("scenario", "hot_water_scenario.yaml")
+
 # Inputs directory:
 #   The directory containing user inputs.
 INPUTS_DIRECTORY: str = "inputs"
@@ -245,7 +250,7 @@ def _determine_available_convertors(
     """
 
     # Determine the available convertors from the scenarios file.
-    if ResourceType.CLEAN_WATER in scenario.resource_types:
+    if scenario.desalination_scenario is not None:
         available_convertors: List[Convertor] = []
 
         # Process the clean-water convertors.
@@ -650,7 +655,7 @@ def _parse_exchanger_inputs(
     inputs_directory_relative_path: str,
     logger: Logger,
     scenario: Scenario,
-) -> Tuple[Dict[str, float], Dict[str, float], Dict[str, float], str]:
+) -> Tuple[Optional[Dict[str, float]], Optional[Dict[str, float]], Dict[str, float], str]:
     """
     Parses the exchanger inputs file.
 
@@ -685,7 +690,7 @@ def _parse_exchanger_inputs(
     logger.info("Exchanger inputs successfully parsed.")
 
     # Determine the costs and emissions.
-    if scenario.desalination_scenario.pvt_scenario.heats == HTFMode.CLOSED_HTF:
+    if (scenario.desalination_scenario is not None and scenario.desalination_scenario.pvt_scenario.heats == HTFMode.CLOSED_HTF) or scenario.hot_water_scenario is not None:
         logger.info("Parsing exchanger impact information.")
         try:
             exchanger_costs = [
@@ -713,6 +718,8 @@ def _parse_exchanger_inputs(
         logger.info(
             "Exchanger disblaed in scenario file, skipping battery impact parsing."
         )
+        exchanger_costs = None
+        exchanger_emissions = None
 
     return (
         exchanger_costs,
@@ -840,14 +847,19 @@ def _parse_scenario_inputs(
 
     Outputs:
         - The desalination inputs filepath;
+        - The hot-water inputs filepath;
         - The :class:`Scenario` to use for the run;
         - The scenario inputs filepath.
 
     """
 
-    desalination_scenario_inputs_filepath = os.path.join(
+    desalination_scenario_inputs_filepath: str = os.path.join(
         inputs_directory_relative_path,
         DESALINATION_SCENARIO_INPUTS_FILE,
+    )
+    hot_water_scenario_inputs_filepath: str = os.path.join(
+        inputs_directory_relative_path,
+        HOT_WATER_SCENARIO_INPUTS_FILE
     )
 
     # Parse the desalination scenario inputs information if relevant.
@@ -878,6 +890,34 @@ def _parse_scenario_inputs(
         desalination_scenario = None
         logger.info("No desalination scenario provided, skipping.")
 
+    # Parse the hot-water scenario inputs information if relevant.
+    if os.path.isfile(hot_water_scenario_inputs_filepath):
+        logger.info("Parsing hot-water inputs file.")
+        hot_water_scenario_inputs = read_yaml(
+            hot_water_scenario_inputs_filepath,
+            logger,
+        )
+        if not isinstance(hot_water_scenario_inputs, dict):
+            raise InputFileError(
+                "hot-water inputs", "Hot-water scenario inputs is not of type `dict`."
+            )
+        try:
+            hot_water_scenario: Optional[
+                HotWaterScenario
+            ] = HotWaterScenario.from_dict(hot_water_scenario_inputs, logger)
+        except Exception as e:
+            logger.error(
+                "%sError generating hot-water scenario from inputs file: %s%s",
+                BColours.fail,
+                str(e),
+                BColours.endc,
+            )
+            raise
+        logger.info("Hot-water scenario successfully parsed.")
+    else:
+        hot_water_scenario = None
+        logger.info("No hot-water scenario provided, skipping.")
+
     # Parse the scenario input information.
     scenario_inputs_filepath = os.path.join(
         inputs_directory_relative_path,
@@ -893,7 +933,7 @@ def _parse_scenario_inputs(
         )
     try:
         scenario: Scenario = Scenario.from_dict(
-            desalination_scenario, logger, scenario_inputs
+            desalination_scenario, hot_water_scenario, logger, scenario_inputs
         )
     except Exception as e:
         logger.error(
@@ -909,7 +949,10 @@ def _parse_scenario_inputs(
     if ResourceType.CLEAN_WATER not in scenario.resource_types:
         scenario.desalination_scenario = None
 
-    return desalination_scenario_inputs_filepath, scenario, scenario_inputs_filepath
+    if ResourceType.HOT_CLEAN_WATER not in scenario.resource_types:
+        scenario.hot_water_scenario = None
+
+    return desalination_scenario_inputs_filepath, hot_water_scenario_inputs_filepath, scenario, scenario_inputs_filepath
 
 
 def _parse_solar_inputs(
@@ -1115,6 +1158,8 @@ def _parse_tank_inputs(
     Optional[Dict[str, float]],
     Optional[Dict[str, float]],
     Optional[Dict[str, float]],
+    Optional[Dict[str, float]],
+    Optional[Dict[str, float]],
     Dict[str, Any],
     str,
 ]:
@@ -1133,6 +1178,8 @@ def _parse_tank_inputs(
 
     Outputs:
         A `tuple` containing:
+        - The buffer-water-tank cost information;
+        - The buffer-water-tank emissions information;
         - The clean-water-tank cost information;
         - The clean-water-tank emissions information;
         - The hot-water tank cost information;
@@ -1151,9 +1198,8 @@ def _parse_tank_inputs(
         raise InputFileError("tank inputs", "Tank inputs file is not of type `list`.")
 
     # If clean-water is present, extract the cost and emissions information.
-    if ResourceType.CLEAN_WATER in scenario.resource_types:
+    if scenario.desalination_scenario is not None:
         logger.info("Parsing clean-water tank impact information.")
-
         # Parse the clean-water tank costs information.
         try:
             clean_water_tank_costs = [
@@ -1190,10 +1236,9 @@ def _parse_tank_inputs(
         )
 
     # If clean-water is present, extract the cost and emissions information.
-    if scenario.desalination_scenario.pvt_scenario.heats == HTFMode.CLOSED_HTF:
-        logger.info("Parsing hot-water tank impact information.")
-
-        # Parse the clean-water tank costs information.
+    if scenario.desalination_scenario is not None and scenario.desalination_scenario.pvt_scenario.heats == HTFMode.CLOSED_HTF:
+        logger.info("Parsing buffer-water tank impact information.")
+        # Parse the buffer-water tank costs information.
         try:
             buffer_tank_costs = [
                 entry[COSTS]
@@ -1202,12 +1247,12 @@ def _parse_tank_inputs(
                 == energy_system_inputs[ImpactingComponent.BUFFER_TANK.value]
             ][0]
         except IndexError:
-            logger.error("Failed to determine hot-water tank cost information.")
+            logger.error("Failed to determine buffer-water tank cost information.")
             raise
         else:
             logger.info("HOt-water tank cost information successfully parsed.")
 
-        # Parse the clean-water tank emissions information.
+        # Parse the buffer-water tank emissions information.
         try:
             buffer_tank_emissions = [
                 entry[EMISSIONS]
@@ -1216,14 +1261,51 @@ def _parse_tank_inputs(
                 == energy_system_inputs[ImpactingComponent.BUFFER_TANK.value]
             ][0]
         except IndexError:
+            logger.error("Failed to determine buffer-water tank emission information.")
+            raise
+        else:
+            logger.info("Buffer-water tank emission information successfully parsed.")
+
+    else:
+        buffer_tank_costs = None
+        buffer_tank_emissions = None
+        logger.info(
+            "Buffer-water tank disblaed in scenario file, skipping battery impact parsing."
+        )
+
+    if scenario.hot_water_scenario is not None:
+        logger.info("Parsing hot-water tank impact information.")
+        # Parse the hot-water tank costs information.
+        try:
+            hot_water_tank_costs = [
+                entry[COSTS]
+                for entry in tank_inputs
+                if entry[NAME]
+                == energy_system_inputs[ImpactingComponent.HOT_WATER_TANK.value]
+            ][0]
+        except IndexError:
+            logger.error("Failed to determine hot-water tank cost information.")
+            raise
+        else:
+            logger.info("Hot-water tank cost information successfully parsed.")
+
+        # Parse the hot-water tank emissions information.
+        try:
+            hot_water_tank_emissions = [
+                entry[EMISSIONS]
+                for entry in tank_inputs
+                if entry[NAME]
+                == energy_system_inputs[ImpactingComponent.HOT_WATER_TANK.value]
+            ][0]
+        except IndexError:
             logger.error("Failed to determine hot-water tank emission information.")
             raise
         else:
             logger.info("Hot-water tank emission information successfully parsed.")
 
     else:
-        buffer_tank_costs = None
-        buffer_tank_emissions = None
+        hot_water_tank_costs = None
+        hot_water_tank_emissions = None
         logger.info(
             "Hot-water tank disblaed in scenario file, skipping battery impact parsing."
         )
@@ -1233,6 +1315,8 @@ def _parse_tank_inputs(
         buffer_tank_emissions,
         clean_water_tank_costs,
         clean_water_tank_emissions,
+        hot_water_tank_costs,
+        hot_water_tank_emissions,
         tank_inputs,
         tank_inputs_filepath,
     )
@@ -1257,6 +1341,8 @@ def _parse_minigrid_inputs(
     Optional[Dict[str, float]],
     Optional[Dict[str, float]],
     Optional[str],
+    Optional[Dict[str, float]],
+    Optional[Dict[str, float]],
     Minigrid,
     Dict[str, float],
     Dict[str, float],
@@ -1286,12 +1372,14 @@ def _parse_minigrid_inputs(
         - Battery input filepath,
         - Buffer tank costs,
         - Buffer tank emissions,
-        - Clean water costs,
-        - Clean water emissions,
+        - Clean-water tank tank costs,
+        - Clean-water tank tank emissions,
         - Diesel costs,
         - Diesel emissions,
         - Diesel input filepath,
         - Energy system filepath,
+        - Hot-water tank costs,
+        - Hot-water tank emissions,
         - The :class:`Minigrid` to use for the run,
         - PV costs,
         - PV emissions,
@@ -1378,6 +1466,8 @@ def _parse_minigrid_inputs(
     buffer_tank_emissions: Optional[Dict[str, float]]
     clean_water_tank_costs: Optional[Dict[str, float]]
     clean_water_tank_emissions: Optional[Dict[str, float]]
+    hot_water_tank_costs: Optional[Dict[str, float]]
+    hot_water_tank_emissions: Optional[Dict[str, float]]
     exchanger_costs: Optional[Dict[str, float]]
     exchanger_emissions: Optional[Dict[str, float]]
     exchanger_inputs: Optional[Dict[str, Any]]
@@ -1390,6 +1480,8 @@ def _parse_minigrid_inputs(
             buffer_tank_emissions,
             clean_water_tank_costs,
             clean_water_tank_emissions,
+            hot_water_tank_costs,
+            hot_water_tank_emissions,
             tank_inputs,
             tank_inputs_filepath,
         ) = _parse_tank_inputs(
@@ -1427,6 +1519,8 @@ def _parse_minigrid_inputs(
         buffer_tank_emissions = None
         clean_water_tank_costs = None
         clean_water_tank_emissions = None
+        hot_water_tank_costs = None
+        hot_water_tank_emissions = None
         exchanger_costs = None
         exchanger_emissions = None
         exchanger_inputs = None
@@ -1446,8 +1540,10 @@ def _parse_minigrid_inputs(
         water_pump,
     )
 
-    if ResourceType.CLEAN_WATER in scenario.resource_types and minigrid.clean_water_tank is None:
+    if scenario.desalination_scenario is not None and minigrid.clean_water_tank is None:
         raise InputFileError("scenario OR minigrid", "The scenario specifies a clean-water system but no clean-water tank is defined.")
+    if scenario.desalination_scenario is not None and minigrid.buffer_tank is None:
+        raise InputFileError("scenario OR minigrid", "The scenario specifies a desalination scenario but no buffer tank is defined.")
     if ResourceType.HOT_CLEAN_WATER in scenario.resource_types and minigrid.hot_water_tank is None:
         raise InputFileError("scenario OR minigrid", "The scenario specifies a hot-water system but no hot-water tank is defined.")
 
@@ -1466,6 +1562,8 @@ def _parse_minigrid_inputs(
         exchanger_costs,
         exchanger_emissions,
         exchanger_inputs_filepath,
+        hot_water_tank_costs,
+        hot_water_tank_emissions,
         minigrid,
         pv_panel_costs,
         pv_panel_emissions,
@@ -1689,6 +1787,7 @@ def parse_input_files(
     # Parse the scenario input information.
     (
         desalination_scenario_inputs_filepath,
+        hot_water_scenario_inputs_filepath,
         scenario,
         scenario_inputs_filepath,
     ) = _parse_scenario_inputs(inputs_directory_relative_path, logger)
@@ -1715,6 +1814,8 @@ def parse_input_files(
         exchanger_costs,
         exchanger_emissions,
         exchanger_inputs_filepath,
+        hot_water_tank_costs,
+        hot_water_tank_emissions,
         minigrid,
         pv_panel_costs,
         pv_panel_emissions,
@@ -1751,7 +1852,7 @@ def parse_input_files(
         )
     logger.info("Grid times successfully parsed.")
 
-    if ResourceType.CLEAN_WATER in scenario.resource_types:
+    if scenario.desalination_scenario is not None:
         # Parse the water-source inputs file.
         (
             conventional_water_source_inputs,
@@ -1917,11 +2018,6 @@ def parse_input_files(
     else:
         logger.info("PV-T disblaed in scenario file, skipping PV-T impact parsing.")
 
-    logger.info("Updating with clean-water tank impact data.")
-    finance_inputs[ImpactingComponent.CLEAN_WATER_TANK.value] = clean_water_tank_costs
-    ghg_data[ImpactingComponent.CLEAN_WATER_TANK.value] = clean_water_tank_emissions
-    logger.info("Clean-water tank impact data successfully updated.")
-
     # Add transmitter impacts.
     for transmitter in transmitters:
         logger.info("Updating with %s impact data.", transmitter)
@@ -1942,13 +2038,21 @@ def parse_input_files(
         scenario.desalination_scenario is not None
         and scenario.desalination_scenario.pvt_scenario.heats == HTFMode.CLOSED_HTF
     ):
-        logger.info("Updating with hot-water tank impact data.")
+        # Update the clean-water tank impacts.
+        logger.info("Updating with clean-water tank impact data.")
+        finance_inputs[ImpactingComponent.CLEAN_WATER_TANK.value] = clean_water_tank_costs
+        ghg_data[ImpactingComponent.CLEAN_WATER_TANK.value] = clean_water_tank_emissions
+        logger.info("Clean-water tank impact data successfully updated.")
+
+        # Update the buffer tank impacts.
+        logger.info("Updating with buffer tank impact data.")
         if buffer_tank_costs is None or buffer_tank_emissions is None:
             raise InternalError("Error processing buffer-tank cost and emissions.")
         finance_inputs[ImpactingComponent.BUFFER_TANK.value] = buffer_tank_costs
         ghg_data[ImpactingComponent.BUFFER_TANK.value] = buffer_tank_emissions
-        logger.info("Hot-water tank impact data successfully updated.")
+        logger.info("Buffer tank impact data successfully updated.")
 
+        # Update the heat-exchanger imapcts.
         logger.info("Updating with heat-exchanger impact data.")
         if exchanger_costs is None or exchanger_emissions is None:
             raise InternalError("Error processing heat-exchanger cost and emissions.")
@@ -1956,8 +2060,9 @@ def parse_input_files(
         ghg_data[ImpactingComponent.HEAT_EXCHANGER.value] = exchanger_emissions
         logger.info("Heat-exchanger impact data successfully updated.")
 
+        # Include the impacts of conventional water sources.
         logger.info("Updating with conventional water-source impact data.")
-        if ResourceType.CLEAN_WATER in scenario.resource_types:
+        if scenario.desalination_scenario is not None:
             for source in conventional_water_sources:
                 conventional_source_costs: Dict[str, float]
                 try:
@@ -1996,6 +2101,16 @@ def parse_input_files(
                     f"{ImpactingComponent.CONVENTIONAL_SOURCE.value}_{source.name}"
                 ] = conventional_source_emissions
 
+    # Add hot-water-specific impacts.
+    if (
+        scenario.hot_water_scenario is not None
+    ):
+        # Update the hot-water tank impacts.
+        logger.info("Updating with hot-water tank impact data.")
+        finance_inputs[ImpactingComponent.HOT_WATER_TANK.value] = hot_water_tank_costs
+        ghg_data[ImpactingComponent.HOT_WATER_TANK.value] = hot_water_tank_emissions
+        logger.info("Hot-water tank impact data successfully updated.")
+
     # Generate a dictionary with information about the input files used.
     input_file_info: Dict[str, str] = {
         "batteries": battery_inputs_filepath,
@@ -2015,7 +2130,7 @@ def parse_input_files(
         "transmission_inputs": transmission_inputs_filepath,
     }
 
-    if ResourceType.CLEAN_WATER in scenario.resource_types:
+    if scenario.desalination_scenario is not None:
         input_file_info[
             "conventional_water_source_inputs"
         ] = conventional_water_source_inputs_filepath
@@ -2027,6 +2142,9 @@ def parse_input_files(
     ):
         input_file_info["desalination_scenario"] = desalination_scenario_inputs_filepath
         input_file_info["exchanger_inputs"] = exchanger_inputs_filepath
+
+    if scenario.hot_water_scenario is not None:
+        input_file_info["hot_water_scenario"] = hot_water_scenario_inputs_filepath
 
     logger.debug("Input file parsing complete.")
     logger.debug(

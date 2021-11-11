@@ -817,7 +817,7 @@ def _find_optimum_system(
             # or (
             #     optimum_system.system_details.initial_num_clean_water_tanks
             #     == largest_clean_water_tank_size.max
-            #     and ResourceType.CLEAN_WATER in scenario.resource_types
+            #     and scenario.desalination_scenario is not None
             # )
         ):
             # Do single line optimisation to see if larger system is superior
@@ -1263,7 +1263,7 @@ def _simulation_iteration(
             pv_size_max,
             storage_size_max,
             f", num clean-water tanks: {clean_water_tanks_max}"
-            if ResourceType.CLEAN_WATER in scenario.resource_types
+            if scenario.desalination_scenario is not None
             else "",
         )
 
@@ -1339,7 +1339,7 @@ def _simulation_iteration(
         f"pvt-size: {pvt_size_max}, " if minigrid.pvt_panel is not None else "",
         storage_size_max,
         f", num clean-water tanks: {clean_water_tanks_max}"
-        if ResourceType.CLEAN_WATER in scenario.resource_types
+        if scenario.desalination_scenario is not None
         else "",
     )
 
@@ -1716,7 +1716,7 @@ def multiple_optimisation_step(
     # Use the optimisation-parameter values for the first loop.
     if (
         input_clean_water_tanks is None
-        and ResourceType.CLEAN_WATER in scenario.resource_types
+        and scenario.desalination_scenario is not None
         and minigrid.clean_water_tank is not None
     ):
         if (

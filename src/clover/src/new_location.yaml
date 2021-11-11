@@ -628,6 +628,59 @@
                       - blackouts: 0.05 # Max/min value permitted (see guidance)
         - directory: scenario
           contents:
+            - file: desalination_scenario.yaml
+              contents: |+
+                ---
+                ################################################################################
+                # desalination_scenario.yaml - Desalination and PV-T specific scenario params. #
+                #                                                                              #
+                # Author: Phil Sandwell, Ben Winchester                                        #
+                # Copyright: Phil Sandwell & Ben Winchester, 2021                              #
+                # Date created: 22/10/2021                                                     #
+                # License: Open source                                                         #
+                ################################################################################
+
+                clean_water:
+                  mode: backup # "backup", "prioritise" or "thermal_only"
+                  conventional_sources:
+                    - river
+                  sources: # defined within the 'conversion_inputs.yaml' file
+                    - med_liponi
+                    - reverse_osmosis
+                feedwater:
+                  sources:
+                    - bore_hole # defined within the 'conversion_inputs.yaml' file
+                    - bore_hole
+                    - bore_hole
+                    - bore_hole
+                    - bore_hole
+                  supply_temperature: 10 # [degC]
+                pvt_scenario:
+                  heats: htf
+                  mass_flow_rate: 7.37 # [litres/hour]
+            - file: hot_water_scenario.yaml
+              contents: |+
+                ---
+                ################################################################################
+                # hot_water_scenario.yaml - Hot-water and PV-T specific scenario params.       #
+                #                                                                              #
+                # Author: Phil Sandwell, Ben Winchester                                        #
+                # Copyright: Phil Sandwell & Ben Winchester, 2021                              #
+                # Date created: 11/11/2021                                                     #
+                # License: Open source                                                         #
+                ################################################################################
+
+                hot_water:
+                  mode: fulfil # "fulfil" to fulfil demand temp., "renewable_only" to not
+                  conventional_sources:
+                    - natural_gas
+                  demand_temp: 60 # [degC]
+                cold_water:
+                  supply: unlimited # "unlimited" or "clean_water"
+                  supply_temperature: 10 # [degC]
+                pvt_scenario:
+                  heats: cold_water
+                  mass_flow_rate: 7.37 # [litres/hour]
             - file: scenario_inputs.yaml
               contents: |+
                 ---
