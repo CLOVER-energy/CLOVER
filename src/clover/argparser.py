@@ -115,7 +115,7 @@ def parse_args(args: List[Any]) -> argparse.Namespace:
         "defaulting to kWh.",
     )
 
-    # Simulation-specific arguments.
+    # Clean-water-specific arguments.
     clean_water_parser = parser.add_argument_group(
         "clean-water-only arguments",
     )
@@ -126,9 +126,25 @@ def parse_args(args: List[Any]) -> argparse.Namespace:
         help="The number of clean-water tanks to be included in the system.",
     )
     clean_water_parser.add_argument(
-        "--pvt-system-size",
+        "--clean-water-pvt-system-size",
         type=float,
-        help="The size of the PV-T system being modelled in PV-T panel units.",
+        help="The size of the PV-T system being modelled, associated with the ""clean-water supply system, in PV-T panel units.",
+    )
+
+    # Hot-water-specific arguments.
+    hot_water_parser = parser.add_argument_group(
+        "hot-water-only arguments",
+    )
+    hot_water_parser.add_argument(
+        "--num-hot-water-tanks",
+        default=0,
+        type=int,
+        help="The number of hpt-water tanks to be included in the system.",
+    )
+    hot_water_parser.add_argument(
+        "--hot-water-pvt-system-size",
+        type=float,
+        help="The size of the PV-T system being modelled, associated with the ""hot-water supply system, in PV-T panel units.",
     )
 
     # Simulation-specific arguments.

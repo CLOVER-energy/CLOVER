@@ -904,6 +904,11 @@ def _parse_scenario_inputs(
         )
         raise
 
+    # The system should ignore the desalination scenario if there is no clean-water to
+    # consider.
+    if ResourceType.CLEAN_WATER not in scenario.resource_types:
+        scenario.desalination_scenario = None
+
     return desalination_scenario_inputs_filepath, scenario, scenario_inputs_filepath
 
 
@@ -1379,7 +1384,7 @@ def _parse_minigrid_inputs(
     exchanger_inputs_filepath: Optional[str]
     tank_inputs: Optional[Dict[str, Any]]
     tank_inputs_filepath: Optional[str]
-    if scenario.desalination_scenario is not None:
+    if scenario.desalination_scenario is not None or scenario.hot_water_scenario is not None:
         (
             buffer_tank_costs,
             buffer_tank_emissions,
@@ -1440,6 +1445,11 @@ def _parse_minigrid_inputs(
         tank_inputs,  # type: ignore
         water_pump,
     )
+
+    if ResourceType.CLEAN_WATER in scenario.resource_types and minigrid.clean_water_tank is None:
+        raise InputFileError("scenario OR minigrid", "The scenario specifies a clean-water system but no clean-water tank is defined.")
+    if ResourceType.HOT_CLEAN_WATER in scenario.resource_types and minigrid.hot_water_tank is None:
+        raise InputFileError("scenario OR minigrid", "The scenario specifies a hot-water system but no hot-water tank is defined.")
 
     return (
         battery_costs,

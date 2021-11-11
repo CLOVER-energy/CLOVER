@@ -547,8 +547,8 @@ def main(args: List[Any]) -> None:
         )
     if (
         operating_mode == OperatingMode.SIMULATION
-        and (scenario.pv and parsed_args.pv_system_size is None)
-        or (not scenario.pv and parsed_args.pv_system_size is not None)
+        and ((scenario.pv and parsed_args.pv_system_size is None)
+        or (not scenario.pv and parsed_args.pv_system_size is not None))
     ):
         raise InputFileError(
             "scenario",
@@ -556,12 +556,21 @@ def main(args: List[Any]) -> None:
         )
     if (
         operating_mode == OperatingMode.SIMULATION
-        and (scenario.pv_t and parsed_args.pvt_system_size is None)
-        or (not scenario.pv_t and parsed_args.pvt_system_size is not None)
+        and ((parsed_args.clean_water_pvt_system_size is not None and ResourceType.CLEAN_WATER not in scenario.resource_types and not scenario.pv_t)
+        or (parsed_args.clean_water_pvt_system_size is None and ResourceType.CLEAN_WATER in scenario.resource_types and scenario.pv_t))
     ):
         raise InputFileError(
             "scenario",
-            "PV-T mode in the scenario file must match the command-line usage.",
+            "PV-T mode in the scenario file must match the command-line usage. Check ""the clean-water and PV-T scenario specification.",
+        )
+    if (
+        operating_mode == OperatingMode.SIMULATION
+        and ((parsed_args.hot_water_pvt_system_size is not None and ResourceType.HOT_CLEAN_WATER not in scenario.resource_types and not scenario.pv_t)
+        or (parsed_args.hot_water_pvt_system_size is None and ResourceType.HOT_CLEAN_WATER in scenario.resource_types and scenario.pv_t))
+    ):
+        raise InputFileError(
+            "scenario",
+            "PV-T mode in the scenario file must match the command-line usage. Check ""the hot-water and PV-T scenario specification.",
         )
     if (
         operating_mode == OperatingMode.SIMULATION
@@ -951,12 +960,11 @@ def main(args: List[Any]) -> None:
             )
             + "\n"
             + (
-                "- {} PV-T panel units ({} kWp PV and {} kWth per unit)\n".format(
-                    parsed_args.pvt_system_size,
+                "- {} Clean-water PV-T panel units ({} kWp PV per unit)\n".format(
+                    parsed_args.clean_water_pvt_system_size,
                     minigrid.pvt_panel.pv_unit,
-                    minigrid.pvt_panel.thermal_unit,
                 )
-                if parsed_args.pvt_system_size is not None
+                if parsed_args.clean_water_pvt_system_size is not None
                 else ""
             )
             + (
@@ -964,6 +972,21 @@ def main(args: List[Any]) -> None:
                     parsed_args.num_clean_water_tanks, minigrid.clean_water_tank.mass
                 )
                 if ResourceType.CLEAN_WATER in scenario.resource_types
+                else ""
+            )
+            + (
+                "- {} Hot-water PV-T panel units ({} kWp PV per unit)\n".format(
+                    parsed_args.hot_water_pvt_system_size,
+                    minigrid.pvt_panel.pv_unit,
+                )
+                if parsed_args.hot_water_pvt_system_size is not None
+                else ""
+            )
+            + (
+                "- {}x {} litres hot-water storage".format(
+                    parsed_args.num_hot_water_tanks, minigrid.hot_water_tank.mass
+                )
+                if ResourceType.HOT_CLEAN_WATER in scenario.resource_types
                 else ""
             )
         )
@@ -996,8 +1019,8 @@ def main(args: List[Any]) -> None:
                     parsed_args.pv_system_size
                     if parsed_args.pv_system_size is not None
                     else 0,
-                    parsed_args.pvt_system_size
-                    if parsed_args.pvt_system_size is not None
+                    parsed_args.clean_water_pvt_system_size
+                    if parsed_args.clean_water_pvt_system_size is not None
                     else 0,
                     scenario,
                     simulation,
