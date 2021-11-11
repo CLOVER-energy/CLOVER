@@ -7,10 +7,13 @@ This guide provides a very brief overview of the updates to the CLOVER model.
 			Minor updates to comments
 			Addition of self.daily_sum_to_monthly_sum(...)
 	3.	Update to Load.py (12.12.18)
-			Addition of function to calculate load statistics (aggregated yearly) for later integration into other modules
+			Addition of function to calculate load statistics (aggregated yearly) for
+			later integration into other modules
 	4.	Update to Energy_System.py (12.12.18)
-			self.simulation(…) restructured to fix bugs (unmet energy miscalculations, grid energy recorded as “-0”)
-			self.simulation(…) now gives two outputs (system performance outputs as before, and description of installed system capacity for later use)
+			self.simulation(…) restructured to fix bugs (unmet energy miscalculations,
+			grid energy recorded as “-0”)
+			self.simulation(…) now gives two outputs (system performance outputs as
+			before, and description of installed system capacity for later use)
 			Change of function orders in file
 	5.	Addition of “Impact Scripts” and Finance.py (12.12.18)
 			Added to “Scripts” folder
@@ -28,39 +31,40 @@ This guide provides a very brief overview of the updates to the CLOVER model.
 	10.	Addition of Optimisation.py (12.12.18)
 			Added to “Scripts” folder
 			Script for optimising system sizes
-	11. 	Addition of To Do list (07.01.19)
+	11. Addition of To Do list (07.01.19)
 			List of upcoming updates and known issues to solve
-	12. 	Bug fixes of Finance.py (21.01.19)
+	12. Bug fixes of Finance.py (21.01.19)
 			Fixing bug to enable calling inputs from "Finance inputs.csv"
-	13. 	Addition of GHGs.py to "Impact" folder (01.02.19)
+	13. Addition of GHGs.py to "Impact" folder (01.02.19)
 			Added to "Scripts" folder
 			Script for calculating GHG impact
 	14.	Addition to “Impact” folder in Bahraich location folder (01.02.19)
 			Added “GHG inputs.csv”
 	15.	Addition to “Impact” folder in New_Location folder (01.02.19)
 			Added “GHG inputs.csv”
-	16. 	Update to Optimisation.py (01.02.19)
+	16. Update to Optimisation.py (01.02.19)
 			Integrated GHG assessment into optimisation processes
 			Minor bug fixes
-	17. 	Update to Solar.py (14.03.19)
+	17. Update to Solar.py (14.03.19)
 			Minor bug fixes
-	18. 	Update to Grid.py (03.05.19)
+	18. Update to Grid.py (03.05.19)
 			Added function to change grid profile hours
 	19.	Update to Energy_System.py (03.05.19)
 			Now able to simulate systems with no PV and/or storage
 	20.	Update to Optimisation.py (03.05.19)
 			Fixes to accomodate zero PV/storage size
-	21. 	Update to Optimisation.py (18.07.19)
+	21. Update to Optimisation.py (18.07.19)
 			Inclusion of GHG module to Optimisation.py
 			Bug fix for fraction of unmet demand calculation
-	22. 	Update to Solar.py (01.08.19)
+	22. Update to Solar.py (01.08.19)
 			Bug fix to solar degradation function to allow 20 year time horizon
 	23.	Update to Energy_System.py (17.02.20)
 			Allows different c-rates into/out of batteries
-	25. 	Update to Load.py (17.06.20)
+	25. Update to Load.py (17.06.20)
 			Added function to calculate yearly load statistics when using a
-				load profile not generated using the standard methodology 
-			
+				load profile not generated using the standard methodology
+	26. Main CLOVER branch updated to v5.0.0 (XX.XX.21)
+
 Minor changes not recorded as pull requests:
 	i.	Bug fixes of Solar.py (01.02.19)
 			Corrected test variable left over from testing phase to live variable
@@ -69,4 +73,6 @@ Minor changes not recorded as pull requests:
 	iii.	Bug fix of Solar.py (19.11.19)
 			Fixed Renewables.ninja API interface
 
-For more information, contact Phil Sandwell (philip.sandwell@gmail.com) or go to the list of CLOVER pull requests (https://github.com/phil-sandwell/CLOVER/pulls)
+For more information, contact Phil Sandwell (philip.sandwell@gmail.com), Ben Winchester
+(benedict.winchester@gmail.com) or Hamish Beath, or go to the list of CLOVER pull
+requests (https://github.com/phil-sandwell/CLOVER/pulls)
