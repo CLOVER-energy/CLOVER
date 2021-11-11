@@ -1106,8 +1106,8 @@ def _parse_tank_inputs(
     logger: Logger,
     scenario: Scenario,
 ) -> Tuple[
-    Dict[str, float],
-    Dict[str, float],
+    Optional[Dict[str, float]],
+    Optional[Dict[str, float]],
     Optional[Dict[str, float]],
     Optional[Dict[str, float]],
     Dict[str, Any],
@@ -1178,6 +1178,8 @@ def _parse_tank_inputs(
             logger.info("Clean-water tank emission information successfully parsed.")
 
     else:
+        clean_water_tank_costs = None
+        clean_water_tank_emissions = None
         logger.info(
             "Clean-water tank disblaed in scenario file, skipping battery impact parsing."
         )
@@ -1787,6 +1789,9 @@ def parse_input_files(
         logger.info("Conventional water-source times successfully parsed.")
     # Otherwise, instantiate an empty dict.
     else:
+        conventional_water_source_inputs = None
+        conventional_water_source_inputs_filepath = None
+        conventional_water_sources = None
         water_source_times = {}
 
     location_inputs_filepath = os.path.join(
@@ -1942,47 +1947,44 @@ def parse_input_files(
         logger.info("Heat-exchanger impact data successfully updated.")
 
         logger.info("Updating with conventional water-source impact data.")
-        for source in conventional_water_sources:
-            conventional_source_costs: Dict[str, float]
-            try:
-                conventional_source_costs = [
-                    entry[COSTS]
-                    for entry in conventional_water_source_inputs
-                    if entry[NAME] == source.name
-                ][0]
-            except KeyError:
-                logger.error(
-                    "%sNo finance inputs for conventional source %s.%s",
-                    BColours.fail,
-                    source.name,
-                    BColours.endc,
-                )
-                raise
-            finance_inputs[
-                FINANCE_IMPACT.format(
-                    type=ImpactingComponent.CONVENTIONAL_SOURCE.value, name=source.name
-                )
-            ] = conventional_source_costs
-            conventional_source_emissions: Dict[str, float]
-            try:
-                conventional_source_emissions = [
-                    entry[EMISSIONS]
-                    for entry in conventional_water_source_inputs
-                    if entry[NAME] == source.name
-                ][0]
-            except KeyError:
-                logger.error(
-                    "%sNo ghg inputs for conventional source %s.%s",
-                    BColours.fail,
-                    source.name,
-                    BColours.endc,
-                )
-                raise
-            ghg_data[
-                GHG_IMPACT.format(
-                    type=ImpactingComponent.CONVENTIONAL_SOURCE.value, name=source.name
-                )
-            ] = conventional_source_emissions
+        if ResourceType.CLEAN_WATER in scenario.resource_types:
+            for source in conventional_water_sources:
+                conventional_source_costs: Dict[str, float]
+                try:
+                    conventional_source_costs = [
+                        entry[COSTS]
+                        for entry in conventional_water_source_inputs
+                        if entry[NAME] == source.name
+                    ][0]
+                except KeyError:
+                    logger.error(
+                        "%sNo finance inputs for conventional source %s.%s",
+                        BColours.fail,
+                        source.name,
+                        BColours.endc,
+                    )
+                    raise
+                finance_inputs[
+                    f"{ImpactingComponent.CONVENTIONAL_SOURCE.value}_{source.name}"
+                ] = conventional_source_costs
+                conventional_source_emissions: Dict[str, float]
+                try:
+                    conventional_source_emissions = [
+                        entry[EMISSIONS]
+                        for entry in conventional_water_source_inputs
+                        if entry[NAME] == source.name
+                    ][0]
+                except KeyError:
+                    logger.error(
+                        "%sNo ghg inputs for conventional source %s.%s",
+                        BColours.fail,
+                        source.name,
+                        BColours.endc,
+                    )
+                    raise
+                ghg_data[
+                    f"{ImpactingComponent.CONVENTIONAL_SOURCE.value}_{source.name}"
+                ] = conventional_source_emissions
 
     # Generate a dictionary with information about the input files used.
     input_file_info: Dict[str, str] = {
