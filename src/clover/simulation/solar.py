@@ -21,7 +21,7 @@ performance under environmental conditions needs to be calculated.
 import collections
 
 from logging import Logger
-from typing import Dict, Tuple
+from typing import Dict, Optional, Tuple
 
 import pandas as pd  # type: ignore  # pylint: disable=import-error
 
@@ -32,6 +32,7 @@ from ..__utils__ import (
     BColours,
     HTFMode,
     InputFileError,
+    InternalError,
     ResourceType,
     Scenario,
     ZERO_CELCIUS_OFFSET,
@@ -136,6 +137,63 @@ def _buffer_tank_mass_flow_rate(
     )  # [kg/hour]
 
 
+def _volume_withdrawn_from_tank(
+    ambient_temperature: float,
+    best_guess_tank_temperature: float,
+    hot_water_load: Optional[float],
+    logger: Logger,
+    minigrid: Minigrid,
+    previous_tank_temperature: Optional[float],
+    resource_type: ResourceType,
+    thermal_desalination_plant: Optional[ThermalDesalinationPlant],
+) -> Tuple[bool, float]:
+    """
+    Computes whether the tank is supplying an output, and what this output is.
+
+    Inputs:
+
+
+    Outputs:
+        A `tuple` containing:
+        - tank_supply_on:
+            Whether liquid was withdrawn from the tank (True) or not (False).
+        - volume_supplied:
+            The volume supplied, measured in kg/hour.
+
+    """
+
+    if resource_type == ResourceType.CLEAN_WATER:
+        if previous_tank_temperature is None or thermal_desalination_plant is None:
+            logger.error(
+                "%sNot enough parameters specified to determine buffer-tank mass-flow "
+                "rate.%s",
+                BColours.fail,
+                BColours.endc,
+            )
+            raise InternalError(
+                "Not enough desalination-specific parameters specified to determine "
+                "the buffer-tank mass-flow rate."
+            )
+        tank_supply_on: bool = (
+            previous_tank_temperature
+            > thermal_desalination_plant.minimum_htf_temperature
+        )
+        volume_supplied: float = _buffer_tank_mass_flow_rate(
+            ambient_temperature,
+            best_guess_tank_temperature,
+            minigrid.buffer_tank,
+            thermal_desalination_plant,
+        )
+
+    elif resource_type == ResourceType.HOT_CLEAN_WATER:
+        if hot_water_load is None:
+            logger.error("%s")
+        tank_supply_on = hot_water_load > 0
+        volume_supplied = hot_water_load
+
+    return tank_supply_on, volume_supplied
+
+
 def calculate_pvt_output(
     end_hour: int,
     irradiances: pd.Series,
@@ -226,6 +284,7 @@ def calculate_pvt_output(
     )
     pvt_electric_power_per_unit_map: Dict[int, float] = {}
     pvt_pump_times_map: Dict[int, bool] = {}
+    tank_supply_temperature_map: Dict[int, float] = {}
     tank_temperature_map: Dict[int, float] = collections.defaultdict(
         lambda: scenario.desalination_scenario.feedwater_supply_temperature
     )
@@ -237,30 +296,63 @@ def calculate_pvt_output(
     )
 
     # Compute the various terms which remain common across all time steps.
-    pvt_heat_transfer = (
-        pvt_system_size
-        * scenario.desalination_scenario.pvt_scenario.mass_flow_rate  # [kg/hour]
-        * scenario.desalination_scenario.pvt_scenario.htf_heat_capacity  # [J/kg*K]
-        * minigrid.heat_exchanger.efficiency
-        / 3600  # [s/hour]
-    )  # [W/K]
-    tank_environment_heat_transfer = (
-        minigrid.buffer_tank.heat_transfer_coefficient
-    )  # [W/K]
-    tank_internal_energy = (
-        minigrid.buffer_tank.mass  # [kg]
-        * minigrid.buffer_tank.heat_capacity  # [J/kg*K]
-        / 3600  # [s/hour]
-    )  # [W/K]
+    if scenario.desalination_scenario is not None:
+        pvt_heat_transfer = (
+            pvt_system_size
+            * scenario.desalination_scenario.pvt_scenario.mass_flow_rate  # [kg/hour]
+            * scenario.desalination_scenario.pvt_scenario.htf_heat_capacity  # [J/kg*K]
+            * minigrid.heat_exchanger.efficiency
+            / 3600  # [s/hour]
+        )  # [W/K]
+        tank_environment_heat_transfer = (
+            minigrid.buffer_tank.heat_transfer_coefficient
+        )  # [W/K]
+        tank_internal_energy = (
+            minigrid.buffer_tank.mass  # [kg]
+            * minigrid.buffer_tank.heat_capacity  # [J/kg*K]
+            / 3600  # [s/hour]
+        )  # [W/K]
 
-    if scenario.desalination_scenario.pvt_scenario.heats != HTFMode.CLOSED_HTF:
+        # Throw an error if the PV-T is not heating an intermediary HTF.
+        if scenario.desalination_scenario.pvt_scenario.heats != HTFMode.CLOSED_HTF:
+            logger.error(
+                "%sCurrently, closed HTF PV-T modelling is supported only.%s",
+                BColours.fail,
+                BColours.endc,
+            )
+            raise InputFileError(
+                "desalination scenario",
+                "The PV-T heating mode requested is not supported.",
+            )
+
+    elif scenario.hot_water_scenario is not None:
+        pvt_heat_transfer = (
+            pvt_system_size
+            * scenario.hot_water_scenario.pvt_scenario.mass_flow_rate  # [kg/hour]
+            * scenario.hot_water_scenario.pvt_scenario.htf_heat_capacity  # [J/kg*K]
+            * minigrid.heat_exchanger.efficiency
+            / 3600  # [s/hour]
+        )  # [W/K]
+        tank_environment_heat_transfer = (
+            minigrid.hot_water_tank.heat_transfer_coefficient
+        )  # [W/K]
+        tank_internal_energy = (
+            minigrid.hot_water_tank.mass  # [kg]
+            * minigrid.hot_water_tank.heat_capacity  # [J/kg*K]
+            / 3600  # [s/hour]
+        )  # [W/K]
+
+    # One of these scenarios must be specified, so throw an error if not.
+    else:
         logger.error(
-            "%sCurrently, closed HTF PV-T modelling is supported only.%s",
+            "%sNeither desalination nor hot-water scenarios were defined despite PV-T "
+            "output being requested.%s",
             BColours.fail,
             BColours.endc,
         )
-        raise InputFileError(
-            "desalination scenario", "The PV-T heating mode requested is not supported."
+        raise InternalError(
+            "Neither desalination nor hot-water scenarios were specified despite PV-T "
+            "being called."
         )
 
     for index in tqdm(
@@ -270,10 +362,6 @@ def calculate_pvt_output(
         unit="hour",
     ):
         # Determine whether the PV-T is flowing.
-        desalination_plant_on: bool = (
-            tank_temperature_map[index - 1]
-            > thermal_desalination_plant.minimum_htf_temperature
-        )
         pvt_flow_on: bool = (
             pvt_collector_output_temperature_map[index - 1]
             > tank_temperature_map[index - 1]
@@ -287,7 +375,7 @@ def calculate_pvt_output(
                 minigrid.buffer_tank,
                 thermal_desalination_plant,
             )
-            * desalination_plant_on
+            * tank_supply_on
         )
 
         # Only compute outputs if there is input irradiance.
@@ -338,7 +426,7 @@ def calculate_pvt_output(
                         scenario.desalination_scenario.feedwater_supply_temperature
                         + ZERO_CELCIUS_OFFSET
                     )
-                    if desalination_plant_on
+                    if tank_supply_on
                     else 0
                 ),
                 (
@@ -354,7 +442,7 @@ def calculate_pvt_output(
                         (pvt_heat_transfer if pvt_flow_on else 0)
                         + tank_environment_heat_transfer
                         + tank_internal_energy
-                        + (tank_load_enthalpy_transfer if desalination_plant_on else 0)
+                        + (tank_load_enthalpy_transfer if tank_supply_on else 0)
                     ),
                 ],
                 [1, -minigrid.heat_exchanger.efficiency],
@@ -387,7 +475,7 @@ def calculate_pvt_output(
                     index,
                     runs,
                     "on" if pvt_flow_on else "off",
-                    "on" if desalination_plant_on else "off",
+                    "on" if tank_supply_on else "off",
                     round(collector_input_temperature, 3),
                     round(best_guess_collector_input_temperature, 3),
                     round(tank_temperature, 3),
