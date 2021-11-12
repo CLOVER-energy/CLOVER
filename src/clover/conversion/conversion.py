@@ -78,6 +78,9 @@ class Convertor:
     .. attribute:: maximum_output_capacity
         The maximum capacity of the device in producing its output.
 
+    .. attribute:: name
+        The name of the :class:`Convertor` instance.
+
     .. attribute:: output_resource_type
         The type of energy which is outputted by the device.
 
