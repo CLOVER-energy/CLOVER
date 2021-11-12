@@ -684,6 +684,9 @@ class ResourceType(enum.Enum):
     - CLEAN_WATER:
         Represents a clean-water load.
 
+    - DIESEL:
+        Represents the resource of diesel.
+
     - ELECTRIC:
         Represents an electric load.
 
@@ -713,6 +716,7 @@ class ResourceType(enum.Enum):
     """
 
     CLEAN_WATER = "clean_water"
+    DIESEL = "diesel"
     ELECTRIC = "electricity"
     GENERIC_WATER = "generic_water"
     HEAT = "heat"
@@ -727,6 +731,7 @@ class ResourceType(enum.Enum):
 RESOURCE_NAME_TO_RESOURCE_TYPE_MAPPING = {
     "clean_water": ResourceType.CLEAN_WATER,
     "cold_water": ResourceType.CLEAN_WATER,
+    "diesel_consumption": ResourceType.DIESEL,
     ELECTRIC_POWER: ResourceType.ELECTRIC,
     "feedwater": ResourceType.UNCLEAN_WATER,
     "heat": ResourceType.HEAT,

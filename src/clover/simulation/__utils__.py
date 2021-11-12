@@ -34,8 +34,9 @@ from ..__utils__ import (
     ResourceType,
 )
 
+from ..conversion.conversion import Convertor
 from ..generation.solar import HybridPVTPanel, PVPanel
-from .diesel import DieselGenerator
+from .diesel import DieselGenerator, DieselWaterHeater
 from .exchanger import Exchanger
 from .storage import Battery, CleanWaterTank, HotWaterTank
 from .transmission import Transmitter
@@ -104,6 +105,12 @@ class Minigrid:
     .. attribute:: diesel_generator
         The diesel backup generator associated with the minigrid system.
 
+    .. attribute:: diesel_water_heater
+        The diesel water heater associated with the minigrid system.
+
+    .. attribute:: electric_water_heater
+        The electric water heater associated with the minigrid system.
+
     .. attribute:: heat_exchanger
         The heat exchanger associated with the minigrid system.
 
@@ -132,6 +139,8 @@ class Minigrid:
     dc_to_dc_conversion_efficiency: Optional[float]
     dc_transmission_efficiency: Optional[float]
     diesel_generator: Optional[DieselGenerator]
+    diesel_water_heater: Optional[DieselWaterHeater]
+    electric_water_heater: Optional[Convertor]
     heat_exchanger: Optional[Exchanger]
     hot_water_tank: Optional[HotWaterTank]
     pv_panel: PVPanel
@@ -142,6 +151,8 @@ class Minigrid:
     def from_dict(
         cls,
         diesel_generator: DieselGenerator,
+        diesel_water_heater: Optional[DieselWaterHeater],
+        electric_water_heater: Optional[Convertor],
         minigrid_inputs: Dict[Union[int, str], Any],
         pv_panel: PVPanel,
         pvt_panel: Optional[HybridPVTPanel],
@@ -156,6 +167,12 @@ class Minigrid:
         Inputs:
             - diesel_generator:
                 The diesel backup generator to use for the run.
+            - diesel_water_heater:
+                The diesel water heater associated with the minigrid system, if
+                appropriate.
+            - electric_water_heater:
+                The electric water heater associated with the minigrid system, if
+                appropriate.
             - minigrid_inputs:
                 The inputs for the minigrid/energy system, extracted from the input
                 file.
@@ -259,6 +276,8 @@ class Minigrid:
             if "dc_transmission_efficiency" in minigrid_inputs
             else None,
             diesel_generator,
+            diesel_water_heater,
+            electric_water_heater,
             exchangers[minigrid_inputs[EXCHANGER]]
             if EXCHANGER in minigrid_inputs
             else None,

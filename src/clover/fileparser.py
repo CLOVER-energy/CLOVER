@@ -28,8 +28,10 @@ from . import load
 from .generation import solar
 from .impact.finance import COSTS, ImpactingComponent
 from .impact.ghgs import EMISSIONS
+from .simulation.diesel import DIESEL_CONSUMPTION, MINIMUM_LOAD, DieselWaterHeater
 
 from .__utils__ import (
+    AuxiliaryHeaterType,
     BColours,
     DesalinationScenario,
     EXCHANGER,
@@ -117,6 +119,14 @@ DIESEL_GENERATORS: str = "diesel_generators"
 # Diesel inputs file:
 #   The relative path to the diesel-inputs file.
 DIESEL_INPUTS_FILE: str = os.path.join("generation", "diesel_inputs.yaml")
+
+# Diesel water heater:
+#   Keyword used for parsing diesel-water-heater information.
+DIESEL_WATER_HEATER: str = "diesel_water_heater"
+
+# Diesel generators:
+#   Keyword used for parsing diesel-generator information.
+DIESEL_WATER_HEATERS: str = "diesel_water_heaters"
 
 # Electric model file:
 #   The relative path to the electric model file.
@@ -251,10 +261,13 @@ def _determine_available_convertors(
 
     """
 
+    available_convertors: List[Convertor] = []
+
+    if scenario.desalination_scenario is None and scenario.hot_water_scenario is None:
+        return available_convertors
+
     # Determine the available convertors from the scenarios file.
     if scenario.desalination_scenario is not None:
-        available_convertors: List[Convertor] = []
-
         # Process the clean-water convertors.
         for entry in scenario.desalination_scenario.clean_water_scenario.sources:
             try:
@@ -289,9 +302,42 @@ def _determine_available_convertors(
                     f"{BColours.fail}Unknown unclean-water source in the scenario "
                     + f"file: {entry}{BColours.endc}",
                 ) from None
-    # Otherwise, there are no convertors available.
-    else:
-        available_convertors = []
+
+    if scenario.hot_water_scenario is not None:
+        # Process the clean-water convertors.
+        for entry in scenario.desalination_scenario.clean_water_scenario.sources:
+            try:
+                available_convertors.append(convertors[entry])
+            except KeyError as e:
+                logger.error(
+                    "%sUnknown clean-water source specified in the scenario file: %s%s",
+                    BColours.fail,
+                    entry,
+                    BColours.endc,
+                )
+                raise InputFileError(
+                    "desalination scenario",
+                    f"{BColours.fail}Unknown clean-water source(s) in the scenario "
+                    + f"file: {entry}{BColours.endc}",
+                ) from None
+
+        # Process the feedwater sources.
+        for entry in scenario.desalination_scenario.unclean_water_sources:
+            try:
+                available_convertors.append(convertors[entry])
+            except KeyError as e:
+                logger.error(
+                    "%sUnknown unclean-water source specified in the scenario file: %s"
+                    "%s",
+                    BColours.fail,
+                    entry,
+                    BColours.endc,
+                )
+                raise InputFileError(
+                    "desalination scenario",
+                    f"{BColours.fail}Unknown unclean-water source in the scenario "
+                    + f"file: {entry}{BColours.endc}",
+                ) from None
 
     return available_convertors
 
@@ -489,7 +535,16 @@ def _parse_diesel_inputs(
     energy_system_inputs: Dict[str, Any],
     inputs_directory_relative_path: str,
     logger: Logger,
-) -> Tuple[Dict[str, float], Dict[str, float], DieselGenerator, str]:
+    scenario: Scenario,
+) -> Tuple[
+    Dict[str, float],
+    Dict[str, float],
+    DieselGenerator,
+    str,
+    Optional[DieselWaterHeater],
+    Optional[Dict[str, float]],
+    Optional[Dict[str, float]],
+]:
     """
     Parses the diesel inputs file.
 
@@ -500,13 +555,18 @@ def _parse_diesel_inputs(
             The relative path to the inputs folder directory.
         - logger:
             The :class:`logging.Logger` to use for the run.
+        - scenario:
+            The :class:`Scenario` for the run.
 
     Outputs:
         A `tuple` containing:
         - The path to the diesel inputs file;
         - The diesel-generator cost information;
         - The diesel-generator emissions information;
-        - The diesel generator to use for the run.
+        - The diesel generator to use for the run;
+        - The diesel water heater to use for the run, if applicable;
+        - The diesel water heater emissions information, if applicable;
+        - The diesel water heater to use for the run, if applicable.
 
     """
 
@@ -526,9 +586,7 @@ def _parse_diesel_inputs(
     # Instantiate DieselGenerators for every entry in the input file.
     try:
         diesel_generators: List[DieselGenerator] = [
-            DieselGenerator(
-                entry["diesel_consumption"], entry["minimum_load"], entry[NAME]
-            )
+            DieselGenerator(entry[DIESEL_CONSUMPTION], entry[MINIMUM_LOAD], entry[NAME])
             for entry in diesel_inputs[DIESEL_GENERATORS]
         ]
     except KeyError as e:
@@ -571,8 +629,8 @@ def _parse_diesel_inputs(
         )
         raise InputFileError(
             "energy system inputs",
-            "No diesel generator was specified. Use the `diesel_generator` keyword to "
-            "select a valid diesel generator.",
+            f"No diesel generator was specified. Use the {DIESEL_GENERATOR} keyword to "
+            + "select a valid diesel generator.",
         )
 
     # Determine the diesel costs.
@@ -601,7 +659,104 @@ def _parse_diesel_inputs(
     else:
         logger.info("Diesel emission information successfully parsed.")
 
-    return diesel_costs, diesel_emissions, diesel_generator, diesel_inputs_filepath
+    # Instantiate diesel water heaters for every entry in the input file.
+    try:
+        diesel_water_heaters: List[DieselWaterHeater] = [
+            DieselWaterHeater.from_dict(entry, logger)
+            for entry in diesel_inputs[DIESEL_WATER_HEATERS]
+        ]
+    except KeyError as e:
+        logger.error(
+            "%sMissing information in diesel inputs file: %s%s",
+            BColours.fail,
+            str(e),
+            BColours.endc,
+        )
+        raise
+    logger.info("Diesel water-heater inputs successfully parsed.")
+
+    # Determine the diesel generator being modelled.
+    if DIESEL_WATER_HEATER in energy_system_inputs:
+        try:
+            diesel_water_heater = [
+                heater
+                for heater in diesel_water_heaters
+                if heater.name == energy_system_inputs[DIESEL_WATER_HEATER]
+            ][0]
+        except IndexError:
+            logger.error(
+                "%sNo matching diesel water-heater information for generator %s found "
+                "in diesel inputs file.%s",
+                BColours.fail,
+                energy_system_inputs[DIESEL_WATER_HEATER],
+                BColours.endc,
+            )
+            raise InputFileError(
+                "energy system inputs",
+                "Diesel water heater '{}' not found in diesel inputs.".format(
+                    energy_system_inputs[DIESEL_WATER_HEATER]
+                ),
+            ) from None
+
+        # Determine the diesel costs.
+        try:
+            diesel_water_heater_costs = [
+                entry[COSTS]
+                for entry in diesel_inputs[DIESEL_WATER_HEATERS]
+                if entry[NAME] == diesel_generator.name
+            ][0]
+        except IndexError:
+            logger.error("Failed to determine diesel water-heater cost information.")
+            raise
+        else:
+            logger.info("Diesel water-heater cost information successfully parsed.")
+
+        # Determine the diesel emissions.
+        try:
+            diesel_water_heater_emissions = [
+                entry[EMISSIONS]
+                for entry in diesel_inputs[DIESEL_WATER_HEATERS]
+                if entry[NAME] == diesel_generator.name
+            ][0]
+        except IndexError:
+            logger.error(
+                "Failed to determine diesel water-heater emission information."
+            )
+            raise
+        else:
+            logger.info("Diesel water-heater emission information successfully parsed.")
+
+    elif (
+        scenario.hot_water_scenario is not None
+        and scenario.hot_water_scenario.auxiliary_heater == AuxiliaryHeaterType.DIESEL
+    ):
+        logger.error(
+            "%sDiesel water heater must be specified in the energy system inputs file "
+            "if the hot-water scenario states that a diesel water heater is present.%s",
+            BColours.fail,
+            BColours.endc,
+        )
+        raise InputFileError(
+            "energy system inputs",
+            "No diesel water heater was specified despite being required by the "
+            f"current scenario. Use the {DIESEL_WATER_HEATER} keyword to select a "
+            + "valid diesel generator.",
+        )
+
+    else:
+        diesel_water_heater = None
+        diesel_water_heater_costs = None
+        diesel_water_heater_emissions = None
+
+    return (
+        diesel_costs,
+        diesel_emissions,
+        diesel_generator,
+        diesel_inputs_filepath,
+        diesel_water_heater,
+        diesel_water_heater_costs,
+        diesel_water_heater_emissions,
+    )
 
 
 def _parse_device_inputs(
@@ -1367,6 +1522,7 @@ def _parse_tank_inputs(
 
 
 def _parse_minigrid_inputs(
+    convertors: List[Convertor],
     inputs_directory_relative_path: str,
     logger: Logger,
     scenario: Scenario,
@@ -1381,6 +1537,8 @@ def _parse_minigrid_inputs(
     Dict[str, float],
     Dict[str, float],
     str,
+    Optional[Dict[str, float]],
+    Optional[Dict[str, float]],
     str,
     Optional[Dict[str, float]],
     Optional[Dict[str, float]],
@@ -1403,6 +1561,8 @@ def _parse_minigrid_inputs(
     Parses the energy-system-related input files.
 
     Inputs:
+        - convertors:
+            The `list` of :class:`Convertor` instances available to the system.
         - inputs_directory_relative_path:
             The relative path to the inputs folder directory.
         - logger:
@@ -1421,6 +1581,8 @@ def _parse_minigrid_inputs(
         - Diesel costs,
         - Diesel emissions,
         - Diesel input filepath,
+        - Diesel water heater costs,
+        - Diesel water heater emissions,
         - Energy system filepath,
         - Hot-water tank costs,
         - Hot-water tank emissions,
@@ -1455,10 +1617,14 @@ def _parse_minigrid_inputs(
         diesel_emissions,
         diesel_generator,
         diesel_inputs_filepath,
+        diesel_water_heater,
+        diesel_water_heater_costs,
+        diesel_water_heater_emissions,
     ) = _parse_diesel_inputs(
         energy_system_inputs,  # type: ignore
         inputs_directory_relative_path,
         logger,
+        scenario,
     )
     logger.info("Diesel generator information successfully parsed.")
 
@@ -1578,6 +1744,8 @@ def _parse_minigrid_inputs(
 
     minigrid = Minigrid.from_dict(
         diesel_generator,
+        diesel_water_heater,
+        electric_water_heater,
         energy_system_inputs,  # type: ignore
         pv_panel,
         pvt_panel,
@@ -1617,6 +1785,8 @@ def _parse_minigrid_inputs(
         diesel_costs,
         diesel_emissions,
         diesel_inputs_filepath,
+        diesel_water_heater_costs,
+        diesel_water_heater_emissions,
         energy_system_inputs_filepath,
         exchanger_costs,
         exchanger_emissions,
@@ -1869,6 +2039,8 @@ def parse_input_files(
         diesel_costs,
         diesel_emissions,
         diesel_inputs_filepath,
+        diesel_water_heater_costs,
+        diesel_water_heater_emissions,
         energy_system_inputs_filepath,
         exchanger_costs,
         exchanger_emissions,
@@ -1886,7 +2058,9 @@ def parse_input_files(
         transmission_emissions,
         transmission_inputs_filepath,
         transmitters,
-    ) = _parse_minigrid_inputs(inputs_directory_relative_path, logger, scenario)
+    ) = _parse_minigrid_inputs(
+        convertors, inputs_directory_relative_path, logger, scenario
+    )
     logger.info("Energy-system inputs successfully parsed.")
 
     generation_inputs_filepath = os.path.join(
@@ -2169,6 +2343,16 @@ def parse_input_files(
         finance_inputs[ImpactingComponent.HOT_WATER_TANK.value] = hot_water_tank_costs
         ghg_data[ImpactingComponent.HOT_WATER_TANK.value] = hot_water_tank_emissions
         logger.info("Hot-water tank impact data successfully updated.")
+
+        # Update the diesel water-heater impacts.
+        logger.info("Updating with diesel water-heater impact data.")
+        finance_inputs[
+            ImpactingComponent.DIESEL_WATER_HEATER.value
+        ] = diesel_water_heater_costs
+        ghg_data[
+            ImpactingComponent.DIESEL_WATER_HEATER.value
+        ] = diesel_water_heater_emissions
+        logger.info("Diesel water-heater impact data successfully updated.")
 
     # Generate a dictionary with information about the input files used.
     input_file_info: Dict[str, str] = {

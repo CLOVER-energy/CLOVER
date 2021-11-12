@@ -5,7 +5,7 @@
 # Author: Ben Winchester                                                               #
 # Copyright: Ben Winchester, 2021                                                      #
 # License: Open source                                                                 #
-# Most recent update: 05/08/2021                                                       #
+# Most recent update: 12/11/2021                                                       #
 #                                                                                      #
 # For more information, please email:                                                  #
 #     philip.sandwell@gmail.com                                                        #
@@ -19,18 +19,33 @@ functionality to model diesel generators.
 """
 
 import dataclasses
+import logging
 
-from typing import Tuple
+from typing import Any, Dict, Tuple
 
 import numpy as np  # pylint: disable=import-error
-import pandas as pd  # type: ignore  # pylint: disable=import-error
+import pandas as pd
+
+from ..__utils__ import BColours, ELECTRIC_POWER, InputFileError, NAME, ResourceType
+from ..conversion.conversion import MAXIMUM_OUTPUT, Convertor
 
 
 __all__ = (
+    "DIESEL_CONSUMPTION",
     "DieselGenerator",
+    "DieselWaterHeater",
     "get_diesel_energy_and_times",
     "get_diesel_fuel_usage",
 )
+
+
+# Diesel consumption:
+#   Used to parse diesel fuel consumption information.
+DIESEL_CONSUMPTION: str = "diesel_consumption"
+
+# Minimum load:
+#   The minimum load that needs to be placed on a diesel-consuming device.
+MINIMUM_LOAD: str = "minimum_load"
 
 
 @dataclasses.dataclass
@@ -53,6 +68,112 @@ class DieselGenerator:
     diesel_consumption: float
     minimum_load: float
     name: str
+
+
+@dataclasses.dataclass
+class DieselWaterHeater(Convertor):
+    """
+    Represents a diesel water heater.
+
+    .. attribute:: diesel_consumption
+        The diesel consumption of the heater, measured in litres per kWth produced.
+
+    .. attribute:: minimum_load
+        The minimum capacity of the heater, defined between 0 (able to operate with any
+        load) and 1 (only able to operate at maximum load).
+
+    """
+
+    def __init__(
+        self,
+        input_resource_consumption: Dict[ResourceType, float],
+        maximum_output_capacity: float,
+        minimum_load: float,
+        name: str,
+        output_resource_type: ResourceType,
+    ) -> None:
+        """
+        Instnatiate a :class:`DieselWaterHeater` instance.
+
+        Inputs:
+            - consunmption:
+                The amount of input load type which is consumed per unit output load
+                produced.
+            - input_resource_types:
+                The types of load inputted to the d:class:`DieselWaterHeater`evice.
+            - maximum_output_capcity:
+                The maximum output capacity of the :class:`DieselWaterHeater`.
+            - minimum_load:
+                The minimum load that must be placed on the :class:`DieselWaterHeater`.
+            - name:
+                The name of the :class:`DieselWaterHeater`.
+            - output_resource_type:
+                The type of output produced by the :class:`DieselWaterHeater`.
+
+        """
+
+        super().__init__(
+            input_resource_consumption,
+            maximum_output_capacity,
+            name,
+            output_resource_type,
+        )
+        self.minimum_load = minimum_load
+
+    @classmethod
+    def from_dict(cls, input_data: Dict[str, Any], logger: logging.Logger) -> Any:
+        """
+        Instantiates a :class:`DieselWaterHeater` instance based on the input data.
+
+        Inputs:
+            - input_data:
+                The input information, extracted from the diesel inputs YAML file.
+            - logger:
+                The :class:`logging.Logger` to use for the run.
+
+        Outputs:
+            - An instantiated :class:`DieselWaterHeater` based on the input information.
+
+        """
+
+        try:
+            input_resource_consumption: Dict[ResourceType, float] = {
+                ResourceType.DIESEL: input_data[DIESEL_CONSUMPTION],
+                ResourceType.ELECTRIC: input_data[ELECTRIC_POWER]
+                if ELECTRIC_POWER in input_data
+                else 0,
+            }
+        except KeyError as e:
+            logger.error(
+                "%sMissing or invalid information for diesel water heater concerning "
+                "its fuel and/or electricity consumption: %s%s",
+                BColours.fail,
+                str(e),
+                BColours.endc,
+            )
+            raise InputFileError(
+                "diesel inputs", "Missing diesel water heater resource inputs."
+            ) from None
+
+        return cls(
+            input_resource_consumption,
+            input_data[MAXIMUM_OUTPUT],
+            input_data[MINIMUM_LOAD],
+            input_data[NAME],
+            ResourceType.HEAT,
+        )
+
+    @property
+    def diesel_consumption(self) -> float:
+        """
+        Returns the diesel-fuel consumption of the :class:`DieselWaterHeater`.
+
+        Outputs:
+            - The diesel fuel consumption of the :class:`DieselWaterHeater`.
+
+        """
+
+        return self.input_resource_consumption[ResourceType.DIESEL]
 
 
 def _find_deficit_threshold(

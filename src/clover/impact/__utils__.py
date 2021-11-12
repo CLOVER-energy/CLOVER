@@ -58,6 +58,12 @@ class ImpactingComponent(enum.Enum):
     - DIESEL_FUEL:
         Denotes the diesel fuel component of the system.
 
+    - DIESEL_WATER_HEATER:
+        Denotes the diesel water heater component of the system.
+
+    - ELECTRIC_WATER_HEATER:
+        Denotes the electric water heater component of the system.
+
     - GENERAL:
         Denotes impacts generally associated with the system but not a specific
         component.
@@ -103,6 +109,8 @@ class ImpactingComponent(enum.Enum):
     CONVENTIONAL_SOURCE = "conventional_source"
     DIESEL = "diesel_generator"
     DIESEL_FUEL = "diesel_fuel"
+    DIESEL_WATER_HEATER = "diesel_water_heater"
+    ELECTRIC_WATER_HEATER = "electric_water_heater"
     GENERAL = "general"
     GRID = "grid"
     HEAT_EXCHANGER = EXCHANGER
