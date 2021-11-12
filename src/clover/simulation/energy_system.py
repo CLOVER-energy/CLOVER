@@ -1590,7 +1590,7 @@ def run_simulation(
     )
 
     if all(renewables_energy.values == 0):
-        logger.warn(
+        logger.warning(
             "%sNo renewable electricity was generated. Continuing with grid and diesel "
             "only.%s",
             BColours.warning,

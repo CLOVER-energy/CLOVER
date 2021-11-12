@@ -436,7 +436,7 @@ def calculate_pvt_output(
     #         ).to_csv()
     #     )
 
-    # logger.warn(
+    # logger.warning(
     #     "%sUsing saved PV-T profile: this should be used for debugging only.%s",
     #     BColours.warning,
     #     BColours.endc,
