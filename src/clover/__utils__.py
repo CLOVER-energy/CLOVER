@@ -83,6 +83,10 @@ __all__ = (
 #   Used for parsing cold-water related information.
 COLD_WATER: str = "cold_water"
 
+# Conventional sources:
+#   Keyword used for parsing conventional-source information.
+CONVENTIONAL_SOURCES: str = "conventional_sources"
+
 # Cut off time:
 #   The time up and to which information about the load of each device will be returned.
 CUT_OFF_TIME: int = 72  # [hours]
@@ -1389,10 +1393,10 @@ class DesalinationScenario:
         clean_water_scenario: CleanWaterScenario = CleanWaterScenario(
             set(
                 desalination_inputs[ResourceType.CLEAN_WATER.value][
-                    "conventional_sources"
+                    CONVENTIONAL_SOURCES
                 ]
             )
-            if "conventional_sources"
+            if CONVENTIONAL_SOURCES
             in desalination_inputs[ResourceType.CLEAN_WATER.value]
             else set(),
             clean_water_mode,
@@ -1476,6 +1480,9 @@ class HotWaterScenario:
     .. attribute:: cold_water_supply_temperature
         The supply temperature of the cold-water input to the system.
 
+    .. attribute:: conventional_sources
+        A `list` of conventional sources.
+
     .. attribute:: demand_temperature
         The temperature, in degrees Celcius, at which hot water should be supplied to the end user.
 
@@ -1487,6 +1494,7 @@ class HotWaterScenario:
     auxiliary_heater: Optional[AuxiliaryHeaterType]
     cold_water_supply: ColdWaterSupply
     cold_water_supply_temperature: float
+    conventional_sources: List[str]
     demand_temperature: float
     pvt_scenario: PVTScenario
 
@@ -1561,7 +1569,7 @@ class HotWaterScenario:
             ) from None
 
         try:
-            cold_water_supply_temperature = hot_water_inputs[COLD_WATER][
+            cold_water_supply_temperature: float = hot_water_inputs[COLD_WATER][
                 SUPPLY_TEMPERATURE
             ]
         except KeyError:
@@ -1571,6 +1579,18 @@ class HotWaterScenario:
                 BColours.fail,
                 BColours.endc,
             )
+
+        try:
+            conventional_sources: List[str] = hot_water_inputs[
+                ResourceType.HOT_CLEAN_WATER.value
+            ][CONVENTIONAL_SOURCES]
+        except KeyError:
+            logger.info("Missing hot-water conventional sources in hot-water inputs.")
+            logger.debug(
+                "Hot-water input information: %s", json.dumps(hot_water_inputs)
+            )
+            logger.info("Continuing with no conventional hot-water sources.")
+            conventional_sources = []
 
         try:
             demand_temperature = hot_water_inputs[ResourceType.HOT_CLEAN_WATER.value][
@@ -1631,6 +1651,7 @@ class HotWaterScenario:
             auxiliary_heater,
             cold_water_supply,
             cold_water_supply_temperature,
+            conventional_sources,
             demand_temperature,
             pvt_scenario,
         )

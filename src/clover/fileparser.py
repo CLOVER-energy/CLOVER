@@ -132,6 +132,10 @@ DIESEL_WATER_HEATERS: str = "diesel_water_heaters"
 #   The relative path to the electric model file.
 ELECTRIC_MODEL_FILE: str = os.path.join("src", "electric_forest.sav")
 
+# Electric water heater:
+#   Keyword used for parsing electric water-heater information.
+ELECTRIC_WATER_HEATER: str = "electric_water_heater"
+
 # Energy-system inputs file:
 #   The relative path to the energy-system-inputs file.
 ENERGY_SYSTEM_INPUTS_FILE: str = os.path.join("simulation", "energy_system.yaml")
@@ -242,7 +246,10 @@ WATER_SOURCE_INPUTS_FILE: str = os.path.join("generation", "water_source_inputs.
 
 
 def _determine_available_convertors(
-    convertors: Dict[str, Convertor], logger: Logger, scenario: Scenario
+    convertors: Dict[str, Convertor],
+    logger: Logger,
+    minigrid: Minigrid,
+    scenario: Scenario,
 ) -> List[Convertor]:
     """
     Determines the available :class:`Convertor` instances based on the :class:`Scenario`
@@ -253,6 +260,8 @@ def _determine_available_convertors(
             file.
         - logger:
             The :class:`logging.Logger` to use for the run.
+        - minigrid:
+            The :class:`Minigrid` to use for the run.
         - scenario:
             The :class:`Scenario` to use for the run.
 
@@ -304,40 +313,26 @@ def _determine_available_convertors(
                 ) from None
 
     if scenario.hot_water_scenario is not None:
-        # Process the clean-water convertors.
-        for entry in scenario.desalination_scenario.clean_water_scenario.sources:
+        # Process the hot-water convertors.
+        for entry in scenario.hot_water_scenario.conventional_sources:
             try:
                 available_convertors.append(convertors[entry])
             except KeyError as e:
                 logger.error(
-                    "%sUnknown clean-water source specified in the scenario file: %s%s",
+                    "%sUnknown conventional hot-water source specified in the "
+                    "hot-water scenario file: %s%s",
                     BColours.fail,
                     entry,
                     BColours.endc,
                 )
                 raise InputFileError(
-                    "desalination scenario",
-                    f"{BColours.fail}Unknown clean-water source(s) in the scenario "
-                    + f"file: {entry}{BColours.endc}",
+                    "hot-water scenario",
+                    f"{BColours.fail}Unknown conventional hot-water source(s) in the "
+                    + f"hot-water scenario file: {entry}{BColours.endc}",
                 ) from None
 
-        # Process the feedwater sources.
-        for entry in scenario.desalination_scenario.unclean_water_sources:
-            try:
-                available_convertors.append(convertors[entry])
-            except KeyError as e:
-                logger.error(
-                    "%sUnknown unclean-water source specified in the scenario file: %s"
-                    "%s",
-                    BColours.fail,
-                    entry,
-                    BColours.endc,
-                )
-                raise InputFileError(
-                    "desalination scenario",
-                    f"{BColours.fail}Unknown unclean-water source in the scenario "
-                    + f"file: {entry}{BColours.endc}",
-                ) from None
+        if scenario.hot_water_scenario.auxiliary_heater == AuxiliaryHeaterType.ELECTRIC:
+            available_convertors.append(convertors[minigrid.electric_water_heater.name])
 
     return available_convertors
 
@@ -703,10 +698,14 @@ def _parse_diesel_inputs(
             diesel_water_heater_costs = [
                 entry[COSTS]
                 for entry in diesel_inputs[DIESEL_WATER_HEATERS]
-                if entry[NAME] == diesel_generator.name
+                if entry[NAME] == diesel_water_heater.name
             ][0]
         except IndexError:
-            logger.error("Failed to determine diesel water-heater cost information.")
+            logger.error(
+                "%sFailed to determine diesel water-heater cost information.%s",
+                BColours.fail,
+                BColours.endc,
+            )
             raise
         else:
             logger.info("Diesel water-heater cost information successfully parsed.")
@@ -716,11 +715,13 @@ def _parse_diesel_inputs(
             diesel_water_heater_emissions = [
                 entry[EMISSIONS]
                 for entry in diesel_inputs[DIESEL_WATER_HEATERS]
-                if entry[NAME] == diesel_generator.name
+                if entry[NAME] == diesel_water_heater.name
             ][0]
         except IndexError:
             logger.error(
-                "Failed to determine diesel water-heater emission information."
+                "%sFailed to determine diesel water-heater emission information.%s",
+                BColours.fail,
+                BColours.endc,
             )
             raise
         else:
@@ -1612,6 +1613,13 @@ def _parse_minigrid_inputs(
     logger.info("Energy system inputs successfully parsed.")
 
     # Parse the diesel inputs information.
+    diesel_costs: Dict[str, float]
+    diesel_emissions: Dict[str, float]
+    diesel_generator: DieselGenerator
+    diesel_inputs_filepath: str
+    diesel_water_heater: Optional[DieselWaterHeater]
+    diesel_water_heater_costs: Optional[Dict[str, float]]
+    diesel_water_heater_emissions: Optional[Dict[str, float]]
     (
         diesel_costs,
         diesel_emissions,
@@ -1626,8 +1634,18 @@ def _parse_minigrid_inputs(
         logger,
         scenario,
     )
-    logger.info("Diesel generator information successfully parsed.")
+    logger.info(
+        "Diesel generator %sinformation successfully parsed.",
+        "and water heater " if diesel_water_heater is not None else "",
+    )
 
+    pv_panel: solar.PVPanel
+    pv_panel_costs: Dict[str, float]
+    pv_panel_emissions: Dict[str, float]
+    pvt_panel: Optional[solar.HybridPVTPanel]
+    pvt_panel_costs: Optional[Dict[str, float]]
+    pvt_panel_emissions: Optional[Dict[str, float]]
+    solar_generation_inputs_filepath: str
     (
         pv_panel,
         pv_panel_costs,
@@ -1741,6 +1759,28 @@ def _parse_minigrid_inputs(
         tank_inputs = None
         tank_inputs_filepath = None
         water_pump = None
+
+    # If applicable, determine the electric water heater for the system.
+    if (
+        scenario.hot_water_scenario is not None
+        and scenario.hot_water_scenario.auxiliary_heater == AuxiliaryHeaterType.ELECTRIC
+    ):
+        try:
+            electric_water_heater: Optional[Convertor] = convertors[
+                energy_system_inputs[ELECTRIC_WATER_HEATER]
+            ]
+        except KeyError:
+            logger.error(
+                "%sNo electric water heater defined in the conversion inputs despite "
+                "the hot-water scenario specifying that auxiliary heating is carried "
+                "out electrically. See the user guide for more information on defining "
+                "a valid electric water heater.%s",
+                BColours.fail,
+                BColours.endc,
+            )
+            raise
+    else:
+        electric_water_heater = None
 
     minigrid = Minigrid.from_dict(
         diesel_generator,
@@ -2022,11 +2062,6 @@ def parse_input_files(
     ) = _parse_scenario_inputs(inputs_directory_relative_path, logger)
     logger.info("Scenario inputs successfully parsed.")
 
-    # Determine the available convertors.
-    available_convertors: List[Convertor] = _determine_available_convertors(
-        convertors, logger, scenario
-    )
-
     # Parse the energy-system input information.
     (
         battery_costs,
@@ -2062,6 +2097,12 @@ def parse_input_files(
         convertors, inputs_directory_relative_path, logger, scenario
     )
     logger.info("Energy-system inputs successfully parsed.")
+
+    # Determine the available convertors.
+    available_convertors: List[Convertor] = _determine_available_convertors(
+        convertors, logger, minigrid, scenario
+    )
+    logger.info("Subset of available convertors determined.")
 
     generation_inputs_filepath = os.path.join(
         inputs_directory_relative_path, GENERATION_INPUTS_FILE
