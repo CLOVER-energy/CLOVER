@@ -128,7 +128,8 @@ def parse_args(args: List[Any]) -> argparse.Namespace:
     clean_water_parser.add_argument(
         "--clean-water-pvt-system-size",
         type=float,
-        help="The size of the PV-T system being modelled, associated with the ""clean-water supply system, in PV-T panel units.",
+        help="The size of the PV-T system being modelled, associated with the "
+        "clean-water supply system, in PV-T panel units.",
     )
 
     # Hot-water-specific arguments.
@@ -144,7 +145,8 @@ def parse_args(args: List[Any]) -> argparse.Namespace:
     hot_water_parser.add_argument(
         "--hot-water-pvt-system-size",
         type=float,
-        help="The size of the PV-T system being modelled, associated with the ""hot-water supply system, in PV-T panel units.",
+        help="The size of the PV-T system being modelled, associated with the "
+        "hot-water supply system, in PV-T panel units.",
     )
 
     # Simulation-specific arguments.

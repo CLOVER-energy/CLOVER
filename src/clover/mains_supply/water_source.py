@@ -27,7 +27,7 @@ import pandas as pd  # type: ignore # pylint: disable=import-error
 
 from tqdm import tqdm
 
-from ..__utils__ import BColours, Location, monthly_times_to_daily_times, SKIPPED
+from ..__utils__ import BColours, Location, monthly_times_to_daily_times, SKIPPING
 from ..conversion.conversion import WaterSource
 
 __all__ = ("get_lifetime_water_source_status",)
@@ -283,9 +283,11 @@ def get_lifetime_water_source_status(
 
     # Do not compute conventional profiles if there are none available.
     if len(water_source_times) == 0:
-        tqdm.write("No conventional {} water profiles defined {} {}".format(
-            keyword, "." * (41 - len(keyword) - len(SKIPPED)), SKIPPED
-        ))
+        tqdm.write(
+            "No conventional {} water profiles defined {}    {}".format(
+                keyword, "." * (35 - (len(keyword) + len(SKIPPING))), SKIPPING
+            )
+        )
         return water_source_profiles
 
     for source, availability in tqdm(
