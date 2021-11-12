@@ -41,8 +41,8 @@ from .fileparser import (
     parse_input_files,
 )
 from .generation import solar, weather, wind
-from .grid import grid, water_source
 from .load import load
+from .mains_supply import grid, water_source
 from .scripts import new_location
 from .simulation import energy_system
 from .optimisation.optimisation import multiple_optimisation_step
@@ -537,41 +537,53 @@ def main(args: List[Any]) -> None:
         print(DONE)
 
     # If the inputs do not match up correctly, then raise errors.
-    if (
-        scenario.desalination_scenario is not None
-        and minigrid.clean_water_tank is None
-    ):
+    if scenario.desalination_scenario is not None and minigrid.clean_water_tank is None:
         raise InputFileError(
             "energy system inputs",
             "No clean-water tank was provided despite there needing to be a tank "
             "specified for dealing with clean-water demands.",
         )
-    if (
-        operating_mode == OperatingMode.SIMULATION
-        and ((scenario.pv and parsed_args.pv_system_size is None)
-        or (not scenario.pv and parsed_args.pv_system_size is not None))
+    if operating_mode == OperatingMode.SIMULATION and (
+        (scenario.pv and parsed_args.pv_system_size is None)
+        or (not scenario.pv and parsed_args.pv_system_size is not None)
     ):
         raise InputFileError(
             "scenario",
             "PV mode in the scenario file must match the command-line usage.",
         )
-    if (
-        operating_mode == OperatingMode.SIMULATION
-        and ((parsed_args.clean_water_pvt_system_size is not None and scenario.desalination_scenario is None and not scenario.pv_t)
-        or (parsed_args.clean_water_pvt_system_size is None and scenario.desalination_scenario is not None and scenario.pv_t))
-    ):
-        raise InputFileError(
-            "scenario",
-            "PV-T mode in the scenario file must match the command-line usage. Check ""the clean-water and PV-T scenario specification.",
+    if operating_mode == OperatingMode.SIMULATION and (
+        (
+            parsed_args.clean_water_pvt_system_size is not None
+            and scenario.desalination_scenario is None
+            and not scenario.pv_t
         )
-    if (
-        operating_mode == OperatingMode.SIMULATION
-        and ((parsed_args.hot_water_pvt_system_size is not None and scenario.hot_water_scenario is None and not scenario.pv_t)
-        or (parsed_args.hot_water_pvt_system_size is None and scenario.hot_water_scenario is not None in scenario.resource_types and scenario.pv_t))
+        or (
+            parsed_args.clean_water_pvt_system_size is None
+            and scenario.desalination_scenario is not None
+            and scenario.pv_t
+        )
     ):
         raise InputFileError(
             "scenario",
-            "PV-T mode in the scenario file must match the command-line usage. Check ""the hot-water and PV-T scenario specification.",
+            "PV-T mode in the scenario file must match the command-line usage. Check "
+            "the clean-water and PV-T scenario specification.",
+        )
+    if operating_mode == OperatingMode.SIMULATION and (
+        (
+            parsed_args.hot_water_pvt_system_size is not None
+            and scenario.hot_water_scenario is None
+            and not scenario.pv_t
+        )
+        or (
+            parsed_args.hot_water_pvt_system_size is None
+            and scenario.hot_water_scenario is not None in scenario.resource_types
+            and scenario.pv_t
+        )
+    ):
+        raise InputFileError(
+            "scenario",
+            "PV-T mode in the scenario file must match the command-line usage. Check "
+            "the hot-water and PV-T scenario specification.",
         )
     if (
         operating_mode == OperatingMode.SIMULATION

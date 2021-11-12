@@ -183,7 +183,7 @@ RAW_CLOVER_PATH: str = os.path.join("src", "clover")
 
 # Skipped:
 #   Keyword used when skipping part of the CLOVER flow.
-SKIPPED: str = "[ SKIPPED ]"
+SKIPPING: str = "[ SKIPPING ]"
 
 # Step:
 #   Keyword used when parsing information about the system size step to consider in
@@ -197,6 +197,31 @@ SUPPLY_TEMPERATURE: str = "supply_temperature"
 # Zero celcius offset:
 #   Used for offsetting zero degrees celcius in Kelvin.
 ZERO_CELCIUS_OFFSET: float = 273.15
+
+
+class AuxiliaryHeaterType(enum.Enum):
+    """
+    Denotes the type of auxiliary heater used in the system.
+
+    - DIESEL:
+        Denotes that a diesel heater is being used.
+
+    - ELECTRIC:
+        Denotes that an electrically-powered heater is being used.
+
+    """
+
+    DIESEL = "diesel"
+    ELECTRIC = "electric"
+
+
+# Auxiliary heater name to type mapping:
+#   Used to parse auxiliary heater types, allowing for more than are defined on the
+#   base enum class.
+AUXILIARY_HEATER_NAME_TO_TYPE_MAPPING: Dict[str, Optional[AuxiliaryHeaterType]] = {
+    e.value: e for e in AuxiliaryHeaterType
+}
+AUXILIARY_HEATER_NAME_TO_TYPE_MAPPING["none"] = None
 
 
 @dataclasses.dataclass
@@ -501,23 +526,6 @@ def hourly_profile_to_daily_sum(hourly_profile: pd.DataFrame) -> pd.DataFrame:
     daily_profile = pd.DataFrame(hourly_profile.values.reshape((days, 24)))
     # return pd.DataFrame(np.sum(daily_profile, 1))
     return daily_profile.sum(axis=1)
-
-
-class HotWaterMode(enum.Enum):
-    """
-    Denotes the hot-water mode.
-
-    - FULFIL:
-        Denotes that hot water should always be supplied at the demand temperature.
-
-    - RENEWABLE_ONLY:
-        Denotes that hot water should only be supplied at the temperature which can be
-        reached using renewables within the system.
-
-    """
-
-    FULFIL = "fulfil"
-    RENEWABLE_ONLY = "renewable_only"
 
 
 class InputFileError(Exception):
@@ -1453,21 +1461,28 @@ class HotWaterScenario:
     """
     Represents the hot-water-related scenario being run.
 
+    .. attribute:: auxiliary_heater
+        The type of auxiliary heater assigned to the system, or `None` if there is no
+        auxiliary heater present, stored as a :class:`AuxiliaryHeaterType` instance.
+
     .. attribute:: cold_water_supply
         How input cold water is sourced for the hot-water system.
 
     .. attribute:: cold_water_supply_temperature
         The supply temperature of the cold-water input to the system.
 
+    .. attribute:: demand_temperature
+        The temperature, in degrees Celcius, at which hot water should be supplied to the end user.
+
     .. attribute:: pvt_scenario
         The PV-T scenario.
 
     """
 
+    auxiliary_heater: Optional[AuxiliaryHeaterType]
     cold_water_supply: ColdWaterSupply
     cold_water_supply_temperature: float
     demand_temperature: float
-    mode: HotWaterMode
     pvt_scenario: PVTScenario
 
     @classmethod
@@ -1489,9 +1504,36 @@ class HotWaterScenario:
         """
 
         try:
-            cold_water_supply = ColdWaterSupply(
-                hot_water_inputs[COLD_WATER]["supply"]
+            auxiliary_heater = AUXILIARY_HEATER_NAME_TO_TYPE_MAPPING[
+                hot_water_inputs[ResourceType.HOT_CLEAN_WATER.value]["auxiliary_heater"]
+            ]
+        except ValueError:
+            logger.error(
+                "%sInvalid auxiliary heater mode specified: %s. Valid options are %s."
+                "%s",
+                BColours.fail,
+                hot_water_inputs[ResourceType.HOT_CLEAN_WATER.value][
+                    "auxiliary_heater"
+                ],
+                ", ".join(f"'{e.value}'" for e in AuxiliaryHeaterType),
+                BColours.endc,
             )
+            raise InputFileError(
+                "hot-water scenario",
+                "Invalid auxiliary heater mode specified in hot-water scenario.",
+            ) from None
+        except KeyError:
+            logger.error(
+                "%sMissing auxiliary-heater mode in hot-water scenario file.%s",
+                BColours.fail,
+                BColours.endc,
+            )
+            raise InputFileError(
+                "hot-water scenario", "Missing auxiliary-heater mode information."
+            ) from None
+
+        try:
+            cold_water_supply = ColdWaterSupply(hot_water_inputs[COLD_WATER]["supply"])
         except ValueError:
             logger.error(
                 "%sInvalid cold-water supply specified: %s%s",
@@ -1514,9 +1556,9 @@ class HotWaterScenario:
             ) from None
 
         try:
-            cold_water_supply_temperature = hot_water_inputs[
-                COLD_WATER
-            ][SUPPLY_TEMPERATURE]
+            cold_water_supply_temperature = hot_water_inputs[COLD_WATER][
+                SUPPLY_TEMPERATURE
+            ]
         except KeyError:
             logger.error(
                 "%sMissing cold-water supply temperature information in hot-water "
@@ -1526,12 +1568,16 @@ class HotWaterScenario:
             )
 
         try:
-            demand_temperature = hot_water_inputs[ResourceType.HOT_CLEAN_WATER.value]["demand_temperature"]
+            demand_temperature = hot_water_inputs[ResourceType.HOT_CLEAN_WATER.value][
+                "demand_temperature"
+            ]
         except ValueError:
             logger.error(
                 "%sInvalid hot-water demand temperature specified: %s%s",
                 BColours.fail,
-                hot_water_inputs[ResourceType.HOT_CLEAN_WATER.value]["demand_temperature"],
+                hot_water_inputs[ResourceType.HOT_CLEAN_WATER.value][
+                    "demand_temperature"
+                ],
                 BColours.endc,
             )
             raise InputFileError(
@@ -1546,31 +1592,6 @@ class HotWaterScenario:
             )
             raise InputFileError(
                 "hot-water scenario", "Missing demand temperature."
-            ) from None
-
-        try:
-            hot_water_mode = HotWaterMode(
-                hot_water_inputs[ResourceType.HOT_CLEAN_WATER.value][MODE]
-            )
-        except ValueError:
-            logger.error(
-                "%sInvalid hot-water mode specified: %s%s",
-                BColours.fail,
-                hot_water_inputs[ResourceType.HOT_CLEAN_WATER.value][MODE],
-                BColours.endc,
-            )
-            raise InputFileError(
-                "hot-water scenario",
-                "Invalid hot-water mode specified in hot-water scenario.",
-            ) from None
-        except KeyError:
-            logger.error(
-                "%sMissing hot-water mode information in hot-water scenario file.%s",
-                BColours.fail,
-                BColours.endc,
-            )
-            raise InputFileError(
-                "hot-water scenario", "Missing cold-water source information."
             ) from None
 
         try:
@@ -1602,10 +1623,10 @@ class HotWaterScenario:
             ) from None
 
         return cls(
+            auxiliary_heater,
             cold_water_supply,
             cold_water_supply_temperature,
             demand_temperature,
-            hot_water_mode,
             pvt_scenario,
         )
 

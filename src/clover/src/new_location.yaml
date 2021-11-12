@@ -671,10 +671,10 @@
                 ################################################################################
 
                 hot_water:
-                  mode: fulfil # "fulfil" to fulfil demand temp., "renewable_only" to not
+                  auxiliary_heater: diesel # "diesel", "electric" or "none"
                   conventional_sources:
                     - natural_gas
-                  demand_temp: 60 # [degC]
+                  demand_temperature: 60 # [degC]
                 cold_water:
                   supply: unlimited # "unlimited" or "clean_water"
                   supply_temperature: 10 # [degC]

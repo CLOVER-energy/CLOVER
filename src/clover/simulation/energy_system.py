@@ -288,7 +288,7 @@ def _calculate_electric_desalination_parameters(
     return electric_desalinators, energy_per_desalinated_litre, maximum_water_throughput
 
 
-def _calculate_pvt_and_thermal_desalination_profiles(
+def _calculate_renewable_clean_water_profiles(
     convertors: List[Convertor],
     end_hour: int,
     irradiance_data: pd.Series,
@@ -354,7 +354,7 @@ def _calculate_pvt_and_thermal_desalination_profiles(
 
     """
 
-    if scenario.pv_t:
+    if scenario.pv_t and scenario.desalination_scenario is not None:
         if wind_speed_data is None:
             raise InternalError(
                 "Wind speed data required in PV-T computation and not passed to the "
@@ -1447,7 +1447,7 @@ def run_simulation(
         renewable_clean_water_produced,
         tank_volume_supplied,
         thermal_desalination_electric_power_consumed,
-    ) = _calculate_pvt_and_thermal_desalination_profiles(
+    ) = _calculate_renewable_clean_water_profiles(
         convertors,
         end_hour,
         irradiance_data,
@@ -1588,6 +1588,14 @@ def run_simulation(
         pvt_size=pvt_size,
         start_hour=start_hour,
     )
+
+    if all(renewables_energy.values == 0):
+        logger.warn(
+            "%sNo renewable electricity was generated. Continuing with grid and diesel "
+            "only.%s",
+            BColours.warning,
+            BColours.endc,
+        )
 
     # Determine the number of households in the community.
     households = pd.DataFrame(
@@ -1819,10 +1827,7 @@ def run_simulation(
     )
     if thermal_desalination_electric_power_consumed is not None:
         unmet_energy = pd.DataFrame(
-            (
-                unmet_energy.values
-                + thermal_desalination_electric_power_consumed.values
-            )
+            (unmet_energy.values + thermal_desalination_electric_power_consumed.values)
         )
 
     # Determine the times for which the system experienced a blackout.
@@ -2019,15 +2024,11 @@ def run_simulation(
     system_details = SystemDetails(
         diesel_capacity,
         simulation.end_year,
-        number_of_buffer_tanks
-        if scenario.desalination_scenario is not None
-        else None,
+        number_of_buffer_tanks if scenario.desalination_scenario is not None else None,
         number_of_clean_water_tanks
         if scenario.desalination_scenario is not None
         else None,
-        number_of_hot_water_tanks
-        if scenario.hot_water_scenario is not None
-        else None,
+        number_of_hot_water_tanks if scenario.hot_water_scenario is not None else None,
         pv_size
         * float(
             solar_degradation(minigrid.pv_panel.lifetime)[0][  # type: ignore
@@ -2047,15 +2048,11 @@ def run_simulation(
             * minigrid.battery.storage_unit
             * np.min(battery_health_frame["Battery health"])
         ),
-        number_of_buffer_tanks
-        if scenario.desalination_scenario is not None
-        else None,
+        number_of_buffer_tanks if scenario.desalination_scenario is not None else None,
         number_of_clean_water_tanks
         if scenario.desalination_scenario is not None
         else None,
-        number_of_hot_water_tanks
-        if scenario.hot_water_scenario is not None
-        else None,
+        number_of_hot_water_tanks if scenario.hot_water_scenario is not None else None,
         pv_size,
         pvt_size if minigrid.pvt_panel is not None else None,
         float(electric_storage_size * minigrid.battery.storage_unit),
