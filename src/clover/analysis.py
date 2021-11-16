@@ -874,7 +874,7 @@ def plot_outputs(
         if initial_clean_water_hourly_loads is not None:
             # Plot the first year of PV-T generation as a heatmap.
             pvt_electricity_supplied_per_unit = simulation_output[0:HOURS_PER_YEAR][
-                "PV-T electric energy supplied per kWh"
+                "Clean-water PV-T electric energy supplied per kWh"
             ]
             reshaped_data = np.reshape(
                 pvt_electricity_supplied_per_unit.values, (365, 24)
@@ -1751,17 +1751,17 @@ def plot_outputs(
             # Plot the daily collector output temperature
             _, ax1 = plt.subplots()
             collector_output_temperature_january = simulation_output.iloc[0:24][
-                "PV-T output temperature (degC)"
+                "Clean-water PV-T output temperature (degC)"
             ]
             collector_output_temperature_march = simulation_output.iloc[
                 HOURS_UNTIL_MARCH : HOURS_UNTIL_MARCH + 24
-            ]["PV-T output temperature (degC)"]
+            ]["Clean-water PV-T output temperature (degC)"]
             collector_output_temperature_may = simulation_output.iloc[
                 HOURS_UNTIL_MAY : HOURS_UNTIL_MAY + 24
-            ]["PV-T output temperature (degC)"]
+            ]["Clean-water PV-T output temperature (degC)"]
             collector_output_temperature_july = simulation_output.iloc[
                 HOURS_UNTIL_JULY : HOURS_UNTIL_JULY + 24
-            ]["PV-T output temperature (degC)"]
+            ]["Clean-water PV-T output temperature (degC)"]
 
             buffer_tank_temperature_january = simulation_output.iloc[0:24][
                 "Buffer tank temperature (degC)"
@@ -1843,7 +1843,7 @@ def plot_outputs(
             collector_output_temperature_january = np.mean(
                 np.reshape(
                     simulation_output[0 : 31 * 24][
-                        "PV-T output temperature (degC)"
+                        "Clean-water PV-T output temperature (degC)"
                     ].values,
                     (31, 24),
                 ),
@@ -1852,7 +1852,7 @@ def plot_outputs(
             collector_output_temperature_march = np.mean(
                 np.reshape(
                     simulation_output[HOURS_UNTIL_MARCH : HOURS_UNTIL_MARCH + 31 * 24][
-                        "PV-T output temperature (degC)"
+                        "Clean-water PV-T output temperature (degC)"
                     ].values,
                     (31, 24),
                 ),
@@ -1861,7 +1861,7 @@ def plot_outputs(
             collector_output_temperature_may = np.mean(
                 np.reshape(
                     simulation_output[HOURS_UNTIL_MAY : HOURS_UNTIL_MAY + 31 * 24][
-                        "PV-T output temperature (degC)"
+                        "Clean-water PV-T output temperature (degC)"
                     ].values,
                     (31, 24),
                 ),
@@ -1870,7 +1870,7 @@ def plot_outputs(
             collector_output_temperature_july = np.mean(
                 np.reshape(
                     simulation_output[HOURS_UNTIL_JULY : HOURS_UNTIL_JULY + 31 * 24][
-                        "PV-T output temperature (degC)"
+                        "Clean-water PV-T output temperature (degC)"
                     ].values,
                     (31, 24),
                 ),
