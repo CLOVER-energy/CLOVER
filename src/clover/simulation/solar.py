@@ -178,16 +178,29 @@ def _volume_withdrawn_from_tank(
             previous_tank_temperature
             > thermal_desalination_plant.minimum_htf_temperature
         )
-        volume_supplied: float = _buffer_tank_mass_flow_rate(
-            ambient_temperature,
-            best_guess_tank_temperature,
-            minigrid.buffer_tank,
-            thermal_desalination_plant,
+        volume_supplied: float = (
+            _buffer_tank_mass_flow_rate(
+                ambient_temperature,
+                best_guess_tank_temperature,
+                minigrid.buffer_tank,
+                thermal_desalination_plant,
+            )
+            * tank_supply_on
         )
 
     elif resource_type == ResourceType.HOT_CLEAN_WATER:
         if hot_water_load is None:
-            logger.error("%s")
+            logger.error(
+                "%sNo hot-water load defined despite a hot-water system being "
+                "specified.%s",
+                BColours.fail,
+                BColours.endc,
+            )
+            raise InternalError(
+                "No hot-water load was provided to the 'tank volume supplied' "
+                "calculation method despite hot water being defined in the scenario "
+                "file."
+            )
         tank_supply_on = hot_water_load > 0
         volume_supplied = hot_water_load
 
@@ -199,11 +212,13 @@ def calculate_pvt_output(
     irradiances: pd.Series,
     logger: Logger,
     minigrid: Minigrid,
+    processed_total_hot_water_load: Optional[pd.DataFrame],
     pvt_system_size: int,
+    resource_type: ResourceType,
     scenario: Scenario,
     start_hour: int,
     temperatures: pd.Series,
-    thermal_desalination_plant: ThermalDesalinationPlant,
+    thermal_desalination_plant: Optional[ThermalDesalinationPlant],
     wind_speeds: pd.Series,
 ) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """
@@ -219,8 +234,12 @@ def calculate_pvt_output(
             The logger to use for the run.
         - minigrid:
             The minigrid being modelled currently.
+        - processed_total_hot_water_load:
+            The total hot-water load placed on the system, measured in litres per hour.
         - pvt_system_size:
             The size of the PV-T system being modelled.
+        - resource_type:
+            The resource type for which the PV-T output is being determined.
         - scenario:
             The :class:`Scenario` being considered.
         - start_hour:
@@ -262,19 +281,6 @@ def calculate_pvt_output(
             "modelling was requested.",
         )
 
-    if minigrid.buffer_tank is None:
-        logger.error(
-            "%sThe energy system does not contain a buffer tank despite the PV-T "
-            "output computation function being called.%s",
-            BColours.fail,
-            BColours.endc,
-        )
-        raise InputFileError(
-            "energy system inputs",
-            "The energy system specified does not contain a buffer tank but PV-T "
-            "modelling was requested.",
-        )
-
     # Instantiate debugging variables
     runs: int = 0
 
@@ -296,22 +302,34 @@ def calculate_pvt_output(
     )
 
     # Compute the various terms which remain common across all time steps.
-    if scenario.desalination_scenario is not None:
-        pvt_heat_transfer = (
+    if (
+        scenario.desalination_scenario is not None
+        and resource_type == ResourceType.CLEAN_WATER
+    ):
+        if minigrid.buffer_tank is None:
+            logger.error(
+                "%sThe energy system does not contain a buffer tank despite the PV-T "
+                "output computation function being called for a clean-water load.%s",
+                BColours.fail,
+                BColours.endc,
+            )
+            raise InputFileError(
+                "energy system inputs",
+                "The energy system specified does not contain a buffer tank but PV-T "
+                "modelling for desalination was requested.",
+            )
+        tank: HotWaterTank = minigrid.buffer_tank
+
+        pvt_heat_transfer: float = (
             pvt_system_size
             * scenario.desalination_scenario.pvt_scenario.mass_flow_rate  # [kg/hour]
             * scenario.desalination_scenario.pvt_scenario.htf_heat_capacity  # [J/kg*K]
             * minigrid.heat_exchanger.efficiency
             / 3600  # [s/hour]
         )  # [W/K]
-        tank_environment_heat_transfer = (
-            minigrid.buffer_tank.heat_transfer_coefficient
-        )  # [W/K]
-        tank_internal_energy = (
-            minigrid.buffer_tank.mass  # [kg]
-            * minigrid.buffer_tank.heat_capacity  # [J/kg*K]
-            / 3600  # [s/hour]
-        )  # [W/K]
+        tank_replacement_temperature: float = (
+            scenario.desalination_scenario.feedwater_supply_temperature
+        )  # [degC]
 
         # Throw an error if the PV-T is not heating an intermediary HTF.
         if scenario.desalination_scenario.pvt_scenario.heats != HTFMode.CLOSED_HTF:
@@ -325,7 +343,24 @@ def calculate_pvt_output(
                 "The PV-T heating mode requested is not supported.",
             )
 
-    elif scenario.hot_water_scenario is not None:
+    elif (
+        scenario.hot_water_scenario is not None
+        and resource_type == ResourceType.HOT_CLEAN_WATER
+    ):
+        if minigrid.hot_water_tank is None:
+            logger.error(
+                "%sThe energy system does not contain a hot-water tank despite the "
+                "PV-T output computation function being called for a hot-water load.%s",
+                BColours.fail,
+                BColours.endc,
+            )
+            raise InputFileError(
+                "energy system inputs",
+                "The energy system specified does not contain a hot-water tank but "
+                "PV-T modelling for hot-water loads was requested.",
+            )
+        tank = minigrid.hot_water_tank
+
         pvt_heat_transfer = (
             pvt_system_size
             * scenario.hot_water_scenario.pvt_scenario.mass_flow_rate  # [kg/hour]
@@ -333,14 +368,9 @@ def calculate_pvt_output(
             * minigrid.heat_exchanger.efficiency
             / 3600  # [s/hour]
         )  # [W/K]
-        tank_environment_heat_transfer = (
-            minigrid.hot_water_tank.heat_transfer_coefficient
-        )  # [W/K]
-        tank_internal_energy = (
-            minigrid.hot_water_tank.mass  # [kg]
-            * minigrid.hot_water_tank.heat_capacity  # [J/kg*K]
-            / 3600  # [s/hour]
-        )  # [W/K]
+        tank_replacement_temperature = (
+            scenario.hot_water_scenario.cold_water_supply_temperature
+        )  # [degC]
 
     # One of these scenarios must be specified, so throw an error if not.
     else:
@@ -355,6 +385,11 @@ def calculate_pvt_output(
             "being called."
         )
 
+    tank_environment_heat_transfer: float = tank.heat_transfer_coefficient  # [W/K]
+    tank_internal_energy: float = (
+        tank.mass * tank.heat_capacity / 3600  # [kg]  # [J/kg*K]  # [s/hour]
+    )  # [W/K]
+
     for index in tqdm(
         range(start_hour, end_hour),
         desc="pv-t performance",
@@ -368,14 +403,17 @@ def calculate_pvt_output(
         ) and irradiances[index] > 0
 
         # Determine the volume withdrawn from the buffer tanks
-        volume_supplied = (
-            _buffer_tank_mass_flow_rate(
-                temperatures[index],
-                tank_temperature_map[index - 1],
-                minigrid.buffer_tank,
-                thermal_desalination_plant,
-            )
-            * tank_supply_on
+        tank_supply_on, volume_supplied = _volume_withdrawn_from_tank(
+            temperatures[index],
+            tank_temperature_map[index - 1],
+            processed_total_hot_water_load[index]
+            if processed_total_hot_water_load is not None
+            else None,
+            logger,
+            minigrid,
+            tank_temperature_map[index - 1],
+            resource_type,
+            thermal_desalination_plant,
         )
 
         # Only compute outputs if there is input irradiance.
@@ -404,7 +442,7 @@ def calculate_pvt_output(
 
             tank_load_enthalpy_transfer = (
                 volume_supplied  # [kg/hour]
-                * minigrid.buffer_tank.heat_capacity  # [J/kg*K]
+                * tank.heat_capacity  # [J/kg*K]
                 / 3600  # [s/hour]
             )  # [W/K]
 
@@ -422,10 +460,7 @@ def calculate_pvt_output(
                 * (tank_temperature_map[index - 1] + ZERO_CELCIUS_OFFSET)
                 + (
                     tank_load_enthalpy_transfer
-                    * (
-                        scenario.desalination_scenario.feedwater_supply_temperature
-                        + ZERO_CELCIUS_OFFSET
-                    )
+                    * (tank_replacement_temperature + ZERO_CELCIUS_OFFSET)
                     if tank_supply_on
                     else 0
                 ),

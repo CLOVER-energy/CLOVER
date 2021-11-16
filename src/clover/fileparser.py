@@ -1408,6 +1408,12 @@ def _parse_tank_inputs(
         except IndexError:
             logger.error("Failed to determine clean-water tank cost information.")
             raise
+        except KeyError:
+            logger.error(
+                "Failed to determine clean-water tank from the energy-system inputs "
+                "file."
+            )
+            raise
         else:
             logger.info("Clean-water tank cost information successfully parsed.")
 
@@ -1422,6 +1428,12 @@ def _parse_tank_inputs(
         except IndexError:
             logger.error("Failed to determine clean-water tank emission information.")
             raise
+        except KeyError:
+            logger.error(
+                "Failed to determine clean-water tank from the energy-system inputs "
+                "file."
+            )
+            raise
         else:
             logger.info("Clean-water tank emission information successfully parsed.")
 
@@ -1429,7 +1441,8 @@ def _parse_tank_inputs(
         clean_water_tank_costs = None
         clean_water_tank_emissions = None
         logger.info(
-            "Clean-water tank disblaed in scenario file, skipping battery impact parsing."
+            "Clean-water tank disblaed in scenario file, skipping battery impact "
+            "parsing."
         )
 
     # If clean-water is present, extract the cost and emissions information.
@@ -1449,6 +1462,11 @@ def _parse_tank_inputs(
         except IndexError:
             logger.error("Failed to determine buffer-water tank cost information.")
             raise
+        except KeyError:
+            logger.error(
+                "Failed to determine buffer-water tank from the energy-system inputs file."
+            )
+            raise
         else:
             logger.info("HOt-water tank cost information successfully parsed.")
 
@@ -1462,6 +1480,12 @@ def _parse_tank_inputs(
             ][0]
         except IndexError:
             logger.error("Failed to determine buffer-water tank emission information.")
+            raise
+        except KeyError:
+            logger.error(
+                "Failed to determine buffer-water tank from the energy-system inputs "
+                "file."
+            )
             raise
         else:
             logger.info("Buffer-water tank emission information successfully parsed.")
@@ -1486,6 +1510,12 @@ def _parse_tank_inputs(
         except IndexError:
             logger.error("Failed to determine hot-water tank cost information.")
             raise
+        except KeyError:
+            logger.error(
+                "Failed to determine hot-water tank from the energy-system inputs "
+                "file."
+            )
+            raise
         else:
             logger.info("Hot-water tank cost information successfully parsed.")
 
@@ -1499,6 +1529,12 @@ def _parse_tank_inputs(
             ][0]
         except IndexError:
             logger.error("Failed to determine hot-water tank emission information.")
+            raise
+        except KeyError:
+            logger.error(
+                "Failed to determine hot-water tank from the energy-system inputs "
+                "file."
+            )
             raise
         else:
             logger.info("Hot-water tank emission information successfully parsed.")
