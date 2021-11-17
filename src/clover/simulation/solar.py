@@ -212,7 +212,7 @@ def calculate_pvt_output(
     irradiances: pd.Series,
     logger: Logger,
     minigrid: Minigrid,
-    processed_total_hot_water_load: Optional[pd.DataFrame],
+    processed_total_hot_water_load: Optional[pd.Series],
     pvt_system_size: int,
     resource_type: ResourceType,
     scenario: Scenario,
@@ -288,7 +288,7 @@ def calculate_pvt_output(
     pvt_electric_power_per_unit_map: Dict[int, float] = {}
     pvt_pump_times_map: Dict[int, bool] = {}
     tank_supply_temperature_map: Dict[int, float] = {}
-    tank_volume_supplied_map: Dict[int, float] = collections.defaultdict(float)
+    tank_volume_supplied_map: Dict[int, float] = {}
 
     # Compute the various terms which remain common across all time steps.
     if (
@@ -405,21 +405,28 @@ def calculate_pvt_output(
         unit="hour",
     ):
         # Determine whether the PV-T is flowing.
-        pvt_flow_on: bool = (
-            pvt_collector_output_temperature_map[index - 1]
-            > tank_temperature_map[index - 1]
-        ) and irradiances[index] > 0
+        if index > start_hour:
+            pvt_flow_on: bool = (
+                pvt_collector_output_temperature_map[index - 1]
+                > tank_temperature_map[index - 1]
+            ) and irradiances[index] > 0
+        else:
+            pvt_flow_on = False
+
+        previous_tank_temperature: float = (
+            tank_temperature_map[index - 1] if index > 0 else default_supply_temperature
+        )
 
         # Determine the volume withdrawn from the buffer tanks
         tank_supply_on, volume_supplied = _volume_withdrawn_from_tank(
             temperatures[index],
-            tank_temperature_map[index - 1],
+            previous_tank_temperature,
             processed_total_hot_water_load[index]
             if processed_total_hot_water_load is not None
             else None,
             logger,
             minigrid,
-            tank_temperature_map[index - 1],
+            previous_tank_temperature,
             resource_type,
             thermal_desalination_plant,
         )
@@ -431,11 +438,15 @@ def calculate_pvt_output(
             # Use the AI to determine the output temperature of the collector, based on
             # the best guess of the collector input temperature.
             if irradiances[index] > 0:
-                import pdb
+                # import pdb
 
-                pdb.set_trace(
-                    header=f"amb:{temperatures[index]:.3g}, in:{best_guess_collector_input_temperature:.3g}, m:{mass_flow_rate:.3g}, G:{1000*irradiances[index]:.3g}, v_w:{wind_speeds[index]:.3g}"
-                )
+                # pdb.set_trace(
+                #     header=f"amb:{temperatures[index]:.3g}, "
+                #     + f"in:{best_guess_collector_input_temperature:.3g}, "
+                #     + f"m:{mass_flow_rate:.3g}, "
+                #     + f"G:{1000*irradiances[index]:.3g}, "
+                #     + f"v_w:{wind_speeds[index]:.3g}"
+                # )
                 (
                     fractional_electric_performance,
                     collector_output_temperature,
@@ -468,7 +479,7 @@ def calculate_pvt_output(
                 + tank_environment_heat_transfer
                 * (temperatures[index] + ZERO_CELCIUS_OFFSET)
                 + tank_internal_energy
-                * (tank_temperature_map[index - 1] + ZERO_CELCIUS_OFFSET)
+                * (previous_tank_temperature + ZERO_CELCIUS_OFFSET)
                 + (
                     tank_load_enthalpy_transfer
                     * (tank_replacement_temperature + ZERO_CELCIUS_OFFSET)

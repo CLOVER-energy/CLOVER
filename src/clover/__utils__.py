@@ -67,6 +67,7 @@ __all__ = (
     "PACKAGE_NAME",
     "RAW_CLOVER_PATH",
     "read_yaml",
+    "RenewableEnergySource",
     "ResourceType",
     "RenewablesNinjaError",
     "save_simulation",
@@ -679,6 +680,26 @@ class KeyResults:
             )
 
         return data_dict
+
+
+class RenewableEnergySource(enum.Enum):
+    """
+    Specfiies the renewable energy sources that can be included in the system.
+
+    - CLEAN_WATER_PV_T:
+        Denotes PV-T associated with clean-water production.
+
+    - HOT_WATER_PV_T:
+        Denotes PV-T associated with hot-water production.
+
+    - PV:
+        Denotes purely electric PV-T panels.
+
+    """
+
+    CLEAN_WATER_PV_T = "clean_water_pv_t"
+    HOT_WATER_PV_T = "hot_water_pv_t"
+    PV = "pv"
 
 
 class ResourceType(enum.Enum):

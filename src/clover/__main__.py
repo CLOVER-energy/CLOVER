@@ -543,57 +543,75 @@ def main(args: List[Any]) -> None:
             "No clean-water tank was provided despite there needing to be a tank "
             "specified for dealing with clean-water demands.",
         )
-    if operating_mode == OperatingMode.SIMULATION and (
-        (scenario.pv and parsed_args.pv_system_size is None)
-        or (not scenario.pv and parsed_args.pv_system_size is not None)
-    ):
-        raise InputFileError(
-            "scenario",
-            "PV mode in the scenario file must match the command-line usage.",
-        )
-    if operating_mode == OperatingMode.SIMULATION and (
-        (
+    if operating_mode == OperatingMode.SIMULATION:
+        if (scenario.pv and parsed_args.pv_system_size is None) or (
+            not scenario.pv and parsed_args.pv_system_size is not None
+        ):
+            raise InputFileError(
+                "scenario",
+                "PV mode in the scenario file must match the command-line usage.",
+            )
+        if (
             parsed_args.clean_water_pvt_system_size is not None
-            and scenario.desalination_scenario is None
-            and not scenario.pv_t
-        )
-        or (
+            and (scenario.desalination_scenario is None)
+        ) or (
             parsed_args.clean_water_pvt_system_size is None
-            and scenario.desalination_scenario is not None
-            and scenario.pv_t
-        )
-    ):
-        raise InputFileError(
-            "scenario",
-            "PV-T mode in the scenario file must match the command-line usage. Check "
-            "the clean-water and PV-T scenario specification.",
-        )
-    if operating_mode == OperatingMode.SIMULATION and (
-        (
+            and (scenario.desalination_scenario is not None)
+        ):
+            logger.error(
+                "%sPV-T mode and available resources in the scenario file must match "
+                "the command-line usage. Check the clean-water and PV-T scenario "
+                "specification.%s",
+                BColours.fail,
+                BColours.endc,
+            )
+            raise InputFileError(
+                "scenario",
+                "Mismatch between command-line usage and in-file usage.",
+            )
+        if (
             parsed_args.hot_water_pvt_system_size is not None
-            and scenario.hot_water_scenario is None
-            and not scenario.pv_t
-        )
-        or (
+            and (scenario.hot_water_scenario is None)
+        ) or (
             parsed_args.hot_water_pvt_system_size is None
-            and scenario.hot_water_scenario is not None in scenario.resource_types
-            and scenario.pv_t
-        )
-    ):
-        raise InputFileError(
-            "scenario",
-            "PV-T mode in the scenario file must match the command-line usage. Check "
-            "the hot-water and PV-T scenario specification.",
-        )
-    if (
-        operating_mode == OperatingMode.SIMULATION
-        and (scenario.battery and parsed_args.storage_size is None)
-        or (not scenario.battery and parsed_args.storage_size is not None)
-    ):
-        raise InputFileError(
-            "scenario",
-            "Battery mode in the scenario file must match the command-line usage.",
-        )
+            and (scenario.hot_water_scenario is not None in scenario.resource_types)
+        ):
+            logger.error(
+                "%sPV-T mode in the scenario file must match the command-line usage. "
+                "Check the hot-water and PV-T scenario specification.%s",
+                BColours.fail,
+                BColours.endc,
+            )
+            raise InputFileError(
+                "scenario",
+                "Mismatch between command-line usage and in-file usage.",
+            )
+        if (
+            scenario.pv_t
+            and scenario.desalination_scenario is None
+            and scenario.hot_water_scenario is None
+        ) or (
+            not scenario.pv_t
+            and scenario.desalination_scenario is not None
+            and scenario.hot_water_scenario is not None
+        ):
+            logger.error(
+                "%sDesalination or hot-water scenario usage does not match the "
+                "system's PV-T panel inclusion.%s",
+                BColours.fail,
+                BColours.endc,
+            )
+            raise InputFileError(
+                "scenario",
+                "The PV-T mode does not match the hot-water or desalination scenarios.",
+            )
+        if (scenario.battery and parsed_args.storage_size is None) or (
+            not scenario.battery and parsed_args.storage_size is not None
+        ):
+            raise InputFileError(
+                "scenario",
+                "Battery mode in the scenario file must match the command-line usage.",
+            )
 
     print("Generating necessary profiles", end="\n")
 
@@ -816,7 +834,10 @@ def main(args: List[Any]) -> None:
     )
     logger.info("Total solar output successfully computed and saved.")
 
-    if scenario.desalination_scenario is not None:
+    if (
+        scenario.desalination_scenario is not None
+        or scenario.hot_water_scenario is not None
+    ):
         logger.info("Generating and saving total weather output file.")
         total_weather_data = weather.total_weather_output(
             os.path.join(auto_generated_files_directory, "weather"),
@@ -892,7 +913,7 @@ def main(args: List[Any]) -> None:
         else False
     )
 
-    # * Run a simulation or optimisation as appropriate.
+    # Run a simulation or optimisation as appropriate.
     if operating_mode == OperatingMode.SIMULATION:
         print(
             "Beginning CLOVER simulation runs {}    ".format(
@@ -975,10 +996,16 @@ def main(args: List[Any]) -> None:
                     system_performance_outputs,
                     system_details,
                 ) = energy_system.run_simulation(
+                    parsed_args.clean_water_pvt_system_size
+                    if parsed_args.clean_water_pvt_system_size is not None
+                    else 0,
                     conventional_clean_water_source_profiles,
                     convertors,
                     parsed_args.storage_size,
                     grid_profile,
+                    parsed_args.hot_water_pvt_system_size
+                    if parsed_args.hot_water_pvt_system_size is not None
+                    else 0,
                     total_solar_data[solar.SolarDataType.TOTAL_IRRADIANCE.value],
                     kerosene_usage,
                     location,
@@ -989,9 +1016,6 @@ def main(args: List[Any]) -> None:
                     * minigrid.pv_panel.pv_unit,
                     parsed_args.pv_system_size
                     if parsed_args.pv_system_size is not None
-                    else 0,
-                    parsed_args.clean_water_pvt_system_size
-                    if parsed_args.clean_water_pvt_system_size is not None
                     else 0,
                     scenario,
                     simulation,
