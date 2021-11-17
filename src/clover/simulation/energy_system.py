@@ -644,7 +644,7 @@ def _calculate_renewable_hot_water_profiles(
         # Determine whether the water pump is capable for supplying the PV-T panels with
         # enough throughput.
         if (
-            scenario.desalination_scenario.pvt_scenario.mass_flow_rate * pvt_size
+            scenario.hot_water_scenario.pvt_scenario.mass_flow_rate * pvt_size
             > minigrid.water_pump.throughput
         ):
             logger.error(
