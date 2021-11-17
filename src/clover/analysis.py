@@ -218,7 +218,7 @@ def plot_outputs(
     with tqdm(
         total=10
         + (17 if initial_clean_water_hourly_loads is not None else 0)
-        + (4 if initial_hot_water_hourly_loads is not None else 0),
+        + (6 if initial_hot_water_hourly_loads is not None else 0),
         desc="plots",
         leave=False,
         unit="plot",
@@ -1831,7 +1831,7 @@ def plot_outputs(
             plt.savefig(
                 os.path.join(
                     figures_directory,
-                    "collector_output_temperature_on_first_month_days.png",
+                    "clean_water_collector_output_temperature_on_first_month_days.png",
                 ),
                 transparent=True,
             )
@@ -1989,7 +1989,7 @@ def plot_outputs(
             plt.savefig(
                 os.path.join(
                     figures_directory,
-                    "collector_output_temperature_on_average_month_days.png",
+                    "clean_water_collector_output_temperature_on_average_month_days.png",
                 ),
                 transparent=True,
             )
@@ -2385,6 +2385,270 @@ def plot_outputs(
             plt.title("Load growth of the community")
             plt.savefig(
                 os.path.join(figures_directory, "hot_water_load_growth.png"),
+                transparent=True,
+            )
+            plt.close()
+            pbar.update(1)
+
+            # Plot the daily collector output temperature
+            _, ax1 = plt.subplots()
+            collector_output_temperature_january = simulation_output.iloc[0:24][
+                "Hot-water PV-T output temperature (degC)"
+            ]
+            collector_output_temperature_march = simulation_output.iloc[
+                HOURS_UNTIL_MARCH : HOURS_UNTIL_MARCH + 24
+            ]["Hot-water PV-T output temperature (degC)"]
+            collector_output_temperature_may = simulation_output.iloc[
+                HOURS_UNTIL_MAY : HOURS_UNTIL_MAY + 24
+            ]["Hot-water PV-T output temperature (degC)"]
+            collector_output_temperature_july = simulation_output.iloc[
+                HOURS_UNTIL_JULY : HOURS_UNTIL_JULY + 24
+            ]["Hot-water PV-T output temperature (degC)"]
+
+            hot_water_tank_temperature_january = simulation_output.iloc[0:24][
+                "Hot-water tank temperature (degC)"
+            ]
+            hot_water_tank_temperature_march = simulation_output.iloc[
+                HOURS_UNTIL_MARCH : HOURS_UNTIL_MARCH + 24
+            ]["Hot-water tank temperature (degC)"]
+            hot_water_tank_temperature_may = simulation_output.iloc[
+                HOURS_UNTIL_MAY : HOURS_UNTIL_MAY + 24
+            ]["Hot-water tank temperature (degC)"]
+            hot_water_tank_temperature_july = simulation_output.iloc[
+                HOURS_UNTIL_JULY : HOURS_UNTIL_JULY + 24
+            ]["Hot-water tank temperature (degC)"]
+
+            renewable_fraction_january = simulation_output.iloc[0:24][
+                "Renewable hot-water fraction"
+            ]
+            renewable_fraction_march = simulation_output.iloc[
+                HOURS_UNTIL_MARCH : HOURS_UNTIL_MARCH + 24
+            ]["Renewable hot-water fraction"]
+            renewable_fraction_may = simulation_output.iloc[
+                HOURS_UNTIL_MAY : HOURS_UNTIL_MAY + 24
+            ]["Renewable hot-water fraction"]
+            renewable_fraction_july = simulation_output.iloc[
+                HOURS_UNTIL_JULY : HOURS_UNTIL_JULY + 24
+            ]["Renewable hot-water fraction"]
+
+            ax1.plot(
+                collector_output_temperature_january.values,
+                label="january pv-t output temp.",
+            )
+            # ax1.plot(collector_output_temperature_march.values, label="march pv-t output temp.")
+            # ax1.plot(collector_output_temperature_may.values, label="may pv-t output temp.")
+            ax1.plot(
+                collector_output_temperature_july.values, label="july pv-t output temp."
+            )
+
+            ax1.plot(
+                hot_water_tank_temperature_january.values,
+                ":",
+                label="january tank temp.",
+                color="C0",
+            )
+            # ax1.plot(hot_water_tank_temperature_march.values, label="march tank temp.")
+            # ax1.plot(hot_water_tank_temperature_may.values, label="may tank temp.")
+            ax1.plot(
+                hot_water_tank_temperature_july.values,
+                ":",
+                label="july tank temp.",
+                color="C1",
+            )
+
+            ax1.legend(loc="upper left")
+
+            ax2 = ax1.twinx()
+            ax2.plot(
+                renewable_fraction_january.values,
+                "--",
+                label="january renewables fraction",
+            )
+            # ax2.plot(
+            #     renewable_fraction_march.values, "--", label="march renewables fraction"
+            # )
+            # ax2.plot(
+            #     renewable_fraction_may.values, "--", label="may renewables fraction"
+            # )
+            ax2.plot(
+                renewable_fraction_july.values, "--", label="july renewables fraction"
+            )
+            ax2.legend(loc="upper right")
+
+            plt.xlim(0, 23)
+            plt.xlabel("Hour of day")
+            ax1.set_ylabel("Collector output temperature / degC")
+            ax2.set_ylabel("Fraction of demand covered renewably")
+            plt.title(
+                "Collector output temp. on the first day of select months and "
+                "renewable demand covered"
+            )
+            plt.savefig(
+                os.path.join(
+                    figures_directory,
+                    "hot_water_collector_output_temperature_on_first_month_days.png",
+                ),
+                transparent=True,
+            )
+            plt.close()
+            pbar.update(1)
+
+            # Plot the average collector output temperature
+            _, ax1 = plt.subplots()
+            collector_output_temperature_january = np.mean(
+                np.reshape(
+                    simulation_output[0 : 31 * 24][
+                        "Hot-water PV-T output temperature (degC)"
+                    ].values,
+                    (31, 24),
+                ),
+                axis=0,
+            )
+            collector_output_temperature_march = np.mean(
+                np.reshape(
+                    simulation_output[HOURS_UNTIL_MARCH : HOURS_UNTIL_MARCH + 31 * 24][
+                        "Hot-water PV-T output temperature (degC)"
+                    ].values,
+                    (31, 24),
+                ),
+                axis=0,
+            )
+            collector_output_temperature_may = np.mean(
+                np.reshape(
+                    simulation_output[HOURS_UNTIL_MAY : HOURS_UNTIL_MAY + 31 * 24][
+                        "Hot-water PV-T output temperature (degC)"
+                    ].values,
+                    (31, 24),
+                ),
+                axis=0,
+            )
+            collector_output_temperature_july = np.mean(
+                np.reshape(
+                    simulation_output[HOURS_UNTIL_JULY : HOURS_UNTIL_JULY + 31 * 24][
+                        "Hot-water PV-T output temperature (degC)"
+                    ].values,
+                    (31, 24),
+                ),
+                axis=0,
+            )
+
+            hot_water_tank_temperature_january = np.mean(
+                np.reshape(
+                    simulation_output[0 : 31 * 24][
+                        "Hot-water tank temperature (degC)"
+                    ].values,
+                    (31, 24),
+                ),
+                axis=0,
+            )
+            hot_water_tank_temperature_march = np.mean(
+                np.reshape(
+                    simulation_output[HOURS_UNTIL_MARCH : HOURS_UNTIL_MARCH + 31 * 24][
+                        "Hot-water tank temperature (degC)"
+                    ].values,
+                    (31, 24),
+                ),
+                axis=0,
+            )
+            hot_water_tank_temperature_may = np.mean(
+                np.reshape(
+                    simulation_output[HOURS_UNTIL_MAY : HOURS_UNTIL_MAY + 31 * 24][
+                        "Hot-water tank temperature (degC)"
+                    ].values,
+                    (31, 24),
+                ),
+                axis=0,
+            )
+            hot_water_tank_temperature_july = np.mean(
+                np.reshape(
+                    simulation_output[HOURS_UNTIL_JULY : HOURS_UNTIL_JULY + 31 * 24][
+                        "Hot-water tank temperature (degC)"
+                    ].values,
+                    (31, 24),
+                ),
+                axis=0,
+            )
+
+            # Plot the average collector output temperature
+            renewable_fraction_january = np.mean(
+                np.reshape(
+                    simulation_output[0 : 31 * 24][
+                        "Renewable hot-water fraction"
+                    ].values,
+                    (31, 24),
+                ),
+                axis=0,
+            )
+            renewable_fraction_march = np.mean(
+                np.reshape(
+                    simulation_output[HOURS_UNTIL_MARCH : HOURS_UNTIL_MARCH + 31 * 24][
+                        "Renewable hot-water fraction"
+                    ].values,
+                    (31, 24),
+                ),
+                axis=0,
+            )
+            renewable_fraction_may = np.mean(
+                np.reshape(
+                    simulation_output[HOURS_UNTIL_MAY : HOURS_UNTIL_MAY + 31 * 24][
+                        "Renewable hot-water fraction"
+                    ].values,
+                    (31, 24),
+                ),
+                axis=0,
+            )
+            renewable_fraction_july = np.mean(
+                np.reshape(
+                    simulation_output[HOURS_UNTIL_JULY : HOURS_UNTIL_JULY + 31 * 24][
+                        "Renewable hot-water fraction"
+                    ].values,
+                    (31, 24),
+                ),
+                axis=0,
+            )
+
+            ax1.plot(
+                collector_output_temperature_january,
+                label="january collector output temp.",
+            )
+            # ax1.plot(collector_output_temperature_march, label="march collector output temp.")
+            # ax1.plot(collector_output_temperature_may, label="may collector output temp.")
+            ax1.plot(
+                collector_output_temperature_july, label="july collector output temp."
+            )
+            ax1.plot(
+                hot_water_tank_temperature_january,
+                ":",
+                label="january tank temp.",
+                color="C0",
+            )
+            # ax1.plot(hot_water_tank_temperature_march, ":", label="march tank temp.", color="C2")
+            # ax1.plot(hot_water_tank_temperature_may, ":", label="may tank temp.", color="C3")
+            ax1.plot(
+                hot_water_tank_temperature_july,
+                ":",
+                label="july tank temp.",
+                color="C1",
+            )
+            ax1.legend(loc="upper left")
+
+            ax2 = ax1.twinx()
+            ax2.plot(renewable_fraction_january, "--", label="january renewables fraction")
+            # ax2.plot(renewable_fraction_march, "--", label="march renewables fraction")
+            # ax2.plot(renewable_fraction_may, "--", label="may renewables fraction")
+            ax2.plot(renewable_fraction_july, "--", label="july renewables fraction")
+            ax2.legend(loc="upper right")
+
+            plt.xlim(0, 23)
+            plt.xlabel("Hour of day")
+            ax1.set_ylabel("Collector output temperature / degC")
+            ax2.set_ylabel("Demand covered fraction through renewables.")
+            plt.title("Collector output temprature on an average seasonal days and the demand covered.")
+            plt.savefig(
+                os.path.join(
+                    figures_directory,
+                    "hot_water_collector_output_temperature_on_average_month_days.png",
+                ),
                 transparent=True,
             )
             plt.close()

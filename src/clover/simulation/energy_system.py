@@ -38,9 +38,9 @@ from ..__utils__ import (
     DieselMode,
     DemandType,
     DistributionNetwork,
-    HTFMode,
     InputFileError,
     InternalError,
+    RenewableEnergySource,
     ResourceType,
     Location,
     Scenario,
@@ -723,7 +723,7 @@ def _calculate_renewable_hot_water_profiles(
             irradiance_data[start_hour:end_hour],  # type: ignore
             logger,
             minigrid,
-            processed_total_hot_water_load,
+            processed_total_hot_water_load[0],
             pvt_size,
             ResourceType.HOT_CLEAN_WATER,
             scenario,
@@ -1040,9 +1040,10 @@ def _get_electric_battery_storage_profile(
     processed_total_electric_load: pd.DataFrame,
     renewables_power_produced: Dict[SolarPanelType, pd.DataFrame],
     scenario: Scenario,
+    clean_water_pvt_size: int = 0,
     end_hour: int = 4,
+    hot_water_pvt_size: int = 0,
     pv_size: float = 10,
-    pvt_size: int = 0,
     start_hour: int = 0,
 ) -> Tuple[
     pd.DataFrame,
@@ -1075,12 +1076,14 @@ def _get_electric_battery_storage_profile(
             of technology size.
         - scenario:
             The scenatio being considered.
+        - clean_water_pvt_size:
+            Amount of PV-T in units of PV-T associated with the clean-water system.
         - end_year:
             End year of this simulation period.
+        - hot_water_pvt_size:
+            Amount of PV-T in units of PV-T associated with the hot-water system.
         - pv_size:
             Amount of PV in units of PV.
-        - pvt_size:
-            Amount of PV-T in units of PV-T.
         - start_year:
             Start year of this simulation period.
 
@@ -1109,7 +1112,7 @@ def _get_electric_battery_storage_profile(
 
     # Initialise power generation, including degradation of PV
     try:
-        pv_power_produced = renewables_power_produced[SolarPanelType.PV]
+        pv_power_produced = renewables_power_produced[RenewableEnergySource.PV]
     except KeyError:
         logger.critical(
             "%sCould not determine PV power produced from renewables production.%s",
@@ -1132,27 +1135,89 @@ def _get_electric_battery_storage_profile(
 
     # Initialise PV-T power generation, including degradation of PV
     if minigrid.pvt_panel is not None:
-        try:
-            pvt_electric_power_produced = renewables_power_produced[SolarPanelType.PV_T]
-        except KeyError:
+        # Determine the PV-T degredation.
+        pvt_degradation_array = solar_degradation(minigrid.pvt_panel.lifetime)[  # type: ignore
+            0 : (end_hour - start_hour)
+        ]
+
+        if (
+            RenewableEnergySource.CLEAN_WATER_PV_T not in renewables_power_produced
+            and RenewableEnergySource.HOT_WATER_PV_T not in renewables_power_produced
+        ):
             logger.error(
-                "%sCould not determine PV-T power produced from renewables production "
-                "despite a PV-T panel being defined on the system.%s",
+                "%sA PV-T panel was defined on the system but no clean-water PV-T or "
+                "hot-water PV-T electricity was generated.%s",
                 BColours.fail,
                 BColours.endc,
             )
             raise InternalError(
-                "No PV-T power in renewables_power_produced mapping despite a PV-T "
-                "panel being specified."
-            ) from None
-        pvt_electric_generation_array = pvt_electric_power_produced * pvt_size
-        pvt_degradation_array = solar_degradation(minigrid.pvt_panel.lifetime)[  # type: ignore
-            0 : (end_hour - start_hour)
-        ]
+                "No PV-T electric power produced despite a PV-T panel being defined for the system.."
+            )
+
+        # Compute the clean-water PV-T electricity generated.
+        if RenewableEnergySource.CLEAN_WATER_PV_T in renewables_power_produced:
+            try:
+                clean_water_pvt_electric_power_produced = renewables_power_produced[
+                    RenewableEnergySource.CLEAN_WATER_PV_T
+                ]
+            except KeyError:
+                logger.error(
+                    "%sCould not determine clean-water PV-T power produced from "
+                    "renewables production despite a PV-T panel being defined on the "
+                    "system.%s",
+                    BColours.fail,
+                    BColours.endc,
+                )
+                raise InternalError(
+                    "No PV-T power in renewables_power_produced mapping despite a PV-T "
+                    "panel being specified."
+                ) from None
+            clean_water_pvt_electric_generation_array = (
+                clean_water_pvt_electric_power_produced * clean_water_pvt_size
+            )
+            clean_water_pvt_electric_generation: pd.DataFrame = pd.DataFrame(
+                np.asarray(clean_water_pvt_electric_generation_array)
+                * np.asarray(pvt_degradation_array)
+            )
+        else:
+            clean_water_pvt_electric_generation = pd.DataFrame(
+                [0] * (end_hour - start_hour)
+            )
+
+        # Compute the clean-water source.
+        if RenewableEnergySource.HOT_WATER_PV_T in renewables_power_produced:
+            try:
+                hot_water_pvt_electric_power_produced = renewables_power_produced[
+                    RenewableEnergySource.HOT_WATER_PV_T
+                ]
+            except KeyError:
+                logger.error(
+                    "%sCould not determine PV-T power produced from renewables "
+                    "production despite a PV-T panel being defined on the system.%s",
+                    BColours.fail,
+                    BColours.endc,
+                )
+                raise InternalError(
+                    "No PV-T power in renewables_power_produced mapping despite a PV-T "
+                    "panel being specified."
+                ) from None
+            hot_water_pvt_electric_generation_array = (
+                hot_water_pvt_electric_power_produced * hot_water_pvt_size
+            )
+            hot_water_pvt_electric_generation: Optional[pd.DataFrame] = pd.DataFrame(
+                np.asarray(hot_water_pvt_electric_generation_array)
+                * np.asarray(pvt_degradation_array)
+            )
+        else:
+            hot_water_pvt_electric_generation = pd.DataFrame(
+                [0] * (end_hour - start_hour)
+            )
+
         pvt_electric_generation: Optional[pd.DataFrame] = pd.DataFrame(
-            np.asarray(pvt_electric_generation_array)
-            * np.asarray(pvt_degradation_array)
+            clean_water_pvt_electric_generation.values
+            + hot_water_pvt_electric_generation.values
         )
+
     else:
         pvt_electric_generation = None
 
@@ -1557,10 +1622,12 @@ def _update_battery_health(
 
 
 def run_simulation(
+    clean_water_pvt_size: int,
     conventional_clean_water_source_profiles: Dict[WaterSource, pd.DataFrame],
     convertors: List[Convertor],
     electric_storage_size: float,
     grid_profile: pd.DataFrame,
+    hot_water_pvt_size: int,
     irradiance_data: pd.Series,
     kerosene_usage: pd.DataFrame,
     location: Location,
@@ -1569,7 +1636,6 @@ def run_simulation(
     number_of_clean_water_tanks: int,
     pv_power_produced: pd.Series,
     pv_size: float,
-    pvt_size: int,
     scenario: Scenario,
     simulation: Simulation,
     temperature_data: pd.Series,
@@ -1583,6 +1649,8 @@ def run_simulation(
     stated in the input files.
 
     Inputs:
+        - clean_water_pvt_size:
+            Amount of PV-T in PV-T units associated with the clean-water system.
         - conventional_clean_water_source_profiles:
             A mapping between :class:`WaterSource` instances and the associated water
             that can be drawn from the source throughout the duration of the simulation.
@@ -1594,6 +1662,8 @@ def run_simulation(
             Amount of storage in terms of the number of batteries included.
         - grid_profile:
             The grid-availability profile.
+        - hot_water_pvt_size:
+            Amount of PV-T in PV-T units associated with the hot-water system.
         - irradiance_data:
             The total solar irradiance data.
         - kerosene_usage:
@@ -1610,8 +1680,6 @@ def run_simulation(
             Amount of PV in PV units.
         - pv_power_produced:
             The total energy outputted by the solar system per PV unit.
-        - pvt_size:
-            Amount of PV-T in PV-T units.
         - renewable_clean_water_produced:
             The amount of clean-water produced renewably, mesaured in litres.
         - scenario:
@@ -1721,7 +1789,7 @@ def run_simulation(
         irradiance_data,
         logger,
         minigrid,
-        pvt_size,
+        clean_water_pvt_size,
         scenario,
         start_hour,
         temperature_data,
@@ -1799,7 +1867,7 @@ def run_simulation(
         processed_total_hot_water_load = pd.DataFrame(
             _get_processed_load_profile(scenario, total_hot_water_load)[
                 start_hour:end_hour
-            ].values
+            ]
         )
     else:
         hot_water_power_consumed = pd.DataFrame([0] * (end_hour - start_hour))
@@ -1830,7 +1898,7 @@ def run_simulation(
         logger,
         minigrid,
         processed_total_hot_water_load,
-        pvt_size,
+        hot_water_pvt_size,
         scenario,
         start_hour,
         temperature_data,
@@ -1873,10 +1941,12 @@ def run_simulation(
     kerosene_profile: pd.DataFrame
     load_energy: pd.DataFrame
     renewables_energy: pd.DataFrame
-    renewables_energy_map: Dict[SolarPanelType, pd.DataFrame] = {
-        SolarPanelType.PV: pv_power_produced,
-        SolarPanelType.PV_T: clean_water_pvt_electric_power_per_unit
-        + hot_water_pvt_electric_power_per_unit,
+    renewables_energy_map: Dict[RenewableEnergySource, pd.DataFrame] = {
+        RenewableEnergySource.PV: pv_power_produced,
+        RenewableEnergySource.CLEAN_WATER_PV_T: (
+            clean_water_pvt_electric_power_per_unit
+        ),
+        RenewableEnergySource.HOT_WATER_PV_T: hot_water_pvt_electric_power_per_unit,
     }
     renewables_energy_used_directly: pd.DataFrame
     (
@@ -1888,7 +1958,9 @@ def run_simulation(
         renewables_energy_map,
         renewables_energy_used_directly,
     ) = _get_electric_battery_storage_profile(
+        clean_water_pvt_size=clean_water_pvt_size,
         grid_profile=grid_profile[start_hour:end_hour],  # type: ignore
+        hot_water_pvt_size=hot_water_pvt_size,
         kerosene_usage=kerosene_usage[start_hour:end_hour],  # type: ignore
         logger=logger,
         minigrid=minigrid,
@@ -1897,7 +1969,6 @@ def run_simulation(
         scenario=scenario,
         end_hour=end_hour,
         pv_size=pv_size,
-        pvt_size=pvt_size,
         start_hour=start_hour,
     )
 
