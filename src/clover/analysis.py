@@ -141,15 +141,50 @@ def get_key_results(
 
     # Compute the clean-water key results.
     if "Clean water blackouts" in simulation_results:
+        key_results.average_daily_clean_water_supplied = round(
+            simulation_results["Total clean water supplied (l)"].sum()
+            / (365 * num_years),
+            3,
+        )
+        key_results.average_daily_clean_water_pvt_generation = round(
+            simulation_results[
+                "Clean-water PV-T electric energy supplied per kWh"
+            ].sum()
+            / (365 * num_years),
+            3,
+        )
         key_results.clean_water_blackouts = round(
             simulation_results["Clean water blackouts"].mean(), 3
         )
-
-    # Compute the PV-T key results.
-    if "PV-T electric energy supplied (kWh)" in simulation_results:
-        key_results.average_pvt_electric_generation = round(
-            simulation_results["PV-T electric energy supplied (kWh)"].mean(), 3
+        key_results.cumulative_clean_water_pvt_generation = round(
+            simulation_results[
+                "Clean-water PV-T electric energy supplied per kWh"
+            ].sum(),
+            3,
         )
+        key_results.cumulative_clean_water_supplied = round(
+            simulation_results["Total clean water supplied (l)"].sum(), 3
+        )
+        key_results.max_buffer_tank_temperature = round(
+            max(simulation_results["Buffer tank temperature (degC)"]), 3
+        )
+        key_results.max_clean_water_pvt_output_temperature = round(
+            max(simulation_results["Clean-water PV-T output temperature (degC)"]), 3
+        )
+        key_results.mean_buffer_tank_temperature = round(
+            simulation_results["Buffer tank temperature (degC)"].mean(), 3
+        )
+        key_results.mean_clean_water_pvt_output_temperature = round(
+            simulation_results["Clean-water PV-T output temperature (degC)"].mean(), 3
+        )
+        key_results.min_buffer_tank_temperature = round(
+            min(simulation_results["Buffer tank temperature (degC)"]), 3
+        )
+        key_results.min_clean_water_pvt_output_temperature = round(
+            min(simulation_results["Clean-water PV-T output temperature (degC)"]), 3
+        )
+
+    # Compute the hot-water key results.
 
     return key_results
 
@@ -2633,7 +2668,9 @@ def plot_outputs(
             ax1.legend(loc="upper left")
 
             ax2 = ax1.twinx()
-            ax2.plot(renewable_fraction_january, "--", label="january renewables fraction")
+            ax2.plot(
+                renewable_fraction_january, "--", label="january renewables fraction"
+            )
             # ax2.plot(renewable_fraction_march, "--", label="march renewables fraction")
             # ax2.plot(renewable_fraction_may, "--", label="may renewables fraction")
             ax2.plot(renewable_fraction_july, "--", label="july renewables fraction")
@@ -2643,7 +2680,9 @@ def plot_outputs(
             plt.xlabel("Hour of day")
             ax1.set_ylabel("Collector output temperature / degC")
             ax2.set_ylabel("Demand covered fraction through renewables.")
-            plt.title("Collector output temprature on an average seasonal days and the demand covered.")
+            plt.title(
+                "Collector output temprature on an average seasonal days and the demand covered."
+            )
             plt.savefig(
                 os.path.join(
                     figures_directory,
