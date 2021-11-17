@@ -22,11 +22,11 @@ import datetime
 import math
 
 from logging import Logger
-from re import T
+from re import L, T
 from typing import Dict, List, Optional, Tuple, Union
 
-import numpy as np  # type: ignore  # pylint: disable=import-error
-import pandas as pd  # type: ignore  # pylint: disable=import-error
+import numpy as np  # pylint: disable=import-error
+import pandas as pd  # pylint: disable=import-error
 
 from tqdm import tqdm
 
@@ -75,7 +75,7 @@ def _battery_iteration_step(
     minimum_battery_storage: float,
     *,
     time_index: int,
-) -> Tuple[float, float]:
+) -> Tuple[float, float, float]:
     """
     Carries out an iteration calculation for the battery.
 
@@ -97,6 +97,8 @@ def _battery_iteration_step(
             The current time (hour) being considered.
 
     Outputs:
+        - battery_energy_flow:
+            The net flow into or out of the battery.
         - excess_energy:
             The energy surplus generated which could not be stored in the batteries.
         - new_hourly_battery_storage;
@@ -104,7 +106,7 @@ def _battery_iteration_step(
 
     """
 
-    battery_energy_flow = battery_storage_profile.iloc[time_index][0]
+    battery_energy_flow = battery_storage_profile.iloc[time_index, 0]
     if time_index == 0:
         new_hourly_battery_storage = initial_battery_storage + battery_energy_flow
     else:
@@ -194,7 +196,7 @@ def _calculate_backup_diesel_generator_usage(
         ).values
     )
     unmet_energy = pd.DataFrame(unmet_energy.values - diesel_energy.values)
-    diesel_energy = diesel_energy.abs()  # type: ignore
+    diesel_energy = diesel_energy.abs()
 
     return diesel_capacity, diesel_energy, diesel_fuel_usage, diesel_times, unmet_energy
 
@@ -363,6 +365,17 @@ def _calculate_renewable_clean_water_profiles(
                 "Wind speed data required in PV-T computation and not passed to the "
                 "energy system module."
             )
+        if minigrid.water_pump is None:
+            logger.error(
+                "%sNo water pump defined on the mninigrid despite PV-T modelling being "
+                "requested via the scenario files.%s",
+                BColours.fail,
+                BColours.endc,
+            )
+            raise InternalError(
+                "No water pump defined as part of the energy system despite the PV-T "
+                "modelling being requested."
+            )
 
         # Determine the thermal desalination plant being used.
         logger.info("Determining desalination plant.")
@@ -474,7 +487,7 @@ def _calculate_renewable_clean_water_profiles(
             buffer_tank_volume_supplied,
         ) = calculate_pvt_output(
             end_hour,
-            irradiance_data[start_hour:end_hour],  # type: ignore
+            irradiance_data[start_hour:end_hour],
             logger,
             minigrid,
             None,
@@ -482,17 +495,16 @@ def _calculate_renewable_clean_water_profiles(
             ResourceType.CLEAN_WATER,
             scenario,
             start_hour,
-            temperature_data[start_hour:end_hour],  # type: ignore
+            temperature_data[start_hour:end_hour],
             thermal_desalination_plant,
-            wind_speed_data[start_hour:end_hour],  # type: ignore
+            wind_speed_data[start_hour:end_hour],
         )
         logger.info("PV-T performance successfully computed.")
 
         # Compute the clean water supplied by the desalination unit.
-        renewable_clean_water_produced: pd.DataFrame = pd.DataFrame(
-            thermal_desalination_plant.maximum_output_capacity  # type: ignore
-            * (buffer_tank_volume_supplied > 0)  # type: ignore
-        )
+        renewable_clean_water_produced: pd.DataFrame = (
+            buffer_tank_volume_supplied > 0
+        ) * thermal_desalination_plant.maximum_output_capacity
 
         # Compute the power consumed by the thermal desalination plant.
         thermal_desalination_electric_power_consumed: pd.DataFrame = pd.DataFrame(
@@ -512,7 +524,7 @@ def _calculate_renewable_clean_water_profiles(
                     )
                 )
             ).values
-            + 0.001 * (clean_water_pvt_pump_times > 0) * minigrid.water_pump.consumption
+            + (clean_water_pvt_pump_times > 0) * 0.001 * minigrid.water_pump.consumption
         )
 
         buffer_tank_temperature = buffer_tank_temperature.reset_index(drop=True)
@@ -641,6 +653,18 @@ def _calculate_renewable_hot_water_profiles(
                 BColours.endc,
             )
 
+        if minigrid.water_pump is None:
+            logger.error(
+                "%sNo water pump defined on the mninigrid despite PV-T modelling being "
+                "requested via the scenario files.%s",
+                BColours.fail,
+                BColours.endc,
+            )
+            raise InternalError(
+                "No water pump defined as part of the energy system despite the PV-T "
+                "modelling being requested."
+            )
+
         # Determine whether the water pump is capable for supplying the PV-T panels with
         # enough throughput.
         if (
@@ -720,17 +744,17 @@ def _calculate_renewable_hot_water_profiles(
             hot_water_tank_volume_supplied,
         ) = calculate_pvt_output(
             end_hour,
-            irradiance_data[start_hour:end_hour],  # type: ignore
+            irradiance_data[start_hour:end_hour],
             logger,
             minigrid,
-            processed_total_hot_water_load[0],
+            processed_total_hot_water_load.iloc[:, 0],
             pvt_size,
             ResourceType.HOT_CLEAN_WATER,
             scenario,
             start_hour,
-            temperature_data[start_hour:end_hour],  # type: ignore
+            temperature_data[start_hour:end_hour],
             None,
-            wind_speed_data[start_hour:end_hour],  # type: ignore
+            wind_speed_data[start_hour:end_hour],
         )
         logger.info("Hot-water PV-T performance successfully computed.")
 
@@ -899,7 +923,7 @@ def _clean_water_tank_iteration_step(
     """
 
     if scenario.desalination_scenario is not None:
-        tank_water_flow = tank_storage_profile.iloc[time_index][0]  # type: ignore
+        tank_water_flow = tank_storage_profile.iloc[time_index, 0]
 
         # Compute the new tank level based on the previous level and the flow.
         if time_index == 0:
@@ -907,7 +931,7 @@ def _clean_water_tank_iteration_step(
         else:
             current_net_water_flow = (
                 hourly_clean_water_tank_storage[time_index - 1]
-                * (1.0 - minigrid.clean_water_tank.leakage)  # type: ignore
+                * (1.0 - minigrid.clean_water_tank.leakage)
                 + tank_water_flow
             )
 
@@ -1024,7 +1048,7 @@ def _clean_water_tank_iteration_step(
         else:
             storage_water_supplied[time_index] = max(
                 hourly_clean_water_tank_storage[time_index - 1]
-                * (1.0 - minigrid.clean_water_tank.leakage)  # type: ignore
+                * (1.0 - minigrid.clean_water_tank.leakage)
                 - hourly_clean_water_tank_storage[time_index],
                 0.0,
             )
@@ -1036,6 +1060,7 @@ def _get_electric_battery_storage_profile(
     *,
     grid_profile: pd.DataFrame,
     kerosene_usage: pd.DataFrame,
+    location: Location,
     logger: Logger,
     minigrid: Minigrid,
     processed_total_electric_load: pd.DataFrame,
@@ -1124,22 +1149,20 @@ def _get_electric_battery_storage_profile(
             "No PV power in renewables_power_produced mapping, fatal."
         ) from None
     pv_generation_array = pv_power_produced * pv_size
-    solar_degradation_array = solar_degradation(minigrid.pv_panel.lifetime)[  # type: ignore
-        0 : (end_hour - start_hour)
-    ][
-        0
-    ]
+    solar_degradation_array = solar_degradation(
+        minigrid.pv_panel.lifetime, location.max_years
+    ).iloc[start_hour:end_hour, 0]
     pv_generation = pd.DataFrame(
-        np.asarray(pv_generation_array[start_hour:end_hour])  # type: ignore
+        np.asarray(pv_generation_array.iloc[start_hour:end_hour])
         * np.asarray(solar_degradation_array)
     )
 
     # Initialise PV-T power generation, including degradation of PV
     if minigrid.pvt_panel is not None:
         # Determine the PV-T degredation.
-        pvt_degradation_array = solar_degradation(minigrid.pvt_panel.lifetime)[  # type: ignore
-            0 : (end_hour - start_hour)
-        ]
+        pvt_degradation_array = solar_degradation(
+            minigrid.pvt_panel.lifetime, location.max_years
+        )[0 : (end_hour - start_hour)]
 
         if (
             RenewableEnergySource.CLEAN_WATER_PV_T not in renewables_power_produced
@@ -1224,16 +1247,12 @@ def _get_electric_battery_storage_profile(
 
     # Consider power distribution network
     if scenario.distribution_network == DistributionNetwork.DC:
-        pv_generation = pv_generation.mul(  # type: ignore
-            minigrid.dc_to_dc_conversion_efficiency
-        )
+        pv_generation = pv_generation.mul(minigrid.dc_to_dc_conversion_efficiency)
         transmission_efficiency = minigrid.dc_transmission_efficiency
         # grid_conversion_eff = minigrid.ac_to_dc_conversion
 
     else:
-        pv_generation = pv_generation.mul(  # type: ignore
-            minigrid.dc_to_ac_conversion_efficiency
-        )
+        pv_generation = pv_generation.mul(minigrid.dc_to_ac_conversion_efficiency)
         transmission_efficiency = minigrid.ac_transmission_efficiency
         # grid_conversion_efficiency = minigrid.ac_to_ac_conversion
 
@@ -1251,9 +1270,7 @@ def _get_electric_battery_storage_profile(
         )
 
     # Consider transmission efficiency
-    load_energy: pd.DataFrame = (
-        processed_total_electric_load / transmission_efficiency  # type: ignore
-    )
+    load_energy: pd.DataFrame = processed_total_electric_load / transmission_efficiency
     pv_energy = pv_generation * transmission_efficiency
 
     if pvt_electric_generation is not None:
@@ -1270,9 +1287,7 @@ def _get_electric_battery_storage_profile(
         # RenewableGenerationSource.WIND: wind_energy,
     }
     # Add more renewable sources here as required
-    renewables_energy: pd.DataFrame = pd.DataFrame(
-        sum(renewables_energy_map.values())  # type: ignore
-    )
+    renewables_energy: pd.DataFrame = pd.DataFrame(sum(renewables_energy_map.values()))
 
     # Check for self-generation prioritisation
     if scenario.prioritise_self_generation:
@@ -1285,9 +1300,9 @@ def _get_electric_battery_storage_profile(
 
         # Then take energy from grid
         grid_energy = pd.DataFrame(
-            ((remaining_profile < 0) * remaining_profile).values  # type: ignore
+            ((remaining_profile < 0) * remaining_profile).iloc[start_hour:end_hour, 0]
             * -1.0
-            * grid_profile.values
+            * grid_profile.iloc[start_hour:end_hour]
         )
         battery_storage_profile: pd.DataFrame = pd.DataFrame(
             remaining_profile.values + grid_energy.values
@@ -1295,17 +1310,17 @@ def _get_electric_battery_storage_profile(
 
     else:
         # Take energy from grid first
-        grid_energy = grid_profile.mul(load_energy)  # type: ignore
+        grid_energy = grid_profile.mul(load_energy)
         # as needed for load
-        remaining_profile = (grid_energy <= 0).mul(load_energy)  # type: ignore
+        remaining_profile = (grid_energy <= 0).mul(load_energy)
         # Then take energy from PV
         battery_storage_profile = pd.DataFrame(
-            renewables_energy.values.subtrace(remaining_profile.values)  # type: ignore
+            renewables_energy.values.subtrace(remaining_profile.values)
         )
         renewables_energy_used_directly = pd.DataFrame(
-            (battery_storage_profile > 0)  # type: ignore
+            (battery_storage_profile > 0)
             .mul(remaining_profile)
-            .add((battery_storage_profile < 0).mul(renewables_energy))  # type: ignore
+            .add((battery_storage_profile < 0).mul(renewables_energy))
         )
 
     battery_storage_profile.columns = pd.Index(["Storage profile (kWh)"])
@@ -1357,19 +1372,19 @@ def _get_processed_load_profile(scenario: Scenario, total_load: pd.DataFrame):
 
     if scenario.demands.commercial:
         if processed_total_load is not None:
-            processed_total_load += pd.DataFrame(  # type: ignore
+            processed_total_load += pd.DataFrame(
                 total_load[DemandType.COMMERCIAL.value].values
             )
         else:
-            processed_total_load = total_load[DemandType.COMMERCIAL.value]  # type: ignore
+            processed_total_load = total_load[DemandType.COMMERCIAL.value]
 
     if scenario.demands.public:
         if processed_total_load is not None:
-            processed_total_load += pd.DataFrame(  # type: ignore
+            processed_total_load += pd.DataFrame(
                 total_load[DemandType.PUBLIC.value].values
             )
         else:
-            processed_total_load = total_load[DemandType.PUBLIC.value]  # type: ignore
+            processed_total_load = total_load[DemandType.PUBLIC.value]
 
     if processed_total_load is None:
         raise Exception("At least one load type must be specified.")
@@ -1418,8 +1433,7 @@ def _get_water_storage_profile(
     tank_storage_profile: pd.DataFrame = pd.DataFrame(remaining_profile.values)
 
     return (
-        0.001  # type: ignore
-        * pd.DataFrame([0] * processed_total_clean_water_load.size),  # type: ignore
+        0.001 * pd.DataFrame([0] * processed_total_clean_water_load.size),
         renewable_clean_water_used_directly,
         tank_storage_profile,
     )
@@ -1464,9 +1478,7 @@ def _setup_tank_storage_profiles(
 
     """
 
-    power_consumed_mapping: Dict[int, float] = power_consumed[  # type: ignore
-        0
-    ].to_dict()
+    power_consumed_mapping: Dict[int, float] = power_consumed[0].to_dict()
 
     if (
         resource_type in scenario.resource_types
@@ -1489,9 +1501,7 @@ def _setup_tank_storage_profiles(
         # Determine the maximum tank storage.
         try:
             maximum_tank_storage: float = (
-                number_of_tanks
-                * tank.mass  # type: ignore
-                * tank.maximum_charge  # type: ignore
+                number_of_tanks * tank.mass * tank.maximum_charge
             )
         except AttributeError:
             logger.error(
@@ -1508,9 +1518,7 @@ def _setup_tank_storage_profiles(
 
         try:
             minimum_tank_storage: float = (
-                number_of_tanks
-                * tank.mass  # type: ignore
-                * tank.minimum_charge  # type: ignore
+                number_of_tanks * tank.mass * tank.minimum_charge
             )
         except AttributeError:
             logger.error(
@@ -1846,7 +1854,7 @@ def run_simulation(
             tank_storage_profile,
         ) = _get_water_storage_profile(
             processed_total_clean_water_load,
-            renewable_clean_water_produced,  # type: ignore
+            renewable_clean_water_produced,
         )
         number_of_buffer_tanks: int = 1
     else:
@@ -1958,9 +1966,10 @@ def run_simulation(
         renewables_energy_used_directly,
     ) = _get_electric_battery_storage_profile(
         clean_water_pvt_size=clean_water_pvt_size,
-        grid_profile=grid_profile[start_hour:end_hour],  # type: ignore
+        grid_profile=grid_profile.iloc[start_hour:end_hour, 0],
         hot_water_pvt_size=hot_water_pvt_size,
-        kerosene_usage=kerosene_usage[start_hour:end_hour],  # type: ignore
+        kerosene_usage=kerosene_usage.iloc[start_hour:end_hour, 0],
+        location=location,
         logger=logger,
         minigrid=minigrid,
         processed_total_electric_load=processed_total_electric_load,
@@ -1981,7 +1990,7 @@ def run_simulation(
 
     # Determine the number of households in the community.
     households = pd.DataFrame(
-        population_hourly(location)[  # type: ignore
+        population_hourly(location)[
             simulation.start_year * 8760 : simulation.end_year * 8760
         ].values
     )
@@ -2069,12 +2078,8 @@ def run_simulation(
 
     # Do not do the itteration if no storage is being used
     if electric_storage_size == 0:
-        energy_surplus = (
-            (battery_storage_profile > 0) * battery_storage_profile  # type: ignore
-        ).abs()  # type: ignore
-        energy_deficit = (
-            (battery_storage_profile < 0) * battery_storage_profile  # type: ignore
-        ).abs()  # type: ignore
+        energy_surplus = ((battery_storage_profile > 0) * battery_storage_profile).abs()
+        energy_deficit = ((battery_storage_profile < 0) * battery_storage_profile).abs()
     # Carry out the itteration if there is some storage involved in the system.
     else:
         # Begin simulation, iterating over timesteps
@@ -2250,24 +2255,20 @@ def run_simulation(
     # Find new blackout times, according to when there is unmet energy
     blackout_times = ((unmet_energy > 0) * 1).astype(float)
     # Ensure all unmet energy is calculated correctly, removing any negative values
-    unmet_energy = ((unmet_energy > 0) * unmet_energy).abs()  # type: ignore
+    unmet_energy = ((unmet_energy > 0) * unmet_energy).abs()
     # Ensure all unmet clean-water energy is considered.
-    clean_water_power_consumed = clean_water_power_consumed.mul(  # type: ignore
-        1 - blackout_times
-    )
-    thermal_desalination_electric_power_consumed = thermal_desalination_electric_power_consumed.mul(  # type: ignore
-        1 - blackout_times
+    clean_water_power_consumed = clean_water_power_consumed.mul(1 - blackout_times)
+    thermal_desalination_electric_power_consumed = (
+        thermal_desalination_electric_power_consumed.mul(1 - blackout_times)
     )
 
     # Find how many kerosene lamps are in use
-    kerosene_usage = blackout_times.mul(kerosene_profile.values)  # type: ignore
-    kerosene_mitigation = (1 - blackout_times).mul(  # type: ignore
-        kerosene_profile.values
-    )
+    kerosene_usage = blackout_times.loc[:, 0].mul(kerosene_profile.values)
+    kerosene_mitigation = (1 - blackout_times).loc[:, 0].mul(kerosene_profile.values)
 
     if scenario.desalination_scenario is not None:
         # Compute the amount of time for which the backup water was able to operate.
-        backup_desalinator_water_frame = backup_desalinator_water_frame.mul(  # type: ignore
+        backup_desalinator_water_frame = backup_desalinator_water_frame.mul(
             1 - blackout_times
         )
 
@@ -2282,9 +2283,9 @@ def run_simulation(
 
         power_used_on_electricity = (
             total_energy_used
-            - excess_energy_used_desalinating_frame  # type: ignore
-            - clean_water_power_consumed  # type: ignore
-            - thermal_desalination_electric_power_consumed  # type: ignore
+            - excess_energy_used_desalinating_frame
+            - clean_water_power_consumed
+            - thermal_desalination_electric_power_consumed
             - hot_water_power_consumed
         )
 
@@ -2295,25 +2296,19 @@ def run_simulation(
             + backup_desalinator_water_frame.values
             + clean_water_supplied_by_excess_energy_frame.values
             + conventional_clean_water_supplied_frame.values
-        ).mul(
-            (1 - blackout_times)
-        )  # type: ignore
+        ).mul((1 - blackout_times))
 
         water_surplus_frame = (
-            (total_clean_water_supplied - processed_total_clean_water_load) > 0  # type: ignore
-        ) * (
-            total_clean_water_supplied - processed_total_clean_water_load  # type: ignore
-        )
+            (total_clean_water_supplied - processed_total_clean_water_load) > 0
+        ) * (total_clean_water_supplied - processed_total_clean_water_load)
 
-        total_clean_water_used = (
-            total_clean_water_supplied - water_surplus_frame  # type: ignore
-        )
+        total_clean_water_used = total_clean_water_supplied - water_surplus_frame
 
         # Compute when the water demand went unmet.
         unmet_clean_water = pd.DataFrame(
             processed_total_clean_water_load.values - total_clean_water_supplied.values
         )
-        unmet_clean_water = unmet_clean_water * (unmet_clean_water > 0)  # type: ignore
+        unmet_clean_water = unmet_clean_water * (unmet_clean_water > 0)
 
         # Convert the PV-T units to kWh.
         clean_water_pvt_electric_power_per_kwh = (
@@ -2440,16 +2435,16 @@ def run_simulation(
         simulation.end_year,
         clean_water_pvt_size
         * float(
-            solar_degradation(minigrid.pvt_panel.lifetime)[0][  # type: ignore
-                8760 * (simulation.end_year - simulation.start_year)
+            solar_degradation(minigrid.pvt_panel.lifetime, location.max_years).iloc[
+                8760 * (simulation.end_year - simulation.start_year), 0
             ]
         )
         if minigrid.pvt_panel is not None and scenario.desalination_scenario is not None
         else None,
         hot_water_pvt_size
         * float(
-            solar_degradation(minigrid.pvt_panel.lifetime)[0][  # type: ignore
-                8760 * (simulation.end_year - simulation.start_year)
+            solar_degradation(minigrid.pvt_panel.lifetime, location.max_yeras).iloc[
+                8760 * (simulation.end_year - simulation.start_year), 0
             ]
         )
         if minigrid.pvt_panel is not None and scenario.hot_water_scenario is not None
@@ -2461,8 +2456,8 @@ def run_simulation(
         number_of_hot_water_tanks if scenario.hot_water_scenario is not None else None,
         pv_size
         * float(
-            solar_degradation(minigrid.pv_panel.lifetime)[0][  # type: ignore
-                8760 * (simulation.end_year - simulation.start_year)
+            solar_degradation(minigrid.pv_panel.lifetime, location.max_years).iloc[
+                8760 * (simulation.end_year - simulation.start_year), 0
             ]
         ),
         float(
@@ -2487,8 +2482,8 @@ def run_simulation(
     )
 
     # Separate out the various renewable inputs.
-    pv_energy = renewables_energy_map[SolarPanelType.PV].loc[start_hour:end_hour]
-    pvt_energy = renewables_energy_map[SolarPanelType.PV_T].loc[start_hour:end_hour]
+    pv_energy = renewables_energy_map[SolarPanelType.PV].iloc[start_hour:end_hour]
+    pvt_energy = renewables_energy_map[SolarPanelType.PV_T].iloc[start_hour:end_hour]
 
     # End simulation timer
     timer_end = datetime.datetime.now()

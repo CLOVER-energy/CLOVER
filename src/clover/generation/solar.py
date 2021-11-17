@@ -24,12 +24,18 @@ import enum
 from logging import Logger
 from typing import Any, Dict, List, Optional, Tuple
 
-import numpy as np  # type: ignore  # pylint: disable=import-error
-import pandas as pd  # type: ignore  # pylint: disable=import-error
+import numpy as np  # pylint: disable=import-error
+import pandas as pd  # pylint: disable=import-error
 
 from sklearn.linear_model._coordinate_descent import Lasso
 
-from ..__utils__ import BColours, InputFileError, Location, NAME
+from ..__utils__ import (
+    BColours,
+    InputFileError,
+    Location,
+    NAME,
+    ProgrammerJudgementFault,
+)
 from ..conversion.conversion import ThermalDesalinationPlant
 from .__utils__ import BaseRenewablesNinjaThread, SolarDataType, total_profile_output
 
@@ -135,7 +141,7 @@ class SolarPanel:
 
         """
 
-        cls.panel_type = panel_type  # type: ignore
+        cls.panel_type = panel_type
 
         return super().__init_subclass__()
 
@@ -377,8 +383,22 @@ class HybridPVTPanel(SolarPanel, panel_type=SolarPanelType.PV_T):
                 BColours.fail,
                 BColours.endc,
             )
+            raise ProgrammerJudgementFault(
+                "pv-t modelling",
+                "The PV-T instance does not have well-defined and loaded models. This "
+                "could be due to the files being incorrectly parsed, mishandled, or "
+                "dropped inadvertently due to internal code flow.",
+            )
+        if self.reference_efficiency is None:
+            logger.error(
+                "%sThe PV-T output function was called without a reference efficiency "
+                "being defined for the PV-T panel being considered.%s",
+                BColours.fail,
+                BColours.endc,
+            )
             raise InputFileError(
-                "The PV-T instance does not have well-defined and loaded models."
+                "solar generation inputs",
+                "A reference efficiency must be defined for PV-T panels.",
             )
 
         input_data_frame = pd.DataFrame(
@@ -417,24 +437,26 @@ class HybridPVTPanel(SolarPanel, panel_type=SolarPanelType.PV_T):
         return fractional_electric_performance, output_temperature
 
 
-def solar_degradation(lifetime: int) -> pd.DataFrame:
+def solar_degradation(lifetime: int, num_years: int) -> pd.DataFrame:
     """
     Calculates the solar degredation.
 
     Inputs:
         - lifetime:
             The lifetime of the solar setup in years.
+        - num_years:
+            The number of years for which the simulation is being carried out.
 
     Outputs:
         - The lifetime degredation of the solar setup.
 
     """
 
-    # lifetime = self.input_data.loc["lifetime"]
+    # lifetime = self.input_data.iloc["lifetime"]
     hourly_degradation = 0.20 / (lifetime * 365 * 24)
     lifetime_degradation = []
 
-    for i in range((20 * 365 * 24) + 1):
+    for i in range((num_years * 365 * 24) + 1):
         equiv = 1.0 - i * hourly_degradation
         lifetime_degradation.append(equiv)
 
@@ -488,7 +510,7 @@ class SolarDataThread(
         )
 
 
-def total_solar_output(*args, **kwargs) -> pd.DataFrame:
+def total_solar_output(*args, **kwargs) -> pd.DataFrame:  # type: ignore
     """
     Wrapper function to wrap the total solar output.
 

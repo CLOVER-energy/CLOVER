@@ -197,7 +197,7 @@ def _find_deficit_threshold(
     """
 
     # Find the blackout percentage
-    blackout_percentage = np.mean(blackouts)[0]  # type: ignore
+    blackout_percentage = float(np.mean(blackouts)[0])
 
     # Find the difference in reliability
     reliability_difference = blackout_percentage - backup_threshold
@@ -240,7 +240,9 @@ def get_diesel_energy_and_times(
         unmet_energy, blackouts, backup_threshold
     )
 
-    diesel_energy = (unmet_energy >= energy_threshold).mul(unmet_energy)  # type: ignore
+    diesel_energy = pd.DataFrame(
+        unmet_energy.values * (unmet_energy >= energy_threshold).values
+    )
     diesel_times = (unmet_energy >= energy_threshold) * 1
     diesel_times = diesel_times.astype(float)
 
@@ -274,13 +276,16 @@ def get_diesel_fuel_usage(
 
     """
 
-    load_factor: pd.DataFrame = diesel_energy.div(capacity)  # type: ignore
-    above_minimum = load_factor * (load_factor > diesel_generator.minimum_load)
-    below_minimum = diesel_generator.minimum_load * (
-        load_factor <= diesel_generator.minimum_load
+    load_factor: pd.DataFrame = diesel_energy.divide(capacity)  # type: ignore
+    above_minimum = pd.DataFrame(
+        load_factor.values * (load_factor > diesel_generator.minimum_load).values
     )
-    load_factor: pd.DataFrame = pd.DataFrame(above_minimum.values + below_minimum.values).mul(  # type: ignore
-        diesel_times
+    below_minimum = (
+        load_factor <= diesel_generator.minimum_load
+    ) * diesel_generator.minimum_load
+    # @@@ Investigate variable reassignment here.
+    load_factor = pd.DataFrame(
+        diesel_times.values * (above_minimum.values + below_minimum.values)
     )
 
     fuel_usage: pd.DataFrame = (

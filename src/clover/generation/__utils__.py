@@ -33,11 +33,11 @@ from logging import Logger
 from math import ceil
 from typing import Any, Dict, Union
 
-import numpy as np  # type: ignore  # pylint: disable=import-error
-import pandas as pd  # type: ignore  # pylint: disable=import-error
-import requests  # type: ignore  # pylint: disable=import-error
+import numpy as np  # pylint: disable=import-error
+import pandas as pd  # pylint: disable=import-error
+import requests  # pylint: disable=import-error
 
-from tqdm import tqdm  # type: ignore  # pylint: disable=import-error
+from tqdm import tqdm  # pylint: disable=import-error
 
 from ..__utils__ import (
     BColours,
@@ -101,8 +101,8 @@ def _get_profile_from_rn(
     logger: Logger,
     renewables_ninja_keyword: str,
     renewables_ninja_params: Dict[str, Any],
-    year=2014,
-):
+    year: int = 2014,
+) -> pd.DataFrame:
     """
     Gets data from Renewables.ninja for a given year (kW/kWp) in UTC time
 
@@ -177,7 +177,7 @@ def _get_profile_from_rn(
         session.headers,
         renewables_ninja_params,
     )
-    session_url = session.get(url, params=renewables_ninja_params)  # type: ignore
+    session_url = session.get(url, params=renewables_ninja_params)
 
     # Parse JSON to get a pandas.DataFrame
     try:
@@ -192,13 +192,17 @@ def _get_profile_from_rn(
         )
         raise RenewablesNinjaError() from None
 
-    data_frame = pd.read_json(json.dumps(parsed_response["data"]), orient="index")
+    data_frame: pd.DataFrame = pd.DataFrame(
+        pd.read_json(json.dumps(parsed_response["data"]), orient="index")
+    )
     data_frame = data_frame.reset_index(drop=True)
 
     # Remove leap days
     if year % 4 == 0:
         feb_29 = (31 + 28) * 24
-        data_frame = data_frame.drop(list(range(feb_29, feb_29 + 24)))  # type: ignore
+        data_frame = data_frame.drop(
+            [str(entry) for entry in range(feb_29, feb_29 + 24)]
+        )
         data_frame = data_frame.reset_index(drop=True)
 
     # Remove empty rows from the dataframe.
@@ -393,8 +397,8 @@ class BaseRenewablesNinjaThread(threading.Thread):
         """
 
         super().__init_subclass__()
-        cls.profile_name = profile_name  # type: ignore
-        cls.profile_key = profile_key  # type: ignore
+        cls.profile_name = profile_name
+        cls.profile_key = profile_key
 
     def run(
         self,
@@ -404,7 +408,7 @@ class BaseRenewablesNinjaThread(threading.Thread):
 
         """
 
-        if self.profile_name is None:  # type: ignore
+        if self.profile_name is None:
             self.logger.error(
                 "%sRenewables Ninja base thread executed directly: execute child "
                 "threads instead.%s",
@@ -418,7 +422,7 @@ class BaseRenewablesNinjaThread(threading.Thread):
 
         self.logger.info(
             "RenewablesNinja data thread instantiated for %s profiles.",
-            self.profile_name,  # type: ignore
+            self.profile_name,
         )
 
         # A counter is used to keep track of calls to renewables.ninja to prevent
@@ -429,11 +433,11 @@ class BaseRenewablesNinjaThread(threading.Thread):
                     int(self.generation_inputs["start_year"]),
                     int(self.generation_inputs["end_year"]) + 1,
                 ),
-                desc=f"{self.profile_name} profiles",  # type: ignore
+                desc=f"{self.profile_name} profiles",
                 unit="year",
             ):
                 # If the data file for the year already exists, skip.
-                filename = f"{self.profile_name}_generation_{year}.csv"  # type: ignore
+                filename = f"{self.profile_name}_generation_{year}.csv"
                 filepath = os.path.join(self.auto_generated_files_directory, filename)
 
                 if os.path.isfile(filepath) and not self.regenerate:
@@ -444,7 +448,7 @@ class BaseRenewablesNinjaThread(threading.Thread):
 
                 self.logger.info(
                     "Fetching %s data for year %s.",
-                    self.profile_name,  # type: ignore
+                    self.profile_name,
                     year,
                 )
                 try:
@@ -452,7 +456,7 @@ class BaseRenewablesNinjaThread(threading.Thread):
                         str(self.generation_inputs[TOKEN]),
                         self.location,
                         self.logger,
-                        self.profile_key,  # type: ignore
+                        self.profile_key,
                         self.renewables_ninja_params,
                         year,
                     )
@@ -462,11 +466,11 @@ class BaseRenewablesNinjaThread(threading.Thread):
 
                 self.logger.info(
                     "Renewables.ninja for %s data successfully fetched.",
-                    self.profile_name,  # type: ignore
+                    self.profile_name,
                 )
 
                 # Compute the total irradiance if the data is solar data.
-                if self.profile_name == "solar":  # type: ignore
+                if self.profile_name == "solar":
                     try:
                         data[SolarDataType.TOTAL_IRRADIANCE.value] = (
                             data[SolarDataType.DIRECT_IRRADIANCE.value]

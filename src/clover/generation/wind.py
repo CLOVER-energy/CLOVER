@@ -20,9 +20,9 @@ use locally within CLOVER.
 
 import enum
 
-from typing import Any, Dict
+from typing import Any, Dict, Union
 
-import pandas as pd  # type: ignore  # pylint: disable=import-error
+import pandas as pd  # pylint: disable=import-error
 
 from ..__utils__ import Location
 from .__utils__ import BaseRenewablesNinjaThread, total_profile_output

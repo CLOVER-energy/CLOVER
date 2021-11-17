@@ -27,7 +27,7 @@ import sys
 from typing import Any, List, Optional, Pattern
 
 import re
-import yaml  # type: ignore  # pylint: disable=import-error
+import yaml  # pylint: disable=import-error
 
 from ..__utils__ import (
     InternalError,

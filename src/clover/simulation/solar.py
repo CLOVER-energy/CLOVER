@@ -23,7 +23,7 @@ import collections
 from logging import Logger
 from typing import Dict, Optional, Tuple
 
-import pandas as pd  # type: ignore  # pylint: disable=import-error
+import pandas as pd  # pylint: disable=import-error
 
 from scipy import linalg
 from tqdm import tqdm
@@ -174,6 +174,18 @@ def _volume_withdrawn_from_tank(
                 "Not enough desalination-specific parameters specified to determine "
                 "the buffer-tank mass-flow rate."
             )
+        if minigrid.buffer_tank is None:
+            logger.error(
+                "%sNo buffer tank specified when attempting to determine the volume "
+                "withdrawn from the tank.%s",
+                BColours.fail,
+                BColours.endc,
+            )
+            raise InternalError(
+                "No buffer tank was found defined for the minigrid specified despite "
+                "clean-water loads being requested."
+            )
+
         tank_supply_on: bool = (
             previous_tank_temperature
             > thermal_desalination_plant.minimum_htf_temperature
@@ -280,13 +292,26 @@ def calculate_pvt_output(
             "The energy system specified does not contain a PV-T panel but PV-T "
             "modelling was requested.",
         )
+    if minigrid.heat_exchanger is None:
+        logger.error(
+            "%sThe energy system does not contain a heat exchanger despite the PV-T "
+            "output computation function being called which is reliant on the "
+            "definition of a heat exchanger.%s",
+            BColours.fail,
+            BColours.endc,
+        )
+        raise InputFileError(
+            "energy system inputs",
+            "The energy system specified does not contain a heat exchanger but PV-T "
+            "modelling was requested for which this is required.",
+        )
 
     # Instantiate debugging variables
     runs: int = 0
 
     # Instantiate maps for easy PV-T power lookups.
     pvt_electric_power_per_unit_map: Dict[int, float] = {}
-    pvt_pump_times_map: Dict[int, bool] = {}
+    pvt_pump_times_map: Dict[int, int] = {}
     tank_supply_temperature_map: Dict[int, float] = {}
     tank_volume_supplied_map: Dict[int, float] = {}
 
@@ -316,10 +341,6 @@ def calculate_pvt_output(
         )
         tank: HotWaterTank = minigrid.buffer_tank
 
-        best_guess_collector_input_temperature: float = default_supply_temperature
-        pvt_collector_output_temperature_map: Dict[
-            int, float
-        ] = collections.defaultdict(lambda: default_supply_temperature)
         pvt_heat_transfer: float = (
             pvt_system_size
             * mass_flow_rate  # [kg/hour]
@@ -364,7 +385,6 @@ def calculate_pvt_output(
         mass_flow_rate = scenario.hot_water_scenario.pvt_scenario.mass_flow_rate
         tank = minigrid.hot_water_tank
 
-        best_guess_collector_input_temperature = default_supply_temperature
         pvt_heat_transfer = (
             pvt_system_size
             * mass_flow_rate  # [kg/hour]
@@ -387,6 +407,7 @@ def calculate_pvt_output(
             "being called."
         )
 
+    best_guess_collector_input_temperature: float = default_supply_temperature
     pvt_collector_output_temperature_map: Dict[int, float] = collections.defaultdict(
         lambda: default_supply_temperature
     )
@@ -553,7 +574,7 @@ def calculate_pvt_output(
         # Save the fractional electrical performance and output temp.
         pvt_collector_output_temperature_map[index] = collector_output_temperature
         pvt_electric_power_per_unit_map[index] = fractional_electric_performance
-        pvt_pump_times_map[index] = pvt_flow_on
+        pvt_pump_times_map[index] = int(pvt_flow_on)
         tank_temperature_map[index] = tank_temperature
         tank_volume_supplied_map[index] = volume_supplied
 
@@ -565,7 +586,9 @@ def calculate_pvt_output(
         pvt_electric_power_per_unit_map, logger
     )
     pvt_pump_times_frame: pd.DataFrame = dict_to_dataframe(pvt_pump_times_map, logger)
-    tank_temperature: pd.DataFrame = dict_to_dataframe(tank_temperature_map, logger)
+    tank_temperature_frame: pd.DataFrame = dict_to_dataframe(
+        tank_temperature_map, logger
+    )
     tank_volume_output_supplied: pd.DataFrame = dict_to_dataframe(
         tank_volume_supplied_map, logger
     )
@@ -607,6 +630,6 @@ def calculate_pvt_output(
         pvt_collector_output_temperature,
         pvt_electric_power_per_unit,
         pvt_pump_times_frame,
-        tank_temperature,
+        tank_temperature_frame,
         tank_volume_output_supplied,
     )

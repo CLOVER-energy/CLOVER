@@ -131,7 +131,7 @@ class Convertor:
         self.output_resource_type: ResourceType = output_resource_type
         self.waste_production: Dict[WasteProduct, float] = waste_production
 
-    def __eq__(self, other) -> bool:
+    def __eq__(self, other: Any) -> bool:
         """
         Returns whether two :class:`Conversion` instances are equal.
 
@@ -143,7 +143,7 @@ class Convertor:
 
         """
 
-        return (
+        return bool(
             self.input_resource_consumption == other.input_resource_consumption
             and self.output_resource_type == other.output_resource_type
             and self.consumption == other.consumption
@@ -169,7 +169,7 @@ class Convertor:
 
         return hash((consumption_int + self.maximum_output_capacity) ** 2)
 
-    def __lt__(self, other) -> bool:
+    def __lt__(self, other: Any) -> bool:
         """
         Returns whether the current instance is less than another instance.
 
@@ -190,7 +190,7 @@ class Convertor:
                 "different output types."
             )
 
-        return self.consumption < other.consumption
+        return bool(self.consumption < other.consumption)
 
     def __repr__(self) -> str:
         """
@@ -259,7 +259,7 @@ class MultiInputConvertor(Convertor):
 
     """
 
-    def __lt__(self, other) -> bool:
+    def __lt__(self, other: Any) -> bool:
         """
         Returns whether the current instance is less than another instance.
 
@@ -274,7 +274,7 @@ class MultiInputConvertor(Convertor):
 
         """
 
-        return (
+        return bool(
             list(self.input_resource_consumption.values())[0]
             < list(other.input_resource_consumption.values())[0]
         )

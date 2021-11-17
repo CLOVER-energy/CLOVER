@@ -126,7 +126,8 @@ class Transmitter:
                 BColours.endc,
             )
             raise InputFileError(
-                "Transmitters can only be powered by a single resource."
+                "transmission inputs",
+                "Transmitters can only be powered by a single resource.",
             )
 
         # Determine the consumption of this resource.
@@ -156,7 +157,7 @@ class Transmitter:
         return cls(
             consumption,
             input_data[NAME],
-            input_resource_list[0],
+            ResourceType(RESOURCE_NAME_TO_RESOURCE_TYPE_MAPPING[input_resource]),
             input_data[MAXIMUM_THROUGHPUT],
             input_data[TRANSMITS],
         )

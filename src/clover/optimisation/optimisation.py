@@ -35,10 +35,10 @@ import datetime
 from logging import Logger
 from typing import Any, Dict, List, Optional, Tuple, Union
 
-import numpy as np  # type: ignore  # pylint: disable=import-error
-import pandas as pd  # type: ignore  # pylint: disable=import-error
+import numpy as np  # pylint: disable=import-error
+import pandas as pd  # pylint: disable=import-error
 
-from tqdm import tqdm  # type: ignore  # pylint: disable=import-error
+from tqdm import tqdm  # pylint: disable=import-error
 
 from ..simulation import energy_system
 
@@ -116,7 +116,7 @@ def _fetch_optimum_system(
     for (criterion, criterion_mode) in optimisation.optimisation_criteria.items():
         # Sort by the optimisation criterion.
         sufficient_systems.sort(
-            key=lambda appraisal, crit=criterion: appraisal.criteria[crit],  # type: ignore
+            key=lambda appraisal, crit=criterion: appraisal.criteria[crit],
             reverse=(criterion_mode == CriterionMode.MAXIMISE),
         )
 
@@ -786,7 +786,7 @@ def _find_optimum_system(
             [
                 "criterion: {}, value: {}\nsystem_details: {}".format(
                     criterion,
-                    system.criteria[criterion],  # type: ignore
+                    system.criteria[criterion],
                     system.system_details,
                 )
                 for criterion, system in optimum_systems.items()

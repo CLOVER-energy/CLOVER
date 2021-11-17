@@ -22,8 +22,8 @@ information and system-sizing information provided.
 from logging import Logger
 from typing import Any, Dict, List
 
-import numpy as np  # type: ignore  # pylint: disable=import-error
-import pandas as pd  # type: ignore  # pylint: disable=import-error
+import numpy as np  # pylint: disable=import-error
+import pandas as pd  # pylint: disable=import-error
 
 from .__utils__ import ImpactingComponent, LIFETIME, SIZE_INCREMENT
 from ..__utils__ import (
@@ -92,7 +92,7 @@ def _component_cost(
     component_cost: float,
     component_cost_decrease: float,
     component_size: float,
-    installation_year=0,
+    installation_year: int = 0,
 ) -> float:
     """
     Computes and returns the cost the system componenet based on the parameters.
@@ -117,7 +117,7 @@ def _component_cost(
 
     system_wide_cost = component_cost * component_size
     annual_reduction = 0.01 * component_cost_decrease
-    return system_wide_cost * (1 - annual_reduction) ** installation_year
+    return float(system_wide_cost * (1 - annual_reduction) ** installation_year)
 
 
 def _component_installation_cost(
@@ -274,9 +274,9 @@ def _inverter_expenditure(
     replacement_intervals.columns = pd.Index(["Installation year"])
 
     # Check if inverter should be replaced in the specified time interval
-    if replacement_intervals.loc[
+    if replacement_intervals.iloc[
         replacement_intervals["Installation year"].isin(
-            list(range(start_year, end_year))
+            list(np.array(range(start_year, end_year)))
         )
     ].empty:
         inverter_discounted_cost = float(0.0)
@@ -319,7 +319,7 @@ def _inverter_expenditure(
         for i in range(len(inverter_info))
     ]
     inverter_discounted_cost = np.sum(
-        inverter_info.loc[  # type: ignore
+        inverter_info.iloc[
             inverter_info["Installation year"].isin(
                 list(np.array(range(start_year, end_year)))
             )
@@ -623,7 +623,7 @@ def get_total_equipment_cost(
 
 
 def connections_expenditure(
-    finance_inputs: Dict[str, Any], households: pd.DataFrame, installation_year: int = 0
+    finance_inputs: Dict[str, Any], households: pd.Series, installation_year: int = 0
 ) -> float:
     """
     Calculates cost of connecting households to the system
@@ -632,7 +632,7 @@ def connections_expenditure(
         - finance_inputs:
             The finance input information.
         - households:
-            DataFrame of households from Energy_System().simulation(...)
+            A :class:`pd.Series` of households from Energy_System().simulation(...)
         - year:
             Installation year
 
@@ -666,7 +666,7 @@ def connections_expenditure(
 
 
 def diesel_fuel_expenditure(
-    diesel_fuel_usage_hourly: pd.DataFrame,
+    diesel_fuel_usage_hourly: pd.Series,
     finance_inputs: Dict[str, Any],
     logger: Logger,
     *,
@@ -762,8 +762,8 @@ def discounted_energy_total(
     discounted_fraction = _discounted_fraction(
         discount_rate, start_year=start_year, end_year=end_year
     )
-    discounted_energy = discounted_fraction * total_daily  # type: ignore
-    return np.sum(discounted_energy)[0]  # type: ignore
+    discounted_energy = pd.DataFrame(discounted_fraction.values * total_daily.values)
+    return float(np.sum(discounted_energy).iloc[:, 0])
 
 
 def discounted_equipment_cost(
@@ -777,7 +777,7 @@ def discounted_equipment_cost(
     pv_array_size: float,
     pvt_array_size: float,
     storage_size: float,
-    installation_year=0,
+    installation_year: int = 0,
 ) -> float:
     """
     Calculates cost of all equipment costs
@@ -822,20 +822,22 @@ def discounted_equipment_cost(
         storage_size,
         installation_year,
     )
-    discount_fraction = (1.0 - finance_inputs[DISCOUNT_RATE]) ** installation_year
+    discount_fraction = (
+        1.0 - float(finance_inputs[DISCOUNT_RATE])
+    ) ** installation_year
 
     return undiscounted_cost * discount_fraction
 
 
 def expenditure(
     component: ImpactingComponent,
-    finance_inputs,
-    hourly_usage: pd.DataFrame,
+    finance_inputs: Dict[str, Any],
+    hourly_usage: pd.Series,
     logger: Logger,
     *,
     start_year: int = 0,
     end_year: int = 20
-):
+) -> float:
     """
     Calculates cost of the usage of a component.
 
@@ -875,7 +877,7 @@ def independent_expenditure(
     *,
     start_year: int,
     end_year: int
-):
+) -> float:
     """
     Calculates cost of equipment which is independent of simulation periods
 
@@ -921,7 +923,7 @@ def total_om(
     *,
     start_year: int = 0,
     end_year: int = 20
-):
+) -> float:
     """
     Calculates total O&M cost over the simulation period
 
@@ -1142,9 +1144,9 @@ def total_om(
 #     Outputs:
 #         Discounted cost
 #     """
-#     grid_extension_cost = self.finance_inputs.loc["Grid extension cost"]  # per km
-#     grid_infrastructure_cost = self.finance_inputs.loc["Grid infrastructure cost"]
-#     discount_fraction = (1.0 - self.finance_inputs.loc["Discount rate"]) ** year
+#     grid_extension_cost = self.finance_inputs.iloc["Grid extension cost"]  # per km
+#     grid_infrastructure_cost = self.finance_inputs.iloc["Grid infrastructure cost"]
+#     discount_fraction = (1.0 - self.finance_inputs.iloc["Discount rate"]) ** year
 #     return (
 #         grid_extension_distance * grid_extension_cost * discount_fraction
 #         + grid_infrastructure_cost
