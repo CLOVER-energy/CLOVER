@@ -2100,6 +2100,8 @@ def run_simulation(
                 time_index=t,
             )
 
+            # Calculate the hot-water iteration.
+
             # Calculate the clean-water iteration.
             excess_energy = _clean_water_tank_iteration_step(
                 backup_desalinator_water_supplied,
@@ -2433,6 +2435,22 @@ def run_simulation(
     system_details = SystemDetails(
         diesel_capacity,
         simulation.end_year,
+        clean_water_pvt_size
+        * float(
+            solar_degradation(minigrid.pvt_panel.lifetime)[0][  # type: ignore
+                8760 * (simulation.end_year - simulation.start_year)
+            ]
+        )
+        if minigrid.pvt_panel is not None and scenario.desalination_scenario is not None
+        else None,
+        hot_water_pvt_size
+        * float(
+            solar_degradation(minigrid.pvt_panel.lifetime)[0][  # type: ignore
+                8760 * (simulation.end_year - simulation.start_year)
+            ]
+        )
+        if minigrid.pvt_panel is not None and scenario.hot_water_scenario is not None
+        else None,
         number_of_buffer_tanks if scenario.desalination_scenario is not None else None,
         number_of_clean_water_tanks
         if scenario.desalination_scenario is not None
@@ -2444,26 +2462,23 @@ def run_simulation(
                 8760 * (simulation.end_year - simulation.start_year)
             ]
         ),
-        pvt_size
-        * float(
-            solar_degradation(minigrid.pvt_panel.lifetime)[0][  # type: ignore
-                8760 * (simulation.end_year - simulation.start_year)
-            ]
-        )
-        if minigrid.pvt_panel is not None
-        else None,
         float(
             electric_storage_size
             * minigrid.battery.storage_unit
             * np.min(battery_health_frame["Battery health"])
         ),
+        clean_water_pvt_size
+        if minigrid.pvt_panel is not None and scenario.desalination_scenario is not None
+        else None,
+        hot_water_pvt_size
+        if minigrid.pvt_panel is not None and scenario.hot_water_scenario is not None
+        else None,
         number_of_buffer_tanks if scenario.desalination_scenario is not None else None,
         number_of_clean_water_tanks
         if scenario.desalination_scenario is not None
         else None,
         number_of_hot_water_tanks if scenario.hot_water_scenario is not None else None,
         pv_size,
-        pvt_size if minigrid.pvt_panel is not None else None,
         float(electric_storage_size * minigrid.battery.storage_unit),
         simulation.start_year,
     )

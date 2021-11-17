@@ -400,7 +400,7 @@ def calculate_pvt_output(
 
     for index in tqdm(
         range(start_hour, end_hour),
-        desc="pv-t performance",
+        desc=f"{resource_type.value} pv-t performance",
         leave=False,
         unit="hour",
     ):
@@ -414,7 +414,9 @@ def calculate_pvt_output(
             pvt_flow_on = False
 
         previous_tank_temperature: float = (
-            tank_temperature_map[index - 1] if index > 0 else default_supply_temperature
+            tank_temperature_map[index - 1]
+            if index > start_hour
+            else default_supply_temperature
         )
 
         # Determine the volume withdrawn from the buffer tanks
