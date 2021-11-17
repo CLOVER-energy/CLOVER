@@ -85,18 +85,18 @@
                 # License: Open source                                                         #
                 ################################################################################
 
-                - name: bore_hole
-                  electric_power: 600 # [W]
-                  output: feedwater
-                  maximum_output: 830 # [litres/hour]
+                # - name: bore_hole
+                #   electric_power: 600 # [W]
+                #   output: feedwater
+                #   maximum_output: 830 # [litres/hour]
 
                 # Reverse osmosis specification from:
                 # https://www.sciencedirect.com/science/article/pii/S0255270116304329
-                - name: reverse_osmosis
-                  electric_power: 1435 # [W]
-                  feedwater: 500 # [litres]
-                  output: clean_water
-                  maximum_output: 208 # [litres/hour]
+                # - name: reverse_osmosis
+                #   electric_power: 1435 # [W]
+                #   feedwater: 500 # [litres]
+                #   output: clean_water
+                #   maximum_output: 208 # [litres/hour]
             - file: "diesel_inputs.yaml"
               contents: |+
                 ---
@@ -124,21 +124,22 @@
                       ghg_decrease: 0 # [% p.a.]
                       installation_ghgs: 50 # [kgCO2/kW]
                       installation_ghg_decrease: 0 # [% p.a.]
-                diesel_water_heaters:
-                  - name: default_diesel_heater
-                    diesel_consumption: 0.4 # [litres per kWth capacity per hour]
-                    minimum_load: 0.35 # Minimum capacity factor (0.0 - 1.0)
-                    costs:
-                      cost: 200 # [$/kW]
-                      installation_cost: 50 # [$/kW]
-                      installation_cost_decrease: 0 # [% p.a.]
-                      o&m: 20 # [$/kW p.a.]
-                      cost_decrease: 0 # [% p.a.]
-                    emissions:
-                      ghgs: 2000 # [kgCO2/kW]
-                      ghg_decrease: 0 # [% p.a.]
-                      installation_ghgs: 50 # [kgCO2/kW]
-                      installation_ghg_decrease: 0 # [% p.a.]
+                # diesel_water_heaters:
+                #   - name: default_diesel_heater
+                #     diesel_consumption: 0.4 # [litres per kWth capacity per hour]
+                #     maximum_output: 1 # [kWth]
+                #     minimum_load: 0.35 # Minimum capacity factor (0.0 - 1.0)
+                #     costs:
+                #       cost: 200 # [$/kW]
+                #       installation_cost: 50 # [$/kW]
+                #       installation_cost_decrease: 0 # [% p.a.]
+                #       o&m: 20 # [$/kW p.a.]
+                #       cost_decrease: 0 # [% p.a.]
+                #     emissions:
+                #       ghgs: 2000 # [kgCO2/kW]
+                #       ghg_decrease: 0 # [% p.a.]
+                #       installation_ghgs: 50 # [kgCO2/kW]
+                #       installation_ghg_decrease: 0 # [% p.a.]
             - file: "generation_inputs.yaml"
               contents: |+
                 ---
@@ -231,18 +232,18 @@
                 # License: Open source                                                         #
                 ################################################################################
 
-                - name: river
-                  output: feedwater
-                  costs:
-                    cost: 0 # [$]
-                    cost_decrease: 0 # [% p.a.]
-                    o&m: 1 # [$/litre p.a.]
-                  emissions:
-                    ghgs: 0 # [kgCO2/tank]
-                    ghg_decrease: 0 # [% p.a.]
-                    o&m: 5 # [kgCO2/litre p.a.]
-                  water_quality:
-                    salinity: 440 # [ppm]
+                # - name: river
+                #   output: feedwater
+                #   costs:
+                #     cost: 0 # [$]
+                #     cost_decrease: 0 # [% p.a.]
+                #     o&m: 1 # [$/litre p.a.]
+                #   emissions:
+                #     ghgs: 0 # [kgCO2/tank]
+                #     ghg_decrease: 0 # [% p.a.]
+                #     o&m: 5 # [kgCO2/litre p.a.]
+                #   water_quality:
+                #     salinity: 440 # [ppm]
         - directory: impact
           contents:
             - file: "finance_inputs.yaml"

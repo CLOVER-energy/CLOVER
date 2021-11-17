@@ -17,7 +17,7 @@ the clover module from the command-line interface.
 
 """
 
-__version__ = "5.0.0a1.dev4"
+__version__ = "5.0.0a1.dev5"
 
 import datetime
 import logging
@@ -192,6 +192,7 @@ def _prepare_location(location: str, logger: logging.Logger):
 
 
 def _prepate_water_system(
+    available_conventional_sources: List[str],
     auto_generated_files_directory: str,
     device_utilisations: Dict[load.Device, pd.DataFrame],
     location: Location,
@@ -206,6 +207,8 @@ def _prepate_water_system(
     Prepares the conventional-water system.
 
     Inputs:
+        - available_conventional_sources:
+            The `list` of available conventional sources for the system.
         - auto_generated_files_directory:
             The directory into which auto-generated files should be saved.
         - device_utilisations:
@@ -350,6 +353,12 @@ def _prepate_water_system(
             [str(source) for source in conventional_water_source_profiles.keys()]
         ),
     )
+
+    conventional_water_source_profiles = {
+        key: value
+        for key, value in conventional_water_source_profiles.items()
+        if key in available_conventional_sources
+    }
 
     return (
         conventional_water_source_profiles,
@@ -745,6 +754,7 @@ def main(args: List[Any]) -> None:
             total_clean_water_load,
             clean_water_yearly_load_statistics,
         ) = _prepate_water_system(
+            scenario.desalination_scenario.clean_water_scenario.conventional_sources,
             auto_generated_files_directory,
             device_utilisations,
             location,
@@ -768,6 +778,7 @@ def main(args: List[Any]) -> None:
             total_hot_water_load,
             hot_water_yearly_load_statistics,
         ) = _prepate_water_system(
+            scenario.hot_water_scenario.conventional_sources,
             auto_generated_files_directory,
             device_utilisations,
             location,
@@ -960,8 +971,10 @@ def main(args: List[Any]) -> None:
                 else ""
             )
             + (
-                "- {}x {} litres clean-water storage".format(
-                    parsed_args.num_clean_water_tanks, minigrid.clean_water_tank.mass
+                "- {}x {} litres clean-water storage{}".format(
+                    parsed_args.num_clean_water_tanks,
+                    minigrid.clean_water_tank.mass,
+                    "\n" if scenario.hot_water_scenario is not None else "",
                 )
                 if scenario.desalination_scenario is not None
                 else ""

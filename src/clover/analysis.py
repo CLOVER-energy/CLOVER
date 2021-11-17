@@ -140,7 +140,12 @@ def get_key_results(
     key_results.blackouts = round(simulation_results["Blackouts"].mean(), 3)
 
     # Compute the clean-water key results.
-    if "Clean water blackouts" in simulation_results:
+    if "Total clean water demand (l)" in simulation_results:
+        key_results.average_daily_clean_water_demand_covered = round(
+            simulation_results["Total clean water supplied (l)"].sum()
+            / simulation_results["Total clean water demand (l)"].sum(),
+            3,
+        )
         key_results.average_daily_clean_water_supplied = round(
             simulation_results["Total clean water supplied (l)"].sum()
             / (365 * num_years),
@@ -155,6 +160,9 @@ def get_key_results(
         )
         key_results.clean_water_blackouts = round(
             simulation_results["Clean water blackouts"].mean(), 3
+        )
+        key_results.cumulative_clean_water_load = round(
+            simulation_results["Total clean water demand (l)"].sum(), 3
         )
         key_results.cumulative_clean_water_pvt_generation = round(
             simulation_results[
@@ -185,6 +193,20 @@ def get_key_results(
         )
 
     # Compute the hot-water key results.
+    if "Total hot-water demand (l)" in simulation_results:
+        key_results.average_daily_hot_water_demand_covered = round(
+            simulation_results["Renewable hot-water fraction"].mean(), 3
+        )
+        key_results.average_daily_hot_water_pvt_generation = round(
+            simulation_results["Hot-water PV-T electric energy supplied per kWh"].sum()
+            / (365 * num_years),
+            3,
+        )
+        key_results.average_daily_hot_water_supplied = round(
+            simulation_results["Total hot water supplied (l)"].sum()
+            / (365 * num_years),
+            3,
+        )
 
     return key_results
 
