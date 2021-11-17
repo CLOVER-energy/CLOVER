@@ -472,52 +472,64 @@ def _parse_conversion_inputs(
     if os.path.isfile(conversion_file_relative_path):
         parsed_convertors: List[Convertor] = []
         conversion_inputs = read_yaml(conversion_file_relative_path, logger)
-        for entry in conversion_inputs:
-            if not isinstance(entry, dict):
+        if conversion_inputs is not None:
+            if not isinstance(conversion_inputs, list):
                 logger.error(
-                    "%sConvertor not of correct format `dict`: %s%s",
+                    "%sThe conversion inputs file must be a `list` of valid convertors.%s",
                     BColours.fail,
-                    str(entry),
                     BColours.endc,
                 )
-                raise InputFileError(
-                    "conversion inputs", "Convertors not correctly defined."
-                )
+        if conversion_inputs is not None and len(conversion_inputs) > 0:
+            for entry in conversion_inputs:
+                if not isinstance(entry, dict):
+                    logger.error(
+                        "%sConvertor not of correct format `dict`: %s%s",
+                        BColours.fail,
+                        str(entry),
+                        BColours.endc,
+                    )
+                    raise InputFileError(
+                        "conversion inputs", "Convertors not correctly defined."
+                    )
 
-            # Attempt to parse as a water source.
-            try:
-                parsed_convertors.append(WaterSource.from_dict(entry, logger))
-            except InputFileError:
-                logger.info(
-                    "Failed to create a single-input convertor, trying a thermal "
-                    "desalination plant."
-                )
-
-                # Attempt to parse as a thermal desalination plant.
+                # Attempt to parse as a water source.
                 try:
-                    parsed_convertors.append(
-                        ThermalDesalinationPlant.from_dict(entry, logger)
-                    )
-                except KeyError:
+                    parsed_convertors.append(WaterSource.from_dict(entry, logger))
+                except InputFileError:
                     logger.info(
-                        "Failed to create a thermal desalination plant, trying "
-                        "a multi-input convertor."
+                        "Failed to create a single-input convertor, trying a thermal "
+                        "desalination plant."
                     )
 
-                    # Parse as a generic multi-input convertor.
-                    parsed_convertors.append(
-                        MultiInputConvertor.from_dict(entry, logger)
-                    )
-                    logger.info("Parsed multi-input convertor from input data.")
-                logger.info("Parsed thermal desalination plant from input data.")
+                    # Attempt to parse as a thermal desalination plant.
+                    try:
+                        parsed_convertors.append(
+                            ThermalDesalinationPlant.from_dict(entry, logger)
+                        )
+                    except KeyError:
+                        logger.info(
+                            "Failed to create a thermal desalination plant, trying "
+                            "a multi-input convertor."
+                        )
 
-            else:
-                logger.info("Parsed single-input convertor from input data.")
+                        # Parse as a generic multi-input convertor.
+                        parsed_convertors.append(
+                            MultiInputConvertor.from_dict(entry, logger)
+                        )
+                        logger.info("Parsed multi-input convertor from input data.")
+                    logger.info("Parsed thermal desalination plant from input data.")
 
-        # Convert the list to the required format.
-        convertors: Dict[str, Convertor] = {
-            convertor.name: convertor for convertor in parsed_convertors
-        }
+                else:
+                    logger.info("Parsed single-input convertor from input data.")
+
+            # Convert the list to the required format.
+            convertors: Dict[str, Convertor] = {
+                convertor.name: convertor for convertor in parsed_convertors
+            }
+
+        else:
+            convertors = {}
+            logger.info("Conversion file empty, continuing with no defined convertors.")
 
     else:
         convertors = {}
@@ -655,20 +667,26 @@ def _parse_diesel_inputs(
         logger.info("Diesel emission information successfully parsed.")
 
     # Instantiate diesel water heaters for every entry in the input file.
-    try:
-        diesel_water_heaters: List[DieselWaterHeater] = [
-            DieselWaterHeater.from_dict(entry, logger)
-            for entry in diesel_inputs[DIESEL_WATER_HEATERS]
-        ]
-    except KeyError as e:
-        logger.error(
-            "%sMissing information in diesel inputs file: %s%s",
-            BColours.fail,
-            str(e),
-            BColours.endc,
+    if DIESEL_WATER_HEATERS in diesel_inputs:
+        try:
+            diesel_water_heaters: List[DieselWaterHeater] = [
+                DieselWaterHeater.from_dict(entry, logger)
+                for entry in diesel_inputs[DIESEL_WATER_HEATERS]
+            ]
+        except KeyError as e:
+            logger.error(
+                "%sMissing information in diesel inputs file: %s%s",
+                BColours.fail,
+                str(e),
+                BColours.endc,
+            )
+            raise
+        logger.info("Diesel water-heater inputs successfully parsed.")
+    else:
+        diesel_water_heaters = []
+        logger.info(
+            "No diesel water heaters defined in the diesel inputs file, continuing."
         )
-        raise
-    logger.info("Diesel water-heater inputs successfully parsed.")
 
     # Determine the diesel generator being modelled.
     if DIESEL_WATER_HEATER in energy_system_inputs:

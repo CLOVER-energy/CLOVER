@@ -400,7 +400,7 @@ def calculate_pvt_output(
 
     for index in tqdm(
         range(start_hour, end_hour),
-        desc=f"{resource_type.value} pv-t performance",
+        desc=f"{resource_type.value.replace('_', ' ')} pv-t performance",
         leave=False,
         unit="hour",
     ):

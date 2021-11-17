@@ -595,12 +595,16 @@ class KeyResults:
 
     """
 
-    average_daily_clean_water_supplied: Optional[float] = None
+    average_daily_clean_water_demand_covered: Optional[float] = None
     average_daily_clean_water_pvt_generation: Optional[float] = None
+    average_daily_clean_water_supplied: Optional[float] = None
     average_daily_diesel_energy_supplied: Optional[float] = None
     average_daily_dumped_energy: Optional[float] = None
     average_daily_energy_consumption: Optional[float] = None
     average_daily_grid_energy_supplied: Optional[float] = None
+    average_daily_hot_water_demand_covered: Optional[float] = None
+    average_daily_hot_water_pvt_generation: Optional[float] = None
+    average_daily_hot_water_supplied: Optional[float] = None
     average_daily_pv_energy_supplied: Optional[float] = None
     average_daily_renewables_energy_supplied: Optional[float] = None
     average_daily_renewables_energy_used: Optional[float] = None
@@ -610,9 +614,12 @@ class KeyResults:
     average_pvt_electric_generation: Optional[float] = None
     blackouts: Optional[float] = None
     clean_water_blackouts: Optional[float] = None
+    cumulative_clean_water_load: Optional[float] = None
     cumulative_clean_water_pvt_generation: Optional[float] = None
     cumulative_clean_water_supplied: Optional[float] = None
+    cumulative_hot_water_load: Optional[float] = None
     cumulative_hot_water_pvt_generation: Optional[float] = None
+    cumulative_hot_water_supplied: Optional[float] = None
     cumulative_pv_generation: Optional[float] = None
     diesel_times: Optional[float] = None
     grid_daily_hours: Optional[float] = None
@@ -635,14 +642,18 @@ class KeyResults:
 
         data_dict: Dict[str, float] = {}
 
+        if self.average_daily_clean_water_demand_covered is not None:
+            data_dict["Average daily clean-water demand covered"] = round(
+                self.average_daily_clean_water_demand_covered, 3
+            )
         if self.average_daily_clean_water_supplied is not None:
             data_dict["Average daily clean water supplied / litres"] = round(
                 self.average_daily_clean_water_supplied, 3
             )
         if self.average_daily_clean_water_pvt_generation is not None:
-            data_dict["Average daily PV-T electricity supplied / kWh"] = round(
-                self.average_daily_clean_water_pvt_generation, 3
-            )
+            data_dict[
+                "Average daily clean-water PV-T electricity supplied / kWh"
+            ] = round(self.average_daily_clean_water_pvt_generation, 3)
         if self.average_daily_diesel_energy_supplied is not None:
             data_dict["Average daily diesel energy supplied / kWh"] = round(
                 self.average_daily_diesel_energy_supplied, 3
@@ -658,6 +669,18 @@ class KeyResults:
         if self.average_daily_grid_energy_supplied is not None:
             data_dict["Average daily grid energy supplied / kWh"] = round(
                 self.average_daily_grid_energy_supplied, 3
+            )
+        if self.average_daily_hot_water_demand_covered is not None:
+            data_dict["Average hot-water demand covered"] = round(
+                self.average_daily_hot_water_demand_covered, 3
+            )
+        if self.average_daily_hot_water_pvt_generation is not None:
+            data_dict[
+                "Average daily hot-water PV-T electricity supplied / kWh"
+            ] = round(self.average_daily_hot_water_pvt_generation, 3)
+        if self.average_daily_hot_water_supplied is not None:
+            data_dict["Average daily hot water supplied / litres"] = round(
+                self.average_daily_hot_water_supplied, 3
             )
         if self.average_daily_renewables_energy_supplied is not None:
             data_dict["Average daily renewables energy suppied / kWh"] = round(
@@ -687,6 +710,10 @@ class KeyResults:
             data_dict["Blackouts"] = round(self.blackouts, 3)
         if self.clean_water_blackouts is not None:
             data_dict["Clean water blackouts"] = round(self.clean_water_blackouts, 3)
+        if self.cumulative_clean_water_load is not None:
+            data_dict["Cumulative clean-water load / litres"] = round(
+                self.cumulative_clean_water_load, 3
+            )
         if self.cumulative_clean_water_pvt_generation is not None:
             data_dict["Cumulative clean-water PV-T generation / kWh"] = round(
                 self.cumulative_clean_water_pvt_generation, 3
@@ -1428,7 +1455,7 @@ class DesalinationScenario:
         cls, desalination_inputs: Dict[Union[int, str], Any], logger: logging.Logger
     ) -> Any:
         """
-        Returns a :class:`DeslinationScenario` instance based on the input data.
+        Returns a :class:`DesalinationScenario` instance based on the input data.
 
         Inputs:
             - desalination_inputs:
@@ -1437,7 +1464,7 @@ class DesalinationScenario:
                 The :class:`logging.Logger` to use for the run.
 
         Outputs:
-            - A :class:`DeslinationScenario` instance based on the input data provided.
+            - A :class:`DesalinationScenario` instance based on the input data provided.
 
         """
 
@@ -1579,7 +1606,7 @@ class HotWaterScenario:
         cls, hot_water_inputs: Dict[Union[int, str], Any], logger: logging.Logger
     ) -> Any:
         """
-        Returns a :class:`DeslinationScenario` instance based on the input data.
+        Returns a :class:`DesalinationScenario` instance based on the input data.
 
         Inputs:
             - hot_water_inputs:
