@@ -285,21 +285,10 @@ def calculate_pvt_output(
     runs: int = 0
 
     # Instantiate maps for easy PV-T power lookups.
-    pvt_collector_output_temperature_map: Dict[int, float] = collections.defaultdict(
-        lambda: scenario.desalination_scenario.feedwater_supply_temperature
-    )
     pvt_electric_power_per_unit_map: Dict[int, float] = {}
     pvt_pump_times_map: Dict[int, bool] = {}
     tank_supply_temperature_map: Dict[int, float] = {}
-    tank_temperature_map: Dict[int, float] = collections.defaultdict(
-        lambda: scenario.desalination_scenario.feedwater_supply_temperature
-    )
     tank_volume_supplied_map: Dict[int, float] = collections.defaultdict(float)
-
-    # Instantiate other variables required in the loop
-    best_guess_collector_input_temperature: float = (
-        scenario.desalination_scenario.feedwater_supply_temperature
-    )
 
     # Compute the various terms which remain common across all time steps.
     if (
@@ -318,18 +307,27 @@ def calculate_pvt_output(
                 "The energy system specified does not contain a buffer tank but PV-T "
                 "modelling for desalination was requested.",
             )
+
+        default_supply_temperature: float = (
+            scenario.desalination_scenario.feedwater_supply_temperature
+        )
+        mass_flow_rate: float = (
+            scenario.desalination_scenario.pvt_scenario.mass_flow_rate
+        )
         tank: HotWaterTank = minigrid.buffer_tank
 
+        best_guess_collector_input_temperature: float = default_supply_temperature
+        pvt_collector_output_temperature_map: Dict[
+            int, float
+        ] = collections.defaultdict(lambda: default_supply_temperature)
         pvt_heat_transfer: float = (
             pvt_system_size
-            * scenario.desalination_scenario.pvt_scenario.mass_flow_rate  # [kg/hour]
+            * mass_flow_rate  # [kg/hour]
             * scenario.desalination_scenario.pvt_scenario.htf_heat_capacity  # [J/kg*K]
             * minigrid.heat_exchanger.efficiency
             / 3600  # [s/hour]
         )  # [W/K]
-        tank_replacement_temperature: float = (
-            scenario.desalination_scenario.feedwater_supply_temperature
-        )  # [degC]
+        tank_replacement_temperature: float = default_supply_temperature  # [degC]
 
         # Throw an error if the PV-T is not heating an intermediary HTF.
         if scenario.desalination_scenario.pvt_scenario.heats != HTFMode.CLOSED_HTF:
@@ -359,18 +357,22 @@ def calculate_pvt_output(
                 "The energy system specified does not contain a hot-water tank but "
                 "PV-T modelling for hot-water loads was requested.",
             )
+
+        default_supply_temperature = (
+            scenario.hot_water_scenario.cold_water_supply_temperature
+        )
+        mass_flow_rate = scenario.hot_water_scenario.pvt_scenario.mass_flow_rate
         tank = minigrid.hot_water_tank
 
+        best_guess_collector_input_temperature = default_supply_temperature
         pvt_heat_transfer = (
             pvt_system_size
-            * scenario.hot_water_scenario.pvt_scenario.mass_flow_rate  # [kg/hour]
+            * mass_flow_rate  # [kg/hour]
             * scenario.hot_water_scenario.pvt_scenario.htf_heat_capacity  # [J/kg*K]
             * minigrid.heat_exchanger.efficiency
             / 3600  # [s/hour]
         )  # [W/K]
-        tank_replacement_temperature = (
-            scenario.hot_water_scenario.cold_water_supply_temperature
-        )  # [degC]
+        tank_replacement_temperature = default_supply_temperature  # [degC]
 
     # One of these scenarios must be specified, so throw an error if not.
     else:
@@ -385,10 +387,16 @@ def calculate_pvt_output(
             "being called."
         )
 
+    pvt_collector_output_temperature_map: Dict[int, float] = collections.defaultdict(
+        lambda: default_supply_temperature
+    )
     tank_environment_heat_transfer: float = tank.heat_transfer_coefficient  # [W/K]
     tank_internal_energy: float = (
         tank.mass * tank.heat_capacity / 3600  # [kg]  # [J/kg*K]  # [s/hour]
     )  # [W/K]
+    tank_temperature_map: Dict[int, float] = collections.defaultdict(
+        lambda: default_supply_temperature
+    )
 
     for index in tqdm(
         range(start_hour, end_hour),
@@ -423,6 +431,11 @@ def calculate_pvt_output(
             # Use the AI to determine the output temperature of the collector, based on
             # the best guess of the collector input temperature.
             if irradiances[index] > 0:
+                import pdb
+
+                pdb.set_trace(
+                    header=f"amb:{temperatures[index]:.3g}, in:{best_guess_collector_input_temperature:.3g}, m:{mass_flow_rate:.3g}, G:{1000*irradiances[index]:.3g}, v_w:{wind_speeds[index]:.3g}"
+                )
                 (
                     fractional_electric_performance,
                     collector_output_temperature,
@@ -430,15 +443,13 @@ def calculate_pvt_output(
                     temperatures[index],
                     best_guess_collector_input_temperature,
                     logger,
-                    scenario.desalination_scenario.pvt_scenario.mass_flow_rate,
+                    mass_flow_rate,
                     1000 * irradiances[index],
                     wind_speeds[index],
                 )
             else:
                 fractional_electric_performance = 0
-                collector_output_temperature = (
-                    scenario.desalination_scenario.feedwater_supply_temperature
-                )
+                collector_output_temperature = default_supply_temperature
 
             tank_load_enthalpy_transfer = (
                 volume_supplied  # [kg/hour]
