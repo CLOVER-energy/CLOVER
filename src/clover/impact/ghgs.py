@@ -22,7 +22,7 @@ from logging import Logger
 from typing import Any, Dict, List
 
 import numpy as np  # pylint: disable=import-error
-import pandas as pd  # type: ignore  # pylint: disable=import-error
+import pandas as pd  # pylint: disable=import-error
 
 from .__utils__ import SIZE_INCREMENT, ImpactingComponent, LIFETIME
 from ..__utils__ import BColours, InputFileError, Location, hourly_profile_to_daily_sum
@@ -81,8 +81,8 @@ def calculate_ghgs(
     capacity: float,
     ghg_inputs: Dict[str, Any],
     system_component: ImpactingComponent,
-    year=0,
-):
+    year: int = 0,
+) -> float:
     """
     Calculates ghgs of PV
 
@@ -101,7 +101,7 @@ def calculate_ghgs(
 
     """
 
-    ghgs = capacity * ghg_inputs[system_component.value][GHGS]
+    ghgs: float = capacity * float(ghg_inputs[system_component.value][GHGS])
     annual_reduction = 0.01 * ghg_inputs[system_component.value][GHG_DECREASE]
     return ghgs * (1.0 - annual_reduction) ** year
 
@@ -111,7 +111,7 @@ def calculate_installation_ghgs(
     capacity: float,
     ghg_inputs: Dict[str, Any],
     system_component: ImpactingComponent,
-    year=0,
+    year: int = 0,
 ) -> float:
     """
 
@@ -401,7 +401,7 @@ def calculate_connections_ghgs(ghg_inputs: Dict[str, Any], households: pd.Series
 
 def calculate_grid_extension_ghgs(
     ghg_inputs: Dict[str, Any], grid_extension_distance: float
-):
+) -> float:
     """
     Calculates ghgs of extending the grid network to a community
 
@@ -416,11 +416,9 @@ def calculate_grid_extension_ghgs(
 
     """
 
-    return (
-        grid_extension_distance
-        * ghg_inputs[ImpactingComponent.GRID.value][EXTENSION_GHGS]
-        + ghg_inputs[ImpactingComponent.GRID.value][INFRASTRUCTURE_GHGS]
-    )
+    return grid_extension_distance * float(
+        ghg_inputs[ImpactingComponent.GRID.value][EXTENSION_GHGS]
+    ) + float(ghg_inputs[ImpactingComponent.GRID.value][INFRASTRUCTURE_GHGS])
 
 
 def calculate_independent_ghgs(
@@ -429,7 +427,7 @@ def calculate_independent_ghgs(
     ghg_inputs: Dict[str, Any],
     location: Location,
     start_year: int,
-):
+) -> float:
     """
     Calculates ghgs of equipment which is independent of simulation periods
 
@@ -493,9 +491,9 @@ def calculate_inverter_ghgs(
     replacement_intervals.columns = pd.Index(["Installation year"])
 
     # Check if inverter should be replaced in the specified time interval
-    if replacement_intervals.loc[
+    if replacement_intervals.iloc[
         replacement_intervals["Installation year"].isin(
-            list(range(start_year, end_year))
+            list(np.array(range(start_year, end_year)))
         )
     ].empty:
         return float(0.0)
@@ -535,8 +533,8 @@ def calculate_inverter_ghgs(
         * inverter_info["Inverter ghgs (kgCO2/kW)"].iloc[i]
         for i in range(len(inverter_info))
     ]
-    inverter_ghgs = np.sum(
-        inverter_info.loc[  # type: ignore
+    inverter_ghgs: float = np.sum(
+        inverter_info.iloc[  # type: ignore
             inverter_info["Installation year"].isin(
                 list(np.array(range(start_year, end_year)))
             )
@@ -548,7 +546,7 @@ def calculate_inverter_ghgs(
 
 def calculate_kerosene_ghgs(
     ghg_inputs: Dict[str, Any], kerosene_lamps_in_use_hourly: pd.Series
-):
+) -> float:
     """
     Calculates ghgs of kerosene usage.
 
@@ -566,12 +564,12 @@ def calculate_kerosene_ghgs(
         * ghg_inputs[ImpactingComponent.KEROSENE.value][GHGS]
     )
 
-    return np.sum(kerosene_ghgs)
+    return float(np.sum(kerosene_ghgs))
 
 
 def calculate_kerosene_ghgs_mitigated(
     ghg_inputs: Dict[str, Any], kerosene_lamps_mitigated_hourly: pd.Series
-):
+) -> float:
     """
     Calculates ghgs of kerosene usage that has been avoided by using the system.
 
@@ -589,15 +587,15 @@ def calculate_kerosene_ghgs_mitigated(
         * ghg_inputs[ImpactingComponent.KEROSENE.value][GHGS]
     )
 
-    return np.sum(kerosene_ghgs)
+    return float(np.sum(kerosene_ghgs))
 
 
 def calculate_grid_ghgs(
     ghg_inputs: Dict[str, Any],
     grid_energy_hourly: pd.Series,
     location: Location,
-    start_year=0,
-    end_year=20,
+    start_year: int = 0,
+    end_year: int = 20,
 ) -> float:
     """
     Calculates ghgs of grid electricity used by the system
@@ -642,7 +640,7 @@ def calculate_grid_ghgs(
         total_daily_energy.values * daily_emissions_intensity.values
     )
 
-    return float(np.sum(daily_emissions, axis=0))  # type: ignore
+    return float(np.sum(daily_emissions, axis=0))
 
 
 def calculate_diesel_fuel_ghgs(
@@ -663,7 +661,7 @@ def calculate_diesel_fuel_ghgs(
     """
 
     diesel_fuel_ghgs = ghg_inputs[ImpactingComponent.DIESEL_FUEL.value][GHGS]
-    return float(np.sum(diesel_fuel_usage_hourly) * diesel_fuel_ghgs)  # type: ignore
+    return float(np.sum(diesel_fuel_usage_hourly) * diesel_fuel_ghgs)
 
 
 def calculate_om_ghgs(
@@ -692,7 +690,9 @@ def calculate_om_ghgs(
     """
 
     return (
-        capacity * ghg_inputs[system_component.value][OM_GHGS] * (end_year - start_year)
+        capacity
+        * float(ghg_inputs[system_component.value][OM_GHGS])
+        * (end_year - start_year)
     )
 
 
@@ -710,7 +710,7 @@ def calculate_total_om(
     storage_size: float,
     start_year: int = 0,
     end_year: int = 20,
-):
+) -> float:
     """
     Calculates total O&M ghgs over the simulation period
 

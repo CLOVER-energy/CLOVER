@@ -22,8 +22,8 @@ import os
 from logging import Logger
 from typing import Dict
 
-import numpy as np  # type: ignore # pylint: disable=import-error
-import pandas as pd  # type: ignore # pylint: disable=import-error
+import numpy as np  # pylint: disable=import-error
+import pandas as pd  # pylint: disable=import-error
 
 from tqdm import tqdm
 
@@ -115,7 +115,9 @@ def _process_water_source_availability(
 
         # Save this to the output file.
         with open(filepath, "w") as f:
-            interpolated_daily_profile.to_csv(f, header=None, index=False, line_terminator="")  # type: ignore
+            interpolated_daily_profile.to_csv(
+                f, header=None, index=False, line_terminator=""  # type: ignore
+            )
         logger.info(
             "Daily %s water-source availability profile for %s successfully saved to "
             "%s.",
@@ -227,7 +229,9 @@ def _process_water_soure_hourly_probability(
             filepath,
             "w",
         ) as f:
-            hourly_availability.to_csv(f, header=None, index=False, line_terminator="")  # type: ignore
+            hourly_availability.to_csv(
+                f, header=None, index=False, line_terminator=""  # type: ignore
+            )
 
         logger.info(
             "Hourly %s water-source availability proifle for %s successfully saved to "

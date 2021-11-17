@@ -21,12 +21,12 @@ import os
 
 from typing import Dict, Optional
 
-import numpy as np  # type: ignore  # pylint: disable=import-error
-import pandas as pd  # type: ignore  # pylint: disable=import-error
-import seaborn as sns  # type: ignore  # pylint: disable=import-error
+import numpy as np  # pylint: disable=import-error
+import pandas as pd  # pylint: disable=import-error
+import seaborn as sns  # pylint: disable=import-error
 
-import matplotlib.pyplot as plt  # type: ignore  # pylint: disable=import-error
-from tqdm import tqdm  # type: ignore  # pylint: disable=import-error
+import matplotlib.pyplot as plt  # pylint: disable=import-error
+from tqdm import tqdm  # pylint: disable=import-error
 
 from .__utils__ import CUT_OFF_TIME, DemandType, KeyResults, ResourceType
 
@@ -203,7 +203,7 @@ def get_key_results(
             3,
         )
         key_results.average_daily_hot_water_supplied = round(
-            simulation_results["Total hot water supplied (l)"].sum()
+            simulation_results["Hot-water tank volume supplied (l)"].sum()
             / (365 * num_years),
             3,
         )
@@ -300,8 +300,8 @@ def plot_outputs(
             ylabel="Day of year",
             title="Output per kWp of solar capacity",
         )
-        plt.xticks(rotation=0)  # type: ignore
-        plt.tight_layout()  # type: ignore
+        plt.xticks(rotation=0)
+        plt.tight_layout()
         plt.savefig(
             os.path.join(figures_directory, "solar_output_hetamap.png"),
             transparent=True,
@@ -337,8 +337,8 @@ def plot_outputs(
             ylabel="Day of year",
             title="Grid availability of the selected profile.",
         )
-        plt.xticks(rotation=0)  # type: ignore
-        plt.tight_layout()  # type: ignore
+        plt.xticks(rotation=0)
+        plt.tight_layout()
         plt.savefig(
             os.path.join(figures_directory, "grid_availability_heatmap.png"),
             transparent=True,
@@ -371,7 +371,7 @@ def plot_outputs(
         plt.xlabel("Hour of simulation")
         plt.ylabel("Device load / W")
         plt.title("Electric load demand of each device")
-        plt.tight_layout()  # type: ignore
+        plt.tight_layout()
         plt.legend()
         plt.savefig(
             os.path.join(figures_directory, "electric_device_loads.png"),
@@ -403,7 +403,7 @@ def plot_outputs(
             label="total",
         )
         plt.legend(loc="upper right")
-        plt.xticks(list(range(0, CUT_OFF_TIME - 1, min(4, CUT_OFF_TIME - 1))))
+        plt.xticks([entry for entry in (range(0, CUT_OFF_TIME - 1, min(4, CUT_OFF_TIME - 1)))])
         plt.xlabel("Hour of simulation")
         plt.ylabel("Electric power demand / kW")
         plt.title(f"Load profile of the community for the first {CUT_OFF_TIME} hours")
@@ -491,7 +491,7 @@ def plot_outputs(
             ylabel="Load / kWh/day",
             title="Total community energy demand",
         )
-        plt.tight_layout()  # type: ignore
+        plt.tight_layout()
         plt.savefig(
             os.path.join(figures_directory, "electric_demand_annual_variation.png"),
             transparent=True,
@@ -851,10 +851,10 @@ def plot_outputs(
             ylabel="Day of year",
             title="Diesel",
         )
-        plt.tight_layout()  # type: ignore
+        plt.tight_layout()
         fig.suptitle("Electricity from different sources (kWh)")
         fig.subplots_adjust(top=0.87)
-        plt.xticks(rotation=0)  # type: ignore
+        plt.xticks(rotation=0)
         plt.savefig(
             os.path.join(
                 figures_directory, "seasonal_electricity_supply_variations.png"
@@ -952,8 +952,8 @@ def plot_outputs(
                 ylabel="Day of year",
                 title="Electric output per kWp of PV-T capacity",
             )
-            plt.xticks(rotation=0)  # type: ignore
-            plt.tight_layout()  # type: ignore
+            plt.xticks(rotation=0)
+            plt.tight_layout()
             plt.savefig(
                 os.path.join(figures_directory, "pv_t_electric_output_hetamap.png"),
                 transparent=True,
@@ -984,7 +984,7 @@ def plot_outputs(
                 plt.xlabel("Hour of simulation")
                 plt.ylabel("Device load / litres/hour")
                 plt.title("Clean water demand of each device")
-                plt.tight_layout()  # type: ignore
+                plt.tight_layout()
             plt.legend()
             plt.savefig(
                 os.path.join(figures_directory, "clean_water_device_loads.png"),
@@ -1016,7 +1016,7 @@ def plot_outputs(
                 label="total",
             )
             plt.legend(loc="upper right")
-            plt.xticks(list(range(0, CUT_OFF_TIME - 1, min(4, CUT_OFF_TIME - 2))))
+            plt.xticks([entry for entry in range(0, CUT_OFF_TIME - 1, min(4, CUT_OFF_TIME - 2))])
             plt.xlabel("Hour of simulation")
             plt.ylabel("Clean water demand / litres/hour")
             plt.title(
@@ -1108,7 +1108,7 @@ def plot_outputs(
                 ylabel="Load / litres/hour",
                 title="Clean-water demand of each load type",
             )
-            plt.tight_layout()  # type: ignore
+            plt.tight_layout()
             plt.savefig(
                 os.path.join(
                     figures_directory, "clean_water_demand_annual_variation.png"
@@ -2220,10 +2220,10 @@ def plot_outputs(
             # ax4.set_position([0.24, 0.125, 0.228, 0.343])
             # ax5.set_position([0.55, 0.125, 0.228, 0.343])
 
-            plt.tight_layout()  # type: ignore
+            plt.tight_layout()
             fig.suptitle("Water from different sources (tonnes)")
             fig.subplots_adjust(top=0.87)
-            plt.xticks(rotation=0)  # type: ignore
+            plt.xticks(rotation=0)
             plt.savefig(
                 os.path.join(figures_directory, "seasonal_water_supply_variations.png"),
                 transparent=True,
@@ -2240,7 +2240,7 @@ def plot_outputs(
                 plt.xlabel("Hour of simulation")
                 plt.ylabel("Device load / litres/hour")
                 plt.title("Hot water demand of each device")
-                plt.tight_layout()  # type: ignore
+                plt.tight_layout()
             plt.legend()
             plt.savefig(
                 os.path.join(figures_directory, "hot_water_device_loads.png"),
@@ -2272,7 +2272,7 @@ def plot_outputs(
                 label="total",
             )
             plt.legend(loc="upper right")
-            plt.xticks(list(range(0, CUT_OFF_TIME - 1, min(4, CUT_OFF_TIME - 2))))
+            plt.xticks([entry for entry in range(0, CUT_OFF_TIME - 1, min(4, CUT_OFF_TIME - 2))])
             plt.xlabel("Hour of simulation")
             plt.ylabel("Hot water demand / litres/hour")
             plt.title(
@@ -2364,7 +2364,7 @@ def plot_outputs(
                 ylabel="Load / litres/hour",
                 title="Hot-water demand of each load type",
             )
-            plt.tight_layout()  # type: ignore
+            plt.tight_layout()
             plt.savefig(
                 os.path.join(
                     figures_directory, "hot_water_demand_annual_variation.png"

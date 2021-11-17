@@ -23,7 +23,7 @@ import enum
 
 from typing import Any, Dict
 
-import pandas as pd  # type: ignore  # pylint: disable=import-error
+import pandas as pd  # pylint: disable=import-error
 
 
 from .__utils__ import BaseRenewablesNinjaThread, total_profile_output

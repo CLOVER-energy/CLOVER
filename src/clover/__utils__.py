@@ -27,11 +27,11 @@ from typing import Any, Dict, List, Optional, Set, Union
 
 import json
 import numpy as np  # pylint: disable=import-error
-import pandas as pd  # type: ignore  # pylint: disable=import-error
-import scipy  # type: ignore  # pylint: disable=import-error
-import yaml  # type: ignore  # pylint: disable=import-error
+import pandas as pd  # pylint: disable=import-error
+import scipy  # pylint: disable=import-error
+import yaml  # pylint: disable=import-error
 
-from tqdm import tqdm  # type: ignore  # pylint: disable=import-error
+from tqdm import tqdm  # pylint: disable=import-error
 
 __all__ = (
     "BColours",
@@ -65,6 +65,7 @@ __all__ = (
     "OperatingMode",
     "OptimisationParameters",
     "PACKAGE_NAME",
+    "ProgrammerJudgementFault",
     "RAW_CLOVER_PATH",
     "read_yaml",
     "RenewableEnergySource",
@@ -334,10 +335,10 @@ def daily_sum_to_monthly_sum(daily_profile: pd.DataFrame) -> pd.DataFrame:
     month_days = month_days.append(pd.DataFrame([365 * years]))
     monthly_sum = pd.DataFrame([])
     for month in range(0, month_days.shape[0] - 1):
-        start_day = month_days.iloc[month][0]
-        end_day = month_days.iloc[month + 1][0]
+        start_day = month_days.iloc[month, 0]
+        end_day = month_days.iloc[month + 1, 0]
         monthly_sum = monthly_sum.append(
-            pd.DataFrame([np.sum(daily_profile[start_day:end_day])[0]])
+            pd.DataFrame([np.sum(daily_profile.iloc[start_day:end_day, 0])])
         )
     return monthly_sum
 
@@ -384,7 +385,7 @@ class DemandType(enum.Enum):
 
 
 def dict_to_dataframe(
-    input_dict: Dict[int, float], logger: logging.Logger
+    input_dict: Union[Dict[int, float], Dict[int, int]], logger: logging.Logger
 ) -> pd.DataFrame:
     """
     Converts a `dict` to a :class:`pandas.DataFrame`.
@@ -410,9 +411,22 @@ def dict_to_dataframe(
             f"Misuse of internal helper functions. See {LOGGER_DIRECTORY} for details."
         )
 
-    return pd.DataFrame(  # type: ignore
+    frame = pd.DataFrame(
         list(input_dict.values()), index=list(input_dict.keys())
     ).sort_index()
+
+    if not isinstance(frame, pd.DataFrame):
+        logger.error(
+            "%sThe `dict_to_dataframe` function was called but did not successfully "
+            "generate a :class:`pandas.DataFrame`.%s",
+            BColours.fail,
+            BColours.endc,
+        )
+        raise InternalError(
+            f"Failure of internal helper functions. See {LOGGER_DIRECTORY} for details."
+        )
+
+    return frame
 
 
 class DieselMode(enum.Enum):
@@ -514,7 +528,7 @@ def get_logger(logger_name: str, verbose: bool = False) -> logging.Logger:
     return logger
 
 
-def hourly_profile_to_daily_sum(hourly_profile: pd.DataFrame) -> pd.DataFrame:
+def hourly_profile_to_daily_sum(hourly_profile: pd.DataFrame) -> pd.Series:
     """
     Converts an hour-by-hour profile to a sum for each day.
 
@@ -764,6 +778,29 @@ class KeyResults:
         return data_dict
 
 
+class ProgrammerJudgementFault(Exception):
+    """
+    Raised when a programmer judgement faul occurs.
+
+    """
+
+    def __init__(self, location: str, message: str) -> None:
+        """
+        Instantiates a :class:`ProgrammerJudgementFault instance.
+
+        Inputs:
+            - location:
+                The location within CLOVER where the error has occured.
+            - message:
+                The more verbose message to display to the end user.
+
+        """
+
+        super().__init__(
+            f"Internal programmer judgement fault concerning {location}: {message}"
+        )
+
+
 class RenewableEnergySource(enum.Enum):
     """
     Specfiies the renewable energy sources that can be included in the system.
@@ -960,18 +997,18 @@ def monthly_profile_to_daily_profile(monthly_profile: pd.DataFrame) -> pd.DataFr
 
     """
 
-    day_one_profile = pd.DataFrame(np.zeros((24, 1)))
+    day_one_profile: pd.DataFrame = pd.DataFrame(np.zeros((24, 1)))
     for hour in range(24):
-        day_one_profile[0][hour] = 0.5 * (  # type: ignore
-            monthly_profile[0][hour] + monthly_profile[11][hour]  # type: ignore
+        day_one_profile.iloc[hour, 0] = 0.5 * (
+            monthly_profile.iloc[hour, 0] + monthly_profile.iloc[hour, 11]
         )
 
-    extended_year_profile = pd.DataFrame(np.zeros((24, 14)))
-    extended_year_profile[0] = day_one_profile[0]  # type: ignore
+    extended_year_profile: pd.DataFrame = pd.DataFrame(np.zeros((24, 14)))
+    extended_year_profile.iloc[:, 0] = day_one_profile.iloc[:, 0]
 
     for month in range(12):
-        extended_year_profile[month + 1] = monthly_profile[month]  # type: ignore
-        extended_year_profile[13] = day_one_profile[0]  # type: ignore
+        extended_year_profile.iloc[:, month + 1] = monthly_profile.iloc[:, month]
+        extended_year_profile.iloc[:, 13] = day_one_profile.iloc[:, 0]
 
     # Interpolate the value that falls in the middle of the month.
     daily_profile = {
@@ -2008,8 +2045,8 @@ class SystemDetails:
     initial_clean_water_pvt_size: Optional[float] = 0
     initial_hot_water_pvt_size: Optional[float] = 0
     initial_num_buffer_tanks: Optional[int] = 0
-    initial_num_clean_water_tanks: Optional[float] = 0
-    initial_num_hot_water_tanks: Optional[float] = 0
+    initial_num_clean_water_tanks: Optional[int] = 0
+    initial_num_hot_water_tanks: Optional[int] = 0
     initial_pv_size: float = 0
     initial_storage_size: float = 0
     start_year: int = 0
@@ -2080,6 +2117,46 @@ class SystemDetails:
             )
 
         return system_details_as_dict
+
+    @property
+    def initial_pvt_size(self) -> float:
+        """
+        Returns the total size of the PV-T system initially installed.
+
+        Outputs:
+            - The total size of the PV-T system initially installed.
+
+        """
+
+        return (
+            self.initial_clean_water_pvt_size
+            if self.initial_clean_water_pvt_size is not None
+            else 0
+        ) + (
+            self.initial_hot_water_pvt_size
+            if self.initial_hot_water_pvt_size is not None
+            else 0
+        )
+
+    @property
+    def final_pvt_size(self) -> float:
+        """
+        Returns the total size of the PV-T system installed at the end of the iteration.
+
+        Outputs:
+            - The total size of the PV-T system installed at the end of the simulation.
+
+        """
+
+        return (
+            self.final_clean_water_pvt_size
+            if self.final_clean_water_pvt_size is not None
+            else 0
+        ) + (
+            self.final_hot_water_pvt_size
+            if self.final_hot_water_pvt_size is not None
+            else 0
+        )
 
 
 @dataclasses.dataclass
@@ -2572,6 +2649,9 @@ def save_simulation(
             ),
             "w",
         ) as f:
-            simulation.to_csv(f, line_terminator="\n")  # type: ignore
+            simulation.to_csv(
+                f,  # type: ignore
+                line_terminator="\n",
+            )
         logger.info("Simulation successfully saved to %s.", simulation_output_folder)
         pbar.update(1)

@@ -28,7 +28,7 @@ import sys
 from argparse import Namespace
 from typing import Any, Dict, List, Optional, Tuple
 
-import pandas as pd  # type: ignore  # pylint: disable=import-error
+import pandas as pd  # pylint: disable=import-error
 
 from tqdm import tqdm
 
@@ -791,7 +791,7 @@ def main(args: List[Any]) -> None:
     # Assemble a means of storing the relevant loads.
     total_loads: Dict[ResourceType, Optional[pd.DataFrame]] = {
         ResourceType.CLEAN_WATER: total_clean_water_load,
-        ResourceType.ELECTRIC: 0.001 * total_electric_load,  # type: ignore
+        ResourceType.ELECTRIC: 0.001 * total_electric_load,
         ResourceType.HOT_CLEAN_WATER: total_hot_water_load,
     }
 
@@ -1065,7 +1065,7 @@ def main(args: List[Any]) -> None:
             system_details.file_information = input_file_info
 
             # Compute the key results.
-            key_results = analysis.get_key_results(  # type: ignore
+            key_results = analysis.get_key_results(
                 grid_times[scenario.grid_type],
                 simulation.end_year - simulation.start_year,
                 system_performance_outputs,
@@ -1075,7 +1075,7 @@ def main(args: List[Any]) -> None:
 
             if parsed_args.analyse:
                 # Generate and save the various plots.
-                analysis.plot_outputs(  # type: ignore
+                analysis.plot_outputs(
                     grid_times[scenario.grid_type],
                     grid_profile,
                     initial_clean_water_hourly_loads,

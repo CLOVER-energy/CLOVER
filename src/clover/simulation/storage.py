@@ -260,7 +260,7 @@ class Battery(_BaseStorage, label="battery", resource_type=ResourceType.ELECTRIC
 
         return (
             "Battery("
-            + f"{self.label} storing {self.resource_type.value} loads, "  # type: ignore
+            + f"{self.label} storing {self.resource_type.value} loads, "
             + f"name={self.name}, "
             + f"cycle_lifetime={self.cycle_lifetime} cycles, "
             + f"leakage={self.leakage}, "
@@ -377,7 +377,7 @@ class CleanWaterTank(
 
         return (
             "CleanWaterTank("
-            + f"{self.label} storing {self.resource_type.value} loads, "  # type: ignore
+            + f"{self.label} storing {self.resource_type.value} loads, "
             + f"name={self.name}, "
             + f"capacity={self.mass} litres, "
             + f"cycle_lifetime={self.cycle_lifetime} cycles, "
@@ -521,7 +521,7 @@ class HotWaterTank(
 
         return (
             "HotWaterTank("
-            + f"{self.label} storing {self.resource_type.value} loads, "  # type: ignore
+            + f"{self.label} storing {self.resource_type.value} loads, "
             + f"name={self.name}, "
             + f"area={self.area} m^2, "
             + f"capacity={self.mass} litres, "

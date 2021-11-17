@@ -26,9 +26,9 @@ from logging import Logger
 from typing import Any, Dict, Optional, Set, Tuple
 
 import numpy as np  # pylint: disable=import-error
-import pandas as pd  # type: ignore  # pylint: disable=import-error
+import pandas as pd  # pylint: disable=import-error
 
-from tqdm import tqdm  # type: ignore  # pylint: disable=import-error
+from tqdm import tqdm  # pylint: disable=import-error
 
 from ..__utils__ import (
     BColours,
@@ -332,16 +332,16 @@ def _yearly_load_statistics(total_load: pd.DataFrame, years: int) -> pd.DataFram
 
     total_load_yearly = pd.DataFrame(
         np.reshape(
-            pd.DataFrame(total_load.sum(axis=1)).values,  # type: ignore
+            pd.DataFrame(total_load.sum(axis=1)).values,
             (years, 365 * 24),
         )
     )
 
-    yearly_maximum = pd.DataFrame(total_load_yearly.max(axis=1))  # type: ignore
+    yearly_maximum: pd.DataFrame = pd.DataFrame(total_load_yearly.max(axis=1))  # type: ignore
     yearly_maximum.columns = pd.Index([MAXIMUM])
-    yearly_mean = pd.DataFrame(total_load_yearly.mean(axis=1).round(0))  # type: ignore
+    yearly_mean: pd.DataFrame = pd.DataFrame(total_load_yearly.mean(axis=1).round(0))  # type: ignore
     yearly_mean.columns = pd.Index([MEAN])
-    yearly_median = pd.DataFrame(np.percentile(total_load_yearly, 50, axis=1))
+    yearly_median: pd.DataFrame = pd.DataFrame(np.percentile(total_load_yearly, 50, axis=1))  # type: ignore
     yearly_median.columns = pd.Index([MEDIAN])
     yearly_load_statistics = pd.concat(
         [yearly_maximum, yearly_mean, yearly_median], axis=1
@@ -396,7 +396,7 @@ def _number_of_devices_daily(
                 location.max_years,
             )
             daily_ownership = pd.DataFrame(
-                np.floor(cum_sales.mul(population_growth_rate))  # type: ignore
+                np.floor(cum_sales.mul(population_growth_rate))
             )
 
         else:
@@ -405,7 +405,7 @@ def _number_of_devices_daily(
                 device.name,
             )
             daily_ownership = pd.DataFrame(
-                np.floor(population_growth_rate * device.initial_ownership)  # type: ignore
+                np.floor(population_growth_rate * device.initial_ownership)
             )
         logger.info(
             "Ownership for device %s calculated.",
@@ -516,7 +516,9 @@ def compute_total_hourly_load(
 
     logger.info("Saving yearly load statistics.")
     with open(yearly_load_statistics_filepath, "w") as f:
-        yearly_load_statistics.to_csv(f, index=False, line_terminator="")  # type: ignore
+        yearly_load_statistics.to_csv(
+            f, index=False, line_terminator=""  # type: ignore
+        )
     logger.info("Yearly load statistics successfully saved.")
 
     return total_load, yearly_load_statistics
@@ -603,9 +605,7 @@ def process_device_hourly_power(
                     f"{BColours.fail}Internal error processing device "
                     + f"'{device.name}', electric power unexpectedly `None`.{BColours.endc}",
                 )
-            device_load = hourly_device_usage.mul(  # type: ignore
-                float(device.electric_power)
-            )
+            device_load = hourly_device_usage * device.electric_power
             logger.info(
                 "Electric hourly power usage for %s successfully computed.", device.name
             )
@@ -617,9 +617,7 @@ def process_device_hourly_power(
                     + f"{BColours.endc}",
                 )
 
-            device_load = hourly_device_usage.mul(  # type: ignore
-                float(device.clean_water_usage)
-            )
+            device_load = hourly_device_usage * device.clean_water_usage
             logger.info("Water usage for %s successfully computed.", device.name)
         elif resource_type == ResourceType.HOT_CLEAN_WATER:
             if device.hot_water_usage is None:
@@ -629,9 +627,7 @@ def process_device_hourly_power(
                     + f"{BColours.endc}",
                 )
 
-            device_load = hourly_device_usage.mul(  # type: ignore
-                float(device.hot_water_usage)
-            )
+            device_load = hourly_device_usage * device.hot_water_usage
         else:
             logger.error(
                 "%sUnsuported load type used: %s%s",
@@ -659,7 +655,9 @@ def process_device_hourly_power(
             hourly_usage_filepath,
             "w",
         ) as f:
-            device_load.to_csv(f, header=None, index=False, line_terminator="")  # type: ignore
+            device_load.to_csv(
+                f, header=None, index=False, line_terminator=""  # type: ignore
+            )
 
         logger.info(
             "Hourly power proifle for %s successfully saved to %s.",
@@ -738,9 +736,9 @@ def process_device_hourly_usage(
             hourly_device_usage = pd.concat(
                 [
                     pd.DataFrame(
-                        np.random.binomial(  # type: ignore
-                            float(daily_device_ownership.iloc[day]),  # type: ignore
-                            daily_device_utilisation.iloc[day],
+                        np.random.binomial(
+                            float(daily_device_ownership.iloc[day, 0]),
+                            daily_device_utilisation.iloc[day, :],
                         )
                     )
                     for day in range(0, 365 * years)
@@ -766,7 +764,9 @@ def process_device_hourly_usage(
             filepath,
             "w",
         ) as f:
-            hourly_device_usage.to_csv(f, header=None, index=False, line_terminator="")  # type: ignore
+            hourly_device_usage.to_csv(
+                f, header=None, index=False, line_terminator=""  # type: ignore
+            )
 
         logger.info(
             "Hourly usage proifle for %s successfully saved to %s.",
@@ -846,7 +846,9 @@ def process_device_ownership(
             daily_ownership_filepath,
             "w",
         ) as f:
-            daily_ownership.to_csv(f, header=None, index=False, line_terminator="")  # type: ignore
+            daily_ownership.to_csv(
+                f, header=None, index=False, line_terminator=""  # type: ignore
+            )
         logger.info(
             "Monthly deivice-ownership profile for %s successfully saved to %s.",
             device.name,
@@ -920,7 +922,9 @@ def process_device_utilisation(
 
         # Save this to the output file.
         with open(filepath, "w") as f:
-            interpolated_daily_profile.to_csv(f, header=None, index=False, line_terminator="")  # type: ignore
+            interpolated_daily_profile.to_csv(
+                f, header=None, index=False, line_terminator=""  # type: ignore
+            )
         logger.info(
             "Daily deivice-utilisation profile for %s successfully saved to %s.",
             device.name,
@@ -1094,7 +1098,7 @@ def process_load_profiles(
 
     return (
         {
-            device_name: load[0:CUT_OFF_TIME]  # type: ignore
+            device_name: load.iloc[0:CUT_OFF_TIME, :]
             for device_name, load in device_hourly_loads.items()
         },
         total_load,

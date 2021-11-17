@@ -28,6 +28,7 @@ from typing import Any, Dict, List, Optional, Set, Union
 
 from ..__utils__ import (
     EXCHANGER,
+    BColours,
     InputFileError,
     NAME,
     RESOURCE_NAME_TO_RESOURCE_TYPE_MAPPING,
@@ -157,7 +158,7 @@ class Minigrid:
         pv_panel: PVPanel,
         pvt_panel: Optional[HybridPVTPanel],
         battery_inputs: Optional[List[Dict[Union[int, str], Any]]] = None,
-        exchanger_inputs: Optional[List[Dict[Union[int, str], Any]]] = None,
+        exchanger_inputs: Optional[List[Dict[str, Any]]] = None,
         tank_inputs: Optional[List[Dict[Union[int, str], Any]]] = None,
         water_pump: Optional[Transmitter] = None,
     ) -> Any:
@@ -246,6 +247,43 @@ class Minigrid:
         else:
             tanks = {}
 
+        # Determine the various tanks being considered.
+        if "buffer_tank" in minigrid_inputs:
+            buffer_tank: Optional[Union[CleanWaterTank, HotWaterTank]] = tanks[
+                minigrid_inputs["buffer_tank"]
+            ]
+            if not isinstance(buffer_tank, HotWaterTank):
+                raise InputFileError(
+                    "energy system inputs",
+                    "The buffer tank selected must be a hot-water tank.",
+                )
+        else:
+            buffer_tank = None
+
+        if "clean_water_tank" in minigrid_inputs:
+            clean_water_tank: Optional[Union[CleanWaterTank, HotWaterTank]] = tanks[
+                minigrid_inputs["clean_water_tank"]
+            ]
+            if not isinstance(clean_water_tank, HotWaterTank):
+                raise InputFileError(
+                    "energy system inputs",
+                    "The buffer tank selected must be a hot-water tank.",
+                )
+        else:
+            clean_water_tank = None
+
+        if "hot_water_tank" in minigrid_inputs:
+            hot_water_tank: Optional[Union[CleanWaterTank, HotWaterTank]] = tanks[
+                minigrid_inputs["hot_water_tank"]
+            ]
+            if not isinstance(hot_water_tank, HotWaterTank):
+                raise InputFileError(
+                    "energy system inputs",
+                    "The buffer tank selected must be a hot-water tank.",
+                )
+        else:
+            hot_water_tank = None
+
         # Return the minigrid instance.
         return cls(
             minigrid_inputs[CONVERSION][AC_TO_AC]
@@ -260,12 +298,8 @@ class Minigrid:
             batteries[minigrid_inputs["battery"]]
             if "battery" in minigrid_inputs
             else None,
-            tanks[minigrid_inputs["buffer_tank"]]
-            if "buffer_tank" in minigrid_inputs
-            else None,
-            tanks[minigrid_inputs["clean_water_tank"]]
-            if "clean_water_tank" in minigrid_inputs
-            else None,
+            buffer_tank,
+            clean_water_tank,
             minigrid_inputs[CONVERSION][DC_TO_AC]
             if DC_TO_AC in minigrid_inputs[CONVERSION]
             else None,
@@ -281,9 +315,7 @@ class Minigrid:
             exchangers[minigrid_inputs[EXCHANGER]]
             if EXCHANGER in minigrid_inputs
             else None,
-            tanks[minigrid_inputs["hot_water_tank"]]
-            if "hot_water_tank" in minigrid_inputs
-            else None,
+            hot_water_tank,
             pv_panel,
             pvt_panel,
             water_pump,

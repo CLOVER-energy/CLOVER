@@ -20,7 +20,7 @@ from logging import Logger
 from typing import Any, Dict, List, Optional, Set, Tuple, Union
 
 import json
-import pandas as pd  # type: ignore  # pylint: disable=import-error
+import pandas as pd  # pylint: disable=import-error
 
 from sklearn.linear_model._coordinate_descent import Lasso
 
@@ -332,6 +332,18 @@ def _determine_available_convertors(
                 ) from None
 
         if scenario.hot_water_scenario.auxiliary_heater == AuxiliaryHeaterType.ELECTRIC:
+            if minigrid.electric_water_heater is None:
+                logger.error(
+                    "%sAuxiliary heating method of electric heating specified despite "
+                    "no electric water heater being selected in the energy-system "
+                    "inputs.%s",
+                    BColours.fail,
+                    BColours.endc,
+                )
+                raise InputFileError(
+                    "energy system inputs OR hot-water scenario",
+                    "Mismatch between electric water heating scenario.",
+                )
             available_convertors.append(convertors[minigrid.electric_water_heater.name])
 
     return available_convertors
@@ -1016,7 +1028,7 @@ def _parse_pvt_reduced_models(
 def _parse_scenario_inputs(
     inputs_directory_relative_path: str,
     logger: Logger,
-) -> Tuple[str, Scenario, str]:
+) -> Tuple[str, str, Scenario, str]:
     """
     Parses the scenario input files.
 
@@ -1244,10 +1256,10 @@ def _parse_solar_inputs(
 
     # Determine the PV panel being modelled.
     try:
-        pv_panel: solar.PVPanel = [
-            panel  # type: ignore
+        pv_panel: Union[solar.PVPanel, solar.SolarPanel] = [
+            panel
             for panel in solar_panels
-            if panel.panel_type == solar.SolarPanelType.PV  # type: ignore
+            if panel.panel_type == solar.SolarPanelType.PV
             and panel.name == energy_system_inputs["pv_panel"]
         ][0]
     except IndexError:
@@ -1298,10 +1310,10 @@ def _parse_solar_inputs(
     # Determine the PVT panel being modelled, if appropriate.
     if "pvt_panel" in energy_system_inputs:
         try:
-            pvt_panel: Optional[solar.HybridPVTPanel] = [
-                panel  # type: ignore
+            pvt_panel: Optional[Union[solar.HybridPVTPanel, solar.SolarPanel]] = [
+                panel
                 for panel in solar_panels
-                if panel.panel_type == solar.SolarPanelType.PV_T  # type: ignore
+                if panel.panel_type == solar.SolarPanelType.PV_T
                 and panel.name == energy_system_inputs["pvt_panel"]
             ][0]
             logger.info("PV-T panel successfully determined.")
@@ -1315,6 +1327,15 @@ def _parse_solar_inputs(
             raise
         else:
             logger.info("PV-T panel successfully parsed: %s.", pvt_panel.name)
+
+        if not isinstance(pvt_panel, solar.HybridPVTPanel):
+            logger.error(
+                "%sThe PV-T panel selected %s is not a valid PV-T panel.%s",
+                BColours.fail,
+                energy_system_inputs["pv_panel"],
+                BColours.endc,
+            )
+
         try:
             pvt_panel_costs: Optional[Dict[str, float]] = [
                 panel_data[COSTS]
@@ -1683,7 +1704,7 @@ def _parse_minigrid_inputs(
         diesel_water_heater_costs,
         diesel_water_heater_emissions,
     ) = _parse_diesel_inputs(
-        energy_system_inputs,  # type: ignore
+        energy_system_inputs,
         inputs_directory_relative_path,
         logger,
         scenario,
@@ -1709,7 +1730,7 @@ def _parse_minigrid_inputs(
         pvt_panel_emissions,
         solar_generation_inputs_filepath,
     ) = _parse_solar_inputs(
-        energy_system_inputs,  # type: ignore
+        energy_system_inputs,
         inputs_directory_relative_path,
         logger,
         scenario,
@@ -1722,7 +1743,7 @@ def _parse_minigrid_inputs(
         battery_inputs,
         battery_inputs_filepath,
     ) = _parse_battery_inputs(
-        energy_system_inputs,  # type: ignore
+        energy_system_inputs,
         inputs_directory_relative_path,
         logger,
         scenario,
@@ -1770,7 +1791,7 @@ def _parse_minigrid_inputs(
             tank_inputs,
             tank_inputs_filepath,
         ) = _parse_tank_inputs(
-            energy_system_inputs,  # type: ignore
+            energy_system_inputs,
             inputs_directory_relative_path,
             logger,
             scenario,
@@ -1840,12 +1861,12 @@ def _parse_minigrid_inputs(
         diesel_generator,
         diesel_water_heater,
         electric_water_heater,
-        energy_system_inputs,  # type: ignore
+        energy_system_inputs,
         pv_panel,
         pvt_panel,
-        battery_inputs,  # type: ignore
-        exchanger_inputs,  # type: ignore
-        tank_inputs,  # type: ignore
+        battery_inputs,
+        exchanger_inputs,
+        tank_inputs,
         water_pump,
     )
 
@@ -2161,7 +2182,7 @@ def parse_input_files(
     generation_inputs_filepath = os.path.join(
         inputs_directory_relative_path, GENERATION_INPUTS_FILE
     )
-    generation_inputs: Dict[str, Union[int, str]] = read_yaml(  # type: ignore
+    generation_inputs: Dict[str, Union[int, str]] = read_yaml(
         generation_inputs_filepath, logger
     )
     logger.info("Generation inputs successfully parsed.")
@@ -2307,7 +2328,7 @@ def parse_input_files(
     finance_inputs_filepath = os.path.join(
         inputs_directory_relative_path, FINANCE_INPUTS_FILE
     )
-    finance_inputs: Dict[str, Union[float, Dict[str, float]]] = read_yaml(  # type: ignore
+    finance_inputs: Dict[str, Union[float, Dict[str, float]]] = read_yaml(
         finance_inputs_filepath, logger
     )
     if not isinstance(finance_inputs, dict):
@@ -2317,7 +2338,7 @@ def parse_input_files(
     logger.info("Finance inputs successfully parsed.")
 
     ghg_inputs_filepath = os.path.join(inputs_directory_relative_path, GHG_INPUTS_FILE)
-    ghg_data: Dict[str, Any] = read_yaml(ghg_inputs_filepath, logger)  # type: ignore
+    ghg_data: Dict[str, Any] = read_yaml(ghg_inputs_filepath, logger)
     logger.info("GHG inputs successfully parsed.")
 
     # Update the finance and GHG inputs accordingly with the PV data.

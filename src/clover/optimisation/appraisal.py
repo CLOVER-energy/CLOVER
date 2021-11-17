@@ -22,8 +22,8 @@ simulations.
 from logging import Logger
 from typing import Any, Dict, Optional
 
-import numpy as np  # type: ignore  # pylint: disable=import-error
-import pandas as pd  # type: ignore  # pylint: disable=import-error
+import numpy as np  # pylint: disable=import-error
+import pandas as pd  # pylint: disable=import-error
 
 from ..impact import finance, ghgs
 
@@ -56,7 +56,7 @@ def _simulation_environmental_appraisal(
     logger: Logger,
     pv_addition: float,
     pvt_addition: float,
-    simulation_results,
+    simulation_results: pd.DataFrame,
     start_year: int,
     storage_addition: float,
     system_details: SystemDetails,
@@ -237,7 +237,7 @@ def _simulation_financial_appraisal(
     logger: Logger,
     pv_addition: float,
     pvt_addition: float,
-    simulation_results,
+    simulation_results: pd.DataFrame,
     storage_addition: float,
     system_details: SystemDetails,
     yearly_load_statistics: pd.DataFrame,
@@ -428,31 +428,19 @@ def _simulation_technical_appraisal(
     )
 
     # Total energy used
-    total_energy = np.sum(simulation_results["Total energy used (kWh)"])  # type: ignore
-    total_load_energy = np.sum(simulation_results["Load energy (kWh)"])  # type: ignore
-    total_renewables_used = np.sum(
-        simulation_results["Renewables energy used (kWh)"]  # type: ignore
-    )
-    total_pv_energy = np.sum(
-        simulation_results["PV energy supplied (kWh)"]  # type: ignore
-    )
+    total_energy = np.sum(simulation_results["Total energy used (kWh)"])
+    total_load_energy = np.sum(simulation_results["Load energy (kWh)"])
+    total_renewables_used = np.sum(simulation_results["Renewables energy used (kWh)"])
+    total_pv_energy = np.sum(simulation_results["PV energy supplied (kWh)"])
     total_pvt_energy = (
-        np.sum(
-            simulation_results["PV-T electric energy supplied (kWh)"]  # type: ignore
-        )
+        np.sum(simulation_results["PV-T electric energy supplied (kWh)"])
         if "PV-T electric energy supplied (kWh)" in simulation_results
         else None
     )
-    total_storage_used = np.sum(
-        simulation_results["Storage energy supplied (kWh)"]  # type: ignore
-    )
-    total_grid_used = np.sum(simulation_results["Grid energy (kWh)"])  # type: ignore
-    total_diesel_used = np.sum(
-        simulation_results["Diesel energy (kWh)"]  # type: ignore
-    )
-    total_unmet_energy = np.sum(
-        simulation_results["Unmet energy (kWh)"]  # type: ignore
-    )
+    total_storage_used = np.sum(simulation_results["Storage energy supplied (kWh)"])
+    total_grid_used = np.sum(simulation_results["Grid energy (kWh)"])
+    total_diesel_used = np.sum(simulation_results["Diesel energy (kWh)"])
+    total_unmet_energy = np.sum(simulation_results["Unmet energy (kWh)"])
     renewables_fraction = (total_renewables_used + total_storage_used) / total_energy
     unmet_fraction = total_unmet_energy / total_load_energy
 
@@ -470,20 +458,16 @@ def _simulation_technical_appraisal(
 
     # Calculate proportion of kerosene displaced (defaults to zero if kerosene is not
     # originally used
-    if np.sum(simulation_results["Kerosene lamps"]) > 0.0:  # type: ignore
-        kerosene_displacement = (
-            np.sum(simulation_results["Kerosene mitigation"])  # type: ignore
-        ) / (
-            np.sum(simulation_results["Kerosene mitigation"])  # type: ignore
-            + np.sum(simulation_results["Kerosene lamps"])  # type: ignore
+    if np.sum(simulation_results["Kerosene lamps"]) > 0.0:
+        kerosene_displacement = (np.sum(simulation_results["Kerosene mitigation"])) / (
+            np.sum(simulation_results["Kerosene mitigation"])
+            + np.sum(simulation_results["Kerosene lamps"])
         )
     else:
         kerosene_displacement = 0.0
 
     # Calculate diesel fuel usage
-    total_diesel_fuel = np.sum(
-        simulation_results["Diesel fuel usage (l)"]  # type: ignore
-    )
+    total_diesel_fuel = np.sum(simulation_results["Diesel fuel usage (l)"])
 
     # Return outputs
     return TechnicalAppraisal(
@@ -558,14 +542,14 @@ def appraise_system(
         )
 
     # Compute the additions made to the system.
-    buffer_tank_addition: float = (
+    buffer_tank_addition: int = (
         system_details.initial_num_buffer_tanks
         - previous_system.system_details.final_num_buffer_tanks
         if system_details.initial_num_buffer_tanks is not None
         and previous_system.system_details.final_num_buffer_tanks is not None
         else 0
     )
-    clean_water_tank_addition: float = (
+    clean_water_tank_addition: int = (
         system_details.initial_num_clean_water_tanks
         - previous_system.system_details.final_num_clean_water_tanks
         if system_details.initial_num_clean_water_tanks is not None
@@ -575,14 +559,14 @@ def appraise_system(
     diesel_addition = (
         system_details.diesel_capacity - previous_system.system_details.diesel_capacity
     )
-    heat_exchanger_addition: float = (
+    heat_exchanger_addition: int = (
         system_details.initial_num_buffer_tanks
         - previous_system.system_details.final_num_buffer_tanks
         if system_details.initial_num_buffer_tanks is not None
         and previous_system.system_details.final_num_buffer_tanks is not None
         else 0
     )
-    hot_water_tank_addition: float = (
+    hot_water_tank_addition: int = (
         system_details.initial_num_hot_water_tanks
         - previous_system.system_details.final_num_hot_water_tanks
         if system_details.initial_num_hot_water_tanks is not None
