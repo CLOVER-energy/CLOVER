@@ -955,7 +955,7 @@ class Location:
     time_difference: float
 
     @classmethod
-    def from_dict(cls, location_inputs: Dict[Union[int, str], Any]) -> Any:
+    def from_dict(cls, location_inputs: Dict[str, Any]) -> Any:
         """
         Creates a :class:`Location` instance based on the inputs provided.
 
@@ -1285,7 +1285,7 @@ class OptimisationParameters:
     storage_size_step: float
 
     @classmethod
-    def from_dict(cls, optimisation_inputs: Dict[Union[int, str], Any]) -> Any:
+    def from_dict(cls, optimisation_inputs: Dict[str, Any]) -> Any:
         """
         Returns a :class:`OptimisationParameters` instance based on the input info.
 
@@ -1418,7 +1418,7 @@ class PVTScenario:
 
 def read_yaml(
     filepath: str, logger: logging.Logger
-) -> Union[Dict[Union[int, str], Any], List[Dict[Union[int, str], Any]]]:
+) -> Union[Dict[str, Any], List[Dict[str, Any]]]:
     """
     Reads a YAML file and returns the contents.
 
@@ -1428,9 +1428,9 @@ def read_yaml(
     # Process the new-location data.
     try:
         with open(filepath, "r") as filedata:
-            file_contents: Union[
-                Dict[Union[int, str], Any], List[Dict[Union[int, str], Any]]
-            ] = yaml.safe_load(filedata)
+            file_contents: Union[Dict[str, Any], List[Dict[str, Any]]] = yaml.safe_load(
+                filedata
+            )
     except FileNotFoundError:
         logger.error(
             "The file specified, %s, could not be found. "
@@ -1489,7 +1489,7 @@ class DesalinationScenario:
 
     @classmethod
     def from_dict(
-        cls, desalination_inputs: Dict[Union[int, str], Any], logger: logging.Logger
+        cls, desalination_inputs: Dict[str, Any], logger: logging.Logger
     ) -> Any:
         """
         Returns a :class:`DesalinationScenario` instance based on the input data.
@@ -1639,9 +1639,7 @@ class HotWaterScenario:
     pvt_scenario: PVTScenario
 
     @classmethod
-    def from_dict(
-        cls, hot_water_inputs: Dict[Union[int, str], Any], logger: logging.Logger
-    ) -> Any:
+    def from_dict(cls, hot_water_inputs: Dict[str, Any], logger: logging.Logger) -> Any:
         """
         Returns a :class:`DesalinationScenario` instance based on the input data.
 
@@ -1864,7 +1862,7 @@ class Scenario:
         desalination_scenario: Optional[DesalinationScenario],
         hot_water_scenario: Optional[HotWaterScenario],
         logger: logging.Logger,
-        scenario_inputs: Dict[Union[int, str], Any],
+        scenario_inputs: Dict[str, Any],
     ) -> Any:
         """
         Returns a :class:`Scenario` instance based on the input data.
@@ -1956,7 +1954,7 @@ class Simulation:
         )
 
     @classmethod
-    def from_dict(cls, simulation_inputs: Dict[Union[int, str], Any]) -> Any:
+    def from_dict(cls, simulation_inputs: Dict[str, Any]) -> Any:
         """
         Returns a :class:`Simulation` instance based on the input data.
 

@@ -154,12 +154,12 @@ class Minigrid:
         diesel_generator: DieselGenerator,
         diesel_water_heater: Optional[DieselWaterHeater],
         electric_water_heater: Optional[Convertor],
-        minigrid_inputs: Dict[Union[int, str], Any],
+        minigrid_inputs: Dict[str, Any],
         pv_panel: PVPanel,
         pvt_panel: Optional[HybridPVTPanel],
-        battery_inputs: Optional[List[Dict[Union[int, str], Any]]] = None,
+        battery_inputs: Optional[List[Dict[str, Any]]] = None,
         exchanger_inputs: Optional[List[Dict[str, Any]]] = None,
-        tank_inputs: Optional[List[Dict[Union[int, str], Any]]] = None,
+        tank_inputs: Optional[List[Dict[str, Any]]] = None,
         water_pump: Optional[Transmitter] = None,
     ) -> Any:
         """

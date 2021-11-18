@@ -280,7 +280,7 @@ class MultiInputConvertor(Convertor):
         )
 
     @classmethod
-    def from_dict(cls, input_data: Dict[Union[int, str], Any], logger: Logger) -> Any:
+    def from_dict(cls, input_data: Dict[str, Any], logger: Logger) -> Any:
         """
         Generates a :class:`MultiInputConvertor` instance based on the input data.
 
@@ -465,7 +465,7 @@ class ThermalDesalinationPlant(MultiInputConvertor):
         self.minimum_output_capacity: float = minimum_output_capacity
 
     @classmethod
-    def from_dict(cls, input_data: Dict[Union[int, str], Any], logger: Logger) -> Any:
+    def from_dict(cls, input_data: Dict[str, Any], logger: Logger) -> Any:
         """
         Generates a :class:`ThermalDesalinationPlant` instance based on the input data.
 
@@ -623,7 +623,7 @@ class WaterSource(Convertor):
         )
 
     @classmethod
-    def from_dict(cls, input_data: Dict[Union[int, str], Any], logger: Logger) -> Any:
+    def from_dict(cls, input_data: Dict[str, Any], logger: Logger) -> Any:
         """
         Generates a :class:`Convertor` instance based on the input data provided.
 

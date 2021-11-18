@@ -144,7 +144,7 @@ class _BaseStorage:
         )
 
     @classmethod
-    def from_dict(cls, storage_data: Dict[Union[int, str], Any]) -> Any:
+    def from_dict(cls, storage_data: Dict[str, Any]) -> Any:
         """
         Create a :class:`_BaseStorage` instance based on the file data passed in.
 
@@ -293,7 +293,7 @@ class Battery(_BaseStorage, label="battery", resource_type=ResourceType.ELECTRIC
         )
 
     @classmethod
-    def from_dict(cls, storage_data: Dict[Union[int, str], Any]) -> Any:
+    def from_dict(cls, storage_data: Dict[str, Any]) -> Any:
         """
         Create a :class:`Battery` instance based on the file data passed in.
 
@@ -405,7 +405,7 @@ class CleanWaterTank(
         )
 
     @classmethod
-    def from_dict(cls, storage_data: Dict[Union[int, str], Any]) -> Any:
+    def from_dict(cls, storage_data: Dict[str, Any]) -> Any:
         """
         Create a :class:`CleanWaterTank` instance based on the file data passed in.
 
@@ -553,7 +553,7 @@ class HotWaterTank(
         )
 
     @classmethod
-    def from_dict(cls, storage_data: Dict[Union[int, str], Any]) -> Any:
+    def from_dict(cls, storage_data: Dict[str, Any]) -> Any:
         """
         Create a :class:`HotWaterTank` instance based on the file data passed in.
 
