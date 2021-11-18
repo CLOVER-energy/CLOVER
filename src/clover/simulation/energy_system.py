@@ -38,6 +38,7 @@ from ..__utils__ import (
     DieselMode,
     DemandType,
     DistributionNetwork,
+    HTFMode,
     InputFileError,
     InternalError,
     RenewableEnergySource,
@@ -50,7 +51,7 @@ from ..__utils__ import (
 )
 from ..conversion.conversion import Convertor, ThermalDesalinationPlant, WaterSource
 from ..generation.solar import SolarPanelType, solar_degradation
-from ..load.load import population_hourly
+from ..load.load import HOT_WATER_USAGE, population_hourly
 from .__utils__ import Minigrid
 from .diesel import (
     DieselWaterHeater,
@@ -306,11 +307,12 @@ def _calculate_renewable_clean_water_profiles(
     wind_speed_data: Optional[pd.Series],
 ) -> Tuple[
     Optional[pd.DataFrame],
+    pd.DataFrame,
     List[Convertor],
     Optional[pd.DataFrame],
     pd.DataFrame,
     pd.DataFrame,
-    pd.DataFrame,
+    List[Convertor],
     pd.DataFrame,
 ]:
     """
@@ -341,6 +343,8 @@ def _calculate_renewable_clean_water_profiles(
     Outputs:
         - buffer_tank_temperature:
             The temperature of the buffer tank, measured in degrees Celcius.
+        - buffer_tank_volume_supplied:
+            The volume of buffer solution outputted by the HTF buffer tanks.
         - feedwater_sources:
             The :class:`Convertor` instances which are a source of feedwater to the PV-T
             system.
@@ -351,8 +355,9 @@ def _calculate_renewable_clean_water_profiles(
             The electric power produced by the PV-T, in kWh, per unit of PV-T installed.
         - renewable_clean_water_produced:
             The amount of clean water produced renewably, measured in litres.
-        - buffer_tank_volume_supplied:
-            The volume of buffer solution outputted by the HTF buffer tanks.
+        - required_feedwater_sources:
+            The `list` of feedwater sources required to supply the needs of the
+            desalination system.
         - thermal_desalination_electric_power_consumed:
             The electric power consumed in operating the thermal desalination plant,
             measured in kWh.
@@ -430,6 +435,30 @@ def _calculate_renewable_clean_water_profiles(
             ]
         )
 
+        if thermal_desalination_plant.htf_mode == HTFMode.CLOSED_HTF:
+            thermal_desalination_plant_input_type: ResourceType = (
+                ResourceType.UNCLEAN_WATER
+            )
+        if thermal_desalination_plant.htf_mode == HTFMode.FEEDWATER_HEATING:
+            thermal_desalination_plant_input_type = ResourceType.HOT_UNCLEAN_WATER
+        if thermal_desalination_plant.htf_mode == HTFMode.COLD_WATER_HEATING:
+            logger.error(
+                "%sCold-water heating thermal desalination plants are not supported.%s",
+                BColours.fail,
+                BColours.endc,
+            )
+            InputFileError(
+                "convertor inputs OR desalination scenario",
+                f"The htf mode '{HTFMode.COLD_WATER_HEATING.value}' is not currently "
+                "supported.",
+            )
+
+        thermal_desalination_plant_input_flow_rate = (
+            thermal_desalination_plant.input_resource_consumption[
+                thermal_desalination_plant_input_type
+            ]
+        )
+
         if (
             sum(
                 [
@@ -437,9 +466,7 @@ def _calculate_renewable_clean_water_profiles(
                     for feedwater_source in feedwater_sources
                 ]
             )
-            < thermal_desalination_plant.input_resource_consumption[
-                ResourceType.UNCLEAN_WATER
-            ]
+            < thermal_desalination_plant_input_flow_rate
         ):
             logger.error(
                 "%sThe feedwater sources are unable to supply enough throughput to "
@@ -463,7 +490,7 @@ def _calculate_renewable_clean_water_profiles(
         while (
             feedwater_capacity
             < thermal_desalination_plant.input_resource_consumption[
-                ResourceType.UNCLEAN_WATER
+                thermal_desalination_plant_input_type
             ]
         ):
             required_feedwater_sources.append(feedwater_sources.pop(0))
@@ -544,24 +571,26 @@ def _calculate_renewable_clean_water_profiles(
 
     else:
         buffer_tank_temperature = None
-        feedwater_sources = []
+        buffer_tank_volume_supplied = pd.DataFrame([0] * (end_hour - start_hour))
         clean_water_pvt_collector_output_temperature = None
         clean_water_pvt_electric_power_per_unit = pd.DataFrame(
             [0] * (end_hour - start_hour)
         )
+        feedwater_sources = []
         renewable_clean_water_produced = pd.DataFrame([0] * (end_hour - start_hour))
-        buffer_tank_volume_supplied = pd.DataFrame([0] * (end_hour - start_hour))
+        required_feedwater_sources = None
         thermal_desalination_electric_power_consumed = pd.DataFrame(
             [0] * (end_hour - start_hour)
         )
 
     return (
         buffer_tank_temperature,
+        buffer_tank_volume_supplied,
         feedwater_sources,
         clean_water_pvt_collector_output_temperature,
         clean_water_pvt_electric_power_per_unit,
         renewable_clean_water_produced,
-        buffer_tank_volume_supplied,
+        required_feedwater_sources,
         thermal_desalination_electric_power_consumed,
     )
 
@@ -1129,8 +1158,8 @@ def _get_electric_battery_storage_profile(
         - renewables_energy:
             Amount of energy (kWh) provided by renewables to the system.
         - renewables_energy_map:
-            A mapping between :class:`SolarPanelType` and the associated electrical
-            energy produced.
+            A mapping between :class:`RenewableEnergySource` and the associated
+            electrical energy produced.
         - renewables_energy_used_directly:
             Amount of energy (kWh) from renewables used directly to satisfy load (kWh).
 
@@ -1282,10 +1311,12 @@ def _get_electric_battery_storage_profile(
 
     # Combine energy from all renewables sources
     renewables_energy_map: Dict[SolarPanelType, pd.DataFrame] = {
-        SolarPanelType.PV: pv_energy,
-        SolarPanelType.PV_T: pvt_electric_energy,
-        # RenewableGenerationSource.WIND: wind_energy,
+        RenewableEnergySource.PV: pv_energy,
+        RenewableEnergySource.CLEAN_WATER_PV_T: clean_water_pvt_electric_generation,
+        RenewableEnergySource.HOT_WATER_PV_T: hot_water_pvt_electric_generation,
+        # RenewableGenerationSource.WIND: wind_energy, etc.
     }
+
     # Add more renewable sources here as required
     renewables_energy: pd.DataFrame = pd.DataFrame(sum(renewables_energy_map.values()))
 
@@ -1300,9 +1331,9 @@ def _get_electric_battery_storage_profile(
 
         # Then take energy from grid
         grid_energy = pd.DataFrame(
-            ((remaining_profile < 0) * remaining_profile).iloc[start_hour:end_hour, 0]
+            ((remaining_profile < 0) * remaining_profile).iloc[:, 0]
             * -1.0
-            * grid_profile.iloc[start_hour:end_hour]
+            * grid_profile.values
         )
         battery_storage_profile: pd.DataFrame = pd.DataFrame(
             remaining_profile.values + grid_energy.values
@@ -1328,11 +1359,14 @@ def _get_electric_battery_storage_profile(
     kerosene_usage.columns = pd.Index(["Kerosene lamps"])
     load_energy.columns = pd.Index(["Load energy (kWh)"])
     renewables_energy.columns = pd.Index(["Renewables energy supplied (kWh)"])
-    renewables_energy_map[SolarPanelType.PV].columns = pd.Index(
+    renewables_energy_map[RenewableEnergySource.PV].columns = pd.Index(
         ["PV energy supplied (kWh)"]
     )
-    renewables_energy_map[SolarPanelType.PV_T].columns = pd.Index(
-        ["PV-T electric energy supplied (kWh)"]
+    renewables_energy_map[RenewableEnergySource.CLEAN_WATER_PV_T].columns = pd.Index(
+        ["Clean-water PV-T electric energy supplied (kWh)"]
+    )
+    renewables_energy_map[RenewableEnergySource.HOT_WATER_PV_T].columns = pd.Index(
+        ["Hot-water PV-T electric energy supplied (kWh)"]
     )
     renewables_energy_used_directly.columns = pd.Index(["Renewables energy used (kWh)"])
 
@@ -1786,11 +1820,12 @@ def run_simulation(
     logger.info("Calculating clean-water PV-T performance profiles.")
     (
         buffer_tank_temperature,
+        buffer_tank_volume_supplied,
         feedwater_sources,
         clean_water_pvt_collector_output_temperature,
         clean_water_pvt_electric_power_per_unit,
         renewable_clean_water_produced,
-        buffer_tank_volume_supplied,
+        required_clean_water_feedwater_sources,
         thermal_desalination_electric_power_consumed,
     ) = _calculate_renewable_clean_water_profiles(
         convertors,
@@ -2443,7 +2478,7 @@ def run_simulation(
         else None,
         hot_water_pvt_size
         * float(
-            solar_degradation(minigrid.pvt_panel.lifetime, location.max_yeras).iloc[
+            solar_degradation(minigrid.pvt_panel.lifetime, location.max_years).iloc[
                 8760 * (simulation.end_year - simulation.start_year), 0
             ]
         )
@@ -2478,12 +2513,26 @@ def run_simulation(
         number_of_hot_water_tanks if scenario.hot_water_scenario is not None else None,
         pv_size,
         float(electric_storage_size * minigrid.battery.storage_unit),
+        [source.name for source in required_clean_water_feedwater_sources]
+        if required_clean_water_feedwater_sources is not None
+        else None,
         simulation.start_year,
     )
 
     # Separate out the various renewable inputs.
-    pv_energy = renewables_energy_map[SolarPanelType.PV].iloc[start_hour:end_hour]
-    pvt_energy = renewables_energy_map[SolarPanelType.PV_T].iloc[start_hour:end_hour]
+    pv_energy = renewables_energy_map[RenewableEnergySource.PV].iloc[
+        start_hour:end_hour
+    ]
+    clean_water_pvt_energy = renewables_energy_map[
+        RenewableEnergySource.CLEAN_WATER_PV_T
+    ].iloc[start_hour:end_hour]
+    hot_water_pvt_energy = renewables_energy_map[
+        RenewableEnergySource.HOT_WATER_PV_T
+    ].iloc[start_hour:end_hour]
+    total_pvt_energy = pd.DataFrame(
+        clean_water_pvt_energy.values + hot_water_pvt_energy.values
+    )
+    total_pvt_energy.columns = pd.Index(["Total PV-T electric energy supplied (kWh)"])
 
     # End simulation timer
     timer_end = datetime.datetime.now()
@@ -2512,6 +2561,11 @@ def run_simulation(
         kerosene_mitigation,
     ]
 
+    if (
+        scenario.desalination_scenario is not None
+        or scenario.hot_water_scenario is not None
+    ):
+        system_performance_outputs_list.append(total_pvt_energy)
     if scenario.desalination_scenario is not None:
         system_performance_outputs_list.extend(
             [
@@ -2526,7 +2580,7 @@ def run_simulation(
                 processed_total_clean_water_load,
                 clean_water_pvt_collector_output_temperature,
                 clean_water_pvt_electric_power_per_kwh,
-                pvt_energy,
+                clean_water_pvt_energy,
                 renewable_clean_water_produced,
                 renewable_clean_water_used_directly,
                 storage_water_supplied_frame,
@@ -2546,6 +2600,7 @@ def run_simulation(
                 hot_water_pvt_collector_output_temperature,
                 hot_water_pvt_electric_power_per_kwh,
                 hot_water_pvt_electric_power_per_unit,
+                hot_water_pvt_energy,
                 hot_water_tank_temperature,
                 hot_water_tank_volume_supplied,
                 processed_total_hot_water_load,

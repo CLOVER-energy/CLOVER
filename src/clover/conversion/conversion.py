@@ -19,7 +19,7 @@ another.
 """
 
 from logging import Logger
-from typing import Any, Dict, List, Union
+from typing import Any, Dict, List, Optional
 
 from ..__utils__ import (
     BColours,
@@ -43,21 +43,29 @@ __all__ = (
 #   Keyword used for parsing the heat source of thermal desalination plants.
 HEAT_SOURCE: str = "heat_source"
 
+# Maximum feedwater input temperature:
+#   Keyword used for parsing maximum feedwater temperature information.
+MAXIMUM_FEEDWATER_TEMPERATURE: str = "max_feedwater_temperature"
+
+# Maximum htf input temperature:
+#   Keyword used for parsing maximum htf temperature information.
+MAXIMUM_HTF_TEMPERATURE: str = "max_htf_temperature"
+
 # Maximum output:
 #   Keyword used for parsing maximum output information.
 MAXIMUM_OUTPUT: str = "maximum_output"
 
-# Maximum water input temperature:
-#   Keyword used for parsing maximum output information.
-MAXIMUM_HTF_TEMPERATURE: str = "max_htf_temperature"
-
-# Minimum output:
-#   Keyword used for parsing maximum output information.
-MINIMUM_OUTPUT: str = "minimum_output"
+# Maximum feedwater input temperature:
+#   Keyword used for parsing maximum feedwater temperature information.
+MINIMUM_FEEDWATER_TEMPERATURE: str = "min_feedwater_temperature"
 
 # Minimum water input temperature:
-#   Keyword used for parsing maximum output information.
+#   Keyword used for parsing minimum htf temperature information.
 MINIMUM_HTF_TEMPERATURE: str = "min_htf_temperature"
+
+# Minimum output:
+#   Keyword used for parsing minimum output information.
+MINIMUM_OUTPUT: str = "minimum_output"
 
 # Output:
 #   Keyword used for parsing output information.
@@ -66,6 +74,57 @@ OUTPUT: str = "output"
 # Waste products:
 #   Keyword used for parsing waste-product information.
 WASTE_PRODUCTS: str = "waste_products"
+
+
+def _parse_waste_production(
+    logger: Logger, name: str, waste_product_inputs: Dict[str, float]
+) -> Dict[WasteProduct, float]:
+    """
+    Parses waste-product information.
+
+    Inputs:
+        - logger:
+            The :class:`logging.Logger` to use for the run.
+        - name:
+            The name of the :class:`Convertor` being parsed.
+        - waste_product_inputs:
+            The waste-product input information for the :class:`Convertor` being parsed.
+
+    Outputs:
+        - A mapping between the :class:`WasteProduct` and its associated output
+        produced.
+
+    """
+
+    waste_production: Dict[WasteProduct, float] = {}
+
+    for waste_product, amount_produced in waste_product_inputs.items():
+        try:
+            waste_production[WasteProduct(waste_product)] = amount_produced
+        except ValueError:
+            logger.error(
+                "%sInvalid waste product specified: '%s'. Valid values are %s.%s",
+                BColours.fail,
+                waste_product,
+                ", ".join(e.value for e in WasteProduct),
+                BColours.endc,
+            )
+
+        # Type check the value generated.
+        if not isinstance(waste_production[WasteProduct(waste_product)], (int, float)):
+            logger.error(
+                "%sInvalid value for waste-product '%s' for plant '%s': "
+                "value must be of type float.%s",
+                BColours.fail,
+                waste_product,
+                BColours.endc,
+            )
+            raise InputFileError(
+                "conversion inputs",
+                f"Thermal desalination plant {name} has invalid " "waste-product type.",
+            )
+
+    return waste_production
 
 
 class Convertor:
@@ -357,31 +416,9 @@ class MultiInputConvertor(Convertor):
         waste_production: Dict[WasteProduct, float] = {}
 
         if WASTE_PRODUCTS in input_data:
-            for waste_product, amount_produced in input_data[WASTE_PRODUCTS].values():
-                try:
-                    waste_production[WasteProduct(waste_product)] = amount_produced
-                except ValueError:
-                    logger.error(
-                        "%sInvalid waste product specified: '%s'. Valid values are %s.%s",
-                        BColours.fail,
-                        waste_product,
-                        ", ".join(e.value for e in WasteProduct),
-                        BColours.endc,
-                    )
-
-                # Type check the value generated.
-                if not isinstance(waste_product[WasteProduct(waste_product)], float):
-                    logger.error(
-                        "%sInvalid value for waste-product '%s' for convertor '%s': "
-                        "value must be of type float.%s",
-                        BColours.fail,
-                        waste_product,
-                        BColours.endc,
-                    )
-                    raise InputFileError(
-                        "conversion inputs",
-                        f"Convertor {input_data[NAME]} has invalid waste-product type.",
-                    )
+            waste_production = _parse_waste_production(
+                logger, input_data[NAME], input_data[WASTE_PRODUCTS]
+            )
 
         return cls(
             input_resource_consumption,
@@ -399,8 +436,16 @@ class ThermalDesalinationPlant(MultiInputConvertor):
     .. attribute:: htf_mode
         The mode of inputting HTF to the thermal desalination plant.
 
+    .. attribute:: maximum_feedwater_temperature
+        The maximum temperature of feedwater allowed by the plant, measured in degrees
+        Celcius.
+
     .. attribute:: maximum_htf_temperature
         The maximum temperature of HTF allowed by the plant, measured in degrees
+        Celcius.
+
+    .. attribute:: minimum_feedwater_temperature
+        The minimum temperature of feedwater allowed by the plant, measured in degrees
         Celcius.
 
     .. attribute:: minimum_htf_temperature
@@ -416,9 +461,11 @@ class ThermalDesalinationPlant(MultiInputConvertor):
         self,
         htf_mode: HTFMode,
         input_resource_consumption: Dict[ResourceType, float],
+        maximum_feedwater_temperature: Optional[float],
+        maximum_htf_temperature: Optional[float],
         maximum_output_capacity: float,
-        maximum_htf_temperature: float,
-        minimum_htf_temperature: float,
+        minimum_feedwater_temperature: Optional[float],
+        minimum_htf_temperature: Optional[float],
         minimum_output_capacity: float,
         name: str,
         output_resource_type: ResourceType,
@@ -432,10 +479,16 @@ class ThermalDesalinationPlant(MultiInputConvertor):
                 The mode of inputting heat to the plant.
             - input_resource_types:
                 The types of load inputted to the plant.
-            - maximum_output_capcity:
-                The maximum output capacity of the plant.
+            - maximum_feedwater_temperature:
+                The maximum temperature of feedwater allowed into the plant, measured in
+                degrees Celcius.
             - maximum_htf_temperature:
                 The maximum temperature of water allowed into the plant, measured in
+                degrees Celcius.
+            - maximum_output_capcity:
+                The maximum output capacity of the plant.
+            - minimum_feedwater_temperature:
+                The minimum temperature of feedwater allowed into the plant, measured in
                 degrees Celcius.
             - minimum_htf_temperature:
                 The mibimum temperature of water allowed into the plant, measured in
@@ -460,9 +513,15 @@ class ThermalDesalinationPlant(MultiInputConvertor):
         )
 
         self.htf_mode = htf_mode
-        self.maximum_htf_temperature: float = maximum_htf_temperature
-        self.minimum_htf_temperature: float = minimum_htf_temperature
-        self.minimum_output_capacity: float = minimum_output_capacity
+        self.maximum_feedwater_temperature: Optional[
+            float
+        ] = maximum_feedwater_temperature
+        self.maximum_htf_temperature: Optional[float] = maximum_htf_temperature
+        self.minimum_feedwater_temperature: Optional[
+            float
+        ] = minimum_feedwater_temperature
+        self.minimum_htf_temperature: Optional[float] = minimum_htf_temperature
+        self.minimum_output_capacity: Optional[float] = minimum_output_capacity
 
     @classmethod
     def from_dict(cls, input_data: Dict[str, Any], logger: Logger) -> Any:
@@ -554,39 +613,26 @@ class ThermalDesalinationPlant(MultiInputConvertor):
         waste_production: Dict[WasteProduct, float] = {}
 
         if WASTE_PRODUCTS in input_data:
-            for waste_product, amount_produced in input_data[WASTE_PRODUCTS].values():
-                try:
-                    waste_production[WasteProduct(waste_product)] = amount_produced
-                except ValueError:
-                    logger.error(
-                        "%sInvalid waste product specified: '%s'. Valid values are %s.%s",
-                        BColours.fail,
-                        waste_product,
-                        ", ".join(e.value for e in WasteProduct),
-                        BColours.endc,
-                    )
-
-                # Type check the value generated.
-                if not isinstance(waste_product[WasteProduct(waste_product)], float):
-                    logger.error(
-                        "%sInvalid value for waste-product '%s' for plant '%s': "
-                        "value must be of type float.%s",
-                        BColours.fail,
-                        waste_product,
-                        BColours.endc,
-                    )
-                    raise InputFileError(
-                        "conversion inputs",
-                        f"Thermal desalination plant {input_data[NAME]} has invalid "
-                        "waste-product type.",
-                    )
+            waste_production = _parse_waste_production(
+                logger, input_data[NAME], input_data[WASTE_PRODUCTS]
+            )
 
         return cls(
             htf_mode,
             input_resource_consumption,
+            float(input_data[MAXIMUM_FEEDWATER_TEMPERATURE])
+            if MAXIMUM_FEEDWATER_TEMPERATURE in input_data
+            else None,
+            float(input_data[MAXIMUM_HTF_TEMPERATURE])
+            if MAXIMUM_HTF_TEMPERATURE in input_data
+            else None,
             maximum_output,
-            float(input_data[MAXIMUM_HTF_TEMPERATURE]),
-            float(input_data[MINIMUM_HTF_TEMPERATURE]),
+            float(input_data[MINIMUM_FEEDWATER_TEMPERATURE])
+            if MINIMUM_FEEDWATER_TEMPERATURE in input_data
+            else None,
+            float(input_data[MINIMUM_HTF_TEMPERATURE])
+            if MINIMUM_HTF_TEMPERATURE in input_data
+            else None,
             float(input_data[MINIMUM_OUTPUT]),
             str(input_data[NAME]),
             output_resource_type,
@@ -713,31 +759,9 @@ class WaterSource(Convertor):
         waste_production: Dict[WasteProduct, float] = {}
 
         if WASTE_PRODUCTS in input_data:
-            for waste_product, amount_produced in input_data[WASTE_PRODUCTS].values():
-                try:
-                    waste_production[WasteProduct(waste_product)] = amount_produced
-                except ValueError:
-                    logger.error(
-                        "%sInvalid waste product specified: '%s'. Valid values are %s.%s",
-                        BColours.fail,
-                        waste_product,
-                        ", ".join(e.value for e in WasteProduct),
-                        BColours.endc,
-                    )
-
-                # Type check the value generated.
-                if not isinstance(waste_product[WasteProduct(waste_product)], float):
-                    logger.error(
-                        "%sInvalid value for waste-product '%s' for water source '%s': "
-                        "value must be of type float.%s",
-                        BColours.fail,
-                        waste_product,
-                        BColours.endc,
-                    )
-                    raise InputFileError(
-                        "conversion inputs",
-                        f"Water source {input_data[NAME]} has invalid waste-product type.",
-                    )
+            waste_production = _parse_waste_production(
+                logger, input_data[NAME], input_data[WASTE_PRODUCTS]
+            )
 
         return cls(
             {input_resource_type: consumption},

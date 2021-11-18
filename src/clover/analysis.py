@@ -403,7 +403,9 @@ def plot_outputs(
             label="total",
         )
         plt.legend(loc="upper right")
-        plt.xticks([entry for entry in (range(0, CUT_OFF_TIME - 1, min(4, CUT_OFF_TIME - 1)))])
+        plt.xticks(
+            [entry for entry in (range(0, CUT_OFF_TIME - 1, min(4, CUT_OFF_TIME - 1)))]
+        )
         plt.xlabel("Hour of simulation")
         plt.ylabel("Electric power demand / kW")
         plt.title(f"Load profile of the community for the first {CUT_OFF_TIME} hours")
@@ -617,17 +619,30 @@ def plot_outputs(
             ),
             axis=0,
         )
-        pvt_electricity_supplied = (
+        clean_water_pvt_supplied = (
             np.mean(
                 np.reshape(
                     simulation_output[0:HOURS_PER_YEAR][
-                        "PV-T electric energy supplied (kWh)"
+                        "Clean-water PV-T electric energy supplied (kWh)"
                     ].values,
                     (365, 24),
                 ),
                 axis=0,
             )
-            if "PV-T electric energy supplied (kWh)" in simulation_output
+            if "Clean-water PV-T electric energy supplied (kWh)" in simulation_output
+            else None
+        )
+        hot_water_pvt_supplied = (
+            np.mean(
+                np.reshape(
+                    simulation_output[0:HOURS_PER_YEAR][
+                        "Hot-water PV-T electric energy supplied (kWh)"
+                    ].values,
+                    (365, 24),
+                ),
+                axis=0,
+            )
+            if "Hot-water PV-T electric energy supplied (kWh)" in simulation_output
             else None
         )
         storage_energy = np.mean(
@@ -655,13 +670,24 @@ def plot_outputs(
         plt.plot(storage_energy, label="Storage", zorder=6)
         plt.plot(renewable_energy, label="Renewables used directly", zorder=7)
         plt.plot(pv_supplied, label="PV electricity generated", zorder=8)
-        if pvt_electricity_supplied is not None:
+        if clean_water_pvt_supplied is not None:
             plt.plot(
-                pvt_electricity_supplied, label="PV-T electricity generated", zorder=9
+                clean_water_pvt_supplied,
+                label="CW PV-T electricity generated",
+                zorder=9,
             )
-            pvt_present: bool = True
+            cw_pvt: bool = True
         else:
-            pvt_present = False
+            cw_pvt = False
+        if clean_water_pvt_supplied is not None:
+            plt.plot(
+                hot_water_pvt_supplied,
+                label="HW PV-T electricity generated",
+                zorder=(9 + (1 if cw_pvt else 0)),
+            )
+            hw_pvt: bool = True
+        else:
+            hw_pvt = False
         if initial_clean_water_hourly_loads is not None:
             clean_water_energy_via_excess = (
                 np.mean(
@@ -707,17 +733,17 @@ def plot_outputs(
             plt.plot(
                 clean_water_energy_via_excess,
                 label="Excess -> clean water",
-                zorder=9 + (1 if pvt_present else 0),
+                zorder=int(9 + (1 if cw_pvt else 0) + (1 if hw_pvt else 0)),
             )
             plt.plot(
                 clean_water_energy_via_backup,
                 label="Backup -> clean water",
-                zorder=10 + (1 if pvt_present else 0),
+                zorder=10 + (1 if cw_pvt else 0) + (1 if hw_pvt else 0),
             )
             plt.plot(
                 thermal_desalination_energy,
                 label="Thermal desal electric power",
-                zorder=11 + (1 if pvt_present else 0),
+                zorder=11 + (1 if cw_pvt else 0) + (1 if hw_pvt else 0),
             )
         plt.legend()
         plt.xlim(0, 23)
@@ -872,9 +898,18 @@ def plot_outputs(
         dumped_energy = simulation_output.iloc[0:24]["Dumped energy (kWh)"]
         unmet_energy = simulation_output.iloc[0:24]["Unmet energy (kWh)"]
         pv_supplied = simulation_output.iloc[0:24]["PV energy supplied (kWh)"]
-        pvt_electricity_supplied = (
-            simulation_output.iloc[0:24]["PV-T electric energy supplied (kWh)"]
-            if "PV-T electric energy supplied (kWh)" in simulation_output
+        clean_water_pvt_supplied = (
+            simulation_output.iloc[0:24][
+                "Clean water PV-T electric energy supplied (kWh)"
+            ]
+            if "Clean water PV-T electric energy supplied (kWh)" in simulation_output
+            else None
+        )
+        hot_water_pvt_supplied = (
+            simulation_output.iloc[0:24][
+                "Hot water PV-T electric energy supplied (kWh)"
+            ]
+            if "Hot water PV-T electric energy supplied (kWh)" in simulation_output
             else None
         )
 
@@ -886,9 +921,17 @@ def plot_outputs(
         plt.plot(storage_energy, label="Storage", zorder=6)
         plt.plot(renewable_energy, label="Solar used directly", zorder=7)
         plt.plot(pv_supplied, label="PV generated", zorder=8)
-        if pvt_present:
+        if cw_pvt:
             plt.plot(
-                pvt_electricity_supplied, label="PV-T electricity generated", zorder=9
+                clean_water_pvt_supplied,
+                label="CW PV-T electricity generated",
+                zorder=9,
+            )
+        if hw_pvt:
+            plt.plot(
+                hot_water_pvt_supplied,
+                label="HW PV-T electricity generated",
+                zorder=9 + (1 if cw_pvt else 0),
             )
         if initial_clean_water_hourly_loads is not None:
             clean_water_energy_via_excess = simulation_output.iloc[0:24][
@@ -903,17 +946,17 @@ def plot_outputs(
             plt.plot(
                 clean_water_energy_via_excess,
                 label="Excess -> clean water",
-                zorder=9 + (1 if pvt_present else 0),
+                zorder=9 + (1 if cw_pvt else 0) + (1 if hw_pvt else 0),
             )
             plt.plot(
                 clean_water_energy_via_backup,
                 label="Backup -> clean water",
-                zorder=10 + (1 if pvt_present else 0),
+                zorder=10 + (1 if cw_pvt else 0) + (1 if hw_pvt else 0),
             )
             plt.plot(
                 thermal_desalination_energy,
                 label="Thermal desal electric power",
-                zorder=11 + (1 if pvt_present else 0),
+                zorder=11 + (1 if cw_pvt else 0) + (1 if hw_pvt else 0),
             )
         plt.legend()
         plt.xlim(0, 23)
@@ -1016,7 +1059,12 @@ def plot_outputs(
                 label="total",
             )
             plt.legend(loc="upper right")
-            plt.xticks([entry for entry in range(0, CUT_OFF_TIME - 1, min(4, CUT_OFF_TIME - 2))])
+            plt.xticks(
+                [
+                    entry
+                    for entry in range(0, CUT_OFF_TIME - 1, min(4, CUT_OFF_TIME - 2))
+                ]
+            )
             plt.xlabel("Hour of simulation")
             plt.ylabel("Clean water demand / litres/hour")
             plt.title(
@@ -2272,7 +2320,12 @@ def plot_outputs(
                 label="total",
             )
             plt.legend(loc="upper right")
-            plt.xticks([entry for entry in range(0, CUT_OFF_TIME - 1, min(4, CUT_OFF_TIME - 2))])
+            plt.xticks(
+                [
+                    entry
+                    for entry in range(0, CUT_OFF_TIME - 1, min(4, CUT_OFF_TIME - 2))
+                ]
+            )
             plt.xlabel("Hour of simulation")
             plt.ylabel("Hot water demand / litres/hour")
             plt.title(

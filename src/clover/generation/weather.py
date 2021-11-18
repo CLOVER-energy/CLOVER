@@ -82,6 +82,7 @@ class WeatherDataThread(
         logger_name: str,
         regenerate: bool,
         sleep_multiplier: int = 1,
+        verbose: bool = False,
     ):
         """
         Instantiate a :class:`WeatherDataThread` instance.
@@ -125,6 +126,7 @@ class WeatherDataThread(
             logger_name,
             regenerate,
             sleep_multiplier,
+            verbose,
             renewables_ninja_params=renewables_ninja_params,
         )
 

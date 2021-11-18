@@ -846,7 +846,7 @@ def _parse_device_inputs(
         device_inputs_filepath,
         logger,
     )
-    if not isinstance(device_inputs_filepath, list):
+    if not isinstance(device_inputs, list):
         logger.error(
             "%sDevice input information was not of type `list`. The devices file must "
             "specify a list of valid devices.%s",

@@ -94,7 +94,7 @@ class MassFlowRateTooSmallError(Exception):
         )
 
 
-def _buffer_tank_mass_flow_rate(
+def _htf_fed_buffer_tank_mass_flow_rate(
     ambient_temperature: float,
     best_guess_tank_temperature: float,
     buffer_tank: HotWaterTank,
@@ -126,6 +126,12 @@ def _buffer_tank_mass_flow_rate(
             Raised if the thermal desalination plant does not use heat from the HTF.
 
     """
+
+    if ResourceType.HEAT not in thermal_desalination_plant.input_resource_consumption:
+        raise InputFileError(
+            "convertor inputs",
+            "The thermal desalination plant selected does define its heat consumption.",
+        )
 
     return (
         thermal_desalination_plant.input_resource_consumption[ResourceType.HEAT]
@@ -186,19 +192,32 @@ def _volume_withdrawn_from_tank(
                 "clean-water loads being requested."
             )
 
-        tank_supply_on: bool = (
-            previous_tank_temperature
-            > thermal_desalination_plant.minimum_htf_temperature
-        )
-        volume_supplied: float = (
-            _buffer_tank_mass_flow_rate(
-                ambient_temperature,
-                best_guess_tank_temperature,
-                minigrid.buffer_tank,
-                thermal_desalination_plant,
+        # If the plant is heated by HTF.
+        if thermal_desalination_plant.htf_mode == HTFMode.CLOSED_HTF:
+            tank_supply_on: bool = (
+                previous_tank_temperature
+                > thermal_desalination_plant.minimum_htf_temperature
             )
-            * tank_supply_on
-        )
+            volume_supplied: float = (
+                _htf_fed_buffer_tank_mass_flow_rate(
+                    ambient_temperature,
+                    best_guess_tank_temperature,
+                    minigrid.buffer_tank,
+                    thermal_desalination_plant,
+                )
+                * tank_supply_on
+            )
+        if thermal_desalination_plant.htf_mode == HTFMode.FEEDWATER_HEATING:
+            tank_supply_on = (
+                previous_tank_temperature
+                > thermal_desalination_plant.minimum_feedwater_temperature
+            )
+            volume_supplied = (
+                thermal_desalination_plant.input_resource_consumption[
+                    ResourceType.HOT_UNCLEAN_WATER
+                ]
+                * tank_supply_on
+            )
 
     elif resource_type == ResourceType.HOT_CLEAN_WATER:
         if hot_water_load is None:
@@ -573,7 +592,9 @@ def calculate_pvt_output(
 
         # Save the fractional electrical performance and output temp.
         pvt_collector_output_temperature_map[index] = collector_output_temperature
-        pvt_electric_power_per_unit_map[index] = fractional_electric_performance
+        pvt_electric_power_per_unit_map[index] = (
+            fractional_electric_performance * minigrid.pvt_panel.pv_unit
+        )
         pvt_pump_times_map[index] = int(pvt_flow_on)
         tank_temperature_map[index] = tank_temperature
         tank_volume_supplied_map[index] = volume_supplied
