@@ -469,7 +469,7 @@ def main(args: List[Any]) -> None:
                 output: str = str(parsed_args.output)
             else:
                 output = input("Specify new output folder name: ")
-            print(f"Output directory {output} will be used for simulation results.")
+            print(f"\nOutput directory {output} will be used for simulation results.")
         else:
             output = str(parsed_args.output)
     else:
@@ -583,7 +583,7 @@ def main(args: List[Any]) -> None:
             and (scenario.hot_water_scenario is None)
         ) or (
             parsed_args.hot_water_pvt_system_size is None
-            and (scenario.hot_water_scenario is not None in scenario.resource_types)
+            and (scenario.hot_water_scenario is not None)
         ):
             logger.error(
                 "%sPV-T mode in the scenario file must match the command-line usage. "
@@ -641,6 +641,7 @@ def main(args: List[Any]) -> None:
             f"{parsed_args.location}_{wind.WIND_LOGGER_NAME}",
             parsed_args.refetch,
             num_ninjas,
+            parsed_args.verbose,
         )
         if wind_data_thread is None:
             raise InternalError("Wind data thread failed to successfully instantiate.")
@@ -665,6 +666,7 @@ def main(args: List[Any]) -> None:
             f"{parsed_args.location}_{weather.WEATHER_LOGGER_NAME}",
             parsed_args.refetch,
             num_ninjas,
+            parsed_args.verbose,
         )
         if weather_data_thread is None:
             raise InternalError(
@@ -690,6 +692,7 @@ def main(args: List[Any]) -> None:
         parsed_args.refetch,
         minigrid.pv_panel,
         num_ninjas,
+        parsed_args.verbose,
     )
     solar_data_thread.start()
     logger.info(

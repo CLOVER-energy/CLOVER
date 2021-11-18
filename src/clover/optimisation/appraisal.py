@@ -433,8 +433,8 @@ def _simulation_technical_appraisal(
     total_renewables_used = np.sum(simulation_results["Renewables energy used (kWh)"])
     total_pv_energy = np.sum(simulation_results["PV energy supplied (kWh)"])
     total_pvt_energy = (
-        np.sum(simulation_results["PV-T electric energy supplied (kWh)"])
-        if "PV-T electric energy supplied (kWh)" in simulation_results
+        np.sum(simulation_results["Total PV-T electric energy supplied (kWh)"])
+        if "Total PV-T electric energy supplied (kWh)" in simulation_results
         else None
     )
     total_storage_used = np.sum(simulation_results["Storage energy supplied (kWh)"])

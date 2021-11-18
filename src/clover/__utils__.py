@@ -2023,6 +2023,10 @@ class SystemDetails:
     .. attribute:: initial_storage_size
         The initial storage size of the system.
 
+    .. attribute:: required_feedwater_sources
+        The `list` of feedwater sources which were required to supply the desalination
+        plant(s) associated with the system.
+
     .. attribute:: start_year
         The start year of the system.
 
@@ -2047,6 +2051,7 @@ class SystemDetails:
     initial_num_hot_water_tanks: Optional[int] = 0
     initial_pv_size: float = 0
     initial_storage_size: float = 0
+    required_feedwater_sources: Optional[List[str]] = None
     start_year: int = 0
     file_information: Optional[Dict[str, str]] = None
 
@@ -2113,6 +2118,8 @@ class SystemDetails:
             system_details_as_dict["final_hot_water_pvt_size"] = round(
                 self.final_hot_water_pvt_size, 3
             )
+        if self.required_feedwater_sources is not None:
+            system_details_as_dict["required_feedwater_sources"] = ", ".join(self.required_feedwater_sources)
 
         return system_details_as_dict
 

@@ -36,7 +36,6 @@ from ..__utils__ import (
     NAME,
     ProgrammerJudgementFault,
 )
-from ..conversion.conversion import ThermalDesalinationPlant
 from .__utils__ import BaseRenewablesNinjaThread, SolarDataType, total_profile_output
 
 __all__ = (
@@ -480,6 +479,7 @@ class SolarDataThread(
         regenerate: bool,
         pv_panel: PVPanel,
         sleep_multiplier: int = 1,
+        verbose: bool = False,
     ):
         """
         Instantiate a :class:`SolarDataThread` instance.
@@ -506,6 +506,7 @@ class SolarDataThread(
             logger_name,
             regenerate,
             sleep_multiplier,
+            verbose,
             renewables_ninja_params=renewables_ninja_params,
         )
 

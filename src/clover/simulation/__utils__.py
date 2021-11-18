@@ -264,10 +264,10 @@ class Minigrid:
             clean_water_tank: Optional[Union[CleanWaterTank, HotWaterTank]] = tanks[
                 minigrid_inputs["clean_water_tank"]
             ]
-            if not isinstance(clean_water_tank, HotWaterTank):
+            if not isinstance(clean_water_tank, CleanWaterTank):
                 raise InputFileError(
                     "energy system inputs",
-                    "The buffer tank selected must be a hot-water tank.",
+                    "The clean-water tank selected must be a clean-water tank.",
                 )
         else:
             clean_water_tank = None
@@ -279,7 +279,7 @@ class Minigrid:
             if not isinstance(hot_water_tank, HotWaterTank):
                 raise InputFileError(
                     "energy system inputs",
-                    "The buffer tank selected must be a hot-water tank.",
+                    "The hot-water tank selected must be a hot-water tank.",
                 )
         else:
             hot_water_tank = None

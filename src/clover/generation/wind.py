@@ -59,6 +59,7 @@ class WindDataThread(
         logger_name: str,
         regenerate: bool,
         sleep_multiplier: int = 1,
+        verbose: bool = False,
     ):
         """
         Instantiate a :class:`WindDataThread` instance.
@@ -82,6 +83,7 @@ class WindDataThread(
             logger_name,
             regenerate,
             sleep_multiplier,
+            verbose,
             renewables_ninja_params=renewables_ninja_params,
         )
 

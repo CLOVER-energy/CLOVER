@@ -58,6 +58,10 @@ __all__ = (
 #   The base API name of renewables.ninja.
 API_BASE = "https://www.renewables.ninja/api/"
 
+# Feb 29:
+#   Used to remove leap-year information.
+FEB_29: int = (31 + 28) * 24
+
 # Renewables.ninja sleep time:
 #   To avoid being locked out of the renewables.ninja API, it is necessary for CLOVER to
 #   sleep between requests. The time taken for this, in seconds, is set below.
@@ -199,10 +203,8 @@ def _get_profile_from_rn(
 
     # Remove leap days
     if year % 4 == 0:
-        feb_29 = (31 + 28) * 24
-        data_frame = data_frame.drop(
-            [str(entry) for entry in range(feb_29, feb_29 + 24)]
-        )
+        logger.debug("Dataframe:\n%s", data_frame)
+        data_frame = data_frame.drop([entry for entry in range(FEB_29, FEB_29 + 24)])
         data_frame = data_frame.reset_index(drop=True)
 
     # Remove empty rows from the dataframe.
@@ -348,6 +350,7 @@ class BaseRenewablesNinjaThread(threading.Thread):
         logger_name: str,
         regenerate: bool,
         sleep_multiplier: int,
+        verbose: bool,
         *,
         renewables_ninja_params: Dict[str, Any],
     ) -> None:
@@ -370,6 +373,8 @@ class BaseRenewablesNinjaThread(threading.Thread):
             - sleep_multiplier:
                 The multiplier to use when computing how long to sleep for, used when
                 multiple threads are executed in parallel.
+            - verbose:
+                Whether to carry out verbose logging (True) or standard logging (False).
 
         """
 
@@ -378,7 +383,7 @@ class BaseRenewablesNinjaThread(threading.Thread):
             str, Union[bool, int, str, float]
         ] = generation_inputs
         self.location: Location = location
-        self.logger: Logger = get_logger(logger_name)
+        self.logger: Logger = get_logger(logger_name, verbose)
         self.logger_name: str = logger_name
         self.regenerate: bool = regenerate
         self.renewables_ninja_params: Dict[str, Any] = renewables_ninja_params
