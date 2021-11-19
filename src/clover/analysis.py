@@ -274,7 +274,7 @@ def plot_outputs(
 
     with tqdm(
         total=10
-        + (17 if initial_clean_water_hourly_loads is not None else 0)
+        + (19 if initial_clean_water_hourly_loads is not None else 0)
         + (6 if initial_hot_water_hourly_loads is not None else 0),
         desc="plots",
         leave=False,
@@ -679,7 +679,7 @@ def plot_outputs(
             cw_pvt: bool = True
         else:
             cw_pvt = False
-        if clean_water_pvt_supplied is not None:
+        if hot_water_pvt_supplied is not None:
             plt.plot(
                 hot_water_pvt_supplied,
                 label="HW PV-T electricity generated",
@@ -1498,6 +1498,52 @@ def plot_outputs(
             plt.savefig(
                 os.path.join(
                     figures_directory, "clean_water_use_on_average_july_day.png"
+                ),
+                transparent=True,
+            )
+            plt.close()
+            pbar.update(1)
+
+            plt.plot(renewable_clean_water, label="PV-D direct use", zorder=1)
+            plt.plot(storage_clean_water, label="Storage", zorder=2)
+            plt.plot(tank_storage, "--", label="Water held in tanks", zorder=3)
+            plt.plot(unmet_clean_water, label="Unmet", zorder=4)
+            plt.plot(total_clean_water_load, "--", label="Total load", zorder=5)
+            plt.legend()
+            plt.xlim(0, 23)
+            plt.xticks(range(0, 24, 1))
+            plt.xlabel("Hour of day")
+            plt.ylabel("Clean-water usage / litres/hour")
+            plt.title("Water supply and demand on an average July day")
+            plt.savefig(
+                os.path.join(
+                    figures_directory,
+                    "clean_water_use_on_average_july_day_reduced_plot.png",
+                ),
+                transparent=True,
+            )
+            plt.close()
+            pbar.update(1)
+
+            plt.plot(renewable_clean_water, label="PV-D direct use", zorder=1)
+            plt.plot(
+                renewable_clean_water_produced, "--", label="PV-D output", zorder=2
+            )
+            plt.plot(tank_storage, "--", label="Water held in tanks", zorder=3)
+            plt.plot(unmet_clean_water, label="Unmet", zorder=9)
+            plt.plot(total_clean_water_load, "--", label="Total load", zorder=4)
+            plt.legend()
+            plt.xlim(0, 23)
+            plt.xticks(range(0, 24, 1))
+            plt.xlabel("Hour of day")
+            plt.ylabel("Clean-water usage / litres/hour")
+            plt.title(
+                "Output from the thermal desalination plant on an average July day"
+            )
+            plt.savefig(
+                os.path.join(
+                    figures_directory,
+                    "thermal_desal_clean_water_on_average_july_day.png",
                 ),
                 transparent=True,
             )
