@@ -262,10 +262,13 @@ class CleanWaterMode(enum.Enum):
     Used to specify the clean-water mode for the system.
 
     - BACKUP:
-        The clean-water demand will only be fulfiled using minigrid power as backup.
+        The clean-water demand will only be fulfiled using minigrid power as backup to
+        carry out electric desalination if there are any electric desalination
+        convertors present.
 
     - PRIORITISE:
-        The clean-water demand will be fulfiled always.
+        The clean-water demand will be fulfiled always, utilising diesel generators if
+        necessary to carry out electric desalination during clean-water blackouts..
 
     """
 
@@ -338,7 +341,7 @@ def daily_sum_to_monthly_sum(daily_profile: pd.DataFrame) -> pd.DataFrame:
         start_day = month_days.iloc[month, 0]
         end_day = month_days.iloc[month + 1, 0]
         monthly_sum = monthly_sum.append(
-            pd.DataFrame([np.sum(daily_profile.iloc[start_day:end_day, 0])])
+            pd.DataFrame([np.sum(daily_profile.iloc[start_day:end_day, 0])])  # type: ignore
         )
     return monthly_sum
 
@@ -528,7 +531,7 @@ def get_logger(logger_name: str, verbose: bool = False) -> logging.Logger:
     return logger
 
 
-def hourly_profile_to_daily_sum(hourly_profile: pd.DataFrame) -> pd.Series:
+def hourly_profile_to_daily_sum(hourly_profile: Union[pd.DataFrame, pd.Series]) -> pd.Series:
     """
     Converts an hour-by-hour profile to a sum for each day.
 
@@ -2119,7 +2122,9 @@ class SystemDetails:
                 self.final_hot_water_pvt_size, 3
             )
         if self.required_feedwater_sources is not None:
-            system_details_as_dict["required_feedwater_sources"] = ", ".join(self.required_feedwater_sources)
+            system_details_as_dict["required_feedwater_sources"] = ", ".join(
+                self.required_feedwater_sources
+            )
 
         return system_details_as_dict
 

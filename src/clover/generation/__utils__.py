@@ -31,7 +31,7 @@ import time
 from json.decoder import JSONDecodeError
 from logging import Logger
 from math import ceil
-from typing import Any, Dict, Union
+from typing import Any, Dict, List, Union
 
 import numpy as np  # pylint: disable=import-error
 import pandas as pd  # pylint: disable=import-error
@@ -204,14 +204,18 @@ def _get_profile_from_rn(
     # Remove leap days
     if year % 4 == 0:
         logger.debug("Dataframe:\n%s", data_frame)
-        data_frame = data_frame.drop([entry for entry in range(FEB_29, FEB_29 + 24)])
+        data_frame = data_frame.drop(
+            [entry for entry in range(FEB_29, FEB_29 + 24)]  # type: ignore
+        )
         data_frame = data_frame.reset_index(drop=True)
 
     # Remove empty rows from the dataframe.
     return data_frame
 
 
-def _get_profile_local_time(data_utc: pd.DataFrame, time_difference: float = 0):
+def _get_profile_local_time(
+    data_utc: pd.DataFrame, time_difference: float = 0
+) -> pd.DataFrame:
     """
     Converts data from Renewables.ninja (kW/kWp in UTC time) to user-defined local time.
 
@@ -232,7 +236,7 @@ def _get_profile_local_time(data_utc: pd.DataFrame, time_difference: float = 0):
     # East of Greenwich
     if time_difference > 0:
         splits = np.split(data_utc, [len(data_utc) - time_difference])
-        data_local = pd.concat([splits[1], splits[0]], ignore_index=True)
+        data_local: pd.DataFrame = pd.concat([splits[1], splits[0]], ignore_index=True)
     # West of Greenwich
     elif time_difference < 0:
         splits = np.split(data_utc, [abs(time_difference)])
@@ -341,6 +345,9 @@ class BaseRenewablesNinjaThread(threading.Thread):
         present (False).
 
     """
+
+    profile_name: str
+    profile_key: str
 
     def __init__(
         self,

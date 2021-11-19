@@ -900,9 +900,9 @@ def plot_outputs(
         pv_supplied = simulation_output.iloc[0:24]["PV energy supplied (kWh)"]
         clean_water_pvt_supplied = (
             simulation_output.iloc[0:24][
-                "Clean water PV-T electric energy supplied (kWh)"
+                "Clean-water PV-T electric energy supplied (kWh)"
             ]
-            if "Clean water PV-T electric energy supplied (kWh)" in simulation_output
+            if "Clean-water PV-T electric energy supplied (kWh)" in simulation_output
             else None
         )
         hot_water_pvt_supplied = (

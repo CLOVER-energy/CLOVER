@@ -78,7 +78,6 @@ class SolarPanelType(enum.Enum):
     PV_T = "pv_t"
 
 
-@dataclasses.dataclass
 class SolarPanel:
     """
     Represents a solar panel being considered.
@@ -117,15 +116,59 @@ class SolarPanel:
 
     """
 
-    azimuthal_orientation: float
-    lifetime: int
-    name: str
-    pv_unit: float
-    pv_unit_overrided: bool
-    reference_efficiency: Optional[float]
-    reference_temperature: Optional[float]
-    thermal_coefficient: Optional[float]
-    tilt: float
+    panel_type: SolarPanelType
+
+    def __init__(
+        self,
+        azimuthal_orientation: float,
+        lifetime: int,
+        name: str,
+        pv_unit: float,
+        pv_unit_overrided: bool,
+        reference_efficiency: Optional[float],
+        reference_temperature: Optional[float],
+        thermal_coefficient: Optional[float],
+        tilt: float,
+    ) -> None:
+        """
+        Instantiate a :class:`SolarPanel` instance.
+
+        Inputs:
+            - azimuthal_orientation:
+                The azimuthal orientation of the :class:`SolarPanel`.
+            - lifetime:
+                The lifetime of the :class:`SolarPanel` in years.
+            - name:
+                The name to assign to the :class:`SolarPanel` in order to uniquely
+                identify it.
+            - pv_unit:
+                The output power, in Watts, of the PV layer of the panel per unit panel
+                installed.
+            - pv_unit_overrided:
+                Whether this unit has been overrided from its default value (True) or
+                not (False).
+            - reference_efficiency:
+                The reference efficiency of the panel, if required, otherwise `None`.
+            - reference_temperature:
+                The temperature, in degrees Celcius, at which the reference efficiency
+                is defined, if required, otherwise `None`.
+            - thermal_coefficient:
+                The thermal coefficient of the PV layer of the panel, if required,
+                otherwise `None`.
+            - tilt:
+                The tilt of the panel in degrees above the horizontal.
+
+        """
+
+        self.azimuthal_orientation: float = azimuthal_orientation
+        self.lifetime: int = lifetime
+        self.name: str = name
+        self.pv_unit: float = pv_unit
+        self.pv_unit_overrided: bool = pv_unit_overrided
+        self.reference_efficiency: Optional[float] = reference_efficiency
+        self.reference_temperature: Optional[float] = reference_temperature
+        self.thermal_coefficient: Optional[float] = thermal_coefficient
+        self.tilt: float = tilt
 
     def __init_subclass__(cls, panel_type: SolarPanelType) -> None:
         """
