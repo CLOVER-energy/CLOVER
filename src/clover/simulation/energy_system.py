@@ -381,6 +381,19 @@ def _calculate_renewable_clean_water_profiles(
 
     """
 
+    if scenario.desalination_scenario is not None:
+        # Determine the list of available feedwater sources.
+        feedwater_sources: List[Convertor] = sorted(
+            [
+                convertor
+                for convertor in convertors
+                if list(convertor.input_resource_consumption) == [ResourceType.ELECTRIC]
+                and convertor.output_resource_type == ResourceType.UNCLEAN_WATER
+            ]
+        )
+    else:
+        feedwater_sources = []
+
     if scenario.pv_t and scenario.desalination_scenario is not None:
         if wind_speed_data is None:
             raise InternalError(
@@ -441,16 +454,6 @@ def _calculate_renewable_clean_water_profiles(
                 "transmission inputs",
                 "The water pump defined is unable to meet PV-T flow requirements.",
             )
-
-        # Determine the list of available feedwater sources.
-        feedwater_sources: List[Convertor] = sorted(
-            [
-                convertor
-                for convertor in convertors
-                if list(convertor.input_resource_consumption) == [ResourceType.ELECTRIC]
-                and convertor.output_resource_type == ResourceType.UNCLEAN_WATER
-            ]
-        )
 
         if thermal_desalination_plant.htf_mode == HTFMode.CLOSED_HTF:
             thermal_desalination_plant_input_type: ResourceType = (
@@ -593,7 +596,6 @@ def _calculate_renewable_clean_water_profiles(
         clean_water_pvt_electric_power_per_unit = pd.DataFrame(
             [0] * (end_hour - start_hour)
         )
-        feedwater_sources = []
         renewable_clean_water_produced = pd.DataFrame([0] * (end_hour - start_hour))
         required_feedwater_sources = []
         thermal_desalination_electric_power_consumed = pd.DataFrame(
@@ -2393,10 +2395,12 @@ def run_simulation(
         backup_desalinator_water_frame.columns = pd.Index(
             ["Clean water supplied via backup desalination (l)"]
         )
-        buffer_tank_temperature.columns = pd.Index(["Buffer tank temperature (degC)"])
         clean_water_blackout_times.columns = pd.Index(["Clean water blackouts"])
         clean_water_power_consumed.columns = pd.Index(
             ["Power consumed providing clean water (kWh)"]
+        )
+        clean_water_supplied_by_excess_energy_frame.columns = pd.Index(
+            ["Clean water supplied using excess minigrid energy (l)"]
         )
         conventional_clean_water_supplied_frame.columns = pd.Index(
             ["Drinking water supplied via conventional sources (l)"]
@@ -2413,12 +2417,6 @@ def run_simulation(
         power_used_on_electricity.columns = pd.Index(
             ["Power consumed providing electricity (kWh)"]
         )
-        clean_water_pvt_collector_output_temperature.columns = pd.Index(
-            ["Clean-water PV-T output temperature (degC)"]
-        )
-        clean_water_pvt_electric_power_per_kwh.columns = pd.Index(
-            ["Clean-water PV-T electric energy supplied per kWh"]
-        )
         renewable_clean_water_produced.columns = pd.Index(
             ["Renewable clean water produced (l)"]
         )
@@ -2428,21 +2426,29 @@ def run_simulation(
         storage_water_supplied_frame.columns = pd.Index(
             ["Clean water supplied via tank storage (l)"]
         )
-        buffer_tank_volume_supplied.columns = pd.Index(
-            ["Buffer tank output volume (l)"]
-        )
-        thermal_desalination_electric_power_consumed.columns = pd.Index(
-            ["Power consumed running thermal desalination (kWh)"]
-        )
         total_clean_water_used.columns = pd.Index(["Total clean water consumed (l)"])
         total_clean_water_supplied.columns = pd.Index(
             ["Total clean water supplied (l)"]
         )
         unmet_clean_water.columns = pd.Index(["Unmet clean water demand (l)"])
-        clean_water_supplied_by_excess_energy_frame.columns = pd.Index(
-            ["Clean water supplied using excess minigrid energy (l)"]
-        )
         water_surplus_frame.columns = pd.Index(["Water surplus (l)"])
+
+        if scenario.pv_t:
+            buffer_tank_temperature.columns = pd.Index(
+                ["Buffer tank temperature (degC)"]
+            )
+            buffer_tank_volume_supplied.columns = pd.Index(
+                ["Buffer tank output volume (l)"]
+            )
+            clean_water_pvt_collector_output_temperature.columns = pd.Index(
+                ["Clean-water PV-T output temperature (degC)"]
+            )
+            clean_water_pvt_electric_power_per_kwh.columns = pd.Index(
+                ["Clean-water PV-T electric energy supplied per kWh"]
+            )
+            thermal_desalination_electric_power_consumed.columns = pd.Index(
+                ["Power consumed running thermal desalination (kWh)"]
+            )
 
     else:
         # Find total energy used by the system
@@ -2610,29 +2616,35 @@ def run_simulation(
         system_performance_outputs_list.extend(
             [
                 backup_desalinator_water_frame,
-                buffer_tank_temperature,
                 clean_water_blackout_times,
                 clean_water_power_consumed,
+                clean_water_supplied_by_excess_energy_frame,
                 conventional_clean_water_supplied_frame,
                 excess_energy_used_desalinating_frame,
                 hourly_clean_water_tank_storage_frame,
                 power_used_on_electricity,
                 processed_total_clean_water_load,
-                clean_water_pvt_collector_output_temperature,
-                clean_water_pvt_electric_power_per_kwh,
-                clean_water_pvt_energy,
                 renewable_clean_water_produced,
                 renewable_clean_water_used_directly,
                 storage_water_supplied_frame,
-                buffer_tank_volume_supplied,
-                thermal_desalination_electric_power_consumed,
                 total_clean_water_supplied,
                 total_clean_water_used,
                 unmet_clean_water,
-                clean_water_supplied_by_excess_energy_frame,
                 water_surplus_frame,
             ]
         )
+        if scenario.pv_t:
+            system_performance_outputs_list.extend(
+                [
+                    buffer_tank_temperature,
+                    buffer_tank_volume_supplied,
+                    clean_water_pvt_collector_output_temperature,
+                    clean_water_pvt_electric_power_per_kwh,
+                    clean_water_pvt_energy,
+                    thermal_desalination_electric_power_consumed,
+                ]
+            )
+
     if scenario.hot_water_scenario is not None:
         system_performance_outputs_list.extend(
             [

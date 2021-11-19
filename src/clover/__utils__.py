@@ -531,7 +531,9 @@ def get_logger(logger_name: str, verbose: bool = False) -> logging.Logger:
     return logger
 
 
-def hourly_profile_to_daily_sum(hourly_profile: Union[pd.DataFrame, pd.Series]) -> pd.Series:
+def hourly_profile_to_daily_sum(
+    hourly_profile: Union[pd.DataFrame, pd.Series]
+) -> pd.Series:
     """
     Converts an hour-by-hour profile to a sum for each day.
 
