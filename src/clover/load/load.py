@@ -396,7 +396,7 @@ def _number_of_devices_daily(
                 location.max_years,
             )
             daily_ownership = pd.DataFrame(
-                np.floor(cum_sales.mul(population_growth_rate))
+                np.floor(cum_sales.values * population_growth_rate.values)
             )
 
         else:

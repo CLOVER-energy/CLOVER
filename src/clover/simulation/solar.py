@@ -194,6 +194,17 @@ def _volume_withdrawn_from_tank(
 
         # If the plant is heated by HTF.
         if thermal_desalination_plant.htf_mode == HTFMode.CLOSED_HTF:
+            if thermal_desalination_plant.minimum_htf_temperature is None:
+                logger.error(
+                    "%sNo minimum htf temperature defined despite '%s' being the HTF mode.%s",
+                    BColours.fail,
+                    thermal_desalination_plant.htf_mode.value,
+                    BColours.endc,
+                )
+                raise InternalError(
+                    "Minimum HTF temperature unexpectly undefined when computing plant supply volume."
+                )
+
             tank_supply_on: bool = (
                 previous_tank_temperature
                 > thermal_desalination_plant.minimum_htf_temperature
@@ -208,6 +219,17 @@ def _volume_withdrawn_from_tank(
                 * tank_supply_on
             )
         if thermal_desalination_plant.htf_mode == HTFMode.FEEDWATER_HEATING:
+            if thermal_desalination_plant.minimum_feedwater_temperature is None:
+                logger.error(
+                    "%sNo minimum feedwater temperature defined despite '%s' being the HTF mode.%s",
+                    BColours.fail,
+                    thermal_desalination_plant.htf_mode.value,
+                    BColours.endc,
+                )
+                raise InternalError(
+                    "Minimum feedwater temperature unexpectly undefined when computing plant supply volume."
+                )
+
             tank_supply_on = (
                 previous_tank_temperature
                 > thermal_desalination_plant.minimum_feedwater_temperature

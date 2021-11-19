@@ -64,6 +64,9 @@ class _BaseStorage:
 
     """
 
+    label: str
+    resource_type: ResourceType
+
     def __init__(
         self,
         cycle_lifetime: int,

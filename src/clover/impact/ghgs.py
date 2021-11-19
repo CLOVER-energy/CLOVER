@@ -102,7 +102,7 @@ def calculate_ghgs(
     """
 
     ghgs: float = capacity * float(ghg_inputs[system_component.value][GHGS])
-    annual_reduction = 0.01 * ghg_inputs[system_component.value][GHG_DECREASE]
+    annual_reduction: float = 0.01 * ghg_inputs[system_component.value][GHG_DECREASE]
     return ghgs * (1.0 - annual_reduction) ** year
 
 
@@ -131,8 +131,8 @@ def calculate_installation_ghgs(
 
     """
 
-    installation_ghgs = capacity * ghg_inputs[system_component.value][GHGS]
-    annual_reduction = 0.01 * ghg_inputs[system_component.value][GHG_DECREASE]
+    installation_ghgs: float = capacity * ghg_inputs[system_component.value][GHGS]
+    annual_reduction: float = 0.01 * ghg_inputs[system_component.value][GHG_DECREASE]
 
     return installation_ghgs * (1.0 - annual_reduction) ** year
 
@@ -153,7 +153,7 @@ def calculate_misc_ghgs(capacity: float, ghg_inputs: Dict[str, Any]) -> float:
 
     """
 
-    misc_ghgs = capacity * ghg_inputs[ImpactingComponent.MISC.value][GHGS]
+    misc_ghgs: float = capacity * ghg_inputs[ImpactingComponent.MISC.value][GHGS]
     return misc_ghgs
 
 
@@ -168,7 +168,7 @@ def calculate_total_equipment_ghgs(
     pv_array_size: float,
     pvt_array_size: float,
     storage_size: float,
-    year=0,
+    year: int = 0,
 ) -> float:
     """
     Calculates ghgs of all newly installed equipment
@@ -371,7 +371,9 @@ def calculate_total_equipment_ghgs(
     )
 
 
-def calculate_connections_ghgs(ghg_inputs: Dict[str, Any], households: pd.Series):
+def calculate_connections_ghgs(
+    ghg_inputs: Dict[str, Any], households: pd.Series
+) -> float:
     """
     Calculates ghgs of connecting households to the system
 
@@ -390,10 +392,14 @@ def calculate_connections_ghgs(ghg_inputs: Dict[str, Any], households: pd.Series
     households_data_frame: pd.DataFrame = pd.DataFrame(households)
 
     # Compute the number of new households that were added to the system.
-    new_connections = np.max(households_data_frame) - np.min(households_data_frame)
+    new_connections: float = np.max(households_data_frame) - np.min(
+        households_data_frame
+    )
 
     # Calculate the associated ghgs.
-    connection_ghgs = ghg_inputs[ImpactingComponent.HOUSEHOLDS.value][CONNECTION_GHGS]
+    connection_ghgs: float = ghg_inputs[ImpactingComponent.HOUSEHOLDS.value][
+        CONNECTION_GHGS
+    ]
     connections_ghgs = float(connection_ghgs * new_connections)
 
     return connections_ghgs
@@ -640,7 +646,7 @@ def calculate_grid_ghgs(
         total_daily_energy.values * daily_emissions_intensity.values
     )
 
-    return float(np.sum(daily_emissions, axis=0))
+    return float(np.sum(daily_emissions, axis=0))  # type: ignore
 
 
 def calculate_diesel_fuel_ghgs(
@@ -661,7 +667,7 @@ def calculate_diesel_fuel_ghgs(
     """
 
     diesel_fuel_ghgs = ghg_inputs[ImpactingComponent.DIESEL_FUEL.value][GHGS]
-    return float(np.sum(diesel_fuel_usage_hourly) * diesel_fuel_ghgs)
+    return float(np.sum(diesel_fuel_usage_hourly) * diesel_fuel_ghgs)  # type: ignore
 
 
 def calculate_om_ghgs(

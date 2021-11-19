@@ -20,7 +20,7 @@ information and system-sizing information provided.
 """
 
 from logging import Logger
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Union
 
 import numpy as np  # pylint: disable=import-error
 import pandas as pd  # pylint: disable=import-error
@@ -319,7 +319,7 @@ def _inverter_expenditure(
         for i in range(len(inverter_info))
     ]
     inverter_discounted_cost = np.sum(
-        inverter_info.iloc[
+        inverter_info.iloc[  # type: ignore
             inverter_info["Installation year"].isin(
                 list(np.array(range(start_year, end_year)))
             )
@@ -723,7 +723,7 @@ def diesel_fuel_expenditure(
 def discounted_energy_total(
     finance_inputs: Dict[str, Any],
     logger: Logger,
-    total_daily: pd.DataFrame,
+    total_daily: Union[pd.DataFrame, pd.Series],
     *,
     start_year: int = 0,
     end_year: int = 20
@@ -763,7 +763,7 @@ def discounted_energy_total(
         discount_rate, start_year=start_year, end_year=end_year
     )
     discounted_energy = pd.DataFrame(discounted_fraction.values * total_daily.values)
-    return float(np.sum(discounted_energy).iloc[:, 0])
+    return float(np.sum(discounted_energy).iloc[:, 0])  # type: ignore
 
 
 def discounted_equipment_cost(
