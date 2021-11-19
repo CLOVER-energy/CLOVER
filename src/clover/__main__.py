@@ -49,8 +49,8 @@ from .optimisation.optimisation import multiple_optimisation_step
 
 from .__utils__ import (
     BColours,
+    CleanWaterMode,
     DONE,
-    ELECTRIC_POWER,
     FAILED,
     InternalError,
     Location,
@@ -63,7 +63,6 @@ from .__utils__ import (
     save_optimisation,
     save_simulation,
 )
-from .generation.__utils__ import SolarDataType
 
 __all__ = ("main",)
 
@@ -565,7 +564,11 @@ def main(args: List[Any]) -> None:
             and (scenario.desalination_scenario is None)
         ) or (
             parsed_args.clean_water_pvt_system_size is None
-            and (scenario.desalination_scenario is not None)
+            and (
+                scenario.desalination_scenario is not None
+                and scenario.desalination_scenario.clean_water_scenario.mode
+                == CleanWaterMode.THERMAL_ONLY
+            )
         ):
             logger.error(
                 "%sPV-T mode and available resources in the scenario file must match "

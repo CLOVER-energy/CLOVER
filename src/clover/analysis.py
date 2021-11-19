@@ -151,6 +151,18 @@ def get_key_results(
             / (365 * num_years),
             3,
         )
+        key_results.clean_water_blackouts = round(
+            simulation_results["Clean water blackouts"].mean(), 3
+        )
+        key_results.cumulative_clean_water_load = round(
+            simulation_results["Total clean water demand (l)"].sum(), 3
+        )
+        key_results.cumulative_clean_water_supplied = round(
+            simulation_results["Total clean water supplied (l)"].sum(), 3
+        )
+
+    # Compute the clean-water PV-T key results.
+    if "Clean-water PV-T electric energy supplied per kWh" in simulation_results:
         key_results.average_daily_clean_water_pvt_generation = round(
             simulation_results[
                 "Clean-water PV-T electric energy supplied per kWh"
@@ -158,20 +170,11 @@ def get_key_results(
             / (365 * num_years),
             3,
         )
-        key_results.clean_water_blackouts = round(
-            simulation_results["Clean water blackouts"].mean(), 3
-        )
-        key_results.cumulative_clean_water_load = round(
-            simulation_results["Total clean water demand (l)"].sum(), 3
-        )
         key_results.cumulative_clean_water_pvt_generation = round(
             simulation_results[
                 "Clean-water PV-T electric energy supplied per kWh"
             ].sum(),
             3,
-        )
-        key_results.cumulative_clean_water_supplied = round(
-            simulation_results["Total clean water supplied (l)"].sum(), 3
         )
         key_results.max_buffer_tank_temperature = round(
             max(simulation_results["Buffer tank temperature (degC)"]), 3
@@ -272,9 +275,16 @@ def plot_outputs(
     total_electric_load = total_loads[ResourceType.ELECTRIC]
     total_hot_water_load = total_loads[ResourceType.HOT_CLEAN_WATER]
 
+    # Determine which aspects of the system need plotting.
+    cw_pvt: bool = (
+        "Clean-water PV-T electric energy supplied (kWh)" in simulation_output
+    )
+    hw_pvt: bool = "Hot-water PV-T electric energy supplied (kWh)" in simulation_output
+
     with tqdm(
         total=10
-        + (19 if initial_clean_water_hourly_loads is not None else 0)
+        + (15 if initial_clean_water_hourly_loads is not None else 0)
+        + (4 if cw_pvt else 0)
         + (6 if initial_hot_water_hourly_loads is not None else 0),
         desc="plots",
         leave=False,
@@ -670,24 +680,23 @@ def plot_outputs(
         plt.plot(storage_energy, label="Storage", zorder=6)
         plt.plot(renewable_energy, label="Renewables used directly", zorder=7)
         plt.plot(pv_supplied, label="PV electricity generated", zorder=8)
-        if clean_water_pvt_supplied is not None:
+        if cw_pvt:
             plt.plot(
                 clean_water_pvt_supplied,
                 label="CW PV-T electricity generated",
                 zorder=9,
             )
-            cw_pvt: bool = True
-        else:
-            cw_pvt = False
-        if hot_water_pvt_supplied is not None:
+            plt.plot(
+                thermal_desalination_energy,
+                label="Thermal desal electric power",
+                zorder=10,
+            )
+        if hw_pvt:
             plt.plot(
                 hot_water_pvt_supplied,
                 label="HW PV-T electricity generated",
-                zorder=(9 + (1 if cw_pvt else 0)),
+                zorder=(10 + (2 if cw_pvt else 0)),
             )
-            hw_pvt: bool = True
-        else:
-            hw_pvt = False
         if initial_clean_water_hourly_loads is not None:
             clean_water_energy_via_excess = (
                 np.mean(
@@ -733,17 +742,12 @@ def plot_outputs(
             plt.plot(
                 clean_water_energy_via_excess,
                 label="Excess -> clean water",
-                zorder=int(9 + (1 if cw_pvt else 0) + (1 if hw_pvt else 0)),
+                zorder=int(10 + (2 if cw_pvt else 0) + (1 if hw_pvt else 0)),
             )
             plt.plot(
                 clean_water_energy_via_backup,
                 label="Backup -> clean water",
-                zorder=10 + (1 if cw_pvt else 0) + (1 if hw_pvt else 0),
-            )
-            plt.plot(
-                thermal_desalination_energy,
-                label="Thermal desal electric power",
-                zorder=11 + (1 if cw_pvt else 0) + (1 if hw_pvt else 0),
+                zorder=11 + (2 if cw_pvt else 0) + (1 if hw_pvt else 0),
             )
         plt.legend()
         plt.xlim(0, 23)
@@ -927,11 +931,19 @@ def plot_outputs(
                 label="CW PV-T electricity generated",
                 zorder=9,
             )
+            thermal_desalination_energy = simulation_output.iloc[0:24][
+                "Power consumed running thermal desalination (kWh)"
+            ]
+            plt.plot(
+                thermal_desalination_energy,
+                label="Thermal desal electric power",
+                zorder=10,
+            )
         if hw_pvt:
             plt.plot(
                 hot_water_pvt_supplied,
                 label="HW PV-T electricity generated",
-                zorder=9 + (1 if cw_pvt else 0),
+                zorder=9 + (2 if cw_pvt else 0),
             )
         if initial_clean_water_hourly_loads is not None:
             clean_water_energy_via_excess = simulation_output.iloc[0:24][
@@ -940,23 +952,15 @@ def plot_outputs(
             clean_water_energy_via_backup = simulation_output.iloc[0:24][
                 "Power consumed providing clean water (kWh)"
             ]
-            thermal_desalination_energy = simulation_output.iloc[0:24][
-                "Power consumed running thermal desalination (kWh)"
-            ]
             plt.plot(
                 clean_water_energy_via_excess,
                 label="Excess -> clean water",
-                zorder=9 + (1 if cw_pvt else 0) + (1 if hw_pvt else 0),
+                zorder=10 + (2 if cw_pvt else 0) + (1 if hw_pvt else 0),
             )
             plt.plot(
                 clean_water_energy_via_backup,
                 label="Backup -> clean water",
-                zorder=10 + (1 if cw_pvt else 0) + (1 if hw_pvt else 0),
-            )
-            plt.plot(
-                thermal_desalination_energy,
-                label="Thermal desal electric power",
-                zorder=11 + (1 if cw_pvt else 0) + (1 if hw_pvt else 0),
+                zorder=11 + (2 if cw_pvt else 0) + (1 if hw_pvt else 0),
             )
         plt.legend()
         plt.xlim(0, 23)
@@ -972,53 +976,6 @@ def plot_outputs(
         pbar.update(1)
 
         if initial_clean_water_hourly_loads is not None:
-            # Plot the first year of PV-T generation as a heatmap.
-            pvt_electricity_supplied_per_unit = simulation_output[0:HOURS_PER_YEAR][
-                "Clean-water PV-T electric energy supplied per kWh"
-            ]
-            reshaped_data = np.reshape(
-                pvt_electricity_supplied_per_unit.values, (365, 24)
-            )
-            heatmap = sns.heatmap(
-                reshaped_data,
-                vmin=0,
-                vmax=1,
-                cmap=COLOUR_MAP,
-                cbar_kws={"label": "Power output / kW"},
-            )
-            heatmap.set(
-                xticks=range(0, 24, 2),
-                xticklabels=range(0, 24, 2),
-                yticks=range(0, 365, 30),
-                yticklabels=range(0, 365, 30),
-                xlabel="Hour of day",
-                ylabel="Day of year",
-                title="Electric output per kWp of PV-T capacity",
-            )
-            plt.xticks(rotation=0)
-            plt.tight_layout()
-            plt.savefig(
-                os.path.join(figures_directory, "pv_t_electric_output_hetamap.png"),
-                transparent=True,
-            )
-            plt.close()
-            pbar.update(1)
-
-            # Plot the yearly power generated by the solar system.
-            solar_daily_sums = pd.DataFrame(np.sum(reshaped_data, axis=1))
-            plt.plot(range(365), solar_daily_sums[0])
-            plt.xticks(range(0, 365, 30))
-            plt.yticks(range(0, 9, 2))
-            plt.xlabel("Day of year")
-            plt.ylabel("Energy generation / kWh per day")
-            plt.title("Daily electric energy generation of 1 kWp of PV-T capacity")
-            plt.savefig(
-                os.path.join(figures_directory, "pv_t_electric_output_yearly.png"),
-                transparent=True,
-            )
-            plt.close()
-            pbar.update(1)
-
             # Plot the initial clean-water load of each device.
             for device, load in initial_clean_water_hourly_loads.items():
                 plt.plot(range(CUT_OFF_TIME), load, label=device)
@@ -1504,11 +1461,12 @@ def plot_outputs(
             plt.close()
             pbar.update(1)
 
-            plt.plot(renewable_clean_water, label="PV-D direct use", zorder=1)
-            plt.plot(storage_clean_water, label="Storage", zorder=2)
-            plt.plot(tank_storage, "--", label="Water held in tanks", zorder=3)
-            plt.plot(unmet_clean_water, label="Unmet", zorder=4)
-            plt.plot(total_clean_water_load, "--", label="Total load", zorder=5)
+            plt.plot(excess_power_clean_water, label="PV-RO using excess PV", zorder=1)
+            plt.plot(renewable_clean_water, label="PV-D direct use", zorder=2)
+            plt.plot(storage_clean_water, label="Storage", zorder=3)
+            plt.plot(tank_storage, "--", label="Water held in tanks", zorder=4)
+            plt.plot(unmet_clean_water, label="Unmet", zorder=5)
+            plt.plot(total_clean_water_load, "--", label="Total load", zorder=6)
             plt.legend()
             plt.xlim(0, 23)
             plt.xticks(range(0, 24, 1))
@@ -1855,15 +1813,6 @@ def plot_outputs(
                 ),
                 axis=0,
             )
-            thermal_desalination_energy = np.mean(
-                np.reshape(
-                    simulation_output[0:HOURS_PER_YEAR][
-                        "Power consumed running thermal desalination (kWh)"
-                    ].values,
-                    (365, 24),
-                ),
-                axis=0,
-            )
             total_power_supplied = np.mean(
                 np.reshape(
                     simulation_output[0:HOURS_PER_YEAR][
@@ -1881,10 +1830,21 @@ def plot_outputs(
                 surplus_power_consumed,
                 label="Clean water via dumped energy",
             )
-            plt.plot(
-                thermal_desalination_energy,
-                label="Thermal desaln electricity consumption",
-            )
+            if cw_pvt:
+                thermal_desalination_energy = np.mean(
+                    np.reshape(
+                        simulation_output[0:HOURS_PER_YEAR][
+                            "Power consumed running thermal desalination (kWh)"
+                        ].values,
+                        (365, 24),
+                    ),
+                    axis=0,
+                )
+                plt.plot(
+                    thermal_desalination_energy,
+                    label="Thermal desaln electricity consumption",
+                )
+
             plt.plot(total_power_supplied, "--", label="Total load")
             plt.legend()
             plt.xlim(0, 23)
@@ -1894,254 +1854,6 @@ def plot_outputs(
             plt.title("Electriciy use by supply/device type on an average day")
             plt.savefig(
                 os.path.join(figures_directory, "electricity_use_by_supply_type.png"),
-                transparent=True,
-            )
-            plt.close()
-            pbar.update(1)
-
-            # Plot the daily collector output temperature
-            _, ax1 = plt.subplots()
-            collector_output_temperature_january = simulation_output.iloc[0:24][
-                "Clean-water PV-T output temperature (degC)"
-            ]
-            collector_output_temperature_march = simulation_output.iloc[
-                HOURS_UNTIL_MARCH : HOURS_UNTIL_MARCH + 24
-            ]["Clean-water PV-T output temperature (degC)"]
-            collector_output_temperature_may = simulation_output.iloc[
-                HOURS_UNTIL_MAY : HOURS_UNTIL_MAY + 24
-            ]["Clean-water PV-T output temperature (degC)"]
-            collector_output_temperature_july = simulation_output.iloc[
-                HOURS_UNTIL_JULY : HOURS_UNTIL_JULY + 24
-            ]["Clean-water PV-T output temperature (degC)"]
-
-            buffer_tank_temperature_january = simulation_output.iloc[0:24][
-                "Buffer tank temperature (degC)"
-            ]
-            buffer_tank_temperature_march = simulation_output.iloc[
-                HOURS_UNTIL_MARCH : HOURS_UNTIL_MARCH + 24
-            ]["Buffer tank temperature (degC)"]
-            buffer_tank_temperature_may = simulation_output.iloc[
-                HOURS_UNTIL_MAY : HOURS_UNTIL_MAY + 24
-            ]["Buffer tank temperature (degC)"]
-            buffer_tank_temperature_july = simulation_output.iloc[
-                HOURS_UNTIL_JULY : HOURS_UNTIL_JULY + 24
-            ]["Buffer tank temperature (degC)"]
-
-            volume_supplied_january = simulation_output.iloc[0:24][
-                "Renewable clean water produced (l)"
-            ]
-            volume_supplied_march = simulation_output.iloc[
-                HOURS_UNTIL_MARCH : HOURS_UNTIL_MARCH + 24
-            ]["Renewable clean water produced (l)"]
-            volume_supplied_may = simulation_output.iloc[
-                HOURS_UNTIL_MAY : HOURS_UNTIL_MAY + 24
-            ]["Renewable clean water produced (l)"]
-            volume_supplied_july = simulation_output.iloc[
-                HOURS_UNTIL_JULY : HOURS_UNTIL_JULY + 24
-            ]["Renewable clean water produced (l)"]
-
-            ax1.plot(
-                collector_output_temperature_january.values,
-                label="january pv-t output temp.",
-            )
-            # ax1.plot(collector_output_temperature_march.values, label="march pv-t output temp.")
-            # ax1.plot(collector_output_temperature_may.values, label="may pv-t output temp.")
-            ax1.plot(
-                collector_output_temperature_july.values, label="july pv-t output temp."
-            )
-
-            ax1.plot(
-                buffer_tank_temperature_january.values,
-                ":",
-                label="january tank temp.",
-                color="C0",
-            )
-            # ax1.plot(buffer_tank_temperature_march.values, label="march tank temp.")
-            # ax1.plot(buffer_tank_temperature_may.values, label="may tank temp.")
-            ax1.plot(
-                buffer_tank_temperature_july.values,
-                ":",
-                label="july tank temp.",
-                color="C1",
-            )
-
-            ax1.legend(loc="upper left")
-
-            ax2 = ax1.twinx()
-            ax2.plot(volume_supplied_january.values, "--", label="january output")
-            # ax2.plot(volume_supplied_march.values, "--", label="march output")
-            # ax2.plot(volume_supplied_may.values, "--", label="may output")
-            ax2.plot(volume_supplied_july.values, "--", label="july output")
-            ax2.legend(loc="upper right")
-
-            plt.xlim(0, 23)
-            plt.xlabel("Hour of day")
-            ax1.set_ylabel("Collector output temperature / degC")
-            ax2.set_ylabel("Volume thermally desalinated / litres")
-            plt.title("Collector output temprature on the first day of select months")
-            plt.savefig(
-                os.path.join(
-                    figures_directory,
-                    "clean_water_collector_output_temperature_on_first_month_days.png",
-                ),
-                transparent=True,
-            )
-            plt.close()
-            pbar.update(1)
-
-            # Plot the average collector output temperature
-            _, ax1 = plt.subplots()
-            collector_output_temperature_january = np.mean(
-                np.reshape(
-                    simulation_output[0 : 31 * 24][
-                        "Clean-water PV-T output temperature (degC)"
-                    ].values,
-                    (31, 24),
-                ),
-                axis=0,
-            )
-            collector_output_temperature_march = np.mean(
-                np.reshape(
-                    simulation_output[HOURS_UNTIL_MARCH : HOURS_UNTIL_MARCH + 31 * 24][
-                        "Clean-water PV-T output temperature (degC)"
-                    ].values,
-                    (31, 24),
-                ),
-                axis=0,
-            )
-            collector_output_temperature_may = np.mean(
-                np.reshape(
-                    simulation_output[HOURS_UNTIL_MAY : HOURS_UNTIL_MAY + 31 * 24][
-                        "Clean-water PV-T output temperature (degC)"
-                    ].values,
-                    (31, 24),
-                ),
-                axis=0,
-            )
-            collector_output_temperature_july = np.mean(
-                np.reshape(
-                    simulation_output[HOURS_UNTIL_JULY : HOURS_UNTIL_JULY + 31 * 24][
-                        "Clean-water PV-T output temperature (degC)"
-                    ].values,
-                    (31, 24),
-                ),
-                axis=0,
-            )
-
-            buffer_tank_temperature_january = np.mean(
-                np.reshape(
-                    simulation_output[0 : 31 * 24][
-                        "Buffer tank temperature (degC)"
-                    ].values,
-                    (31, 24),
-                ),
-                axis=0,
-            )
-            buffer_tank_temperature_march = np.mean(
-                np.reshape(
-                    simulation_output[HOURS_UNTIL_MARCH : HOURS_UNTIL_MARCH + 31 * 24][
-                        "Buffer tank temperature (degC)"
-                    ].values,
-                    (31, 24),
-                ),
-                axis=0,
-            )
-            buffer_tank_temperature_may = np.mean(
-                np.reshape(
-                    simulation_output[HOURS_UNTIL_MAY : HOURS_UNTIL_MAY + 31 * 24][
-                        "Buffer tank temperature (degC)"
-                    ].values,
-                    (31, 24),
-                ),
-                axis=0,
-            )
-            buffer_tank_temperature_july = np.mean(
-                np.reshape(
-                    simulation_output[HOURS_UNTIL_JULY : HOURS_UNTIL_JULY + 31 * 24][
-                        "Buffer tank temperature (degC)"
-                    ].values,
-                    (31, 24),
-                ),
-                axis=0,
-            )
-
-            # Plot the average collector output temperature
-            volume_supplied_january = np.mean(
-                np.reshape(
-                    simulation_output[0 : 31 * 24][
-                        "Renewable clean water produced (l)"
-                    ].values,
-                    (31, 24),
-                ),
-                axis=0,
-            )
-            volume_supplied_march = np.mean(
-                np.reshape(
-                    simulation_output[HOURS_UNTIL_MARCH : HOURS_UNTIL_MARCH + 31 * 24][
-                        "Renewable clean water produced (l)"
-                    ].values,
-                    (31, 24),
-                ),
-                axis=0,
-            )
-            volume_supplied_may = np.mean(
-                np.reshape(
-                    simulation_output[HOURS_UNTIL_MAY : HOURS_UNTIL_MAY + 31 * 24][
-                        "Renewable clean water produced (l)"
-                    ].values,
-                    (31, 24),
-                ),
-                axis=0,
-            )
-            volume_supplied_july = np.mean(
-                np.reshape(
-                    simulation_output[HOURS_UNTIL_JULY : HOURS_UNTIL_JULY + 31 * 24][
-                        "Renewable clean water produced (l)"
-                    ].values,
-                    (31, 24),
-                ),
-                axis=0,
-            )
-
-            ax1.plot(
-                collector_output_temperature_january,
-                label="january collector output temp.",
-            )
-            # ax1.plot(collector_output_temperature_march, label="march collector output temp.")
-            # ax1.plot(collector_output_temperature_may, label="may collector output temp.")
-            ax1.plot(
-                collector_output_temperature_july, label="july collector output temp."
-            )
-            ax1.plot(
-                buffer_tank_temperature_january,
-                ":",
-                label="january tank temp.",
-                color="C0",
-            )
-            # ax1.plot(buffer_tank_temperature_march, ":", label="march tank temp.", color="C2")
-            # ax1.plot(buffer_tank_temperature_may, ":", label="may tank temp.", color="C3")
-            ax1.plot(
-                buffer_tank_temperature_july, ":", label="july tank temp.", color="C1"
-            )
-            ax1.legend(loc="upper left")
-
-            ax2 = ax1.twinx()
-            ax2.plot(volume_supplied_january, "--", label="january output")
-            # ax2.plot(volume_supplied_march, "--", label="march output")
-            # ax2.plot(volume_supplied_may, "--", label="may output")
-            ax2.plot(volume_supplied_july, "--", label="july output")
-            ax2.legend(loc="upper right")
-
-            plt.xlim(0, 23)
-            plt.xlabel("Hour of day")
-            ax1.set_ylabel("Collector output temperature / degC")
-            ax2.set_ylabel("Volume thermally desalinated / litres")
-            plt.title("Collector output temprature on an average seasonal days day")
-            plt.savefig(
-                os.path.join(
-                    figures_directory,
-                    "clean_water_collector_output_temperature_on_average_month_days.png",
-                ),
                 transparent=True,
             )
             plt.close()
@@ -2324,6 +2036,309 @@ def plot_outputs(
             )
             plt.close()
             pbar.update(1)
+
+            if cw_pvt:
+                # Plot the first year of PV-T generation as a heatmap.
+                pvt_electricity_supplied_per_unit = simulation_output[0:HOURS_PER_YEAR][
+                    "Clean-water PV-T electric energy supplied per kWh"
+                ]
+                reshaped_data = np.reshape(
+                    pvt_electricity_supplied_per_unit.values, (365, 24)
+                )
+                heatmap = sns.heatmap(
+                    reshaped_data,
+                    vmin=0,
+                    vmax=1,
+                    cmap=COLOUR_MAP,
+                    cbar_kws={"label": "Power output / kW"},
+                )
+                heatmap.set(
+                    xticks=range(0, 24, 2),
+                    xticklabels=range(0, 24, 2),
+                    yticks=range(0, 365, 30),
+                    yticklabels=range(0, 365, 30),
+                    xlabel="Hour of day",
+                    ylabel="Day of year",
+                    title="Electric output per kWp of PV-T capacity",
+                )
+                plt.xticks(rotation=0)
+                plt.tight_layout()
+                plt.savefig(
+                    os.path.join(figures_directory, "pv_t_electric_output_hetamap.png"),
+                    transparent=True,
+                )
+                plt.close()
+                pbar.update(1)
+
+                # Plot the yearly power generated by the solar system.
+                solar_daily_sums = pd.DataFrame(np.sum(reshaped_data, axis=1))
+                plt.plot(range(365), solar_daily_sums[0])
+                plt.xticks(range(0, 365, 30))
+                plt.yticks(range(0, 9, 2))
+                plt.xlabel("Day of year")
+                plt.ylabel("Energy generation / kWh per day")
+                plt.title("Daily electric energy generation of 1 kWp of PV-T capacity")
+                plt.savefig(
+                    os.path.join(figures_directory, "pv_t_electric_output_yearly.png"),
+                    transparent=True,
+                )
+                plt.close()
+                pbar.update(1)
+
+                # Plot the daily collector output temperature
+                _, ax1 = plt.subplots()
+                collector_output_temperature_january = simulation_output.iloc[0:24][
+                    "Clean-water PV-T output temperature (degC)"
+                ]
+                collector_output_temperature_march = simulation_output.iloc[
+                    HOURS_UNTIL_MARCH : HOURS_UNTIL_MARCH + 24
+                ]["Clean-water PV-T output temperature (degC)"]
+                collector_output_temperature_may = simulation_output.iloc[
+                    HOURS_UNTIL_MAY : HOURS_UNTIL_MAY + 24
+                ]["Clean-water PV-T output temperature (degC)"]
+                collector_output_temperature_july = simulation_output.iloc[
+                    HOURS_UNTIL_JULY : HOURS_UNTIL_JULY + 24
+                ]["Clean-water PV-T output temperature (degC)"]
+
+                buffer_tank_temperature_january = simulation_output.iloc[0:24][
+                    "Buffer tank temperature (degC)"
+                ]
+                buffer_tank_temperature_march = simulation_output.iloc[
+                    HOURS_UNTIL_MARCH : HOURS_UNTIL_MARCH + 24
+                ]["Buffer tank temperature (degC)"]
+                buffer_tank_temperature_may = simulation_output.iloc[
+                    HOURS_UNTIL_MAY : HOURS_UNTIL_MAY + 24
+                ]["Buffer tank temperature (degC)"]
+                buffer_tank_temperature_july = simulation_output.iloc[
+                    HOURS_UNTIL_JULY : HOURS_UNTIL_JULY + 24
+                ]["Buffer tank temperature (degC)"]
+
+                volume_supplied_january = simulation_output.iloc[0:24][
+                    "Renewable clean water produced (l)"
+                ]
+                volume_supplied_march = simulation_output.iloc[
+                    HOURS_UNTIL_MARCH : HOURS_UNTIL_MARCH + 24
+                ]["Renewable clean water produced (l)"]
+                volume_supplied_may = simulation_output.iloc[
+                    HOURS_UNTIL_MAY : HOURS_UNTIL_MAY + 24
+                ]["Renewable clean water produced (l)"]
+                volume_supplied_july = simulation_output.iloc[
+                    HOURS_UNTIL_JULY : HOURS_UNTIL_JULY + 24
+                ]["Renewable clean water produced (l)"]
+
+                ax1.plot(
+                    collector_output_temperature_january.values,
+                    label="january pv-t output temp.",
+                )
+                # ax1.plot(collector_output_temperature_march.values, label="march pv-t output temp.")
+                # ax1.plot(collector_output_temperature_may.values, label="may pv-t output temp.")
+                ax1.plot(
+                    collector_output_temperature_july.values,
+                    label="july pv-t output temp.",
+                )
+
+                ax1.plot(
+                    buffer_tank_temperature_january.values,
+                    ":",
+                    label="january tank temp.",
+                    color="C0",
+                )
+                # ax1.plot(buffer_tank_temperature_march.values, label="march tank temp.")
+                # ax1.plot(buffer_tank_temperature_may.values, label="may tank temp.")
+                ax1.plot(
+                    buffer_tank_temperature_july.values,
+                    ":",
+                    label="july tank temp.",
+                    color="C1",
+                )
+
+                ax1.legend(loc="upper left")
+
+                ax2 = ax1.twinx()
+                ax2.plot(volume_supplied_january.values, "--", label="january output")
+                # ax2.plot(volume_supplied_march.values, "--", label="march output")
+                # ax2.plot(volume_supplied_may.values, "--", label="may output")
+                ax2.plot(volume_supplied_july.values, "--", label="july output")
+                ax2.legend(loc="upper right")
+
+                plt.xlim(0, 23)
+                plt.xlabel("Hour of day")
+                ax1.set_ylabel("Collector output temperature / degC")
+                ax2.set_ylabel("Volume thermally desalinated / litres")
+                plt.title(
+                    "Collector output temprature on the first day of select months"
+                )
+                plt.savefig(
+                    os.path.join(
+                        figures_directory,
+                        "clean_water_collector_output_temperature_on_first_month_days.png",
+                    ),
+                    transparent=True,
+                )
+                plt.close()
+                pbar.update(1)
+
+                # Plot the average collector output temperature
+                _, ax1 = plt.subplots()
+                collector_output_temperature_january = np.mean(
+                    np.reshape(
+                        simulation_output[0 : 31 * 24][
+                            "Clean-water PV-T output temperature (degC)"
+                        ].values,
+                        (31, 24),
+                    ),
+                    axis=0,
+                )
+                collector_output_temperature_march = np.mean(
+                    np.reshape(
+                        simulation_output[
+                            HOURS_UNTIL_MARCH : HOURS_UNTIL_MARCH + 31 * 24
+                        ]["Clean-water PV-T output temperature (degC)"].values,
+                        (31, 24),
+                    ),
+                    axis=0,
+                )
+                collector_output_temperature_may = np.mean(
+                    np.reshape(
+                        simulation_output[HOURS_UNTIL_MAY : HOURS_UNTIL_MAY + 31 * 24][
+                            "Clean-water PV-T output temperature (degC)"
+                        ].values,
+                        (31, 24),
+                    ),
+                    axis=0,
+                )
+                collector_output_temperature_july = np.mean(
+                    np.reshape(
+                        simulation_output[
+                            HOURS_UNTIL_JULY : HOURS_UNTIL_JULY + 31 * 24
+                        ]["Clean-water PV-T output temperature (degC)"].values,
+                        (31, 24),
+                    ),
+                    axis=0,
+                )
+
+                buffer_tank_temperature_january = np.mean(
+                    np.reshape(
+                        simulation_output[0 : 31 * 24][
+                            "Buffer tank temperature (degC)"
+                        ].values,
+                        (31, 24),
+                    ),
+                    axis=0,
+                )
+                buffer_tank_temperature_march = np.mean(
+                    np.reshape(
+                        simulation_output[
+                            HOURS_UNTIL_MARCH : HOURS_UNTIL_MARCH + 31 * 24
+                        ]["Buffer tank temperature (degC)"].values,
+                        (31, 24),
+                    ),
+                    axis=0,
+                )
+                buffer_tank_temperature_may = np.mean(
+                    np.reshape(
+                        simulation_output[HOURS_UNTIL_MAY : HOURS_UNTIL_MAY + 31 * 24][
+                            "Buffer tank temperature (degC)"
+                        ].values,
+                        (31, 24),
+                    ),
+                    axis=0,
+                )
+                buffer_tank_temperature_july = np.mean(
+                    np.reshape(
+                        simulation_output[
+                            HOURS_UNTIL_JULY : HOURS_UNTIL_JULY + 31 * 24
+                        ]["Buffer tank temperature (degC)"].values,
+                        (31, 24),
+                    ),
+                    axis=0,
+                )
+
+                # Plot the average collector output temperature
+                volume_supplied_january = np.mean(
+                    np.reshape(
+                        simulation_output[0 : 31 * 24][
+                            "Renewable clean water produced (l)"
+                        ].values,
+                        (31, 24),
+                    ),
+                    axis=0,
+                )
+                volume_supplied_march = np.mean(
+                    np.reshape(
+                        simulation_output[
+                            HOURS_UNTIL_MARCH : HOURS_UNTIL_MARCH + 31 * 24
+                        ]["Renewable clean water produced (l)"].values,
+                        (31, 24),
+                    ),
+                    axis=0,
+                )
+                volume_supplied_may = np.mean(
+                    np.reshape(
+                        simulation_output[HOURS_UNTIL_MAY : HOURS_UNTIL_MAY + 31 * 24][
+                            "Renewable clean water produced (l)"
+                        ].values,
+                        (31, 24),
+                    ),
+                    axis=0,
+                )
+                volume_supplied_july = np.mean(
+                    np.reshape(
+                        simulation_output[
+                            HOURS_UNTIL_JULY : HOURS_UNTIL_JULY + 31 * 24
+                        ]["Renewable clean water produced (l)"].values,
+                        (31, 24),
+                    ),
+                    axis=0,
+                )
+
+                ax1.plot(
+                    collector_output_temperature_january,
+                    label="january collector output temp.",
+                )
+                # ax1.plot(collector_output_temperature_march, label="march collector output temp.")
+                # ax1.plot(collector_output_temperature_may, label="may collector output temp.")
+                ax1.plot(
+                    collector_output_temperature_july,
+                    label="july collector output temp.",
+                )
+                ax1.plot(
+                    buffer_tank_temperature_january,
+                    ":",
+                    label="january tank temp.",
+                    color="C0",
+                )
+                # ax1.plot(buffer_tank_temperature_march, ":", label="march tank temp.", color="C2")
+                # ax1.plot(buffer_tank_temperature_may, ":", label="may tank temp.", color="C3")
+                ax1.plot(
+                    buffer_tank_temperature_july,
+                    ":",
+                    label="july tank temp.",
+                    color="C1",
+                )
+                ax1.legend(loc="upper left")
+
+                ax2 = ax1.twinx()
+                ax2.plot(volume_supplied_january, "--", label="january output")
+                # ax2.plot(volume_supplied_march, "--", label="march output")
+                # ax2.plot(volume_supplied_may, "--", label="may output")
+                ax2.plot(volume_supplied_july, "--", label="july output")
+                ax2.legend(loc="upper right")
+
+                plt.xlim(0, 23)
+                plt.xlabel("Hour of day")
+                ax1.set_ylabel("Collector output temperature / degC")
+                ax2.set_ylabel("Volume thermally desalinated / litres")
+                plt.title("Collector output temprature on an average seasonal days day")
+                plt.savefig(
+                    os.path.join(
+                        figures_directory,
+                        "clean_water_collector_output_temperature_on_average_month_days.png",
+                    ),
+                    transparent=True,
+                )
+                plt.close()
+                pbar.update(1)
 
         if initial_hot_water_hourly_loads is not None:
             # Plot the initial hot-water load of each device.
