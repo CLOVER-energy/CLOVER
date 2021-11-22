@@ -311,12 +311,13 @@ def _calculate_electric_desalination_parameters(
     return electric_desalinators, energy_per_desalinated_litre, maximum_water_throughput
 
 
-def _calculate_renewable_clean_water_profiles(
+def _calculate_renewable_cw_profiles(
     convertors: List[Convertor],
     end_hour: int,
     irradiance_data: pd.Series,
     logger: Logger,
     minigrid: Minigrid,
+    number_of_cw_tanks: int,
     pvt_size: int,
     scenario: Scenario,
     start_hour: int,
@@ -346,6 +347,8 @@ def _calculate_renewable_clean_water_profiles(
             The :class:`logging.Logger` to use for the run.
         - minigrid:
             The energy system being considered.
+        - number_of_cw_tanks:
+            The number of clean-water tanks installed within the system.
         - pvt_size:
             Amount of PV-T in PV-T units.
         - scenario:
@@ -370,7 +373,7 @@ def _calculate_renewable_clean_water_profiles(
             Celcius.
         - clean_water_pvt_electric_power_per_unit:
             The electric power produced by the PV-T, in kWh, per unit of PV-T installed.
-        - renewable_clean_water_produced:
+        - renewable_cw_produced:
             The amount of clean water produced renewably, measured in litres.
         - required_feedwater_sources:
             The `list` of feedwater sources required to supply the needs of the
@@ -537,6 +540,7 @@ def _calculate_renewable_clean_water_profiles(
             irradiance_data[start_hour:end_hour],
             logger,
             minigrid,
+            number_of_cw_tanks,
             None,
             pvt_size,
             ResourceType.CLEAN_WATER,
@@ -549,14 +553,14 @@ def _calculate_renewable_clean_water_profiles(
         logger.info("PV-T performance successfully computed.")
 
         # Compute the clean water supplied by the desalination unit.
-        renewable_clean_water_produced: pd.DataFrame = (
+        renewable_cw_produced: pd.DataFrame = (
             buffer_tank_volume_supplied > 0
         ) * thermal_desalination_plant.maximum_output_capacity
 
         # Compute the power consumed by the thermal desalination plant.
         thermal_desalination_electric_power_consumed: pd.DataFrame = pd.DataFrame(
             (
-                (renewable_clean_water_produced > 0)
+                (renewable_cw_produced > 0)
                 * (
                     0.001
                     * thermal_desalination_plant.input_resource_consumption[
@@ -581,9 +585,7 @@ def _calculate_renewable_clean_water_profiles(
         clean_water_pvt_electric_power_per_unit = (
             clean_water_pvt_electric_power_per_unit.reset_index(drop=True)
         )
-        renewable_clean_water_produced = renewable_clean_water_produced.reset_index(
-            drop=True
-        )
+        renewable_cw_produced = renewable_cw_produced.reset_index(drop=True)
         buffer_tank_volume_supplied = buffer_tank_volume_supplied.reset_index(drop=True)
         thermal_desalination_electric_power_consumed = (
             thermal_desalination_electric_power_consumed.reset_index(drop=True)
@@ -596,7 +598,7 @@ def _calculate_renewable_clean_water_profiles(
         clean_water_pvt_electric_power_per_unit = pd.DataFrame(
             [0] * (end_hour - start_hour)
         )
-        renewable_clean_water_produced = pd.DataFrame([0] * (end_hour - start_hour))
+        renewable_cw_produced = pd.DataFrame([0] * (end_hour - start_hour))
         required_feedwater_sources = []
         thermal_desalination_electric_power_consumed = pd.DataFrame(
             [0] * (end_hour - start_hour)
@@ -608,19 +610,20 @@ def _calculate_renewable_clean_water_profiles(
         feedwater_sources,
         clean_water_pvt_collector_output_temperature,
         clean_water_pvt_electric_power_per_unit,
-        renewable_clean_water_produced,
+        renewable_cw_produced,
         required_feedwater_sources,
         thermal_desalination_electric_power_consumed,
     )
 
 
-def _calculate_renewable_hot_water_profiles(
+def _calculate_renewable_hw_profiles(
     convertors: List[Convertor],
     end_hour: int,
     irradiance_data: pd.Series,
     logger: Logger,
     minigrid: Minigrid,
-    processed_total_hot_water_load: pd.DataFrame,
+    number_of_hw_tanks: int,
+    processed_total_hw_load: pd.DataFrame,
     pvt_size: int,
     scenario: Scenario,
     start_hour: int,
@@ -649,7 +652,9 @@ def _calculate_renewable_hot_water_profiles(
             The :class:`logging.Logger` to use for the run.
         - minigrid:
             The energy system being considered.
-        - processed_total_hot_water_load:
+        - number_of_hw_tanks:
+            The number of hot-water tanks installed.
+        - processed_total_hw_load:
             The total hot-water load placed on the system, defined in litres/hour at
             every time step.
         - pvt_size:
@@ -679,7 +684,7 @@ def _calculate_renewable_hot_water_profiles(
             step throughout the simulation period.
         - hot_water_tank_volume_supplied:
             The volume of hot-water supplied by the hot-water tank.
-        - renewable_hot_water_fraction:
+        - renewable_hw_fraction:
             The fraction of the hot-water demand which was covered using renewables vs
             which was covered using auxiliary means.
 
@@ -806,7 +811,8 @@ def _calculate_renewable_hot_water_profiles(
             irradiance_data[start_hour:end_hour],
             logger,
             minigrid,
-            processed_total_hot_water_load.iloc[:, 0],
+            number_of_hw_tanks,
+            processed_total_hw_load.iloc[:, 0],
             pvt_size,
             ResourceType.HOT_CLEAN_WATER,
             scenario,
@@ -852,7 +858,7 @@ def _calculate_renewable_hot_water_profiles(
         )
 
         # Determine the fraction of the output which was met renewably.
-        renewable_hot_water_fraction: pd.DataFrame = (
+        renewable_hw_fraction: pd.DataFrame = (
             hot_water_tank_temperature
             - scenario.hot_water_scenario.cold_water_supply_temperature
         ) / (
@@ -871,9 +877,7 @@ def _calculate_renewable_hot_water_profiles(
         hot_water_tank_volume_supplied = hot_water_tank_volume_supplied.reset_index(
             drop=True
         )
-        renewable_hot_water_fraction = renewable_hot_water_fraction.reset_index(
-            drop=True
-        )
+        renewable_hw_fraction = renewable_hw_fraction.reset_index(drop=True)
 
     else:
         auxiliary_heater = None
@@ -884,7 +888,7 @@ def _calculate_renewable_hot_water_profiles(
         )
         hot_water_tank_temperature = None
         hot_water_tank_volume_supplied = None
-        renewable_hot_water_fraction = None
+        renewable_hw_fraction = None
 
     return (
         auxiliary_heater,
@@ -893,27 +897,27 @@ def _calculate_renewable_hot_water_profiles(
         hot_water_pvt_electric_power_per_unit,
         hot_water_tank_temperature,
         hot_water_tank_volume_supplied,
-        renewable_hot_water_fraction,
+        renewable_hw_fraction,
     )
 
 
-def _clean_water_tank_iteration_step(
+def _cw_tank_iteration_step(
     backup_desalinator_water_supplied: Dict[int, float],
     clean_water_power_consumed_mapping: Dict[int, float],
     clean_water_demand_met_by_excess_energy: Dict[int, float],
     clean_water_supplied_by_excess_energy: Dict[int, float],
-    conventional_clean_water_source_profiles: Dict[WaterSource, pd.DataFrame],
+    conventional_cw_source_profiles: Dict[WaterSource, pd.DataFrame],
     conventional_water_supplied: Dict[int, float],
     energy_per_desalinated_litre: float,
     excess_energy: float,
     excess_energy_used_desalinating: Dict[int, float],
-    hourly_clean_water_tank_storage: pd.DataFrame,
-    initial_clean_water_tank_storage: float,
+    hourly_cw_tank_storage: pd.DataFrame,
+    initial_cw_tank_storage: float,
     maximum_battery_storage: float,
-    maximum_clean_water_tank_storage: float,
+    maximum_cw_tank_storage: float,
     maximum_water_throughput: float,
     minigrid: Minigrid,
-    minimum_clean_water_tank_storage: float,
+    minimum_cw_tank_storage: float,
     new_hourly_battery_storage: float,
     scenario: Scenario,
     storage_water_supplied: Dict[int, float],
@@ -935,7 +939,7 @@ def _clean_water_tank_iteration_step(
         - clean_water_supplied_by_excess_energy:
             The clean water that was supplied by the excess energy from the renewable
             system.
-        - conventioanl_clean_water_source_profiles:
+        - conventioanl_cw_source_profiles:
             A mapping between :class:`WaterSource` instances, corresponding to
             conventional sources of drinking water within the system, and their
             associated maximum output throughout the duration of the simulation.
@@ -948,20 +952,20 @@ def _clean_water_tank_iteration_step(
             The excess electrical energy from the renewable system.
         - excess_energy_used_desalinating:
             The amount of excess electrical energy that was used desalinating.
-        - hourly_clean_water_tank_storage:
+        - hourly_cw_tank_storage:
             A mapping between time index and the amount of clean water stored in the
             system.
-        - initial_clean_water_tank_storage:
+        - initial_cw_tank_storage:
             The initial level of the clean water tanks.
         - maximum_battery_storage:
             The maximum amount of energy that can be stored in the batteries.
-        - maximum_clean_water_tank_storage:
+        - maximum_cw_tank_storage:
             The maximum storage of the clean-water tanks.
         - maximum_water_throughput:
             The maximum amount of water that can be desalinated electrically.
         - minigrid:
             The :class:`Minigrid` being used for the run.
-        - minimum_clean_water_tank_storage:
+        - minimum_cw_tank_storage:
             The minimum amount of water that must be held in the clean-water tanks.
         - new_hourly_battery_storage:
             The level of electricity stored in the batteries at the time step being
@@ -986,10 +990,10 @@ def _clean_water_tank_iteration_step(
 
         # Compute the new tank level based on the previous level and the flow.
         if time_index == 0:
-            current_net_water_flow = initial_clean_water_tank_storage + tank_water_flow
+            current_net_water_flow = initial_cw_tank_storage + tank_water_flow
         else:
             current_net_water_flow = (
-                hourly_clean_water_tank_storage[time_index - 1]
+                hourly_cw_tank_storage[time_index - 1]
                 * (1.0 - minigrid.clean_water_tank.leakage)
                 + tank_water_flow
             )
@@ -1008,14 +1012,14 @@ def _clean_water_tank_iteration_step(
             )
 
             # Add this to the tank and fulfil the demand if relevant.
-            current_hourly_clean_water_tank_storage = (
+            current_hourly_cw_tank_storage = (
                 current_net_water_flow + maximum_desalinated_water
             )
 
             # Compute the amount of water that was actually desalinated.
             desalinated_water = min(
                 maximum_desalinated_water,
-                maximum_clean_water_tank_storage - current_net_water_flow,
+                maximum_cw_tank_storage - current_net_water_flow,
             )
 
             # Compute the remaining excess energy and the energy used in
@@ -1038,11 +1042,11 @@ def _clean_water_tank_iteration_step(
             excess_energy_used_desalinating[time_index] = 0
             clean_water_demand_met_by_excess_energy[time_index] = 0
             clean_water_supplied_by_excess_energy[time_index] = 0
-            current_hourly_clean_water_tank_storage = current_net_water_flow
+            current_hourly_cw_tank_storage = current_net_water_flow
 
         # If there is still unmet water demand, then carry out desalination and
         # pumping to fulfil the demand.
-        current_unmet_water_demand: float = -current_hourly_clean_water_tank_storage
+        current_unmet_water_demand: float = -current_hourly_cw_tank_storage
         if (
             current_unmet_water_demand > 0
             and scenario.desalination_scenario is not None
@@ -1073,42 +1077,40 @@ def _clean_water_tank_iteration_step(
         # sources if available.
         if current_unmet_water_demand > 0:
             # Compute the clean water supplied using convnetional sources.
-            conventional_clean_water_available = float(
+            conventional_cw_available = float(
                 sum(
                     entry.iloc[time_index]
-                    for entry in conventional_clean_water_source_profiles.values()
+                    for entry in conventional_cw_source_profiles.values()
                 )
             )
-            conventional_clean_water_supplied = min(
-                conventional_clean_water_available, current_unmet_water_demand
+            conventional_cw_supplied = min(
+                conventional_cw_available, current_unmet_water_demand
             )
-            current_unmet_water_demand -= conventional_clean_water_supplied
+            current_unmet_water_demand -= conventional_cw_supplied
 
             # Store this as water supplied through conventional means.
-            conventional_water_supplied[time_index] = conventional_clean_water_supplied
+            conventional_water_supplied[time_index] = conventional_cw_supplied
         else:
             conventional_water_supplied[time_index] = 0
 
-        current_hourly_clean_water_tank_storage = min(
-            current_hourly_clean_water_tank_storage,
-            maximum_clean_water_tank_storage,
+        current_hourly_cw_tank_storage = min(
+            current_hourly_cw_tank_storage,
+            maximum_cw_tank_storage,
         )
-        current_hourly_clean_water_tank_storage = max(
-            current_hourly_clean_water_tank_storage,
-            minimum_clean_water_tank_storage,
+        current_hourly_cw_tank_storage = max(
+            current_hourly_cw_tank_storage,
+            minimum_cw_tank_storage,
         )
 
-        hourly_clean_water_tank_storage[
-            time_index
-        ] = current_hourly_clean_water_tank_storage
+        hourly_cw_tank_storage[time_index] = current_hourly_cw_tank_storage
 
         if time_index == 0:
             storage_water_supplied[time_index] = 0.0 - tank_water_flow
         else:
             storage_water_supplied[time_index] = max(
-                hourly_clean_water_tank_storage[time_index - 1]
+                hourly_cw_tank_storage[time_index - 1]
                 * (1.0 - minigrid.clean_water_tank.leakage)
-                - hourly_clean_water_tank_storage[time_index],
+                - hourly_cw_tank_storage[time_index],
                 0.0,
             )
 
@@ -1464,8 +1466,8 @@ def _get_processed_load_profile(scenario: Scenario, total_load: pd.DataFrame):
 
 
 def _get_water_storage_profile(
-    processed_total_clean_water_load: pd.DataFrame,
-    renewable_clean_water_produced: pd.DataFrame,
+    processed_total_cw_load: pd.DataFrame,
+    renewable_cw_produced: pd.DataFrame,
 ) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """
     Gets the storage profile for the clean-water system.
@@ -1473,9 +1475,9 @@ def _get_water_storage_profile(
     Inputs:
         - minigrid:
             The minigrid being modelled.
-        - processed_total_clean_water_load:
+        - processed_total_cw_load:
             The total clean-water load placed on the system.
-        - renewable_clean_water_produced:
+        - renewable_cw_produced:
             The total clean water produced directly from renewables, i.e., solar-based
             or solar-thermal-based desalination technologies.
         - scenario:
@@ -1484,7 +1486,7 @@ def _get_water_storage_profile(
     Outputs:
         - power_consumed:
             The electric power consumed in providing the water demand.
-        - renewable_clean_water_used_directly:
+        - renewable_cw_used_directly:
             The renewable clean water which was directly consumed.
         - tank_storage_profile:
             The amount of water (litres) into (+ve) and out of (-ve) the clean-water
@@ -1494,18 +1496,18 @@ def _get_water_storage_profile(
 
     # Clean water is either produced directly or drawn from the storage tanks.
     remaining_profile = pd.DataFrame(
-        renewable_clean_water_produced.values - processed_total_clean_water_load.values
+        renewable_cw_produced.values - processed_total_cw_load.values
     )
-    renewable_clean_water_used_directly: pd.DataFrame = pd.DataFrame(
-        (remaining_profile > 0) * processed_total_clean_water_load.values
-        + (remaining_profile < 0) * renewable_clean_water_produced.values
+    renewable_cw_used_directly: pd.DataFrame = pd.DataFrame(
+        (remaining_profile > 0) * processed_total_cw_load.values
+        + (remaining_profile < 0) * renewable_cw_produced.values
     )
 
     tank_storage_profile: pd.DataFrame = pd.DataFrame(remaining_profile.values)
 
     return (
-        0.001 * pd.DataFrame([0] * processed_total_clean_water_load.size),
-        renewable_clean_water_used_directly,
+        0.001 * pd.DataFrame([0] * processed_total_cw_load.size),
+        renewable_cw_used_directly,
         tank_storage_profile,
     )
 
@@ -1703,7 +1705,7 @@ def _update_battery_health(
 
 def run_simulation(
     clean_water_pvt_size: int,
-    conventional_clean_water_source_profiles: Dict[WaterSource, pd.DataFrame],
+    conventional_cw_source_profiles: Dict[WaterSource, pd.DataFrame],
     convertors: List[Convertor],
     electric_storage_size: float,
     grid_profile: pd.DataFrame,
@@ -1713,7 +1715,8 @@ def run_simulation(
     location: Location,
     logger: Logger,
     minigrid: Minigrid,
-    number_of_clean_water_tanks: int,
+    number_of_cw_tanks: int,
+    number_of_hw_tanks: int,
     pv_power_produced: pd.Series,
     pv_size: float,
     scenario: Scenario,
@@ -1731,7 +1734,7 @@ def run_simulation(
     Inputs:
         - clean_water_pvt_size:
             Amount of PV-T in PV-T units associated with the clean-water system.
-        - conventional_clean_water_source_profiles:
+        - conventional_cw_source_profiles:
             A mapping between :class:`WaterSource` instances and the associated water
             that can be drawn from the source throughout the duration of the simulation.
         - convertors:
@@ -1754,13 +1757,15 @@ def run_simulation(
             The :class:`logging.Logger` to use for the run.
         - minigrid:
             The energy system being considered.
-        - number_of_clean_water_tanks:
+        - number_of_cw_tanks:
             The number of clean-water tanks installed in the system.
+        - number_of_hw_tanks:
+            The number of hot-water tanks installed in the system.
         - pv_size:
             Amount of PV in PV units.
         - pv_power_produced:
             The total energy outputted by the solar system per PV unit.
-        - renewable_clean_water_produced:
+        - renewable_cw_produced:
             The amount of clean-water produced renewably, mesaured in litres.
         - scenario:
             The scenario being considered.
@@ -1837,20 +1842,16 @@ def run_simulation(
     start_hour = simulation.start_year * 8760
     end_hour = simulation.end_year * 8760
     simulation_hours = end_hour - start_hour
-    total_clean_water_load: Optional[pd.DataFrame] = total_loads[
-        ResourceType.CLEAN_WATER
-    ]
+    total_cw_load: Optional[pd.DataFrame] = total_loads[ResourceType.CLEAN_WATER]
     total_electric_load: Optional[pd.DataFrame] = total_loads[ResourceType.ELECTRIC]
-    total_hot_water_load: Optional[pd.DataFrame] = total_loads[
-        ResourceType.HOT_CLEAN_WATER
-    ]
+    total_hw_load: Optional[pd.DataFrame] = total_loads[ResourceType.HOT_CLEAN_WATER]
 
     # Calculate PV-T related performance profiles.
     buffer_tank_temperature: Optional[pd.DataFrame]
     feedwater_sources: List[Convertor]
     clean_water_pvt_collector_output_temperature: Optional[pd.DataFrame]
     clean_water_pvt_electric_power_per_unit: pd.DataFrame
-    renewable_clean_water_produced: pd.DataFrame
+    renewable_cw_produced: pd.DataFrame
     buffer_tank_volume_supplied: pd.DataFrame
     thermal_desalination_electric_power_consumed: pd.DataFrame
 
@@ -1861,15 +1862,16 @@ def run_simulation(
         feedwater_sources,
         clean_water_pvt_collector_output_temperature,
         clean_water_pvt_electric_power_per_unit,
-        renewable_clean_water_produced,
-        required_clean_water_feedwater_sources,
+        renewable_cw_produced,
+        required_cw_feedwater_sources,
         thermal_desalination_electric_power_consumed,
-    ) = _calculate_renewable_clean_water_profiles(
+    ) = _calculate_renewable_cw_profiles(
         convertors,
         end_hour,
         irradiance_data,
         logger,
         minigrid,
+        number_of_cw_tanks,
         clean_water_pvt_size,
         scenario,
         start_hour,
@@ -1902,19 +1904,19 @@ def run_simulation(
 
     # Calculate clean-water-related performance profiles.
     clean_water_power_consumed: pd.DataFrame
-    renewable_clean_water_used_directly: pd.DataFrame
+    renewable_cw_used_directly: pd.DataFrame
     tank_storage_profile: Optional[pd.DataFrame] = None
-    total_clean_water_supplied: Optional[pd.DataFrame] = None
+    total_cw_supplied: Optional[pd.DataFrame] = None
 
     if scenario.desalination_scenario is not None:
-        if total_clean_water_load is None:
+        if total_cw_load is None:
             raise Exception(
                 f"{BColours.fail}A simulation was run that specified a clean-water "
                 + f"load but no clean-water load was passed in.{BColours.endc}"
             )
         # Process the load profile based on the relevant scenario.
-        processed_total_clean_water_load = pd.DataFrame(
-            _get_processed_load_profile(scenario, total_clean_water_load)[
+        processed_total_cw_load = pd.DataFrame(
+            _get_processed_load_profile(scenario, total_cw_load)[
                 start_hour:end_hour
             ].values
         )
@@ -1922,36 +1924,33 @@ def run_simulation(
         # Determine the water-tank storage profile.
         (
             clean_water_power_consumed,
-            renewable_clean_water_used_directly,
+            renewable_cw_used_directly,
             tank_storage_profile,
         ) = _get_water_storage_profile(
-            processed_total_clean_water_load,
-            renewable_clean_water_produced,
+            processed_total_cw_load,
+            renewable_cw_produced,
         )
         number_of_buffer_tanks: int = 1
     else:
         clean_water_power_consumed = pd.DataFrame([0] * simulation_hours)
         number_of_buffer_tanks = 0
-        renewable_clean_water_used_directly = pd.DataFrame([0] * simulation_hours)
+        renewable_cw_used_directly = pd.DataFrame([0] * simulation_hours)
 
     # Calculate hot-water-related profiles.
-    processed_total_hot_water_load: pd.DataFrame
+    processed_total_hw_load: pd.DataFrame
     if scenario.hot_water_scenario is not None:
-        if total_hot_water_load is None:
+        if total_hw_load is None:
             raise Exception(
                 f"{BColours.fail}A simulation was run that specified a hot-water load "
                 + f"but no hot-water load was passed in.{BColours.endc}"
             )
         # Process the load profile based on the relevant scenario.
-        number_of_hot_water_tanks: int = 0
-        processed_total_hot_water_load = pd.DataFrame(
-            _get_processed_load_profile(scenario, total_hot_water_load)[
-                start_hour:end_hour
-            ]
+        processed_total_hw_load = pd.DataFrame(
+            _get_processed_load_profile(scenario, total_hw_load)[start_hour:end_hour]
         )
     else:
-        number_of_hot_water_tanks = 0
-        processed_total_hot_water_load = pd.DataFrame([0] * (end_hour - start_hour))
+        number_of_hw_tanks = 0
+        processed_total_hw_load = pd.DataFrame([0] * (end_hour - start_hour))
 
     # Calculate hot-water PV-T related performance profiles.
     hot_water_pump_electric_power_consumed: pd.DataFrame
@@ -1959,7 +1958,7 @@ def run_simulation(
     hot_water_pvt_electric_power_per_unit: pd.DataFrame
     hot_water_tank_temperature: Optional[pd.DataFrame]
     hot_water_tank_volume_supplied: pd.DataFrame
-    renewable_hot_water_fraction: pd.DataFrame
+    renewable_hw_fraction: pd.DataFrame
 
     logger.info("Calculating hot-water PV-T performance profiles.")
     (
@@ -1969,14 +1968,15 @@ def run_simulation(
         hot_water_pvt_electric_power_per_unit,
         hot_water_tank_temperature,
         hot_water_tank_volume_supplied,
-        renewable_hot_water_fraction,
-    ) = _calculate_renewable_hot_water_profiles(
+        renewable_hw_fraction,
+    ) = _calculate_renewable_hw_profiles(
         convertors,
         end_hour,
         irradiance_data,
         logger,
         minigrid,
-        processed_total_hot_water_load,
+        number_of_hw_tanks,
+        processed_total_hw_load,
         hot_water_pvt_size,
         scenario,
         start_hour,
@@ -2095,14 +2095,14 @@ def run_simulation(
 
     # Initialise tank storage parameters
     (
-        hourly_clean_water_tank_storage,
-        initial_clean_water_tank_storage,
-        maximum_clean_water_tank_storage,
-        minimum_clean_water_tank_storage,
+        hourly_cw_tank_storage,
+        initial_cw_tank_storage,
+        maximum_cw_tank_storage,
+        minimum_cw_tank_storage,
         clean_water_power_consumed_mapping,
     ) = _setup_tank_storage_profiles(
         logger,
-        number_of_clean_water_tanks,
+        number_of_cw_tanks,
         clean_water_power_consumed,
         ResourceType.CLEAN_WATER,
         scenario,
@@ -2110,14 +2110,14 @@ def run_simulation(
     )
 
     (
-        hourly_hot_water_tank_storage,
-        initial_hot_water_tank_storage,
-        maximum_hot_water_tank_storage,
-        minimum_hot_water_tank_storage,
+        hourly_hw_tank_storage,
+        initial_hw_tank_storage,
+        maximum_hw_tank_storage,
+        minimum_hw_tank_storage,
         hot_water_power_consumed_mapping,
     ) = _setup_tank_storage_profiles(
         logger,
-        number_of_hot_water_tanks,
+        number_of_hw_tanks,
         hot_water_power_consumed,
         ResourceType.HOT_CLEAN_WATER,
         scenario,
@@ -2180,23 +2180,23 @@ def run_simulation(
             # Calculate the hot-water iteration.
 
             # Calculate the clean-water iteration.
-            excess_energy = _clean_water_tank_iteration_step(
+            excess_energy = _cw_tank_iteration_step(
                 backup_desalinator_water_supplied,
                 clean_water_power_consumed_mapping,
                 clean_water_demand_met_by_excess_energy,
                 clean_water_supplied_by_excess_energy,
-                conventional_clean_water_source_profiles,
+                conventional_cw_source_profiles,
                 conventional_water_supplied,
                 energy_per_desalinated_litre,
                 excess_energy,
                 excess_energy_used_desalinating,
-                hourly_clean_water_tank_storage,
-                initial_clean_water_tank_storage,
+                hourly_cw_tank_storage,
+                initial_cw_tank_storage,
                 maximum_battery_storage,
-                maximum_clean_water_tank_storage,
+                maximum_cw_tank_storage,
                 maximum_water_throughput,
                 minigrid,
-                minimum_clean_water_tank_storage,
+                minimum_cw_tank_storage,
                 new_hourly_battery_storage,
                 scenario,
                 storage_water_supplied,
@@ -2262,14 +2262,14 @@ def run_simulation(
         clean_water_supplied_by_excess_energy_frame: pd.DataFrame = dict_to_dataframe(
             clean_water_supplied_by_excess_energy, logger
         )
-        conventional_clean_water_supplied_frame: pd.DataFrame = dict_to_dataframe(
+        conventional_cw_supplied_frame: pd.DataFrame = dict_to_dataframe(
             conventional_water_supplied, logger
         )
         excess_energy_used_desalinating_frame: pd.DataFrame = dict_to_dataframe(
             excess_energy_used_desalinating, logger
         )
-        hourly_clean_water_tank_storage_frame: pd.DataFrame = dict_to_dataframe(
-            hourly_clean_water_tank_storage, logger
+        hourly_cw_tank_storage_frame: pd.DataFrame = dict_to_dataframe(
+            hourly_cw_tank_storage, logger
         )
         storage_water_supplied_frame: pd.DataFrame = dict_to_dataframe(
             storage_water_supplied, logger
@@ -2363,23 +2363,23 @@ def run_simulation(
         )
 
         # Compute the outputs from the itteration stage
-        total_clean_water_supplied = pd.DataFrame(
-            renewable_clean_water_used_directly.values
+        total_cw_supplied = pd.DataFrame(
+            renewable_cw_used_directly.values
             + storage_water_supplied_frame.values
             + backup_desalinator_water_frame.values
             + clean_water_supplied_by_excess_energy_frame.values
-            + conventional_clean_water_supplied_frame.values
+            + conventional_cw_supplied_frame.values
         ).mul((1 - blackout_times))
 
-        water_surplus_frame = (
-            (total_clean_water_supplied - processed_total_clean_water_load) > 0
-        ) * (total_clean_water_supplied - processed_total_clean_water_load)
+        water_surplus_frame = ((total_cw_supplied - processed_total_cw_load) > 0) * (
+            total_cw_supplied - processed_total_cw_load
+        )
 
-        total_clean_water_used = total_clean_water_supplied - water_surplus_frame
+        total_cw_used = total_cw_supplied - water_surplus_frame
 
         # Compute when the water demand went unmet.
         unmet_clean_water = pd.DataFrame(
-            processed_total_clean_water_load.values - total_clean_water_supplied.values
+            processed_total_cw_load.values - total_cw_supplied.values
         )
         unmet_clean_water = unmet_clean_water * (unmet_clean_water > 0)
 
@@ -2402,34 +2402,28 @@ def run_simulation(
         clean_water_supplied_by_excess_energy_frame.columns = pd.Index(
             ["Clean water supplied using excess minigrid energy (l)"]
         )
-        conventional_clean_water_supplied_frame.columns = pd.Index(
+        conventional_cw_supplied_frame.columns = pd.Index(
             ["Drinking water supplied via conventional sources (l)"]
         )
         excess_energy_used_desalinating_frame.columns = pd.Index(
             ["Excess power consumed desalinating clean water (kWh)"]
         )
-        hourly_clean_water_tank_storage_frame.columns = pd.Index(
+        hourly_cw_tank_storage_frame.columns = pd.Index(
             ["Water held in clean-water storage tanks (l)"]
         )
-        processed_total_clean_water_load.columns = pd.Index(
-            ["Total clean water demand (l)"]
-        )
+        processed_total_cw_load.columns = pd.Index(["Total clean water demand (l)"])
         power_used_on_electricity.columns = pd.Index(
             ["Power consumed providing electricity (kWh)"]
         )
-        renewable_clean_water_produced.columns = pd.Index(
-            ["Renewable clean water produced (l)"]
-        )
-        renewable_clean_water_used_directly.columns = pd.Index(
+        renewable_cw_produced.columns = pd.Index(["Renewable clean water produced (l)"])
+        renewable_cw_used_directly.columns = pd.Index(
             ["Renewable clean water used directly (l)"]
         )
         storage_water_supplied_frame.columns = pd.Index(
             ["Clean water supplied via tank storage (l)"]
         )
-        total_clean_water_used.columns = pd.Index(["Total clean water consumed (l)"])
-        total_clean_water_supplied.columns = pd.Index(
-            ["Total clean water supplied (l)"]
-        )
+        total_cw_used.columns = pd.Index(["Total clean water consumed (l)"])
+        total_cw_supplied.columns = pd.Index(["Total clean water supplied (l)"])
         unmet_clean_water.columns = pd.Index(["Unmet clean water demand (l)"])
         water_surplus_frame.columns = pd.Index(["Water surplus (l)"])
 
@@ -2492,12 +2486,8 @@ def run_simulation(
         hot_water_tank_volume_supplied.columns = pd.Index(
             ["Hot-water tank volume supplied (l)"]
         )
-        processed_total_hot_water_load.columns = pd.Index(
-            ["Total hot-water demand (l)"]
-        )
-        renewable_hot_water_fraction.columns = pd.Index(
-            ["Renewable hot-water fraction"]
-        )
+        processed_total_hw_load.columns = pd.Index(["Total hot-water demand (l)"])
+        renewable_hw_fraction.columns = pd.Index(["Renewable hot-water fraction"])
 
     # System performance outputs
     battery_health_frame.columns = pd.Index(["Battery health"])
@@ -2535,10 +2525,8 @@ def run_simulation(
         if minigrid.pvt_panel is not None and scenario.hot_water_scenario is not None
         else None,
         number_of_buffer_tanks if scenario.desalination_scenario is not None else None,
-        number_of_clean_water_tanks
-        if scenario.desalination_scenario is not None
-        else None,
-        number_of_hot_water_tanks if scenario.hot_water_scenario is not None else None,
+        number_of_cw_tanks if scenario.desalination_scenario is not None else None,
+        number_of_hw_tanks if scenario.hot_water_scenario is not None else None,
         pv_size
         * float(
             solar_degradation(minigrid.pv_panel.lifetime, location.max_years).iloc[
@@ -2557,14 +2545,12 @@ def run_simulation(
         if minigrid.pvt_panel is not None and scenario.hot_water_scenario is not None
         else None,
         number_of_buffer_tanks if scenario.desalination_scenario is not None else None,
-        number_of_clean_water_tanks
-        if scenario.desalination_scenario is not None
-        else None,
-        number_of_hot_water_tanks if scenario.hot_water_scenario is not None else None,
+        number_of_cw_tanks if scenario.desalination_scenario is not None else None,
+        number_of_hw_tanks if scenario.hot_water_scenario is not None else None,
         pv_size,
         float(electric_storage_size * minigrid.battery.storage_unit),
-        [source.name for source in required_clean_water_feedwater_sources]
-        if len(required_clean_water_feedwater_sources) > 0
+        [source.name for source in required_cw_feedwater_sources]
+        if len(required_cw_feedwater_sources) > 0
         else None,
         simulation.start_year,
     )
@@ -2619,16 +2605,16 @@ def run_simulation(
                 clean_water_blackout_times,
                 clean_water_power_consumed,
                 clean_water_supplied_by_excess_energy_frame,
-                conventional_clean_water_supplied_frame,
+                conventional_cw_supplied_frame,
                 excess_energy_used_desalinating_frame,
-                hourly_clean_water_tank_storage_frame,
+                hourly_cw_tank_storage_frame,
                 power_used_on_electricity,
-                processed_total_clean_water_load,
-                renewable_clean_water_produced,
-                renewable_clean_water_used_directly,
+                processed_total_cw_load,
+                renewable_cw_produced,
+                renewable_cw_used_directly,
                 storage_water_supplied_frame,
-                total_clean_water_supplied,
-                total_clean_water_used,
+                total_cw_supplied,
+                total_cw_used,
                 unmet_clean_water,
                 water_surplus_frame,
             ]
@@ -2655,8 +2641,8 @@ def run_simulation(
                 hot_water_pvt_energy,
                 hot_water_tank_temperature,
                 hot_water_tank_volume_supplied,
-                processed_total_hot_water_load,
-                renewable_hot_water_fraction,
+                processed_total_hw_load,
+                renewable_hw_fraction,
             ]
         )
 

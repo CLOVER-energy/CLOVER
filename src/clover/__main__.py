@@ -747,17 +747,15 @@ def main(args: List[Any]) -> None:
             raise
 
     clean_water_yearly_load_statistics: Optional[pd.DataFrame] = None
-    conventional_clean_water_source_profiles: Optional[
-        Dict[WaterSource, pd.DataFrame]
-    ] = None
-    initial_clean_water_hourly_loads: Optional[Dict[str, pd.DataFrame]] = None
-    total_clean_water_load: Optional[pd.DataFrame] = None
+    conventional_cw_source_profiles: Optional[Dict[WaterSource, pd.DataFrame]] = None
+    initial_cw_hourly_loads: Optional[Dict[str, pd.DataFrame]] = None
+    total_cw_load: Optional[pd.DataFrame] = None
 
     if scenario.desalination_scenario is not None:
         (
-            conventional_clean_water_source_profiles,
-            initial_clean_water_hourly_loads,
-            total_clean_water_load,
+            conventional_cw_source_profiles,
+            initial_cw_hourly_loads,
+            total_cw_load,
             clean_water_yearly_load_statistics,
         ) = _prepate_water_system(
             scenario.desalination_scenario.clean_water_scenario.conventional_sources,
@@ -770,20 +768,18 @@ def main(args: List[Any]) -> None:
             water_source_times,
         )
 
-    conventional_hot_water_source_profiles: Optional[
-        Dict[WaterSource, pd.DataFrame]
-    ] = None
+    conventional_hw_source_profiles: Optional[Dict[WaterSource, pd.DataFrame]] = None
     hot_water_yearly_load_statistics: Optional[pd.DataFrame] = None
-    initial_hot_water_hourly_loads: Optional[Dict[str, pd.DataFrame]] = None
-    total_hot_water_load: Optional[pd.DataFrame] = None
+    initial_hw_hourly_loads: Optional[Dict[str, pd.DataFrame]] = None
+    total_hw_load: Optional[pd.DataFrame] = None
 
     if scenario.hot_water_scenario is not None:
         (
-            conventional_hot_water_source_profiles,
-            initial_hot_water_hourly_loads,
-            total_hot_water_load,
+            conventional_hw_source_profiles,
+            initial_hw_hourly_loads,
+            total_hw_load,
             hot_water_yearly_load_statistics,
-        ) = _prepate_water_system(
+        ) = _prep_hw_ystem(
             scenario.hot_water_scenario.conventional_sources,
             auto_generated_files_directory,
             device_utilisations,
@@ -796,9 +792,9 @@ def main(args: List[Any]) -> None:
 
     # Assemble a means of storing the relevant loads.
     total_loads: Dict[ResourceType, Optional[pd.DataFrame]] = {
-        ResourceType.CLEAN_WATER: total_clean_water_load,
+        ResourceType.CLEAN_WATER: total_cw_load,
         ResourceType.ELECTRIC: 0.001 * total_electric_load,
-        ResourceType.HOT_CLEAN_WATER: total_hot_water_load,
+        ResourceType.HOT_CLEAN_WATER: total_hw_load,
     }
 
     # Generate the grid-availability profiles.
@@ -1018,7 +1014,7 @@ def main(args: List[Any]) -> None:
                     parsed_args.clean_water_pvt_system_size
                     if parsed_args.clean_water_pvt_system_size is not None
                     else 0,
-                    conventional_clean_water_source_profiles,
+                    conventional_cw_source_profiles,
                     convertors,
                     parsed_args.storage_size,
                     grid_profile,
@@ -1031,6 +1027,7 @@ def main(args: List[Any]) -> None:
                     logger,
                     minigrid,
                     parsed_args.num_clean_water_tanks,
+                    parsed_args.num_hot_water_tanks,
                     total_solar_data[solar.SolarDataType.ELECTRICITY.value]
                     * minigrid.pv_panel.pv_unit,
                     parsed_args.pv_system_size
@@ -1084,9 +1081,9 @@ def main(args: List[Any]) -> None:
                 analysis.plot_outputs(
                     grid_times[scenario.grid_type],
                     grid_profile,
-                    initial_clean_water_hourly_loads,
+                    initial_cw_hourly_loads,
                     initial_electric_hourly_loads,
-                    initial_hot_water_hourly_loads,
+                    initial_hw_hourly_loads,
                     simulation.end_year - simulation.start_year,
                     simulation_output_directory,
                     output,

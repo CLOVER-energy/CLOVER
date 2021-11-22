@@ -614,16 +614,16 @@ class KeyResults:
 
     """
 
-    average_daily_clean_water_demand_covered: Optional[float] = None
-    average_daily_clean_water_pvt_generation: Optional[float] = None
-    average_daily_clean_water_supplied: Optional[float] = None
+    average_daily_cw_demand_covered: Optional[float] = None
+    average_daily_cw_pvt_generation: Optional[float] = None
+    average_daily_cw_supplied: Optional[float] = None
     average_daily_diesel_energy_supplied: Optional[float] = None
     average_daily_dumped_energy: Optional[float] = None
     average_daily_energy_consumption: Optional[float] = None
     average_daily_grid_energy_supplied: Optional[float] = None
-    average_daily_hot_water_demand_covered: Optional[float] = None
-    average_daily_hot_water_pvt_generation: Optional[float] = None
-    average_daily_hot_water_supplied: Optional[float] = None
+    average_daily_hw_demand_covered: Optional[float] = None
+    average_daily_hw_pvt_generation: Optional[float] = None
+    average_daily_hw_supplied: Optional[float] = None
     average_daily_pv_energy_supplied: Optional[float] = None
     average_daily_renewables_energy_supplied: Optional[float] = None
     average_daily_renewables_energy_used: Optional[float] = None
@@ -633,21 +633,21 @@ class KeyResults:
     average_pvt_electric_generation: Optional[float] = None
     blackouts: Optional[float] = None
     clean_water_blackouts: Optional[float] = None
-    cumulative_clean_water_load: Optional[float] = None
-    cumulative_clean_water_pvt_generation: Optional[float] = None
-    cumulative_clean_water_supplied: Optional[float] = None
-    cumulative_hot_water_load: Optional[float] = None
-    cumulative_hot_water_pvt_generation: Optional[float] = None
-    cumulative_hot_water_supplied: Optional[float] = None
+    cumulative_cw_load: Optional[float] = None
+    cumulative_cw_pvt_generation: Optional[float] = None
+    cumulative_cw_supplied: Optional[float] = None
+    cumulative_hw_load: Optional[float] = None
+    cumulative_hw_pvt_generation: Optional[float] = None
+    cumulative_hw_supplied: Optional[float] = None
     cumulative_pv_generation: Optional[float] = None
     diesel_times: Optional[float] = None
     grid_daily_hours: Optional[float] = None
     max_buffer_tank_temperature: Optional[float] = None
-    max_clean_water_pvt_output_temperature: Optional[float] = None
+    max_cw_pvt_output_temperature: Optional[float] = None
     mean_buffer_tank_temperature: Optional[float] = None
-    mean_clean_water_pvt_output_temperature: Optional[float] = None
+    mean_cw_pvt_output_temperature: Optional[float] = None
     min_buffer_tank_temperature: Optional[float] = None
-    min_clean_water_pvt_output_temperature: Optional[float] = None
+    min_cw_pvt_output_temperature: Optional[float] = None
 
     def to_dict(self) -> Dict[str, float]:
         """
@@ -661,18 +661,18 @@ class KeyResults:
 
         data_dict: Dict[str, float] = {}
 
-        if self.average_daily_clean_water_demand_covered is not None:
+        if self.average_daily_cw_demand_covered is not None:
             data_dict["Average daily clean-water demand covered"] = round(
-                self.average_daily_clean_water_demand_covered, 3
+                self.average_daily_cw_demand_covered, 3
             )
-        if self.average_daily_clean_water_supplied is not None:
+        if self.average_daily_cw_supplied is not None:
             data_dict["Average daily clean water supplied / litres"] = round(
-                self.average_daily_clean_water_supplied, 3
+                self.average_daily_cw_supplied, 3
             )
-        if self.average_daily_clean_water_pvt_generation is not None:
+        if self.average_daily_cw_pvt_generation is not None:
             data_dict[
                 "Average daily clean-water PV-T electricity supplied / kWh"
-            ] = round(self.average_daily_clean_water_pvt_generation, 3)
+            ] = round(self.average_daily_cw_pvt_generation, 3)
         if self.average_daily_diesel_energy_supplied is not None:
             data_dict["Average daily diesel energy supplied / kWh"] = round(
                 self.average_daily_diesel_energy_supplied, 3
@@ -689,17 +689,17 @@ class KeyResults:
             data_dict["Average daily grid energy supplied / kWh"] = round(
                 self.average_daily_grid_energy_supplied, 3
             )
-        if self.average_daily_hot_water_demand_covered is not None:
+        if self.average_daily_hw_demand_covered is not None:
             data_dict["Average hot-water demand covered"] = round(
-                self.average_daily_hot_water_demand_covered, 3
+                self.average_daily_hw_demand_covered, 3
             )
-        if self.average_daily_hot_water_pvt_generation is not None:
+        if self.average_daily_hw_pvt_generation is not None:
             data_dict[
                 "Average daily hot-water PV-T electricity supplied / kWh"
-            ] = round(self.average_daily_hot_water_pvt_generation, 3)
-        if self.average_daily_hot_water_supplied is not None:
+            ] = round(self.average_daily_hw_pvt_generation, 3)
+        if self.average_daily_hw_supplied is not None:
             data_dict["Average daily hot water supplied / litres"] = round(
-                self.average_daily_hot_water_supplied, 3
+                self.average_daily_hw_supplied, 3
             )
         if self.average_daily_renewables_energy_supplied is not None:
             data_dict["Average daily renewables energy suppied / kWh"] = round(
@@ -729,21 +729,21 @@ class KeyResults:
             data_dict["Blackouts"] = round(self.blackouts, 3)
         if self.clean_water_blackouts is not None:
             data_dict["Clean water blackouts"] = round(self.clean_water_blackouts, 3)
-        if self.cumulative_clean_water_load is not None:
+        if self.cumulative_cw_load is not None:
             data_dict["Cumulative clean-water load / litres"] = round(
-                self.cumulative_clean_water_load, 3
+                self.cumulative_cw_load, 3
             )
-        if self.cumulative_clean_water_pvt_generation is not None:
+        if self.cumulative_cw_pvt_generation is not None:
             data_dict["Cumulative clean-water PV-T generation / kWh"] = round(
-                self.cumulative_clean_water_pvt_generation, 3
+                self.cumulative_cw_pvt_generation, 3
             )
-        if self.cumulative_clean_water_supplied is not None:
+        if self.cumulative_cw_supplied is not None:
             data_dict["Cumulative clean-water supplied / litres"] = round(
-                self.cumulative_clean_water_supplied, 3
+                self.cumulative_cw_supplied, 3
             )
-        if self.cumulative_hot_water_pvt_generation is not None:
+        if self.cumulative_hw_pvt_generation is not None:
             data_dict["Cumulative hot-water PV-T generation / kWh"] = round(
-                self.cumulative_hot_water_pvt_generation, 3
+                self.cumulative_hw_pvt_generation, 3
             )
         if self.cumulative_pv_generation is not None:
             data_dict["Cumulative pv generation / kWh"] = round(
@@ -759,25 +759,25 @@ class KeyResults:
             data_dict["Maximum buffer-tank temperature / degC"] = round(
                 self.max_buffer_tank_temperature, 3
             )
-        if self.max_clean_water_pvt_output_temperature is not None:
+        if self.max_cw_pvt_output_temperature is not None:
             data_dict["Maximum clean-water PV-T output temperature / degC"] = round(
-                self.max_clean_water_pvt_output_temperature, 3
+                self.max_cw_pvt_output_temperature, 3
             )
         if self.mean_buffer_tank_temperature is not None:
             data_dict["Mean buffer-tank temperature / degC"] = round(
                 self.mean_buffer_tank_temperature, 3
             )
-        if self.mean_clean_water_pvt_output_temperature is not None:
+        if self.mean_cw_pvt_output_temperature is not None:
             data_dict["Mean clean-water PV-T output temperature / degC"] = round(
-                self.mean_clean_water_pvt_output_temperature, 3
+                self.mean_cw_pvt_output_temperature, 3
             )
         if self.min_buffer_tank_temperature is not None:
             data_dict["Minimum buffer-tank temperature / degC"] = round(
                 self.min_buffer_tank_temperature, 3
             )
-        if self.min_clean_water_pvt_output_temperature is not None:
+        if self.min_cw_pvt_output_temperature is not None:
             data_dict["Minimum clean-water PV-T output temperature / degC"] = round(
-                self.min_clean_water_pvt_output_temperature, 3
+                self.min_cw_pvt_output_temperature, 3
             )
 
         return data_dict
@@ -1986,10 +1986,10 @@ class SystemDetails:
     .. attribute:: end_year
         The end year of the simulation.
 
-    .. attribute:: final_clean_water_pvt_size
+    .. attribute:: final_cw_pvt_size
         The final clean-water pv-t size of the system.
 
-    .. attribute:: final_hot_water_pvt_size
+    .. attribute:: final_hw_pvt_size
         The final hot-water pv-t size of the system.
 
     .. attribute:: final_num_buffer_tanks
@@ -2007,10 +2007,10 @@ class SystemDetails:
     .. attribute:: final_storage_size
         The final storage size of the system.
 
-    .. attribute:: initial_clean_water_pvt_size
+    .. attribute:: initial_cw_pvt_size
         The initial clean-water pv-t size of the system.
 
-    .. attribute:: initial_hot_water_pvt_size
+    .. attribute:: initial_hw_pvt_size
         The initial hot-water pv-t size of the system.
 
     .. attribute:: initial_num_buffer_tanks
@@ -2042,15 +2042,15 @@ class SystemDetails:
 
     diesel_capacity: float = 0
     end_year: int = 0
-    final_clean_water_pvt_size: Optional[float] = 0
-    final_hot_water_pvt_size: Optional[float] = 0
+    final_cw_pvt_size: Optional[float] = 0
+    final_hw_pvt_size: Optional[float] = 0
     final_num_buffer_tanks: Optional[int] = 0
     final_num_clean_water_tanks: Optional[int] = 0
     final_num_hot_water_tanks: Optional[int] = 0
     final_pv_size: float = 0
     final_storage_size: float = 0
-    initial_clean_water_pvt_size: Optional[float] = 0
-    initial_hot_water_pvt_size: Optional[float] = 0
+    initial_cw_pvt_size: Optional[float] = 0
+    initial_hw_pvt_size: Optional[float] = 0
     initial_num_buffer_tanks: Optional[int] = 0
     initial_num_clean_water_tanks: Optional[int] = 0
     initial_num_hot_water_tanks: Optional[int] = 0
@@ -2107,21 +2107,21 @@ class SystemDetails:
             system_details_as_dict["final_num_hot_water_tanks"] = round(
                 self.final_num_hot_water_tanks, 3
             )
-        if self.initial_clean_water_pvt_size is not None:
-            system_details_as_dict["initial_clean_water_pvt_size"] = round(
-                self.initial_clean_water_pvt_size, 3
+        if self.initial_cw_pvt_size is not None:
+            system_details_as_dict["initial_cw_pvt_size"] = round(
+                self.initial_cw_pvt_size, 3
             )
-        if self.final_clean_water_pvt_size is not None:
-            system_details_as_dict["final_clean_water_pvt_size"] = round(
-                self.final_clean_water_pvt_size, 3
+        if self.final_cw_pvt_size is not None:
+            system_details_as_dict["final_cw_pvt_size"] = round(
+                self.final_cw_pvt_size, 3
             )
-        if self.initial_hot_water_pvt_size is not None:
-            system_details_as_dict["initial_hot_water_pvt_size"] = round(
-                self.initial_hot_water_pvt_size, 3
+        if self.initial_hw_pvt_size is not None:
+            system_details_as_dict["initial_hw_pvt_size"] = round(
+                self.initial_hw_pvt_size, 3
             )
-        if self.final_hot_water_pvt_size is not None:
-            system_details_as_dict["final_hot_water_pvt_size"] = round(
-                self.final_hot_water_pvt_size, 3
+        if self.final_hw_pvt_size is not None:
+            system_details_as_dict["final_hw_pvt_size"] = round(
+                self.final_hw_pvt_size, 3
             )
         if self.required_feedwater_sources is not None:
             system_details_as_dict["required_feedwater_sources"] = ", ".join(
@@ -2141,14 +2141,8 @@ class SystemDetails:
         """
 
         return (
-            self.initial_clean_water_pvt_size
-            if self.initial_clean_water_pvt_size is not None
-            else 0
-        ) + (
-            self.initial_hot_water_pvt_size
-            if self.initial_hot_water_pvt_size is not None
-            else 0
-        )
+            self.initial_cw_pvt_size if self.initial_cw_pvt_size is not None else 0
+        ) + (self.initial_hw_pvt_size if self.initial_hw_pvt_size is not None else 0)
 
     @property
     def final_pvt_size(self) -> float:
@@ -2160,14 +2154,8 @@ class SystemDetails:
 
         """
 
-        return (
-            self.final_clean_water_pvt_size
-            if self.final_clean_water_pvt_size is not None
-            else 0
-        ) + (
-            self.final_hot_water_pvt_size
-            if self.final_hot_water_pvt_size is not None
-            else 0
+        return (self.final_cw_pvt_size if self.final_cw_pvt_size is not None else 0) + (
+            self.final_hw_pvt_size if self.final_hw_pvt_size is not None else 0
         )
 
 

@@ -265,7 +265,8 @@ def calculate_pvt_output(
     irradiances: pd.Series,
     logger: Logger,
     minigrid: Minigrid,
-    processed_total_hot_water_load: Optional[pd.Series],
+    num_tanks: int,
+    processed_total_hw_load: Optional[pd.Series],
     pvt_system_size: int,
     resource_type: ResourceType,
     scenario: Scenario,
@@ -287,7 +288,11 @@ def calculate_pvt_output(
             The logger to use for the run.
         - minigrid:
             The minigrid being modelled currently.
-        - processed_total_hot_water_load:
+        - num_tanks:
+            The number of hot-water tanks being modelled currently, which can either be
+            buffer tanks (for desalination systems), or hot-water tanks (for hot-water
+            systems).
+        - processed_total_hw_load:
             The total hot-water load placed on the system, measured in litres per hour.
         - pvt_system_size:
             The size of the PV-T system being modelled.
@@ -452,9 +457,14 @@ def calculate_pvt_output(
     pvt_collector_output_temperature_map: Dict[int, float] = collections.defaultdict(
         lambda: default_supply_temperature
     )
-    tank_environment_heat_transfer: float = tank.heat_transfer_coefficient  # [W/K]
+    tank_environment_heat_transfer: float = (
+        num_tanks * tank.heat_transfer_coefficient
+    )  # [W/K]
     tank_internal_energy: float = (
-        tank.mass * tank.heat_capacity / 3600  # [kg]  # [J/kg*K]  # [s/hour]
+        num_tanks
+        * tank.mass
+        * tank.heat_capacity
+        / 3600  # [kg]  # [J/kg*K]  # [s/hour]
     )  # [W/K]
     tank_temperature_map: Dict[int, float] = collections.defaultdict(
         lambda: default_supply_temperature
@@ -485,8 +495,8 @@ def calculate_pvt_output(
         tank_supply_on, volume_supplied = _volume_withdrawn_from_tank(
             temperatures[index],
             previous_tank_temperature,
-            processed_total_hot_water_load[index]
-            if processed_total_hot_water_load is not None
+            processed_total_hw_load[index]
+            if processed_total_hw_load is not None
             else None,
             logger,
             minigrid,
