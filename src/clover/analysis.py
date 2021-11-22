@@ -141,12 +141,12 @@ def get_key_results(
 
     # Compute the clean-water key results.
     if "Total clean water demand (l)" in simulation_results:
-        key_results.average_daily_clean_water_demand_covered = round(
+        key_results.average_daily_cw_demand_covered = round(
             simulation_results["Total clean water supplied (l)"].sum()
             / simulation_results["Total clean water demand (l)"].sum(),
             3,
         )
-        key_results.average_daily_clean_water_supplied = round(
+        key_results.average_daily_cw_supplied = round(
             simulation_results["Total clean water supplied (l)"].sum()
             / (365 * num_years),
             3,
@@ -154,23 +154,23 @@ def get_key_results(
         key_results.clean_water_blackouts = round(
             simulation_results["Clean water blackouts"].mean(), 3
         )
-        key_results.cumulative_clean_water_load = round(
+        key_results.cumulative_cw_load = round(
             simulation_results["Total clean water demand (l)"].sum(), 3
         )
-        key_results.cumulative_clean_water_supplied = round(
+        key_results.cumulative_cw_supplied = round(
             simulation_results["Total clean water supplied (l)"].sum(), 3
         )
 
     # Compute the clean-water PV-T key results.
     if "Clean-water PV-T electric energy supplied per kWh" in simulation_results:
-        key_results.average_daily_clean_water_pvt_generation = round(
+        key_results.average_daily_cw_pvt_generation = round(
             simulation_results[
                 "Clean-water PV-T electric energy supplied per kWh"
             ].sum()
             / (365 * num_years),
             3,
         )
-        key_results.cumulative_clean_water_pvt_generation = round(
+        key_results.cumulative_cw_pvt_generation = round(
             simulation_results[
                 "Clean-water PV-T electric energy supplied per kWh"
             ].sum(),
@@ -179,33 +179,33 @@ def get_key_results(
         key_results.max_buffer_tank_temperature = round(
             max(simulation_results["Buffer tank temperature (degC)"]), 3
         )
-        key_results.max_clean_water_pvt_output_temperature = round(
+        key_results.max_cw_pvt_output_temperature = round(
             max(simulation_results["Clean-water PV-T output temperature (degC)"]), 3
         )
         key_results.mean_buffer_tank_temperature = round(
             simulation_results["Buffer tank temperature (degC)"].mean(), 3
         )
-        key_results.mean_clean_water_pvt_output_temperature = round(
+        key_results.mean_cw_pvt_output_temperature = round(
             simulation_results["Clean-water PV-T output temperature (degC)"].mean(), 3
         )
         key_results.min_buffer_tank_temperature = round(
             min(simulation_results["Buffer tank temperature (degC)"]), 3
         )
-        key_results.min_clean_water_pvt_output_temperature = round(
+        key_results.min_cw_pvt_output_temperature = round(
             min(simulation_results["Clean-water PV-T output temperature (degC)"]), 3
         )
 
     # Compute the hot-water key results.
     if "Total hot-water demand (l)" in simulation_results:
-        key_results.average_daily_hot_water_demand_covered = round(
+        key_results.average_daily_hw_demand_covered = round(
             simulation_results["Renewable hot-water fraction"].mean(), 3
         )
-        key_results.average_daily_hot_water_pvt_generation = round(
+        key_results.average_daily_hw_pvt_generation = round(
             simulation_results["Hot-water PV-T electric energy supplied per kWh"].sum()
             / (365 * num_years),
             3,
         )
-        key_results.average_daily_hot_water_supplied = round(
+        key_results.average_daily_hw_supplied = round(
             simulation_results["Hot-water tank volume supplied (l)"].sum()
             / (365 * num_years),
             3,
@@ -217,9 +217,9 @@ def get_key_results(
 def plot_outputs(
     grid_input_profile: pd.DataFrame,
     grid_profile: pd.DataFrame,
-    initial_clean_water_hourly_loads: Optional[Dict[str, pd.DataFrame]],
+    initial_cw_hourly_loads: Optional[Dict[str, pd.DataFrame]],
     initial_electric_hourly_loads: Dict[str, pd.DataFrame],
-    initial_hot_water_hourly_loads: Dict[str, pd.DataFrame],
+    initial_hw_hourly_loads: Dict[str, pd.DataFrame],
     num_years: int,
     output_directory: str,
     simulation_name: str,
@@ -238,7 +238,7 @@ def plot_outputs(
             The relevant grid input profile for the simulation that was run.
         - grid_profile:
             The relevant grid profile for the simulation that was run.
-        - initial_clean_water_hourly_loads:
+        - initial_cw_hourly_loads:
             The initial clean water hourly load for each device for the initial period
             of the simulation run.
         - initial_electric_hourly_loads:
@@ -271,9 +271,9 @@ def plot_outputs(
     os.makedirs(os.path.join(output_directory, simulation_name), exist_ok=True)
     os.makedirs(figures_directory, exist_ok=True)
 
-    total_clean_water_load = total_loads[ResourceType.CLEAN_WATER]
+    total_cw_load = total_loads[ResourceType.CLEAN_WATER]
     total_electric_load = total_loads[ResourceType.ELECTRIC]
-    total_hot_water_load = total_loads[ResourceType.HOT_CLEAN_WATER]
+    total_hw_load = total_loads[ResourceType.HOT_CLEAN_WATER]
 
     # Determine which aspects of the system need plotting.
     cw_pvt: bool = (
@@ -283,9 +283,9 @@ def plot_outputs(
 
     with tqdm(
         total=10
-        + (15 if initial_clean_water_hourly_loads is not None else 0)
+        + (15 if initial_cw_hourly_loads is not None else 0)
         + (4 if cw_pvt else 0)
-        + (6 if initial_hot_water_hourly_loads is not None else 0),
+        + (6 if initial_hw_hourly_loads is not None else 0),
         desc="plots",
         leave=False,
         unit="plot",
@@ -681,23 +681,6 @@ def plot_outputs(
         plt.plot(renewable_energy, label="Renewables used directly", zorder=7)
         plt.plot(pv_supplied, label="PV electricity generated", zorder=8)
         if cw_pvt:
-            plt.plot(
-                clean_water_pvt_supplied,
-                label="CW PV-T electricity generated",
-                zorder=9,
-            )
-            plt.plot(
-                thermal_desalination_energy,
-                label="Thermal desal electric power",
-                zorder=10,
-            )
-        if hw_pvt:
-            plt.plot(
-                hot_water_pvt_supplied,
-                label="HW PV-T electricity generated",
-                zorder=(10 + (2 if cw_pvt else 0)),
-            )
-        if initial_clean_water_hourly_loads is not None:
             clean_water_energy_via_excess = (
                 np.mean(
                     np.reshape(
@@ -748,6 +731,22 @@ def plot_outputs(
                 clean_water_energy_via_backup,
                 label="Backup -> clean water",
                 zorder=11 + (2 if cw_pvt else 0) + (1 if hw_pvt else 0),
+            )
+            plt.plot(
+                clean_water_pvt_supplied,
+                label="CW PV-T electricity generated",
+                zorder=9,
+            )
+            plt.plot(
+                thermal_desalination_energy,
+                label="Thermal desal electric power",
+                zorder=10,
+            )
+        if hw_pvt:
+            plt.plot(
+                hot_water_pvt_supplied,
+                label="HW PV-T electricity generated",
+                zorder=(10 + (2 if cw_pvt else 0)),
             )
         plt.legend()
         plt.xlim(0, 23)
@@ -945,7 +944,7 @@ def plot_outputs(
                 label="HW PV-T electricity generated",
                 zorder=9 + (2 if cw_pvt else 0),
             )
-        if initial_clean_water_hourly_loads is not None:
+        if initial_cw_hourly_loads is not None:
             clean_water_energy_via_excess = simulation_output.iloc[0:24][
                 "Excess power consumed desalinating clean water (kWh)"
             ]
@@ -975,9 +974,9 @@ def plot_outputs(
         plt.close()
         pbar.update(1)
 
-        if initial_clean_water_hourly_loads is not None:
+        if initial_cw_hourly_loads is not None:
             # Plot the initial clean-water load of each device.
-            for device, load in initial_clean_water_hourly_loads.items():
+            for device, load in initial_cw_hourly_loads.items():
                 plt.plot(range(CUT_OFF_TIME), load, label=device)
                 # labels.append(device)
                 plt.xticks(range(0, CUT_OFF_TIME - 1, min(6, CUT_OFF_TIME - 2)))
@@ -996,22 +995,22 @@ def plot_outputs(
             # Plot the clean-water load breakdown by load type.
             plt.plot(
                 range(CUT_OFF_TIME),
-                total_clean_water_load[0:CUT_OFF_TIME][DemandType.DOMESTIC.value],
+                total_cw_load[0:CUT_OFF_TIME][DemandType.DOMESTIC.value],
                 label=DemandType.DOMESTIC.value,
             )
             plt.plot(
                 range(CUT_OFF_TIME),
-                total_clean_water_load[0:CUT_OFF_TIME][DemandType.COMMERCIAL.value],
+                total_cw_load[0:CUT_OFF_TIME][DemandType.COMMERCIAL.value],
                 label=DemandType.COMMERCIAL.value,
             )
             plt.plot(
                 range(CUT_OFF_TIME),
-                total_clean_water_load[0:CUT_OFF_TIME][DemandType.PUBLIC.value],
+                total_cw_load[0:CUT_OFF_TIME][DemandType.PUBLIC.value],
                 label=DemandType.PUBLIC.value,
             )
             plt.plot(
                 range(CUT_OFF_TIME),
-                np.sum(total_clean_water_load[0:CUT_OFF_TIME], axis=1),
+                np.sum(total_cw_load[0:CUT_OFF_TIME], axis=1),
                 "--",
                 label="total",
             )
@@ -1038,34 +1037,28 @@ def plot_outputs(
             _, axis = plt.subplots(1, 2, figsize=(8, 4))
             domestic_demand = np.sum(
                 np.reshape(
-                    total_clean_water_load[0:HOURS_PER_YEAR][
-                        DemandType.DOMESTIC.value
-                    ].values,
+                    total_cw_load[0:HOURS_PER_YEAR][DemandType.DOMESTIC.value].values,
                     (365, 24),
                 ),
                 axis=1,
             )
             commercial_demand = np.sum(
                 np.reshape(
-                    total_clean_water_load[0:HOURS_PER_YEAR][
-                        DemandType.COMMERCIAL.value
-                    ].values,
+                    total_cw_load[0:HOURS_PER_YEAR][DemandType.COMMERCIAL.value].values,
                     (365, 24),
                 ),
                 axis=1,
             )
             public_demand = np.sum(
                 np.reshape(
-                    total_clean_water_load[0:HOURS_PER_YEAR][
-                        DemandType.PUBLIC.value
-                    ].values,
+                    total_cw_load[0:HOURS_PER_YEAR][DemandType.PUBLIC.value].values,
                     (365, 24),
                 ),
                 axis=1,
             )
             total_demand = np.sum(
                 np.reshape(
-                    np.sum(total_clean_water_load[0:HOURS_PER_YEAR].values, axis=1),
+                    np.sum(total_cw_load[0:HOURS_PER_YEAR].values, axis=1),
                     (365, 24),
                 ),
                 axis=1,
@@ -1128,7 +1121,7 @@ def plot_outputs(
             domestic_demand = np.sum(
                 np.reshape(
                     0.001
-                    * total_clean_water_load[0 : num_years * HOURS_PER_YEAR][
+                    * total_cw_load[0 : num_years * HOURS_PER_YEAR][
                         DemandType.DOMESTIC.value
                     ].values,
                     (num_years, HOURS_PER_YEAR),
@@ -1138,7 +1131,7 @@ def plot_outputs(
             commercial_demand = np.sum(
                 np.reshape(
                     0.001
-                    * total_clean_water_load[0 : num_years * HOURS_PER_YEAR][
+                    * total_cw_load[0 : num_years * HOURS_PER_YEAR][
                         DemandType.COMMERCIAL.value
                     ].values,
                     (num_years, HOURS_PER_YEAR),
@@ -1148,7 +1141,7 @@ def plot_outputs(
             public_demand = np.sum(
                 np.reshape(
                     0.001
-                    * total_clean_water_load[0 : num_years * HOURS_PER_YEAR][
+                    * total_cw_load[0 : num_years * HOURS_PER_YEAR][
                         DemandType.PUBLIC.value
                     ].values,
                     (num_years, HOURS_PER_YEAR),
@@ -1158,8 +1151,7 @@ def plot_outputs(
             total_demand = np.sum(
                 np.reshape(
                     np.sum(
-                        0.001
-                        * total_clean_water_load[0 : num_years * HOURS_PER_YEAR].values,
+                        0.001 * total_cw_load[0 : num_years * HOURS_PER_YEAR].values,
                         axis=1,
                     ),
                     (num_years, HOURS_PER_YEAR),
@@ -1252,7 +1244,7 @@ def plot_outputs(
                 ),
                 axis=0,
             )
-            renewable_clean_water_produced = np.mean(
+            renewable_cw_produced = np.mean(
                 np.reshape(
                     simulation_output[0:HOURS_PER_YEAR][
                         "Renewable clean water produced (l)"
@@ -1279,7 +1271,7 @@ def plot_outputs(
                 ),
                 axis=0,
             )
-            total_clean_water_load = np.mean(
+            total_cw_load = np.mean(
                 np.reshape(
                     simulation_output[0:HOURS_PER_YEAR][
                         "Total clean water demand (l)"
@@ -1307,13 +1299,11 @@ def plot_outputs(
                 excess_power_clean_water, label="Excess power desalination", zorder=4
             )
             plt.plot(renewable_clean_water, label="PV-D direct use", zorder=5)
-            plt.plot(
-                renewable_clean_water_produced, "--", label="PV-D output", zorder=6
-            )
+            plt.plot(renewable_cw_produced, "--", label="PV-D output", zorder=6)
             plt.plot(storage_clean_water, label="Storage", zorder=7)
             plt.plot(tank_storage, "--", label="Water held in tanks", zorder=8)
             plt.plot(unmet_clean_water, label="Unmet", zorder=9)
-            plt.plot(total_clean_water_load, "--", label="Total load", zorder=10)
+            plt.plot(total_cw_load, "--", label="Total load", zorder=10)
             plt.plot(total_supplied, "--", label="Total supplied", zorder=11)
             plt.legend()
             plt.xlim(0, 23)
@@ -1383,7 +1373,7 @@ def plot_outputs(
                 ),
                 axis=0,
             )
-            renewable_clean_water_produced = np.mean(
+            renewable_cw_produced = np.mean(
                 np.reshape(
                     simulation_output[HOURS_UNTIL_JULY : HOURS_UNTIL_JULY + 31 * 24][
                         "Renewable clean water produced (l)"
@@ -1410,7 +1400,7 @@ def plot_outputs(
                 ),
                 axis=0,
             )
-            total_clean_water_load = np.mean(
+            total_cw_load = np.mean(
                 np.reshape(
                     simulation_output[HOURS_UNTIL_JULY : HOURS_UNTIL_JULY + 31 * 24][
                         "Total clean water demand (l)"
@@ -1438,13 +1428,11 @@ def plot_outputs(
                 excess_power_clean_water, label="Excess power desalination", zorder=4
             )
             plt.plot(renewable_clean_water, label="PV-D direct use", zorder=5)
-            plt.plot(
-                renewable_clean_water_produced, "--", label="PV-D output", zorder=6
-            )
+            plt.plot(renewable_cw_produced, "--", label="PV-D output", zorder=6)
             plt.plot(storage_clean_water, label="Storage", zorder=7)
             plt.plot(tank_storage, "--", label="Water held in tanks", zorder=8)
             plt.plot(unmet_clean_water, label="Unmet", zorder=9)
-            plt.plot(total_clean_water_load, "--", label="Total load", zorder=10)
+            plt.plot(total_cw_load, "--", label="Total load", zorder=10)
             plt.plot(total_supplied, "--", label="Total supplied", zorder=11)
             plt.legend()
             plt.xlim(0, 23)
@@ -1466,7 +1454,7 @@ def plot_outputs(
             plt.plot(storage_clean_water, label="Storage", zorder=3)
             plt.plot(tank_storage, "--", label="Water held in tanks", zorder=4)
             plt.plot(unmet_clean_water, label="Unmet", zorder=5)
-            plt.plot(total_clean_water_load, "--", label="Total load", zorder=6)
+            plt.plot(total_cw_load, "--", label="Total load", zorder=6)
             plt.legend()
             plt.xlim(0, 23)
             plt.xticks(range(0, 24, 1))
@@ -1484,12 +1472,10 @@ def plot_outputs(
             pbar.update(1)
 
             plt.plot(renewable_clean_water, label="PV-D direct use", zorder=1)
-            plt.plot(
-                renewable_clean_water_produced, "--", label="PV-D output", zorder=2
-            )
+            plt.plot(renewable_cw_produced, "--", label="PV-D output", zorder=2)
             plt.plot(tank_storage, "--", label="Water held in tanks", zorder=3)
             plt.plot(unmet_clean_water, label="Unmet", zorder=9)
-            plt.plot(total_clean_water_load, "--", label="Total load", zorder=4)
+            plt.plot(total_cw_load, "--", label="Total load", zorder=4)
             plt.legend()
             plt.xlim(0, 23)
             plt.xticks(range(0, 24, 1))
@@ -1501,7 +1487,7 @@ def plot_outputs(
             plt.savefig(
                 os.path.join(
                     figures_directory,
-                    "thermal_desal_clean_water_on_average_july_day.png",
+                    "thermal_desal_cw_on_average_july_day.png",
                 ),
                 transparent=True,
             )
@@ -1563,7 +1549,7 @@ def plot_outputs(
                 ),
                 axis=0,
             )
-            renewable_clean_water_produced = np.mean(
+            renewable_cw_produced = np.mean(
                 np.reshape(
                     simulation_output[0 : 24 * 31][
                         "Renewable clean water produced (l)"
@@ -1590,7 +1576,7 @@ def plot_outputs(
                 ),
                 axis=0,
             )
-            total_clean_water_load = np.mean(
+            total_cw_load = np.mean(
                 np.reshape(
                     simulation_output[0 : 24 * 31][
                         "Total clean water demand (l)"
@@ -1618,13 +1604,11 @@ def plot_outputs(
                 excess_power_clean_water, label="Excess power desalination", zorder=3
             )
             plt.plot(renewable_clean_water, label="PV-D direct use", zorder=4)
-            plt.plot(
-                renewable_clean_water_produced, "--", label="PV-D output", zorder=5
-            )
+            plt.plot(renewable_cw_produced, "--", label="PV-D output", zorder=5)
             plt.plot(storage_clean_water, label="Storage", zorder=6)
             plt.plot(tank_storage, "--", label="Water held in tanks", zorder=7)
             plt.plot(unmet_clean_water, label="Unmet", zorder=8)
-            plt.plot(total_clean_water_load, "--", label="Total load", zorder=9)
+            plt.plot(total_cw_load, "--", label="Total load", zorder=9)
             plt.plot(total_supplied, "--", label="Total supplied", zorder=10)
             plt.legend()
             plt.xlim(0, 23)
@@ -2340,9 +2324,9 @@ def plot_outputs(
                 plt.close()
                 pbar.update(1)
 
-        if initial_hot_water_hourly_loads is not None:
+        if initial_hw_hourly_loads is not None:
             # Plot the initial hot-water load of each device.
-            for device, load in initial_hot_water_hourly_loads.items():
+            for device, load in initial_hw_hourly_loads.items():
                 plt.plot(range(CUT_OFF_TIME), load, label=device)
                 # labels.append(device)
                 plt.xticks(range(0, CUT_OFF_TIME - 1, min(6, CUT_OFF_TIME - 2)))
@@ -2361,22 +2345,22 @@ def plot_outputs(
             # Plot the clean-water load breakdown by load type.
             plt.plot(
                 range(CUT_OFF_TIME),
-                total_hot_water_load[0:CUT_OFF_TIME][DemandType.DOMESTIC.value],
+                total_hw_load[0:CUT_OFF_TIME][DemandType.DOMESTIC.value],
                 label=DemandType.DOMESTIC.value,
             )
             plt.plot(
                 range(CUT_OFF_TIME),
-                total_hot_water_load[0:CUT_OFF_TIME][DemandType.COMMERCIAL.value],
+                total_hw_load[0:CUT_OFF_TIME][DemandType.COMMERCIAL.value],
                 label=DemandType.COMMERCIAL.value,
             )
             plt.plot(
                 range(CUT_OFF_TIME),
-                total_hot_water_load[0:CUT_OFF_TIME][DemandType.PUBLIC.value],
+                total_hw_load[0:CUT_OFF_TIME][DemandType.PUBLIC.value],
                 label=DemandType.PUBLIC.value,
             )
             plt.plot(
                 range(CUT_OFF_TIME),
-                np.sum(total_hot_water_load[0:CUT_OFF_TIME], axis=1),
+                np.sum(total_hw_load[0:CUT_OFF_TIME], axis=1),
                 "--",
                 label="total",
             )
@@ -2403,34 +2387,28 @@ def plot_outputs(
             _, axis = plt.subplots(1, 2, figsize=(8, 4))
             domestic_demand = np.sum(
                 np.reshape(
-                    total_hot_water_load[0:HOURS_PER_YEAR][
-                        DemandType.DOMESTIC.value
-                    ].values,
+                    total_hw_load[0:HOURS_PER_YEAR][DemandType.DOMESTIC.value].values,
                     (365, 24),
                 ),
                 axis=1,
             )
             commercial_demand = np.sum(
                 np.reshape(
-                    total_hot_water_load[0:HOURS_PER_YEAR][
-                        DemandType.COMMERCIAL.value
-                    ].values,
+                    total_hw_load[0:HOURS_PER_YEAR][DemandType.COMMERCIAL.value].values,
                     (365, 24),
                 ),
                 axis=1,
             )
             public_demand = np.sum(
                 np.reshape(
-                    total_hot_water_load[0:HOURS_PER_YEAR][
-                        DemandType.PUBLIC.value
-                    ].values,
+                    total_hw_load[0:HOURS_PER_YEAR][DemandType.PUBLIC.value].values,
                     (365, 24),
                 ),
                 axis=1,
             )
             total_demand = np.sum(
                 np.reshape(
-                    np.sum(total_hot_water_load[0:HOURS_PER_YEAR].values, axis=1),
+                    np.sum(total_hw_load[0:HOURS_PER_YEAR].values, axis=1),
                     (365, 24),
                 ),
                 axis=1,
@@ -2492,7 +2470,7 @@ def plot_outputs(
             domestic_demand = np.sum(
                 np.reshape(
                     0.001
-                    * total_hot_water_load[0 : num_years * HOURS_PER_YEAR][
+                    * total_hw_load[0 : num_years * HOURS_PER_YEAR][
                         DemandType.DOMESTIC.value
                     ].values,
                     (num_years, HOURS_PER_YEAR),
@@ -2502,7 +2480,7 @@ def plot_outputs(
             commercial_demand = np.sum(
                 np.reshape(
                     0.001
-                    * total_hot_water_load[0 : num_years * HOURS_PER_YEAR][
+                    * total_hw_load[0 : num_years * HOURS_PER_YEAR][
                         DemandType.COMMERCIAL.value
                     ].values,
                     (num_years, HOURS_PER_YEAR),
@@ -2512,7 +2490,7 @@ def plot_outputs(
             public_demand = np.sum(
                 np.reshape(
                     0.001
-                    * total_hot_water_load[0 : num_years * HOURS_PER_YEAR][
+                    * total_hw_load[0 : num_years * HOURS_PER_YEAR][
                         DemandType.PUBLIC.value
                     ].values,
                     (num_years, HOURS_PER_YEAR),
@@ -2522,8 +2500,7 @@ def plot_outputs(
             total_demand = np.sum(
                 np.reshape(
                     np.sum(
-                        0.001
-                        * total_hot_water_load[0 : num_years * HOURS_PER_YEAR].values,
+                        0.001 * total_hw_load[0 : num_years * HOURS_PER_YEAR].values,
                         axis=1,
                     ),
                     (num_years, HOURS_PER_YEAR),
