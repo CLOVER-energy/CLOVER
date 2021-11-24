@@ -34,14 +34,10 @@ import yaml  # pylint: disable=import-error
 from tqdm import tqdm  # pylint: disable=import-error
 
 __all__ = (
-    "BATTERY_HEALTH",
     "BColours",
-    "CLEAN_WATER_BLACKOUTS",
-    "CLEAN_WATER_FROM_PRIORITISATION",
     "CleanWaterMode",
     "Criterion",
     "CUT_OFF_TIME",
-    "CW_PVT_ELECTRICITY_SUPPLIED",
     "daily_sum_to_monthly_sum",
     "DemandType",
     "DesalinationScenario",
@@ -56,13 +52,10 @@ __all__ = (
     "HotWaterScenario",
     "hourly_profile_to_daily_sum",
     "HTFMode",
-    "HW_PVT_ELECTRICITY_SUPPLIED",
     "InputFileError",
     "InternalError",
     "KEROSENE_DEVICE_NAME",
-    "KEROSENE_LAMPS",
     "KeyResults",
-    "LOAD_ENERGY",
     "LOCATIONS_FOLDER_NAME",
     "LOGGER_DIRECTORY",
     "monthly_profile_to_daily_profile",
@@ -74,40 +67,19 @@ __all__ = (
     "PACKAGE_NAME",
     "POWER_CONSUMED_BY_DESALINATION",
     "ProgrammerJudgementFault",
-    "PV_ELECTRICITY_SUPPLIED",
     "RAW_CLOVER_PATH",
     "read_yaml",
     "RenewableEnergySource",
     "ResourceType",
-    "RENEWABLE_ELECTRICITY_SUPPLIED",
-    "RENEWABLES_USED_DIRECTLY",
     "RenewablesNinjaError",
     "save_simulation",
     "Scenario",
     "Simulation",
-    "STORAGE_PROFILE",
     "SystemAppraisal",
     "SystemDetails",
-    "TOTAL_PVT_ELECTRICITY_SUPPLIED",
-    "Criterion",
     "ZERO_CELCIUS_OFFSET",
 )
 
-
-# Battery health:
-#   Column header for saving battery-health information.
-BATTERY_HEALTH: str = "Battery health"
-
-# Clean-water blackouts:
-#   Column header for saving clean-water blackouts information.
-CLEAN_WATER_BLACKOUTS: str = "Clean water blackouts"
-
-# Clean water from prioritisation:
-#   Column header for saving the clean water that was produced through electrical means
-# when the load was prioritised.
-CLEAN_WATER_FROM_PRIORITISATION: str = (
-    "Clean water supplied via backup desalination (l)"
-)
 
 # Cold water:
 #   Used for parsing cold-water related information.
@@ -120,10 +92,6 @@ CONVENTIONAL_SOURCES: str = "conventional_sources"
 # Cut off time:
 #   The time up and to which information about the load of each device will be returned.
 CUT_OFF_TIME: int = 72  # [hours]
-
-# Clean-water PV-T electricity supplied:
-#   Column header for saving the electricity supplied by clean-water PV-T.
-CW_PVT_ELECTRICITY_SUPPLIED: str = "Clean-water PV-T electric energy supplied (kWh)"
 
 # Done message:
 #   The message to display when a task was successful.
@@ -141,17 +109,9 @@ EXCHANGER: str = "heat_exchanger"
 #   The message to display when a task has failed.
 FAILED: str = "[  FAILED  ]"
 
-# Grid energy:
-#   Column header for saving the energy that was supplied by the grid.
-GRID_ENERGY: str = "Grid energy (kWh)"
-
 # Heat capacity of water:
 #   The heat capacity of water, measured in Joules per kilogram Kelvin.
 HEAT_CAPACITY_OF_WATER: int = 4182
-
-# Hot-water PV-T electricity supplied:
-#   Column header for saving the amount of electricity that is supplied by hot water.
-HW_PVT_ELECTRICITY_SUPPLIED: str = "Hot-water PV-T electric energy supplied (kWh)"
 
 # Iteration length:
 #   Used when parsing information about the iteration length to use in optimisations.
@@ -160,14 +120,6 @@ ITERATION_LENGTH: str = "iteration_length"
 # Kerosene device name:
 #   The name used to denote the kerosene device.
 KEROSENE_DEVICE_NAME: str = "kerosene"
-
-# Kerosene lamps:
-#   Column header for saving the number of kerosene lamps in use.
-KEROSENE_LAMPS: str = "Kerosene lamps"
-
-# Load energy:
-#   Column header for saving the total electrical load placed on the system.
-LOAD_ENERGY: str = "Load energy (kWh)"
 
 # Locations folder name:
 #   The name of the locations folder.
@@ -227,14 +179,6 @@ NUMBER_OF_ITERATIONS: str = "number_of_iterations"
 #   packaged but are accessed locally in developer code.
 PACKAGE_NAME: str = "clover"
 
-# Power consumed by desalination:
-#   Column header for the power consumed providing clean water.
-POWER_CONSUMED_BY_DESALINATION: str = "Power consumed providing clean water (kWh)"
-
-# PV electricity supplied:
-#   Column header for the electricity that was supplied by the installed PV panels.
-PV_ELECTRICITY_SUPPLIED: str = "PV energy supplied (kWh)"
-
 # PVT Scenario:
 #   Keyword used for parsing PV-T scenario information.
 PVT_SCENARIO: str = "pvt_scenario"
@@ -242,14 +186,6 @@ PVT_SCENARIO: str = "pvt_scenario"
 # Raw CLOVER path:
 #   The path to the clover source directory to use when running in github mode.
 RAW_CLOVER_PATH: str = os.path.join("src", "clover")
-
-# Renewable electricity supplied:
-#   Column header for the total renewable electricity that was supplied.
-RENEWABLE_ELECTRICITY_SUPPLIED: str = "Renewables energy supplied (kWh)"
-
-# Renewables used directly:
-#   Column header for the renewable electricity that was used directly.
-RENEWABLES_USED_DIRECTLY: str = "Renewables energy used (kWh)"
 
 # Skipped:
 #   Keyword used when skipping part of the CLOVER flow.
@@ -260,17 +196,9 @@ SKIPPING: str = "[ SKIPPING ]"
 #   optimisations.
 STEP: str = "step"
 
-# Storage profile:
-#   Column header for storage profile information.
-STORAGE_PROFILE: str = "Storage profile (kWh)"
-
 # Supply temperature:
 #   Used to parse supply-temperature information.
 SUPPLY_TEMPERATURE: str = "supply_temperature"
-
-# Total PV-T electricity supplied:
-#   Column header for saving the total energy supplied by PV-T.
-TOTAL_PVT_ELECTRICITY_SUPPLIED: str = "Total PV-T electric energy supplied (kWh)"
 
 # Zero celcius offset:
 #   Used for offsetting zero degrees celcius in Kelvin.
@@ -387,6 +315,235 @@ class ColdWaterSupply(enum.Enum):
 
     CLEAN_WATER = "clean_water"
     UNLIMITED = "unlimited"
+
+
+class ColumnHeader(enum.Enum):
+    """
+    Contains column header information.
+
+    - BLACKOUTS:
+        The times for which the electricity system experienced a blackout in supply.
+
+    - BATTERY_HEALTH:
+        The health of the batteries installed.
+
+    - BUFFER_TANK_OUTPUT:
+        The output of the buffer tank(s) installed.
+
+    - BUFFER_TANK_TEMPERATURE:
+        The temperature of any buffer tank(s) installed in the system.
+
+    - CLEAN_WATER_BLACKOUTS:
+        Blackout times in the clean water supply.
+
+    - CLEAN_WATER_FROM_CONVENTIONAL_SOURCES:
+        Clean water produced from conventional sources.
+
+    - CLEAN_WATER_FROM_EXCESS_ELECTRICITY:
+        Clean water produced from excess electricity available within the system.
+
+    - CLEAN_WATER_FROM_PRIORITISATION:
+        The clean water which was supplied through prioritising clean-water loads.
+
+    - CLEAN_WATER_FROM_RENEWABLES:
+        The clean water which was supplied by renewable technologies.
+
+    - CLEAN_WATER_FROM_STORAGE:
+        The clean water which was supplied from tank storage.
+
+    - CW_PVT_ELECTRICITY_SUPPLIED:
+        The electricity supplied by the clean-water PV-T.
+
+    - CW_PVT_ELECTRICITY_SUPPLIED_PER_KWP:
+        The electricity supplied by the clean-water PV-T per kWp installed.
+
+    - CW_PVT_OUTPUT_TEMPERATURE:
+        The output temperature of the clean-water PV-T installed.
+
+    - CW_TANK_STORAGE_PROFILE:
+        The storage profile of the clean-water tanks.
+
+    - DIESEL_ENERGY_SUPPLIED:
+        The energy which was supplied by the diesel generators present in the system.
+
+    - DIESEL_FUEL_USAGE:
+        The diesel fuel usage in litres by the system.
+
+    - DIESEL_GENERATOR_TIMES:
+        The times for which the backup electrical diesel generator was operating in
+        order to meet demand.
+
+    - DUMPED_ELECTRICITY:
+        Excess electricity which was dumped due to the system being unable to either
+        utilise or store it.
+
+    - GRID_ENERGY:
+        Energy that was supplied by the grid.
+
+    - ELECTRICITY_FROM_STORAGE:
+        Electricity that was supplied by installed storage.
+
+    - EXCESS_POWER_CONSUMED_BY_DESALINATION:
+        Excess power consumed by desalination.
+
+    - HOURLY_STORAGE_PROFILE:
+        The hourly battery storage profile for the system.
+
+    - HOUSEHOLDS:
+        The number of households present in the community.
+
+    - HW_PVT_OUTPUT_TEMPERATURE:
+        The output temperature of HTF leaving the hot-water PV-T installed.
+
+    - HW_PVT_ELECTRICITY_SUPPLIED:
+        The electricity supplied by the hot-water PV-T.
+
+    - HW_PVT_ELECTRICITY_SUPPLIED_PER_KWP:
+        The electricity supplied by the hot-water PV-T per kWp of installed PV.
+
+    - HW_RENEWABLES_FRACTION:
+        The fraction of hot-water demand that was met through renewables.
+
+    - HW_TANK_OUTPUT:
+        The output volume from the hot-water tank(s) installed.
+
+    - HW_TANK_TEMPERATURE:
+        The temperature profile of the hot-water tank(s) installed.
+
+    - INSTALLATION_YEAR:
+        The year in which the installation was made.
+
+    - INVERTER_SIZE:
+        The size of the inverter installed.
+
+    - KEROSENE_LAMPS:
+        The number of kerosene lamps that were in use.
+
+    - KEROSENE_MITIGATION:
+        The kerosene usage that was mitigated by utilising the system.
+
+    - LOAD_ENERGY:
+        The electric load that was placed on the system.
+
+    - POWER_CONSUMED_BY_DESALINATION:
+        The power that was consumed carrying out desalination, either using electricity
+        as the primary driving force, or using it in a supplementary way.
+
+    - POWER_CONSUMED_BY_ELECTRIC_DEVICES:
+        Power consumed by electric devices present within the system.
+
+    - POWER_CONSUMED_BY_HOT_WATER:
+        Power consumed by providing hot water, either through pumps etc. or by
+        auxiliary heating.
+
+    - POWER_CONSUMED_BY_THERMAL_DESALINATION:
+        Power consumed by thermal desalination.
+
+    - PV_ELECTRICITY_SUPPLIED:
+        The electricity supplied by the PV installed.
+
+    - RENEWABLE_ELECTRICITY_SUPPLIED:
+        The electricity that was supplied renewably.
+
+    - RENEWABLES_USED_DIRECTLY:
+        The renewables produced that were used directly to meet loads.
+
+    - STORAGE_PROFILE:
+        The profile for the electric storage system.
+
+    - TOTAL_CW_CONSUMED:
+        The total clean water that was consumed.
+
+    - TOTAL_CW_LOAD:
+        The total clean-water load placed on the system.
+
+    - TOTAL_CW_SUPPLIED:
+        The total clean water that was supplied by the system.
+
+    - TOTAL_ELECTRICITY_CONSUMED:
+        The total electricity that was consumed in the system.
+
+    - TOTAL_HW_LOAD:
+        The total hot-water load that was placed on the system.
+
+    - TOTAL_PVT_ELECTRICITY_SUPPLIED:
+        The total electricity that was supplied by PV-T installed.
+
+    - UNMET_CLEAN_WATER:
+        The clean-water demand that was unmet by the system.
+
+    - UNMET_ELECTRICITY:
+        The electricity demand that went unmet by the system.
+
+    - WATER_SURPLUS:
+        The water surplus that was generated by the system.
+
+    """
+
+    BLACKOUTS = "Blackouts"
+    BATTERY_HEALTH = "Battery health"
+    BUFFER_TANK_OUTPUT = "Buffer tank output volume (l)"
+    BUFFER_TANK_TEMPERATURE = "Buffer tank temperature (degC)"
+    CLEAN_WATER_BLACKOUTS = "Clean water blackouts"
+    CLEAN_WATER_FROM_CONVENTIONAL_SOURCES = (
+        "Drinking water supplied via conventional sources (l)"
+    )
+    CLEAN_WATER_FROM_EXCESS_ELECTRICITY = (
+        "Clean water supplied using excess minigrid energy (l)"
+    )
+    CLEAN_WATER_FROM_PRIORITISATION = "Clean water supplied via backup desalination (l)"
+    CLEAN_WATER_FROM_RENEWABLES = "Renewable clean water produced (l)"
+    CLEAN_WATER_FROM_STORAGE = "Clean water supplied via tank storage (l)"
+    CW_PVT_ELECTRICITY_SUPPLIED = "Clean-water PV-T electric energy supplied (kWh)"
+    CW_PVT_ELECTRICITY_SUPPLIED_PER_KWP = (
+        "Clean-water PV-T electric energy supplied per kWp"
+    )
+    CW_PVT_OUTPUT_TEMPERATURE = "Clean-water PV-T output temperature (degC)"
+    CW_TANK_STORAGE_PROFILE = "Water held in clean-water storage tanks (l)"
+    DIESEL_ENERGY_SUPPLIED = "Diesel energy (kWh)"
+    DIESEL_FUEL_USAGE= "Diesel fuel usage (l)"
+    DIESEL_GENERATOR_TIMES = "Diesel times"
+    DUMPED_ELECTRICITY = "Dumped energy (kWh)"
+    ELECTRICITY_FROM_STORAGE = "Storage energy supplied (kWh)"
+    EXCESS_POWER_CONSUMED_BY_DESALINATION = (
+        "Excess power consumed desalinating clean water (kWh)"
+    )
+    GRID_ENERGY = "Grid energy (kWh)"
+    HOURLY_STORAGE_PROFILE = "Hourly storage (kWh)"
+    HOUSEHOLDS = "Households"
+    HW_PVT_OUTPUT_TEMPERATURE = "Hot-water PV-T output temperature (degC)"
+    HW_PVT_ELECTRICITY_SUPPLIED = "Hot-water PV-T electric energy supplied (kWh)"
+    HW_PVT_ELECTRICITY_SUPPLIED_PER_KWP = (
+        "Hot-water PV-T electric energy supplied per kWp"
+    )
+    HW_RENEWABLES_FRACTION = "Renewable hot-water fraction"
+    HW_TANK_OUTPUT = "Hot-water tank volume supplied (l)"
+    HW_TANK_TEMPERATURE = "Hot-water tank temperature (degC)"
+    INSTALLATION_YEAR= "Installation year"
+    INVERTER_SIZE = "Inverter size (kW)"
+    KEROSENE_LAMPS = "Kerosene lamps"
+    KEROSENE_MITIGATION= "Kerosene mitigation"
+    LOAD_ENERGY = "Load energy (kWh)"
+    POWER_CONSUMED_BY_DESALINATION = "Power consumed providing clean water (kWh)"
+    POWER_CONSUMED_BY_ELECTRIC_DEVICES = "Power consumed providing electricity (kWh)"
+    POWER_CONSUMED_BY_HOT_WATER = "Power consumed providing hot water (kWh)"
+    POWER_CONSUMED_BY_THERMAL_DESALINATION = (
+        "Power consumed running thermal desalination (kWh)"
+    )
+    PV_ELECTRICITY_SUPPLIED = "PV energy supplied (kWh)"
+    RENEWABLE_CW_USED_DIRECTLY = "Renewable clean water used directly (l)"
+    RENEWABLE_ELECTRICITY_SUPPLIED = "Renewables energy supplied (kWh)"
+    RENEWABLES_USED_DIRECTLY = "Renewables energy used (kWh)"
+    STORAGE_PROFILE = "Storage profile (kWh)"
+    TOTAL_CW_CONSUMED = "Total clean water consumed (l)"
+    TOTAL_CW_LOAD = "Total clean water demand (l)"
+    TOTAL_CW_SUPPLIED = "Total clean water supplied (l)"
+    TOTAL_ELECTRICITY_CONSUMED= "Total energy used (kWh)"
+    TOTAL_HW_LOAD = "Total hot-water demand (l)"
+    TOTAL_PVT_ELECTRICITY_SUPPLIED = "Total PV-T electric energy supplied (kWh)"
+    UNMET_CLEAN_WATER = "Unmet clean water demand (l)"
+    UNMET_ELECTRICITY= "Unmet energy (kWh)"
+    WATER_SURPLUS = "Water surplus (l)"
 
 
 def daily_sum_to_monthly_sum(daily_profile: pd.DataFrame) -> pd.DataFrame:
@@ -822,7 +979,7 @@ class KeyResults:
                 self.cumulative_pv_generation, 3
             )
         if self.diesel_times is not None:
-            data_dict["Diesel times"] = round(self.diesel_times, 3)
+            data_dict[ColumnHeader.DIESEL_GENERATOR_TIMES] = round(self.diesel_times, 3)
         if self.grid_daily_hours is not None:
             data_dict["Average grid availability / hours/day"] = round(
                 self.grid_daily_hours, 3

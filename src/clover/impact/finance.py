@@ -28,6 +28,7 @@ import pandas as pd  # pylint: disable=import-error
 from .__utils__ import ImpactingComponent, LIFETIME, SIZE_INCREMENT
 from ..__utils__ import (
     BColours,
+    ColumnHeader,
     InputFileError,
     Location,
     hourly_profile_to_daily_sum,
@@ -271,7 +272,7 @@ def _inverter_expenditure(
     replacement_intervals = pd.DataFrame(
         np.arange(0, location.max_years, replacement_period)
     )
-    replacement_intervals.columns = pd.Index(["Installation year"])
+    replacement_intervals.columns = pd.Index([ColumnHeader.INSTALLATION_YEAR])
 
     # Check if inverter should be replaced in the specified time interval
     if replacement_intervals.iloc[
@@ -298,7 +299,7 @@ def _inverter_expenditure(
         )
         inverter_size.append(inverter_size_interval)
     inverter_size_data_frame: pd.DataFrame = pd.DataFrame(inverter_size)
-    inverter_size_data_frame.columns = pd.Index(["Inverter size (kW)"])
+    inverter_size_data_frame.columns = pd.Index([ColumnHeader.INVERTER_SIZE])
     inverter_info = pd.concat([replacement_intervals, inverter_size_data_frame], axis=1)
     # Calculate
     inverter_info["Discount rate"] = [

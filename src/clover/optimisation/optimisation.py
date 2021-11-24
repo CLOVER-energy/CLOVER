@@ -44,8 +44,8 @@ from ..simulation import energy_system
 
 from ..__utils__ import (
     BColours,
+    # ColumnHeader,
     DONE,
-    # GRID_ENERGY,
     InternalError,
     Location,
     OptimisationParameters,
@@ -1965,7 +1965,7 @@ def multiple_optimisation_step(
 #             self.optimisation_filepath, header=None, index_col=0
 #         ).round(decimals=3)
 #         self.maximum_criteria = [
-#             "Blackouts",
+#             ColumnHeader.BLACKOUTS,
 #             "LCUE ($/kWh)",
 #             "Emissions intensity (gCO2/kWh)",
 #             "Unmet energy fraction",
@@ -2174,17 +2174,17 @@ def multiple_optimisation_step(
 #             "Cumulative system GHGs (kgCO2eq)"
 #         ].iloc[-1]
 #         #   Data where the mean is most relevant
-#         blackouts = np.mean(optimisation_results["Blackouts"])
+#         blackouts = np.mean(optimisation_results[ColumnHeader.BLACKOUTS])
 #         kerosene_displacement = np.mean(optimisation_results["Kerosene displacement"])
 #         #   Data where the sum is most relevant
 #         total_energy = np.sum(optimisation_results["Total energy (kWh)"])
-#         unmet_energy = np.sum(optimisation_results["Unmet energy (kWh)"])
+#         unmet_energy = np.sum(optimisation_results[ColumnHeader.UNMET_ELECTRICITY])
 #         renewable_energy = np.sum(optimisation_results["Renewable energy (kWh)"])
 #         storage_energy = np.sum(optimisation_results["Storage energy (kWh)"])
-#         grid_energy = np.sum(optimisation_results[GRID_ENERGY])
-#         diesel_energy = np.sum(optimisation_results["Diesel energy (kWh)"])
+#         grid_energy = np.sum(optimisation_results[ColumnHeader.GRID_ENERGY])
+#         diesel_energy = np.sum(optimisation_results[ColumnHeader.DIESEL_ENERGY_SUPPLIED])
 #         discounted_energy = np.sum(optimisation_results["Discounted energy (kWh)"])
-#         diesel_fuel_usage = np.sum(optimisation_results["Diesel fuel usage (l)"])
+#         diesel_fuel_usage = np.sum(optimisation_results[ColumnHeader.DIESEL_FUEL_USAGE])
 #         total_cost = np.sum(optimisation_results["Total cost ($)"])
 #         total_system_cost = np.sum(optimisation_results["Total system cost ($)"])
 #         new_equipment_cost = np.sum(optimisation_results["New equipment cost ($)"])
@@ -2222,18 +2222,18 @@ def multiple_optimisation_step(
 #                 "Maximum diesel capacity": max_diesel,
 #                 "LCUE ($/kWh)": LCUE,
 #                 "Emissions intensity (gCO2/kWh)": emissions_intensity,
-#                 "Blackouts": blackouts,
+#                 ColumnHeader.BLACKOUTS: blackouts,
 #                 "Unmet fraction": unmet_fraction,
 #                 "Renewables fraction": renewables_fraction,
 #                 "Storage fraction": storage_fraction,
 #                 "Diesel fraction": diesel_fraction,
 #                 "Grid fraction": grid_fraction,
 #                 "Total energy (kWh)": total_energy,
-#                 "Unmet energy (kWh)": unmet_energy,
+#                 ColumnHeader.UNMET_ELECTRICITY: unmet_energy,
 #                 "Renewable energy (kWh)": renewable_energy,
 #                 "Storage energy (kWh)": storage_energy,
-#                 GRID_ENERGY: grid_energy,
-#                 "Diesel energy (kWh)": diesel_energy,
+#                 ColumnHeader.GRID_ENERGY: grid_energy,
+#                 ColumnHeader.DIESEL_ENERGY_SUPPLIED: diesel_energy,
 #                 "Discounted energy (kWh)": discounted_energy,
 #                 "Total cost ($)": total_cost,
 #                 "Total system cost ($)": total_system_cost,
@@ -2245,7 +2245,7 @@ def multiple_optimisation_step(
 #                 "Kerosene cost ($)": kerosene_cost,
 #                 "Kerosene cost mitigated ($)": kerosene_cost_mitigated,
 #                 "Kerosene displacement": kerosene_displacement,
-#                 "Diesel fuel usage (l)": diesel_fuel_usage,
+#                 ColumnHeader.DIESEL_FUEL_USAGE: diesel_fuel_usage,
 #                 "Total GHGs (kgCO2eq)": total_GHGs,
 #                 "Total system GHGs (kgCO2eq)": total_system_GHGs,
 #                 "Total GHGs (kgCO2eq)": total_GHGs,
