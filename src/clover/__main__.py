@@ -190,7 +190,7 @@ def _prepare_location(location: str, logger: logging.Logger):
         logger.info("%s succesfully updated with missing files.", location)
 
 
-def _prepate_water_system(
+def _prepare_water_system(
     available_conventional_sources: List[str],
     auto_generated_files_directory: str,
     device_utilisations: Dict[load.Device, pd.DataFrame],
@@ -757,7 +757,7 @@ def main(args: List[Any]) -> None:
             initial_cw_hourly_loads,
             total_cw_load,
             clean_water_yearly_load_statistics,
-        ) = _prepate_water_system(
+        ) = _prepare_water_system(
             scenario.desalination_scenario.clean_water_scenario.conventional_sources,
             auto_generated_files_directory,
             device_utilisations,
@@ -779,7 +779,7 @@ def main(args: List[Any]) -> None:
             initial_hw_hourly_loads,
             total_hw_load,
             hot_water_yearly_load_statistics,
-        ) = _prep_hw_ystem(
+        ) = _prepare_water_system(
             scenario.hot_water_scenario.conventional_sources,
             auto_generated_files_directory,
             device_utilisations,

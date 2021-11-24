@@ -34,10 +34,14 @@ import yaml  # pylint: disable=import-error
 from tqdm import tqdm  # pylint: disable=import-error
 
 __all__ = (
+    "BATTERY_HEALTH",
     "BColours",
+    "CLEAN_WATER_BLACKOUTS",
+    "CLEAN_WATER_FROM_PRIORITISATION",
     "CleanWaterMode",
     "Criterion",
     "CUT_OFF_TIME",
+    "CW_PVT_ELECTRICITY_SUPPLIED",
     "daily_sum_to_monthly_sum",
     "DemandType",
     "DesalinationScenario",
@@ -52,10 +56,13 @@ __all__ = (
     "HotWaterScenario",
     "hourly_profile_to_daily_sum",
     "HTFMode",
+    "HW_PVT_ELECTRICITY_SUPPLIED",
     "InputFileError",
     "InternalError",
     "KEROSENE_DEVICE_NAME",
+    "KEROSENE_LAMPS",
     "KeyResults",
+    "LOAD_ENERGY",
     "LOCATIONS_FOLDER_NAME",
     "LOGGER_DIRECTORY",
     "monthly_profile_to_daily_profile",
@@ -65,21 +72,42 @@ __all__ = (
     "OperatingMode",
     "OptimisationParameters",
     "PACKAGE_NAME",
+    "POWER_CONSUMED_BY_DESALINATION",
     "ProgrammerJudgementFault",
+    "PV_ELECTRICITY_SUPPLIED",
     "RAW_CLOVER_PATH",
     "read_yaml",
     "RenewableEnergySource",
     "ResourceType",
+    "RENEWABLE_ELECTRICITY_SUPPLIED",
+    "RENEWABLES_USED_DIRECTLY",
     "RenewablesNinjaError",
     "save_simulation",
     "Scenario",
     "Simulation",
+    "STORAGE_PROFILE",
     "SystemAppraisal",
     "SystemDetails",
+    "TOTAL_PVT_ELECTRICITY_SUPPLIED",
     "Criterion",
     "ZERO_CELCIUS_OFFSET",
 )
 
+
+# Battery health:
+#   Column header for saving battery-health information.
+BATTERY_HEALTH: str = "Battery health"
+
+# Clean-water blackouts:
+#   Column header for saving clean-water blackouts information.
+CLEAN_WATER_BLACKOUTS: str = "Clean water blackouts"
+
+# Clean water from prioritisation:
+#   Column header for saving the clean water that was produced through electrical means
+# when the load was prioritised.
+CLEAN_WATER_FROM_PRIORITISATION: str = (
+    "Clean water supplied via backup desalination (l)"
+)
 
 # Cold water:
 #   Used for parsing cold-water related information.
@@ -92,6 +120,10 @@ CONVENTIONAL_SOURCES: str = "conventional_sources"
 # Cut off time:
 #   The time up and to which information about the load of each device will be returned.
 CUT_OFF_TIME: int = 72  # [hours]
+
+# Clean-water PV-T electricity supplied:
+#   Column header for saving the electricity supplied by clean-water PV-T.
+CW_PVT_ELECTRICITY_SUPPLIED: str = "Clean-water PV-T electric energy supplied (kWh)"
 
 # Done message:
 #   The message to display when a task was successful.
@@ -109,9 +141,17 @@ EXCHANGER: str = "heat_exchanger"
 #   The message to display when a task has failed.
 FAILED: str = "[  FAILED  ]"
 
+# Grid energy:
+#   Column header for saving the energy that was supplied by the grid.
+GRID_ENERGY: str = "Grid energy (kWh)"
+
 # Heat capacity of water:
 #   The heat capacity of water, measured in Joules per kilogram Kelvin.
 HEAT_CAPACITY_OF_WATER: int = 4182
+
+# Hot-water PV-T electricity supplied:
+#   Column header for saving the amount of electricity that is supplied by hot water.
+HW_PVT_ELECTRICITY_SUPPLIED: str = "Hot-water PV-T electric energy supplied (kWh)"
 
 # Iteration length:
 #   Used when parsing information about the iteration length to use in optimisations.
@@ -120,6 +160,14 @@ ITERATION_LENGTH: str = "iteration_length"
 # Kerosene device name:
 #   The name used to denote the kerosene device.
 KEROSENE_DEVICE_NAME: str = "kerosene"
+
+# Kerosene lamps:
+#   Column header for saving the number of kerosene lamps in use.
+KEROSENE_LAMPS: str = "Kerosene lamps"
+
+# Load energy:
+#   Column header for saving the total electrical load placed on the system.
+LOAD_ENERGY: str = "Load energy (kWh)"
 
 # Locations folder name:
 #   The name of the locations folder.
@@ -179,6 +227,14 @@ NUMBER_OF_ITERATIONS: str = "number_of_iterations"
 #   packaged but are accessed locally in developer code.
 PACKAGE_NAME: str = "clover"
 
+# Power consumed by desalination:
+#   Column header for the power consumed providing clean water.
+POWER_CONSUMED_BY_DESALINATION: str = "Power consumed providing clean water (kWh)"
+
+# PV electricity supplied:
+#   Column header for the electricity that was supplied by the installed PV panels.
+PV_ELECTRICITY_SUPPLIED: str = "PV energy supplied (kWh)"
+
 # PVT Scenario:
 #   Keyword used for parsing PV-T scenario information.
 PVT_SCENARIO: str = "pvt_scenario"
@@ -186,6 +242,14 @@ PVT_SCENARIO: str = "pvt_scenario"
 # Raw CLOVER path:
 #   The path to the clover source directory to use when running in github mode.
 RAW_CLOVER_PATH: str = os.path.join("src", "clover")
+
+# Renewable electricity supplied:
+#   Column header for the total renewable electricity that was supplied.
+RENEWABLE_ELECTRICITY_SUPPLIED: str = "Renewables energy supplied (kWh)"
+
+# Renewables used directly:
+#   Column header for the renewable electricity that was used directly.
+RENEWABLES_USED_DIRECTLY: str = "Renewables energy used (kWh)"
 
 # Skipped:
 #   Keyword used when skipping part of the CLOVER flow.
@@ -196,9 +260,17 @@ SKIPPING: str = "[ SKIPPING ]"
 #   optimisations.
 STEP: str = "step"
 
+# Storage profile:
+#   Column header for storage profile information.
+STORAGE_PROFILE: str = "Storage profile (kWh)"
+
 # Supply temperature:
 #   Used to parse supply-temperature information.
 SUPPLY_TEMPERATURE: str = "supply_temperature"
+
+# Total PV-T electricity supplied:
+#   Column header for saving the total energy supplied by PV-T.
+TOTAL_PVT_ELECTRICITY_SUPPLIED: str = "Total PV-T electric energy supplied (kWh)"
 
 # Zero celcius offset:
 #   Used for offsetting zero degrees celcius in Kelvin.
@@ -728,7 +800,7 @@ class KeyResults:
         if self.blackouts is not None:
             data_dict["Blackouts"] = round(self.blackouts, 3)
         if self.clean_water_blackouts is not None:
-            data_dict["Clean water blackouts"] = round(self.clean_water_blackouts, 3)
+            data_dict[CLEAN_WATER_BLACKOUTS] = round(self.clean_water_blackouts, 3)
         if self.cumulative_cw_load is not None:
             data_dict["Cumulative clean-water load / litres"] = round(
                 self.cumulative_cw_load, 3

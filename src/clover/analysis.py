@@ -28,7 +28,22 @@ import seaborn as sns  # pylint: disable=import-error
 import matplotlib.pyplot as plt  # pylint: disable=import-error
 from tqdm import tqdm  # pylint: disable=import-error
 
-from .__utils__ import CUT_OFF_TIME, DemandType, KeyResults, ResourceType
+from .__utils__ import (
+    CLEAN_WATER_BLACKOUTS,
+    CLEAN_WATER_FROM_PRIORITISATION,
+    CUT_OFF_TIME,
+    CW_PVT_ELECTRICITY_SUPPLIED,
+    DemandType,
+    GRID_ENERGY,
+    HW_PVT_ELECTRICITY_SUPPLIED,
+    KeyResults,
+    POWER_CONSUMED_BY_DESALINATION,
+    PV_ELECTRICITY_SUPPLIED,
+    RENEWABLE_ELECTRICITY_SUPPLIED,
+    RENEWABLES_USED_DIRECTLY,
+    ResourceType,
+    TOTAL_PVT_ELECTRICITY_SUPPLIED,
+)
 
 __all__ = (
     "get_key_results",
@@ -117,15 +132,15 @@ def get_key_results(
     ].sum() / (365 * num_years)
 
     key_results.average_daily_grid_energy_supplied = simulation_results[
-        "Grid energy (kWh)"
+        GRID_ENERGY
     ].sum() / (365 * num_years)
 
     key_results.average_daily_renewables_energy_supplied = simulation_results[
-        "Renewables energy supplied (kWh)"
+        RENEWABLE_ELECTRICITY_SUPPLIED
     ].sum() / (365 * num_years)
 
     key_results.average_daily_renewables_energy_used = simulation_results[
-        "Renewables energy used (kWh)"
+        RENEWABLES_USED_DIRECTLY
     ].sum() / (365 * num_years)
 
     key_results.average_daily_stored_energy_supplied = simulation_results[
@@ -152,7 +167,7 @@ def get_key_results(
             3,
         )
         key_results.clean_water_blackouts = round(
-            simulation_results["Clean water blackouts"].mean(), 3
+            simulation_results[CLEAN_WATER_BLACKOUTS].mean(), 3
         )
         key_results.cumulative_cw_load = round(
             simulation_results["Total clean water demand (l)"].sum(), 3
@@ -276,10 +291,8 @@ def plot_outputs(
     total_hw_load = total_loads[ResourceType.HOT_CLEAN_WATER]
 
     # Determine which aspects of the system need plotting.
-    cw_pvt: bool = (
-        "Clean-water PV-T electric energy supplied (kWh)" in simulation_output
-    )
-    hw_pvt: bool = "Hot-water PV-T electric energy supplied (kWh)" in simulation_output
+    cw_pvt: bool = CW_PVT_ELECTRICITY_SUPPLIED in simulation_output
+    hw_pvt: bool = HW_PVT_ELECTRICITY_SUPPLIED in simulation_output
 
     with tqdm(
         total=10
@@ -606,16 +619,14 @@ def plot_outputs(
         )
         grid_energy = np.mean(
             np.reshape(
-                simulation_output[0:HOURS_PER_YEAR]["Grid energy (kWh)"].values,
+                simulation_output[0:HOURS_PER_YEAR][GRID_ENERGY].values,
                 (365, 24),
             ),
             axis=0,
         )
         renewable_energy = np.mean(
             np.reshape(
-                simulation_output[0:HOURS_PER_YEAR][
-                    "Renewables energy used (kWh)"
-                ].values,
+                simulation_output[0:HOURS_PER_YEAR][RENEWABLES_USED_DIRECTLY].values,
                 (365, 24),
             ),
             axis=0,
@@ -623,7 +634,7 @@ def plot_outputs(
         pv_supplied = np.mean(
             np.reshape(
                 simulation_output[0:HOURS_PER_YEAR][
-                    "Renewables energy supplied (kWh)"
+                    RENEWABLE_ELECTRICITY_SUPPLIED
                 ].values,
                 (365, 24),
             ),
@@ -633,26 +644,26 @@ def plot_outputs(
             np.mean(
                 np.reshape(
                     simulation_output[0:HOURS_PER_YEAR][
-                        "Clean-water PV-T electric energy supplied (kWh)"
+                        CW_PVT_ELECTRICITY_SUPPLIED
                     ].values,
                     (365, 24),
                 ),
                 axis=0,
             )
-            if "Clean-water PV-T electric energy supplied (kWh)" in simulation_output
+            if CW_PVT_ELECTRICITY_SUPPLIED in simulation_output
             else None
         )
         hot_water_pvt_supplied = (
             np.mean(
                 np.reshape(
                     simulation_output[0:HOURS_PER_YEAR][
-                        "Hot-water PV-T electric energy supplied (kWh)"
+                        HW_PVT_ELECTRICITY_SUPPLIED
                     ].values,
                     (365, 24),
                 ),
                 axis=0,
             )
-            if "Hot-water PV-T electric energy supplied (kWh)" in simulation_output
+            if HW_PVT_ELECTRICITY_SUPPLIED in simulation_output
             else None
         )
         storage_energy = np.mean(
@@ -699,13 +710,13 @@ def plot_outputs(
                 np.mean(
                     np.reshape(
                         simulation_output[0:HOURS_PER_YEAR][
-                            "Power consumed providing clean water (kWh)"
+                            POWER_CONSUMED_BY_DESALINATION
                         ].values,
                         (365, 24),
                     ),
                     axis=0,
                 )
-                if "Power consumed providing clean water (kWh)" in simulation_output
+                if POWER_CONSUMED_BY_DESALINATION in simulation_output
                 else None
             )
             thermal_desalination_energy = (
@@ -780,9 +791,7 @@ def plot_outputs(
         )
         solar_usage = np.mean(
             np.reshape(
-                simulation_output[0:HOURS_PER_YEAR][
-                    "Renewables energy used (kWh)"
-                ].values,
+                simulation_output[0:HOURS_PER_YEAR][RENEWABLES_USED_DIRECTLY].values,
                 (365, 24),
             ),
             axis=0,
@@ -819,7 +828,7 @@ def plot_outputs(
 
         # Plot the seasonal variation in electricity supply sources.
         grid_energy = np.reshape(
-            simulation_output[0:HOURS_PER_YEAR]["Grid energy (kWh)"].values,
+            simulation_output[0:HOURS_PER_YEAR][GRID_ENERGY].values,
             (365, 24),
         )
         storage_energy = np.reshape(
@@ -827,7 +836,7 @@ def plot_outputs(
             (365, 24),
         )
         renewable_energy = np.reshape(
-            simulation_output[0:HOURS_PER_YEAR]["Renewables energy used (kWh)"].values,
+            simulation_output[0:HOURS_PER_YEAR][RENEWABLES_USED_DIRECTLY].values,
             (365, 24),
         )
         diesel_energy = np.reshape(
@@ -894,25 +903,21 @@ def plot_outputs(
         pbar.update(1)
 
         total_used = simulation_output.iloc[0:24]["Total energy used (kWh)"]
-        renewable_energy = simulation_output.iloc[0:24]["Renewables energy used (kWh)"]
+        renewable_energy = simulation_output.iloc[0:24][RENEWABLES_USED_DIRECTLY]
         storage_energy = simulation_output.iloc[0:24]["Storage energy supplied (kWh)"]
-        grid_energy = simulation_output.iloc[0:24]["Grid energy (kWh)"]
+        grid_energy = simulation_output.iloc[0:24][GRID_ENERGY]
         diesel_energy = simulation_output.iloc[0:24]["Diesel energy (kWh)"]
         dumped_energy = simulation_output.iloc[0:24]["Dumped energy (kWh)"]
         unmet_energy = simulation_output.iloc[0:24]["Unmet energy (kWh)"]
-        pv_supplied = simulation_output.iloc[0:24]["PV energy supplied (kWh)"]
+        pv_supplied = simulation_output.iloc[0:24][PV_ELECTRICITY_SUPPLIED]
         clean_water_pvt_supplied = (
-            simulation_output.iloc[0:24][
-                "Clean-water PV-T electric energy supplied (kWh)"
-            ]
-            if "Clean-water PV-T electric energy supplied (kWh)" in simulation_output
+            simulation_output.iloc[0:24][CW_PVT_ELECTRICITY_SUPPLIED]
+            if CW_PVT_ELECTRICITY_SUPPLIED in simulation_output
             else None
         )
         hot_water_pvt_supplied = (
-            simulation_output.iloc[0:24][
-                "Hot water PV-T electric energy supplied (kWh)"
-            ]
-            if "Hot water PV-T electric energy supplied (kWh)" in simulation_output
+            simulation_output.iloc[0:24][HW_PVT_ELECTRICITY_SUPPLIED]
+            if HW_PVT_ELECTRICITY_SUPPLIED in simulation_output
             else None
         )
 
@@ -949,7 +954,7 @@ def plot_outputs(
                 "Excess power consumed desalinating clean water (kWh)"
             ]
             clean_water_energy_via_backup = simulation_output.iloc[0:24][
-                "Power consumed providing clean water (kWh)"
+                POWER_CONSUMED_BY_DESALINATION
             ]
             plt.plot(
                 clean_water_energy_via_excess,
@@ -1211,7 +1216,7 @@ def plot_outputs(
             backup_clean_water = np.mean(
                 np.reshape(
                     simulation_output[0:HOURS_PER_YEAR][
-                        "Clean water supplied via backup desalination (l)"
+                        CLEAN_WATER_FROM_PRIORITISATION
                     ].values,
                     (365, 24),
                 ),
@@ -1340,7 +1345,7 @@ def plot_outputs(
             backup_clean_water = np.mean(
                 np.reshape(
                     simulation_output[HOURS_UNTIL_JULY : HOURS_UNTIL_JULY + 31 * 24][
-                        "Clean water supplied via backup desalination (l)"
+                        CLEAN_WATER_FROM_PRIORITISATION
                     ].values,
                     (31, 24),
                 ),
@@ -1516,7 +1521,7 @@ def plot_outputs(
             backup_clean_water = np.mean(
                 np.reshape(
                     simulation_output[0 : 24 * 31][
-                        "Clean water supplied via backup desalination (l)"
+                        CLEAN_WATER_FROM_PRIORITISATION
                     ].values,
                     (31, 24),
                 ),
@@ -1626,9 +1631,7 @@ def plot_outputs(
             pbar.update(1)
 
             # Water supply and demand on the first day.
-            backup = simulation_output.iloc[0:24][
-                "Clean water supplied via backup desalination (l)"
-            ]
+            backup = simulation_output.iloc[0:24][CLEAN_WATER_FROM_PRIORITISATION]
             conventional = simulation_output.iloc[0:24][
                 "Drinking water supplied via conventional sources (l)"
             ]
@@ -1676,9 +1679,7 @@ def plot_outputs(
             plt.close()
             pbar.update(1)
 
-            backup = simulation_output.iloc[0:48][
-                "Clean water supplied via backup desalination (l)"
-            ]
+            backup = simulation_output.iloc[0:48][CLEAN_WATER_FROM_PRIORITISATION]
             excess = simulation_output.iloc[0:48][
                 "Clean water supplied using excess minigrid energy (l)"
             ]
@@ -1766,7 +1767,7 @@ def plot_outputs(
             clean_water_power_supplied = np.mean(
                 np.reshape(
                     simulation_output[0:HOURS_PER_YEAR][
-                        "Power consumed providing clean water (kWh)"
+                        POWER_CONSUMED_BY_DESALINATION
                     ].values,
                     (365, 24),
                 ),
@@ -1846,7 +1847,7 @@ def plot_outputs(
             # Plot the seasonal variation in clean-water supply sources.
             backup_water = np.reshape(
                 simulation_output[0:HOURS_PER_YEAR][
-                    "Clean water supplied via backup desalination (l)"
+                    CLEAN_WATER_FROM_PRIORITISATION
                 ].values
                 / 1000,
                 (365, 24),
