@@ -28,7 +28,6 @@ import pandas as pd  # pylint: disable=import-error
 from ..impact import finance, ghgs
 
 from ..__utils__ import (
-    CLEAN_WATER_BLACKOUTS,
     ColumnHeader,
     Criterion,
     CumulativeResults,
@@ -129,7 +128,7 @@ def _simulation_environmental_appraisal(
     # Calculate GHGs of connecting new households
     try:
         connections_ghgs = ghgs.calculate_connections_ghgs(
-            ghg_inputs, simulation_results[ColumnHeader.HOUSEHOLDS]
+            ghg_inputs, simulation_results[ColumnHeader.HOUSEHOLDS.value]
         )
     except KeyError as e:
         logger.error("Missing household connection GHG input information: %s", str(e))
@@ -168,7 +167,7 @@ def _simulation_environmental_appraisal(
     # Calculate running GHGs of the system
     try:
         diesel_fuel_ghgs = ghgs.calculate_diesel_fuel_ghgs(
-            simulation_results[ColumnHeader.DIESEL_FUEL_USAGE], ghg_inputs
+            simulation_results[ColumnHeader.DIESEL_FUEL_USAGE.value], ghg_inputs
         )
     except KeyError as e:
         logger.error("Missing diesel-fuel GHG input information: %s", str(e))
@@ -177,7 +176,7 @@ def _simulation_environmental_appraisal(
     try:
         grid_ghgs = ghgs.calculate_grid_ghgs(
             ghg_inputs,
-            simulation_results[ColumnHeader.GRID_ENERGY],
+            simulation_results[ColumnHeader.GRID_ENERGY.value],
             location,
             start_year,
             end_year,
@@ -187,7 +186,7 @@ def _simulation_environmental_appraisal(
         raise
     try:
         kerosene_ghgs = ghgs.calculate_kerosene_ghgs(
-            ghg_inputs, simulation_results[ColumnHeader.KEROSENE_LAMPS]
+            ghg_inputs, simulation_results[ColumnHeader.KEROSENE_LAMPS.value]
         )
     except KeyError as e:
         logger.error("Missing kerosene GHG input information: %s", str(e))
@@ -195,7 +194,7 @@ def _simulation_environmental_appraisal(
 
     try:
         kerosene_ghgs_mitigated = ghgs.calculate_kerosene_ghgs_mitigated(
-            ghg_inputs, simulation_results[ColumnHeader.KEROSENE_MITIGATION]
+            ghg_inputs, simulation_results[ColumnHeader.KEROSENE_MITIGATION.value]
         )
     except KeyError as e:
         logger.error("Missing kerosene GHG input information: %s", str(e))
@@ -307,7 +306,7 @@ def _simulation_financial_appraisal(
     # Calculate costs of connecting new households (discounted)
     connections_cost = finance.connections_expenditure(
         finance_inputs,
-        simulation_results[ColumnHeader.HOUSEHOLDS],
+        simulation_results[ColumnHeader.HOUSEHOLDS.value],
         system_details.start_year,
     )
 
@@ -339,7 +338,7 @@ def _simulation_financial_appraisal(
 
     # Calculate running costs of the system (discounted)
     diesel_costs = finance.diesel_fuel_expenditure(
-        simulation_results[ColumnHeader.DIESEL_FUEL_USAGE],
+        simulation_results[ColumnHeader.DIESEL_FUEL_USAGE.value],
         finance_inputs,
         logger,
         start_year=system_details.start_year,
@@ -348,7 +347,7 @@ def _simulation_financial_appraisal(
     grid_costs = finance.expenditure(
         ImpactingComponent.GRID,
         finance_inputs,
-        simulation_results[ColumnHeader.GRID_ENERGY],
+        simulation_results[ColumnHeader.GRID_ENERGY.value],
         logger,
         start_year=system_details.start_year,
         end_year=system_details.end_year,
@@ -356,7 +355,7 @@ def _simulation_financial_appraisal(
     kerosene_costs = finance.expenditure(
         ImpactingComponent.KEROSENE,
         finance_inputs,
-        simulation_results[ColumnHeader.KEROSENE_LAMPS],
+        simulation_results[ColumnHeader.KEROSENE_LAMPS.value],
         logger,
         start_year=system_details.start_year,
         end_year=system_details.end_year,
@@ -364,7 +363,7 @@ def _simulation_financial_appraisal(
     kerosene_costs_mitigated = finance.expenditure(
         ImpactingComponent.KEROSENE,
         finance_inputs,
-        simulation_results[ColumnHeader.KEROSENE_MITIGATION],
+        simulation_results[ColumnHeader.KEROSENE_MITIGATION.value],
         logger,
         start_year=system_details.start_year,
         end_year=system_details.end_year,
@@ -423,38 +422,53 @@ def _simulation_technical_appraisal(
 
     # Calculate system blackouts
     system_blackouts: float = float(
-        np.mean(simulation_results[ColumnHeader.BLACKOUTS].values)
+        np.mean(simulation_results[ColumnHeader.BLACKOUTS.value].values)
     )
     clean_water_blackouts: Optional[float] = (
-        round(float(np.mean(simulation_results[CLEAN_WATER_BLACKOUTS].values)), 3)
-        if CLEAN_WATER_BLACKOUTS in simulation_results
+        round(
+            float(
+                np.mean(
+                    simulation_results[ColumnHeader.CLEAN_WATER_BLACKOUTS.value].values
+                )
+            ),
+            3,
+        )
+        if ColumnHeader.CLEAN_WATER_BLACKOUTS.value in simulation_results
         else None
     )
 
     # Total energy used
-    total_energy = np.sum(simulation_results[ColumnHeader.TOTAL_ELECTRICITY_CONSUMED])
-    total_load_energy = np.sum(simulation_results[ColumnHeader.LOAD_ENERGY])
-    total_renewables_used = np.sum(
-        simulation_results[ColumnHeader.RENEWABLE_ELECTRICITY_USED_DIRECTLY]
+    total_energy = np.sum(
+        simulation_results[ColumnHeader.TOTAL_ELECTRICITY_CONSUMED.value]
     )
-    total_pv_energy = np.sum(simulation_results[ColumnHeader.PV_ELECTRICITY_SUPPLIED])
+    total_load_energy = np.sum(simulation_results[ColumnHeader.LOAD_ENERGY.value])
+    total_renewables_used = np.sum(
+        simulation_results[ColumnHeader.RENEWABLE_ELECTRICITY_USED_DIRECTLY.value]
+    )
+    total_pv_energy = np.sum(
+        simulation_results[ColumnHeader.PV_ELECTRICITY_SUPPLIED.value]
+    )
     total_pvt_energy = (
-        np.sum(simulation_results[ColumnHeader.TOTAL_PVT_ELECTRICITY_SUPPLIED])
-        if ColumnHeader.TOTAL_PVT_ELECTRICITY_SUPPLIED in simulation_results
+        np.sum(simulation_results[ColumnHeader.TOTAL_PVT_ELECTRICITY_SUPPLIED.value])
+        if ColumnHeader.TOTAL_PVT_ELECTRICITY_SUPPLIED.value in simulation_results
         else None
     )
     total_storage_used = np.sum(
-        simulation_results[ColumnHeader.ELECTRICITY_FROM_STORAGE]
+        simulation_results[ColumnHeader.ELECTRICITY_FROM_STORAGE.value]
     )
-    total_grid_used = np.sum(simulation_results[ColumnHeader.GRID_ENERGY])
-    total_diesel_used = np.sum(simulation_results[ColumnHeader.DIESEL_ENERGY_SUPPLIED])
-    total_unmet_energy = np.sum(simulation_results[ColumnHeader.UNMET_ELECTRICITY])
+    total_grid_used = np.sum(simulation_results[ColumnHeader.GRID_ENERGY.value])
+    total_diesel_used = np.sum(
+        simulation_results[ColumnHeader.DIESEL_ENERGY_SUPPLIED.value]
+    )
+    total_unmet_energy = np.sum(
+        simulation_results[ColumnHeader.UNMET_ELECTRICITY.value]
+    )
     renewables_fraction = (total_renewables_used + total_storage_used) / total_energy
     unmet_fraction = total_unmet_energy / total_load_energy
 
     # Calculate total discounted energy
     total_energy_daily = hourly_profile_to_daily_sum(
-        pd.DataFrame(simulation_results[ColumnHeader.TOTAL_ELECTRICITY_CONSUMED])
+        pd.DataFrame(simulation_results[ColumnHeader.TOTAL_ELECTRICITY_CONSUMED.value])
     )
     discounted_energy = finance.discounted_energy_total(
         finance_inputs,
@@ -466,18 +480,18 @@ def _simulation_technical_appraisal(
 
     # Calculate proportion of kerosene displaced (defaults to zero if kerosene is not
     # originally used
-    if np.sum(simulation_results[ColumnHeader.KEROSENE_LAMPS]) > 0.0:
+    if np.sum(simulation_results[ColumnHeader.KEROSENE_LAMPS.value]) > 0.0:
         kerosene_displacement = (
-            np.sum(simulation_results[ColumnHeader.KEROSENE_MITIGATION])
+            np.sum(simulation_results[ColumnHeader.KEROSENE_MITIGATION.value])
         ) / (
-            np.sum(simulation_results[ColumnHeader.KEROSENE_MITIGATION])
-            + np.sum(simulation_results[ColumnHeader.KEROSENE_LAMPS])
+            np.sum(simulation_results[ColumnHeader.KEROSENE_MITIGATION.value])
+            + np.sum(simulation_results[ColumnHeader.KEROSENE_LAMPS.value])
         )
     else:
         kerosene_displacement = 0.0
 
     # Calculate diesel fuel usage
-    total_diesel_fuel = np.sum(simulation_results[ColumnHeader.DIESEL_FUEL_USAGE])
+    total_diesel_fuel = np.sum(simulation_results[ColumnHeader.DIESEL_FUEL_USAGE.value])
 
     # Return outputs
     return TechnicalAppraisal(

@@ -979,7 +979,7 @@ class KeyResults:
                 self.cumulative_pv_generation, 3
             )
         if self.diesel_times is not None:
-            data_dict[ColumnHeader.DIESEL_GENERATOR_TIMES] = round(self.diesel_times, 3)
+            data_dict[ColumnHeader.DIESEL_GENERATOR_TIMES.value] = round(self.diesel_times, 3)
         if self.grid_daily_hours is not None:
             data_dict["Average grid availability / hours/day"] = round(
                 self.grid_daily_hours, 3
