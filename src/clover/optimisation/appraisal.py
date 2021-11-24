@@ -28,12 +28,18 @@ import pandas as pd  # pylint: disable=import-error
 from ..impact import finance, ghgs
 
 from ..__utils__ import (
+    CLEAN_WATER_BLACKOUTS,
     Criterion,
     CumulativeResults,
     EnvironmentalAppraisal,
     FinancialAppraisal,
+    GRID_ENERGY,
     hourly_profile_to_daily_sum,
+    KEROSENE_LAMPS,
+    LOAD_ENERGY,
     Location,
+    PV_ELECTRICITY_SUPPLIED,
+    RENEWABLES_USED_DIRECTLY,
     SystemAppraisal,
     SystemDetails,
     TechnicalAppraisal,
@@ -175,7 +181,7 @@ def _simulation_environmental_appraisal(
     try:
         grid_ghgs = ghgs.calculate_grid_ghgs(
             ghg_inputs,
-            simulation_results["Grid energy (kWh)"],
+            simulation_results[GRID_ENERGY],
             location,
             start_year,
             end_year,
@@ -185,7 +191,7 @@ def _simulation_environmental_appraisal(
         raise
     try:
         kerosene_ghgs = ghgs.calculate_kerosene_ghgs(
-            ghg_inputs, simulation_results["Kerosene lamps"]
+            ghg_inputs, simulation_results[KEROSENE_LAMPS]
         )
     except KeyError as e:
         logger.error("Missing kerosene GHG input information: %s", str(e))
@@ -346,7 +352,7 @@ def _simulation_financial_appraisal(
     grid_costs = finance.expenditure(
         ImpactingComponent.GRID,
         finance_inputs,
-        simulation_results["Grid energy (kWh)"],
+        simulation_results[GRID_ENERGY],
         logger,
         start_year=system_details.start_year,
         end_year=system_details.end_year,
@@ -354,7 +360,7 @@ def _simulation_financial_appraisal(
     kerosene_costs = finance.expenditure(
         ImpactingComponent.KEROSENE,
         finance_inputs,
-        simulation_results["Kerosene lamps"],
+        simulation_results[KEROSENE_LAMPS],
         logger,
         start_year=system_details.start_year,
         end_year=system_details.end_year,
@@ -422,23 +428,23 @@ def _simulation_technical_appraisal(
     # Calculate system blackouts
     system_blackouts: float = float(np.mean(simulation_results["Blackouts"].values))
     clean_water_blackouts: Optional[float] = (
-        round(float(np.mean(simulation_results["Clean water blackouts"].values)), 3)
-        if "Clean water blackouts" in simulation_results
+        round(float(np.mean(simulation_results[CLEAN_WATER_BLACKOUTS].values)), 3)
+        if CLEAN_WATER_BLACKOUTS in simulation_results
         else None
     )
 
     # Total energy used
     total_energy = np.sum(simulation_results["Total energy used (kWh)"])
-    total_load_energy = np.sum(simulation_results["Load energy (kWh)"])
-    total_renewables_used = np.sum(simulation_results["Renewables energy used (kWh)"])
-    total_pv_energy = np.sum(simulation_results["PV energy supplied (kWh)"])
+    total_load_energy = np.sum(simulation_results[LOAD_ENERGY])
+    total_renewables_used = np.sum(simulation_results[RENEWABLES_USED_DIRECTLY])
+    total_pv_energy = np.sum(simulation_results[PV_ELECTRICITY_SUPPLIED])
     total_pvt_energy = (
-        np.sum(simulation_results["Total PV-T electric energy supplied (kWh)"])
-        if "Total PV-T electric energy supplied (kWh)" in simulation_results
+        np.sum(simulation_results[TOTAL_PVT_ELECTRICITY_SUPPLIED])
+        if TOTAL_PVT_ELECTRICITY_SUPPLIED in simulation_results
         else None
     )
     total_storage_used = np.sum(simulation_results["Storage energy supplied (kWh)"])
-    total_grid_used = np.sum(simulation_results["Grid energy (kWh)"])
+    total_grid_used = np.sum(simulation_results[GRID_ENERGY])
     total_diesel_used = np.sum(simulation_results["Diesel energy (kWh)"])
     total_unmet_energy = np.sum(simulation_results["Unmet energy (kWh)"])
     renewables_fraction = (total_renewables_used + total_storage_used) / total_energy
@@ -458,10 +464,10 @@ def _simulation_technical_appraisal(
 
     # Calculate proportion of kerosene displaced (defaults to zero if kerosene is not
     # originally used
-    if np.sum(simulation_results["Kerosene lamps"]) > 0.0:
+    if np.sum(simulation_results[KEROSENE_LAMPS]) > 0.0:
         kerosene_displacement = (np.sum(simulation_results["Kerosene mitigation"])) / (
             np.sum(simulation_results["Kerosene mitigation"])
-            + np.sum(simulation_results["Kerosene lamps"])
+            + np.sum(simulation_results[KEROSENE_LAMPS])
         )
     else:
         kerosene_displacement = 0.0

@@ -32,21 +32,35 @@ from tqdm import tqdm
 
 from ..__utils__ import (
     AuxiliaryHeaterType,
+    BATTERY_HEALTH,
     BColours,
+    CLEAN_WATER_BLACKOUTS,
+    CLEAN_WATER_FROM_PRIORITISATION,
     CleanWaterMode,
     ColdWaterSupply,
+    CW_PVT_ELECTRICITY_SUPPLIED,
     DieselMode,
     DemandType,
     DistributionNetwork,
+    GRID_ENERGY,
+    HW_PVT_ELECTRICITY_SUPPLIED,
     HTFMode,
     InputFileError,
     InternalError,
+    KEROSENE_LAMPS,
+    LOAD_ENERGY,
+    POWER_CONSUMED_BY_DESALINATION,
+    PV_ELECTRICITY_SUPPLIED,
+    RENEWABLE_ELECTRICITY_SUPPLIED,
+    RENEWABLES_USED_DIRECTLY,
     RenewableEnergySource,
     ResourceType,
     Location,
     Scenario,
     Simulation,
+    STORAGE_PROFILE,
     SystemDetails,
+    TOTAL_PVT_ELECTRICITY_SUPPLIED,
     dict_to_dataframe,
 )
 from ..conversion.conversion import Convertor, ThermalDesalinationPlant, WaterSource
@@ -1298,13 +1312,17 @@ def _get_electric_battery_storage_profile(
                 [0] * (end_hour - start_hour)
             )
 
-        pvt_electric_generation: Optional[pd.DataFrame] = pd.DataFrame(
-            clean_water_pvt_electric_generation.values
-            + hot_water_pvt_electric_generation.values
-        )
-
     else:
+        clean_water_pvt_electric_generation = pd.DataFrame(
+            [0] * (end_hour - start_hour)
+        )
+        hot_water_pvt_electric_generation = pd.DataFrame([0] * (end_hour - start_hour))
         pvt_electric_generation = None
+
+    pvt_electric_generation: Optional[pd.DataFrame] = pd.DataFrame(
+        clean_water_pvt_electric_generation.values
+        + hot_water_pvt_electric_generation.values
+    )
 
     # Consider power distribution network
     if scenario.distribution_network == DistributionNetwork.DC:
@@ -1393,21 +1411,21 @@ def _get_electric_battery_storage_profile(
             .add((battery_storage_profile < 0).mul(renewables_energy))
         )
 
-    battery_storage_profile.columns = pd.Index(["Storage profile (kWh)"])
-    grid_energy.columns = pd.Index(["Grid energy (kWh)"])
-    kerosene_usage.columns = pd.Index(["Kerosene lamps"])
-    load_energy.columns = pd.Index(["Load energy (kWh)"])
-    renewables_energy.columns = pd.Index(["Renewables energy supplied (kWh)"])
+    battery_storage_profile.columns = pd.Index([STORAGE_PROFILE])
+    grid_energy.columns = pd.Index([GRID_ENERGY])
+    kerosene_usage.columns = pd.Index([KEROSENE_LAMPS])
+    load_energy.columns = pd.Index([LOAD_ENERGY])
+    renewables_energy.columns = pd.Index([RENEWABLE_ELECTRICITY_SUPPLIED])
     renewables_energy_map[RenewableEnergySource.PV].columns = pd.Index(
-        ["PV energy supplied (kWh)"]
+        [PV_ELECTRICITY_SUPPLIED]
     )
     renewables_energy_map[RenewableEnergySource.CLEAN_WATER_PV_T].columns = pd.Index(
-        ["Clean-water PV-T electric energy supplied (kWh)"]
+        [CW_PVT_ELECTRICITY_SUPPLIED]
     )
     renewables_energy_map[RenewableEnergySource.HOT_WATER_PV_T].columns = pd.Index(
-        ["Hot-water PV-T electric energy supplied (kWh)"]
+        [HW_PVT_ELECTRICITY_SUPPLIED]
     )
-    renewables_energy_used_directly.columns = pd.Index(["Renewables energy used (kWh)"])
+    renewables_energy_used_directly.columns = pd.Index([RENEWABLES_USED_DIRECTLY])
 
     return (
         battery_storage_profile,
@@ -2393,12 +2411,10 @@ def run_simulation(
 
         # Clean-water system performance outputs
         backup_desalinator_water_frame.columns = pd.Index(
-            ["Clean water supplied via backup desalination (l)"]
+            [CLEAN_WATER_FROM_PRIORITISATION]
         )
-        clean_water_blackout_times.columns = pd.Index(["Clean water blackouts"])
-        clean_water_power_consumed.columns = pd.Index(
-            ["Power consumed providing clean water (kWh)"]
-        )
+        clean_water_blackout_times.columns = pd.Index([CLEAN_WATER_BLACKOUTS])
+        clean_water_power_consumed.columns = pd.Index([POWER_CONSUMED_BY_DESALINATION])
         clean_water_supplied_by_excess_energy_frame.columns = pd.Index(
             ["Clean water supplied using excess minigrid energy (l)"]
         )
@@ -2490,7 +2506,7 @@ def run_simulation(
         renewable_hw_fraction.columns = pd.Index(["Renewable hot-water fraction"])
 
     # System performance outputs
-    battery_health_frame.columns = pd.Index(["Battery health"])
+    battery_health_frame.columns = pd.Index([BATTERY_HEALTH])
     blackout_times.columns = pd.Index(["Blackouts"])
     diesel_fuel_usage.columns = pd.Index(["Diesel fuel usage (l)"])
     diesel_times.columns = pd.Index(["Diesel times"])
@@ -2499,7 +2515,7 @@ def run_simulation(
     households.columns = pd.Index(["Households"])
     diesel_energy.columns = pd.Index(["Diesel energy (kWh)"])
     kerosene_mitigation.columns = pd.Index(["Kerosene mitigation"])
-    kerosene_usage.columns = pd.Index(["Kerosene lamps"])
+    kerosene_usage.columns = pd.Index([KEROSENE_LAMPS])
     storage_power_supplied_frame.columns = pd.Index(["Storage energy supplied (kWh)"])
     total_energy_used.columns = pd.Index(["Total energy used (kWh)"])
     unmet_energy.columns = pd.Index(["Unmet energy (kWh)"])
@@ -2536,7 +2552,7 @@ def run_simulation(
         float(
             electric_storage_size
             * minigrid.battery.storage_unit
-            * np.min(battery_health_frame["Battery health"])
+            * np.min(battery_health_frame[BATTERY_HEALTH])
         ),
         clean_water_pvt_size
         if minigrid.pvt_panel is not None and scenario.desalination_scenario is not None
@@ -2564,7 +2580,7 @@ def run_simulation(
     total_pvt_energy = pd.DataFrame(
         clean_water_pvt_energy.values + hot_water_pvt_energy.values
     )
-    total_pvt_energy.columns = pd.Index(["Total PV-T electric energy supplied (kWh)"])
+    total_pvt_energy.columns = pd.Index([TOTAL_PVT_ELECTRICITY_SUPPLIED])
 
     # End simulation timer
     timer_end = datetime.datetime.now()
