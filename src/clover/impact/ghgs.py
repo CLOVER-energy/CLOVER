@@ -25,7 +25,13 @@ import numpy as np  # pylint: disable=import-error
 import pandas as pd  # pylint: disable=import-error
 
 from .__utils__ import SIZE_INCREMENT, ImpactingComponent, LIFETIME
-from ..__utils__ import BColours, InputFileError, Location, hourly_profile_to_daily_sum
+from ..__utils__ import (
+    BColours,
+    ColumnHeader,
+    InputFileError,
+    Location,
+    hourly_profile_to_daily_sum,
+)
 
 __all__ = (
     "calculate_connections_ghgs",
@@ -494,7 +500,7 @@ def calculate_inverter_ghgs(
     replacement_intervals = pd.DataFrame(
         np.arange(0, location.max_years, replacement_period)
     )
-    replacement_intervals.columns = pd.Index(["Installation year"])
+    replacement_intervals.columns = pd.Index([ColumnHeader.INSTALLATION_YEAR])
 
     # Check if inverter should be replaced in the specified time interval
     if replacement_intervals.iloc[
@@ -524,7 +530,7 @@ def calculate_inverter_ghgs(
         inverter_size.append(inverter_size_interval)
 
     inverter_size_data_frame: pd.DataFrame = pd.DataFrame(inverter_size)
-    inverter_size_data_frame.columns = pd.Index(["Inverter size (kW)"])
+    inverter_size_data_frame.columns = pd.Index([ColumnHeader.INVERTER_SIZE])
     inverter_info = pd.concat([replacement_intervals, inverter_size_data_frame], axis=1)
 
     # Calculate the associated ghgs
