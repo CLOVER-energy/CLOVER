@@ -29,7 +29,6 @@ import matplotlib.pyplot as plt  # pylint: disable=import-error
 from tqdm import tqdm  # pylint: disable=import-error
 
 from .__utils__ import (
-    CLEAN_WATER_BLACKOUTS,
     ColumnHeader,
     CUT_OFF_TIME,
     DemandType,
@@ -112,106 +111,119 @@ def get_key_results(
 
     # Compute the simulation related averages and sums.
     key_results.average_daily_diesel_energy_supplied = simulation_results[
-        ColumnHeader.DIESEL_ENERGY_SUPPLIED
+        ColumnHeader.DIESEL_ENERGY_SUPPLIED.value
     ].sum() / (365 * num_years)
 
     key_results.average_daily_dumped_energy = simulation_results[
-        ColumnHeader.DUMPED_ELECTRICITY
+        ColumnHeader.DUMPED_ELECTRICITY.value
     ].sum() / (365 * num_years)
 
     key_results.average_daily_energy_consumption = simulation_results[
-        ColumnHeader.TOTAL_ELECTRICITY_CONSUMED
+        ColumnHeader.TOTAL_ELECTRICITY_CONSUMED.value
     ].sum() / (365 * num_years)
 
     key_results.average_daily_grid_energy_supplied = simulation_results[
-        ColumnHeader.GRID_ENERGY
+        ColumnHeader.GRID_ENERGY.value
     ].sum() / (365 * num_years)
 
     key_results.average_daily_renewables_energy_supplied = simulation_results[
-        ColumnHeader.RENEWABLE_ELECTRICITY_SUPPLIED
+        ColumnHeader.RENEWABLE_ELECTRICITY_SUPPLIED.value
     ].sum() / (365 * num_years)
 
     key_results.average_daily_renewables_energy_used = simulation_results[
-        ColumnHeader.RENEWABLE_ELECTRICITY_USED_DIRECTLY
+        ColumnHeader.RENEWABLE_ELECTRICITY_USED_DIRECTLY.value
     ].sum() / (365 * num_years)
 
     key_results.average_daily_stored_energy_supplied = simulation_results[
-        ColumnHeader.ELECTRICITY_FROM_STORAGE
+        ColumnHeader.ELECTRICITY_FROM_STORAGE.value
     ].sum() / (365 * num_years)
 
     key_results.average_daily_unmet_energy = simulation_results[
-        ColumnHeader.UNMET_ELECTRICITY
+        ColumnHeader.UNMET_ELECTRICITY.value
     ].sum() / (365 * num_years)
 
     key_results.diesel_times = round(
-        simulation_results[ColumnHeader.DIESEL_GENERATOR_TIMES].mean(), 3
+        simulation_results[ColumnHeader.DIESEL_GENERATOR_TIMES.value].mean(), 3
     )
-    key_results.blackouts = round(simulation_results[ColumnHeader.BLACKOUTS].mean(), 3)
+    key_results.blackouts = round(
+        simulation_results[ColumnHeader.BLACKOUTS.value].mean(), 3
+    )
 
     # Compute the clean-water key results.
-    if ColumnHeader.TOTAL_CW_LOAD in simulation_results:
+    if ColumnHeader.TOTAL_CW_LOAD.value in simulation_results:
         key_results.average_daily_cw_demand_covered = round(
-            simulation_results[ColumnHeader.TOTAL_CW_SUPPLIED].sum()
-            / simulation_results[ColumnHeader.TOTAL_CW_LOAD].sum(),
+            simulation_results[ColumnHeader.TOTAL_CW_SUPPLIED.value].sum()
+            / simulation_results[ColumnHeader.TOTAL_CW_LOAD.value].sum(),
             3,
         )
         key_results.average_daily_cw_supplied = round(
-            simulation_results[ColumnHeader.TOTAL_CW_SUPPLIED].sum()
+            simulation_results[ColumnHeader.TOTAL_CW_SUPPLIED.value].sum()
             / (365 * num_years),
             3,
         )
         key_results.clean_water_blackouts = round(
-            simulation_results[CLEAN_WATER_BLACKOUTS].mean(), 3
+            simulation_results[ColumnHeader.CLEAN_WATER_BLACKOUTS.value].mean(), 3
         )
         key_results.cumulative_cw_load = round(
-            simulation_results[ColumnHeader.TOTAL_CW_LOAD].sum(), 3
+            simulation_results[ColumnHeader.TOTAL_CW_LOAD.value].sum(), 3
         )
         key_results.cumulative_cw_supplied = round(
-            simulation_results[ColumnHeader.TOTAL_CW_SUPPLIED].sum(), 3
+            simulation_results[ColumnHeader.TOTAL_CW_SUPPLIED.value].sum(), 3
         )
 
     # Compute the clean-water PV-T key results.
-    if ColumnHeader.CW_PVT_ELECTRICITY_SUPPLIED_PER_KWP in simulation_results:
+    if (
+        ColumnHeader.CW_PVT_ELECTRICITY_SUPPLIED_PER_KWP.valuePER_KWP
+        in simulation_results
+    ):
         key_results.average_daily_cw_pvt_generation = round(
-            simulation_results[ColumnHeader.CW_PVT_ELECTRICITY_SUPPLIED_PER_KWP].sum()
+            simulation_results[
+                ColumnHeader.CW_PVT_ELECTRICITY_SUPPLIED_PER_KWP.valuePER_KWP
+            ].sum()
             / (365 * num_years),
             3,
         )
         key_results.cumulative_cw_pvt_generation = round(
-            simulation_results[ColumnHeader.CW_PVT_ELECTRICITY_SUPPLIED_PER_KWP].sum(),
+            simulation_results[
+                ColumnHeader.CW_PVT_ELECTRICITY_SUPPLIED_PER_KWP.valuePER_KWP
+            ].sum(),
             3,
         )
         key_results.max_buffer_tank_temperature = round(
-            max(simulation_results[ColumnHeader.BUFFER_TANK_TEMPERATURE]), 3
+            max(simulation_results[ColumnHeader.BUFFER_TANK_TEMPERATURE.value.value]), 3
         )
         key_results.max_cw_pvt_output_temperature = round(
-            max(simulation_results[ColumnHeader.CW_PVT_OUTPUT_TEMPERATURE]), 3
+            max(simulation_results[ColumnHeader.CW_PVT_OUTPUT_TEMPERATURE.value]), 3
         )
         key_results.mean_buffer_tank_temperature = round(
-            simulation_results[ColumnHeader.BUFFER_TANK_TEMPERATURE].mean(), 3
+            simulation_results[ColumnHeader.BUFFER_TANK_TEMPERATURE.value.value].mean(),
+            3,
         )
         key_results.mean_cw_pvt_output_temperature = round(
-            simulation_results[ColumnHeader.CW_PVT_OUTPUT_TEMPERATURE].mean(), 3
+            simulation_results[ColumnHeader.CW_PVT_OUTPUT_TEMPERATURE.value].mean(), 3
         )
         key_results.min_buffer_tank_temperature = round(
-            min(simulation_results[ColumnHeader.BUFFER_TANK_TEMPERATURE]), 3
+            min(simulation_results[ColumnHeader.BUFFER_TANK_TEMPERATURE.value.value]), 3
         )
         key_results.min_cw_pvt_output_temperature = round(
-            min(simulation_results[ColumnHeader.CW_PVT_OUTPUT_TEMPERATURE]), 3
+            min(simulation_results[ColumnHeader.CW_PVT_OUTPUT_TEMPERATURE.value]), 3
         )
 
     # Compute the hot-water key results.
-    if ColumnHeader.TOTAL_HW_LOAD in simulation_results:
+    if ColumnHeader.TOTAL_HW_LOAD.value in simulation_results:
         key_results.average_daily_hw_demand_covered = round(
-            simulation_results[ColumnHeader.HW_RENEWABLES_FRACTION].mean(), 3
+            simulation_results[ColumnHeader.HW_RENEWABLES_FRACTION.value].mean(), 3
         )
         key_results.average_daily_hw_pvt_generation = round(
-            simulation_results[ColumnHeader.HW_PVT_ELECTRICITY_SUPPLIED_PER_KWP].sum()
+            simulation_results[
+                ColumnHeader.HW_PVT_ELECTRICITY_SUPPLIED_PER_KWP.value
+            ].sum()
             / (365 * num_years),
             3,
         )
         key_results.average_daily_hw_supplied = round(
-            simulation_results[ColumnHeader.HW_TANK_OUTPUT].sum() / (365 * num_years),
+            simulation_results[ColumnHeader.HW_TANK_OUTPUT.value].sum()
+            / (365 * num_years),
             3,
         )
 
@@ -280,8 +292,8 @@ def plot_outputs(
     total_hw_load = total_loads[ResourceType.HOT_CLEAN_WATER]
 
     # Determine which aspects of the system need plotting.
-    cw_pvt: bool = ColumnHeader.CW_PVT_ELECTRICITY_SUPPLIED in simulation_output
-    hw_pvt: bool = ColumnHeader.HW_PVT_ELECTRICITY_SUPPLIED in simulation_output
+    cw_pvt: bool = ColumnHeader.CW_PVT_ELECTRICITY_SUPPLIED.value in simulation_output
+    hw_pvt: bool = ColumnHeader.HW_PVT_ELECTRICITY_SUPPLIED.value in simulation_output
 
     with tqdm(
         total=10
@@ -588,7 +600,7 @@ def plot_outputs(
         total_used = np.mean(
             np.reshape(
                 simulation_output[0:HOURS_PER_YEAR][
-                    ColumnHeader.TOTAL_ELECTRICITY_CONSUMED
+                    ColumnHeader.TOTAL_ELECTRICITY_CONSUMED.value
                 ].values,
                 (365, 24),
             ),
@@ -597,7 +609,7 @@ def plot_outputs(
         diesel_energy = np.mean(
             np.reshape(
                 simulation_output[0:HOURS_PER_YEAR][
-                    ColumnHeader.DIESEL_ENERGY_SUPPLIED
+                    ColumnHeader.DIESEL_ENERGY_SUPPLIED.value
                 ].values,
                 (365, 24),
             ),
@@ -606,7 +618,7 @@ def plot_outputs(
         dumped = np.mean(
             np.reshape(
                 simulation_output[0:HOURS_PER_YEAR][
-                    ColumnHeader.DUMPED_ELECTRICITY
+                    ColumnHeader.DUMPED_ELECTRICITY.value
                 ].values,
                 (365, 24),
             ),
@@ -614,7 +626,9 @@ def plot_outputs(
         )
         grid_energy = np.mean(
             np.reshape(
-                simulation_output[0:HOURS_PER_YEAR][ColumnHeader.GRID_ENERGY].values,
+                simulation_output[0:HOURS_PER_YEAR][
+                    ColumnHeader.GRID_ENERGY.value
+                ].values,
                 (365, 24),
             ),
             axis=0,
@@ -622,7 +636,7 @@ def plot_outputs(
         renewable_energy = np.mean(
             np.reshape(
                 simulation_output[0:HOURS_PER_YEAR][
-                    ColumnHeader.RENEWABLE_ELECTRICITY_USED_DIRECTLY
+                    ColumnHeader.RENEWABLE_ELECTRICITY_USED_DIRECTLY.value
                 ].values,
                 (365, 24),
             ),
@@ -631,7 +645,7 @@ def plot_outputs(
         pv_supplied = np.mean(
             np.reshape(
                 simulation_output[0:HOURS_PER_YEAR][
-                    ColumnHeader.RENEWABLE_ELECTRICITY_SUPPLIED
+                    ColumnHeader.RENEWABLE_ELECTRICITY_SUPPLIED.value
                 ].values,
                 (365, 24),
             ),
@@ -641,32 +655,32 @@ def plot_outputs(
             np.mean(
                 np.reshape(
                     simulation_output[0:HOURS_PER_YEAR][
-                        ColumnHeader.CW_PVT_ELECTRICITY_SUPPLIED
+                        ColumnHeader.CW_PVT_ELECTRICITY_SUPPLIED.value
                     ].values,
                     (365, 24),
                 ),
                 axis=0,
             )
-            if ColumnHeader.CW_PVT_ELECTRICITY_SUPPLIED in simulation_output
+            if ColumnHeader.CW_PVT_ELECTRICITY_SUPPLIED.value in simulation_output
             else None
         )
         hot_water_pvt_supplied = (
             np.mean(
                 np.reshape(
                     simulation_output[0:HOURS_PER_YEAR][
-                        ColumnHeader.HW_PVT_ELECTRICITY_SUPPLIED
+                        ColumnHeader.HW_PVT_ELECTRICITY_SUPPLIED.value
                     ].values,
                     (365, 24),
                 ),
                 axis=0,
             )
-            if ColumnHeader.HW_PVT_ELECTRICITY_SUPPLIED in simulation_output
+            if ColumnHeader.HW_PVT_ELECTRICITY_SUPPLIED.value in simulation_output
             else None
         )
         storage_energy = np.mean(
             np.reshape(
                 simulation_output[0:HOURS_PER_YEAR][
-                    ColumnHeader.ELECTRICITY_FROM_STORAGE
+                    ColumnHeader.ELECTRICITY_FROM_STORAGE.value
                 ].values,
                 (365, 24),
             ),
@@ -675,7 +689,7 @@ def plot_outputs(
         unmet_energy = np.mean(
             np.reshape(
                 simulation_output[0:HOURS_PER_YEAR][
-                    ColumnHeader.UNMET_ELECTRICITY
+                    ColumnHeader.UNMET_ELECTRICITY.value
                 ].values,
                 (365, 24),
             ),
@@ -695,13 +709,13 @@ def plot_outputs(
                 np.mean(
                     np.reshape(
                         simulation_output[0:HOURS_PER_YEAR][
-                            ColumnHeader.EXCESS_POWER_CONSUMED_BY_DESALINATION
+                            ColumnHeader.EXCESS_POWER_CONSUMED_BY_DESALINATION.value
                         ].values,
                         (365, 24),
                     ),
                     axis=0,
                 )
-                if ColumnHeader.EXCESS_POWER_CONSUMED_BY_DESALINATION
+                if ColumnHeader.EXCESS_POWER_CONSUMED_BY_DESALINATION.value
                 in simulation_output
                 else None
             )
@@ -709,26 +723,27 @@ def plot_outputs(
                 np.mean(
                     np.reshape(
                         simulation_output[0:HOURS_PER_YEAR][
-                            ColumnHeader.POWER_CONSUMED_BY_DESALINATION
+                            ColumnHeader.POWER_CONSUMED_BY_DESALINATION.value
                         ].values,
                         (365, 24),
                     ),
                     axis=0,
                 )
-                if ColumnHeader.POWER_CONSUMED_BY_DESALINATION in simulation_output
+                if ColumnHeader.POWER_CONSUMED_BY_DESALINATION.value
+                in simulation_output
                 else None
             )
             thermal_desalination_energy = (
                 np.mean(
                     np.reshape(
                         simulation_output[0:HOURS_PER_YEAR][
-                            ColumnHeader.POWER_CONSUMED_BY_THERMAL_DESALINATION
+                            ColumnHeader.POWER_CONSUMED_BY_THERMAL_DESALINATION.value
                         ].values,
                         (365, 24),
                     ),
                     axis=0,
                 )
-                if ColumnHeader.POWER_CONSUMED_BY_THERMAL_DESALINATION
+                if ColumnHeader.POWER_CONSUMED_BY_THERMAL_DESALINATION.value
                 in simulation_output
                 else None
             )
@@ -773,7 +788,9 @@ def plot_outputs(
 
         blackouts = np.mean(
             np.reshape(
-                simulation_output[0:HOURS_PER_YEAR][ColumnHeader.BLACKOUTS].values,
+                simulation_output[0:HOURS_PER_YEAR][
+                    ColumnHeader.BLACKOUTS.value
+                ].values,
                 (365, 24),
             ),
             axis=0,
@@ -781,7 +798,7 @@ def plot_outputs(
         storage_energy = np.mean(
             np.reshape(
                 simulation_output[0:HOURS_PER_YEAR][
-                    ColumnHeader.ELECTRICITY_FROM_STORAGE
+                    ColumnHeader.ELECTRICITY_FROM_STORAGE.value
                 ].values
                 > 0,
                 (365, 24),
@@ -791,7 +808,7 @@ def plot_outputs(
         solar_usage = np.mean(
             np.reshape(
                 simulation_output[0:HOURS_PER_YEAR][
-                    ColumnHeader.RENEWABLE_ELECTRICITY_USED_DIRECTLY
+                    ColumnHeader.RENEWABLE_ELECTRICITY_USED_DIRECTLY.value
                 ].values,
                 (365, 24),
             ),
@@ -800,14 +817,14 @@ def plot_outputs(
         diesel_times = np.mean(
             np.reshape(
                 simulation_output[0:HOURS_PER_YEAR][
-                    ColumnHeader.DIESEL_GENERATOR_TIMES
+                    ColumnHeader.DIESEL_GENERATOR_TIMES.value
                 ].values,
                 (365, 24),
             ),
             axis=0,
         )
 
-        plt.plot(blackouts, label=ColumnHeader.BLACKOUTS)
+        plt.plot(blackouts, label=ColumnHeader.BLACKOUTS.value)
         plt.plot(solar_usage, label="Renewables")
         plt.plot(storage_energy, label="Storage")
         plt.plot(grid_energy, label="Grid")
@@ -831,24 +848,24 @@ def plot_outputs(
 
         # Plot the seasonal variation in electricity supply sources.
         grid_energy = np.reshape(
-            simulation_output[0:HOURS_PER_YEAR][ColumnHeader.GRID_ENERGY].values,
+            simulation_output[0:HOURS_PER_YEAR][ColumnHeader.GRID_ENERGY.value].values,
             (365, 24),
         )
         storage_energy = np.reshape(
             simulation_output[0:HOURS_PER_YEAR][
-                ColumnHeader.ELECTRICITY_FROM_STORAGE
+                ColumnHeader.ELECTRICITY_FROM_STORAGE.value
             ].values,
             (365, 24),
         )
         renewable_energy = np.reshape(
             simulation_output[0:HOURS_PER_YEAR][
-                ColumnHeader.RENEWABLE_ELECTRICITY_USED_DIRECTLY
+                ColumnHeader.RENEWABLE_ELECTRICITY_USED_DIRECTLY.value
             ].values,
             (365, 24),
         )
         diesel_energy = np.reshape(
             simulation_output[0:HOURS_PER_YEAR][
-                ColumnHeader.DIESEL_GENERATOR_TIMES
+                ColumnHeader.DIESEL_GENERATOR_TIMES.value
             ].values,
             (365, 24),
         )
@@ -912,29 +929,35 @@ def plot_outputs(
         pbar.update(1)
 
         total_used = simulation_output.iloc[0:24][
-            ColumnHeader.TOTAL_ELECTRICITY_CONSUMED
+            ColumnHeader.TOTAL_ELECTRICITY_CONSUMED.value
         ]
         renewable_energy = simulation_output.iloc[0:24][
-            ColumnHeader.RENEWABLE_ELECTRICITY_USED_DIRECTLY
+            ColumnHeader.RENEWABLE_ELECTRICITY_USED_DIRECTLY.value
         ]
         storage_energy = simulation_output.iloc[0:24][
-            ColumnHeader.ELECTRICITY_FROM_STORAGE
+            ColumnHeader.ELECTRICITY_FROM_STORAGE.value
         ]
-        grid_energy = simulation_output.iloc[0:24][ColumnHeader.GRID_ENERGY]
+        grid_energy = simulation_output.iloc[0:24][ColumnHeader.GRID_ENERGY.value]
         diesel_energy = simulation_output.iloc[0:24][
-            ColumnHeader.DIESEL_ENERGY_SUPPLIED
+            ColumnHeader.DIESEL_ENERGY_SUPPLIED.value
         ]
-        dumped_energy = simulation_output.iloc[0:24][ColumnHeader.DUMPED_ELECTRICITY]
-        unmet_energy = simulation_output.iloc[0:24][ColumnHeader.UNMET_ELECTRICITY]
-        pv_supplied = simulation_output.iloc[0:24][ColumnHeader.PV_ELECTRICITY_SUPPLIED]
+        dumped_energy = simulation_output.iloc[0:24][
+            ColumnHeader.DUMPED_ELECTRICITY.value
+        ]
+        unmet_energy = simulation_output.iloc[0:24][
+            ColumnHeader.UNMET_ELECTRICITY.value
+        ]
+        pv_supplied = simulation_output.iloc[0:24][
+            ColumnHeader.PV_ELECTRICITY_SUPPLIED.value
+        ]
         clean_water_pvt_supplied = (
-            simulation_output.iloc[0:24][ColumnHeader.CW_PVT_ELECTRICITY_SUPPLIED]
-            if ColumnHeader.CW_PVT_ELECTRICITY_SUPPLIED in simulation_output
+            simulation_output.iloc[0:24][ColumnHeader.CW_PVT_ELECTRICITY_SUPPLIED.value]
+            if ColumnHeader.CW_PVT_ELECTRICITY_SUPPLIED.value in simulation_output
             else None
         )
         hot_water_pvt_supplied = (
-            simulation_output.iloc[0:24][ColumnHeader.HW_PVT_ELECTRICITY_SUPPLIED]
-            if ColumnHeader.HW_PVT_ELECTRICITY_SUPPLIED in simulation_output
+            simulation_output.iloc[0:24][ColumnHeader.HW_PVT_ELECTRICITY_SUPPLIED.value]
+            if ColumnHeader.HW_PVT_ELECTRICITY_SUPPLIED.value in simulation_output
             else None
         )
 
@@ -953,7 +976,7 @@ def plot_outputs(
                 zorder=9,
             )
             thermal_desalination_energy = simulation_output.iloc[0:24][
-                ColumnHeader.POWER_CONSUMED_BY_THERMAL_DESALINATION
+                ColumnHeader.POWER_CONSUMED_BY_THERMAL_DESALINATION.value
             ]
             plt.plot(
                 thermal_desalination_energy,
@@ -968,10 +991,10 @@ def plot_outputs(
             )
         if initial_cw_hourly_loads is not None:
             clean_water_energy_via_excess = simulation_output.iloc[0:24][
-                ColumnHeader.EXCESS_POWER_CONSUMED_BY_DESALINATION
+                ColumnHeader.EXCESS_POWER_CONSUMED_BY_DESALINATION.value
             ]
             clean_water_energy_via_backup = simulation_output.iloc[0:24][
-                ColumnHeader.POWER_CONSUMED_BY_DESALINATION
+                ColumnHeader.POWER_CONSUMED_BY_DESALINATION.value
             ]
             plt.plot(
                 clean_water_energy_via_excess,
@@ -1215,7 +1238,7 @@ def plot_outputs(
             total_supplied = np.mean(
                 np.reshape(
                     simulation_output[0:HOURS_PER_YEAR][
-                        ColumnHeader.TOTAL_CW_SUPPLIED
+                        ColumnHeader.TOTAL_CW_SUPPLIED.value
                     ].values,
                     (365, 24),
                 ),
@@ -1224,7 +1247,7 @@ def plot_outputs(
             total_used = np.mean(
                 np.reshape(
                     simulation_output[0:HOURS_PER_YEAR][
-                        ColumnHeader.TOTAL_CW_CONSUMED
+                        ColumnHeader.TOTAL_CW_CONSUMED.value
                     ].values,
                     (365, 24),
                 ),
@@ -1233,7 +1256,7 @@ def plot_outputs(
             backup_clean_water = np.mean(
                 np.reshape(
                     simulation_output[0:HOURS_PER_YEAR][
-                        ColumnHeader.CLEAN_WATER_FROM_PRIORITISATION
+                        ColumnHeader.CLEAN_WATER_FROM_PRIORITISATION.value
                     ].values,
                     (365, 24),
                 ),
@@ -1242,7 +1265,7 @@ def plot_outputs(
             conventional_drinking_water = np.mean(
                 np.reshape(
                     simulation_output[0:HOURS_PER_YEAR][
-                        ColumnHeader.CLEAN_WATER_FROM_CONVENTIONAL_SOURCES
+                        ColumnHeader.CLEAN_WATER_FROM_CONVENTIONAL_SOURCES.value
                     ].values,
                     (365, 24),
                 ),
@@ -1251,7 +1274,7 @@ def plot_outputs(
             excess_power_clean_water = np.mean(
                 np.reshape(
                     simulation_output[0:HOURS_PER_YEAR][
-                        ColumnHeader.CLEAN_WATER_FROM_EXCESS_ELECTRICITY
+                        ColumnHeader.CLEAN_WATER_FROM_EXCESS_ELECTRICITY.value
                     ].values,
                     (365, 24),
                 ),
@@ -1269,7 +1292,7 @@ def plot_outputs(
             renewable_cw_produced = np.mean(
                 np.reshape(
                     simulation_output[0:HOURS_PER_YEAR][
-                        ColumnHeader.CLEAN_WATER_FROM_RENEWABLES
+                        ColumnHeader.CLEAN_WATER_FROM_RENEWABLES.value
                     ].values,
                     (365, 24),
                 ),
@@ -1278,7 +1301,7 @@ def plot_outputs(
             storage_clean_water = np.mean(
                 np.reshape(
                     simulation_output[0:HOURS_PER_YEAR][
-                        ColumnHeader.CLEAN_WATER_FROM_STORAGE
+                        ColumnHeader.CLEAN_WATER_FROM_STORAGE.value
                     ].values,
                     (365, 24),
                 ),
@@ -1287,7 +1310,7 @@ def plot_outputs(
             tank_storage = np.mean(
                 np.reshape(
                     simulation_output[0:HOURS_PER_YEAR][
-                        ColumnHeader.CW_TANK_STORAGE_PROFILE
+                        ColumnHeader.CW_TANK_STORAGE_PROFILE.value
                     ].values,
                     (365, 24),
                 ),
@@ -1296,7 +1319,7 @@ def plot_outputs(
             total_cw_load = np.mean(
                 np.reshape(
                     simulation_output[0:HOURS_PER_YEAR][
-                        ColumnHeader.TOTAL_CW_LOAD
+                        ColumnHeader.TOTAL_CW_LOAD.value
                     ].values,
                     (365, 24),
                 ),
@@ -1344,7 +1367,7 @@ def plot_outputs(
             total_supplied = np.mean(
                 np.reshape(
                     simulation_output[HOURS_UNTIL_JULY : HOURS_UNTIL_JULY + 31 * 24][
-                        ColumnHeader.TOTAL_CW_SUPPLIED
+                        ColumnHeader.TOTAL_CW_SUPPLIED.value
                     ].values,
                     (31, 24),
                 ),
@@ -1353,7 +1376,7 @@ def plot_outputs(
             total_used = np.mean(
                 np.reshape(
                     simulation_output[HOURS_UNTIL_JULY : HOURS_UNTIL_JULY + 31 * 24][
-                        ColumnHeader.TOTAL_CW_CONSUMED
+                        ColumnHeader.TOTAL_CW_CONSUMED.value
                     ].values,
                     (31, 24),
                 ),
@@ -1362,7 +1385,7 @@ def plot_outputs(
             backup_clean_water = np.mean(
                 np.reshape(
                     simulation_output[HOURS_UNTIL_JULY : HOURS_UNTIL_JULY + 31 * 24][
-                        ColumnHeader.CLEAN_WATER_FROM_PRIORITISATION
+                        ColumnHeader.CLEAN_WATER_FROM_PRIORITISATION.value
                     ].values,
                     (31, 24),
                 ),
@@ -1371,7 +1394,7 @@ def plot_outputs(
             conventional_drinking_water = np.mean(
                 np.reshape(
                     simulation_output[HOURS_UNTIL_JULY : HOURS_UNTIL_JULY + 31 * 24][
-                        ColumnHeader.CLEAN_WATER_FROM_CONVENTIONAL_SOURCES
+                        ColumnHeader.CLEAN_WATER_FROM_CONVENTIONAL_SOURCES.value
                     ].values,
                     (31, 24),
                 ),
@@ -1380,7 +1403,7 @@ def plot_outputs(
             excess_power_clean_water = np.mean(
                 np.reshape(
                     simulation_output[HOURS_UNTIL_JULY : HOURS_UNTIL_JULY + 31 * 24][
-                        ColumnHeader.CLEAN_WATER_FROM_EXCESS_ELECTRICITY
+                        ColumnHeader.CLEAN_WATER_FROM_EXCESS_ELECTRICITY.value
                     ].values,
                     (31, 24),
                 ),
@@ -1398,7 +1421,7 @@ def plot_outputs(
             renewable_cw_produced = np.mean(
                 np.reshape(
                     simulation_output[HOURS_UNTIL_JULY : HOURS_UNTIL_JULY + 31 * 24][
-                        ColumnHeader.CLEAN_WATER_FROM_RENEWABLES
+                        ColumnHeader.CLEAN_WATER_FROM_RENEWABLES.value
                     ].values,
                     (31, 24),
                 ),
@@ -1407,7 +1430,7 @@ def plot_outputs(
             storage_clean_water = np.mean(
                 np.reshape(
                     simulation_output[HOURS_UNTIL_JULY : HOURS_UNTIL_JULY + 31 * 24][
-                        ColumnHeader.CLEAN_WATER_FROM_STORAGE
+                        ColumnHeader.CLEAN_WATER_FROM_STORAGE.value
                     ].values,
                     (31, 24),
                 ),
@@ -1416,7 +1439,7 @@ def plot_outputs(
             tank_storage = np.mean(
                 np.reshape(
                     simulation_output[HOURS_UNTIL_JULY : HOURS_UNTIL_JULY + 31 * 24][
-                        ColumnHeader.CW_TANK_STORAGE_PROFILE
+                        ColumnHeader.CW_TANK_STORAGE_PROFILE.value
                     ].values,
                     (31, 24),
                 ),
@@ -1425,7 +1448,7 @@ def plot_outputs(
             total_cw_load = np.mean(
                 np.reshape(
                     simulation_output[HOURS_UNTIL_JULY : HOURS_UNTIL_JULY + 31 * 24][
-                        ColumnHeader.TOTAL_CW_LOAD
+                        ColumnHeader.TOTAL_CW_LOAD.value
                     ].values,
                     (31, 24),
                 ),
@@ -1520,7 +1543,7 @@ def plot_outputs(
             total_supplied = np.mean(
                 np.reshape(
                     simulation_output[0 : 24 * 31][
-                        ColumnHeader.TOTAL_CW_SUPPLIED
+                        ColumnHeader.TOTAL_CW_SUPPLIED.value
                     ].values,
                     (31, 24),
                 ),
@@ -1529,7 +1552,7 @@ def plot_outputs(
             total_used = np.mean(
                 np.reshape(
                     simulation_output[0 : 24 * 31][
-                        ColumnHeader.TOTAL_CW_CONSUMED
+                        ColumnHeader.TOTAL_CW_CONSUMED.value
                     ].values,
                     (31, 24),
                 ),
@@ -1538,7 +1561,7 @@ def plot_outputs(
             backup_clean_water = np.mean(
                 np.reshape(
                     simulation_output[0 : 24 * 31][
-                        ColumnHeader.CLEAN_WATER_FROM_PRIORITISATION
+                        ColumnHeader.CLEAN_WATER_FROM_PRIORITISATION.value
                     ].values,
                     (31, 24),
                 ),
@@ -1547,7 +1570,7 @@ def plot_outputs(
             conventional_drinking_water = np.mean(
                 np.reshape(
                     simulation_output[0 : 24 * 31][
-                        ColumnHeader.CLEAN_WATER_FROM_CONVENTIONAL_SOURCES
+                        ColumnHeader.CLEAN_WATER_FROM_CONVENTIONAL_SOURCES.value
                     ].values,
                     (31, 24),
                 ),
@@ -1556,7 +1579,7 @@ def plot_outputs(
             excess_power_clean_water = np.mean(
                 np.reshape(
                     simulation_output[0 : 24 * 31][
-                        ColumnHeader.CLEAN_WATER_FROM_EXCESS_ELECTRICITY
+                        ColumnHeader.CLEAN_WATER_FROM_EXCESS_ELECTRICITY.value
                     ].values,
                     (31, 24),
                 ),
@@ -1574,7 +1597,7 @@ def plot_outputs(
             renewable_cw_produced = np.mean(
                 np.reshape(
                     simulation_output[0 : 24 * 31][
-                        ColumnHeader.CLEAN_WATER_FROM_RENEWABLES
+                        ColumnHeader.CLEAN_WATER_FROM_RENEWABLES.value
                     ].values,
                     (31, 24),
                 ),
@@ -1583,7 +1606,7 @@ def plot_outputs(
             storage_clean_water = np.mean(
                 np.reshape(
                     simulation_output[0 : 24 * 31][
-                        ColumnHeader.CLEAN_WATER_FROM_STORAGE
+                        ColumnHeader.CLEAN_WATER_FROM_STORAGE.value
                     ].values,
                     (31, 24),
                 ),
@@ -1592,7 +1615,7 @@ def plot_outputs(
             tank_storage = np.mean(
                 np.reshape(
                     simulation_output[0 : 24 * 31][
-                        ColumnHeader.CW_TANK_STORAGE_PROFILE
+                        ColumnHeader.CW_TANK_STORAGE_PROFILE.value
                     ].values,
                     (31, 24),
                 ),
@@ -1600,7 +1623,9 @@ def plot_outputs(
             )
             total_cw_load = np.mean(
                 np.reshape(
-                    simulation_output[0 : 24 * 31][ColumnHeader.TOTAL_CW_LOAD].values,
+                    simulation_output[0 : 24 * 31][
+                        ColumnHeader.TOTAL_CW_LOAD.value
+                    ].values,
                     (31, 24),
                 ),
                 axis=0,
@@ -1647,28 +1672,30 @@ def plot_outputs(
 
             # Water supply and demand on the first day.
             backup = simulation_output.iloc[0:24][
-                ColumnHeader.CLEAN_WATER_FROM_PRIORITISATION
+                ColumnHeader.CLEAN_WATER_FROM_PRIORITISATION.value
             ]
             conventional = simulation_output.iloc[0:24][
-                ColumnHeader.CLEAN_WATER_FROM_CONVENTIONAL_SOURCES
+                ColumnHeader.CLEAN_WATER_FROM_CONVENTIONAL_SOURCES.value
             ]
             excess = simulation_output.iloc[0:24][
-                ColumnHeader.CLEAN_WATER_FROM_EXCESS_ELECTRICITY
+                ColumnHeader.CLEAN_WATER_FROM_EXCESS_ELECTRICITY.value
             ]
             renewable = simulation_output.iloc[0:24][
                 ColumnHeader.RENEWABLE_CW_USED_DIRECTLY
             ]
             renewable_produced = simulation_output.iloc[0:24][
-                ColumnHeader.CLEAN_WATER_FROM_RENEWABLES
+                ColumnHeader.CLEAN_WATER_FROM_RENEWABLES.value
             ]
             storage = simulation_output.iloc[0:24][
-                ColumnHeader.CLEAN_WATER_FROM_STORAGE
+                ColumnHeader.CLEAN_WATER_FROM_STORAGE.value
             ]
             tank_storage = simulation_output.iloc[0:24][
-                ColumnHeader.CW_TANK_STORAGE_PROFILE
+                ColumnHeader.CW_TANK_STORAGE_PROFILE.value
             ]
-            total_load = simulation_output.iloc[0:24][ColumnHeader.TOTAL_CW_LOAD]
-            total_used = simulation_output.iloc[0:24][ColumnHeader.TOTAL_CW_SUPPLIED]
+            total_load = simulation_output.iloc[0:24][ColumnHeader.TOTAL_CW_LOAD.value]
+            total_used = simulation_output.iloc[0:24][
+                ColumnHeader.TOTAL_CW_SUPPLIED.value
+            ]
             unmet_clean_water = simulation_output.iloc[0:24][
                 ColumnHeader.UNMET_CLEAN_WATER
             ]
@@ -1697,25 +1724,27 @@ def plot_outputs(
             pbar.update(1)
 
             backup = simulation_output.iloc[0:48][
-                ColumnHeader.CLEAN_WATER_FROM_PRIORITISATION
+                ColumnHeader.CLEAN_WATER_FROM_PRIORITISATION.value
             ]
             excess = simulation_output.iloc[0:48][
-                ColumnHeader.CLEAN_WATER_FROM_EXCESS_ELECTRICITY
+                ColumnHeader.CLEAN_WATER_FROM_EXCESS_ELECTRICITY.value
             ]
             renewable = simulation_output.iloc[0:48][
                 ColumnHeader.RENEWABLE_CW_USED_DIRECTLY
             ]
             renewable_produced = simulation_output.iloc[0:48][
-                ColumnHeader.CLEAN_WATER_FROM_RENEWABLES
+                ColumnHeader.CLEAN_WATER_FROM_RENEWABLES.value
             ]
             storage = simulation_output.iloc[0:48][
-                ColumnHeader.CLEAN_WATER_FROM_STORAGE
+                ColumnHeader.CLEAN_WATER_FROM_STORAGE.value
             ]
             tank_storage = simulation_output.iloc[0:48][
-                ColumnHeader.CW_TANK_STORAGE_PROFILE
+                ColumnHeader.CW_TANK_STORAGE_PROFILE.value
             ]
-            total_load = simulation_output.iloc[0:48][ColumnHeader.TOTAL_CW_LOAD]
-            total_used = simulation_output.iloc[0:48][ColumnHeader.TOTAL_CW_SUPPLIED]
+            total_load = simulation_output.iloc[0:48][ColumnHeader.TOTAL_CW_LOAD.value]
+            total_used = simulation_output.iloc[0:48][
+                ColumnHeader.TOTAL_CW_SUPPLIED.value
+            ]
             unmet_clean_water = simulation_output.iloc[0:48][
                 ColumnHeader.UNMET_CLEAN_WATER
             ]
@@ -1764,7 +1793,7 @@ def plot_outputs(
             #     axis=0,
             # )
 
-            # plt.plot(blackouts, label=ColumnHeader.BLACKOUTS)
+            # plt.plot(blackouts, label=ColumnHeader.BLACKOUTS.value)
             # plt.plot(direct_electric_supply, label="Direct electric")
             # plt.legend()
             # plt.xlim(0, 23)
@@ -1786,7 +1815,7 @@ def plot_outputs(
             clean_water_power_supplied = np.mean(
                 np.reshape(
                     simulation_output[0:HOURS_PER_YEAR][
-                        ColumnHeader.POWER_CONSUMED_BY_DESALINATION
+                        ColumnHeader.POWER_CONSUMED_BY_DESALINATION.value
                     ].values,
                     (365, 24),
                 ),
@@ -1795,7 +1824,7 @@ def plot_outputs(
             dumped_power = np.mean(
                 np.reshape(
                     simulation_output[0:HOURS_PER_YEAR][
-                        ColumnHeader.DUMPED_ELECTRICITY
+                        ColumnHeader.DUMPED_ELECTRICITY.value
                     ].values,
                     (365, 24),
                 ),
@@ -1804,7 +1833,7 @@ def plot_outputs(
             electric_power_supplied = np.mean(
                 np.reshape(
                     simulation_output[0:HOURS_PER_YEAR][
-                        ColumnHeader.POWER_CONSUMED_BY_ELECTRIC_DEVICES
+                        ColumnHeader.POWER_CONSUMED_BY_ELECTRIC_DEVICES.value
                     ].values,
                     (365, 24),
                 ),
@@ -1813,7 +1842,7 @@ def plot_outputs(
             surplus_power_consumed = np.mean(
                 np.reshape(
                     simulation_output[0:HOURS_PER_YEAR][
-                        ColumnHeader.EXCESS_POWER_CONSUMED_BY_DESALINATION
+                        ColumnHeader.EXCESS_POWER_CONSUMED_BY_DESALINATION.value
                     ].values,
                     (365, 24),
                 ),
@@ -1822,7 +1851,7 @@ def plot_outputs(
             total_power_supplied = np.mean(
                 np.reshape(
                     simulation_output[0:HOURS_PER_YEAR][
-                        ColumnHeader.TOTAL_ELECTRICITY_CONSUMED
+                        ColumnHeader.TOTAL_ELECTRICITY_CONSUMED.value
                     ].values,
                     (365, 24),
                 ),
@@ -1840,7 +1869,7 @@ def plot_outputs(
                 thermal_desalination_energy = np.mean(
                     np.reshape(
                         simulation_output[0:HOURS_PER_YEAR][
-                            ColumnHeader.POWER_CONSUMED_BY_THERMAL_DESALINATION
+                            ColumnHeader.POWER_CONSUMED_BY_THERMAL_DESALINATION.value
                         ].values,
                         (365, 24),
                     ),
@@ -1868,28 +1897,28 @@ def plot_outputs(
             # Plot the seasonal variation in clean-water supply sources.
             backup_water = np.reshape(
                 simulation_output[0:HOURS_PER_YEAR][
-                    ColumnHeader.CLEAN_WATER_FROM_PRIORITISATION
+                    ColumnHeader.CLEAN_WATER_FROM_PRIORITISATION.value
                 ].values
                 / 1000,
                 (365, 24),
             )
             conventional_water = np.reshape(
                 simulation_output[0:HOURS_PER_YEAR][
-                    ColumnHeader.CLEAN_WATER_FROM_CONVENTIONAL_SOURCES
+                    ColumnHeader.CLEAN_WATER_FROM_CONVENTIONAL_SOURCES.value
                 ].values
                 / 1000,
                 (365, 24),
             )
             excess_pv_water = np.reshape(
                 simulation_output[0:HOURS_PER_YEAR][
-                    ColumnHeader.CLEAN_WATER_FROM_EXCESS_ELECTRICITY
+                    ColumnHeader.CLEAN_WATER_FROM_EXCESS_ELECTRICITY.value
                 ].values
                 / 1000,
                 (365, 24),
             )
             storage_water = np.reshape(
                 simulation_output[0:HOURS_PER_YEAR][
-                    ColumnHeader.CLEAN_WATER_FROM_STORAGE
+                    ColumnHeader.CLEAN_WATER_FROM_STORAGE.value
                 ].values
                 / 1000,
                 (365, 24),
@@ -2046,7 +2075,7 @@ def plot_outputs(
             if cw_pvt:
                 # Plot the first year of PV-T generation as a heatmap.
                 pvt_electricity_supplied_per_unit = simulation_output[0:HOURS_PER_YEAR][
-                    ColumnHeader.CW_PVT_ELECTRICITY_SUPPLIED_PER_KWP
+                    ColumnHeader.CW_PVT_ELECTRICITY_SUPPLIED_PER_KWP.valuePER_KWP
                 ]
                 reshaped_data = np.reshape(
                     pvt_electricity_supplied_per_unit.values, (365, 24)
@@ -2094,43 +2123,43 @@ def plot_outputs(
                 # Plot the daily collector output temperature
                 _, ax1 = plt.subplots()
                 collector_output_temperature_january = simulation_output.iloc[0:24][
-                    ColumnHeader.CW_PVT_OUTPUT_TEMPERATURE
+                    ColumnHeader.CW_PVT_OUTPUT_TEMPERATURE.value
                 ]
                 collector_output_temperature_march = simulation_output.iloc[
                     HOURS_UNTIL_MARCH : HOURS_UNTIL_MARCH + 24
-                ][ColumnHeader.CW_PVT_OUTPUT_TEMPERATURE]
+                ][ColumnHeader.CW_PVT_OUTPUT_TEMPERATURE.value]
                 collector_output_temperature_may = simulation_output.iloc[
                     HOURS_UNTIL_MAY : HOURS_UNTIL_MAY + 24
-                ][ColumnHeader.CW_PVT_OUTPUT_TEMPERATURE]
+                ][ColumnHeader.CW_PVT_OUTPUT_TEMPERATURE.value]
                 collector_output_temperature_july = simulation_output.iloc[
                     HOURS_UNTIL_JULY : HOURS_UNTIL_JULY + 24
-                ][ColumnHeader.CW_PVT_OUTPUT_TEMPERATURE]
+                ][ColumnHeader.CW_PVT_OUTPUT_TEMPERATURE.value]
 
                 buffer_tank_temperature_january = simulation_output.iloc[0:24][
-                    ColumnHeader.BUFFER_TANK_TEMPERATURE
+                    ColumnHeader.BUFFER_TANK_TEMPERATURE.value.value
                 ]
                 buffer_tank_temperature_march = simulation_output.iloc[
                     HOURS_UNTIL_MARCH : HOURS_UNTIL_MARCH + 24
-                ][ColumnHeader.BUFFER_TANK_TEMPERATURE]
+                ][ColumnHeader.BUFFER_TANK_TEMPERATURE.value.value]
                 buffer_tank_temperature_may = simulation_output.iloc[
                     HOURS_UNTIL_MAY : HOURS_UNTIL_MAY + 24
-                ][ColumnHeader.BUFFER_TANK_TEMPERATURE]
+                ][ColumnHeader.BUFFER_TANK_TEMPERATURE.value.value]
                 buffer_tank_temperature_july = simulation_output.iloc[
                     HOURS_UNTIL_JULY : HOURS_UNTIL_JULY + 24
-                ][ColumnHeader.BUFFER_TANK_TEMPERATURE]
+                ][ColumnHeader.BUFFER_TANK_TEMPERATURE.value.value]
 
                 volume_supplied_january = simulation_output.iloc[0:24][
-                    ColumnHeader.CLEAN_WATER_FROM_RENEWABLES
+                    ColumnHeader.CLEAN_WATER_FROM_RENEWABLES.value
                 ]
                 volume_supplied_march = simulation_output.iloc[
                     HOURS_UNTIL_MARCH : HOURS_UNTIL_MARCH + 24
-                ][ColumnHeader.CLEAN_WATER_FROM_RENEWABLES]
+                ][ColumnHeader.CLEAN_WATER_FROM_RENEWABLES.value]
                 volume_supplied_may = simulation_output.iloc[
                     HOURS_UNTIL_MAY : HOURS_UNTIL_MAY + 24
-                ][ColumnHeader.CLEAN_WATER_FROM_RENEWABLES]
+                ][ColumnHeader.CLEAN_WATER_FROM_RENEWABLES.value]
                 volume_supplied_july = simulation_output.iloc[
                     HOURS_UNTIL_JULY : HOURS_UNTIL_JULY + 24
-                ][ColumnHeader.CLEAN_WATER_FROM_RENEWABLES]
+                ][ColumnHeader.CLEAN_WATER_FROM_RENEWABLES.value]
 
                 ax1.plot(
                     collector_output_temperature_january.values,
@@ -2189,7 +2218,7 @@ def plot_outputs(
                 collector_output_temperature_january = np.mean(
                     np.reshape(
                         simulation_output[0 : 31 * 24][
-                            ColumnHeader.CW_PVT_OUTPUT_TEMPERATURE
+                            ColumnHeader.CW_PVT_OUTPUT_TEMPERATURE.value
                         ].values,
                         (31, 24),
                     ),
@@ -2199,7 +2228,7 @@ def plot_outputs(
                     np.reshape(
                         simulation_output[
                             HOURS_UNTIL_MARCH : HOURS_UNTIL_MARCH + 31 * 24
-                        ][ColumnHeader.CW_PVT_OUTPUT_TEMPERATURE].values,
+                        ][ColumnHeader.CW_PVT_OUTPUT_TEMPERATURE.value].values,
                         (31, 24),
                     ),
                     axis=0,
@@ -2207,7 +2236,7 @@ def plot_outputs(
                 collector_output_temperature_may = np.mean(
                     np.reshape(
                         simulation_output[HOURS_UNTIL_MAY : HOURS_UNTIL_MAY + 31 * 24][
-                            ColumnHeader.CW_PVT_OUTPUT_TEMPERATURE
+                            ColumnHeader.CW_PVT_OUTPUT_TEMPERATURE.value
                         ].values,
                         (31, 24),
                     ),
@@ -2217,7 +2246,7 @@ def plot_outputs(
                     np.reshape(
                         simulation_output[
                             HOURS_UNTIL_JULY : HOURS_UNTIL_JULY + 31 * 24
-                        ][ColumnHeader.CW_PVT_OUTPUT_TEMPERATURE].values,
+                        ][ColumnHeader.CW_PVT_OUTPUT_TEMPERATURE.value].values,
                         (31, 24),
                     ),
                     axis=0,
@@ -2226,7 +2255,7 @@ def plot_outputs(
                 buffer_tank_temperature_january = np.mean(
                     np.reshape(
                         simulation_output[0 : 31 * 24][
-                            ColumnHeader.BUFFER_TANK_TEMPERATURE
+                            ColumnHeader.BUFFER_TANK_TEMPERATURE.value.value
                         ].values,
                         (31, 24),
                     ),
@@ -2236,7 +2265,7 @@ def plot_outputs(
                     np.reshape(
                         simulation_output[
                             HOURS_UNTIL_MARCH : HOURS_UNTIL_MARCH + 31 * 24
-                        ][ColumnHeader.BUFFER_TANK_TEMPERATURE].values,
+                        ][ColumnHeader.BUFFER_TANK_TEMPERATURE.value.value].values,
                         (31, 24),
                     ),
                     axis=0,
@@ -2244,7 +2273,7 @@ def plot_outputs(
                 buffer_tank_temperature_may = np.mean(
                     np.reshape(
                         simulation_output[HOURS_UNTIL_MAY : HOURS_UNTIL_MAY + 31 * 24][
-                            ColumnHeader.BUFFER_TANK_TEMPERATURE
+                            ColumnHeader.BUFFER_TANK_TEMPERATURE.value.value
                         ].values,
                         (31, 24),
                     ),
@@ -2254,7 +2283,7 @@ def plot_outputs(
                     np.reshape(
                         simulation_output[
                             HOURS_UNTIL_JULY : HOURS_UNTIL_JULY + 31 * 24
-                        ][ColumnHeader.BUFFER_TANK_TEMPERATURE].values,
+                        ][ColumnHeader.BUFFER_TANK_TEMPERATURE.value.value].values,
                         (31, 24),
                     ),
                     axis=0,
@@ -2264,7 +2293,7 @@ def plot_outputs(
                 volume_supplied_january = np.mean(
                     np.reshape(
                         simulation_output[0 : 31 * 24][
-                            ColumnHeader.CLEAN_WATER_FROM_RENEWABLES
+                            ColumnHeader.CLEAN_WATER_FROM_RENEWABLES.value
                         ].values,
                         (31, 24),
                     ),
@@ -2274,7 +2303,7 @@ def plot_outputs(
                     np.reshape(
                         simulation_output[
                             HOURS_UNTIL_MARCH : HOURS_UNTIL_MARCH + 31 * 24
-                        ][ColumnHeader.CLEAN_WATER_FROM_RENEWABLES].values,
+                        ][ColumnHeader.CLEAN_WATER_FROM_RENEWABLES.value].values,
                         (31, 24),
                     ),
                     axis=0,
@@ -2282,7 +2311,7 @@ def plot_outputs(
                 volume_supplied_may = np.mean(
                     np.reshape(
                         simulation_output[HOURS_UNTIL_MAY : HOURS_UNTIL_MAY + 31 * 24][
-                            ColumnHeader.CLEAN_WATER_FROM_RENEWABLES
+                            ColumnHeader.CLEAN_WATER_FROM_RENEWABLES.value
                         ].values,
                         (31, 24),
                     ),
@@ -2292,7 +2321,7 @@ def plot_outputs(
                     np.reshape(
                         simulation_output[
                             HOURS_UNTIL_JULY : HOURS_UNTIL_JULY + 31 * 24
-                        ][ColumnHeader.CLEAN_WATER_FROM_RENEWABLES].values,
+                        ][ColumnHeader.CLEAN_WATER_FROM_RENEWABLES.value].values,
                         (31, 24),
                     ),
                     axis=0,
@@ -2563,43 +2592,43 @@ def plot_outputs(
             # Plot the daily collector output temperature
             _, ax1 = plt.subplots()
             collector_output_temperature_january = simulation_output.iloc[0:24][
-                ColumnHeader.HW_PVT_OUTPUT_TEMPERATURE
+                ColumnHeader.HW_PVT_OUTPUT_TEMPERATURE.value
             ]
             collector_output_temperature_march = simulation_output.iloc[
                 HOURS_UNTIL_MARCH : HOURS_UNTIL_MARCH + 24
-            ][ColumnHeader.HW_PVT_OUTPUT_TEMPERATURE]
+            ][ColumnHeader.HW_PVT_OUTPUT_TEMPERATURE.value]
             collector_output_temperature_may = simulation_output.iloc[
                 HOURS_UNTIL_MAY : HOURS_UNTIL_MAY + 24
-            ][ColumnHeader.HW_PVT_OUTPUT_TEMPERATURE]
+            ][ColumnHeader.HW_PVT_OUTPUT_TEMPERATURE.value]
             collector_output_temperature_july = simulation_output.iloc[
                 HOURS_UNTIL_JULY : HOURS_UNTIL_JULY + 24
-            ][ColumnHeader.HW_PVT_OUTPUT_TEMPERATURE]
+            ][ColumnHeader.HW_PVT_OUTPUT_TEMPERATURE.value]
 
             hot_water_tank_temperature_january = simulation_output.iloc[0:24][
-                ColumnHeader.HW_TANK_TEMPERATURE
+                ColumnHeader.HW_TANK_TEMPERATURE.value
             ]
             hot_water_tank_temperature_march = simulation_output.iloc[
                 HOURS_UNTIL_MARCH : HOURS_UNTIL_MARCH + 24
-            ][ColumnHeader.HW_TANK_TEMPERATURE]
+            ][ColumnHeader.HW_TANK_TEMPERATURE.value]
             hot_water_tank_temperature_may = simulation_output.iloc[
                 HOURS_UNTIL_MAY : HOURS_UNTIL_MAY + 24
-            ][ColumnHeader.HW_TANK_TEMPERATURE]
+            ][ColumnHeader.HW_TANK_TEMPERATURE.value]
             hot_water_tank_temperature_july = simulation_output.iloc[
                 HOURS_UNTIL_JULY : HOURS_UNTIL_JULY + 24
-            ][ColumnHeader.HW_TANK_TEMPERATURE]
+            ][ColumnHeader.HW_TANK_TEMPERATURE.value]
 
             renewable_fraction_january = simulation_output.iloc[0:24][
-                ColumnHeader.HW_RENEWABLES_FRACTION
+                ColumnHeader.HW_RENEWABLES_FRACTION.value
             ]
             renewable_fraction_march = simulation_output.iloc[
                 HOURS_UNTIL_MARCH : HOURS_UNTIL_MARCH + 24
-            ][ColumnHeader.HW_RENEWABLES_FRACTION]
+            ][ColumnHeader.HW_RENEWABLES_FRACTION.value]
             renewable_fraction_may = simulation_output.iloc[
                 HOURS_UNTIL_MAY : HOURS_UNTIL_MAY + 24
-            ][ColumnHeader.HW_RENEWABLES_FRACTION]
+            ][ColumnHeader.HW_RENEWABLES_FRACTION.value]
             renewable_fraction_july = simulation_output.iloc[
                 HOURS_UNTIL_JULY : HOURS_UNTIL_JULY + 24
-            ][ColumnHeader.HW_RENEWABLES_FRACTION]
+            ][ColumnHeader.HW_RENEWABLES_FRACTION.value]
 
             ax1.plot(
                 collector_output_temperature_january.values,
@@ -2668,7 +2697,7 @@ def plot_outputs(
             collector_output_temperature_january = np.mean(
                 np.reshape(
                     simulation_output[0 : 31 * 24][
-                        ColumnHeader.HW_PVT_OUTPUT_TEMPERATURE
+                        ColumnHeader.HW_PVT_OUTPUT_TEMPERATURE.value
                     ].values,
                     (31, 24),
                 ),
@@ -2677,7 +2706,7 @@ def plot_outputs(
             collector_output_temperature_march = np.mean(
                 np.reshape(
                     simulation_output[HOURS_UNTIL_MARCH : HOURS_UNTIL_MARCH + 31 * 24][
-                        ColumnHeader.HW_PVT_OUTPUT_TEMPERATURE
+                        ColumnHeader.HW_PVT_OUTPUT_TEMPERATURE.value
                     ].values,
                     (31, 24),
                 ),
@@ -2686,7 +2715,7 @@ def plot_outputs(
             collector_output_temperature_may = np.mean(
                 np.reshape(
                     simulation_output[HOURS_UNTIL_MAY : HOURS_UNTIL_MAY + 31 * 24][
-                        ColumnHeader.HW_PVT_OUTPUT_TEMPERATURE
+                        ColumnHeader.HW_PVT_OUTPUT_TEMPERATURE.value
                     ].values,
                     (31, 24),
                 ),
@@ -2695,7 +2724,7 @@ def plot_outputs(
             collector_output_temperature_july = np.mean(
                 np.reshape(
                     simulation_output[HOURS_UNTIL_JULY : HOURS_UNTIL_JULY + 31 * 24][
-                        ColumnHeader.HW_PVT_OUTPUT_TEMPERATURE
+                        ColumnHeader.HW_PVT_OUTPUT_TEMPERATURE.value
                     ].values,
                     (31, 24),
                 ),
@@ -2705,7 +2734,7 @@ def plot_outputs(
             hot_water_tank_temperature_january = np.mean(
                 np.reshape(
                     simulation_output[0 : 31 * 24][
-                        ColumnHeader.HW_TANK_TEMPERATURE
+                        ColumnHeader.HW_TANK_TEMPERATURE.value
                     ].values,
                     (31, 24),
                 ),
@@ -2714,7 +2743,7 @@ def plot_outputs(
             hot_water_tank_temperature_march = np.mean(
                 np.reshape(
                     simulation_output[HOURS_UNTIL_MARCH : HOURS_UNTIL_MARCH + 31 * 24][
-                        ColumnHeader.HW_TANK_TEMPERATURE
+                        ColumnHeader.HW_TANK_TEMPERATURE.value
                     ].values,
                     (31, 24),
                 ),
@@ -2723,7 +2752,7 @@ def plot_outputs(
             hot_water_tank_temperature_may = np.mean(
                 np.reshape(
                     simulation_output[HOURS_UNTIL_MAY : HOURS_UNTIL_MAY + 31 * 24][
-                        ColumnHeader.HW_TANK_TEMPERATURE
+                        ColumnHeader.HW_TANK_TEMPERATURE.value
                     ].values,
                     (31, 24),
                 ),
@@ -2732,7 +2761,7 @@ def plot_outputs(
             hot_water_tank_temperature_july = np.mean(
                 np.reshape(
                     simulation_output[HOURS_UNTIL_JULY : HOURS_UNTIL_JULY + 31 * 24][
-                        ColumnHeader.HW_TANK_TEMPERATURE
+                        ColumnHeader.HW_TANK_TEMPERATURE.value
                     ].values,
                     (31, 24),
                 ),
@@ -2743,7 +2772,7 @@ def plot_outputs(
             renewable_fraction_january = np.mean(
                 np.reshape(
                     simulation_output[0 : 31 * 24][
-                        ColumnHeader.HW_RENEWABLES_FRACTION
+                        ColumnHeader.HW_RENEWABLES_FRACTION.value
                     ].values,
                     (31, 24),
                 ),
@@ -2752,7 +2781,7 @@ def plot_outputs(
             renewable_fraction_march = np.mean(
                 np.reshape(
                     simulation_output[HOURS_UNTIL_MARCH : HOURS_UNTIL_MARCH + 31 * 24][
-                        ColumnHeader.HW_RENEWABLES_FRACTION
+                        ColumnHeader.HW_RENEWABLES_FRACTION.value
                     ].values,
                     (31, 24),
                 ),
@@ -2761,7 +2790,7 @@ def plot_outputs(
             renewable_fraction_may = np.mean(
                 np.reshape(
                     simulation_output[HOURS_UNTIL_MAY : HOURS_UNTIL_MAY + 31 * 24][
-                        ColumnHeader.HW_RENEWABLES_FRACTION
+                        ColumnHeader.HW_RENEWABLES_FRACTION.value
                     ].values,
                     (31, 24),
                 ),
@@ -2770,7 +2799,7 @@ def plot_outputs(
             renewable_fraction_july = np.mean(
                 np.reshape(
                     simulation_output[HOURS_UNTIL_JULY : HOURS_UNTIL_JULY + 31 * 24][
-                        ColumnHeader.HW_RENEWABLES_FRACTION
+                        ColumnHeader.HW_RENEWABLES_FRACTION.value
                     ].values,
                     (31, 24),
                 ),

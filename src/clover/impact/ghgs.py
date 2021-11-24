@@ -500,7 +500,7 @@ def calculate_inverter_ghgs(
     replacement_intervals = pd.DataFrame(
         np.arange(0, location.max_years, replacement_period)
     )
-    replacement_intervals.columns = pd.Index([ColumnHeader.INSTALLATION_YEAR])
+    replacement_intervals.columns = pd.Index([ColumnHeader.INSTALLATION_YEAR.value])
 
     # Check if inverter should be replaced in the specified time interval
     if replacement_intervals.iloc[
@@ -530,7 +530,7 @@ def calculate_inverter_ghgs(
         inverter_size.append(inverter_size_interval)
 
     inverter_size_data_frame: pd.DataFrame = pd.DataFrame(inverter_size)
-    inverter_size_data_frame.columns = pd.Index([ColumnHeader.INVERTER_SIZE])
+    inverter_size_data_frame.columns = pd.Index([ColumnHeader.INVERTER_SIZE.value])
     inverter_info = pd.concat([replacement_intervals, inverter_size_data_frame], axis=1)
 
     # Calculate the associated ghgs
