@@ -2451,7 +2451,7 @@ def run_simulation(
                 [ColumnHeader.CW_PVT_OUTPUT_TEMPERATURE.value]
             )
             clean_water_pvt_electric_power_per_kwh.columns = pd.Index(
-                [ColumnHeader.CW_PVT_ELECTRICITY_SUPPLIED_PER_KWP.valuePER_KWP]
+                [ColumnHeader.CW_PVT_ELECTRICITY_SUPPLIED_PER_KWP.value]
             )
             thermal_desalination_electric_power_consumed.columns = pd.Index(
                 [ColumnHeader.POWER_CONSUMED_BY_THERMAL_DESALINATION.value]

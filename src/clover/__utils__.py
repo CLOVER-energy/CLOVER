@@ -445,7 +445,7 @@ class ColumnHeader(enum.Enum):
     - RENEWABLE_ELECTRICITY_SUPPLIED:
         The electricity that was supplied renewably.
 
-    - RENEWABLES_USED_DIRECTLY:
+    - RENEWABLE_ELECTRICITY_USED_DIRECTLY:
         The renewables produced that were used directly to meet loads.
 
     - STORAGE_PROFILE:
@@ -501,7 +501,7 @@ class ColumnHeader(enum.Enum):
     CW_PVT_OUTPUT_TEMPERATURE = "Clean-water PV-T output temperature (degC)"
     CW_TANK_STORAGE_PROFILE = "Water held in clean-water storage tanks (l)"
     DIESEL_ENERGY_SUPPLIED = "Diesel energy (kWh)"
-    DIESEL_FUEL_USAGE= "Diesel fuel usage (l)"
+    DIESEL_FUEL_USAGE = "Diesel fuel usage (l)"
     DIESEL_GENERATOR_TIMES = "Diesel times"
     DUMPED_ELECTRICITY = "Dumped energy (kWh)"
     ELECTRICITY_FROM_STORAGE = "Storage energy supplied (kWh)"
@@ -519,10 +519,10 @@ class ColumnHeader(enum.Enum):
     HW_RENEWABLES_FRACTION = "Renewable hot-water fraction"
     HW_TANK_OUTPUT = "Hot-water tank volume supplied (l)"
     HW_TANK_TEMPERATURE = "Hot-water tank temperature (degC)"
-    INSTALLATION_YEAR= "Installation year"
+    INSTALLATION_YEAR = "Installation year"
     INVERTER_SIZE = "Inverter size (kW)"
     KEROSENE_LAMPS = "Kerosene lamps"
-    KEROSENE_MITIGATION= "Kerosene mitigation"
+    KEROSENE_MITIGATION = "Kerosene mitigation"
     LOAD_ENERGY = "Load energy (kWh)"
     POWER_CONSUMED_BY_DESALINATION = "Power consumed providing clean water (kWh)"
     POWER_CONSUMED_BY_ELECTRIC_DEVICES = "Power consumed providing electricity (kWh)"
@@ -533,16 +533,16 @@ class ColumnHeader(enum.Enum):
     PV_ELECTRICITY_SUPPLIED = "PV energy supplied (kWh)"
     RENEWABLE_CW_USED_DIRECTLY = "Renewable clean water used directly (l)"
     RENEWABLE_ELECTRICITY_SUPPLIED = "Renewables energy supplied (kWh)"
-    RENEWABLES_USED_DIRECTLY = "Renewables energy used (kWh)"
+    RENEWABLE_ELECTRICITY_USED_DIRECTLY = "Renewables energy used (kWh)"
     STORAGE_PROFILE = "Storage profile (kWh)"
     TOTAL_CW_CONSUMED = "Total clean water consumed (l)"
     TOTAL_CW_LOAD = "Total clean water demand (l)"
     TOTAL_CW_SUPPLIED = "Total clean water supplied (l)"
-    TOTAL_ELECTRICITY_CONSUMED= "Total energy used (kWh)"
+    TOTAL_ELECTRICITY_CONSUMED = "Total energy used (kWh)"
     TOTAL_HW_LOAD = "Total hot-water demand (l)"
     TOTAL_PVT_ELECTRICITY_SUPPLIED = "Total PV-T electric energy supplied (kWh)"
     UNMET_CLEAN_WATER = "Unmet clean water demand (l)"
-    UNMET_ELECTRICITY= "Unmet energy (kWh)"
+    UNMET_ELECTRICITY = "Unmet energy (kWh)"
     WATER_SURPLUS = "Water surplus (l)"
 
 
@@ -979,7 +979,9 @@ class KeyResults:
                 self.cumulative_pv_generation, 3
             )
         if self.diesel_times is not None:
-            data_dict[ColumnHeader.DIESEL_GENERATOR_TIMES.value] = round(self.diesel_times, 3)
+            data_dict[ColumnHeader.DIESEL_GENERATOR_TIMES.value] = round(
+                self.diesel_times, 3
+            )
         if self.grid_daily_hours is not None:
             data_dict["Average grid availability / hours/day"] = round(
                 self.grid_daily_hours, 3
