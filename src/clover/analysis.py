@@ -172,20 +172,17 @@ def get_key_results(
         )
 
     # Compute the clean-water PV-T key results.
-    if (
-        ColumnHeader.CW_PVT_ELECTRICITY_SUPPLIED_PER_KWP.valuePER_KWP
-        in simulation_results
-    ):
+    if ColumnHeader.CW_PVT_ELECTRICITY_SUPPLIED_PER_KWP.value in simulation_results:
         key_results.average_daily_cw_pvt_generation = round(
             simulation_results[
-                ColumnHeader.CW_PVT_ELECTRICITY_SUPPLIED_PER_KWP.valuePER_KWP
+                ColumnHeader.CW_PVT_ELECTRICITY_SUPPLIED_PER_KWP.value
             ].sum()
             / (365 * num_years),
             3,
         )
         key_results.cumulative_cw_pvt_generation = round(
             simulation_results[
-                ColumnHeader.CW_PVT_ELECTRICITY_SUPPLIED_PER_KWP.valuePER_KWP
+                ColumnHeader.CW_PVT_ELECTRICITY_SUPPLIED_PER_KWP.value
             ].sum(),
             3,
         )
@@ -2075,7 +2072,7 @@ def plot_outputs(
             if cw_pvt:
                 # Plot the first year of PV-T generation as a heatmap.
                 pvt_electricity_supplied_per_unit = simulation_output[0:HOURS_PER_YEAR][
-                    ColumnHeader.CW_PVT_ELECTRICITY_SUPPLIED_PER_KWP.valuePER_KWP
+                    ColumnHeader.CW_PVT_ELECTRICITY_SUPPLIED_PER_KWP.value
                 ]
                 reshaped_data = np.reshape(
                     pvt_electricity_supplied_per_unit.values, (365, 24)
