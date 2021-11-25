@@ -22,7 +22,7 @@ import enum
 import os
 
 from logging import Logger
-from typing import Any, Dict, List, Pattern, Union
+from typing import Any, Dict, List, Pattern, Set, Union
 
 import json
 import re
@@ -372,11 +372,19 @@ class OptimisationParameters:
     storage_size: StorageSystemSize
 
     @classmethod
-    def from_dict(cls, logger: Logger, optimisation_inputs: Dict[str, Any]) -> Any:
+    def from_dict(
+        cls,
+        available_convertors: List[Convertor],
+        logger: Logger,
+        optimisation_inputs: Dict[str, Any],
+    ) -> Any:
         """
         Returns a :class:`OptimisationParameters` instance based on the input info.
 
         Inputs:
+            - available_convertors:
+                The `list` of :class:`conversion.Convertor` instances that are defined
+                and which are available to the system.
             - logger:
                 The :class:`logging.Loggger` to use for the run.
             - optimisation_inputs:
@@ -387,10 +395,6 @@ class OptimisationParameters:
             passed in.
 
         """
-
-        import pdb
-
-        pdb.set_trace()
 
         # Parse the clean-water PV-T system size.
         if OptimisationComponent.CLEAN_WATER_PVT_SIZE.value in optimisation_inputs:
@@ -449,14 +453,16 @@ class OptimisationParameters:
             clean_water_tanks = TankSize()
 
         # Parse the convertors that are to be optimised.
-        convertor_sizing_inputs: Dict[str, Dict[str, int]] = {
-            key: value
+        convertor_sizing_inputs: Dict[str, Dict[str, float]] = {
+            key: value  # type: ignore
             for key, value in optimisation_inputs.items()
             if CONVERTOR_SIZE_REGEX.match(key) is not None
         }
         convertor_sizing_inputs = {
-            CONVERTOR_SIZE_REGEX.match(key).group(CONVERTOR_NAME_STRING): value  # type: ignore
-            for key, value in optimisation_inputs.items()
+            CONVERTOR_SIZE_REGEX.match(key).group(CONVERTOR_NAME_STRING): value
+            for key, value in convertor_sizing_inputs.items()
+            if CONVERTOR_SIZE_REGEX.match(key).group(CONVERTOR_NAME_STRING)
+            in {convertor.name for convertor in available_convertors}
         }
         try:
             convertor_sizes: Dict[str, ConvertorSize] = {
@@ -495,7 +501,7 @@ class OptimisationParameters:
                 )
                 raise
         else:
-            cw_pvt_size = SolarSystemSize()
+            hw_pvt_size = SolarSystemSize()
 
         # Parse the hot-water tank information.
         if OptimisationComponent.HOT_WATER_TANKS.value in optimisation_inputs:
