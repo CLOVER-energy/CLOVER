@@ -76,7 +76,6 @@ class ConvertorSize(enum.Enum):
     step: int = 0
 
 
-
 class CriterionMode(enum.Enum):
     """
     The mode of optimisation of the criterion.
@@ -308,7 +307,6 @@ class TankSize:
     step: int = 0
 
 
-
 @dataclasses.dataclass
 class OptimisationParameters:
     """
@@ -375,10 +373,20 @@ class OptimisationParameters:
         if OptimisationComponent.CLEAN_WATER_TANKS.value in optimisation_inputs:
             try:
                 clean_water_tanks: TankSize = TankSize(
-                    int(optimisation_inputs[OptimisationComponent.CLEAN_WATER_TANKS.value][MAX]),
-                    int(optimisation_inputs[OptimisationComponent.CLEAN_WATER_TANKS.value][MIN]),
                     int(
-                        optimisation_inputs[OptimisationComponent.CLEAN_WATER_TANKS.value][STEP]
+                        optimisation_inputs[
+                            OptimisationComponent.CLEAN_WATER_TANKS.value
+                        ][MAX]
+                    ),
+                    int(
+                        optimisation_inputs[
+                            OptimisationComponent.CLEAN_WATER_TANKS.value
+                        ][MIN]
+                    ),
+                    int(
+                        optimisation_inputs[
+                            OptimisationComponent.CLEAN_WATER_TANKS.value
+                        ][STEP]
                     ),
                 )
             except KeyError:
@@ -386,7 +394,7 @@ class OptimisationParameters:
                     "%sNot all clean-water tank information specified in the "
                     "optimisation inputs file.%s",
                     BColours.fail,
-                    BColours.endc
+                    BColours.endc,
                 )
                 raise
         else:
@@ -396,10 +404,20 @@ class OptimisationParameters:
         if OptimisationComponent.HOT_WATER_TANKS.value in optimisation_inputs:
             try:
                 hot_water_tanks: TankSize = TankSize(
-                    int(optimisation_inputs[OptimisationComponent.HOT_WATER_TANKS.value][MAX]),
-                    int(optimisation_inputs[OptimisationComponent.HOT_WATER_TANKS.value][MIN]),
                     int(
-                        optimisation_inputs[OptimisationComponent.HOT_WATER_TANKS.value][STEP]
+                        optimisation_inputs[
+                            OptimisationComponent.HOT_WATER_TANKS.value
+                        ][MAX]
+                    ),
+                    int(
+                        optimisation_inputs[
+                            OptimisationComponent.HOT_WATER_TANKS.value
+                        ][MIN]
+                    ),
+                    int(
+                        optimisation_inputs[
+                            OptimisationComponent.HOT_WATER_TANKS.value
+                        ][STEP]
                     ),
                 )
             except KeyError:
@@ -407,7 +425,7 @@ class OptimisationParameters:
                     "%sNot all hot-water tank information specified in the "
                     "optimisation inputs file.%s",
                     BColours.fail,
-                    BColours.endc
+                    BColours.endc,
                 )
                 raise
         else:
@@ -425,7 +443,7 @@ class OptimisationParameters:
                     "%sNot all PV size information specified in the optimisation "
                     "inputs file.%s",
                     BColours.fail,
-                    BColours.endc
+                    BColours.endc,
                 )
                 raise
         else:
@@ -437,12 +455,13 @@ class OptimisationParameters:
                     optimisation_inputs[OptimisationComponent.STORAGE_SIZE.value][MAX],
                     optimisation_inputs[OptimisationComponent.STORAGE_SIZE.value][MIN],
                     optimisation_inputs[OptimisationComponent.STORAGE_SIZE.value][STEP],
+                )
             except KeyError:
                 logger.error(
                     "%sNot all battery storage size information specified in the "
                     "optimisation inputs file.%s",
                     BColours.fail,
-                    BColours.endc
+                    BColours.endc,
                 )
                 raise
         else:
