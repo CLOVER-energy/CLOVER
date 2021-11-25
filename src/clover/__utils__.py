@@ -957,7 +957,9 @@ class KeyResults:
         if self.blackouts is not None:
             data_dict["Blackouts"] = round(self.blackouts, 3)
         if self.clean_water_blackouts is not None:
-            data_dict[ColumnHeader.CLEAN_WATER_BLACKOUTS.value] = round(self.clean_water_blackouts, 3)
+            data_dict[ColumnHeader.CLEAN_WATER_BLACKOUTS.value] = round(
+                self.clean_water_blackouts, 3
+            )
         if self.cumulative_cw_load is not None:
             data_dict["Cumulative clean-water load / litres"] = round(
                 self.cumulative_cw_load, 3
