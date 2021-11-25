@@ -97,6 +97,18 @@
                 #   feedwater: 500 # [litres]
                 #   output: clean_water
                 #   maximum_output: 208 # [litres/hour]
+
+                # - name: med_liponi
+                #   electric_power: 84 # [Wh]
+                #   feedwater: 2755 # [litres/hour]
+                #   heat: 66500 # [Wth*h]
+                #   heat_source: htf # "htf" or "feedwater"
+                #   output: clean_water
+                #   maximum_output: 475 # [litres/hour]
+                #   minimum_output: 200 # [litres/hour]
+                #   min_feedwater_temperature: 25 # [degC]
+                #   max_htf_temperature: 71.2 # [degC]
+                #   min_htf_temperature: 45.5 # [degC]
             - file: "diesel_inputs.yaml"
               contents: |+
                 ---
@@ -629,10 +641,34 @@
 
                 iteration_length: 4 # [years]
                 number_of_iterations: 3 # number of iterations to carry out
+                # cw_pvt_size:
+                #   min: 50 # [CW PV-T units]
+                #   max: 500 # [CW PV-T units]
+                #   step: 50 # [CW PV-T units]
+                # cw_tanks:
+                #   min: 2 # [tanks]
+                #   max: 10 # [tanks]
+                #   step: 2 # [tanks]
+                # hw_pvt_size:
+                #   min: 50 # [CW PV-T units]
+                #   max: 500 # [CW PV-T units]
+                #   step: 50 # [CW PV-T units]
+                # hw_tanks:
+                #   min: 5 # [tanks]
+                #   max: 45 # [tanks]
+                #   step: 10 # [tanks]
+                # med_liponi_size:
+                #   min: 1
+                #   max: 2
+                #   step: 1
                 pv_size:
                   min: 5 # [PV units], [kWp] by default
                   max: 25 # [PV units], [kWp] by default
                   step: 5 # [PV units], [kWp] by default
+                # reverse_osmosis_size:
+                #   min: 1
+                #   max: 4
+                #   step: 1
                 storage_size:
                   min: 10 # [storage units], [kWh] by default
                   max: 40 # [storage units], [kWh] by default
