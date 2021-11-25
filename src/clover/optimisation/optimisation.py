@@ -48,7 +48,6 @@ from ..__utils__ import (
     DONE,
     InternalError,
     Location,
-    OptimisationParameters,
     RenewableEnergySource,
     ResourceType,
     Scenario,
@@ -61,6 +60,7 @@ from .__utils__ import (
     Criterion,
     CriterionMode,
     Optimisation,
+    OptimisationParameters,
     SolarSystemSize,
     StorageSystemSize,
     TankSize,
@@ -1783,9 +1783,9 @@ def multiple_optimisation_step(
         if scenario.pv:
             logger.info("No pv sizes passed in, using default optimisation parameters.")
             input_pv_sizes = SolarSystemSize(
-                optimisation_parameters.pv_size_max,
-                optimisation_parameters.pv_size_min,
-                optimisation_parameters.pv_size_step,
+                optimisation_parameters.pv_size.max,
+                optimisation_parameters.pv_size.min,
+                optimisation_parameters.pv_size.step,
             )
         else:
             logger.info(
@@ -1796,11 +1796,7 @@ def multiple_optimisation_step(
             )
             input_pv_sizes = SolarSystemSize(0, 0, 1)
     if input_pvt_sizes is None and scenario.pv_t:
-        if (
-            optimisation_parameters.pvt_size_max is None
-            or optimisation_parameters.pvt_size_min is None
-            or optimisation_parameters.pvt_size_step is None
-        ):
+        if optimisation_parameters.pvt_size is None:
             raise InternalError(
                 "{}Optimisation parameters do not have pvt-size params despite ".format(
                     BColours.fail
@@ -1809,9 +1805,9 @@ def multiple_optimisation_step(
             )
         logger.info("No pv-t sizes passed in, using default optimisation parameters.")
         input_pvt_sizes = SolarSystemSize(
-            optimisation_parameters.pvt_size_max,
-            optimisation_parameters.pvt_size_min,
-            optimisation_parameters.pvt_size_step,
+            optimisation_parameters.pvt_size.max,
+            optimisation_parameters.pvt_size.min,
+            optimisation_parameters.pvt_size.step,
         )
     else:
         input_pvt_sizes = SolarSystemSize(0, 0, 1)
@@ -1822,9 +1818,9 @@ def multiple_optimisation_step(
                 "No storage sizes passed in, using default optimisation parameters."
             )
             input_storage_sizes = StorageSystemSize(
-                optimisation_parameters.storage_size_max,
-                optimisation_parameters.storage_size_min,
-                optimisation_parameters.storage_size_step,
+                optimisation_parameters.storage_size.max,
+                optimisation_parameters.storage_size.min,
+                optimisation_parameters.storage_size.step,
             )
         else:
             logger.info(
@@ -1909,37 +1905,25 @@ def multiple_optimisation_step(
         # Prepare the pv-size parameters
         pv_size_min = optimum_system.system_details.final_pv_size
         pv_size_max = float(
-            optimisation_parameters.pv_size_max
+            optimisation_parameters.pv_size.max
             + optimum_system.system_details.final_pv_size
         )
         input_pv_sizes = SolarSystemSize(
             int(pv_size_max),
             int(pv_size_min),
-            int(optimisation_parameters.pv_size_step),
-        )
-
-        # Prepare the pvt-size parameters
-        pvt_size_min = optimum_system.system_details.final_pvt_size
-        pvt_size_max = float(
-            optimisation_parameters.pvt_size_max
-            + optimum_system.system_details.final_pvt_size
-        )
-        input_pvt_sizes = SolarSystemSize(
-            int(pvt_size_max),
-            int(pvt_size_min),
-            int(optimisation_parameters.pvt_size_step),
+            int(optimisation_parameters.pv_size.step),
         )
 
         # Prepare the storage-size parameters
         storage_size_min = optimum_system.system_details.final_storage_size
         storage_size_max = float(
-            optimisation_parameters.storage_size_max
+            optimisation_parameters.storage_size.max
             + optimum_system.system_details.final_storage_size
         )
         input_storage_sizes = StorageSystemSize(
             int(storage_size_max),
             int(storage_size_min),
-            int(optimisation_parameters.storage_size_step),
+            int(optimisation_parameters.storage_size.step),
         )
 
     # End simulation timer

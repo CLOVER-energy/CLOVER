@@ -45,7 +45,6 @@ from .__utils__ import (
     Location,
     LOCATIONS_FOLDER_NAME,
     NAME,
-    OptimisationParameters,
     PACKAGE_NAME,
     RAW_CLOVER_PATH,
     read_yaml,
@@ -58,6 +57,7 @@ from .conversion.conversion import (
     ThermalDesalinationPlant,
     WaterSource,
 )
+from .optimisation.__utils__ import OptimisationParameters
 from .optimisation.optimisation import Optimisation
 from .simulation.diesel import DieselGenerator
 from .simulation.energy_system import Minigrid
@@ -2374,7 +2374,9 @@ def parse_input_files(
             "optimisation inputs", "Optimisation inputs is not of type `dict`."
         )
     try:
-        optimisation_parameters = OptimisationParameters.from_dict(optimisation_inputs)
+        optimisation_parameters = OptimisationParameters.from_dict(
+            available_convertors, logger, optimisation_inputs
+        )
     except Exception as e:
         logger.error(
             "%sAn error occurred parsing the optimisation inputs file: %s%s",
