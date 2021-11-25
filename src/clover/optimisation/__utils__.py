@@ -19,11 +19,14 @@ appraisal modules within the optimisation component.
 
 import dataclasses
 import enum
+import os
 
 from logging import Logger
-from typing import Any, Dict
+from typing import Any, Dict, List, Pattern, Union
 
+import json
 import re
+import tqdm
 
 from ..__utils__ import (
     BColours,
@@ -33,6 +36,7 @@ from ..__utils__ import (
     MIN,
     NUMBER_OF_ITERATIONS,
     STEP,
+    SystemAppraisal,
 )
 from ..conversion.conversion import Convertor
 
@@ -41,19 +45,28 @@ __all__ = (
     "CriterionMode",
     "Optimisation",
     "OptimisationParameters",
+    "save_optimisation",
     "SolarSystemSize",
     "StorageSystemSize",
     "TankSize",
     "ThresholdMode",
 )
 
+# Convertor name string:
+#   The name used for parsing the convertor name group.
+#   NOTE: This name is not updated within the regex and needs to be updated separately.
+CONVERTOR_NAME_STRING: str = "name"
+
 # Convertor size regex:
 #   Regular expression used for parsing the size of various convertors for
 # optimisations.
-CONVERTOR_SIZE_REGEX: str = re.compile(r"(?P<name>.*)_size")
+#   NOTE: The name of the group is not updated automatically in accordance with the
+# above string and needs to be udpated separately.
+CONVERTOR_SIZE_REGEX: Pattern[str] = re.compile(r"(?P<name>.*)_size")
 
 
-class ConvertorSize(enum.Enum):
+@dataclasses.dataclass
+class ConvertorSize:
     """
     Used to wrap the convertor size information.
 
@@ -221,14 +234,20 @@ class OptimisationComponent(enum.Enum):
     """
     Contains information about the components which are variable in an optimisation.
 
+    - CLEAN_WATER_PVT_SIZE:
+        Denotes the size of the clean-water PV-T system, measured in PV-T units.
+
     - CLEAN_WATER_TANKS:
         Denotes the number of clean-water tanks in the system.
 
+    - HOT_WATER_PVT_SIZE:
+        Denotes the size of the hot-water PV-T system, measured in PV-T units.
+
+    - HOT_WATER_TANKS:
+        Denotes the number of hot-water tanks in the system.
+
     - PV_SIZE:
         Denotes the size of the PV system, measured in PV units.
-
-    - PVT_SIZE:
-        Denotes the size of the PV-T system, measured in PV-T units.
 
     - STORAGE_SIZE:
         Denotes the size of the storage system, measured in storage units, i.e.,
@@ -236,9 +255,9 @@ class OptimisationComponent(enum.Enum):
 
     """
 
-    CLEAN_WATER_PVT = "cw_pvt_size"
+    CLEAN_WATER_PVT_SIZE = "cw_pvt_size"
     CLEAN_WATER_TANKS = "cw_tanks"
-    HOT_WATER_PVT = "hw_pvt_size"
+    HOT_WATER_PVT_SIZE = "hw_pvt_size"
     HOT_WATER_TANKS = "hw_tanks"
     PV_SIZE = "pv_size"
     STORAGE_SIZE = "storage_size"
@@ -343,7 +362,7 @@ class OptimisationParameters:
     """
 
     clean_water_tanks: TankSize
-    convertor_sizes: Dict[Convertor, ConvertorSize]
+    convertor_sizes: Dict[str, ConvertorSize]
     cw_pvt_size: SolarSystemSize
     hot_water_tanks: TankSize
     hw_pvt_size: SolarSystemSize
@@ -368,6 +387,35 @@ class OptimisationParameters:
             passed in.
 
         """
+
+        import pdb
+
+        pdb.set_trace()
+
+        # Parse the clean-water PV-T system size.
+        if OptimisationComponent.CLEAN_WATER_PVT_SIZE.value in optimisation_inputs:
+            try:
+                cw_pvt_size = SolarSystemSize(
+                    optimisation_inputs[
+                        OptimisationComponent.CLEAN_WATER_PVT_SIZE.value
+                    ][MAX],
+                    optimisation_inputs[
+                        OptimisationComponent.CLEAN_WATER_PVT_SIZE.value
+                    ][MIN],
+                    optimisation_inputs[
+                        OptimisationComponent.CLEAN_WATER_PVT_SIZE.value
+                    ][STEP],
+                )
+            except KeyError:
+                logger.error(
+                    "%sNot all clean-water PV-T size information specified in the "
+                    "optimisation inputs file.%s",
+                    BColours.fail,
+                    BColours.endc,
+                )
+                raise
+        else:
+            cw_pvt_size = SolarSystemSize()
 
         # Parse the clean-water tank information.
         if OptimisationComponent.CLEAN_WATER_TANKS.value in optimisation_inputs:
@@ -400,7 +448,56 @@ class OptimisationParameters:
         else:
             clean_water_tanks = TankSize()
 
-        # Parse the clean-water tank information.
+        # Parse the convertors that are to be optimised.
+        convertor_sizing_inputs: Dict[str, Dict[str, int]] = {
+            key: value
+            for key, value in optimisation_inputs.items()
+            if CONVERTOR_SIZE_REGEX.match(key) is not None
+        }
+        convertor_sizing_inputs = {
+            CONVERTOR_SIZE_REGEX.match(key).group(CONVERTOR_NAME_STRING): value  # type: ignore
+            for key, value in optimisation_inputs.items()
+        }
+        try:
+            convertor_sizes: Dict[str, ConvertorSize] = {
+                key: ConvertorSize(entry[MAX], entry[MIN], entry[STEP])
+                for key, entry in convertor_sizing_inputs.items()
+            }
+        except KeyError:
+            logger.error(
+                "%sNot all information was provided for the convertors defined within "
+                "the optimisation inputs file.%s",
+                BColours.fail,
+                BColours.endc,
+            )
+            raise
+
+        # Parse the hot-water PV-T size information.
+        if OptimisationComponent.HOT_WATER_PVT_SIZE.value in optimisation_inputs:
+            try:
+                hw_pvt_size = SolarSystemSize(
+                    optimisation_inputs[OptimisationComponent.HOT_WATER_PVT_SIZE.value][
+                        MAX
+                    ],
+                    optimisation_inputs[OptimisationComponent.HOT_WATER_PVT_SIZE.value][
+                        MIN
+                    ],
+                    optimisation_inputs[OptimisationComponent.HOT_WATER_PVT_SIZE.value][
+                        STEP
+                    ],
+                )
+            except KeyError:
+                logger.error(
+                    "%sNot all hot-water PV-T size information specified in the "
+                    "optimisation inputs file.%s",
+                    BColours.fail,
+                    BColours.endc,
+                )
+                raise
+        else:
+            cw_pvt_size = SolarSystemSize()
+
+        # Parse the hot-water tank information.
         if OptimisationComponent.HOT_WATER_TANKS.value in optimisation_inputs:
             try:
                 hot_water_tanks: TankSize = TankSize(
@@ -451,7 +548,7 @@ class OptimisationParameters:
 
         if OptimisationComponent.STORAGE_SIZE.value in optimisation_inputs:
             try:
-                storage_size = SolarSystemSize(
+                storage_size = StorageSystemSize(
                     optimisation_inputs[OptimisationComponent.STORAGE_SIZE.value][MAX],
                     optimisation_inputs[OptimisationComponent.STORAGE_SIZE.value][MIN],
                     optimisation_inputs[OptimisationComponent.STORAGE_SIZE.value][STEP],
@@ -501,32 +598,50 @@ class OptimisationParameters:
         """
 
         optimisation_parameters_dict = {
-            "clean_water_tanks_max": int(self.clean_water_tanks_max)
-            if self.clean_water_tanks_max is not None
+            "clean_water_pvt_size_max": int(self.cw_pvt_size.max)
+            if self.cw_pvt_size is not None
             else None,
-            "clean_water_tanks_min": int(self.clean_water_tanks_min)
-            if self.clean_water_tanks_min is not None
+            "clean_water_pvt_size_min": int(self.cw_pvt_size.min)
+            if self.cw_pvt_size is not None
             else None,
-            "clean_water_tanks_step": int(self.clean_water_tanks_step)
-            if self.clean_water_tanks_step is not None
+            "clean_water_pvt_size_step": int(self.cw_pvt_size.step)
+            if self.cw_pvt_size is not None
+            else None,
+            "clean_water_tanks_max": int(self.clean_water_tanks.max)
+            if self.clean_water_tanks is not None
+            else None,
+            "clean_water_tanks_min": int(self.clean_water_tanks.min)
+            if self.clean_water_tanks is not None
+            else None,
+            "clean_water_tanks_step": int(self.clean_water_tanks.step)
+            if self.clean_water_tanks is not None
+            else None,
+            "hot_water_pvt_size_max": int(self.hw_pvt_size.max)
+            if self.hw_pvt_size is not None
+            else None,
+            "hot_water_pvt_size_min": int(self.hw_pvt_size.min)
+            if self.hw_pvt_size is not None
+            else None,
+            "hot_water_pvt_size_step": int(self.hw_pvt_size.step)
+            if self.hw_pvt_size is not None
+            else None,
+            "hot_water_tanks_max": int(self.hot_water_tanks.max)
+            if self.hot_water_tanks is not None
+            else None,
+            "hot_water_tanks_min": int(self.hot_water_tanks.min)
+            if self.hot_water_tanks is not None
+            else None,
+            "hot_water_tanks_step": int(self.hot_water_tanks.step)
+            if self.hot_water_tanks is not None
             else None,
             ITERATION_LENGTH: round(self.iteration_length, 3),
             NUMBER_OF_ITERATIONS: round(self.number_of_iterations, 3),
-            "pv_size_max": round(self.pv_size_max, 3),
-            "pv_size_min": round(self.pv_size_min, 3),
-            "pv_size_step": round(self.pv_size_step, 3),
-            "pvt_size_max": int(self.pvt_size_max)
-            if self.pvt_size_max is not None
-            else None,
-            "pvt_size_min": int(self.pvt_size_min)
-            if self.pvt_size_min is not None
-            else None,
-            "pvt_size_step": int(self.pvt_size_step)
-            if self.pvt_size_step is not None
-            else None,
-            "storage_size_max": round(self.storage_size_max, 3),
-            "storage_size_min": round(self.storage_size_min, 3),
-            "storage_size_step": round(self.storage_size_step, 3),
+            "pv_size_max": round(self.pv_size.max, 3),
+            "pv_size_min": round(self.pv_size.min, 3),
+            "pv_size_step": round(self.pv_size.step, 3),
+            "storage_size_max": round(self.storage_size.max, 3),
+            "storage_size_min": round(self.storage_size.min, 3),
+            "storage_size_step": round(self.storage_size.step, 3),
         }
 
         return {
@@ -534,3 +649,69 @@ class OptimisationParameters:
             for key, value in optimisation_parameters_dict.items()
             if value is not None
         }
+
+
+def save_optimisation(
+    logger: Logger,
+    optimisation_inputs: OptimisationParameters,
+    optimisation_number: int,
+    output: str,
+    output_directory: str,
+    system_appraisals: List[SystemAppraisal],
+) -> None:
+    """
+    Saves simulation outputs to a .csv file
+
+    Inputs:
+        - logger:
+            The logger to use for the run.
+        - optimisation_inputs:
+            The optimisation input information.
+        - optimisation_number:
+            The number of the optimisation that has just been carried out.
+        - output:
+            The output name to use when labelling the simulation: this is the name given
+            to the output folder in which the system files are saved.
+        - output_directory:
+            The directory into which the files should be saved.
+        - system_appraisals:
+            A `list` of the :class:`SystemAppraisal` instances which specify the
+            optimum systems at each time step.
+
+    """
+
+    # Remove the file extension if appropriate.
+    if output.endswith(".json"):
+        output = output.rsplit(".json", 1)[0]
+
+    # Create the output directory.
+    optimisation_output_folder = os.path.join(output_directory, output)
+    os.makedirs(optimisation_output_folder, exist_ok=True)
+
+    # Add the key results to the system data.
+    system_appraisals_dict = {
+        f"iteration_{index}": appraisal.to_dict()
+        for index, appraisal in enumerate(system_appraisals)
+    }
+
+    # Add the optimisation parameter information.
+    output_dict = {
+        "optimisation_inputs": optimisation_inputs.to_dict(),
+        "system_appraisals": system_appraisals_dict,
+    }
+
+    with tqdm(total=1, desc="saving output files", leave=False, unit="file") as pbar:
+        # Save the optimisation data.
+        logger.info("Saving optimisation output.")
+        with open(
+            os.path.join(
+                optimisation_output_folder,
+                f"optimisation_output_{optimisation_number}.json",
+            ),
+            "w",
+        ) as f:
+            json.dump(output_dict, f, indent=4)
+        logger.info(
+            "Optimisation successfully saved to %s.", optimisation_output_folder
+        )
+        pbar.update(1)

@@ -45,6 +45,7 @@ from .load import load
 from .mains_supply import grid, water_source
 from .scripts import new_location
 from .simulation import energy_system
+from .optimisation.__utils__ import save_optimisation
 from .optimisation.optimisation import multiple_optimisation_step
 
 from .__utils__ import (
@@ -60,7 +61,6 @@ from .__utils__ import (
     LOCATIONS_FOLDER_NAME,
     LOGGER_DIRECTORY,
     OperatingMode,
-    save_optimisation,
     save_simulation,
 )
 
