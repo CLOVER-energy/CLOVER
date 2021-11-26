@@ -1149,69 +1149,77 @@ def main(args: List[Any]) -> None:
                 "the system.",
             )
 
-        optimisation_string: str = "\n".join(
-            [
-                entry
-                for entry in [
-                    "- PV resolution of {} units ({} kWp per unit)".format(
-                        optimisation_inputs.pv_size.step, minigrid.pv_panel.pv_unit
+        optimisation_string_list = [
+            entry
+            for entry in [
+                "- PV resolution of {} units ({} kWp per unit)".format(
+                    optimisation_inputs.pv_size.step, minigrid.pv_panel.pv_unit
+                )
+                if scenario.pv and optimisation_inputs.pv_size is not None
+                else None,
+                "- Storage resolution of {} units ({} kWh per unit)".format(
+                    optimisation_inputs.storage_size.step,
+                    minigrid.battery.storage_unit,
+                )
+                if scenario.battery and optimisation_inputs.storage_size is not None
+                else None,
+                (
+                    "- Clean-water PV-T resolution of "
+                    + "{} units ({} kWp and {} kWth per unit)".format(
+                        optimisation_inputs.cw_pvt_size.step,
+                        minigrid.pvt_panel.pv_unit,
+                        minigrid.pvt_panel.thermal_unit,
                     )
-                    if scenario.pv and optimisation_inputs.pv_size is not None
-                    else None,
-                    "- Storage resolution of {} units ({} kWh per unit)".format(
-                        optimisation_inputs.storage_size.step,
-                        minigrid.battery.storage_unit,
+                )
+                if scenario.desalination_scenario is not None
+                and optimisation_inputs.cw_pvt_size is not None
+                else "",
+                (
+                    "- Clean-water tank resolution of {} ".format(
+                        optimisation_inputs.clean_water_tanks.step
                     )
-                    if scenario.battery and optimisation_inputs.storage_size is not None
-                    else None,
-                    (
-                        "- Clean-water PV-T resolution of "
-                        + "{} units ({} kWp and {} kWth per unit)".format(
-                            optimisation_inputs.cw_pvt_size.step,
-                            minigrid.pvt_panel.pv_unit,
-                            minigrid.pvt_panel.thermal_unit,
-                        )
+                    + "units (1 tank of size {} litres per unit)".format(
+                        minigrid.clean_water_tank.mass
                     )
-                    if scenario.desalination_scenario is not None
-                    and optimisation_inputs.cw_pvt_size is not None
-                    else "",
-                    (
-                        "- Clean-water tank resolution of {} ".format(
-                            optimisation_inputs.clean_water_tanks.step
-                        )
-                        + "units (1 tank of size {} litres per unit)".format(
-                            minigrid.clean_water_tank.mass
-                        )
+                )
+                if scenario.desalination_scenario is not None
+                and optimisation_inputs.clean_water_tanks is not None
+                else None,
+                (
+                    "- Hot-water PV-T resolution of "
+                    + "{} units ({} kWp and {} kWth per unit)".format(
+                        optimisation_inputs.hw_pvt_size.step,
+                        minigrid.pvt_panel.pv_unit,
+                        minigrid.pvt_panel.thermal_unit,
                     )
-                    if scenario.desalination_scenario is not None
-                    and optimisation_inputs.clean_water_tanks is not None
-                    else None,
-                    (
-                        "- Hot-water PV-T resolution of "
-                        + "{} units ({} kWp and {} kWth per unit)".format(
-                            optimisation_inputs.hw_pvt_size.step,
-                            minigrid.pvt_panel.pv_unit,
-                            minigrid.pvt_panel.thermal_unit,
-                        )
+                )
+                if scenario.hot_water_scenario is not None
+                and optimisation_inputs.hw_pvt_size is not None
+                else "",
+                (
+                    "- Hot-water tank resolution of {} ".format(
+                        optimisation_inputs.hot_water_tanks.step
                     )
-                    if scenario.hot_water_scenario is not None
-                    and optimisation_inputs.hw_pvt_size is not None
-                    else "",
-                    (
-                        "- Hot-water tank resolution of {} ".format(
-                            optimisation_inputs.hot_water_tanks.step
-                        )
-                        + "units (1 tank of size {} litres per unit)".format(
-                            minigrid.clean_water_tank.mass
-                        )
+                    + "units (1 tank of size {} litres per unit)".format(
+                        minigrid.clean_water_tank.mass
                     )
-                    if scenario.hot_water_scenario is not None
-                    and optimisation_inputs.hot_water_tanks is not None
-                    else None,
-                ]
-                if entry is not None
+                )
+                if scenario.hot_water_scenario is not None
+                and optimisation_inputs.hot_water_tanks is not None
+                else None,
             ]
-        )
+            if entry is not None
+        ] + [
+            "- {} resolution of {} units (1 {} device of {} max output per unit)".format(
+                convertor.name,
+                sizing.step,
+                convertor.name,
+                convertor.maximum_output_capacity,
+            )
+            for convertor, sizing in optimisation_inputs.convertor_sizes.items()
+        ]
+
+        optimisation_string: str = "\n".join(optimisation_string_list)
         print(f"Running an optimisation with:\n{optimisation_string}")
 
         for optimisation_number, optimisation in enumerate(
@@ -1219,6 +1227,7 @@ def main(args: List[Any]) -> None:
         ):
             try:
                 time_delta, optimisation_results = multiple_optimisation_step(
+                    conventional_cw_source_profiles,
                     convertors,
                     finance_inputs,
                     ghg_inputs,

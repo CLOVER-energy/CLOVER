@@ -86,7 +86,7 @@ class ConvertorSize:
 
     max: int = 0
     min: int = 0
-    step: int = 0
+    step: int = 1
 
 
 class CriterionMode(enum.Enum):
@@ -281,7 +281,7 @@ class SolarSystemSize:
 
     max: float = 0
     min: float = 0
-    step: float = 0
+    step: float = 1
 
 
 @dataclasses.dataclass
@@ -302,7 +302,7 @@ class StorageSystemSize:
 
     max: float = 0
     min: float = 0
-    step: float = 0
+    step: float = 1
 
 
 @dataclasses.dataclass
@@ -323,7 +323,7 @@ class TankSize:
 
     max: int = 0
     min: int = 0
-    step: int = 0
+    step: int = 1
 
 
 @dataclasses.dataclass
@@ -362,7 +362,7 @@ class OptimisationParameters:
     """
 
     clean_water_tanks: TankSize
-    convertor_sizes: Dict[str, ConvertorSize]
+    convertor_sizes: Dict[Convertor, ConvertorSize]
     cw_pvt_size: SolarSystemSize
     hot_water_tanks: TankSize
     hw_pvt_size: SolarSystemSize
@@ -464,9 +464,14 @@ class OptimisationParameters:
             if CONVERTOR_SIZE_REGEX.match(key).group(CONVERTOR_NAME_STRING)
             in {convertor.name for convertor in available_convertors}
         }
+        convertor_name_to_convertor = {
+            convertor.name: convertor for convertor in available_convertors
+        }
         try:
-            convertor_sizes: Dict[str, ConvertorSize] = {
-                key: ConvertorSize(entry[MAX], entry[MIN], entry[STEP])
+            convertor_sizes: Dict[Convertor, ConvertorSize] = {
+                convertor_name_to_convertor[key]: ConvertorSize(
+                    entry[MAX], entry[MIN], entry[STEP]
+                )
                 for key, entry in convertor_sizing_inputs.items()
             }
         except KeyError:
