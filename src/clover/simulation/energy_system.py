@@ -494,7 +494,12 @@ def _calculate_renewable_cw_profiles(
         ):
             logger.error(
                 "%sThe feedwater sources are unable to supply enough throughput to "
-                "facilitate the thermal desalination plant.%s",
+                "facilitate the thermal desalination plant. If you are running a "
+                "simulation, consider using a smaller desalination plant or a larger "
+                "number of feedwater sources. If you are running an optimisation, "
+                "consider using a greater number of feedwater sources as your initial "
+                "maximum point. Or, it is possible that no feedwater sources have been "
+                "defined within your optimisation inputs file.%s",
                 BColours.fail,
                 BColours.endc,
             )
@@ -505,7 +510,8 @@ def _calculate_renewable_cw_profiles(
             logger.info("Desalination plant: %s", thermal_desalination_plant)
             raise InputFileError(
                 "desalination scenario",
-                "The feedwater sources cannot meet the thermal desalination plant input demand.",
+                "The feedwater sources cannot meet the thermal desalination plant "
+                "input demand.",
             )
 
         logger.info("Determining required feedwater sources.")

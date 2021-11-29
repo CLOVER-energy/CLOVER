@@ -129,6 +129,10 @@ DIESEL_WATER_HEATER: str = "diesel_water_heater"
 #   Keyword used for parsing diesel-generator information.
 DIESEL_WATER_HEATERS: str = "diesel_water_heaters"
 
+# Fast electric model file:
+#   The relative path to the electric model file to use when running .
+ELECTRIC_MODEL_FAST_FILE: str = os.path.join("src", "electric_tree.sav")
+
 # Electric model file:
 #   The relative path to the electric model file.
 ELECTRIC_MODEL_FILE: str = os.path.join("src", "electric_forest.sav")
@@ -220,6 +224,10 @@ SOLAR_INPUTS_FILE: str = os.path.join("generation", "solar_generation_inputs.yam
 # Tank inputs file:
 #   The relative path to the tank inputs file.
 TANK_INPUTS_FILE: str = os.path.join("simulation", "tank_inputs.yaml")
+
+# Fast thermal model file:
+#   The relative path to the thermal model file.
+THERMAL_MODEL_FAST_FILE: str = os.path.join("src", "thermal_tree.sav")
 
 # Thermal model file:
 #   The relative path to the thermal model file.
@@ -962,12 +970,15 @@ def _parse_exchanger_inputs(
 
 
 def _parse_pvt_reduced_models(
-    logger: Logger, scenario: Scenario
+    debug: bool, logger: Logger, scenario: Scenario
 ) -> Tuple[Lasso, Lasso]:
     """
     Parses the PV-T models from the installed package or raw files.
 
     Inputs:
+        - debug:
+            Whether to use the PV-T reduced models (False) or invented data for
+            debugging purposes (True).
         - logger:
             The :class:`logging.Logger` to use for the run.
         - scenario:
@@ -996,22 +1007,39 @@ def _parse_pvt_reduced_models(
             logger.info(
                 "Attempting to read PV-T reduced thermal model from raw source file."
             )
-            try:
-                with open(os.path.join(RAW_CLOVER_PATH, THERMAL_MODEL_FILE), "rb") as f:
-                    thermal_model = pickle.load(f)
-            except Exception:
-                logger.error(
-                    "Failed to read PV-T reduced thermal model from raw source."
-                )
-                logger.critical("Failed to determine PV-T reduced thermal model.")
-                raise
+            if debug:
+                try:
+                    with open(
+                        os.path.join(RAW_CLOVER_PATH, THERMAL_MODEL_FAST_FILE), "rb"
+                    ) as f:
+                        thermal_model = pickle.load(f)
+                except Exception:
+                    logger.error(
+                        "Failed to read fast PV-T reduced thermal model from raw source."
+                    )
+                    logger.critical("Failed to determine PV-T reduced thermal model.")
+                    raise
+
+            else:
+                try:
+                    with open(
+                        os.path.join(RAW_CLOVER_PATH, THERMAL_MODEL_FILE), "rb"
+                    ) as f:
+                        thermal_model = pickle.load(f)
+                except Exception:
+                    logger.error(
+                        "Failed to read PV-T reduced thermal model from raw source."
+                    )
+                    logger.critical("Failed to determine PV-T reduced thermal model.")
+                    raise
             logger.info(
                 "Successfully read PV-T reduced thermal model form local source."
             )
 
         else:
             logger.info(
-                "Successfully read PV-T reduced thermal model form installed package file."
+                "Successfully read PV-T reduced thermal model form installed package "
+                "file."
             )
 
         logger.info("PV-T reduced thermal model file successfully read.")
@@ -1033,17 +1061,31 @@ def _parse_pvt_reduced_models(
             logger.info(
                 "Attempting to read PV-T reduced electric model from raw source file."
             )
-            try:
-                with open(
-                    os.path.join(RAW_CLOVER_PATH, ELECTRIC_MODEL_FILE), "rb"
-                ) as f:
-                    electric_model = pickle.load(f)
-            except Exception:
-                logger.error(
-                    "Failed to read PV-T reduced electric model from raw source."
-                )
-                logger.critical("Failed to determine PV-T reduced electric model.")
-                raise
+            if debug:
+                try:
+                    with open(
+                        os.path.join(RAW_CLOVER_PATH, ELECTRIC_MODEL_FAST_FILE), "rb"
+                    ) as f:
+                        electric_model = pickle.load(f)
+                except Exception:
+                    logger.error(
+                        "Failed to read fast PV-T reduced electric model from raw "
+                        "source."
+                    )
+                    logger.critical("Failed to determine PV-T reduced electric model.")
+                    raise
+            else:
+                try:
+                    with open(
+                        os.path.join(RAW_CLOVER_PATH, ELECTRIC_MODEL_FILE), "rb"
+                    ) as f:
+                        electric_model = pickle.load(f)
+                except Exception:
+                    logger.error(
+                        "Failed to read PV-T reduced electric model from raw source."
+                    )
+                    logger.critical("Failed to determine PV-T reduced electric model.")
+                    raise
 
             logger.info(
                 "Successfully read PV-T reduced electric model form local source."
@@ -1222,6 +1264,7 @@ def _parse_scenario_inputs(
 
 
 def _parse_solar_inputs(
+    debug: bool,
     energy_system_inputs: Dict[str, Any],
     inputs_directory_relative_path: str,
     logger: Logger,
@@ -1239,6 +1282,9 @@ def _parse_solar_inputs(
     Parses the solar inputs file.
 
     Inputs:
+        - debug:
+            Whether to use the PV-T reduced models (False) or invented data for
+            debugging purposes (True).
         - energy_system_inputs:
             The un-processed energy-system input information.
         - inputs_directory_relative_path:
@@ -1282,7 +1328,7 @@ def _parse_solar_inputs(
             solar_panels.append(solar.PVPanel.from_dict(logger, panel_input))
 
     # Parse the PV-T models if relevant for the code flow.
-    electric_model, thermal_model = _parse_pvt_reduced_models(logger, scenario)
+    electric_model, thermal_model = _parse_pvt_reduced_models(debug, logger, scenario)
 
     # Parse the PV-T panel information
     for panel_input in solar_generation_inputs["panels"]:
@@ -1664,6 +1710,7 @@ def _parse_tank_inputs(
 
 def _parse_minigrid_inputs(
     convertors: Dict[str, Convertor],
+    debug: bool,
     inputs_directory_relative_path: str,
     logger: Logger,
     scenario: Scenario,
@@ -1704,6 +1751,9 @@ def _parse_minigrid_inputs(
     Inputs:
         - convertors:
             The `list` of :class:`Convertor` instances available to the system.
+        - debug:
+            Whether to use the PV-T reduced models (False) or invented data for
+            debugging purposes (True).
         - inputs_directory_relative_path:
             The relative path to the inputs folder directory.
         - logger:
@@ -1795,6 +1845,7 @@ def _parse_minigrid_inputs(
         pvt_panel_emissions,
         solar_generation_inputs_filepath,
     ) = _parse_solar_inputs(
+        debug,
         energy_system_inputs,
         inputs_directory_relative_path,
         logger,
@@ -2114,7 +2165,7 @@ def _parse_transmission_inputs(
 
 
 def parse_input_files(
-    location_name: str, logger: Logger
+    debug: bool, location_name: str, logger: Logger
 ) -> Tuple[
     List[Convertor],
     Dict[load.load.Device, pd.DataFrame],
@@ -2135,6 +2186,9 @@ def parse_input_files(
     Parse the various input files and return content-related information.
 
     Inputs:
+        - debug:
+            Whether to use the PV-T reduced models (False) or invented data for
+            debugging purposes (True).
         - location_name:
             The name of the location_name being considered.
         - logger:
@@ -2248,7 +2302,7 @@ def parse_input_files(
         transmission_inputs_filepath,
         transmitters,
     ) = _parse_minigrid_inputs(
-        convertors, inputs_directory_relative_path, logger, scenario
+        convertors, debug, inputs_directory_relative_path, logger, scenario
     )
     logger.info("Energy-system inputs successfully parsed.")
 

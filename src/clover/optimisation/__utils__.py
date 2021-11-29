@@ -36,6 +36,7 @@ from ..__utils__ import (
     MIN,
     NUMBER_OF_ITERATIONS,
     STEP,
+    InputFileError,
     SystemAppraisal,
 )
 from ..conversion.conversion import Convertor
@@ -418,6 +419,18 @@ class OptimisationParameters:
                     BColours.endc,
                 )
                 raise
+            if cw_pvt_size.min == 0 or cw_pvt_size.max == 0:
+                logger.error(
+                    "%sCannot have zero clean-water PV-T collectors when modelling the "
+                    "clean-water system.%s",
+                    BColours.fail,
+                    BColours.endc,
+                )
+                raise InputFileError(
+                    "optimisation inputs",
+                    "If modelling a clean-water system, none of the clean-water PV-T "
+                    "size options can be set to zero.",
+                )
         else:
             cw_pvt_size = SolarSystemSize()
 
@@ -449,6 +462,18 @@ class OptimisationParameters:
                     BColours.endc,
                 )
                 raise
+            if clean_water_tanks.min == 0 or clean_water_tanks.max == 0:
+                logger.error(
+                    "%sCannot have zero clean-water tanks when modelling the "
+                    "clean-water system.%s",
+                    BColours.fail,
+                    BColours.endc,
+                )
+                raise InputFileError(
+                    "optimisation inputs",
+                    "If modelling a clean-water system, none of the clean-water tank "
+                    "size options can be set to zero.",
+                )
         else:
             clean_water_tanks = TankSize()
 
@@ -505,6 +530,18 @@ class OptimisationParameters:
                     BColours.endc,
                 )
                 raise
+            if hw_pvt_size.min == 0 or hw_pvt_size.max == 0:
+                logger.error(
+                    "%sCannot have zero hot-water PV-T collectors when modelling the "
+                    "hot-water system.%s",
+                    BColours.fail,
+                    BColours.endc,
+                )
+                raise InputFileError(
+                    "optimisation inputs",
+                    "If modelling an hot-water system, none of the hot-water PV-T size "
+                    "options can be set to zero.",
+                )
         else:
             hw_pvt_size = SolarSystemSize()
 
@@ -536,6 +573,18 @@ class OptimisationParameters:
                     BColours.endc,
                 )
                 raise
+            if hot_water_tanks.min == 0 or hot_water_tanks.max == 0:
+                logger.error(
+                    "%sCannot have zero hot-water tanks when modelling the "
+                    "hot-water system.%s",
+                    BColours.fail,
+                    BColours.endc,
+                )
+                raise InputFileError(
+                    "optimisation inputs",
+                    "If modelling an hot-water system, none of the hot-water tank "
+                    "size options can be set to zero.",
+                )
         else:
             hot_water_tanks = TankSize()
 

@@ -379,7 +379,10 @@ def main(args: List[Any]) -> None:
 
     # Parse the command-line arguments and instantiate the logger.
     parsed_args = argparser.parse_args(args)
-    logger = get_logger(f"{parsed_args.location}_{LOGGER_NAME}", parsed_args.verbose)
+    logger = get_logger(
+        f"{parsed_args.location}_{LOGGER_NAME}",
+        parsed_args.verbose or parsed_args.debug,
+    )
     logger.info("CLOVER run initiated. Options specified: %s", " ".join(args))
 
     # Validate the command-line arguments.
@@ -514,7 +517,7 @@ def main(args: List[Any]) -> None:
             simulations,
             water_source_times,
             input_file_info,
-        ) = parse_input_files(parsed_args.location, logger)
+        ) = parse_input_files(parsed_args.debug, parsed_args.location, logger)
     except FileNotFoundError as e:
         print(FAILED)
         logger.error(
@@ -644,7 +647,7 @@ def main(args: List[Any]) -> None:
             f"{parsed_args.location}_{wind.WIND_LOGGER_NAME}",
             parsed_args.refetch,
             num_ninjas,
-            parsed_args.verbose,
+            parsed_args.verbose or parsed_args.debug,
         )
         if wind_data_thread is None:
             raise InternalError("Wind data thread failed to successfully instantiate.")
@@ -669,7 +672,7 @@ def main(args: List[Any]) -> None:
             f"{parsed_args.location}_{weather.WEATHER_LOGGER_NAME}",
             parsed_args.refetch,
             num_ninjas,
-            parsed_args.verbose,
+            parsed_args.verbose or parsed_args.debug,
         )
         if weather_data_thread is None:
             raise InternalError(
@@ -695,7 +698,7 @@ def main(args: List[Any]) -> None:
         parsed_args.refetch,
         minigrid.pv_panel,
         num_ninjas,
-        parsed_args.verbose,
+        parsed_args.verbose or parsed_args.debug,
     )
     solar_data_thread.start()
     logger.info(
