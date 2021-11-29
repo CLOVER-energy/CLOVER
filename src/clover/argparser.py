@@ -56,6 +56,13 @@ def parse_args(args: List[Any]) -> argparse.Namespace:
     parser = argparse.ArgumentParser()
 
     # Misc. arguments.
+    # Fast mode:
+    #   Used for debugging purposes to run with fsat models.
+    parser.add_argument(
+        "--debug", "-d", action="store_true", default=False, help=argparse.SUPPRESS
+    )
+    # Verbose:
+    #   Used for generating verbose logs for debugging.
     parser.add_argument(
         "--verbose", "-v", action="store_true", default=False, help=argparse.SUPPRESS
     )
