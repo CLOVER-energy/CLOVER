@@ -442,7 +442,9 @@ def main(args: List[Any]) -> None:
         print(
             "A single CLOVER simulation will be run for {}{}.".format(
                 parsed_args.location,
-                f" {BColours.okblue}in debug mode{BColours.endc}" if parsed_args.debug else ""
+                f" {BColours.okblue}in debug mode{BColours.endc}"
+                if parsed_args.debug
+                else "",
             )
         )
     if operating_mode == OperatingMode.OPTIMISATION:
@@ -452,7 +454,9 @@ def main(args: List[Any]) -> None:
         print(
             "A CLOVER optimisation will be run for {}{}.".format(
                 parsed_args.location,
-                f" {BColours.okblue}in debug mode{BColours.endc}" if parsed_args.debug else ""
+                f" {BColours.okblue}in debug mode{BColours.endc}"
+                if parsed_args.debug
+                else "",
             )
         )
     if operating_mode == OperatingMode.PROFILE_GENERATION:
@@ -461,7 +465,9 @@ def main(args: List[Any]) -> None:
             "Neither `simulation` or `optimisation` specified, running profile "
             "generation only for {}{}.".format(
                 parsed_args.location,
-                f" {BColours.okblue}in debug mode{BColours.endc}" if parsed_args.debug else ""
+                f" {BColours.okblue}in debug mode{BColours.endc}"
+                if parsed_args.debug
+                else "",
             )
         )
 

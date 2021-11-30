@@ -1901,7 +1901,9 @@ def run_simulation(
     )
     logger.debug(
         "Soruces of feedwater: %s",
-        ", ".join([str(source) for source in feedwater_sources]) if len(feedwater_sources) > 0 else "N/A",
+        ", ".join([str(source) for source in feedwater_sources])
+        if len(feedwater_sources) > 0
+        else "N/A",
     )
     logger.debug(
         "Mean clean-water PV-T electric power per unit: %s",
@@ -2351,7 +2353,9 @@ def run_simulation(
 
     # Find how many kerosene lamps are in use
     kerosene_usage = pd.DataFrame(blackout_times.loc[:, 0].mul(kerosene_profile.values))
-    kerosene_mitigation = pd.DataFrame((1 - blackout_times).loc[:, 0].mul(kerosene_profile.values))
+    kerosene_mitigation = pd.DataFrame(
+        (1 - blackout_times).loc[:, 0].mul(kerosene_profile.values)
+    )
 
     if scenario.desalination_scenario is not None:
         # Compute the amount of time for which the backup water was able to operate.

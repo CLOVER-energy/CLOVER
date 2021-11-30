@@ -185,7 +185,13 @@ def _single_line_simulation(
     wind_speed_data: Optional[pd.Series],
     yearly_electric_load_statistics: pd.DataFrame,
 ) -> Tuple[
-    SolarSystemSize, TankSize, SolarSystemSize, TankSize, SolarSystemSize, StorageSystemSize, List[SystemAppraisal]
+    SolarSystemSize,
+    TankSize,
+    SolarSystemSize,
+    TankSize,
+    SolarSystemSize,
+    StorageSystemSize,
+    List[SystemAppraisal],
 ]:
     """
     Preforms an additional round of simulations.
@@ -283,32 +289,42 @@ def _single_line_simulation(
             ImpactingComponent.STORAGE: int(storage_size.max + storage_size.step),
         }
         parameter_space: List[
-            Tuple[Union[ImpactingComponent, RenewableEnergySource], str, Union[List[int], List[float]]]
+            Tuple[
+                Union[ImpactingComponent, RenewableEnergySource],
+                str,
+                Union[List[int], List[float]],
+            ]
         ] = []
 
         if len(increased_cw_pvt_system_sizes) == 0:
-            component_sizes[RenewableEnergySource.CLEAN_WATER_PVT] = potential_system.system_details.initial_cw_pvt_size
+            component_sizes[
+                RenewableEnergySource.CLEAN_WATER_PVT
+            ] = potential_system.system_details.initial_cw_pvt_size
         else:
             parameter_space.append(
                 RenewableEnergySource.CLEAN_WATER_PVT,
                 "simulation",
-                increased_cw_pvt_system_sizes
+                increased_cw_pvt_system_sizes,
             )
         if len(increased_hw_pvt_system_sizes) == 0:
-            component_sizes[RenewableEnergySource.HOT_WATER_PVT] = potential_system.system_details.initial_hw_pvt_size
+            component_sizes[
+                RenewableEnergySource.HOT_WATER_PVT
+            ] = potential_system.system_details.initial_hw_pvt_size
         else:
             parameter_space.append(
                 RenewableEnergySource.HOT_WATER_PVT,
                 "simulation" if len(parameter_space) == 0 else "hw pv-t size",
-                increased_hw_pvt_system_sizes
+                increased_hw_pvt_system_sizes,
             )
         if len(increased_pv_system_sizes) == 0:
-            component_sizes[RenewableEnergySource.PV] = potential_system.system_details.initial_pv_size
+            component_sizes[
+                RenewableEnergySource.PV
+            ] = potential_system.system_details.initial_pv_size
         else:
             parameter_space.append(
                 RenewableEnergySource.PV,
                 "simulation" if len(parameter_space) == 0 else "pv size",
-                increased_pv_system_sizes
+                increased_pv_system_sizes,
             )
 
         system_appraisals.append(
@@ -439,28 +455,34 @@ def _single_line_simulation(
         parameter_space = []
 
         if len(increased_cw_pvt_system_sizes) == 0:
-            component_sizes[RenewableEnergySource.CLEAN_WATER_PVT] = potential_system.system_details.initial_cw_pvt_size
+            component_sizes[
+                RenewableEnergySource.CLEAN_WATER_PVT
+            ] = potential_system.system_details.initial_cw_pvt_size
         else:
             parameter_space.append(
                 RenewableEnergySource.CLEAN_WATER_PVT,
                 "simulation",
-                increased_cw_pvt_system_sizes
+                increased_cw_pvt_system_sizes,
             )
         if len(increased_hw_pvt_system_sizes) == 0:
-            component_sizes[RenewableEnergySource.HOT_WATER_PVT] = potential_system.system_details.initial_hw_pvt_size
+            component_sizes[
+                RenewableEnergySource.HOT_WATER_PVT
+            ] = potential_system.system_details.initial_hw_pvt_size
         else:
             parameter_space.append(
                 RenewableEnergySource.HOT_WATER_PVT,
                 "simulation" if len(parameter_space) == 0 else "hw pv-t size",
-                increased_hw_pvt_system_sizes
+                increased_hw_pvt_system_sizes,
             )
         if len(increased_storage_sizes) == 0:
-            component_sizes[ImpactingComponent.STORAGE] = potential_system.system_details.initial_storage_size
+            component_sizes[
+                ImpactingComponent.STORAGE
+            ] = potential_system.system_details.initial_storage_size
         else:
             parameter_space.append(
                 ImpactingComponent.STORAGE,
                 "simulation" if len(parameter_space) == 0 else "storage size",
-                increased_storage_sizes
+                increased_storage_sizes,
             )
 
         system_appraisals.append(
@@ -490,7 +512,6 @@ def _single_line_simulation(
                 system_appraisals=system_appraisals,
             )
         )
-
 
     # Check to see if clean-water PV-T size was an integer number of steps, and increase
     # accordingly
@@ -551,50 +572,58 @@ def _single_line_simulation(
         )
 
         # Prep variables for the iteration process.
-        component_sizes = {
-            RenewableEnergySource.CLEAN_WATER_PVT: test_cw_pvt_size
-        }
+        component_sizes = {RenewableEnergySource.CLEAN_WATER_PVT: test_cw_pvt_size}
         parameter_space = []
 
         if len(increased_cw_tank_sizes) == 0:
-            component_sizes[RenewableEnergySource.CLEAN_WATER_TANKS] = potential_system.system_details.initial_num_clean_water_tanks
+            component_sizes[
+                RenewableEnergySource.CLEAN_WATER_TANKS
+            ] = potential_system.system_details.initial_num_clean_water_tanks
         else:
             parameter_space.append(
                 RenewableEnergySource.CLEAN_WATER_TANKS,
                 "simulation",
-                increased_cw_tank_sizes
+                increased_cw_tank_sizes,
             )
         if len(increased_hw_pvt_system_sizes) == 0:
-            component_sizes[RenewableEnergySource.HOT_WATER_PVT] = potential_system.system_details.initial_hw_pvt_size
+            component_sizes[
+                RenewableEnergySource.HOT_WATER_PVT
+            ] = potential_system.system_details.initial_hw_pvt_size
         else:
             parameter_space.append(
                 RenewableEnergySource.HOT_WATER_PVT,
                 "simulation" if len(parameter_space) == 0 else "hw pv-t size",
-                increased_hw_pvt_system_sizes
+                increased_hw_pvt_system_sizes,
             )
         if len(increased_hw_tank_sizes) == 0:
-            component_sizes[RenewableEnergySource.HOT_WATER_TANKS] = potential_system.system_details.initial_num_hot_water_tanks
+            component_sizes[
+                RenewableEnergySource.HOT_WATER_TANKS
+            ] = potential_system.system_details.initial_num_hot_water_tanks
         else:
             parameter_space.append(
                 RenewableEnergySource.HOT_WATER_TANKS,
                 "simulation" if len(parameter_space) == 0 else "hw tanks",
-                increased_hw_tank_sizes
+                increased_hw_tank_sizes,
             )
         if len(increased_storage_sizes) == 0:
-            component_sizes[ImpactingComponent.STORAGE] = potential_system.system_details.initial_storage_size
+            component_sizes[
+                ImpactingComponent.STORAGE
+            ] = potential_system.system_details.initial_storage_size
         else:
             parameter_space.append(
                 ImpactingComponent.STORAGE,
                 "simulation" if len(parameter_space) == 0 else "storage size",
-                increased_storage_sizes
+                increased_storage_sizes,
             )
         if len(increased_pv_system_sizes) == 0:
-            component_sizes[RenewableEnergySource.PV] = potential_system.system_details.initial_pv_size
+            component_sizes[
+                RenewableEnergySource.PV
+            ] = potential_system.system_details.initial_pv_size
         else:
             parameter_space.append(
                 RenewableEnergySource.PV,
                 "simulation" if len(parameter_space) == 0 else "pv size",
-                increased_pv_system_sizes
+                increased_pv_system_sizes,
             )
 
         system_appraisals.append(
@@ -624,7 +653,6 @@ def _single_line_simulation(
                 system_appraisals=system_appraisals,
             )
         )
-
 
     # Check to see if hot-water PV-T size was an integer number of steps, and increase
     # accordingly
@@ -685,50 +713,58 @@ def _single_line_simulation(
         )
 
         # Prep variables for the iteration process.
-        component_sizes = {
-            RenewableEnergySource.HOT_WATER_PVT: test_hw_pvt_size
-        }
+        component_sizes = {RenewableEnergySource.HOT_WATER_PVT: test_hw_pvt_size}
         parameter_space = []
 
         if len(increased_cw_pvt_system_sizes) == 0:
-            component_sizes[RenewableEnergySource.CLEAN_WATER_PVT] = potential_system.system_details.initial_cw_pvt_size
+            component_sizes[
+                RenewableEnergySource.CLEAN_WATER_PVT
+            ] = potential_system.system_details.initial_cw_pvt_size
         else:
             parameter_space.append(
                 RenewableEnergySource.CLEAN_WATER_PVT,
                 "simulation",
-                increased_cw_pvt_system_sizes
+                increased_cw_pvt_system_sizes,
             )
         if len(increased_cw_tank_sizes) == 0:
-            component_sizes[RenewableEnergySource.CLEAN_WATER_TANKS] = potential_system.system_details.initial_num_clean_water_tanks
+            component_sizes[
+                RenewableEnergySource.CLEAN_WATER_TANKS
+            ] = potential_system.system_details.initial_num_clean_water_tanks
         else:
             parameter_space.append(
                 RenewableEnergySource.CLEAN_WATER_TANKS,
                 "simulation",
-                increased_cw_tank_sizes
+                increased_cw_tank_sizes,
             )
         if len(increased_hw_tank_sizes) == 0:
-            component_sizes[RenewableEnergySource.HOT_WATER_TANKS] = potential_system.system_details.initial_num_hot_water_tanks
+            component_sizes[
+                RenewableEnergySource.HOT_WATER_TANKS
+            ] = potential_system.system_details.initial_num_hot_water_tanks
         else:
             parameter_space.append(
                 RenewableEnergySource.HOT_WATER_TANKS,
                 "simulation" if len(parameter_space) == 0 else "hw tanks",
-                increased_hw_tank_sizes
+                increased_hw_tank_sizes,
             )
         if len(increased_storage_sizes) == 0:
-            component_sizes[ImpactingComponent.STORAGE] = potential_system.system_details.initial_storage_size
+            component_sizes[
+                ImpactingComponent.STORAGE
+            ] = potential_system.system_details.initial_storage_size
         else:
             parameter_space.append(
                 ImpactingComponent.STORAGE,
                 "simulation" if len(parameter_space) == 0 else "storage size",
-                increased_storage_sizes
+                increased_storage_sizes,
             )
         if len(increased_pv_system_sizes) == 0:
-            component_sizes[RenewableEnergySource.PV] = potential_system.system_details.initial_pv_size
+            component_sizes[
+                RenewableEnergySource.PV
+            ] = potential_system.system_details.initial_pv_size
         else:
             parameter_space.append(
                 RenewableEnergySource.PV,
                 "simulation" if len(parameter_space) == 0 else "pv size",
-                increased_pv_system_sizes
+                increased_pv_system_sizes,
             )
 
         system_appraisals.append(
@@ -758,7 +794,6 @@ def _single_line_simulation(
                 system_appraisals=system_appraisals,
             )
         )
-
 
     return (
         cw_tanks,
@@ -1034,7 +1069,11 @@ def _recursive_iteration(
     *,
     component_sizes: Dict[Union[ImpactingComponent, RenewableEnergySource], float],
     parameter_space: List[
-        Tuple[Union[ImpactingComponent, RenewableEnergySource], str, Union[List[int], List[float]]]
+        Tuple[
+            Union[ImpactingComponent, RenewableEnergySource],
+            str,
+            Union[List[int], List[float]],
+        ]
     ],
     system_appraisals: List[SystemAppraisal],
 ) -> List[SystemAppraisal]:
@@ -1466,10 +1505,12 @@ def _simulation_iteration(
 
     # Round the maximum PV and storage sizes to be increments of the steps involved.
     cw_pvt_size_max = (
-        float(np.ceil(cw_pvt_size_max / cw_pvt_system_size.step)) * cw_pvt_system_size.step
+        float(np.ceil(cw_pvt_size_max / cw_pvt_system_size.step))
+        * cw_pvt_system_size.step
     )
     hw_pvt_size_max = (
-        float(np.ceil(hw_pvt_size_max / hw_pvt_system_size.step)) * hw_pvt_system_size.step
+        float(np.ceil(hw_pvt_size_max / hw_pvt_system_size.step))
+        * hw_pvt_system_size.step
     )
     pv_size_max = float(np.ceil(pv_size_max / pv_sizes.step)) * pv_sizes.step
     storage_size_max = float(
@@ -1498,12 +1539,18 @@ def _simulation_iteration(
     # Set up the various variables ready for recursive iteration.
     component_sizes: Dict[Union[ImpactingComponent, RenewableEnergySource], float] = {}
     parameter_space: List[
-        Tuple[Union[ImpactingComponent, RenewableEnergySource], str, Union[List[float], List[int]]]
+        Tuple[
+            Union[ImpactingComponent, RenewableEnergySource],
+            str,
+            Union[List[float], List[int]],
+        ]
     ] = []
 
     simulation_cw_pvt_system_size: List[int] = sorted(
         range(
-            int(cw_pvt_system_size.min), int(cw_pvt_size_max + cw_pvt_system_size.step), int(cw_pvt_system_size.step)
+            int(cw_pvt_system_size.min),
+            int(cw_pvt_size_max + cw_pvt_system_size.step),
+            int(cw_pvt_system_size.step),
         ),
         reverse=True,
     )
@@ -1517,7 +1564,9 @@ def _simulation_iteration(
     )
     simulation_hw_pvt_system_size: List[int] = sorted(
         range(
-            int(hw_pvt_system_size.min), int(hw_pvt_size_max + hw_pvt_system_size.step), int(hw_pvt_system_size.step)
+            int(hw_pvt_system_size.min),
+            int(hw_pvt_size_max + hw_pvt_system_size.step),
+            int(hw_pvt_system_size.step),
         ),
         reverse=True,
     )
@@ -1565,7 +1614,9 @@ def _simulation_iteration(
             )
         )
     else:
-        component_sizes[RenewableEnergySource.CLEAN_WATER_PVT] = simulation_cw_pvt_system_size[0]
+        component_sizes[
+            RenewableEnergySource.CLEAN_WATER_PVT
+        ] = simulation_cw_pvt_system_size[0]
 
     # Add the iterable hot-water tank sizes if appropriate.
     if len(simulation_hw_tanks) > 1:
@@ -1589,7 +1640,9 @@ def _simulation_iteration(
             )
         )
     else:
-        component_sizes[RenewableEnergySource.HOT_WATER_PVT] = simulation_cw_pvt_system_size[0]
+        component_sizes[
+            RenewableEnergySource.HOT_WATER_PVT
+        ] = simulation_cw_pvt_system_size[0]
 
     # Add the iterable PV sizes if appropriate.
     if len(simulation_pv_sizes) > 1:
@@ -1650,9 +1703,13 @@ def _simulation_iteration(
             convertor: ConvertorSize(size.max, size.min, size.step)
             for convertor, size in convertor_sizes.items()
         },
-        SolarSystemSize(cw_pvt_size_max, cw_pvt_system_size.min, cw_pvt_system_size.step),
+        SolarSystemSize(
+            cw_pvt_size_max, cw_pvt_system_size.min, cw_pvt_system_size.step
+        ),
         TankSize(cw_tanks_max, cw_tanks.min, cw_tanks.step),
-        SolarSystemSize(hw_pvt_size_max, hw_pvt_system_size.min, hw_pvt_system_size.step),
+        SolarSystemSize(
+            hw_pvt_size_max, hw_pvt_system_size.min, hw_pvt_system_size.step
+        ),
         TankSize(hw_tanks_max, hw_tanks.min, hw_tanks.step),
         SolarSystemSize(pv_size_max, pv_sizes.min, pv_sizes.step),
         StorageSystemSize(storage_size_max, storage_sizes.min, storage_sizes.step),
