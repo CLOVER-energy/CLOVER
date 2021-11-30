@@ -439,17 +439,30 @@ def main(args: List[Any]) -> None:
             "A single CLOVER simulation will be run for locatation '%s'",
             parsed_args.location,
         )
-        print(f"A single CLOVER simulation will be run for {parsed_args.location}.")
+        print(
+            "A single CLOVER simulation will be run for {}{}.".format(
+                parsed_args.location,
+                f" {BColours.okblue}in debug mode{BColours.endc}" if parsed_args.debug else ""
+            )
+        )
     if operating_mode == OperatingMode.OPTIMISATION:
         logger.info(
             "A CLOVER optimisation will be run for location '%s'", parsed_args.location
         )
-        print(f"A CLOVER optimisation will be run for {parsed_args.location}.")
+        print(
+            "A CLOVER optimisation will be run for {}{}.".format(
+                parsed_args.location,
+                f" {BColours.okblue}in debug mode{BColours.endc}" if parsed_args.debug else ""
+            )
+        )
     if operating_mode == OperatingMode.PROFILE_GENERATION:
         logger.info("No CLI mode was specified, CLOVER will only generate profiles.")
         print(
             "Neither `simulation` or `optimisation` specified, running profile "
-            f"generation only for {parsed_args.location}."
+            "generation only for {}{}.".format(
+                parsed_args.location,
+                f" {BColours.okblue}in debug mode{BColours.endc}" if parsed_args.debug else ""
+            )
         )
 
     # If the output folder already exists, then confirm from the user that they wish to

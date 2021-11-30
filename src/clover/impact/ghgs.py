@@ -100,7 +100,7 @@ def calculate_ghgs(
         - system_component:
             The component of the system currently being considered.
         - year:
-            Installation year
+            ColumnHeader.INSTALLATION_YEAR.value
 
     Outputs:
         GHGs
@@ -130,7 +130,7 @@ def calculate_installation_ghgs(
         - system_component:
             The component of the system currently being considered.
         - year:
-            Installation year
+            ColumnHeader.INSTALLATION_YEAR.value
 
     Outputs:
         GHGs
@@ -199,7 +199,7 @@ def calculate_total_equipment_ghgs(
         - storage_size:
             Capacity of battery storage being installed.
         - year:
-            Installation year.
+            ColumnHeader.INSTALLATION_YEAR.value.
 
     Outputs:
         GHGs
@@ -503,11 +503,11 @@ def calculate_inverter_ghgs(
     replacement_intervals.columns = pd.Index([ColumnHeader.INSTALLATION_YEAR.value])
 
     # Check if inverter should be replaced in the specified time interval
-    if replacement_intervals.iloc[
-        replacement_intervals["Installation year"].isin(
+    if any(
+        replacement_intervals[ColumnHeader.INSTALLATION_YEAR.value].isin(
             list(np.array(range(start_year, end_year)))
         )
-    ].empty:
+    ):
         return float(0.0)
 
     # Initialise inverter sizing calculation
@@ -516,7 +516,7 @@ def calculate_inverter_ghgs(
     inverter_size: List[float] = []
     for i in range(len(replacement_intervals)):
         # Calculate maximum power in interval years
-        start = replacement_intervals["Installation year"].iloc[i]
+        start = replacement_intervals[ColumnHeader.INSTALLATION_YEAR.value].iloc[i]
         end = start + replacement_period
         max_power_interval = (
             electric_yearly_load_statistics["Maximum"].iloc[start:end].max()
@@ -537,7 +537,7 @@ def calculate_inverter_ghgs(
     inverter_info["Inverter ghgs (kgCO2/kW)"] = [
         ghg_inputs[ImpactingComponent.INVERTER.value][GHGS]
         * (1 - 0.01 * ghg_inputs[ImpactingComponent.INVERTER.value][GHG_DECREASE])
-        ** inverter_info["Installation year"].iloc[i]
+        ** inverter_info[ColumnHeader.INSTALLATION_YEAR.value].iloc[i]
         for i in range(len(inverter_info))
     ]
     inverter_info["Total ghgs (kgCO2)"] = [
@@ -547,7 +547,7 @@ def calculate_inverter_ghgs(
     ]
     inverter_ghgs: float = np.sum(
         inverter_info.iloc[  # type: ignore
-            inverter_info["Installation year"].isin(
+            inverter_info[ColumnHeader.INSTALLATION_YEAR.value].isin(
                 list(np.array(range(start_year, end_year)))
             )
         ]["Total ghgs (kgCO2)"]
@@ -694,7 +694,7 @@ def calculate_om_ghgs(
         - system_component:
             The component of the system currently being considered.
         - year:
-            Installation year
+            ColumnHeader.INSTALLATION_YEAR.value
 
     Outputs:
         GHGs

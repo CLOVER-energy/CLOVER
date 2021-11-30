@@ -1233,8 +1233,8 @@ def _get_electric_battery_storage_profile(
         )[0 : (end_hour - start_hour)]
 
         if (
-            RenewableEnergySource.CLEAN_WATER_PV_T not in renewables_power_produced
-            and RenewableEnergySource.HOT_WATER_PV_T not in renewables_power_produced
+            RenewableEnergySource.CLEAN_WATER_PVT not in renewables_power_produced
+            and RenewableEnergySource.HOT_WATER_PVT not in renewables_power_produced
         ):
             logger.error(
                 "%sA PV-T panel was defined on the system but no clean-water PV-T or "
@@ -1247,10 +1247,10 @@ def _get_electric_battery_storage_profile(
             )
 
         # Compute the clean-water PV-T electricity generated.
-        if RenewableEnergySource.CLEAN_WATER_PV_T in renewables_power_produced:
+        if RenewableEnergySource.CLEAN_WATER_PVT in renewables_power_produced:
             try:
                 clean_water_pvt_electric_power_produced = renewables_power_produced[
-                    RenewableEnergySource.CLEAN_WATER_PV_T
+                    RenewableEnergySource.CLEAN_WATER_PVT
                 ]
             except KeyError:
                 logger.error(
@@ -1277,10 +1277,10 @@ def _get_electric_battery_storage_profile(
             )
 
         # Compute the clean-water source.
-        if RenewableEnergySource.HOT_WATER_PV_T in renewables_power_produced:
+        if RenewableEnergySource.HOT_WATER_PVT in renewables_power_produced:
             try:
                 hot_water_pvt_electric_power_produced = renewables_power_produced[
-                    RenewableEnergySource.HOT_WATER_PV_T
+                    RenewableEnergySource.HOT_WATER_PVT
                 ]
             except KeyError:
                 logger.error(
@@ -1362,8 +1362,8 @@ def _get_electric_battery_storage_profile(
     # Combine energy from all renewables sources
     renewables_energy_map: Dict[SolarPanelType, pd.DataFrame] = {
         RenewableEnergySource.PV: pv_energy,
-        RenewableEnergySource.CLEAN_WATER_PV_T: pvt_cw_electric_energy,
-        RenewableEnergySource.HOT_WATER_PV_T: pvt_hw_electric_energy,
+        RenewableEnergySource.CLEAN_WATER_PVT: pvt_cw_electric_energy,
+        RenewableEnergySource.HOT_WATER_PVT: pvt_hw_electric_energy,
         # RenewableGenerationSource.WIND: wind_energy, etc.
     }
 
@@ -1406,7 +1406,6 @@ def _get_electric_battery_storage_profile(
 
     battery_storage_profile.columns = pd.Index([ColumnHeader.STORAGE_PROFILE.value])
     grid_energy.columns = pd.Index([ColumnHeader.GRID_ENERGY.value])
-    kerosene_usage.columns = pd.Index([ColumnHeader.KEROSENE_LAMPS.value])
     load_energy.columns = pd.Index([ColumnHeader.LOAD_ENERGY.value])
     renewables_energy.columns = pd.Index(
         [ColumnHeader.RENEWABLE_ELECTRICITY_SUPPLIED.value]
@@ -1414,10 +1413,10 @@ def _get_electric_battery_storage_profile(
     renewables_energy_map[RenewableEnergySource.PV].columns = pd.Index(
         [ColumnHeader.PV_ELECTRICITY_SUPPLIED.value]
     )
-    renewables_energy_map[RenewableEnergySource.CLEAN_WATER_PV_T].columns = pd.Index(
+    renewables_energy_map[RenewableEnergySource.CLEAN_WATER_PVT].columns = pd.Index(
         [ColumnHeader.CW_PVT_ELECTRICITY_SUPPLIED.value]
     )
-    renewables_energy_map[RenewableEnergySource.HOT_WATER_PV_T].columns = pd.Index(
+    renewables_energy_map[RenewableEnergySource.HOT_WATER_PVT].columns = pd.Index(
         [ColumnHeader.HW_PVT_ELECTRICITY_SUPPLIED.value]
     )
     renewables_energy_used_directly.columns = pd.Index(
@@ -1902,7 +1901,7 @@ def run_simulation(
     )
     logger.debug(
         "Soruces of feedwater: %s",
-        ", ".join([str(source) for source in feedwater_sources]),
+        ", ".join([str(source) for source in feedwater_sources]) if len(feedwater_sources) > 0 else "N/A",
     )
     logger.debug(
         "Mean clean-water PV-T electric power per unit: %s",
@@ -2037,10 +2036,10 @@ def run_simulation(
     renewables_energy: pd.DataFrame
     renewables_energy_map: Dict[RenewableEnergySource, pd.DataFrame] = {
         RenewableEnergySource.PV: pv_power_produced,
-        RenewableEnergySource.CLEAN_WATER_PV_T: (
+        RenewableEnergySource.CLEAN_WATER_PVT: (
             clean_water_pvt_electric_power_per_unit
         ),
-        RenewableEnergySource.HOT_WATER_PV_T: hot_water_pvt_electric_power_per_unit,
+        RenewableEnergySource.HOT_WATER_PVT: hot_water_pvt_electric_power_per_unit,
     }
     renewables_energy_used_directly: pd.DataFrame
     (
@@ -2351,8 +2350,8 @@ def run_simulation(
     )
 
     # Find how many kerosene lamps are in use
-    kerosene_usage = blackout_times.loc[:, 0].mul(kerosene_profile.values)
-    kerosene_mitigation = (1 - blackout_times).loc[:, 0].mul(kerosene_profile.values)
+    kerosene_usage = pd.DataFrame(blackout_times.loc[:, 0].mul(kerosene_profile.values))
+    kerosene_mitigation = pd.DataFrame((1 - blackout_times).loc[:, 0].mul(kerosene_profile.values))
 
     if scenario.desalination_scenario is not None:
         # Compute the amount of time for which the backup water was able to operate.
@@ -2448,7 +2447,7 @@ def run_simulation(
 
         if scenario.pv_t:
             buffer_tank_temperature.columns = pd.Index(
-                [ColumnHeader.BUFFER_TANK_TEMPERATURE.value.value]
+                [ColumnHeader.BUFFER_TANK_TEMPERATURE.value]
             )
             buffer_tank_volume_supplied.columns = pd.Index(
                 [ColumnHeader.BUFFER_TANK_OUTPUT.value]
@@ -2585,9 +2584,9 @@ def run_simulation(
     # Separate out the various renewable inputs.
     pv_energy = renewables_energy_map[RenewableEnergySource.PV]
     clean_water_pvt_energy = renewables_energy_map[
-        RenewableEnergySource.CLEAN_WATER_PV_T
+        RenewableEnergySource.CLEAN_WATER_PVT
     ]
-    hot_water_pvt_energy = renewables_energy_map[RenewableEnergySource.HOT_WATER_PV_T]
+    hot_water_pvt_energy = renewables_energy_map[RenewableEnergySource.HOT_WATER_PVT]
     total_pvt_energy = pd.DataFrame(
         clean_water_pvt_energy.values + hot_water_pvt_energy.values
     )
