@@ -1043,10 +1043,10 @@ class RenewableEnergySource(enum.Enum):
     """
     Specfiies the renewable energy sources that can be included in the system.
 
-    - CLEAN_WATER_PV_T:
+    - CLEAN_WATER_PVT:
         Denotes PV-T associated with clean-water production.
 
-    - HOT_WATER_PV_T:
+    - HOT_WATER_PVT:
         Denotes PV-T associated with hot-water production.
 
     - PV:
@@ -1054,8 +1054,8 @@ class RenewableEnergySource(enum.Enum):
 
     """
 
-    CLEAN_WATER_PV_T = "clean_water_pv_t"
-    HOT_WATER_PV_T = "hot_water_pv_t"
+    CLEAN_WATER_PVT = "clean_water_pv_t"
+    HOT_WATER_PVT = "hot_water_pv_t"
     PV = "pv"
 
 

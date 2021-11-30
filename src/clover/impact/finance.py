@@ -30,6 +30,7 @@ from ..__utils__ import (
     BColours,
     ColumnHeader,
     InputFileError,
+    InternalError,
     Location,
     hourly_profile_to_daily_sum,
 )
@@ -176,7 +177,7 @@ def _component_om(
     """
 
     om_cost_daily = (component_size * component_om_cost) / 365
-    total_daily_cost = pd.DataFrame([om_cost_daily] * (end_year - start_year) * 265)
+    total_daily_cost = pd.DataFrame([om_cost_daily] * (end_year - start_year) * 365)
 
     return discounted_energy_total(
         finance_inputs,
@@ -275,11 +276,11 @@ def _inverter_expenditure(
     replacement_intervals.columns = pd.Index([ColumnHeader.INSTALLATION_YEAR.value])
 
     # Check if inverter should be replaced in the specified time interval
-    if replacement_intervals.iloc[
-        replacement_intervals["Installation year"].isin(
+    if any(
+        replacement_intervals[ColumnHeader.INSTALLATION_YEAR.value].isin(
             list(np.array(range(start_year, end_year)))
         )
-    ].empty:
+    ):
         inverter_discounted_cost = float(0.0)
         return inverter_discounted_cost
 
@@ -289,7 +290,7 @@ def _inverter_expenditure(
     inverter_size: List[float] = []
     for i in range(len(replacement_intervals)):
         # Calculate maximum power in interval years
-        start = replacement_intervals["Installation year"].iloc[i]
+        start = replacement_intervals[ColumnHeader.INSTALLATION_YEAR.value].iloc[i]
         end = start + replacement_period
         max_power_interval = yearly_load_statistics["Maximum"].iloc[start:end].max()
         max_power.append(max_power_interval)
@@ -304,13 +305,13 @@ def _inverter_expenditure(
     # Calculate
     inverter_info["Discount rate"] = [
         (1 - finance_inputs[DISCOUNT_RATE])
-        ** inverter_info["Installation year"].iloc[i]
+        ** inverter_info[ColumnHeader.INSTALLATION_YEAR.value].iloc[i]
         for i in range(len(inverter_info))
     ]
     inverter_info["Inverter cost ($/kW)"] = [
         finance_inputs[ImpactingComponent.INVERTER.value][COST]
         * (1 - 0.01 * finance_inputs[ImpactingComponent.INVERTER.value][COST_DECREASE])
-        ** inverter_info["Installation year"].iloc[i]
+        ** inverter_info[ColumnHeader.INSTALLATION_YEAR.value].iloc[i]
         for i in range(len(inverter_info))
     ]
     inverter_info["Discounted expenditure ($)"] = [
@@ -321,7 +322,7 @@ def _inverter_expenditure(
     ]
     inverter_discounted_cost = np.sum(
         inverter_info.iloc[  # type: ignore
-            inverter_info["Installation year"].isin(
+            inverter_info[ColumnHeader.INSTALLATION_YEAR.value].isin(
                 list(np.array(range(start_year, end_year)))
             )
         ]["Discounted expenditure ($)"]
@@ -393,7 +394,7 @@ def get_total_equipment_cost(
         - storage_size:
             Capacity of battery storage being installed
         - installation_year:
-            Installation year
+            ColumnHeader.INSTALLATION_YEAR.value
 
     Outputs:
         The combined undiscounted cost of the system equipment.
@@ -635,7 +636,7 @@ def connections_expenditure(
         - households:
             A :class:`pd.Series` of households from Energy_System().simulation(...)
         - year:
-            Installation year
+            ColumnHeader.INSTALLATION_YEAR.value
 
     Outputs:
         Discounted cost
@@ -763,8 +764,20 @@ def discounted_energy_total(
     discounted_fraction = _discounted_fraction(
         discount_rate, start_year=start_year, end_year=end_year
     )
-    discounted_energy = pd.DataFrame(discounted_fraction.values * total_daily.values)
-    return float(np.sum(discounted_energy).iloc[:, 0])  # type: ignore
+    if not isinstance(total_daily, pd.Series):
+        try:
+            total_daily = total_daily.iloc[:, 0]
+        except pd.core.indexing.IndexingError as e:
+            logger.error(
+                "%sAn unexpected internal error occured in the financial inputs file "
+                "when casting `pd.Series` to `pd.DataFrame`: %s%s",
+                str(e),
+                BColours.fail,
+                BColours.endc
+            )
+            raise InternalError("An error occured casting between pandas types.") from None
+    discounted_energy = pd.DataFrame(discounted_fraction.iloc[:, 0] * total_daily)
+    return float(np.sum(discounted_energy))  # type: ignore
 
 
 def discounted_equipment_cost(
@@ -805,7 +818,7 @@ def discounted_equipment_cost(
         - storage_size:
             Capacity of battery storage being installed
         - installation_year:
-            Installation year
+            ColumnHeader.INSTALLATION_YEAR.value
     Outputs:
         Discounted cost
     """
@@ -1141,7 +1154,7 @@ def total_om(
 #         Calculates cost of extending the grid network to a community
 #     Inputs:
 #         grid_extension_distance     Distance to the existing grid network
-#         year                        Installation year
+#         year                        ColumnHeader.INSTALLATION_YEAR.value
 #     Outputs:
 #         Discounted cost
 #     """

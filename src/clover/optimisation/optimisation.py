@@ -157,59 +157,72 @@ def _fetch_optimum_system(
 
 
 def _single_line_simulation(
+    conventional_cw_source_profiles: Dict[WaterSource, pd.DataFrame],
+    cw_pvt_size: SolarSystemSize,
     cw_tanks: TankSize,
     convertors: List[Convertor],
     end_year: int,
     finance_inputs: Dict[str, Any],
     ghg_inputs: Dict[str, Any],
     grid_profile: pd.DataFrame,
+    hw_pvt_size: SolarSystemSize,
+    hw_tanks: TankSize,
     irradiance_data: pd.Series,
     kerosene_usage: pd.DataFrame,
-    pv_system_size: SolarSystemSize,
-    pvt_system_size: SolarSystemSize,
-    storage_size: StorageSystemSize,
     location: Location,
     logger: Logger,
     minigrid: energy_system.Minigrid,
     optimisation: Optimisation,
     potential_system: SystemAppraisal,
     previous_system: Optional[SystemAppraisal],
+    pv_system_size: SolarSystemSize,
     scenario: Scenario,
     start_year: int,
+    storage_size: StorageSystemSize,
     temperature_data: pd.Series,
     total_loads: Dict[ResourceType, Optional[pd.DataFrame]],
     total_solar_pv_power_produced: pd.Series,
     wind_speed_data: Optional[pd.Series],
     yearly_electric_load_statistics: pd.DataFrame,
 ) -> Tuple[
-    TankSize, SolarSystemSize, SolarSystemSize, StorageSystemSize, List[SystemAppraisal]
+    SolarSystemSize, TankSize, SolarSystemSize, TankSize, SolarSystemSize, StorageSystemSize, List[SystemAppraisal]
 ]:
     """
     Preforms an additional round of simulations.
 
     If the potential optimum system was found to be an edge case (either maximum PV
-    capacity, storage capacity or both) then this function can be called to carry out an
-    additional simulation.
+    capacity, storage capacity etc.) then this function can be called to carry out
+    additional simulation(s).
 
     Inputs:
-        - largest_pv_size:
-            The largest PV size that was simulated.
+        - cw_pvt_size:
+            The largest clean-water PV-T size that was simulated.
+        - cw_pvt_size:
+            The largest clean-water tank size that was simulated.
+        - hw_pvt_size:
+            The largest hot-water PV-T size that was simulated.
+        - hw_pvt_size:
+            The largest hot-water tank size that was simulated.
+        - pv_size:
+            The largest pv size that was simulated.
         - storage_size:
             The largest storage size that was simulated.
-        - logger:
-            The logger to use for the run.
         - potential_system:
             The system assumed to be the optimum, before this process
         - previous_system:
             The system that was previously installed
 
     Outputs:
+        - cw_pvt_system_size:
+            The clean-water PV-T size of the largest system considered.
         - cw_tanks:
             The clean-water tank size of the largest system considered.
+        - hw_pvt_system_size:
+            The hot-water PV-T size of the largest system considered.
+        - hw_tanks:
+            The hot-water tank size of the largest system considered.
         - pv_system_size:
             The pv system size of the largest system considered.
-        - pvt_system_size:
-            The pv-t system size of the largest system considered.
         - storage_size:
             The storage size of the largest system considered.
         - system_appraisals:
@@ -233,14 +246,27 @@ def _single_line_simulation(
             np.ceil(storage_size.max / storage_size.step) * storage_size.step
         )
 
-    # Set up a max clean-water tank variable to use if none were specified.
-    test_cw_tanks = cw_tanks.max
-
     # If storage was maxed out:
     if potential_system.system_details.initial_storage_size == storage_size.max:
         logger.info("Increasing storage size.")
 
-        # Increase and iterate over PV and PV-T sizes
+        # Increase and iterate over the various power-generation sizes.
+        increased_cw_pvt_system_sizes = sorted(
+            range(
+                int(cw_pvt_size.min),
+                int(np.ceil(cw_pvt_size.max + cw_pvt_size.step)),
+                int(cw_pvt_size.step),
+            ),
+            reverse=True,
+        )
+        increased_hw_pvt_system_sizes = sorted(
+            range(
+                int(hw_pvt_size.min),
+                int(np.ceil(hw_pvt_size.max + hw_pvt_size.step)),
+                int(hw_pvt_size.step),
+            ),
+            reverse=True,
+        )
         increased_pv_system_sizes = sorted(
             range(
                 int(pv_system_size.min),
@@ -249,183 +275,71 @@ def _single_line_simulation(
             ),
             reverse=True,
         )
-        increased_pvt_system_sizes = sorted(
-            range(
-                int(pvt_system_size.min),
-                int(np.ceil(pvt_system_size.max + pvt_system_size.step)),
-                int(pvt_system_size.step),
-            ),
-            reverse=True,
+
+        # Prep variables for the iteration process.
+        component_sizes: Dict[Union[ImpactingComponent, RenewableEnergySource]] = {
+            ImpactingComponent.CLEAN_WATER_TANKS: potential_system.system_details.initial_num_clean_water_tanks,
+            ImpactingComponent.HOT_WATER_TANKS: potential_system.system_details.initial_num_hot_water_tanks,
+            ImpactingComponent.STORAGE: int(storage_size.max + storage_size.step),
+        }
+        parameter_space: List[
+            Tuple[Union[ImpactingComponent, RenewableEnergySource], str, Union[List[int], List[float]]]
+        ] = []
+
+        if len(increased_cw_pvt_system_sizes) == 0:
+            component_sizes[RenewableEnergySource.CLEAN_WATER_PVT] = potential_system.system_details.initial_cw_pvt_size
+        else:
+            parameter_space.append(
+                RenewableEnergySource.CLEAN_WATER_PVT,
+                "simulation",
+                increased_cw_pvt_system_sizes
+            )
+        if len(increased_hw_pvt_system_sizes) == 0:
+            component_sizes[RenewableEnergySource.HOT_WATER_PVT] = potential_system.system_details.initial_hw_pvt_size
+        else:
+            parameter_space.append(
+                RenewableEnergySource.HOT_WATER_PVT,
+                "simulation" if len(parameter_space) == 0 else "hw pv-t size",
+                increased_hw_pvt_system_sizes
+            )
+        if len(increased_pv_system_sizes) == 0:
+            component_sizes[RenewableEnergySource.PV] = potential_system.system_details.initial_pv_size
+        else:
+            parameter_space.append(
+                RenewableEnergySource.PV,
+                "simulation" if len(parameter_space) == 0 else "pv size",
+                increased_pv_system_sizes
+            )
+
+        system_appraisals.append(
+            _recursive_iteration(
+                conventional_cw_source_profiles,
+                convertors,
+                end_year,
+                finance_inputs,
+                ghg_inputs,
+                grid_profile,
+                irradiance_data,
+                kerosene_usage,
+                location,
+                logger,
+                minigrid,
+                optimisation,
+                previous_system,
+                scenario,
+                start_year,
+                temperature_data,
+                total_loads,
+                total_solar_pv_power_produced,
+                wind_speed_data,
+                yearly_electric_load_statistics,
+                component_sizes=component_sizes,
+                parameter_space=parameter_space,
+                system_appraisals=system_appraisals,
+            )
         )
 
-        if len(increased_pv_system_sizes) > 1:
-            for iteration_pv_size in tqdm(
-                increased_pv_system_sizes,
-                desc="probing pv sizes",
-                leave=False,
-                unit="pv size" if pvt_system_size.max > 0 else "simulation",
-            ):
-                if len(increased_pvt_system_sizes) > 1:
-                    for iteration_pvt_size in tqdm(
-                        increased_pvt_system_sizes,
-                        desc="probing pv-t sizes",
-                        leave=False,
-                        unit="simulation",
-                    ):
-                        # Run a simulation.
-                        (
-                            _,
-                            simulation_results,
-                            system_details,
-                        ) = energy_system.run_simulation(
-                            iteraion_cw_pvt_size,
-                            conventional_cw_source_profiles,
-                            convertors,
-                            test_storage_size,
-                            grid_profile,
-                            iteration_hw_pvt_size,
-                            irradiance_data,
-                            kerosene_usage,
-                            location,
-                            logger,
-                            minigrid,
-                            test_cw_tanks,
-                            test_hw_tanks,
-                            total_solar_pv_power_produced,
-                            iteration_pv_size,
-                            scenario,
-                            Simulation(end_year, start_year),
-                            temperature_data,
-                            total_loads,
-                            wind_speed_data,
-                        )
-
-                        # Appraise the system.
-                        new_appraisal = appraise_system(
-                            yearly_electric_load_statistics,
-                            end_year,
-                            finance_inputs,
-                            ghg_inputs,
-                            location,
-                            logger,
-                            previous_system,
-                            simulation_results,
-                            start_year,
-                            system_details,
-                        )
-
-                        if (
-                            _get_sufficient_appraisals(optimisation, [new_appraisal])
-                            == []
-                        ):
-                            break
-                        system_appraisals.append(new_appraisal)
-                else:
-                    # Run a simulation.
-                    (
-                        _,
-                        simulation_results,
-                        system_details,
-                    ) = energy_system.run_simulation(
-                        cw_pvt_size_to_redo,
-                        conventional_cw_source_profiles,
-                        convertors,
-                        test_storage_size,
-                        grid_profile,
-                        hw_pvt_size_to_redo,
-                        irradiance_data,
-                        kerosene_usage,
-                        location,
-                        logger,
-                        minigrid,
-                        test_cw_tanks,
-                        test_hw_tanks,
-                        total_solar_pv_power_produced,
-                        iteration_pv_size,
-                        scenario,
-                        Simulation(end_year, start_year),
-                        temperature_data,
-                        total_loads,
-                        total_solar_pv_power_produced,
-                    )
-
-                    # Appraise the system.
-                    new_appraisal = appraise_system(
-                        yearly_electric_load_statistics,
-                        end_year,
-                        finance_inputs,
-                        ghg_inputs,
-                        location,
-                        logger,
-                        previous_system,
-                        simulation_results,
-                        start_year,
-                        system_details,
-                    )
-
-                    if _get_sufficient_appraisals(optimisation, [new_appraisal]) == []:
-                        break
-                    system_appraisals.append(new_appraisal)
-        else:
-            if len(increased_pvt_system_sizes) > 1:
-                for iteration_pvt_size in tqdm(
-                    increased_pvt_system_sizes,
-                    desc="probing pv-t sizes",
-                    leave=False,
-                    unit="simulation",
-                ):
-                    # Run a simulation.
-                    (
-                        _,
-                        simulation_results,
-                        system_details,
-                    ) = energy_system.run_simulation(
-                        cw_pvt_size_to_redo,
-                        conventional_cw_source_profiles,
-                        convertors,
-                        test_storage_size,
-                        grid_profile,
-                        hw_pvt_size_to_redo,
-                        irradiance_data,
-                        kerosene_usage,
-                        location,
-                        logger,
-                        minigrid,
-                        test_cw_tanks,
-                        test_hw_tanks,
-                        total_solar_pv_power_produced,
-                        pv_system_size.max,
-                        scenario,
-                        Simulation(end_year, start_year),
-                        temperature_data,
-                        total_loads,
-                        total_solar_pv_power_produced,
-                    )
-
-                    # Appraise the system.
-                    new_appraisal = appraise_system(
-                        yearly_electric_load_statistics,
-                        end_year,
-                        finance_inputs,
-                        ghg_inputs,
-                        location,
-                        logger,
-                        previous_system,
-                        simulation_results,
-                        start_year,
-                        system_details,
-                    )
-
-                    if _get_sufficient_appraisals(optimisation, [new_appraisal]) == []:
-                        break
-                    system_appraisals.append(new_appraisal)
-            else:
-                logger.info(
-                    "%sNo PV or PV-T system sizes to iterate over.%s",
-                    BColours.fail,
-                    BColours.endc,
-                )
-
+        # @@@ Is this step necessary??
         # If the maximum PV system size isn't a round number of steps, carry out a
         # simulation at this size..
         if (
@@ -433,65 +347,19 @@ def _single_line_simulation(
             != pv_system_size.max
         ):
             _, simulation_results, system_details = energy_system.run_simulation(
-                cw_pvt_size_to_redo,
+                potential_system.system_details.initial_cw_pvt_size,
                 conventional_cw_source_profiles,
                 convertors,
                 test_storage_size,
                 grid_profile,
-                hw_pvt_size_to_redo,
+                potential_system.system_details.initial_hw_pvt_size,
                 irradiance_data,
                 kerosene_usage,
                 location,
                 logger,
                 minigrid,
-                test_cw_tanks,
-                test_hw_tanks,
-                total_solar_pv_power_produced,
-                pv_system_size.max,
-                scenario,
-                Simulation(end_year, start_year),
-                temperature_data,
-                total_loads,
-                wind_speed_data,
-            )
-
-            # Appraise the system.
-            new_appraisal = appraise_system(
-                yearly_electric_load_statistics,
-                end_year,
-                finance_inputs,
-                ghg_inputs,
-                location,
-                logger,
-                previous_system,
-                simulation_results,
-                start_year,
-                system_details,
-            )
-
-            if _get_sufficient_appraisals(optimisation, [new_appraisal]) != []:
-                system_appraisals.append(new_appraisal)
-
-        # If the maximum PV-T system size isn't a round number of steps, carry out a
-        # simulation at this size..
-        if (
-            np.ceil(pv_system_size.max / pv_system_size.step) * pv_system_size.step
-            != pvt_system_size.max
-        ):
-            _, simulation_results, system_details = energy_system.run_simulation(
-                cw_pvt_size_to_redo,
-                conventional_cw_source_profiles,
-                convertors,
-                test_storage_size,
-                grid_profile,
-                hw_pvt_size_to_redo,
-                irradiance_data,
-                kerosene_usage,
-                location,
-                logger,
-                minigrid,
-                test_cw_tanks,
-                test_hw_tanks,
+                potential_system.system_details.initial_num_clean_water_tanks,
+                potential_system.system_details.initial_num_hot_water_tanks,
                 total_solar_pv_power_produced,
                 pv_system_size.max,
                 scenario,
@@ -533,243 +401,364 @@ def _single_line_simulation(
         )
 
     # If PV was maxed out:
-    if (
-        potential_system.system_details.initial_pv_size == pv_system_size.max
-        and pv_system_size.max > 0
-    ):
+    if potential_system.system_details.initial_pv_size == pv_system_size.max:
         logger.info("Increasing PV size.")
 
-        # Increase  and iterate over storage size
-        for iteration_storage_size in tqdm(
-            sorted(
-                range(
-                    int(storage_size.min),
-                    int(np.ceil(storage_size.max + storage_size.step)),
-                    int(storage_size.step),
-                ),
-                reverse=True,
+        # Increase and iterate over the various storage sizes and PV-T sizes.
+        increased_cw_pvt_system_sizes = sorted(
+            range(
+                int(cw_pvt_size.min),
+                int(np.ceil(cw_pvt_size.max + cw_pvt_size.step)),
+                int(cw_pvt_size.step),
             ),
-            desc="probing storage sizes",
-            leave=False,
-            unit="simulation",
-        ):
-            # Run a simulation.
-            _, simulation_results, system_details = energy_system.run_simulation(
-                cw_pvt_size_redo,
-                conventional_cw_source_profiles,
-                convertors,
-                iteration_storage_size,
-                grid_profile,
-                hw_pvt_size_redo,
-                irradiance_data,
-                kerosene_usage,
-                location,
-                logger,
-                minigrid,
-                test_cw_tanks,
-                test_hw_tanks,
-                total_solar_pv_power_produced,
-                test_pv_size,
-                scenario,
-                Simulation(end_year, start_year),
-                temperature_data,
-                total_loads,
-                wind_speed_data,
-            )
-
-            # Appraise the system.
-            new_appraisal = appraise_system(
-                yearly_electric_load_statistics,
-                end_year,
-                finance_inputs,
-                ghg_inputs,
-                location,
-                logger,
-                previous_system,
-                simulation_results,
-                start_year,
-                system_details,
-            )
-
-            if _get_sufficient_appraisals(optimisation, [new_appraisal]) == []:
-                break
-
-            system_appraisals.append(new_appraisal)
-
-        # If the maximum storage size wasn't a round number of steps, then carry out a
-        # simulation run at this storage size.
-        if (
-            np.ceil(storage_size.max / storage_size.step) * storage_size.step
-            != storage_size.max
-        ):
-            # Run a simulation.
-            _, simulation_results, system_details = energy_system.run_simulation(
-                cw_pvt_size_redo,
-                conventional_cw_source_profiles,
-                convertors,
-                storage_size.max,
-                grid_profile,
-                hw_pvt_size_redo,
-                irradiance_data,
-                kerosene_usage,
-                location,
-                logger,
-                minigrid,
-                test_cw_tanks,
-                test_hw_tanks,
-                total_solar_pv_power_produced,
-                test_pv_size,
-                scenario,
-                Simulation(end_year, start_year),
-                temperature_data,
-                total_loads,
-                wind_speed_data,
-            )
-
-            # Appraise the system.
-            new_appraisal = appraise_system(
-                yearly_electric_load_statistics,
-                end_year,
-                finance_inputs,
-                ghg_inputs,
-                location,
-                logger,
-                previous_system,
-                simulation_results,
-                start_year,
-                system_details,
-            )
-
-            if _get_sufficient_appraisals(optimisation, [new_appraisal]) != []:
-                system_appraisals.append(new_appraisal)
-
-        # Update the maximum PV size.
-        pv_system_size.max = test_pv_size
-
-    # Check to see if PV-T size was an integer number of steps, and increase accordingly
-    if (
-        np.ceil(pvt_system_size.max / pvt_system_size.step) * pvt_system_size.step
-        == pvt_system_size.max
-    ):
-        test_pvt_size = float(pvt_system_size.max + pvt_system_size.step)
-    else:
-        test_pvt_size = float(
-            np.ceil(pvt_system_size.max / pvt_system_size.step) * pvt_system_size.step
+            reverse=True,
+        )
+        increased_hw_pvt_system_sizes = sorted(
+            range(
+                int(hw_pvt_size.min),
+                int(np.ceil(hw_pvt_size.max + hw_pvt_size.step)),
+                int(hw_pvt_size.step),
+            ),
+            reverse=True,
+        )
+        increased_storage_sizes = sorted(
+            range(
+                int(storage_size.min),
+                int(np.ceil(storage_size.max + storage_size.step)),
+                int(storage_size.step),
+            ),
+            reverse=True,
         )
 
-    # If PV-T was maxed out:
+        # Prep variables for the iteration process.
+        component_sizes = {
+            ImpactingComponent.CLEAN_WATER_TANKS: potential_system.system_details.initial_num_clean_water_tanks,
+            ImpactingComponent.HOT_WATER_TANKS: potential_system.system_details.initial_num_hot_water_tanks,
+            RenewableEnergySource.PV: int(pv_system_size.max + pv_system_size.step),
+        }
+        parameter_space = []
+
+        if len(increased_cw_pvt_system_sizes) == 0:
+            component_sizes[RenewableEnergySource.CLEAN_WATER_PVT] = potential_system.system_details.initial_cw_pvt_size
+        else:
+            parameter_space.append(
+                RenewableEnergySource.CLEAN_WATER_PVT,
+                "simulation",
+                increased_cw_pvt_system_sizes
+            )
+        if len(increased_hw_pvt_system_sizes) == 0:
+            component_sizes[RenewableEnergySource.HOT_WATER_PVT] = potential_system.system_details.initial_hw_pvt_size
+        else:
+            parameter_space.append(
+                RenewableEnergySource.HOT_WATER_PVT,
+                "simulation" if len(parameter_space) == 0 else "hw pv-t size",
+                increased_hw_pvt_system_sizes
+            )
+        if len(increased_storage_sizes) == 0:
+            component_sizes[ImpactingComponent.STORAGE] = potential_system.system_details.initial_storage_size
+        else:
+            parameter_space.append(
+                ImpactingComponent.STORAGE,
+                "simulation" if len(parameter_space) == 0 else "storage size",
+                increased_storage_sizes
+            )
+
+        system_appraisals.append(
+            _recursive_iteration(
+                conventional_cw_source_profiles,
+                convertors,
+                end_year,
+                finance_inputs,
+                ghg_inputs,
+                grid_profile,
+                irradiance_data,
+                kerosene_usage,
+                location,
+                logger,
+                minigrid,
+                optimisation,
+                previous_system,
+                scenario,
+                start_year,
+                temperature_data,
+                total_loads,
+                total_solar_pv_power_produced,
+                wind_speed_data,
+                yearly_electric_load_statistics,
+                component_sizes=component_sizes,
+                parameter_space=parameter_space,
+                system_appraisals=system_appraisals,
+            )
+        )
+
+
+    # Check to see if clean-water PV-T size was an integer number of steps, and increase
+    # accordingly
     if (
-        potential_system.system_details.initial_pvt_size == pvt_system_size.max
-        and pvt_system_size.max > 0
+        np.ceil(cw_pvt_size.max / cw_pvt_size.step) * cw_pvt_size.step
+        == cw_pvt_size.max
     ):
-        logger.info("Increasing PV-T size.")
+        test_cw_pvt_size = float(cw_pvt_size.max + cw_pvt_size.step)
+    else:
+        test_cw_pvt_size = float(
+            np.ceil(cw_pvt_size.max / cw_pvt_size.step) * cw_pvt_size.step
+        )
 
-        # Increase  and iterate over storage size
-        for iteration_storage_size in tqdm(
-            sorted(
-                range(
-                    int(storage_size.min),
-                    int(np.ceil(storage_size.max + storage_size.step)),
-                    int(storage_size.step),
-                ),
-                reverse=True,
+    # If clean-water PV-T was maxed out:
+    if potential_system.system_details.initial_cw_pvt_size == cw_pvt_size.max:
+        logger.info("Increasing clean-water PV size.")
+
+        # Increase and iterate over the various storage sizes and other PV-T sizes.
+        increased_cw_tank_sizes = sorted(
+            range(
+                int(cw_tanks.min),
+                int(np.ceil(cw_tanks.max + cw_tanks.step)),
+                int(cw_tanks.step),
             ),
-            desc="probing storage sizes",
-            leave=False,
-            unit="simulation",
-        ):
-            # Run a simulation.
-            _, simulation_results, system_details = energy_system.run_simulation(
-                cw_pvt_size_redo,
+            reverse=True,
+        )
+        increased_hw_pvt_system_sizes = sorted(
+            range(
+                int(hw_pvt_size.min),
+                int(np.ceil(hw_pvt_size.max + hw_pvt_size.step)),
+                int(hw_pvt_size.step),
+            ),
+            reverse=True,
+        )
+        increased_hw_tank_sizes = sorted(
+            range(
+                int(hw_tanks.min),
+                int(np.ceil(hw_tanks.max + hw_tanks.step)),
+                int(hw_tanks.step),
+            ),
+            reverse=True,
+        )
+        increased_pv_system_sizes = sorted(
+            range(
+                int(pv_system_size.min),
+                int(np.ceil(pv_system_size.max + pv_system_size.step)),
+                int(pv_system_size.step),
+            ),
+            reverse=True,
+        )
+        increased_storage_sizes = sorted(
+            range(
+                int(storage_size.min),
+                int(np.ceil(storage_size.max + storage_size.step)),
+                int(storage_size.step),
+            ),
+            reverse=True,
+        )
+
+        # Prep variables for the iteration process.
+        component_sizes = {
+            RenewableEnergySource.CLEAN_WATER_PVT: test_cw_pvt_size
+        }
+        parameter_space = []
+
+        if len(increased_cw_tank_sizes) == 0:
+            component_sizes[RenewableEnergySource.CLEAN_WATER_TANKS] = potential_system.system_details.initial_num_clean_water_tanks
+        else:
+            parameter_space.append(
+                RenewableEnergySource.CLEAN_WATER_TANKS,
+                "simulation",
+                increased_cw_tank_sizes
+            )
+        if len(increased_hw_pvt_system_sizes) == 0:
+            component_sizes[RenewableEnergySource.HOT_WATER_PVT] = potential_system.system_details.initial_hw_pvt_size
+        else:
+            parameter_space.append(
+                RenewableEnergySource.HOT_WATER_PVT,
+                "simulation" if len(parameter_space) == 0 else "hw pv-t size",
+                increased_hw_pvt_system_sizes
+            )
+        if len(increased_hw_tank_sizes) == 0:
+            component_sizes[RenewableEnergySource.HOT_WATER_TANKS] = potential_system.system_details.initial_num_hot_water_tanks
+        else:
+            parameter_space.append(
+                RenewableEnergySource.HOT_WATER_TANKS,
+                "simulation" if len(parameter_space) == 0 else "hw tanks",
+                increased_hw_tank_sizes
+            )
+        if len(increased_storage_sizes) == 0:
+            component_sizes[ImpactingComponent.STORAGE] = potential_system.system_details.initial_storage_size
+        else:
+            parameter_space.append(
+                ImpactingComponent.STORAGE,
+                "simulation" if len(parameter_space) == 0 else "storage size",
+                increased_storage_sizes
+            )
+        if len(increased_pv_system_sizes) == 0:
+            component_sizes[RenewableEnergySource.PV] = potential_system.system_details.initial_pv_size
+        else:
+            parameter_space.append(
+                RenewableEnergySource.PV,
+                "simulation" if len(parameter_space) == 0 else "pv size",
+                increased_pv_system_sizes
+            )
+
+        system_appraisals.append(
+            _recursive_iteration(
                 conventional_cw_source_profiles,
                 convertors,
-                iteration_storage_size,
+                end_year,
+                finance_inputs,
+                ghg_inputs,
                 grid_profile,
-                hw_pvt_size_redo,
                 irradiance_data,
                 kerosene_usage,
                 location,
                 logger,
                 minigrid,
-                test_cw_tanks,
-                test_hw_tanks,
-                total_solar_pv_power_produced,
-                test_pv_size,
+                optimisation,
+                previous_system,
                 scenario,
-                Simulation(end_year, start_year),
+                start_year,
                 temperature_data,
                 total_loads,
+                total_solar_pv_power_produced,
                 wind_speed_data,
+                yearly_electric_load_statistics,
+                component_sizes=component_sizes,
+                parameter_space=parameter_space,
+                system_appraisals=system_appraisals,
+            )
+        )
+
+
+    # Check to see if hot-water PV-T size was an integer number of steps, and increase
+    # accordingly
+    if (
+        np.ceil(hw_pvt_size.max / hw_pvt_size.step) * hw_pvt_size.step
+        == hw_pvt_size.max
+    ):
+        test_hw_pvt_size = float(hw_pvt_size.max + hw_pvt_size.step)
+    else:
+        test_hw_pvt_size = float(
+            np.ceil(hw_pvt_size.max / hw_pvt_size.step) * hw_pvt_size.step
+        )
+
+    # If hot-water PV-T was maxed out:
+    if potential_system.system_details.initial_hw_pvt_size == hw_pvt_size.max:
+        logger.info("Increasing hot-water PV size.")
+
+        # Increase and iterate over the various storage sizes and other PV-T sizes.
+        increased_cw_pvt_system_sizes = sorted(
+            range(
+                int(cw_pvt_size.min),
+                int(np.ceil(cw_pvt_size.max + cw_pvt_size.step)),
+                int(cw_pvt_size.step),
+            ),
+            reverse=True,
+        )
+        increased_cw_tank_sizes = sorted(
+            range(
+                int(cw_tanks.min),
+                int(np.ceil(cw_tanks.max + cw_tanks.step)),
+                int(cw_tanks.step),
+            ),
+            reverse=True,
+        )
+        increased_hw_tank_sizes = sorted(
+            range(
+                int(hw_tanks.min),
+                int(np.ceil(hw_tanks.max + hw_tanks.step)),
+                int(hw_tanks.step),
+            ),
+            reverse=True,
+        )
+        increased_pv_system_sizes = sorted(
+            range(
+                int(pv_system_size.min),
+                int(np.ceil(pv_system_size.max + pv_system_size.step)),
+                int(pv_system_size.step),
+            ),
+            reverse=True,
+        )
+        increased_storage_sizes = sorted(
+            range(
+                int(storage_size.min),
+                int(np.ceil(storage_size.max + storage_size.step)),
+                int(storage_size.step),
+            ),
+            reverse=True,
+        )
+
+        # Prep variables for the iteration process.
+        component_sizes = {
+            RenewableEnergySource.HOT_WATER_PVT: test_hw_pvt_size
+        }
+        parameter_space = []
+
+        if len(increased_cw_pvt_system_sizes) == 0:
+            component_sizes[RenewableEnergySource.CLEAN_WATER_PVT] = potential_system.system_details.initial_cw_pvt_size
+        else:
+            parameter_space.append(
+                RenewableEnergySource.CLEAN_WATER_PVT,
+                "simulation",
+                increased_cw_pvt_system_sizes
+            )
+        if len(increased_cw_tank_sizes) == 0:
+            component_sizes[RenewableEnergySource.CLEAN_WATER_TANKS] = potential_system.system_details.initial_num_clean_water_tanks
+        else:
+            parameter_space.append(
+                RenewableEnergySource.CLEAN_WATER_TANKS,
+                "simulation",
+                increased_cw_tank_sizes
+            )
+        if len(increased_hw_tank_sizes) == 0:
+            component_sizes[RenewableEnergySource.HOT_WATER_TANKS] = potential_system.system_details.initial_num_hot_water_tanks
+        else:
+            parameter_space.append(
+                RenewableEnergySource.HOT_WATER_TANKS,
+                "simulation" if len(parameter_space) == 0 else "hw tanks",
+                increased_hw_tank_sizes
+            )
+        if len(increased_storage_sizes) == 0:
+            component_sizes[ImpactingComponent.STORAGE] = potential_system.system_details.initial_storage_size
+        else:
+            parameter_space.append(
+                ImpactingComponent.STORAGE,
+                "simulation" if len(parameter_space) == 0 else "storage size",
+                increased_storage_sizes
+            )
+        if len(increased_pv_system_sizes) == 0:
+            component_sizes[RenewableEnergySource.PV] = potential_system.system_details.initial_pv_size
+        else:
+            parameter_space.append(
+                RenewableEnergySource.PV,
+                "simulation" if len(parameter_space) == 0 else "pv size",
+                increased_pv_system_sizes
             )
 
-            # Appraise the system.
-            new_appraisal = appraise_system(
-                yearly_electric_load_statistics,
+        system_appraisals.append(
+            _recursive_iteration(
+                conventional_cw_source_profiles,
+                convertors,
                 end_year,
                 finance_inputs,
                 ghg_inputs,
-                location,
-                logger,
-                previous_system,
-                simulation_results,
-                start_year,
-                system_details,
-            )
-
-            if _get_sufficient_appraisals(optimisation, [new_appraisal]) == []:
-                break
-
-            system_appraisals.append(new_appraisal)
-
-        # If the maximum storage size wasn't a round number of steps, then carry out a
-        # simulation run at this storage size.
-        if (
-            np.ceil(storage_size.max / storage_size.step) * storage_size.step
-            != storage_size.max
-        ):
-            # Run a simulation.
-            _, simulation_results, system_details = energy_system.run_simulation(
-                cw_pvt_size_redo,
-                conventional_cw_source_profiles,
-                convertors,
-                storage_size.max,
                 grid_profile,
-                hw_pvt_size_redo,
                 irradiance_data,
                 kerosene_usage,
                 location,
                 logger,
                 minigrid,
-                test_cw_tanks,
-                test_hw_tanks,
-                total_solar_pv_power_produced,
-                test_pv_size,
+                optimisation,
+                previous_system,
                 scenario,
-                Simulation(end_year, start_year),
+                start_year,
                 temperature_data,
                 total_loads,
+                total_solar_pv_power_produced,
                 wind_speed_data,
-            )
-
-            # Appraise the system.
-            new_appraisal = appraise_system(
                 yearly_electric_load_statistics,
-                end_year,
-                finance_inputs,
-                ghg_inputs,
-                location,
-                logger,
-                previous_system,
-                simulation_results,
-                start_year,
-                system_details,
+                component_sizes=component_sizes,
+                parameter_space=parameter_space,
+                system_appraisals=system_appraisals,
             )
+        )
 
-            if _get_sufficient_appraisals(optimisation, [new_appraisal]) != []:
-                system_appraisals.append(new_appraisal)
-
-        # Update the maximum PV size.
-        pvt_system_size.max = test_pvt_size
 
     return (
         cw_tanks,
@@ -781,6 +770,7 @@ def _single_line_simulation(
 
 
 def _find_optimum_system(
+    conventional_cw_source_profiles: Dict[WaterSource, pd.DataFrame],
     convertors: List[Convertor],
     end_year: int,
     finance_inputs: Dict[str, Any],
@@ -788,9 +778,11 @@ def _find_optimum_system(
     grid_profile: pd.DataFrame,
     irradiance_data: pd.Series,
     kerosene_usage: pd.DataFrame,
+    largest_cw_pvt_system_size: SolarSystemSize,
     largest_cw_tank_size: TankSize,
+    largest_hw_pvt_system_size: SolarSystemSize,
+    largest_hw_tank_size: TankSize,
     largest_pv_system_size: SolarSystemSize,
-    largest_pvt_system_size: SolarSystemSize,
     largest_storage_system_size: StorageSystemSize,
     location: Location,
     logger: Logger,
@@ -816,8 +808,14 @@ def _find_optimum_system(
     Inputs:
         - end_year:
             The end year of the simulation run currently being considered.
+        - largest_cw_pvt_system_size:
+            The maximum size of clean-water PV-T system installed.
         - largest_cw_tank_size:
             The maximum size of clean-water tanks installed.
+        - largest_hw_pvt_system_size:
+            The maximum size of hot-water PV-T system installed.
+        - largest_hw_tank_size:
+            The maximum size of hot-water tanks installed.
         - largest_pv_system_size:
             The maximum size of PV system installed.
         - largest_storage_system_size:
@@ -857,6 +855,28 @@ def _find_optimum_system(
         # Check if optimum system was the largest system simulated
         while (
             (
+                optimum_system.system_details.initial_cw_pvt_size
+                == largest_cw_pvt_system_size.max
+                and scenario.desalination_scenario is not None
+                and scenario.pv_t
+            )
+            or (
+                optimum_system.system_details.initial_num_clean_water_tanks
+                == largest_cw_tank_size.max
+                and scenario.desalination_scenario is not None
+            )
+            or (
+                optimum_system.system_details.initial_hw_pvt_size
+                == largest_hw_pvt_system_size.max
+                and scenario.hot_water_scenario is not None
+                and scenario.pv_t
+            )
+            or (
+                optimum_system.system_details.initial_num_hot_water_tanks
+                == largest_hw_tank_size.max
+                and scenario.hot_water_scenario is not None
+            )
+            or (
                 optimum_system.system_details.initial_pv_size
                 == largest_pv_system_size.max
                 and scenario.pv
@@ -866,44 +886,39 @@ def _find_optimum_system(
                 == largest_storage_system_size.max
                 and scenario.battery
             )
-            or (
-                optimum_system.system_details.initial_pvt_size
-                == largest_pvt_system_size.max
-                and scenario.pv_t
-            )
-            # or (
-            #     optimum_system.system_details.initial_num_cw_tanks
-            #     == largest_cw_tank_size.max
-            #     and scenario.desalination_scenario is not None
-            # )
         ):
             # Do single line optimisation to see if larger system is superior
             (
+                largest_cw_pvt_system_size,
                 largest_cw_tank_size,
+                largest_hw_pvt_system_size,
+                largest_hw_tank_size,
                 largest_pv_system_size,
-                largest_pvt_system_size,
                 largest_storage_system_size,
                 new_system_appraisals,
             ) = _single_line_simulation(
+                conventional_cw_source_profiles,
+                largest_cw_pvt_system_size,
                 largest_cw_tank_size,
                 convertors,
                 end_year,
                 finance_inputs,
                 ghg_inputs,
                 grid_profile,
+                largest_hw_pvt_system_size,
+                largest_hw_tank_size,
                 irradiance_data,
                 kerosene_usage,
-                largest_pv_system_size,
-                largest_pvt_system_size,
-                largest_storage_system_size,
                 location,
                 logger,
                 minigrid,
                 optimisation,
                 optimum_system,
                 previous_system,
+                largest_pv_system_size,
                 scenario,
                 start_year,
+                largest_storage_system_size,
                 temperature_data,
                 total_loads,
                 total_solar_pv_power_produced,
@@ -996,6 +1011,7 @@ def _get_sufficient_appraisals(
 
 
 def _recursive_iteration(
+    conventional_cw_source_profiles: Dict[WaterSource, pd.DataFrame],
     convertors: List[Convertor],
     end_year: int,
     finance_inputs: Dict[str, Any],
@@ -1016,19 +1032,40 @@ def _recursive_iteration(
     wind_speed_data: Optional[pd.Series],
     yearly_electric_load_statistics: pd.DataFrame,
     *,
-    component_sizes: Dict[ImpactingComponent, float],
+    component_sizes: Dict[Union[ImpactingComponent, RenewableEnergySource], float],
     parameter_space: List[
-        Tuple[ImpactingComponent, str, Union[List[int], List[float]]]
+        Tuple[Union[ImpactingComponent, RenewableEnergySource], str, Union[List[int], List[float]]]
     ],
     system_appraisals: List[SystemAppraisal],
 ) -> List[SystemAppraisal]:
     """
     Recursively look for sufficient systems through a series of parameter spaces.
 
+    To recursively search through the parameter space, two objects are utilised:
+    - a mapping between the component and the size to model for it;
+    - a `list` of `tuple`s containing the components along with a list of possible
+      values.
+
+    At each stage in the process, a single component is removed from the `list` and
+    added to the mapping such that a definite value is assigned. This is then passed
+    through recursively with the function being called each time from a loop. In this
+    way, a single level of the recursion deals with a single component of the system
+    and its possible sizes, whilst the lowest (deepest) level of recursion deals with
+    the actual simulations that are being carried out.
+
+    In order to specify unique values, i.e., components of the system which have a fixed
+    size and do not require iteration, use the mapping directly. In this way, the
+    recursive function will be unaware of whether there exists a recursive layer for
+    this parameter or whether the value has been uniquely defined.
+
     Inputs:
+        - conventional_cw_source_profiles:
+            A mapping between conventional water sources and their availability
+            profiles.
         - component_sizes:
-            Specific values for the varoius :class:`finance.ImpactingComponent` sizes to
-            use for the simulation to be carried out.
+            Specific values for the varoius :class:`finance.ImpactingComponent` sizes
+            and :class:`RenewableEnergySource` sizes to use for the simulation to be
+            carried out.
         - parameter_spaces:
             A `list` containing `tuple`s as entries that specify:
             - The :class:`finance.ImpactingComponent` that should have its sizes
@@ -1054,12 +1091,12 @@ def _recursive_iteration(
             ),
         )
         (_, simulation_results, system_details,) = energy_system.run_simulation(
-            component_sizes[RenewableEnergySource.CLEAN_WATER_PV_T],
+            component_sizes[RenewableEnergySource.CLEAN_WATER_PVT],
             conventional_cw_source_profiles,
             convertors,
             component_sizes[ImpactingComponent.STORAGE],
             grid_profile,
-            component_sizes[RenewableEnergySource.HOT_WATER_PV_T],
+            component_sizes[RenewableEnergySource.HOT_WATER_PVT],
             irradiance_data,
             kerosene_usage,
             location,
@@ -1109,6 +1146,7 @@ def _recursive_iteration(
 
         # Call the function recursively.
         sufficient_appraisals = _recursive_iteration(
+            conventional_cw_source_profiles,
             convertors,
             end_year,
             finance_inputs,
@@ -1152,13 +1190,13 @@ def _recursive_iteration(
 def _simulation_iteration(
     conventional_cw_source_profiles: Optional[Dict[WaterSource, pd.DataFrame]],
     convertor_sizes: Dict[Convertor, ConvertorSize],
-    cw_pvt_sizes: SolarSystemSize,
+    cw_pvt_system_size: SolarSystemSize,
     cw_tanks: TankSize,
     convertors: List[Convertor],
     finance_inputs: Dict[str, Any],
     ghg_inputs: Dict[str, Any],
     grid_profile: pd.DataFrame,
-    hw_pvt_sizes: SolarSystemSize,
+    hw_pvt_system_size: SolarSystemSize,
     hw_tanks: TankSize,
     irradiance_data: pd.Series,
     kerosene_usage: pd.DataFrame,
@@ -1292,12 +1330,12 @@ def _simulation_iteration(
         convertor: size.max for convertor, size in convertor_sizes.items()
     }
     _, simulation_results, system_details = energy_system.run_simulation(
-        cw_pvt_sizes.max,
+        cw_pvt_system_size.max,
         conventional_cw_source_profiles,
         _convertors_from_sizing(max_convertor_sizes),
         storage_sizes.max,
         grid_profile,
-        hw_pvt_sizes.max,
+        hw_pvt_system_size.max,
         irradiance_data,
         kerosene_usage,
         location,
@@ -1328,9 +1366,9 @@ def _simulation_iteration(
     )
 
     # Instantiate in preparation of the while loop.
-    cw_pvt_sizes_max = cw_pvt_sizes.max
+    cw_pvt_size_max = cw_pvt_system_size.max
     cw_tanks_max = cw_tanks.max
-    hw_pvt_sizes_max = hw_pvt_sizes.max
+    hw_pvt_size_max = hw_pvt_system_size.max
     hw_tanks_max = hw_tanks.max
     pv_size_max = pv_sizes.max
     storage_size_max = storage_sizes.max
@@ -1339,10 +1377,10 @@ def _simulation_iteration(
     while _get_sufficient_appraisals(optimisation, [largest_system_appraisal]) == []:
         # Round out the various variables.
         cw_pvt_size_max = float(
-            np.ceil(cw_pvt_size_max / cw_pvt_sizes.step) * cw_pvt_sizes.step
+            np.ceil(cw_pvt_size_max / cw_pvt_system_size.step) * cw_pvt_system_size.step
         )
         hw_pvt_size_max = float(
-            np.ceil(hw_pvt_size_max / hw_pvt_sizes.step) * hw_pvt_sizes.step
+            np.ceil(hw_pvt_size_max / hw_pvt_system_size.step) * hw_pvt_system_size.step
         )
         pv_size_max = float(np.ceil(pv_size_max / pv_sizes.step) * pv_sizes.step)
         storage_size_max = float(
@@ -1409,9 +1447,9 @@ def _simulation_iteration(
         )
 
         # Increment the system sizes.
-        cw_pvt_size_max += cw_pvt_sizes.step
+        cw_pvt_size_max += cw_pvt_system_size.step
         cw_tanks_max += cw_tanks.step
-        hw_pvt_size_max += hw_pvt_sizes.step
+        hw_pvt_size_max += hw_pvt_system_size.step
         hw_tanks_max += hw_tanks.step
         max_convertor_sizes = {
             convertor: max_convertor_sizes[convertor] + size.step
@@ -1428,17 +1466,17 @@ def _simulation_iteration(
 
     # Round the maximum PV and storage sizes to be increments of the steps involved.
     cw_pvt_size_max = (
-        float(np.ceil(cw_pvt_size_max / cw_pvt_sizes.step)) * cw_pvt_sizes.step
+        float(np.ceil(cw_pvt_size_max / cw_pvt_system_size.step)) * cw_pvt_system_size.step
     )
     hw_pvt_size_max = (
-        float(np.ceil(hw_pvt_size_max / hw_pvt_sizes.step)) * hw_pvt_sizes.step
+        float(np.ceil(hw_pvt_size_max / hw_pvt_system_size.step)) * hw_pvt_system_size.step
     )
     pv_size_max = float(np.ceil(pv_size_max / pv_sizes.step)) * pv_sizes.step
     storage_size_max = float(
         np.ceil(storage_size_max / storage_sizes.step) * storage_sizes.step
     )
     logger.info(
-        "Largest system size determined:\n- pv_size: %s\n%s%s%s%s%s- storage_size: %s",
+        "Largest system size determined:\n- pv_size: %s\n%s%s%s%s- storage_size: %s",
         pv_size_max,
         f"- clean-water pvt-size: {cw_pvt_size_max}\n"
         if minigrid.pvt_panel is not None and scenario.desalination_scenario is not None
@@ -1458,11 +1496,17 @@ def _simulation_iteration(
     )
 
     # Set up the various variables ready for recursive iteration.
-    component_sizes: Dict[ImpactingComponent, float] = {}
+    component_sizes: Dict[Union[ImpactingComponent, RenewableEnergySource], float] = {}
     parameter_space: List[
-        Tuple[ImpactingComponent, str, Union[List[float], List[int]]]
+        Tuple[Union[ImpactingComponent, RenewableEnergySource], str, Union[List[float], List[int]]]
     ] = []
 
+    simulation_cw_pvt_system_size: List[int] = sorted(
+        range(
+            int(cw_pvt_system_size.min), int(cw_pvt_size_max + cw_pvt_system_size.step), int(cw_pvt_system_size.step)
+        ),
+        reverse=True,
+    )
     simulation_cw_tanks: List[int] = sorted(
         range(
             cw_tanks.min,
@@ -1471,19 +1515,24 @@ def _simulation_iteration(
         ),
         reverse=True,
     )
-
+    simulation_hw_pvt_system_size: List[int] = sorted(
+        range(
+            int(hw_pvt_system_size.min), int(hw_pvt_size_max + hw_pvt_system_size.step), int(hw_pvt_system_size.step)
+        ),
+        reverse=True,
+    )
+    simulation_hw_tanks: List[int] = sorted(
+        range(
+            hw_tanks.min,
+            hw_tanks_max + hw_tanks.step,
+            hw_tanks.step,
+        ),
+        reverse=True,
+    )
     simulation_pv_sizes: List[int] = sorted(
         range(int(pv_sizes.min), int(pv_size_max + pv_sizes.step), int(pv_sizes.step)),
         reverse=True,
     )
-
-    simulation_pvt_sizes: List[int] = sorted(
-        range(
-            int(pvt_sizes.min), int(pvt_size_max + pvt_sizes.step), int(pvt_sizes.step)
-        ),
-        reverse=True,
-    )
-
     simulation_storage_sizes: List[int] = sorted(
         range(
             int(storage_sizes.min),
@@ -1506,29 +1555,53 @@ def _simulation_iteration(
     else:
         component_sizes[ImpactingComponent.CLEAN_WATER_TANK] = simulation_cw_tanks[0]
 
-    # Add the iterable PV-T sizes if appropriate.
-    if len(simulation_pvt_sizes) > 1:
+    # Add the iterable clean-water PV-T sizes if appropriate.
+    if len(simulation_cw_pvt_system_size) > 1:
         parameter_space.append(
             (
-                ImpactingComponent.PV_T,
-                "simulation" if len(parameter_space) == 0 else "pv-t size",
-                simulation_pvt_sizes,
+                ImpactingComponent.CLEAN_WATER_PVT,
+                "simulation" if len(parameter_space) == 0 else "cw pv-t size",
+                simulation_cw_pvt_system_size,
             )
         )
     else:
-        component_sizes[ImpactingComponent.PV_T] = simulation_pvt_sizes[0]
+        component_sizes[RenewableEnergySource.CLEAN_WATER_PVT] = simulation_cw_pvt_system_size[0]
+
+    # Add the iterable hot-water tank sizes if appropriate.
+    if len(simulation_hw_tanks) > 1:
+        parameter_space.append(
+            (
+                ImpactingComponent.HOT_WATER_TANK,
+                "simulation" if len(parameter_space) == 0 else "hw tank size",
+                simulation_hw_tanks,
+            )
+        )
+    else:
+        component_sizes[ImpactingComponent.HOT_WATER_TANK] = simulation_cw_tanks[0]
+
+    # Add the iterable hot-water PV-T sizes if appropriate.
+    if len(simulation_hw_pvt_system_size) > 1:
+        parameter_space.append(
+            (
+                ImpactingComponent.HOT_WATER_PVT,
+                "simulation" if len(parameter_space) == 0 else "hw pv-t size",
+                simulation_cw_pvt_system_size,
+            )
+        )
+    else:
+        component_sizes[RenewableEnergySource.HOT_WATER_PVT] = simulation_cw_pvt_system_size[0]
 
     # Add the iterable PV sizes if appropriate.
     if len(simulation_pv_sizes) > 1:
         parameter_space.append(
             (
-                ImpactingComponent.PV,
+                RenewableEnergySource.PV,
                 "simulation" if len(parameter_space) == 0 else "pv size",
                 simulation_pv_sizes,
             )
         )
     else:
-        component_sizes[ImpactingComponent.PV] = simulation_pv_sizes[0]
+        component_sizes[RenewableEnergySource.PV] = simulation_pv_sizes[0]
 
     # Add the iterable storage sizes if appropriate.
     if len(simulation_storage_sizes) > 1:
@@ -1545,6 +1618,7 @@ def _simulation_iteration(
     # Call the recursive simulation with these parameter and component sets of
     # information.
     _ = _recursive_iteration(
+        conventional_cw_source_profiles,
         convertors,
         end_year,
         finance_inputs,
@@ -1576,9 +1650,9 @@ def _simulation_iteration(
             convertor: ConvertorSize(size.max, size.min, size.step)
             for convertor, size in convertor_sizes.items()
         },
-        SolarSystemSize(cw_pvt_size_max, cw_pvt_sizes.min, cw_pvt_sizes.step),
+        SolarSystemSize(cw_pvt_size_max, cw_pvt_system_size.min, cw_pvt_system_size.step),
         TankSize(cw_tanks_max, cw_tanks.min, cw_tanks.step),
-        SolarSystemSize(hw_pvt_size_max, hw_pvt_sizes.min, hw_pvt_sizes.step),
+        SolarSystemSize(hw_pvt_size_max, hw_pvt_system_size.min, hw_pvt_system_size.step),
         TankSize(hw_tanks_max, hw_tanks.min, hw_tanks.step),
         SolarSystemSize(pv_size_max, pv_sizes.min, pv_sizes.step),
         StorageSystemSize(storage_size_max, storage_sizes.min, storage_sizes.step),
@@ -1592,13 +1666,13 @@ def _simulation_iteration(
 def _optimisation_step(
     conventional_cw_source_profiles: Optional[Dict[WaterSource, pd.DataFrame]],
     convertor_sizes: Dict[Convertor, ConvertorSize],
-    cw_pvt_sizes: SolarSystemSize,
+    cw_pvt_system_size: SolarSystemSize,
     cw_tanks: TankSize,
     convertors: List[Convertor],
     finance_inputs: Dict[str, Any],
     ghg_inputs: Dict[str, Any],
     grid_profile: pd.DataFrame,
-    hw_pvt_sizes: SolarSystemSize,
+    hw_pvt_system_size: SolarSystemSize,
     hw_tanks: TankSize,
     irradiance_data: pd.Series,
     kerosene_usage: pd.DataFrame,
@@ -1628,7 +1702,7 @@ def _optimisation_step(
         - convertor_sizes:
             Mapping between :class:`Convertor` instances and the range of associated
             sizes.
-        - cw_pvt_sizes:
+        - cw_pvt_system_size:
             Range of clean-water PV-T sizes.
         - cw_tanks:
             Range of clean-water tank sizes.
@@ -1640,7 +1714,7 @@ def _optimisation_step(
             The grid-availability profile.
         - irradiance_data:
             The total irradiance throughout the period of the simulation.
-        - hw_pvt_sizes:
+        - hw_pvt_system_size:
             Range of hot-water PV-T sizes.
         - hw_tanks:
             Range of hot-water tank sizes.
@@ -1687,9 +1761,12 @@ def _optimisation_step(
     logger.info("Optimisation step called.")
     (
         end_year,
+        convertor_sizes,
+        cw_pvt_system_size,
         cw_tanks,
+        hw_pvt_system_size,
+        hw_tanks,
         pv_system_size,
-        pvt_system_size,
         storage_system_size,
         _,
         previous_system,
@@ -1698,13 +1775,13 @@ def _optimisation_step(
     ) = _simulation_iteration(
         conventional_cw_source_profiles,
         convertor_sizes,
-        cw_pvt_sizes,
+        cw_pvt_system_size,
         cw_tanks,
         convertors,
         finance_inputs,
         ghg_inputs,
         grid_profile,
-        hw_pvt_sizes,
+        hw_pvt_system_size,
         hw_tanks,
         irradiance_data,
         kerosene_usage,
@@ -1728,6 +1805,7 @@ def _optimisation_step(
 
     # Determine the optimum systems that fulfil each of the optimisation criteria.
     optimum_systems = _find_optimum_system(
+        conventional_cw_source_profiles,
         convertors,
         end_year,
         finance_inputs,
@@ -1736,8 +1814,10 @@ def _optimisation_step(
         irradiance_data,
         kerosene_usage,
         cw_tanks,
+        cw_pvt_system_size,
+        hw_tanks,
+        hw_pvt_system_size,
         pv_system_size,
-        pvt_system_size,
         storage_system_size,
         location,
         logger,
@@ -1780,9 +1860,9 @@ def multiple_optimisation_step(
     yearly_electric_load_statistics: pd.DataFrame,
     *,
     input_convertor_sizes: Optional[Dict[Convertor, ConvertorSize]] = None,
-    input_cw_pvt_sizes: Optional[SolarSystemSize] = None,
+    input_cw_pvt_system_size: Optional[SolarSystemSize] = None,
     input_cw_tanks: Optional[TankSize] = None,
-    input_hw_pvt_sizes: Optional[SolarSystemSize] = None,
+    input_hw_pvt_system_size: Optional[SolarSystemSize] = None,
     input_hw_tanks: Optional[TankSize] = None,
     input_pv_sizes: Optional[SolarSystemSize] = None,
     input_storage_sizes: Optional[StorageSystemSize] = None,
@@ -1830,11 +1910,11 @@ def multiple_optimisation_step(
             range available.
         - input_cw_tanks:
             Range of clean-water tank sizes as a :class:`TankSize` instance;
-        - input_cw_pvt_sizes:
+        - input_cw_pvt_system_size:
             Range of clean-water PV-T sizes as a :class:`SolarSystemSize` instance;
         - input_hw_tanks:
             Range of hot-water tank sizes as a :class:`TankSize` instance;
-        - input_hw_pvt_sizes:
+        - input_hw_pvt_system_size:
             Range of hot-water PV-T sizes as a :class:`SolarSystemSize` instance;
         - input_pv_sizes:
             Range of PV sizes as a :class:`SolarSystemSize` instance;
@@ -1877,7 +1957,7 @@ def multiple_optimisation_step(
 
     # Set up the clean-water PV-T sizes for the first loop.
     if (
-        input_cw_pvt_sizes is None
+        input_cw_pvt_system_size is None
         and scenario.desalination_scenario is not None
         and minigrid.pvt_panel is not None
     ):
@@ -1893,13 +1973,13 @@ def multiple_optimisation_step(
         logger.info(
             "No hot-water PV-T sizes passed in, using default optimisation parameters."
         )
-        input_cw_pvt_sizes = SolarSystemSize(
+        input_cw_pvt_system_size = SolarSystemSize(
             optimisation_parameters.cw_pvt_size.max,
             optimisation_parameters.cw_pvt_size.min,
             optimisation_parameters.cw_pvt_size.step,
         )
     else:
-        input_cw_pvt_sizes = SolarSystemSize()
+        input_cw_pvt_system_size = SolarSystemSize()
 
     # Set up the clean-water tank sizes for the first loop.
     if (
@@ -1929,7 +2009,7 @@ def multiple_optimisation_step(
 
     # Set up the hot-water PV-T sizes for the first loop.
     if (
-        input_hw_pvt_sizes is None
+        input_hw_pvt_system_size is None
         and scenario.hot_water_scenario is not None
         and minigrid.pvt_panel is not None
     ):
@@ -1945,13 +2025,13 @@ def multiple_optimisation_step(
         logger.info(
             "No hot-water PV-T sizes passed in, using default optimisation parameters."
         )
-        input_hw_pvt_sizes = SolarSystemSize(
+        input_hw_pvt_system_size = SolarSystemSize(
             optimisation_parameters.hw_pvt_size.max,
             optimisation_parameters.hw_pvt_size.min,
             optimisation_parameters.hw_pvt_size.step,
         )
     else:
-        input_hw_pvt_sizes = SolarSystemSize()
+        input_hw_pvt_system_size = SolarSystemSize()
 
     # Set up the hot-water tank sizes for the first loop
     if (
@@ -2029,9 +2109,9 @@ def multiple_optimisation_step(
             conventional_cw_source_profiles,
             input_convertor_sizes.copy(),
             SolarSystemSize(
-                input_cw_pvt_sizes.max,
-                input_cw_pvt_sizes.min,
-                input_cw_pvt_sizes.step,
+                input_cw_pvt_system_size.max,
+                input_cw_pvt_system_size.min,
+                input_cw_pvt_system_size.step,
             ),
             TankSize(
                 input_cw_tanks.max,
@@ -2043,9 +2123,9 @@ def multiple_optimisation_step(
             ghg_inputs,
             grid_profile,
             SolarSystemSize(
-                input_hw_pvt_sizes.max,
-                input_hw_pvt_sizes.min,
-                input_hw_pvt_sizes.step,
+                input_hw_pvt_system_size.max,
+                input_hw_pvt_system_size.min,
+                input_hw_pvt_system_size.step,
             ),
             TankSize(
                 input_hw_tanks.max,

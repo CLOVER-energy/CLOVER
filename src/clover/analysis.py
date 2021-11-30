@@ -187,20 +187,20 @@ def get_key_results(
             3,
         )
         key_results.max_buffer_tank_temperature = round(
-            max(simulation_results[ColumnHeader.BUFFER_TANK_TEMPERATURE.value.value]), 3
+            max(simulation_results[ColumnHeader.BUFFER_TANK_TEMPERATURE.value]), 3
         )
         key_results.max_cw_pvt_output_temperature = round(
             max(simulation_results[ColumnHeader.CW_PVT_OUTPUT_TEMPERATURE.value]), 3
         )
         key_results.mean_buffer_tank_temperature = round(
-            simulation_results[ColumnHeader.BUFFER_TANK_TEMPERATURE.value.value].mean(),
+            simulation_results[ColumnHeader.BUFFER_TANK_TEMPERATURE.value].mean(),
             3,
         )
         key_results.mean_cw_pvt_output_temperature = round(
             simulation_results[ColumnHeader.CW_PVT_OUTPUT_TEMPERATURE.value].mean(), 3
         )
         key_results.min_buffer_tank_temperature = round(
-            min(simulation_results[ColumnHeader.BUFFER_TANK_TEMPERATURE.value.value]), 3
+            min(simulation_results[ColumnHeader.BUFFER_TANK_TEMPERATURE.value]), 3
         )
         key_results.min_cw_pvt_output_temperature = round(
             min(simulation_results[ColumnHeader.CW_PVT_OUTPUT_TEMPERATURE.value]), 3
@@ -2133,17 +2133,17 @@ def plot_outputs(
                 ][ColumnHeader.CW_PVT_OUTPUT_TEMPERATURE.value]
 
                 buffer_tank_temperature_january = simulation_output.iloc[0:24][
-                    ColumnHeader.BUFFER_TANK_TEMPERATURE.value.value
+                    ColumnHeader.BUFFER_TANK_TEMPERATURE.value
                 ]
                 buffer_tank_temperature_march = simulation_output.iloc[
                     HOURS_UNTIL_MARCH : HOURS_UNTIL_MARCH + 24
-                ][ColumnHeader.BUFFER_TANK_TEMPERATURE.value.value]
+                ][ColumnHeader.BUFFER_TANK_TEMPERATURE.value]
                 buffer_tank_temperature_may = simulation_output.iloc[
                     HOURS_UNTIL_MAY : HOURS_UNTIL_MAY + 24
-                ][ColumnHeader.BUFFER_TANK_TEMPERATURE.value.value]
+                ][ColumnHeader.BUFFER_TANK_TEMPERATURE.value]
                 buffer_tank_temperature_july = simulation_output.iloc[
                     HOURS_UNTIL_JULY : HOURS_UNTIL_JULY + 24
-                ][ColumnHeader.BUFFER_TANK_TEMPERATURE.value.value]
+                ][ColumnHeader.BUFFER_TANK_TEMPERATURE.value]
 
                 volume_supplied_january = simulation_output.iloc[0:24][
                     ColumnHeader.CLEAN_WATER_FROM_RENEWABLES.value
@@ -2252,7 +2252,7 @@ def plot_outputs(
                 buffer_tank_temperature_january = np.mean(
                     np.reshape(
                         simulation_output[0 : 31 * 24][
-                            ColumnHeader.BUFFER_TANK_TEMPERATURE.value.value
+                            ColumnHeader.BUFFER_TANK_TEMPERATURE.value
                         ].values,
                         (31, 24),
                     ),
@@ -2262,7 +2262,7 @@ def plot_outputs(
                     np.reshape(
                         simulation_output[
                             HOURS_UNTIL_MARCH : HOURS_UNTIL_MARCH + 31 * 24
-                        ][ColumnHeader.BUFFER_TANK_TEMPERATURE.value.value].values,
+                        ][ColumnHeader.BUFFER_TANK_TEMPERATURE.value].values,
                         (31, 24),
                     ),
                     axis=0,
@@ -2270,7 +2270,7 @@ def plot_outputs(
                 buffer_tank_temperature_may = np.mean(
                     np.reshape(
                         simulation_output[HOURS_UNTIL_MAY : HOURS_UNTIL_MAY + 31 * 24][
-                            ColumnHeader.BUFFER_TANK_TEMPERATURE.value.value
+                            ColumnHeader.BUFFER_TANK_TEMPERATURE.value
                         ].values,
                         (31, 24),
                     ),
@@ -2280,7 +2280,7 @@ def plot_outputs(
                     np.reshape(
                         simulation_output[
                             HOURS_UNTIL_JULY : HOURS_UNTIL_JULY + 31 * 24
-                        ][ColumnHeader.BUFFER_TANK_TEMPERATURE.value.value].values,
+                        ][ColumnHeader.BUFFER_TANK_TEMPERATURE.value].values,
                         (31, 24),
                     ),
                     axis=0,
