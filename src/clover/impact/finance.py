@@ -773,9 +773,11 @@ def discounted_energy_total(
                 "when casting `pd.Series` to `pd.DataFrame`: %s%s",
                 str(e),
                 BColours.fail,
-                BColours.endc
+                BColours.endc,
             )
-            raise InternalError("An error occured casting between pandas types.") from None
+            raise InternalError(
+                "An error occured casting between pandas types."
+            ) from None
     discounted_energy = pd.DataFrame(discounted_fraction.iloc[:, 0] * total_daily)
     return float(np.sum(discounted_energy))  # type: ignore
 
