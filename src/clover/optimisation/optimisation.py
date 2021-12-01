@@ -1361,7 +1361,7 @@ def multiple_optimisation_step(
         # Prepare the hot-water PV-T parameters
         hw_pvt_size_min = (
             optimum_system.system_details.final_hw_pvt_size
-            if optimum_system.system_details.final_hw_pvt_sizeis is not None
+            if optimum_system.system_details.final_hw_pvt_size is not None
             else optimisation_parameters.hw_pvt_size.min
         )
         hw_pvt_size_max = float(
@@ -1428,7 +1428,7 @@ def multiple_optimisation_step(
             optimisation_parameters.storage_size.max
             + (
                 optimum_system.system_details.final_storage_size
-                if optimum_system.system_details.final_storage_sizeis is not None
+                if optimum_system.system_details.final_storage_size is not None
                 else 0
             )
         )
