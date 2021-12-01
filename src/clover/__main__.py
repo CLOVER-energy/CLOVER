@@ -1241,7 +1241,9 @@ def main(args: List[Any]) -> None:
             for convertor, sizing in optimisation_inputs.convertor_sizes.items()
         ]
 
-        optimisation_string: str = "\n".join(optimisation_string_list)
+        optimisation_string: str = "\n".join(
+            [entry for entry in optimisation_string_list if entry != ""]
+        )
         print(f"Running an optimisation with:\n{optimisation_string}")
 
         for optimisation_number, optimisation in enumerate(
