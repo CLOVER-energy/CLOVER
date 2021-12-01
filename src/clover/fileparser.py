@@ -57,8 +57,7 @@ from .conversion.conversion import (
     ThermalDesalinationPlant,
     WaterSource,
 )
-from .optimisation.__utils__ import OptimisationParameters
-from .optimisation.optimisation import Optimisation
+from .optimisation.__utils__ import Optimisation, OptimisationParameters
 from .simulation.diesel import DieselGenerator
 from .simulation.energy_system import Minigrid
 from .simulation.transmission import Transmitter

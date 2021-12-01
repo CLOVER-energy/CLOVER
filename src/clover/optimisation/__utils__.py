@@ -22,30 +22,46 @@ import enum
 import os
 
 from logging import Logger
-from typing import Any, Dict, List, Pattern, Set, Union
+from typing import Any, Dict, List, Optional, Pattern, Tuple, Union
 
 import json
+import numpy as np  # pylint: disable=import-error
+import pandas as pd  # pylint: disable=import-error
 import re
-import tqdm
+
+from tqdm import tqdm
+
+from ..simulation import energy_system
 
 from ..__utils__ import (
     BColours,
     Criterion,
     ITERATION_LENGTH,
+    Location,
     MAX,
     MIN,
     NUMBER_OF_ITERATIONS,
+    RenewableEnergySource,
+    ResourceType,
+    Scenario,
+    Simulation,
     STEP,
+    SystemAppraisal,
     InputFileError,
     SystemAppraisal,
 )
-from ..conversion.conversion import Convertor
+from ..conversion.conversion import Convertor, WaterSource
+from ..impact.__utils__ import ImpactingComponent
+
+from .appraisal import appraise_system
 
 __all__ = (
     "ConvertorSize",
     "CriterionMode",
+    "get_sufficient_appraisals",
     "Optimisation",
     "OptimisationParameters",
+    "recursive_iteration",
     "save_optimisation",
     "SolarSystemSize",
     "StorageSystemSize",
@@ -709,6 +725,268 @@ class OptimisationParameters:
             for key, value in optimisation_parameters_dict.items()
             if value is not None
         }
+
+
+# Threshold-criterion-to-mode mapping:
+#   Maps the threshold criteria to the modes, i.e., whether they are maximisable or
+#   minimisable.
+THRESHOLD_CRITERION_TO_MODE: Dict[Criterion, ThresholdMode] = {
+    Criterion.BLACKOUTS: ThresholdMode.MAXIMUM,
+    Criterion.CLEAN_WATER_BLACKOUTS: ThresholdMode.MAXIMUM,
+    Criterion.CUMULATIVE_COST: ThresholdMode.MAXIMUM,
+    Criterion.CUMULATIVE_GHGS: ThresholdMode.MAXIMUM,
+    Criterion.CUMULATIVE_SYSTEM_COST: ThresholdMode.MAXIMUM,
+    Criterion.CUMULATIVE_SYSTEM_COST: ThresholdMode.MAXIMUM,
+    Criterion.EMISSIONS_INTENSITY: ThresholdMode.MAXIMUM,
+    Criterion.KEROSENE_COST_MITIGATED: ThresholdMode.MINIMUM,
+    Criterion.KEROSENE_DISPLACEMENT: ThresholdMode.MINIMUM,
+    Criterion.KEROSENE_GHGS_MITIGATED: ThresholdMode.MINIMUM,
+    Criterion.LCUE: ThresholdMode.MAXIMUM,
+    Criterion.RENEWABLES_FRACTION: ThresholdMode.MINIMUM,
+    Criterion.TOTAL_COST: ThresholdMode.MAXIMUM,
+    Criterion.TOTAL_GHGS: ThresholdMode.MAXIMUM,
+    Criterion.TOTAL_SYSTEM_COST: ThresholdMode.MAXIMUM,
+    Criterion.TOTAL_SYSTEM_GHGS: ThresholdMode.MAXIMUM,
+    Criterion.UNMET_ENERGY_FRACTION: ThresholdMode.MAXIMUM,
+}
+
+
+def get_sufficient_appraisals(
+    optimisation: Optimisation, system_appraisals: List[SystemAppraisal]
+) -> List[SystemAppraisal]:
+    """
+    Checks whether any of the system appraisals fulfill the threshold criterion
+
+    Inputs:
+        - optimisation:
+            The optimisation currently being considered.
+        - system_appraisals:
+            Appraisals of the systems which have been simulated
+
+    Outputs:
+        - sufficient_systems:
+            Appraisals of the systems which meet the threshold criterion (sufficient systems)
+
+    """
+
+    sufficient_appraisals: List[SystemAppraisal] = []
+
+    # Cycle through the provided appraisals.
+    for appraisal in system_appraisals:
+        if appraisal.criteria is None:
+            raise InternalError(
+                "A system appraisal was returned which does not have criteria defined."
+            )
+        criteria_met = set()
+        for (
+            threshold_criterion,
+            threshold_value,
+        ) in optimisation.threshold_criteria.items():
+            # Add a `True` marker if the threshold criteria are met, otherwise add
+            # False.
+            if (
+                THRESHOLD_CRITERION_TO_MODE[threshold_criterion]
+                == ThresholdMode.MAXIMUM
+            ):
+                if appraisal.criteria[threshold_criterion] <= threshold_value:
+                    criteria_met.add(True)
+                else:
+                    criteria_met.add(False)
+            if (
+                THRESHOLD_CRITERION_TO_MODE[threshold_criterion]
+                == ThresholdMode.MINIMUM
+            ):
+                if appraisal.criteria[threshold_criterion] >= threshold_value:
+                    criteria_met.add(True)
+                else:
+                    criteria_met.add(False)
+
+        # Store the system to return provided it is sufficient.
+        if all(criteria_met):
+            sufficient_appraisals.append(appraisal)
+
+    return sufficient_appraisals
+
+
+def recursive_iteration(
+    conventional_cw_source_profiles: Dict[WaterSource, pd.DataFrame],
+    convertors: List[Convertor],
+    end_year: int,
+    finance_inputs: Dict[str, Any],
+    ghg_inputs: Dict[str, Any],
+    grid_profile: pd.DataFrame,
+    irradiance_data: pd.Series,
+    kerosene_usage: pd.DataFrame,
+    location: Location,
+    logger: Logger,
+    minigrid: energy_system.Minigrid,
+    optimisation: Optimisation,
+    previous_system: Optional[SystemAppraisal],
+    scenario: Scenario,
+    start_year: int,
+    temperature_data: pd.Series,
+    total_loads: Dict[ResourceType, Optional[pd.DataFrame]],
+    total_solar_pv_power_produced: pd.Series,
+    wind_speed_data: Optional[pd.Series],
+    yearly_electric_load_statistics: pd.DataFrame,
+    *,
+    component_sizes: Dict[Union[ImpactingComponent, RenewableEnergySource], float],
+    parameter_space: List[
+        Tuple[
+            Union[ImpactingComponent, RenewableEnergySource],
+            str,
+            Union[List[int], List[float]],
+        ]
+    ],
+    system_appraisals: List[SystemAppraisal],
+) -> List[SystemAppraisal]:
+    """
+    Recursively look for sufficient systems through a series of parameter spaces.
+
+    To recursively search through the parameter space, two objects are utilised:
+    - a mapping between the component and the size to model for it;
+    - a `list` of `tuple`s containing the components along with a list of possible
+      values.
+
+    At each stage in the process, a single component is removed from the `list` and
+    added to the mapping such that a definite value is assigned. This is then passed
+    through recursively with the function being called each time from a loop. In this
+    way, a single level of the recursion deals with a single component of the system
+    and its possible sizes, whilst the lowest (deepest) level of recursion deals with
+    the actual simulations that are being carried out.
+
+    In order to specify unique values, i.e., components of the system which have a fixed
+    size and do not require iteration, use the mapping directly. In this way, the
+    recursive function will be unaware of whether there exists a recursive layer for
+    this parameter or whether the value has been uniquely defined.
+
+    Inputs:
+        - conventional_cw_source_profiles:
+            A mapping between conventional water sources and their availability
+            profiles.
+        - component_sizes:
+            Specific values for the varoius :class:`finance.ImpactingComponent` sizes
+            and :class:`RenewableEnergySource` sizes to use for the simulation to be
+            carried out.
+        - parameter_spaces:
+            A `list` containing `tuple`s as entries that specify:
+            - The :class:`finance.ImpactingComponent` that should have its sizes
+              iterated through;
+            - The unit to display to the user, as a `str`;
+            - The `list` of values to iterate through.
+        - system_appraisals:
+            The `list` containing the :class:`SystemAppraisal` instances that correspond
+            to sufficient systems.
+
+    Outputs:
+        - A `list` of sufficient systems.
+
+    """
+
+    # If there are no more things to iterate through, then run a simulation and return
+    # whether the system was sufficient.
+    if len(parameter_space) == 0:
+        logger.info(
+            "Running simulation with component sizes: %s",
+            ", ".join(
+                [f"{key.value} size={value}" for key, value in component_sizes.items()]
+            ),
+        )
+        (_, simulation_results, system_details,) = energy_system.run_simulation(
+            component_sizes[RenewableEnergySource.CLEAN_WATER_PVT],
+            conventional_cw_source_profiles,
+            convertors,
+            component_sizes[ImpactingComponent.STORAGE],
+            grid_profile,
+            component_sizes[RenewableEnergySource.HOT_WATER_PVT],
+            irradiance_data,
+            kerosene_usage,
+            location,
+            logger,
+            minigrid,
+            int(component_sizes[ImpactingComponent.CLEAN_WATER_TANK]),
+            int(component_sizes[ImpactingComponent.HOT_WATER_TANK]),
+            total_solar_pv_power_produced,
+            component_sizes[RenewableEnergySource.PV],
+            scenario,
+            Simulation(end_year, start_year),
+            temperature_data,
+            total_loads,
+            wind_speed_data,
+        )
+
+        new_appraisal = appraise_system(
+            yearly_electric_load_statistics,
+            end_year,
+            finance_inputs,
+            ghg_inputs,
+            location,
+            logger,
+            previous_system,
+            simulation_results,
+            start_year,
+            system_details,
+        )
+
+        return get_sufficient_appraisals(optimisation, [new_appraisal])
+
+    # If there are things to iterate through, then iterate through these, calling the
+    # function recursively.
+    component, unit, sizes = parameter_space.pop()
+
+    for size in tqdm(
+        sizes,
+        desc=f"{component.value} size options",
+        leave=False,
+        unit=unit,
+    ):
+        # Update the set of fixed sizes accordingly.
+        updated_component_sizes: Dict[
+            ImpactingComponent, float
+        ] = component_sizes.copy()
+        updated_component_sizes[component] = size
+
+        # Call the function recursively.
+        sufficient_appraisals = recursive_iteration(
+            conventional_cw_source_profiles,
+            convertors,
+            end_year,
+            finance_inputs,
+            ghg_inputs,
+            grid_profile,
+            irradiance_data,
+            kerosene_usage,
+            location,
+            logger,
+            minigrid,
+            optimisation,
+            previous_system,
+            scenario,
+            start_year,
+            temperature_data,
+            total_loads,
+            total_solar_pv_power_produced,
+            wind_speed_data,
+            yearly_electric_load_statistics,
+            component_sizes=updated_component_sizes,
+            parameter_space=parameter_space.copy(),
+            system_appraisals=system_appraisals,
+        )
+        if sufficient_appraisals == []:
+            logger.info("No sufficient systems at this resolution.")
+            if len(parameter_space) == 0:
+                logger.info("Probing lowest depth - skipping further size options.")
+                break
+            else:
+                logger.info("Probing non-lowest depth - continuing iteration.")
+                continue
+
+        # Store the new appraisal if it is sufficient.
+        logger.info("Sufficient system found, storing.")
+        system_appraisals.extend(sufficient_appraisals)
+
+    # Return the sufficient appraisals that were found at this resolution.
+    return sufficient_appraisals
 
 
 def save_optimisation(
