@@ -692,8 +692,28 @@ def appraise_system(
         Criterion.BLACKOUTS: round(technical_appraisal.blackouts, 3),
         Criterion.CUMULATIVE_COST: round(cumulative_results.cost, 3),
         Criterion.CUMULATIVE_GHGS: round(cumulative_results.ghgs, 3),
+        Criterion.CUMULATIVE_SYSTEM_COST: round(cumulative_results.system_cost, 3),
+        Criterion.CUMULATIVE_SYSTEM_GHGS: round(cumulative_results.system_ghgs, 3),
         Criterion.EMISSIONS_INTENSITY: round(emissions_intensity, 3),
+        Criterion.KEROSENE_COST_MITIGATED: round(
+            financial_appraisal.kerosene_cost_mitigated, 3
+        ),
+        Criterion.KEROSENE_DISPLACEMENT: round(
+            technical_appraisal.kerosene_displacement, 3
+        ),
+        Criterion.KEROSENE_GHGS_MITIGATED: round(
+            environmental_appraisal.kerosene_ghgs_mitigated, 3
+        ),
         Criterion.LCUE: round(lcue, 3),
+        Criterion.RENEWABLES_FRACTION: round(
+            technical_appraisal.renewable_energy_fraction, 3
+        ),
+        Criterion.TOTAL_COST: round(financial_appraisal.total_cost, 3),
+        Criterion.TOTAL_GHGS: round(environmental_appraisal.total_ghgs, 3),
+        Criterion.TOTAL_SYSTEM_COST: round(financial_appraisal.total_system_cost, 3),
+        Criterion.TOTAL_SYSTEM_GHGS: round(
+            environmental_appraisal.total_system_ghgs, 3
+        ),
         Criterion.UNMET_ENERGY_FRACTION: round(
             technical_appraisal.unmet_energy_fraction, 3
         ),

@@ -470,6 +470,9 @@ def calculate_pvt_output(
         lambda: default_supply_temperature
     )
 
+    logger.info(
+        "Beggining hourly %s PV-T performance calculation.", resource_type.value
+    )
     for index in tqdm(
         range(start_hour, end_hour),
         desc=f"{resource_type.value.replace('_', ' ')} pv-t performance",
@@ -631,6 +634,8 @@ def calculate_pvt_output(
         tank_temperature_map[index] = tank_temperature
         tank_volume_supplied_map[index] = volume_supplied
 
+    logger.info("Hourly %s PV-T performance calculation complete.", resource_type.value)
+
     # Convert these outputs to dataframes and return.
     pvt_collector_output_temperature: pd.DataFrame = dict_to_dataframe(
         pvt_collector_output_temperature_map, logger
@@ -652,7 +657,8 @@ def calculate_pvt_output(
     #             [
     #                 pvt_collector_output_temperature,
     #                 pvt_electric_power_per_unit,
-    #                 tank_temperature,
+    #                 pvt_pump_times_frame,
+    #                 tank_temperature_frame,
     #                 tank_volume_output_supplied,
     #             ],
     #             axis=1,
@@ -669,15 +675,9 @@ def calculate_pvt_output(
     #     filedata = pd.read_csv(f, header=None, index_col=0)
     #     pvt_collector_output_temperature = pd.DataFrame(filedata[1].values)
     #     pvt_electric_power_per_unit = pd.DataFrame(filedata[2].values)
-    #     tank_temperature = pd.DataFrame(filedata[3].values)
-    #     tank_volume_output_supplied = pd.DataFrame(filedata[4].values)
-
-    #     # Bodge to fix units.
-    #     pvt_electric_power_per_unit = pd.DataFrame(
-    #         pvt_electric_power_per_unit
-    #         * pd.DataFrame(irradiances.values)
-    #         / (minigrid.pvt_panel.reference_efficiency)
-    #     )
+    #     pvt_pump_times_frame = pd.DataFrame(filedata[3].values)
+    #     tank_temperature_frame = pd.DataFrame(filedata[4].values)
+    #     tank_volume_output_supplied = pd.DataFrame(filedata[5].values)
 
     return (
         pvt_collector_output_temperature,
