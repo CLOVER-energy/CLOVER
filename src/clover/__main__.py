@@ -104,6 +104,13 @@ CLOVER_HEADER_STRING = """
 
 """
 
+# Debug string:
+#   Text to display when debug mode is selected.
+DEBUG_STRING: str = """{okblue}                        CLOVER is running in debug mode.
+          For more information on debug mode, consult the user guide.
+    If you did not intend to use debug mode, re-run without the debug flag.
+{endc}"""
+
 # Logger name:
 #   The name to use for the main logger for CLOVER
 LOGGER_NAME = "clover"
@@ -381,7 +388,7 @@ def main(args: List[Any]) -> None:
     parsed_args = argparser.parse_args(args)
     logger = get_logger(
         f"{parsed_args.location}_{LOGGER_NAME}",
-        parsed_args.verbose or parsed_args.debug,
+        parsed_args.verbose,
     )
     logger.info("CLOVER run initiated. Options specified: %s", " ".join(args))
 
@@ -414,6 +421,9 @@ def main(args: List[Any]) -> None:
             )
         )
     )
+
+    if parsed_args.debug:
+        print(DEBUG_STRING.format(okblue=BColours.okblue, endc=BColours.endc))
 
     # Define common variables.
     auto_generated_files_directory = os.path.join(
@@ -666,7 +676,7 @@ def main(args: List[Any]) -> None:
             f"{parsed_args.location}_{wind.WIND_LOGGER_NAME}",
             parsed_args.refetch,
             num_ninjas,
-            parsed_args.verbose or parsed_args.debug,
+            parsed_args.verbose,
         )
         if wind_data_thread is None:
             raise InternalError("Wind data thread failed to successfully instantiate.")
@@ -691,7 +701,7 @@ def main(args: List[Any]) -> None:
             f"{parsed_args.location}_{weather.WEATHER_LOGGER_NAME}",
             parsed_args.refetch,
             num_ninjas,
-            parsed_args.verbose or parsed_args.debug,
+            parsed_args.verbose,
         )
         if weather_data_thread is None:
             raise InternalError(
@@ -717,7 +727,7 @@ def main(args: List[Any]) -> None:
         parsed_args.refetch,
         minigrid.pv_panel,
         num_ninjas,
-        parsed_args.verbose or parsed_args.debug,
+        parsed_args.verbose,
     )
     solar_data_thread.start()
     logger.info(

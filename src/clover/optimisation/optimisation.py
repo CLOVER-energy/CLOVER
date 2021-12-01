@@ -35,6 +35,7 @@ import datetime
 from logging import Logger
 from typing import Any, Dict, List, Optional, Tuple, Union
 
+import json
 import numpy as np  # pylint: disable=import-error
 import pandas as pd  # pylint: disable=import-error
 
@@ -507,6 +508,17 @@ def _simulation_iteration(
 
     # Increase system size until largest system is sufficient (if necessary)
     while get_sufficient_appraisals(optimisation, [largest_system_appraisal]) == []:
+        logger.info(
+            "The largest system was found to be insufficient. Threshold criteria: %s",
+            json.dumps(
+                {
+                    str(key): value
+                    for key, value in largest_system_appraisal.criteria.items()
+                },
+                indent=4,
+            ),
+        )
+
         # Round out the various variables.
         cw_pvt_size_max = float(
             np.ceil(cw_pvt_size_max / cw_pvt_system_size.step) * cw_pvt_system_size.step
@@ -518,12 +530,22 @@ def _simulation_iteration(
         storage_size_max = float(
             np.ceil(storage_size_max / storage_sizes.step) * storage_sizes.step
         )
+
         logger.info(
-            "Probing system upper bounds: pv_size: %s, storage_size: %s%s",
+            "Probing system upper bounds: pv_size: %s, storage_size: %s%s%s%s%s",
             pv_size_max,
             storage_size_max,
+            f", clean-water PV-T size: {cw_pvt_size_max}"
+            if scenario.desalination_scenario is not None and scenario.pv_t
+            else "",
             f", num clean-water tanks: {cw_tanks_max}"
             if scenario.desalination_scenario is not None
+            else "",
+            f", hot-water PV-T size: {hw_pvt_size_max}"
+            if scenario.hot_water_scenario is not None and scenario.pv_t
+            else "",
+            f", num hot-water tanks: {hw_tanks_max}"
+            if scenario.hot_water_scenario is not None
             else "",
         )
 
@@ -570,29 +592,43 @@ def _simulation_iteration(
                     BColours.fail, BColours.endc
                 )
             )
-        logger.info(
-            "System was found to be insufficient. Threshold criteria: %s",
-            {
-                str(key): value
-                for key, value in largest_system_appraisal.criteria.items()
-            },
-        )
 
         # Increment the system sizes.
-        cw_pvt_size_max += cw_pvt_system_size.step
-        cw_tanks_max += cw_tanks.step
-        hw_pvt_size_max += hw_pvt_system_size.step
-        hw_tanks_max += hw_tanks.step
+        cw_pvt_size_max += (
+            cw_pvt_system_size.step
+            if scenario.desalination_scenario is not None and scenario.pv_t
+            else 0
+        )
+        cw_tanks_max += (
+            cw_tanks.step if scenario.desalination_scenario is not None else 0
+        )
+        hw_pvt_size_max += (
+            hw_pvt_system_size.step
+            if scenario.hot_water_scenario is not None and scenario.pv_t
+            else 0
+        )
+        hw_tanks_max += hw_tanks.step if scenario.hot_water_scenario is not None else 0
         max_convertor_sizes = {
             convertor: max_convertor_sizes[convertor] + size.step
             for convertor, size in convertor_sizes.items()
         }
-        pv_size_max += pv_sizes.step
-        storage_size_max += storage_sizes.step
+        pv_size_max += pv_sizes.step if scenario.pv else 0
+        storage_size_max += storage_sizes.step if scenario.battery else 0
 
+    # Output that the search for the largest suitable system was successful.
     tqdm.write(
         "Determining largest suitable system {}    {}".format("." * 27, DONE),
         end="\n",
+    )
+    logger.info(
+        "System was found to be sufficient. Threshold criteria: %s",
+        json.dumps(
+            {
+                str(key): value
+                for key, value in largest_system_appraisal.criteria.items()
+            },
+            indent=4,
+        ),
     )
     system_appraisals.append(largest_system_appraisal)
 
@@ -701,7 +737,7 @@ def _simulation_iteration(
     if len(simulation_cw_pvt_system_size) > 1:
         parameter_space.append(
             (
-                ImpactingComponent.CLEAN_WATER_PVT,
+                RenewableEnergySource.CLEAN_WATER_PVT,
                 "simulation" if len(parameter_space) == 0 else "cw pv-t size",
                 simulation_cw_pvt_system_size,
             )
@@ -721,7 +757,7 @@ def _simulation_iteration(
             )
         )
     else:
-        component_sizes[ImpactingComponent.HOT_WATER_TANK] = simulation_cw_tanks[0]
+        component_sizes[ImpactingComponent.HOT_WATER_TANK] = simulation_hw_tanks[0]
 
     # Add the iterable hot-water PV-T sizes if appropriate.
     if len(simulation_hw_pvt_system_size) > 1:
@@ -735,7 +771,7 @@ def _simulation_iteration(
     else:
         component_sizes[
             RenewableEnergySource.HOT_WATER_PVT
-        ] = simulation_cw_pvt_system_size[0]
+        ] = simulation_hw_pvt_system_size[0]
 
     # Add the iterable PV sizes if appropriate.
     if len(simulation_pv_sizes) > 1:
@@ -1121,7 +1157,7 @@ def multiple_optimisation_step(
                 )
             )
         logger.info(
-            "No hot-water PV-T sizes passed in, using default optimisation parameters."
+            "No clean-water PV-T sizes passed in, using default optimisation parameters."
         )
         input_cw_pvt_system_size = SolarSystemSize(
             optimisation_parameters.cw_pvt_size.max,

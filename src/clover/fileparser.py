@@ -975,9 +975,6 @@ def _parse_pvt_reduced_models(
     Parses the PV-T models from the installed package or raw files.
 
     Inputs:
-        - debug:
-            Whether to use the PV-T reduced models (False) or invented data for
-            debugging purposes (True).
         - logger:
             The :class:`logging.Logger` to use for the run.
         - scenario:
@@ -1334,7 +1331,11 @@ def _parse_solar_inputs(
         if panel_input["type"] == solar.SolarPanelType.PV_T.value:
             solar_panels.append(
                 solar.HybridPVTPanel(
-                    electric_model, logger, panel_input, solar_panels, thermal_model
+                    electric_model,
+                    logger,
+                    panel_input,
+                    solar_panels,
+                    thermal_model,
                 )
             )
 

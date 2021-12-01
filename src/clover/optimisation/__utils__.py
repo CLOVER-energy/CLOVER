@@ -983,6 +983,14 @@ def recursive_iteration(
 
         # Store the new appraisal if it is sufficient.
         logger.info("Sufficient system found, storing.")
+        for appraisal in sufficient_appraisals:
+            logger.debug(
+                "Threshold criteria: %s",
+                json.dumps(
+                    {str(key): value for key, value in appraisal.criteria.items()},
+                    indent=4,
+                ),
+            )
         system_appraisals.extend(sufficient_appraisals)
 
     # Return the sufficient appraisals that were found at this resolution.
