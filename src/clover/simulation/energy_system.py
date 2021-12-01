@@ -387,6 +387,7 @@ def _calculate_renewable_cw_profiles(
 
     if scenario.desalination_scenario is not None:
         # Determine the list of available feedwater sources.
+        logger.info("Determining available feedwater sources.")
         feedwater_sources: List[Convertor] = sorted(
             [
                 convertor
@@ -395,10 +396,15 @@ def _calculate_renewable_cw_profiles(
                 and convertor.output_resource_type == ResourceType.UNCLEAN_WATER
             ]
         )
+        logger.debug(
+            "Available feedwater sources determined: %s",
+            ", ".join([str(source) for source in feedwater_sources]) if len(feedwater_sources) > 0 else "",
+        )
     else:
         feedwater_sources = []
 
     if scenario.pv_t and scenario.desalination_scenario is not None:
+        logger.info("Calculating clean-water PV-T performance profiles.")
         if wind_speed_data is None:
             raise InternalError(
                 "Wind speed data required in PV-T computation and not passed to the "
@@ -597,8 +603,10 @@ def _calculate_renewable_cw_profiles(
         thermal_desalination_electric_power_consumed = (
             thermal_desalination_electric_power_consumed.reset_index(drop=True)
         )
+        logger.info("Clean-water PV-T performance profiles determined.")
 
     else:
+        logger.info("Skipping clean-water PV-T performance-profile calculation.")
         buffer_tank_temperature = None
         buffer_tank_volume_supplied = pd.DataFrame([0] * (end_hour - start_hour))
         clean_water_pvt_collector_output_temperature = None
@@ -698,6 +706,7 @@ def _calculate_renewable_hw_profiles(
     """
 
     if scenario.pv_t and scenario.hot_water_scenario is not None:
+        logger.info("Calculating hot-water PV-T performance profiles.")
         if wind_speed_data is None:
             raise InternalError(
                 "Wind speed data required in PV-T computation and not passed to the "
@@ -885,8 +894,10 @@ def _calculate_renewable_hw_profiles(
             drop=True
         )
         renewable_hw_fraction = renewable_hw_fraction.reset_index(drop=True)
+        logger.info("Hot-water PV-T performance profiles determined.")
 
     else:
+        logger.info("Skipping hot-water PV-T performance-profile calculation.")
         auxiliary_heater = None
         hot_water_power_consumed = pd.DataFrame([0] * (end_hour - start_hour))
         hot_water_pvt_collector_output_temperature = None
@@ -1869,7 +1880,6 @@ def run_simulation(
     buffer_tank_volume_supplied: pd.DataFrame
     thermal_desalination_electric_power_consumed: pd.DataFrame
 
-    logger.info("Calculating clean-water PV-T performance profiles.")
     (
         buffer_tank_temperature,
         buffer_tank_volume_supplied,
@@ -1892,7 +1902,6 @@ def run_simulation(
         temperature_data,
         wind_speed_data,
     )
-    logger.info("Clean-water PV-T performance profiles determined.")
     logger.debug(
         "Mean buffer tank temperature: %s",
         np.mean(buffer_tank_temperature.values)
@@ -1976,7 +1985,6 @@ def run_simulation(
     hot_water_tank_volume_supplied: pd.DataFrame
     renewable_hw_fraction: pd.DataFrame
 
-    logger.info("Calculating hot-water PV-T performance profiles.")
     (
         auxiliary_heater,
         hot_water_power_consumed,
@@ -1999,7 +2007,6 @@ def run_simulation(
         temperature_data,
         wind_speed_data,
     )
-    logger.info("Hot-water PV-T performance profiles determined.")
     logger.debug(
         "Mean hot-water tank temperature: %s",
         np.mean(hot_water_tank_temperature.values)
