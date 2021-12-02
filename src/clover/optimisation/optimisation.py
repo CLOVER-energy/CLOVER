@@ -119,6 +119,7 @@ def _find_optimum_system(
     grid_profile: pd.DataFrame,
     irradiance_data: pd.Series,
     kerosene_usage: pd.DataFrame,
+    largest_convertor_sizes: Dict[Convertor, ConvertorSize],
     largest_cw_pvt_system_size: SolarSystemSize,
     largest_cw_tank_size: TankSize,
     largest_hw_pvt_system_size: SolarSystemSize,
@@ -149,6 +150,8 @@ def _find_optimum_system(
     Inputs:
         - end_year:
             The end year of the simulation run currently being considered.
+        - largest_convertor_sizes:
+            The maximum size of each convertor that was installed.
         - largest_cw_pvt_system_size:
             The maximum size of clean-water PV-T system installed.
         - largest_cw_tank_size:
@@ -195,7 +198,12 @@ def _find_optimum_system(
     ):
         # Check if optimum system was the largest system simulated
         while (
-            (
+            any(
+                optimum_system.system_details.initial_convertor_sizes[convertor.name]
+                == sizes.max
+                for convertor, sizes in largest_convertor_sizes
+            )
+            or (
                 optimum_system.system_details.initial_cw_pvt_size
                 == largest_cw_pvt_system_size.max
                 and scenario.desalination_scenario is not None
@@ -239,6 +247,7 @@ def _find_optimum_system(
                 new_system_appraisals,
             ) = single_line_simulation(
                 conventional_cw_source_profiles,
+                largest_convertor_sizes,
                 largest_cw_pvt_system_size,
                 largest_cw_tank_size,
                 convertors,
@@ -433,13 +442,24 @@ def _simulation_iteration(
         ),
         end="\n",
     )
+
+    # Determine the maximum sizes of each convertor defined.
     max_convertor_sizes: Dict[Convertor, int] = {
         convertor: size.max for convertor, size in convertor_sizes.items()
     }
+
+    # Append convertors defined elsewhere.
+    static_convertor_sizes: Dict[Convertor, int] = {
+        convertor: convertors.count(convertor)
+        for convertor in convertors
+        if convertor not in max_convertor_sizes
+    }
+    simulation_convertor_sizes = {**max_convertor_sizes, **static_convertor_sizes}
+
     _, simulation_results, system_details = energy_system.run_simulation(
         cw_pvt_system_size.max,
         conventional_cw_source_profiles,
-        convertors_from_sizing(max_convertor_sizes),
+        convertors_from_sizing(simulation_convertor_sizes),
         storage_sizes.max,
         grid_profile,
         hw_pvt_system_size.max,
@@ -506,7 +526,7 @@ def _simulation_iteration(
         )
 
         logger.info(
-            "Probing system upper bounds: pv_size: %s, storage_size: %s%s%s%s%s",
+            "Probing system upper bounds: pv_size: %s, storage_size: %s%s%s%s%s%s",
             pv_size_max,
             storage_size_max,
             f", clean-water PV-T size: {cw_pvt_size_max}"
@@ -521,6 +541,10 @@ def _simulation_iteration(
             f", num hot-water tanks: {hw_tanks_max}"
             if scenario.hot_water_scenario is not None
             else "",
+            ", ".join(
+                [f"{convertor.name} size: {size}"]
+                for convertor, size in max_convertor_sizes.items()
+            ),
         )
 
         # Run a simulation and appraise it.
@@ -586,6 +610,7 @@ def _simulation_iteration(
             convertor: max_convertor_sizes[convertor] + size.step
             for convertor, size in convertor_sizes.items()
         }
+        simulation_convertor_sizes = {**max_convertor_sizes, **static_convertor_sizes}
         pv_size_max += pv_sizes.step if scenario.pv else 0
         storage_size_max += storage_sizes.step if scenario.battery else 0
 
@@ -748,6 +773,10 @@ def _simulation_iteration(
         else:
             component_sizes[convertor] = simulation_convertor_sizes[0]
 
+    # Add the static convertor sizes.
+    for convertor, size in static_convertor_sizes.items():
+        component_sizes[convertor] = size
+
     # Add the iterable hot-water tank sizes if appropriate.
     if len(simulation_hw_tanks) > 1:
         parameter_space.append(
@@ -764,9 +793,9 @@ def _simulation_iteration(
     if len(simulation_hw_pvt_system_size) > 1:
         parameter_space.append(
             (
-                ImpactingComponent.HOT_WATER_PVT,
+                RenewableEnergySource.HOT_WATER_PVT,
                 "simulation" if len(parameter_space) == 0 else "hw pv-t size",
-                simulation_cw_pvt_system_size,
+                simulation_hw_pvt_system_size,
             )
         )
     else:
@@ -830,7 +859,7 @@ def _simulation_iteration(
         end_year,
         {
             convertor: ConvertorSize(size.max, size.min, size.step)
-            for convertor, size in convertor_sizes.items()
+            for convertor, size in max_convertor_sizes.items()
         },
         SolarSystemSize(
             cw_pvt_size_max, cw_pvt_system_size.min, cw_pvt_system_size.step
@@ -999,6 +1028,7 @@ def _optimisation_step(
         grid_profile,
         irradiance_data,
         kerosene_usage,
+        convertor_sizes,
         cw_tanks,
         cw_pvt_system_size,
         hw_tanks,

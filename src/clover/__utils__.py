@@ -2024,6 +2024,10 @@ class SystemDetails:
     .. attribute:: end_year
         The end year of the simulation.
 
+    .. attribute:: final_convertor_sizes:
+        A mapping between the name of the various convertors associated with the system
+        and the final size of each that remained at the end of the simiulation.
+
     .. attribute:: final_cw_pvt_size
         The final clean-water pv-t size of the system.
 
@@ -2044,6 +2048,10 @@ class SystemDetails:
 
     .. attribute:: final_storage_size
         The final storage size of the system.
+
+    .. attribute:: initial_convertor_sizes:
+        A mapping between the name of the various convertors associated with the system
+        and the initial size of each that was installed.
 
     .. attribute:: initial_cw_pvt_size
         The initial clean-water pv-t size of the system.
@@ -2080,6 +2088,7 @@ class SystemDetails:
 
     diesel_capacity: float = 0
     end_year: int = 0
+    final_convertor_sizes: Optional[Dict[str, float]] = 0
     final_cw_pvt_size: Optional[float] = 0
     final_hw_pvt_size: Optional[float] = 0
     final_num_buffer_tanks: Optional[int] = 0
@@ -2087,6 +2096,7 @@ class SystemDetails:
     final_num_hot_water_tanks: Optional[int] = 0
     final_pv_size: float = 0
     final_storage_size: float = 0
+    initial_convertor_sizes: Optional[Dict[str, float]] = 0
     initial_cw_pvt_size: Optional[float] = 0
     initial_hw_pvt_size: Optional[float] = 0
     initial_num_buffer_tanks: Optional[int] = 0
@@ -2121,6 +2131,20 @@ class SystemDetails:
             "start_year": round(self.start_year, 3),
         }
 
+        if self.initial_convertor_sizes is not None:
+            system_details_as_dict.update(
+                {
+                    f"intial_num_{key}": value
+                    for key, value in self.initial_convertor_sizes.items()
+                }
+            )
+        if self.final_convertor_sizes is not None:
+            system_details_as_dict.update(
+                {
+                    f"intial_num_{key}": value
+                    for key, value in self.final_convertor_sizes.items()
+                }
+            )
         if self.initial_num_buffer_tanks is not None:
             system_details_as_dict["initial_num_buffer_tanks"] = round(
                 self.initial_num_buffer_tanks, 3
