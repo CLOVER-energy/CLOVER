@@ -41,6 +41,7 @@ from ..conversion.conversion import Convertor, WaterSource
 from ..impact.__utils__ import ImpactingComponent  # pylint: disable=import-error
 
 from .__utils__ import (
+    ConvertorSize,
     Optimisation,
     get_sufficient_appraisals,
     recursive_iteration,
@@ -48,6 +49,7 @@ from .__utils__ import (
     StorageSystemSize,
     TankSize,
 )
+from .appraisal import appraise_system
 
 
 __all__ = ("single_line_simulation",)
@@ -55,6 +57,7 @@ __all__ = ("single_line_simulation",)
 
 def single_line_simulation(
     conventional_cw_source_profiles: Dict[WaterSource, pd.DataFrame],
+    convertor_sizes: Dict[Convertor, ConvertorSize],
     cw_pvt_size: SolarSystemSize,
     cw_tanks: TankSize,
     convertors: List[Convertor],
@@ -82,6 +85,7 @@ def single_line_simulation(
     wind_speed_data: Optional[pd.Series],
     yearly_electric_load_statistics: pd.DataFrame,
 ) -> Tuple[
+    Dict[Convertor, ConvertorSize],
     SolarSystemSize,
     TankSize,
     SolarSystemSize,
@@ -98,6 +102,8 @@ def single_line_simulation(
     additional simulation(s).
 
     Inputs:
+        - convertor_sizes:
+            The largest size of each convertor that was simulated.
         - cw_pvt_size:
             The largest clean-water PV-T size that was simulated.
         - cw_pvt_size:
@@ -137,6 +143,13 @@ def single_line_simulation(
     logger.info("Single-line optimisation to be carried out.")
     system_appraisals: List[SystemAppraisal] = []
 
+    _convertor_name_to_convertor_mapping = {
+        convertor.name: convertor for convertor in convertor_sizes
+    }
+    potential_convertor_sizes = {
+        _convertor_name_to_convertor_mapping[name]: value
+        for name, value in potential_system.system_details.initial_convertor_sizes.items()
+    }
     potential_cw_pvt_size = (
         potential_system.system_details.initial_cw_pvt_size
         if potential_system.system_details.initial_cw_pvt_size is not None
@@ -157,6 +170,14 @@ def single_line_simulation(
         if potential_system.system_details.initial_num_hot_water_tanks is not None
         else 0
     )
+
+    # Determine the static convertors based on those that were modelled but were not
+    # passed in as part of the maximum system size parameters.
+    static_convertor_sizes: Dict[Convertor, int] = {
+        convertor: potential_convertor_sizes.count(convertor)
+        for convertor in potential_convertor_sizes
+        if convertor not in convertor_sizes
+    }
 
     # Check to see if storage size was an integer number of steps, and increase
     # accordingly.
@@ -201,7 +222,9 @@ def single_line_simulation(
         )
 
         # Prep variables for the iteration process.
-        component_sizes: Dict[Union[Convertor, ImpactingComponent, RenewableEnergySource]] = {
+        component_sizes: Dict[
+            Union[Convertor, ImpactingComponent, RenewableEnergySource]
+        ] = {
             ImpactingComponent.CLEAN_WATER_TANK: potential_num_clean_water_tanks,
             ImpactingComponent.HOT_WATER_TANK: potential_num_hot_water_tanks,
             ImpactingComponent.STORAGE: int(storage_size.max + storage_size.step),
@@ -213,6 +236,35 @@ def single_line_simulation(
                 Union[List[int], List[float]],
             ]
         ] = []
+
+        # Add the iterable convertor sizes.
+        for convertor, sizes in convertor_sizes.items():
+            # Construct the list of available sizes for the given convertor.
+            simulation_convertor_sizes: List[int] = sorted(
+                range(
+                    int(sizes.min),
+                    int(np.ceil(sizes.max + sizes.step)),
+                    int(sizes.step),
+                ),
+                reverse=True,
+            )
+
+            if len(simulation_convertor_sizes) > 1:
+                parameter_space.append(
+                    (
+                        convertor,
+                        "simulation"
+                        if len(parameter_space) == 0
+                        else f"{convertor.name} size",
+                        simulation_convertor_sizes,
+                    )
+                )
+            else:
+                component_sizes[convertor] = simulation_convertor_sizes[0]
+
+        # Add the static convertor sizes.
+        for convertor, size in static_convertor_sizes.items():
+            component_sizes[convertor] = size
 
         if len(increased_cw_pvt_system_sizes) <= 1:
             component_sizes[
@@ -252,7 +304,6 @@ def single_line_simulation(
         system_appraisals.extend(
             recursive_iteration(
                 conventional_cw_source_profiles,
-                convertors,
                 end_year,
                 finance_inputs,
                 ghg_inputs,
@@ -361,18 +412,41 @@ def single_line_simulation(
         )
 
         # Prep variables for the iteration process.
-        component_sizes: Dict[Union[Convertor, ImpactingComponent, RenewableEnergySource]] = {
+        component_sizes = {
             ImpactingComponent.CLEAN_WATER_TANK: int(cw_tanks.max + cw_tanks.step),
             RenewableEnergySource.HOT_WATER_PVT: potential_hw_pvt_size,
             ImpactingComponent.HOT_WATER_TANK: potential_num_hot_water_tanks,
         }
-        parameter_space: List[
-            Tuple[
-                Union[Convertor, ImpactingComponent, RenewableEnergySource],
-                str,
-                Union[List[int], List[float]],
-            ]
-        ] = []
+        parameter_space = []
+
+        # Add the iterable convertor sizes.
+        for convertor, sizes in convertor_sizes.items():
+            # Construct the list of available sizes for the given convertor.
+            simulation_convertor_sizes: List[int] = sorted(
+                range(
+                    int(sizes.min),
+                    int(np.ceil(sizes.max + sizes.step)),
+                    int(sizes.step),
+                ),
+                reverse=True,
+            )
+
+            if len(simulation_convertor_sizes) > 1:
+                parameter_space.append(
+                    (
+                        convertor,
+                        "simulation"
+                        if len(parameter_space) == 0
+                        else f"{convertor.name} size",
+                        simulation_convertor_sizes,
+                    )
+                )
+            else:
+                component_sizes[convertor] = simulation_convertor_sizes[0]
+
+        # Add the static convertor sizes.
+        for convertor, size in static_convertor_sizes.items():
+            component_sizes[convertor] = size
 
         if len(increased_cw_pvt_system_sizes) <= 1:
             component_sizes[
@@ -473,18 +547,41 @@ def single_line_simulation(
         )
 
         # Prep variables for the iteration process.
-        component_sizes: Dict[Union[Convertor, ImpactingComponent, RenewableEnergySource]] = {
+        component_sizes = {
             RenewableEnergySource.CLEAN_WATER_PVT: potential_cw_pvt_size,
             ImpactingComponent.CLEAN_WATER_TANK: int(cw_tanks.max + cw_tanks.step),
             ImpactingComponent.HOT_WATER_TANK: potential_num_hot_water_tanks,
         }
-        parameter_space: List[
-            Tuple[
-                Union[Convertor, ImpactingComponent, RenewableEnergySource],
-                str,
-                Union[List[int], List[float]],
-            ]
-        ] = []
+        parameter_space = []
+
+        # Add the iterable convertor sizes.
+        for convertor, sizes in convertor_sizes.items():
+            # Construct the list of available sizes for the given convertor.
+            simulation_convertor_sizes: List[int] = sorted(
+                range(
+                    int(sizes.min),
+                    int(np.ceil(sizes.max + sizes.step)),
+                    int(sizes.step),
+                ),
+                reverse=True,
+            )
+
+            if len(simulation_convertor_sizes) > 1:
+                parameter_space.append(
+                    (
+                        convertor,
+                        "simulation"
+                        if len(parameter_space) == 0
+                        else f"{convertor.name} size",
+                        simulation_convertor_sizes,
+                    )
+                )
+            else:
+                component_sizes[convertor] = simulation_convertor_sizes[0]
+
+        # Add the static convertor sizes.
+        for convertor, size in static_convertor_sizes.items():
+            component_sizes[convertor] = size
 
         if len(increased_hw_pvt_system_sizes) <= 1:
             component_sizes[RenewableEnergySource.HOT_WATER_PVT] = potential_hw_pvt_size
@@ -611,6 +708,35 @@ def single_line_simulation(
             RenewableEnergySource.PV: int(pv_system_size.max + pv_system_size.step),
         }
         parameter_space = []
+
+        # Add the iterable convertor sizes.
+        for convertor, sizes in convertor_sizes.items():
+            # Construct the list of available sizes for the given convertor.
+            simulation_convertor_sizes: List[int] = sorted(
+                range(
+                    int(sizes.min),
+                    int(np.ceil(sizes.max + sizes.step)),
+                    int(sizes.step),
+                ),
+                reverse=True,
+            )
+
+            if len(simulation_convertor_sizes) > 1:
+                parameter_space.append(
+                    (
+                        convertor,
+                        "simulation"
+                        if len(parameter_space) == 0
+                        else f"{convertor.name} size",
+                        simulation_convertor_sizes,
+                    )
+                )
+            else:
+                component_sizes[convertor] = simulation_convertor_sizes[0]
+
+        # Add the static convertor sizes.
+        for convertor, size in static_convertor_sizes.items():
+            component_sizes[convertor] = size
 
         if len(increased_cw_pvt_system_sizes) <= 1:
             component_sizes[
@@ -767,6 +893,35 @@ def single_line_simulation(
         }
         parameter_space = []
 
+        # Add the iterable convertor sizes.
+        for convertor, sizes in convertor_sizes.items():
+            # Construct the list of available sizes for the given convertor.
+            simulation_convertor_sizes: List[int] = sorted(
+                range(
+                    int(sizes.min),
+                    int(np.ceil(sizes.max + sizes.step)),
+                    int(sizes.step),
+                ),
+                reverse=True,
+            )
+
+            if len(simulation_convertor_sizes) > 1:
+                parameter_space.append(
+                    (
+                        convertor,
+                        "simulation"
+                        if len(parameter_space) == 0
+                        else f"{convertor.name} size",
+                        simulation_convertor_sizes,
+                    )
+                )
+            else:
+                component_sizes[convertor] = simulation_convertor_sizes[0]
+
+        # Add the static convertor sizes.
+        for convertor, size in static_convertor_sizes.items():
+            component_sizes[convertor] = size
+
         if len(increased_cw_tank_sizes) <= 1:
             component_sizes[
                 ImpactingComponent.CLEAN_WATER_TANK
@@ -921,6 +1076,35 @@ def single_line_simulation(
             )
         }
         parameter_space = []
+
+        # Add the iterable convertor sizes.
+        for convertor, sizes in convertor_sizes.items():
+            # Construct the list of available sizes for the given convertor.
+            simulation_convertor_sizes: List[int] = sorted(
+                range(
+                    int(sizes.min),
+                    int(np.ceil(sizes.max + sizes.step)),
+                    int(sizes.step),
+                ),
+                reverse=True,
+            )
+
+            if len(simulation_convertor_sizes) > 1:
+                parameter_space.append(
+                    (
+                        convertor,
+                        "simulation"
+                        if len(parameter_space) == 0
+                        else f"{convertor.name} size",
+                        simulation_convertor_sizes,
+                    )
+                )
+            else:
+                component_sizes[convertor] = simulation_convertor_sizes[0]
+
+        # Add the static convertor sizes.
+        for convertor, size in static_convertor_sizes.items():
+            component_sizes[convertor] = size
 
         if len(increased_cw_pvt_system_sizes) <= 1:
             component_sizes[

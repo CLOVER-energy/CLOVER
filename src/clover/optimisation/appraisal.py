@@ -565,6 +565,10 @@ def appraise_system(
             TechnicalAppraisal(),
         )
 
+    import pdb
+
+    pdb.set_trace(header="Broken in appraisal function.")
+
     # Compute the additions made to the system.
     buffer_tank_addition: int = (
         system_details.initial_num_buffer_tanks

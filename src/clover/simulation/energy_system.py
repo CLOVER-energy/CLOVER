@@ -2615,6 +2615,7 @@ def run_simulation(
     system_details = SystemDetails(
         diesel_capacity,
         simulation.end_year,
+        {convertor.name: convertors.count(convertor) for convertor in convertors},
         clean_water_pvt_size
         * float(
             solar_degradation(minigrid.pvt_panel.lifetime, location.max_years).iloc[
@@ -2645,6 +2646,7 @@ def run_simulation(
             * minigrid.battery.storage_unit
             * np.min(battery_health_frame[ColumnHeader.BATTERY_HEALTH.value])
         ),
+        {convertor.name: convertors.count(convertor) for convertor in convertors},
         clean_water_pvt_size
         if minigrid.pvt_panel is not None and scenario.desalination_scenario is not None
         else None,
