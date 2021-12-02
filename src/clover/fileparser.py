@@ -408,7 +408,7 @@ def _parse_battery_inputs(
                 for entry in battery_inputs
                 if entry[NAME] == energy_system_inputs[BATTERY]
             ][0]
-        except IndexError:
+        except (KeyError, IndexError):
             logger.error("Failed to determine battery cost information.")
             raise
         else:
@@ -419,7 +419,7 @@ def _parse_battery_inputs(
                 for entry in battery_inputs
                 if entry[NAME] == energy_system_inputs[BATTERY]
             ][0]
-        except IndexError:
+        except (KeyError, IndexError):
             logger.error("Failed to determine battery emission information.")
             raise
         else:
@@ -482,7 +482,12 @@ def _parse_conventional_water_source_inputs(
 def _parse_conversion_inputs(
     inputs_directory_relative_path: str,
     logger: Logger,
-) -> Tuple[str, Dict[str, Convertor]]:
+) -> Tuple[
+    str,
+    Dict[Convertor, Dict[str, float]],
+    Dict[Convertor, Dict[str, float]],
+    Dict[str, Convertor],
+]:
     """
     Parses the conversion inputs file.
 
@@ -493,9 +498,17 @@ def _parse_conversion_inputs(
             The :class:`logging.Logger` to use for the run.
 
     Outputs:
-        - The conversion inputs relative path;
-        - A `dict` mapping convertor names (`str`) to :class:`conversion.Convertor`
-          instances based on the input information provided.
+        - conversion_inputs_filepath:
+            The conversion inputs relative path;
+        - convertor_costs:
+            A `dict` mapping :class:`conversion.Convertor` instances to their associated
+            costs.
+        - convertor_emissions:
+            A `dict` mapping :class:`conversion.Convertor` instances to their associated
+            emissions.
+        - convertors:
+            A `dict` mapping convertor names (`str`) to :class:`conversion.Convertor`
+            instances based on the input information provided.
 
     """
 
@@ -503,6 +516,9 @@ def _parse_conversion_inputs(
     conversion_file_relative_path = os.path.join(
         inputs_directory_relative_path, CONVERSION_INPUTS_FILE
     )
+
+    convertor_costs: Dict[Convertor, Dict[str, float]] = {}
+    convertor_emissions: Dict[Convertor, Dict[str, float]] = {}
 
     # If the file exists, parse the convertors contained.
     if os.path.isfile(conversion_file_relative_path):
@@ -563,6 +579,43 @@ def _parse_conversion_inputs(
                 convertor.name: convertor for convertor in parsed_convertors
             }
 
+            # Parse the transmission impact information.
+            for convertor in convertors.values():
+                try:
+                    convertor_costs[convertor] = [
+                        entry[COSTS]
+                        for entry in conversion_inputs
+                        if entry[NAME] == convertor.name
+                    ][0]
+                except (KeyError, IndexError):
+                    logger.error(
+                        "Failed to determine convertor cost information for %s.",
+                        convertor.name,
+                    )
+                    raise
+                else:
+                    logger.info(
+                        "Convertor cost information for %s successfully parsed.",
+                        convertor.name,
+                    )
+                try:
+                    convertor_emissions[convertor] = [
+                        entry[EMISSIONS]
+                        for entry in conversion_inputs
+                        if entry[NAME] == convertor.name
+                    ][0]
+                except (KeyError, IndexError):
+                    logger.error(
+                        "Failed to determine convertor emission information for %s.",
+                        convertor.name,
+                    )
+                    raise
+                else:
+                    logger.info(
+                        "Convertor emission information for %s successfully parsed.",
+                        convertor.name,
+                    )
+
         else:
             convertors = {}
             logger.info("Conversion file empty, continuing with no defined convertors.")
@@ -571,7 +624,12 @@ def _parse_conversion_inputs(
         convertors = {}
         logger.info("No conversion file, skipping convertor parsing.")
 
-    return conversion_file_relative_path, convertors
+    return (
+        conversion_file_relative_path,
+        convertor_costs,
+        convertor_emissions,
+        convertors,
+    )
 
 
 def _parse_diesel_inputs(
@@ -683,7 +741,7 @@ def _parse_diesel_inputs(
             for entry in diesel_inputs[DIESEL_GENERATORS]
             if entry[NAME] == diesel_generator.name
         ][0]
-    except IndexError:
+    except (KeyError, IndexError):
         logger.error("Failed to determine diesel cost information.")
         raise
     else:
@@ -696,7 +754,7 @@ def _parse_diesel_inputs(
             for entry in diesel_inputs[DIESEL_GENERATORS]
             if entry[NAME] == diesel_generator.name
         ][0]
-    except IndexError:
+    except (KeyError, IndexError):
         logger.error("Failed to determine diesel emission information.")
         raise
     else:
@@ -765,7 +823,7 @@ def _parse_diesel_inputs(
                 for entry in diesel_inputs[DIESEL_WATER_HEATERS]
                 if entry[NAME] == diesel_water_heater.name
             ][0]
-        except IndexError:
+        except (KeyError, IndexError):
             logger.error(
                 "%sFailed to determine diesel water-heater cost information.%s",
                 BColours.fail,
@@ -782,7 +840,7 @@ def _parse_diesel_inputs(
                 for entry in diesel_inputs[DIESEL_WATER_HEATERS]
                 if entry[NAME] == diesel_water_heater.name
             ][0]
-        except IndexError:
+        except (KeyError, IndexError):
             logger.error(
                 "%sFailed to determine diesel water-heater emission information.%s",
                 BColours.fail,
@@ -937,7 +995,7 @@ def _parse_exchanger_inputs(
                 for entry in exchanger_inputs[EXCHANGERS]
                 if entry[NAME] == energy_system_inputs[EXCHANGER]
             ][0]
-        except IndexError:
+        except (KeyError, IndexError):
             logger.error("Failed to determine exchanger cost information.")
             raise
         else:
@@ -948,7 +1006,7 @@ def _parse_exchanger_inputs(
                 for entry in exchanger_inputs[EXCHANGERS]
                 if entry[NAME] == energy_system_inputs[EXCHANGER]
             ][0]
-        except IndexError:
+        except (KeyError, IndexError):
             logger.error("Failed to determine exchanger emission information.")
             raise
         else:
@@ -1374,7 +1432,7 @@ def _parse_solar_inputs(
             for panel_data in solar_generation_inputs["panels"]
             if panel_data[NAME] == pv_panel.name
         ][0]
-    except IndexError:
+    except (KeyError, IndexError):
         logger.error(
             "%sFailed to determine costs for PV panel %s.%s",
             BColours.fail,
@@ -1392,7 +1450,7 @@ def _parse_solar_inputs(
             for panel_data in solar_generation_inputs["panels"]
             if panel_data[NAME] == pv_panel.name
         ][0]
-    except IndexError:
+    except (KeyError, IndexError):
         logger.error(
             "%sFailed to determine emissions for PV panel %s.%s",
             BColours.fail,
@@ -1453,7 +1511,7 @@ def _parse_solar_inputs(
                 for panel_data in solar_generation_inputs["panels"]
                 if panel_data[NAME] == pvt_panel.name
             ][0]
-        except IndexError:
+        except (KeyError, IndexError):
             logger.error(
                 "%sFailed to determine costs for PV-T panel %s.%s",
                 BColours.fail,
@@ -1469,7 +1527,7 @@ def _parse_solar_inputs(
                 for panel_data in solar_generation_inputs["panels"]
                 if panel_data[NAME] == pvt_panel.name
             ][0]
-        except IndexError:
+        except (KeyError, IndexError):
             logger.error(
                 "%sFailed to determine emissions for PV-T panel %s.%s",
                 BColours.fail,
@@ -1555,10 +1613,10 @@ def _parse_tank_inputs(
                 if entry[NAME]
                 == energy_system_inputs[ImpactingComponent.CLEAN_WATER_TANK.value]
             ][0]
-        except IndexError:
+        except (KeyError, IndexError):
             logger.error("Failed to determine clean-water tank cost information.")
             raise
-        except KeyError:
+        except (KeyError, IndexError):
             logger.error(
                 "Failed to determine clean-water tank from the energy-system inputs "
                 "file."
@@ -2057,9 +2115,9 @@ def _parse_transmission_inputs(
             The :class:`logging.Logger` to use for the run.
 
     Outputs:
-        - The transmission inputs relative path;
         - The costs associated with the transmitters;
         - The emissions associated with the transmitters;
+        - The transmission inputs relative path;
         - A `dict` mapping convertor names (`str`) to :class:`transmission.Transmitter`
           instances based on the input information provided.
 
@@ -2123,7 +2181,7 @@ def _parse_transmission_inputs(
                     for entry in transmission_inputs[TRANSMITTERS]
                     if entry[NAME] == transmitter.name
                 ][0]
-            except IndexError:
+            except (KeyError, IndexError):
                 logger.error(
                     "Failed to determine transmitter cost information for %s.",
                     transmitter.name,
@@ -2140,7 +2198,7 @@ def _parse_transmission_inputs(
                     for entry in transmission_inputs[TRANSMITTERS]
                     if entry[NAME] == transmitter.name
                 ][0]
-            except IndexError:
+            except (KeyError, IndexError):
                 logger.error(
                     "Failed to determine transmitter emission information for %s.",
                     transmitter.name,
@@ -2221,7 +2279,12 @@ def parse_input_files(
     )
 
     # Parse the conversion inputs file.
-    conversion_file_relative_path, convertors = _parse_conversion_inputs(
+    (
+        conversion_file_relative_path,
+        convertor_costs,
+        convertor_emissions,
+        convertors,
+    ) = _parse_conversion_inputs(
         inputs_directory_relative_path,
         logger,
     )
@@ -2520,6 +2583,21 @@ def parse_input_files(
         logger.info("PV-T disblaed in scenario file, skipping PV-T impact parsing.")
 
     # Add transmitter impacts.
+    for convertor in available_convertors:
+        logger.info("Updating with %s impact data.", convertor.name)
+        finance_inputs[
+            FINANCE_IMPACT.format(
+                type=ImpactingComponent.CONVERTOR.value, name=convertor.name
+            )
+        ] = convertor_costs[convertor]
+        ghg_data[
+            GHG_IMPACT.format(
+                type=ImpactingComponent.CONVERTOR.value, name=convertor.name
+            )
+        ] = convertor_emissions[convertor]
+        logger.info("Convertor %s impact data successfully updated.", convertor.name)
+
+    # Add transmitter impacts.
     for transmitter in transmitters:
         logger.info("Updating with %s impact data.", transmitter)
         finance_inputs[
@@ -2577,7 +2655,7 @@ def parse_input_files(
                         for entry in conventional_water_source_inputs
                         if entry[NAME] == source.name
                     ][0]
-                except KeyError:
+                except (KeyError, IndexError):
                     logger.error(
                         "%sNo finance inputs for conventional source %s.%s",
                         BColours.fail,
@@ -2609,7 +2687,7 @@ def parse_input_files(
                         for entry in conventional_water_source_inputs
                         if entry[NAME] == source.name
                     ][0]
-                except KeyError:
+                except (KeyError, IndexError):
                     logger.error(
                         "%sNo ghg inputs for conventional source %s.%s",
                         BColours.fail,
