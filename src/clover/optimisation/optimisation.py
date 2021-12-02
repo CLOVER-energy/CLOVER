@@ -59,6 +59,7 @@ from ..impact.finance import ImpactingComponent
 from .appraisal import appraise_system, SystemAppraisal
 from .single_line_simulation import single_line_simulation
 from .__utils__ import (
+    convertors_from_sizing,
     ConvertorSize,
     Criterion,
     CriterionMode,
@@ -73,33 +74,6 @@ from .__utils__ import (
 )
 
 __all__ = ("multiple_optimisation_step",)
-
-
-def _convertors_from_sizing(convertor_sizes: Dict[Convertor, int]) -> List[Convertor]:
-    """
-    Generates a `list` of available convertors based on the number of each available.
-
-    As the system is optimised, it becomes necessary to generate a `list` containing the
-    available convertors, with duplicates allowed to indiciate multiple instances of a
-    single type present, from the various values.
-
-    Inputs:
-        - convertor_sizes:
-            A `dict` mapping :class:`Convertor` instances to the number of each type
-            present during the iteration.
-
-    Outputs:
-        - A `list` of :class:`Convertor` instances present based on the mapping passed
-        in.
-
-    """
-
-    convertors: List[Convertor] = []
-
-    for convertor, size in convertor_sizes.items():
-        convertors.extend([convertor] * size)
-
-    return convertors
 
 
 def _fetch_optimum_system(
@@ -465,7 +439,7 @@ def _simulation_iteration(
     _, simulation_results, system_details = energy_system.run_simulation(
         cw_pvt_system_size.max,
         conventional_cw_source_profiles,
-        _convertors_from_sizing(max_convertor_sizes),
+        convertors_from_sizing(max_convertor_sizes),
         storage_sizes.max,
         grid_profile,
         hw_pvt_system_size.max,
@@ -553,7 +527,7 @@ def _simulation_iteration(
         _, simulation_results, system_details = energy_system.run_simulation(
             cw_pvt_size_max,
             conventional_cw_source_profiles,
-            _convertors_from_sizing(max_convertor_sizes),
+            convertors_from_sizing(max_convertor_sizes),
             storage_size_max,
             grid_profile,
             hw_pvt_size_max,
@@ -666,10 +640,12 @@ def _simulation_iteration(
     )
 
     # Set up the various variables ready for recursive iteration.
-    component_sizes: Dict[Union[ImpactingComponent, RenewableEnergySource], float] = {}
+    component_sizes: Dict[
+        Union[Convertor, ImpactingComponent, RenewableEnergySource], float
+    ] = {}
     parameter_space: List[
         Tuple[
-            Union[ImpactingComponent, RenewableEnergySource],
+            Union[Convertor, ImpactingComponent, RenewableEnergySource],
             str,
             Union[List[float], List[int]],
         ]
@@ -747,6 +723,31 @@ def _simulation_iteration(
             RenewableEnergySource.CLEAN_WATER_PVT
         ] = simulation_cw_pvt_system_size[0]
 
+    # Add the iterable convertor sizes.
+    for convertor, sizes in convertor_sizes.items():
+        # Construct the list of available sizes for the given convertor.
+        simulation_convertor_sizes: List[int] = sorted(
+            range(
+                int(sizes.min),
+                int(max_convertor_sizes[convertor] + sizes.step),
+                int(sizes.step),
+            ),
+            reverse=True,
+        )
+
+        if len(simulation_convertor_sizes) > 1:
+            parameter_space.append(
+                (
+                    convertor,
+                    "simulation"
+                    if len(parameter_space) == 0
+                    else f"{convertor.name} size",
+                    simulation_convertor_sizes,
+                )
+            )
+        else:
+            component_sizes[convertor] = simulation_convertor_sizes[0]
+
     # Add the iterable hot-water tank sizes if appropriate.
     if len(simulation_hw_tanks) > 1:
         parameter_space.append(
@@ -801,7 +802,6 @@ def _simulation_iteration(
     # information.
     _ = recursive_iteration(
         conventional_cw_source_profiles,
-        convertors,
         end_year,
         finance_inputs,
         ghg_inputs,

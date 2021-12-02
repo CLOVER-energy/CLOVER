@@ -56,6 +56,7 @@ from ..impact.__utils__ import ImpactingComponent
 from .appraisal import appraise_system
 
 __all__ = (
+    "convertors_from_sizing",
     "ConvertorSize",
     "CriterionMode",
     "get_sufficient_appraisals",
@@ -80,6 +81,33 @@ CONVERTOR_NAME_STRING: str = "name"
 #   NOTE: The name of the group is not updated automatically in accordance with the
 # above string and needs to be udpated separately.
 CONVERTOR_SIZE_REGEX: Pattern[str] = re.compile(r"(?P<name>.*)_size")
+
+
+def convertors_from_sizing(convertor_sizes: Dict[Convertor, int]) -> List[Convertor]:
+    """
+    Generates a `list` of available convertors based on the number of each available.
+
+    As the system is optimised, it becomes necessary to generate a `list` containing the
+    available convertors, with duplicates allowed to indiciate multiple instances of a
+    single type present, from the various values.
+
+    Inputs:
+        - convertor_sizes:
+            A `dict` mapping :class:`Convertor` instances to the number of each type
+            present during the iteration.
+
+    Outputs:
+        - A `list` of :class:`Convertor` instances present based on the mapping passed
+        in.
+
+    """
+
+    convertors: List[Convertor] = []
+
+    for convertor, size in convertor_sizes.items():
+        convertors.extend([convertor] * size)
+
+    return convertors
 
 
 @dataclasses.dataclass
@@ -810,7 +838,6 @@ def get_sufficient_appraisals(
 
 def recursive_iteration(
     conventional_cw_source_profiles: Dict[WaterSource, pd.DataFrame],
-    convertors: List[Convertor],
     end_year: int,
     finance_inputs: Dict[str, Any],
     ghg_inputs: Dict[str, Any],
@@ -830,10 +857,12 @@ def recursive_iteration(
     wind_speed_data: Optional[pd.Series],
     yearly_electric_load_statistics: pd.DataFrame,
     *,
-    component_sizes: Dict[Union[ImpactingComponent, RenewableEnergySource], float],
+    component_sizes: Dict[
+        Union[Convertor, ImpactingComponent, RenewableEnergySource], float
+    ],
     parameter_space: List[
         Tuple[
-            Union[ImpactingComponent, RenewableEnergySource],
+            Union[Convertor, ImpactingComponent, RenewableEnergySource],
             str,
             Union[List[int], List[float]],
         ]
@@ -860,10 +889,7 @@ def recursive_iteration(
     recursive function will be unaware of whether there exists a recursive layer for
     this parameter or whether the value has been uniquely defined.
 
-    Inputs:
-        - conventional_cw_source_profiles:
-            A mapping between conventional water sources and their availability
-            profiles.
+    Inputs: (NOTE: Only inputs are listed which are utilised within this function.)
         - component_sizes:
             Specific values for the varoius :class:`finance.ImpactingComponent` sizes
             and :class:`RenewableEnergySource` sizes to use for the simulation to be
@@ -892,6 +918,17 @@ def recursive_iteration(
                 [f"{key.value} size={value}" for key, value in component_sizes.items()]
             ),
         )
+
+        # Determine the convertor sizes.
+        convertors = convertors_from_sizing(
+            {
+                key: value
+                for key, value in component_sizes.items()
+                if isinstance(key, Convertor)
+            }
+        )
+
+        # Run the simulation
         (_, simulation_results, system_details,) = energy_system.run_simulation(
             component_sizes[RenewableEnergySource.CLEAN_WATER_PVT],
             conventional_cw_source_profiles,
@@ -949,7 +986,6 @@ def recursive_iteration(
         # Call the function recursively.
         sufficient_appraisals = recursive_iteration(
             conventional_cw_source_profiles,
-            convertors,
             end_year,
             finance_inputs,
             ghg_inputs,
@@ -987,7 +1023,10 @@ def recursive_iteration(
             logger.debug(
                 "Threshold criteria: %s",
                 json.dumps(
-                    {str(key): value for key, value in appraisal.criteria.items()},
+                    {
+                        str(key.value): value
+                        for key, value in appraisal.criteria.items()
+                    },
                     indent=4,
                 ),
             )
