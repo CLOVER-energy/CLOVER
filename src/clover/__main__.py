@@ -425,6 +425,12 @@ def main(args: List[Any]) -> None:
 
     if parsed_args.debug:
         print(DEBUG_STRING.format(okblue=BColours.okblue, endc=BColours.endc))
+        import pdb
+
+        pdb.set_trace(
+            header=f"{BColours.okblue}Debug mode instantiated. Press 'c' to continue, "
+            + f"'q' to quit.{BColours.endc}"
+        )
 
     # Define common variables.
     auto_generated_files_directory = os.path.join(

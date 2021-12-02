@@ -311,6 +311,23 @@ class Convertor:
 
         return list(self.input_resource_consumption.values())[0]
 
+    @property
+    def value(self) -> str:
+        """
+        Used to mimic the behaviour of enums.
+
+        In order to utilise :class:`Convertor` instances in the same way that
+        :class:`enum.Enum` instances are, it is necessary to include a '.value'
+        property.
+
+        Outputs:
+            - A `str` giving the value associated with the :class:`Convertor` instance,
+              i.e., its name.
+
+        """
+
+        return self.name
+
 
 class MultiInputConvertor(Convertor):
     """

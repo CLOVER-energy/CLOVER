@@ -201,14 +201,14 @@ def single_line_simulation(
         )
 
         # Prep variables for the iteration process.
-        component_sizes: Dict[Union[ImpactingComponent, RenewableEnergySource]] = {
+        component_sizes: Dict[Union[Convertor, ImpactingComponent, RenewableEnergySource]] = {
             ImpactingComponent.CLEAN_WATER_TANK: potential_num_clean_water_tanks,
             ImpactingComponent.HOT_WATER_TANK: potential_num_hot_water_tanks,
             ImpactingComponent.STORAGE: int(storage_size.max + storage_size.step),
         }
         parameter_space: List[
             Tuple[
-                Union[ImpactingComponent, RenewableEnergySource],
+                Union[Convertor, ImpactingComponent, RenewableEnergySource],
                 str,
                 Union[List[int], List[float]],
             ]
@@ -361,14 +361,14 @@ def single_line_simulation(
         )
 
         # Prep variables for the iteration process.
-        component_sizes: Dict[Union[ImpactingComponent, RenewableEnergySource]] = {
+        component_sizes: Dict[Union[Convertor, ImpactingComponent, RenewableEnergySource]] = {
             ImpactingComponent.CLEAN_WATER_TANK: int(cw_tanks.max + cw_tanks.step),
             RenewableEnergySource.HOT_WATER_PVT: potential_hw_pvt_size,
             ImpactingComponent.HOT_WATER_TANK: potential_num_hot_water_tanks,
         }
         parameter_space: List[
             Tuple[
-                Union[ImpactingComponent, RenewableEnergySource],
+                Union[Convertor, ImpactingComponent, RenewableEnergySource],
                 str,
                 Union[List[int], List[float]],
             ]
@@ -473,14 +473,14 @@ def single_line_simulation(
         )
 
         # Prep variables for the iteration process.
-        component_sizes: Dict[Union[ImpactingComponent, RenewableEnergySource]] = {
+        component_sizes: Dict[Union[Convertor, ImpactingComponent, RenewableEnergySource]] = {
             RenewableEnergySource.CLEAN_WATER_PVT: potential_cw_pvt_size,
             ImpactingComponent.CLEAN_WATER_TANK: int(cw_tanks.max + cw_tanks.step),
             ImpactingComponent.HOT_WATER_TANK: potential_num_hot_water_tanks,
         }
         parameter_space: List[
             Tuple[
-                Union[ImpactingComponent, RenewableEnergySource],
+                Union[Convertor, ImpactingComponent, RenewableEnergySource],
                 str,
                 Union[List[int], List[float]],
             ]
