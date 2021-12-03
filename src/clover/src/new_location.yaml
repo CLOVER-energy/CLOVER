@@ -270,6 +270,9 @@
                 # License: Open source                                                         #
                 ################################################################################
 
+                # NOTE: Missing finance input data values default to 0.
+                #
+
                 discount_rate: 0.1 # Fraction between 0 and 1.
                 general_o&m: 500 # [$ p.a.]
                 misc:
@@ -304,6 +307,9 @@
                 # Date created: 14/07/2021                                                     #
                 # License: Open source                                                         #
                 ################################################################################
+
+                # NOTE: Missing GHG input data values default to 0.
+                #
 
                 general:
                   o&m: 200 # [kgCO2 p.a.]

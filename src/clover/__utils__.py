@@ -2088,7 +2088,7 @@ class SystemDetails:
 
     diesel_capacity: float = 0
     end_year: int = 0
-    final_convertor_sizes: Optional[Dict[str, float]] = 0
+    final_convertor_sizes: Optional[Dict[str, float]] = None
     final_cw_pvt_size: Optional[float] = 0
     final_hw_pvt_size: Optional[float] = 0
     final_num_buffer_tanks: Optional[int] = 0
@@ -2096,7 +2096,7 @@ class SystemDetails:
     final_num_hot_water_tanks: Optional[int] = 0
     final_pv_size: float = 0
     final_storage_size: float = 0
-    initial_convertor_sizes: Optional[Dict[str, float]] = 0
+    initial_convertor_sizes: Optional[Dict[str, float]] = None
     initial_cw_pvt_size: Optional[float] = 0
     initial_hw_pvt_size: Optional[float] = 0
     initial_num_buffer_tanks: Optional[int] = 0
@@ -2226,6 +2226,9 @@ class CumulativeResults:
     """
     Contains cumulative results about the system.
 
+    .. attribute:: clean_water
+        The cumulative clean water produced, measured in litres.
+
     .. attribute:: cost
         The cumulative cost, measured in USD.
 
@@ -2246,6 +2249,7 @@ class CumulativeResults:
 
     """
 
+    clean_water: Optional[float] = None
     cost: float = 0
     discounted_energy: float = 0
     energy: float = 0
@@ -2272,9 +2276,11 @@ class CumulativeResults:
             "cumulative_system_ghgs": self.system_ghgs,
         }
 
+        if self.clean_water is not None:
+            cumulative_results["clean_water"] = self.clean_water
         if self.waste_produced is not None:
             for key, value in self.waste_produced.items():
-                cumulative_results[f"cumulative_waste_{key}"] = value
+                cumulative_results[f"cumulative_{key}_waste"] = value
 
         return cumulative_results
 
@@ -2460,6 +2466,9 @@ class TechnicalAppraisal:
     .. attribute:: storage_energy
         The total energy which was supplied by the storage system, measured in kWh.
 
+    .. attribute:: total_clean_water
+        The total clean water which was produced by the system, measured in litres.
+
     .. attribute:: total_energy
         The total energy which was used in the system, measured in kWh.
 
@@ -2484,6 +2493,7 @@ class TechnicalAppraisal:
     renewable_energy: float = 0
     renewable_energy_fraction: float = 0
     storage_energy: float = 0
+    total_clean_water: float = 0
     total_energy: float = 0
     unmet_energy: float = 0
     unmet_energy_fraction: float = 0
@@ -2508,6 +2518,7 @@ class TechnicalAppraisal:
             "renewable_energy": self.renewable_energy,
             "renewable_energy_fraction": self.renewable_energy_fraction,
             "storage_energy": self.storage_energy,
+            "total_clean_water": self.total_clean_water,
             "total_energy": self.total_energy,
             "unmet_energy": self.unmet_energy,
             "unmet_energy_fraction": self.unmet_energy_fraction,
