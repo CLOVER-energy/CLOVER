@@ -20,7 +20,7 @@ information and system-sizing information provided.
 """
 
 from logging import Logger
-from typing import Any, Dict, List, Union
+from typing import Any, Dict, List, Optional, Union
 
 import numpy as np  # pylint: disable=import-error
 import pandas as pd  # pylint: disable=import-error
@@ -34,6 +34,7 @@ from ..__utils__ import (
     Location,
     hourly_profile_to_daily_sum,
 )
+from ..conversion.conversion import Convertor
 
 __all_ = (
     "connections_expenditure",
@@ -67,6 +68,10 @@ COST_DECREASE: str = "cost_decrease"
 # Discount rate:
 #   Keyword used to denote the discount rate.
 DISCOUNT_RATE = "discount_rate"
+
+# Finance impact:
+#   Default `str` used as the format for specifying unique financial impacts.
+FINANCE_IMPACT: str = "{type}_{name}"
 
 # General OM:
 #   Keyword used to denote general O&M costs of the system.
@@ -359,6 +364,7 @@ def _misc_costs(diesel_size: float, misc_costs: float, pv_array_size: float) -> 
 def get_total_equipment_cost(
     buffer_tanks: float,
     clean_water_tanks: float,
+    convertors: Dict[str, int],
     diesel_size: float,
     finance_inputs: Dict[str, Any],
     heat_exchangers: float,
@@ -377,6 +383,9 @@ def get_total_equipment_cost(
             The number of buffer tanks being installed.
         - clean_water_tanks:
             The number of clean-water tanks being installed.
+        - convertors:
+            A mapping between convertor names and the size of each that was added to the
+            system this iteration.
         - diesel_size:
             Capacity of diesel generator being installed
         - finance_inputs:
@@ -471,6 +480,41 @@ def get_total_equipment_cost(
             ],
             installation_year,
         )
+
+    convertor_costs = sum(
+        _component_cost(
+            finance_inputs[
+                FINANCE_IMPACT.format(
+                    type=ImpactingComponent.CONVERTOR.value, name=convertor
+                )
+            ][COST],
+            finance_inputs[
+                FINANCE_IMPACT.format(
+                    type=ImpactingComponent.CONVERTOR.value, name=convertor
+                )
+            ][COST_DECREASE],
+            size,
+            installation_year,
+        )
+        for convertor, size in convertors.items()
+    )
+    convertor_installation_costs = sum(
+        _component_installation_cost(
+            size,
+            finance_inputs[
+                FINANCE_IMPACT.format(
+                    type=ImpactingComponent.CONVERTOR.value, name=convertor
+                )
+            ][INSTALLATION_COST],
+            finance_inputs[
+                FINANCE_IMPACT.format(
+                    type=ImpactingComponent.CONVERTOR.value, name=convertor
+                )
+            ][INSTALLATION_COST_DECREASE],
+            installation_year,
+        )
+        for convertor, size in convertors.items()
+    )
 
     diesel_cost = _component_cost(
         finance_inputs[ImpactingComponent.DIESEL.value][COST],
@@ -599,6 +643,7 @@ def get_total_equipment_cost(
     total_installation_cost = (
         buffer_tank_installation_cost
         + clean_water_tank_installation_cost
+        + convertor_installation_costs
         + diesel_installation_cost
         + heat_exchanger_installation_cost
         + hot_water_tank_installation_cost
@@ -613,6 +658,7 @@ def get_total_equipment_cost(
         bos_cost
         + buffer_tank_cost
         + clean_water_tank_cost
+        + convertor_costs
         + diesel_cost
         + heat_exchanger_cost
         + hot_water_tank_cost
@@ -785,6 +831,7 @@ def discounted_energy_total(
 def discounted_equipment_cost(
     buffer_tanks: int,
     clean_water_tanks: int,
+    convertors: Dict[str, int],
     diesel_size: float,
     finance_inputs: Dict[str, Any],
     heat_exchangers: int,
@@ -803,6 +850,9 @@ def discounted_equipment_cost(
             The number of buffer tanks being installed.
         - clean_water_tanks:
             The number of clean-water tanks being installed.
+        - convertors:
+            A mapping between convertor names and the size of each that was added to the
+            system this iteration.
         - diesel_size:
             Capacity of diesel generator being installed
         - finance_inputs:
@@ -828,6 +878,7 @@ def discounted_equipment_cost(
     undiscounted_cost = get_total_equipment_cost(
         buffer_tanks,
         clean_water_tanks,
+        convertors,
         diesel_size,
         finance_inputs,
         heat_exchangers,
@@ -928,6 +979,7 @@ def independent_expenditure(
 def total_om(
     buffer_tanks: int,
     clean_water_tanks: int,
+    convertors: Optional[Dict[str, int]],
     diesel_size: float,
     finance_inputs: Dict[str, Any],
     heat_exchangers: int,
@@ -948,6 +1000,9 @@ def total_om(
             The number of buffer tanks installed.
         - clean_water_tanks:
             The number of clean-water tanks installed.
+        - convertors:
+            A mapping between convertor names and the size of each that was added to the
+            system this iteration.
         - diesel_size:
             Capacity of diesel generator installed.
         - finance_inputs:
@@ -1019,6 +1074,28 @@ def total_om(
             logger,
             start_year=start_year,
             end_year=end_year,
+        )
+
+    convertors_om: float
+    if convertors is not None:
+        convertors_om = sum(
+            _component_om(
+                finance_inputs[
+                    FINANCE_IMPACT.format(
+                        type=ImpactingComponent.CONVERTOR.value, name=convertor
+                    )
+                ][OM],
+                size,
+                finance_inputs,
+                logger,
+                start_year=start_year,
+                end_year=end_year,
+            )
+            for convertor, size in convertors.items()
+        )
+    else:
+        logger.debug(
+            "No convertors were installed in the system, hence no OM costs to compute."
         )
 
     diesel_om = _component_om(
@@ -1132,6 +1209,7 @@ def total_om(
     return (
         buffer_tank_om
         + clean_water_tank_om
+        + convertors_om
         + diesel_om
         + general_om
         + heat_exchanger_om

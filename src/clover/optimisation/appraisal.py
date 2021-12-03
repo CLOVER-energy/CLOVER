@@ -23,7 +23,7 @@ from logging import Logger
 from typing import Any, Dict, Optional
 
 import numpy as np  # pylint: disable=import-error
-import pandas as pd  # pylint: disable=import-error
+import pandas as pd
 
 from ..impact import finance, ghgs
 
@@ -39,6 +39,7 @@ from ..__utils__ import (
     SystemDetails,
     TechnicalAppraisal,
 )
+from ..conversion.conversion import Convertor
 from ..impact.__utils__ import ImpactingComponent
 
 __all__ = ("appraise_system",)
@@ -47,6 +48,7 @@ __all__ = ("appraise_system",)
 def _simulation_environmental_appraisal(
     buffer_tank_addition: int,
     clean_water_tank_addition: int,
+    convertor_addition: Dict[str, int],
     diesel_addition: float,
     electric_yearly_load_statistics: pd.DataFrame,
     end_year: int,
@@ -70,6 +72,9 @@ def _simulation_environmental_appraisal(
             The additional number of buffer tanks added this iteration.
         - clean_water_tank_addition:
             The additional number of clean-water tanks added this iteration.
+        - convertor_addition:
+            A mapping between convertor names and the size of each that was added to the
+            system this iteration.
         - diesel_addition:
             The additional diesel capacity added this iteration.
         - electric_yearly_load_statistics:
@@ -110,6 +115,7 @@ def _simulation_environmental_appraisal(
         equipment_ghgs = ghgs.calculate_total_equipment_ghgs(
             buffer_tank_addition,
             clean_water_tank_addition,
+            convertor_addition,
             diesel_addition,
             ghg_inputs,
             heat_exchanger_addition,
@@ -143,6 +149,9 @@ def _simulation_environmental_appraisal(
             system_details.initial_num_clean_water_tanks
             if system_details.initial_num_clean_water_tanks is not None
             else 0,
+            system_details.initial_convertor_sizes
+            if system_details.initial_convertor_sizes is not None
+            else None,
             system_details.diesel_capacity,
             ghg_inputs,
             system_details.initial_num_buffer_tanks
@@ -230,6 +239,7 @@ def _simulation_environmental_appraisal(
 def _simulation_financial_appraisal(
     buffer_tank_addition: int,
     clean_water_tank_addition: int,
+    convertor_addition: Dict[str, int],
     diesel_addition: float,
     finance_inputs: Dict[str, Any],
     heat_exchanger_addition: int,
@@ -251,6 +261,9 @@ def _simulation_financial_appraisal(
             The additional number of buffer tanks added this iteration.
         - clean_water_tank_addition:
             The additional number of clean-water tanks added this iteration.
+        - convertor_addition:
+            A mapping between convertor names and the size of each that was added to the
+            system this iteration.
         - diesel_addition:
             The additional diesel capacity added this iteration.
         - finance_inputs:
@@ -286,6 +299,7 @@ def _simulation_financial_appraisal(
     equipment_costs = finance.discounted_equipment_cost(
         buffer_tank_addition,
         clean_water_tank_addition,
+        convertor_addition,
         diesel_addition,
         finance_inputs,
         heat_exchanger_addition,
@@ -318,6 +332,9 @@ def _simulation_financial_appraisal(
         system_details.initial_num_clean_water_tanks
         if system_details.initial_num_clean_water_tanks is not None
         else 0,
+        system_details.initial_convertor_sizes
+        if system_details.initial_convertor_sizes is not None
+        else None,
         system_details.diesel_capacity,
         finance_inputs,
         system_details.initial_num_buffer_tanks
@@ -424,6 +441,8 @@ def _simulation_technical_appraisal(
     system_blackouts: float = float(
         np.mean(simulation_results[ColumnHeader.BLACKOUTS.value].values)
     )
+
+    # Clean-water system.
     clean_water_blackouts: Optional[float] = (
         round(
             float(
@@ -436,8 +455,13 @@ def _simulation_technical_appraisal(
         if ColumnHeader.CLEAN_WATER_BLACKOUTS.value in simulation_results
         else None
     )
+    total_clean_water = (
+        np.sum(simulation_results[ColumnHeader.TOTAL_CW_SUPPLIED.value])
+        if ColumnHeader.TOTAL_CW_SUPPLIED.value in simulation_results
+        else 0
+    )
 
-    # Total energy used
+    # Energy system.
     total_energy = np.sum(
         simulation_results[ColumnHeader.TOTAL_ELECTRICITY_CONSUMED.value]
     )
@@ -507,6 +531,7 @@ def _simulation_technical_appraisal(
         round(total_renewables_used, 3),
         round(renewables_fraction, 3),
         round(total_storage_used, 3),
+        round(total_clean_water, 3),
         round(total_energy, 3),
         round(total_unmet_energy, 3),
         round(unmet_fraction, 3),
@@ -565,10 +590,6 @@ def appraise_system(
             TechnicalAppraisal(),
         )
 
-    import pdb
-
-    pdb.set_trace(header="Broken in appraisal function.")
-
     # Compute the additions made to the system.
     buffer_tank_addition: int = (
         system_details.initial_num_buffer_tanks
@@ -584,6 +605,15 @@ def appraise_system(
         and previous_system.system_details.final_num_clean_water_tanks is not None
         else 0
     )
+    convertor_addition: Dict[str, int] = {
+        convertor: size
+        - (
+            previous_system.system_details.final_convertor_sizes[convertor]
+            if previous_system.system_details.final_convertor_sizes is not None
+            else 0
+        )
+        for convertor, size in system_details.initial_convertor_sizes.items()
+    }
     diesel_addition = (
         system_details.diesel_capacity - previous_system.system_details.diesel_capacity
     )
@@ -623,6 +653,7 @@ def appraise_system(
     financial_appraisal = _simulation_financial_appraisal(
         buffer_tank_addition,
         clean_water_tank_addition,
+        convertor_addition,
         diesel_addition,
         finance_inputs,
         heat_exchanger_addition,
@@ -639,6 +670,7 @@ def appraise_system(
     environmental_appraisal = _simulation_environmental_appraisal(
         buffer_tank_addition,
         clean_water_tank_addition,
+        convertor_addition,
         diesel_addition,
         electric_yearly_load_statistics,
         end_year,
@@ -656,34 +688,47 @@ def appraise_system(
     )
 
     # Get results that rely on metrics of different kinds and several different iteration periods
+    if (
+        technical_appraisal.total_clean_water > 0
+        and previous_system.cumulative_results.clean_water is not None
+    ):
+        cumulative_clean_water: float = (
+            technical_appraisal.total_clean_water
+            + previous_system.cumulative_results.clean_water
+        )
+    else:
+        logger.debug("No clean water produced.")
+        cumulative_clean_water = 0
     cumulative_costs = (
         financial_appraisal.total_cost + previous_system.cumulative_results.cost
-    )
-    cumulative_system_costs = (
-        financial_appraisal.total_system_cost
-        + previous_system.cumulative_results.system_cost
-    )
-    cumulative_ghgs = (
-        environmental_appraisal.total_ghgs + previous_system.cumulative_results.ghgs
-    )
-    cumulative_system_ghgs = (
-        environmental_appraisal.total_system_ghgs
-        + previous_system.cumulative_results.system_ghgs
-    )
-    cumulative_energy = (
-        technical_appraisal.total_energy + previous_system.cumulative_results.energy
     )
     cumulative_discounted_energy = (
         technical_appraisal.discounted_energy
         + previous_system.cumulative_results.discounted_energy
     )
+    cumulative_energy = (
+        technical_appraisal.total_energy + previous_system.cumulative_results.energy
+    )
+    cumulative_ghgs = (
+        environmental_appraisal.total_ghgs + previous_system.cumulative_results.ghgs
+    )
+    cumulative_system_costs = (
+        financial_appraisal.total_system_cost
+        + previous_system.cumulative_results.system_cost
+    )
+    cumulative_system_ghgs = (
+        environmental_appraisal.total_system_ghgs
+        + previous_system.cumulative_results.system_ghgs
+    )
 
     # Combined metrics
     lcue = float(cumulative_system_costs / cumulative_discounted_energy)
+    # lcuw = float(cumulative_system_costs / cumulative_discounted_clean_water)
     emissions_intensity = 1000.0 * float(cumulative_system_ghgs / cumulative_energy)
 
     #   Format outputs
     cumulative_results = CumulativeResults(
+        cumulative_clean_water,
         cumulative_costs,
         cumulative_discounted_energy,
         cumulative_energy,
