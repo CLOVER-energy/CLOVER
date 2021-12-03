@@ -913,8 +913,8 @@ def recursive_iteration(
     # whether the system was sufficient.
     if len(parameter_space) == 0:
         logger.info(
-            "Running simulation with component sizes: %s",
-            ", ".join(
+            "Running simulation with component sizes:\n- %s",
+            "\n- ".join(
                 [f"{key.value} size={value}" for key, value in component_sizes.items()]
             ),
         )

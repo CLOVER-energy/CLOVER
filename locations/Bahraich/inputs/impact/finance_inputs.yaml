@@ -8,6 +8,9 @@
 # License: Open source                                                         #
 ################################################################################
 
+# NOTE: Missing finance input data values default to 0.
+#
+
 discount_rate: 0.1 # Fraction between 0 and 1.
 general_o&m: 500 # [$ p.a.]
 misc:

@@ -297,7 +297,9 @@ def _inverter_expenditure(
         # Calculate maximum power in interval years
         start = replacement_intervals[ColumnHeader.INSTALLATION_YEAR.value].iloc[i]
         end = start + replacement_period
-        max_power_interval = yearly_load_statistics["Maximum"].iloc[start:end].max()
+        max_power_interval = (
+            yearly_load_statistics[ColumnHeader.MAXIMUM.value].iloc[start:end].max()
+        )
         max_power.append(max_power_interval)
         # Calculate resulting inverter size
         inverter_size_interval: float = (
@@ -308,7 +310,7 @@ def _inverter_expenditure(
     inverter_size_data_frame.columns = pd.Index([ColumnHeader.INVERTER_SIZE.value])
     inverter_info = pd.concat([replacement_intervals, inverter_size_data_frame], axis=1)
     # Calculate
-    inverter_info["Discount rate"] = [
+    inverter_info[ColumnHeader.DISCOUNT_RATE.value] = [
         (1 - finance_inputs[DISCOUNT_RATE])
         ** inverter_info[ColumnHeader.INSTALLATION_YEAR.value].iloc[i]
         for i in range(len(inverter_info))
@@ -319,19 +321,22 @@ def _inverter_expenditure(
         ** inverter_info[ColumnHeader.INSTALLATION_YEAR.value].iloc[i]
         for i in range(len(inverter_info))
     ]
-    inverter_info["Discounted expenditure ($)"] = [
-        inverter_info["Discount rate"].iloc[i]
+    inverter_info[ColumnHeader.DISCOUNTED_EXPENDITURE.value] = [
+        inverter_info[ColumnHeader.DISCOUNT_RATE.value].iloc[i]
         * inverter_info["Inverter size (kW)"].iloc[i]
         * inverter_info["Inverter cost ($/kW)"].iloc[i]
         for i in range(len(inverter_info))
     ]
     inverter_discounted_cost = np.sum(
-        inverter_info.iloc[  # type: ignore
-            inverter_info[ColumnHeader.INSTALLATION_YEAR.value].isin(
-                list(np.array(range(start_year, end_year)))
-            )
-        ]["Discounted expenditure ($)"]
+        inverter_info.iloc[
+            inverter_info.index[
+                inverter_info[ColumnHeader.INSTALLATION_YEAR.value].isin(
+                    list(np.array(range(start_year, end_year)))
+                )
+            ]
+        ][ColumnHeader.DISCOUNTED_EXPENDITURE.value]
     ).round(2)
+
     return inverter_discounted_cost
 
 
@@ -1240,7 +1245,7 @@ def total_om(
 #     """
 #     grid_extension_cost = self.finance_inputs.iloc["Grid extension cost"]  # per km
 #     grid_infrastructure_cost = self.finance_inputs.iloc["Grid infrastructure cost"]
-#     discount_fraction = (1.0 - self.finance_inputs.iloc["Discount rate"]) ** year
+#     discount_fraction = (1.0 - self.finance_inputs.iloc[ColumnHeader.DISCOUNT_RATE.value]) ** year
 #     return (
 #         grid_extension_distance * grid_extension_cost * discount_fraction
 #         + grid_infrastructure_cost
