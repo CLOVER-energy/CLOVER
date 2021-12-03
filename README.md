@@ -4,7 +4,7 @@ CLOVER minigrid simulation and optimisation for supporting rural electrification
 
 ## CLOVER Quick Start Guide
 
-This guide provides a very brief introduction to get your CLOVER installation up and running as quickly as possible following the initial download. The file structure has two main branches: 
+This guide provides a very brief introduction to get your CLOVER installation up and running as quickly as possible following the initial download. The file structure has two main branches:
 * a python branch, `src`, which contains CLOVER's source code which is used to perform simulations and generate outputs,
 * and a data branch, `locations`, which contains informaiton describing the locations being modelled and contains parameters to outline the simulations and optimisations that should be run.
 
@@ -62,7 +62,7 @@ New locations can be set up in one of two ways:
   ```
   new-clover-location <new_location_name> --from-existing <existing_location>
   ```
-  
+
 #### Updating an existing location
 
 As part of the ongoing development of CLOVER, new features will be introduced. In order to incorporate these into existing CLOVER locations on your system, you can use the `new_location` script provided to update these locations:
@@ -111,7 +111,7 @@ Within your location folder you will find a subfolder named `inputs`. This conta
 #### Optimisation-only files
 
 * Complete the `inputs/impact/finance_inputs.yaml` with the financial details of your location;
-* Complete the `inputs/impact/ghg_inpus.yaml` with the GHG-emission details of your location;
+* Complete the `inputs/impact/ghg_inputs.yaml` with the GHG-emission details of your location;
 * Complete the `inputs/optimisation/optimisation_inputs.yaml` with the various parameters used to define the scope of the optimisations;
 
 See the user guide, available within the repository, for more information on these input files.
