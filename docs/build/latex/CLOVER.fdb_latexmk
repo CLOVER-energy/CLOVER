@@ -1,0 +1,16 @@
+# Fdb version 3
+["pdflatex"] 1638535639 "CLOVER.tex" "CLOVER.pdf" "CLOVER" 1638535639
+  "/etc/texmf/web2c/texmf.cnf" 1638535570 475 c0e671620eb5563b2130f56340a5fde8 ""
+  "/usr/share/texlive/texmf-dist/tex/latex/base/inputenc.sty" 1544567569 5052 b64c57f4a38aae0d2745f8298fa50814 ""
+  "/usr/share/texlive/texmf-dist/tex/latex/base/report.cls" 1544567569 22992 ac205d2578ad3f18cf73b50579632d1c ""
+  "/usr/share/texlive/texmf-dist/tex/latex/base/size10.clo" 1544567569 8294 6d6e23d5169c0d89d173f6c7e08a005a ""
+  "/usr/share/texlive/texmf-dist/web2c/texmf.cnf" 1551493644 34566 ab5be96bde1a5acfd4f881dbe566b5fb ""
+  "/usr/share/texmf/web2c/texmf.cnf" 1551493644 34566 ab5be96bde1a5acfd4f881dbe566b5fb ""
+  "/var/lib/texmf/web2c/pdftex/pdflatex.fmt" 1638535605 795362 c3e5d2316f58cefd3297b1d3e04d3e71 ""
+  "CLOVER.aux" 1638535639 8 a94a2480d3289e625eea47cd1b285758 ""
+  "CLOVER.tex" 1638535400 260005 42f84994efed2448518c5c51b7f64467 ""
+  "cmap.sty" 0 -1 0 ""
+  "sphinxmanual.cls" 1638533817 4241 7b0d7a37df7b5715fb0dbd585c52ecdb ""
+  (generated)
+  "CLOVER.log"
+  "CLOVER.pdf"
