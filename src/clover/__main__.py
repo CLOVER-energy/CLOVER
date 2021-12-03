@@ -17,7 +17,7 @@ the clover module from the command-line interface.
 
 """
 
-__version__ = "5.0.0a1.dev5"
+__version__ = "5.0.0a2.dev1"
 
 import datetime
 import logging
@@ -425,12 +425,6 @@ def main(args: List[Any]) -> None:
 
     if parsed_args.debug:
         print(DEBUG_STRING.format(okblue=BColours.okblue, endc=BColours.endc))
-        # import pdb
-
-        # pdb.set_trace(
-        #     header=f"{BColours.okblue}Debug mode instantiated. Press 'c' to continue, "
-        #     + f"'q' to quit.{BColours.endc}"
-        # )
 
     # Define common variables.
     auto_generated_files_directory = os.path.join(
