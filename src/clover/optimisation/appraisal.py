@@ -581,11 +581,6 @@ def appraise_system(
 
     """
 
-    if previous_system is not None:
-        import pdb
-
-        pdb.set_trace(header="Appraising system interrupted..")
-
     if previous_system is None:
         previous_system = SystemAppraisal(
             CumulativeResults(),

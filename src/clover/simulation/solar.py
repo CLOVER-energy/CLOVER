@@ -515,15 +515,6 @@ def calculate_pvt_output(
             # Use the AI to determine the output temperature of the collector, based on
             # the best guess of the collector input temperature.
             if irradiances[index] > 0:
-                # import pdb
-
-                # pdb.set_trace(
-                #     header=f"amb:{temperatures[index]:.3g}, "
-                #     + f"in:{best_guess_collector_input_temperature:.3g}, "
-                #     + f"m:{mass_flow_rate:.3g}, "
-                #     + f"G:{1000*irradiances[index]:.3g}, "
-                #     + f"v_w:{wind_speeds[index]:.3g}"
-                # )
                 (
                     fractional_electric_performance,
                     collector_output_temperature,
