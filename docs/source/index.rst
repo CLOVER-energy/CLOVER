@@ -56,6 +56,9 @@ manual `available here
 This site will be continuously updated and should serve as the main reference,
 whilst the user manual will be updated after significant updates to CLOVER.
 
+CLOVER is undergoing some big changes to increase its usability. Check back soon
+for more updates!
+
 .. toctree::
    :maxdepth: 2
 
