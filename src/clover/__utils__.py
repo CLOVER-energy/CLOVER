@@ -373,6 +373,13 @@ class ColumnHeader(enum.Enum):
         The times for which the backup electrical diesel generator was operating in
         order to meet demand.
 
+    - DISCOUNT_RATE:
+        The discount rate for parts which are periodically replaced.
+
+    - DISCOUNTED_EXPENDITURE:
+        The discounted expenditure on replacing parts which require periodic
+        replacement.
+
     - DUMPED_ELECTRICITY:
         Excess electricity which was dumped due to the system being unable to either
         utilise or store it.
@@ -413,6 +420,9 @@ class ColumnHeader(enum.Enum):
     - INSTALLATION_YEAR:
         The year in which the installation was made.
 
+    - INVERTER_COST:
+        The cost of the inverter installed.
+
     - INVERTER_SIZE:
         The size of the inverter installed.
 
@@ -424,6 +434,9 @@ class ColumnHeader(enum.Enum):
 
     - LOAD_ENERGY:
         The electric load that was placed on the system.
+
+    - MAXIMUM:
+        Used in the yearly load statistics.
 
     - POWER_CONSUMED_BY_DESALINATION:
         The power that was consumed carrying out desalination, either using electricity
@@ -462,6 +475,9 @@ class ColumnHeader(enum.Enum):
 
     - TOTAL_ELECTRICITY_CONSUMED:
         The total electricity that was consumed in the system.
+
+    - TOTAL_GHGS:
+        The total GHGs information.
 
     - TOTAL_HW_LOAD:
         The total hot-water load that was placed on the system.
@@ -503,6 +519,8 @@ class ColumnHeader(enum.Enum):
     DIESEL_ENERGY_SUPPLIED = "Diesel energy (kWh)"
     DIESEL_FUEL_USAGE = "Diesel fuel usage (l)"
     DIESEL_GENERATOR_TIMES = "Diesel times"
+    DISCOUNTED_EXPENDITURE = "Discounted expenditure ($)"
+    DISCOUNT_RATE = "Discount rate"
     DUMPED_ELECTRICITY = "Dumped energy (kWh)"
     ELECTRICITY_FROM_STORAGE = "Storage energy supplied (kWh)"
     EXCESS_POWER_CONSUMED_BY_DESALINATION = (
@@ -520,10 +538,12 @@ class ColumnHeader(enum.Enum):
     HW_TANK_OUTPUT = "Hot-water tank volume supplied (l)"
     HW_TANK_TEMPERATURE = "Hot-water tank temperature (degC)"
     INSTALLATION_YEAR = "Installation year"
+    INVERTER_COST = "Inverter cost ($/kW)"
     INVERTER_SIZE = "Inverter size (kW)"
     KEROSENE_LAMPS = "Kerosene lamps"
     KEROSENE_MITIGATION = "Kerosene mitigation"
     LOAD_ENERGY = "Load energy (kWh)"
+    MAXIMUM = "Maximum"
     POWER_CONSUMED_BY_DESALINATION = "Power consumed providing clean water (kWh)"
     POWER_CONSUMED_BY_ELECTRIC_DEVICES = "Power consumed providing electricity (kWh)"
     POWER_CONSUMED_BY_HOT_WATER = "Power consumed providing hot water (kWh)"
@@ -539,6 +559,7 @@ class ColumnHeader(enum.Enum):
     TOTAL_CW_LOAD = "Total clean water demand (l)"
     TOTAL_CW_SUPPLIED = "Total clean water supplied (l)"
     TOTAL_ELECTRICITY_CONSUMED = "Total energy used (kWh)"
+    TOTAL_GHGS = "Total ghgs (kgCO2)"
     TOTAL_HW_LOAD = "Total hot-water demand (l)"
     TOTAL_PVT_ELECTRICITY_SUPPLIED = "Total PV-T electric energy supplied (kWh)"
     UNMET_CLEAN_WATER = "Unmet clean water demand (l)"

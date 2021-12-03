@@ -8,6 +8,9 @@
 # License: Open source                                                         #
 ################################################################################
 
+# NOTE: Missing GHG input data values default to 0.
+#
+
 general:
   o&m: 200 # [kgCO2 p.a.]
 misc:

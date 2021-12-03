@@ -558,7 +558,9 @@ def calculate_inverter_ghgs(
         start = replacement_intervals[ColumnHeader.INSTALLATION_YEAR.value].iloc[i]
         end = start + replacement_period
         max_power_interval = (
-            electric_yearly_load_statistics["Maximum"].iloc[start:end].max()
+            electric_yearly_load_statistics[ColumnHeader.MAXIMUM.value]
+            .iloc[start:end]
+            .max()
         )
         max_power.append(max_power_interval)
 
@@ -579,17 +581,19 @@ def calculate_inverter_ghgs(
         ** inverter_info[ColumnHeader.INSTALLATION_YEAR.value].iloc[i]
         for i in range(len(inverter_info))
     ]
-    inverter_info["Total ghgs (kgCO2)"] = [
-        inverter_info["Inverter size (kW)"].iloc[i]
+    inverter_info[ColumnHeader.TOTAL_GHGS.value] = [
+        inverter_info[ColumnHeader.INVERTER_SIZE.value].iloc[i]
         * inverter_info["Inverter ghgs (kgCO2/kW)"].iloc[i]
         for i in range(len(inverter_info))
     ]
     inverter_ghgs: float = np.sum(
-        inverter_info.iloc[  # type: ignore
-            inverter_info[ColumnHeader.INSTALLATION_YEAR.value].isin(
-                list(np.array(range(start_year, end_year)))
-            )
-        ]["Total ghgs (kgCO2)"]
+        inverter_info.iloc[
+            inverter_info.index[
+                inverter_info[ColumnHeader.INSTALLATION_YEAR.value].isin(
+                    list(np.array(range(start_year, end_year)))
+                )
+            ]
+        ][ColumnHeader.TOTAL_GHGS.value]
     ).round(2)
 
     return inverter_ghgs
@@ -672,7 +676,7 @@ def calculate_grid_ghgs(
     grid_ghgs_final = ghg_inputs[ImpactingComponent.GRID.value][FINAL_GHGS]
     days = int(365 * (end_year - start_year))
     total_daily_energy = pd.DataFrame(
-        hourly_profile_to_daily_sum(pd.DataFrame(grid_energy_hourly))
+        hourly_profile_to_daily_sum(pd.DataFrame(grid_energy_hourly.dropna()))
     )
 
     # Account for reduction in grid GHG intensity

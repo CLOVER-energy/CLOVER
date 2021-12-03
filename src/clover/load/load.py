@@ -33,6 +33,7 @@ from tqdm import tqdm  # pylint: disable=import-error
 from ..__utils__ import (
     BColours,
     CUT_OFF_TIME,
+    ColumnHeader,
     DemandType,
     ELECTRIC_POWER,
     InputFileError,
@@ -93,10 +94,6 @@ IMITATION: str = "imitation"
 # Load logger name:
 #   The name to use for the load module logger.
 LOAD_LOGGER_NAME: str = "load"
-
-# Maximum column name:
-#   The name to use for the "maximum" column in the yearly-load statistics.
-MAXIMUM: str = "Maximum"
 
 # Mean column name:
 #   The name to use for the "mean" column in the yearly-load statistics.
@@ -338,7 +335,7 @@ def _yearly_load_statistics(total_load: pd.DataFrame, years: int) -> pd.DataFram
     )
 
     yearly_maximum: pd.DataFrame = pd.DataFrame(total_load_yearly.max(axis=1))  # type: ignore
-    yearly_maximum.columns = pd.Index([MAXIMUM])
+    yearly_maximum.columns = pd.Index([ColumnHeader.MAXIMUM.value])
     yearly_mean: pd.DataFrame = pd.DataFrame(total_load_yearly.mean(axis=1).round(0))  # type: ignore
     yearly_mean.columns = pd.Index([MEAN])
     yearly_median: pd.DataFrame = pd.DataFrame(np.percentile(total_load_yearly, 50, axis=1))  # type: ignore

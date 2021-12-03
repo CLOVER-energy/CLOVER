@@ -551,7 +551,7 @@ def _simulation_iteration(
         _, simulation_results, system_details = energy_system.run_simulation(
             cw_pvt_size_max,
             conventional_cw_source_profiles,
-            convertors_from_sizing(max_convertor_sizes),
+            convertors_from_sizing(simulation_convertor_sizes),
             storage_size_max,
             grid_profile,
             hw_pvt_size_max,
