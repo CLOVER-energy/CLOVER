@@ -1,4 +1,5 @@
 # Ignore assembled python packages
+**/build
 **/dist
 **/*.egg*
 # Ignore HPC log files
