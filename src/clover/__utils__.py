@@ -1402,6 +1402,9 @@ class Criterion(enum.Enum):
     - RENEWABLES_ELECTRICITY_FRACTION:
         The fraction of energy which was emitted renewably.
 
+    - TOTAL_BRINE:
+        The total brine produced.
+
     - TOTAL_COST:
         The total cost incurred.
 
@@ -1432,6 +1435,7 @@ class Criterion(enum.Enum):
     KEROSENE_GHGS_MITIGATED = "kerosene_ghgs_mitigated"
     LCUE = "lcue"
     RENEWABLES_ELECTRICITY_FRACTION = "renewables_fraction"
+    TOTAL_BRINE = "total_brine"
     TOTAL_COST = "total_cost"
     TOTAL_GHGS = "total_ghgs"
     TOTAL_SYSTEM_COST = "total_system_cost"
