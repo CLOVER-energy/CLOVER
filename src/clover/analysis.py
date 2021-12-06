@@ -32,6 +32,7 @@ from .__utils__ import (
     ColumnHeader,
     CUT_OFF_TIME,
     DemandType,
+    HOURS_PER_YEAR,
     KeyResults,
     ResourceType,
 )
@@ -45,10 +46,6 @@ __all__ = (
 # Colour map:
 #   The preferred sns colourmap to use.
 COLOUR_MAP: str = "Blues"
-
-# Hours per year:
-#   The number of hours in a year, used for reshaping arrays.
-HOURS_PER_YEAR: int = 8760
 
 # Hours until July:
 #   The number of hours until March.
@@ -222,6 +219,12 @@ def get_key_results(
             simulation_results[ColumnHeader.HW_TANK_OUTPUT.value].sum()
             / (365 * num_years),
             3,
+        )
+
+    # Compute the waste-product key results.
+    if ColumnHeader.BRINE.value in simulation_results:
+        key_results.cumulative_brine = round(
+            simulation_results[ColumnHeader.BRINE.value].sum(), 3
         )
 
     return key_results
