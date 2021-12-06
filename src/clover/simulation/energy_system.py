@@ -2011,9 +2011,7 @@ def run_simulation(
             )
         # Process the load profile based on the relevant scenario.
         processed_total_cw_load = pd.DataFrame(
-            _get_processed_load_profile(scenario, total_cw_load)[
-                start_hour:end_hour
-            ].values
+            _get_processed_load_profile(scenario, total_cw_load)[start_hour:end_hour]
         )
 
         # Determine the water-tank storage profile.
@@ -2027,9 +2025,13 @@ def run_simulation(
         )
         number_of_buffer_tanks: int = 1
     else:
+        processed_total_cw_load = pd.DataFrame([0] * simulation_hours)
         clean_water_power_consumed = pd.DataFrame([0] * simulation_hours)
         number_of_buffer_tanks = 0
         renewable_cw_used_directly = pd.DataFrame([0] * simulation_hours)
+
+    # Post process the dataframes.
+    processed_total_cw_load = processed_total_cw_load.reset_index(drop=True)
 
     # Calculate hot-water-related profiles.
     processed_total_hw_load: pd.DataFrame
@@ -2087,6 +2089,9 @@ def run_simulation(
         "Mean hot-water PV-T electric power per unit: %s",
         np.mean(hot_water_pvt_electric_power_per_unit.values),
     )
+
+    # Post-process dataframes.
+    processed_total_hw_load = processed_total_hw_load.reset_index(drop=True)
 
     # Calculate electricity-related profiles.
     if total_electric_load is None:
