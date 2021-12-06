@@ -639,6 +639,7 @@
                 #   total_ghgs                      kgCO2eq
                 #   total_system_ghgs               kgCO2eq
                 # Valid optimisation criteria, usually set to "maximise":
+                #   hw_demand_covered
                 #   renewables_fraction
                 #   kerosene_displacement
                 #   kerosene_cost_mitigated         $

@@ -455,9 +455,28 @@ def _simulation_technical_appraisal(
         if ColumnHeader.CLEAN_WATER_BLACKOUTS.value in simulation_results
         else None
     )
-    total_clean_water = (
+    total_clean_water: float = (
         np.sum(simulation_results[ColumnHeader.TOTAL_CW_SUPPLIED.value])
         if ColumnHeader.TOTAL_CW_SUPPLIED.value in simulation_results
+        else 0
+    )
+
+    # Hot-water system.
+    hot_water_demand_covered: Optional[float] = (
+        round(
+            float(
+                np.mean(
+                    simulation_results[ColumnHeader.HW_RENEWABLES_FRACTION.value].values
+                )
+            ),
+            3,
+        )
+        if ColumnHeader.HW_RENEWABLES_FRACTION.value in simulation_results
+        else None
+    )
+    total_hot_water: float = (
+        np.sum(simulation_results[ColumnHeader.HW_RENEWABLES_FRACTION.value])
+        if ColumnHeader.HW_RENEWABLES_FRACTION.value in simulation_results
         else 0
     )
 
@@ -525,6 +544,7 @@ def _simulation_technical_appraisal(
         round(total_diesel_fuel, 3),
         round(discounted_energy, 3),
         round(total_grid_used, 3),
+        hot_water_demand_covered,
         round(kerosene_displacement, 3),
         round(total_pv_energy, 3),
         round(total_pvt_energy, 3) if total_pvt_energy is not None else None,
@@ -532,6 +552,7 @@ def _simulation_technical_appraisal(
         round(renewables_fraction, 3),
         round(total_storage_used, 3),
         round(total_clean_water, 3),
+        round(total_hot_water, 3),
         round(total_energy, 3),
         round(total_unmet_energy, 3),
         round(unmet_fraction, 3),
@@ -744,6 +765,9 @@ def appraise_system(
         Criterion.CUMULATIVE_SYSTEM_COST: round(cumulative_results.system_cost, 3),
         Criterion.CUMULATIVE_SYSTEM_GHGS: round(cumulative_results.system_ghgs, 3),
         Criterion.EMISSIONS_INTENSITY: round(emissions_intensity, 3),
+        Criterion.HW_RENEWABLES_FRACTION: round(
+            technical_appraisal.hw_demand_covered, 3
+        ),
         Criterion.KEROSENE_COST_MITIGATED: round(
             financial_appraisal.kerosene_cost_mitigated, 3
         ),
@@ -754,7 +778,7 @@ def appraise_system(
             environmental_appraisal.kerosene_ghgs_mitigated, 3
         ),
         Criterion.LCUE: round(lcue, 3),
-        Criterion.RENEWABLES_FRACTION: round(
+        Criterion.RENEWABLES_ELECTRICITY_FRACTION: round(
             technical_appraisal.renewable_energy_fraction, 3
         ),
         Criterion.TOTAL_COST: round(financial_appraisal.total_cost, 3),
