@@ -1384,6 +1384,9 @@ class Criterion(enum.Enum):
     - EMISSIONS_INTENSITY:
         Denotes the intensity of GHG emissions emitted.
 
+    - HW_RENEWABLES_FRACTION:
+        The fraction of HW demand that was met through renewables.
+
     - KEROSENE_COST_MITIGATED:
         The cost of kerosene which was not incurred through use of the system.
 
@@ -1396,7 +1399,7 @@ class Criterion(enum.Enum):
     - LCUE:
         Denotes the levilised code of electricity.
 
-    - RENEWABLES_FRACTION:
+    - RENEWABLES_ELECTRICITY_FRACTION:
         The fraction of energy which was emitted renewably.
 
     - TOTAL_COST:
@@ -1423,11 +1426,12 @@ class Criterion(enum.Enum):
     CUMULATIVE_SYSTEM_COST = "cumulative_system_cost"
     CUMULATIVE_SYSTEM_GHGS = "cumulative_system_ghgs"
     EMISSIONS_INTENSITY = "emissions_intensity"
+    HW_RENEWABLES_FRACTION = "hw_demand_covered"
     KEROSENE_COST_MITIGATED = "kerosene_cost_mitigated"
     KEROSENE_DISPLACEMENT = "kerosene_displacement"
     KEROSENE_GHGS_MITIGATED = "kerosene_ghgs_mitigated"
     LCUE = "lcue"
-    RENEWABLES_FRACTION = "renewables_fraction"
+    RENEWABLES_ELECTRICITY_FRACTION = "renewables_fraction"
     TOTAL_COST = "total_cost"
     TOTAL_GHGS = "total_ghgs"
     TOTAL_SYSTEM_COST = "total_system_cost"
@@ -2464,6 +2468,9 @@ class TechnicalAppraisal:
     .. attribute:: grid_energy
         The total energy which was supplied by the grid, measured in kWh.
 
+    .. attribute:: hw_demand_covered
+        The fraction of hot-water demand that was met through renewables.
+
     .. attribute:: kerosene_displacement
         The proportion of kerosene which was displacement by the minigrid, defined
         between 0 (all of the kerosene that would have been used was used) and 1 (none
@@ -2490,6 +2497,10 @@ class TechnicalAppraisal:
     .. attribute:: total_clean_water
         The total clean water which was produced by the system, measured in litres.
 
+    .. attribute:: total_hot_water
+        The total volume of hot water which was produced by the system, measured in
+        litres.
+
     .. attribute:: total_energy
         The total energy which was used in the system, measured in kWh.
 
@@ -2508,6 +2519,7 @@ class TechnicalAppraisal:
     diesel_fuel_usage: float = 0
     discounted_energy: float = 0
     grid_energy: float = 0
+    hw_demand_covered: Optional[float] = 0
     kerosene_displacement: float = 0
     pv_energy: float = 0
     pvt_energy: Optional[float] = 0
@@ -2515,6 +2527,7 @@ class TechnicalAppraisal:
     renewable_energy_fraction: float = 0
     storage_energy: float = 0
     total_clean_water: float = 0
+    total_hot_water: float = 0
     total_energy: float = 0
     unmet_energy: float = 0
     unmet_energy_fraction: float = 0
@@ -2535,11 +2548,13 @@ class TechnicalAppraisal:
             "diesel_fuel_usage": self.diesel_fuel_usage,
             "discounted_energy": self.discounted_energy,
             "grid_energy": self.grid_energy,
+            "hot_water_demand_covered": self.hw_demand_covered,
             "kerosene_displacement": self.kerosene_displacement,
             "renewable_energy": self.renewable_energy,
             "renewable_energy_fraction": self.renewable_energy_fraction,
             "storage_energy": self.storage_energy,
             "total_clean_water": self.total_clean_water,
+            "total_hot_water": self.total_hot_water,
             "total_energy": self.total_energy,
             "unmet_energy": self.unmet_energy,
             "unmet_energy_fraction": self.unmet_energy_fraction,

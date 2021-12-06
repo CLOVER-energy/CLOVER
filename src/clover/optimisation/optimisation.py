@@ -506,7 +506,7 @@ def _simulation_iteration(
             "The largest system was found to be insufficient. Threshold criteria: %s",
             json.dumps(
                 {
-                    str(key): value
+                    str(key.value): value
                     for key, value in largest_system_appraisal.criteria.items()
                 },
                 indent=4,
@@ -623,7 +623,7 @@ def _simulation_iteration(
         "System was found to be sufficient. Threshold criteria: %s",
         json.dumps(
             {
-                str(key): value
+                str(key.value): value
                 for key, value in largest_system_appraisal.criteria.items()
             },
             indent=4,
