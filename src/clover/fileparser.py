@@ -2560,27 +2560,31 @@ def parse_input_files(
 
     # Update the finance and GHG inputs accordingly with the PV data.
     logger.info("Updating with PV impact data.")
-    finance_inputs[ImpactingComponent.PV.value] = pv_panel_costs
-    ghg_inputs[ImpactingComponent.PV.value] = pv_panel_emissions
+    finance_inputs[ImpactingComponent.PV.value] = defaultdict(float, pv_panel_costs)
+    ghg_inputs[ImpactingComponent.PV.value] = defaultdict(float, pv_panel_emissions)
     logger.info("PV impact data successfully updated.")
 
     # Update the impact inputs with the diesel data.
     logger.info("Updating with diesel impact data.")
-    finance_inputs[ImpactingComponent.DIESEL.value] = diesel_costs
-    ghg_inputs[ImpactingComponent.DIESEL.value] = diesel_emissions
+    finance_inputs[ImpactingComponent.DIESEL.value] = defaultdict(float, diesel_costs)
+    ghg_inputs[ImpactingComponent.DIESEL.value] = defaultdict(float, diesel_emissions)
     logger.info("Diesel impact data successfully updated.")
 
     # Update the impact inputs with the battery data.
     logger.info("Updating with battery impact data.")
-    finance_inputs[ImpactingComponent.STORAGE.value] = battery_costs
-    ghg_inputs[ImpactingComponent.STORAGE.value] = battery_emissions
+    finance_inputs[ImpactingComponent.STORAGE.value] = defaultdict(float, battery_costs)
+    ghg_inputs[ImpactingComponent.STORAGE.value] = defaultdict(float, battery_emissions)
     logger.info("Battery impact data successfully updated.")
 
     if minigrid.pvt_panel is not None and scenario.pv_t:
         if pvt_panel_costs is None or pvt_panel_emissions is None:
             raise InternalError("Error processing PV-T panel cost and emissions.")
-        finance_inputs[ImpactingComponent.PV_T.value] = pvt_panel_costs
-        ghg_inputs[ImpactingComponent.PV_T.value] = pvt_panel_emissions
+        finance_inputs[ImpactingComponent.PV_T.value] = defaultdict(
+            float, pvt_panel_costs
+        )
+        ghg_inputs[ImpactingComponent.PV_T.value] = defaultdict(
+            float, pvt_panel_emissions
+        )
     else:
         logger.info("PV-T disblaed in scenario file, skipping PV-T impact parsing.")
 
@@ -2591,12 +2595,12 @@ def parse_input_files(
             FINANCE_IMPACT.format(
                 type=ImpactingComponent.CONVERTOR.value, name=convertor.name
             )
-        ] = convertor_costs[convertor]
+        ] = defaultdict(float, convertor_costs[convertor])
         ghg_inputs[
             GHG_IMPACT.format(
                 type=ImpactingComponent.CONVERTOR.value, name=convertor.name
             )
-        ] = convertor_emissions[convertor]
+        ] = defaultdict(float, convertor_emissions[convertor])
         logger.info("Convertor %s impact data successfully updated.", convertor.name)
 
     # Add transmitter impacts.
@@ -2606,12 +2610,12 @@ def parse_input_files(
             FINANCE_IMPACT.format(
                 type=ImpactingComponent.TRANSMITTER.value, name=transmitter
             )
-        ] = transmission_costs[transmitter]
+        ] = defaultdict(float, transmission_costs[transmitter])
         ghg_inputs[
             GHG_IMPACT.format(
                 type=ImpactingComponent.TRANSMITTER.value, name=transmitter
             )
-        ] = transmission_emissions[transmitter]
+        ] = defaultdict(float, transmission_emissions[transmitter])
         logger.info("Transmitter %s impact data successfully updated.", transmitter)
 
     # Add desalination-specific impacts.
@@ -2621,28 +2625,36 @@ def parse_input_files(
     ):
         # Update the clean-water tank impacts.
         logger.info("Updating with clean-water tank impact data.")
-        finance_inputs[
-            ImpactingComponent.CLEAN_WATER_TANK.value
-        ] = clean_water_tank_costs
-        ghg_inputs[
-            ImpactingComponent.CLEAN_WATER_TANK.value
-        ] = clean_water_tank_emissions
+        finance_inputs[ImpactingComponent.CLEAN_WATER_TANK.value] = defaultdict(
+            float, clean_water_tank_costs
+        )
+        ghg_inputs[ImpactingComponent.CLEAN_WATER_TANK.value] = defaultdict(
+            float, clean_water_tank_emissions
+        )
         logger.info("Clean-water tank impact data successfully updated.")
 
         # Update the buffer tank impacts.
         logger.info("Updating with buffer tank impact data.")
         if buffer_tank_costs is None or buffer_tank_emissions is None:
             raise InternalError("Error processing buffer-tank cost and emissions.")
-        finance_inputs[ImpactingComponent.BUFFER_TANK.value] = buffer_tank_costs
-        ghg_inputs[ImpactingComponent.BUFFER_TANK.value] = buffer_tank_emissions
+        finance_inputs[ImpactingComponent.BUFFER_TANK.value] = defaultdict(
+            float, buffer_tank_costs
+        )
+        ghg_inputs[ImpactingComponent.BUFFER_TANK.value] = defaultdict(
+            float, buffer_tank_emissions
+        )
         logger.info("Buffer tank impact data successfully updated.")
 
         # Update the heat-exchanger imapcts.
         logger.info("Updating with heat-exchanger impact data.")
         if exchanger_costs is None or exchanger_emissions is None:
             raise InternalError("Error processing heat-exchanger cost and emissions.")
-        finance_inputs[ImpactingComponent.HEAT_EXCHANGER.value] = exchanger_costs
-        ghg_inputs[ImpactingComponent.HEAT_EXCHANGER.value] = exchanger_emissions
+        finance_inputs[ImpactingComponent.HEAT_EXCHANGER.value] = defaultdict(
+            float, exchanger_costs
+        )
+        ghg_inputs[ImpactingComponent.HEAT_EXCHANGER.value] = defaultdict(
+            float, exchanger_emissions
+        )
         logger.info("Heat-exchanger impact data successfully updated.")
 
         # Include the impacts of conventional water sources.
@@ -2683,7 +2695,7 @@ def parse_input_files(
 
                 finance_inputs[
                     f"{ImpactingComponent.CONVENTIONAL_SOURCE.value}_{source.name}"
-                ] = conventional_source_costs
+                ] = defaultdict(float, conventional_source_costs)
 
                 try:
                     conventional_source_emissions: Union[float, Dict[str, float]] = [
@@ -2715,24 +2727,28 @@ def parse_input_files(
 
                 ghg_inputs[
                     f"{ImpactingComponent.CONVENTIONAL_SOURCE.value}_{source.name}"
-                ] = conventional_source_emissions
+                ] = defaultdict(float, conventional_source_emissions)
 
     # Add hot-water-specific impacts.
     if scenario.hot_water_scenario is not None:
         # Update the hot-water tank impacts.
         logger.info("Updating with hot-water tank impact data.")
-        finance_inputs[ImpactingComponent.HOT_WATER_TANK.value] = hot_water_tank_costs
-        ghg_inputs[ImpactingComponent.HOT_WATER_TANK.value] = hot_water_tank_emissions
+        finance_inputs[ImpactingComponent.HOT_WATER_TANK.value] = defaultdict(
+            float, hot_water_tank_costs
+        )
+        ghg_inputs[ImpactingComponent.HOT_WATER_TANK.value] = defaultdict(
+            float, hot_water_tank_emissions
+        )
         logger.info("Hot-water tank impact data successfully updated.")
 
         # Update the diesel water-heater impacts.
         logger.info("Updating with diesel water-heater impact data.")
-        finance_inputs[
-            ImpactingComponent.DIESEL_WATER_HEATER.value
-        ] = diesel_water_heater_costs
-        ghg_inputs[
-            ImpactingComponent.DIESEL_WATER_HEATER.value
-        ] = diesel_water_heater_emissions
+        finance_inputs[ImpactingComponent.DIESEL_WATER_HEATER.value] = defaultdict(
+            float, diesel_water_heater_costs
+        )
+        ghg_inputs[ImpactingComponent.DIESEL_WATER_HEATER.value] = defaultdict(
+            float, diesel_water_heater_emissions
+        )
         logger.info("Diesel water-heater impact data successfully updated.")
 
     # Generate a dictionary with information about the input files used.
