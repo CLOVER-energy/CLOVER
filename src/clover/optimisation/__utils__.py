@@ -772,6 +772,7 @@ THRESHOLD_CRITERION_TO_MODE: Dict[Criterion, ThresholdMode] = {
     Criterion.KEROSENE_GHGS_MITIGATED: ThresholdMode.MINIMUM,
     Criterion.LCUE: ThresholdMode.MAXIMUM,
     Criterion.RENEWABLES_ELECTRICITY_FRACTION: ThresholdMode.MINIMUM,
+    Criterion.TOTAL_BRINE: ThresholdMode.MAXIMUM,
     Criterion.TOTAL_COST: ThresholdMode.MAXIMUM,
     Criterion.TOTAL_GHGS: ThresholdMode.MAXIMUM,
     Criterion.TOTAL_SYSTEM_COST: ThresholdMode.MAXIMUM,

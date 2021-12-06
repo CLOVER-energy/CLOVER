@@ -632,6 +632,7 @@
                 #   unmet_energy_fraction
                 #   cumulative_cost                 $
                 #   cumulative_system_cost          $
+                #   total_brine                     m^3
                 #   total_cost                      $
                 #   total_system_cost               $
                 #   cumulative_ghgs                 kgCO2eq

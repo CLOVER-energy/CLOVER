@@ -633,7 +633,7 @@ def _calculate_renewable_cw_profiles(
         #     ([0] * 14 + [400] + [0] * 9) * int((end_hour - start_hour) / 24)
         # )
 
-        logger.info("PV-T performance successfully computed.")
+        logger.debug("PV-T performance successfully computed.")
 
         # Compute the clean water supplied by the desalination unit.
         renewable_cw_produced: pd.DataFrame = (
@@ -673,10 +673,10 @@ def _calculate_renewable_cw_profiles(
         thermal_desalination_electric_power_consumed = (
             thermal_desalination_electric_power_consumed.reset_index(drop=True)
         )
-        logger.info("Clean-water PV-T performance profiles determined.")
+        logger.debug("Clean-water PV-T performance profiles determined.")
 
     else:
-        logger.info("Skipping clean-water PV-T performance-profile calculation.")
+        logger.debug("Skipping clean-water PV-T performance-profile calculation.")
         buffer_tank_temperature = None
         buffer_tank_volume_supplied = pd.DataFrame([0] * (end_hour - start_hour))
         clean_water_pvt_collector_output_temperature = None
@@ -877,7 +877,7 @@ def _calculate_renewable_hw_profiles(
                 "scenario specifying that this is needed.",
             )
 
-        logger.info("Auxiliary heater successfully determined.")
+        logger.debug("Auxiliary heater successfully determined.")
         logger.debug("Auxiliary heater: %s", str(auxiliary_heater))
 
         # Compute the output of the PV-T system.
@@ -907,7 +907,7 @@ def _calculate_renewable_hw_profiles(
             None,
             wind_speed_data[start_hour:end_hour],
         )
-        logger.info("Hot-water PV-T performance successfully computed.")
+        logger.debug("Hot-water PV-T performance successfully computed.")
 
         # Compute the heat consumed by the auxiliary heater.
         auxiliary_heater_heat_consumption: pd.DataFrame = pd.DataFrame(
@@ -964,10 +964,10 @@ def _calculate_renewable_hw_profiles(
             drop=True
         )
         renewable_hw_fraction = renewable_hw_fraction.reset_index(drop=True)
-        logger.info("Hot-water PV-T performance profiles determined.")
+        logger.debug("Hot-water PV-T performance profiles determined.")
 
     else:
-        logger.info("Skipping hot-water PV-T performance-profile calculation.")
+        logger.debug("Skipping hot-water PV-T performance-profile calculation.")
         auxiliary_heater = None
         hot_water_power_consumed = pd.DataFrame([0] * (end_hour - start_hour))
         hot_water_pvt_collector_output_temperature = None
