@@ -4,6 +4,7 @@ pandas-stubs>=1.2.0
 PyYAML>=5.4.1
 requests>=2.25.1
 seaborn>=0.11.1
+scikit-learn >= 1.0
 scipy>=1.6.2
 tqdm>=4.59.0
 types-requests>=2.26
