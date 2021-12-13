@@ -24,7 +24,7 @@ import json
 from numpy import isin
 import pandas as pd  # pylint: disable=import-error
 
-# from sklearn.linear_model._coordinate_descent import Lasso
+from sklearn.linear_model._coordinate_descent import Lasso
 
 from . import load
 from .generation import solar
@@ -1021,7 +1021,7 @@ def _parse_exchanger_inputs(
 
 def _parse_pvt_reduced_models(
     debug: bool, logger: Logger, scenario: Scenario
-) -> Tuple[Any, Any]:
+) -> Tuple[Lasso, Lasso]:
     """
     Parses the PV-T models from the installed package or raw files.
 
@@ -1044,7 +1044,7 @@ def _parse_pvt_reduced_models(
             "Attempting to read PV-T reduced thermal model from installed package info."
         )
         try:
-            thermal_model: Optional[Any] = pickle.load(
+            thermal_model: Optional[Lasso] = pickle.load(
                 pkgutil.get_data(PACKAGE_NAME, THERMAL_MODEL_FILE)  # type: ignore
             )
         except (AttributeError, FileNotFoundError, TypeError):
@@ -1098,7 +1098,7 @@ def _parse_pvt_reduced_models(
         try:
             # Attempt to read the electric model file as per CLOVER being an installed
             # package.
-            electric_model: Optional[Any] = pickle.load(
+            electric_model: Optional[Lasso] = pickle.load(
                 pkgutil.get_data(PACKAGE_NAME, ELECTRIC_MODEL_FILE)  # type: ignore
             )
         except (AttributeError, FileNotFoundError, TypeError):
