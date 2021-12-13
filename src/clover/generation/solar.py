@@ -27,7 +27,7 @@ from typing import Any, Dict, List, Optional, Tuple
 import numpy as np  # pylint: disable=import-error
 import pandas as pd  # pylint: disable=import-error
 
-from sklearn.linear_model._coordinate_descent import Lasso
+# from sklearn.linear_model._coordinate_descent import Lasso
 
 from ..__utils__ import (
     BColours,
@@ -268,11 +268,11 @@ class HybridPVTPanel(SolarPanel, panel_type=SolarPanelType.PV_T):
 
     def __init__(
         self,
-        electric_model: Optional[Lasso],
+        electric_model: Optional[Any],
         logger: Logger,
         solar_inputs: Dict[str, Any],
         solar_panels: List[SolarPanel],
-        thermal_model: Optional[Lasso],
+        thermal_model: Optional[Any],
     ) -> None:
         """
         Instantiate a :class:`HybridPVTPanel` instance based on the input data.
