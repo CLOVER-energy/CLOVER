@@ -79,11 +79,11 @@ GENERAL_OM = "general_o&m"
 
 # Installation cost:
 #   Keyword used to denote the installation cost of a component.
-INSTALLATION_COST: str = "cost"
+INSTALLATION_COST: str = "installation_cost"
 
 # Installation cost decrease:
 #   Keyword used to denote the installation cost decrease of a component.
-INSTALLATION_COST_DECREASE: str = "cost_decrease"
+INSTALLATION_COST_DECREASE: str = "installation_cost_decrease"
 
 # OM:
 #   Keyword used to denote O&M costs.

@@ -2183,9 +2183,7 @@ def run_simulation(
     # Determine the number of households in the community.
     households = pd.DataFrame(
         population_hourly(location)[
-            simulation.start_year
-            * HOURS_PER_YEAR : simulation.end_year
-            * HOURS_PER_YEAR
+            simulation.start_year * HOURS_PER_YEAR : simulation.end_year * HOURS_PER_YEAR
         ].values
     )
 
