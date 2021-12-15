@@ -309,13 +309,17 @@ def _simulation_financial_appraisal(
         pvt_addition,
         storage_addition,
         system_details.start_year,
-    ) + finance.independent_expenditure(
+    )
+
+    # Add the inddependent expenditure.
+    independent_expenditure = finance.independent_expenditure(
         finance_inputs,
         location,
         yearly_load_statistics,
         start_year=system_details.start_year,
         end_year=system_details.end_year,
     )
+    equipment_costs += independent_expenditure
 
     # Calculate costs of connecting new households (discounted)
     connections_cost = finance.connections_expenditure(
