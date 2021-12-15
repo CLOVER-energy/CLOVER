@@ -32,6 +32,7 @@ from .__utils__ import (
     ColumnHeader,
     CUT_OFF_TIME,
     DemandType,
+    HOURS_PER_YEAR,
     KeyResults,
     ResourceType,
 )
@@ -45,10 +46,6 @@ __all__ = (
 # Colour map:
 #   The preferred sns colourmap to use.
 COLOUR_MAP: str = "Blues"
-
-# Hours per year:
-#   The number of hours in a year, used for reshaping arrays.
-HOURS_PER_YEAR: int = 8760
 
 # Hours until July:
 #   The number of hours until March.

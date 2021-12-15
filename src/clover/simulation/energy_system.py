@@ -39,6 +39,7 @@ from ..__utils__ import (
     DieselMode,
     DemandType,
     DistributionNetwork,
+    HOURS_PER_YEAR,
     HTFMode,
     InputFileError,
     InternalError,
@@ -1934,8 +1935,8 @@ def run_simulation(
     timer_start = datetime.datetime.now()
 
     # Initialise simulation parameters
-    start_hour = simulation.start_year * 8760
-    end_hour = simulation.end_year * 8760
+    start_hour = simulation.start_year * HOURS_PER_YEAR
+    end_hour = simulation.end_year * HOURS_PER_YEAR
     simulation_hours = end_hour - start_hour
     total_cw_load: Optional[pd.DataFrame] = total_loads[ResourceType.CLEAN_WATER]
     total_electric_load: Optional[pd.DataFrame] = total_loads[ResourceType.ELECTRIC]
@@ -2156,7 +2157,7 @@ def run_simulation(
     # Determine the number of households in the community.
     households = pd.DataFrame(
         population_hourly(location)[
-            simulation.start_year * 8760 : simulation.end_year * 8760
+            simulation.start_year * HOURS_PER_YEAR : simulation.end_year * HOURS_PER_YEAR
         ].values
     )
 
@@ -2619,7 +2620,7 @@ def run_simulation(
         clean_water_pvt_size
         * float(
             solar_degradation(minigrid.pvt_panel.lifetime, location.max_years).iloc[
-                8760 * (simulation.end_year - simulation.start_year), 0
+                HOURS_PER_YEAR * (simulation.end_year - simulation.start_year), 0
             ]
         )
         if minigrid.pvt_panel is not None and scenario.desalination_scenario is not None
@@ -2627,7 +2628,7 @@ def run_simulation(
         hot_water_pvt_size
         * float(
             solar_degradation(minigrid.pvt_panel.lifetime, location.max_years).iloc[
-                8760 * (simulation.end_year - simulation.start_year), 0
+                HOURS_PER_YEAR * (simulation.end_year - simulation.start_year), 0
             ]
         )
         if minigrid.pvt_panel is not None and scenario.hot_water_scenario is not None
@@ -2638,7 +2639,7 @@ def run_simulation(
         pv_size
         * float(
             solar_degradation(minigrid.pv_panel.lifetime, location.max_years).iloc[
-                8760 * (simulation.end_year - simulation.start_year), 0
+                HOURS_PER_YEAR * (simulation.end_year - simulation.start_year), 0
             ]
         ),
         float(

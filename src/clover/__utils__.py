@@ -113,6 +113,10 @@ FAILED: str = "[  FAILED  ]"
 #   The heat capacity of water, measured in Joules per kilogram Kelvin.
 HEAT_CAPACITY_OF_WATER: int = 4182
 
+# Hours per year:
+#   The number of hours in a year, used for reshaping arrays.
+HOURS_PER_YEAR: int = 8760
+
 # Iteration length:
 #   Used when parsing information about the iteration length to use in optimisations.
 ITERATION_LENGTH: str = "iteration_length"
