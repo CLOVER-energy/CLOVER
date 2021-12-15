@@ -281,7 +281,7 @@ def _inverter_expenditure(
     replacement_intervals.columns = pd.Index([ColumnHeader.INSTALLATION_YEAR.value])
 
     # Check if inverter should be replaced in the specified time interval
-    if any(
+    if not any(
         replacement_intervals[ColumnHeader.INSTALLATION_YEAR.value].isin(
             list(np.array(range(start_year, end_year)))
         )
