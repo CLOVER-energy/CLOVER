@@ -1315,7 +1315,7 @@ def multiple_optimisation_step(
     for _ in tqdm(
         range(int(optimisation_parameters.number_of_iterations)),
         desc="optimisation steps",
-        leave=True,
+        leave=False,
         unit="step",
     ):
         logger.info("Beginning optimisation step.")
