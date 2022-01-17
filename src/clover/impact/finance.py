@@ -528,7 +528,7 @@ def get_total_equipment_cost(
         installation_year,
     )
     diesel_installation_cost = _component_installation_cost(
-        pv_array_size,
+        diesel_size,
         finance_inputs[ImpactingComponent.DIESEL.value][INSTALLATION_COST],
         finance_inputs[ImpactingComponent.DIESEL.value][INSTALLATION_COST_DECREASE],
         installation_year,
