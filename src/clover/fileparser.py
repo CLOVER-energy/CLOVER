@@ -1713,8 +1713,10 @@ def _parse_tank_inputs(
             raise
         except KeyError:
             logger.error(
-                "Failed to determine hot-water tank from the energy-system inputs "
-                "file."
+                "%sFailed to determine hot-water tank from the energy-system inputs "
+                "file.%s",
+                BColours.fail,
+                BColours.endc
             )
             raise
         else:
