@@ -920,13 +920,13 @@ def _calculate_renewable_hw_profiles(
             ]  # [Wh/degC]
             * (
                 hot_water_tank_volume_supplied
-                / auxiliary_heater.input_resource_consumption[ResourceType.CLEAN_WATER]
+                / 1  # auxiliary_heater.input_resource_consumption[ResourceType.CLEAN_WATER]
             )  # [operating fraction]
             * (hot_water_tank_volume_supplied > 0)
             * (
                 scenario.hot_water_scenario.demand_temperature
                 - hot_water_tank_temperature
-            )
+            )  # [degC]
         )
 
         total_waste_produced.update(
@@ -2562,10 +2562,18 @@ def run_simulation(
             [ColumnHeader.CLEAN_WATER_FROM_RENEWABLES.value]
         )
         renewable_cw_used_directly.columns = pd.Index(
-            [ColumnHeader.RENEWABLE_CW_USED_DIRECTLY]
+            [ColumnHeader.RENEWABLE_CW_USED_DIRECTLY.value]
         )
         storage_water_supplied_frame.columns = pd.Index(
             [ColumnHeader.CLEAN_WATER_FROM_STORAGE.value]
+        )
+        # FIXME: This calculation needs fixing to take into account different operation
+        # scenarios for the desalination plant.
+        thermal_desalination_plant_renewable_fraction = pd.DataFrame(
+            [1] * (end_hour - start_hour)
+        )
+        thermal_desalination_plant_renewable_fraction.columns = pd.Index(
+            [ColumnHeader.DESALINATION_PLANT_RENEWABLE_FRACTION.value]
         )
         total_cw_used.columns = pd.Index([ColumnHeader.TOTAL_CW_CONSUMED.value])
         total_cw_supplied.columns = pd.Index([ColumnHeader.TOTAL_CW_SUPPLIED.value])
@@ -2786,6 +2794,7 @@ def run_simulation(
                 renewable_cw_produced,
                 renewable_cw_used_directly,
                 storage_water_supplied_frame,
+                thermal_desalination_plant_renewable_fraction,
                 total_cw_supplied,
                 total_cw_used,
                 unmet_clean_water,
