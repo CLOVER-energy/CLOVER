@@ -12,24 +12,33 @@
 #   CRITERION                       UNIT
 #   blackouts
 #   clean_water_blackouts
-#   lcue                            $/kWh
-#   emissions_intensity             gCO2/kWh
-#   unmet_energy_fraction
+#   cumulative_brine                m^3
 #   cumulative_cost                 $
+#   cumulative_ghgs                 kgCO2eq
 #   cumulative_system_cost          $
+#   cumulative_system_ghgs          kgCO2eq
+#   emissions_intensity             gCO2/kWh
+#   lcow                            $/m^3
+#   lcue                            $/kWh
 #   total_brine                     m^3
 #   total_cost                      $
 #   total_system_cost               $
-#   cumulative_ghgs                 kgCO2eq
-#   cumulative_system_ghgs          kgCO2eq
 #   total_ghgs                      kgCO2eq
 #   total_system_ghgs               kgCO2eq
+#   unmet_clean_water_fraction
+#   unmet_energy_fraction
+#   unmet_hot_water_fraction
 # Valid optimisation criteria, usually set to "maximise":
 #   hw_demand_covered
-#   renewables_fraction
-#   kerosene_displacement
 #   kerosene_cost_mitigated         $
+#   kerosene_displacement
 #   kerosene_ghgs_mitigated         kgCO2eq
+#   renewables_clean_water_fraction
+#   renewables_fraction
+#   renewables_hot_water_fraction
+#
+# NOTE: Not all optimisation criteria may be available for the system depending
+# on the resource types being considered.
 #
 
 iteration_length: 4 # [years]
