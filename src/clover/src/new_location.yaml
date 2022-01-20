@@ -77,7 +77,7 @@
               contents: |+
                 ---
                 ################################################################################
-                # conversion_inputs.yaml - Parameters for defining converting devices.         #
+                # conversion_inputs.yaml - Parameters for defining converting devices.    #
                 #                                                                              #
                 # Author: Ben Winchester                                                       #
                 # Copyright: Phil Sandwell & Ben Winchester, 2021                              #
@@ -89,14 +89,38 @@
                 #   electric_power: 600 # [W]
                 #   output: feedwater
                 #   maximum_output: 830 # [litres/hour]
+                #   costs:
+                #     cost: 0 # [$/unit]
+                #     cost_decrease: 5 # [% p.a.]
+                #     installation_cost: 0 # [$/unit]
+                #     installation_cost_decrease: 0 # [% p.a.]
+                #     o&m: 8.5 # [$/unit p.a.]
+                #   emissions:
+                #     # ghgs: 614000 # [kgCO2/unit]
+                #     ghgs: 0
+                #     ghg_decrease: 5 # [% p.a.]
+                #     # installation_ghgs: 78000 # [kgCO2/unit]
+                #     installation_ghgs: 0
+                #     installation_ghg_decrease: 0 # [% p.a.]
+                #     o&m: 0 #[kgCO2/litre p.a.]
 
-                # Reverse osmosis specification from:
-                # https://www.sciencedirect.com/science/article/pii/S0255270116304329
                 # - name: reverse_osmosis
                 #   electric_power: 1435 # [W]
                 #   feedwater: 500 # [litres]
                 #   output: clean_water
                 #   maximum_output: 208 # [litres/hour]
+                #   costs:
+                #     cost: 1200 # [$/unit]
+                #     cost_decrease: 5 # [% p.a.]
+                #     installation_cost: 50 # [$/unit]
+                #     installation_cost_decrease: 0 # [% p.a.]
+                #     o&m: 150 # [$/unit p.a.]
+                #   emissions:
+                #     ghgs: 10000 # [kgCO2/kWp]
+                #     ghg_decrease: 5 # [% p.a.]
+                #     installation_ghgs: 10 # [kgCO2/unit]
+                #     installation_ghg_decrease: 0 # [% p.a.]
+                #     o&m: 0.0021 #[kgCO2/litre p.a.]
 
                 # - name: med_liponi
                 #   electric_power: 84 # [Wh]
@@ -109,6 +133,18 @@
                 #   min_feedwater_temperature: 25 # [degC]
                 #   max_htf_temperature: 71.2 # [degC]
                 #   min_htf_temperature: 45.5 # [degC]
+                #   costs:
+                #     cost: 1310 # [$/unit]
+                #     cost_decrease: 5 # [% p.a.]
+                #     installation_cost: 55 # [$/unit]
+                #     installation_cost_decrease: 0 # [% p.a.]
+                #     o&m: 165 # [$/unit p.a.]
+                #   emissions:
+                #     ghgs: 10000 # [kgCO2/kWp]
+                #     ghg_decrease: 5 # [% p.a.]
+                #     installation_ghgs: 10 # [kgCO2/unit]
+                #     installation_ghg_decrease: 0 # [% p.a.]
+                #     o&m: 0.0021 #[kgCO2/litre p.a.]
             - file: "diesel_inputs.yaml"
               contents: |+
                 ---
