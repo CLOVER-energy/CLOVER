@@ -32,8 +32,8 @@ from ..__utils__ import (
 from ..impact.__utils__ import WasteProduct
 
 __all__ = (
-    "Convertor",
-    "MultiInputConvertor",
+    "Converter",
+    "MultiInputConverter",
     "ThermalDesalinationPlant",
     "WaterSource",
 )
@@ -86,9 +86,9 @@ def _parse_waste_production(
         - logger:
             The :class:`logging.Logger` to use for the run.
         - name:
-            The name of the :class:`Convertor` being parsed.
+            The name of the :class:`Converter` being parsed.
         - waste_product_inputs:
-            The waste-product input information for the :class:`Convertor` being parsed.
+            The waste-product input information for the :class:`Converter` being parsed.
 
     Outputs:
         - A mapping between the :class:`WasteProduct` and its associated output
@@ -127,7 +127,7 @@ def _parse_waste_production(
     return waste_production
 
 
-class Convertor:
+class Converter:
     """
     Represents a device that is able to convert one form of energy into another.
 
@@ -136,14 +136,14 @@ class Convertor:
 
     .. attribute:: input_resource_consumption
         A mapping between :class:`ResourceType` and the amount of input required, from
-        that :class:`ResourceType`, when the :class:`Convertor` is operating at its
+        that :class:`ResourceType`, when the :class:`Converter` is operating at its
         maximum throughput.
 
     .. attribute:: maximum_output_capacity
         The maximum capacity of the device in producing its output.
 
     .. attribute:: name
-        The name of the :class:`Convertor` instance.
+        The name of the :class:`Converter` instance.
 
     .. attribute:: output_resource_type
         The type of energy which is outputted by the device.
@@ -163,22 +163,22 @@ class Convertor:
         waste_production: Dict[WasteProduct, float] = {},
     ) -> None:
         """
-        Instantiate a :class:`Convertor` instance.
+        Instantiate a :class:`Converter` instance.
 
         Inputs:
             - consunmption:
                 The amount of input load type which is consumed per unit output load
                 produced.
             - input_resource_types:
-                The types of load inputted to the convertor.
+                The types of load inputted to the converter.
             - maximum_output_capcity:
-                The maximum output capacity of the convertor.
+                The maximum output capacity of the converter.
             - name:
-                The name of the convertor.
+                The name of the converter.
             - output_resource_type:
-                The type of output produced by the convertor.
+                The type of output produced by the converter.
             - waste_production:
-                The waste production of the convertor.
+                The waste production of the converter.
 
         """
 
@@ -211,10 +211,10 @@ class Convertor:
 
     def __hash__(self) -> int:
         """
-        Returns a unique `int` identifying the :class:`Convertor` instance.
+        Returns a unique `int` identifying the :class:`Converter` instance.
 
         Outputs:
-            A unique `int` identifying the :class:`Convertor` instance.
+            A unique `int` identifying the :class:`Converter` instance.
 
         """
 
@@ -253,10 +253,10 @@ class Convertor:
 
     def __repr__(self) -> str:
         """
-        Returns a nice-looking `str` representing the :class:`Convertor` instance.
+        Returns a nice-looking `str` representing the :class:`Converter` instance.
 
         Outputs:
-            - A nidee-looking `str` representing the :class:`Convertor` instance.
+            - A nidee-looking `str` representing the :class:`Converter` instance.
 
         """
 
@@ -264,15 +264,15 @@ class Convertor:
 
     def __str__(self) -> str:
         """
-        Returns a nice-looking `str` representing the :class:`Convertor` instance.
+        Returns a nice-looking `str` representing the :class:`Converter` instance.
 
         Outputs:
-            - A nidee-looking `str` representing the :class:`Convertor` instance.
+            - A nidee-looking `str` representing the :class:`Converter` instance.
 
         """
 
         return (
-            "Convertor("
+            "Converter("
             + f"name={self.name}"
             + ", input_resource_consumption=({})".format(
                 ", ".join(
@@ -306,7 +306,7 @@ class Convertor:
             raise InputFileError(
                 "conversion inputs",
                 "Multiple inputs were defined where only one was expected on a "
-                + f"convertor instance: {self.name}",
+                + f"converter instance: {self.name}",
             )
 
         return list(self.input_resource_consumption.values())[0]
@@ -316,12 +316,12 @@ class Convertor:
         """
         Used to mimic the behaviour of enums.
 
-        In order to utilise :class:`Convertor` instances in the same way that
+        In order to utilise :class:`Converter` instances in the same way that
         :class:`enum.Enum` instances are, it is necessary to include a '.value'
         property.
 
         Outputs:
-            - A `str` giving the value associated with the :class:`Convertor` instance,
+            - A `str` giving the value associated with the :class:`Converter` instance,
               i.e., its name.
 
         """
@@ -329,9 +329,9 @@ class Convertor:
         return self.name
 
 
-class MultiInputConvertor(Convertor):
+class MultiInputConverter(Converter):
     """
-    Represents a convertor that is capable of having multiple input resource types.
+    Represents a converter that is capable of having multiple input resource types.
 
     """
 
@@ -358,14 +358,14 @@ class MultiInputConvertor(Convertor):
     @classmethod
     def from_dict(cls, input_data: Dict[str, Any], logger: Logger) -> Any:
         """
-        Generates a :class:`MultiInputConvertor` instance based on the input data.
+        Generates a :class:`MultiInputConverter` instance based on the input data.
 
         Inputs:
             - input_data:
                 The input data, parsed from the input file.
 
         Outputs:
-            - A :class:`MultiInputConvertor` instance based on the input data.
+            - A :class:`MultiInputConverter` instance based on the input data.
 
         """
 
@@ -446,7 +446,7 @@ class MultiInputConvertor(Convertor):
         )
 
 
-class ThermalDesalinationPlant(MultiInputConvertor):
+class ThermalDesalinationPlant(MultiInputConverter):
     """
     Represents a thermal desalination plant.
 
@@ -657,20 +657,20 @@ class ThermalDesalinationPlant(MultiInputConvertor):
         )
 
 
-class WaterSource(Convertor):
+class WaterSource(Converter):
     """Represents a water source which takes in electricity and outputs water."""
 
     def __str__(self) -> str:
         """
-        Returns a nice-looking `str` representing the :class:`Convertor` instance.
+        Returns a nice-looking `str` representing the :class:`Converter` instance.
 
         Outputs:
-            - A nidee-looking `str` representing the :class:`Convertor` instance.
+            - A nidee-looking `str` representing the :class:`Converter` instance.
 
         """
 
         return (
-            "Convertor("
+            "Converter("
             + f"name={self.name}"
             + ", input_resource_consumption=({})".format(
                 ", ".join(
@@ -688,14 +688,14 @@ class WaterSource(Convertor):
     @classmethod
     def from_dict(cls, input_data: Dict[str, Any], logger: Logger) -> Any:
         """
-        Generates a :class:`Convertor` instance based on the input data provided.
+        Generates a :class:`Converter` instance based on the input data provided.
 
         Inputs:
             - input_data:
                 The input data, parsed from the input file.
 
         Outputs:
-            - A :class:`Convertor` instance based on the input data.
+            - A :class:`Converter` instance based on the input data.
 
         """
 

@@ -27,7 +27,7 @@ import numpy as np  # pylint: disable=import-error
 import pandas as pd
 
 from ..__utils__ import BColours, ELECTRIC_POWER, InputFileError, NAME, ResourceType
-from ..conversion.conversion import MAXIMUM_OUTPUT, Convertor
+from ..conversion.conversion import MAXIMUM_OUTPUT, Converter
 
 
 __all__ = (
@@ -71,7 +71,7 @@ class DieselGenerator:
 
 
 @dataclasses.dataclass
-class DieselWaterHeater(Convertor):
+class DieselWaterHeater(Converter):
     """
     Represents a diesel water heater.
 

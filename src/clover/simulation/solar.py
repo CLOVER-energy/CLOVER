@@ -129,7 +129,7 @@ def _htf_fed_buffer_tank_mass_flow_rate(
 
     if ResourceType.HEAT not in thermal_desalination_plant.input_resource_consumption:
         raise InputFileError(
-            "convertor inputs",
+            "converter inputs",
             "The thermal desalination plant selected does define its heat consumption.",
         )
 
