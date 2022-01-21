@@ -172,7 +172,7 @@ MONTH_MID_DAY: List[int] = [
 MONTH_START_DAY: List[int] = [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334]
 
 # Name:
-#   Keyword used for parsing convertor name information.
+#   Keyword used for parsing converter name information.
 NAME: str = "name"
 
 # Number of iterations:
@@ -269,7 +269,7 @@ class CleanWaterMode(enum.Enum):
     - BACKUP:
         The clean-water demand will only be fulfiled using minigrid power as backup to
         carry out electric desalination if there are any electric desalination
-        convertors present.
+        converters present.
 
     - PRIORITISE:
         The clean-water demand will be fulfiled always, utilising diesel generators if
@@ -2117,8 +2117,8 @@ class SystemDetails:
     .. attribute:: end_year
         The end year of the simulation.
 
-    .. attribute:: final_convertor_sizes:
-        A mapping between the name of the various convertors associated with the system
+    .. attribute:: final_converter_sizes:
+        A mapping between the name of the various converters associated with the system
         and the final size of each that remained at the end of the simiulation.
 
     .. attribute:: final_cw_pvt_size
@@ -2142,8 +2142,8 @@ class SystemDetails:
     .. attribute:: final_storage_size
         The final storage size of the system.
 
-    .. attribute:: initial_convertor_sizes:
-        A mapping between the name of the various convertors associated with the system
+    .. attribute:: initial_converter_sizes:
+        A mapping between the name of the various converters associated with the system
         and the initial size of each that was installed.
 
     .. attribute:: initial_cw_pvt_size
@@ -2181,7 +2181,7 @@ class SystemDetails:
 
     diesel_capacity: float = 0
     end_year: int = 0
-    final_convertor_sizes: Optional[Dict[str, float]] = None
+    final_converter_sizes: Optional[Dict[str, float]] = None
     final_cw_pvt_size: Optional[float] = 0
     final_hw_pvt_size: Optional[float] = 0
     final_num_buffer_tanks: Optional[int] = 0
@@ -2189,7 +2189,7 @@ class SystemDetails:
     final_num_hot_water_tanks: Optional[int] = 0
     final_pv_size: float = 0
     final_storage_size: float = 0
-    initial_convertor_sizes: Optional[Dict[str, float]] = None
+    initial_converter_sizes: Optional[Dict[str, float]] = None
     initial_cw_pvt_size: Optional[float] = 0
     initial_hw_pvt_size: Optional[float] = 0
     initial_num_buffer_tanks: Optional[int] = 0
@@ -2224,18 +2224,18 @@ class SystemDetails:
             "start_year": round(self.start_year, 3),
         }
 
-        if self.initial_convertor_sizes is not None:
+        if self.initial_converter_sizes is not None:
             system_details_as_dict.update(
                 {
                     f"intial_num_{key}": value
-                    for key, value in self.initial_convertor_sizes.items()
+                    for key, value in self.initial_converter_sizes.items()
                 }
             )
-        if self.final_convertor_sizes is not None:
+        if self.final_converter_sizes is not None:
             system_details_as_dict.update(
                 {
                     f"intial_num_{key}": value
-                    for key, value in self.final_convertor_sizes.items()
+                    for key, value in self.final_converter_sizes.items()
                 }
             )
         if self.initial_num_buffer_tanks is not None:

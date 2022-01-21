@@ -533,7 +533,7 @@ def main(args: List[Any]) -> None:
 
     try:
         (
-            convertors,
+            converters,
             device_utilisations,
             minigrid,
             finance_inputs,
@@ -1048,7 +1048,7 @@ def main(args: List[Any]) -> None:
                     if parsed_args.clean_water_pvt_system_size is not None
                     else 0,
                     conventional_cw_source_profiles,
-                    convertors,
+                    converters,
                     parsed_args.storage_size,
                     grid_profile,
                     parsed_args.hot_water_pvt_system_size
@@ -1244,12 +1244,12 @@ def main(args: List[Any]) -> None:
             if entry is not None
         ] + [
             "- {} resolution of {} units (1 {} device of {} max output per unit)".format(
-                convertor.name,
+                converter.name,
                 sizing.step,
-                convertor.name,
-                convertor.maximum_output_capacity,
+                converter.name,
+                converter.maximum_output_capacity,
             )
-            for convertor, sizing in optimisation_inputs.convertor_sizes.items()
+            for converter, sizing in optimisation_inputs.converter_sizes.items()
         ]
 
         optimisation_string: str = "\n".join(
@@ -1263,7 +1263,7 @@ def main(args: List[Any]) -> None:
             try:
                 time_delta, optimisation_results = multiple_optimisation_step(
                     conventional_cw_source_profiles,
-                    convertors,
+                    converters,
                     finance_inputs,
                     ghg_inputs,
                     grid_profile,

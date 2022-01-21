@@ -113,7 +113,7 @@ class ImpactingComponent(enum.Enum):
     BUFFER_TANK = "buffer_tank"
     CLEAN_WATER_TANK = "clean_water_tank"
     CONVENTIONAL_SOURCE = "conventional_source"
-    CONVERTOR = "convertor"
+    CONVERTOR = "converter"
     DIESEL = "diesel_generator"
     DIESEL_FUEL = "diesel_fuel"
     DIESEL_WATER_HEATER = "diesel_water_heater"
