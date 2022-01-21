@@ -371,6 +371,10 @@ class ColumnHeader(enum.Enum):
     - CW_TANK_STORAGE_PROFILE:
         The storage profile of the clean-water tanks.
 
+    - DESALINATION_PLANT_RENEWABLE_FRACTION
+        The fraction of the thermal energy which was supplied to the desalination
+        plant(s) which was renewable.
+
     - DIESEL_ENERGY_SUPPLIED:
         The energy which was supplied by the diesel generators present in the system.
 
@@ -517,7 +521,7 @@ class ColumnHeader(enum.Enum):
         "Clean water supplied using excess minigrid energy (l)"
     )
     CLEAN_WATER_FROM_PRIORITISATION = "Clean water supplied via backup desalination (l)"
-    CLEAN_WATER_FROM_RENEWABLES = "Renewable clean water produced (l)"
+    CLEAN_WATER_FROM_RENEWABLES = "Renewable clean water produced directly (l)"
     CLEAN_WATER_FROM_STORAGE = "Clean water supplied via tank storage (l)"
     CW_PVT_ELECTRICITY_SUPPLIED = "Clean-water PV-T electric energy supplied (kWh)"
     CW_PVT_ELECTRICITY_SUPPLIED_PER_KWP = (
@@ -525,6 +529,9 @@ class ColumnHeader(enum.Enum):
     )
     CW_PVT_OUTPUT_TEMPERATURE = "Clean-water PV-T output temperature (degC)"
     CW_TANK_STORAGE_PROFILE = "Water held in clean-water storage tanks (l)"
+    DESALINATION_PLANT_RENEWABLE_FRACTION = (
+        "Thermal desalination plant(s) renewable fraction"
+    )
     DIESEL_ENERGY_SUPPLIED = "Diesel energy (kWh)"
     DIESEL_FUEL_USAGE = "Diesel fuel usage (l)"
     DIESEL_GENERATOR_TIMES = "Diesel times"
@@ -1104,6 +1111,9 @@ class ResourceType(enum.Enum):
     - CLEAN_WATER:
         Represents a clean-water load.
 
+    - COOLING:
+        Represents a cooling load.
+
     - DIESEL:
         Represents the resource of diesel.
 
@@ -1136,6 +1146,7 @@ class ResourceType(enum.Enum):
     """
 
     CLEAN_WATER = "clean_water"
+    COOLING = "cooling"
     DIESEL = "diesel"
     ELECTRIC = "electricity"
     GENERIC_WATER = "generic_water"
@@ -1151,6 +1162,7 @@ class ResourceType(enum.Enum):
 RESOURCE_NAME_TO_RESOURCE_TYPE_MAPPING = {
     "clean_water": ResourceType.CLEAN_WATER,
     "cold_water": ResourceType.CLEAN_WATER,
+    "cooling": ResourceType.COOLING,
     "diesel_consumption": ResourceType.DIESEL,
     ELECTRIC_POWER: ResourceType.ELECTRIC,
     "feedwater": ResourceType.UNCLEAN_WATER,
@@ -1386,6 +1398,9 @@ class Criterion(enum.Enum):
         Denotes the portion of time for which the clean-water system experienced a
         blackout.
 
+    - CUMULATIVE_BRINE:
+        Denotes the cumulative brine produced by the system.
+
     - CUMULATIVE_COST:
         Denotes the cumulative cost incurred.
 
@@ -1413,11 +1428,29 @@ class Criterion(enum.Enum):
     - KEROSENE_GHGS_MITIGATED:
         The mitigated GHGs by not consuming kerosene.
 
+    - LCOW:
+        Denotes the levilised cost of clean water produced.
+
     - LCUE:
-        Denotes the levilised code of electricity.
+        Denotes the levilised cost of electricity.
+
+    - RENEWABLES_CLEAN_WATER_FRACTION:
+        The fraction of the clean water produced by the system which was generated using
+        renewables.
 
     - RENEWABLES_ELECTRICITY_FRACTION:
         The fraction of energy which was emitted renewably.
+
+    - RENEWABLES_HOT_WATER_FRACTION:
+        The fraction of hot-water heating that was carried out using renewables.
+
+    - SOLAR_THERMAL_CLEAN_WATER_FRACTION:
+        The fraction of the clean-water demand which was met using solar-thermal heat,
+        both PV-T and solar-thermal collectors if present.
+
+    - SOLAR_THERMAL_HOT_WATER_FRACTION:
+        The fraction of the hot-water demand which was met using solar-thermal heat,
+        both PV-T and solar-thermal collectors if present.
 
     - TOTAL_BRINE:
         The total brine produced.
@@ -1434,13 +1467,20 @@ class Criterion(enum.Enum):
     - TOTAL_SYSTEM_GHGS:
         The total GHGs emitted by the system.
 
+    - UNMET_CLEAN_WATER_FRACTION:
+        The fraction of clean-water demand which went unmet.
+
     - UNMET_ENERGY_FRACTION:
         The fraction of energy which went unmet.
+
+    - UNMET_HOT_WATER_FRACTION:
+        The fraction of hot-water demand which went unmet.
 
     """
 
     BLACKOUTS = "blackouts"
     CLEAN_WATER_BLACKOUTS = "clean_water_blackouts"
+    CUMULATIVE_BRINE = "cumulative_brine"
     CUMULATIVE_COST = "cumulative_cost"
     CUMULATIVE_GHGS = "cumulative_ghgs"
     CUMULATIVE_SYSTEM_COST = "cumulative_system_cost"
@@ -1450,14 +1490,21 @@ class Criterion(enum.Enum):
     KEROSENE_COST_MITIGATED = "kerosene_cost_mitigated"
     KEROSENE_DISPLACEMENT = "kerosene_displacement"
     KEROSENE_GHGS_MITIGATED = "kerosene_ghgs_mitigated"
+    LCOW = "lcow"
     LCUE = "lcue"
+    RENEWABLES_CLEAN_WATER_FRACTION = "renewables_clean_water_fraction"
     RENEWABLES_ELECTRICITY_FRACTION = "renewables_fraction"
+    RENEWABLES_HOT_WATER_FRACTION = "renewables_hot_water_fraction"
+    SOLAR_THERMAL_CLEAN_WATER_FRACTION = "solar_thermal_clean_water_fraction"
+    SOLAR_THERMAL_HOT_WATER_FRACTION = "solar_thermal_hot_water_fraction"
     TOTAL_BRINE = "total_brine"
     TOTAL_COST = "total_cost"
     TOTAL_GHGS = "total_ghgs"
     TOTAL_SYSTEM_COST = "total_system_cost"
     TOTAL_SYSTEM_GHGS = "total_system_ghgs"
+    UNMET_CLEAN_WATER_FRACTION = "unmet_clean_water_fraction"
     UNMET_ENERGY_FRACTION = "unmet_energy_fraction"
+    UNMET_HOT_WATER_FRACTION = "unmet_hot_water_fraction"
 
     def __str__(self) -> str:
         """
@@ -2272,6 +2319,9 @@ class CumulativeResults:
     """
     Contains cumulative results about the system.
 
+    .. attribute:: brine
+        The cumulative brine produced, measured in litres.
+
     .. attribute:: clean_water
         The cumulative clean water produced, measured in litres.
 
@@ -2357,6 +2407,9 @@ class EnvironmentalAppraisal:
     .. attribute:: om_ghgs
         The O&M GHGs emitted by the system.
 
+    .. attribute:: total_brine
+        The total brine produced.
+
     .. attribute:: total_ghgs
         The total GHGs emitted.
 
@@ -2365,6 +2418,7 @@ class EnvironmentalAppraisal:
 
     """
 
+    total_brine: float = 0
     diesel_ghgs: float = 0
     grid_ghgs: float = 0
     kerosene_ghgs: float = 0
@@ -2392,6 +2446,7 @@ class EnvironmentalAppraisal:
             "new_connection_ghgs": self.new_connection_ghgs,
             "new_equipment_ghgs": self.new_equipment_ghgs,
             "om_ghgs": self.om_ghgs,
+            "total_brine": self.total_brine,
             "total_ghgs": self.total_ghgs,
             "total_system_ghgs": self.total_system_ghgs,
         }
@@ -2504,6 +2559,11 @@ class TechnicalAppraisal:
     .. attribute:: pv_energy
         The total amount of energy that was supplied by the PV system, measured in kWh.
 
+    .. attribute:: renewable_clean_water_fraction
+        The fraction of clean water that was supplied through renewables, defined
+        between 0 (none of the clean water supplied was supplied by renewables) and 1
+        (all of the clean water was produced using renwables).
+
     .. attribute:: renewable_energy
         The total amount of renewable energy that was supplied by all the renewable
         sources, measured in kWh.
@@ -2544,6 +2604,7 @@ class TechnicalAppraisal:
     kerosene_displacement: float = 0
     pv_energy: float = 0
     pvt_energy: Optional[float] = 0
+    renewable_clean_water_fraction: float = 0
     renewable_energy: float = 0
     renewable_energy_fraction: float = 0
     storage_energy: float = 0
@@ -2571,6 +2632,7 @@ class TechnicalAppraisal:
             "grid_energy": self.grid_energy,
             "hot_water_demand_covered": self.hw_demand_covered,
             "kerosene_displacement": self.kerosene_displacement,
+            "renewable_clean_water_fraction": self.renewable_clean_water_fraction,
             "renewable_energy": self.renewable_energy,
             "renewable_energy_fraction": self.renewable_energy_fraction,
             "storage_energy": self.storage_energy,
