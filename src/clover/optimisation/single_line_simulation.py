@@ -37,11 +37,11 @@ from ..__utils__ import (
     Simulation,
     SystemAppraisal,
 )
-from ..conversion.conversion import Convertor, WaterSource
+from ..conversion.conversion import Converter, WaterSource
 from ..impact.__utils__ import ImpactingComponent  # pylint: disable=import-error
 
 from .__utils__ import (
-    ConvertorSize,
+    ConverterSize,
     Optimisation,
     get_sufficient_appraisals,
     recursive_iteration,
@@ -57,10 +57,10 @@ __all__ = ("single_line_simulation",)
 
 def single_line_simulation(
     conventional_cw_source_profiles: Dict[WaterSource, pd.DataFrame],
-    convertor_sizes: Dict[Convertor, ConvertorSize],
+    convertor_sizes: Dict[Converter, ConverterSize],
     cw_pvt_size: SolarSystemSize,
     cw_tanks: TankSize,
-    convertors: List[Convertor],
+    convertors: List[Converter],
     end_year: int,
     finance_inputs: Dict[str, Any],
     ghg_inputs: Dict[str, Any],
@@ -85,7 +85,7 @@ def single_line_simulation(
     wind_speed_data: Optional[pd.Series],
     yearly_electric_load_statistics: pd.DataFrame,
 ) -> Tuple[
-    Dict[Convertor, ConvertorSize],
+    Dict[Converter, ConverterSize],
     SolarSystemSize,
     TankSize,
     SolarSystemSize,
@@ -173,7 +173,7 @@ def single_line_simulation(
 
     # Determine the static convertors based on those that were modelled but were not
     # passed in as part of the maximum system size parameters.
-    static_convertor_sizes: Dict[Convertor, int] = {
+    static_convertor_sizes: Dict[Converter, int] = {
         convertor: potential_convertor_sizes.count(convertor)
         for convertor in potential_convertor_sizes
         if convertor not in convertor_sizes
@@ -223,7 +223,7 @@ def single_line_simulation(
 
         # Prep variables for the iteration process.
         component_sizes: Dict[
-            Union[Convertor, ImpactingComponent, RenewableEnergySource]
+            Union[Converter, ImpactingComponent, RenewableEnergySource]
         ] = {
             ImpactingComponent.CLEAN_WATER_TANK: potential_num_clean_water_tanks,
             ImpactingComponent.HOT_WATER_TANK: potential_num_hot_water_tanks,
@@ -231,7 +231,7 @@ def single_line_simulation(
         }
         parameter_space: List[
             Tuple[
-                Union[Convertor, ImpactingComponent, RenewableEnergySource],
+                Union[Converter, ImpactingComponent, RenewableEnergySource],
                 str,
                 Union[List[int], List[float]],
             ]

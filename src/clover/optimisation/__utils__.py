@@ -51,14 +51,14 @@ from ..__utils__ import (
     InputFileError,
     SystemAppraisal,
 )
-from ..conversion.conversion import Convertor, WaterSource
+from ..conversion.conversion import Converter, WaterSource
 from ..impact.__utils__ import ImpactingComponent
 
 from .appraisal import appraise_system
 
 __all__ = (
-    "convertors_from_sizing",
-    "ConvertorSize",
+    "converters_from_sizing",
+    "ConverterSize",
     "CriterionMode",
     "get_sufficient_appraisals",
     "Optimisation",
@@ -71,62 +71,62 @@ __all__ = (
     "ThresholdMode",
 )
 
-# Convertor name string:
-#   The name used for parsing the convertor name group.
+# Converter name string:
+#   The name used for parsing the converter name group.
 #   NOTE: This name is not updated within the regex and needs to be updated separately.
 CONVERTOR_NAME_STRING: str = "name"
 
-# Convertor size regex:
-#   Regular expression used for parsing the size of various convertors for
+# Converter size regex:
+#   Regular expression used for parsing the size of various converters for
 # optimisations.
 #   NOTE: The name of the group is not updated automatically in accordance with the
 # above string and needs to be udpated separately.
 CONVERTOR_SIZE_REGEX: Pattern[str] = re.compile(r"(?P<name>.*)_size")
 
 
-def convertors_from_sizing(convertor_sizes: Dict[Convertor, int]) -> List[Convertor]:
+def converters_from_sizing(converter_sizes: Dict[Converter, int]) -> List[Converter]:
     """
-    Generates a `list` of available convertors based on the number of each available.
+    Generates a `list` of available converters based on the number of each available.
 
     As the system is optimised, it becomes necessary to generate a `list` containing the
-    available convertors, with duplicates allowed to indiciate multiple instances of a
+    available converters, with duplicates allowed to indiciate multiple instances of a
     single type present, from the various values.
 
     Inputs:
-        - convertor_sizes:
-            A `dict` mapping :class:`Convertor` instances to the number of each type
+        - converter_sizes:
+            A `dict` mapping :class:`Converter` instances to the number of each type
             present during the iteration.
 
     Outputs:
-        - A `list` of :class:`Convertor` instances present based on the mapping passed
+        - A `list` of :class:`Converter` instances present based on the mapping passed
         in.
 
     """
 
-    convertors: List[Convertor] = []
+    converters: List[Converter] = []
 
-    for convertor, size in convertor_sizes.items():
-        convertors.extend([convertor] * size)
+    for converter, size in converter_sizes.items():
+        converters.extend([converter] * size)
 
-    return convertors
+    return converters
 
 
 @dataclasses.dataclass
-class ConvertorSize:
+class ConverterSize:
     """
-    Used to wrap the convertor size information.
+    Used to wrap the converter size information.
 
     .. atttribute:: max
-        The maximum size of the :class:`converseion.Convertor` in question, measured in
-        number of :class:`conversion.Convertor` instances.
+        The maximum size of the :class:`converseion.Converter` in question, measured in
+        number of :class:`conversion.Converter` instances.
 
     .. attribute:: min
-        The minimum size of the :class:`converseion.Convertor` in question, measured in
-        number of :class:`conversion.Convertor` instances.
+        The minimum size of the :class:`converseion.Converter` in question, measured in
+        number of :class:`conversion.Converter` instances.
 
     .. attribute:: step
-        The step to use for the :class:`converseion.Convertor` in question, measured in
-        number of :class:`conversion.Convertor` instances.
+        The step to use for the :class:`converseion.Converter` in question, measured in
+        number of :class:`conversion.Converter` instances.
 
     """
 
@@ -380,8 +380,8 @@ class OptimisationParameters:
     .. attribute:: clean_water_tanks
         The sizing bounds for the clean-water tanks.
 
-    .. attribute:: convertor_sizes
-        The sizing bounds for the various :class:`conversion.Convertor` instances
+    .. attribute:: converter_sizes
+        The sizing bounds for the various :class:`conversion.Converter` instances
         associated with the system.
 
     .. attribute:: cw_pvt_size
@@ -408,7 +408,7 @@ class OptimisationParameters:
     """
 
     clean_water_tanks: TankSize
-    convertor_sizes: Dict[Convertor, ConvertorSize]
+    converter_sizes: Dict[Converter, ConverterSize]
     cw_pvt_size: SolarSystemSize
     hot_water_tanks: TankSize
     hw_pvt_size: SolarSystemSize
@@ -420,7 +420,7 @@ class OptimisationParameters:
     @classmethod
     def from_dict(
         cls,
-        available_convertors: List[Convertor],
+        available_converters: List[Converter],
         logger: Logger,
         optimisation_inputs: Dict[str, Any],
     ) -> Any:
@@ -428,8 +428,8 @@ class OptimisationParameters:
         Returns a :class:`OptimisationParameters` instance based on the input info.
 
         Inputs:
-            - available_convertors:
-                The `list` of :class:`conversion.Convertor` instances that are defined
+            - available_converters:
+                The `list` of :class:`conversion.Converter` instances that are defined
                 and which are available to the system.
             - logger:
                 The :class:`logging.Loggger` to use for the run.
@@ -522,8 +522,8 @@ class OptimisationParameters:
         else:
             clean_water_tanks = TankSize()
 
-        # Parse the convertors that are to be optimised.
-        convertor_sizing_inputs: Dict[str, Dict[str, int]] = {
+        # Parse the converters that are to be optimised.
+        converter_sizing_inputs: Dict[str, Dict[str, int]] = {
             key: value  # type: ignore
             for key, value in optimisation_inputs.items()
             if CONVERTOR_SIZE_REGEX.match(key) is not None
@@ -531,33 +531,33 @@ class OptimisationParameters:
 
         # NOTE: Explicit error handling is done for the type-check ignored lines.
         try:
-            convertor_sizing_inputs = {
+            converter_sizing_inputs = {
                 CONVERTOR_SIZE_REGEX.match(key).group(CONVERTOR_NAME_STRING): value  # type: ignore
-                for key, value in convertor_sizing_inputs.items()
+                for key, value in converter_sizing_inputs.items()
                 if CONVERTOR_SIZE_REGEX.match(key).group(CONVERTOR_NAME_STRING)  # type: ignore
-                in {convertor.name for convertor in available_convertors}
+                in {converter.name for converter in available_converters}
             }
         except AttributeError as e:
             logger.error(
-                "%sError parsing convertor input information, unable to match groups."
+                "%sError parsing converter input information, unable to match groups."
                 "%s",
                 BColours.fail,
                 BColours.endc
             )
 
-        convertor_name_to_convertor = {
-            convertor.name: convertor for convertor in available_convertors
+        converter_name_to_converter = {
+            converter.name: converter for converter in available_converters
         }
         try:
-            convertor_sizes: Dict[Convertor, ConvertorSize] = {
-                convertor_name_to_convertor[key]: ConvertorSize(
+            converter_sizes: Dict[Converter, ConverterSize] = {
+                converter_name_to_converter[key]: ConverterSize(
                     entry[MAX], entry[MIN], entry[STEP]
                 )
-                for key, entry in convertor_sizing_inputs.items()
+                for key, entry in converter_sizing_inputs.items()
             }
         except KeyError:
             logger.error(
-                "%sNot all information was provided for the convertors defined within "
+                "%sNot all information was provided for the converters defined within "
                 "the optimisation inputs file.%s",
                 BColours.fail,
                 BColours.endc,
@@ -682,7 +682,7 @@ class OptimisationParameters:
 
         return cls(
             clean_water_tanks,
-            convertor_sizes,
+            converter_sizes,
             cw_pvt_size,
             hot_water_tanks,
             hw_pvt_size,
@@ -871,11 +871,11 @@ def recursive_iteration(
     yearly_electric_load_statistics: pd.DataFrame,
     *,
     component_sizes: Dict[
-        Union[Convertor, ImpactingComponent, RenewableEnergySource], Union[int, float],
+        Union[Converter, ImpactingComponent, RenewableEnergySource], Union[int, float],
     ],
     parameter_space: List[
         Tuple[
-            Union[Convertor, ImpactingComponent, RenewableEnergySource],
+            Union[Converter, ImpactingComponent, RenewableEnergySource],
             str,
             Union[List[int], List[float]],
         ]
@@ -932,7 +932,7 @@ def recursive_iteration(
             ),
         )
 
-        # Determine the convertor sizes.
+        # Determine the converter sizes.
         if not all(isinstance(value, int) for value in component_sizes.values()):
             logger.error(
                 "%sNon-integer component sizes were specified, exiting.%s",
@@ -941,13 +941,13 @@ def recursive_iteration(
             )
             raise InputFileError(
                 "optimisation inputs",
-                "Component size inputs specified non-integer convertor sizes."
+                "Component size inputs specified non-integer converter sizes."
             )
-        convertors = convertors_from_sizing(
+        converters = converters_from_sizing(
             {
                 key: int(value)
                 for key, value in component_sizes.items()
-                if isinstance(key, Convertor)
+                if isinstance(key, Converter)
             }
         )
 
@@ -955,7 +955,7 @@ def recursive_iteration(
         (_, simulation_results, system_details,) = energy_system.run_simulation(
             int(component_sizes[RenewableEnergySource.CLEAN_WATER_PVT]),
             conventional_cw_source_profiles,
-            convertors,
+            converters,
             component_sizes[ImpactingComponent.STORAGE],
             grid_profile,
             int(component_sizes[RenewableEnergySource.HOT_WATER_PVT]),
@@ -1002,7 +1002,7 @@ def recursive_iteration(
     ):
         # Update the set of fixed sizes accordingly.
         updated_component_sizes: Dict[
-            Union[Convertor, ImpactingComponent, RenewableEnergySource], Union[int, float]
+            Union[Converter, ImpactingComponent, RenewableEnergySource], Union[int, float]
         ] = component_sizes.copy()
         updated_component_sizes[component] = size
 
