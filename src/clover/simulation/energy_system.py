@@ -2061,10 +2061,9 @@ def run_simulation(
         )
         number_of_buffer_tanks: int = 1
     else:
-        processed_total_cw_load = pd.DataFrame([0] * simulation_hours)
         clean_water_power_consumed = pd.DataFrame([0] * simulation_hours)
         number_of_buffer_tanks = 0
-        processed_total_cw_load = None
+        processed_total_cw_load = pd.DataFrame([0] * simulation_hours)
         renewable_cw_used_directly = pd.DataFrame([0] * simulation_hours)
         tank_storage_profile = pd.DataFrame([0] * simulation_hours)
 
