@@ -74,14 +74,14 @@ __all__ = (
 # Converter name string:
 #   The name used for parsing the converter name group.
 #   NOTE: This name is not updated within the regex and needs to be updated separately.
-CONVERTOR_NAME_STRING: str = "name"
+CONVERTER_NAME_STRING: str = "name"
 
 # Converter size regex:
 #   Regular expression used for parsing the size of various converters for
 # optimisations.
 #   NOTE: The name of the group is not updated automatically in accordance with the
 # above string and needs to be udpated separately.
-CONVERTOR_SIZE_REGEX: Pattern[str] = re.compile(r"(?P<name>.*)_size")
+CONVERTER_SIZE_REGEX: Pattern[str] = re.compile(r"(?P<name>.*)_size")
 
 
 def converters_from_sizing(converter_sizes: Dict[Converter, int]) -> List[Converter]:
@@ -526,15 +526,15 @@ class OptimisationParameters:
         converter_sizing_inputs: Dict[str, Dict[str, int]] = {
             key: value  # type: ignore
             for key, value in optimisation_inputs.items()
-            if CONVERTOR_SIZE_REGEX.match(key) is not None
+            if CONVERTER_SIZE_REGEX.match(key) is not None
         }
 
         # NOTE: Explicit error handling is done for the type-check ignored lines.
         try:
             converter_sizing_inputs = {
-                CONVERTOR_SIZE_REGEX.match(key).group(CONVERTOR_NAME_STRING): value  # type: ignore
+                CONVERTER_SIZE_REGEX.match(key).group(CONVERTER_NAME_STRING): value  # type: ignore
                 for key, value in converter_sizing_inputs.items()
-                if CONVERTOR_SIZE_REGEX.match(key).group(CONVERTOR_NAME_STRING)  # type: ignore
+                if CONVERTER_SIZE_REGEX.match(key).group(CONVERTER_NAME_STRING)  # type: ignore
                 in {converter.name for converter in available_converters}
             }
         except AttributeError as e:

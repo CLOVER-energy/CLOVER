@@ -490,12 +490,12 @@ def get_total_equipment_cost(
         _component_cost(
             finance_inputs[
                 FINANCE_IMPACT.format(
-                    type=ImpactingComponent.CONVERTOR.value, name=converter
+                    type=ImpactingComponent.CONVERTER.value, name=converter
                 )
             ][COST],
             finance_inputs[
                 FINANCE_IMPACT.format(
-                    type=ImpactingComponent.CONVERTOR.value, name=converter
+                    type=ImpactingComponent.CONVERTER.value, name=converter
                 )
             ][COST_DECREASE],
             size,
@@ -508,12 +508,12 @@ def get_total_equipment_cost(
             size,
             finance_inputs[
                 FINANCE_IMPACT.format(
-                    type=ImpactingComponent.CONVERTOR.value, name=converter
+                    type=ImpactingComponent.CONVERTER.value, name=converter
                 )
             ][INSTALLATION_COST],
             finance_inputs[
                 FINANCE_IMPACT.format(
-                    type=ImpactingComponent.CONVERTOR.value, name=converter
+                    type=ImpactingComponent.CONVERTER.value, name=converter
                 )
             ][INSTALLATION_COST_DECREASE],
             installation_year,
@@ -1087,7 +1087,7 @@ def total_om(
             _component_om(
                 finance_inputs[
                     FINANCE_IMPACT.format(
-                        type=ImpactingComponent.CONVERTOR.value, name=converter
+                        type=ImpactingComponent.CONVERTER.value, name=converter
                     )
                 ][OM],
                 size,

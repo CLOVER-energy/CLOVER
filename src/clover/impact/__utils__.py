@@ -53,7 +53,7 @@ class ImpactingComponent(enum.Enum):
         Denotes conventional sources which would be utilised during minigrid supply
         downtimes.
 
-    - CONVERTOR:
+    - CONVERTER:
         Denotes a component of the system responsible for the conversion of one
         resource type into another.
 
@@ -113,7 +113,7 @@ class ImpactingComponent(enum.Enum):
     BUFFER_TANK = "buffer_tank"
     CLEAN_WATER_TANK = "clean_water_tank"
     CONVENTIONAL_SOURCE = "conventional_source"
-    CONVERTOR = "converter"
+    CONVERTER = "converter"
     DIESEL = "diesel_generator"
     DIESEL_FUEL = "diesel_fuel"
     DIESEL_WATER_HEATER = "diesel_water_heater"
