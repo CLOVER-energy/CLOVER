@@ -57,17 +57,10 @@ __all__ = ("single_line_simulation",)
 
 def single_line_simulation(
     conventional_cw_source_profiles: Dict[WaterSource, pd.DataFrame],
-<<<<<<< HEAD
     converter_sizes: Dict[Converter, ConverterSize],
     cw_pvt_size: SolarSystemSize,
     cw_tanks: TankSize,
     converters: List[Converter],
-=======
-    convertor_sizes: Dict[Converter, ConverterSize],
-    cw_pvt_size: SolarSystemSize,
-    cw_tanks: TankSize,
-    convertors: List[Converter],
->>>>>>> main-module
     end_year: int,
     finance_inputs: Dict[str, Any],
     ghg_inputs: Dict[str, Any],
@@ -180,17 +173,10 @@ def single_line_simulation(
 
     # Determine the static converters based on those that were modelled but were not
     # passed in as part of the maximum system size parameters.
-<<<<<<< HEAD
     static_converter_sizes: Dict[Converter, int] = {
         converter: potential_converter_sizes.count(converter)
         for converter in potential_converter_sizes
         if converter not in converter_sizes
-=======
-    static_convertor_sizes: Dict[Converter, int] = {
-        convertor: potential_convertor_sizes.count(convertor)
-        for convertor in potential_convertor_sizes
-        if convertor not in convertor_sizes
->>>>>>> main-module
     }
 
     # Check to see if storage size was an integer number of steps, and increase
