@@ -41,6 +41,7 @@ from ..__utils__ import (
     MAX,
     MIN,
     NUMBER_OF_ITERATIONS,
+    ProgrammerJudgementFault,
     RenewableEnergySource,
     ResourceType,
     Scenario,
@@ -521,20 +522,31 @@ class OptimisationParameters:
         else:
             clean_water_tanks = TankSize()
 
-        # Parse the converters that are to be optimised.
-        converter_sizing_inputs: Dict[str, Dict[str, float]] = {
+        # Parse the convertors that are to be optimised.
+        convertor_sizing_inputs: Dict[str, Dict[str, int]] = {
             key: value  # type: ignore
             for key, value in optimisation_inputs.items()
             if CONVERTOR_SIZE_REGEX.match(key) is not None
         }
-        converter_sizing_inputs = {
-            CONVERTOR_SIZE_REGEX.match(key).group(CONVERTOR_NAME_STRING): value
-            for key, value in converter_sizing_inputs.items()
-            if CONVERTOR_SIZE_REGEX.match(key).group(CONVERTOR_NAME_STRING)
-            in {converter.name for converter in available_converters}
-        }
-        converter_name_to_converter = {
-            converter.name: converter for converter in available_converters
+
+        # NOTE: Explicit error handling is done for the type-check ignored lines.
+        try:
+            convertor_sizing_inputs = {
+                CONVERTOR_SIZE_REGEX.match(key).group(CONVERTOR_NAME_STRING): value  # type: ignore
+                for key, value in convertor_sizing_inputs.items()
+                if CONVERTOR_SIZE_REGEX.match(key).group(CONVERTOR_NAME_STRING)  # type: ignore
+                in {convertor.name for convertor in available_convertors}
+            }
+        except AttributeError as e:
+            logger.error(
+                "%sError parsing convertor input information, unable to match groups."
+                "%s",
+                BColours.fail,
+                BColours.endc
+            )
+
+        convertor_name_to_convertor = {
+            convertor.name: convertor for convertor in available_convertors
         }
         try:
             converter_sizes: Dict[Converter, ConverterSize] = {
@@ -804,7 +816,8 @@ def get_sufficient_appraisals(
     # Cycle through the provided appraisals.
     for appraisal in system_appraisals:
         if appraisal.criteria is None:
-            raise InternalError(
+            raise ProgrammerJudgementFault(
+                "appraisal",
                 "A system appraisal was returned which does not have criteria defined."
             )
         criteria_met = set()
@@ -860,7 +873,7 @@ def recursive_iteration(
     yearly_electric_load_statistics: pd.DataFrame,
     *,
     component_sizes: Dict[
-        Union[Converter, ImpactingComponent, RenewableEnergySource], float
+        Union[Convertor, ImpactingComponent, RenewableEnergySource], Union[int, float],
     ],
     parameter_space: List[
         Tuple[
@@ -921,10 +934,20 @@ def recursive_iteration(
             ),
         )
 
-        # Determine the converter sizes.
-        converters = converters_from_sizing(
+        # Determine the convertor sizes.
+        if not all(isinstance(value, int) for value in component_sizes.values()):
+            logger.error(
+                "%sNon-integer component sizes were specified, exiting.%s",
+                BColours.fail,
+                BColours.endc
+            )
+            raise InputFileError(
+                "optimisation inputs",
+                "Component size inputs specified non-integer convertor sizes."
+            )
+        convertors = convertors_from_sizing(
             {
-                key: value
+                key: int(value)
                 for key, value in component_sizes.items()
                 if isinstance(key, Converter)
             }
@@ -932,12 +955,12 @@ def recursive_iteration(
 
         # Run the simulation
         (_, simulation_results, system_details,) = energy_system.run_simulation(
-            component_sizes[RenewableEnergySource.CLEAN_WATER_PVT],
+            int(component_sizes[RenewableEnergySource.CLEAN_WATER_PVT]),
             conventional_cw_source_profiles,
             converters,
             component_sizes[ImpactingComponent.STORAGE],
             grid_profile,
-            component_sizes[RenewableEnergySource.HOT_WATER_PVT],
+            int(component_sizes[RenewableEnergySource.HOT_WATER_PVT]),
             irradiance_data,
             kerosene_usage,
             location,
@@ -981,7 +1004,7 @@ def recursive_iteration(
     ):
         # Update the set of fixed sizes accordingly.
         updated_component_sizes: Dict[
-            ImpactingComponent, float
+            Union[Convertor, ImpactingComponent, RenewableEnergySource], Union[int, float]
         ] = component_sizes.copy()
         updated_component_sizes[component] = size
 
@@ -1022,6 +1045,21 @@ def recursive_iteration(
         # Store the new appraisal if it is sufficient.
         logger.info("Sufficient system found, storing.")
         for appraisal in sufficient_appraisals:
+            if appraisal.criteria is None:
+                logger.error(
+                    "%sNo appraisal criteria for appraisal.%s",
+                    BColours.fail,
+                    BColours.endc
+                )
+                logger.debug(
+                    "System appraisal: %s", appraisal
+                )
+                raise ProgrammerJudgementFault(
+                    "appraisal module",
+                    "When processing debug output for sufficient appraisals, an error "
+                    "occured as there were no criteria attached to the appraisal. More "
+                    "information can be found in the logger directory."
+                )
             logger.debug(
                 "Threshold criteria: %s",
                 json.dumps(
