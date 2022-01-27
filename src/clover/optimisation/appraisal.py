@@ -48,7 +48,7 @@ __all__ = ("appraise_system",)
 def _simulation_environmental_appraisal(
     buffer_tank_addition: int,
     clean_water_tank_addition: int,
-    convertor_addition: Dict[str, int],
+    converter_addition: Dict[str, int],
     diesel_addition: float,
     electric_yearly_load_statistics: pd.DataFrame,
     end_year: int,
@@ -72,8 +72,8 @@ def _simulation_environmental_appraisal(
             The additional number of buffer tanks added this iteration.
         - clean_water_tank_addition:
             The additional number of clean-water tanks added this iteration.
-        - convertor_addition:
-            A mapping between convertor names and the size of each that was added to the
+        - converter_addition:
+            A mapping between converter names and the size of each that was added to the
             system this iteration.
         - diesel_addition:
             The additional diesel capacity added this iteration.
@@ -115,7 +115,7 @@ def _simulation_environmental_appraisal(
         equipment_ghgs = ghgs.calculate_total_equipment_ghgs(
             buffer_tank_addition,
             clean_water_tank_addition,
-            convertor_addition,
+            converter_addition,
             diesel_addition,
             ghg_inputs,
             heat_exchanger_addition,
@@ -149,8 +149,8 @@ def _simulation_environmental_appraisal(
             system_details.initial_num_clean_water_tanks
             if system_details.initial_num_clean_water_tanks is not None
             else 0,
-            system_details.initial_convertor_sizes
-            if system_details.initial_convertor_sizes is not None
+            system_details.initial_converter_sizes
+            if system_details.initial_converter_sizes is not None
             else None,
             system_details.diesel_capacity,
             ghg_inputs,
@@ -239,7 +239,7 @@ def _simulation_environmental_appraisal(
 def _simulation_financial_appraisal(
     buffer_tank_addition: int,
     clean_water_tank_addition: int,
-    convertor_addition: Dict[str, int],
+    converter_addition: Dict[str, int],
     diesel_addition: float,
     finance_inputs: Dict[str, Any],
     heat_exchanger_addition: int,
@@ -261,8 +261,8 @@ def _simulation_financial_appraisal(
             The additional number of buffer tanks added this iteration.
         - clean_water_tank_addition:
             The additional number of clean-water tanks added this iteration.
-        - convertor_addition:
-            A mapping between convertor names and the size of each that was added to the
+        - converter_addition:
+            A mapping between converter names and the size of each that was added to the
             system this iteration.
         - diesel_addition:
             The additional diesel capacity added this iteration.
@@ -299,7 +299,7 @@ def _simulation_financial_appraisal(
     equipment_costs = finance.discounted_equipment_cost(
         buffer_tank_addition,
         clean_water_tank_addition,
-        convertor_addition,
+        converter_addition,
         diesel_addition,
         finance_inputs,
         heat_exchanger_addition,
@@ -332,8 +332,8 @@ def _simulation_financial_appraisal(
         system_details.initial_num_clean_water_tanks
         if system_details.initial_num_clean_water_tanks is not None
         else 0,
-        system_details.initial_convertor_sizes
-        if system_details.initial_convertor_sizes is not None
+        system_details.initial_converter_sizes
+        if system_details.initial_converter_sizes is not None
         else None,
         system_details.diesel_capacity,
         finance_inputs,
@@ -605,14 +605,14 @@ def appraise_system(
         and previous_system.system_details.final_num_clean_water_tanks is not None
         else 0
     )
-    convertor_addition: Dict[str, int] = {
-        convertor: size
+    converter_addition: Dict[str, int] = {
+        converter: size
         - (
-            previous_system.system_details.final_convertor_sizes[convertor]
-            if previous_system.system_details.final_convertor_sizes is not None
+            previous_system.system_details.final_converter_sizes[converter]
+            if previous_system.system_details.final_converter_sizes is not None
             else 0
         )
-        for convertor, size in system_details.initial_convertor_sizes.items()
+        for converter, size in system_details.initial_converter_sizes.items()
     }
     diesel_addition = (
         system_details.diesel_capacity - previous_system.system_details.diesel_capacity
@@ -653,7 +653,7 @@ def appraise_system(
     financial_appraisal = _simulation_financial_appraisal(
         buffer_tank_addition,
         clean_water_tank_addition,
-        convertor_addition,
+        converter_addition,
         diesel_addition,
         finance_inputs,
         heat_exchanger_addition,
@@ -670,7 +670,7 @@ def appraise_system(
     environmental_appraisal = _simulation_environmental_appraisal(
         buffer_tank_addition,
         clean_water_tank_addition,
-        convertor_addition,
+        converter_addition,
         diesel_addition,
         electric_yearly_load_statistics,
         end_year,

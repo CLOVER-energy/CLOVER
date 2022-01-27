@@ -59,7 +59,7 @@ from ..impact.finance import ImpactingComponent
 from .appraisal import appraise_system, SystemAppraisal
 from .single_line_simulation import single_line_simulation
 from .__utils__ import (
-    convertors_from_sizing,
+    converters_from_sizing,
     ConverterSize,
     Criterion,
     CriterionMode,
@@ -112,14 +112,14 @@ def _fetch_optimum_system(
 
 def _find_optimum_system(
     conventional_cw_source_profiles: Dict[WaterSource, pd.DataFrame],
-    convertors: List[Converter],
+    converters: List[Converter],
     end_year: int,
     finance_inputs: Dict[str, Any],
     ghg_inputs: Dict[str, Any],
     grid_profile: pd.DataFrame,
     irradiance_data: pd.Series,
     kerosene_usage: pd.DataFrame,
-    largest_convertor_sizes: Dict[Converter, ConverterSize],
+    largest_converter_sizes: Dict[Converter, ConverterSize],
     largest_cw_pvt_system_size: SolarSystemSize,
     largest_cw_tank_size: TankSize,
     largest_hw_pvt_system_size: SolarSystemSize,
@@ -150,8 +150,8 @@ def _find_optimum_system(
     Inputs:
         - end_year:
             The end year of the simulation run currently being considered.
-        - largest_convertor_sizes:
-            The maximum size of each convertor that was installed.
+        - largest_converter_sizes:
+            The maximum size of each converter that was installed.
         - largest_cw_pvt_system_size:
             The maximum size of clean-water PV-T system installed.
         - largest_cw_tank_size:
@@ -199,9 +199,9 @@ def _find_optimum_system(
         # Check if optimum system was the largest system simulated
         while (
             any(
-                optimum_system.system_details.initial_convertor_sizes[convertor.name]
+                optimum_system.system_details.initial_converter_sizes[converter.name]
                 == sizes.max
-                for convertor, sizes in largest_convertor_sizes
+                for converter, sizes in largest_converter_sizes
             )
             or (
                 optimum_system.system_details.initial_cw_pvt_size
@@ -247,10 +247,10 @@ def _find_optimum_system(
                 new_system_appraisals,
             ) = single_line_simulation(
                 conventional_cw_source_profiles,
-                largest_convertor_sizes,
+                largest_converter_sizes,
                 largest_cw_pvt_system_size,
                 largest_cw_tank_size,
-                convertors,
+                converters,
                 end_year,
                 finance_inputs,
                 ghg_inputs,
@@ -305,10 +305,10 @@ def _find_optimum_system(
 
 def _simulation_iteration(
     conventional_cw_source_profiles: Optional[Dict[WaterSource, pd.DataFrame]],
-    convertor_sizes: Dict[Converter, ConverterSize],
+    converter_sizes: Dict[Converter, ConverterSize],
     cw_pvt_system_size: SolarSystemSize,
     cw_tanks: TankSize,
-    convertors: List[Converter],
+    converters: List[Converter],
     finance_inputs: Dict[str, Any],
     ghg_inputs: Dict[str, Any],
     grid_profile: pd.DataFrame,
@@ -403,7 +403,7 @@ def _simulation_iteration(
     Outputs:
         - end_year:
             The end year of this step, used in the simulations;
-        - largest_convertor_size:
+        - largest_converter_size:
             A mapping between :class:`Converter` instances and the size associated with
             each for the largest system simulated;
         - largest_cw_pvt_size:
@@ -443,23 +443,23 @@ def _simulation_iteration(
         end="\n",
     )
 
-    # Determine the maximum sizes of each convertor defined.
-    max_convertor_sizes: Dict[Converter, int] = {
-        convertor: size.max for convertor, size in convertor_sizes.items()
+    # Determine the maximum sizes of each converter defined.
+    max_converter_sizes: Dict[Converter, int] = {
+        converter: size.max for converter, size in converter_sizes.items()
     }
 
-    # Append convertors defined elsewhere.
-    static_convertor_sizes: Dict[Converter, int] = {
-        convertor: convertors.count(convertor)
-        for convertor in convertors
-        if convertor not in max_convertor_sizes
+    # Append converters defined elsewhere.
+    static_converter_sizes: Dict[Converter, int] = {
+        converter: converters.count(converter)
+        for converter in converters
+        if converter not in max_converter_sizes
     }
-    simulation_convertor_sizes = {**max_convertor_sizes, **static_convertor_sizes}
+    simulation_converter_sizes = {**max_converter_sizes, **static_converter_sizes}
 
     _, simulation_results, system_details = energy_system.run_simulation(
         cw_pvt_system_size.max,
         conventional_cw_source_profiles,
-        convertors_from_sizing(simulation_convertor_sizes),
+        converters_from_sizing(simulation_converter_sizes),
         storage_sizes.max,
         grid_profile,
         hw_pvt_system_size.max,
@@ -542,8 +542,8 @@ def _simulation_iteration(
             if scenario.hot_water_scenario is not None
             else "",
             ", ".join(
-                [f"{convertor.name} size: {size}"]
-                for convertor, size in max_convertor_sizes.items()
+                [f"{converter.name} size: {size}"]
+                for converter, size in max_converter_sizes.items()
             ),
         )
 
@@ -551,7 +551,7 @@ def _simulation_iteration(
         _, simulation_results, system_details = energy_system.run_simulation(
             cw_pvt_size_max,
             conventional_cw_source_profiles,
-            convertors_from_sizing(simulation_convertor_sizes),
+            converters_from_sizing(simulation_converter_sizes),
             storage_size_max,
             grid_profile,
             hw_pvt_size_max,
@@ -606,11 +606,11 @@ def _simulation_iteration(
             else 0
         )
         hw_tanks_max += hw_tanks.step if scenario.hot_water_scenario is not None else 0
-        max_convertor_sizes = {
-            convertor: max_convertor_sizes[convertor] + size.step
-            for convertor, size in convertor_sizes.items()
+        max_converter_sizes = {
+            converter: max_converter_sizes[converter] + size.step
+            for converter, size in converter_sizes.items()
         }
-        simulation_convertor_sizes = {**max_convertor_sizes, **static_convertor_sizes}
+        simulation_converter_sizes = {**max_converter_sizes, **static_converter_sizes}
         pv_size_max += pv_sizes.step if scenario.pv else 0
         storage_size_max += storage_sizes.step if scenario.battery else 0
 
@@ -748,34 +748,34 @@ def _simulation_iteration(
             RenewableEnergySource.CLEAN_WATER_PVT
         ] = simulation_cw_pvt_system_size[0]
 
-    # Add the iterable convertor sizes.
-    for convertor, sizes in convertor_sizes.items():
-        # Construct the list of available sizes for the given convertor.
-        simulation_convertor_sizes: List[int] = sorted(
+    # Add the iterable converter sizes.
+    for converter, sizes in converter_sizes.items():
+        # Construct the list of available sizes for the given converter.
+        simulation_converter_sizes: List[int] = sorted(
             range(
                 int(sizes.min),
-                int(max_convertor_sizes[convertor] + sizes.step),
+                int(max_converter_sizes[converter] + sizes.step),
                 int(sizes.step),
             ),
             reverse=True,
         )
 
-        if len(simulation_convertor_sizes) > 1:
+        if len(simulation_converter_sizes) > 1:
             parameter_space.append(
                 (
-                    convertor,
+                    converter,
                     "simulation"
                     if len(parameter_space) == 0
-                    else f"{convertor.name} size",
-                    simulation_convertor_sizes,
+                    else f"{converter.name} size",
+                    simulation_converter_sizes,
                 )
             )
         else:
-            component_sizes[convertor] = simulation_convertor_sizes[0]
+            component_sizes[converter] = simulation_converter_sizes[0]
 
-    # Add the static convertor sizes.
-    for convertor, size in static_convertor_sizes.items():
-        component_sizes[convertor] = size
+    # Add the static converter sizes.
+    for converter, size in static_converter_sizes.items():
+        component_sizes[converter] = size
 
     # Add the iterable hot-water tank sizes if appropriate.
     if len(simulation_hw_tanks) > 1:
@@ -858,8 +858,8 @@ def _simulation_iteration(
     return (
         end_year,
         {
-            convertor: ConverterSize(size.max, size.min, size.step)
-            for convertor, size in max_convertor_sizes.items()
+            converter: ConverterSize(size.max, size.min, size.step)
+            for converter, size in max_converter_sizes.items()
         },
         SolarSystemSize(
             cw_pvt_size_max, cw_pvt_system_size.min, cw_pvt_system_size.step
@@ -880,10 +880,10 @@ def _simulation_iteration(
 
 def _optimisation_step(
     conventional_cw_source_profiles: Optional[Dict[WaterSource, pd.DataFrame]],
-    convertor_sizes: Dict[Converter, ConverterSize],
+    converter_sizes: Dict[Converter, ConverterSize],
     cw_pvt_system_size: SolarSystemSize,
     cw_tanks: TankSize,
-    convertors: List[Converter],
+    converters: List[Converter],
     finance_inputs: Dict[str, Any],
     ghg_inputs: Dict[str, Any],
     grid_profile: pd.DataFrame,
@@ -914,15 +914,15 @@ def _optimisation_step(
         - conventional_cw_source_profiles:
             Mapping between :class:`WaterSource` instances and their availability
             proviles.
-        - convertor_sizes:
+        - converter_sizes:
             Mapping between :class:`Converter` instances and the range of associated
             sizes.
         - cw_pvt_system_size:
             Range of clean-water PV-T sizes.
         - cw_tanks:
             Range of clean-water tank sizes.
-        - convertors:
-            The `list` of convertors available to the system.
+        - converters:
+            The `list` of converters available to the system.
         - finance_inputs:
             The finance input information.
         - grid_profile:
@@ -976,7 +976,7 @@ def _optimisation_step(
     logger.info("Optimisation step called.")
     (
         end_year,
-        convertor_sizes,
+        converter_sizes,
         cw_pvt_system_size,
         cw_tanks,
         hw_pvt_system_size,
@@ -989,10 +989,10 @@ def _optimisation_step(
         sufficient_systems,
     ) = _simulation_iteration(
         conventional_cw_source_profiles,
-        convertor_sizes,
+        converter_sizes,
         cw_pvt_system_size,
         cw_tanks,
-        convertors,
+        converters,
         finance_inputs,
         ghg_inputs,
         grid_profile,
@@ -1021,14 +1021,14 @@ def _optimisation_step(
     # Determine the optimum systems that fulfil each of the optimisation criteria.
     optimum_systems = _find_optimum_system(
         conventional_cw_source_profiles,
-        convertors,
+        converters,
         end_year,
         finance_inputs,
         ghg_inputs,
         grid_profile,
         irradiance_data,
         kerosene_usage,
-        convertor_sizes,
+        converter_sizes,
         cw_tanks,
         cw_pvt_system_size,
         hw_tanks,
@@ -1057,7 +1057,7 @@ def _optimisation_step(
 
 def multiple_optimisation_step(
     conventional_cw_source_profiles: Optional[Dict[WaterSource, pd.DataFrame]],
-    convertors: List[Converter],
+    converters: List[Converter],
     finance_inputs: Dict[str, Any],
     ghg_inputs: Dict[str, Any],
     grid_profile: pd.DataFrame,
@@ -1075,7 +1075,7 @@ def multiple_optimisation_step(
     wind_speed_data: Optional[pd.Series],
     yearly_electric_load_statistics: pd.DataFrame,
     *,
-    input_convertor_sizes: Optional[Dict[Converter, ConverterSize]] = None,
+    input_converter_sizes: Optional[Dict[Converter, ConverterSize]] = None,
     input_cw_pvt_system_size: Optional[SolarSystemSize] = None,
     input_cw_tanks: Optional[TankSize] = None,
     input_hw_pvt_system_size: Optional[SolarSystemSize] = None,
@@ -1089,8 +1089,8 @@ def multiple_optimisation_step(
     Carries out multiple optimisation steps of the continuous lifetime optimisation.
 
     Inputs:
-        - convertors:
-            The `list` of convertors available to the system;
+        - converters:
+            The `list` of converters available to the system;
         - grid_profile:
             The grid-availability profile;
         - irradiance_data:
@@ -1121,7 +1121,7 @@ def multiple_optimisation_step(
             The wind-speed data throughout the period of the simulation.
         - yearly_electric_load_statistics:
             The yearly electric load statistic information;
-        - input_convertor_sizes:
+        - input_converter_sizes:
             Mapping between :class:`Converter` instances and the :class:`ConverterSize`
             range available.
         - input_cw_tanks:
@@ -1156,20 +1156,20 @@ def multiple_optimisation_step(
     # Initialise
     results: List[SystemAppraisal] = []
 
-    # Set up the input convertor sizes for the first loop.
+    # Set up the input converter sizes for the first loop.
     if (
-        input_convertor_sizes is None
-        and len(convertors) > 0
-        and len(optimisation_parameters.convertor_sizes) > 0
+        input_converter_sizes is None
+        and len(converters) > 0
+        and len(optimisation_parameters.converter_sizes) > 0
     ):
         logger.info(
-            "No convertor sizes passed in, using default optimisation parameters."
+            "No converter sizes passed in, using default optimisation parameters."
         )
-        input_convertor_sizes: Dict[
+        input_converter_sizes: Dict[
             Converter, ConverterSize
-        ] = optimisation_parameters.convertor_sizes.copy()
+        ] = optimisation_parameters.converter_sizes.copy()
     else:
-        input_convertor_sizes = {}
+        input_converter_sizes = {}
 
     # Set up the clean-water PV-T sizes for the first loop.
     if (
@@ -1323,7 +1323,7 @@ def multiple_optimisation_step(
         # Fetch the optimum systems for this step.
         optimum_system = _optimisation_step(
             conventional_cw_source_profiles,
-            input_convertor_sizes.copy(),
+            input_converter_sizes.copy(),
             SolarSystemSize(
                 input_cw_pvt_system_size.max,
                 input_cw_pvt_system_size.min,
@@ -1334,7 +1334,7 @@ def multiple_optimisation_step(
                 input_cw_tanks.min,
                 input_cw_tanks.step,
             ),
-            convertors,
+            converters,
             finance_inputs,
             ghg_inputs,
             grid_profile,

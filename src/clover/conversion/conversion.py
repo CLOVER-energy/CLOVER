@@ -170,15 +170,15 @@ class Converter:
                 The amount of input load type which is consumed per unit output load
                 produced.
             - input_resource_types:
-                The types of load inputted to the convertor.
+                The types of load inputted to the converter.
             - maximum_output_capcity:
-                The maximum output capacity of the convertor.
+                The maximum output capacity of the converter.
             - name:
-                The name of the convertor.
+                The name of the converter.
             - output_resource_type:
-                The type of output produced by the convertor.
+                The type of output produced by the converter.
             - waste_production:
-                The waste production of the convertor.
+                The waste production of the converter.
 
         """
 
@@ -306,7 +306,7 @@ class Converter:
             raise InputFileError(
                 "conversion inputs",
                 "Multiple inputs were defined where only one was expected on a "
-                + f"convertor instance: {self.name}",
+                + f"converter instance: {self.name}",
             )
 
         return list(self.input_resource_consumption.values())[0]
@@ -331,7 +331,7 @@ class Converter:
 
 class MultiInputConverter(Converter):
     """
-    Represents a convertor that is capable of having multiple input resource types.
+    Represents a converter that is capable of having multiple input resource types.
 
     """
 
