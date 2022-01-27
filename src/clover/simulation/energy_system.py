@@ -2415,7 +2415,7 @@ def run_simulation(
                 "%sNo clean-water tank storage level information was outputted from "
                 "the simulation despite non-`None` information being expected.%s",
                 BColours.fail,
-                BColours.endc
+                BColours.endc,
             )
             raise InternalError(
                 "Clean-water tank storage information not computed successfully."
@@ -2482,9 +2482,9 @@ def run_simulation(
     unmet_energy = ((unmet_energy > 0) * unmet_energy).abs()  # type: ignore
     # Ensure all unmet clean-water energy is considered.
     clean_water_power_consumed = clean_water_power_consumed.mul(1 - blackout_times)  # type: ignore
-    thermal_desalination_electric_power_consumed = (
-        thermal_desalination_electric_power_consumed.mul(1 - blackout_times)  # type: ignore
-    )
+    thermal_desalination_electric_power_consumed = thermal_desalination_electric_power_consumed.mul(
+        1 - blackout_times
+    )  # type: ignore
 
     # Find how many kerosene lamps are in use
     kerosene_usage = pd.DataFrame(blackout_times.loc[:, 0].mul(kerosene_profile.values))  # type: ignore
@@ -2604,7 +2604,7 @@ def run_simulation(
                     "%sInternal error: buffer tank temperature was None despite buffer "
                     "tanks being present.%s",
                     BColours.fail,
-                    BColours.endc
+                    BColours.endc,
                 )
                 raise InternalError(
                     "Buffer tank temperature was expected but was `None`."
@@ -2620,7 +2620,7 @@ def run_simulation(
                     "%sInternal error: PV-T output temperature was None despite PV-T "
                     "being present.%s",
                     BColours.fail,
-                    BColours.endc
+                    BColours.endc,
                 )
                 raise InternalError(
                     "PV-T output temperature was expected but was `None`."
@@ -2842,7 +2842,7 @@ def run_simulation(
                 "%sError saving desalination outputs, simulation returned `None` as "
                 "outputs despite non-`None` outputs being expected.%s",
                 BColours.fail,
-                BColours.endc
+                BColours.endc,
             )
             raise InternalError(
                 "Some outputs of the simulation were returned as `None` for "
@@ -2869,7 +2869,7 @@ def run_simulation(
                     "%sError saving clean-water outputs, simulation returned `None` as "
                     "outputs despite non-`None` outputs being expected.%s",
                     BColours.fail,
-                    BColours.endc
+                    BColours.endc,
                 )
                 raise InternalError(
                     "Some outputs of the simulation were returned as `None` for "
@@ -2899,7 +2899,7 @@ def run_simulation(
                 "%sError saving hot-water outputs, simulation returned `None` as "
                 "outputs despite non-`None` outputs being expected.%s",
                 BColours.fail,
-                BColours.endc
+                BColours.endc,
             )
             raise InternalError(
                 "Some outputs of the simulation were returned as `None` for hot-water "

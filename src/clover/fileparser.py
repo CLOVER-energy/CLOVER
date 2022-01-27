@@ -1716,7 +1716,7 @@ def _parse_tank_inputs(
                 "%sFailed to determine hot-water tank from the energy-system inputs "
                 "file.%s",
                 BColours.fail,
-                BColours.endc
+                BColours.endc,
             )
             raise
         else:

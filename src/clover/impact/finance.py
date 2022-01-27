@@ -29,12 +29,16 @@ import pandas as pd  # pylint: disable=import-error
 
 from .__utils__ import ImpactingComponent, LIFETIME, SIZE_INCREMENT
 from ..__utils__ import (
+    ELECTRIC_POWER,
     BColours,
+    CleanWaterMode,
     ColumnHeader,
     InputFileError,
     InternalError,
     Location,
     ResourceType,
+    Scenario,
+    TechnicalAppraisal,
     hourly_profile_to_daily_sum,
 )
 from ..conversion.conversion import Converter
@@ -380,7 +384,9 @@ def get_total_equipment_cost(
     logger: Logger,
     pv_array_size: float,
     pvt_array_size: float,
+    scenario: Scenario,
     storage_size: float,
+    technical_appraisal: TechnicalAppraisal,
     installation_year: int = 0,
 ) -> float:
     """
@@ -395,7 +401,7 @@ def get_total_equipment_cost(
             A mapping between converter names and the size of each that was added to the
             system this iteration.
         - diesel_size:
-            Capacity of diesel generator being installed
+            Capacity of diesel generator being installed.
         - finance_inputs:
             The finance-input information, parsed from the finance-inputs file.
         - heat_exchangers:
@@ -404,12 +410,16 @@ def get_total_equipment_cost(
             The number of hot-water tanks being installed.
         - logger:
             The logger to use for the run.
+        - scenario:
+            The scenario for the run(s) being carried out.
         - pv_array_size:
-            Capacity of PV being installed
+            Capacity of PV being installed.
         - pvt_array_size:
-            Capacity of PV-T being installed
+            Capacity of PV-T being installed.
         - storage_size:
-            Capacity of battery storage being installed
+            Capacity of battery storage being installed.
+        - technical_appraisal:
+            The technical appraisal for the system.
         - installation_year:
             ColumnHeader.INSTALLATION_YEAR.value
 
@@ -548,8 +558,18 @@ def get_total_equipment_cost(
         finance_inputs[ImpactingComponent.DIESEL.value][INSTALLATION_COST_DECREASE],
         installation_year,
     )
-    
-    total_subsystem_costs[ResourceType.ELECTRIC] += diesel_cost
+    if (
+        scenario.desalination_scenario.clean_water_scenario.mode
+        != CleanWaterMode.THERMAL_ONLY
+    ):
+        total_subsystem_costs[ResourceType.CLEAN_WATER] += (
+            diesel_cost
+            * technical_appraisal.power_consumed_fraction[ResourceType.CLEAN_WATER]
+        )
+    total_subsystem_costs[ResourceType.ELECTRIC] += (
+        diesel_cost
+        * technical_appraisal.power_consumed_fraction[ResourceType.ELECTRIC_POWER]
+    )
 
     if (
         ImpactingComponent.HEAT_EXCHANGER.value not in finance_inputs
