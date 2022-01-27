@@ -568,58 +568,28 @@ def _simulation_technical_appraisal(
 
     # Calculate the fraction of power used providing each resource.
     power_consumed_fraction: Dict[ResourceType, float] = dict()
-    total_clean_water_power_consumed = np.sum(
-        simulation_results[ColumnHeader.POWER_CONSUMED_BY_DESALINATION.value]
-    )
-    clean_water_power_consumed_fraction = (
-        total_clean_water_power_consumed / total_energy
-    )
-    if clean_water_power_consumed_fraction > 0:
-        power_consumed_fraction[ResourceType.CLEAN_WATER] = clean_water_power_consumed_fraction
+    if ColumnHeader.POWER_CONSUMED_BY_DESALINATION.value in simulation_results:
+        total_clean_water_power_consumed = np.sum(
+            simulation_results[ColumnHeader.POWER_CONSUMED_BY_DESALINATION.value]
+        )
+        power_consumed_fraction[ResourceType.CLEAN_WATER] = (
+            total_clean_water_power_consumed / total_energy
+        )
 
-    total_electricity_power_consumed_fraction = np.sum(
-        simulation_results[ColumnHeader.POWER_CONSUMED_BY_ELECTRIC_DEVICES.value]
-    )
-    electricity_power_consumed_fraction = (
-        total_electricity_power_consumed_fraction / total_energy
-    )
-    if electricity_power_consumed_fraction > 0:
-        power_consumed_fraction[ResourceType.ELECTRIC] = electricity_power_consumed_fraction
+    if ColumnHeader.POWER_CONSUMED_BY_ELECTRIC_DEVICES.value in simulation_results:
+        total_electricity_power_consumed_fraction = np.sum(
+            simulation_results[ColumnHeader.POWER_CONSUMED_BY_ELECTRIC_DEVICES.value]
+        )
+        power_consumed_fraction[ResourceType.ELECTRIC] = (
+            total_electricity_power_consumed_fraction / total_energy
+        )
 
-    total_electricity_power_consumed_fraction = np.sum(
-        simulation_results[ColumnHeader.POWER_CONSUMED_BY_HOT_WATER.value]
-    )
-    hot_water_power_consumed_fraction = (
-        total_electricity_power_consumed_fraction / total_energy
-    )
-    if hot_water_power_consumed_fraction > 0:
-        power_consumed_fraction[ResourceType.HOT_CLEAN_WATER] = hot_water_power_consumed_fraction
-
-    # Confirm that these align correctly.
-    if (
-        clean_water_power_consumed_fraction
-        + electricity_power_consumed_fraction
-        + hot_water_power_consumed_fraction
-    ) != 1:
-        logger.error(
-            "%sThe power consumed providing each resource type did not sum to 1.%s",
-            BColours.fail,
-            BColours.endc
+    if ColumnHeader.POWER_CONSUMED_BY_HOT_WATER.value in simulation_results:
+        total_electricity_power_consumed_fraction = np.sum(
+            simulation_results[ColumnHeader.POWER_CONSUMED_BY_HOT_WATER.value]
         )
-        logger.info(
-            "Clean water power consumed fraction: %s.",
-            clean_water_power_consumed_fraction
-        )
-        logger.info(
-            "Electricity power consumed fraction: %s.",
-            electricity_power_consumed_fraction
-        )
-        logger.info(
-            "Hot water power consumed fraction: %s.",
-            hot_water_power_consumed_fraction
-        )
-        raise InternalError(
-            "Power consumed fractions did not sum to 1 across all valid resource types."
+        power_consumed_fraction[ResourceType.HOT_CLEAN_WATER] = (
+            total_electricity_power_consumed_fraction / total_energy
         )
 
     # Calculate total discounted energy

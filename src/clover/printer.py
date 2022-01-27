@@ -57,7 +57,11 @@ def generate_optimisation_string(
         )
 
     # Append the battery storage information if relevant.
-    if scenario.battery and optimisation_inputs.storage_size is not None and minigrid.battery is not None:
+    if (
+        scenario.battery
+        and optimisation_inputs.storage_size is not None
+        and minigrid.battery is not None
+    ):
         optimisation_string_list.append(
             "- Storage resolution of {} units ({} kWh per unit)".format(
                 optimisation_inputs.storage_size.step,
@@ -67,7 +71,10 @@ def generate_optimisation_string(
 
     # Append the clean-water information if relevant.
     if scenario.desalination_scenario is not None:
-        if optimisation_inputs.cw_pvt_size is not None and minigrid.pvt_panel is not None:
+        if (
+            optimisation_inputs.cw_pvt_size is not None
+            and minigrid.pvt_panel is not None
+        ):
             optimisation_string_list.append(
                 "- Clean-water PV-T resolution of "
                 + "{} units ({} kWp and {} kWth per unit)".format(
@@ -76,7 +83,10 @@ def generate_optimisation_string(
                     minigrid.pvt_panel.thermal_unit,
                 )
             )
-        if optimisation_inputs.clean_water_tanks is not None and minigrid.clean_water_tank is not None:
+        if (
+            optimisation_inputs.clean_water_tanks is not None
+            and minigrid.clean_water_tank is not None
+        ):
             optimisation_string_list.append(
                 "- Clean-water tank resolution of {} ".format(
                     optimisation_inputs.clean_water_tanks.step
@@ -88,7 +98,10 @@ def generate_optimisation_string(
 
     # Append the hot-water information if relevant.
     if scenario.hot_water_scenario is not None:
-        if optimisation_inputs.hw_pvt_size is not None and minigrid.pvt_panel is not None:
+        if (
+            optimisation_inputs.hw_pvt_size is not None
+            and minigrid.pvt_panel is not None
+        ):
             optimisation_string_list.append(
                 "- Hot-water PV-T resolution of "
                 + "{} units ({} kWp and {} kWth per unit)".format(
@@ -97,7 +110,10 @@ def generate_optimisation_string(
                     minigrid.pvt_panel.thermal_unit,
                 )
             )
-        if optimisation_inputs.hot_water_tanks is not None and minigrid.hot_water_tank is not None:
+        if (
+            optimisation_inputs.hot_water_tanks is not None
+            and minigrid.hot_water_tank is not None
+        ):
             optimisation_string_list.append(
                 "- Hot-water tank resolution of {} ".format(
                     optimisation_inputs.hot_water_tanks.step

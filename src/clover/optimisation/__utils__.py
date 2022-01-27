@@ -542,7 +542,7 @@ class OptimisationParameters:
                 "%sError parsing converter input information, unable to match groups."
                 "%s",
                 BColours.fail,
-                BColours.endc
+                BColours.endc,
             )
 
         converter_name_to_converter = {
@@ -818,7 +818,7 @@ def get_sufficient_appraisals(
         if appraisal.criteria is None:
             raise ProgrammerJudgementFault(
                 "appraisal",
-                "A system appraisal was returned which does not have criteria defined."
+                "A system appraisal was returned which does not have criteria defined.",
             )
         criteria_met = set()
         for (
@@ -873,7 +873,8 @@ def recursive_iteration(
     yearly_electric_load_statistics: pd.DataFrame,
     *,
     component_sizes: Dict[
-        Union[Converter, ImpactingComponent, RenewableEnergySource], Union[int, float],
+        Union[Converter, ImpactingComponent, RenewableEnergySource],
+        Union[int, float],
     ],
     parameter_space: List[
         Tuple[
@@ -939,11 +940,11 @@ def recursive_iteration(
             logger.error(
                 "%sNon-integer component sizes were specified, exiting.%s",
                 BColours.fail,
-                BColours.endc
+                BColours.endc,
             )
             raise InputFileError(
                 "optimisation inputs",
-                "Component size inputs specified non-integer converter sizes."
+                "Component size inputs specified non-integer converter sizes.",
             )
         converters = converters_from_sizing(
             {
@@ -1004,7 +1005,8 @@ def recursive_iteration(
     ):
         # Update the set of fixed sizes accordingly.
         updated_component_sizes: Dict[
-            Union[Converter, ImpactingComponent, RenewableEnergySource], Union[int, float]
+            Union[Converter, ImpactingComponent, RenewableEnergySource],
+            Union[int, float],
         ] = component_sizes.copy()
         updated_component_sizes[component] = size
 
@@ -1049,16 +1051,14 @@ def recursive_iteration(
                 logger.error(
                     "%sNo appraisal criteria for appraisal.%s",
                     BColours.fail,
-                    BColours.endc
+                    BColours.endc,
                 )
-                logger.debug(
-                    "System appraisal: %s", appraisal
-                )
+                logger.debug("System appraisal: %s", appraisal)
                 raise ProgrammerJudgementFault(
                     "appraisal module",
                     "When processing debug output for sufficient appraisals, an error "
                     "occured as there were no criteria attached to the appraisal. More "
-                    "information can be found in the logger directory."
+                    "information can be found in the logger directory.",
                 )
             logger.debug(
                 "Threshold criteria: %s",
