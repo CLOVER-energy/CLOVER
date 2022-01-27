@@ -107,16 +107,16 @@ def generate_optimisation_string(
                 )
             )
 
-    # Append the convertor information.
+    # Append the converter information.
     optimisation_string_list.extend(
         [
             "- {} resolution of {} units (1 {} device of {} max output per unit)".format(
-                convertor.name,
+                converter.name,
                 sizing.step,
-                convertor.name,
-                convertor.maximum_output_capacity,
+                converter.name,
+                converter.maximum_output_capacity,
             )
-            for convertor, sizing in optimisation_inputs.convertor_sizes.items()
+            for converter, sizing in optimisation_inputs.converter_sizes.items()
         ]
     )
 
