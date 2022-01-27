@@ -268,6 +268,27 @@
                       installation_ghgs: 50 # [kgCO2/kW]
                       installation_ghg_decrease: 0 # [% p.a.]
                       o&m: 5 #[kgCO2/kWp p.a.]
+                  # - name: default_pvt
+                  #   azimuthal_orientation: 180
+                  #   lifetime: 20
+                  #   max_mass_flow_rate: 7.37 # [litres/hour]
+                  #   min_mass_flow_rate: 7.37 # [litres/hour]
+                  #   pv: default_pv
+                  #   pv_unit: 0.2 # [kW]
+                  #   tilt: 29
+                  #   type: pv_t
+                  #   costs:
+                  #     cost: 500 # [$/PV unit], [$/kWp] by default
+                  #     cost_decrease: 5 # [% p.a.]
+                  #     installation_cost: 100 # [$/PV unit], [$/kWp] by default
+                  #     installation_cost_decrease: 0 # [% p.a.]
+                  #     o&m: 5 # [$/kWp p.a.]
+                  #   emissions:
+                  #     ghgs: 3000 # [kgCO2/kWp]
+                  #     ghg_decrease: 5 # [% p.a.]
+                  #     installation_ghgs: 50 # [kgCO2/kW]
+                  #     installation_ghg_decrease: 0 # [% p.a.]
+                  #     o&m: 5 #[kgCO2/kWp p.a.]
             - file: water_source_inputs.yaml
               contents: |+
                 ---
@@ -281,6 +302,8 @@
                 ################################################################################
 
                 # - name: river
+                #   feedwater: 1000
+                #   maximum_output: 1000
                 #   output: feedwater
                 #   costs:
                 #     cost: 0 # [$]
@@ -493,6 +516,71 @@
                   innovation: 0
                   imitation: 0
                   type: public
+
+                #######################
+                # Clean-water devices #
+                #######################
+
+                # Tap for drinking and cooking
+                #
+                - device: tap
+                  available: true
+                  electric_power: 0
+                  initial_ownership: 1
+                  final_ownership: 1
+                  innovation: 0
+                  imitation: 0
+                  type: public
+                  clean_water_usage: 10
+
+                # Non-potable water possible
+                - device: bath
+                  available: true
+                  electric_power: 0
+                  initial_ownership: 0.33
+                  final_ownership: 0.33
+                  innovation: 0.02
+                  imitation: 0.1
+                  type: public
+                  clean_water_usage: 120  # [40 l per person per day]
+                - device: dish_washing
+                  available: true
+                  initial_ownership: 1
+                  final_ownership: 1
+                  innovation: 0.01
+                  imitation: 0.1
+                  type: domestic
+                  clean_water_usage: 6
+                - device: washing_machine
+                  available: true
+                  electric_power: 250
+                  initial_ownership: 0.25
+                  final_ownership: 0.25
+                  innovation: 0.01
+                  imitation: 0.1
+                  type: domestic
+                  clean_water_usage: 16
+
+                # Toilet options
+                #
+                - device: pour_flush_toilet
+                  available: true
+                  electric_power: 0
+                  initial_ownership: 1
+                  final_ownership: 1
+                  innovation: 0
+                  imitation: 0
+                  type: public
+                  clean_water_usage: 20 # [20 l per person per day]
+                - device: cistern_flush_toilet
+                  available: false
+                  electric_power: 0
+                  initial_ownership: 1
+                  final_ownership: 1
+                  innovation: 0
+                  imitation: 0
+                  type: public
+                  clean_water_usage: 50 # [50 l per person per day]
             - directory: device_utilisation
               contents:
                 - file: fan_times.csv
@@ -928,6 +1016,48 @@
                   maximum_charge: 1 # State of charge (0.0 - 1.0)
                   minimum_charge: 0 # State of charge (0.0 - 1.0)
                   resource_type: clean_water
+                  costs:
+                    cost: 100 # [$/tank]
+                    cost_decrease: 5 # [% p.a.]
+                    installation_cost: 20 # [$/tank]
+                    installation_cost_decrease: 0 # [% p.a.]
+                    o&m: 10 # [$/kWh p.a.]
+                  emissions:
+                    ghgs: 110 # [kgCO2/tank]
+                    ghg_decrease: 5 # [% p.a.]
+                    installation_ghgs: 10 # [kwCO2/tank]
+                    installation_ghg_decrease: 0
+                    o&m: 5 # [kgCO2/tank p.a.]
+                - name: hot_water_tank
+                  area: 1.9 # [m^2]
+                  cycle_lifetime: 1500 # Expected number of cycles over lifetime
+                  heat_loss_coefficient: 1.9 # [W/m^2*K]
+                  leakage: 0 # Fractional leakage per hour
+                  mass: 150 # [kg or litres]
+                  maximum_charge: 1 # State of charge (0.0 - 1.0)
+                  minimum_charge: 0 # State of charge (0.0 - 1.0)
+                  resource_type: hot_water
+                  costs:
+                    cost: 100 # [$/tank]
+                    cost_decrease: 5 # [% p.a.]
+                    installation_cost: 20 # [$/tank]
+                    installation_cost_decrease: 0 # [% p.a.]
+                    o&m: 10 # [$/kWh p.a.]
+                  emissions:
+                    ghgs: 110 # [kgCO2/tank]
+                    ghg_decrease: 5 # [% p.a.]
+                    installation_ghgs: 10 # [kwCO2/tank]
+                    installation_ghg_decrease: 0
+                    o&m: 5 # [kgCO2/tank p.a.]
+                - name: buffer_tank
+                  area: 7.4 # [m^2]
+                  cycle_lifetime: 1500 # Expected number of cycles over lifetime
+                  heat_loss_coefficient: 1.9 # [W/m^2*K]
+                  leakage: 0 # Fractional leakage per hour
+                  mass: 3000 # [kg or litres]
+                  maximum_charge: 1 # State of charge (0.0 - 1.0)
+                  minimum_charge: 0 # State of charge (0.0 - 1.0)
+                  resource_type: hot_water
                   costs:
                     cost: 100 # [$/tank]
                     cost_decrease: 5 # [% p.a.]

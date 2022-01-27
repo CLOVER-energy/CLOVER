@@ -19,6 +19,8 @@ information and system-sizing information provided.
 
 """
 
+import collections
+
 from logging import Logger
 from typing import Any, Dict, List, Optional, Union
 
@@ -32,6 +34,7 @@ from ..__utils__ import (
     InputFileError,
     InternalError,
     Location,
+    ResourceType,
     hourly_profile_to_daily_sum,
 )
 from ..conversion.conversion import Converter
@@ -369,7 +372,7 @@ def _misc_costs(diesel_size: float, misc_costs: float, pv_array_size: float) -> 
 def get_total_equipment_cost(
     buffer_tanks: float,
     clean_water_tanks: float,
-    converters: Dict[str, int],
+    converters: Dict[Converter, int],
     diesel_size: float,
     finance_inputs: Dict[str, Any],
     heat_exchangers: float,
@@ -415,6 +418,9 @@ def get_total_equipment_cost(
 
     """
 
+    # Instantiate a mapping for storing total cost information.
+    total_subsystem_costs: Dict[ResourceType, float] = collections.defaultdict(float)
+
     # Calculate the various system costs.
     bos_cost = _component_cost(
         finance_inputs[ImpactingComponent.BOS.value][COST],
@@ -422,6 +428,7 @@ def get_total_equipment_cost(
         pv_array_size,
         installation_year,
     )
+    total_subsystem_costs[ResourceType.ELECTRIC] += bos_cost
 
     if ImpactingComponent.BUFFER_TANK.value not in finance_inputs and buffer_tanks > 0:
         logger.error(
@@ -451,6 +458,7 @@ def get_total_equipment_cost(
             ],
             installation_year,
         )
+    total_subsystem_costs[ResourceType.CLEAN_WATER] += buffer_tank_cost
 
     if (
         ImpactingComponent.CLEAN_WATER_TANK.value not in finance_inputs
@@ -485,41 +493,48 @@ def get_total_equipment_cost(
             ],
             installation_year,
         )
+    total_subsystem_costs[ResourceType.CLEAN_WATER] += buffer_tank_cost
 
-    converter_costs = sum(
-        _component_cost(
-            finance_inputs[
-                FINANCE_IMPACT.format(
-                    type=ImpactingComponent.CONVERTER.value, name=converter
-                )
-            ][COST],
-            finance_inputs[
-                FINANCE_IMPACT.format(
-                    type=ImpactingComponent.CONVERTER.value, name=converter
-                )
-            ][COST_DECREASE],
-            size,
-            installation_year,
+    # Sum up the convertor costs for each of the relevant subsystems.
+    for resource_type in [ResourceType.CLEAN_WATER, ResourceType.HOT_CLEAN_WATER]:
+        converter_costs = sum(
+            _component_cost(
+                finance_inputs[
+                    FINANCE_IMPACT.format(
+                        type=ImpactingComponent.CONVERTER.value, name=converter
+                    )
+                ][COST],
+                finance_inputs[
+                    FINANCE_IMPACT.format(
+                        type=ImpactingComponent.CONVERTER.value, name=converter
+                    )
+                ][COST_DECREASE],
+                size,
+                installation_year,
+            )
+            for converter, size in converters.items()
+            if converter.output_resource_type == resource_type
         )
-        for converter, size in converters.items()
-    )
-    converter_installation_costs = sum(
-        _component_installation_cost(
-            size,
-            finance_inputs[
-                FINANCE_IMPACT.format(
-                    type=ImpactingComponent.CONVERTER.value, name=converter
-                )
-            ][INSTALLATION_COST],
-            finance_inputs[
-                FINANCE_IMPACT.format(
-                    type=ImpactingComponent.CONVERTER.value, name=converter
-                )
-            ][INSTALLATION_COST_DECREASE],
-            installation_year,
+        converter_installation_costs = sum(
+            _component_installation_cost(
+                size,
+                finance_inputs[
+                    FINANCE_IMPACT.format(
+                        type=ImpactingComponent.CONVERTER.value, name=converter
+                    )
+                ][INSTALLATION_COST],
+                finance_inputs[
+                    FINANCE_IMPACT.format(
+                        type=ImpactingComponent.CONVERTER.value, name=converter
+                    )
+                ][INSTALLATION_COST_DECREASE],
+                installation_year,
+            )
+            for converter, size in converters.items()
         )
-        for converter, size in converters.items()
-    )
+        total_subsystem_costs[np.result_type] += (
+            converter_costs + converter_installation_costs
+        )
 
     diesel_cost = _component_cost(
         finance_inputs[ImpactingComponent.DIESEL.value][COST],
@@ -533,6 +548,8 @@ def get_total_equipment_cost(
         finance_inputs[ImpactingComponent.DIESEL.value][INSTALLATION_COST_DECREASE],
         installation_year,
     )
+    
+    total_subsystem_costs[ResourceType.ELECTRIC] += diesel_cost
 
     if (
         ImpactingComponent.HEAT_EXCHANGER.value not in finance_inputs
@@ -659,6 +676,7 @@ def get_total_equipment_cost(
     misc_costs = _misc_costs(
         diesel_size, finance_inputs[ImpactingComponent.MISC.value][COST], pv_array_size
     )
+
     return (
         bos_cost
         + buffer_tank_cost
@@ -836,7 +854,7 @@ def discounted_energy_total(
 def discounted_equipment_cost(
     buffer_tanks: int,
     clean_water_tanks: int,
-    converters: Dict[str, int],
+    converters: Dict[Converter, int],
     diesel_size: float,
     finance_inputs: Dict[str, Any],
     heat_exchangers: int,
