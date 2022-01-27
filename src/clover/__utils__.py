@@ -2118,8 +2118,8 @@ class SystemDetails:
         The end year of the simulation.
 
     .. attribute:: final_converter_sizes:
-        A mapping between the name of the various converters associated with the system
-        and the final size of each that remained at the end of the simiulation.
+        A mapping between the various converters associated with the system and the
+        final size of each that remained at the end of the simiulation.
 
     .. attribute:: final_cw_pvt_size
         The final clean-water pv-t size of the system.
@@ -2143,8 +2143,8 @@ class SystemDetails:
         The final storage size of the system.
 
     .. attribute:: initial_converter_sizes:
-        A mapping between the name of the various converters associated with the system
-        and the initial size of each that was installed.
+        A mapping between the various converters associated with the system and the
+        initial size of each that was installed.
 
     .. attribute:: initial_cw_pvt_size
         The initial clean-water pv-t size of the system.
@@ -2181,7 +2181,7 @@ class SystemDetails:
 
     diesel_capacity: float = 0
     end_year: int = 0
-    final_converter_sizes: Optional[Dict[str, float]] = None
+    final_converter_sizes: Optional[Dict[Any, float]] = None
     final_cw_pvt_size: Optional[float] = 0
     final_hw_pvt_size: Optional[float] = 0
     final_num_buffer_tanks: Optional[int] = 0
@@ -2189,7 +2189,7 @@ class SystemDetails:
     final_num_hot_water_tanks: Optional[int] = 0
     final_pv_size: float = 0
     final_storage_size: float = 0
-    initial_converter_sizes: Optional[Dict[str, float]] = None
+    initial_converter_sizes: Optional[Dict[Any, float]] = None
     initial_cw_pvt_size: Optional[float] = 0
     initial_hw_pvt_size: Optional[float] = 0
     initial_num_buffer_tanks: Optional[int] = 0
@@ -2227,14 +2227,14 @@ class SystemDetails:
         if self.initial_converter_sizes is not None:
             system_details_as_dict.update(
                 {
-                    f"intial_num_{key}": value
+                    f"intial_num_{key.name}": value
                     for key, value in self.initial_converter_sizes.items()
                 }
             )
         if self.final_converter_sizes is not None:
             system_details_as_dict.update(
                 {
-                    f"intial_num_{key}": value
+                    f"final_num_{key.name}": value
                     for key, value in self.final_converter_sizes.items()
                 }
             )
@@ -2482,6 +2482,9 @@ class FinancialAppraisal:
     .. attribute:: total_cost
         The total cost of the energy system and fuel etc. used, measured in USD
 
+    .. attribute:: total_subsystem_costs
+        The total cost of the subsystems present in the energy system.
+
     .. attribute:: total_system_cost
         The total cost of the energy system, measured in USD
 
@@ -2495,6 +2498,7 @@ class FinancialAppraisal:
     new_equipment_cost: float = 0
     om_cost: float = 0
     total_cost: float = 0
+    total_subsystem_costs: Dict[ResourceType, float] = 0
     total_system_cost: float = 0
 
     def to_dict(self) -> Dict[str, Any]:
@@ -2506,7 +2510,7 @@ class FinancialAppraisal:
 
         """
 
-        return {
+        financial_appraisal_dict: Dict[str, float] = {
             "diesel_cost": self.diesel_cost,
             "grid_cost": self.grid_cost,
             "kerosene_cost": self.kerosene_cost,
@@ -2517,6 +2521,18 @@ class FinancialAppraisal:
             "total_cost": self.total_cost,
             "total_system_cost": self.total_system_cost,
         }
+
+        if ResourceType.CLEAN_WATER in self.total_subsystem_costs:
+            financial_appraisal_dict[
+                "total_clean_water_subsystem_cost"
+            ] = self.total_subsystem_costs[ResourceType.CLEAN_WATER]
+
+        if ResourceType.ELECTRIC in self.total_subsystem_costs:
+            financial_appraisal_dict[
+                "total_electric_subsystem_cost"
+            ] = self.total_subsystem_costs[ResourceType.ELECTRIC]
+
+        return financial_appraisal_dict
 
 
 @dataclasses.dataclass
@@ -2556,8 +2572,16 @@ class TechnicalAppraisal:
     .. attribute:: new_connection_cost
         The cost of connecting a new household to the grid, measured in USD.
 
+    .. attribute:: power_consumed_fraction
+        Mapping between :class:`ResourceType` and the fraction of power that was
+        consumed providing the resource of the given type from the electricity system.
+
     .. attribute:: pv_energy
         The total amount of energy that was supplied by the PV system, measured in kWh.
+
+    .. attribute:: pvt_energy
+        The total amount of energy that was supplied by the PV-T system, measured in
+        kWh.
 
     .. attribute:: renewable_clean_water_fraction
         The fraction of clean water that was supplied through renewables, defined
@@ -2602,6 +2626,7 @@ class TechnicalAppraisal:
     grid_energy: float = 0
     hw_demand_covered: Optional[float] = 0
     kerosene_displacement: float = 0
+    power_consumed_fraction: Dict[ResourceType, float] = dict()
     pv_energy: float = 0
     pvt_energy: Optional[float] = 0
     renewable_clean_water_fraction: float = 0
@@ -2623,7 +2648,7 @@ class TechnicalAppraisal:
 
         """
 
-        return {
+        technical_appraisal_dict: Dict[str, float] = {
             "blackouts": self.blackouts,
             "clean_water_blackouts": self.clean_water_blackouts,
             "diesel_energy": self.diesel_energy,
@@ -2642,6 +2667,22 @@ class TechnicalAppraisal:
             "unmet_energy": self.unmet_energy,
             "unmet_energy_fraction": self.unmet_energy_fraction,
         }
+
+        # Add the fractions of power that were consumed providing each resource.
+        if ResourceType.CLEAN_WATER in self.power_consumed_fraction:
+            technical_appraisal_dict[
+                "clean_water_power_consumption_fraction"
+            ] = self.power_consumed_fraction[ResourceType.CLEAN_WATER]
+        if ResourceType.ELECTRIC in self.power_consumed_fraction:
+            technical_appraisal_dict[
+                "electricity_power_consumption_fraction"
+            ] = self.power_consumed_fraction[ResourceType.ELECTRIC]
+        if ResourceType.HOT_CLEAN_WATER in self.power_consumed_fraction:
+            technical_appraisal_dict[
+                "hot_water_power_consumption_fraction"
+            ] = self.power_consumed_fraction[ResourceType.HOT_CLEAN_WATER]
+
+        return technical_appraisal_dict
 
 
 @dataclasses.dataclass

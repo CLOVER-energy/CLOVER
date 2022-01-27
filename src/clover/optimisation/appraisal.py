@@ -28,11 +28,14 @@ import pandas as pd
 from ..impact import finance, ghgs
 
 from ..__utils__ import (
+    BColours,
     ColumnHeader,
     Criterion,
     CumulativeResults,
     EnvironmentalAppraisal,
     FinancialAppraisal,
+    InternalError,
+    ResourceType,
     hourly_profile_to_daily_sum,
     Location,
     SystemAppraisal,
@@ -243,7 +246,7 @@ def _simulation_environmental_appraisal(
 def _simulation_financial_appraisal(
     buffer_tank_addition: int,
     clean_water_tank_addition: int,
-    converter_addition: Dict[str, int],
+    converter_addition: Dict[Converter, int],
     diesel_addition: float,
     finance_inputs: Dict[str, Any],
     heat_exchanger_addition: int,
@@ -479,33 +482,6 @@ def _simulation_technical_appraisal(
     renewables_fraction = (total_renewables_used + total_storage_used) / total_energy
     unmet_fraction = total_unmet_energy / total_load_energy
 
-    # Calculate total discounted energy
-    total_energy_daily = hourly_profile_to_daily_sum(
-        pd.DataFrame(simulation_results[ColumnHeader.TOTAL_ELECTRICITY_CONSUMED.value])
-    )
-    discounted_energy = finance.discounted_energy_total(
-        finance_inputs,
-        logger,
-        total_energy_daily,
-        start_year=system_details.start_year,
-        end_year=system_details.end_year,
-    )
-
-    # Calculate proportion of kerosene displaced (defaults to zero if kerosene is not
-    # originally used
-    if np.sum(simulation_results[ColumnHeader.KEROSENE_LAMPS.value]) > 0.0:
-        kerosene_displacement = (
-            np.sum(simulation_results[ColumnHeader.KEROSENE_MITIGATION.value])
-        ) / (
-            np.sum(simulation_results[ColumnHeader.KEROSENE_MITIGATION.value])
-            + np.sum(simulation_results[ColumnHeader.KEROSENE_LAMPS.value])
-        )
-    else:
-        kerosene_displacement = 0.0
-
-    # Calculate diesel fuel usage
-    total_diesel_fuel = np.sum(simulation_results[ColumnHeader.DIESEL_FUEL_USAGE.value])
-
     # Clean-water system.
     clean_water_blackouts: Optional[float] = (
         round(
@@ -590,6 +566,89 @@ def _simulation_technical_appraisal(
         else 0
     )
 
+    # Calculate the fraction of power used providing each resource.
+    power_consumed_fraction: Dict[ResourceType, float] = dict()
+    total_clean_water_power_consumed = np.sum(
+        simulation_results[ColumnHeader.POWER_CONSUMED_BY_DESALINATION.value]
+    )
+    clean_water_power_consumed_fraction = (
+        total_clean_water_power_consumed / total_energy
+    )
+    if clean_water_power_consumed_fraction > 0:
+        power_consumed_fraction[ResourceType.CLEAN_WATER] = clean_water_power_consumed_fraction
+
+    total_electricity_power_consumed_fraction = np.sum(
+        simulation_results[ColumnHeader.POWER_CONSUMED_BY_ELECTRIC_DEVICES.value]
+    )
+    electricity_power_consumed_fraction = (
+        total_electricity_power_consumed_fraction / total_energy
+    )
+    if electricity_power_consumed_fraction > 0:
+        power_consumed_fraction[ResourceType.ELECTRIC] = electricity_power_consumed_fraction
+
+    total_electricity_power_consumed_fraction = np.sum(
+        simulation_results[ColumnHeader.POWER_CONSUMED_BY_HOT_WATER.value]
+    )
+    hot_water_power_consumed_fraction = (
+        total_electricity_power_consumed_fraction / total_energy
+    )
+    if hot_water_power_consumed_fraction > 0:
+        power_consumed_fraction[ResourceType.HOT_CLEAN_WATER] = hot_water_power_consumed_fraction
+
+    # Confirm that these align correctly.
+    if (
+        clean_water_power_consumed_fraction
+        + electricity_power_consumed_fraction
+        + hot_water_power_consumed_fraction
+    ) != 1:
+        logger.error(
+            "%sThe power consumed providing each resource type did not sum to 1.%s",
+            BColours.fail,
+            BColours.endc
+        )
+        logger.info(
+            "Clean water power consumed fraction: %s.",
+            clean_water_power_consumed_fraction
+        )
+        logger.info(
+            "Electricity power consumed fraction: %s.",
+            electricity_power_consumed_fraction
+        )
+        logger.info(
+            "Hot water power consumed fraction: %s.",
+            hot_water_power_consumed_fraction
+        )
+        raise InternalError(
+            "Power consumed fractions did not sum to 1 across all valid resource types."
+        )
+
+    # Calculate total discounted energy
+    total_energy_daily = hourly_profile_to_daily_sum(
+        pd.DataFrame(simulation_results[ColumnHeader.TOTAL_ELECTRICITY_CONSUMED.value])
+    )
+    discounted_energy = finance.discounted_energy_total(
+        finance_inputs,
+        logger,
+        total_energy_daily,
+        start_year=system_details.start_year,
+        end_year=system_details.end_year,
+    )
+
+    # Calculate proportion of kerosene displaced (defaults to zero if kerosene is not
+    # originally used
+    if np.sum(simulation_results[ColumnHeader.KEROSENE_LAMPS.value]) > 0.0:
+        kerosene_displacement = (
+            np.sum(simulation_results[ColumnHeader.KEROSENE_MITIGATION.value])
+        ) / (
+            np.sum(simulation_results[ColumnHeader.KEROSENE_MITIGATION.value])
+            + np.sum(simulation_results[ColumnHeader.KEROSENE_LAMPS.value])
+        )
+    else:
+        kerosene_displacement = 0.0
+
+    # Calculate diesel fuel usage
+    total_diesel_fuel = np.sum(simulation_results[ColumnHeader.DIESEL_FUEL_USAGE.value])
+
     # Return outputs
     return TechnicalAppraisal(
         round(system_blackouts, 3),
@@ -602,6 +661,7 @@ def _simulation_technical_appraisal(
         round(kerosene_displacement, 3),
         round(total_pv_energy, 3),
         round(total_pvt_energy, 3) if total_pvt_energy is not None else None,
+        power_consumed_fraction,
         round(renewable_clean_water_fraction, 3),
         round(total_renewables_used, 3),
         round(renewables_fraction, 3),
@@ -681,7 +741,7 @@ def appraise_system(
         and previous_system.system_details.final_num_clean_water_tanks is not None
         else 0
     )
-    converter_addition: Dict[str, int] = {
+    converter_addition: Dict[Converter, int] = {
         converter: size
         - (
             previous_system.system_details.final_converter_sizes[converter]
@@ -802,7 +862,7 @@ def appraise_system(
 
     # Combined metrics
     lcue = float(cumulative_system_costs / cumulative_discounted_energy)
-    # lcuw = float(cumulative_system_costs / cumulative_discounted_clean_water)
+    lcow = float(cumulative_system_costs / cumulative_discounted_clean_water)
     emissions_intensity = 1000.0 * float(cumulative_system_ghgs / cumulative_energy)
 
     #   Format outputs
