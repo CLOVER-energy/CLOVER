@@ -53,8 +53,8 @@ from .__utils__ import (
     Simulation,
 )
 from .conversion.conversion import (
-    Convertor,
-    MultiInputConvertor,
+    Converter,
+    MultiInputConverter,
     ThermalDesalinationPlant,
     WaterSource,
 )
@@ -247,17 +247,17 @@ WATER_SOURCE_INPUTS_FILE: str = os.path.join("generation", "water_source_inputs.
 
 
 def _determine_available_convertors(
-    convertors: Dict[str, Convertor],
+    convertors: Dict[str, Converter],
     logger: Logger,
     minigrid: Minigrid,
     scenario: Scenario,
-) -> List[Convertor]:
+) -> List[Converter]:
     """
-    Determines the available :class:`Convertor` instances based on the :class:`Scenario`
+    Determines the available :class:`Converter` instances based on the :class:`Scenario`
 
     Inputs:
         - convertors:
-            The :class:`Convertor` instances defined, parsed from the conversion inputs
+            The :class:`Converter` instances defined, parsed from the conversion inputs
             file.
         - logger:
             The :class:`logging.Logger` to use for the run.
@@ -267,11 +267,11 @@ def _determine_available_convertors(
             The :class:`Scenario` to use for the run.
 
     Outputs:
-        - A `list` of :class:`Convertor` instances available to the system.
+        - A `list` of :class:`Converter` instances available to the system.
 
     """
 
-    available_convertors: List[Convertor] = []
+    available_convertors: List[Converter] = []
 
     if scenario.desalination_scenario is None and scenario.hot_water_scenario is None:
         return available_convertors
@@ -477,9 +477,9 @@ def _parse_conversion_inputs(
     logger: Logger,
 ) -> Tuple[
     str,
-    Dict[Convertor, Dict[str, float]],
-    Dict[Convertor, Dict[str, float]],
-    Dict[str, Convertor],
+    Dict[Converter, Dict[str, float]],
+    Dict[Converter, Dict[str, float]],
+    Dict[str, Converter],
 ]:
     """
     Parses the conversion inputs file.
@@ -494,13 +494,13 @@ def _parse_conversion_inputs(
         - conversion_inputs_filepath:
             The conversion inputs relative path;
         - convertor_costs:
-            A `dict` mapping :class:`conversion.Convertor` instances to their associated
+            A `dict` mapping :class:`conversion.Converter` instances to their associated
             costs.
         - convertor_emissions:
-            A `dict` mapping :class:`conversion.Convertor` instances to their associated
+            A `dict` mapping :class:`conversion.Converter` instances to their associated
             emissions.
         - convertors:
-            A `dict` mapping convertor names (`str`) to :class:`conversion.Convertor`
+            A `dict` mapping convertor names (`str`) to :class:`conversion.Converter`
             instances based on the input information provided.
 
     """
@@ -510,12 +510,12 @@ def _parse_conversion_inputs(
         inputs_directory_relative_path, CONVERSION_INPUTS_FILE
     )
 
-    convertor_costs: Dict[Convertor, Dict[str, float]] = {}
-    convertor_emissions: Dict[Convertor, Dict[str, float]] = {}
+    convertor_costs: Dict[Converter, Dict[str, float]] = {}
+    convertor_emissions: Dict[Converter, Dict[str, float]] = {}
 
     # If the file exists, parse the convertors contained.
     if os.path.isfile(conversion_file_relative_path):
-        parsed_convertors: List[Convertor] = []
+        parsed_convertors: List[Converter] = []
         conversion_inputs = read_yaml(conversion_file_relative_path, logger)
         if conversion_inputs is not None:
             if not isinstance(conversion_inputs, list):
@@ -528,13 +528,13 @@ def _parse_conversion_inputs(
             for entry in conversion_inputs:
                 if not isinstance(entry, dict):
                     logger.error(
-                        "%sConvertor not of correct format `dict`: %s%s",
+                        "%sConverter not of correct format `dict`: %s%s",
                         BColours.fail,
                         str(entry),
                         BColours.endc,
                     )
                     raise InputFileError(
-                        "conversion inputs", "Convertors not correctly defined."
+                        "conversion inputs", "Converters not correctly defined."
                     )
 
                 # Attempt to parse as a water source.
@@ -559,7 +559,7 @@ def _parse_conversion_inputs(
 
                         # Parse as a generic multi-input convertor.
                         parsed_convertors.append(
-                            MultiInputConvertor.from_dict(entry, logger)
+                            MultiInputConverter.from_dict(entry, logger)
                         )
                         logger.info("Parsed multi-input convertor from input data.")
                     logger.info("Parsed thermal desalination plant from input data.")
@@ -568,7 +568,7 @@ def _parse_conversion_inputs(
                     logger.info("Parsed single-input convertor from input data.")
 
             # Convert the list to the required format.
-            convertors: Dict[str, Convertor] = {
+            convertors: Dict[str, Converter] = {
                 convertor.name: convertor for convertor in parsed_convertors
             }
 
@@ -588,7 +588,7 @@ def _parse_conversion_inputs(
                     raise
                 else:
                     logger.info(
-                        "Convertor cost information for %s successfully parsed.",
+                        "Converter cost information for %s successfully parsed.",
                         convertor.name,
                     )
                 try:
@@ -605,7 +605,7 @@ def _parse_conversion_inputs(
                     raise
                 else:
                     logger.info(
-                        "Convertor emission information for %s successfully parsed.",
+                        "Converter emission information for %s successfully parsed.",
                         convertor.name,
                     )
 
@@ -1760,7 +1760,7 @@ def _parse_tank_inputs(
 
 
 def _parse_minigrid_inputs(
-    convertors: Dict[str, Convertor],
+    convertors: Dict[str, Converter],
     debug: bool,
     inputs_directory_relative_path: str,
     logger: Logger,
@@ -1801,7 +1801,7 @@ def _parse_minigrid_inputs(
 
     Inputs:
         - convertors:
-            The `list` of :class:`Convertor` instances available to the system.
+            The `list` of :class:`Converter` instances available to the system.
         - debug:
             Whether to use the PV-T reduced models (False) or invented data for
             debugging purposes (True).
@@ -2008,7 +2008,7 @@ def _parse_minigrid_inputs(
         and scenario.hot_water_scenario.auxiliary_heater == AuxiliaryHeaterType.ELECTRIC
     ):
         try:
-            electric_water_heater: Optional[Convertor] = convertors[
+            electric_water_heater: Optional[Converter] = convertors[
                 energy_system_inputs[ELECTRIC_WATER_HEATER]
             ]
         except KeyError:
@@ -2218,7 +2218,7 @@ def _parse_transmission_inputs(
 def parse_input_files(
     debug: bool, location_name: str, logger: Logger
 ) -> Tuple[
-    List[Convertor],
+    List[Converter],
     Dict[load.load.Device, pd.DataFrame],
     Minigrid,
     Dict[str, Dict[str, float]],
@@ -2363,7 +2363,7 @@ def parse_input_files(
     logger.info("Energy-system inputs successfully parsed.")
 
     # Determine the available convertors.
-    available_convertors: List[Convertor] = _determine_available_convertors(
+    available_convertors: List[Converter] = _determine_available_convertors(
         convertors, logger, minigrid, scenario
     )
     logger.info("Subset of available convertors determined.")
@@ -2601,7 +2601,7 @@ def parse_input_files(
                 type=ImpactingComponent.CONVERTOR.value, name=convertor.name
             )
         ] = defaultdict(float, convertor_emissions[convertor])
-        logger.info("Convertor %s impact data successfully updated.", convertor.name)
+        logger.info("Converter %s impact data successfully updated.", convertor.name)
 
     # Add transmitter impacts.
     for transmitter in transmitters:

@@ -54,13 +54,13 @@ from ..__utils__ import (
     Scenario,
     Simulation,
 )
-from ..conversion.conversion import Convertor, WaterSource
+from ..conversion.conversion import Converter, WaterSource
 from ..impact.finance import ImpactingComponent
 from .appraisal import appraise_system, SystemAppraisal
 from .single_line_simulation import single_line_simulation
 from .__utils__ import (
     convertors_from_sizing,
-    ConvertorSize,
+    ConverterSize,
     Criterion,
     CriterionMode,
     get_sufficient_appraisals,
@@ -112,14 +112,14 @@ def _fetch_optimum_system(
 
 def _find_optimum_system(
     conventional_cw_source_profiles: Dict[WaterSource, pd.DataFrame],
-    convertors: List[Convertor],
+    convertors: List[Converter],
     end_year: int,
     finance_inputs: Dict[str, Any],
     ghg_inputs: Dict[str, Any],
     grid_profile: pd.DataFrame,
     irradiance_data: pd.Series,
     kerosene_usage: pd.DataFrame,
-    largest_convertor_sizes: Dict[Convertor, ConvertorSize],
+    largest_convertor_sizes: Dict[Converter, ConverterSize],
     largest_cw_pvt_system_size: SolarSystemSize,
     largest_cw_tank_size: TankSize,
     largest_hw_pvt_system_size: SolarSystemSize,
@@ -305,10 +305,10 @@ def _find_optimum_system(
 
 def _simulation_iteration(
     conventional_cw_source_profiles: Optional[Dict[WaterSource, pd.DataFrame]],
-    convertor_sizes: Dict[Convertor, ConvertorSize],
+    convertor_sizes: Dict[Converter, ConverterSize],
     cw_pvt_system_size: SolarSystemSize,
     cw_tanks: TankSize,
-    convertors: List[Convertor],
+    convertors: List[Converter],
     finance_inputs: Dict[str, Any],
     ghg_inputs: Dict[str, Any],
     grid_profile: pd.DataFrame,
@@ -333,7 +333,7 @@ def _simulation_iteration(
     yearly_electric_load_statistics: pd.DataFrame,
 ) -> Tuple[
     int,
-    Dict[Convertor, ConvertorSize],
+    Dict[Converter, ConverterSize],
     SolarSystemSize,
     TankSize,
     SolarSystemSize,
@@ -404,7 +404,7 @@ def _simulation_iteration(
         - end_year:
             The end year of this step, used in the simulations;
         - largest_convertor_size:
-            A mapping between :class:`Convertor` instances and the size associated with
+            A mapping between :class:`Converter` instances and the size associated with
             each for the largest system simulated;
         - largest_cw_pvt_size:
             The clean-water PV-T size of the largest system simulated;
@@ -444,12 +444,12 @@ def _simulation_iteration(
     )
 
     # Determine the maximum sizes of each convertor defined.
-    max_convertor_sizes: Dict[Convertor, int] = {
+    max_convertor_sizes: Dict[Converter, int] = {
         convertor: size.max for convertor, size in convertor_sizes.items()
     }
 
     # Append convertors defined elsewhere.
-    static_convertor_sizes: Dict[Convertor, int] = {
+    static_convertor_sizes: Dict[Converter, int] = {
         convertor: convertors.count(convertor)
         for convertor in convertors
         if convertor not in max_convertor_sizes
@@ -666,11 +666,11 @@ def _simulation_iteration(
 
     # Set up the various variables ready for recursive iteration.
     component_sizes: Dict[
-        Union[Convertor, ImpactingComponent, RenewableEnergySource], float
+        Union[Converter, ImpactingComponent, RenewableEnergySource], float
     ] = {}
     parameter_space: List[
         Tuple[
-            Union[Convertor, ImpactingComponent, RenewableEnergySource],
+            Union[Converter, ImpactingComponent, RenewableEnergySource],
             str,
             Union[List[float], List[int]],
         ]
@@ -858,7 +858,7 @@ def _simulation_iteration(
     return (
         end_year,
         {
-            convertor: ConvertorSize(size.max, size.min, size.step)
+            convertor: ConverterSize(size.max, size.min, size.step)
             for convertor, size in max_convertor_sizes.items()
         },
         SolarSystemSize(
@@ -880,10 +880,10 @@ def _simulation_iteration(
 
 def _optimisation_step(
     conventional_cw_source_profiles: Optional[Dict[WaterSource, pd.DataFrame]],
-    convertor_sizes: Dict[Convertor, ConvertorSize],
+    convertor_sizes: Dict[Converter, ConverterSize],
     cw_pvt_system_size: SolarSystemSize,
     cw_tanks: TankSize,
-    convertors: List[Convertor],
+    convertors: List[Converter],
     finance_inputs: Dict[str, Any],
     ghg_inputs: Dict[str, Any],
     grid_profile: pd.DataFrame,
@@ -915,7 +915,7 @@ def _optimisation_step(
             Mapping between :class:`WaterSource` instances and their availability
             proviles.
         - convertor_sizes:
-            Mapping between :class:`Convertor` instances and the range of associated
+            Mapping between :class:`Converter` instances and the range of associated
             sizes.
         - cw_pvt_system_size:
             Range of clean-water PV-T sizes.
@@ -1057,7 +1057,7 @@ def _optimisation_step(
 
 def multiple_optimisation_step(
     conventional_cw_source_profiles: Optional[Dict[WaterSource, pd.DataFrame]],
-    convertors: List[Convertor],
+    convertors: List[Converter],
     finance_inputs: Dict[str, Any],
     ghg_inputs: Dict[str, Any],
     grid_profile: pd.DataFrame,
@@ -1075,7 +1075,7 @@ def multiple_optimisation_step(
     wind_speed_data: Optional[pd.Series],
     yearly_electric_load_statistics: pd.DataFrame,
     *,
-    input_convertor_sizes: Optional[Dict[Convertor, ConvertorSize]] = None,
+    input_convertor_sizes: Optional[Dict[Converter, ConverterSize]] = None,
     input_cw_pvt_system_size: Optional[SolarSystemSize] = None,
     input_cw_tanks: Optional[TankSize] = None,
     input_hw_pvt_system_size: Optional[SolarSystemSize] = None,
@@ -1122,7 +1122,7 @@ def multiple_optimisation_step(
         - yearly_electric_load_statistics:
             The yearly electric load statistic information;
         - input_convertor_sizes:
-            Mapping between :class:`Convertor` instances and the :class:`ConvertorSize`
+            Mapping between :class:`Converter` instances and the :class:`ConverterSize`
             range available.
         - input_cw_tanks:
             Range of clean-water tank sizes as a :class:`TankSize` instance;
@@ -1166,7 +1166,7 @@ def multiple_optimisation_step(
             "No convertor sizes passed in, using default optimisation parameters."
         )
         input_convertor_sizes: Dict[
-            Convertor, ConvertorSize
+            Converter, ConverterSize
         ] = optimisation_parameters.convertor_sizes.copy()
     else:
         input_convertor_sizes = {}

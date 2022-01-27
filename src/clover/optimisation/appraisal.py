@@ -39,7 +39,7 @@ from ..__utils__ import (
     SystemDetails,
     TechnicalAppraisal,
 )
-from ..conversion.conversion import Convertor
+from ..conversion.conversion import Converter
 from ..impact.__utils__ import ImpactingComponent
 
 __all__ = ("appraise_system",)

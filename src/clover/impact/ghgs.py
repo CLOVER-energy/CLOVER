@@ -31,7 +31,7 @@ from ..__utils__ import (
     Location,
     hourly_profile_to_daily_sum,
 )
-from ..conversion.conversion import Convertor
+from ..conversion.conversion import Converter
 from .__utils__ import SIZE_INCREMENT, ImpactingComponent, LIFETIME
 
 __all__ = (

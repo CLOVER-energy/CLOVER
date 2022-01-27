@@ -34,7 +34,7 @@ from ..__utils__ import (
     Location,
     hourly_profile_to_daily_sum,
 )
-from ..conversion.conversion import Convertor
+from ..conversion.conversion import Converter
 
 __all_ = (
     "connections_expenditure",

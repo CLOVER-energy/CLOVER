@@ -35,7 +35,7 @@ from ..__utils__ import (
     ResourceType,
 )
 
-from ..conversion.conversion import Convertor
+from ..conversion.conversion import Converter
 from ..generation.solar import HybridPVTPanel, PVPanel
 from .diesel import DieselGenerator, DieselWaterHeater
 from .exchanger import Exchanger
@@ -141,7 +141,7 @@ class Minigrid:
     dc_transmission_efficiency: Optional[float]
     diesel_generator: Optional[DieselGenerator]
     diesel_water_heater: Optional[DieselWaterHeater]
-    electric_water_heater: Optional[Convertor]
+    electric_water_heater: Optional[Converter]
     heat_exchanger: Optional[Exchanger]
     hot_water_tank: Optional[HotWaterTank]
     pv_panel: PVPanel
@@ -153,7 +153,7 @@ class Minigrid:
         cls,
         diesel_generator: DieselGenerator,
         diesel_water_heater: Optional[DieselWaterHeater],
-        electric_water_heater: Optional[Convertor],
+        electric_water_heater: Optional[Converter],
         minigrid_inputs: Dict[str, Any],
         pv_panel: PVPanel,
         pvt_panel: Optional[HybridPVTPanel],
