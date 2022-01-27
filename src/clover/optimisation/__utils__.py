@@ -522,8 +522,8 @@ class OptimisationParameters:
         else:
             clean_water_tanks = TankSize()
 
-        # Parse the convertors that are to be optimised.
-        convertor_sizing_inputs: Dict[str, Dict[str, int]] = {
+        # Parse the converters that are to be optimised.
+        converter_sizing_inputs: Dict[str, Dict[str, int]] = {
             key: value  # type: ignore
             for key, value in optimisation_inputs.items()
             if CONVERTOR_SIZE_REGEX.match(key) is not None
@@ -531,22 +531,22 @@ class OptimisationParameters:
 
         # NOTE: Explicit error handling is done for the type-check ignored lines.
         try:
-            convertor_sizing_inputs = {
+            converter_sizing_inputs = {
                 CONVERTOR_SIZE_REGEX.match(key).group(CONVERTOR_NAME_STRING): value  # type: ignore
-                for key, value in convertor_sizing_inputs.items()
+                for key, value in converter_sizing_inputs.items()
                 if CONVERTOR_SIZE_REGEX.match(key).group(CONVERTOR_NAME_STRING)  # type: ignore
-                in {convertor.name for convertor in available_convertors}
+                in {converter.name for converter in available_converters}
             }
         except AttributeError as e:
             logger.error(
-                "%sError parsing convertor input information, unable to match groups."
+                "%sError parsing converter input information, unable to match groups."
                 "%s",
                 BColours.fail,
                 BColours.endc
             )
 
-        convertor_name_to_convertor = {
-            convertor.name: convertor for convertor in available_convertors
+        converter_name_to_converter = {
+            converter.name: converter for converter in available_converters
         }
         try:
             converter_sizes: Dict[Converter, ConverterSize] = {
@@ -873,7 +873,7 @@ def recursive_iteration(
     yearly_electric_load_statistics: pd.DataFrame,
     *,
     component_sizes: Dict[
-        Union[Convertor, ImpactingComponent, RenewableEnergySource], Union[int, float],
+        Union[Converter, ImpactingComponent, RenewableEnergySource], Union[int, float],
     ],
     parameter_space: List[
         Tuple[
@@ -934,7 +934,7 @@ def recursive_iteration(
             ),
         )
 
-        # Determine the convertor sizes.
+        # Determine the converter sizes.
         if not all(isinstance(value, int) for value in component_sizes.values()):
             logger.error(
                 "%sNon-integer component sizes were specified, exiting.%s",
@@ -943,9 +943,9 @@ def recursive_iteration(
             )
             raise InputFileError(
                 "optimisation inputs",
-                "Component size inputs specified non-integer convertor sizes."
+                "Component size inputs specified non-integer converter sizes."
             )
-        convertors = convertors_from_sizing(
+        converters = converters_from_sizing(
             {
                 key: int(value)
                 for key, value in component_sizes.items()
@@ -1004,7 +1004,7 @@ def recursive_iteration(
     ):
         # Update the set of fixed sizes accordingly.
         updated_component_sizes: Dict[
-            Union[Convertor, ImpactingComponent, RenewableEnergySource], Union[int, float]
+            Union[Converter, ImpactingComponent, RenewableEnergySource], Union[int, float]
         ] = component_sizes.copy()
         updated_component_sizes[component] = size
 
