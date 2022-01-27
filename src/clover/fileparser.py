@@ -246,8 +246,8 @@ WATER_SOURCE_AVAILABILTY_TEMPLATE_FILENAME: str = "{water_source}_times.csv"
 WATER_SOURCE_INPUTS_FILE: str = os.path.join("generation", "water_source_inputs.yaml")
 
 
-def _determine_available_convertors(
-    convertors: Dict[str, Converter],
+def _determine_available_converters(
+    converters: Dict[str, Converter],
     logger: Logger,
     minigrid: Minigrid,
     scenario: Scenario,
@@ -256,7 +256,7 @@ def _determine_available_convertors(
     Determines the available :class:`Converter` instances based on the :class:`Scenario`
 
     Inputs:
-        - convertors:
+        - converters:
             The :class:`Converter` instances defined, parsed from the conversion inputs
             file.
         - logger:
@@ -271,17 +271,17 @@ def _determine_available_convertors(
 
     """
 
-    available_convertors: List[Converter] = []
+    available_converters: List[Converter] = []
 
     if scenario.desalination_scenario is None and scenario.hot_water_scenario is None:
-        return available_convertors
+        return available_converters
 
-    # Determine the available convertors from the scenarios file.
+    # Determine the available converters from the scenarios file.
     if scenario.desalination_scenario is not None:
-        # Process the clean-water convertors.
+        # Process the clean-water converters.
         for entry in scenario.desalination_scenario.clean_water_scenario.sources:
             try:
-                available_convertors.append(convertors[entry])
+                available_converters.append(converters[entry])
             except KeyError as e:
                 logger.error(
                     "%sUnknown clean-water source specified in the scenario file: %s%s",
@@ -298,7 +298,7 @@ def _determine_available_convertors(
         # Process the feedwater sources.
         for entry in scenario.desalination_scenario.unclean_water_sources:
             try:
-                available_convertors.append(convertors[entry])
+                available_converters.append(converters[entry])
             except KeyError as e:
                 logger.error(
                     "%sUnknown unclean-water source specified in the scenario file: %s"
@@ -314,10 +314,10 @@ def _determine_available_convertors(
                 ) from None
 
     if scenario.hot_water_scenario is not None:
-        # Process the hot-water convertors.
+        # Process the hot-water converters.
         for entry in scenario.hot_water_scenario.conventional_sources:
             try:
-                available_convertors.append(convertors[entry])
+                available_converters.append(converters[entry])
             except KeyError as e:
                 logger.error(
                     "%sUnknown conventional hot-water source specified in the "
@@ -345,9 +345,9 @@ def _determine_available_convertors(
                     "energy system inputs OR hot-water scenario",
                     "Mismatch between electric water heating scenario.",
                 )
-            available_convertors.append(convertors[minigrid.electric_water_heater.name])
+            available_converters.append(converters[minigrid.electric_water_heater.name])
 
-    return available_convertors
+    return available_converters
 
 
 def _parse_battery_inputs(
@@ -493,14 +493,14 @@ def _parse_conversion_inputs(
     Outputs:
         - conversion_inputs_filepath:
             The conversion inputs relative path;
-        - convertor_costs:
+        - converter_costs:
             A `dict` mapping :class:`conversion.Converter` instances to their associated
             costs.
-        - convertor_emissions:
+        - converter_emissions:
             A `dict` mapping :class:`conversion.Converter` instances to their associated
             emissions.
-        - convertors:
-            A `dict` mapping convertor names (`str`) to :class:`conversion.Converter`
+        - converters:
+            A `dict` mapping converter names (`str`) to :class:`conversion.Converter`
             instances based on the input information provided.
 
     """
@@ -510,17 +510,17 @@ def _parse_conversion_inputs(
         inputs_directory_relative_path, CONVERSION_INPUTS_FILE
     )
 
-    convertor_costs: Dict[Converter, Dict[str, float]] = {}
-    convertor_emissions: Dict[Converter, Dict[str, float]] = {}
+    converter_costs: Dict[Converter, Dict[str, float]] = {}
+    converter_emissions: Dict[Converter, Dict[str, float]] = {}
 
-    # If the file exists, parse the convertors contained.
+    # If the file exists, parse the converters contained.
     if os.path.isfile(conversion_file_relative_path):
-        parsed_convertors: List[Converter] = []
+        parsed_converters: List[Converter] = []
         conversion_inputs = read_yaml(conversion_file_relative_path, logger)
         if conversion_inputs is not None:
             if not isinstance(conversion_inputs, list):
                 logger.error(
-                    "%sThe conversion inputs file must be a `list` of valid convertors.%s",
+                    "%sThe conversion inputs file must be a `list` of valid converters.%s",
                     BColours.fail,
                     BColours.endc,
                 )
@@ -539,89 +539,89 @@ def _parse_conversion_inputs(
 
                 # Attempt to parse as a water source.
                 try:
-                    parsed_convertors.append(WaterSource.from_dict(entry, logger))
+                    parsed_converters.append(WaterSource.from_dict(entry, logger))
                 except InputFileError:
                     logger.info(
-                        "Failed to create a single-input convertor, trying a thermal "
+                        "Failed to create a single-input converter, trying a thermal "
                         "desalination plant."
                     )
 
                     # Attempt to parse as a thermal desalination plant.
                     try:
-                        parsed_convertors.append(
+                        parsed_converters.append(
                             ThermalDesalinationPlant.from_dict(entry, logger)
                         )
                     except KeyError:
                         logger.info(
                             "Failed to create a thermal desalination plant, trying "
-                            "a multi-input convertor."
+                            "a multi-input converter."
                         )
 
-                        # Parse as a generic multi-input convertor.
-                        parsed_convertors.append(
+                        # Parse as a generic multi-input converter.
+                        parsed_converters.append(
                             MultiInputConverter.from_dict(entry, logger)
                         )
-                        logger.info("Parsed multi-input convertor from input data.")
+                        logger.info("Parsed multi-input converter from input data.")
                     logger.info("Parsed thermal desalination plant from input data.")
 
                 else:
-                    logger.info("Parsed single-input convertor from input data.")
+                    logger.info("Parsed single-input converter from input data.")
 
             # Convert the list to the required format.
-            convertors: Dict[str, Converter] = {
-                convertor.name: convertor for convertor in parsed_convertors
+            converters: Dict[str, Converter] = {
+                converter.name: converter for converter in parsed_converters
             }
 
             # Parse the transmission impact information.
-            for convertor in convertors.values():
+            for converter in converters.values():
                 try:
-                    convertor_costs[convertor] = [
+                    converter_costs[converter] = [
                         entry[COSTS]
                         for entry in conversion_inputs
-                        if entry[NAME] == convertor.name
+                        if entry[NAME] == converter.name
                     ][0]
                 except (KeyError, IndexError):
                     logger.error(
-                        "Failed to determine convertor cost information for %s.",
-                        convertor.name,
+                        "Failed to determine converter cost information for %s.",
+                        converter.name,
                     )
                     raise
                 else:
                     logger.info(
                         "Converter cost information for %s successfully parsed.",
-                        convertor.name,
+                        converter.name,
                     )
                 try:
-                    convertor_emissions[convertor] = [
+                    converter_emissions[converter] = [
                         entry[EMISSIONS]
                         for entry in conversion_inputs
-                        if entry[NAME] == convertor.name
+                        if entry[NAME] == converter.name
                     ][0]
                 except (KeyError, IndexError):
                     logger.error(
-                        "Failed to determine convertor emission information for %s.",
-                        convertor.name,
+                        "Failed to determine converter emission information for %s.",
+                        converter.name,
                     )
                     raise
                 else:
                     logger.info(
                         "Converter emission information for %s successfully parsed.",
-                        convertor.name,
+                        converter.name,
                     )
 
         else:
-            convertors = {}
-            logger.info("Conversion file empty, continuing with no defined convertors.")
+            converters = {}
+            logger.info("Conversion file empty, continuing with no defined converters.")
 
     else:
-        convertors = {}
-        logger.info("No conversion file, skipping convertor parsing.")
+        converters = {}
+        logger.info("No conversion file, skipping converter parsing.")
 
     return (
         conversion_file_relative_path,
-        convertor_costs,
-        convertor_emissions,
-        convertors,
+        converter_costs,
+        converter_emissions,
+        converters,
     )
 
 
@@ -1760,7 +1760,7 @@ def _parse_tank_inputs(
 
 
 def _parse_minigrid_inputs(
-    convertors: Dict[str, Converter],
+    converters: Dict[str, Converter],
     debug: bool,
     inputs_directory_relative_path: str,
     logger: Logger,
@@ -1800,7 +1800,7 @@ def _parse_minigrid_inputs(
     Parses the energy-system-related input files.
 
     Inputs:
-        - convertors:
+        - converters:
             The `list` of :class:`Converter` instances available to the system.
         - debug:
             Whether to use the PV-T reduced models (False) or invented data for
@@ -2008,7 +2008,7 @@ def _parse_minigrid_inputs(
         and scenario.hot_water_scenario.auxiliary_heater == AuxiliaryHeaterType.ELECTRIC
     ):
         try:
-            electric_water_heater: Optional[Converter] = convertors[
+            electric_water_heater: Optional[Converter] = converters[
                 energy_system_inputs[ELECTRIC_WATER_HEATER]
             ]
         except KeyError:
@@ -2111,7 +2111,7 @@ def _parse_transmission_inputs(
         - The costs associated with the transmitters;
         - The emissions associated with the transmitters;
         - The transmission inputs relative path;
-        - A `dict` mapping convertor names (`str`) to :class:`transmission.Transmitter`
+        - A `dict` mapping converter names (`str`) to :class:`transmission.Transmitter`
           instances based on the input information provided.
 
     """
@@ -2124,7 +2124,7 @@ def _parse_transmission_inputs(
     transmission_costs: Dict[str, Dict[str, float]] = {}
     transmission_emissions: Dict[str, Dict[str, float]] = {}
 
-    # If the file exists, parse the convertors contained.
+    # If the file exists, parse the converters contained.
     if os.path.isfile(transmission_file_relative_path):
         parsed_transmitters: List[Transmitter] = []
         transmission_inputs = read_yaml(transmission_file_relative_path, logger)
@@ -2274,9 +2274,9 @@ def parse_input_files(
     # Parse the conversion inputs file.
     (
         conversion_file_relative_path,
-        convertor_costs,
-        convertor_emissions,
-        convertors,
+        converter_costs,
+        converter_emissions,
+        converters,
     ) = _parse_conversion_inputs(
         inputs_directory_relative_path,
         logger,
@@ -2358,15 +2358,15 @@ def parse_input_files(
         transmission_inputs_filepath,
         transmitters,
     ) = _parse_minigrid_inputs(
-        convertors, debug, inputs_directory_relative_path, logger, scenario
+        converters, debug, inputs_directory_relative_path, logger, scenario
     )
     logger.info("Energy-system inputs successfully parsed.")
 
-    # Determine the available convertors.
-    available_convertors: List[Converter] = _determine_available_convertors(
-        convertors, logger, minigrid, scenario
+    # Determine the available converters.
+    available_converters: List[Converter] = _determine_available_converters(
+        converters, logger, minigrid, scenario
     )
-    logger.info("Subset of available convertors determined.")
+    logger.info("Subset of available converters determined.")
 
     generation_inputs_filepath = os.path.join(
         inputs_directory_relative_path, GENERATION_INPUTS_FILE
@@ -2485,7 +2485,7 @@ def parse_input_files(
         )
     try:
         optimisation_parameters = OptimisationParameters.from_dict(
-            available_convertors, logger, optimisation_inputs
+            available_converters, logger, optimisation_inputs
         )
     except Exception as e:
         logger.error(
@@ -2589,19 +2589,19 @@ def parse_input_files(
         logger.info("PV-T disblaed in scenario file, skipping PV-T impact parsing.")
 
     # Add transmitter impacts.
-    for convertor in available_convertors:
-        logger.info("Updating with %s impact data.", convertor.name)
+    for converter in available_converters:
+        logger.info("Updating with %s impact data.", converter.name)
         finance_inputs[
             FINANCE_IMPACT.format(
-                type=ImpactingComponent.CONVERTOR.value, name=convertor.name
+                type=ImpactingComponent.CONVERTER.value, name=converter.name
             )
-        ] = defaultdict(float, convertor_costs[convertor])
+        ] = defaultdict(float, converter_costs[converter])
         ghg_inputs[
             GHG_IMPACT.format(
-                type=ImpactingComponent.CONVERTOR.value, name=convertor.name
+                type=ImpactingComponent.CONVERTER.value, name=converter.name
             )
-        ] = defaultdict(float, convertor_emissions[convertor])
-        logger.info("Converter %s impact data successfully updated.", convertor.name)
+        ] = defaultdict(float, converter_emissions[converter])
+        logger.info("Converter %s impact data successfully updated.", converter.name)
 
     # Add transmitter impacts.
     for transmitter in transmitters:
@@ -2754,7 +2754,7 @@ def parse_input_files(
     # Generate a dictionary with information about the input files used.
     input_file_info: Dict[str, str] = {
         "batteries": battery_inputs_filepath,
-        "convertors": conversion_file_relative_path,
+        "converters": conversion_file_relative_path,
         "devices": device_inputs_filepath,
         "diesel_inputs": diesel_inputs_filepath,
         "energy_system": energy_system_inputs_filepath,
@@ -2791,8 +2791,8 @@ def parse_input_files(
 
     logger.debug("Input file parsing complete.")
     logger.debug(
-        "Available convertors: %s",
-        ", ".join([str(convertor) for convertor in available_convertors]),
+        "Available converters: %s",
+        ", ".join([str(converter) for converter in available_converters]),
     )
     logger.debug("Devices: %s", ", ".join([str(device) for device in devices]))
     logger.debug("Energy system/minigrid: %s", str(minigrid))
@@ -2818,7 +2818,7 @@ def parse_input_files(
     logger.debug("Input file information: %s", input_file_info)
 
     return (
-        available_convertors,
+        available_converters,
         device_utilisations,
         minigrid,
         finance_inputs,

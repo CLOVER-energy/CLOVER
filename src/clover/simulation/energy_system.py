@@ -52,7 +52,7 @@ from ..__utils__ import (
     SystemDetails,
     dict_to_dataframe,
 )
-from ..conversion.conversion import Convertor, ThermalDesalinationPlant, WaterSource
+from ..conversion.conversion import Converter, ThermalDesalinationPlant, WaterSource
 from ..generation.solar import SolarPanelType, solar_degradation
 from ..load.load import HOT_WATER_USAGE, population_hourly
 from .__utils__ import Minigrid
@@ -223,17 +223,17 @@ def _calculate_backup_diesel_generator_usage(
 
 
 def _calculate_electric_desalination_parameters(
-    convertors: List[Convertor],
-    feedwater_sources: List[Convertor],
+    converters: List[Converter],
+    feedwater_sources: List[Converter],
     logger: Logger,
     scenario: Scenario,
-) -> Tuple[List[Convertor], float, float]:
+) -> Tuple[List[Converter], float, float]:
     """
     Calculates parameters needed for computing electric desalination.
 
     Inputs:
-        - convertors:
-            The `list` of :class:`Convertor` instances defined for the system.
+        - converters:
+            The `list` of :class:`Converter` instances defined for the system.
         - feedwater_sources:
             The `list` of :class:`WaterSource` instances that produce feedwater as their
             outputs.
@@ -243,7 +243,7 @@ def _calculate_electric_desalination_parameters(
             The :class:`Scenario` for the run.
 
     Outputs:
-        - The `list` of electric desalinators :class:`Convertor` instances defined on
+        - The `list` of electric desalinators :class:`Converter` instances defined on
           the system.
         - The electric energy consumed per desalinated litre of water produced.
         - The maximum throughput of the electric desalination system.
@@ -256,14 +256,14 @@ def _calculate_electric_desalination_parameters(
         and scenario.desalination_scenario.clean_water_scenario.mode
         in {CleanWaterMode.BACKUP, CleanWaterMode.PRIORITISE}
     ):
-        # Initialise deslination convertors.
-        electric_desalinators: List[Convertor] = sorted(
+        # Initialise deslination converters.
+        electric_desalinators: List[Converter] = sorted(
             [
-                convertor
-                for convertor in convertors
-                if list(convertor.input_resource_consumption)
+                converter
+                for converter in converters
+                if list(converter.input_resource_consumption)
                 == [ResourceType.ELECTRIC, ResourceType.UNCLEAN_WATER]
-                and convertor.output_resource_type == ResourceType.CLEAN_WATER
+                and converter.output_resource_type == ResourceType.CLEAN_WATER
             ]
         )
 
@@ -315,7 +315,7 @@ def _calculate_electric_desalination_parameters(
 
 
 def _calculate_renewable_cw_profiles(
-    convertors: List[Convertor],
+    converters: List[Converter],
     end_hour: int,
     irradiance_data: pd.Series,
     logger: Logger,
@@ -329,19 +329,19 @@ def _calculate_renewable_cw_profiles(
 ) -> Tuple[
     Optional[pd.DataFrame],
     pd.DataFrame,
-    List[Convertor],
+    List[Converter],
     Optional[pd.DataFrame],
     pd.DataFrame,
     pd.DataFrame,
-    List[Convertor],
+    List[Converter],
     pd.DataFrame,
 ]:
     """
     Calculates PV-T related profiles.
 
     Inputs:
-        - convertors:
-            The `list` of :class:`Convertor` instances available to be used.
+        - converters:
+            The `list` of :class:`Converter` instances available to be used.
         - end_hour:
             The final hour for which the simulation will be carried out.
         - irradiance_data:
@@ -369,7 +369,7 @@ def _calculate_renewable_cw_profiles(
         - buffer_tank_volume_supplied:
             The volume of buffer solution outputted by the HTF buffer tanks.
         - feedwater_sources:
-            The :class:`Convertor` instances which are a source of feedwater to the PV-T
+            The :class:`Converter` instances which are a source of feedwater to the PV-T
             system.
         - clean_water_pvt_collector_output_temperature:
             The output temperature of HTF from the PV-T collectors, measured in degrees
@@ -390,12 +390,12 @@ def _calculate_renewable_cw_profiles(
     if scenario.desalination_scenario is not None:
         # Determine the list of available feedwater sources.
         logger.info("Determining available feedwater sources.")
-        feedwater_sources: List[Convertor] = sorted(
+        feedwater_sources: List[Converter] = sorted(
             [
-                convertor
-                for convertor in convertors
-                if list(convertor.input_resource_consumption) == [ResourceType.ELECTRIC]
-                and convertor.output_resource_type == ResourceType.UNCLEAN_WATER
+                converter
+                for converter in converters
+                if list(converter.input_resource_consumption) == [ResourceType.ELECTRIC]
+                and converter.output_resource_type == ResourceType.UNCLEAN_WATER
             ]
         )
         logger.debug(
@@ -430,9 +430,9 @@ def _calculate_renewable_cw_profiles(
         logger.info("Determining desalination plant.")
         try:
             thermal_desalination_plant: ThermalDesalinationPlant = [
-                convertor
-                for convertor in convertors
-                if isinstance(convertor, ThermalDesalinationPlant)
+                converter
+                for converter in converters
+                if isinstance(converter, ThermalDesalinationPlant)
             ][0]
         except IndexError:
             logger.error(
@@ -482,7 +482,7 @@ def _calculate_renewable_cw_profiles(
                 BColours.endc,
             )
             InputFileError(
-                "convertor inputs OR desalination scenario",
+                "converter inputs OR desalination scenario",
                 f"The htf mode '{HTFMode.COLD_WATER_HEATING.value}' is not currently "
                 "supported.",
             )
@@ -526,7 +526,7 @@ def _calculate_renewable_cw_profiles(
 
         logger.info("Determining required feedwater sources.")
         feedwater_capacity: float = 0
-        required_feedwater_sources: List[Convertor] = []
+        required_feedwater_sources: List[Converter] = []
         while (
             feedwater_capacity
             < thermal_desalination_plant.input_resource_consumption[
@@ -704,7 +704,7 @@ def _calculate_renewable_cw_profiles(
 
 
 def _calculate_renewable_hw_profiles(
-    convertors: List[Convertor],
+    converters: List[Converter],
     end_hour: int,
     irradiance_data: pd.Series,
     logger: Logger,
@@ -717,7 +717,7 @@ def _calculate_renewable_hw_profiles(
     temperature_data: pd.Series,
     wind_speed_data: Optional[pd.Series],
 ) -> Tuple[
-    Optional[Union[Convertor, DieselWaterHeater]],
+    Optional[Union[Converter, DieselWaterHeater]],
     pd.DataFrame,
     Optional[pd.DataFrame],
     pd.DataFrame,
@@ -729,8 +729,8 @@ def _calculate_renewable_hw_profiles(
     Calculates PV-T related profiles for the hot-water system.
 
     Inputs:
-        - convertors:
-            The `list` of :class:`Convertor` instances available to be used.
+        - converters:
+            The `list` of :class:`Converter` instances available to be used.
         - end_hour:
             The final hour for which the simulation will be carried out.
         - irradiance_data:
@@ -842,16 +842,16 @@ def _calculate_renewable_hw_profiles(
         # Determine the auxiliary heater associated with the system.
         if scenario.hot_water_scenario.auxiliary_heater == AuxiliaryHeaterType.DIESEL:
             auxiliary_heater: Optional[
-                Union[Convertor, DieselWaterHeater]
+                Union[Converter, DieselWaterHeater]
             ] = minigrid.diesel_water_heater
         if scenario.hot_water_scenario.auxiliary_heater == AuxiliaryHeaterType.ELECTRIC:
             try:
                 auxiliary_heater = [
-                    convertor
-                    for convertor in convertors
-                    if convertor.output_resource_type == ResourceType.HOT_CLEAN_WATER
-                    and ResourceType.ELECTRIC in convertor.input_resource_consumption
-                    and ResourceType.CLEAN_WATER in convertor.input_resource_consumption
+                    converter
+                    for converter in converters
+                    if converter.output_resource_type == ResourceType.HOT_CLEAN_WATER
+                    and ResourceType.ELECTRIC in converter.input_resource_consumption
+                    and ResourceType.CLEAN_WATER in converter.input_resource_consumption
                 ][0]
             except IndexError:
                 logger.error(
@@ -1803,7 +1803,7 @@ def _update_battery_health(
 def run_simulation(
     clean_water_pvt_size: int,
     conventional_cw_source_profiles: Dict[WaterSource, pd.DataFrame],
-    convertors: List[Convertor],
+    converters: List[Converter],
     electric_storage_size: float,
     grid_profile: pd.DataFrame,
     hot_water_pvt_size: int,
@@ -1834,8 +1834,8 @@ def run_simulation(
         - conventional_cw_source_profiles:
             A mapping between :class:`WaterSource` instances and the associated water
             that can be drawn from the source throughout the duration of the simulation.
-        - convertors:
-            The `list` of :class:`Convertor` instances available to be used.
+        - converters:
+            The `list` of :class:`Converter` instances available to be used.
         - diesel_generator:
             The backup diesel generator for the system being modelled.
         - electric_storage_size:
@@ -1945,7 +1945,7 @@ def run_simulation(
 
     # Calculate PV-T related performance profiles.
     buffer_tank_temperature: Optional[pd.DataFrame]
-    feedwater_sources: List[Convertor]
+    feedwater_sources: List[Converter]
     clean_water_pvt_collector_output_temperature: Optional[pd.DataFrame]
     clean_water_pvt_electric_power_per_unit: pd.DataFrame
     renewable_cw_produced: pd.DataFrame
@@ -1962,7 +1962,7 @@ def run_simulation(
         required_cw_feedwater_sources,
         thermal_desalination_electric_power_consumed,
     ) = _calculate_renewable_cw_profiles(
-        convertors,
+        converters,
         end_hour,
         irradiance_data,
         logger,
@@ -2068,7 +2068,7 @@ def run_simulation(
         hot_water_tank_volume_supplied,
         renewable_hw_fraction,
     ) = _calculate_renewable_hw_profiles(
-        convertors,
+        converters,
         end_hour,
         irradiance_data,
         logger,
@@ -2227,7 +2227,7 @@ def run_simulation(
         energy_per_desalinated_litre,
         maximum_water_throughput,
     ) = _calculate_electric_desalination_parameters(
-        convertors, feedwater_sources, logger, scenario
+        converters, feedwater_sources, logger, scenario
     )
 
     # Intialise tank accounting parameters
@@ -2653,7 +2653,7 @@ def run_simulation(
     system_details = SystemDetails(
         diesel_capacity,
         simulation.end_year,
-        {convertor.name: convertors.count(convertor) for convertor in convertors},
+        {converter.name: converters.count(converter) for converter in converters},
         clean_water_pvt_size
         * float(
             solar_degradation(minigrid.pvt_panel.lifetime, location.max_years).iloc[
@@ -2684,7 +2684,7 @@ def run_simulation(
             * minigrid.battery.storage_unit
             * np.min(battery_health_frame[ColumnHeader.BATTERY_HEALTH.value])
         ),
-        {convertor.name: convertors.count(convertor) for convertor in convertors},
+        {converter.name: converters.count(converter) for converter in converters},
         clean_water_pvt_size
         if minigrid.pvt_panel is not None and scenario.desalination_scenario is not None
         else None,
