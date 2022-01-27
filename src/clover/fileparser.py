@@ -2595,12 +2595,12 @@ def parse_input_files(
         logger.info("Updating with %s impact data.", converter.name)
         finance_inputs[
             FINANCE_IMPACT.format(
-                type=ImpactingComponent.CONVERTOR.value, name=converter.name
+                type=ImpactingComponent.CONVERTER.value, name=converter.name
             )
         ] = defaultdict(float, converter_costs[converter])
         ghg_inputs[
             GHG_IMPACT.format(
-                type=ImpactingComponent.CONVERTOR.value, name=converter.name
+                type=ImpactingComponent.CONVERTER.value, name=converter.name
             )
         ] = defaultdict(float, converter_emissions[converter])
         logger.info("Converter %s impact data successfully updated.", converter.name)
