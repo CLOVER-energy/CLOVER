@@ -1483,48 +1483,6 @@ def multiple_optimisation_step(
     # Return the results along with the time taken.
     return time_delta, results
 
-
-# #%%
-# class OptimisationOld:
-#     def __init__(self):
-#         self.location = "Bahraich"
-#         self.CLOVER_filepath = os.getcwd()
-#         self.location_filepath = os.path.join(
-#             self.CLOVER_filepath, LOCATIONS_FOLDER_NAME, self.location
-#         )
-#         self.optimisation_filepath = os.path.join(
-#             self.location_filepath, "Optimisation", "Optimisation inputs.csv"
-#         )
-#         self.optimisation_inputs = pd.read_csv(
-#             self.optimisation_filepath, header=None, index_col=0
-#         ).round(decimals=3)
-#         self.maximum_criteria = [
-#             ColumnHeader.BLACKOUTS.value,
-#             "LCUE ($/kWh)",
-#             "Emissions intensity (gCO2/kWh)",
-#             "Unmet energy fraction",
-#             "Cumulative cost ($)",
-#             "Cumulative system cost ($)",
-#             "Total cost ($)",
-#             "Total system cost ($)",
-#             "Cumulative GHGs (kgCO2eq)",
-#             "Cumulative system GHGs (kgCO2eq)",
-#             "Total GHGs (kgCO2eq)",
-#             "Total system GHGs (kgCO2eq)",
-#         ]
-#         self.minimum_criteria = [
-#             "Renewables fraction",
-#             "Kerosene displacement",
-#             "Kerosene cost mitigated ($)",
-#             "Kerosene GHGs mitigated (kgCO2eq)",
-#         ]
-#         self.optimum_criterion = str(
-#             self.optimisation_inputs[1]["Optimisation criterion"]
-#         )
-#         self.optimisation_storage = os.path.join(
-#             self.location_filepath, "Optimisation", "Saved optimisations"
-#         )
-
 #     #%%
 
 #     def changing_parameter_optimisation(
