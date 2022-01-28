@@ -47,7 +47,7 @@ from .scripts import new_location
 from .simulation import energy_system
 from .optimisation.__utils__ import save_optimisation
 from .optimisation.optimisation import multiple_optimisation_step
-from .printer import generate_optimisation_string
+from .printer import generate_optimisation_string, generate_simulation_string
 
 from .__utils__ import (
     BColours,
@@ -319,15 +319,13 @@ def _prepare_water_system(
         resource_type.value,
     )
     try:
-        conventional_water_source_profiles = (
-            water_source.get_lifetime_water_source_status(
-                os.path.join(auto_generated_files_directory, resource_type.value),
-                resource_type.value.split("_")[0],
-                location,
-                logger,
-                parsed_args.regenerate,
-                water_source_times,
-            )
+        conventional_water_source_profiles = water_source.get_lifetime_water_source_status(
+            os.path.join(auto_generated_files_directory, resource_type.value),
+            resource_type.value.split("_")[0],
+            location,
+            logger,
+            parsed_args.regenerate,
+            water_source_times,
         )
     except InputFileError:
         print(
@@ -388,10 +386,7 @@ def main(args: List[Any]) -> None:
 
     # Parse the command-line arguments and instantiate the logger.
     parsed_args = argparser.parse_args(args)
-    logger = get_logger(
-        f"{parsed_args.location}_{LOGGER_NAME}",
-        parsed_args.verbose,
-    )
+    logger = get_logger(f"{parsed_args.location}_{LOGGER_NAME}", parsed_args.verbose,)
     logger.info("CLOVER run initiated. Options specified: %s", " ".join(args))
 
     # Validate the command-line arguments.
@@ -429,16 +424,12 @@ def main(args: List[Any]) -> None:
 
     # Define common variables.
     auto_generated_files_directory = os.path.join(
-        LOCATIONS_FOLDER_NAME,
-        parsed_args.location,
-        AUTO_GENERATED_FILES_DIRECTORY,
+        LOCATIONS_FOLDER_NAME, parsed_args.location, AUTO_GENERATED_FILES_DIRECTORY,
     )
 
     # If the output filename is not provided, then generate it.
     simulation_output_directory = os.path.join(
-        LOCATIONS_FOLDER_NAME,
-        parsed_args.location,
-        SIMULATION_OUTPUTS_FOLDER,
+        LOCATIONS_FOLDER_NAME, parsed_args.location, SIMULATION_OUTPUTS_FOLDER,
     )
     optimisation_output_directory = os.path.join(
         LOCATIONS_FOLDER_NAME, parsed_args.location, OPTIMISATION_OUTPUTS_FOLDER
@@ -612,8 +603,7 @@ def main(args: List[Any]) -> None:
                 BColours.endc,
             )
             raise InputFileError(
-                "scenario",
-                "Mismatch between command-line usage and in-file usage.",
+                "scenario", "Mismatch between command-line usage and in-file usage.",
             )
         if (
             parsed_args.hot_water_pvt_system_size is not None
@@ -629,8 +619,7 @@ def main(args: List[Any]) -> None:
                 BColours.endc,
             )
             raise InputFileError(
-                "scenario",
-                "Mismatch between command-line usage and in-file usage.",
+                "scenario", "Mismatch between command-line usage and in-file usage.",
             )
         if (
             scenario.pv_t
@@ -928,10 +917,7 @@ def main(args: List[Any]) -> None:
             ),
             "r",
         ) as f:
-            grid_profile = pd.read_csv(
-                f,
-                index_col=0,
-            )
+            grid_profile = pd.read_csv(f, index_col=0,)
     except FileNotFoundError as e:
         logger.error(
             "%sGrid profile file for profile '%s' could not be found: %s%s",
@@ -963,74 +949,12 @@ def main(args: List[Any]) -> None:
     # Run a simulation or optimisation as appropriate.
     if operating_mode == OperatingMode.SIMULATION:
         print(
-            "Beginning CLOVER simulation runs {}    ".format(
-                "." * 30,
-            ),
-            end="\n",
+            "Beginning CLOVER simulation runs {}    ".format("." * 30,), end="\n",
         )
+
         simulation_times: List[str] = []
 
-        simulation_string: str = (
-            (
-                (
-                    f"- {parsed_args.pv_system_size * minigrid.pv_panel.pv_unit} kWp of PV"
-                    + (
-                        (
-                            f" ({parsed_args.pv_system_size}x "
-                            + f"{minigrid.pv_panel.pv_unit} kWp panels)"
-                        )
-                        if overrided_default_sizes
-                        else ""
-                    )
-                    + "\n"
-                )
-                if parsed_args.pv_system_size is not None and scenario.pv
-                else ""
-            )
-            + f"- {parsed_args.storage_size * minigrid.battery.storage_unit} kWh of "
-            + "storage"
-            + (
-                (
-                    f" ({parsed_args.storage_size}x "
-                    + f"{minigrid.battery.storage_unit} kWh batteries)"
-                )
-                if overrided_default_sizes
-                else ""
-            )
-            + "\n"
-            + (
-                "- {} Clean-water PV-T panel units ({} kWp PV per unit)\n".format(
-                    parsed_args.clean_water_pvt_system_size,
-                    minigrid.pvt_panel.pv_unit,
-                )
-                if parsed_args.clean_water_pvt_system_size is not None
-                else ""
-            )
-            + (
-                "- {}x {} litres clean-water storage{}".format(
-                    parsed_args.num_clean_water_tanks,
-                    minigrid.clean_water_tank.mass,
-                    "\n" if scenario.hot_water_scenario is not None else "",
-                )
-                if scenario.desalination_scenario is not None
-                else ""
-            )
-            + (
-                "- {} Hot-water PV-T panel units ({} kWp PV per unit)\n".format(
-                    parsed_args.hot_water_pvt_system_size,
-                    minigrid.pvt_panel.pv_unit,
-                )
-                if parsed_args.hot_water_pvt_system_size is not None
-                else ""
-            )
-            + (
-                "- {}x {} litres hot-water storage".format(
-                    parsed_args.num_hot_water_tanks, minigrid.hot_water_tank.mass
-                )
-                if scenario.hot_water_scenario is not None
-                else ""
-            )
-        )
+        simulation_string: str = generate_simulation_string(minigrid, overrided_default_sizes, parsed_args, scenario)
         print(f"Running a simulation with:\n{simulation_string}")
 
         for simulation_number, simulation in enumerate(
@@ -1150,10 +1074,7 @@ def main(args: List[Any]) -> None:
 
     if operating_mode == OperatingMode.OPTIMISATION:
         print(
-            "Beginning CLOVER optimisation runs {}    ".format(
-                "." * 28,
-            ),
-            end="\n",
+            "Beginning CLOVER optimisation runs {}    ".format("." * 28,), end="\n",
         )
         optimisation_times: List[str] = []
 

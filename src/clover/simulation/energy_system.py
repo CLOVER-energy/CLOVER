@@ -203,9 +203,7 @@ def _calculate_backup_diesel_generator_usage(
             "the diesel mode `backup` being selected.",
         )
     diesel_energy, diesel_times = get_diesel_energy_and_times(
-        unmet_energy,
-        blackout_times,
-        float(scenario.diesel_scenario.backup_threshold),
+        unmet_energy, blackout_times, float(scenario.diesel_scenario.backup_threshold),
     )
     diesel_capacity: float = float(math.ceil(np.max(diesel_energy)))
     diesel_fuel_usage = pd.DataFrame(
@@ -487,11 +485,9 @@ def _calculate_renewable_cw_profiles(
                 "supported.",
             )
 
-        thermal_desalination_plant_input_flow_rate = (
-            thermal_desalination_plant.input_resource_consumption[
-                thermal_desalination_plant_input_type
-            ]
-        )
+        thermal_desalination_plant_input_flow_rate = thermal_desalination_plant.input_resource_consumption[
+            thermal_desalination_plant_input_type
+        ]
 
         if (
             sum(
@@ -664,16 +660,16 @@ def _calculate_renewable_cw_profiles(
         )
 
         buffer_tank_temperature = buffer_tank_temperature.reset_index(drop=True)
-        clean_water_pvt_collector_output_temperature = (
-            clean_water_pvt_collector_output_temperature.reset_index(drop=True)
+        clean_water_pvt_collector_output_temperature = clean_water_pvt_collector_output_temperature.reset_index(
+            drop=True
         )
-        clean_water_pvt_electric_power_per_unit = (
-            clean_water_pvt_electric_power_per_unit.reset_index(drop=True)
+        clean_water_pvt_electric_power_per_unit = clean_water_pvt_electric_power_per_unit.reset_index(
+            drop=True
         )
         renewable_cw_produced = renewable_cw_produced.reset_index(drop=True)
         buffer_tank_volume_supplied = buffer_tank_volume_supplied.reset_index(drop=True)
-        thermal_desalination_electric_power_consumed = (
-            thermal_desalination_electric_power_consumed.reset_index(drop=True)
+        thermal_desalination_electric_power_consumed = thermal_desalination_electric_power_consumed.reset_index(
+            drop=True
         )
         logger.info("Clean-water PV-T performance profiles determined.")
 
@@ -955,11 +951,11 @@ def _calculate_renewable_hw_profiles(
         )
 
         hot_water_power_consumed = hot_water_power_consumed.reset_index(drop=True)
-        hot_water_pvt_collector_output_temperature = (
-            hot_water_pvt_collector_output_temperature.reset_index(drop=True)
+        hot_water_pvt_collector_output_temperature = hot_water_pvt_collector_output_temperature.reset_index(
+            drop=True
         )
-        hot_water_pvt_electric_power_per_unit = (
-            hot_water_pvt_electric_power_per_unit.reset_index(drop=True)
+        hot_water_pvt_electric_power_per_unit = hot_water_pvt_electric_power_per_unit.reset_index(
+            drop=True
         )
         hot_water_tank_temperature = hot_water_tank_temperature.reset_index(drop=True)
         hot_water_tank_volume_supplied = hot_water_tank_volume_supplied.reset_index(
@@ -1097,8 +1093,7 @@ def _cw_tank_iteration_step(
         ):
             # Compute the maximum amount of water that can be desalinated.
             maximum_desalinated_water = min(
-                excess_energy / energy_per_desalinated_litre,
-                maximum_water_throughput,
+                excess_energy / energy_per_desalinated_litre, maximum_water_throughput,
             )
 
             # Add this to the tank and fulfil the demand if relevant.
@@ -1184,12 +1179,10 @@ def _cw_tank_iteration_step(
             conventional_water_supplied[time_index] = 0
 
         current_hourly_cw_tank_storage = min(
-            current_hourly_cw_tank_storage,
-            maximum_cw_tank_storage,
+            current_hourly_cw_tank_storage, maximum_cw_tank_storage,
         )
         current_hourly_cw_tank_storage = max(
-            current_hourly_cw_tank_storage,
-            minimum_cw_tank_storage,
+            current_hourly_cw_tank_storage, minimum_cw_tank_storage,
         )
 
         hourly_cw_tank_storage[time_index] = current_hourly_cw_tank_storage
@@ -1563,8 +1556,7 @@ def _get_processed_load_profile(scenario: Scenario, total_load: pd.DataFrame):
 
 
 def _get_water_storage_profile(
-    processed_total_cw_load: pd.DataFrame,
-    renewable_cw_produced: pd.DataFrame,
+    processed_total_cw_load: pd.DataFrame, renewable_cw_produced: pd.DataFrame,
 ) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """
     Gets the storage profile for the clean-water system.
@@ -2023,10 +2015,7 @@ def run_simulation(
             clean_water_power_consumed,
             renewable_cw_used_directly,
             tank_storage_profile,
-        ) = _get_water_storage_profile(
-            processed_total_cw_load,
-            renewable_cw_produced,
-        )
+        ) = _get_water_storage_profile(processed_total_cw_load, renewable_cw_produced,)
         number_of_buffer_tanks: int = 1
     else:
         clean_water_power_consumed = pd.DataFrame([0] * simulation_hours)
@@ -2160,7 +2149,9 @@ def run_simulation(
     # Determine the number of households in the community.
     households = pd.DataFrame(
         population_hourly(location)[
-            simulation.start_year * HOURS_PER_YEAR : simulation.end_year * HOURS_PER_YEAR
+            simulation.start_year
+            * HOURS_PER_YEAR : simulation.end_year
+            * HOURS_PER_YEAR
         ].values
     )
 
@@ -2370,7 +2361,7 @@ def run_simulation(
                 "%sNo clean-water tank storage level information was outputted from "
                 "the simulation despite non-`None` information being expected.%s",
                 BColours.fail,
-                BColours.endc
+                BColours.endc,
             )
             raise InternalError(
                 "Clean-water tank storage information not computed successfully."
@@ -2437,9 +2428,9 @@ def run_simulation(
     unmet_energy = ((unmet_energy > 0) * unmet_energy).abs()  # type: ignore
     # Ensure all unmet clean-water energy is considered.
     clean_water_power_consumed = clean_water_power_consumed.mul(1 - blackout_times)  # type: ignore
-    thermal_desalination_electric_power_consumed = (
-        thermal_desalination_electric_power_consumed.mul(1 - blackout_times)  # type: ignore
-    )
+    thermal_desalination_electric_power_consumed = thermal_desalination_electric_power_consumed.mul(
+        1 - blackout_times
+    )  # type: ignore
 
     # Find how many kerosene lamps are in use
     kerosene_usage = pd.DataFrame(blackout_times.loc[:, 0].mul(kerosene_profile.values))  # type: ignore
@@ -2550,7 +2541,7 @@ def run_simulation(
                     "%sInternal error: buffer tank temperature was None despite buffer "
                     "tanks being present.%s",
                     BColours.fail,
-                    BColours.endc
+                    BColours.endc,
                 )
                 raise InternalError(
                     "Buffer tank temperature was expected but was `None`."
@@ -2566,7 +2557,7 @@ def run_simulation(
                     "%sInternal error: PV-T output temperature was None despite PV-T "
                     "being present.%s",
                     BColours.fail,
-                    BColours.endc
+                    BColours.endc,
                 )
                 raise InternalError(
                     "PV-T output temperature was expected but was `None`."
@@ -2772,7 +2763,7 @@ def run_simulation(
                 "%sError saving desalination outputs, simulation returned `None` as "
                 "outputs despite non-`None` outputs being expected.%s",
                 BColours.fail,
-                BColours.endc
+                BColours.endc,
             )
             raise InternalError(
                 "Some outputs of the simulation were returned as `None` for "
@@ -2799,7 +2790,7 @@ def run_simulation(
                     "%sError saving clean-water outputs, simulation returned `None` as "
                     "outputs despite non-`None` outputs being expected.%s",
                     BColours.fail,
-                    BColours.endc
+                    BColours.endc,
                 )
                 raise InternalError(
                     "Some outputs of the simulation were returned as `None` for "
@@ -2829,7 +2820,7 @@ def run_simulation(
                 "%sError saving hot-water outputs, simulation returned `None` as "
                 "outputs despite non-`None` outputs being expected.%s",
                 BColours.fail,
-                BColours.endc
+                BColours.endc,
             )
             raise InternalError(
                 "Some outputs of the simulation were returned as `None` for hot-water "
@@ -2840,10 +2831,7 @@ def run_simulation(
             hot_water_performance_outputs  # type: ignore
         )
 
-    system_performance_outputs = pd.concat(
-        system_performance_outputs_list,
-        axis=1,
-    )
+    system_performance_outputs = pd.concat(system_performance_outputs_list, axis=1,)
 
     return time_delta, system_performance_outputs, system_details
 
