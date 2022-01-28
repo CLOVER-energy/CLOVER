@@ -9,68 +9,36 @@ on your machine. You may need to install Anaconda and/or Spyder
 (`available here <https://www.anaconda.com/distribution/>`__) in order
 to run the code if you have not used Python in the past.
 
-After the initial download, each script will need to be updated to match
-your file path. This means that the modules that use other modules know
-where to look when accessing them, otherwise they will give an error.
-The scripts will also need to be updated to match the location you are
-investigating, although throughout this guide we will use Bahraich as
-the example location as all of the input data is provided in the CLOVER
-download.
-
 Dependencies
 ~~~~~~~~~~~~
 
-CLOVER relies on the following packages so please ensure you have them
-installed:
+CLOVER relies on a series of Python packages in order to run. These can
+be installed using one of two methods:
 
-- pandas
-- numpy
-- scipy
-- math
-- requests
-- json
-- random
-- datetime
+Anaconda method
+""""""""""""
+To install using conda, from the root of the repository, run:
 
-Updating the file path and location
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.. code-block:: bash
 
-Each module (Python file, with a ``.py`` appendix) in the *Scripts*
-branch has a line in the initial definition function which sets the
-filepath of your CLOVER software and the location you are investigating.
-It looks something like this:
+    conda install --file requirements.txt
 
-::
+Note, on some systems, Anaconda is unable to find the requirements.txt
+file. In these cases, it is necessary to use the full and absolute path
+to the file. E.G.,
 
-   def __init__(self):
-       self.location = 'Bahraich'
-       self.CLOVER_filepath = '/***YOUR LOCAL FILE PATH***/CLOVER 4.0'
+.. code-block:: bash
 
+    conda install --file C:\\Users\<User>\...\requirements.txt
 
-Our chosen location is Bahraich, so we do not need to update
-*self.location*, but we do need to input our file path. In my case this
-is saved in my documents (``Users/prs09``) in a folder called *CLOVER*,
-so the entire file path (``Users/prs09/CLOVER``) needs to be inserted
-here:
+Pip method
+""""""""""""
+To install using the in-build python package manager, from the root of
+the repository, run:
 
-::
+.. code-block:: bash
 
-   self.CLOVER_filepath = '/Users/prs09/CLOVER'
-
-Some modules contain the filepath in several places so make sure to
-update all of them in each file. **Repeat this for all of the modules in
-the scripts folder so that they are all ready to use.**
-
-Troubleshooting
-~~~~~~~~~~~~~~~
-
-If you have issues when updating the file paths or locations, check the
-following:
-
-- Your file path contains a complete list of the folders where your CLOVER folder is saved
-- You use the correct syntax for your operating system (e.g. “/” vs. “\\” when stating the file path)
-- You have not added or removed slashes from the end of the file path
-- You have used the correct quotation marks, and they match (e.g. “double” or ‘single’ quotation marks, not \`grave accent`)
+    python -m pip install -r requirements.txt
 
 Setting up a location
 ---------------------
@@ -79,15 +47,52 @@ Make a new location
 ~~~~~~~~~~~~~~~~~~~
 
 Every location will require its own input files for the local
-generation, load demand and other factors. The easiest way to make a new
-location is to **copy the New_Location folder in the Locations folder
-and rename it as your chosen location**. This ensures that your folder
-structure is correctly set up, and maintains a copy of the generic
-folder in case you want to add a new location in the future.
+generation, load demand and other factors. Locations can be set up in
+one of two ways:
 
-In this guide we will use the default example location, *Bahraich*,
-which is a rural district in the state of Uttar Pradesh in northern
-India.
+* By creating a new location from scratch and inputting all necessary
+information. To do this, call the new_location helper script with just
+the name of your new location:
+
+.. code:: bash
+
+    python -m src.clover.scripts.new_location <new_location_name>
+
+or, if on a Linux machine,
+
+.. code:: bash
+
+    ./bin/new_location.sh <new_location_name>
+
+or, if you have installed the clover-energy package:
+
+.. code:: bash
+
+    new-clover-location <new_location_name>
+
+* By basing the location on an existing location. To do this, call the
+new_location helper script with the --from-existing flag:
+
+.. code:: bash
+
+    python -m src.clover.scripts.new_location <new_location_name> --from-existing <existing_location>
+
+or, if on a Linux machine,
+
+.. code:: bash
+
+    ./bin/new_location.sh <new_location_name> --from-existing <existing_location>
+
+or, if you have installed the clover-energy package:
+
+.. code:: bash
+
+    new-clover-location <new_location_name> --from-existing <existing_location>
+
+If you have an existing location, you can base your new location on this
+one. An example location, “Bahraich,” is provided. To use this, simply
+append the :code:`--from-existing` flag when calling the new-location
+helper scripts.
 
 Get a *Renewables.ninja* API token
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -107,94 +112,32 @@ Establish your location
 ~~~~~~~~~~~~~~~~~~~~~~~
 
 First you will need to provide details of the geographic location being
-investigated. These are contained in the *Location inputs* file in the
-*Location data* folder. You can edit these in the CSV file directly, but
+investigated. These are contained in the *location_inputs.yaml* file in the
+*inputs/location_data* folder. You can edit these in the CSV file directly, but
 here we will import the data and print it to the screen to see the input
 data for Bahraich:
 
-.. code:: ipython3
+.. code:: yaml
 
-    import pandas as pd
-    location_inputs = pd.read_csv("/Users/prs09/Documents/CLOVER/Locations/Bahraich/Location Data/Location inputs.csv")
-    location_inputs.head(len(location_inputs)-1)
+    ---
+    ################################################################################
+    # location_inputs.yaml - Location-specific parameters.                         #
+    #                                                                              #
+    # Author: Phil Sandwell, Ben Winchester                                        #
+    # Copyright: Phil Sandwell & Ben Winchester, 2021                              #
+    # Date created: 14/07/2021                                                     #
+    # License: Open source                                                         #
+    ################################################################################
 
+    location: Bahraich # The name of the location
+    country: India # Location country
+    time_difference: 5.5 # Time difference, in hours, vs. UTC
+    community_size: 100 # Initial number of households in community
+    community_growth_rate: 0.01 # Fractional growth rate per year
+    max_years: 20 # The maximum number of years of simulation
+    latitude: 27.6 # Degrees of latitude (North +ve)
+    longitude: 81.6 # Degrees of longitude (East +ve)
 
-
-
-.. raw:: html
-
-    <div>
-    <style scoped>
-        .dataframe tbody tr th:only-of-type {
-            vertical-align: middle;
-        }
-
-        .dataframe tbody tr th {
-            vertical-align: top;
-        }
-
-        .dataframe thead th {
-            text-align: right;
-        }
-    </style>
-    <table border="1" class="dataframe">
-      <thead>
-        <tr style="text-align: right;">
-          <th></th>
-          <th>Location</th>
-          <th>Bahraich</th>
-          <th>Location name</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <th>0</th>
-          <td>Country</td>
-          <td>India</td>
-          <td>Location country</td>
-        </tr>
-        <tr>
-          <th>1</th>
-          <td>Time difference</td>
-          <td>5.5</td>
-          <td>Time difference vs. UTC</td>
-        </tr>
-        <tr>
-          <th>2</th>
-          <td>Community size</td>
-          <td>100</td>
-          <td>Number of households in community</td>
-        </tr>
-        <tr>
-          <th>3</th>
-          <td>Community growth rate</td>
-          <td>0.01</td>
-          <td>Fractional growth rate per year</td>
-        </tr>
-        <tr>
-          <th>4</th>
-          <td>Years</td>
-          <td>20</td>
-          <td>years of simulation</td>
-        </tr>
-        <tr>
-          <th>5</th>
-          <td>Latitude</td>
-          <td>27.6</td>
-          <td>degrees of latitude (North +ve)</td>
-        </tr>
-        <tr>
-          <th>6</th>
-          <td>Longitude</td>
-          <td>81.6</td>
-          <td>degrees of longitude (East +ve)</td>
-        </tr>
-      </tbody>
-    </table>
-    </div>
-
-
-|
 
 Some of these variables should be self-explanatory: the location
 *Bahraich* is located in *India*. Others are less obvious: the time
