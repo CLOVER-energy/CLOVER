@@ -10,6 +10,32 @@ This guide provides a very brief introduction to get your CLOVER installation up
 
 An example location, "Bahraich," in India, is included in the initial download for reference.
 
+### Downloading CLOVER
+
+CLOVER can be downloaded from Github or installed via the Python package manager. If you intend to use CLOVER, but not develop or edit any of its code, then it is recommended that you install CLOVER from the Python package manager as this will guarantee that you install a stable version. If you intend to develop or edit any of the code contained within CLOVER as part of your research, then it is recommended that you download CLOVER directly from Github.
+
+#### The Python package manager
+
+##### Installing
+
+To install the CLOVER package, from anywhere on your system, run:
+```
+python -m pip install clover-energy
+```
+This will download and install the latest version of CLOVER into the current virtual environment that you have running. If you are using Anaconda, please note that this will install CLOVER only for the virtual environment that you are currently in, not for your system as a whole. CLOVER can now be run by calling `clover` from a terminal anywhere on your system, though you will need to set up a location in order for it to run successfully. See 'Setting up a new location' below.
+
+##### Upgrading
+
+To update the version of CLOVER that you have installed, from anywhere on your system, run:
+```
+python -m pip install clover-energy --upragde
+```
+This will fetch the latest stable version of CLOVER and install it into your current virtual environment.
+
+#### Downloading from Github
+
+To download the CLOVER source code directly from Github, simply click the green `Code` button near the top of this page, and select `Download ZIP`. Once downloaded, unpack the zip file into a directory of your choice. You will now be able to run CLOVER from a terminal in this directory. Use the `cd` command to change the directory of your terminal to the extracted folder in order to run CLOVER.
+
 ### Setting up your Python environment
 
 CLOVER is a scientific package and, as such, uses Python packages that may not have come installed by default on your system. These packages can be easily installed, provided that you are connected to the internet, either using `pip`, the python package manager, or `conda`, a virtual-environment-based system. Instructions for `conda` are provided below:
