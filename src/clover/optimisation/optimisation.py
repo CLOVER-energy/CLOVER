@@ -184,7 +184,9 @@ def _find_optimum_system(
         "\n".join(
             [
                 "criterion: {}, value: {}\nsystem_details: {}".format(
-                    criterion, system.criteria[criterion], system.system_details,
+                    criterion,
+                    system.criteria[criterion],
+                    system.system_details,
                 )
                 for criterion, system in optimum_systems.items()
             ]
@@ -435,7 +437,10 @@ def _simulation_iteration(
     # Check if largest system is sufficient
     logger.info("Checking whether the largest system is sufficient.")
     tqdm.write(
-        "Determining largest suitable system {}    ".format("." * 27,), end="\n",
+        "Determining largest suitable system {}    ".format(
+            "." * 27,
+        ),
+        end="\n",
     )
 
     # Determine the maximum sizes of each converter defined.
@@ -611,7 +616,8 @@ def _simulation_iteration(
 
     # Output that the search for the largest suitable system was successful.
     tqdm.write(
-        "Determining largest suitable system {}    {}".format("." * 27, DONE), end="\n",
+        "Determining largest suitable system {}    {}".format("." * 27, DONE),
+        end="\n",
     )
     logger.info(
         "System was found to be sufficient. Threshold criteria: %s",
@@ -679,7 +685,12 @@ def _simulation_iteration(
         reverse=True,
     )
     simulation_cw_tanks: List[int] = sorted(
-        range(cw_tanks.min, cw_tanks_max + cw_tanks.step, cw_tanks.step,), reverse=True,
+        range(
+            cw_tanks.min,
+            cw_tanks_max + cw_tanks.step,
+            cw_tanks.step,
+        ),
+        reverse=True,
     )
     simulation_hw_pvt_system_size: List[int] = sorted(
         range(
@@ -690,7 +701,12 @@ def _simulation_iteration(
         reverse=True,
     )
     simulation_hw_tanks: List[int] = sorted(
-        range(hw_tanks.min, hw_tanks_max + hw_tanks.step, hw_tanks.step,), reverse=True,
+        range(
+            hw_tanks.min,
+            hw_tanks_max + hw_tanks.step,
+            hw_tanks.step,
+        ),
+        reverse=True,
     )
     simulation_pv_sizes: List[int] = sorted(
         range(int(pv_sizes.min), int(pv_size_max + pv_sizes.step), int(pv_sizes.step)),
@@ -709,7 +725,11 @@ def _simulation_iteration(
     # Add the iterable clean-water tank sizes if appropriate.
     if len(simulation_cw_tanks) > 1:
         parameter_space.append(
-            (ImpactingComponent.CLEAN_WATER_TANK, "simulation", simulation_cw_tanks,)
+            (
+                ImpactingComponent.CLEAN_WATER_TANK,
+                "simulation",
+                simulation_cw_tanks,
+            )
         )
     else:
         component_sizes[ImpactingComponent.CLEAN_WATER_TANK] = simulation_cw_tanks[0]
@@ -1309,7 +1329,11 @@ def multiple_optimisation_step(
                 input_cw_pvt_system_size.min,
                 input_cw_pvt_system_size.step,
             ),
-            TankSize(input_cw_tanks.max, input_cw_tanks.min, input_cw_tanks.step,),
+            TankSize(
+                input_cw_tanks.max,
+                input_cw_tanks.min,
+                input_cw_tanks.step,
+            ),
             converters,
             finance_inputs,
             ghg_inputs,
@@ -1319,7 +1343,11 @@ def multiple_optimisation_step(
                 input_hw_pvt_system_size.min,
                 input_hw_pvt_system_size.step,
             ),
-            TankSize(input_hw_tanks.max, input_hw_tanks.min, input_hw_tanks.step,),
+            TankSize(
+                input_hw_tanks.max,
+                input_hw_tanks.min,
+                input_hw_tanks.step,
+            ),
             irradiance_data,
             kerosene_usage,
             location,
@@ -1482,6 +1510,7 @@ def multiple_optimisation_step(
 
     # Return the results along with the time taken.
     return time_delta, results
+
 
 #     #%%
 

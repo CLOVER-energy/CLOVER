@@ -24,9 +24,7 @@ import pandas as pd  # pylint: disable=import-error
 
 from .__utils__ import get_intermittent_supply_status
 
-__all__ = (
-    "get_lifetime_grid_status",
-)
+__all__ = ("get_lifetime_grid_status",)
 
 
 def get_lifetime_grid_status(
