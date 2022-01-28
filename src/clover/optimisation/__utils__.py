@@ -986,6 +986,7 @@ def recursive_iteration(
             location,
             logger,
             previous_system,
+            scenario,
             simulation_results,
             start_year,
             system_details,

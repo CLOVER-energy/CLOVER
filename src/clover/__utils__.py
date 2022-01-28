@@ -2457,7 +2457,7 @@ class FinancialAppraisal:
     """
     Contains financial-appraisal information.
 
-    .. attribute:: diesel_cost
+    .. attribute:: diesel_fuel_cost
         The cost of diesel fuel used, measured in USD.
 
     .. attribute:: grid_cost
@@ -2490,7 +2490,7 @@ class FinancialAppraisal:
 
     """
 
-    diesel_cost: float = 0
+    diesel_fuel_cost: float = 0
     grid_cost: float = 0
     kerosene_cost: float = 0
     kerosene_cost_mitigated: float = 0
@@ -2511,7 +2511,7 @@ class FinancialAppraisal:
         """
 
         financial_appraisal_dict: Dict[str, float] = {
-            "diesel_cost": self.diesel_cost,
+            "diesel_fuel_cost": self.diesel_fuel_cost,
             "grid_cost": self.grid_cost,
             "kerosene_cost": self.kerosene_cost,
             "kerosene_cost_mitigated": self.kerosene_cost_mitigated,
@@ -2522,15 +2522,12 @@ class FinancialAppraisal:
             "total_system_cost": self.total_system_cost,
         }
 
-        if ResourceType.CLEAN_WATER in self.total_subsystem_costs:
-            financial_appraisal_dict[
-                "total_clean_water_subsystem_cost"
-            ] = self.total_subsystem_costs[ResourceType.CLEAN_WATER]
-
-        if ResourceType.ELECTRIC in self.total_subsystem_costs:
-            financial_appraisal_dict[
-                "total_electric_subsystem_cost"
-            ] = self.total_subsystem_costs[ResourceType.ELECTRIC]
+        financial_appraisal_dict.update(
+            {
+                f"total_{resource_type.value}_subsystem_cost": cost
+                for resource_type, cost in self.total_subsystem_costs
+            }
+        )
 
         return financial_appraisal_dict
 
