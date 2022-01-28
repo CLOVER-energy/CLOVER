@@ -2482,8 +2482,8 @@ def run_simulation(
     unmet_energy = ((unmet_energy > 0) * unmet_energy).abs()  # type: ignore
     # Ensure all unmet clean-water energy is considered.
     clean_water_power_consumed = clean_water_power_consumed.mul(1 - blackout_times)  # type: ignore
-    thermal_desalination_electric_power_consumed = thermal_desalination_electric_power_consumed.mul(
-        1 - blackout_times
+    thermal_desalination_electric_power_consumed = (
+        thermal_desalination_electric_power_consumed.mul(1 - blackout_times)
     )  # type: ignore
 
     # Find how many kerosene lamps are in use

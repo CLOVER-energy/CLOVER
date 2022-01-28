@@ -36,6 +36,7 @@ from ..__utils__ import (
     FinancialAppraisal,
     InternalError,
     ResourceType,
+    Scenario,
     hourly_profile_to_daily_sum,
     Location,
     SystemAppraisal,
@@ -255,9 +256,11 @@ def _simulation_financial_appraisal(
     logger: Logger,
     pv_addition: float,
     pvt_addition: float,
+    scenario: Scenario,
     simulation_results: pd.DataFrame,
     storage_addition: float,
     system_details: SystemDetails,
+    technical_appraisal: TechnicalAppraisal,
     yearly_load_statistics: pd.DataFrame,
 ) -> FinancialAppraisal:
     """
@@ -287,6 +290,8 @@ def _simulation_financial_appraisal(
             The additional number of PV panels added this iteration.
         - pvt_addition:
             The additional number of PV-T panels added this iteration.
+        - scenario:
+            The scenario currently being considered.
         - simulation_results:
             Outputs of Energy_System().simulation(...)
         - storage_addition:
@@ -294,6 +299,8 @@ def _simulation_financial_appraisal(
             iteration.
         - system_details:
             The details of this system.
+        - technical_appraisal:
+            The :class:`TechnicalAppraisal` for the system being considered.
         - yearly_load_statistics:
             The yearly electric load statistics for the system.
 
@@ -303,7 +310,10 @@ def _simulation_financial_appraisal(
     """
 
     # Calculate new equipment costs (discounted)
-    equipment_costs = finance.discounted_equipment_cost(
+    (
+        additional_installation_costs,
+        subsystem_equipment_costs,
+    ) = finance.discounted_equipment_cost(
         buffer_tank_addition,
         clean_water_tank_addition,
         converter_addition,
@@ -314,7 +324,9 @@ def _simulation_financial_appraisal(
         logger,
         pv_addition,
         pvt_addition,
+        scenario,
         storage_addition,
+        technical_appraisal,
         system_details.start_year,
     )
 
@@ -326,7 +338,7 @@ def _simulation_financial_appraisal(
         start_year=system_details.start_year,
         end_year=system_details.end_year,
     )
-    equipment_costs += independent_expenditure
+    subsystem_equipment_costs[ResourceType.ELECTRIC] += independent_expenditure
 
     # Calculate costs of connecting new households (discounted)
     connections_cost = finance.connections_expenditure(
@@ -336,7 +348,7 @@ def _simulation_financial_appraisal(
     )
 
     # Calculate operating costs of the system during this simulation (discounted)
-    om_costs = finance.total_om(
+    additional_om_costs, subsystem_om_costs = finance.total_om(
         system_details.initial_num_buffer_tanks
         if system_details.initial_num_buffer_tanks is not None
         else 0,
@@ -359,19 +371,22 @@ def _simulation_financial_appraisal(
         system_details.initial_pvt_size
         if system_details.initial_pvt_size is not None
         else 0,
+        scenario,
         system_details.initial_storage_size,
+        technical_appraisal,
         start_year=system_details.start_year,
         end_year=system_details.end_year,
     )
 
     # Calculate running costs of the system (discounted)
-    diesel_costs = finance.diesel_fuel_expenditure(
+    diesel_fuel_costs = finance.diesel_fuel_expenditure(
         simulation_results[ColumnHeader.DIESEL_FUEL_USAGE.value],
         finance_inputs,
         logger,
         start_year=system_details.start_year,
         end_year=system_details.end_year,
     )
+    # FIXME: The diesel fuel usage of any diesel water heaters should be calcaulted here
     grid_costs = finance.expenditure(
         ImpactingComponent.GRID,
         finance_inputs,
@@ -398,28 +413,33 @@ def _simulation_financial_appraisal(
     )
 
     # Total cost incurred during simulation period (discounted)
-    total_cost = (
-        equipment_costs
-        + connections_cost
-        + om_costs
-        + diesel_costs
-        + grid_costs
-        + kerosene_costs
+    total_equipment_costs = (
+        sum(subsystem_equipment_costs.values()) + additional_installation_costs
+    )
+    total_om_costs = (
+        sum(subsystem_om_costs.values()) + additional_om_costs
     )
     total_system_cost = (
-        equipment_costs + connections_cost + om_costs + diesel_costs + grid_costs
+        total_equipment_costs + connections_cost + total_om_costs + diesel_fuel_costs + grid_costs
     )
+    total_cost = total_system_cost + kerosene_costs
+
+    # Apportion the running costs by the resource types.
+    total_subsystem_costs: Dict[ResourceType, float] = subsystem_equipment_costs + subsystem_om_costs
+    if scenario.desalination_scenario is not None:
+        
 
     # Return outputs
     return FinancialAppraisal(
-        round(diesel_costs, 3),
+        round(diesel_fuel_costs, 3),
         round(grid_costs, 3),
         round(kerosene_costs, 3),
         round(kerosene_costs_mitigated, 3),
         round(connections_cost, 3),
-        round(equipment_costs, 3),
-        round(om_costs, 3),
+        round(total_equipment_costs, 3),
+        round(total_om_costs, 3),
         round(total_cost, 3),
+        {key: round(value, 3) for key, value in total_subsystem_costs},
         round(total_system_cost, 3),
     )
 
@@ -652,6 +672,7 @@ def appraise_system(
     location: Location,
     logger: Logger,
     previous_system: Optional[SystemAppraisal],
+    scenario: Scenario,
     simulation_results: pd.DataFrame,
     start_year: int,
     system_details: SystemDetails,
@@ -673,6 +694,8 @@ def appraise_system(
         - previous_system:
             Report from previously installed system (not required if no system was
             previously deployed)
+        - scenario:
+            The scenario currently being considered.
         - simulation_results
             Outputs of Energy_System().simulation(...)
         - start_year:
@@ -768,9 +791,11 @@ def appraise_system(
         logger,
         pv_addition,
         pvt_addition,
+        scenario,
         simulation_results,
         storage_addition,
         system_details,
+        technical_appraisal,
         electric_yearly_load_statistics,
     )
     environmental_appraisal = _simulation_environmental_appraisal(
