@@ -626,7 +626,6 @@
                 # Valid optimisation criteria, usually set to "minimise":
                 #   CRITERION                       UNIT
                 #   blackouts
-                #   clean_water_blackouts
                 #   lcue                            $/kWh
                 #   emissions_intensity             gCO2/kWh
                 #   unmet_energy_fraction
@@ -647,34 +646,10 @@
 
                 iteration_length: 4 # [years]
                 number_of_iterations: 3 # number of iterations to carry out
-                # cw_pvt_size:
-                #   min: 50 # [CW PV-T units]
-                #   max: 500 # [CW PV-T units]
-                #   step: 50 # [CW PV-T units]
-                # cw_tanks:
-                #   min: 2 # [tanks]
-                #   max: 10 # [tanks]
-                #   step: 2 # [tanks]
-                # hw_pvt_size:
-                #   min: 50 # [CW PV-T units]
-                #   max: 500 # [CW PV-T units]
-                #   step: 50 # [CW PV-T units]
-                # hw_tanks:
-                #   min: 5 # [tanks]
-                #   max: 45 # [tanks]
-                #   step: 10 # [tanks]
-                # med_liponi_size:
-                #   min: 1
-                #   max: 2
-                #   step: 1
                 pv_size:
                   min: 5 # [PV units], [kWp] by default
                   max: 25 # [PV units], [kWp] by default
                   step: 5 # [PV units], [kWp] by default
-                # reverse_osmosis_size:
-                #   min: 1
-                #   max: 4
-                #   step: 1
                 storage_size:
                   min: 10 # [storage units], [kWh] by default
                   max: 40 # [storage units], [kWh] by default
@@ -684,6 +659,79 @@
                       - lcue: minimise # Name of the column and whether to maximise/minimise.
                     threshold_criteria:
                       - blackouts: 0.05 # Max/min value permitted (see guidance)
+            # - file: "optimisation_inputs.yaml"
+            #   contents: |+
+            #     ---
+            #     ################################################################################
+            #     # optimisation_inputs.yaml - Specifications for running optimisations.         #
+            #     #                                                                              #
+            #     # Author: Phil Sandwell, Ben Winchester                                        #
+            #     # Copyright: Phil Sandwell & Ben Winchester, 2021                              #
+            #     # Date created: 14/07/2021                                                     #
+            #     # License: Open source                                                         #
+            #     ################################################################################
+
+            #     # Valid optimisation criteria, usually set to "minimise":
+            #     #   CRITERION                       UNIT
+            #     #   blackouts
+            #     #   clean_water_blackouts
+            #     #   lcue                            $/kWh
+            #     #   emissions_intensity             gCO2/kWh
+            #     #   unmet_energy_fraction
+            #     #   cumulative_cost                 $
+            #     #   cumulative_system_cost          $
+            #     #   total_cost                      $
+            #     #   total_system_cost               $
+            #     #   cumulative_ghgs                 kgCO2eq
+            #     #   cumulative_system_ghgs          kgCO2eq
+            #     #   total_ghgs                      kgCO2eq
+            #     #   total_system_ghgs               kgCO2eq
+            #     # Valid optimisation criteria, usually set to "maximise":
+            #     #   renewables_fraction
+            #     #   kerosene_displacement
+            #     #   kerosene_cost_mitigated         $
+            #     #   kerosene_ghgs_mitigated         kgCO2eq
+            #     #
+
+            #     iteration_length: 4 # [years]
+            #     number_of_iterations: 3 # number of iterations to carry out
+            #     # cw_pvt_size:
+            #     #   min: 50 # [CW PV-T units]
+            #     #   max: 500 # [CW PV-T units]
+            #     #   step: 50 # [CW PV-T units]
+            #     # cw_tanks:
+            #     #   min: 2 # [tanks]
+            #     #   max: 10 # [tanks]
+            #     #   step: 2 # [tanks]
+            #     # hw_pvt_size:
+            #     #   min: 50 # [CW PV-T units]
+            #     #   max: 500 # [CW PV-T units]
+            #     #   step: 50 # [CW PV-T units]
+            #     # hw_tanks:
+            #     #   min: 5 # [tanks]
+            #     #   max: 45 # [tanks]
+            #     #   step: 10 # [tanks]
+            #     # med_liponi_size:
+            #     #   min: 1
+            #     #   max: 2
+            #     #   step: 1
+            #     pv_size:
+            #       min: 5 # [PV units], [kWp] by default
+            #       max: 25 # [PV units], [kWp] by default
+            #       step: 5 # [PV units], [kWp] by default
+            #     # reverse_osmosis_size:
+            #     #   min: 1
+            #     #   max: 4
+            #     #   step: 1
+            #     storage_size:
+            #       min: 10 # [storage units], [kWh] by default
+            #       max: 40 # [storage units], [kWh] by default
+            #       step: 5 # [storage units], [kWh] by default
+            #     optimisations:
+            #       - optimisation_criteria:
+            #           - lcue: minimise # Name of the column and whether to maximise/minimise.
+            #         threshold_criteria:
+            #           - blackouts: 0.05 # Max/min value permitted (see guidance)
         - directory: scenario
           contents:
             # - file: desalination_scenario.yaml
@@ -819,20 +867,42 @@
                 ac_transmission_efficiency: 0.95 # Efficiency of AC distribution network
                 dc_transmission_efficiency: 0.95 # Efficiency of DC distribution network
                 battery: default_battery
-                # buffer_tank: buffer_tank
-                # clean_water_tank: cold_water_tank
                 conversion:
                   dc_to_ac: 0.95 # Conversion efficiency (0.0-1.0)
                   dc_to_dc: 0.95 # Conversion efficiency (0.0-1.0)
                   ac_to_dc: 0.8 # Conversion efficiency (0.0-1.0)
                   ac_to_ac: 0.98 # Conversion efficiency (0.0-1.0)
                 diesel_generator: default_diesel
-                # heat_exchanger: default_heat_exchanger
-                # hot_water_tank: hot_water_tank
                 pv_panel: default_pv
-                # pvt_panel: default_pvt
-                # water_pump: default_water_pump
-            # - file: "heat_exchangers.yaml"
+            # - file: "energy_system.yaml"
+            #   contents: |+
+            #     ---
+            #     ################################################################################
+            #     # energy_system.yaml - Parameters for specifying a CLOVER energy system.       #
+            #     #                                                                              #
+            #     # Author: Phil Sandwell, Ben Winchester                                        #
+            #     # Copyright: Phil Sandwell & Ben Winchester, 2021                              #
+            #     # Date created: 14/07/2021                                                     #
+            #     # License: Open source                                                         #
+            #     ################################################################################
+
+            #     ac_transmission_efficiency: 0.95 # Efficiency of AC distribution network
+            #     dc_transmission_efficiency: 0.95 # Efficiency of DC distribution network
+            #     battery: default_battery
+            #     # buffer_tank: buffer_tank
+            #     # clean_water_tank: cold_water_tank
+            #     conversion:
+            #       dc_to_ac: 0.95 # Conversion efficiency (0.0-1.0)
+            #       dc_to_dc: 0.95 # Conversion efficiency (0.0-1.0)
+            #       ac_to_dc: 0.8 # Conversion efficiency (0.0-1.0)
+            #       ac_to_ac: 0.98 # Conversion efficiency (0.0-1.0)
+            #     diesel_generator: default_diesel
+            #     # heat_exchanger: default_heat_exchanger
+            #     # hot_water_tank: hot_water_tank
+            #     pv_panel: default_pv
+            #     # pvt_panel: default_pvt
+            #     # water_pump: default_water_pump
+            # # - file: "heat_exchangers.yaml"
             #   contents: |+
             #     ---
             #     ################################################################################
