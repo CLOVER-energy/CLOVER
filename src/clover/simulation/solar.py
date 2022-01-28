@@ -605,15 +605,6 @@ def calculate_pvt_output(
                     round(best_guess_collector_input_temperature, 3),
                     round(tank_temperature, 3),
                 )
-            # best_guess_collector_input_temperature += (TEMPERATURE_PRECISION / 2) * (
-            #     2
-            #     * (collector_input_temperature > best_guess_collector_input_temperature)
-            #     - 1
-            # )
-            # best_guess_tank_temperature += (TEMPERATURE_PRECISION / 2) * (
-            #     2 * (tank_temperature > best_guess_tank_temperature) - 1
-            # )
-
             best_guess_collector_input_temperature = collector_input_temperature
 
         # Save the fractional electrical performance and output temp.
@@ -641,34 +632,6 @@ def calculate_pvt_output(
     tank_volume_output_supplied: pd.DataFrame = dict_to_dataframe(
         tank_volume_supplied_map, logger
     )
-
-    # with open("tmp.csv", "w") as f:
-    #     f.write(
-    #         pd.concat(
-    #             [
-    #                 pvt_collector_output_temperature,
-    #                 pvt_electric_power_per_unit,
-    #                 pvt_pump_times_frame,
-    #                 tank_temperature_frame,
-    #                 tank_volume_output_supplied,
-    #             ],
-    #             axis=1,
-    #         ).to_csv()
-    #     )
-
-    # logger.warning(
-    #     "%sUsing saved PV-T profile: this should be used for debugging only.%s",
-    #     BColours.warning,
-    #     BColours.endc,
-    # )
-
-    # with open("tmp.csv", "r") as f:
-    #     filedata = pd.read_csv(f, header=None, index_col=0)
-    #     pvt_collector_output_temperature = pd.DataFrame(filedata[1].values)
-    #     pvt_electric_power_per_unit = pd.DataFrame(filedata[2].values)
-    #     pvt_pump_times_frame = pd.DataFrame(filedata[3].values)
-    #     tank_temperature_frame = pd.DataFrame(filedata[4].values)
-    #     tank_volume_output_supplied = pd.DataFrame(filedata[5].values)
 
     return (
         pvt_collector_output_temperature,

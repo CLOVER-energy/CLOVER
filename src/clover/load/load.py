@@ -705,16 +705,11 @@ def process_device_hourly_usage(
         hourly_device_usage = pd.DataFrame()
 
         # Calculate the hourly-usage profile.
-        logger.info("Calculating number of %ss in use", device.name)
-        # for day in range(0, 365 * years):
-        #     devices = float(daily_device_ownership.iloc[day])
-        #     day_profile = daily_device_utilisation.iloc[day]
-        #     day_devices_on = pd.DataFrame(np.random.binomial(devices, day_profile))
-        #     hourly_device_usage = pd.concat(hourly_device_usage, day_devices_on)
-
         # This processes a random distribution for usage based on the device ownership and
         # utilisation on any given day for all days within the simulation range.
         #
+
+        logger.info("Calculating number of %ss in use", device.name)
         try:
             hourly_device_usage = pd.concat(
                 [

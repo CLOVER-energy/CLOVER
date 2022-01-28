@@ -563,74 +563,6 @@ def _calculate_renewable_cw_profiles(
             thermal_desalination_plant,
             wind_speed_data[start_hour:end_hour],
         )
-        # clean_water_pvt_collector_output_temperature = pd.DataFrame(
-        #     [
-        #         10,
-        #         10,
-        #         10,
-        #         10,
-        #         10,
-        #         10,
-        #         10,
-        #         20,
-        #         30,
-        #         40,
-        #         50,
-        #         50,
-        #         50,
-        #         50,
-        #         50,
-        #         40,
-        #         30,
-        #         20,
-        #         10,
-        #         10,
-        #         10,
-        #         10,
-        #         10,
-        #         10,
-        #     ]
-        #     * int((end_hour - start_hour) / 24)
-        # )
-        # clean_water_pvt_electric_power_per_unit = pd.DataFrame(
-        #     [minigrid.pvt_panel.pv_unit] * (end_hour - start_hour)
-        # )
-        # clean_water_pvt_pump_times = pd.DataFrame(
-        #     [0, 1, 1, 0] * int((end_hour - start_hour) / 4)
-        # )
-        # buffer_tank_temperature = pd.DataFrame(
-        #     [
-        #         10,
-        #         10,
-        #         10,
-        #         10,
-        #         10,
-        #         10,
-        #         10,
-        #         15,
-        #         20,
-        #         25,
-        #         30,
-        #         35,
-        #         40,
-        #         45,
-        #         50,
-        #         55,
-        #         10,
-        #         10,
-        #         10,
-        #         10,
-        #         10,
-        #         10,
-        #         10,
-        #         10,
-        #     ]
-        #     * int((end_hour - start_hour) / 24)
-        # )
-        # buffer_tank_volume_supplied = pd.DataFrame(
-        #     ([0] * 14 + [400] + [0] * 9) * int((end_hour - start_hour) / 24)
-        # )
-
         logger.info("PV-T performance successfully computed.")
 
         # Compute the clean water supplied by the desalination unit.
@@ -2834,42 +2766,6 @@ def run_simulation(
     system_performance_outputs = pd.concat(system_performance_outputs_list, axis=1,)
 
     return time_delta, system_performance_outputs, system_details
-
-
-# #%%
-# class MinigridOld:
-#     """
-#     Represents an energy system in the context of CLOVER.
-
-#     """
-
-#     def __init__(self):
-#         """
-#         Instantiate a :class:`minigrid.Minigrid` instance.
-
-#         """
-
-#         self.kerosene_data_filepath = os.path.join(
-#             self.location_filepath, "Load", "Devices in use", "kerosene_in_use.csv"
-#         )
-#         self.kerosene_usage = pd.read_csv(
-#             self.kerosene_data_filepath, index_col=0
-#         ).reset_index(drop=True)
-
-#     #%%
-#     # =============================================================================
-#     # SIMULATION FUNCTIONS
-#     #       This function simulates the energy system of a given capacity and to
-#     #       the parameters stated in the input files.
-#     # =============================================================================
-
-#     #%%
-#     # =============================================================================
-#     # GENERAL FUNCTIONS
-#     #       These functions allow users to save simulations and open previous ones,
-#     #       and resimulate the entire lifetime of a previously-optimised system
-#     #       including consideration of increasing capacity.
-#     # =============================================================================
 
 #     def lifetime_simulation(self, optimisation_report):
 #         """
