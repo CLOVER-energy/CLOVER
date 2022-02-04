@@ -638,16 +638,6 @@ def get_total_equipment_costs(
         finance_inputs[ImpactingComponent.PV.value][INSTALLATION_COST_DECREASE],
         installation_year,
     )
-    if scenario.desalination_scenario is not None and (
-        scenario.desalination_scenario.clean_water_scenario.mode
-        != CleanWaterMode.THERMAL_ONLY
-    ):
-        subsystem_costs[ResourceType.CLEAN_WATER] += (
-            pv_cost + pv_installation_cost
-        ) * technical_appraisal.power_consumed_fraction[ResourceType.CLEAN_WATER]
-    subsystem_costs[ResourceType.ELECTRIC] += (
-        pv_cost + pv_installation_cost
-    ) * technical_appraisal.power_consumed_fraction[ResourceType.ELECTRIC_POWER]
 
     if ImpactingComponent.PV_T.value not in finance_inputs and pvt_array_size > 0:
         logger.error(
@@ -701,61 +691,62 @@ def get_total_equipment_costs(
 
     # Compute the various subsystem costs.
     if scenario.desalination_scenario is not None:
-        # Compute the clean-water and electric subsystem costs.
+        # Compute the clean-water subsystem costs.
         subsystem_costs[ResourceType.CLEAN_WATER] += (
             buffer_tank_cost
             + buffer_tank_installation_cost
             + clean_water_tank_cost
             + clean_water_tank_installation_cost
             + heat_exchanger_cost
-            + (misc_costs)
+            + (misc_costs + pv_cost + pv_installation_cost + storage_cost)
             * technical_appraisal.power_consumed_fraction[ResourceType.CLEAN_WATER]
         )
-        subsystem_costs[ResourceType.ELECTRIC] += (
-            misc_costs
-        ) * technical_appraisal.power_consumed_fraction[ResourceType.ELECTRIC_POWER]
 
-        # Compute the costs associated when operating with PV-T only desalination.
-        if (
-            scenario.desalination_scenario.clean_water_scenario.mode
-            == CleanWaterMode.THERMAL_ONLY
-        ):
-            subsystem_costs[ResourceType.ELECTRIC] += (
-                pv_cost + pv_installation_cost + storage_cost
-            )
-
-        # Compute the costs associated when operating with backup electric desalination.
-        else:
-            subsystem_costs[ResourceType.CLEAN_WATER] += (
-                pv_cost + pv_installation_cost + storage_cost
-            ) * technical_appraisal.power_consumed_fraction[ResourceType.CLEAN_WATER]
-            subsystem_costs[ResourceType.ELECTRIC] += (
-                pv_cost + pv_installation_cost + storage_cost
-            ) * technical_appraisal.power_consumed_fraction[ResourceType.ELECTRIC]
-
-        # Compute the costs associated when carrying out prioritisation desalination.
-        if (
-            scenario.desalination_scenario.clean_water_scenario.mode
-            == CleanWaterMode.PRIORITISE
-        ):
-            subsystem_costs[ResourceType.CLEAN_WATER] += (
-                diesel_cost + diesel_installation_cost
-            ) * technical_appraisal.power_consumed_fraction[ResourceType.CLEAN_WATER]
-            subsystem_costs[ResourceType.ELECTRIC] += (
-                diesel_cost + diesel_installation_cost
-            ) * technical_appraisal.power_consumed_fraction[ResourceType.ELECTRIC]
-        else:
-            subsystem_costs[ResourceType.ELECTRIC] += (
-                diesel_cost + diesel_installation_cost
-            )
+    # Compute the electric subsystem costs.
+    subsystem_costs[ResourceType.ELECTRIC] += (
+        misc_costs + pv_cost + pv_installation_cost + storage_cost
+    ) * technical_appraisal.power_consumed_fraction[ResourceType.ELECTRIC_POWER]
 
     # Compute the hot-water subsystem costs.
     subsystem_costs[ResourceType.HOT_CLEAN_WATER] += (
         hot_water_tank_cost
         + hot_water_tank_installation_cost
-        + (pv_cost + pv_installation_cost + diesel_cost + diesel_installation_cost + misc_costs + storage_cost)
+        + (pv_cost + pv_installation_cost + misc_costs + storage_cost)
         * technical_appraisal.power_consumed_fraction[ResourceType.HOT_CLEAN_WATER]
     )
+
+    # Compute the costs associated when carrying out prioritisation desalination.
+    if (
+        scenario.desalination_scenario is not None
+        and scenario.desalination_scenario.clean_water_scenario.mode
+        == CleanWaterMode.PRIORITISE
+    ):
+        # Diesel costs to be split equally among all resource types.
+        subsystem_costs[ResourceType.CLEAN_WATER] += (
+            (diesel_cost + diesel_installation_cost)
+        ) * technical_appraisal.power_consumed_fraction[ResourceType.CLEAN_WATER]
+        subsystem_costs[ResourceType.ELECTRIC] += (
+            (diesel_cost + diesel_installation_cost)
+        ) * technical_appraisal.power_consumed_fraction[ResourceType.ELECTRIC]
+        subsystem_costs[ResourceType.DIESEL] += (
+            diesel_cost + diesel_installation_cost
+        ) * technical_appraisal.power_consumed_fraction[ResourceType.HOT_CLEAN_WATER]
+    else:
+        # Diesel costs to only be split amongst electric and hot-water resource
+        # types.
+        total_diesel_frac: float = technical_appraisal.power_consumed_fraction[
+            ResourceType.ELECTRIC
+        ] + technical_appraisal.power_consumed_fraction[ResourceType.HOT_CLEAN_WATER]
+        subsystem_costs[ResourceType.ELECTRIC] += (
+            (diesel_cost + diesel_installation_cost)
+            * technical_appraisal.power_consumed_fraction[ResourceType.ELECTRIC]
+            / total_diesel_frac
+        )
+        subsystem_costs[ResourceType.HOT_CLEAN_WATER] += (
+            (diesel_cost + diesel_installation_cost)
+            * technical_appraisal.power_consumed_fraction[ResourceType.HOT_CLEAN_WATER]
+            / total_diesel_frac
+        )
 
     additional_equipment_costs = bos_cost + converter_installation_costs
 
@@ -936,7 +927,7 @@ def discounted_equipment_cost(
     storage_size: float,
     technical_appraisal: TechnicalAppraisal,
     installation_year: int = 0,
-) -> Dict[ResourceType, float]:
+) -> Tuple[float, Dict[ResourceType, float]]:
     """
     Calculates cost of all equipment costs
 
@@ -971,6 +962,7 @@ def discounted_equipment_cost(
         - installation_year:
             ColumnHeader.INSTALLATION_YEAR.value
     Outputs:
+        - Any additional equipment costs not associated with a specific subsystem.
         - A mapping between :class:`ResourceType` entries and the discounted costs
           associated with that subsystem.
 
@@ -1099,7 +1091,7 @@ def total_om(
     *,
     start_year: int = 0,
     end_year: int = 20
-) -> Dict[ResourceType, float]:
+) -> Tuple[float, Dict[ResourceType, float]]:
     """
     Calculates total O&M cost over the simulation period
 
@@ -1331,62 +1323,67 @@ def total_om(
 
     # Compute the various subsystem costs.
     if scenario.desalination_scenario is not None:
-        # Compute the clean-water and electric subsystem costs.
+        # Compute the clean-water subsystem costs.
         subsystem_costs[ResourceType.CLEAN_WATER] += (
             buffer_tank_om
             + clean_water_tank_om
             + heat_exchanger_om
+            + (
+                (pv_om + storage_om)
+                * technical_appraisal.power_consumed_fraction[ResourceType.CLEAN_WATER]
+            )
         )
 
-        # Compute the costs associated when operating with PV-T only desalination.
-        if (
-            scenario.desalination_scenario.clean_water_scenario.mode
-            == CleanWaterMode.THERMAL_ONLY
-        ):
-            subsystem_costs[ResourceType.ELECTRIC] += (
-                pv_om + storage_om
-            )
-
-        # Compute the costs associated when operating with backup electric desalination.
-        else:
-            subsystem_costs[ResourceType.CLEAN_WATER] += (
-                pv_om + storage_om
-            ) * technical_appraisal.power_consumed_fraction[ResourceType.CLEAN_WATER]
-            subsystem_costs[ResourceType.ELECTRIC] += (
-                pv_om + storage_om
-            ) * technical_appraisal.power_consumed_fraction[ResourceType.ELECTRIC]
-
-        # Compute the costs associated when carrying out prioritisation desalination.
-        if (
-            scenario.desalination_scenario.clean_water_scenario.mode
-            == CleanWaterMode.PRIORITISE
-        ):
-            subsystem_costs[ResourceType.CLEAN_WATER] += (
-                diesel_om
-            ) * technical_appraisal.power_consumed_fraction[ResourceType.CLEAN_WATER]
-            subsystem_costs[ResourceType.ELECTRIC] += (
-                diesel_om
-            ) * technical_appraisal.power_consumed_fraction[ResourceType.ELECTRIC]
-        else:
-            subsystem_costs[ResourceType.ELECTRIC] += (
-                diesel_om
-            )
+    # Compute the electric subsystem costs.
+    subsystem_costs[ResourceType.ELECTRIC] += (
+        pv_om + storage_om
+    ) * technical_appraisal.power_consumed_fraction[ResourceType.ELECTRIC]
 
     # Compute the hot-water subsystem costs.
     subsystem_costs[ResourceType.HOT_CLEAN_WATER] += (
         hot_water_tank_om
-        + (pv_om + diesel_om + storage_om)
+        + (pv_om + storage_om)
         * technical_appraisal.power_consumed_fraction[ResourceType.HOT_CLEAN_WATER]
     )
 
-    additional_equipment_costs = general_om + converters_om
+    # Compute the costs associated when carrying out prioritisation desalination.
+    if (
+        scenario.desalination_scenario is not None
+        and scenario.desalination_scenario.clean_water_scenario.mode
+        == CleanWaterMode.PRIORITISE
+    ):
+        # Diesel costs to be split equally among all resource types.
+        subsystem_costs[ResourceType.CLEAN_WATER] += (
+            diesel_om
+        ) * technical_appraisal.power_consumed_fraction[ResourceType.CLEAN_WATER]
+        subsystem_costs[ResourceType.ELECTRIC] += (
+            diesel_om
+        ) * technical_appraisal.power_consumed_fraction[ResourceType.ELECTRIC]
+        subsystem_costs[ResourceType.DIESEL] += (
+            diesel_om
+            * technical_appraisal.power_consumed_fraction[ResourceType.HOT_CLEAN_WATER]
+        )
+    else:
+        # Diesel costs to only be split amongst electric and hot-water resource
+        # types.
+        total_diesel_frac: float = technical_appraisal.power_consumed_fraction[
+            ResourceType.ELECTRIC
+        ] + technical_appraisal.power_consumed_fraction[ResourceType.HOT_CLEAN_WATER]
+        subsystem_costs[ResourceType.ELECTRIC] += (
+            diesel_om
+            * technical_appraisal.power_consumed_fraction[ResourceType.ELECTRIC]
+            / total_diesel_frac
+        )
+        subsystem_costs[ResourceType.HOT_CLEAN_WATER] += (
+            diesel_om
+            * technical_appraisal.power_consumed_fraction[ResourceType.HOT_CLEAN_WATER]
+            / total_diesel_frac
+        )
+
+    additional_equipment_costs = general_om
 
     # FIXME: This needs to include the PV-T costs.
-
-    return (
-        additional_equipment_costs,
-        subsystem_costs
-    )
+    return (additional_equipment_costs, subsystem_costs)
 
 
 # #%%

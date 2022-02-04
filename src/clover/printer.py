@@ -26,9 +26,7 @@ __all__ = ("generate_optimisation_string",)
 
 
 def generate_optimisation_string(
-    minigrid: Minigrid,
-    optimisation_inputs: OptimisationParameters,
-    scenario: Scenario,
+    minigrid: Minigrid, optimisation_inputs: OptimisationParameters, scenario: Scenario,
 ) -> str:
     """
     Generate and return the optimisation string.
@@ -64,8 +62,7 @@ def generate_optimisation_string(
     ):
         optimisation_string_list.append(
             "- Storage resolution of {} units ({} kWh per unit)".format(
-                optimisation_inputs.storage_size.step,
-                minigrid.battery.storage_unit,
+                optimisation_inputs.storage_size.step, minigrid.battery.storage_unit,
             )
         )
 

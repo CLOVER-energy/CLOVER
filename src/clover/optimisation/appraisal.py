@@ -29,6 +29,7 @@ from ..impact import finance, ghgs
 
 from ..__utils__ import (
     BColours,
+    CleanWaterMode,
     ColumnHeader,
     Criterion,
     CumulativeResults,
@@ -416,18 +417,57 @@ def _simulation_financial_appraisal(
     total_equipment_costs = (
         sum(subsystem_equipment_costs.values()) + additional_installation_costs
     )
-    total_om_costs = (
-        sum(subsystem_om_costs.values()) + additional_om_costs
-    )
+    total_om_costs = sum(subsystem_om_costs.values()) + additional_om_costs
     total_system_cost = (
-        total_equipment_costs + connections_cost + total_om_costs + diesel_fuel_costs + grid_costs
+        total_equipment_costs
+        + connections_cost
+        + total_om_costs
+        + diesel_fuel_costs
+        + grid_costs
     )
     total_cost = total_system_cost + kerosene_costs
 
     # Apportion the running costs by the resource types.
-    total_subsystem_costs: Dict[ResourceType, float] = subsystem_equipment_costs + subsystem_om_costs
-    if scenario.desalination_scenario is not None:
-        
+    total_subsystem_costs: Dict[ResourceType, float] = {
+        resource_type: value
+        + subsystem_om_costs[resource_type]
+        + (grid_costs * technical_appraisal.power_consumed_fraction[resource_type])
+        for resource_type, value in subsystem_equipment_costs.items()
+    }
+
+    # Compute the costs associated when carrying out prioritisation desalination.
+    if (
+        scenario.desalination_scenario is not None
+        and scenario.desalination_scenario.clean_water_scenario.mode
+        == CleanWaterMode.PRIORITISE
+    ):
+        # Diesel costs to be split equally among all resource types.
+        total_subsystem_costs[ResourceType.CLEAN_WATER] += (
+            diesel_fuel_costs
+        ) * technical_appraisal.power_consumed_fraction[ResourceType.CLEAN_WATER]
+        total_subsystem_costs[ResourceType.ELECTRIC] += (
+            diesel_fuel_costs
+        ) * technical_appraisal.power_consumed_fraction[ResourceType.ELECTRIC]
+        total_subsystem_costs[ResourceType.DIESEL] += (
+            diesel_fuel_costs
+            * technical_appraisal.power_consumed_fraction[ResourceType.HOT_CLEAN_WATER]
+        )
+    else:
+        # Diesel costs to only be split amongst electric and hot-water resource
+        # types.
+        total_diesel_frac: float = technical_appraisal.power_consumed_fraction[
+            ResourceType.ELECTRIC
+        ] + technical_appraisal.power_consumed_fraction[ResourceType.HOT_CLEAN_WATER]
+        total_subsystem_costs[ResourceType.ELECTRIC] += (
+            diesel_fuel_costs
+            * technical_appraisal.power_consumed_fraction[ResourceType.ELECTRIC]
+            / total_diesel_frac
+        )
+        total_subsystem_costs[ResourceType.HOT_CLEAN_WATER] += (
+            diesel_fuel_costs
+            * technical_appraisal.power_consumed_fraction[ResourceType.HOT_CLEAN_WATER]
+            / total_diesel_frac
+        )
 
     # Return outputs
     return FinancialAppraisal(
