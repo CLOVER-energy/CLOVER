@@ -2623,7 +2623,7 @@ class TechnicalAppraisal:
     grid_energy: float = 0
     hw_demand_covered: Optional[float] = 0
     kerosene_displacement: float = 0
-    power_consumed_fraction: Dict[ResourceType, float] = dict()
+    power_consumed_fraction: Optional[Dict[ResourceType, float]] = None
     pv_energy: float = 0
     pvt_energy: Optional[float] = 0
     renewable_clean_water_fraction: float = 0
