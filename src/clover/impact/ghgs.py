@@ -515,11 +515,10 @@ def calculate_total_equipment_ghgs(
         + hot_water_tank_ghgs
         + hot_water_tank_installation_ghgs
         + misc_ghgs
-        + pv_installation_ghgs
         + pv_ghgs
         + pv_installation_ghgs
-        + pvt_installation_ghgs
         + pvt_ghgs
+        + pvt_installation_ghgs
         + storage_ghgs
     )
 
