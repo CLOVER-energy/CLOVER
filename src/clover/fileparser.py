@@ -370,7 +370,7 @@ def _parse_battery_inputs(
         - logger:
             The :class:`logging.Logger` to use for the run.
         - scenario:
-            The :class:`Scneario` to use for the run.
+            The :class:`Scenario` to use for the run.
 
     Outputs:
         A `tuple` containing:
@@ -954,7 +954,7 @@ def _parse_exchanger_inputs(
         - logger:
             The :class:`logging.Logger` to use for the run.
         - scenario:
-            The :class:`Scneario` to use for the run.
+            The :class:`Scenario` to use for the run.
 
     Outputs:
         A `tuple` containing:
@@ -1029,7 +1029,7 @@ def _parse_pvt_reduced_models(
         - logger:
             The :class:`logging.Logger` to use for the run.
         - scenario:
-            The current :class:`Scneario` for the run.
+            The current :class:`Scenario` for the run.
 
     Outputs:
         - A `list` of :class:`DieselGenerator` instances based on the input information
@@ -1080,12 +1080,12 @@ def _parse_pvt_reduced_models(
                     logger.critical("Failed to determine PV-T reduced thermal model.")
                     raise
             logger.info(
-                "Successfully read PV-T reduced thermal model form local source."
+                "Successfully read PV-T reduced thermal model from local source."
             )
 
         else:
             logger.info(
-                "Successfully read PV-T reduced thermal model form installed package "
+                "Successfully read PV-T reduced thermal model from installed package "
                 "file."
             )
 
@@ -1135,12 +1135,12 @@ def _parse_pvt_reduced_models(
                     raise
 
             logger.info(
-                "Successfully read PV-T reduced electric model form local source."
+                "Successfully read PV-T reduced electric model from local source."
             )
 
         else:
             logger.info(
-                "Successfully read PV-T reduced electric model form installed package file."
+                "Successfully read PV-T reduced electric model from installed package file."
             )
 
         logger.info("PV-T reduced electric model file successfully read.")
@@ -1339,7 +1339,7 @@ def _parse_solar_inputs(
         - logger:
             The :class:`logging.Logger` to use for the run.
         - scenario:
-            The current :class:`Scneario` for the run.
+            The current :class:`Scenario` for the run.
 
     Outputs:
         A `tuple` containing:
@@ -1572,7 +1572,7 @@ def _parse_tank_inputs(
         - logger:
             The :class:`logging.Logger` to use for the run.
         - scenario:
-            The current :class:`Scneario` for the run.
+            The current :class:`Scenario` for the run.
 
     Outputs:
         A `tuple` containing:

@@ -328,9 +328,8 @@ def single_line_simulation(
             )
         )
 
-        # @@@ Is this step necessary??
         # If the maximum PV system size isn't a round number of steps, carry out a
-        # simulation at this size..
+        # simulation at this size.
         if (
             np.ceil(pv_system_size.max / pv_system_size.step) * pv_system_size.step
             != pv_system_size.max

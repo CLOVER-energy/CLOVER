@@ -129,7 +129,7 @@ def _parse_waste_production(
 
 class Converter:
     """
-    Represents a device that is able to convert one form of energy into another.
+    Represents a device that is able to convert one from of energy into another.
 
     .. attribute:: consumption
         The amount of input load which is consumed per unit output load produced.

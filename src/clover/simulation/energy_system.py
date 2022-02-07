@@ -1563,7 +1563,7 @@ def _setup_tank_storage_profiles(
         - resource_type:
             The :class:`ResourceType` held within the :class:`CleanWaterTank`.
         - scenario:
-            The :class:`Scneario` for the run.
+            The :class:`Scenario` for the run.
         - tank:
             The :class:`CleanWaterTank`, representing either a clean- or hot-water tank,
             to use for the run.
