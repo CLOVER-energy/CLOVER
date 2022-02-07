@@ -304,46 +304,34 @@ def calculate_total_equipment_ghgs(
 
     # Sum up the converter emissions for each of the relevant subsystems.
     for resource_type in [ResourceType.CLEAN_WATER, ResourceType.HOT_CLEAN_WATER]:
-        converter_costs = sum(
+        converter_ghgs = sum(
             calculate_ghgs(
-                ghg_inputs[
-                    GHG_IMPACT.format(
-                        type=ImpactingComponent.CONVERTER.value, name=converter
-                    )
-                ][GHGS],
-                ghg_inputs[
-                    GHG_IMPACT.format(
-                        type=ImpactingComponent.CONVERTER.value, name=converter
-                    )
-                ][GHG],
                 size,
-                installation_year,
+                ghg_inputs,
+                GHG_IMPACT.format(
+                    type=ImpactingComponent.CONVERTER.value, name=converter
+                ),
+                year,
             )
             for converter, size in converters.items()
             if converter.output_resource_type == resource_type
         )
-        converter_installation_costs = sum(
-            _component_installation_cost(
+        converter_installation_ghgs = sum(
+            calculate_installation_ghgs(
                 size,
-                finance_inputs[
-                    FINANCE_IMPACT.format(
-                        type=ImpactingComponent.CONVERTER.value, name=converter
-                    )
-                ][INSTALLATION_COST],
-                finance_inputs[
-                    FINANCE_IMPACT.format(
-                        type=ImpactingComponent.CONVERTER.value, name=converter
-                    )
-                ][INSTALLATION_COST_DECREASE],
-                installation_year,
+                ghg_inputs,
+                GHG_IMPACT.format(
+                    type=ImpactingComponent.CONVERTER.value, name=converter
+                ),
+                year,
             )
             for converter, size in converters.items()
         )
-        subsystem_costs[resource_type] += converter_costs + converter_installation_costs
+        subsystem_emissions[resource_type] += converter_ghgs + converter_installation_ghgs
         logger.debug(
             "Convertor costs determined for resource %s: %s",
             resource_type.value,
-            converter_costs + converter_installation_costs,
+            converter_ghgs + converter_installation_ghgs,
         )
 
     diesel_ghgs = calculate_ghgs(
@@ -508,19 +496,6 @@ def calculate_total_equipment_ghgs(
 
     # FIXME: This needs to include the PV-T ghgss.
     return additional_equipment_ghgss, subsystem_emissions
-
-    return (
-        +heat_exchanger_ghgs
-        + heat_exchanger_installation_ghgs
-        + hot_water_tank_ghgs
-        + hot_water_tank_installation_ghgs
-        + misc_ghgs
-        + pv_ghgs
-        + pv_installation_ghgs
-        + pvt_ghgs
-        + pvt_installation_ghgs
-        + storage_ghgs
-    )
 
 
 def calculate_connections_ghgs(
