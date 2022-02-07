@@ -21,7 +21,13 @@ import enum
 
 from typing import Dict
 
-from ..__utils__ import CleanWaterMode, EXCHANGER, ResourceType, Scenario, TechnicalAppraisal
+from ..__utils__ import (
+    CleanWaterMode,
+    EXCHANGER,
+    ResourceType,
+    Scenario,
+    TechnicalAppraisal,
+)
 
 __all__ = (
     "ImpactingComponent",
@@ -151,7 +157,7 @@ def update_diesel_costs(
     diesel_impact: float,
     scenario: Scenario,
     subsystem_impacts: Dict[ResourceType, float],
-    technical_appraisal: TechnicalAppraisal
+    technical_appraisal: TechnicalAppraisal,
 ) -> None:
     """
     Calculates the diesel costs associated with each subsystem.

@@ -2710,7 +2710,9 @@ def run_simulation(
         renewable_hw_fraction.columns = pd.Index(
             [ColumnHeader.HW_RENEWABLES_FRACTION.value]
         )
-        volumetric_hw_dc_fraction.columns = pd.Index([ColumnHeader.HW_VOL_DEMAND_COVERED.value])
+        volumetric_hw_dc_fraction.columns = pd.Index(
+            [ColumnHeader.HW_VOL_DEMAND_COVERED.value]
+        )
 
     # Waste product performance outputs
     brine_produced: Optional[pd.DataFrame] = (
