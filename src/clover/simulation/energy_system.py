@@ -698,6 +698,7 @@ def _calculate_renewable_hw_profiles(
     Optional[pd.DataFrame],
     Optional[pd.DataFrame],
     Dict[WasteProduct, DefaultDict[int, float]],
+    Optional[pd.DataFrame],
 ]:
     """
     Calculates PV-T related profiles for the hot-water system.
@@ -753,6 +754,10 @@ def _calculate_renewable_hw_profiles(
             which was covered using auxiliary means.
         - total_waste_produced:
             The updated total waste produced by the system.
+        - volumetric_hw_dc_fraction:
+            The fraction of the hot-water demand which was covered by the system
+            overall, i.e., the volume of water which the system was able to supply
+            divided by the total load.
 
     """
 
@@ -961,6 +966,14 @@ def _calculate_renewable_hw_profiles(
             + 0.001 * (hot_water_pvt_pump_times > 0) * minigrid.water_pump.consumption
         )
 
+        # Determine the volume of hot-water demand that was met by the system overall.
+        import pdb
+
+        pdb.set_trace()
+        volumetric_hw_dc_fraction: pd.DataFrame = pd.DataFrame(
+            [((supplied/load) if load is not None and load > 0 else None) for supplied, load in zip(hot_water_tank_volume_supplied[0], processed_total_hw_load[0])]
+        )
+
         # Determine the fraction of the output which was met renewably.
         renewable_hw_fraction: pd.DataFrame = (
             # The fraction of the total demand temperature that was covered using
@@ -974,8 +987,7 @@ def _calculate_renewable_hw_profiles(
                 - scenario.hot_water_scenario.cold_water_supply_temperature
             )
             # The fraction of the supply that was met volumetrically.
-            * hot_water_tank_volume_supplied
-            / processed_total_hw_load
+            * volumetric_hw_dc_fraction
         )
 
         hot_water_power_consumed = hot_water_power_consumed.reset_index(drop=True)
@@ -1003,6 +1015,7 @@ def _calculate_renewable_hw_profiles(
         hot_water_tank_temperature = None
         hot_water_tank_volume_supplied = None
         renewable_hw_fraction = None
+        volumetric_hw_dc_fraction = None
 
     return (
         auxiliary_heater,
@@ -1013,6 +1026,7 @@ def _calculate_renewable_hw_profiles(
         hot_water_tank_volume_supplied,
         renewable_hw_fraction,
         total_waste_produced,
+        volumetric_hw_dc_fraction,
     )
 
 
@@ -2111,6 +2125,7 @@ def run_simulation(
         hot_water_tank_volume_supplied,
         renewable_hw_fraction,
         total_waste_produced,
+        volumetric_hw_dc_fraction,
     ) = _calculate_renewable_hw_profiles(
         converters,
         end_hour,
@@ -2680,6 +2695,9 @@ def run_simulation(
         hot_water_pvt_electric_power_per_kwh.columns = pd.Index(
             [ColumnHeader.HW_PVT_ELECTRICITY_SUPPLIED_PER_KWP.value]
         )
+        hot_water_pvt_electric_power_per_unit.columns = pd.Index(
+            [ColumnHeader.HW_PVT_ELECTRICITY_SUPPLIED_PER_UNIT.value]
+        )
         hot_water_tank_temperature.columns = pd.Index(
             [ColumnHeader.HW_TANK_TEMPERATURE.value]
         )
@@ -2689,6 +2707,9 @@ def run_simulation(
         processed_total_hw_load.columns = pd.Index([ColumnHeader.TOTAL_HW_LOAD.value])
         renewable_hw_fraction.columns = pd.Index(
             [ColumnHeader.HW_RENEWABLES_FRACTION.value]
+        )
+        volumetric_hw_dc_fraction = pd.Index(
+            [ColumnHeader.HW_VOL_DEMAND_COVERED.value]
         )
 
     # Waste product performance outputs
@@ -2900,6 +2921,7 @@ def run_simulation(
             hot_water_tank_volume_supplied,
             processed_total_hw_load,
             renewable_hw_fraction,
+            volumetric_hw_dc_fraction,
         ]
 
         if any(entry is None for entry in hot_water_performance_outputs):

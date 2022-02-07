@@ -18,6 +18,7 @@ emitted by the system, need to be assed.
 
 """
 
+import collections
 from logging import Logger
 from typing import Any, Dict, List, Optional
 
@@ -26,9 +27,13 @@ import pandas as pd  # pylint: disable=import-error
 
 from ..__utils__ import (
     BColours,
+    CleanWaterMode,
     ColumnHeader,
     InputFileError,
     Location,
+    ResourceType,
+    Scenario,
+    TechnicalAppraisal,
     hourly_profile_to_daily_sum,
 )
 from ..conversion.conversion import Converter
@@ -144,7 +149,7 @@ def calculate_installation_ghgs(
 
     """
 
-    installation_ghgs: float = capacity * ghg_inputs[system_component][GHGS]
+    installation_ghgs: float = capacity * ghg_inputs[system_component][INSTALLATION_GHGS]
     annual_reduction: float = 0.01 * ghg_inputs[system_component][GHG_DECREASE]
 
     return installation_ghgs * (1.0 - annual_reduction) ** year
@@ -181,7 +186,9 @@ def calculate_total_equipment_ghgs(
     logger: Logger,
     pv_array_size: float,
     pvt_array_size: float,
+    scenario: Scenario,
     storage_size: float,
+    technical_appraisal: TechnicalAppraisal,
     year: int = 0,
 ) -> float:
     """
@@ -207,8 +214,12 @@ def calculate_total_equipment_ghgs(
             Capacity of PV being installed.
         - pvt_array_size:
             Capacity of PV-T being installed.
+        - scenario:
+            The scenario currently being considered.
         - storage_size:
             Capacity of battery storage being installed.
+        - technical_appraisal:
+            The :class:`TechnicalAppraisal` for the system being considered.
         - year:
             ColumnHeader.INSTALLATION_YEAR.value.
 
@@ -216,6 +227,9 @@ def calculate_total_equipment_ghgs(
         GHGs
 
     """
+
+    # Instantiate a mapping for storing total ghgs information.
+    subsystem_emissions: Dict[ResourceType, float] = collections.defaultdict(float)
 
     # Calculate system ghgs.
     bos_ghgs = calculate_ghgs(
@@ -276,24 +290,49 @@ def calculate_total_equipment_ghgs(
             year,
         )
 
-    converter_ghgs = sum(
-        calculate_ghgs(
-            size,
-            ghg_inputs,
-            GHG_IMPACT.format(type=ImpactingComponent.CONVERTER.value, name=converter),
-            year,
+    # Sum up the converter emissions for each of the relevant subsystems.
+    for resource_type in [ResourceType.CLEAN_WATER, ResourceType.HOT_CLEAN_WATER]:
+        converter_costs = sum(
+            calculate_ghgs(
+                ghg_inputs[
+                    GHG_IMPACT.format(
+                        type=ImpactingComponent.CONVERTER.value, name=converter
+                    )
+                ][GHGS],
+                ghg_inputs[
+                    GHG_IMPACT.format(
+                        type=ImpactingComponent.CONVERTER.value, name=converter
+                    )
+                ][GHG],
+                size,
+                installation_year,
+            )
+            for converter, size in converters.items()
+            if converter.output_resource_type == resource_type
         )
-        for converter, size in converters.items()
-    )
-    converter_installation_ghgs = sum(
-        calculate_installation_ghgs(
-            size,
-            ghg_inputs,
-            GHG_IMPACT.format(type=ImpactingComponent.CONVERTER.value, name=converter),
-            year,
+        converter_installation_costs = sum(
+            _component_installation_cost(
+                size,
+                finance_inputs[
+                    FINANCE_IMPACT.format(
+                        type=ImpactingComponent.CONVERTER.value, name=converter
+                    )
+                ][INSTALLATION_COST],
+                finance_inputs[
+                    FINANCE_IMPACT.format(
+                        type=ImpactingComponent.CONVERTER.value, name=converter
+                    )
+                ][INSTALLATION_COST_DECREASE],
+                installation_year,
+            )
+            for converter, size in converters.items()
         )
-        for converter, size in converters.items()
-    )
+        subsystem_costs[resource_type] += converter_costs + converter_installation_costs
+        logger.debug(
+            "Convertor costs determined for resource %s: %s",
+            resource_type.value,
+            converter_costs + converter_installation_costs,
+        )
 
     diesel_ghgs = calculate_ghgs(
         diesel_size, ghg_inputs, ImpactingComponent.DIESEL.value, year
@@ -392,16 +431,73 @@ def calculate_total_equipment_ghgs(
     # Calculate misc GHGs.
     misc_ghgs = calculate_misc_ghgs(diesel_size + pv_array_size, ghg_inputs)
 
+    # Compute the various subsystem emissions.
+    if scenario.desalination_scenario is not None:
+        # Compute the clean-water subsystem ghgss.
+        subsystem_emissions[ResourceType.CLEAN_WATER] += (
+            buffer_tank_ghgs
+            + buffer_tank_installation_ghgs
+            + clean_water_tank_ghgs
+            + clean_water_tank_installation_ghgs
+            + heat_exchanger_ghgs
+            + heat_exchanger_installation_ghgs
+            + (pv_ghgs + pv_installation_ghgs + storage_ghgs)
+            * technical_appraisal.power_consumed_fraction[ResourceType.CLEAN_WATER]
+        )
+
+    # Compute the electric subsystem ghgss.
+    subsystem_emissions[ResourceType.ELECTRIC] += (
+        pv_ghgs + pv_installation_ghgs + storage_ghgs
+    ) * technical_appraisal.power_consumed_fraction[ResourceType.ELECTRIC_POWER]
+
+    # Compute the hot-water subsystem ghgss.
+    subsystem_emissions[ResourceType.HOT_CLEAN_WATER] += (
+        hot_water_tank_ghgs
+        + hot_water_tank_installation_ghgs
+        + (pv_ghgs + pv_installation_ghgs + storage_ghgs)
+        * technical_appraisal.power_consumed_fraction[ResourceType.HOT_CLEAN_WATER]
+    )
+
+    # Compute the ghgss associated when carrying out prioritisation desalination.
+    if (
+        scenario.desalination_scenario is not None
+        and scenario.desalination_scenario.clean_water_scenario.mode
+        == CleanWaterMode.PRIORITISE
+    ):
+        # Diesel ghgss to be split equally among all resource types.
+        subsystem_emissions[ResourceType.CLEAN_WATER] += (
+            (diesel_ghgs + diesel_installation_ghgs + misc_ghgs)
+        ) * technical_appraisal.power_consumed_fraction[ResourceType.CLEAN_WATER]
+        subsystem_emissions[ResourceType.ELECTRIC] += (
+            (diesel_ghgs + diesel_installation_ghgs + misc_ghgs)
+        ) * technical_appraisal.power_consumed_fraction[ResourceType.ELECTRIC]
+        subsystem_emissions[ResourceType.DIESEL] += (
+            diesel_ghgs + diesel_installation_ghgs + misc_ghgs
+        ) * technical_appraisal.power_consumed_fraction[ResourceType.HOT_CLEAN_WATER]
+    else:
+        # Diesel ghgss to only be split amongst electric and hot-water resource
+        # types.
+        total_diesel_frac: float = (
+            technical_appraisal.power_consumed_fraction[ResourceType.ELECTRIC]
+            + technical_appraisal.power_consumed_fraction[ResourceType.HOT_CLEAN_WATER]
+        )
+        subsystem_emissions[ResourceType.ELECTRIC] += (
+            (diesel_ghgs + diesel_installation_ghgs + misc_ghgs)
+            * technical_appraisal.power_consumed_fraction[ResourceType.ELECTRIC]
+            / total_diesel_frac
+        )
+        subsystem_emissions[ResourceType.HOT_CLEAN_WATER] += (
+            (diesel_ghgs + diesel_installation_ghgs + misc_ghgs)
+            * technical_appraisal.power_consumed_fraction[ResourceType.HOT_CLEAN_WATER]
+            / total_diesel_frac
+        )
+
+    additional_equipment_ghgss = bos_ghgs 
+
+    # FIXME: This needs to include the PV-T ghgss.
+    return additional_equipment_ghgss, subsystem_emissions
+
     return (
-        bos_ghgs
-        + buffer_tank_ghgs
-        + buffer_tank_installation_ghgs
-        + clean_water_tank_installation_ghgs
-        + clean_water_tank_ghgs
-        + converter_ghgs
-        + converter_installation_ghgs
-        + diesel_installation_ghgs
-        + diesel_ghgs
         + heat_exchanger_ghgs
         + heat_exchanger_installation_ghgs
         + hot_water_tank_ghgs

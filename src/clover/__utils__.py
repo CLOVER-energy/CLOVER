@@ -21,6 +21,7 @@ issues and increase the ease of code alterations.
 import dataclasses
 import enum
 import logging
+from optparse import Option
 import os
 
 from typing import Any, Dict, List, Optional, Set, Union
@@ -420,6 +421,9 @@ class ColumnHeader(enum.Enum):
     - HW_PVT_ELECTRICITY_SUPPLIED_PER_KWP:
         The electricity supplied by the hot-water PV-T per kWp of installed PV.
 
+    - HW_PVT_ELECTRICITY_SUPPLIED_PER_UNIT:
+        The electricity supplied by the hot-water PV-T per unit of installed PV-T panel.
+
     - HW_RENEWABLES_FRACTION:
         The fraction of hot-water demand that was met through renewables.
 
@@ -428,6 +432,9 @@ class ColumnHeader(enum.Enum):
 
     - HW_TANK_TEMPERATURE:
         The temperature profile of the hot-water tank(s) installed.
+
+    - HW_VOL_DEMAND_COVERED:
+        The volumetric demand covered by the hot-water tank(s) installed.
 
     - INSTALLATION_YEAR:
         The year in which the installation was made.
@@ -550,9 +557,13 @@ class ColumnHeader(enum.Enum):
     HW_PVT_ELECTRICITY_SUPPLIED_PER_KWP = (
         "Hot-water PV-T electric energy supplied per kWp"
     )
+    HW_PVT_ELECTRICITY_SUPPLIED_PER_UNIT = (
+        "Hot-water PV-T electric energy supplied per unit panel"
+    )
     HW_RENEWABLES_FRACTION = "Renewable hot-water fraction"
     HW_TANK_OUTPUT = "Hot-water tank volume supplied (l)"
     HW_TANK_TEMPERATURE = "Hot-water tank temperature (degC)"
+    HW_VOL_DEMAND_COVERED = "Hot-water demand covered fraction"
     INSTALLATION_YEAR = "Installation year"
     INVERTER_COST = "Inverter cost ($/kW)"
     INVERTER_SIZE = "Inverter size (kW)"
@@ -892,6 +903,7 @@ class KeyResults:
     average_daily_grid_energy_supplied: Optional[float] = None
     average_daily_hw_demand_covered: Optional[float] = None
     average_daily_hw_pvt_generation: Optional[float] = None
+    average_daily_hw_renewable_fraction: Optional[float] = None
     average_daily_hw_supplied: Optional[float] = None
     average_daily_pv_energy_supplied: Optional[float] = None
     average_daily_renewables_energy_supplied: Optional[float] = None
@@ -966,6 +978,10 @@ class KeyResults:
         if self.average_daily_hw_pvt_generation is not None:
             data_dict[
                 "Average daily hot-water PV-T electricity supplied / kWh"
+            ] = round(self.average_daily_hw_pvt_generation, 3)
+        if self.average_daily_hw_renewable_fraction is not None:
+            data_dict[
+                "Average hot-water renewable fraction"
             ] = round(self.average_daily_hw_pvt_generation, 3)
         if self.average_daily_hw_supplied is not None:
             data_dict["Average daily hot water supplied / litres"] = round(
