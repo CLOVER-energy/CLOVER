@@ -152,8 +152,12 @@ def calculate_installation_ghgs(
 
     """
 
-    installation_ghgs: float = capacity * ghg_inputs[system_component][INSTALLATION_GHGS]
-    annual_reduction: float = 0.01 * ghg_inputs[system_component][INSTALLATION_GHGS_DECREASE]
+    installation_ghgs: float = (
+        capacity * ghg_inputs[system_component][INSTALLATION_GHGS]
+    )
+    annual_reduction: float = (
+        0.01 * ghg_inputs[system_component][INSTALLATION_GHGS_DECREASE]
+    )
 
     return installation_ghgs * (1.0 - annual_reduction) ** year
 
