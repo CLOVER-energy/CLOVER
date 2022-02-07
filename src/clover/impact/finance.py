@@ -246,7 +246,7 @@ def _discounted_fraction(
 
     # Compute a list containing all the discounted fractions over the time period.
     discounted_fraction_array = [
-        denominator ** -time for time in range(start_day, end_day)
+        denominator**-time for time in range(start_day, end_day)
     ]
 
     return pd.DataFrame(discounted_fraction_array)
@@ -734,9 +734,10 @@ def get_total_equipment_costs(
     else:
         # Diesel costs to only be split amongst electric and hot-water resource
         # types.
-        total_diesel_frac: float = technical_appraisal.power_consumed_fraction[
-            ResourceType.ELECTRIC
-        ] + technical_appraisal.power_consumed_fraction[ResourceType.HOT_CLEAN_WATER]
+        total_diesel_frac: float = (
+            technical_appraisal.power_consumed_fraction[ResourceType.ELECTRIC]
+            + technical_appraisal.power_consumed_fraction[ResourceType.HOT_CLEAN_WATER]
+        )
         subsystem_costs[ResourceType.ELECTRIC] += (
             (diesel_cost + diesel_installation_cost)
             * technical_appraisal.power_consumed_fraction[ResourceType.ELECTRIC]
@@ -1366,9 +1367,10 @@ def total_om(
     else:
         # Diesel costs to only be split amongst electric and hot-water resource
         # types.
-        total_diesel_frac: float = technical_appraisal.power_consumed_fraction[
-            ResourceType.ELECTRIC
-        ] + technical_appraisal.power_consumed_fraction[ResourceType.HOT_CLEAN_WATER]
+        total_diesel_frac: float = (
+            technical_appraisal.power_consumed_fraction[ResourceType.ELECTRIC]
+            + technical_appraisal.power_consumed_fraction[ResourceType.HOT_CLEAN_WATER]
+        )
         subsystem_costs[ResourceType.ELECTRIC] += (
             diesel_om
             * technical_appraisal.power_consumed_fraction[ResourceType.ELECTRIC]

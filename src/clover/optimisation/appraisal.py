@@ -455,9 +455,10 @@ def _simulation_financial_appraisal(
     else:
         # Diesel costs to only be split amongst electric and hot-water resource
         # types.
-        total_diesel_frac: float = technical_appraisal.power_consumed_fraction[
-            ResourceType.ELECTRIC
-        ] + technical_appraisal.power_consumed_fraction[ResourceType.HOT_CLEAN_WATER]
+        total_diesel_frac: float = (
+            technical_appraisal.power_consumed_fraction[ResourceType.ELECTRIC]
+            + technical_appraisal.power_consumed_fraction[ResourceType.HOT_CLEAN_WATER]
+        )
         total_subsystem_costs[ResourceType.ELECTRIC] += (
             diesel_fuel_costs
             * technical_appraisal.power_consumed_fraction[ResourceType.ELECTRIC]
