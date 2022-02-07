@@ -980,9 +980,9 @@ class KeyResults:
                 "Average daily hot-water PV-T electricity supplied / kWh"
             ] = round(self.average_daily_hw_pvt_generation, 3)
         if self.average_daily_hw_renewable_fraction is not None:
-            data_dict[
-                "Average hot-water renewable fraction"
-            ] = round(self.average_daily_hw_pvt_generation, 3)
+            data_dict["Average hot-water renewable fraction"] = round(
+                self.average_daily_hw_pvt_generation, 3
+            )
         if self.average_daily_hw_supplied is not None:
             data_dict["Average daily hot water supplied / litres"] = round(
                 self.average_daily_hw_supplied, 3

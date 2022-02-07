@@ -504,13 +504,13 @@ def calculate_total_equipment_ghgs(
             / total_diesel_frac
         )
 
-    additional_equipment_ghgss = bos_ghgs 
+    additional_equipment_ghgss = bos_ghgs
 
     # FIXME: This needs to include the PV-T ghgss.
     return additional_equipment_ghgss, subsystem_emissions
 
     return (
-        + heat_exchanger_ghgs
+        +heat_exchanger_ghgs
         + heat_exchanger_installation_ghgs
         + hot_water_tank_ghgs
         + hot_water_tank_installation_ghgs
