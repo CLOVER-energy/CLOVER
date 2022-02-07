@@ -156,7 +156,7 @@ def _get_operating_mode(parsed_args: Namespace) -> OperatingMode:
     return OperatingMode.PROFILE_GENERATION
 
 
-def _prepare_location(location: str, logger: logging.Logger):
+def _prepare_location(location: str, logger: logging.Logger) -> None:
     """
     Prepares the location and raises an error if the location cannot be found.
 
@@ -827,7 +827,7 @@ def main(args: List[Any]) -> None:
     # Assemble a means of storing the relevant loads.
     total_loads: Dict[ResourceType, Optional[pd.DataFrame]] = {
         ResourceType.CLEAN_WATER: total_cw_load,
-        ResourceType.ELECTRIC: 0.001 * total_electric_load,
+        ResourceType.ELECTRIC: 0.001 * total_electric_load,  # type: ignore
         ResourceType.HOT_CLEAN_WATER: total_hw_load,
     }
 
@@ -1045,7 +1045,7 @@ def main(args: List[Any]) -> None:
             system_details.file_information = input_file_info
 
             # Compute the key results.
-            key_results = analysis.get_key_results(
+            key_results = analysis.get_key_results(  # type: ignore
                 grid_times[scenario.grid_type],
                 simulation.end_year - simulation.start_year,
                 system_performance_outputs,
@@ -1055,7 +1055,7 @@ def main(args: List[Any]) -> None:
 
             if parsed_args.analyse:
                 # Generate and save the various plots.
-                analysis.plot_outputs(
+                analysis.plot_outputs(  # type: ignore
                     grid_times[scenario.grid_type],
                     grid_profile,
                     initial_cw_hourly_loads,
