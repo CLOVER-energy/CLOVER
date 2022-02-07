@@ -89,7 +89,10 @@ OM_GHGS = "o&m"
 
 
 def calculate_ghgs(
-    capacity: float, ghg_inputs: Dict[str, Any], system_component: str, year: int = 0,
+    capacity: float,
+    ghg_inputs: Dict[str, Any],
+    system_component: str,
+    year: int = 0,
 ) -> float:
     """
     Calculates ghgs of PV
@@ -117,7 +120,10 @@ def calculate_ghgs(
 
 # Installation ghgs
 def calculate_installation_ghgs(
-    capacity: float, ghg_inputs: Dict[str, Any], system_component: str, year: int = 0,
+    capacity: float,
+    ghg_inputs: Dict[str, Any],
+    system_component: str,
+    year: int = 0,
 ) -> float:
     """
 
@@ -231,7 +237,10 @@ def calculate_total_equipment_ghgs(
     buffer_tank_installation_ghgs: float = 0
     if buffer_tanks > 0:
         buffer_tank_ghgs = calculate_ghgs(
-            buffer_tanks, ghg_inputs, ImpactingComponent.BUFFER_TANK.value, year,
+            buffer_tanks,
+            ghg_inputs,
+            ImpactingComponent.BUFFER_TANK.value,
+            year,
         )
         buffer_tank_installation_ghgs = calculate_installation_ghgs(
             buffer_tanks, ghg_inputs, ImpactingComponent.BUFFER_TANK.value, year
@@ -311,7 +320,10 @@ def calculate_total_equipment_ghgs(
     heat_exchanger_installation_ghgs: float = 0
     if heat_exchangers > 0:
         heat_exchanger_ghgs = calculate_ghgs(
-            heat_exchangers, ghg_inputs, ImpactingComponent.HEAT_EXCHANGER.value, year,
+            heat_exchangers,
+            ghg_inputs,
+            ImpactingComponent.HEAT_EXCHANGER.value,
+            year,
         )
         heat_exchanger_installation_ghgs = calculate_installation_ghgs(
             heat_exchangers, ghg_inputs, ImpactingComponent.HEAT_EXCHANGER.value, year
@@ -335,7 +347,10 @@ def calculate_total_equipment_ghgs(
     hot_water_tank_installation_ghgs: float = 0
     if hot_water_tanks > 0:
         hot_water_tank_ghgs = calculate_ghgs(
-            hot_water_tanks, ghg_inputs, ImpactingComponent.HOT_WATER_TANK.value, year,
+            hot_water_tanks,
+            ghg_inputs,
+            ImpactingComponent.HOT_WATER_TANK.value,
+            year,
         )
         hot_water_tank_installation_ghgs = calculate_installation_ghgs(
             hot_water_tanks, ghg_inputs, ImpactingComponent.HOT_WATER_TANK.value, year
@@ -361,7 +376,10 @@ def calculate_total_equipment_ghgs(
     pvt_installation_ghgs: float = 0
     if pvt_array_size > 0:
         pvt_ghgs = calculate_ghgs(
-            pvt_array_size, ghg_inputs, ImpactingComponent.PV_T.value, year,
+            pvt_array_size,
+            ghg_inputs,
+            ImpactingComponent.PV_T.value,
+            year,
         )
         pvt_installation_ghgs = calculate_installation_ghgs(
             pvt_array_size, ghg_inputs, ImpactingComponent.PV.value, year

@@ -190,7 +190,8 @@ def get_key_results(
             max(simulation_results[ColumnHeader.CW_PVT_OUTPUT_TEMPERATURE.value]), 3
         )
         key_results.mean_buffer_tank_temperature = round(
-            simulation_results[ColumnHeader.BUFFER_TANK_TEMPERATURE.value].mean(), 3,
+            simulation_results[ColumnHeader.BUFFER_TANK_TEMPERATURE.value].mean(),
+            3,
         )
         key_results.mean_cw_pvt_output_temperature = round(
             simulation_results[ColumnHeader.CW_PVT_OUTPUT_TEMPERATURE.value].mean(), 3
@@ -433,7 +434,8 @@ def plot_outputs(
         plt.ylabel("Electric power demand / kW")
         plt.title(f"Load profile of the community for the first {CUT_OFF_TIME} hours")
         plt.savefig(
-            os.path.join(figures_directory, "electric_demands.png"), transparent=True,
+            os.path.join(figures_directory, "electric_demands.png"),
+            transparent=True,
         )
         plt.close()
         pbar.update(1)
@@ -465,7 +467,8 @@ def plot_outputs(
         )
         total_demand = np.sum(
             np.reshape(
-                np.sum(total_electric_load[0:HOURS_PER_YEAR].values, axis=1), (365, 24),
+                np.sum(total_electric_load[0:HOURS_PER_YEAR].values, axis=1),
+                (365, 24),
             ),
             axis=1,
         )
@@ -1100,7 +1103,8 @@ def plot_outputs(
             )
             total_demand = np.sum(
                 np.reshape(
-                    np.sum(total_cw_load[0:HOURS_PER_YEAR].values, axis=1), (365, 24),
+                    np.sum(total_cw_load[0:HOURS_PER_YEAR].values, axis=1),
+                    (365, 24),
                 ),
                 axis=1,
             )
@@ -1527,7 +1531,8 @@ def plot_outputs(
             )
             plt.savefig(
                 os.path.join(
-                    figures_directory, "thermal_desal_cw_on_average_july_day.png",
+                    figures_directory,
+                    "thermal_desal_cw_on_average_july_day.png",
                 ),
                 transparent=True,
             )
@@ -1857,7 +1862,8 @@ def plot_outputs(
             plt.plot(dumped_power, label="Unused dumped energy")
             plt.plot(electric_power_supplied, label="Electric devices")
             plt.plot(
-                surplus_power_consumed, label="Clean water via dumped energy",
+                surplus_power_consumed,
+                label="Clean water via dumped energy",
             )
             if cw_pvt:
                 thermal_desalination_energy = np.mean(
@@ -2453,7 +2459,8 @@ def plot_outputs(
             )
             total_demand = np.sum(
                 np.reshape(
-                    np.sum(total_hw_load[0:HOURS_PER_YEAR].values, axis=1), (365, 24),
+                    np.sum(total_hw_load[0:HOURS_PER_YEAR].values, axis=1),
+                    (365, 24),
                 ),
                 axis=1,
             )
