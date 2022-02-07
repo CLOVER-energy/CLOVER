@@ -870,9 +870,7 @@ def main(args: List[Any]) -> None:
     )
     logger.info("Total solar output successfully computed and saved.")
 
-    if (
-        scenario.desalination_scenario is not None
-    ):
+    if scenario.desalination_scenario is not None:
         logger.info("Generating and saving total weather output file.")
         total_weather_data = weather.total_weather_output(
             os.path.join(auto_generated_files_directory, "weather"),

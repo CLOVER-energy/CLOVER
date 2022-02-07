@@ -2520,12 +2520,22 @@ def parse_input_files(
             FINANCE_IMPACT.format(
                 type=ImpactingComponent.CONVERTER.value, name=converter.name
             )
-        ] = defaultdict(float, converter_costs[converter] if converter_costs[converter] is not None else dict())
+        ] = defaultdict(
+            float,
+            converter_costs[converter]
+            if converter_costs[converter] is not None
+            else dict(),
+        )
         ghg_inputs[
             GHG_IMPACT.format(
                 type=ImpactingComponent.CONVERTER.value, name=converter.name
             )
-        ] = defaultdict(float, converter_emissions[converter] if converter_emissions[converter] is not None else dict())
+        ] = defaultdict(
+            float,
+            converter_emissions[converter]
+            if converter_emissions[converter] is not None
+            else dict(),
+        )
         logger.info("Converter %s impact data successfully updated.", converter.name)
 
     # Add transmitter impacts.
@@ -2662,17 +2672,26 @@ def parse_input_files(
             float, hot_water_tank_costs if hot_water_tank_costs is not None else dict()
         )
         ghg_inputs[ImpactingComponent.HOT_WATER_TANK.value] = defaultdict(
-            float, hot_water_tank_emissions if hot_water_tank_emissions is not None else dict()
+            float,
+            hot_water_tank_emissions
+            if hot_water_tank_emissions is not None
+            else dict(),
         )
         logger.info("Hot-water tank impact data successfully updated.")
 
         # Update the diesel water-heater impacts.
         logger.info("Updating with diesel water-heater impact data.")
         finance_inputs[ImpactingComponent.DIESEL_WATER_HEATER.value] = defaultdict(
-            float, diesel_water_heater_costs if diesel_water_heater_costs is not None else dict()
+            float,
+            diesel_water_heater_costs
+            if diesel_water_heater_costs is not None
+            else dict(),
         )
         ghg_inputs[ImpactingComponent.DIESEL_WATER_HEATER.value] = defaultdict(
-            float, diesel_water_heater_emissions if diesel_water_heater_emissions is not None else dict()
+            float,
+            diesel_water_heater_emissions
+            if diesel_water_heater_emissions is not None
+            else dict(),
         )
         logger.info("Diesel water-heater impact data successfully updated.")
 

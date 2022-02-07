@@ -964,12 +964,14 @@ def _calculate_renewable_hw_profiles(
             (
                 hot_water_tank_temperature
                 - scenario.hot_water_scenario.cold_water_supply_temperature
-            ) / (
+            )
+            / (
                 scenario.hot_water_scenario.demand_temperature
                 - scenario.hot_water_scenario.cold_water_supply_temperature
             )
             # The fraction of the supply that was met volumetrically.
-            * hot_water_tank_volume_supplied / processed_total_hw_load
+            * hot_water_tank_volume_supplied
+            / processed_total_hw_load
         )
 
         hot_water_power_consumed = hot_water_power_consumed.reset_index(drop=True)
