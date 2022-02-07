@@ -2951,41 +2951,6 @@ def run_simulation(
     return time_delta, system_performance_outputs, system_details
 
 
-# #%%
-# class MinigridOld:
-#     """
-#     Represents an energy system in the context of CLOVER.
-
-#     """
-
-#     def __init__(self):
-#         """
-#         Instantiate a :class:`minigrid.Minigrid` instance.
-
-#         """
-
-#         self.kerosene_data_filepath = os.path.join(
-#             self.location_filepath, "Load", "Devices in use", "kerosene_in_use.csv"
-#         )
-#         self.kerosene_usage = pd.read_csv(
-#             self.kerosene_data_filepath, index_col=0
-#         ).reset_index(drop=True)
-
-#     #%%
-#     # =============================================================================
-#     # SIMULATION FUNCTIONS
-#     #       This function simulates the energy system of a given capacity and to
-#     #       the parameters stated in the input files.
-#     # =============================================================================
-
-#     #%%
-#     # =============================================================================
-#     # GENERAL FUNCTIONS
-#     #       These functions allow users to save simulations and open previous ones,
-#     #       and resimulate the entire lifetime of a previously-optimised system
-#     #       including consideration of increasing capacity.
-#     # =============================================================================
-
 #     def lifetime_simulation(self, optimisation_report):
 #         """
 #         Simulates a minigrid over its lifetime.

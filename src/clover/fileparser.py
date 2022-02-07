@@ -2279,7 +2279,10 @@ def parse_input_files(
         converter_costs,
         converter_emissions,
         converters,
-    ) = _parse_conversion_inputs(inputs_directory_relative_path, logger)
+    ) = _parse_conversion_inputs(
+        inputs_directory_relative_path,
+        logger,
+    )
     logger.info("Conversion inputs successfully parsed.")
 
     # Parse the device inputs file.
