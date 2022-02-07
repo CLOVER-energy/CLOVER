@@ -959,11 +959,17 @@ def _calculate_renewable_hw_profiles(
 
         # Determine the fraction of the output which was met renewably.
         renewable_hw_fraction: pd.DataFrame = (
-            hot_water_tank_temperature
-            - scenario.hot_water_scenario.cold_water_supply_temperature
-        ) / (
-            scenario.hot_water_scenario.demand_temperature
-            - scenario.hot_water_scenario.cold_water_supply_temperature
+            # The fraction of the total demand temperature that was covered using
+            # renewables.
+            (
+                hot_water_tank_temperature
+                - scenario.hot_water_scenario.cold_water_supply_temperature
+            ) / (
+                scenario.hot_water_scenario.demand_temperature
+                - scenario.hot_water_scenario.cold_water_supply_temperature
+            )
+            # The fraction of the supply that was met volumetrically.
+            * hot_water_tank_volume_supplied / processed_total_hw_load
         )
 
         hot_water_power_consumed = hot_water_power_consumed.reset_index(drop=True)

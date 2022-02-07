@@ -149,6 +149,7 @@ def _volume_withdrawn_from_tank(
     hot_water_load: Optional[float],
     logger: Logger,
     minigrid: Minigrid,
+    num_tanks: int,
     previous_tank_temperature: Optional[float],
     resource_type: ResourceType,
     thermal_desalination_plant: Optional[ThermalDesalinationPlant],
@@ -157,7 +158,6 @@ def _volume_withdrawn_from_tank(
     Computes whether the tank is supplying an output, and what this output is.
 
     Inputs:
-
 
     Outputs:
         A `tuple` containing:
@@ -196,13 +196,15 @@ def _volume_withdrawn_from_tank(
         if thermal_desalination_plant.htf_mode == HTFMode.CLOSED_HTF:
             if thermal_desalination_plant.minimum_htf_temperature is None:
                 logger.error(
-                    "%sNo minimum htf temperature defined despite '%s' being the HTF mode.%s",
+                    "%sNo minimum htf temperature defined despite '%s' being the HTF "
+                    "mode.%s",
                     BColours.fail,
                     thermal_desalination_plant.htf_mode.value,
                     BColours.endc,
                 )
                 raise InternalError(
-                    "Minimum HTF temperature unexpectly undefined when computing plant supply volume."
+                    "Minimum HTF temperature unexpectly undefined when computing plant "
+                    "supply volume."
                 )
 
             tank_supply_on: bool = (
@@ -221,13 +223,15 @@ def _volume_withdrawn_from_tank(
         if thermal_desalination_plant.htf_mode == HTFMode.FEEDWATER_HEATING:
             if thermal_desalination_plant.minimum_feedwater_temperature is None:
                 logger.error(
-                    "%sNo minimum feedwater temperature defined despite '%s' being the HTF mode.%s",
+                    "%sNo minimum feedwater temperature defined despite '%s' being the "
+                    "HTF mode.%s",
                     BColours.fail,
                     thermal_desalination_plant.htf_mode.value,
                     BColours.endc,
                 )
                 raise InternalError(
-                    "Minimum feedwater temperature unexpectly undefined when computing plant supply volume."
+                    "Minimum feedwater temperature unexpectly undefined when computing "
+                    "plant supply volume."
                 )
 
             tank_supply_on = (
@@ -254,8 +258,16 @@ def _volume_withdrawn_from_tank(
                 "calculation method despite hot water being defined in the scenario "
                 "file."
             )
-        tank_supply_on = hot_water_load > 0
-        volume_supplied = hot_water_load
+
+        # The tank should only supply water if the load is less than the capacity of the
+        # tanks.
+        if hot_water_load < num_tanks * minigrid.hot_water_tank.mass:
+            tank_supply_on = hot_water_load > 0
+            volume_supplied = hot_water_load
+        # Otherwise, no water should be supplied.
+        else:
+            tank_supply_on = False
+            volume_supplied = 0
 
     return tank_supply_on, volume_supplied
 
@@ -503,6 +515,7 @@ def calculate_pvt_output(
             else None,
             logger,
             minigrid,
+            num_tanks,
             previous_tank_temperature,
             resource_type,
             thermal_desalination_plant,
@@ -605,14 +618,6 @@ def calculate_pvt_output(
                     round(best_guess_collector_input_temperature, 3),
                     round(tank_temperature, 3),
                 )
-            # best_guess_collector_input_temperature += (TEMPERATURE_PRECISION / 2) * (
-            #     2
-            #     * (collector_input_temperature > best_guess_collector_input_temperature)
-            #     - 1
-            # )
-            # best_guess_tank_temperature += (TEMPERATURE_PRECISION / 2) * (
-            #     2 * (tank_temperature > best_guess_tank_temperature) - 1
-            # )
 
             best_guess_collector_input_temperature = collector_input_temperature
 
@@ -641,34 +646,6 @@ def calculate_pvt_output(
     tank_volume_output_supplied: pd.DataFrame = dict_to_dataframe(
         tank_volume_supplied_map, logger
     )
-
-    # with open("tmp.csv", "w") as f:
-    #     f.write(
-    #         pd.concat(
-    #             [
-    #                 pvt_collector_output_temperature,
-    #                 pvt_electric_power_per_unit,
-    #                 pvt_pump_times_frame,
-    #                 tank_temperature_frame,
-    #                 tank_volume_output_supplied,
-    #             ],
-    #             axis=1,
-    #         ).to_csv()
-    #     )
-
-    # logger.warning(
-    #     "%sUsing saved PV-T profile: this should be used for debugging only.%s",
-    #     BColours.warning,
-    #     BColours.endc,
-    # )
-
-    # with open("tmp.csv", "r") as f:
-    #     filedata = pd.read_csv(f, header=None, index_col=0)
-    #     pvt_collector_output_temperature = pd.DataFrame(filedata[1].values)
-    #     pvt_electric_power_per_unit = pd.DataFrame(filedata[2].values)
-    #     pvt_pump_times_frame = pd.DataFrame(filedata[3].values)
-    #     tank_temperature_frame = pd.DataFrame(filedata[4].values)
-    #     tank_volume_output_supplied = pd.DataFrame(filedata[5].values)
 
     return (
         pvt_collector_output_temperature,
