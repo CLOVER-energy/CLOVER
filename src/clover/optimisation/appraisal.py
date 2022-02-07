@@ -448,6 +448,7 @@ def _simulation_financial_appraisal(
         sum(subsystem_equipment_costs.values()) + additional_installation_costs
     )
     total_om_costs = sum(subsystem_om_costs.values()) + additional_om_costs
+
     total_system_cost = (
         total_equipment_costs
         + connections_cost
@@ -455,6 +456,7 @@ def _simulation_financial_appraisal(
         + diesel_fuel_costs
         + grid_costs
     )
+
     total_cost = total_system_cost + kerosene_costs
 
     # Apportion the grid running costs by the resource types.
@@ -924,7 +926,7 @@ def appraise_system(
     )
 
     # Combined metrics
-    lcue = float(cumulative_system_costs / cumulative_discounted_energy)
+    lcue = float(cumulative_subsystem_costs[ResourceType.ELECTRIC] / cumulative_discounted_energy)
     lcow = float(cumulative_system_costs / cumulative_discounted_clean_water)
     emissions_intensity = 1000.0 * float(cumulative_system_ghgs / cumulative_energy)
 
