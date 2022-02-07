@@ -79,6 +79,14 @@ INITIAL_GHGS = "initial_ghgs"
 #   Keyword used for denoting infrastructure ghgs.
 INFRASTRUCTURE_GHGS = "infrastructure_ghgs"
 
+# Installation GHGS:
+#   Keyword for describing GHG data.
+INSTALLATION_GHGS = "installation_ghgs"
+
+# GHG_DECREASE:
+#   Keyword for describing GHG decrease.
+INSTALLATION_GHGS_DECREASE = "installation_ghg_decrease"
+
 # Final GHGs:
 #   Keyword for the final GHGs.
 FINAL_GHGS = "final_ghgs"
@@ -144,8 +152,8 @@ def calculate_installation_ghgs(
 
     """
 
-    installation_ghgs: float = capacity * ghg_inputs[system_component][GHGS]
-    annual_reduction: float = 0.01 * ghg_inputs[system_component][GHG_DECREASE]
+    installation_ghgs: float = capacity * ghg_inputs[system_component][INSTALLATION_GHGS]
+    annual_reduction: float = 0.01 * ghg_inputs[system_component][INSTALLATION_GHGS_DECREASE]
 
     return installation_ghgs * (1.0 - annual_reduction) ** year
 
