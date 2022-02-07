@@ -971,7 +971,12 @@ def _calculate_renewable_hw_profiles(
 
         pdb.set_trace()
         volumetric_hw_dc_fraction: pd.DataFrame = pd.DataFrame(
-            [((supplied/load) if load is not None and load > 0 else None) for supplied, load in zip(hot_water_tank_volume_supplied[0], processed_total_hw_load[0])]
+            [
+                ((supplied / load) if load is not None and load > 0 else None)
+                for supplied, load in zip(
+                    hot_water_tank_volume_supplied[0], processed_total_hw_load[0]
+                )
+            ]
         )
 
         # Determine the fraction of the output which was met renewably.
@@ -2708,9 +2713,7 @@ def run_simulation(
         renewable_hw_fraction.columns = pd.Index(
             [ColumnHeader.HW_RENEWABLES_FRACTION.value]
         )
-        volumetric_hw_dc_fraction = pd.Index(
-            [ColumnHeader.HW_VOL_DEMAND_COVERED.value]
-        )
+        volumetric_hw_dc_fraction = pd.Index([ColumnHeader.HW_VOL_DEMAND_COVERED.value])
 
     # Waste product performance outputs
     brine_produced: Optional[pd.DataFrame] = (
