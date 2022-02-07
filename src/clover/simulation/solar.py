@@ -618,7 +618,6 @@ def calculate_pvt_output(
                     round(best_guess_collector_input_temperature, 3),
                     round(tank_temperature, 3),
                 )
-
             best_guess_collector_input_temperature = collector_input_temperature
 
         # Save the fractional electrical performance and output temp.
