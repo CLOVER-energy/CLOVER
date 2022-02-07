@@ -967,9 +967,6 @@ def _calculate_renewable_hw_profiles(
         )
 
         # Determine the volume of hot-water demand that was met by the system overall.
-        import pdb
-
-        pdb.set_trace()
         volumetric_hw_dc_fraction: pd.DataFrame = pd.DataFrame(
             [
                 ((supplied / load) if load is not None and load > 0 else None)
@@ -2713,7 +2710,7 @@ def run_simulation(
         renewable_hw_fraction.columns = pd.Index(
             [ColumnHeader.HW_RENEWABLES_FRACTION.value]
         )
-        volumetric_hw_dc_fraction = pd.Index([ColumnHeader.HW_VOL_DEMAND_COVERED.value])
+        volumetric_hw_dc_fraction.columns = pd.Index([ColumnHeader.HW_VOL_DEMAND_COVERED.value])
 
     # Waste product performance outputs
     brine_produced: Optional[pd.DataFrame] = (
