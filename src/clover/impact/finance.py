@@ -27,11 +27,10 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 import numpy as np  # pylint: disable=import-error
 import pandas as pd  # pylint: disable=import-error
 
-from .__utils__ import ImpactingComponent, LIFETIME, SIZE_INCREMENT
+from .__utils__ import ImpactingComponent, LIFETIME, SIZE_INCREMENT, update_diesel_costs
 from ..__utils__ import (
     ELECTRIC_POWER,
     BColours,
-    CleanWaterMode,
     ColumnHeader,
     InputFileError,
     InternalError,
@@ -671,17 +670,6 @@ def get_total_equipment_costs(
         diesel_size, finance_inputs[ImpactingComponent.MISC.value][COST], pv_array_size
     )
 
-    if scenario.desalination_scenario is not None and (
-        scenario.desalination_scenario.clean_water_scenario.mode
-        != CleanWaterMode.THERMAL_ONLY
-    ):
-        subsystem_costs[ResourceType.CLEAN_WATER] += (
-            pv_cost + pv_installation_cost
-        ) * technical_appraisal.power_consumed_fraction[ResourceType.CLEAN_WATER]
-    subsystem_costs[ResourceType.ELECTRIC] += (
-        pv_cost + pv_installation_cost
-    ) * technical_appraisal.power_consumed_fraction[ResourceType.ELECTRIC_POWER]
-
     storage_cost = _component_cost(
         finance_inputs[ImpactingComponent.STORAGE.value][COST],
         finance_inputs[ImpactingComponent.STORAGE.value][COST_DECREASE],
@@ -705,7 +693,7 @@ def get_total_equipment_costs(
     # Compute the electric subsystem costs.
     subsystem_costs[ResourceType.ELECTRIC] += (
         pv_cost + pv_installation_cost + storage_cost
-    ) * technical_appraisal.power_consumed_fraction[ResourceType.ELECTRIC_POWER]
+    ) * technical_appraisal.power_consumed_fraction[ResourceType.ELECTRIC]
 
     # Compute the hot-water subsystem costs.
     subsystem_costs[ResourceType.HOT_CLEAN_WATER] += (
@@ -716,38 +704,12 @@ def get_total_equipment_costs(
     )
 
     # Compute the costs associated when carrying out prioritisation desalination.
-    if (
-        scenario.desalination_scenario is not None
-        and scenario.desalination_scenario.clean_water_scenario.mode
-        == CleanWaterMode.PRIORITISE
-    ):
-        # Diesel costs to be split equally among all resource types.
-        subsystem_costs[ResourceType.CLEAN_WATER] += (
-            (diesel_cost + diesel_installation_cost + misc_costs)
-        ) * technical_appraisal.power_consumed_fraction[ResourceType.CLEAN_WATER]
-        subsystem_costs[ResourceType.ELECTRIC] += (
-            (diesel_cost + diesel_installation_cost + misc_costs)
-        ) * technical_appraisal.power_consumed_fraction[ResourceType.ELECTRIC]
-        subsystem_costs[ResourceType.DIESEL] += (
-            diesel_cost + diesel_installation_cost + misc_costs
-        ) * technical_appraisal.power_consumed_fraction[ResourceType.HOT_CLEAN_WATER]
-    else:
-        # Diesel costs to only be split amongst electric and hot-water resource
-        # types.
-        total_diesel_frac: float = (
-            technical_appraisal.power_consumed_fraction[ResourceType.ELECTRIC]
-            + technical_appraisal.power_consumed_fraction[ResourceType.HOT_CLEAN_WATER]
-        )
-        subsystem_costs[ResourceType.ELECTRIC] += (
-            (diesel_cost + diesel_installation_cost + misc_costs)
-            * technical_appraisal.power_consumed_fraction[ResourceType.ELECTRIC]
-            / total_diesel_frac
-        )
-        subsystem_costs[ResourceType.HOT_CLEAN_WATER] += (
-            (diesel_cost + diesel_installation_cost + misc_costs)
-            * technical_appraisal.power_consumed_fraction[ResourceType.HOT_CLEAN_WATER]
-            / total_diesel_frac
-        )
+    update_diesel_costs(
+        diesel_cost + diesel_installation_cost,
+        scenario,
+        subsystem_costs,
+        technical_appraisal,
+    )
 
     additional_equipment_costs = bos_cost
 
@@ -991,7 +953,7 @@ def discounted_equipment_cost(
 
     return (
         additional_costs * discount_fraction,
-        {key: value * discount_fraction for key, value in undiscounted_costs},
+        {key: value * discount_fraction for key, value in undiscounted_costs.items()},
     )
 
 
@@ -1322,9 +1284,8 @@ def total_om(
         end_year=end_year,
     )
 
-    # Compute the various subsystem costs.
+    # Compute the clean-water subsystem costs.
     if scenario.desalination_scenario is not None:
-        # Compute the clean-water subsystem costs.
         subsystem_costs[ResourceType.CLEAN_WATER] += (
             buffer_tank_om
             + clean_water_tank_om
@@ -1348,39 +1309,12 @@ def total_om(
     )
 
     # Compute the costs associated when carrying out prioritisation desalination.
-    if (
-        scenario.desalination_scenario is not None
-        and scenario.desalination_scenario.clean_water_scenario.mode
-        == CleanWaterMode.PRIORITISE
-    ):
-        # Diesel costs to be split equally among all resource types.
-        subsystem_costs[ResourceType.CLEAN_WATER] += (
-            diesel_om
-        ) * technical_appraisal.power_consumed_fraction[ResourceType.CLEAN_WATER]
-        subsystem_costs[ResourceType.ELECTRIC] += (
-            diesel_om
-        ) * technical_appraisal.power_consumed_fraction[ResourceType.ELECTRIC]
-        subsystem_costs[ResourceType.DIESEL] += (
-            diesel_om
-            * technical_appraisal.power_consumed_fraction[ResourceType.HOT_CLEAN_WATER]
-        )
-    else:
-        # Diesel costs to only be split amongst electric and hot-water resource
-        # types.
-        total_diesel_frac: float = (
-            technical_appraisal.power_consumed_fraction[ResourceType.ELECTRIC]
-            + technical_appraisal.power_consumed_fraction[ResourceType.HOT_CLEAN_WATER]
-        )
-        subsystem_costs[ResourceType.ELECTRIC] += (
-            diesel_om
-            * technical_appraisal.power_consumed_fraction[ResourceType.ELECTRIC]
-            / total_diesel_frac
-        )
-        subsystem_costs[ResourceType.HOT_CLEAN_WATER] += (
-            diesel_om
-            * technical_appraisal.power_consumed_fraction[ResourceType.HOT_CLEAN_WATER]
-            / total_diesel_frac
-        )
+    update_diesel_costs(
+        diesel_om,
+        scenario,
+        subsystem_costs,
+        technical_appraisal,
+    )
 
     additional_equipment_costs = general_om
 

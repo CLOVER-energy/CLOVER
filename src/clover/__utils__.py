@@ -2353,11 +2353,20 @@ class CumulativeResults:
     .. attribute:: ghgs
         The total green-house gasses emitted by the system, mesaured in kgCO2eq.
 
+    .. attribute:: subsystem_costs
+        The cumulative costs of each individual subsystem.
+
+    .. attribute:: subsystem_ghgs
+        The cumulative emissions caused by each individual subsystem.
+
     .. attribute:: system_cost
         The cumulative cost of the system, measured in USD.
 
     .. attribute:: system_ghgs
         The total system-related GHGs, mesaured in kgCO2eq.
+
+    .. attribute:: waste_produced
+        The cumulative waste produced by the system.
 
     """
 
@@ -2366,6 +2375,8 @@ class CumulativeResults:
     discounted_energy: float = 0
     energy: float = 0
     ghgs: float = 0
+    subsystem_costs: Optional[Dict[ResourceType, float]] = None
+    subsystem_ghgs: Optional[Dict[ResourceType, float]] = None
     system_cost: float = 0
     system_ghgs: float = 0
     waste_produced: Optional[Dict[str, float]] = None
@@ -2390,6 +2401,15 @@ class CumulativeResults:
 
         if self.clean_water is not None:
             cumulative_results["clean_water"] = self.clean_water
+
+        if self.subsystem_costs is not None:
+            for key, value in self.subsystem_costs.items():
+                cumulative_results[f"cumulative_{key}_subsystem_cost"]
+
+        if self.subsystem_ghgs is not None:
+            for key, value in self.subsystem_ghgs.items():
+                cumulative_results[f"cumulative_{key}_subsystem_ghgs"]
+
         if self.waste_produced is not None:
             for key, value in self.waste_produced.items():
                 cumulative_results[f"cumulative_{key}_waste"] = value
@@ -2429,6 +2449,9 @@ class EnvironmentalAppraisal:
     .. attribute:: total_ghgs
         The total GHGs emitted.
 
+    .. attribute:: total_subsystem_ghgs
+        The total GHGs associated with each subsystem emitted.
+
     .. attribute:: total_system_ghgs
         The total system-related GHGs.
 
@@ -2443,6 +2466,7 @@ class EnvironmentalAppraisal:
     new_equipment_ghgs: float = 0
     om_ghgs: float = 0
     total_ghgs: float = 0
+    total_subsystem_ghgs: Optional[Dict[ResourceType, float]] = None
     total_system_ghgs: float = 0
 
     def to_dict(self) -> Dict[str, Any]:
@@ -2454,7 +2478,7 @@ class EnvironmentalAppraisal:
 
         """
 
-        return {
+        environmental_appraisal_dict: Dict[str, float] = {
             "diesel_ghgs": self.diesel_ghgs,
             "grid_ghgs": self.grid_ghgs,
             "kerosene_ghgs": self.kerosene_ghgs,
@@ -2467,6 +2491,15 @@ class EnvironmentalAppraisal:
             "total_system_ghgs": self.total_system_ghgs,
         }
 
+        if self.total_subsystem_ghgs is not None:
+            environmental_appraisal_dict.update(
+                {
+                    f"total_{resource_type.value}_subsystem_ghgs": ghgs
+                    for resource_type, ghgs in self.total_subsystem_ghgs
+                }
+            )
+
+        return environmental_appraisal_dict
 
 @dataclasses.dataclass
 class FinancialAppraisal:
@@ -2514,7 +2547,7 @@ class FinancialAppraisal:
     new_equipment_cost: float = 0
     om_cost: float = 0
     total_cost: float = 0
-    total_subsystem_costs: Dict[ResourceType, float] = 0
+    total_subsystem_costs: Optional[Dict[ResourceType, float]] = None
     total_system_cost: float = 0
 
     def to_dict(self) -> Dict[str, Any]:
@@ -2538,12 +2571,13 @@ class FinancialAppraisal:
             "total_system_cost": self.total_system_cost,
         }
 
-        financial_appraisal_dict.update(
-            {
-                f"total_{resource_type.value}_subsystem_cost": cost
-                for resource_type, cost in self.total_subsystem_costs
-            }
-        )
+        if self.total_subsystem_costs is not None:
+            financial_appraisal_dict.update(
+                {
+                    f"total_{resource_type.value}_subsystem_cost": cost
+                    for resource_type, cost in self.total_subsystem_costs
+                }
+            )
 
         return financial_appraisal_dict
 

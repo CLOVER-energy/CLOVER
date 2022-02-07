@@ -2678,27 +2678,27 @@ def plot_outputs(
 
             ax1.legend(loc="upper left")
 
-            ax2 = ax1.twinx()
-            ax2.plot(
-                renewable_fraction_january.values,
-                "--",
-                label="january renewables fraction",
-            )
+            # ax2 = ax1.twinx()
             # ax2.plot(
-            #     renewable_fraction_march.values, "--", label="march renewables fraction"
+            #     renewable_fraction_january.values,
+            #     "--",
+            #     label="january renewables fraction",
             # )
+            # # ax2.plot(
+            # #     renewable_fraction_march.values, "--", label="march renewables fraction"
+            # # )
+            # # ax2.plot(
+            # #     renewable_fraction_may.values, "--", label="may renewables fraction"
+            # # )
             # ax2.plot(
-            #     renewable_fraction_may.values, "--", label="may renewables fraction"
+            #     renewable_fraction_july.values, "--", label="july renewables fraction"
             # )
-            ax2.plot(
-                renewable_fraction_july.values, "--", label="july renewables fraction"
-            )
-            ax2.legend(loc="upper right")
+            # ax2.legend(loc="upper right")
 
             plt.xlim(0, 23)
             plt.xlabel("Hour of day")
             ax1.set_ylabel("Collector output temperature / degC")
-            ax2.set_ylabel("Fraction of demand covered renewably")
+            # ax2.set_ylabel("Fraction of demand covered renewably")
             plt.title(
                 "Collector output temp. on the first day of select months and "
                 "renewable demand covered"
@@ -2852,19 +2852,19 @@ def plot_outputs(
             )
             ax1.legend(loc="upper left")
 
-            ax2 = ax1.twinx()
-            ax2.plot(
-                renewable_fraction_january, "--", label="january renewables fraction"
-            )
-            # ax2.plot(renewable_fraction_march, "--", label="march renewables fraction")
-            # ax2.plot(renewable_fraction_may, "--", label="may renewables fraction")
-            ax2.plot(renewable_fraction_july, "--", label="july renewables fraction")
-            ax2.legend(loc="upper right")
+            # ax2 = ax1.twinx()
+            # ax2.plot(
+            #     renewable_fraction_january, "--", label="january renewables fraction"
+            # )
+            # # ax2.plot(renewable_fraction_march, "--", label="march renewables fraction")
+            # # ax2.plot(renewable_fraction_may, "--", label="may renewables fraction")
+            # ax2.plot(renewable_fraction_july, "--", label="july renewables fraction")
+            # ax2.legend(loc="upper right")
 
             plt.xlim(0, 23)
             plt.xlabel("Hour of day")
             ax1.set_ylabel("Collector output temperature / degC")
-            ax2.set_ylabel("Demand covered fraction through renewables.")
+            # ax2.set_ylabel("Demand covered fraction through renewables.")
             plt.title(
                 "Collector output temprature on an average seasonal days and the demand covered."
             )

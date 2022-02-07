@@ -19,6 +19,7 @@ simulations.
 
 """
 
+import collections
 from logging import Logger
 from typing import Any, Dict, Optional
 
@@ -45,7 +46,7 @@ from ..__utils__ import (
     TechnicalAppraisal,
 )
 from ..conversion.conversion import Converter
-from ..impact.__utils__ import ImpactingComponent
+from ..impact.__utils__ import ImpactingComponent, WasteProduct, update_diesel_costs
 
 __all__ = ("appraise_system",)
 
@@ -64,10 +65,12 @@ def _simulation_environmental_appraisal(
     logger: Logger,
     pv_addition: float,
     pvt_addition: float,
+    scenario: Scenario,
     simulation_results: pd.DataFrame,
     start_year: int,
     storage_addition: float,
     system_details: SystemDetails,
+    technical_appraisal: TechnicalAppraisal,
 ) -> EnvironmentalAppraisal:
     """
     Appraises the environmental impact of a minigrid system
@@ -100,6 +103,8 @@ def _simulation_environmental_appraisal(
             The additional number of PV panels added this iteration.
         - pvt_addition:
             The additional number of PV-T panels added this iteration.
+        - scenario:
+            The scenario for the run(s) being carried out.
         - simulation_results:
             The system that was just simulated.
         - start_year:
@@ -109,6 +114,8 @@ def _simulation_environmental_appraisal(
             iteration.
         - system_details:
             The deatils of the system that was just simulated.
+        - technical_appraisal:
+            The technical appraisal for the system.
 
     Outputs:
         An :class:`EnvironmentalAppraisal` containing the key environmental results.
@@ -120,7 +127,7 @@ def _simulation_environmental_appraisal(
 
     # Calculate new equipment GHGs
     try:
-        equipment_ghgs = ghgs.calculate_total_equipment_ghgs(
+        additional_equipment_emissions, subsystem_equipment_emissions= ghgs.calculate_total_equipment_ghgs(
             buffer_tank_addition,
             clean_water_tank_addition,
             converter_addition,
@@ -131,7 +138,9 @@ def _simulation_environmental_appraisal(
             logger,
             pv_addition,
             pvt_addition,
+            scenario,
             storage_addition,
+            technical_appraisal,
         ) + ghgs.calculate_independent_ghgs(
             electric_yearly_load_statistics, end_year, ghg_inputs, location, start_year
         )
@@ -150,7 +159,7 @@ def _simulation_environmental_appraisal(
 
     # Calculate operating GHGs of the system during this simulation
     try:
-        om_ghgs = ghgs.calculate_total_om(
+        additional_om_emissions, subsystem_om_emissions = ghgs.calculate_total_om(
             system_details.initial_num_buffer_tanks
             if system_details.initial_num_buffer_tanks is not None
             else 0,
@@ -173,7 +182,9 @@ def _simulation_environmental_appraisal(
             system_details.initial_pvt_size
             if system_details.initial_pvt_size is not None
             else 0,
+            scenario,
             system_details.initial_storage_size,
+            technical_appraisal,
             start_year,
             end_year,
         )
@@ -218,16 +229,34 @@ def _simulation_environmental_appraisal(
         raise
 
     # Total GHGs incurred during simulation period
-    total_ghgs = (
-        equipment_ghgs
-        + connections_ghgs
-        + om_ghgs
-        + diesel_fuel_ghgs
-        + grid_ghgs
-        + kerosene_ghgs
+    total_equipment_emissions = (
+        sum(subsystem_equipment_emissions.values()) + additional_equipment_emissions
+    )
+    total_om_emissions = (
+        sum(subsystem_om_emissions.values()) + additional_om_emissions
     )
     total_system_ghgs = (
-        equipment_ghgs + connections_ghgs + om_ghgs + diesel_fuel_ghgs + grid_ghgs
+        total_equipment_emissions + connections_ghgs + total_om_emissions + diesel_fuel_ghgs + grid_ghgs
+    )
+    total_ghgs = (
+        total_system_ghgs
+        + kerosene_ghgs
+    )
+
+    # Apportion the grid emissions by the resource types.
+    total_subsystem_emissions: Dict[ResourceType, float] = {
+        resource_type: value
+        + subsystem_om_emissions[resource_type]
+        + (grid_ghgs * technical_appraisal.power_consumed_fraction[resource_type])
+        for resource_type, value in subsystem_equipment_emissions.items()
+    }
+
+    # Apportion the grid emissions by the resource types.
+    update_diesel_costs(
+        diesel_fuel_ghgs,
+        scenario,
+        total_subsystem_emissions,
+        technical_appraisal
     )
 
     # Return outputs
@@ -237,10 +266,11 @@ def _simulation_environmental_appraisal(
         round(kerosene_ghgs, 3),
         round(kerosene_ghgs_mitigated, 3),
         round(connections_ghgs, 3),
-        round(equipment_ghgs, 3),
-        round(om_ghgs, 3),
+        round(total_equipment_emissions, 3),
+        round(total_om_emissions, 3),
         round(total_brine, 3),
         round(total_ghgs, 3),
+        {key: round(value, 3) for key, value in total_subsystem_emissions.items()},
         round(total_system_ghgs, 3),
     )
 
@@ -427,7 +457,7 @@ def _simulation_financial_appraisal(
     )
     total_cost = total_system_cost + kerosene_costs
 
-    # Apportion the running costs by the resource types.
+    # Apportion the grid running costs by the resource types.
     total_subsystem_costs: Dict[ResourceType, float] = {
         resource_type: value
         + subsystem_om_costs[resource_type]
@@ -435,40 +465,13 @@ def _simulation_financial_appraisal(
         for resource_type, value in subsystem_equipment_costs.items()
     }
 
-    # Compute the costs associated when carrying out prioritisation desalination.
-    if (
-        scenario.desalination_scenario is not None
-        and scenario.desalination_scenario.clean_water_scenario.mode
-        == CleanWaterMode.PRIORITISE
-    ):
-        # Diesel costs to be split equally among all resource types.
-        total_subsystem_costs[ResourceType.CLEAN_WATER] += (
-            diesel_fuel_costs
-        ) * technical_appraisal.power_consumed_fraction[ResourceType.CLEAN_WATER]
-        total_subsystem_costs[ResourceType.ELECTRIC] += (
-            diesel_fuel_costs
-        ) * technical_appraisal.power_consumed_fraction[ResourceType.ELECTRIC]
-        total_subsystem_costs[ResourceType.DIESEL] += (
-            diesel_fuel_costs
-            * technical_appraisal.power_consumed_fraction[ResourceType.HOT_CLEAN_WATER]
-        )
-    else:
-        # Diesel costs to only be split amongst electric and hot-water resource
-        # types.
-        total_diesel_frac: float = (
-            technical_appraisal.power_consumed_fraction[ResourceType.ELECTRIC]
-            + technical_appraisal.power_consumed_fraction[ResourceType.HOT_CLEAN_WATER]
-        )
-        total_subsystem_costs[ResourceType.ELECTRIC] += (
-            diesel_fuel_costs
-            * technical_appraisal.power_consumed_fraction[ResourceType.ELECTRIC]
-            / total_diesel_frac
-        )
-        total_subsystem_costs[ResourceType.HOT_CLEAN_WATER] += (
-            diesel_fuel_costs
-            * technical_appraisal.power_consumed_fraction[ResourceType.HOT_CLEAN_WATER]
-            / total_diesel_frac
-        )
+    # Apportion the diesel running costs by the resource types.
+    update_diesel_costs(
+        diesel_fuel_costs,
+        scenario,
+        total_subsystem_costs,
+        technical_appraisal
+    )
 
     # Return outputs
     return FinancialAppraisal(
@@ -480,7 +483,7 @@ def _simulation_financial_appraisal(
         round(total_equipment_costs, 3),
         round(total_om_costs, 3),
         round(total_cost, 3),
-        {key: round(value, 3) for key, value in total_subsystem_costs},
+        {key: round(value, 3) for key, value in total_subsystem_costs.items()},
         round(total_system_cost, 3),
     )
 
@@ -628,21 +631,13 @@ def _simulation_technical_appraisal(
     )
 
     # Calculate the fraction of power used providing each resource.
-    power_consumed_fraction: Dict[ResourceType, float] = dict()
+    power_consumed_fraction: Dict[ResourceType, float] = collections.defaultdict(float)
     if ColumnHeader.POWER_CONSUMED_BY_DESALINATION.value in simulation_results:
         total_clean_water_power_consumed = np.sum(
             simulation_results[ColumnHeader.POWER_CONSUMED_BY_DESALINATION.value]
         )
         power_consumed_fraction[ResourceType.CLEAN_WATER] = (
             total_clean_water_power_consumed / total_energy
-        )
-
-    if ColumnHeader.POWER_CONSUMED_BY_ELECTRIC_DEVICES.value in simulation_results:
-        total_electricity_power_consumed_fraction = np.sum(
-            simulation_results[ColumnHeader.POWER_CONSUMED_BY_ELECTRIC_DEVICES.value]
-        )
-        power_consumed_fraction[ResourceType.ELECTRIC] = (
-            total_electricity_power_consumed_fraction / total_energy
         )
 
     if ColumnHeader.POWER_CONSUMED_BY_HOT_WATER.value in simulation_results:
@@ -652,6 +647,18 @@ def _simulation_technical_appraisal(
         power_consumed_fraction[ResourceType.HOT_CLEAN_WATER] = (
             total_electricity_power_consumed_fraction / total_energy
         )
+
+    if ColumnHeader.POWER_CONSUMED_BY_ELECTRIC_DEVICES.value in simulation_results:
+        total_electricity_power_consumed_fraction = np.sum(
+            simulation_results[ColumnHeader.POWER_CONSUMED_BY_ELECTRIC_DEVICES.value]
+        )
+        power_consumed_fraction[ResourceType.ELECTRIC] = (
+            total_electricity_power_consumed_fraction / total_energy
+        )
+    # If no other resource types consumed electricity, then all was consumed by electric
+    # devices.
+    elif (ColumnHeader.POWER_CONSUMED_BY_DESALINATION.value not in simulation_results and ColumnHeader.POWER_CONSUMED_BY_HOT_WATER.value not in simulation_results):
+        power_consumed_fraction[ResourceType.ELECTRIC] = 1
 
     # Calculate total discounted energy
     total_energy_daily = hourly_profile_to_daily_sum(
@@ -690,9 +697,9 @@ def _simulation_technical_appraisal(
         round(total_grid_used, 3),
         hot_water_demand_covered,
         round(kerosene_displacement, 3),
+        power_consumed_fraction,
         round(total_pv_energy, 3),
         round(total_pvt_energy, 3) if total_pvt_energy is not None else None,
-        power_consumed_fraction,
         round(renewable_clean_water_fraction, 3),
         round(total_renewables_used, 3),
         round(renewables_fraction, 3),
@@ -853,16 +860,24 @@ def appraise_system(
         logger,
         pv_addition,
         pvt_addition,
+        scenario,
         simulation_results,
         start_year,
         storage_addition,
         system_details,
+        technical_appraisal,
     )
 
-    # Get results that rely on metrics of different kinds and several different iteration periods
+    # Get results that rely on metrics of different kinds and several different
+    # iteration periods
+
+    # Compute the cumulative waste products.
     cumulative_brine = (
         environmental_appraisal.total_brine + previous_system.cumulative_results.brine
     )
+    cumulative_waste_produced = {WasteProduct.BRINE.value: cumulative_brine}
+
+    # Compute the cumulative useful products.
     if (
         technical_appraisal.total_clean_water > 0
         and previous_system.cumulative_results.clean_water is not None
@@ -874,6 +889,11 @@ def appraise_system(
     else:
         logger.debug("No clean water produced.")
         cumulative_clean_water = 0
+    cumulative_energy = (
+        technical_appraisal.total_energy + previous_system.cumulative_results.energy
+    )
+
+    # Compute the cumulative financial information.
     cumulative_costs = (
         financial_appraisal.total_cost + previous_system.cumulative_results.cost
     )
@@ -881,16 +901,23 @@ def appraise_system(
         technical_appraisal.discounted_energy
         + previous_system.cumulative_results.discounted_energy
     )
-    cumulative_energy = (
-        technical_appraisal.total_energy + previous_system.cumulative_results.energy
-    )
-    cumulative_ghgs = (
-        environmental_appraisal.total_ghgs + previous_system.cumulative_results.ghgs
-    )
+    cumulative_subsystem_costs = {
+        resource_type: cost + previous_system.cumulative_results.subsystem_costs[resource_type]
+        for resource_type, cost in environmental_appraisal.subsystem_costs.items()
+    }
     cumulative_system_costs = (
         financial_appraisal.total_system_cost
         + previous_system.cumulative_results.system_cost
     )
+
+    # Compute the cumulative emissions information.
+    cumulative_ghgs = (
+        environmental_appraisal.total_ghgs + previous_system.cumulative_results.ghgs
+    )
+    cumulative_subsystem_ghgs = {
+        resource_type: ghgs + previous_system.cumulative_results.subsystem_ghgs[resource_type]
+        for resource_type, ghgs in environmental_appraisal.total_subsystem_ghgs.items()
+    }
     cumulative_system_ghgs = (
         environmental_appraisal.total_system_ghgs
         + previous_system.cumulative_results.system_ghgs
@@ -903,14 +930,16 @@ def appraise_system(
 
     #   Format outputs
     cumulative_results = CumulativeResults(
-        cumulative_brine,
         cumulative_clean_water,
         cumulative_costs,
         cumulative_discounted_energy,
         cumulative_energy,
         cumulative_ghgs,
+        cumulative_subsystem_costs,
+        cumulative_subsystem_ghgs,
         cumulative_system_costs,
         cumulative_system_ghgs,
+        cumulative_waste_produced,
     )
 
     criteria = {
@@ -966,8 +995,8 @@ def appraise_system(
         Criterion.UNMET_ENERGY_FRACTION: round(
             technical_appraisal.unmet_energy_fraction, 3
         ),
-        Criterion.SOLAR_THERMAL_HOT_WATER_FRACTION: round(
-            technical_appraisal.solar_thermal_hw_fraction, 3
+        Criterion.UNMET_HOT_WATER_FRACTION: round(
+            technical_appraisal.unmet_hw_fraction, 3
         ),
     }
 
