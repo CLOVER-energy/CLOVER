@@ -505,7 +505,7 @@ def get_total_equipment_costs(
             installation_year,
         )
 
-    # Sum up the convertor costs for each of the relevant subsystems.
+    # Sum up the converter costs for each of the relevant subsystems.
     for resource_type in [ResourceType.CLEAN_WATER, ResourceType.HOT_CLEAN_WATER]:
         converter_costs = sum(
             _component_cost(
@@ -666,6 +666,11 @@ def get_total_equipment_costs(
             installation_year,
         )
 
+    # Compute any misc. costs.
+    misc_costs = _misc_costs(
+        diesel_size, finance_inputs[ImpactingComponent.MISC.value][COST], pv_array_size
+    )
+
     if scenario.desalination_scenario is not None and (
         scenario.desalination_scenario.clean_water_scenario.mode
         != CleanWaterMode.THERMAL_ONLY
@@ -684,11 +689,6 @@ def get_total_equipment_costs(
         installation_year,
     )
 
-    # Compute any misc. costs.
-    misc_costs = _misc_costs(
-        diesel_size, finance_inputs[ImpactingComponent.MISC.value][COST], pv_array_size
-    )
-
     # Compute the various subsystem costs.
     if scenario.desalination_scenario is not None:
         # Compute the clean-water subsystem costs.
@@ -698,20 +698,20 @@ def get_total_equipment_costs(
             + clean_water_tank_cost
             + clean_water_tank_installation_cost
             + heat_exchanger_cost
-            + (misc_costs + pv_cost + pv_installation_cost + storage_cost)
+            + (pv_cost + pv_installation_cost + storage_cost)
             * technical_appraisal.power_consumed_fraction[ResourceType.CLEAN_WATER]
         )
 
     # Compute the electric subsystem costs.
     subsystem_costs[ResourceType.ELECTRIC] += (
-        misc_costs + pv_cost + pv_installation_cost + storage_cost
+        pv_cost + pv_installation_cost + storage_cost
     ) * technical_appraisal.power_consumed_fraction[ResourceType.ELECTRIC_POWER]
 
     # Compute the hot-water subsystem costs.
     subsystem_costs[ResourceType.HOT_CLEAN_WATER] += (
         hot_water_tank_cost
         + hot_water_tank_installation_cost
-        + (pv_cost + pv_installation_cost + misc_costs + storage_cost)
+        + (pv_cost + pv_installation_cost + storage_cost)
         * technical_appraisal.power_consumed_fraction[ResourceType.HOT_CLEAN_WATER]
     )
 
@@ -723,13 +723,13 @@ def get_total_equipment_costs(
     ):
         # Diesel costs to be split equally among all resource types.
         subsystem_costs[ResourceType.CLEAN_WATER] += (
-            (diesel_cost + diesel_installation_cost)
+            (diesel_cost + diesel_installation_cost + misc_costs)
         ) * technical_appraisal.power_consumed_fraction[ResourceType.CLEAN_WATER]
         subsystem_costs[ResourceType.ELECTRIC] += (
-            (diesel_cost + diesel_installation_cost)
+            (diesel_cost + diesel_installation_cost + misc_costs)
         ) * technical_appraisal.power_consumed_fraction[ResourceType.ELECTRIC]
         subsystem_costs[ResourceType.DIESEL] += (
-            diesel_cost + diesel_installation_cost
+            diesel_cost + diesel_installation_cost + misc_costs
         ) * technical_appraisal.power_consumed_fraction[ResourceType.HOT_CLEAN_WATER]
     else:
         # Diesel costs to only be split amongst electric and hot-water resource
@@ -739,17 +739,17 @@ def get_total_equipment_costs(
             + technical_appraisal.power_consumed_fraction[ResourceType.HOT_CLEAN_WATER]
         )
         subsystem_costs[ResourceType.ELECTRIC] += (
-            (diesel_cost + diesel_installation_cost)
+            (diesel_cost + diesel_installation_cost + misc_costs)
             * technical_appraisal.power_consumed_fraction[ResourceType.ELECTRIC]
             / total_diesel_frac
         )
         subsystem_costs[ResourceType.HOT_CLEAN_WATER] += (
-            (diesel_cost + diesel_installation_cost)
+            (diesel_cost + diesel_installation_cost + misc_costs)
             * technical_appraisal.power_consumed_fraction[ResourceType.HOT_CLEAN_WATER]
             / total_diesel_frac
         )
 
-    additional_equipment_costs = bos_cost + converter_installation_costs
+    additional_equipment_costs = bos_cost
 
     # FIXME: This needs to include the PV-T costs.
     return additional_equipment_costs, subsystem_costs

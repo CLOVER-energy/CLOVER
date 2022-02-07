@@ -205,8 +205,10 @@ def get_key_results(
 
     # Compute the hot-water key results.
     if ColumnHeader.TOTAL_HW_LOAD.value in simulation_results:
-        key_results.average_daily_hw_demand_covered = round(
-            simulation_results[ColumnHeader.HW_RENEWABLES_FRACTION.value].mean(), 3
+        key_results.average_daily_hw_renewable_fraction= round(
+            np.mean(
+                [entry for entry in simulation_results[ColumnHeader.HW_RENEWABLES_FRACTION.value] if entry is not None]
+            ), 3
         )
         key_results.average_daily_hw_pvt_generation = round(
             simulation_results[
@@ -219,6 +221,11 @@ def get_key_results(
             simulation_results[ColumnHeader.HW_TANK_OUTPUT.value].sum()
             / (365 * num_years),
             3,
+        )
+        key_results.average_daily_hw_demand_covered= round(
+            np.mean(
+                [entry for entry in simulation_results[ColumnHeader.HW_VOL_DEMAND_COVERED.value] if entry is not None]
+            ), 3
         )
 
     # Compute the waste-product key results.

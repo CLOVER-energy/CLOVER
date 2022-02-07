@@ -261,13 +261,13 @@ def _volume_withdrawn_from_tank(
 
         # The tank should only supply water if the load is less than the capacity of the
         # tanks.
-        if hot_water_load < num_tanks * minigrid.hot_water_tank.mass:
+        if hot_water_load <= num_tanks * minigrid.hot_water_tank.mass:
             tank_supply_on = hot_water_load > 0
             volume_supplied = hot_water_load
         # Otherwise, no water should be supplied.
         else:
-            tank_supply_on = False
-            volume_supplied = 0
+            tank_supply_on = hot_water_load > 0
+            volume_supplied = num_tanks * minigrid.hot_water_tank.mass
 
     return tank_supply_on, volume_supplied
 
