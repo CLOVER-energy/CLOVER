@@ -1224,7 +1224,7 @@ class Location:
 
         Inputs:
             - location_inputs:
-                The location input information, extracted form the location inputs file.
+                The location input information, extracted from the location inputs file.
 
         Outputs:
             - A :class:`Location` instance based on the input information provided.

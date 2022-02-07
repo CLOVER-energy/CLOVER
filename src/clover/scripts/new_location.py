@@ -234,12 +234,12 @@ def create_new_location(
             logger.error("Failed to read location data from raw source.")
             logger.critical("Failed to determine location of the location data file.")
             raise
-        logger.info("Successfully read location data file form local source.")
+        logger.info("Successfully read location data file from local source.")
     else:
         if package_data is None:
             raise Exception("Package data read but no data within file.")
         new_location_data = yaml.safe_load(package_data)
-        logger.info("Successfully read location data file form installed package file.")
+        logger.info("Successfully read location data file from installed package file.")
     logger.info("Data file successfully read.")
 
     if not isinstance(new_location_data, list):
