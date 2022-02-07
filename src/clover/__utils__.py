@@ -2501,6 +2501,7 @@ class EnvironmentalAppraisal:
 
         return environmental_appraisal_dict
 
+
 @dataclasses.dataclass
 class FinancialAppraisal:
     """

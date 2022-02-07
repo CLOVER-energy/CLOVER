@@ -327,7 +327,9 @@ def calculate_total_equipment_ghgs(
             )
             for converter, size in converters.items()
         )
-        subsystem_emissions[resource_type] += converter_ghgs + converter_installation_ghgs
+        subsystem_emissions[resource_type] += (
+            converter_ghgs + converter_installation_ghgs
+        )
         logger.debug(
             "Convertor costs determined for resource %s: %s",
             resource_type.value,
@@ -463,7 +465,7 @@ def calculate_total_equipment_ghgs(
         diesel_ghgs + diesel_installation_ghgs,
         scenario,
         subsystem_emissions,
-        technical_appraisal
+        technical_appraisal,
     )
 
     additional_equipment_ghgs = bos_ghgs
@@ -921,8 +923,8 @@ def calculate_total_om(
                     size,
                     ghg_inputs,
                     GHG_IMPACT.format(
-                            type=ImpactingComponent.CONVERTER.value, name=converter
-                        ),
+                        type=ImpactingComponent.CONVERTER.value, name=converter
+                    ),
                     start_year,
                     end_year,
                 )

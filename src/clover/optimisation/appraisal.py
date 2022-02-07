@@ -127,7 +127,10 @@ def _simulation_environmental_appraisal(
 
     # Calculate new equipment GHGs
     try:
-        additional_equipment_emissions, subsystem_equipment_emissions= ghgs.calculate_total_equipment_ghgs(
+        (
+            additional_equipment_emissions,
+            subsystem_equipment_emissions,
+        ) = ghgs.calculate_total_equipment_ghgs(
             buffer_tank_addition,
             clean_water_tank_addition,
             converter_addition,
@@ -232,16 +235,15 @@ def _simulation_environmental_appraisal(
     total_equipment_emissions = (
         sum(subsystem_equipment_emissions.values()) + additional_equipment_emissions
     )
-    total_om_emissions = (
-        sum(subsystem_om_emissions.values()) + additional_om_emissions
-    )
+    total_om_emissions = sum(subsystem_om_emissions.values()) + additional_om_emissions
     total_system_ghgs = (
-        total_equipment_emissions + connections_ghgs + total_om_emissions + diesel_fuel_ghgs + grid_ghgs
+        total_equipment_emissions
+        + connections_ghgs
+        + total_om_emissions
+        + diesel_fuel_ghgs
+        + grid_ghgs
     )
-    total_ghgs = (
-        total_system_ghgs
-        + kerosene_ghgs
-    )
+    total_ghgs = total_system_ghgs + kerosene_ghgs
 
     # Apportion the grid emissions by the resource types.
     total_subsystem_emissions: Dict[ResourceType, float] = {
@@ -253,10 +255,7 @@ def _simulation_environmental_appraisal(
 
     # Apportion the grid emissions by the resource types.
     update_diesel_costs(
-        diesel_fuel_ghgs,
-        scenario,
-        total_subsystem_emissions,
-        technical_appraisal
+        diesel_fuel_ghgs, scenario, total_subsystem_emissions, technical_appraisal
     )
 
     # Return outputs
@@ -469,10 +468,7 @@ def _simulation_financial_appraisal(
 
     # Apportion the diesel running costs by the resource types.
     update_diesel_costs(
-        diesel_fuel_costs,
-        scenario,
-        total_subsystem_costs,
-        technical_appraisal
+        diesel_fuel_costs, scenario, total_subsystem_costs, technical_appraisal
     )
 
     # Return outputs
@@ -659,7 +655,10 @@ def _simulation_technical_appraisal(
         )
     # If no other resource types consumed electricity, then all was consumed by electric
     # devices.
-    elif (ColumnHeader.POWER_CONSUMED_BY_DESALINATION.value not in simulation_results and ColumnHeader.POWER_CONSUMED_BY_HOT_WATER.value not in simulation_results):
+    elif (
+        ColumnHeader.POWER_CONSUMED_BY_DESALINATION.value not in simulation_results
+        and ColumnHeader.POWER_CONSUMED_BY_HOT_WATER.value not in simulation_results
+    ):
         power_consumed_fraction[ResourceType.ELECTRIC] = 1
 
     # Calculate total discounted energy
@@ -904,7 +903,8 @@ def appraise_system(
         + previous_system.cumulative_results.discounted_energy
     )
     cumulative_subsystem_costs = {
-        resource_type: cost + previous_system.cumulative_results.subsystem_costs[resource_type]
+        resource_type: cost
+        + previous_system.cumulative_results.subsystem_costs[resource_type]
         for resource_type, cost in environmental_appraisal.subsystem_costs.items()
     }
     cumulative_system_costs = (
@@ -917,7 +917,8 @@ def appraise_system(
         environmental_appraisal.total_ghgs + previous_system.cumulative_results.ghgs
     )
     cumulative_subsystem_ghgs = {
-        resource_type: ghgs + previous_system.cumulative_results.subsystem_ghgs[resource_type]
+        resource_type: ghgs
+        + previous_system.cumulative_results.subsystem_ghgs[resource_type]
         for resource_type, ghgs in environmental_appraisal.total_subsystem_ghgs.items()
     }
     cumulative_system_ghgs = (
@@ -926,7 +927,9 @@ def appraise_system(
     )
 
     # Combined metrics
-    lcue = float(cumulative_subsystem_costs[ResourceType.ELECTRIC] / cumulative_discounted_energy)
+    lcue = float(
+        cumulative_subsystem_costs[ResourceType.ELECTRIC] / cumulative_discounted_energy
+    )
     lcow = float(cumulative_system_costs / cumulative_discounted_clean_water)
     emissions_intensity = 1000.0 * float(cumulative_system_ghgs / cumulative_energy)
 
