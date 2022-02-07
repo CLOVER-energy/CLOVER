@@ -1734,7 +1734,7 @@ def _update_battery_health(
 
 def run_simulation(
     clean_water_pvt_size: int,
-    conventional_cw_source_profiles: Dict[WaterSource, pd.DataFrame],
+    conventional_cw_source_profiles: Optional[Dict[WaterSource, pd.DataFrame]],
     converters: List[Converter],
     electric_storage_size: float,
     grid_profile: pd.DataFrame,

@@ -297,7 +297,7 @@ class CleanWaterScenario:
 
     """
 
-    conventional_sources: Set[str]
+    conventional_sources: List[str]
     mode: CleanWaterMode
     sources: List[str]
 
