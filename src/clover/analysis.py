@@ -299,6 +299,10 @@ def plot_outputs(
 
     """
 
+    # Set plotting parameters.
+    plt.rcParams['font.family'] = 'sans-serif'
+    plt.rcParams['font.sans-serif'] = ['Arial']
+
     # Create an output directory for the various plots to be saved in.
     figures_directory = os.path.join(
         output_directory,
@@ -317,10 +321,10 @@ def plot_outputs(
     hw_pvt: bool = ColumnHeader.HW_PVT_ELECTRICITY_SUPPLIED.value in simulation_output
 
     with tqdm(
-        total=10
-        + (15 if initial_cw_hourly_loads is not None else 0)
-        + (4 if cw_pvt else 0)
-        + (6 if initial_hw_hourly_loads is not None else 0),
+        total=13
+        + (17 if initial_cw_hourly_loads is not None else 0)
+        + (5 if cw_pvt else 0)
+        + (9 if initial_hw_hourly_loads is not None else 0),
         desc="plots",
         leave=False,
         unit="plot",
@@ -425,6 +429,31 @@ def plot_outputs(
         plt.close()
         pbar.update(1)
 
+        # Plot the average hot-water load of each device for the first year.
+        for device, load in initial_electric_hourly_loads.items():
+            average_load = np.mean(
+                np.asarray(
+                    load[0:CUT_OFF_TIME]
+                ).reshape(
+                    (CUT_OFF_TIME // 24, 24),
+                ),
+                axis=0,
+            )
+            plt.plot(range(24), average_load, label=device)
+            # labels.append(device)
+            plt.xticks(range(0, 23, 4))
+            plt.xlabel("Hour of simulation")
+            plt.ylabel("Device load / W")
+            plt.title("Average electric load demand of each device over the first {} days.".format(CUT_OFF_TIME // 24))
+            plt.tight_layout()
+        plt.legend()
+        plt.savefig(
+            os.path.join(figures_directory, "electric_device_loads_average.png"),
+            transparent=True,
+        )
+        plt.close()
+        pbar.update(1)
+
         # Plot the electric load breakdown by load type.
         plt.plot(
             range(CUT_OFF_TIME),
@@ -456,6 +485,77 @@ def plot_outputs(
         plt.title(f"Load profile of the community for the first {CUT_OFF_TIME} hours")
         plt.savefig(
             os.path.join(figures_directory, "electric_demands.png"),
+            transparent=True,
+        )
+        plt.close()
+        pbar.update(1)
+
+        # Plot the average electric load breakdown by load type.
+        domestic_demand = np.mean(
+            np.asarray(
+                total_electric_load[0:HOURS_PER_YEAR][
+                    DemandType.DOMESTIC.value
+                ]
+            ).reshape(
+                (365, 24),
+            ),
+            axis=0,
+        )
+        commercial_demand = np.mean(
+            np.asarray(
+                total_electric_load[0:HOURS_PER_YEAR][
+                    DemandType.COMMERCIAL.value
+                ]
+            ).reshape(
+                (365, 24),
+            ),
+            axis=0,
+        )
+        public_demand = np.mean(
+            np.asarray(
+                total_electric_load[0:HOURS_PER_YEAR][
+                    DemandType.PUBLIC.value
+                ]
+            ).reshape(
+                (365, 24),
+            ),
+            axis=0,
+        )
+        total_demand = np.mean(
+            np.asarray(
+                np.sum(total_electric_load[0:HOURS_PER_YEAR], axis=1)
+            ).reshape(
+                (365, 24),
+            ),
+            axis=0,
+        )
+
+        plt.plot(
+            domestic_demand,
+            label=DemandType.DOMESTIC.value,
+        )
+        plt.plot(
+            commercial_demand,
+            label=DemandType.COMMERCIAL.value,
+        )
+        plt.plot(
+            public_demand,
+            label=DemandType.PUBLIC.value,
+        )
+        plt.plot(
+            total_demand,
+            "--",
+            label="total",
+        )
+        plt.legend(loc="upper right")
+        plt.xticks(
+            [entry for entry in (range(0, 23, 4))]
+        )
+        plt.xlabel("Hour of simulation")
+        plt.ylabel("Electric power demand / kW")
+        plt.title("Average load profile of the community during the first simulation year")
+        plt.savefig(
+            os.path.join(figures_directory, "electric_demands_yearly.png"),
             transparent=True,
         )
         plt.close()
@@ -541,6 +641,30 @@ def plot_outputs(
         plt.tight_layout()
         plt.savefig(
             os.path.join(figures_directory, "electric_demand_annual_variation.png"),
+            transparent=True,
+        )
+        plt.close()
+        pbar.update(1)
+
+        # Plot the total seasonal variation as a stand-alone figure.
+        plt.plot(
+            range(365),
+            pd.DataFrame(total_demand).rolling(5).mean(),
+            "--",
+            label="Total",
+            color="red",
+        )
+        plt.plot(range(365), total_demand, "--", alpha=0.5, color="red")
+        plt.legend(loc="best")
+        plt.xticks(range(0, 366, 60))
+        plt.xlabel("Day of simulation period")
+        plt.ylabel("Load / kWh/day")
+        plt.title("Total community energy demand")
+        plt.tight_layout()
+        plt.savefig(
+            os.path.join(
+                figures_directory, "electric_demand_total_annual_variation.png"
+            ),
             transparent=True,
         )
         plt.close()
@@ -1058,6 +1182,31 @@ def plot_outputs(
             plt.close()
             pbar.update(1)
 
+            # Plot the average clean-water load of each device for the first year.
+            for device, load in initial_cw_hourly_loads.items():
+                average_load = np.mean(
+                    np.asarray(
+                        load[0:CUT_OFF_TIME]
+                    ).reshape(
+                        (CUT_OFF_TIME // 24, 24),
+                    ),
+                    axis=0,
+                )
+                plt.plot(range(24), average_load, label=device)
+                # labels.append(device)
+                plt.xticks(range(0, 23, 4))
+                plt.xlabel("Hour of simulation")
+                plt.ylabel("Device load / litres/hour")
+                plt.title("Average clean water demand of each device over the first {} days.".format(CUT_OFF_TIME // 24))
+                plt.tight_layout()
+            plt.legend()
+            plt.savefig(
+                os.path.join(figures_directory, "clean_water_device_loads_average.png"),
+                transparent=True,
+            )
+            plt.close()
+            pbar.update(1)
+
             # Plot the clean-water load breakdown by load type.
             plt.plot(
                 range(CUT_OFF_TIME),
@@ -1154,7 +1303,7 @@ def plot_outputs(
             axis[0].set(
                 xticks=(range(0, 366, 60)),
                 xlabel="Day of simulation period",
-                ylabel="Load / litres/hour",
+                ylabel="Load / litres/day",
                 title="Clean-water demand of each load type",
             )
             axis[1].plot(
@@ -1169,13 +1318,37 @@ def plot_outputs(
             axis[1].set(
                 xticks=(range(0, 366, 60)),
                 xlabel="Day of simulation period",
-                ylabel="Load / litres/hour",
-                title="Clean-water demand of each load type",
+                ylabel="Load / litres/day",
+                title="Total community clean-water demand",
             )
             plt.tight_layout()
             plt.savefig(
                 os.path.join(
                     figures_directory, "clean_water_demand_annual_variation.png"
+                ),
+                transparent=True,
+            )
+            plt.close()
+            pbar.update(1)
+
+            # Plot the total seasonal variation as a stand-alone figure.
+            plt.plot(
+                range(365),
+                pd.DataFrame(total_demand).rolling(5).mean(),
+                "--",
+                label="Total",
+                color="red",
+            )
+            plt.plot(range(365), total_demand, "--", alpha=0.5, color="red")
+            plt.legend(loc="best")
+            plt.xticks(range(0, 366, 60))
+            plt.xlabel("Day of simulation period")
+            plt.ylabel("Load / litres/day")
+            plt.title("Total community clean-water demand")
+            plt.tight_layout()
+            plt.savefig(
+                os.path.join(
+                    figures_directory, "clean_water_demand_total_annual_variation.png"
                 ),
                 transparent=True,
             )
@@ -1250,6 +1423,78 @@ def plot_outputs(
             plt.title("Load growth of the community")
             plt.savefig(
                 os.path.join(figures_directory, "clean_water_load_growth.png"),
+                transparent=True,
+            )
+            plt.close()
+            pbar.update(1)
+
+            # Plot the average clean-water load breakdown by load type over the first
+            # year.
+            domestic_demand = np.mean(
+                np.asarray(
+                    total_cw_load[0:HOURS_PER_YEAR][
+                        DemandType.DOMESTIC.value
+                    ]
+                ).reshape(
+                    (365, 24),
+                ),
+                axis=0,
+            )
+            commercial_demand = np.mean(
+                np.asarray(
+                    total_cw_load[0:HOURS_PER_YEAR][
+                        DemandType.COMMERCIAL.value
+                    ]
+                ).reshape(
+                    (365, 24),
+                ),
+                axis=0,
+            )
+            public_demand = np.mean(
+                np.asarray(
+                    total_cw_load[0:HOURS_PER_YEAR][
+                        DemandType.PUBLIC.value
+                    ]
+                ).reshape(
+                    (365, 24),
+                ),
+                axis=0,
+            )
+            total_demand = np.mean(
+                np.asarray(
+                    np.sum(total_cw_load[0:HOURS_PER_YEAR], axis=1)
+                ).reshape(
+                    (365, 24),
+                ),
+                axis=0,
+            )
+
+            plt.plot(
+                domestic_demand,
+                label=DemandType.DOMESTIC.value,
+            )
+            plt.plot(
+                commercial_demand,
+                label=DemandType.COMMERCIAL.value,
+            )
+            plt.plot(
+                public_demand,
+                label=DemandType.PUBLIC.value,
+            )
+            plt.plot(
+                total_demand,
+                "--",
+                label="total",
+            )
+            plt.legend(loc="upper right")
+            plt.xticks(
+                [entry for entry in (range(0, 23, 4))]
+            )
+            plt.xlabel("Hour of simulation")
+            plt.ylabel("Clean-water demand / litres/hour")
+            plt.title(f"Average drinking water load profile of the community during the first year")
+            plt.savefig(
+                os.path.join(figures_directory, "clean_water_demands_yearly.png"),
                 transparent=True,
             )
             plt.close()
@@ -2414,6 +2659,31 @@ def plot_outputs(
             plt.close()
             pbar.update(1)
 
+            # Plot the average hot-water load of each device for the cut off period.
+            for device, load in initial_hw_hourly_loads.items():
+                average_load = np.mean(
+                    np.asarray(
+                        load[0:CUT_OFF_TIME]
+                    ).reshape(
+                        (CUT_OFF_TIME // 24, 24),
+                    ),
+                    axis=0,
+                )
+                plt.plot(range(24), average_load, label=device)
+                # labels.append(device)
+                plt.xticks(range(0, 23, 4))
+                plt.xlabel("Hour of simulation")
+                plt.ylabel("Device load / litres/hour")
+                plt.title("Average hot water demand of each device over the first {} days.".format(CUT_OFF_TIME // 24))
+                plt.tight_layout()
+            plt.legend()
+            plt.savefig(
+                os.path.join(figures_directory, "hot_water_device_loads_average.png"),
+                transparent=True,
+            )
+            plt.close()
+            pbar.update(1)
+
             # Plot the clean-water load breakdown by load type.
             plt.plot(
                 range(CUT_OFF_TIME),
@@ -2510,7 +2780,7 @@ def plot_outputs(
             axis[0].set(
                 xticks=(range(0, 366, 60)),
                 xlabel="Day of simulation period",
-                ylabel="Load / litres/hour",
+                ylabel="Load / litres/day",
                 title="Hot-water demand of each load type",
             )
             axis[1].plot(
@@ -2525,14 +2795,109 @@ def plot_outputs(
             axis[1].set(
                 xticks=(range(0, 366, 60)),
                 xlabel="Day of simulation period",
-                ylabel="Load / litres/hour",
-                title="Hot-water demand of each load type",
+                ylabel="Load / litres/day",
+                title="Total community hot-water demand",
             )
             plt.tight_layout()
             plt.savefig(
                 os.path.join(
                     figures_directory, "hot_water_demand_annual_variation.png"
                 ),
+                transparent=True,
+            )
+            plt.close()
+            pbar.update(1)
+
+            # Plot the total seasonal variation as a stand-alone figure.
+            plt.plot(
+                range(365),
+                pd.DataFrame(total_demand).rolling(5).mean(),
+                "--",
+                label="Total",
+                color="red",
+            )
+            plt.plot(range(365), total_demand, "--", alpha=0.5, color="red")
+            plt.legend(loc="best")
+            plt.xticks(range(0, 366, 60))
+            plt.xlabel("Day of simulation period")
+            plt.ylabel("Load / litres/day")
+            plt.title("Total community hot-water demand")
+            plt.tight_layout()
+            plt.savefig(
+                os.path.join(
+                    figures_directory, "hot_water_demand_total_annual_variation.png"
+                ),
+                transparent=True,
+            )
+            plt.close()
+            pbar.update(1)
+
+            # Plot the average hot-water load breakdown by load type over the first year
+            domestic_demand = np.mean(
+                np.asarray(
+                    total_hw_load[0:HOURS_PER_YEAR][
+                        DemandType.DOMESTIC.value
+                    ]
+                ).reshape(
+                    (365, 24),
+                ),
+                axis=0,
+            )
+            commercial_demand = np.mean(
+                np.asarray(
+                    total_hw_load[0:HOURS_PER_YEAR][
+                        DemandType.COMMERCIAL.value
+                    ]
+                ).reshape(
+                    (365, 24),
+                ),
+                axis=0,
+            )
+            public_demand = np.mean(
+                np.asarray(
+                    total_hw_load[0:HOURS_PER_YEAR][
+                        DemandType.PUBLIC.value
+                    ]
+                ).reshape(
+                    (365, 24),
+                ),
+                axis=0,
+            )
+            total_demand = np.mean(
+                np.asarray(
+                    np.sum(total_hw_load[0:HOURS_PER_YEAR], axis=1)
+                ).reshape(
+                    (365, 24),
+                ),
+                axis=0,
+            )
+
+            plt.plot(
+                domestic_demand,
+                label=DemandType.DOMESTIC.value,
+            )
+            plt.plot(
+                commercial_demand,
+                label=DemandType.COMMERCIAL.value,
+            )
+            plt.plot(
+                public_demand,
+                label=DemandType.PUBLIC.value,
+            )
+            plt.plot(
+                total_demand,
+                "--",
+                label="total",
+            )
+            plt.legend(loc="upper right")
+            plt.xticks(
+                [entry for entry in (range(0, 23, 4))]
+            )
+            plt.xlabel("Hour of simulation")
+            plt.ylabel("Hot-water demand / litres/hour")
+            plt.title("Average DHW load profile of the community during the first simulation year")
+            plt.savefig(
+                os.path.join(figures_directory, "hot_water_demands_yearly.png"),
                 transparent=True,
             )
             plt.close()
