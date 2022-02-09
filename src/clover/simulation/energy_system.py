@@ -823,11 +823,25 @@ def _calculate_renewable_hw_profiles(
                 "The water pump defined is unable to meet PV-T flow requirements.",
             )
 
-        # Determine the auxiliary heater associated with the system.
+        # Determine the auxiliary heater associated with the system and its energy
+        # consumption.
         if scenario.hot_water_scenario.auxiliary_heater == AuxiliaryHeaterType.DIESEL:
             auxiliary_heater: Optional[
                 Union[Converter, DieselWaterHeater]
             ] = minigrid.diesel_water_heater
+            if auxiliary_heater is None:
+                logger.error(
+                    "%sDiesel water heater not defined despite hot-water auxiliary "
+                    "heating mode being specified as diesel.%s",
+                    BColours.fail,
+                    BColours.endc,
+                )
+                raise InputFileError(
+                    "energy system inputs OR hot-water scenario",
+                    "No diesel hot-water heater defined despite the hot-water "
+                    "scenario specifying that this is needed.",
+                )
+
         elif (
             scenario.hot_water_scenario.auxiliary_heater == AuxiliaryHeaterType.ELECTRIC
         ):
@@ -851,6 +865,10 @@ def _calculate_renewable_hw_profiles(
                     "No electric water heater defined despite the hot-water scenario "
                     "specifying that this is needed.",
                 )
+        elif (
+            scenario.hot_water_scenario.auxiliary_heater is None
+        ):
+            auxiliary_heater = None
         else:
             logger.error(
                 "%sAuxiliary water heater scenario was not of valid types. Valid types: %s%s",
@@ -860,19 +878,6 @@ def _calculate_renewable_hw_profiles(
             )
             raise InputFileError(
                 "hot-water scenario", "Invalid auxiliary water heater type specified."
-            )
-
-        if auxiliary_heater is None:
-            logger.error(
-                "%sDiesel water heater not defined despite hot-water auxiliary "
-                "heating mode being specified as diesel.%s",
-                BColours.fail,
-                BColours.endc,
-            )
-            raise InputFileError(
-                "energy system inputs OR hot-water scenario",
-                "No diesel hot-water heater defined despite the hot-water "
-                "scenario specifying that this is needed.",
             )
 
         logger.debug("Auxiliary heater successfully determined.")
@@ -907,64 +912,76 @@ def _calculate_renewable_hw_profiles(
         )
         logger.debug("Hot-water PV-T performance successfully computed.")
 
-        # Compute the heat consumed by the auxiliary heater.
-        auxiliary_heater_heat_consumption: pd.DataFrame = pd.DataFrame(
-            (hot_water_tank_volume_supplied > 0)
-            * hot_water_tank_volume_supplied
-            * minigrid.hot_water_tank.heat_capacity
-            * (
-                scenario.hot_water_scenario.demand_temperature
-                - hot_water_tank_temperature
-            )
-        )
-
         # Compute the electric power consumed by the auxiliary heater.
-        auxiliary_heater_power_consumption: pd.DataFrame = pd.DataFrame(
-            0.001
-            * auxiliary_heater.input_resource_consumption[
-                ResourceType.ELECTRIC
-            ]  # [Wh/degC]
-            * (
-                hot_water_tank_volume_supplied
-                / 1  # auxiliary_heater.input_resource_consumption[ResourceType.CLEAN_WATER]
-            )  # [operating fraction]
-            * (hot_water_tank_volume_supplied > 0)
-            * (
-                scenario.hot_water_scenario.demand_temperature
-                - hot_water_tank_temperature
-            )  # [degC]
-        )
+        if auxiliary_heater is not None:
+            # Determine the electric power consumed by the auxiliary heater.
+            auxiliary_heater_power_consumption: Optional[pd.DataFrame] = pd.DataFrame(
+                0.001
+                * auxiliary_heater.input_resource_consumption[
+                    ResourceType.ELECTRIC
+                ]  # [Wh/degC]
+                * (
+                    hot_water_tank_volume_supplied
+                    / auxiliary_heater.input_resource_consumption[ResourceType.CLEAN_WATER]
+                )  # [operating fraction]
+                * (hot_water_tank_volume_supplied > 0)
+                * (
+                    scenario.hot_water_scenario.demand_temperature
+                    - hot_water_tank_temperature
+                )  # [degC]
+            )
 
-        total_waste_produced.update(
-            {
-                waste_product: defaultdict(
-                    float,
-                    pd.DataFrame(
-                        (
-                            waste_produced
-                            * (
-                                hot_water_tank_volume_supplied
-                                / auxiliary_heater.input_resource_consumption[
-                                    ResourceType.CLEAN_WATER
-                                ]
-                            )
-                            * (hot_water_tank_volume_supplied > 0)
-                            * (
-                                scenario.hot_water_scenario.demand_temperature
-                                - hot_water_tank_temperature
-                            )
-                        ).values
-                    ).to_dict(),
+            if isinstance(auxiliary_heater, DieselWaterHeater):
+                # Compute the heat consumed by the auxiliary heater.
+                auxiliary_heater_heat_consumption: Optional[pd.DataFrame] = pd.DataFrame(
+                    (hot_water_tank_volume_supplied > 0)
+                    * hot_water_tank_volume_supplied
+                    * minigrid.hot_water_tank.heat_capacity
+                    * (
+                        scenario.hot_water_scenario.demand_temperature
+                        - hot_water_tank_temperature
+                    )
                 )
-                for waste_product, waste_produced in auxiliary_heater.waste_production.items()
-            }
-        )
+            else:
+                auxiliary_heater_heat_consumption = None
+
+            # Update the waste production calculation with the waste that's produced by
+            # the auxiliary water heater.
+            total_waste_produced.update(
+                {
+                    waste_product: defaultdict(
+                        float,
+                        pd.DataFrame(
+                            (
+                                waste_produced
+                                * (
+                                    hot_water_tank_volume_supplied
+                                    / auxiliary_heater.input_resource_consumption[
+                                        ResourceType.CLEAN_WATER
+                                    ]
+                                )
+                                * (hot_water_tank_volume_supplied > 0)
+                                * (
+                                    scenario.hot_water_scenario.demand_temperature
+                                    - hot_water_tank_temperature
+                                )
+                            ).values
+                        ).to_dict(),
+                    )
+                    for waste_product, waste_produced in auxiliary_heater.waste_production.items()
+                }
+            )
+
+        else:
+            auxiliary_heater_power_consumption = None
+            auxiliary_heater_heat_consumption = None
 
         # Compute the power consumed by the thermal desalination plant.
         hot_water_power_consumed: pd.DataFrame = pd.DataFrame(
-            auxiliary_heater_power_consumption
-            + 0.001 * (hot_water_pvt_pump_times > 0) * minigrid.water_pump.consumption
+            0.001 * (hot_water_pvt_pump_times > 0) * minigrid.water_pump.consumption
         )
+        if auxiliary_heater_power_consumption is not None:
+            hot_water_power_consumed += auxiliary_heater_power_consumption
 
         # Determine the volume of hot-water demand that was met by the system overall.
         volumetric_hw_dc_fraction: pd.DataFrame = pd.DataFrame(
@@ -2167,6 +2184,7 @@ def run_simulation(
             "No electric load was supplied to the energy_system.run_simulation method "
             "despite this being necessary for the simulation of energy systems."
         )
+
     processed_total_electric_load = pd.DataFrame(
         _get_processed_load_profile(scenario, total_electric_load)[
             start_hour:end_hour
@@ -2417,22 +2435,22 @@ def run_simulation(
     )
 
     if scenario.desalination_scenario is not None:
-        backup_desalinator_water_frame: pd.DataFrame = dict_to_dataframe(
+        backup_desalinator_water_frame: Optional[pd.DataFrame] = dict_to_dataframe(
             backup_desalinator_water_supplied, logger
         )
-        clean_water_demand_met_by_excess_energy_frame: pd.DataFrame = dict_to_dataframe(
+        clean_water_demand_met_by_excess_energy_frame: Optional[pd.DataFrame] = dict_to_dataframe(
             clean_water_demand_met_by_excess_energy, logger
         )
-        clean_water_power_consumed = dict_to_dataframe(
+        clean_water_power_consumed: Optional[pd.DataFrame] = dict_to_dataframe(
             clean_water_power_consumed_mapping, logger
         )
-        clean_water_supplied_by_excess_energy_frame: pd.DataFrame = dict_to_dataframe(
+        clean_water_supplied_by_excess_energy_frame: Optional[pd.DataFrame] = dict_to_dataframe(
             clean_water_supplied_by_excess_energy, logger
         )
-        conventional_cw_supplied_frame: pd.DataFrame = dict_to_dataframe(
+        conventional_cw_supplied_frame: Optional[pd.DataFrame] = dict_to_dataframe(
             conventional_water_supplied, logger
         )
-        excess_energy_used_desalinating_frame: pd.DataFrame = dict_to_dataframe(
+        excess_energy_used_desalinating_frame: Optional[pd.DataFrame] = dict_to_dataframe(
             excess_energy_used_desalinating, logger
         )
         if hourly_cw_tank_storage is None:
@@ -2445,13 +2463,23 @@ def run_simulation(
             raise InternalError(
                 "Clean-water tank storage information not computed successfully."
             )
-        hourly_cw_tank_storage_frame: pd.DataFrame = dict_to_dataframe(
+        hourly_cw_tank_storage_frame: Optional[pd.DataFrame] = dict_to_dataframe(
             hourly_cw_tank_storage, logger
         )
-        storage_water_supplied_frame: pd.DataFrame = dict_to_dataframe(
+        storage_water_supplied_frame: Optional[pd.DataFrame] = dict_to_dataframe(
             storage_water_supplied, logger
         )
-        water_surplus_frame: pd.DataFrame = dict_to_dataframe(water_surplus, logger)
+        water_surplus_frame: Optional[pd.DataFrame] = dict_to_dataframe(water_surplus, logger)
+    else:
+        backup_desalinator_water_frame = pd.DataFrame([0.0] * int(battery_storage_profile.size))
+        clean_water_demand_met_by_excess_energy_frame = pd.DataFrame([0.0] * int(battery_storage_profile.size))
+        clean_water_power_consumed = pd.DataFrame([0.0] * int(battery_storage_profile.size))
+        clean_water_supplied_by_excess_energy_frame = pd.DataFrame([0.0] * int(battery_storage_profile.size))
+        conventional_cw_supplied_frame = pd.DataFrame([0.0] * int(battery_storage_profile.size))
+        excess_energy_used_desalinating_frame = pd.DataFrame([0.0] * int(battery_storage_profile.size))
+        hourly_cw_tank_storage_frame = pd.DataFrame([0.0] * int(battery_storage_profile.size))
+        storage_water_supplied_frame = pd.DataFrame([0.0] * int(battery_storage_profile.size))
+        water_surplus_frame = pd.DataFrame([0.0] * int(battery_storage_profile.size))
 
     # Find unmet energy
     unmet_energy = pd.DataFrame(
@@ -2517,28 +2545,31 @@ def run_simulation(
         (1 - blackout_times).loc[:, 0].mul(kerosene_profile.values)  # type: ignore
     )
 
+    # Find total energy used by the system
+    total_energy_used = pd.DataFrame(
+        renewables_energy_used_directly.values
+        + storage_power_supplied_frame.values
+        + grid_energy.values
+        + diesel_energy.values
+        + excess_energy_used_desalinating_frame.values
+    )
+
+    power_used_on_electricity = (
+        total_energy_used
+        - excess_energy_used_desalinating_frame  # type: ignore
+        - clean_water_power_consumed  # type: ignore
+        - thermal_desalination_electric_power_consumed  # type: ignore
+        - hot_water_power_consumed  # type: ignore
+    )
+    power_used_on_electricity.columns = pd.Index(
+        [ColumnHeader.POWER_CONSUMED_BY_ELECTRIC_DEVICES.value]
+    )
+
     # Clean-water scenario system performance outputs.
     if scenario.desalination_scenario is not None:
         # Compute the amount of time for which the backup water was able to operate.
         backup_desalinator_water_frame = backup_desalinator_water_frame.mul(  # type: ignore
             1 - blackout_times
-        )
-
-        # Find total energy used by the system
-        total_energy_used = pd.DataFrame(
-            renewables_energy_used_directly.values
-            + storage_power_supplied_frame.values
-            + grid_energy.values
-            + diesel_energy.values
-            + excess_energy_used_desalinating_frame.values
-        )
-
-        power_used_on_electricity = (
-            total_energy_used
-            - excess_energy_used_desalinating_frame  # type: ignore
-            - clean_water_power_consumed  # type: ignore
-            - thermal_desalination_electric_power_consumed  # type: ignore
-            - hot_water_power_consumed  # type: ignore
         )
 
         # Compute the outputs from the itteration stage
@@ -2598,9 +2629,6 @@ def run_simulation(
             [ColumnHeader.CW_TANK_STORAGE_PROFILE.value]
         )
         processed_total_cw_load.columns = pd.Index([ColumnHeader.TOTAL_CW_LOAD.value])
-        power_used_on_electricity.columns = pd.Index(
-            [ColumnHeader.POWER_CONSUMED_BY_ELECTRIC_DEVICES.value]
-        )
         renewable_cw_produced.columns = pd.Index(
             [ColumnHeader.CLEAN_WATER_FROM_RENEWABLES.value]
         )
@@ -2824,6 +2852,7 @@ def run_simulation(
     system_performance_outputs_list = [
         load_energy,
         total_energy_used,
+        power_used_on_electricity,
         unmet_energy,
         blackout_times,
         renewables_energy_used_directly,
@@ -2857,7 +2886,6 @@ def run_simulation(
             conventional_cw_supplied_frame,
             excess_energy_used_desalinating_frame,
             hourly_cw_tank_storage_frame,
-            power_used_on_electricity,
             processed_total_cw_load,
             renewable_cw_produced,
             renewable_cw_used_directly,
