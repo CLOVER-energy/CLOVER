@@ -865,9 +865,7 @@ def _calculate_renewable_hw_profiles(
                     "No electric water heater defined despite the hot-water scenario "
                     "specifying that this is needed.",
                 )
-        elif (
-            scenario.hot_water_scenario.auxiliary_heater is None
-        ):
+        elif scenario.hot_water_scenario.auxiliary_heater is None:
             auxiliary_heater = None
         else:
             logger.error(
@@ -922,7 +920,9 @@ def _calculate_renewable_hw_profiles(
                 ]  # [Wh/degC]
                 * (
                     hot_water_tank_volume_supplied
-                    / auxiliary_heater.input_resource_consumption[ResourceType.CLEAN_WATER]
+                    / auxiliary_heater.input_resource_consumption[
+                        ResourceType.CLEAN_WATER
+                    ]
                 )  # [operating fraction]
                 * (hot_water_tank_volume_supplied > 0)
                 * (
@@ -933,7 +933,9 @@ def _calculate_renewable_hw_profiles(
 
             if isinstance(auxiliary_heater, DieselWaterHeater):
                 # Compute the heat consumed by the auxiliary heater.
-                auxiliary_heater_heat_consumption: Optional[pd.DataFrame] = pd.DataFrame(
+                auxiliary_heater_heat_consumption: Optional[
+                    pd.DataFrame
+                ] = pd.DataFrame(
                     (hot_water_tank_volume_supplied > 0)
                     * hot_water_tank_volume_supplied
                     * minigrid.hot_water_tank.heat_capacity
@@ -2437,21 +2439,21 @@ def run_simulation(
         backup_desalinator_water_frame: Optional[pd.DataFrame] = dict_to_dataframe(
             backup_desalinator_water_supplied, logger
         )
-        clean_water_demand_met_by_excess_energy_frame: Optional[pd.DataFrame] = dict_to_dataframe(
-            clean_water_demand_met_by_excess_energy, logger
-        )
+        clean_water_demand_met_by_excess_energy_frame: Optional[
+            pd.DataFrame
+        ] = dict_to_dataframe(clean_water_demand_met_by_excess_energy, logger)
         clean_water_power_consumed: Optional[pd.DataFrame] = dict_to_dataframe(
             clean_water_power_consumed_mapping, logger
         )
-        clean_water_supplied_by_excess_energy_frame: Optional[pd.DataFrame] = dict_to_dataframe(
-            clean_water_supplied_by_excess_energy, logger
-        )
+        clean_water_supplied_by_excess_energy_frame: Optional[
+            pd.DataFrame
+        ] = dict_to_dataframe(clean_water_supplied_by_excess_energy, logger)
         conventional_cw_supplied_frame: Optional[pd.DataFrame] = dict_to_dataframe(
             conventional_water_supplied, logger
         )
-        excess_energy_used_desalinating_frame: Optional[pd.DataFrame] = dict_to_dataframe(
-            excess_energy_used_desalinating, logger
-        )
+        excess_energy_used_desalinating_frame: Optional[
+            pd.DataFrame
+        ] = dict_to_dataframe(excess_energy_used_desalinating, logger)
         if hourly_cw_tank_storage is None:
             logger.error(
                 "%sNo clean-water tank storage level information was outputted from "
@@ -2468,16 +2470,34 @@ def run_simulation(
         storage_water_supplied_frame: Optional[pd.DataFrame] = dict_to_dataframe(
             storage_water_supplied, logger
         )
-        water_surplus_frame: Optional[pd.DataFrame] = dict_to_dataframe(water_surplus, logger)
+        water_surplus_frame: Optional[pd.DataFrame] = dict_to_dataframe(
+            water_surplus, logger
+        )
     else:
-        backup_desalinator_water_frame = pd.DataFrame([0.0] * int(battery_storage_profile.size))
-        clean_water_demand_met_by_excess_energy_frame = pd.DataFrame([0.0] * int(battery_storage_profile.size))
-        clean_water_power_consumed = pd.DataFrame([0.0] * int(battery_storage_profile.size))
-        clean_water_supplied_by_excess_energy_frame = pd.DataFrame([0.0] * int(battery_storage_profile.size))
-        conventional_cw_supplied_frame = pd.DataFrame([0.0] * int(battery_storage_profile.size))
-        excess_energy_used_desalinating_frame = pd.DataFrame([0.0] * int(battery_storage_profile.size))
-        hourly_cw_tank_storage_frame = pd.DataFrame([0.0] * int(battery_storage_profile.size))
-        storage_water_supplied_frame = pd.DataFrame([0.0] * int(battery_storage_profile.size))
+        backup_desalinator_water_frame = pd.DataFrame(
+            [0.0] * int(battery_storage_profile.size)
+        )
+        clean_water_demand_met_by_excess_energy_frame = pd.DataFrame(
+            [0.0] * int(battery_storage_profile.size)
+        )
+        clean_water_power_consumed = pd.DataFrame(
+            [0.0] * int(battery_storage_profile.size)
+        )
+        clean_water_supplied_by_excess_energy_frame = pd.DataFrame(
+            [0.0] * int(battery_storage_profile.size)
+        )
+        conventional_cw_supplied_frame = pd.DataFrame(
+            [0.0] * int(battery_storage_profile.size)
+        )
+        excess_energy_used_desalinating_frame = pd.DataFrame(
+            [0.0] * int(battery_storage_profile.size)
+        )
+        hourly_cw_tank_storage_frame = pd.DataFrame(
+            [0.0] * int(battery_storage_profile.size)
+        )
+        storage_water_supplied_frame = pd.DataFrame(
+            [0.0] * int(battery_storage_profile.size)
+        )
         water_surplus_frame = pd.DataFrame([0.0] * int(battery_storage_profile.size))
 
     # Find unmet energy

@@ -231,11 +231,7 @@ def get_key_results(
             3,
         )
         key_results.average_daily_hw_demand_covered = round(
-            np.mean(
-                simulation_results[
-                    ColumnHeader.HW_VOL_DEMAND_COVERED.value
-                ]
-            ),
+            np.mean(simulation_results[ColumnHeader.HW_VOL_DEMAND_COVERED.value]),
             3,
         )
 
@@ -297,8 +293,8 @@ def plot_outputs(
     """
 
     # Set plotting parameters.
-    plt.rcParams['font.family'] = 'sans-serif'
-    plt.rcParams['font.sans-serif'] = ['Arial']
+    plt.rcParams["font.family"] = "sans-serif"
+    plt.rcParams["font.sans-serif"] = ["Arial"]
 
     # Create an output directory for the various plots to be saved in.
     figures_directory = os.path.join(
@@ -429,9 +425,7 @@ def plot_outputs(
         # Plot the average hot-water load of each device for the first year.
         for device, load in initial_electric_hourly_loads.items():
             average_load = np.mean(
-                np.asarray(
-                    load[0:CUT_OFF_TIME]
-                ).reshape(
+                np.asarray(load[0:CUT_OFF_TIME]).reshape(
                     (CUT_OFF_TIME // 24, 24),
                 ),
                 axis=0,
@@ -441,7 +435,11 @@ def plot_outputs(
             plt.xticks(range(0, 23, 4))
             plt.xlabel("Hour of simulation")
             plt.ylabel("Device load / W")
-            plt.title("Average electric load demand of each device over the first {} days.".format(CUT_OFF_TIME // 24))
+            plt.title(
+                "Average electric load demand of each device over the first {} days.".format(
+                    CUT_OFF_TIME // 24
+                )
+            )
             plt.tight_layout()
         plt.legend()
         plt.savefig(
@@ -490,9 +488,7 @@ def plot_outputs(
         # Plot the average electric load breakdown by load type.
         domestic_demand = np.mean(
             np.asarray(
-                total_electric_load[0:HOURS_PER_YEAR][
-                    DemandType.DOMESTIC.value
-                ]
+                total_electric_load[0:HOURS_PER_YEAR][DemandType.DOMESTIC.value]
             ).reshape(
                 (365, 24),
             ),
@@ -500,9 +496,7 @@ def plot_outputs(
         )
         commercial_demand = np.mean(
             np.asarray(
-                total_electric_load[0:HOURS_PER_YEAR][
-                    DemandType.COMMERCIAL.value
-                ]
+                total_electric_load[0:HOURS_PER_YEAR][DemandType.COMMERCIAL.value]
             ).reshape(
                 (365, 24),
             ),
@@ -510,18 +504,14 @@ def plot_outputs(
         )
         public_demand = np.mean(
             np.asarray(
-                total_electric_load[0:HOURS_PER_YEAR][
-                    DemandType.PUBLIC.value
-                ]
+                total_electric_load[0:HOURS_PER_YEAR][DemandType.PUBLIC.value]
             ).reshape(
                 (365, 24),
             ),
             axis=0,
         )
         total_demand = np.mean(
-            np.asarray(
-                np.sum(total_electric_load[0:HOURS_PER_YEAR], axis=1)
-            ).reshape(
+            np.asarray(np.sum(total_electric_load[0:HOURS_PER_YEAR], axis=1)).reshape(
                 (365, 24),
             ),
             axis=0,
@@ -545,12 +535,12 @@ def plot_outputs(
             label="total",
         )
         plt.legend(loc="upper right")
-        plt.xticks(
-            [entry for entry in (range(0, 23, 4))]
-        )
+        plt.xticks([entry for entry in (range(0, 23, 4))])
         plt.xlabel("Hour of simulation")
         plt.ylabel("Electric power demand / kW")
-        plt.title("Average load profile of the community during the first simulation year")
+        plt.title(
+            "Average load profile of the community during the first simulation year"
+        )
         plt.savefig(
             os.path.join(figures_directory, "electric_demands_yearly.png"),
             transparent=True,
@@ -1182,9 +1172,7 @@ def plot_outputs(
             # Plot the average clean-water load of each device for the first year.
             for device, load in initial_cw_hourly_loads.items():
                 average_load = np.mean(
-                    np.asarray(
-                        load[0:CUT_OFF_TIME]
-                    ).reshape(
+                    np.asarray(load[0:CUT_OFF_TIME]).reshape(
                         (CUT_OFF_TIME // 24, 24),
                     ),
                     axis=0,
@@ -1194,7 +1182,11 @@ def plot_outputs(
                 plt.xticks(range(0, 23, 4))
                 plt.xlabel("Hour of simulation")
                 plt.ylabel("Device load / litres/hour")
-                plt.title("Average clean water demand of each device over the first {} days.".format(CUT_OFF_TIME // 24))
+                plt.title(
+                    "Average clean water demand of each device over the first {} days.".format(
+                        CUT_OFF_TIME // 24
+                    )
+                )
                 plt.tight_layout()
             plt.legend()
             plt.savefig(
@@ -1429,9 +1421,7 @@ def plot_outputs(
             # year.
             domestic_demand = np.mean(
                 np.asarray(
-                    total_cw_load[0:HOURS_PER_YEAR][
-                        DemandType.DOMESTIC.value
-                    ]
+                    total_cw_load[0:HOURS_PER_YEAR][DemandType.DOMESTIC.value]
                 ).reshape(
                     (365, 24),
                 ),
@@ -1439,9 +1429,7 @@ def plot_outputs(
             )
             commercial_demand = np.mean(
                 np.asarray(
-                    total_cw_load[0:HOURS_PER_YEAR][
-                        DemandType.COMMERCIAL.value
-                    ]
+                    total_cw_load[0:HOURS_PER_YEAR][DemandType.COMMERCIAL.value]
                 ).reshape(
                     (365, 24),
                 ),
@@ -1449,18 +1437,14 @@ def plot_outputs(
             )
             public_demand = np.mean(
                 np.asarray(
-                    total_cw_load[0:HOURS_PER_YEAR][
-                        DemandType.PUBLIC.value
-                    ]
+                    total_cw_load[0:HOURS_PER_YEAR][DemandType.PUBLIC.value]
                 ).reshape(
                     (365, 24),
                 ),
                 axis=0,
             )
             total_demand = np.mean(
-                np.asarray(
-                    np.sum(total_cw_load[0:HOURS_PER_YEAR], axis=1)
-                ).reshape(
+                np.asarray(np.sum(total_cw_load[0:HOURS_PER_YEAR], axis=1)).reshape(
                     (365, 24),
                 ),
                 axis=0,
@@ -1484,12 +1468,12 @@ def plot_outputs(
                 label="total",
             )
             plt.legend(loc="upper right")
-            plt.xticks(
-                [entry for entry in (range(0, 23, 4))]
-            )
+            plt.xticks([entry for entry in (range(0, 23, 4))])
             plt.xlabel("Hour of simulation")
             plt.ylabel("Clean-water demand / litres/hour")
-            plt.title(f"Average drinking water load profile of the community during the first year")
+            plt.title(
+                f"Average drinking water load profile of the community during the first year"
+            )
             plt.savefig(
                 os.path.join(figures_directory, "clean_water_demands_yearly.png"),
                 transparent=True,
@@ -2151,7 +2135,9 @@ def plot_outputs(
             plt.ylabel("Power consumption / kWh")
             plt.title("Electriciy use by supply/device type on an average day")
             plt.savefig(
-                os.path.join(figures_directory, "cw_electricity_use_by_supply_type.png"),
+                os.path.join(
+                    figures_directory, "cw_electricity_use_by_supply_type.png"
+                ),
                 transparent=True,
             )
             plt.close()
@@ -2659,9 +2645,7 @@ def plot_outputs(
             # Plot the average hot-water load of each device for the cut off period.
             for device, load in initial_hw_hourly_loads.items():
                 average_load = np.mean(
-                    np.asarray(
-                        load[0:CUT_OFF_TIME]
-                    ).reshape(
+                    np.asarray(load[0:CUT_OFF_TIME]).reshape(
                         (CUT_OFF_TIME // 24, 24),
                     ),
                     axis=0,
@@ -2671,7 +2655,11 @@ def plot_outputs(
                 plt.xticks(range(0, 23, 4))
                 plt.xlabel("Hour of simulation")
                 plt.ylabel("Device load / litres/hour")
-                plt.title("Average hot water demand of each device over the first {} days.".format(CUT_OFF_TIME // 24))
+                plt.title(
+                    "Average hot water demand of each device over the first {} days.".format(
+                        CUT_OFF_TIME // 24
+                    )
+                )
                 plt.tight_layout()
             plt.legend()
             plt.savefig(
@@ -2832,9 +2820,7 @@ def plot_outputs(
             # Plot the average hot-water load breakdown by load type over the first year
             domestic_demand = np.mean(
                 np.asarray(
-                    total_hw_load[0:HOURS_PER_YEAR][
-                        DemandType.DOMESTIC.value
-                    ]
+                    total_hw_load[0:HOURS_PER_YEAR][DemandType.DOMESTIC.value]
                 ).reshape(
                     (365, 24),
                 ),
@@ -2842,9 +2828,7 @@ def plot_outputs(
             )
             commercial_demand = np.mean(
                 np.asarray(
-                    total_hw_load[0:HOURS_PER_YEAR][
-                        DemandType.COMMERCIAL.value
-                    ]
+                    total_hw_load[0:HOURS_PER_YEAR][DemandType.COMMERCIAL.value]
                 ).reshape(
                     (365, 24),
                 ),
@@ -2852,18 +2836,14 @@ def plot_outputs(
             )
             public_demand = np.mean(
                 np.asarray(
-                    total_hw_load[0:HOURS_PER_YEAR][
-                        DemandType.PUBLIC.value
-                    ]
+                    total_hw_load[0:HOURS_PER_YEAR][DemandType.PUBLIC.value]
                 ).reshape(
                     (365, 24),
                 ),
                 axis=0,
             )
             total_demand = np.mean(
-                np.asarray(
-                    np.sum(total_hw_load[0:HOURS_PER_YEAR], axis=1)
-                ).reshape(
+                np.asarray(np.sum(total_hw_load[0:HOURS_PER_YEAR], axis=1)).reshape(
                     (365, 24),
                 ),
                 axis=0,
@@ -2887,12 +2867,12 @@ def plot_outputs(
                 label="total",
             )
             plt.legend(loc="upper right")
-            plt.xticks(
-                [entry for entry in (range(0, 23, 4))]
-            )
+            plt.xticks([entry for entry in (range(0, 23, 4))])
             plt.xlabel("Hour of simulation")
             plt.ylabel("Hot-water demand / litres/hour")
-            plt.title("Average DHW load profile of the community during the first simulation year")
+            plt.title(
+                "Average DHW load profile of the community during the first simulation year"
+            )
             plt.savefig(
                 os.path.join(figures_directory, "hot_water_demands_yearly.png"),
                 transparent=True,
@@ -3061,9 +3041,7 @@ def plot_outputs(
             plt.xlabel("Hour of day")
             ax1.set_ylabel("Collector output temperature / degC")
             # ax2.set_ylabel("Fraction of demand covered renewably")
-            plt.title(
-                "Collector output temp. on the first day of select months"
-            )
+            plt.title("Collector output temp. on the first day of select months")
             plt.savefig(
                 os.path.join(
                     figures_directory,
@@ -3280,9 +3258,7 @@ def plot_outputs(
             plt.xlabel("Hour of day")
             ax1.set_ylabel("Collector output temperature / degC")
             # ax2.set_ylabel("Demand covered fraction through renewables.")
-            plt.title(
-                "Collector output temprature on an average seasonal days."
-            )
+            plt.title("Collector output temprature on an average seasonal days.")
             plt.savefig(
                 os.path.join(
                     figures_directory,
@@ -3393,7 +3369,9 @@ def plot_outputs(
             plt.ylabel("Power consumption / kWh")
             plt.title("Electriciy use by supply/device type on an average day")
             plt.savefig(
-                os.path.join(figures_directory, "hw_electricity_use_by_supply_type.png"),
+                os.path.join(
+                    figures_directory, "hw_electricity_use_by_supply_type.png"
+                ),
                 transparent=True,
             )
             plt.close()
