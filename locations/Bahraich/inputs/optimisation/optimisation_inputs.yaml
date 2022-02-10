@@ -18,8 +18,10 @@
 #   cumulative_system_cost          $
 #   cumulative_system_ghgs          kgCO2eq
 #   emissions_intensity             gCO2/kWh
-#   lcow                            $/m^3
+#   lcu_energy                      $/kWh_el(eq)
 #   lcue                            $/kWh
+#   lcuh                            $/kWh_th
+#   lcuw                            $/m^3
 #   total_brine                     m^3
 #   total_cost                      $
 #   total_system_cost               $

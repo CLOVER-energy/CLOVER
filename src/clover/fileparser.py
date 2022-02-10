@@ -87,6 +87,10 @@ CONVENTIONAL_WATER_SOURCE_AVAILABILITY_DIRECTORY: str = os.path.join(
     "generation", "conventional_water_sources"
 )
 
+# Converters:
+#   Keyword used for parsing convertor information.
+CONVERTERS: str = "converters"
+
 # Conversion inputs file:
 #   The relative path to the conversion-inputs file.
 CONVERSION_INPUTS_FILE: str = os.path.join("generation", "conversion_inputs.yaml")
@@ -518,101 +522,111 @@ def _parse_conversion_inputs(
         parsed_converters: List[Converter] = []
         conversion_inputs = read_yaml(conversion_file_relative_path, logger)
         if conversion_inputs is not None:
-            if not isinstance(conversion_inputs, list):
+            # Attempt to parse the converter information.
+            if not isinstance(conversion_inputs, dict):
                 logger.error(
-                    "%sThe conversion inputs file must be a `list` of valid converters.%s",
+                    "%sThe conversion inputs file must be a `dict` of valid converters "
+                    "with convertors listed under the heading '%s'.%s",
                     BColours.fail,
+                    CONVERTERS,
                     BColours.endc,
                 )
-        if conversion_inputs is not None and len(conversion_inputs) > 0:
-            for entry in conversion_inputs:
-                if not isinstance(entry, dict):
-                    logger.error(
-                        "%sConverter not of correct format `dict`: %s%s",
-                        BColours.fail,
-                        str(entry),
-                        BColours.endc,
-                    )
-                    raise InputFileError(
-                        "conversion inputs", "Converters not correctly defined."
-                    )
 
-                # Attempt to parse as a water source.
-                try:
-                    parsed_converters.append(WaterSource.from_dict(entry, logger))
-                except InputFileError:
-                    logger.info(
-                        "Failed to create a single-input converter, trying a thermal "
-                        "desalination plant."
-                    )
+            if len(conversion_inputs[CONVERTERS]) > 0:
+                for entry in conversion_inputs[CONVERTERS]:
+                    if not isinstance(entry, dict):
+                        logger.error(
+                            "%sConverter not of correct format `dict`: %s%s",
+                            BColours.fail,
+                            str(entry),
+                            BColours.endc,
+                        )
+                        raise InputFileError(
+                            "conversion inputs", "Converters not correctly defined."
+                        )
 
-                    # Attempt to parse as a thermal desalination plant.
+                    # Attempt to parse as a water source.
                     try:
-                        parsed_converters.append(
-                            ThermalDesalinationPlant.from_dict(entry, logger)
-                        )
-                    except KeyError:
+                        parsed_converters.append(WaterSource.from_dict(entry, logger))
+                    except InputFileError:
                         logger.info(
-                            "Failed to create a thermal desalination plant, trying "
-                            "a multi-input converter."
+                            "Failed to create a single-input converter, trying a thermal "
+                            "desalination plant."
                         )
 
-                        # Parse as a generic multi-input converter.
-                        parsed_converters.append(
-                            MultiInputConverter.from_dict(entry, logger)
+                        # Attempt to parse as a thermal desalination plant.
+                        try:
+                            parsed_converters.append(
+                                ThermalDesalinationPlant.from_dict(entry, logger)
+                            )
+                        except KeyError:
+                            logger.info(
+                                "Failed to create a thermal desalination plant, trying "
+                                "a multi-input converter."
+                            )
+
+                            # Parse as a generic multi-input converter.
+                            parsed_converters.append(
+                                MultiInputConverter.from_dict(entry, logger)
+                            )
+                            logger.info("Parsed multi-input converter from input data.")
+                        logger.info(
+                            "Parsed thermal desalination plant from input data."
                         )
-                        logger.info("Parsed multi-input converter from input data.")
-                    logger.info("Parsed thermal desalination plant from input data.")
 
-                else:
-                    logger.info("Parsed single-input converter from input data.")
+                    else:
+                        logger.info("Parsed single-input converter from input data.")
 
-            # Convert the list to the required format.
-            converters: Dict[str, Converter] = {
-                converter.name: converter for converter in parsed_converters
-            }
+                # Convert the list to the required format.
+                converters: Dict[str, Converter] = {
+                    converter.name: converter for converter in parsed_converters
+                }
 
-            # Parse the transmission impact information.
-            for converter in converters.values():
-                try:
-                    converter_costs[converter] = [
-                        entry[COSTS]
-                        for entry in conversion_inputs
-                        if entry[NAME] == converter.name
-                    ][0]
-                except (KeyError, IndexError):
-                    logger.error(
-                        "Failed to determine converter cost information for %s.",
-                        converter.name,
-                    )
-                    raise
-                else:
-                    logger.info(
-                        "Converter cost information for %s successfully parsed.",
-                        converter.name,
-                    )
-                try:
-                    converter_emissions[converter] = [
-                        entry[EMISSIONS]
-                        for entry in conversion_inputs
-                        if entry[NAME] == converter.name
-                    ][0]
-                except (KeyError, IndexError):
-                    logger.error(
-                        "Failed to determine converter emission information for %s.",
-                        converter.name,
-                    )
-                    raise
-                else:
-                    logger.info(
-                        "Converter emission information for %s successfully parsed.",
-                        converter.name,
-                    )
+                # Parse the transmission impact information.
+                for converter in converters.values():
+                    try:
+                        converter_costs[converter] = [
+                            entry[COSTS]
+                            for entry in conversion_inputs[CONVERTERS]
+                            if entry[NAME] == converter.name
+                        ][0]
+                    except (KeyError, IndexError):
+                        logger.error(
+                            "Failed to determine converter cost information for %s.",
+                            converter.name,
+                        )
+                        raise
+                    else:
+                        logger.info(
+                            "Converter cost information for %s successfully parsed.",
+                            converter.name,
+                        )
+                    try:
+                        converter_emissions[converter] = [
+                            entry[EMISSIONS]
+                            for entry in conversion_inputs[CONVERTERS]
+                            if entry[NAME] == converter.name
+                        ][0]
+                    except (KeyError, IndexError):
+                        logger.error(
+                            "Failed to determine converter emission information for %s.",
+                            converter.name,
+                        )
+                        raise
+                    else:
+                        logger.info(
+                            "Converter emission information for %s successfully parsed.",
+                            converter.name,
+                        )
 
+            else:
+                converters = {}
+                logger.info(
+                    "No conversion inputs in file, continuing with no defined converters."
+                )
         else:
             converters = {}
             logger.info("Conversion file empty, continuing with no defined converters.")
-
     else:
         converters = {}
         logger.info("No conversion file, skipping converter parsing.")
