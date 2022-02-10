@@ -210,7 +210,7 @@ def _calculate_backup_diesel_generator_usage(
         blackout_times,
         float(scenario.diesel_scenario.backup_threshold),
     )
-    diesel_capacity: float = float(math.ceil(np.max(diesel_energy)))
+    diesel_capacity: float = float(math.ceil(np.max(diesel_energy, axis=0)))
     diesel_fuel_usage = pd.DataFrame(
         get_diesel_fuel_usage(
             int(diesel_capacity),
@@ -1699,7 +1699,7 @@ def _setup_tank_storage_profiles(
         - resource_type:
             The :class:`ResourceType` held within the :class:`CleanWaterTank`.
         - scenario:
-            The :class:`Scneario` for the run.
+            The :class:`Scenario` for the run.
         - tank:
             The :class:`CleanWaterTank`, representing either a clean- or hot-water tank,
             to use for the run.
@@ -1870,7 +1870,7 @@ def _update_battery_health(
 
 def run_simulation(
     clean_water_pvt_size: int,
-    conventional_cw_source_profiles: Dict[WaterSource, pd.DataFrame],
+    conventional_cw_source_profiles: Optional[Dict[WaterSource, pd.DataFrame]],
     converters: List[Converter],
     electric_storage_size: float,
     grid_profile: pd.DataFrame,
@@ -2422,7 +2422,6 @@ def run_simulation(
                 storage_power_supplied,
                 time_index=t,
             )
-
     # Process the various outputs into dataframes.
     battery_health_frame: pd.DataFrame = dict_to_dataframe(battery_health, logger)
     # energy_deficit_frame: pd.DataFrame = dict_to_dataframe(energy_deficit)
