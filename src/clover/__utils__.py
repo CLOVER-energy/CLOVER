@@ -2611,6 +2611,7 @@ def save_simulation(
     output_directory: str,
     simulation: pd.DataFrame,
     simulation_number: int,
+    system_appraisal: Optional[SystemAppraisal],
     system_details: SystemDetails,
 ) -> None:
     """
@@ -2630,6 +2631,8 @@ def save_simulation(
             DataFrame output from Energy_System().simulation(...).
         - simulation_number:
             The number of the simulation being run.
+        - system_appraisal:
+            An optional appraisal of the system.
         - system_details:
             Information about the run to save.
 
@@ -2646,6 +2649,10 @@ def save_simulation(
     # Add the key results to the system data.
     simulation_details_dict: Dict[str, Any] = system_details.to_dict()
     simulation_details_dict["analysis_results"] = key_results.to_dict()
+
+    # Add the appraisal results to the system data if relevant.
+    if system_appraisal is not None:
+        simulation_details_dict["system_appraisal"] = system_appraisal.to_dict()
 
     # Save the system data.
     simulation_details_filepath = os.path.join(

@@ -626,22 +626,29 @@
                 # Valid optimisation criteria, usually set to "minimise":
                 #   CRITERION                       UNIT
                 #   blackouts
+                #   clean_water_blackouts
                 #   lcue                            $/kWh
                 #   emissions_intensity             gCO2/kWh
                 #   unmet_energy_fraction
                 #   cumulative_cost                 $
+                #   cumulative_ghgs                 kgCO2eq
                 #   cumulative_system_cost          $
+                #   cumulative_system_ghgs          kgCO2eq
+                #   emissions_intensity             gCO2/kWh
+                #   lcue                            $/kWh
                 #   total_cost                      $
                 #   total_system_cost               $
-                #   cumulative_ghgs                 kgCO2eq
-                #   cumulative_system_ghgs          kgCO2eq
                 #   total_ghgs                      kgCO2eq
                 #   total_system_ghgs               kgCO2eq
+                #   unmet_energy_fraction
                 # Valid optimisation criteria, usually set to "maximise":
-                #   renewables_fraction
-                #   kerosene_displacement
                 #   kerosene_cost_mitigated         $
+                #   kerosene_displacement
                 #   kerosene_ghgs_mitigated         kgCO2eq
+                #   renewables_fraction
+                #
+                # NOTE: Not all optimisation criteria may be available for the system depending
+                # on the resource types being considered.
                 #
 
                 iteration_length: 4 # [years]
