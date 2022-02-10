@@ -17,7 +17,7 @@ the clover module from the command-line interface.
 
 """
 
-__version__ = "5.0.0a2.dev1"
+__version__ = "5.1.0a1.dev1"
 
 import datetime
 import logging
@@ -1054,6 +1054,21 @@ def main(args: List[Any]) -> None:
             )
 
             if parsed_args.analyse:
+                # Carry out an appraisal of the system.
+                system_appraisal: Optional[SystemAppraisal] = appraise_system(
+                    electric_yearly_load_statistics,
+                    simulation.end_year,
+                    finance_inputs,
+                    ghg_inputs,
+                    location,
+                    logger,
+                    None,
+                    scenario,
+                    system_performance_outputs,
+                    simulation.start_year,
+                    system_details,
+                )
+
                 # Generate and save the various plots.
                 analysis.plot_outputs(  # type: ignore
                     grid_times[scenario.grid_type],
@@ -1071,20 +1086,6 @@ def main(args: List[Any]) -> None:
                     * minigrid.pv_panel.pv_unit,
                 )
 
-                # Carry out an appraisal of the system.
-                system_appraisal: Optional[SystemAppraisal] = appraise_system(
-                    electric_yearly_load_statistics,
-                    simulation.end_year,
-                    finance_inputs,
-                    ghg_inputs,
-                    location,
-                    logger,
-                    None,
-                    scenario,
-                    system_performance_outputs,
-                    simulation.start_year,
-                    system_details,
-                )
             else:
                 system_appraisal = None
                 logger.info("No analysis to be carried out.")

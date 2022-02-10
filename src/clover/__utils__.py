@@ -18,10 +18,10 @@ issues and increase the ease of code alterations.
 
 """
 
+import collections
 import dataclasses
 import enum
 import logging
-from optparse import Option
 import os
 
 from typing import Any, Dict, List, Optional, Set, Union
@@ -433,6 +433,10 @@ class ColumnHeader(enum.Enum):
     - HW_TANK_TEMPERATURE:
         The temperature profile of the hot-water tank(s) installed.
 
+    - HW_TEMPERATURE_GAIN:
+        The temperature gain of the water passing through the hot-water system compared
+        with the hot-water input temperature.
+
     - HW_VOL_DEMAND_COVERED:
         The volumetric demand covered by the hot-water tank(s) installed.
 
@@ -563,6 +567,7 @@ class ColumnHeader(enum.Enum):
     HW_RENEWABLES_FRACTION = "Renewable hot-water fraction"
     HW_TANK_OUTPUT = "Hot-water tank volume supplied (l)"
     HW_TANK_TEMPERATURE = "Hot-water tank temperature (degC)"
+    HW_TEMPERATURE_GAIN = "Hot water temperature gain (degC)"
     HW_VOL_DEMAND_COVERED = "Hot-water demand covered fraction"
     INSTALLATION_YEAR = "Installation year"
     INVERTER_COST = "Inverter cost ($/kW)"
@@ -880,7 +885,7 @@ class KeyResults:
     .. attribute:: clean_water_blackouts
         The fraction of time for which the clean-water system experienced a blackout.
 
-    .. attribute:: cumulative_brine_produced
+    .. attribute:: cumulative_brine
         The total brine that was produced by the system, measured in litres.
 
     .. attribute:: cumulative_pv_generation
@@ -1445,11 +1450,18 @@ class Criterion(enum.Enum):
     - KEROSENE_GHGS_MITIGATED:
         The mitigated GHGs by not consuming kerosene.
 
-    - LCOW:
-        Denotes the levilised cost of clean water produced.
+    - LCU_ENERGY:
+        Denotes the levilised cost of energy where both heating (for clean-water
+        production and hot-water heating) and electricity have been combined.
 
     - LCUE:
         Denotes the levilised cost of electricity.
+
+    - LCUH:
+        Denotes the levilised cost of heating.
+
+    - LCUW:
+        Denotes the levilised cost of clean water produced.
 
     - RENEWABLES_CLEAN_WATER_FRACTION:
         The fraction of the clean water produced by the system which was generated using
@@ -1507,8 +1519,10 @@ class Criterion(enum.Enum):
     KEROSENE_COST_MITIGATED = "kerosene_cost_mitigated"
     KEROSENE_DISPLACEMENT = "kerosene_displacement"
     KEROSENE_GHGS_MITIGATED = "kerosene_ghgs_mitigated"
-    LCOW = "lcow"
+    LCU_ENERGY = "lcu_energy"
     LCUE = "lcue"
+    LCUH = "lcuh"
+    LCUW = "lcuw"
     RENEWABLES_CLEAN_WATER_FRACTION = "renewables_clean_water_fraction"
     RENEWABLES_ELECTRICITY_FRACTION = "renewables_fraction"
     RENEWABLES_HOT_WATER_FRACTION = "renewables_hot_water_fraction"
@@ -1993,6 +2007,9 @@ class Scenario:
     .. attribute:: pv_t
         Whether PV-T is being included in the scenario.
 
+    .. attribute:: reference_thermal_efficiency
+        If defined, gives the reference efficiency of a thermal power plant.
+
     """
 
     battery: bool
@@ -2008,6 +2025,7 @@ class Scenario:
     pv: bool
     pv_d: bool
     pv_t: bool
+    reference_thermal_efficiency: float = 0
 
     @classmethod
     def from_dict(
@@ -2069,6 +2087,9 @@ class Scenario:
             scenario_inputs["pv"],
             scenario_inputs["pv_d"] if "pv_d" in scenario_inputs else False,
             scenario_inputs["pv_t"] if "pv_t" in scenario_inputs else False,
+            scenario_inputs["reference_thermal_efficiency"]
+            if "reference_thermal_efficiency" in scenario_inputs
+            else 0,
         )
 
 
@@ -2345,14 +2366,26 @@ class CumulativeResults:
     .. attribute:: cost
         The cumulative cost, measured in USD.
 
+    .. attribute:: discounted_electricity
+        The discounted electricity produced, measured in kWh.
+
     .. attribute:: discounted_energy
         The discounted energy produced, measured in kWh.
+
+    .. attribute:: discounted_heating
+        The discounted heating produced, measured in kWh.
+
+    .. attribute:: electricity
+        The electricity produced, measured in kWh.
 
     .. attribute:: energy
         The energy produced, measured in kWh.
 
     .. attribute:: ghgs
         The total green-house gasses emitted by the system, mesaured in kgCO2eq.
+
+    .. attribute:: heating
+        The total heating produced, measured in kWh_th.
 
     .. attribute:: subsystem_costs
         The cumulative costs of each individual subsystem.
@@ -2371,11 +2404,15 @@ class CumulativeResults:
 
     """
 
-    clean_water: Optional[float] = None
+    clean_water: Optional[float] = 0
     cost: float = 0
+    discounted_electricity: float = 0
     discounted_energy: float = 0
+    discounted_heating: float = 0
+    electricity: float = 0
     energy: float = 0
     ghgs: float = 0
+    heating: float = 0
     subsystem_costs: Optional[Dict[ResourceType, float]] = None
     subsystem_ghgs: Optional[Dict[ResourceType, float]] = None
     system_cost: float = 0
@@ -2444,21 +2481,20 @@ class EnvironmentalAppraisal:
     .. attribute:: om_ghgs
         The O&M GHGs emitted by the system.
 
+    .. attribute:: subsystem_ghgs
+        The total GHGs associated with each subsystem emitted.
+
     .. attribute:: total_brine
         The total brine produced.
 
     .. attribute:: total_ghgs
         The total GHGs emitted.
 
-    .. attribute:: total_subsystem_ghgs
-        The total GHGs associated with each subsystem emitted.
-
     .. attribute:: total_system_ghgs
         The total system-related GHGs.
 
     """
 
-    total_brine: float = 0
     diesel_ghgs: float = 0
     grid_ghgs: float = 0
     kerosene_ghgs: float = 0
@@ -2466,8 +2502,9 @@ class EnvironmentalAppraisal:
     new_connection_ghgs: float = 0
     new_equipment_ghgs: float = 0
     om_ghgs: float = 0
+    subsystem_ghgs: Optional[Dict[ResourceType, float]] = None
+    total_brine: float = 0
     total_ghgs: float = 0
-    total_subsystem_ghgs: Optional[Dict[ResourceType, float]] = None
     total_system_ghgs: float = 0
 
     def to_dict(self) -> Dict[str, Any]:
@@ -2492,11 +2529,11 @@ class EnvironmentalAppraisal:
             "total_system_ghgs": self.total_system_ghgs,
         }
 
-        if self.total_subsystem_ghgs is not None:
+        if self.subsystem_ghgs is not None:
             environmental_appraisal_dict.update(
                 {
-                    f"total_{resource_type.value}_subsystem_ghgs": ghgs
-                    for resource_type, ghgs in self.total_subsystem_ghgs
+                    f"{resource_type.value}_subsystem_ghgs": ghgs
+                    for resource_type, ghgs in self.subsystem_ghgs
                 }
             )
 
@@ -2527,14 +2564,14 @@ class FinancialAppraisal:
         The cost of the new equipment purchased in this optimisation cycle, measured in
         USD
 
+    .. attribute:: subsystem_costs
+        The total cost of the subsystems present in the energy system.
+
     .. attribute:: om_cost
         The O&M cost, measured in USD.
 
     .. attribute:: total_cost
         The total cost of the energy system and fuel etc. used, measured in USD
-
-    .. attribute:: total_subsystem_costs
-        The total cost of the subsystems present in the energy system.
 
     .. attribute:: total_system_cost
         The total cost of the energy system, measured in USD
@@ -2548,8 +2585,8 @@ class FinancialAppraisal:
     new_connection_cost: float = 0
     new_equipment_cost: float = 0
     om_cost: float = 0
+    subsystem_costs: Optional[Dict[ResourceType, float]] = None
     total_cost: float = 0
-    total_subsystem_costs: Optional[Dict[ResourceType, float]] = None
     total_system_cost: float = 0
 
     def to_dict(self) -> Dict[str, Any]:
@@ -2573,11 +2610,11 @@ class FinancialAppraisal:
             "total_system_cost": self.total_system_cost,
         }
 
-        if self.total_subsystem_costs is not None:
+        if self.subsystem_costs is not None:
             financial_appraisal_dict.update(
                 {
-                    f"total_{resource_type.value}_subsystem_cost": cost
-                    for resource_type, cost in self.total_subsystem_costs
+                    f"{resource_type.value}_subsystem_cost": cost
+                    for resource_type, cost in self.subsystem_costs
                 }
             )
 
@@ -2603,8 +2640,14 @@ class TechnicalAppraisal:
     .. attribute:: diesel_fuel_usage
         The amount of diesel fuel usage, measured in litres.
 
+    .. attribute:: discounted_electricity
+        The total discounted electricity consumed, measured in kWh.
+
     .. attribute:: discounted_energy
         The total discounted energy consumed, measured in kWh.
+
+    .. attribute:: discounted_heating
+        The total discounted heating consumed, measured in kWh.
 
     .. attribute:: grid_energy
         The total energy which was supplied by the grid, measured in kWh.
@@ -2655,8 +2698,14 @@ class TechnicalAppraisal:
         The total volume of hot water which was produced by the system, measured in
         litres.
 
-    .. attribute:: total_energy
+    .. attribute:: total_electricity_consumed
+        The total electricity which was used in the system, measured in kWh.
+
+    .. attribute:: total_energy_consumed
         The total energy which was used in the system, measured in kWh.
+
+    .. attribute:: total_heating_consumed
+        The total heating which was used inthe system.
 
     .. attribute:: unmet_energy
         The total energy which went unmet, measured in kWh.
@@ -2671,7 +2720,9 @@ class TechnicalAppraisal:
     clean_water_blackouts: Optional[float] = 0
     diesel_energy: float = 0
     diesel_fuel_usage: float = 0
+    discounted_electricity: float = 0
     discounted_energy: float = 0
+    discounted_heating: float = 0
     grid_energy: float = 0
     hw_demand_covered: Optional[float] = 0
     kerosene_displacement: float = 0
@@ -2684,7 +2735,9 @@ class TechnicalAppraisal:
     storage_energy: float = 0
     total_clean_water: float = 0
     total_hot_water: float = 0
-    total_energy: float = 0
+    total_electricity_consumed: float = 0
+    total_energy_consumed: float = 0
+    total_heating_consumed: float = 0
     unmet_energy: float = 0
     unmet_energy_fraction: float = 0
 
@@ -2702,7 +2755,9 @@ class TechnicalAppraisal:
             "clean_water_blackouts": self.clean_water_blackouts,
             "diesel_energy": self.diesel_energy,
             "diesel_fuel_usage": self.diesel_fuel_usage,
+            "discounted_electricity": self.discounted_energy,
             "discounted_energy": self.discounted_energy,
+            "discounted_heating": self.discounted_energy,
             "grid_energy": self.grid_energy,
             "hot_water_demand_covered": self.hw_demand_covered,
             "kerosene_displacement": self.kerosene_displacement,
@@ -2712,7 +2767,9 @@ class TechnicalAppraisal:
             "storage_energy": self.storage_energy,
             "total_clean_water": self.total_clean_water,
             "total_hot_water": self.total_hot_water,
-            "total_energy": self.total_energy,
+            "total_electricity_consumed": self.total_electricity_consumed,
+            "total_energy_consumed": self.total_energy_consumed,
+            "total_heating_consumed": self.total_heating_consumed,
             "unmet_energy": self.unmet_energy,
             "unmet_energy_fraction": self.unmet_energy_fraction,
         }
