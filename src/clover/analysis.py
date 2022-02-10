@@ -140,10 +140,10 @@ def get_key_results(
     ].sum() / (365 * num_years)
 
     key_results.diesel_times = round(
-        simulation_results[ColumnHeader.DIESEL_GENERATOR_TIMES.value].mean(), 3
+        np.mean(simulation_results[ColumnHeader.DIESEL_GENERATOR_TIMES.value]), 3
     )
     key_results.blackouts = round(
-        simulation_results[ColumnHeader.BLACKOUTS.value].mean(), 3
+        np.mean(simulation_results[ColumnHeader.BLACKOUTS.value]), 3
     )
 
     # Compute the clean-water key results.
@@ -159,7 +159,7 @@ def get_key_results(
             3,
         )
         key_results.clean_water_blackouts = round(
-            simulation_results[ColumnHeader.CLEAN_WATER_BLACKOUTS.value].mean(), 3
+            np.mean(simulation_results[ColumnHeader.CLEAN_WATER_BLACKOUTS.value]), 3
         )
         key_results.cumulative_cw_load = round(
             simulation_results[ColumnHeader.TOTAL_CW_LOAD.value].sum(), 3
@@ -190,11 +190,11 @@ def get_key_results(
             max(simulation_results[ColumnHeader.CW_PVT_OUTPUT_TEMPERATURE.value]), 3
         )
         key_results.mean_buffer_tank_temperature = round(
-            simulation_results[ColumnHeader.BUFFER_TANK_TEMPERATURE.value].mean(),
+            np.mean(simulation_results[ColumnHeader.BUFFER_TANK_TEMPERATURE.value]),
             3,
         )
         key_results.mean_cw_pvt_output_temperature = round(
-            simulation_results[ColumnHeader.CW_PVT_OUTPUT_TEMPERATURE.value].mean(), 3
+            np.mean(simulation_results[ColumnHeader.CW_PVT_OUTPUT_TEMPERATURE.value]), 3
         )
         key_results.min_buffer_tank_temperature = round(
             min(simulation_results[ColumnHeader.BUFFER_TANK_TEMPERATURE.value]), 3
@@ -412,7 +412,7 @@ def plot_outputs(
 
         # Plot the initial electric load of each device.
         for device, load in initial_electric_hourly_loads.items():
-            plt.plot(range(CUT_OFF_TIME), load, label=device)
+            plt.plot(range(CUT_OFF_TIME), load.values, label=device)
         plt.xticks(range(0, CUT_OFF_TIME - 1, min(6, CUT_OFF_TIME - 1)))
         plt.xlabel("Hour of simulation")
         plt.ylabel("Device load / W")
@@ -1131,23 +1131,23 @@ def plot_outputs(
                 label="HW PV-T electricity generated",
                 zorder=9 + (2 if cw_pvt else 0),
             )
-        if initial_cw_hourly_loads is not None:
-            clean_water_energy_via_excess = simulation_output.iloc[0:24][
-                ColumnHeader.EXCESS_POWER_CONSUMED_BY_DESALINATION.value
-            ]
-            clean_water_energy_via_backup = simulation_output.iloc[0:24][
-                ColumnHeader.POWER_CONSUMED_BY_DESALINATION.value
-            ]
-            plt.plot(
-                clean_water_energy_via_excess,
-                label="Excess -> clean water",
-                zorder=10 + (2 if cw_pvt else 0) + (1 if hw_pvt else 0),
-            )
-            plt.plot(
-                clean_water_energy_via_backup,
-                label="Backup -> clean water",
-                zorder=11 + (2 if cw_pvt else 0) + (1 if hw_pvt else 0),
-            )
+        # if initial_cw_hourly_loads is not None:
+        #     clean_water_energy_via_excess = simulation_output.iloc[0:24][
+        #         ColumnHeader.EXCESS_POWER_CONSUMED_BY_DESALINATION.value
+        #     ]
+        #     clean_water_energy_via_backup = simulation_output.iloc[0:24][
+        #         ColumnHeader.POWER_CONSUMED_BY_DESALINATION.value
+        #     ]
+        #     plt.plot(
+        #         clean_water_energy_via_excess,
+        #         label="Excess -> clean water",
+        #         zorder=10 + (2 if cw_pvt else 0) + (1 if hw_pvt else 0),
+        #     )
+        #     plt.plot(
+        #         clean_water_energy_via_backup,
+        #         label="Backup -> clean water",
+        #         zorder=11 + (2 if cw_pvt else 0) + (1 if hw_pvt else 0),
+        #     )
         plt.legend()
         plt.xlim(0, 23)
         plt.xticks(range(0, 24, 1))

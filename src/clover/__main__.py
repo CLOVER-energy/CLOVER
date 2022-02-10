@@ -45,7 +45,9 @@ from .load import load
 from .mains_supply import grid, water_source
 from .scripts import new_location
 from .simulation import energy_system
+
 from .optimisation.__utils__ import save_optimisation
+from .optimisation.appraisal import appraise_system
 from .optimisation.optimisation import multiple_optimisation_step
 from .printer import generate_optimisation_string, generate_simulation_string
 
@@ -57,6 +59,7 @@ from .__utils__ import (
     InternalError,
     Location,
     ResourceType,
+    SystemAppraisal,
     get_logger,
     InputFileError,
     LOCATIONS_FOLDER_NAME,
@@ -156,7 +159,7 @@ def _get_operating_mode(parsed_args: Namespace) -> OperatingMode:
     return OperatingMode.PROFILE_GENERATION
 
 
-def _prepare_location(location: str, logger: logging.Logger):
+def _prepare_location(location: str, logger: logging.Logger) -> None:
     """
     Prepares the location and raises an error if the location cannot be found.
 
@@ -827,7 +830,7 @@ def main(args: List[Any]) -> None:
     # Assemble a means of storing the relevant loads.
     total_loads: Dict[ResourceType, Optional[pd.DataFrame]] = {
         ResourceType.CLEAN_WATER: total_cw_load,
-        ResourceType.ELECTRIC: 0.001 * total_electric_load,
+        ResourceType.ELECTRIC: 0.001 * total_electric_load,  # type: ignore
         ResourceType.HOT_CLEAN_WATER: total_hw_load,
     }
 
@@ -1042,7 +1045,7 @@ def main(args: List[Any]) -> None:
             system_details.file_information = input_file_info
 
             # Compute the key results.
-            key_results = analysis.get_key_results(
+            key_results = analysis.get_key_results(  # type: ignore
                 grid_times[scenario.grid_type],
                 simulation.end_year - simulation.start_year,
                 system_performance_outputs,
@@ -1052,7 +1055,7 @@ def main(args: List[Any]) -> None:
 
             if parsed_args.analyse:
                 # Generate and save the various plots.
-                analysis.plot_outputs(
+                analysis.plot_outputs(  # type: ignore
                     grid_times[scenario.grid_type],
                     grid_profile,
                     initial_cw_hourly_loads,
@@ -1067,7 +1070,22 @@ def main(args: List[Any]) -> None:
                     total_solar_data[solar.SolarDataType.ELECTRICITY.value]
                     * minigrid.pv_panel.pv_unit,
                 )
+
+                # Carry out an appraisal of the system.
+                system_appraisal: Optional[SystemAppraisal] = appraise_system(
+                    electric_yearly_load_statistics,
+                    simulation.end_year,
+                    finance_inputs,
+                    ghg_inputs,
+                    location,
+                    logger,
+                    None,
+                    system_performance_outputs,
+                    simulation.start_year,
+                    system_details,
+                )
             else:
+                system_appraisal = None
                 logger.info("No analysis to be carried out.")
 
             # Save the simulation output.
@@ -1078,6 +1096,7 @@ def main(args: List[Any]) -> None:
                 simulation_output_directory,
                 system_performance_outputs,
                 simulation_number,
+                system_appraisal,
                 system_details,
             )
 
