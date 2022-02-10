@@ -45,7 +45,9 @@ from .load import load
 from .mains_supply import grid, water_source
 from .scripts import new_location
 from .simulation import energy_system
+
 from .optimisation.__utils__ import save_optimisation
+from .optimisation.appraisal import appraise_system
 from .optimisation.optimisation import multiple_optimisation_step
 from .printer import generate_optimisation_string, generate_simulation_string
 
@@ -57,6 +59,7 @@ from .__utils__ import (
     InternalError,
     Location,
     ResourceType,
+    SystemAppraisal,
     get_logger,
     InputFileError,
     LOCATIONS_FOLDER_NAME,
@@ -1070,7 +1073,22 @@ def main(args: List[Any]) -> None:
                     total_solar_data[solar.SolarDataType.ELECTRICITY.value]
                     * minigrid.pv_panel.pv_unit,
                 )
+
+                # Carry out an appraisal of the system.
+                system_appraisal: Optional[SystemAppraisal] = appraise_system(
+                    electric_yearly_load_statistics,
+                    simulation.end_year,
+                    finance_inputs,
+                    ghg_inputs,
+                    location,
+                    logger,
+                    None,
+                    system_performance_outputs,
+                    simulation.start_year,
+                    system_details,
+                )
             else:
+                system_appraisal = None
                 logger.info("No analysis to be carried out.")
 
             # Save the simulation output.
@@ -1081,6 +1099,7 @@ def main(args: List[Any]) -> None:
                 simulation_output_directory,
                 system_performance_outputs,
                 simulation_number,
+                system_appraisal,
                 system_details,
             )
 

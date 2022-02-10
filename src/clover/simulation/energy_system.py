@@ -207,7 +207,7 @@ def _calculate_backup_diesel_generator_usage(
         blackout_times,
         float(scenario.diesel_scenario.backup_threshold),
     )
-    diesel_capacity: float = float(math.ceil(np.max(diesel_energy)))
+    diesel_capacity: float = float(math.ceil(np.max(diesel_energy, axis=0)))
     diesel_fuel_usage = pd.DataFrame(
         get_diesel_fuel_usage(
             int(diesel_capacity),
@@ -2268,7 +2268,6 @@ def run_simulation(
                 storage_power_supplied,
                 time_index=t,
             )
-
     # Process the various outputs into dataframes.
     battery_health_frame: pd.DataFrame = dict_to_dataframe(battery_health, logger)
     # energy_deficit_frame: pd.DataFrame = dict_to_dataframe(energy_deficit)
