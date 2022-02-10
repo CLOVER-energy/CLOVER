@@ -1080,6 +1080,7 @@ def main(args: List[Any]) -> None:
                     location,
                     logger,
                     None,
+                    scenario,
                     system_performance_outputs,
                     simulation.start_year,
                     system_details,

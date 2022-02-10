@@ -686,20 +686,20 @@ def get_total_equipment_costs(
             + clean_water_tank_cost
             + clean_water_tank_installation_cost
             + heat_exchanger_cost
-            + (pv_cost + pv_installation_cost + storage_cost)
+            + (bos_cost + pv_cost + pv_installation_cost + storage_cost)
             * technical_appraisal.power_consumed_fraction[ResourceType.CLEAN_WATER]
         )
 
     # Compute the electric subsystem costs.
     subsystem_costs[ResourceType.ELECTRIC] += (
-        pv_cost + pv_installation_cost + storage_cost
+        bos_cost + pv_cost + pv_installation_cost + storage_cost
     ) * technical_appraisal.power_consumed_fraction[ResourceType.ELECTRIC]
 
     # Compute the hot-water subsystem costs.
     subsystem_costs[ResourceType.HOT_CLEAN_WATER] += (
         hot_water_tank_cost
         + hot_water_tank_installation_cost
-        + (pv_cost + pv_installation_cost + storage_cost)
+        + (bos_cost + pv_cost + pv_installation_cost + storage_cost)
         * technical_appraisal.power_consumed_fraction[ResourceType.HOT_CLEAN_WATER]
     )
 
@@ -711,10 +711,8 @@ def get_total_equipment_costs(
         technical_appraisal,
     )
 
-    additional_equipment_costs = bos_cost
-
     # FIXME: This needs to include the PV-T costs.
-    return additional_equipment_costs, subsystem_costs
+    return 0, subsystem_costs
 
 
 def connections_expenditure(
@@ -1291,20 +1289,20 @@ def total_om(
             + clean_water_tank_om
             + heat_exchanger_om
             + (
-                (pv_om + storage_om)
+                (general_om + pv_om + storage_om)
                 * technical_appraisal.power_consumed_fraction[ResourceType.CLEAN_WATER]
             )
         )
 
     # Compute the electric subsystem costs.
     subsystem_costs[ResourceType.ELECTRIC] += (
-        pv_om + storage_om
+        general_om + pv_om + storage_om
     ) * technical_appraisal.power_consumed_fraction[ResourceType.ELECTRIC]
 
     # Compute the hot-water subsystem costs.
     subsystem_costs[ResourceType.HOT_CLEAN_WATER] += (
         hot_water_tank_om
-        + (pv_om + storage_om)
+        + (general_om + pv_om + storage_om)
         * technical_appraisal.power_consumed_fraction[ResourceType.HOT_CLEAN_WATER]
     )
 
@@ -1316,10 +1314,8 @@ def total_om(
         technical_appraisal,
     )
 
-    additional_equipment_costs = general_om
-
     # FIXME: This needs to include the PV-T costs.
-    return (additional_equipment_costs, subsystem_costs)
+    return (0, subsystem_costs)
 
 
 # #%%

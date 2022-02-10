@@ -93,7 +93,7 @@ CONVENTIONAL_SOURCES: str = "conventional_sources"
 
 # Cut off time:
 #   The time up and to which information about the load of each device will be returned.
-CUT_OFF_TIME: int = 8760  # [hours]
+CUT_OFF_TIME: int = 72  # [hours]
 
 # Done message:
 #   The message to display when a task was successful.
