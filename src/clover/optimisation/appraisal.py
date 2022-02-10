@@ -123,7 +123,11 @@ def _simulation_environmental_appraisal(
     """
 
     # Calculate the total brine produced.
-    total_brine = round(simulation_results[ColumnHeader.BRINE.value].sum(), 3)
+    total_brine = (
+        round(simulation_results[ColumnHeader.BRINE.value].sum(), 3)
+        if ColumnHeader.BRINE.value in simulation_results
+        else None
+    )
 
     # Calculate new equipment GHGs
     try:
