@@ -206,17 +206,16 @@ def generate_simulation_string(
             and minigrid.pvt_panel is not None
         ):
             simulation_string_list.append(
-                "- {} Clean-water PV-T panel units ({} kWp PV per unit)\n".format(
+                "- {} Clean-water PV-T panel units ({} kWp PV per unit)".format(
                     parsed_args.clean_water_pvt_system_size,
                     minigrid.pvt_panel.pv_unit,
                 )
             )
         if minigrid.clean_water_tank is not None:
             simulation_string_list.append(
-                "- {}x {} litres clean-water storage{}".format(
+                "- {}x {} litres clean-water storage".format(
                     parsed_args.num_clean_water_tanks,
                     minigrid.clean_water_tank.mass,
-                    "\n" if scenario.hot_water_scenario is not None else "",
                 )
             )
 
@@ -227,7 +226,7 @@ def generate_simulation_string(
             and minigrid.pvt_panel is not None
         ):
             simulation_string_list.append(
-                "- {} Hot-water PV-T panel units ({} kWp PV per unit)\n".format(
+                "- {} Hot-water PV-T panel units ({} kWp PV per unit)".format(
                     parsed_args.hot_water_pvt_system_size,
                     minigrid.pvt_panel.pv_unit,
                 )
