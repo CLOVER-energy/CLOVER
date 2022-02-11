@@ -718,7 +718,14 @@ def _appraise_clean_water_system_tech(
     renewables_fraction: float,
     simulation_results: pd.DataFrame,
     system_details: SystemDetails,
-) -> Tuple[Optional[float], Optional[float], Optional[float], Optional[float], Optional[float], Optional[float]]:
+) -> Tuple[
+    Optional[float],
+    Optional[float],
+    Optional[float],
+    Optional[float],
+    Optional[float],
+    Optional[float],
+]:
     """
     Appraises the clean-water system's technical parameters.
 
@@ -767,12 +774,15 @@ def _appraise_clean_water_system_tech(
         (
             # Clean water taken from the thermal desalination plant(s) directly.
             np.sum(
-                simulation_results[ColumnHeader.CLEAN_WATER_FROM_THERMAL_RENEWABLES.value]
+                simulation_results[
+                    ColumnHeader.CLEAN_WATER_FROM_THERMAL_RENEWABLES.value
+                ]
                 * simulation_results[
                     ColumnHeader.DESALINATION_PLANT_RENEWABLE_FRACTION.value
                 ]
             )
-            if ColumnHeader.CLEAN_WATER_FROM_THERMAL_RENEWABLES.value in simulation_results
+            if ColumnHeader.CLEAN_WATER_FROM_THERMAL_RENEWABLES.value
+            in simulation_results
             else 0
         )
         # Clean water taken from tank storage.
@@ -793,7 +803,7 @@ def _appraise_clean_water_system_tech(
         )
     ) / np.sum(clean_water_consumed)
 
-    solar_thermal_cw_fraction: float =  (
+    solar_thermal_cw_fraction: float = (
         np.sum(
             simulation_results[ColumnHeader.CLEAN_WATER_FROM_THERMAL_RENEWABLES.value]
             * simulation_results[
@@ -808,7 +818,9 @@ def _appraise_clean_water_system_tech(
         simulation_results[ColumnHeader.TOTAL_CW_SUPPLIED.value]
     )
 
-    clean_water_demand_covered: float = total_clean_water / np.sum(simulation_results[ColumnHeader.TOTAL_CW_LOAD.value])
+    clean_water_demand_covered: float = total_clean_water / np.sum(
+        simulation_results[ColumnHeader.TOTAL_CW_LOAD.value]
+    )
 
     # Calculate total discounted clean water values
     total_clean_water_consumed_daily: pd.Series = hourly_profile_to_daily_sum(
@@ -1015,7 +1027,8 @@ def _appraise_hot_water_system_tech(
     if scenario.hot_water_scenario.auxiliary_heater == AuxiliaryHeaterType.ELECTRIC:
         renewable_hot_water_fraction: float = round(
             renewables_fraction * (hot_water_demand_covered - solar_thermal_hw_fraction)
-            + solar_thermal_hw_fraction, 3
+            + solar_thermal_hw_fraction,
+            3,
         )
     else:
         renewable_hot_water_fraction = solar_thermal_hw_fraction
@@ -1121,7 +1134,12 @@ def _simulation_technical_appraisal(
         solar_thermal_hw_fraction,
         total_hot_water,
     ) = _appraise_hot_water_system_tech(
-        finance_inputs, logger, renewables_fraction, scenario, simulation_results, system_details
+        finance_inputs,
+        logger,
+        renewables_fraction,
+        scenario,
+        simulation_results,
+        system_details,
     )
 
     # Calculate the fraction of power used providing each resource.
@@ -1198,7 +1216,9 @@ def _simulation_technical_appraisal(
     return TechnicalAppraisal(
         round(system_blackouts, 3),
         round(clean_water_blackouts, 3) if clean_water_blackouts is not None else None,
-        round(clean_water_demand_covered, 3) if clean_water_demand_covered is not None else None,
+        round(clean_water_demand_covered, 3)
+        if clean_water_demand_covered is not None
+        else None,
         round(total_diesel_used, 3),
         round(total_diesel_fuel, 3),
         round(discounted_clean_water, 3)
@@ -1224,8 +1244,12 @@ def _simulation_technical_appraisal(
         round(renewable_hot_water_fraction, 3)
         if renewable_hot_water_fraction is not None
         else None,
-        round(solar_thermal_cw_fraction, 3) if solar_thermal_cw_fraction is not None else None,
-        round(solar_thermal_hw_fraction, 3) if solar_thermal_hw_fraction is not None else None,
+        round(solar_thermal_cw_fraction, 3)
+        if solar_thermal_cw_fraction is not None
+        else None,
+        round(solar_thermal_hw_fraction, 3)
+        if solar_thermal_hw_fraction is not None
+        else None,
         round(storage_electricity_used, 3),
         round(total_clean_water, 3) if total_clean_water is not None else None,
         round(total_hot_water, 3) if total_hot_water is not None else None,
@@ -1440,7 +1464,9 @@ def appraise_system(
         Criterion.CLEAN_WATER_BLACKOUTS: technical_appraisal.clean_water_blackouts,
         Criterion.CUMULATIVE_BRINE: cumulative_results.waste_produced[
             WasteProduct.BRINE
-        ] if WasteProduct.BRINE in cumulative_results.waste_produced else None,
+        ]
+        if WasteProduct.BRINE in cumulative_results.waste_produced
+        else None,
         Criterion.CUMULATIVE_COST: cumulative_results.cost,
         Criterion.CUMULATIVE_GHGS: cumulative_results.ghgs,
         Criterion.CUMULATIVE_SYSTEM_COST: cumulative_results.system_cost,
@@ -1465,9 +1491,15 @@ def appraise_system(
         Criterion.TOTAL_GHGS: environmental_appraisal.total_ghgs,
         Criterion.TOTAL_SYSTEM_COST: financial_appraisal.total_system_cost,
         Criterion.TOTAL_SYSTEM_GHGS: environmental_appraisal.total_system_ghgs,
-        Criterion.UNMET_CLEAN_WATER_FRACTION: (1 - technical_appraisal.cw_demand_covered) if technical_appraisal.cw_demand_covered is not None else None,
+        Criterion.UNMET_CLEAN_WATER_FRACTION: (
+            1 - technical_appraisal.cw_demand_covered
+        )
+        if technical_appraisal.cw_demand_covered is not None
+        else None,
         Criterion.UNMET_ELECTRICITY_FRACTION: technical_appraisal.unmet_energy_fraction,
-        Criterion.UNMET_HOT_WATER_FRACTION: (1 - technical_appraisal.hw_demand_covered) if technical_appraisal.hw_demand_covered is not None else None,
+        Criterion.UNMET_HOT_WATER_FRACTION: (1 - technical_appraisal.hw_demand_covered)
+        if technical_appraisal.hw_demand_covered is not None
+        else None,
     }
 
     if technical_appraisal.clean_water_blackouts is not None:

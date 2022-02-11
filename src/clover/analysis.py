@@ -2552,7 +2552,9 @@ def plot_outputs(
                     np.reshape(
                         simulation_output[
                             HOURS_UNTIL_MARCH : HOURS_UNTIL_MARCH + 31 * 24
-                        ][ColumnHeader.CLEAN_WATER_FROM_THERMAL_RENEWABLES.value].values,
+                        ][
+                            ColumnHeader.CLEAN_WATER_FROM_THERMAL_RENEWABLES.value
+                        ].values,
                         (31, 24),
                     ),
                     axis=0,
@@ -2570,7 +2572,9 @@ def plot_outputs(
                     np.reshape(
                         simulation_output[
                             HOURS_UNTIL_JULY : HOURS_UNTIL_JULY + 31 * 24
-                        ][ColumnHeader.CLEAN_WATER_FROM_THERMAL_RENEWABLES.value].values,
+                        ][
+                            ColumnHeader.CLEAN_WATER_FROM_THERMAL_RENEWABLES.value
+                        ].values,
                         (31, 24),
                     ),
                     axis=0,

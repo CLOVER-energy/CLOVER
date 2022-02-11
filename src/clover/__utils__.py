@@ -533,7 +533,9 @@ class ColumnHeader(enum.Enum):
     )
     CLEAN_WATER_FROM_PRIORITISATION = "Clean water supplied via backup desalination (l)"
     CLEAN_WATER_FROM_STORAGE = "Clean water supplied via tank storage (l)"
-    CLEAN_WATER_FROM_THERMAL_RENEWABLES = "Renewable clean water produced directly and thermally (l)"
+    CLEAN_WATER_FROM_THERMAL_RENEWABLES = (
+        "Renewable clean water produced directly and thermally (l)"
+    )
     CW_PVT_ELECTRICITY_SUPPLIED = "Clean-water PV-T electric energy supplied (kWh)"
     CW_PVT_ELECTRICITY_SUPPLIED_PER_KWP = (
         "Clean-water PV-T electric energy supplied per kWp"
@@ -2865,7 +2867,11 @@ class TechnicalAppraisal:
             ] = self.power_consumed_fraction[ResourceType.HOT_CLEAN_WATER]
 
         # Remove any "Nan" entries.
-        technical_appraisal_dict = {key: value for key, value in technical_appraisal_dict.items() if value is not None}
+        technical_appraisal_dict = {
+            key: value
+            for key, value in technical_appraisal_dict.items()
+            if value is not None
+        }
 
         return technical_appraisal_dict
 
