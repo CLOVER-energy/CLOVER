@@ -2366,6 +2366,9 @@ class CumulativeResults:
     .. attribute:: cost
         The cumulative cost, measured in USD.
 
+    .. attribute:: discounted_clean_water
+        The discounted clean water produced, measured in litres.
+
     .. attribute:: discounted_electricity
         The discounted electricity produced, measured in kWh.
 
@@ -2374,6 +2377,9 @@ class CumulativeResults:
 
     .. attribute:: discounted_heating
         The discounted heating produced, measured in kWh.
+
+    .. attribute:: discounted_hot_water
+        The discounted hot water produced, measured in litres.
 
     .. attribute:: electricity
         The electricity produced, measured in kWh.
@@ -2386,6 +2392,9 @@ class CumulativeResults:
 
     .. attribute:: heating
         The total heating produced, measured in kWh_th.
+
+    .. attribute:: hot_water
+        The cumulative hot water produced, measured in litres.
 
     .. attribute:: subsystem_costs
         The cumulative costs of each individual subsystem.
@@ -2406,13 +2415,16 @@ class CumulativeResults:
 
     clean_water: Optional[float] = 0
     cost: float = 0
+    discounted_clean_water: Optional[float] = 0
     discounted_electricity: float = 0
     discounted_energy: float = 0
     discounted_heating: float = 0
+    discounted_hot_water: Optional[float] = 0
     electricity: float = 0
     energy: float = 0
     ghgs: float = 0
     heating: float = 0
+    hot_water: Optional[float] = 0
     subsystem_costs: Optional[Dict[ResourceType, float]] = None
     subsystem_ghgs: Optional[Dict[ResourceType, float]] = None
     system_cost: float = 0
@@ -2430,6 +2442,8 @@ class CumulativeResults:
 
         cumulative_results = {
             "cumulative_cost": self.cost,
+            "cumulative_discounted_electricity": self.discounted_electricity,
+            "cumulative_electricity": self.electricity,
             "cumulative_discounted_energy": self.discounted_energy,
             "cumulative_energy": self.energy,
             "cumulative_ghgs": self.ghgs,
@@ -2439,6 +2453,21 @@ class CumulativeResults:
 
         if self.clean_water is not None:
             cumulative_results["clean_water"] = self.clean_water
+
+        if self.discounted_clean_water is not None:
+            cumulative_results["discounted_clean_water"] = self.discounted_clean_water
+
+        if self.discounted_heating is not None:
+            cumulative_results["discounted_heating"] = self.discounted_heating
+
+        if self.discounted_hot_water is not None:
+            cumulative_results["discounted_hot_water"] = self.discounted_hot_water
+
+        if self.heating is not None:
+            cumulative_results["heating"] = self.heating
+
+        if self.hot_water is not None:
+            cumulative_results["hot_water"] = self.hot_water
 
         if self.subsystem_costs is not None:
             for key, value in self.subsystem_costs.items():
@@ -2640,6 +2669,9 @@ class TechnicalAppraisal:
     .. attribute:: diesel_fuel_usage
         The amount of diesel fuel usage, measured in litres.
 
+    .. attribute:: discounted_clean_water
+        The total discounted clean water consumed, measured in litres.
+
     .. attribute:: discounted_electricity
         The total discounted electricity consumed, measured in kWh.
 
@@ -2648,6 +2680,9 @@ class TechnicalAppraisal:
 
     .. attribute:: discounted_heating
         The total discounted heating consumed, measured in kWh.
+
+    .. attribute:: discounted_hot_water
+        The total discounted hot water consumed, measured in litres.
 
     .. attribute:: grid_energy
         The total energy which was supplied by the grid, measured in kWh.
@@ -2720,24 +2755,27 @@ class TechnicalAppraisal:
     clean_water_blackouts: Optional[float] = 0
     diesel_energy: float = 0
     diesel_fuel_usage: float = 0
+    discounted_clean_water: Optional[float] = 0
     discounted_electricity: float = 0
     discounted_energy: float = 0
-    discounted_heating: float = 0
+    discounted_heating: Optional[float] = 0
+    discounted_hot_water: Optional[float] = 0
     grid_energy: float = 0
     hw_demand_covered: Optional[float] = 0
     kerosene_displacement: float = 0
     power_consumed_fraction: Optional[Dict[ResourceType, float]] = None
     pv_energy: float = 0
     pvt_energy: Optional[float] = 0
-    renewable_clean_water_fraction: float = 0
+    renewable_clean_water_fraction: Optional[float] = 0
     renewable_energy: float = 0
     renewable_energy_fraction: float = 0
+    renewable_hot_water_fraction: Optional[float] = 0
     storage_energy: float = 0
-    total_clean_water: float = 0
-    total_hot_water: float = 0
+    total_clean_water: Optional[float] = 0
+    total_hot_water: Optional[float] = 0
     total_electricity_consumed: float = 0
     total_energy_consumed: float = 0
-    total_heating_consumed: float = 0
+    total_heating_consumed: Optional[float] = 0
     unmet_energy: float = 0
     unmet_energy_fraction: float = 0
 
@@ -2750,20 +2788,23 @@ class TechnicalAppraisal:
 
         """
 
-        technical_appraisal_dict: Dict[str, float] = {
+        technical_appraisal_dict: Dict[str, Optional[float]] = {
             "blackouts": self.blackouts,
             "clean_water_blackouts": self.clean_water_blackouts,
             "diesel_energy": self.diesel_energy,
             "diesel_fuel_usage": self.diesel_fuel_usage,
+            "discounted_clean_water": self.discounted_clean_water,
             "discounted_electricity": self.discounted_energy,
             "discounted_energy": self.discounted_energy,
             "discounted_heating": self.discounted_energy,
+            "discounted_hot_water": self.discounted_hot_water,
             "grid_energy": self.grid_energy,
             "hot_water_demand_covered": self.hw_demand_covered,
             "kerosene_displacement": self.kerosene_displacement,
             "renewable_clean_water_fraction": self.renewable_clean_water_fraction,
             "renewable_energy": self.renewable_energy,
             "renewable_energy_fraction": self.renewable_energy_fraction,
+            "renewable_hot_water_fraction": self.renewable_hot_water_fraction,
             "storage_energy": self.storage_energy,
             "total_clean_water": self.total_clean_water,
             "total_hot_water": self.total_hot_water,
@@ -2787,6 +2828,11 @@ class TechnicalAppraisal:
             technical_appraisal_dict[
                 "hot_water_power_consumption_fraction"
             ] = self.power_consumed_fraction[ResourceType.HOT_CLEAN_WATER]
+
+        # Remove any "Nan" entries.
+        for key, value in technical_appraisal_dict.items():
+            if value is None:
+                technical_appraisal_dict.pop(key)
 
         return technical_appraisal_dict
 
