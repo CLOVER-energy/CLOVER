@@ -205,9 +205,10 @@ def _simulation_cumulative_results(
         + previous_system.cumulative_results.discounted_energy
     )
     cumulative_discounted_heating = (
-        (technical_appraisal.discounted_heating if technical_appraisal.discounted_heating is not None else 0)
-        + previous_system.cumulative_results.discounted_heating
-    )
+        technical_appraisal.discounted_heating
+        if technical_appraisal.discounted_heating is not None
+        else 0
+    ) + previous_system.cumulative_results.discounted_heating
     cumulative_subsystem_costs = {
         resource_type: cost
         + (
@@ -737,9 +738,7 @@ def _appraise_clean_water_system_tech(
 
     clean_water_blackouts: Optional[float] = round(
         float(
-            np.mean(
-                simulation_results[ColumnHeader.CLEAN_WATER_BLACKOUTS.value].values
-            )
+            np.mean(simulation_results[ColumnHeader.CLEAN_WATER_BLACKOUTS.value].values)
         ),
         3,
     )
@@ -748,49 +747,36 @@ def _appraise_clean_water_system_tech(
     ]
     renewable_clean_water_fraction: Optional[float] = (
         (
-            (
-                # Clean water taken from the thermal desalination plant(s) directly.
-                np.sum(
-                    simulation_results[
-                        ColumnHeader.CLEAN_WATER_FROM_RENEWABLES.value
-                    ]
-                    * simulation_results[
-                        ColumnHeader.DESALINATION_PLANT_RENEWABLE_FRACTION.value
-                    ]
-                )
-                if ColumnHeader.CLEAN_WATER_FROM_RENEWABLES.value
-                in simulation_results
-                else 0
-            )
-            # Clean water taken from tank storage.
-            + np.sum(
-                simulation_results[ColumnHeader.CLEAN_WATER_FROM_STORAGE.value]
-            )
-            # Clean water generated using excess power in the minigrid.
-            + np.sum(
-                simulation_results[
-                    ColumnHeader.CLEAN_WATER_FROM_EXCESS_ELECTRICITY.value
+            # Clean water taken from the thermal desalination plant(s) directly.
+            np.sum(
+                simulation_results[ColumnHeader.CLEAN_WATER_FROM_RENEWABLES.value]
+                * simulation_results[
+                    ColumnHeader.DESALINATION_PLANT_RENEWABLE_FRACTION.value
                 ]
             )
-            # Clean water generated using a prioritisation approach. This will be as
-            # renewable as the electricity mix of the minigrid (on average).
-            + (
-                renewables_fraction
-                * np.sum(
-                    simulation_results[
-                        ColumnHeader.CLEAN_WATER_FROM_PRIORITISATION.value
-                    ]
-                )
-                if ColumnHeader.CLEAN_WATER_FROM_PRIORITISATION.value
-                in simulation_results
-                else 0
-            )
+            if ColumnHeader.CLEAN_WATER_FROM_RENEWABLES.value in simulation_results
+            else 0
         )
-        / np.sum(clean_water_consumed)
-    )
+        # Clean water taken from tank storage.
+        + np.sum(simulation_results[ColumnHeader.CLEAN_WATER_FROM_STORAGE.value])
+        # Clean water generated using excess power in the minigrid.
+        + np.sum(
+            simulation_results[ColumnHeader.CLEAN_WATER_FROM_EXCESS_ELECTRICITY.value]
+        )
+        # Clean water generated using a prioritisation approach. This will be as
+        # renewable as the electricity mix of the minigrid (on average).
+        + (
+            renewables_fraction
+            * np.sum(
+                simulation_results[ColumnHeader.CLEAN_WATER_FROM_PRIORITISATION.value]
+            )
+            if ColumnHeader.CLEAN_WATER_FROM_PRIORITISATION.value in simulation_results
+            else 0
+        )
+    ) / np.sum(clean_water_consumed)
 
-    total_clean_water: Optional[float] = (
-        np.sum(simulation_results[ColumnHeader.TOTAL_CW_SUPPLIED.value])
+    total_clean_water: Optional[float] = np.sum(
+        simulation_results[ColumnHeader.TOTAL_CW_SUPPLIED.value]
     )
 
     # Calculate total discounted clean water values
@@ -803,13 +789,13 @@ def _appraise_clean_water_system_tech(
         total_clean_water_consumed_daily,
         start_year=system_details.start_year,
         end_year=system_details.end_year,
-        )
+    )
 
     return (
         clean_water_blackouts,
         discounted_clean_water,
         renewable_clean_water_fraction,
-        total_clean_water
+        total_clean_water,
     )
 
 
@@ -863,7 +849,9 @@ def _appraise_electric_system_tech(
 
     """
 
-    electricity_consumed = simulation_results[ColumnHeader.TOTAL_ELECTRICITY_CONSUMED.value]
+    electricity_consumed = simulation_results[
+        ColumnHeader.TOTAL_ELECTRICITY_CONSUMED.value
+    ]
     total_electricity_consumed: float = np.sum(electricity_consumed)
     total_load_energy = np.sum(simulation_results[ColumnHeader.LOAD_ENERGY.value])
     renewable_electricity_used = np.sum(
@@ -884,9 +872,7 @@ def _appraise_electric_system_tech(
     total_diesel_used = np.sum(
         simulation_results[ColumnHeader.DIESEL_ENERGY_SUPPLIED.value]
     )
-    unmet_electricity = np.sum(
-        simulation_results[ColumnHeader.UNMET_ELECTRICITY.value]
-    )
+    unmet_electricity = np.sum(simulation_results[ColumnHeader.UNMET_ELECTRICITY.value])
     renewables_fraction = (
         renewable_electricity_used + storage_electricity_used
     ) / total_electricity_consumed
@@ -904,7 +890,20 @@ def _appraise_electric_system_tech(
         end_year=system_details.end_year,
     )
 
-    return discounted_electricity, electricity_consumed, renewable_electricity_used, renewables_fraction, storage_electricity_used, total_diesel_used, total_electricity_consumed, total_grid_used, total_pv_energy, total_pvt_energy, unmet_electricity, unmet_fraction
+    return (
+        discounted_electricity,
+        electricity_consumed,
+        renewable_electricity_used,
+        renewables_fraction,
+        storage_electricity_used,
+        total_diesel_used,
+        total_electricity_consumed,
+        total_grid_used,
+        total_pv_energy,
+        total_pvt_energy,
+        unmet_electricity,
+        unmet_fraction,
+    )
 
 
 def _appraise_hot_water_system_tech(
@@ -939,7 +938,12 @@ def _appraise_hot_water_system_tech(
     """
 
     if ColumnHeader.HW_RENEWABLES_FRACTION.value not in simulation_results:
-        return (None, None, None, None,)
+        return (
+            None,
+            None,
+            None,
+            None,
+        )
 
     renewable_hot_water_fraction: float = round(
         float(
@@ -952,15 +956,15 @@ def _appraise_hot_water_system_tech(
 
     hot_water_demand_covered: float = round(
         float(
-            np.mean(
-                simulation_results[ColumnHeader.HW_VOL_DEMAND_COVERED.value].values
-            )
+            np.mean(simulation_results[ColumnHeader.HW_VOL_DEMAND_COVERED.value].values)
         ),
         3,
     )
 
     # Calculate the total heating power consumed by the system.
-    hot_water_consumed: pd.Series = simulation_results[ColumnHeader.HW_TANK_OUTPUT.value]
+    hot_water_consumed: pd.Series = simulation_results[
+        ColumnHeader.HW_TANK_OUTPUT.value
+    ]
     total_hot_water: Optional[float] = np.sum(hot_water_consumed)
 
     # Calculate total discounted hot water values.
@@ -975,7 +979,13 @@ def _appraise_hot_water_system_tech(
         end_year=system_details.end_year,
     )
 
-    return discounted_hot_water, hot_water_consumed, hot_water_demand_covered, renewable_hot_water_fraction, total_hot_water
+    return (
+        discounted_hot_water,
+        hot_water_consumed,
+        hot_water_demand_covered,
+        renewable_hot_water_fraction,
+        total_hot_water,
+    )
 
 
 def _simulation_technical_appraisal(
@@ -1013,16 +1023,48 @@ def _simulation_technical_appraisal(
     )
 
     # Electricity system.
-    electricity_consumed, discounted_electricity, renewable_electricity_used, renewables_fraction, storage_electricity_used, total_diesel_used, total_electricity_consumed, total_grid_used, total_pv_energy, total_pvt_energy, unmet_electricity, unmet_fraction = _appraise_electric_system_tech(finance_inputs, logger, simulation_results, system_details)
+    (
+        electricity_consumed,
+        discounted_electricity,
+        renewable_electricity_used,
+        renewables_fraction,
+        storage_electricity_used,
+        total_diesel_used,
+        total_electricity_consumed,
+        total_grid_used,
+        total_pv_energy,
+        total_pvt_energy,
+        unmet_electricity,
+        unmet_fraction,
+    ) = _appraise_electric_system_tech(
+        finance_inputs, logger, simulation_results, system_details
+    )
 
     # Clean-water system.
-    clean_water_blackouts, discounted_clean_water, renewable_clean_water_fraction, total_clean_water = _appraise_clean_water_system_tech(finance_inputs, logger, renewables_fraction, simulation_results, system_details)
+    (
+        clean_water_blackouts,
+        discounted_clean_water,
+        renewable_clean_water_fraction,
+        total_clean_water,
+    ) = _appraise_clean_water_system_tech(
+        finance_inputs, logger, renewables_fraction, simulation_results, system_details
+    )
 
     # Hot-water system.
-    discounted_hot_water, hot_water_consumed, hot_water_demand_covered, renewable_hot_water_fraction, total_hot_water = _appraise_hot_water_system_tech(finance_inputs, logger, simulation_results, system_details)
+    (
+        discounted_hot_water,
+        hot_water_consumed,
+        hot_water_demand_covered,
+        renewable_hot_water_fraction,
+        total_hot_water,
+    ) = _appraise_hot_water_system_tech(
+        finance_inputs, logger, simulation_results, system_details
+    )
 
     # Calculate the fraction of power used providing each resource.
-    power_consumed_fraction = _calculate_power_consumed_fraction(simulation_results, total_electricity_consumed)
+    power_consumed_fraction = _calculate_power_consumed_fraction(
+        simulation_results, total_electricity_consumed
+    )
 
     # Calculate the total energy consumed by the system using the conversion factors
     # defined by the user.
@@ -1035,8 +1077,8 @@ def _simulation_technical_appraisal(
             hot_water_consumed
             * HEAT_CAPACITY_OF_WATER
             * simulation_results[ColumnHeader.HW_TEMPERATURE_GAIN.value]
-        ) # + clean_water_system_heat + ...
-        total_heating_consumed =  np.sum(heating_consumed)
+        )  # + clean_water_system_heat + ...
+        total_heating_consumed = np.sum(heating_consumed)
 
         # Append the energy consumption information.
         energy_consumed += scenario.reference_thermal_efficiency * heating_consumed
@@ -1054,7 +1096,7 @@ def _simulation_technical_appraisal(
             total_heating_consumed_daily,
             start_year=system_details.start_year,
             end_year=system_details.end_year,
-            )
+        )
 
     else:
         discounted_heating = None
@@ -1095,27 +1137,37 @@ def _simulation_technical_appraisal(
         round(clean_water_blackouts, 3) if clean_water_blackouts is not None else None,
         round(total_diesel_used, 3),
         round(total_diesel_fuel, 3),
-        round(discounted_clean_water, 3) if discounted_clean_water is not None else None,
+        round(discounted_clean_water, 3)
+        if discounted_clean_water is not None
+        else None,
         round(discounted_electricity, 3),
         round(discounted_energy, 3),
         round(discounted_heating, 3) if discounted_heating is not None else None,
         round(discounted_hot_water, 3) if discounted_hot_water is not None else None,
         round(total_grid_used, 3),
-        round(hot_water_demand_covered, 3) if hot_water_demand_covered is not None else None,
+        round(hot_water_demand_covered, 3)
+        if hot_water_demand_covered is not None
+        else None,
         round(kerosene_displacement, 3),
         power_consumed_fraction,
         round(total_pv_energy, 3),
         round(total_pvt_energy, 3) if total_pvt_energy is not None else None,
-        round(renewable_clean_water_fraction, 3) if renewable_clean_water_fraction is not None else None,
+        round(renewable_clean_water_fraction, 3)
+        if renewable_clean_water_fraction is not None
+        else None,
         round(renewable_electricity_used, 3),
         round(renewables_fraction, 3),
-        round(renewable_hot_water_fraction, 3) if renewable_hot_water_fraction is not None else None,
+        round(renewable_hot_water_fraction, 3)
+        if renewable_hot_water_fraction is not None
+        else None,
         round(storage_electricity_used, 3),
         round(total_clean_water, 3) if total_clean_water is not None else None,
         round(total_hot_water, 3) if total_hot_water is not None else None,
         round(total_electricity_consumed, 3),
         round(total_energy_consumed, 3),
-        round(total_heating_consumed, 3) if total_heating_consumed is not None else None,
+        round(total_heating_consumed, 3)
+        if total_heating_consumed is not None
+        else None,
         round(unmet_electricity, 3),
         round(unmet_fraction, 3),
     )
@@ -1233,7 +1285,7 @@ def appraise_system(
 
     # Get results which will be carried forward into optimisation process
     technical_appraisal = _simulation_technical_appraisal(
-        finance_inputs, logger, scenario,simulation_results, system_details
+        finance_inputs, logger, scenario, simulation_results, system_details
     )
 
     financial_appraisal = _simulation_financial_appraisal(
@@ -1296,11 +1348,13 @@ def appraise_system(
         cumulative_results.system_cost / cumulative_results.discounted_electricity
     )
     lcu_h: Optional[float] = (
-            float(
+        float(
             cumulative_results.subsystem_costs[ResourceType.HOT_CLEAN_WATER]
             / cumulative_results.discounted_heating
         )
-        if cumulative_results.discounted_heating is not None else None)
+        if cumulative_results.discounted_heating is not None
+        else None
+    )
     lcu_w: Optional[float] = (
         float(
             cumulative_results.subsystem_costs[ResourceType.CLEAN_WATER]
@@ -1318,7 +1372,9 @@ def appraise_system(
     criteria: Dict[Criterion, Optional[float]] = {
         Criterion.BLACKOUTS: technical_appraisal.blackouts,
         Criterion.CLEAN_WATER_BLACKOUTS: technical_appraisal.clean_water_blackouts,
-        Criterion.CUMULATIVE_BRINE:cumulative_results.waste_produced[WasteProduct.BRINE],
+        Criterion.CUMULATIVE_BRINE: cumulative_results.waste_produced[
+            WasteProduct.BRINE
+        ],
         Criterion.CUMULATIVE_COST: cumulative_results.cost,
         Criterion.CUMULATIVE_GHGS: cumulative_results.ghgs,
         Criterion.CUMULATIVE_SYSTEM_COST: cumulative_results.system_cost,
