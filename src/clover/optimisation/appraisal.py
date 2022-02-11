@@ -475,13 +475,17 @@ def _simulation_environmental_appraisal(
     )
 
     # Apportion the connections emissions.
-    total_subsystem_emissions[ResourceType.ELECTRIC] += connections_ghgs
+    total_subsystem_emissions[ResourceType.ELECTRIC] +=(
+        additional_equipment_emissions
+        + additional_om_emissions
+        + connections_ghgs
+    )
 
     # Total GHGs incurred during simulation period
     total_equipment_emissions = (
-        sum(subsystem_equipment_emissions.values()) + additional_equipment_emissions
+        sum(subsystem_equipment_emissions.values())
     )
-    total_om_emissions = sum(subsystem_om_emissions.values()) + additional_om_emissions
+    total_om_emissions = sum(subsystem_om_emissions.values())
     total_system_ghgs = sum(total_subsystem_emissions.values())
     total_ghgs = total_system_ghgs + kerosene_ghgs
 
@@ -685,13 +689,17 @@ def _simulation_financial_appraisal(
     )
 
     # Add the connections cost for the electric subsystem.
-    total_subsystem_costs[ResourceType.ELECTRIC] += connections_cost
+    total_subsystem_costs[ResourceType.ELECTRIC] += (
+        additional_installation_costs
+        + additional_om_costs
+        + connections_cost
+    )
 
     # Total cost incurred during simulation period (discounted)
     total_equipment_costs = (
-        sum(subsystem_equipment_costs.values()) + additional_installation_costs
+        sum(subsystem_equipment_costs.values())
     )
-    total_om_costs = sum(subsystem_om_costs.values()) + additional_om_costs
+    total_om_costs = sum(subsystem_om_costs.values())
 
     total_system_cost = sum(total_subsystem_costs.values())
 
