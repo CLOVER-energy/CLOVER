@@ -27,17 +27,20 @@
 #   total_system_cost               $
 #   total_ghgs                      kgCO2eq
 #   total_system_ghgs               kgCO2eq
-#   unmet_clean_water_fraction
-#   unmet_energy_fraction
-#   unmet_hot_water_fraction
+#   unmet_cw_fraction
+#   unmet_electricity_fraction
+#   unmet_hw_fraction
 # Valid optimisation criteria, usually set to "maximise":
+#   cw_renewables_fraction
 #   hw_demand_covered
+#   hw_renewables_fraction
 #   kerosene_cost_mitigated         $
 #   kerosene_displacement
 #   kerosene_ghgs_mitigated         kgCO2eq
 #   renewables_clean_water_fraction
 #   renewables_fraction
-#   renewables_hot_water_fraction
+#   solar_thermal_cw_fraction
+#   solar_thermal_hw_fraction
 #
 # NOTE: Not all optimisation criteria may be available for the system depending
 # on the resource types being considered.
@@ -57,4 +60,4 @@ optimisations:
   - optimisation_criteria:
       - lcue: minimise # Name of the column and whether to maximise/minimise.
     threshold_criteria:
-      - blackouts: 0.1 # Max/min value permitted (see guidance)
+      - blackouts: 0.05 # Max/min value permitted (see guidance)
