@@ -641,7 +641,9 @@ def _calculate_renewable_cw_profiles(
         clean_water_pvt_electric_power_per_unit = (
             clean_water_pvt_electric_power_per_unit.reset_index(drop=True)
         )
-        renewable_thermal_cw_produced = renewable_thermal_cw_produced.reset_index(drop=True)
+        renewable_thermal_cw_produced = renewable_thermal_cw_produced.reset_index(
+            drop=True
+        )
         buffer_tank_volume_supplied = buffer_tank_volume_supplied.reset_index(drop=True)
         thermal_desalination_electric_power_consumed = (
             thermal_desalination_electric_power_consumed.reset_index(drop=True)
