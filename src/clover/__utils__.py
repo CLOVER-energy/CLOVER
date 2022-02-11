@@ -2584,6 +2584,12 @@ class EnvironmentalAppraisal:
                 }
             )
 
+        environmental_appraisal_dict = {
+            key: value
+            for key, value in environmental_appraisal_dict.items()
+            if value is not None
+        }
+
         return environmental_appraisal_dict
 
 
@@ -2664,6 +2670,12 @@ class FinancialAppraisal:
                     for resource_type, cost in self.subsystem_costs.items()
                 }
             )
+
+        financial_appraisal_dict = {
+            key: value
+            for key, value in financial_appraisal_dict.items()
+            if value is not None
+        }
 
         return financial_appraisal_dict
 
