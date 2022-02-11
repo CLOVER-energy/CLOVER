@@ -2532,9 +2532,8 @@ class TechnicalAppraisal:
 
         """
 
-        return {
+        technical_appraisal_dict = {
             "blackouts": self.blackouts,
-            "clean_water_blackouts": self.clean_water_blackouts,
             "diesel_energy": self.diesel_energy,
             "diesel_fuel_usage": self.diesel_fuel_usage,
             "discounted_energy": self.discounted_energy,
@@ -2548,6 +2547,11 @@ class TechnicalAppraisal:
             "unmet_energy": self.unmet_energy,
             "unmet_energy_fraction": self.unmet_energy_fraction,
         }
+
+        if self.clean_water_blackouts is not None:
+            technical_appraisal_dict["clean_water_blackouts"] = self.clean_water_blackouts
+
+        return technical_appraisal_dict
 
 
 @dataclasses.dataclass
