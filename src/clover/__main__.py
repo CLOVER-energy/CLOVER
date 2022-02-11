@@ -450,6 +450,7 @@ def main(args: List[Any]) -> None:
     # Determine the operating mode for the run.
     operating_mode = _get_operating_mode(parsed_args)
     if operating_mode == OperatingMode.SIMULATION:
+        output_directory: Optional[str] = simulation_output_directory
         logger.info(
             "A single CLOVER simulation will be run for locatation '%s'",
             parsed_args.location,
@@ -463,6 +464,7 @@ def main(args: List[Any]) -> None:
             )
         )
     if operating_mode == OperatingMode.OPTIMISATION:
+        output_directory = optimisation_output_directory
         logger.info(
             "A CLOVER optimisation will be run for location '%s'", parsed_args.location
         )
@@ -475,6 +477,7 @@ def main(args: List[Any]) -> None:
             )
         )
     if operating_mode == OperatingMode.PROFILE_GENERATION:
+        output_directory = None
         logger.info("No CLI mode was specified, CLOVER will only generate profiles.")
         print(
             "Neither `simulation` or `optimisation` specified, running profile "
@@ -489,7 +492,20 @@ def main(args: List[Any]) -> None:
     # If the output folder already exists, then confirm from the user that they wish to
     # overwrite its contents.
     if parsed_args.output is not None:
-        if os.path.isdir(os.path.join(simulation_output_directory, parsed_args.output)):
+        if output_directory is None:
+            logger.error(
+                "%sCannot specify an output directory if only profile generation is "
+                "taking place.%s",
+                BColours.fail,
+                BColours.endc
+            )
+            raise Exception(
+                "The `output` flag can only be used if a simulation or optimisation "
+                "output is expected."
+            )
+        if os.path.isdir(os.path.join(
+            output_directory,
+            parsed_args.output)):
             try:
                 confirm_overwrite = {"y": True, "n": False, "Y": True, "N": False}[
                     input(
