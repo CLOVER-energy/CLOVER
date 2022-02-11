@@ -526,7 +526,7 @@ def _parse_conversion_inputs(
             if not isinstance(conversion_inputs, dict):
                 logger.error(
                     "%sThe conversion inputs file must be a `dict` of valid converters "
-                    "with convertors listed under the heading '%s'.%s",
+                    "with converters listed under the heading '%s'.%s",
                     BColours.fail,
                     CONVERTERS,
                     BColours.endc,
@@ -1080,7 +1080,6 @@ def _parse_pvt_reduced_models(
                     )
                     logger.critical("Failed to determine PV-T reduced thermal model.")
                     raise
-
             else:
                 try:
                     with open(
