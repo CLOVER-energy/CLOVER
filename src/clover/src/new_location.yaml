@@ -954,6 +954,7 @@
                   commercial: true # "true" or "false"
                   public: true # "true" or "false"
                 distribution_network: dc # DC ("dc") or AC ("ac") distribution network
+                reference_thermal_efficiency: 0.55 # Efficiency of ref. thermal plant (0.0-1.0)
                 resource_types:
                   - electric_power
         - directory: simulation
