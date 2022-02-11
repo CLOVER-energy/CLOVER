@@ -400,7 +400,7 @@ def _calculate_renewable_cw_profiles(
             Celcius.
         - clean_water_pvt_electric_power_per_unit:
             The electric power produced by the PV-T, in kWh, per unit of PV-T installed.
-        - renewable_cw_produced:
+        - renewable_thermal_cw_produced:
             The amount of clean water produced renewably, measured in litres.
         - required_feedwater_sources:
             The `list` of feedwater sources required to supply the needs of the
@@ -597,14 +597,14 @@ def _calculate_renewable_cw_profiles(
         logger.debug("PV-T performance successfully computed.")
 
         # Compute the clean water supplied by the desalination unit.
-        renewable_cw_produced: pd.DataFrame = (
+        renewable_thermal_cw_produced: pd.DataFrame = (
             buffer_tank_volume_supplied > 0
         ) * thermal_desalination_plant.maximum_output_capacity
 
         # Compute the power consumed by the thermal desalination plant.
         thermal_desalination_electric_power_consumed: pd.DataFrame = pd.DataFrame(
             (
-                (renewable_cw_produced > 0)
+                (renewable_thermal_cw_produced > 0)
                 * (
                     0.001
                     * thermal_desalination_plant.input_resource_consumption[
@@ -626,7 +626,7 @@ def _calculate_renewable_cw_profiles(
                 waste_product: defaultdict(
                     float,
                     (
-                        pd.DataFrame((renewable_cw_produced > 0).values)
+                        pd.DataFrame((renewable_thermal_cw_produced > 0).values)
                         * amount_produced
                     )[0].to_dict(),
                 )
@@ -641,7 +641,7 @@ def _calculate_renewable_cw_profiles(
         clean_water_pvt_electric_power_per_unit = (
             clean_water_pvt_electric_power_per_unit.reset_index(drop=True)
         )
-        renewable_cw_produced = renewable_cw_produced.reset_index(drop=True)
+        renewable_thermal_cw_produced = renewable_thermal_cw_produced.reset_index(drop=True)
         buffer_tank_volume_supplied = buffer_tank_volume_supplied.reset_index(drop=True)
         thermal_desalination_electric_power_consumed = (
             thermal_desalination_electric_power_consumed.reset_index(drop=True)
@@ -656,7 +656,7 @@ def _calculate_renewable_cw_profiles(
         clean_water_pvt_electric_power_per_unit = pd.DataFrame(
             [0] * (end_hour - start_hour)
         )
-        renewable_cw_produced = pd.DataFrame([0] * (end_hour - start_hour))
+        renewable_thermal_cw_produced = pd.DataFrame([0] * (end_hour - start_hour))
         required_feedwater_sources = []
         thermal_desalination_electric_power_consumed = pd.DataFrame(
             [0] * (end_hour - start_hour)
@@ -668,7 +668,7 @@ def _calculate_renewable_cw_profiles(
         feedwater_sources,
         clean_water_pvt_collector_output_temperature,
         clean_water_pvt_electric_power_per_unit,
-        renewable_cw_produced,
+        renewable_thermal_cw_produced,
         required_feedwater_sources,
         thermal_desalination_electric_power_consumed,
         total_waste_produced,
@@ -752,7 +752,7 @@ def _calculate_renewable_hw_profiles(
             The volume of hot-water supplied by the hot-water tank.
         - hot_water_temperature_gain:
             The temperature gain of water having been heated by the hot-water system.
-        - renewable_hw_fraction:
+        - solar_thermal_hw_fraction:
             The fraction of the hot-water demand which was covered using renewables vs
             which was covered using auxiliary means.
         - total_waste_produced:
@@ -1006,7 +1006,7 @@ def _calculate_renewable_hw_profiles(
         )
 
         # Determine the fraction of the output which was met renewably.
-        renewable_hw_fraction: pd.DataFrame = (
+        solar_thermal_hw_fraction: pd.DataFrame = (
             # The fraction of the total demand temperature that was covered using
             # renewables.
             hot_water_temperature_gain
@@ -1029,7 +1029,7 @@ def _calculate_renewable_hw_profiles(
         hot_water_tank_volume_supplied = hot_water_tank_volume_supplied.reset_index(
             drop=True
         )
-        renewable_hw_fraction = renewable_hw_fraction.reset_index(drop=True)
+        solar_thermal_hw_fraction = solar_thermal_hw_fraction.reset_index(drop=True)
         logger.debug("Hot-water PV-T performance profiles determined.")
 
     else:
@@ -1043,7 +1043,7 @@ def _calculate_renewable_hw_profiles(
         hot_water_tank_temperature = None
         hot_water_tank_volume_supplied = None
         hot_water_temperature_gain = None
-        renewable_hw_fraction = None
+        solar_thermal_hw_fraction = None
         volumetric_hw_dc_fraction = None
 
     return (
@@ -1054,7 +1054,7 @@ def _calculate_renewable_hw_profiles(
         hot_water_tank_temperature,
         hot_water_tank_volume_supplied,
         hot_water_temperature_gain,
-        renewable_hw_fraction,
+        solar_thermal_hw_fraction,
         total_waste_produced,
         volumetric_hw_dc_fraction,
     )
@@ -1643,7 +1643,7 @@ def _get_processed_load_profile(scenario: Scenario, total_load: pd.DataFrame):
 
 def _get_water_storage_profile(
     processed_total_cw_load: pd.DataFrame,
-    renewable_cw_produced: pd.DataFrame,
+    renewable_thermal_cw_produced: pd.DataFrame,
 ) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """
     Gets the storage profile for the clean-water system.
@@ -1653,7 +1653,7 @@ def _get_water_storage_profile(
             The minigrid being modelled.
         - processed_total_cw_load:
             The total clean-water load placed on the system.
-        - renewable_cw_produced:
+        - renewable_thermal_cw_produced:
             The total clean water produced directly from renewables, i.e., solar-based
             or solar-thermal-based desalination technologies.
         - scenario:
@@ -1672,11 +1672,11 @@ def _get_water_storage_profile(
 
     # Clean water is either produced directly or drawn from the storage tanks.
     remaining_profile = pd.DataFrame(
-        renewable_cw_produced.values - processed_total_cw_load.values
+        renewable_thermal_cw_produced.values - processed_total_cw_load.values
     )
     renewable_cw_used_directly: pd.DataFrame = pd.DataFrame(
         (remaining_profile > 0) * processed_total_cw_load.values
-        + (remaining_profile < 0) * renewable_cw_produced.values
+        + (remaining_profile < 0) * renewable_thermal_cw_produced.values
     )
 
     tank_storage_profile: pd.DataFrame = pd.DataFrame(remaining_profile.values)
@@ -1941,7 +1941,7 @@ def run_simulation(
             Amount of PV in PV units.
         - pv_power_produced:
             The total energy outputted by the solar system per PV unit.
-        - renewable_cw_produced:
+        - renewable_thermal_cw_produced:
             The amount of clean-water produced renewably, mesaured in litres.
         - scenario:
             The scenario being considered.
@@ -2031,7 +2031,7 @@ def run_simulation(
     clean_water_pvt_collector_output_temperature: Optional[pd.DataFrame]
     clean_water_pvt_electric_power_per_unit: pd.DataFrame
     feedwater_sources: List[Converter]
-    renewable_cw_produced: pd.DataFrame
+    renewable_thermal_cw_produced: pd.DataFrame
     thermal_desalination_electric_power_consumed: pd.DataFrame
 
     (
@@ -2040,7 +2040,7 @@ def run_simulation(
         feedwater_sources,
         clean_water_pvt_collector_output_temperature,
         clean_water_pvt_electric_power_per_unit,
-        renewable_cw_produced,
+        renewable_thermal_cw_produced,
         required_cw_feedwater_sources,
         thermal_desalination_electric_power_consumed,
         total_waste_produced,
@@ -2109,7 +2109,7 @@ def run_simulation(
             tank_storage_profile,
         ) = _get_water_storage_profile(
             processed_total_cw_load,
-            renewable_cw_produced,
+            renewable_thermal_cw_produced,
         )
         number_of_buffer_tanks: int = 1
     else:
@@ -2144,7 +2144,7 @@ def run_simulation(
     hot_water_pvt_electric_power_per_unit: pd.DataFrame
     hot_water_tank_temperature: Optional[pd.DataFrame]
     hot_water_tank_volume_supplied: pd.DataFrame
-    renewable_hw_fraction: pd.DataFrame
+    solar_thermal_hw_fraction: pd.DataFrame
 
     (
         auxiliary_heater,
@@ -2154,7 +2154,7 @@ def run_simulation(
         hot_water_tank_temperature,
         hot_water_tank_volume_supplied,
         hot_water_temperature_gain,
-        renewable_hw_fraction,
+        solar_thermal_hw_fraction,
         total_waste_produced,
         volumetric_hw_dc_fraction,
     ) = _calculate_renewable_hw_profiles(
@@ -2658,8 +2658,8 @@ def run_simulation(
             [ColumnHeader.CW_TANK_STORAGE_PROFILE.value]
         )
         processed_total_cw_load.columns = pd.Index([ColumnHeader.TOTAL_CW_LOAD.value])
-        renewable_cw_produced.columns = pd.Index(
-            [ColumnHeader.CLEAN_WATER_FROM_RENEWABLES.value]
+        renewable_thermal_cw_produced.columns = pd.Index(
+            [ColumnHeader.CLEAN_WATER_FROM_THERMAL_RENEWABLES.value]
         )
         renewable_cw_used_directly.columns = pd.Index(
             [ColumnHeader.RENEWABLE_CW_USED_DIRECTLY.value]
@@ -2767,8 +2767,8 @@ def run_simulation(
             [ColumnHeader.HW_TEMPERATURE_GAIN.value]
         )
         processed_total_hw_load.columns = pd.Index([ColumnHeader.TOTAL_HW_LOAD.value])
-        renewable_hw_fraction.columns = pd.Index(
-            [ColumnHeader.HW_RENEWABLES_FRACTION.value]
+        solar_thermal_hw_fraction.columns = pd.Index(
+            [ColumnHeader.HW_SOLAR_THERMAL_FRACTION.value]
         )
         volumetric_hw_dc_fraction.columns = pd.Index(
             [ColumnHeader.HW_VOL_DEMAND_COVERED.value]
@@ -2919,7 +2919,7 @@ def run_simulation(
             excess_energy_used_desalinating_frame,
             hourly_cw_tank_storage_frame,
             processed_total_cw_load,
-            renewable_cw_produced,
+            renewable_thermal_cw_produced,
             renewable_cw_used_directly,
             storage_water_supplied_frame,
             total_cw_supplied,
@@ -2983,7 +2983,7 @@ def run_simulation(
             hot_water_tank_volume_supplied,
             hot_water_temperature_gain,
             processed_total_hw_load,
-            renewable_hw_fraction,
+            solar_thermal_hw_fraction,
             volumetric_hw_dc_fraction,
         ]
 

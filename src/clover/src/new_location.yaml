@@ -745,17 +745,20 @@
                 #   total_system_cost               $
                 #   total_ghgs                      kgCO2eq
                 #   total_system_ghgs               kgCO2eq
-                #   unmet_clean_water_fraction
-                #   unmet_energy_fraction
-                #   unmet_hot_water_fraction
+                #   unmet_cw_fraction
+                #   unmet_electricity_fraction
+                #   unmet_hw_fraction
                 # Valid optimisation criteria, usually set to "maximise":
+                #   cw_renewables_fraction
                 #   hw_demand_covered
+                #   hw_renewables_fraction
                 #   kerosene_cost_mitigated         $
                 #   kerosene_displacement
                 #   kerosene_ghgs_mitigated         kgCO2eq
                 #   renewables_clean_water_fraction
                 #   renewables_fraction
-                #   renewables_hot_water_fraction
+                #   solar_thermal_cw_fraction
+                #   solar_thermal_hw_fraction
                 #
                 # NOTE: Not all optimisation criteria may be available for the system depending
                 # on the resource types being considered.
@@ -765,11 +768,11 @@
                 number_of_iterations: 3 # number of iterations to carry out
                 pv_size:
                   min: 5 # [PV units], [kWp] by default
-                  max: 25 # [PV units], [kWp] by default
+                  max: 20 # [PV units], [kWp] by default
                   step: 5 # [PV units], [kWp] by default
                 storage_size:
-                  min: 10 # [storage units], [kWh] by default
-                  max: 40 # [storage units], [kWh] by default
+                  min: 5 # [storage units], [kWh] by default
+                  max: 30 # [storage units], [kWh] by default
                   step: 5 # [storage units], [kWh] by default
                 optimisations:
                   - optimisation_criteria:
@@ -792,22 +795,38 @@
             #     #   CRITERION                       UNIT
             #     #   blackouts
             #     #   clean_water_blackouts
-            #     #   lcue                            $/kWh
-            #     #   emissions_intensity             gCO2/kWh
-            #     #   unmet_energy_fraction
+            #     #   cumulative_brine                m^3
             #     #   cumulative_cost                 $
+            #     #   cumulative_ghgs                 kgCO2eq
             #     #   cumulative_system_cost          $
+            #     #   cumulative_system_ghgs          kgCO2eq
+            #     #   emissions_intensity             gCO2/kWh
+            #     #   lcu_energy                      $/kWh_el(eq)
+            #     #   lcue                            $/kWh
+            #     #   lcuh                            $/kWh_th
+            #     #   lcuw                            $/m^3
+            #     #   total_brine                     m^3
             #     #   total_cost                      $
             #     #   total_system_cost               $
-            #     #   cumulative_ghgs                 kgCO2eq
-            #     #   cumulative_system_ghgs          kgCO2eq
             #     #   total_ghgs                      kgCO2eq
             #     #   total_system_ghgs               kgCO2eq
+            #     #   unmet_cw_fraction
+            #     #   unmet_electricity_fraction
+            #     #   unmet_hw_fraction
             #     # Valid optimisation criteria, usually set to "maximise":
-            #     #   renewables_fraction
-            #     #   kerosene_displacement
+            #     #   cw_renewables_fraction
+            #     #   hw_demand_covered
+            #     #   hw_renewables_fraction
             #     #   kerosene_cost_mitigated         $
+            #     #   kerosene_displacement
             #     #   kerosene_ghgs_mitigated         kgCO2eq
+            #     #   renewables_clean_water_fraction
+            #     #   renewables_fraction
+            #     #   solar_thermal_cw_fraction
+            #     #   solar_thermal_hw_fraction
+            #     #
+            #     # NOTE: Not all optimisation criteria may be available for the system depending
+            #     # on the resource types being considered.
             #     #
 
             #     iteration_length: 4 # [years]

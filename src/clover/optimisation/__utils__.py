@@ -778,7 +778,7 @@ THRESHOLD_CRITERION_TO_MODE: Dict[Criterion, ThresholdMode] = {
     Criterion.CUMULATIVE_SYSTEM_COST: ThresholdMode.MAXIMUM,
     Criterion.CUMULATIVE_SYSTEM_COST: ThresholdMode.MAXIMUM,
     Criterion.EMISSIONS_INTENSITY: ThresholdMode.MAXIMUM,
-    Criterion.HW_RENEWABLES_FRACTION: ThresholdMode.MINIMUM,
+    Criterion.HW_SOLAR_THERMAL_FRACTION: ThresholdMode.MINIMUM,
     Criterion.KEROSENE_COST_MITIGATED: ThresholdMode.MINIMUM,
     Criterion.KEROSENE_DISPLACEMENT: ThresholdMode.MINIMUM,
     Criterion.KEROSENE_GHGS_MITIGATED: ThresholdMode.MINIMUM,
@@ -789,7 +789,7 @@ THRESHOLD_CRITERION_TO_MODE: Dict[Criterion, ThresholdMode] = {
     Criterion.TOTAL_GHGS: ThresholdMode.MAXIMUM,
     Criterion.TOTAL_SYSTEM_COST: ThresholdMode.MAXIMUM,
     Criterion.TOTAL_SYSTEM_GHGS: ThresholdMode.MAXIMUM,
-    Criterion.UNMET_ENERGY_FRACTION: ThresholdMode.MAXIMUM,
+    Criterion.UNMET_ELECTRICITY_FRACTION: ThresholdMode.MAXIMUM,
 }
 
 

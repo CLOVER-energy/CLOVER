@@ -210,7 +210,7 @@ def get_key_results(
                 [
                     entry
                     for entry in simulation_results[
-                        ColumnHeader.HW_RENEWABLES_FRACTION.value
+                        ColumnHeader.HW_SOLAR_THERMAL_FRACTION.value
                     ]
                     if entry is not None
                 ]
@@ -1539,7 +1539,7 @@ def plot_outputs(
             renewable_cw_produced = np.mean(
                 np.reshape(
                     simulation_output[0:HOURS_PER_YEAR][
-                        ColumnHeader.CLEAN_WATER_FROM_RENEWABLES.value
+                        ColumnHeader.CLEAN_WATER_FROM_THERMAL_RENEWABLES.value
                     ].values,
                     (365, 24),
                 ),
@@ -1668,7 +1668,7 @@ def plot_outputs(
             renewable_cw_produced = np.mean(
                 np.reshape(
                     simulation_output[HOURS_UNTIL_JULY : HOURS_UNTIL_JULY + 31 * 24][
-                        ColumnHeader.CLEAN_WATER_FROM_RENEWABLES.value
+                        ColumnHeader.CLEAN_WATER_FROM_THERMAL_RENEWABLES.value
                     ].values,
                     (31, 24),
                 ),
@@ -1844,7 +1844,7 @@ def plot_outputs(
             renewable_cw_produced = np.mean(
                 np.reshape(
                     simulation_output[0 : 24 * 31][
-                        ColumnHeader.CLEAN_WATER_FROM_RENEWABLES.value
+                        ColumnHeader.CLEAN_WATER_FROM_THERMAL_RENEWABLES.value
                     ].values,
                     (31, 24),
                 ),
@@ -1931,7 +1931,7 @@ def plot_outputs(
                 ColumnHeader.RENEWABLE_CW_USED_DIRECTLY
             ]
             renewable_produced = simulation_output.iloc[0:24][
-                ColumnHeader.CLEAN_WATER_FROM_RENEWABLES.value
+                ColumnHeader.CLEAN_WATER_FROM_THERMAL_RENEWABLES.value
             ]
             storage = simulation_output.iloc[0:24][
                 ColumnHeader.CLEAN_WATER_FROM_STORAGE.value
@@ -1980,7 +1980,7 @@ def plot_outputs(
                 ColumnHeader.RENEWABLE_CW_USED_DIRECTLY
             ]
             renewable_produced = simulation_output.iloc[0:48][
-                ColumnHeader.CLEAN_WATER_FROM_RENEWABLES.value
+                ColumnHeader.CLEAN_WATER_FROM_THERMAL_RENEWABLES.value
             ]
             storage = simulation_output.iloc[0:48][
                 ColumnHeader.CLEAN_WATER_FROM_STORAGE.value
@@ -2398,17 +2398,17 @@ def plot_outputs(
                 ][ColumnHeader.BUFFER_TANK_TEMPERATURE.value]
 
                 volume_supplied_january = simulation_output.iloc[0:24][
-                    ColumnHeader.CLEAN_WATER_FROM_RENEWABLES.value
+                    ColumnHeader.CLEAN_WATER_FROM_THERMAL_RENEWABLES.value
                 ]
                 volume_supplied_march = simulation_output.iloc[
                     HOURS_UNTIL_MARCH : HOURS_UNTIL_MARCH + 24
-                ][ColumnHeader.CLEAN_WATER_FROM_RENEWABLES.value]
+                ][ColumnHeader.CLEAN_WATER_FROM_THERMAL_RENEWABLES.value]
                 volume_supplied_may = simulation_output.iloc[
                     HOURS_UNTIL_MAY : HOURS_UNTIL_MAY + 24
-                ][ColumnHeader.CLEAN_WATER_FROM_RENEWABLES.value]
+                ][ColumnHeader.CLEAN_WATER_FROM_THERMAL_RENEWABLES.value]
                 volume_supplied_july = simulation_output.iloc[
                     HOURS_UNTIL_JULY : HOURS_UNTIL_JULY + 24
-                ][ColumnHeader.CLEAN_WATER_FROM_RENEWABLES.value]
+                ][ColumnHeader.CLEAN_WATER_FROM_THERMAL_RENEWABLES.value]
 
                 ax1.plot(
                     collector_output_temperature_january.values,
@@ -2542,7 +2542,7 @@ def plot_outputs(
                 volume_supplied_january = np.mean(
                     np.reshape(
                         simulation_output[0 : 31 * 24][
-                            ColumnHeader.CLEAN_WATER_FROM_RENEWABLES.value
+                            ColumnHeader.CLEAN_WATER_FROM_THERMAL_RENEWABLES.value
                         ].values,
                         (31, 24),
                     ),
@@ -2552,7 +2552,7 @@ def plot_outputs(
                     np.reshape(
                         simulation_output[
                             HOURS_UNTIL_MARCH : HOURS_UNTIL_MARCH + 31 * 24
-                        ][ColumnHeader.CLEAN_WATER_FROM_RENEWABLES.value].values,
+                        ][ColumnHeader.CLEAN_WATER_FROM_THERMAL_RENEWABLES.value].values,
                         (31, 24),
                     ),
                     axis=0,
@@ -2560,7 +2560,7 @@ def plot_outputs(
                 volume_supplied_may = np.mean(
                     np.reshape(
                         simulation_output[HOURS_UNTIL_MAY : HOURS_UNTIL_MAY + 31 * 24][
-                            ColumnHeader.CLEAN_WATER_FROM_RENEWABLES.value
+                            ColumnHeader.CLEAN_WATER_FROM_THERMAL_RENEWABLES.value
                         ].values,
                         (31, 24),
                     ),
@@ -2570,7 +2570,7 @@ def plot_outputs(
                     np.reshape(
                         simulation_output[
                             HOURS_UNTIL_JULY : HOURS_UNTIL_JULY + 31 * 24
-                        ][ColumnHeader.CLEAN_WATER_FROM_RENEWABLES.value].values,
+                        ][ColumnHeader.CLEAN_WATER_FROM_THERMAL_RENEWABLES.value].values,
                         (31, 24),
                     ),
                     axis=0,
@@ -2981,17 +2981,17 @@ def plot_outputs(
             ][ColumnHeader.HW_TANK_TEMPERATURE.value]
 
             renewable_fraction_january = simulation_output.iloc[0:24][
-                ColumnHeader.HW_RENEWABLES_FRACTION.value
+                ColumnHeader.HW_SOLAR_THERMAL_FRACTION.value
             ]
             renewable_fraction_march = simulation_output.iloc[
                 HOURS_UNTIL_MARCH : HOURS_UNTIL_MARCH + 24
-            ][ColumnHeader.HW_RENEWABLES_FRACTION.value]
+            ][ColumnHeader.HW_SOLAR_THERMAL_FRACTION.value]
             renewable_fraction_may = simulation_output.iloc[
                 HOURS_UNTIL_MAY : HOURS_UNTIL_MAY + 24
-            ][ColumnHeader.HW_RENEWABLES_FRACTION.value]
+            ][ColumnHeader.HW_SOLAR_THERMAL_FRACTION.value]
             renewable_fraction_july = simulation_output.iloc[
                 HOURS_UNTIL_JULY : HOURS_UNTIL_JULY + 24
-            ][ColumnHeader.HW_RENEWABLES_FRACTION.value]
+            ][ColumnHeader.HW_SOLAR_THERMAL_FRACTION.value]
 
             ax1.plot(
                 collector_output_temperature_january.values,
@@ -3195,7 +3195,7 @@ def plot_outputs(
             renewable_fraction_january = np.mean(
                 np.reshape(
                     simulation_output[0 : 31 * 24][
-                        ColumnHeader.HW_RENEWABLES_FRACTION.value
+                        ColumnHeader.HW_SOLAR_THERMAL_FRACTION.value
                     ].values,
                     (31, 24),
                 ),
@@ -3204,7 +3204,7 @@ def plot_outputs(
             renewable_fraction_march = np.mean(
                 np.reshape(
                     simulation_output[HOURS_UNTIL_MARCH : HOURS_UNTIL_MARCH + 31 * 24][
-                        ColumnHeader.HW_RENEWABLES_FRACTION.value
+                        ColumnHeader.HW_SOLAR_THERMAL_FRACTION.value
                     ].values,
                     (31, 24),
                 ),
@@ -3213,7 +3213,7 @@ def plot_outputs(
             renewable_fraction_may = np.mean(
                 np.reshape(
                     simulation_output[HOURS_UNTIL_MAY : HOURS_UNTIL_MAY + 31 * 24][
-                        ColumnHeader.HW_RENEWABLES_FRACTION.value
+                        ColumnHeader.HW_SOLAR_THERMAL_FRACTION.value
                     ].values,
                     (31, 24),
                 ),
@@ -3222,7 +3222,7 @@ def plot_outputs(
             renewable_fraction_july = np.mean(
                 np.reshape(
                     simulation_output[HOURS_UNTIL_JULY : HOURS_UNTIL_JULY + 31 * 24][
-                        ColumnHeader.HW_RENEWABLES_FRACTION.value
+                        ColumnHeader.HW_SOLAR_THERMAL_FRACTION.value
                     ].values,
                     (31, 24),
                 ),
