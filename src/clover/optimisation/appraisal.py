@@ -1142,6 +1142,10 @@ def _simulation_technical_appraisal(
         system_details,
     )
 
+    import pdb
+
+    pdb.set_trace(header="Hot water system appraisal calculated.")
+
     # Calculate the fraction of power used providing each resource.
     power_consumed_fraction = _calculate_power_consumed_fraction(
         simulation_results, total_electricity_consumed
@@ -1155,10 +1159,10 @@ def _simulation_technical_appraisal(
     # Heating system.
     if hot_water_consumed is not None:
         heating_consumed: Optional[pd.DataFrame] = (
-            hot_water_consumed
-            * HEAT_CAPACITY_OF_WATER
-            * simulation_results[ColumnHeader.HW_TEMPERATURE_GAIN.value]
-        )  # + clean_water_system_heat + ...
+            hot_water_consumed  # [kg]
+            * HEAT_CAPACITY_OF_WATER  # [J/kg*K]
+            * simulation_results[ColumnHeader.HW_TEMPERATURE_GAIN.value]  # [K]
+        ) / 1000  # + clean_water_system_heat + ...
         total_heating_consumed = np.sum(heating_consumed)
 
         # Append the energy consumption information.
