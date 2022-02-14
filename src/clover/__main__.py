@@ -1069,9 +1069,6 @@ def main(args: List[Any]) -> None:
 
             if parsed_args.analyse:
                 # Carry out an appraisal of the system.
-                import pdb
-
-                pdb.set_trace()
                 system_appraisal: Optional[SystemAppraisal] = appraise_system(
                     electric_yearly_load_statistics,
                     simulation.end_year,
