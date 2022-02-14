@@ -1142,10 +1142,6 @@ def _simulation_technical_appraisal(
         system_details,
     )
 
-    import pdb
-
-    pdb.set_trace(header="Hot water system appraisal calculated.")
-
     # Calculate the fraction of power used providing each resource.
     power_consumed_fraction = _calculate_power_consumed_fraction(
         simulation_results, total_electricity_consumed
@@ -1153,7 +1149,7 @@ def _simulation_technical_appraisal(
 
     # Calculate the total energy consumed by the system using the conversion factors
     # defined by the user.
-    energy_consumed = electricity_consumed
+    energy_consumed = electricity_consumed.copy()
     total_energy_consumed: float = total_electricity_consumed
 
     # Heating system.

@@ -1009,15 +1009,15 @@ def _calculate_renewable_hw_profiles(
 
         # Determine the fraction of the output which was met renewably.
         solar_thermal_hw_fraction: pd.DataFrame = (
+            # The fraction of the supply that was met volumetrically.
+            volumetric_hw_dc_fraction
             # The fraction of the total demand temperature that was covered using
             # renewables.
-            hot_water_temperature_gain
+            * hot_water_temperature_gain.values
             / (
                 scenario.hot_water_scenario.demand_temperature
                 - scenario.hot_water_scenario.cold_water_supply_temperature
             )
-            # The fraction of the supply that was met volumetrically.
-            * volumetric_hw_dc_fraction
         )
 
         hot_water_power_consumed = hot_water_power_consumed.reset_index(drop=True)
@@ -1031,6 +1031,7 @@ def _calculate_renewable_hw_profiles(
         hot_water_tank_volume_supplied = hot_water_tank_volume_supplied.reset_index(
             drop=True
         )
+        hot_water_temperature_gain = hot_water_temperature_gain.reset_index(drop=True)
         solar_thermal_hw_fraction = solar_thermal_hw_fraction.reset_index(drop=True)
         logger.debug("Hot-water PV-T performance profiles determined.")
 
@@ -2718,15 +2719,6 @@ def run_simulation(
             thermal_desalination_electric_power_consumed.columns = pd.Index(
                 [ColumnHeader.POWER_CONSUMED_BY_THERMAL_DESALINATION.value]
             )
-
-    else:
-        # Find total energy used by the system
-        total_energy_used = pd.DataFrame(
-            renewables_energy_used_directly.values
-            + storage_power_supplied_frame.values
-            + grid_energy.values
-            + diesel_energy.values
-        )
 
     # Hot-water scenario system performance outputs.
     if scenario.hot_water_scenario is not None:

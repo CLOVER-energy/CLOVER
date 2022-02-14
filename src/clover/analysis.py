@@ -115,7 +115,7 @@ def get_key_results(
         ColumnHeader.DUMPED_ELECTRICITY.value
     ].sum() / (365 * num_years)
 
-    key_results.average_daily_energy_consumption = simulation_results[
+    key_results.average_daily_electricity_consumption = simulation_results[
         ColumnHeader.TOTAL_ELECTRICITY_CONSUMED.value
     ].sum() / (365 * num_years)
 
