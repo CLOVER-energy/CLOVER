@@ -907,7 +907,7 @@ class KeyResults:
     average_daily_cw_supplied: Optional[float] = None
     average_daily_diesel_energy_supplied: Optional[float] = None
     average_daily_dumped_energy: Optional[float] = None
-    average_daily_energy_consumption: Optional[float] = None
+    average_daily_electricity_consumption: Optional[float] = None
     average_daily_grid_energy_supplied: Optional[float] = None
     average_daily_hw_demand_covered: Optional[float] = None
     average_daily_hw_pvt_generation: Optional[float] = None
@@ -971,9 +971,9 @@ class KeyResults:
             data_dict["Average daily dumped energy / kWh"] = round(
                 self.average_daily_dumped_energy, 3
             )
-        if self.average_daily_energy_consumption is not None:
+        if self.average_daily_electricity_consumption is not None:
             data_dict["Average daily energy consumption / kWh"] = round(
-                self.average_daily_energy_consumption, 3
+                self.average_daily_electricity_consumption, 3
             )
         if self.average_daily_grid_energy_supplied is not None:
             data_dict["Average daily grid energy supplied / kWh"] = round(

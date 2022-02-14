@@ -1600,6 +1600,9 @@ def _parse_tank_inputs(
 
     """
 
+    if scenario.desalination_scenario is None and scenario.hot_water_scenario is None:
+        return None, None, None, None, None, None, None, None, None
+
     # Parse the tank input information.
     tank_inputs_filepath = os.path.join(
         inputs_directory_relative_path, TANK_INPUTS_FILE

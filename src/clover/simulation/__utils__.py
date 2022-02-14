@@ -209,9 +209,14 @@ class Minigrid:
             exchangers = {
                 entry[NAME]: Exchanger.from_dict(entry) for entry in exchanger_inputs
             }
+            heat_exchanger: Optional[Exchanger] = exchangers[minigrid_inputs[EXCHANGER]]
         else:
             exchangers = {}
+            heat_exchanger = None
 
+        buffer_tank: Optional[Union[CleanWaterTank, HotWaterTank]] = None
+        clean_water_tank: Optional[Union[CleanWaterTank, HotWaterTank]] = None
+        hot_water_tank: Optional[Union[CleanWaterTank, HotWaterTank]] = None
         tanks: Dict[str, Union[CleanWaterTank, HotWaterTank]] = {}
         # Parse the tank information.
         if tank_inputs is not None:
@@ -244,45 +249,35 @@ class Minigrid:
                         f"The tank '{entry['name']}' uses an unknown resource type: "
                         + f"{entry[RESOURCE_TYPE]}",
                     )
-        else:
-            tanks = {}
 
-        # Determine the various tanks being considered.
-        if "buffer_tank" in minigrid_inputs:
-            buffer_tank: Optional[Union[CleanWaterTank, HotWaterTank]] = tanks[
-                minigrid_inputs["buffer_tank"]
-            ]
-            if not isinstance(buffer_tank, HotWaterTank):
-                raise InputFileError(
-                    "energy system inputs",
-                    "The buffer tank selected must be a hot-water tank.",
-                )
-        else:
-            buffer_tank = None
-
-        if "clean_water_tank" in minigrid_inputs:
-            clean_water_tank: Optional[Union[CleanWaterTank, HotWaterTank]] = tanks[
-                minigrid_inputs["clean_water_tank"]
-            ]
-            if not isinstance(clean_water_tank, CleanWaterTank):
-                raise InputFileError(
-                    "energy system inputs",
-                    "The clean-water tank selected must be a clean-water tank.",
-                )
-        else:
-            clean_water_tank = None
-
-        if "hot_water_tank" in minigrid_inputs:
-            hot_water_tank: Optional[Union[CleanWaterTank, HotWaterTank]] = tanks[
-                minigrid_inputs["hot_water_tank"]
-            ]
-            if not isinstance(hot_water_tank, HotWaterTank):
-                raise InputFileError(
-                    "energy system inputs",
-                    "The hot-water tank selected must be a hot-water tank.",
-                )
-        else:
-            hot_water_tank = None
+            # Determine the various tanks.
+            if "buffer_tank" in minigrid_inputs:
+                buffer_tank = tanks[
+                    minigrid_inputs["buffer_tank"]
+                ]
+                if not isinstance(buffer_tank, HotWaterTank):
+                    raise InputFileError(
+                        "energy system inputs",
+                        "The buffer tank selected must be a hot-water tank.",
+                    )
+            if "clean_water_tank" in minigrid_inputs and tanks is not None:
+                clean_water_tank = tanks[
+                    minigrid_inputs["clean_water_tank"]
+                ]
+                if not isinstance(clean_water_tank, CleanWaterTank):
+                    raise InputFileError(
+                        "energy system inputs",
+                        "The clean-water tank selected must be a clean-water tank.",
+                    )
+            if "hot_water_tank" in minigrid_inputs and tanks is not None:
+                hot_water_tank = tanks[
+                    minigrid_inputs["hot_water_tank"]
+                ]
+                if not isinstance(hot_water_tank, HotWaterTank):
+                    raise InputFileError(
+                        "energy system inputs",
+                        "The hot-water tank selected must be a hot-water tank.",
+                    )
 
         # Return the minigrid instance.
         return cls(
@@ -312,9 +307,7 @@ class Minigrid:
             diesel_generator,
             diesel_water_heater,
             electric_water_heater,
-            exchangers[minigrid_inputs[EXCHANGER]]
-            if EXCHANGER in minigrid_inputs
-            else None,
+            heat_exchanger,
             hot_water_tank,
             pv_panel,
             pvt_panel,
