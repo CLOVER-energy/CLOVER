@@ -1544,19 +1544,25 @@ def _get_electric_battery_storage_profile(
             + (remaining_profile < 0) * renewables_energy.values
         )
 
-        # Then take energy from grid
-        grid_energy = pd.DataFrame(
-            ((remaining_profile < 0) * remaining_profile).iloc[:, 0]
-            * -1.0
-            * grid_profile.values
-        )
+        # Then take energy from grid if available
+        if scenario.grid:
+            grid_energy: pd.DataFrame = pd.DataFrame(
+                ((remaining_profile < 0) * remaining_profile).iloc[:, 0]
+                * -1.0
+                * grid_profile.values
+            )
+        else:
+            grid_energy = pd.DataFrame([0] * (end_hour - start_hour))
         battery_storage_profile: pd.DataFrame = pd.DataFrame(
             remaining_profile.values + grid_energy.values
         )
 
     else:
-        # Take energy from grid first
-        grid_energy = grid_profile.mul(load_energy)
+        # Take energy from grid first if available
+        if scenario.grid:
+            grid_energy: pd.DataFrame = grid_profile.mul(load_energy)
+        else:
+            grid_energy = pd.DataFrame([0] * (end_hour - start_hour))
         # as needed for load
         remaining_profile = (grid_energy <= 0).mul(load_energy)
         # Then take energy from PV
