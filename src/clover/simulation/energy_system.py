@@ -2284,26 +2284,32 @@ def run_simulation(
     )
 
     # Initialise battery storage parameters
-    maximum_battery_energy_throughput: float = (
-        electric_storage_size
-        * minigrid.battery.cycle_lifetime
-        * minigrid.battery.storage_unit
-    )
-    initial_battery_storage: float = (
-        electric_storage_size
-        * minigrid.battery.maximum_charge
-        * minigrid.battery.storage_unit
-    )
-    maximum_battery_storage: float = (
-        electric_storage_size
-        * minigrid.battery.maximum_charge
-        * minigrid.battery.storage_unit
-    )
-    minimum_battery_storage: float = (
-        electric_storage_size
-        * minigrid.battery.minimum_charge
-        * minigrid.battery.storage_unit
-    )
+    if scenario.battery:
+        maximum_battery_energy_throughput: float = (
+            electric_storage_size
+            * minigrid.battery.cycle_lifetime
+            * minigrid.battery.storage_unit
+        )
+        initial_battery_storage: float = (
+            electric_storage_size
+            * minigrid.battery.maximum_charge
+            * minigrid.battery.storage_unit
+        )
+        maximum_battery_storage: float = (
+            electric_storage_size
+            * minigrid.battery.maximum_charge
+            * minigrid.battery.storage_unit
+        )
+        minimum_battery_storage: float = (
+            electric_storage_size
+            * minigrid.battery.minimum_charge
+            * minigrid.battery.storage_unit
+        )
+    else:
+        maximum_battery_energy_throughput = 0
+        initial_battery_storage = 0
+        maximum_battery_storage = 0
+        minimum_battery_storage = 0
     cumulative_battery_storage_power: float = 0.0
     hourly_battery_storage: Dict[int, float] = {}
     new_hourly_battery_storage: float = 0.0
@@ -2367,8 +2373,11 @@ def run_simulation(
 
     # Do not do the itteration if no storage is being used
     if electric_storage_size == 0:
-        energy_surplus = ((battery_storage_profile > 0) * battery_storage_profile).abs()
-        energy_deficit = ((battery_storage_profile < 0) * battery_storage_profile).abs()
+        battery_health_frame: pd.DataFrame = pd.DataFrame([float(0)] * (end_hour - start_hour))
+        energy_surplus_frame: pd.DataFrame = ((battery_storage_profile > 0) * battery_storage_profile).abs()
+        energy_deficit_frame: pd.DataFrame = ((battery_storage_profile < 0) * battery_storage_profile).abs()
+        hourly_battery_storage_frame: pd.DataFrame = pd.DataFrame([float(0)] * (end_hour - start_hour))
+        storage_power_supplied_frame: pd.DataFrame = pd.DataFrame([float(0)] * (end_hour - start_hour))
     # Carry out the itteration if there is some storage involved in the system.
     else:
         # Begin simulation, iterating over timesteps
@@ -2378,9 +2387,6 @@ def run_simulation(
             leave=False,
             unit="hour",
         ):
-            import pdb
-
-            pdb.set_trace()
             # Calculate the electric iteration.
             (
                 battery_energy_flow,
@@ -2444,32 +2450,33 @@ def run_simulation(
             hourly_battery_storage[t] = new_hourly_battery_storage
 
             # Update battery health
-            (
-                cumulative_battery_storage_power,
-                maximum_battery_storage,
-                minimum_battery_storage,
-            ) = _update_battery_health(
-                battery_energy_flow,
-                battery_health,
-                cumulative_battery_storage_power,
-                electric_storage_size,
-                hourly_battery_storage,
-                maximum_battery_energy_throughput,
-                minigrid,
-                storage_power_supplied,
-                time_index=t,
-            )
+            if scenario.battery:
+                (
+                    cumulative_battery_storage_power,
+                    maximum_battery_storage,
+                    minimum_battery_storage,
+                ) = _update_battery_health(
+                    battery_energy_flow,
+                    battery_health,
+                    cumulative_battery_storage_power,
+                    electric_storage_size,
+                    hourly_battery_storage,
+                    maximum_battery_energy_throughput,
+                    minigrid,
+                    storage_power_supplied,
+                    time_index=t,
+                )
 
-    # Process the various outputs into dataframes.
-    battery_health_frame: pd.DataFrame = dict_to_dataframe(battery_health, logger)
-    # energy_deficit_frame: pd.DataFrame = dict_to_dataframe(energy_deficit)
-    energy_surplus_frane: pd.DataFrame = dict_to_dataframe(energy_surplus, logger)
-    hourly_battery_storage_frame: pd.DataFrame = dict_to_dataframe(
-        hourly_battery_storage, logger
-    )
-    storage_power_supplied_frame: pd.DataFrame = dict_to_dataframe(
-        storage_power_supplied, logger
-    )
+        # Process the various outputs into dataframes.
+        battery_health_frame = dict_to_dataframe(battery_health, logger)
+        # energy_deficit_frame: pd.DataFrame = dict_to_dataframe(energy_deficit)
+        energy_surplus_frame = dict_to_dataframe(energy_surplus, logger)
+        hourly_battery_storage_frame = dict_to_dataframe(
+            hourly_battery_storage, logger
+        )
+        storage_power_supplied_frame = dict_to_dataframe(
+            storage_power_supplied, logger
+        )
 
     if scenario.desalination_scenario is not None:
         backup_desalinator_water_frame: Optional[pd.DataFrame] = dict_to_dataframe(
@@ -2535,10 +2542,6 @@ def run_simulation(
             [0.0] * int(battery_storage_profile.size)
         )
         water_surplus_frame = pd.DataFrame([0.0] * int(battery_storage_profile.size))
-
-    import pdb
-
-    pdb.set_trace()
 
     # Find unmet energy
     unmet_energy = pd.DataFrame(
@@ -2831,7 +2834,7 @@ def run_simulation(
     blackout_times.columns = pd.Index([ColumnHeader.BLACKOUTS.value])
     diesel_fuel_usage.columns = pd.Index([ColumnHeader.DIESEL_FUEL_USAGE.value])
     diesel_times.columns = pd.Index([ColumnHeader.DIESEL_GENERATOR_TIMES.value])
-    energy_surplus_frane.columns = pd.Index([ColumnHeader.DUMPED_ELECTRICITY.value])
+    energy_surplus_frame.columns = pd.Index([ColumnHeader.DUMPED_ELECTRICITY.value])
     hourly_battery_storage_frame.columns = pd.Index(
         [ColumnHeader.HOURLY_STORAGE_PROFILE.value]
     )
@@ -2934,7 +2937,7 @@ def run_simulation(
         pv_energy,
         renewables_energy,
         hourly_battery_storage_frame,
-        energy_surplus_frane,
+        energy_surplus_frame,
         battery_health_frame,
         households,
         kerosene_usage,

@@ -315,10 +315,10 @@ def plot_outputs(
     hw_pvt: bool = ColumnHeader.HW_PVT_ELECTRICITY_SUPPLIED.value in simulation_output
 
     with tqdm(
-        total=13
+        total=15
         + (17 if initial_cw_hourly_loads is not None else 0)
-        + (5 if cw_pvt else 0)
-        + (13 if initial_hw_hourly_loads is not None else 0),
+        + (4 if cw_pvt else 0)
+        + (15 if initial_hw_hourly_loads is not None else 0),
         desc="plots",
         leave=False,
         unit="plot",
@@ -3429,27 +3429,66 @@ def plot_outputs(
 
             # Plot monthly renewable DHW fraction
             dhw_renewable_fraction: Dict[int: float] = {}
+            dhw_renewable_fraction_daily: Dict[int: np.ndarray] = {}
             dhw_dc_fraction: Dict[int: float] = {}
+            dhw_dc_fraction_daily: Dict[int: np.ndarray] = {}
             for month in range(1, 13):
                 dhw_renewable_fraction[month] = np.mean(
+                    simulation_output[HOURS_UNTIL[month] : HOURS_UNTIL[month] + 30 * 24][
+                        ColumnHeader.HW_SOLAR_THERMAL_FRACTION.value
+                    ].values
+                )
+                dhw_renewable_fraction_daily[month] = np.mean(
                     np.reshape(
                         simulation_output[HOURS_UNTIL[month] : HOURS_UNTIL[month] + 30 * 24][
                             ColumnHeader.HW_SOLAR_THERMAL_FRACTION.value
                         ].values,
-                        (31, 24),
+                        (30, 24),
                     ),
                     axis=0,
                 )
                 dhw_dc_fraction[month] = np.mean(
+                    simulation_output[HOURS_UNTIL[month] : HOURS_UNTIL[month] + 30 * 24][
+                        ColumnHeader.HW_VOL_DEMAND_COVERED.value
+                    ].values
+                )
+                dhw_dc_fraction_daily[month] = np.mean(
                     np.reshape(
                         simulation_output[HOURS_UNTIL[month] : HOURS_UNTIL[month] + 30 * 24][
                             ColumnHeader.HW_VOL_DEMAND_COVERED.value
                         ].values,
-                        (31, 24),
+                        (30, 24),
                     ),
                     axis=0,
                 )
 
+            # Plot the daily varying demand covered profiles.
+            _, ax1 = plt.subplots()
+            ax2 = ax1.twinx()
+            for key, value in dhw_renewable_fraction_daily.items():
+                ax1.plot(range(24), value, label=f"month #{key}")
+
+            for key, value in dhw_dc_fraction_daily.items():
+                ax2.plot(range(24), value, label=f"month #{key}")
+
+            plt.xlim(0, 23)
+            plt.xlabel("Hour of day")
+            ax1.set_ylabel("Renewable DHW demand covered fraction")
+            ax2.set_ylabel("Volumetric DHW demand covered fraction")
+            plt.title(
+                "Monthly averages of domestic demand covered fractions"
+            )
+            plt.savefig(
+                os.path.join(
+                    figures_directory,
+                    "hot_water_monthly_average_dc_fraction_daily.png",
+                ),
+                transparent=True,
+            )
+            plt.close()
+            pbar.update(1)
+
+            # Plot the monthly averages.
             plt.bar(
                 [entry - 0.4 for entry in dhw_renewable_fraction.keys()],
                 dhw_renewable_fraction.values(),
