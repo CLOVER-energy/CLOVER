@@ -37,6 +37,7 @@ from .__utils__ import (
     BColours,
     DesalinationScenario,
     EXCHANGER,
+    DieselMode,
     HotWaterScenario,
     HTFMode,
     InputFileError,
@@ -139,7 +140,7 @@ ELECTRIC_MODEL_FAST_FILE: str = os.path.join("src", "best_electric_tree.sav")
 
 # Electric model file:
 #   The relative path to the electric model file.
-ELECTRIC_MODEL_FILE: str = os.path.join("src", "electric_forest.sav")
+ELECTRIC_MODEL_FILE: str = os.path.join("src", "best_electric_forest.sav")
 
 # Electric water heater:
 #   Keyword used for parsing electric water-heater information.
@@ -227,7 +228,7 @@ THERMAL_MODEL_FAST_FILE: str = os.path.join("src", "best_thermal_tree.sav")
 
 # Thermal model file:
 #   The relative path to the thermal model file.
-THERMAL_MODEL_FILE: str = os.path.join("src", "thermal_forest.sav")
+THERMAL_MODEL_FILE: str = os.path.join("src", "best_thermal_forest.sav")
 
 # Transmission inputs file:
 #   The relative path to the transmission inputs file.
@@ -2583,16 +2584,22 @@ def parse_input_files(
     logger.info("PV impact data successfully updated.")
 
     # Update the impact inputs with the diesel data.
-    logger.info("Updating with diesel impact data.")
-    finance_inputs[ImpactingComponent.DIESEL.value] = defaultdict(float, diesel_costs)
-    ghg_inputs[ImpactingComponent.DIESEL.value] = defaultdict(float, diesel_emissions)
-    logger.info("Diesel impact data successfully updated.")
+    if scenario.diesel_scenario.mode != DieselMode.DISABLED:
+        logger.info("Updating with diesel impact data.")
+        finance_inputs[ImpactingComponent.DIESEL.value] = defaultdict(float, diesel_costs)
+        ghg_inputs[ImpactingComponent.DIESEL.value] = defaultdict(float, diesel_emissions)
+        logger.info("Diesel impact data successfully updated.")
+    else:
+        logger.info("No diesel generator present, skipping impact data.")
 
     # Update the impact inputs with the battery data.
-    logger.info("Updating with battery impact data.")
-    finance_inputs[ImpactingComponent.STORAGE.value] = defaultdict(float, battery_costs)
-    ghg_inputs[ImpactingComponent.STORAGE.value] = defaultdict(float, battery_emissions)
-    logger.info("Battery impact data successfully updated.")
+    if scenario.battery:
+        logger.info("Updating with battery impact data.")
+        finance_inputs[ImpactingComponent.STORAGE.value] = defaultdict(float, battery_costs)
+        ghg_inputs[ImpactingComponent.STORAGE.value] = defaultdict(float, battery_emissions)
+        logger.info("Battery impact data successfully updated.")
+    else:
+        logger.info("No battery present, skipping impact data.")
 
     if minigrid.pvt_panel is not None and scenario.pv_t:
         if pvt_panel_costs is None or pvt_panel_emissions is None:
