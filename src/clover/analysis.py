@@ -207,12 +207,8 @@ def get_key_results(
     if ColumnHeader.TOTAL_HW_LOAD.value in simulation_results:
         key_results.average_daily_hw_renewable_fraction = round(
             np.mean(
-                [
-                    entry
-                    for entry in simulation_results[
-                        ColumnHeader.HW_SOLAR_THERMAL_FRACTION.value
-                    ]
-                    if entry is not None
+                simulation_results[
+                    ColumnHeader.HW_SOLAR_THERMAL_FRACTION.value
                 ]
             ),
             3,
