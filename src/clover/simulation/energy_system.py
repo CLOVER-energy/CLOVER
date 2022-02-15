@@ -695,6 +695,7 @@ def _calculate_renewable_hw_profiles(
     Optional[Union[Converter, DieselWaterHeater]],
     pd.DataFrame,
     Optional[pd.DataFrame],
+    Optional[pd.DataFrame],
     pd.DataFrame,
     Optional[pd.DataFrame],
     Optional[pd.DataFrame],
@@ -742,6 +743,9 @@ def _calculate_renewable_hw_profiles(
         - hot_water_power_consumed:
             The electric power consumed by the hot-water system, including any water
             pumps and electricity that was used meeting unmet hot-water demand.
+        - hot_water_pvt_collector_output_temperature:
+            The input temperature of HTF entering the PV-T collectors associated with
+            the hot-water demand system.
         - hot_water_pvt_collector_output_temperature:
             The output temperature from the PV-T panels associated with the hot-water
             system.
@@ -887,12 +891,14 @@ def _calculate_renewable_hw_profiles(
         logger.debug("Auxiliary heater: %s", str(auxiliary_heater))
 
         # Compute the output of the PV-T system.
+        hot_water_pvt_collector_input_temperature: pd.DataFrame
         hot_water_pvt_collector_output_temperature: pd.DataFrame
         hot_water_pvt_electric_power_per_unit: pd.DataFrame
         hot_water_pvt_pump_times: pd.DataFrame
         hot_water_tank_temperature: pd.DataFrame
         hot_water_tank_volume_supplied: pd.DataFrame
         (
+            hot_water_pvt_collector_input_temperature,
             hot_water_pvt_collector_output_temperature,
             hot_water_pvt_electric_power_per_unit,
             hot_water_pvt_pump_times,
@@ -1021,6 +1027,9 @@ def _calculate_renewable_hw_profiles(
         )
 
         hot_water_power_consumed = hot_water_power_consumed.reset_index(drop=True)
+        hot_water_pvt_collector_input_temperature = (
+            hot_water_pvt_collector_input_temperature.reset_index(drop=True)
+        )
         hot_water_pvt_collector_output_temperature = (
             hot_water_pvt_collector_output_temperature.reset_index(drop=True)
         )
@@ -1039,6 +1048,7 @@ def _calculate_renewable_hw_profiles(
         logger.debug("Skipping hot-water PV-T performance-profile calculation.")
         auxiliary_heater = None
         hot_water_power_consumed = pd.DataFrame([0] * (end_hour - start_hour))
+        hot_water_pvt_collector_input_temperature = None
         hot_water_pvt_collector_output_temperature = None
         hot_water_pvt_electric_power_per_unit = pd.DataFrame(
             [0] * (end_hour - start_hour)
@@ -1052,6 +1062,7 @@ def _calculate_renewable_hw_profiles(
     return (
         auxiliary_heater,
         hot_water_power_consumed,
+        hot_water_pvt_collector_input_temperature,
         hot_water_pvt_collector_output_temperature,
         hot_water_pvt_electric_power_per_unit,
         hot_water_tank_temperature,
@@ -2148,7 +2159,8 @@ def run_simulation(
         processed_total_hw_load = pd.DataFrame([0] * (end_hour - start_hour))
 
     # Calculate hot-water PV-T related performance profiles.
-    hot_water_pump_electric_power_consumed: pd.DataFrame
+    hot_water_pump_electric_power_consumed: pd.DataFrame#
+    hot_water_pvt_collector_input_temperature: Optional[pd.DataFrame]
     hot_water_pvt_collector_output_temperature: Optional[pd.DataFrame]
     hot_water_pvt_electric_power_per_unit: pd.DataFrame
     hot_water_tank_temperature: Optional[pd.DataFrame]
@@ -2158,6 +2170,7 @@ def run_simulation(
     (
         auxiliary_heater,
         hot_water_power_consumed,
+        hot_water_pvt_collector_input_temperature,
         hot_water_pvt_collector_output_temperature,
         hot_water_pvt_electric_power_per_unit,
         hot_water_tank_temperature,
@@ -2365,6 +2378,9 @@ def run_simulation(
             leave=False,
             unit="hour",
         ):
+            import pdb
+
+            pdb.set_trace()
             # Calculate the electric iteration.
             (
                 battery_energy_flow,
@@ -2443,6 +2459,7 @@ def run_simulation(
                 storage_power_supplied,
                 time_index=t,
             )
+
     # Process the various outputs into dataframes.
     battery_health_frame: pd.DataFrame = dict_to_dataframe(battery_health, logger)
     # energy_deficit_frame: pd.DataFrame = dict_to_dataframe(energy_deficit)
@@ -2519,12 +2536,17 @@ def run_simulation(
         )
         water_surplus_frame = pd.DataFrame([0.0] * int(battery_storage_profile.size))
 
+    import pdb
+
+    pdb.set_trace()
+
     # Find unmet energy
     unmet_energy = pd.DataFrame(
         (
             load_energy.values
             + thermal_desalination_electric_power_consumed.values
             + clean_water_power_consumed.values
+            + hot_water_power_consumed.values
             - renewables_energy_used_directly.values
             - grid_energy.values
             - storage_power_supplied_frame.values
@@ -2538,7 +2560,7 @@ def run_simulation(
     # Determine the times for which the system experienced a blackout.
     blackout_times = ((unmet_energy > 0) * 1).astype(float)
 
-    # Use backup diesel generator
+    # Use backup diesel generator if present
     diesel_energy: pd.DataFrame
     diesel_fuel_usage: pd.DataFrame
     diesel_times: pd.DataFrame
@@ -2561,11 +2583,21 @@ def run_simulation(
         raise InputFileError(
             "scenario inputs", "Cycle charing is not currently supported."
         )
-    else:
+    elif scenario.diesel_scenario.mode == DieselMode.DISABLED:
         diesel_energy = pd.DataFrame([0.0] * int(battery_storage_profile.size))
         diesel_times = pd.DataFrame([0.0] * int(battery_storage_profile.size))
         diesel_fuel_usage = pd.DataFrame([0.0] * int(battery_storage_profile.size))
         diesel_capacity = 0.0
+    else:
+        logger.error(
+            "%sDiesel mode must be specified. Valid modes are %s.%s",
+            BColours.fail,
+            ", ".join({e.value for e in DieselMode}),
+            BColours.endc,
+        )
+        raise InputFileError(
+            "scenario inputs", "Diesel mode must be specified in the scenario file."
+        )
 
     # Find new blackout times, according to when there is unmet energy
     blackout_times = ((unmet_energy > 0) * 1).astype(float)
@@ -2731,6 +2763,8 @@ def run_simulation(
         # Process any errors.
         if hot_water_tank_temperature is None:
             raise InternalError("Hot-water tank temperature undefined.")
+        if hot_water_pvt_collector_input_temperature is None:
+            raise InternalError("Hot-water PV-T input temperature undefined.")
         if hot_water_pvt_collector_output_temperature is None:
             raise InternalError("Hot-water PV-T output temperature undefined.")
         if minigrid.pvt_panel is None:
@@ -2747,6 +2781,9 @@ def run_simulation(
         # Add headers to the columns.
         hot_water_power_consumed.columns = pd.Index(
             [ColumnHeader.POWER_CONSUMED_BY_HOT_WATER.value]
+        )
+        hot_water_pvt_collector_input_temperature.columns = pd.Index(
+            [ColumnHeader.HW_PVT_INPUT_TEMPERATURE.value]
         )
         hot_water_pvt_collector_output_temperature.columns = pd.Index(
             [ColumnHeader.HW_PVT_OUTPUT_TEMPERATURE.value]
@@ -2975,6 +3012,7 @@ def run_simulation(
     if scenario.hot_water_scenario is not None:
         hot_water_performance_outputs: List[Optional[pd.DataFrame]] = [
             hot_water_power_consumed,
+            hot_water_pvt_collector_input_temperature,
             hot_water_pvt_collector_output_temperature,
             hot_water_pvt_electric_power_per_kwh,
             hot_water_pvt_electric_power_per_unit,

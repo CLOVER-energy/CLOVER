@@ -412,8 +412,11 @@ class ColumnHeader(enum.Enum):
     - HOUSEHOLDS:
         The number of households present in the community.
 
+    - HW_PVT_INPUT_TEMPERATURE:
+        The input temperature of HTF entering the hot-water PV-T collectors.
+
     - HW_PVT_OUTPUT_TEMPERATURE:
-        The output temperature of HTF leaving the hot-water PV-T installed.
+        The output temperature of HTF leaving the hot-water PV-T collectors.
 
     - HW_PVT_ELECTRICITY_SUPPLIED:
         The electricity supplied by the hot-water PV-T.
@@ -558,6 +561,7 @@ class ColumnHeader(enum.Enum):
     GRID_ENERGY = "Grid energy (kWh)"
     HOURLY_STORAGE_PROFILE = "Hourly storage (kWh)"
     HOUSEHOLDS = "Households"
+    HW_PVT_INPUT_TEMPERATURE = "Hot-water PV-T input temperature (degC)"
     HW_PVT_OUTPUT_TEMPERATURE = "Hot-water PV-T output temperature (degC)"
     HW_PVT_ELECTRICITY_SUPPLIED = "Hot-water PV-T electric energy supplied (kWh)"
     HW_PVT_ELECTRICITY_SUPPLIED_PER_KWP = (
@@ -726,10 +730,14 @@ class DieselMode(enum.Enum):
     - CYCLE_CHARGING:
         The diesel generator is operated as a dynamic 'cycle-charging' generator.
 
+    - DISABLED:
+        No diesel generator is present.
+
     """
 
     BACKUP = "backup"
     CYCLE_CHARGING = "cycle_charging"
+    DISABLED = "disabled"
 
 
 @dataclasses.dataclass
@@ -2845,7 +2853,7 @@ class TechnicalAppraisal:
             "discounted_energy": self.discounted_energy,
             "discounted_heating": self.discounted_energy,
             "discounted_hot_water": self.discounted_hot_water,
-            "grid_energy": self.grid_energy,
+            "grid_energy": float(self.grid_energy),
             "hot_water_demand_covered": self.hw_demand_covered,
             "kerosene_displacement": self.kerosene_displacement,
             "renewable_clean_water_fraction": self.renewable_clean_water_fraction,
