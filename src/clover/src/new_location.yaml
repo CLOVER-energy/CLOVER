@@ -899,7 +899,7 @@
                   supply_temperature: 10 # [degC]
                 pvt_scenario:
                   heats: htf
-                  mass_flow_rate: 7.37 # [litres/hour]
+                  mass_flow_rate: 72 # [litres/hour]
             - file: hot_water_scenario.yaml
               contents: |+
                 ---
@@ -922,7 +922,7 @@
                   supply_temperature: 10 # [degC]
                 pvt_scenario:
                   heats: cold_water
-                  mass_flow_rate: 7.37 # [litres/hour]
+                  mass_flow_rate: 72 # [litres/hour]
             - file: scenario_inputs.yaml
               contents: |+
                 ---
