@@ -286,7 +286,7 @@ def calculate_pvt_output(
     temperatures: pd.Series,
     thermal_desalination_plant: Optional[ThermalDesalinationPlant],
     wind_speeds: pd.Series,
-) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """
     Computes the output of a PV-T system.
 
@@ -324,8 +324,11 @@ def calculate_pvt_output(
             being modelled.
 
     Outputs:
+        - pvt_collector_input_temperature:
+            The input temperature of the HTF entering the PV-T collectors at each time
+            step.
         - pvt_collector_output_temperature:
-            The output temperature of the PV-T collectors at each time step.
+            The output temperature of HTF leaving the PV-T collectors at each time step.
         - pvt_electric_power_per_unit:
             The electric power, per unit PV-T, delivered by the PV-T system.
         - pvt_pump_times_frame:
@@ -466,6 +469,9 @@ def calculate_pvt_output(
         )
 
     best_guess_collector_input_temperature: float = default_supply_temperature
+    pvt_collector_input_temperature_map: Dict[int, float] = collections.defaultdict(
+        lambda: default_supply_temperature
+    )
     pvt_collector_output_temperature_map: Dict[int, float] = collections.defaultdict(
         lambda: default_supply_temperature
     )
@@ -541,7 +547,7 @@ def calculate_pvt_output(
                 )
             else:
                 fractional_electric_performance = 0
-                collector_output_temperature = default_supply_temperature
+                collector_output_temperature = best_guess_collector_input_temperature
 
             tank_load_enthalpy_transfer = (
                 volume_supplied  # [kg/hour]
@@ -621,6 +627,7 @@ def calculate_pvt_output(
             best_guess_collector_input_temperature = collector_input_temperature
 
         # Save the fractional electrical performance and output temp.
+        pvt_collector_input_temperature_map[index] = collector_input_temperature
         pvt_collector_output_temperature_map[index] = collector_output_temperature
         pvt_electric_power_per_unit_map[index] = (
             fractional_electric_performance * minigrid.pvt_panel.pv_unit
@@ -632,6 +639,9 @@ def calculate_pvt_output(
     logger.info("Hourly %s PV-T performance calculation complete.", resource_type.value)
 
     # Convert these outputs to dataframes and return.
+    pvt_collector_input_temperature: pd.DataFrame = dict_to_dataframe(
+        pvt_collector_input_temperature_map, logger
+    )
     pvt_collector_output_temperature: pd.DataFrame = dict_to_dataframe(
         pvt_collector_output_temperature_map, logger
     )
@@ -647,6 +657,7 @@ def calculate_pvt_output(
     )
 
     return (
+        pvt_collector_input_temperature,
         pvt_collector_output_temperature,
         pvt_electric_power_per_unit,
         pvt_pump_times_frame,

@@ -47,17 +47,22 @@ __all__ = (
 #   The preferred sns colourmap to use.
 COLOUR_MAP: str = "Blues"
 
-# Hours until July:
-#   The number of hours until March.
-HOURS_UNTIL_JULY: int = 4344
-
-# Hours until March:
-#   The number of hours until March.
-HOURS_UNTIL_MARCH: int = 1416
-
-# Hours until May:
-#   The number of hours until May.
-HOURS_UNTIL_MAY: int = 2880
+# Hours until month:
+#   Mapping between month number and the hours until the start of the month.
+HOURS_UNTIL: Dict[int, int] = {
+    1: 0,
+    2: 744,
+    3: 1416,
+    4: 2160,
+    5: 2880,
+    6: 3624,
+    7: 4344,
+    8: 5088,
+    9: 5832,
+    10: 6552,
+    11: 7296,
+    12: 8016
+}
 
 # Plot resolution:
 #   The resolution, in dpi, to use for plotting figures.
@@ -313,7 +318,7 @@ def plot_outputs(
         total=13
         + (17 if initial_cw_hourly_loads is not None else 0)
         + (5 if cw_pvt else 0)
-        + (12 if initial_hw_hourly_loads is not None else 0),
+        + (13 if initial_hw_hourly_loads is not None else 0),
         desc="plots",
         leave=False,
         unit="plot",
@@ -1609,7 +1614,7 @@ def plot_outputs(
             # Water supply and demand on an average July day.
             total_supplied = np.mean(
                 np.reshape(
-                    simulation_output[HOURS_UNTIL_JULY : HOURS_UNTIL_JULY + 31 * 24][
+                    simulation_output[HOURS_UNTIL[7] : HOURS_UNTIL[7] + 31 * 24][
                         ColumnHeader.TOTAL_CW_SUPPLIED.value
                     ].values,
                     (31, 24),
@@ -1618,7 +1623,7 @@ def plot_outputs(
             )
             total_used = np.mean(
                 np.reshape(
-                    simulation_output[HOURS_UNTIL_JULY : HOURS_UNTIL_JULY + 31 * 24][
+                    simulation_output[HOURS_UNTIL[7] : HOURS_UNTIL[7] + 31 * 24][
                         ColumnHeader.TOTAL_CW_CONSUMED.value
                     ].values,
                     (31, 24),
@@ -1627,7 +1632,7 @@ def plot_outputs(
             )
             backup_clean_water = np.mean(
                 np.reshape(
-                    simulation_output[HOURS_UNTIL_JULY : HOURS_UNTIL_JULY + 31 * 24][
+                    simulation_output[HOURS_UNTIL[7] : HOURS_UNTIL[7] + 31 * 24][
                         ColumnHeader.CLEAN_WATER_FROM_PRIORITISATION.value
                     ].values,
                     (31, 24),
@@ -1636,7 +1641,7 @@ def plot_outputs(
             )
             conventional_drinking_water = np.mean(
                 np.reshape(
-                    simulation_output[HOURS_UNTIL_JULY : HOURS_UNTIL_JULY + 31 * 24][
+                    simulation_output[HOURS_UNTIL[7] : HOURS_UNTIL[7] + 31 * 24][
                         ColumnHeader.CLEAN_WATER_FROM_CONVENTIONAL_SOURCES.value
                     ].values,
                     (31, 24),
@@ -1645,7 +1650,7 @@ def plot_outputs(
             )
             excess_power_clean_water = np.mean(
                 np.reshape(
-                    simulation_output[HOURS_UNTIL_JULY : HOURS_UNTIL_JULY + 31 * 24][
+                    simulation_output[HOURS_UNTIL[7] : HOURS_UNTIL[7] + 31 * 24][
                         ColumnHeader.CLEAN_WATER_FROM_EXCESS_ELECTRICITY.value
                     ].values,
                     (31, 24),
@@ -1654,7 +1659,7 @@ def plot_outputs(
             )
             renewable_clean_water = np.mean(
                 np.reshape(
-                    simulation_output[HOURS_UNTIL_JULY : HOURS_UNTIL_JULY + 31 * 24][
+                    simulation_output[HOURS_UNTIL[7] : HOURS_UNTIL[7] + 31 * 24][
                         ColumnHeader.RENEWABLE_CW_USED_DIRECTLY
                     ].values,
                     (31, 24),
@@ -1663,7 +1668,7 @@ def plot_outputs(
             )
             renewable_cw_produced = np.mean(
                 np.reshape(
-                    simulation_output[HOURS_UNTIL_JULY : HOURS_UNTIL_JULY + 31 * 24][
+                    simulation_output[HOURS_UNTIL[7] : HOURS_UNTIL[7] + 31 * 24][
                         ColumnHeader.CLEAN_WATER_FROM_THERMAL_RENEWABLES.value
                     ].values,
                     (31, 24),
@@ -1672,7 +1677,7 @@ def plot_outputs(
             )
             storage_clean_water = np.mean(
                 np.reshape(
-                    simulation_output[HOURS_UNTIL_JULY : HOURS_UNTIL_JULY + 31 * 24][
+                    simulation_output[HOURS_UNTIL[7] : HOURS_UNTIL[7] + 31 * 24][
                         ColumnHeader.CLEAN_WATER_FROM_STORAGE.value
                     ].values,
                     (31, 24),
@@ -1681,7 +1686,7 @@ def plot_outputs(
             )
             tank_storage = np.mean(
                 np.reshape(
-                    simulation_output[HOURS_UNTIL_JULY : HOURS_UNTIL_JULY + 31 * 24][
+                    simulation_output[HOURS_UNTIL[7] : HOURS_UNTIL[7] + 31 * 24][
                         ColumnHeader.CW_TANK_STORAGE_PROFILE.value
                     ].values,
                     (31, 24),
@@ -1690,7 +1695,7 @@ def plot_outputs(
             )
             total_cw_load = np.mean(
                 np.reshape(
-                    simulation_output[HOURS_UNTIL_JULY : HOURS_UNTIL_JULY + 31 * 24][
+                    simulation_output[HOURS_UNTIL[7] : HOURS_UNTIL[7] + 31 * 24][
                         ColumnHeader.TOTAL_CW_LOAD.value
                     ].values,
                     (31, 24),
@@ -1699,7 +1704,7 @@ def plot_outputs(
             )
             unmet_clean_water = np.mean(
                 np.reshape(
-                    simulation_output[HOURS_UNTIL_JULY : HOURS_UNTIL_JULY + 31 * 24][
+                    simulation_output[HOURS_UNTIL[7] : HOURS_UNTIL[7] + 31 * 24][
                         ColumnHeader.UNMET_CLEAN_WATER
                     ].values,
                     (31, 24),
@@ -2370,40 +2375,40 @@ def plot_outputs(
                 collector_output_temperature_january = simulation_output.iloc[0:24][
                     ColumnHeader.CW_PVT_OUTPUT_TEMPERATURE.value
                 ]
-                collector_output_temperature_march = simulation_output.iloc[
-                    HOURS_UNTIL_MARCH : HOURS_UNTIL_MARCH + 24
-                ][ColumnHeader.CW_PVT_OUTPUT_TEMPERATURE.value]
-                collector_output_temperature_may = simulation_output.iloc[
-                    HOURS_UNTIL_MAY : HOURS_UNTIL_MAY + 24
-                ][ColumnHeader.CW_PVT_OUTPUT_TEMPERATURE.value]
+                # collector_output_temperature_march = simulation_output.iloc[
+                #     HOURS_UNTIL[3] : HOURS_UNTIL[3] + 24
+                # ][ColumnHeader.CW_PVT_OUTPUT_TEMPERATURE.value]
+                # collector_output_temperature_may = simulation_output.iloc[
+                #     HOURS_UNTIL[5] : HOURS_UNTIL[5] + 24
+                # ][ColumnHeader.CW_PVT_OUTPUT_TEMPERATURE.value]
                 collector_output_temperature_july = simulation_output.iloc[
-                    HOURS_UNTIL_JULY : HOURS_UNTIL_JULY + 24
+                    HOURS_UNTIL[7] : HOURS_UNTIL[7] + 24
                 ][ColumnHeader.CW_PVT_OUTPUT_TEMPERATURE.value]
 
                 buffer_tank_temperature_january = simulation_output.iloc[0:24][
                     ColumnHeader.BUFFER_TANK_TEMPERATURE.value
                 ]
-                buffer_tank_temperature_march = simulation_output.iloc[
-                    HOURS_UNTIL_MARCH : HOURS_UNTIL_MARCH + 24
-                ][ColumnHeader.BUFFER_TANK_TEMPERATURE.value]
-                buffer_tank_temperature_may = simulation_output.iloc[
-                    HOURS_UNTIL_MAY : HOURS_UNTIL_MAY + 24
-                ][ColumnHeader.BUFFER_TANK_TEMPERATURE.value]
+                # buffer_tank_temperature_march = simulation_output.iloc[
+                #     HOURS_UNTIL[3] : HOURS_UNTIL[3] + 24
+                # ][ColumnHeader.BUFFER_TANK_TEMPERATURE.value]
+                # buffer_tank_temperature_may = simulation_output.iloc[
+                #     HOURS_UNTIL[5] : HOURS_UNTIL[5] + 24
+                # ][ColumnHeader.BUFFER_TANK_TEMPERATURE.value]
                 buffer_tank_temperature_july = simulation_output.iloc[
-                    HOURS_UNTIL_JULY : HOURS_UNTIL_JULY + 24
+                    HOURS_UNTIL[7] : HOURS_UNTIL[7] + 24
                 ][ColumnHeader.BUFFER_TANK_TEMPERATURE.value]
 
                 volume_supplied_january = simulation_output.iloc[0:24][
                     ColumnHeader.CLEAN_WATER_FROM_THERMAL_RENEWABLES.value
                 ]
-                volume_supplied_march = simulation_output.iloc[
-                    HOURS_UNTIL_MARCH : HOURS_UNTIL_MARCH + 24
-                ][ColumnHeader.CLEAN_WATER_FROM_THERMAL_RENEWABLES.value]
-                volume_supplied_may = simulation_output.iloc[
-                    HOURS_UNTIL_MAY : HOURS_UNTIL_MAY + 24
-                ][ColumnHeader.CLEAN_WATER_FROM_THERMAL_RENEWABLES.value]
+                # volume_supplied_march = simulation_output.iloc[
+                #     HOURS_UNTIL[3] : HOURS_UNTIL[3] + 24
+                # ][ColumnHeader.CLEAN_WATER_FROM_THERMAL_RENEWABLES.value]
+                # volume_supplied_may = simulation_output.iloc[
+                #     HOURS_UNTIL[5] : HOURS_UNTIL[5] + 24
+                # ][ColumnHeader.CLEAN_WATER_FROM_THERMAL_RENEWABLES.value]
                 volume_supplied_july = simulation_output.iloc[
-                    HOURS_UNTIL_JULY : HOURS_UNTIL_JULY + 24
+                    HOURS_UNTIL[7] : HOURS_UNTIL[7] + 24
                 ][ColumnHeader.CLEAN_WATER_FROM_THERMAL_RENEWABLES.value]
 
                 ax1.plot(
@@ -2472,7 +2477,7 @@ def plot_outputs(
                 collector_output_temperature_march = np.mean(
                     np.reshape(
                         simulation_output[
-                            HOURS_UNTIL_MARCH : HOURS_UNTIL_MARCH + 31 * 24
+                            HOURS_UNTIL[3] : HOURS_UNTIL[3] + 31 * 24
                         ][ColumnHeader.CW_PVT_OUTPUT_TEMPERATURE.value].values,
                         (31, 24),
                     ),
@@ -2480,7 +2485,7 @@ def plot_outputs(
                 )
                 collector_output_temperature_may = np.mean(
                     np.reshape(
-                        simulation_output[HOURS_UNTIL_MAY : HOURS_UNTIL_MAY + 31 * 24][
+                        simulation_output[HOURS_UNTIL[5] : HOURS_UNTIL[5] + 31 * 24][
                             ColumnHeader.CW_PVT_OUTPUT_TEMPERATURE.value
                         ].values,
                         (31, 24),
@@ -2490,7 +2495,7 @@ def plot_outputs(
                 collector_output_temperature_july = np.mean(
                     np.reshape(
                         simulation_output[
-                            HOURS_UNTIL_JULY : HOURS_UNTIL_JULY + 31 * 24
+                            HOURS_UNTIL[7] : HOURS_UNTIL[7] + 31 * 24
                         ][ColumnHeader.CW_PVT_OUTPUT_TEMPERATURE.value].values,
                         (31, 24),
                     ),
@@ -2509,7 +2514,7 @@ def plot_outputs(
                 buffer_tank_temperature_march = np.mean(
                     np.reshape(
                         simulation_output[
-                            HOURS_UNTIL_MARCH : HOURS_UNTIL_MARCH + 31 * 24
+                            HOURS_UNTIL[3] : HOURS_UNTIL[3] + 31 * 24
                         ][ColumnHeader.BUFFER_TANK_TEMPERATURE.value].values,
                         (31, 24),
                     ),
@@ -2517,7 +2522,7 @@ def plot_outputs(
                 )
                 buffer_tank_temperature_may = np.mean(
                     np.reshape(
-                        simulation_output[HOURS_UNTIL_MAY : HOURS_UNTIL_MAY + 31 * 24][
+                        simulation_output[HOURS_UNTIL[5] : HOURS_UNTIL[5] + 31 * 24][
                             ColumnHeader.BUFFER_TANK_TEMPERATURE.value
                         ].values,
                         (31, 24),
@@ -2527,7 +2532,7 @@ def plot_outputs(
                 buffer_tank_temperature_july = np.mean(
                     np.reshape(
                         simulation_output[
-                            HOURS_UNTIL_JULY : HOURS_UNTIL_JULY + 31 * 24
+                            HOURS_UNTIL[7] : HOURS_UNTIL[7] + 31 * 24
                         ][ColumnHeader.BUFFER_TANK_TEMPERATURE.value].values,
                         (31, 24),
                     ),
@@ -2547,7 +2552,7 @@ def plot_outputs(
                 volume_supplied_march = np.mean(
                     np.reshape(
                         simulation_output[
-                            HOURS_UNTIL_MARCH : HOURS_UNTIL_MARCH + 31 * 24
+                            HOURS_UNTIL[3] : HOURS_UNTIL[3] + 31 * 24
                         ][
                             ColumnHeader.CLEAN_WATER_FROM_THERMAL_RENEWABLES.value
                         ].values,
@@ -2557,7 +2562,7 @@ def plot_outputs(
                 )
                 volume_supplied_may = np.mean(
                     np.reshape(
-                        simulation_output[HOURS_UNTIL_MAY : HOURS_UNTIL_MAY + 31 * 24][
+                        simulation_output[HOURS_UNTIL[5] : HOURS_UNTIL[5] + 31 * 24][
                             ColumnHeader.CLEAN_WATER_FROM_THERMAL_RENEWABLES.value
                         ].values,
                         (31, 24),
@@ -2567,7 +2572,7 @@ def plot_outputs(
                 volume_supplied_july = np.mean(
                     np.reshape(
                         simulation_output[
-                            HOURS_UNTIL_JULY : HOURS_UNTIL_JULY + 31 * 24
+                            HOURS_UNTIL[7] : HOURS_UNTIL[7] + 31 * 24
                         ][
                             ColumnHeader.CLEAN_WATER_FROM_THERMAL_RENEWABLES.value
                         ].values,
@@ -2958,39 +2963,39 @@ def plot_outputs(
                 ColumnHeader.HW_PVT_OUTPUT_TEMPERATURE.value
             ]
             collector_output_temperature_march = simulation_output.iloc[
-                HOURS_UNTIL_MARCH : HOURS_UNTIL_MARCH + 24
+                HOURS_UNTIL[3] : HOURS_UNTIL[3] + 24
             ][ColumnHeader.HW_PVT_OUTPUT_TEMPERATURE.value]
             collector_output_temperature_may = simulation_output.iloc[
-                HOURS_UNTIL_MAY : HOURS_UNTIL_MAY + 24
+                HOURS_UNTIL[5] : HOURS_UNTIL[5] + 24
             ][ColumnHeader.HW_PVT_OUTPUT_TEMPERATURE.value]
             collector_output_temperature_july = simulation_output.iloc[
-                HOURS_UNTIL_JULY : HOURS_UNTIL_JULY + 24
+                HOURS_UNTIL[7] : HOURS_UNTIL[7] + 24
             ][ColumnHeader.HW_PVT_OUTPUT_TEMPERATURE.value]
 
             hot_water_tank_temperature_january = simulation_output.iloc[0:24][
                 ColumnHeader.HW_TANK_TEMPERATURE.value
             ]
             hot_water_tank_temperature_march = simulation_output.iloc[
-                HOURS_UNTIL_MARCH : HOURS_UNTIL_MARCH + 24
+                HOURS_UNTIL[3] : HOURS_UNTIL[3] + 24
             ][ColumnHeader.HW_TANK_TEMPERATURE.value]
             hot_water_tank_temperature_may = simulation_output.iloc[
-                HOURS_UNTIL_MAY : HOURS_UNTIL_MAY + 24
+                HOURS_UNTIL[5] : HOURS_UNTIL[5] + 24
             ][ColumnHeader.HW_TANK_TEMPERATURE.value]
             hot_water_tank_temperature_july = simulation_output.iloc[
-                HOURS_UNTIL_JULY : HOURS_UNTIL_JULY + 24
+                HOURS_UNTIL[7] : HOURS_UNTIL[7] + 24
             ][ColumnHeader.HW_TANK_TEMPERATURE.value]
 
             renewable_fraction_january = simulation_output.iloc[0:24][
                 ColumnHeader.HW_SOLAR_THERMAL_FRACTION.value
             ]
             renewable_fraction_march = simulation_output.iloc[
-                HOURS_UNTIL_MARCH : HOURS_UNTIL_MARCH + 24
+                HOURS_UNTIL[3] : HOURS_UNTIL[3] + 24
             ][ColumnHeader.HW_SOLAR_THERMAL_FRACTION.value]
             renewable_fraction_may = simulation_output.iloc[
-                HOURS_UNTIL_MAY : HOURS_UNTIL_MAY + 24
+                HOURS_UNTIL[5] : HOURS_UNTIL[5] + 24
             ][ColumnHeader.HW_SOLAR_THERMAL_FRACTION.value]
             renewable_fraction_july = simulation_output.iloc[
-                HOURS_UNTIL_JULY : HOURS_UNTIL_JULY + 24
+                HOURS_UNTIL[7] : HOURS_UNTIL[7] + 24
             ][ColumnHeader.HW_SOLAR_THERMAL_FRACTION.value]
 
             ax1.plot(
@@ -3126,27 +3131,27 @@ def plot_outputs(
                 ),
                 axis=0,
             )
-            collector_output_temperature_march = np.mean(
-                np.reshape(
-                    simulation_output[HOURS_UNTIL_MARCH : HOURS_UNTIL_MARCH + 31 * 24][
-                        ColumnHeader.HW_PVT_OUTPUT_TEMPERATURE.value
-                    ].values,
-                    (31, 24),
-                ),
-                axis=0,
-            )
-            collector_output_temperature_may = np.mean(
-                np.reshape(
-                    simulation_output[HOURS_UNTIL_MAY : HOURS_UNTIL_MAY + 31 * 24][
-                        ColumnHeader.HW_PVT_OUTPUT_TEMPERATURE.value
-                    ].values,
-                    (31, 24),
-                ),
-                axis=0,
-            )
+            # collector_output_temperature_march = np.mean(
+            #     np.reshape(
+            #         simulation_output[HOURS_UNTIL[3] : HOURS_UNTIL[3] + 31 * 24][
+            #             ColumnHeader.HW_PVT_OUTPUT_TEMPERATURE.value
+            #         ].values,
+            #         (31, 24),
+            #     ),
+            #     axis=0,
+            # )
+            # collector_output_temperature_may = np.mean(
+            #     np.reshape(
+            #         simulation_output[HOURS_UNTIL[5] : HOURS_UNTIL[5] + 31 * 24][
+            #             ColumnHeader.HW_PVT_OUTPUT_TEMPERATURE.value
+            #         ].values,
+            #         (31, 24),
+            #     ),
+            #     axis=0,
+            # )
             collector_output_temperature_july = np.mean(
                 np.reshape(
-                    simulation_output[HOURS_UNTIL_JULY : HOURS_UNTIL_JULY + 31 * 24][
+                    simulation_output[HOURS_UNTIL[7] : HOURS_UNTIL[7] + 31 * 24][
                         ColumnHeader.HW_PVT_OUTPUT_TEMPERATURE.value
                     ].values,
                     (31, 24),
@@ -3163,27 +3168,27 @@ def plot_outputs(
                 ),
                 axis=0,
             )
-            hot_water_tank_temperature_march = np.mean(
-                np.reshape(
-                    simulation_output[HOURS_UNTIL_MARCH : HOURS_UNTIL_MARCH + 31 * 24][
-                        ColumnHeader.HW_TANK_TEMPERATURE.value
-                    ].values,
-                    (31, 24),
-                ),
-                axis=0,
-            )
-            hot_water_tank_temperature_may = np.mean(
-                np.reshape(
-                    simulation_output[HOURS_UNTIL_MAY : HOURS_UNTIL_MAY + 31 * 24][
-                        ColumnHeader.HW_TANK_TEMPERATURE.value
-                    ].values,
-                    (31, 24),
-                ),
-                axis=0,
-            )
+            # hot_water_tank_temperature_march = np.mean(
+            #     np.reshape(
+            #         simulation_output[HOURS_UNTIL[3] : HOURS_UNTIL[3] + 31 * 24][
+            #             ColumnHeader.HW_TANK_TEMPERATURE.value
+            #         ].values,
+            #         (31, 24),
+            #     ),
+            #     axis=0,
+            # )
+            # hot_water_tank_temperature_may = np.mean(
+            #     np.reshape(
+            #         simulation_output[HOURS_UNTIL[5] : HOURS_UNTIL[5] + 31 * 24][
+            #             ColumnHeader.HW_TANK_TEMPERATURE.value
+            #         ].values,
+            #         (31, 24),
+            #     ),
+            #     axis=0,
+            # )
             hot_water_tank_temperature_july = np.mean(
                 np.reshape(
-                    simulation_output[HOURS_UNTIL_JULY : HOURS_UNTIL_JULY + 31 * 24][
+                    simulation_output[HOURS_UNTIL[7] : HOURS_UNTIL[7] + 31 * 24][
                         ColumnHeader.HW_TANK_TEMPERATURE.value
                     ].values,
                     (31, 24),
@@ -3201,27 +3206,27 @@ def plot_outputs(
                 ),
                 axis=0,
             )
-            renewable_fraction_march = np.mean(
-                np.reshape(
-                    simulation_output[HOURS_UNTIL_MARCH : HOURS_UNTIL_MARCH + 31 * 24][
-                        ColumnHeader.HW_SOLAR_THERMAL_FRACTION.value
-                    ].values,
-                    (31, 24),
-                ),
-                axis=0,
-            )
-            renewable_fraction_may = np.mean(
-                np.reshape(
-                    simulation_output[HOURS_UNTIL_MAY : HOURS_UNTIL_MAY + 31 * 24][
-                        ColumnHeader.HW_SOLAR_THERMAL_FRACTION.value
-                    ].values,
-                    (31, 24),
-                ),
-                axis=0,
-            )
+            # renewable_fraction_march = np.mean(
+            #     np.reshape(
+            #         simulation_output[HOURS_UNTIL[3] : HOURS_UNTIL[3] + 31 * 24][
+            #             ColumnHeader.HW_SOLAR_THERMAL_FRACTION.value
+            #         ].values,
+            #         (31, 24),
+            #     ),
+            #     axis=0,
+            # )
+            # renewable_fraction_may = np.mean(
+            #     np.reshape(
+            #         simulation_output[HOURS_UNTIL[5] : HOURS_UNTIL[5] + 31 * 24][
+            #             ColumnHeader.HW_SOLAR_THERMAL_FRACTION.value
+            #         ].values,
+            #         (31, 24),
+            #     ),
+            #     axis=0,
+            # )
             renewable_fraction_july = np.mean(
                 np.reshape(
-                    simulation_output[HOURS_UNTIL_JULY : HOURS_UNTIL_JULY + 31 * 24][
+                    simulation_output[HOURS_UNTIL[7] : HOURS_UNTIL[7] + 31 * 24][
                         ColumnHeader.HW_SOLAR_THERMAL_FRACTION.value
                     ].values,
                     (31, 24),
@@ -3314,7 +3319,7 @@ def plot_outputs(
             plt.savefig(
                 os.path.join(
                     figures_directory,
-                    "hw_collector_output_temperature_on_average_days_with_renewables_fraction.png",
+                    "hot_water_collector_output_temperature_on_average_days_with_renewables_fraction.png",
                 ),
                 transparent=True,
             )
@@ -3370,7 +3375,105 @@ def plot_outputs(
             plt.title("Electriciy use by supply/device type on an average day")
             plt.savefig(
                 os.path.join(
-                    figures_directory, "hw_electricity_use_by_supply_type.png"
+                    figures_directory, "hot_water_electricity_use_by_supply_type.png"
+                ),
+                transparent=True,
+            )
+            plt.close()
+            pbar.update(1)
+
+            # Plot key temperatures that characterise the PV-T system.
+            collector_temperature_gain_july = np.mean(
+                np.reshape(
+                    (simulation_output[HOURS_UNTIL[7] : HOURS_UNTIL[7] + 31 * 24][
+                        ColumnHeader.HW_PVT_OUTPUT_TEMPERATURE.value
+                    ] - simulation_output[HOURS_UNTIL[7] : HOURS_UNTIL[7] + 31 * 24][
+                        ColumnHeader.HW_PVT_INPUT_TEMPERATURE.value
+                    ]).values,
+                    (31, 24),
+                ),
+                axis=0,
+            )
+            collector_minus_tank_july = np.mean(
+                np.reshape(
+                    (simulation_output[HOURS_UNTIL[7] : HOURS_UNTIL[7] + 31 * 24][
+                        ColumnHeader.HW_PVT_OUTPUT_TEMPERATURE.value
+                    ] - simulation_output[HOURS_UNTIL[7] : HOURS_UNTIL[7] + 31 * 24][
+                        ColumnHeader.HW_TANK_TEMPERATURE.value
+                    ]).values,
+                    (31, 24),
+                ),
+                axis=0,
+            )
+
+            _, ax1 = plt.subplots()
+            ax1.plot(collector_temperature_gain_july, label="T_c,out - T_c,in")
+            ax1.plot(collector_minus_tank_july, label="T_c,out - T_tank")
+            ax1.set_ylabel("Temperature / degC")
+            ax1.legend(loc="upper left")
+
+            ax2 = ax1.twinx()
+
+            plt.xlim(0, 23)
+            plt.xticks(range(0, 24, 1))
+            plt.xlabel("Hour of day")
+            plt.title("PV-T in/out temperatures for an average July day")
+            plt.savefig(
+                os.path.join(
+                    figures_directory, "hot_water_pvt_tank_temperature_july.png"
+                ),
+                transparent=True,
+            )
+            plt.close()
+            pbar.update(1)
+
+            # Plot monthly renewable DHW fraction
+            dhw_renewable_fraction: Dict[int: float] = {}
+            dhw_dc_fraction: Dict[int: float] = {}
+            for month in range(1, 13):
+                dhw_renewable_fraction[month] = np.mean(
+                    np.reshape(
+                        simulation_output[HOURS_UNTIL[month] : HOURS_UNTIL[month] + 30 * 24][
+                            ColumnHeader.HW_SOLAR_THERMAL_FRACTION.value
+                        ].values,
+                        (31, 24),
+                    ),
+                    axis=0,
+                )
+                dhw_dc_fraction[month] = np.mean(
+                    np.reshape(
+                        simulation_output[HOURS_UNTIL[month] : HOURS_UNTIL[month] + 30 * 24][
+                            ColumnHeader.HW_VOL_DEMAND_COVERED.value
+                        ].values,
+                        (31, 24),
+                    ),
+                    axis=0,
+                )
+
+            plt.bar(
+                [entry - 0.4 for entry in dhw_renewable_fraction.keys()],
+                dhw_renewable_fraction.values(),
+                width=0.35,
+                align="center",
+                label="renewable fraction"
+            )
+            plt.bar(
+                [entry + 0.4 for entry in dhw_dc_fraction.keys()],
+                dhw_dc_fraction.values(),
+                width=0.35,
+                align="center",
+                label="volume demand covered"
+            )
+
+            plt.xlim(1, 12)
+            plt.xticks(range(1, 13, 1))
+            plt.xlabel("Month of year")
+            plt.ylabel("Demand covered fraction")
+            plt.legend()
+            plt.title("Renewable DHW demand covered throughout the year")
+            plt.savefig(
+                os.path.join(
+                    figures_directory, "how_water_renewable_dc_fraction.png"
                 ),
                 transparent=True,
             )
