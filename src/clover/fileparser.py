@@ -136,7 +136,7 @@ DIESEL_WATER_HEATERS: str = "diesel_water_heaters"
 
 # Fast electric model file:
 #   The relative path to the electric model file to use when running .
-ELECTRIC_MODEL_FAST_FILE: str = os.path.join("src", "best_electric_tree.sav")
+ELECTRIC_MODEL_FAST_FILE: str = os.path.join("src", "electric_tree.sav")
 
 # Electric model file:
 #   The relative path to the electric model file.
@@ -224,7 +224,7 @@ TANK_INPUTS_FILE: str = os.path.join("simulation", "tank_inputs.yaml")
 
 # Fast thermal model file:
 #   The relative path to the thermal model file.
-THERMAL_MODEL_FAST_FILE: str = os.path.join("src", "best_thermal_tree.sav")
+THERMAL_MODEL_FAST_FILE: str = os.path.join("src", "thermal_tree.sav")
 
 # Thermal model file:
 #   The relative path to the thermal model file.
