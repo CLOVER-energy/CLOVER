@@ -2372,10 +2372,12 @@ def run_simulation(
     storage_power_supplied: Dict[int, float] = {}
 
     # Do not do the itteration if no storage is being used
-    if electric_storage_size == 0:
+    if electric_storage_size == 0 or not scenario.battery:
         battery_health_frame: pd.DataFrame = pd.DataFrame([float(0)] * (end_hour - start_hour))
         energy_surplus_frame: pd.DataFrame = ((battery_storage_profile > 0) * battery_storage_profile).abs()
         energy_deficit_frame: pd.DataFrame = ((battery_storage_profile < 0) * battery_storage_profile).abs()
+        initial_storage_size: float = 0
+        final_storage_size: float = 0
         hourly_battery_storage_frame: pd.DataFrame = pd.DataFrame([float(0)] * (end_hour - start_hour))
         storage_power_supplied_frame: pd.DataFrame = pd.DataFrame([float(0)] * (end_hour - start_hour))
     # Carry out the itteration if there is some storage involved in the system.
@@ -2476,6 +2478,13 @@ def run_simulation(
         )
         storage_power_supplied_frame = dict_to_dataframe(
             storage_power_supplied, logger
+        )
+
+        # Determine the initial and final storage sizes
+        initial_storage_size = float(electric_storage_size * minigrid.battery.storage_unit)
+        final_storage_size = float(
+            initial_storage_size
+            * np.min(battery_health_frame[ColumnHeader.BATTERY_HEALTH.value])
         )
 
     if scenario.desalination_scenario is not None:
@@ -2880,11 +2889,7 @@ def run_simulation(
                 HOURS_PER_YEAR * (simulation.end_year - simulation.start_year), 0
             ]
         ),
-        float(
-            electric_storage_size
-            * minigrid.battery.storage_unit
-            * np.min(battery_health_frame[ColumnHeader.BATTERY_HEALTH.value])
-        ),
+        final_storage_size,
         {converter: converters.count(converter) for converter in converters},
         clean_water_pvt_size
         if minigrid.pvt_panel is not None and scenario.desalination_scenario is not None
@@ -2896,7 +2901,7 @@ def run_simulation(
         number_of_cw_tanks if scenario.desalination_scenario is not None else None,
         number_of_hw_tanks if scenario.hot_water_scenario is not None else None,
         pv_size,
-        float(electric_storage_size * minigrid.battery.storage_unit),
+        initial_storage_size,
         [source.name for source in required_cw_feedwater_sources]
         if len(required_cw_feedwater_sources) > 0
         else None,
