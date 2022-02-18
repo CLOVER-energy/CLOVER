@@ -40,7 +40,7 @@ from ..__utils__ import (
 )
 from ..conversion.conversion import ThermalDesalinationPlant
 from .__utils__ import Minigrid
-from .storage import HotWaterTank
+from .storage_utils import HotWaterTank
 
 
 __all__ = ("calculate_pvt_output",)
