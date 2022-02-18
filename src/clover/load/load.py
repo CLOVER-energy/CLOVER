@@ -41,11 +41,13 @@ from ..__utils__ import (
     KEROSENE_DEVICE_NAME,
     ResourceType,
     Location,
+    Scenario,
     monthly_times_to_daily_times,
 )
 
 __all__ = (
     "compute_total_hourly_load",
+    "compute_processed_load_profile",
     "DEFAULT_KEROSENE_DEVICE",
     "Device",
     "LOAD_LOGGER_NAME",
@@ -1096,3 +1098,48 @@ def process_load_profiles(
         total_load,
         yearly_statistics,
     )
+
+
+def compute_processed_load_profile(scenario: Scenario, total_load: pd.DataFrame):
+    """
+    Gets the total community load over 20 years in kW
+
+    Inputs:
+        - scenario:
+            Information about the scenario currently being run.
+        - total_load:
+            The total load as a :class:`pandas.DataFrame`.
+
+    Outputs:
+        - A :class:`pandas.DataFrame` with columns for the load of domestic,
+            commercial and public devices.
+
+    """
+
+    processed_total_load: Optional[pd.DataFrame] = None
+
+    if scenario.demands.domestic:
+        processed_total_load = pd.DataFrame(
+            total_load[DemandType.DOMESTIC.value].values
+        )
+
+    if scenario.demands.commercial:
+        if processed_total_load is not None:
+            processed_total_load += pd.DataFrame(
+                total_load[DemandType.COMMERCIAL.value].values
+            )
+        else:
+            processed_total_load = total_load[DemandType.COMMERCIAL.value]
+
+    if scenario.demands.public:
+        if processed_total_load is not None:
+            processed_total_load += pd.DataFrame(
+                total_load[DemandType.PUBLIC.value].values
+            )
+        else:
+            processed_total_load = total_load[DemandType.PUBLIC.value]
+
+    if processed_total_load is None:
+        raise Exception("At least one load type must be specified.")
+
+    return processed_total_load
