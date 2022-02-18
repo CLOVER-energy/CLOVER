@@ -22,7 +22,6 @@ import datetime
 import math
 
 from logging import Logger
-from re import L, T
 from typing import Dict, List, Optional, Tuple, Union
 
 import numpy as np  # pylint: disable=import-error
@@ -37,13 +36,10 @@ from ..__utils__ import (
     ColdWaterSupply,
     ColumnHeader,
     DieselMode,
-    DemandType,
-    DistributionNetwork,
     HOURS_PER_YEAR,
     HTFMode,
     InputFileError,
     InternalError,
-    ProgrammerJudgementFault,
     RenewableEnergySource,
     ResourceType,
     Location,
@@ -54,7 +50,7 @@ from ..__utils__ import (
 )
 from ..conversion.conversion import Converter, ThermalDesalinationPlant, WaterSource
 from ..generation.solar import SolarPanelType, solar_degradation
-from ..load.load import HOT_WATER_USAGE, population_hourly
+from ..load.load import compute_processed_load_profile, population_hourly
 from .__utils__ import Minigrid
 from .diesel import (
     DieselWaterHeater,
@@ -62,98 +58,18 @@ from .diesel import (
     get_diesel_fuel_usage,
 )
 from .solar import calculate_pvt_output
-from .storage import CleanWaterTank
+from .storage import (
+    battery_iteration_step,
+    cw_tank_iteration_step,
+    get_electric_battery_storage_profile,
+    get_water_storage_profile,
+)
+from .storage_utils import Battery, CleanWaterTank, HotWaterTank
 
 __all__ = (
     "Minigrid",
     "run_simulation",
 )
-
-
-def _battery_iteration_step(
-    battery_storage_profile: pd.DataFrame,
-    hourly_battery_storage: Dict[int, float],
-    initial_battery_storage: float,
-    logger: Logger,
-    maximum_battery_storage: float,
-    minigrid: Minigrid,
-    minimum_battery_storage: float,
-    *,
-    time_index: int,
-) -> Tuple[float, float, float]:
-    """
-    Carries out an iteration calculation for the battery.
-
-    Inputs:
-        - battery_storage_profile:
-            The battery storage profile, as a :class:`pandas.DataFrame`, giving the net
-            flow into and out of the battery due to renewable electricity generation.
-        - hourly_battery_storage:
-            The mapping between time and computed battery storage.
-        - initial_battery_storage:
-            The initial amount of energy stored in the batteries.
-        - logger:
-            The :class:`logging.Logger` to use for the run.
-        - maximum_battery_storage:
-            The maximum amount of energy that can be stored in the batteries.
-        - minigrid:
-            The :class:`Minigrid` representing the system being considered.
-        - minimum_battery_storage:
-            The minimum amount of energy that can be stored in the batteries.
-        - time_index:
-            The current time (hour) being considered.
-
-    Outputs:
-        - battery_energy_flow:
-            The net flow into or out of the battery.
-        - excess_energy:
-            The energy surplus generated which could not be stored in the batteries.
-        - new_hourly_battery_storage;
-            The computed level of energy stored in the batteries at this time step.
-
-    """
-
-    if minigrid.battery is None:
-        logger.error(
-            "%sNo battery was defined on the minigrid despite the iteration "
-            "calculation being called to compute the energy stored within the "
-            "batteries. Either define a valid battery for the energy system, or adjust "
-            "the scenario to no longer consider battery inputs.%s",
-            BColours.fail,
-            BColours.endc,
-        )
-        raise InputFileError(
-            "energy system inputs",
-            "Battery undefined despite an itteration step being called.",
-        )
-
-    battery_energy_flow = battery_storage_profile.iloc[time_index, 0]
-    if time_index == 0:
-        new_hourly_battery_storage = initial_battery_storage + battery_energy_flow
-    else:
-        # Battery charging
-        if battery_energy_flow >= 0.0:
-            new_hourly_battery_storage = hourly_battery_storage[time_index - 1] * (
-                1.0 - minigrid.battery.leakage
-            ) + minigrid.battery.conversion_in * min(
-                battery_energy_flow,
-                minigrid.battery.charge_rate
-                * (maximum_battery_storage - minimum_battery_storage),
-            )
-        # Battery discharging
-        else:
-            new_hourly_battery_storage = hourly_battery_storage[time_index - 1] * (
-                1.0 - minigrid.battery.leakage
-            ) + (1.0 / minigrid.battery.conversion_out) * max(
-                battery_energy_flow,
-                (-1.0)
-                * minigrid.battery.discharge_rate
-                * (maximum_battery_storage - minimum_battery_storage),
-            )
-
-    excess_energy = max(new_hourly_battery_storage - maximum_battery_storage, 0.0)
-
-    return battery_energy_flow, excess_energy, new_hourly_battery_storage
 
 
 def _calculate_backup_diesel_generator_usage(
@@ -923,6 +839,7 @@ def _calculate_renewable_hw_profiles(
     )
 
 
+<<<<<<< Updated upstream
 def _cw_tank_iteration_step(
     backup_desalinator_water_supplied: Dict[int, float],
     clean_water_power_consumed_mapping: Dict[int, float],
@@ -1547,6 +1464,8 @@ def _get_water_storage_profile(
     )
 
 
+=======
+>>>>>>> Stashed changes
 def _setup_tank_storage_profiles(
     logger: Logger,
     number_of_tanks: int,
@@ -1951,7 +1870,7 @@ def run_simulation(
             )
         # Process the load profile based on the relevant scenario.
         processed_total_cw_load: Optional[pd.DataFrame] = pd.DataFrame(
-            _get_processed_load_profile(scenario, total_cw_load)[
+            compute_processed_load_profile(scenario, total_cw_load)[
                 start_hour:end_hour
             ].values
         )
@@ -1983,7 +1902,7 @@ def run_simulation(
             )
         # Process the load profile based on the relevant scenario.
         processed_total_hw_load = pd.DataFrame(
-            _get_processed_load_profile(scenario, total_hw_load)[start_hour:end_hour]
+            compute_processed_load_profile(scenario, total_hw_load)[start_hour:end_hour]
         )
     else:
         number_of_hw_tanks = 0
@@ -2041,7 +1960,7 @@ def run_simulation(
             "despite this being necessary for the simulation of energy systems."
         )
     processed_total_electric_load = pd.DataFrame(
-        _get_processed_load_profile(scenario, total_electric_load)[
+        compute_processed_load_profile(scenario, total_electric_load)[
             start_hour:end_hour
         ].values
         + clean_water_power_consumed.values
@@ -2071,7 +1990,7 @@ def run_simulation(
         renewables_energy,
         renewables_energy_map,
         renewables_energy_used_directly,
-    ) = _get_electric_battery_storage_profile(
+    ) = get_electric_battery_storage_profile(
         clean_water_pvt_size=clean_water_pvt_size,
         grid_profile=grid_profile.iloc[start_hour:end_hour, 0],
         hot_water_pvt_size=hot_water_pvt_size,
@@ -2203,7 +2122,7 @@ def run_simulation(
                 battery_energy_flow,
                 excess_energy,
                 new_hourly_battery_storage,
-            ) = _battery_iteration_step(
+            ) = battery_iteration_step(
                 battery_storage_profile,
                 hourly_battery_storage,
                 initial_battery_storage,
@@ -2217,7 +2136,7 @@ def run_simulation(
             # Calculate the hot-water iteration.
 
             # Calculate the clean-water iteration.
-            excess_energy = _cw_tank_iteration_step(
+            excess_energy = cw_tank_iteration_step(
                 backup_desalinator_water_supplied,
                 clean_water_power_consumed_mapping,
                 clean_water_demand_met_by_excess_energy,

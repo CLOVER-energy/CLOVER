@@ -28,7 +28,6 @@ from typing import Any, Dict, List, Optional, Set, Union
 
 from ..__utils__ import (
     EXCHANGER,
-    BColours,
     InputFileError,
     NAME,
     RESOURCE_NAME_TO_RESOURCE_TYPE_MAPPING,
@@ -39,7 +38,7 @@ from ..conversion.conversion import Converter
 from ..generation.solar import HybridPVTPanel, PVPanel
 from .diesel import DieselGenerator, DieselWaterHeater
 from .exchanger import Exchanger
-from .storage import Battery, CleanWaterTank, HotWaterTank
+from .storage_utils import Battery, CleanWaterTank, HotWaterTank
 from .transmission import Transmitter
 
 __all__ = ("Minigrid",)
