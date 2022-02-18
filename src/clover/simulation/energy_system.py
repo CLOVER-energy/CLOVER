@@ -2471,6 +2471,7 @@ def run_simulation(
 
         # Process the various outputs into dataframes.
         battery_health_frame = dict_to_dataframe(battery_health, logger)
+        battery_health_frame.columns = pd.Index([ColumnHeader.BATTERY_HEALTH.value])
         # energy_deficit_frame: pd.DataFrame = dict_to_dataframe(energy_deficit)
         energy_surplus_frame = dict_to_dataframe(energy_surplus, logger)
         hourly_battery_storage_frame = dict_to_dataframe(
@@ -2839,7 +2840,6 @@ def run_simulation(
         brine_produced.columns = pd.Index([ColumnHeader.BRINE.value])
 
     # Electric system performance outputs
-    battery_health_frame.columns = pd.Index([ColumnHeader.BATTERY_HEALTH.value])
     blackout_times.columns = pd.Index([ColumnHeader.BLACKOUTS.value])
     diesel_fuel_usage.columns = pd.Index([ColumnHeader.DIESEL_FUEL_USAGE.value])
     diesel_times.columns = pd.Index([ColumnHeader.DIESEL_GENERATOR_TIMES.value])
