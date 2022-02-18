@@ -3512,7 +3512,7 @@ def plot_outputs(
             plt.title("Renewable DHW demand covered throughout the year")
             plt.savefig(
                 os.path.join(
-                    figures_directory, "how_water_renewable_dc_fraction.png"
+                    figures_directory, "hot_water_renewable_dc_fraction.png"
                 ),
                 transparent=True,
             )

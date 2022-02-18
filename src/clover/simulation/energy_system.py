@@ -23,7 +23,7 @@ import datetime
 import math
 
 from logging import Logger
-from typing import Dict, List, Optional, Tuple, Union
+from typing import DefaultDict, Dict, List, Optional, Tuple, Union
 
 import json
 import numpy as np  # pylint: disable=import-error
@@ -52,12 +52,8 @@ from ..__utils__ import (
 )
 from ..conversion.conversion import Converter, ThermalDesalinationPlant, WaterSource
 from ..generation.solar import SolarPanelType, solar_degradation
-<<<<<<< HEAD
 from ..impact.__utils__ import WasteProduct
-from ..load.load import HOT_WATER_USAGE, population_hourly
-=======
-from ..load.load import compute_processed_load_profile, population_hourly
->>>>>>> main-module
+from ..load.load import compute_processed_load_profile, HOT_WATER_USAGE, population_hourly
 from .__utils__ import Minigrid
 from .diesel import (
     DieselWaterHeater,
@@ -1694,11 +1690,7 @@ def run_simulation(
             # Calculate the hot-water iteration.
 
             # Calculate the clean-water iteration.
-<<<<<<< HEAD
-            excess_energy, total_waste_produced = _cw_tank_iteration_step(
-=======
-            excess_energy = cw_tank_iteration_step(
->>>>>>> main-module
+            excess_energy, total_waste_produced = cw_tank_iteration_step(
                 backup_desalinator_water_supplied,
                 brine_per_desalinated_litre,
                 clean_water_power_consumed_mapping,
