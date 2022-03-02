@@ -873,7 +873,8 @@ def recursive_iteration(
     yearly_electric_load_statistics: pd.DataFrame,
     *,
     component_sizes: Dict[
-        Union[Converter, ImpactingComponent, RenewableEnergySource], Union[int, float],
+        Union[Converter, ImpactingComponent, RenewableEnergySource],
+        Union[int, float],
     ],
     parameter_space: List[
         Tuple[
@@ -998,7 +999,10 @@ def recursive_iteration(
     component, unit, sizes = parameter_space.pop()
 
     for size in tqdm(
-        sizes, desc=f"{component.value} size options", leave=False, unit=unit,
+        sizes,
+        desc=f"{component.value} size options",
+        leave=False,
+        unit=unit,
     ):
         # Update the set of fixed sizes accordingly.
         updated_component_sizes: Dict[

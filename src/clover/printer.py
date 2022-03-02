@@ -27,7 +27,9 @@ __all__ = ("generate_optimisation_string", "generate_simulation_string")
 
 
 def generate_optimisation_string(
-    minigrid: Minigrid, optimisation_inputs: OptimisationParameters, scenario: Scenario,
+    minigrid: Minigrid,
+    optimisation_inputs: OptimisationParameters,
+    scenario: Scenario,
 ) -> str:
     """
     Generate and return the optimisation string.
@@ -63,7 +65,8 @@ def generate_optimisation_string(
     ):
         optimisation_string_list.append(
             "- Storage resolution of {} units ({} kWh per unit)".format(
-                optimisation_inputs.storage_size.step, minigrid.battery.storage_unit,
+                optimisation_inputs.storage_size.step,
+                minigrid.battery.storage_unit,
             )
         )
 
@@ -204,13 +207,15 @@ def generate_simulation_string(
         ):
             simulation_string_list.append(
                 "- {} Clean-water PV-T panel units ({} kWp PV per unit)".format(
-                    parsed_args.clean_water_pvt_system_size, minigrid.pvt_panel.pv_unit,
+                    parsed_args.clean_water_pvt_system_size,
+                    minigrid.pvt_panel.pv_unit,
                 )
             )
         if minigrid.clean_water_tank is not None:
             simulation_string_list.append(
                 "- {}x {} litres clean-water storage".format(
-                    parsed_args.num_clean_water_tanks, minigrid.clean_water_tank.mass,
+                    parsed_args.num_clean_water_tanks,
+                    minigrid.clean_water_tank.mass,
                 )
             )
 
@@ -222,7 +227,8 @@ def generate_simulation_string(
         ):
             simulation_string_list.append(
                 "- {} Hot-water PV-T panel units ({} kWp PV per unit)".format(
-                    parsed_args.hot_water_pvt_system_size, minigrid.pvt_panel.pv_unit,
+                    parsed_args.hot_water_pvt_system_size,
+                    minigrid.pvt_panel.pv_unit,
                 )
             )
         simulation_string_list.append(

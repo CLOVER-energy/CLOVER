@@ -55,7 +55,8 @@ __all__ = ("appraise_system",)
 
 
 def _calculate_power_consumed_fraction(
-    simulation_results: pd.DataFrame, total_electricity_consumed: float,
+    simulation_results: pd.DataFrame,
+    total_electricity_consumed: float,
 ) -> Dict[ResourceType, float]:
     """
     Calculates the electric power consumed by each resource type.
