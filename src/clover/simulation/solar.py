@@ -49,7 +49,7 @@ __all__ = ("calculate_pvt_output",)
 # Minimum irradiance threshold;
 #   To avoid edge cases, where a very small, but non-zero, irradiance causes the AI to
 #   predict
-MINIMUM_IRRADIANCE_THRESHOLD: float = 0 # [W/m^2]
+MINIMUM_IRRADIANCE_THRESHOLD: float = 0  # [W/m^2]
 
 # Temperature precision:
 #   The precision required when solving the differential equation for the system
@@ -291,7 +291,9 @@ def calculate_pvt_output(
     temperatures: pd.Series,
     thermal_desalination_plant: Optional[ThermalDesalinationPlant],
     wind_speeds: pd.Series,
-) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+) -> Tuple[
+    pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame
+]:
     """
     Computes the output of a PV-T system.
 
@@ -538,12 +540,12 @@ def calculate_pvt_output(
         while not solution_found:
             # Use the AI to determine the output temperature of the collector, based on
             # the best guess of the collector input temperature.
-            if ((1000 * irradiances[index]) > MINIMUM_IRRADIANCE_THRESHOLD):
+            if (1000 * irradiances[index]) > MINIMUM_IRRADIANCE_THRESHOLD:
                 # If there is enough irradiance to trigger reliable modelling, use the
                 # in-built modelling tools.
                 (
                     fractional_electric_performance,
-                    collector_output_temperature
+                    collector_output_temperature,
                 ) = minigrid.pvt_panel.calculate_performance(
                     temperatures[index],
                     best_guess_collector_input_temperature,
