@@ -245,7 +245,7 @@ def _discounted_fraction(
 
     # Compute a list containing all the discounted fractions over the time period.
     discounted_fraction_array = [
-        denominator ** -time for time in range(start_day, end_day)
+        denominator**-time for time in range(start_day, end_day)
     ]
 
     return pd.DataFrame(discounted_fraction_array)
@@ -1308,7 +1308,10 @@ def total_om(
 
     # Compute the costs associated when carrying out prioritisation desalination.
     update_diesel_costs(
-        diesel_om, scenario, subsystem_costs, technical_appraisal,
+        diesel_om,
+        scenario,
+        subsystem_costs,
+        technical_appraisal,
     )
 
     # FIXME: This needs to include the PV-T costs.
