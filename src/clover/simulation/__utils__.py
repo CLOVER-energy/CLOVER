@@ -251,27 +251,21 @@ class Minigrid:
 
             # Determine the various tanks.
             if "buffer_tank" in minigrid_inputs:
-                buffer_tank = tanks[
-                    minigrid_inputs["buffer_tank"]
-                ]
+                buffer_tank = tanks[minigrid_inputs["buffer_tank"]]
                 if not isinstance(buffer_tank, HotWaterTank):
                     raise InputFileError(
                         "energy system inputs",
                         "The buffer tank selected must be a hot-water tank.",
                     )
             if "clean_water_tank" in minigrid_inputs and tanks is not None:
-                clean_water_tank = tanks[
-                    minigrid_inputs["clean_water_tank"]
-                ]
+                clean_water_tank = tanks[minigrid_inputs["clean_water_tank"]]
                 if not isinstance(clean_water_tank, CleanWaterTank):
                     raise InputFileError(
                         "energy system inputs",
                         "The clean-water tank selected must be a clean-water tank.",
                     )
             if "hot_water_tank" in minigrid_inputs and tanks is not None:
-                hot_water_tank = tanks[
-                    minigrid_inputs["hot_water_tank"]
-                ]
+                hot_water_tank = tanks[minigrid_inputs["hot_water_tank"]]
                 if not isinstance(hot_water_tank, HotWaterTank):
                     raise InputFileError(
                         "energy system inputs",

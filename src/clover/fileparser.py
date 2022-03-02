@@ -21,7 +21,6 @@ from logging import Logger
 from typing import Any, DefaultDict, Dict, List, Optional, Set, Tuple, Union
 
 import json
-from numpy import isin
 import pandas as pd  # pylint: disable=import-error
 
 from sklearn.linear_model._coordinate_descent import Lasso
@@ -136,7 +135,7 @@ DIESEL_WATER_HEATERS: str = "diesel_water_heaters"
 
 # Fast electric model file:
 #   The relative path to the electric model file to use when running .
-ELECTRIC_MODEL_FAST_FILE: str = os.path.join("src", "electric_forest.sav")
+ELECTRIC_MODEL_FAST_FILE: str = os.path.join("src", "electric_tree.sav")
 
 # Electric model file:
 #   The relative path to the electric model file.
@@ -224,7 +223,7 @@ TANK_INPUTS_FILE: str = os.path.join("simulation", "tank_inputs.yaml")
 
 # Fast thermal model file:
 #   The relative path to the thermal model file.
-THERMAL_MODEL_FAST_FILE: str = os.path.join("src", "thermal_forest.sav")
+THERMAL_MODEL_FAST_FILE: str = os.path.join("src", "thermal_tree.sav")
 
 # Thermal model file:
 #   The relative path to the thermal model file.
@@ -361,10 +360,7 @@ def _parse_battery_inputs(
     logger: Logger,
     scenario: Scenario,
 ) -> Tuple[
-    Optional[Dict[str, float]],
-    Optional[Dict[str, float]],
-    List[Dict[str, Any]],
-    str,
+    Optional[Dict[str, float]], Optional[Dict[str, float]], List[Dict[str, Any]], str,
 ]:
     """
     Parses the battery inputs file.
@@ -433,8 +429,7 @@ def _parse_battery_inputs(
 
 
 def _parse_conventional_water_source_inputs(
-    inputs_directory_relative_path: str,
-    logger: Logger,
+    inputs_directory_relative_path: str, logger: Logger,
 ) -> Tuple[List[Dict[str, Any]], str, Set[WaterSource]]:
     """
     Parses the device inputs file.
@@ -454,13 +449,9 @@ def _parse_conventional_water_source_inputs(
     """
 
     water_source_inputs_filepath = os.path.join(
-        inputs_directory_relative_path,
-        WATER_SOURCE_INPUTS_FILE,
+        inputs_directory_relative_path, WATER_SOURCE_INPUTS_FILE,
     )
-    water_source_inputs = read_yaml(
-        water_source_inputs_filepath,
-        logger,
-    )
+    water_source_inputs = read_yaml(water_source_inputs_filepath, logger,)
     if not isinstance(water_source_inputs, list):
         logger.error(
             "%sWater source inputs information must be of type `list`.%s",
@@ -478,8 +469,7 @@ def _parse_conventional_water_source_inputs(
 
 
 def _parse_conversion_inputs(
-    inputs_directory_relative_path: str,
-    logger: Logger,
+    inputs_directory_relative_path: str, logger: Logger,
 ) -> Tuple[
     str,
     Dict[Converter, Dict[str, float]],
@@ -681,13 +671,9 @@ def _parse_diesel_inputs(
 
     # Parse the diesel inputs file.
     diesel_inputs_filepath = os.path.join(
-        inputs_directory_relative_path,
-        DIESEL_INPUTS_FILE,
+        inputs_directory_relative_path, DIESEL_INPUTS_FILE,
     )
-    diesel_inputs = read_yaml(
-        diesel_inputs_filepath,
-        logger,
-    )
+    diesel_inputs = read_yaml(diesel_inputs_filepath, logger,)
 
     if not isinstance(diesel_inputs, dict):
         raise InputFileError("diesel inputs", "Diesel inputs are not of type `dict`.")
@@ -892,8 +878,7 @@ def _parse_diesel_inputs(
 
 
 def _parse_device_inputs(
-    inputs_directory_relative_path: str,
-    logger: Logger,
+    inputs_directory_relative_path: str, logger: Logger,
 ) -> Tuple[str, Set[load.load.Device]]:
     """
     Parses the device inputs file.
@@ -912,13 +897,9 @@ def _parse_device_inputs(
     """
 
     device_inputs_filepath = os.path.join(
-        inputs_directory_relative_path,
-        DEVICE_INPUTS_FILE,
+        inputs_directory_relative_path, DEVICE_INPUTS_FILE,
     )
-    device_inputs = read_yaml(
-        device_inputs_filepath,
-        logger,
-    )
+    device_inputs = read_yaml(device_inputs_filepath, logger,)
     if not isinstance(device_inputs, list):
         logger.error(
             "%sDevice input information was not of type `list`. The devices file must "
@@ -1168,8 +1149,7 @@ def _parse_pvt_reduced_models(
 
 
 def _parse_scenario_inputs(
-    inputs_directory_relative_path: str,
-    logger: Logger,
+    inputs_directory_relative_path: str, logger: Logger,
 ) -> Tuple[str, str, Scenario, str]:
     """
     Parses the scenario input files.
@@ -1189,8 +1169,7 @@ def _parse_scenario_inputs(
     """
 
     desalination_scenario_inputs_filepath: str = os.path.join(
-        inputs_directory_relative_path,
-        DESALINATION_SCENARIO_INPUTS_FILE,
+        inputs_directory_relative_path, DESALINATION_SCENARIO_INPUTS_FILE,
     )
     hot_water_scenario_inputs_filepath: str = os.path.join(
         inputs_directory_relative_path, HOT_WATER_SCENARIO_INPUTS_FILE
@@ -1200,8 +1179,7 @@ def _parse_scenario_inputs(
     if os.path.isfile(desalination_scenario_inputs_filepath):
         logger.info("Parsing desalination inputs file.")
         desalination_scenario_inputs = read_yaml(
-            desalination_scenario_inputs_filepath,
-            logger,
+            desalination_scenario_inputs_filepath, logger,
         )
         if not isinstance(desalination_scenario_inputs, dict):
             raise InputFileError(
@@ -1228,8 +1206,7 @@ def _parse_scenario_inputs(
     if os.path.isfile(hot_water_scenario_inputs_filepath):
         logger.info("Parsing hot-water inputs file.")
         hot_water_scenario_inputs = read_yaml(
-            hot_water_scenario_inputs_filepath,
-            logger,
+            hot_water_scenario_inputs_filepath, logger,
         )
         if not isinstance(hot_water_scenario_inputs, dict):
             raise InputFileError(
@@ -1254,13 +1231,9 @@ def _parse_scenario_inputs(
 
     # Parse the scenario input information.
     scenario_inputs_filepath = os.path.join(
-        inputs_directory_relative_path,
-        SCENARIO_INPUTS_FILE,
+        inputs_directory_relative_path, SCENARIO_INPUTS_FILE,
     )
-    scenario_inputs = read_yaml(
-        scenario_inputs_filepath,
-        logger,
-    )
+    scenario_inputs = read_yaml(scenario_inputs_filepath, logger,)
     if not isinstance(scenario_inputs, dict):
         raise InputFileError(
             "scenario inputs", "Scenario inputs is not of type `dict`."
@@ -1369,13 +1342,9 @@ def _parse_solar_inputs(
 
     # Parse the solar input information.
     solar_generation_inputs_filepath = os.path.join(
-        inputs_directory_relative_path,
-        SOLAR_INPUTS_FILE,
+        inputs_directory_relative_path, SOLAR_INPUTS_FILE,
     )
-    solar_generation_inputs = read_yaml(
-        solar_generation_inputs_filepath,
-        logger,
-    )
+    solar_generation_inputs = read_yaml(solar_generation_inputs_filepath, logger,)
     if not isinstance(solar_generation_inputs, dict):
         raise InputFileError(
             "solar generation inputs", "Solar generation inputs are not of type `dict`."
@@ -1396,11 +1365,7 @@ def _parse_solar_inputs(
         if panel_input["type"] == solar.SolarPanelType.PV_T.value:
             solar_panels.append(
                 solar.HybridPVTPanel(
-                    electric_model,
-                    logger,
-                    panel_input,
-                    solar_panels,
-                    thermal_model,
+                    electric_model, logger, panel_input, solar_panels, thermal_model,
                 )
             )
 
@@ -1889,10 +1854,7 @@ def _parse_minigrid_inputs(
         diesel_water_heater_costs,
         diesel_water_heater_emissions,
     ) = _parse_diesel_inputs(
-        energy_system_inputs,
-        inputs_directory_relative_path,
-        logger,
-        scenario,
+        energy_system_inputs, inputs_directory_relative_path, logger, scenario,
     )
     logger.info(
         "Diesel generator %sinformation successfully parsed.",
@@ -1915,11 +1877,7 @@ def _parse_minigrid_inputs(
         pvt_panel_emissions,
         solar_generation_inputs_filepath,
     ) = _parse_solar_inputs(
-        debug,
-        energy_system_inputs,
-        inputs_directory_relative_path,
-        logger,
-        scenario,
+        debug, energy_system_inputs, inputs_directory_relative_path, logger, scenario,
     )
     logger.info("Solar panel information successfully parsed.")
 
@@ -1929,10 +1887,7 @@ def _parse_minigrid_inputs(
         battery_inputs,
         battery_inputs_filepath,
     ) = _parse_battery_inputs(
-        energy_system_inputs,
-        inputs_directory_relative_path,
-        logger,
-        scenario,
+        energy_system_inputs, inputs_directory_relative_path, logger, scenario,
     )
     logger.info("Battery information successfully parsed.")
 
@@ -1945,10 +1900,7 @@ def _parse_minigrid_inputs(
         transmission_emissions,
         transmission_inputs_filepath,
         transmitters,
-    ) = _parse_transmission_inputs(
-        inputs_directory_relative_path,
-        logger,
-    )
+    ) = _parse_transmission_inputs(inputs_directory_relative_path, logger,)
     logger.info("Transmission inputs successfully parsed.")
 
     buffer_tank_costs: Optional[Dict[str, float]]
@@ -1977,10 +1929,7 @@ def _parse_minigrid_inputs(
             tank_inputs,
             tank_inputs_filepath,
         ) = _parse_tank_inputs(
-            energy_system_inputs,
-            inputs_directory_relative_path,
-            logger,
-            scenario,
+            energy_system_inputs, inputs_directory_relative_path, logger, scenario,
         )
         logger.info("Tank information successfully parsed.")
 
@@ -2109,8 +2058,7 @@ def _parse_minigrid_inputs(
 
 
 def _parse_transmission_inputs(
-    inputs_directory_relative_path: str,
-    logger: Logger,
+    inputs_directory_relative_path: str, logger: Logger,
 ) -> Tuple[
     Dict[str, Dict[str, float]],
     Dict[str, Dict[str, float]],
@@ -2285,9 +2233,7 @@ def parse_input_files(
     """
 
     inputs_directory_relative_path = os.path.join(
-        LOCATIONS_FOLDER_NAME,
-        location_name,
-        INPUTS_DIRECTORY,
+        LOCATIONS_FOLDER_NAME, location_name, INPUTS_DIRECTORY,
     )
 
     # Parse the conversion inputs file.
@@ -2296,16 +2242,12 @@ def parse_input_files(
         converter_costs,
         converter_emissions,
         converters,
-    ) = _parse_conversion_inputs(
-        inputs_directory_relative_path,
-        logger,
-    )
+    ) = _parse_conversion_inputs(inputs_directory_relative_path, logger,)
     logger.info("Conversion inputs successfully parsed.")
 
     # Parse the device inputs file.
     device_inputs_filepath, devices = _parse_device_inputs(
-        inputs_directory_relative_path,
-        logger,
+        inputs_directory_relative_path, logger,
     )
     logger.info("Device inputs successfully parsed.")
 
@@ -2322,9 +2264,7 @@ def parse_input_files(
                 "r",
             ) as f:
                 device_utilisations[device] = pd.read_csv(
-                    f,
-                    header=None,
-                    index_col=None,
+                    f, header=None, index_col=None,
                 )
         except FileNotFoundError:
             logger.error(
@@ -2405,17 +2345,10 @@ def parse_input_files(
         )
     logger.info("Generation inputs successfully parsed.")
 
-    grid_times_filepath = os.path.join(
-        inputs_directory_relative_path,
-        GRID_TIMES_FILE,
-    )
-    with open(
-        grid_times_filepath,
-        "r",
-    ) as grid_times_file:
+    grid_times_filepath = os.path.join(inputs_directory_relative_path, GRID_TIMES_FILE,)
+    with open(grid_times_filepath, "r",) as grid_times_file:
         grid_times: pd.DataFrame = pd.read_csv(
-            grid_times_file,
-            index_col=0,
+            grid_times_file, index_col=0,
         )
     logger.info("Grid times successfully parsed.")
 
@@ -2429,8 +2362,7 @@ def parse_input_files(
             conventional_water_source_inputs_filepath,
             conventional_water_sources,
         ) = _parse_conventional_water_source_inputs(
-            inputs_directory_relative_path,
-            logger,
+            inputs_directory_relative_path, logger,
         )
         logger.info("Conventional water-source inputs file successfully parsed.")
         logger.debug(
@@ -2452,9 +2384,7 @@ def parse_input_files(
                     "r",
                 ) as f:
                     water_source_times[source] = pd.read_csv(
-                        f,
-                        header=None,
-                        index_col=None,
+                        f, header=None, index_col=None,
                     )
             except FileNotFoundError:
                 logger.error(
@@ -2476,13 +2406,9 @@ def parse_input_files(
         water_source_times = {}
 
     location_inputs_filepath = os.path.join(
-        inputs_directory_relative_path,
-        LOCATION_INPUTS_FILE,
+        inputs_directory_relative_path, LOCATION_INPUTS_FILE,
     )
-    location_inputs = read_yaml(
-        location_inputs_filepath,
-        logger,
-    )
+    location_inputs = read_yaml(location_inputs_filepath, logger,)
     if not isinstance(location_inputs, dict):
         raise InputFileError(
             "location inputs", "Location inputs is not of type `dict`."
@@ -2532,13 +2458,9 @@ def parse_input_files(
     logger.info("Optimisations file successfully parsed.")
 
     simulations_inputs_filepath = os.path.join(
-        inputs_directory_relative_path,
-        SIMULATIONS_INPUTS_FILE,
+        inputs_directory_relative_path, SIMULATIONS_INPUTS_FILE,
     )
-    simulations_file_contents = read_yaml(
-        simulations_inputs_filepath,
-        logger,
-    )
+    simulations_file_contents = read_yaml(simulations_inputs_filepath, logger,)
     if not isinstance(simulations_file_contents, list):
         raise InputFileError(
             "simulation inputs", "Simulation inputs must be of type `list`."
@@ -2586,8 +2508,12 @@ def parse_input_files(
     # Update the impact inputs with the diesel data.
     if scenario.diesel_scenario.mode != DieselMode.DISABLED:
         logger.info("Updating with diesel impact data.")
-        finance_inputs[ImpactingComponent.DIESEL.value] = defaultdict(float, diesel_costs)
-        ghg_inputs[ImpactingComponent.DIESEL.value] = defaultdict(float, diesel_emissions)
+        finance_inputs[ImpactingComponent.DIESEL.value] = defaultdict(
+            float, diesel_costs
+        )
+        ghg_inputs[ImpactingComponent.DIESEL.value] = defaultdict(
+            float, diesel_emissions
+        )
         logger.info("Diesel impact data successfully updated.")
     else:
         logger.info("No diesel generator present, skipping impact data.")
@@ -2595,8 +2521,12 @@ def parse_input_files(
     # Update the impact inputs with the battery data.
     if scenario.battery:
         logger.info("Updating with battery impact data.")
-        finance_inputs[ImpactingComponent.STORAGE.value] = defaultdict(float, battery_costs)
-        ghg_inputs[ImpactingComponent.STORAGE.value] = defaultdict(float, battery_emissions)
+        finance_inputs[ImpactingComponent.STORAGE.value] = defaultdict(
+            float, battery_costs
+        )
+        ghg_inputs[ImpactingComponent.STORAGE.value] = defaultdict(
+            float, battery_emissions
+        )
         logger.info("Battery impact data successfully updated.")
     else:
         logger.info("No battery present, skipping impact data.")
