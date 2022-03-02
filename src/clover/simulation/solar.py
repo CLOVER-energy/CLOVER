@@ -46,6 +46,11 @@ from .storage_utils import HotWaterTank
 __all__ = ("calculate_pvt_output",)
 
 
+# Minimum irradiance threshold;
+#   To avoid edge cases, where a very small, but non-zero, irradiance causes the AI to
+#   predict
+MINIMUM_IRRADIANCE_THRESHOLD: float = 0 # [W/m^2]
+
 # Temperature precision:
 #   The precision required when solving the differential equation for the system
 #   temperatures.
@@ -533,10 +538,12 @@ def calculate_pvt_output(
         while not solution_found:
             # Use the AI to determine the output temperature of the collector, based on
             # the best guess of the collector input temperature.
-            if irradiances[index] > 0:
+            if ((1000 * irradiances[index]) > MINIMUM_IRRADIANCE_THRESHOLD):
+                # If there is enough irradiance to trigger reliable modelling, use the
+                # in-built modelling tools.
                 (
                     fractional_electric_performance,
-                    collector_output_temperature,
+                    collector_output_temperature
                 ) = minigrid.pvt_panel.calculate_performance(
                     temperatures[index],
                     best_guess_collector_input_temperature,
@@ -546,8 +553,10 @@ def calculate_pvt_output(
                     wind_speeds[index],
                 )
             else:
+                # Otherwise, assume that the collector is in steady state with the
+                # environment, a reasonable assumption given the one-hour resolution.
                 fractional_electric_performance = 0
-                collector_output_temperature = best_guess_collector_input_temperature
+                collector_output_temperature = temperatures[index]
 
             tank_load_enthalpy_transfer = (
                 volume_supplied  # [kg/hour]

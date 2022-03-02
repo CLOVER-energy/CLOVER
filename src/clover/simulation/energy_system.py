@@ -53,7 +53,11 @@ from ..__utils__ import (
 from ..conversion.conversion import Converter, ThermalDesalinationPlant, WaterSource
 from ..generation.solar import SolarPanelType, solar_degradation
 from ..impact.__utils__ import WasteProduct
-from ..load.load import compute_processed_load_profile, HOT_WATER_USAGE, population_hourly
+from ..load.load import (
+    compute_processed_load_profile,
+    HOT_WATER_USAGE,
+    population_hourly,
+)
 from .__utils__ import Minigrid
 from .diesel import (
     DieselWaterHeater,
@@ -122,9 +126,7 @@ def _calculate_backup_diesel_generator_usage(
             "the diesel mode `backup` being selected.",
         )
     diesel_energy, diesel_times = get_diesel_energy_and_times(
-        unmet_energy,
-        blackout_times,
-        float(scenario.diesel_scenario.backup_threshold),
+        unmet_energy, blackout_times, float(scenario.diesel_scenario.backup_threshold),
     )
     diesel_capacity: float = float(math.ceil(np.max(diesel_energy, axis=0)))
     diesel_fuel_usage = pd.DataFrame(
@@ -430,11 +432,9 @@ def _calculate_renewable_cw_profiles(
                 "supported.",
             )
 
-        thermal_desalination_plant_input_flow_rate = (
-            thermal_desalination_plant.input_resource_consumption[
-                thermal_desalination_plant_input_type
-            ]
-        )
+        thermal_desalination_plant_input_flow_rate = thermal_desalination_plant.input_resource_consumption[
+            thermal_desalination_plant_input_type
+        ]
 
         if (
             sum(
@@ -551,18 +551,18 @@ def _calculate_renewable_cw_profiles(
         )
 
         buffer_tank_temperature = buffer_tank_temperature.reset_index(drop=True)
-        clean_water_pvt_collector_output_temperature = (
-            clean_water_pvt_collector_output_temperature.reset_index(drop=True)
+        clean_water_pvt_collector_output_temperature = clean_water_pvt_collector_output_temperature.reset_index(
+            drop=True
         )
-        clean_water_pvt_electric_power_per_unit = (
-            clean_water_pvt_electric_power_per_unit.reset_index(drop=True)
+        clean_water_pvt_electric_power_per_unit = clean_water_pvt_electric_power_per_unit.reset_index(
+            drop=True
         )
         renewable_thermal_cw_produced = renewable_thermal_cw_produced.reset_index(
             drop=True
         )
         buffer_tank_volume_supplied = buffer_tank_volume_supplied.reset_index(drop=True)
-        thermal_desalination_electric_power_consumed = (
-            thermal_desalination_electric_power_consumed.reset_index(drop=True)
+        thermal_desalination_electric_power_consumed = thermal_desalination_electric_power_consumed.reset_index(
+            drop=True
         )
         logger.debug("Clean-water PV-T performance profiles determined.")
 
@@ -943,14 +943,14 @@ def _calculate_renewable_hw_profiles(
         )
 
         hot_water_power_consumed = hot_water_power_consumed.reset_index(drop=True)
-        hot_water_pvt_collector_input_temperature = (
-            hot_water_pvt_collector_input_temperature.reset_index(drop=True)
+        hot_water_pvt_collector_input_temperature = hot_water_pvt_collector_input_temperature.reset_index(
+            drop=True
         )
-        hot_water_pvt_collector_output_temperature = (
-            hot_water_pvt_collector_output_temperature.reset_index(drop=True)
+        hot_water_pvt_collector_output_temperature = hot_water_pvt_collector_output_temperature.reset_index(
+            drop=True
         )
-        hot_water_pvt_electric_power_per_unit = (
-            hot_water_pvt_electric_power_per_unit.reset_index(drop=True)
+        hot_water_pvt_electric_power_per_unit = hot_water_pvt_electric_power_per_unit.reset_index(
+            drop=True
         )
         hot_water_tank_temperature = hot_water_tank_temperature.reset_index(drop=True)
         hot_water_tank_volume_supplied = hot_water_tank_volume_supplied.reset_index(
@@ -1410,8 +1410,7 @@ def run_simulation(
             renewable_cw_used_directly,
             tank_storage_profile,
         ) = _get_water_storage_profile(
-            processed_total_cw_load,
-            renewable_thermal_cw_produced,
+            processed_total_cw_load, renewable_thermal_cw_produced,
         )
         number_of_buffer_tanks: int = 1
     else:
@@ -1441,7 +1440,7 @@ def run_simulation(
         processed_total_hw_load = pd.DataFrame([0] * (end_hour - start_hour))
 
     # Calculate hot-water PV-T related performance profiles.
-    hot_water_pump_electric_power_consumed: pd.DataFrame#
+    hot_water_pump_electric_power_consumed: pd.DataFrame  #
     hot_water_pvt_collector_input_temperature: Optional[pd.DataFrame]
     hot_water_pvt_collector_output_temperature: Optional[pd.DataFrame]
     hot_water_pvt_electric_power_per_unit: pd.DataFrame
@@ -1655,13 +1654,23 @@ def run_simulation(
 
     # Do not do the itteration if no storage is being used
     if electric_storage_size == 0 or not scenario.battery:
-        battery_health_frame: pd.DataFrame = pd.DataFrame([float(0)] * (end_hour - start_hour))
-        energy_surplus_frame: pd.DataFrame = ((battery_storage_profile > 0) * battery_storage_profile).abs()
-        energy_deficit_frame: pd.DataFrame = ((battery_storage_profile < 0) * battery_storage_profile).abs()
+        battery_health_frame: pd.DataFrame = pd.DataFrame(
+            [float(0)] * (end_hour - start_hour)
+        )
+        energy_surplus_frame: pd.DataFrame = (
+            (battery_storage_profile > 0) * battery_storage_profile
+        ).abs()
+        energy_deficit_frame: pd.DataFrame = (
+            (battery_storage_profile < 0) * battery_storage_profile
+        ).abs()
         initial_storage_size: float = 0
         final_storage_size: float = 0
-        hourly_battery_storage_frame: pd.DataFrame = pd.DataFrame([float(0)] * (end_hour - start_hour))
-        storage_power_supplied_frame: pd.DataFrame = pd.DataFrame([float(0)] * (end_hour - start_hour))
+        hourly_battery_storage_frame: pd.DataFrame = pd.DataFrame(
+            [float(0)] * (end_hour - start_hour)
+        )
+        storage_power_supplied_frame: pd.DataFrame = pd.DataFrame(
+            [float(0)] * (end_hour - start_hour)
+        )
     # Carry out the itteration if there is some storage involved in the system.
     else:
         # Begin simulation, iterating over timesteps
@@ -1756,15 +1765,13 @@ def run_simulation(
         battery_health_frame.columns = pd.Index([ColumnHeader.BATTERY_HEALTH.value])
         # energy_deficit_frame: pd.DataFrame = dict_to_dataframe(energy_deficit)
         energy_surplus_frame = dict_to_dataframe(energy_surplus, logger)
-        hourly_battery_storage_frame = dict_to_dataframe(
-            hourly_battery_storage, logger
-        )
-        storage_power_supplied_frame = dict_to_dataframe(
-            storage_power_supplied, logger
-        )
+        hourly_battery_storage_frame = dict_to_dataframe(hourly_battery_storage, logger)
+        storage_power_supplied_frame = dict_to_dataframe(storage_power_supplied, logger)
 
         # Determine the initial and final storage sizes
-        initial_storage_size = float(electric_storage_size * minigrid.battery.storage_unit)
+        initial_storage_size = float(
+            electric_storage_size * minigrid.battery.storage_unit
+        )
         final_storage_size = float(
             initial_storage_size
             * np.min(battery_health_frame[ColumnHeader.BATTERY_HEALTH.value])
@@ -1900,8 +1907,8 @@ def run_simulation(
     unmet_energy = ((unmet_energy > 0) * unmet_energy).abs()  # type: ignore
     # Ensure all unmet clean-water energy is considered.
     clean_water_power_consumed = clean_water_power_consumed.mul(1 - blackout_times)  # type: ignore
-    thermal_desalination_electric_power_consumed = (
-        thermal_desalination_electric_power_consumed.mul(1 - blackout_times)
+    thermal_desalination_electric_power_consumed = thermal_desalination_electric_power_consumed.mul(
+        1 - blackout_times
     )  # type: ignore
 
     # Find how many kerosene lamps are in use
@@ -2334,10 +2341,7 @@ def run_simulation(
     if brine_produced is not None:
         system_performance_outputs_list.append(brine_produced)
 
-    system_performance_outputs = pd.concat(
-        system_performance_outputs_list,
-        axis=1,
-    )
+    system_performance_outputs = pd.concat(system_performance_outputs_list, axis=1,)
 
     return time_delta, system_performance_outputs, system_details
 

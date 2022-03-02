@@ -61,7 +61,7 @@ HOURS_UNTIL: Dict[int, int] = {
     9: 5832,
     10: 6552,
     11: 7296,
-    12: 8016
+    12: 8016,
 }
 
 # Plot resolution:
@@ -199,7 +199,10 @@ def get_key_results(
             3,
         )
         key_results.mean_cw_pvt_output_temperature = round(
-            np.nanmean(simulation_results[ColumnHeader.CW_PVT_OUTPUT_TEMPERATURE.value]), 3
+            np.nanmean(
+                simulation_results[ColumnHeader.CW_PVT_OUTPUT_TEMPERATURE.value]
+            ),
+            3,
         )
         key_results.min_buffer_tank_temperature = round(
             min(simulation_results[ColumnHeader.BUFFER_TANK_TEMPERATURE.value]), 3
@@ -212,9 +215,7 @@ def get_key_results(
     if ColumnHeader.TOTAL_HW_LOAD.value in simulation_results:
         key_results.average_daily_hw_renewable_fraction = round(
             np.nanmean(
-                simulation_results[
-                    ColumnHeader.HW_SOLAR_THERMAL_FRACTION.value
-                ]
+                simulation_results[ColumnHeader.HW_SOLAR_THERMAL_FRACTION.value]
             ),
             3,
         )
@@ -232,8 +233,7 @@ def get_key_results(
             3,
         )
         key_results.average_daily_hw_demand_covered = round(
-            np.nanmean(simulation_results[ColumnHeader.HW_VOL_DEMAND_COVERED.value]),
-            3,
+            np.nanmean(simulation_results[ColumnHeader.HW_VOL_DEMAND_COVERED.value]), 3,
         )
 
     # Compute the waste-product key results.
@@ -391,7 +391,9 @@ def plot_outputs(
 
         # Plot the input vs. randomised grid avialability profiles.
         plt.plot(range(24), grid_input_profile, color="k", label="Input")
-        plt.plot(range(24), np.nanmean(reshaped_data, axis=0), color="r", label="Output")
+        plt.plot(
+            range(24), np.nanmean(reshaped_data, axis=0), color="r", label="Output"
+        )
         plt.legend()
         plt.xticks(range(0, 24, 2))
         plt.yticks(np.arange(0, 1.1, 0.2))
@@ -408,14 +410,14 @@ def plot_outputs(
         pbar.update(1)
 
         # Plot the initial electric load of each device.
+        _, ax = plt.subplots()
         for device, load in initial_electric_hourly_loads.items():
-            plt.plot(range(CUT_OFF_TIME), load.values, label=device)
-        plt.xticks(range(0, CUT_OFF_TIME - 1, min(6, CUT_OFF_TIME - 1)))
-        plt.xlabel("Hour of simulation")
-        plt.ylabel("Device load / W")
-        plt.title("Electric load demand of each device")
-        plt.tight_layout()
-        plt.legend()
+            ax.bar(range(len(load)), load[0], label=device)
+
+        ax.set_xlabel("Hour of simulation")
+        ax.set_ylabel("Device load / W")
+        ax.set_title("Electric load of each device")
+        ax.legend()
         plt.savefig(
             os.path.join(figures_directory, "electric_device_loads.png"),
             transparent=True,
@@ -423,26 +425,23 @@ def plot_outputs(
         plt.close()
         pbar.update(1)
 
-        # Plot the average hot-water load of each device for the first year.
+        # Plot the average electric load of each device for the first year.
         for device, load in initial_electric_hourly_loads.items():
             average_load = np.nanmean(
-                np.asarray(load[0:CUT_OFF_TIME]).reshape(
-                    (CUT_OFF_TIME // 24, 24),
-                ),
+                np.asarray(load[0:CUT_OFF_TIME]).reshape((CUT_OFF_TIME // 24, 24),),
                 axis=0,
             )
-            plt.plot(range(24), average_load, label=device)
-            # labels.append(device)
-            plt.xticks(range(0, 23, 4))
-            plt.xlabel("Hour of simulation")
-            plt.ylabel("Device load / W")
-            plt.title(
-                "Average electric load demand of each device over the first {} days.".format(
-                    CUT_OFF_TIME // 24
-                )
+            _, ax = plt.subplots()
+            ax.bar(range(24), average_load, label=device)
+
+        ax.set_xlabel("Hour of simulation")
+        ax.set_ylabel("Device load / W")
+        ax.set_title(
+            "Average electric load demand of each device over the first {} days.".format(
+                CUT_OFF_TIME // 24
             )
-            plt.tight_layout()
-        plt.legend()
+        )
+        ax.legend()
         plt.savefig(
             os.path.join(figures_directory, "electric_device_loads_average.png"),
             transparent=True,
@@ -480,8 +479,7 @@ def plot_outputs(
         plt.ylabel("Electric power demand / kW")
         plt.title(f"Load profile of the community for the first {CUT_OFF_TIME} hours")
         plt.savefig(
-            os.path.join(figures_directory, "electric_demands.png"),
-            transparent=True,
+            os.path.join(figures_directory, "electric_demands.png"), transparent=True,
         )
         plt.close()
         pbar.update(1)
@@ -490,25 +488,19 @@ def plot_outputs(
         domestic_demand = np.nanmean(
             np.asarray(
                 total_electric_load[0:HOURS_PER_YEAR][DemandType.DOMESTIC.value]
-            ).reshape(
-                (365, 24),
-            ),
+            ).reshape((365, 24),),
             axis=0,
         )
         commercial_demand = np.nanmean(
             np.asarray(
                 total_electric_load[0:HOURS_PER_YEAR][DemandType.COMMERCIAL.value]
-            ).reshape(
-                (365, 24),
-            ),
+            ).reshape((365, 24),),
             axis=0,
         )
         public_demand = np.nanmean(
             np.asarray(
                 total_electric_load[0:HOURS_PER_YEAR][DemandType.PUBLIC.value]
-            ).reshape(
-                (365, 24),
-            ),
+            ).reshape((365, 24),),
             axis=0,
         )
         total_demand = np.nanmean(
@@ -519,21 +511,16 @@ def plot_outputs(
         )
 
         plt.plot(
-            domestic_demand,
-            label=DemandType.DOMESTIC.value,
+            domestic_demand, label=DemandType.DOMESTIC.value,
         )
         plt.plot(
-            commercial_demand,
-            label=DemandType.COMMERCIAL.value,
+            commercial_demand, label=DemandType.COMMERCIAL.value,
         )
         plt.plot(
-            public_demand,
-            label=DemandType.PUBLIC.value,
+            public_demand, label=DemandType.PUBLIC.value,
         )
         plt.plot(
-            total_demand,
-            "--",
-            label="total",
+            total_demand, "--", label="total",
         )
         plt.legend(loc="upper right")
         plt.xticks([entry for entry in (range(0, 23, 4))])
@@ -576,8 +563,7 @@ def plot_outputs(
         )
         total_demand = np.sum(
             np.reshape(
-                np.sum(total_electric_load[0:HOURS_PER_YEAR].values, axis=1),
-                (365, 24),
+                np.sum(total_electric_load[0:HOURS_PER_YEAR].values, axis=1), (365, 24),
             ),
             axis=1,
         )
@@ -1154,15 +1140,14 @@ def plot_outputs(
 
         if initial_cw_hourly_loads is not None:
             # Plot the initial clean-water load of each device.
+            _, ax = plt.subplots()
             for device, load in initial_cw_hourly_loads.items():
-                plt.plot(range(CUT_OFF_TIME), load, label=device)
-                # labels.append(device)
-                plt.xticks(range(0, CUT_OFF_TIME - 1, min(6, CUT_OFF_TIME - 2)))
-                plt.xlabel("Hour of simulation")
-                plt.ylabel("Device load / litres/hour")
-                plt.title("Clean water demand of each device")
-                plt.tight_layout()
-            plt.legend()
+                ax.bar(range(len(load)), load[0], label=device)
+
+            ax.set_xlabel("Hour of simulation")
+            ax.set_ylabel("Device load / litres/hour")
+            ax.set_title("Clean water demand of each device")
+            ax.legend()
             plt.savefig(
                 os.path.join(figures_directory, "clean_water_device_loads.png"),
                 transparent=True,
@@ -1171,24 +1156,22 @@ def plot_outputs(
             pbar.update(1)
 
             # Plot the average clean-water load of each device for the first year.
+            _, ax = plt.subplots()
             for device, load in initial_cw_hourly_loads.items():
                 average_load = np.nanmean(
-                    np.asarray(load[0:CUT_OFF_TIME]).reshape(
-                        (CUT_OFF_TIME // 24, 24),
-                    ),
+                    np.asarray(load[0:CUT_OFF_TIME]).reshape((CUT_OFF_TIME // 24, 24),),
                     axis=0,
                 )
-                plt.plot(range(24), average_load, label=device)
-                # labels.append(device)
-                plt.xticks(range(0, 23, 4))
-                plt.xlabel("Hour of simulation")
-                plt.ylabel("Device load / litres/hour")
-                plt.title(
-                    "Average clean water demand of each device over the first {} days.".format(
-                        CUT_OFF_TIME // 24
-                    )
+                ax.bar(range(24), average_load, label=device)
+
+            ax.set_xlabel("Hour of simulation")
+            ax.set_ylabel("Device load / litres/hour")
+            ax.legend()
+            ax.set_title(
+                "Average clean water demand of each device over the first {} days.".format(
+                    CUT_OFF_TIME // 24
                 )
-                plt.tight_layout()
+            )
             plt.legend()
             plt.savefig(
                 os.path.join(figures_directory, "clean_water_device_loads_average.png"),
@@ -1263,8 +1246,7 @@ def plot_outputs(
             )
             total_demand = 0.001 * np.sum(
                 np.reshape(
-                    np.sum(total_cw_load[0:HOURS_PER_YEAR].values, axis=1),
-                    (365, 24),
+                    np.sum(total_cw_load[0:HOURS_PER_YEAR].values, axis=1), (365, 24),
                 ),
                 axis=1,
             )
@@ -1423,25 +1405,19 @@ def plot_outputs(
             domestic_demand = np.nanmean(
                 np.asarray(
                     total_cw_load[0:HOURS_PER_YEAR][DemandType.DOMESTIC.value]
-                ).reshape(
-                    (365, 24),
-                ),
+                ).reshape((365, 24),),
                 axis=0,
             )
             commercial_demand = np.nanmean(
                 np.asarray(
                     total_cw_load[0:HOURS_PER_YEAR][DemandType.COMMERCIAL.value]
-                ).reshape(
-                    (365, 24),
-                ),
+                ).reshape((365, 24),),
                 axis=0,
             )
             public_demand = np.nanmean(
                 np.asarray(
                     total_cw_load[0:HOURS_PER_YEAR][DemandType.PUBLIC.value]
-                ).reshape(
-                    (365, 24),
-                ),
+                ).reshape((365, 24),),
                 axis=0,
             )
             total_demand = np.nanmean(
@@ -1452,21 +1428,16 @@ def plot_outputs(
             )
 
             plt.plot(
-                domestic_demand,
-                label=DemandType.DOMESTIC.value,
+                domestic_demand, label=DemandType.DOMESTIC.value,
             )
             plt.plot(
-                commercial_demand,
-                label=DemandType.COMMERCIAL.value,
+                commercial_demand, label=DemandType.COMMERCIAL.value,
             )
             plt.plot(
-                public_demand,
-                label=DemandType.PUBLIC.value,
+                public_demand, label=DemandType.PUBLIC.value,
             )
             plt.plot(
-                total_demand,
-                "--",
-                label="total",
+                total_demand, "--", label="total",
             )
             plt.legend(loc="upper right")
             plt.xticks([entry for entry in (range(0, 23, 4))])
@@ -1779,8 +1750,7 @@ def plot_outputs(
             )
             plt.savefig(
                 os.path.join(
-                    figures_directory,
-                    "thermal_desal_cw_on_average_july_day.png",
+                    figures_directory, "thermal_desal_cw_on_average_july_day.png",
                 ),
                 transparent=True,
             )
@@ -2110,8 +2080,7 @@ def plot_outputs(
             plt.plot(dumped_power, label="Unused dumped energy")
             plt.plot(electric_power_supplied, label="Electric devices")
             plt.plot(
-                surplus_power_consumed,
-                label="Clean water via dumped energy",
+                surplus_power_consumed, label="Clean water via dumped energy",
             )
             if cw_pvt:
                 thermal_desalination_energy = np.nanmean(
@@ -2476,9 +2445,9 @@ def plot_outputs(
                 )
                 collector_output_temperature_march = np.nanmean(
                     np.reshape(
-                        simulation_output[
-                            HOURS_UNTIL[3] : HOURS_UNTIL[3] + 31 * 24
-                        ][ColumnHeader.CW_PVT_OUTPUT_TEMPERATURE.value].values,
+                        simulation_output[HOURS_UNTIL[3] : HOURS_UNTIL[3] + 31 * 24][
+                            ColumnHeader.CW_PVT_OUTPUT_TEMPERATURE.value
+                        ].values,
                         (31, 24),
                     ),
                     axis=0,
@@ -2494,9 +2463,9 @@ def plot_outputs(
                 )
                 collector_output_temperature_july = np.nanmean(
                     np.reshape(
-                        simulation_output[
-                            HOURS_UNTIL[7] : HOURS_UNTIL[7] + 31 * 24
-                        ][ColumnHeader.CW_PVT_OUTPUT_TEMPERATURE.value].values,
+                        simulation_output[HOURS_UNTIL[7] : HOURS_UNTIL[7] + 31 * 24][
+                            ColumnHeader.CW_PVT_OUTPUT_TEMPERATURE.value
+                        ].values,
                         (31, 24),
                     ),
                     axis=0,
@@ -2513,9 +2482,9 @@ def plot_outputs(
                 )
                 buffer_tank_temperature_march = np.nanmean(
                     np.reshape(
-                        simulation_output[
-                            HOURS_UNTIL[3] : HOURS_UNTIL[3] + 31 * 24
-                        ][ColumnHeader.BUFFER_TANK_TEMPERATURE.value].values,
+                        simulation_output[HOURS_UNTIL[3] : HOURS_UNTIL[3] + 31 * 24][
+                            ColumnHeader.BUFFER_TANK_TEMPERATURE.value
+                        ].values,
                         (31, 24),
                     ),
                     axis=0,
@@ -2531,9 +2500,9 @@ def plot_outputs(
                 )
                 buffer_tank_temperature_july = np.nanmean(
                     np.reshape(
-                        simulation_output[
-                            HOURS_UNTIL[7] : HOURS_UNTIL[7] + 31 * 24
-                        ][ColumnHeader.BUFFER_TANK_TEMPERATURE.value].values,
+                        simulation_output[HOURS_UNTIL[7] : HOURS_UNTIL[7] + 31 * 24][
+                            ColumnHeader.BUFFER_TANK_TEMPERATURE.value
+                        ].values,
                         (31, 24),
                     ),
                     axis=0,
@@ -2551,9 +2520,7 @@ def plot_outputs(
                 )
                 volume_supplied_march = np.nanmean(
                     np.reshape(
-                        simulation_output[
-                            HOURS_UNTIL[3] : HOURS_UNTIL[3] + 31 * 24
-                        ][
+                        simulation_output[HOURS_UNTIL[3] : HOURS_UNTIL[3] + 31 * 24][
                             ColumnHeader.CLEAN_WATER_FROM_THERMAL_RENEWABLES.value
                         ].values,
                         (31, 24),
@@ -2571,9 +2538,7 @@ def plot_outputs(
                 )
                 volume_supplied_july = np.nanmean(
                     np.reshape(
-                        simulation_output[
-                            HOURS_UNTIL[7] : HOURS_UNTIL[7] + 31 * 24
-                        ][
+                        simulation_output[HOURS_UNTIL[7] : HOURS_UNTIL[7] + 31 * 24][
                             ColumnHeader.CLEAN_WATER_FROM_THERMAL_RENEWABLES.value
                         ].values,
                         (31, 24),
@@ -2631,15 +2596,14 @@ def plot_outputs(
 
         if initial_hw_hourly_loads is not None:
             # Plot the initial hot-water load of each device.
+            _, ax = plt.subplots()
             for device, load in initial_hw_hourly_loads.items():
-                plt.plot(range(CUT_OFF_TIME), load, label=device)
-                # labels.append(device)
-                plt.xticks(range(0, CUT_OFF_TIME - 1, min(6, CUT_OFF_TIME - 2)))
-                plt.xlabel("Hour of simulation")
-                plt.ylabel("Device load / litres/hour")
-                plt.title("Hot water demand of each device")
-                plt.tight_layout()
-            plt.legend()
+                ax.bar(range(len(load)), load[0], label=device)
+
+            ax.set_xlabel("Hour of simulation")
+            ax.set_ylabel("Device load / litres/hour")
+            ax.set_title("Hot water demand of each device")
+            ax.legend()
             plt.savefig(
                 os.path.join(figures_directory, "hot_water_device_loads.png"),
                 transparent=True,
@@ -2648,25 +2612,22 @@ def plot_outputs(
             pbar.update(1)
 
             # Plot the average hot-water load of each device for the cut off period.
+            _, ax = plt.subplots()
             for device, load in initial_hw_hourly_loads.items():
                 average_load = np.nanmean(
-                    np.asarray(load[0:CUT_OFF_TIME]).reshape(
-                        (CUT_OFF_TIME // 24, 24),
-                    ),
+                    np.asarray(load[0:CUT_OFF_TIME]).reshape((CUT_OFF_TIME // 24, 24),),
                     axis=0,
                 )
-                plt.plot(range(24), average_load, label=device)
-                # labels.append(device)
-                plt.xticks(range(0, 23, 4))
-                plt.xlabel("Hour of simulation")
-                plt.ylabel("Device load / litres/hour")
-                plt.title(
-                    "Average hot water demand of each device over the first {} days.".format(
-                        CUT_OFF_TIME // 24
-                    )
+                ax.bar(range(24), average_load, label=device)
+
+            ax.set_xlabel("Hour of simulation")
+            ax.set_ylabel("Device load / litres/hour")
+            ax.set_title(
+                "Average hot water demand of each device over the first {} days.".format(
+                    CUT_OFF_TIME // 24
                 )
-                plt.tight_layout()
-            plt.legend()
+            )
+            ax.legend()
             plt.savefig(
                 os.path.join(figures_directory, "hot_water_device_loads_average.png"),
                 transparent=True,
@@ -2740,8 +2701,7 @@ def plot_outputs(
             )
             total_demand = 0.001 * np.sum(
                 np.reshape(
-                    np.sum(total_hw_load[0:HOURS_PER_YEAR].values, axis=1),
-                    (365, 24),
+                    np.sum(total_hw_load[0:HOURS_PER_YEAR].values, axis=1), (365, 24),
                 ),
                 axis=1,
             )
@@ -2826,25 +2786,19 @@ def plot_outputs(
             domestic_demand = np.nanmean(
                 np.asarray(
                     total_hw_load[0:HOURS_PER_YEAR][DemandType.DOMESTIC.value]
-                ).reshape(
-                    (365, 24),
-                ),
+                ).reshape((365, 24),),
                 axis=0,
             )
             commercial_demand = np.nanmean(
                 np.asarray(
                     total_hw_load[0:HOURS_PER_YEAR][DemandType.COMMERCIAL.value]
-                ).reshape(
-                    (365, 24),
-                ),
+                ).reshape((365, 24),),
                 axis=0,
             )
             public_demand = np.nanmean(
                 np.asarray(
                     total_hw_load[0:HOURS_PER_YEAR][DemandType.PUBLIC.value]
-                ).reshape(
-                    (365, 24),
-                ),
+                ).reshape((365, 24),),
                 axis=0,
             )
             total_demand = np.nanmean(
@@ -2855,21 +2809,16 @@ def plot_outputs(
             )
 
             plt.plot(
-                domestic_demand,
-                label=DemandType.DOMESTIC.value,
+                domestic_demand, label=DemandType.DOMESTIC.value,
             )
             plt.plot(
-                commercial_demand,
-                label=DemandType.COMMERCIAL.value,
+                commercial_demand, label=DemandType.COMMERCIAL.value,
             )
             plt.plot(
-                public_demand,
-                label=DemandType.PUBLIC.value,
+                public_demand, label=DemandType.PUBLIC.value,
             )
             plt.plot(
-                total_demand,
-                "--",
-                label="total",
+                total_demand, "--", label="total",
             )
             plt.legend(loc="upper right")
             plt.xticks([entry for entry in (range(0, 23, 4))])
@@ -3385,22 +3334,28 @@ def plot_outputs(
             # Plot key temperatures that characterise the PV-T system.
             collector_temperature_gain_july = np.nanmean(
                 np.reshape(
-                    (simulation_output[HOURS_UNTIL[7] : HOURS_UNTIL[7] + 31 * 24][
-                        ColumnHeader.HW_PVT_OUTPUT_TEMPERATURE.value
-                    ] - simulation_output[HOURS_UNTIL[7] : HOURS_UNTIL[7] + 31 * 24][
-                        ColumnHeader.HW_PVT_INPUT_TEMPERATURE.value
-                    ]).values,
+                    (
+                        simulation_output[HOURS_UNTIL[7] : HOURS_UNTIL[7] + 31 * 24][
+                            ColumnHeader.HW_PVT_OUTPUT_TEMPERATURE.value
+                        ]
+                        - simulation_output[HOURS_UNTIL[7] : HOURS_UNTIL[7] + 31 * 24][
+                            ColumnHeader.HW_PVT_INPUT_TEMPERATURE.value
+                        ]
+                    ).values,
                     (31, 24),
                 ),
                 axis=0,
             )
             collector_minus_tank_july = np.nanmean(
                 np.reshape(
-                    (simulation_output[HOURS_UNTIL[7] : HOURS_UNTIL[7] + 31 * 24][
-                        ColumnHeader.HW_PVT_OUTPUT_TEMPERATURE.value
-                    ] - simulation_output[HOURS_UNTIL[7] : HOURS_UNTIL[7] + 31 * 24][
-                        ColumnHeader.HW_TANK_TEMPERATURE.value
-                    ]).values,
+                    (
+                        simulation_output[HOURS_UNTIL[7] : HOURS_UNTIL[7] + 31 * 24][
+                            ColumnHeader.HW_PVT_OUTPUT_TEMPERATURE.value
+                        ]
+                        - simulation_output[HOURS_UNTIL[7] : HOURS_UNTIL[7] + 31 * 24][
+                            ColumnHeader.HW_TANK_TEMPERATURE.value
+                        ]
+                    ).values,
                     (31, 24),
                 ),
                 axis=0,
@@ -3428,35 +3383,35 @@ def plot_outputs(
             pbar.update(1)
 
             # Plot monthly renewable DHW fraction
-            dhw_renewable_fraction: Dict[int: float] = {}
-            dhw_renewable_fraction_daily: Dict[int: np.ndarray] = {}
-            dhw_dc_fraction: Dict[int: float] = {}
-            dhw_dc_fraction_daily: Dict[int: np.ndarray] = {}
+            dhw_renewable_fraction: Dict[int:float] = {}
+            dhw_renewable_fraction_daily: Dict[int : np.ndarray] = {}
+            dhw_dc_fraction: Dict[int:float] = {}
+            dhw_dc_fraction_daily: Dict[int : np.ndarray] = {}
             for month in range(1, 13):
                 dhw_renewable_fraction[month] = np.nanmean(
-                    simulation_output[HOURS_UNTIL[month] : HOURS_UNTIL[month] + 30 * 24][
-                        ColumnHeader.HW_SOLAR_THERMAL_FRACTION.value
-                    ].values
+                    simulation_output[
+                        HOURS_UNTIL[month] : HOURS_UNTIL[month] + 30 * 24
+                    ][ColumnHeader.HW_SOLAR_THERMAL_FRACTION.value].values
                 )
                 dhw_renewable_fraction_daily[month] = np.nanmean(
                     np.reshape(
-                        simulation_output[HOURS_UNTIL[month] : HOURS_UNTIL[month] + 30 * 24][
-                            ColumnHeader.HW_SOLAR_THERMAL_FRACTION.value
-                        ].values,
+                        simulation_output[
+                            HOURS_UNTIL[month] : HOURS_UNTIL[month] + 30 * 24
+                        ][ColumnHeader.HW_SOLAR_THERMAL_FRACTION.value].values,
                         (30, 24),
                     ),
                     axis=0,
                 )
                 dhw_dc_fraction[month] = np.nanmean(
-                    simulation_output[HOURS_UNTIL[month] : HOURS_UNTIL[month] + 30 * 24][
-                        ColumnHeader.HW_VOL_DEMAND_COVERED.value
-                    ].values
+                    simulation_output[
+                        HOURS_UNTIL[month] : HOURS_UNTIL[month] + 30 * 24
+                    ][ColumnHeader.HW_VOL_DEMAND_COVERED.value].values
                 )
                 dhw_dc_fraction_daily[month] = np.nanmean(
                     np.reshape(
-                        simulation_output[HOURS_UNTIL[month] : HOURS_UNTIL[month] + 30 * 24][
-                            ColumnHeader.HW_VOL_DEMAND_COVERED.value
-                        ].values,
+                        simulation_output[
+                            HOURS_UNTIL[month] : HOURS_UNTIL[month] + 30 * 24
+                        ][ColumnHeader.HW_VOL_DEMAND_COVERED.value].values,
                         (30, 24),
                     ),
                     axis=0,
@@ -3475,9 +3430,7 @@ def plot_outputs(
             plt.xlabel("Hour of day")
             ax1.set_ylabel("Renewable DHW demand covered fraction")
             ax2.set_ylabel("Volumetric DHW demand covered fraction")
-            plt.title(
-                "Monthly averages of domestic demand covered fractions"
-            )
+            plt.title("Monthly averages of domestic demand covered fractions")
             plt.savefig(
                 os.path.join(
                     figures_directory,
@@ -3490,30 +3443,62 @@ def plot_outputs(
 
             # Plot the monthly averages.
             plt.bar(
-                [entry - 0.4 for entry in dhw_renewable_fraction.keys()],
+                [entry - 0.7 for entry in dhw_renewable_fraction.keys()],
                 dhw_renewable_fraction.values(),
                 width=0.35,
                 align="center",
-                label="renewable fraction"
+                label="CLOVER modelling",
             )
             plt.bar(
-                [entry + 0.4 for entry in dhw_dc_fraction.keys()],
-                dhw_dc_fraction.values(),
+                [entry + 0.7 for entry in dhw_dc_fraction.keys()],
+                [
+                    0.123,
+                    0.22,
+                    0.36,
+                    0.488,
+                    0.567,
+                    0.589,
+                    0.611,
+                    0.648,
+                    0.466,
+                    0.34,
+                    0.188,
+                    0.123,
+                ],
                 width=0.35,
                 align="center",
-                label="volume demand covered"
+                label="Guarracino",
             )
 
+            import json
+
+            with open("monthly_averages_lowerbound.json", "w") as f:
+                json.dump(dhw_renewable_fraction, f, indent=4)
+
             plt.xlim(1, 12)
-            plt.xticks(range(1, 13, 1))
+            plt.xticks(
+                range(1, 13, 1),
+                [
+                    "Jan",
+                    "Feb",
+                    "Mar",
+                    "Apr",
+                    "May",
+                    "Jun",
+                    "Jul",
+                    "Aug",
+                    "Sep",
+                    "Oct",
+                    "Nov",
+                    "Dec",
+                ],
+            )
             plt.xlabel("Month of year")
             plt.ylabel("Demand covered fraction")
             plt.legend()
             plt.title("Renewable DHW demand covered throughout the year")
             plt.savefig(
-                os.path.join(
-                    figures_directory, "hot_water_renewable_dc_fraction.png"
-                ),
+                os.path.join(figures_directory, "hot_water_renewable_dc_fraction.png"),
                 transparent=True,
             )
             plt.close()
