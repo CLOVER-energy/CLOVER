@@ -233,7 +233,8 @@ def get_key_results(
             3,
         )
         key_results.average_daily_hw_demand_covered = round(
-            np.nanmean(simulation_results[ColumnHeader.HW_VOL_DEMAND_COVERED.value]), 3,
+            np.nanmean(simulation_results[ColumnHeader.HW_VOL_DEMAND_COVERED.value]),
+            3,
         )
 
     # Compute the waste-product key results.
@@ -428,7 +429,9 @@ def plot_outputs(
         # Plot the average electric load of each device for the first year.
         for device, load in initial_electric_hourly_loads.items():
             average_load = np.nanmean(
-                np.asarray(load[0:CUT_OFF_TIME]).reshape((CUT_OFF_TIME // 24, 24),),
+                np.asarray(load[0:CUT_OFF_TIME]).reshape(
+                    (CUT_OFF_TIME // 24, 24),
+                ),
                 axis=0,
             )
             _, ax = plt.subplots()
@@ -479,7 +482,8 @@ def plot_outputs(
         plt.ylabel("Electric power demand / kW")
         plt.title(f"Load profile of the community for the first {CUT_OFF_TIME} hours")
         plt.savefig(
-            os.path.join(figures_directory, "electric_demands.png"), transparent=True,
+            os.path.join(figures_directory, "electric_demands.png"),
+            transparent=True,
         )
         plt.close()
         pbar.update(1)
@@ -488,19 +492,25 @@ def plot_outputs(
         domestic_demand = np.nanmean(
             np.asarray(
                 total_electric_load[0:HOURS_PER_YEAR][DemandType.DOMESTIC.value]
-            ).reshape((365, 24),),
+            ).reshape(
+                (365, 24),
+            ),
             axis=0,
         )
         commercial_demand = np.nanmean(
             np.asarray(
                 total_electric_load[0:HOURS_PER_YEAR][DemandType.COMMERCIAL.value]
-            ).reshape((365, 24),),
+            ).reshape(
+                (365, 24),
+            ),
             axis=0,
         )
         public_demand = np.nanmean(
             np.asarray(
                 total_electric_load[0:HOURS_PER_YEAR][DemandType.PUBLIC.value]
-            ).reshape((365, 24),),
+            ).reshape(
+                (365, 24),
+            ),
             axis=0,
         )
         total_demand = np.nanmean(
@@ -511,16 +521,21 @@ def plot_outputs(
         )
 
         plt.plot(
-            domestic_demand, label=DemandType.DOMESTIC.value,
+            domestic_demand,
+            label=DemandType.DOMESTIC.value,
         )
         plt.plot(
-            commercial_demand, label=DemandType.COMMERCIAL.value,
+            commercial_demand,
+            label=DemandType.COMMERCIAL.value,
         )
         plt.plot(
-            public_demand, label=DemandType.PUBLIC.value,
+            public_demand,
+            label=DemandType.PUBLIC.value,
         )
         plt.plot(
-            total_demand, "--", label="total",
+            total_demand,
+            "--",
+            label="total",
         )
         plt.legend(loc="upper right")
         plt.xticks([entry for entry in (range(0, 23, 4))])
@@ -563,7 +578,8 @@ def plot_outputs(
         )
         total_demand = np.sum(
             np.reshape(
-                np.sum(total_electric_load[0:HOURS_PER_YEAR].values, axis=1), (365, 24),
+                np.sum(total_electric_load[0:HOURS_PER_YEAR].values, axis=1),
+                (365, 24),
             ),
             axis=1,
         )
@@ -1159,7 +1175,9 @@ def plot_outputs(
             _, ax = plt.subplots()
             for device, load in initial_cw_hourly_loads.items():
                 average_load = np.nanmean(
-                    np.asarray(load[0:CUT_OFF_TIME]).reshape((CUT_OFF_TIME // 24, 24),),
+                    np.asarray(load[0:CUT_OFF_TIME]).reshape(
+                        (CUT_OFF_TIME // 24, 24),
+                    ),
                     axis=0,
                 )
                 ax.bar(range(24), average_load, label=device)
@@ -1246,7 +1264,8 @@ def plot_outputs(
             )
             total_demand = 0.001 * np.sum(
                 np.reshape(
-                    np.sum(total_cw_load[0:HOURS_PER_YEAR].values, axis=1), (365, 24),
+                    np.sum(total_cw_load[0:HOURS_PER_YEAR].values, axis=1),
+                    (365, 24),
                 ),
                 axis=1,
             )
@@ -1405,19 +1424,25 @@ def plot_outputs(
             domestic_demand = np.nanmean(
                 np.asarray(
                     total_cw_load[0:HOURS_PER_YEAR][DemandType.DOMESTIC.value]
-                ).reshape((365, 24),),
+                ).reshape(
+                    (365, 24),
+                ),
                 axis=0,
             )
             commercial_demand = np.nanmean(
                 np.asarray(
                     total_cw_load[0:HOURS_PER_YEAR][DemandType.COMMERCIAL.value]
-                ).reshape((365, 24),),
+                ).reshape(
+                    (365, 24),
+                ),
                 axis=0,
             )
             public_demand = np.nanmean(
                 np.asarray(
                     total_cw_load[0:HOURS_PER_YEAR][DemandType.PUBLIC.value]
-                ).reshape((365, 24),),
+                ).reshape(
+                    (365, 24),
+                ),
                 axis=0,
             )
             total_demand = np.nanmean(
@@ -1428,16 +1453,21 @@ def plot_outputs(
             )
 
             plt.plot(
-                domestic_demand, label=DemandType.DOMESTIC.value,
+                domestic_demand,
+                label=DemandType.DOMESTIC.value,
             )
             plt.plot(
-                commercial_demand, label=DemandType.COMMERCIAL.value,
+                commercial_demand,
+                label=DemandType.COMMERCIAL.value,
             )
             plt.plot(
-                public_demand, label=DemandType.PUBLIC.value,
+                public_demand,
+                label=DemandType.PUBLIC.value,
             )
             plt.plot(
-                total_demand, "--", label="total",
+                total_demand,
+                "--",
+                label="total",
             )
             plt.legend(loc="upper right")
             plt.xticks([entry for entry in (range(0, 23, 4))])
@@ -1750,7 +1780,8 @@ def plot_outputs(
             )
             plt.savefig(
                 os.path.join(
-                    figures_directory, "thermal_desal_cw_on_average_july_day.png",
+                    figures_directory,
+                    "thermal_desal_cw_on_average_july_day.png",
                 ),
                 transparent=True,
             )
@@ -2080,7 +2111,8 @@ def plot_outputs(
             plt.plot(dumped_power, label="Unused dumped energy")
             plt.plot(electric_power_supplied, label="Electric devices")
             plt.plot(
-                surplus_power_consumed, label="Clean water via dumped energy",
+                surplus_power_consumed,
+                label="Clean water via dumped energy",
             )
             if cw_pvt:
                 thermal_desalination_energy = np.nanmean(
@@ -2615,7 +2647,9 @@ def plot_outputs(
             _, ax = plt.subplots()
             for device, load in initial_hw_hourly_loads.items():
                 average_load = np.nanmean(
-                    np.asarray(load[0:CUT_OFF_TIME]).reshape((CUT_OFF_TIME // 24, 24),),
+                    np.asarray(load[0:CUT_OFF_TIME]).reshape(
+                        (CUT_OFF_TIME // 24, 24),
+                    ),
                     axis=0,
                 )
                 ax.bar(range(24), average_load, label=device)
@@ -2701,7 +2735,8 @@ def plot_outputs(
             )
             total_demand = 0.001 * np.sum(
                 np.reshape(
-                    np.sum(total_hw_load[0:HOURS_PER_YEAR].values, axis=1), (365, 24),
+                    np.sum(total_hw_load[0:HOURS_PER_YEAR].values, axis=1),
+                    (365, 24),
                 ),
                 axis=1,
             )
@@ -2786,19 +2821,25 @@ def plot_outputs(
             domestic_demand = np.nanmean(
                 np.asarray(
                     total_hw_load[0:HOURS_PER_YEAR][DemandType.DOMESTIC.value]
-                ).reshape((365, 24),),
+                ).reshape(
+                    (365, 24),
+                ),
                 axis=0,
             )
             commercial_demand = np.nanmean(
                 np.asarray(
                     total_hw_load[0:HOURS_PER_YEAR][DemandType.COMMERCIAL.value]
-                ).reshape((365, 24),),
+                ).reshape(
+                    (365, 24),
+                ),
                 axis=0,
             )
             public_demand = np.nanmean(
                 np.asarray(
                     total_hw_load[0:HOURS_PER_YEAR][DemandType.PUBLIC.value]
-                ).reshape((365, 24),),
+                ).reshape(
+                    (365, 24),
+                ),
                 axis=0,
             )
             total_demand = np.nanmean(
@@ -2809,16 +2850,21 @@ def plot_outputs(
             )
 
             plt.plot(
-                domestic_demand, label=DemandType.DOMESTIC.value,
+                domestic_demand,
+                label=DemandType.DOMESTIC.value,
             )
             plt.plot(
-                commercial_demand, label=DemandType.COMMERCIAL.value,
+                commercial_demand,
+                label=DemandType.COMMERCIAL.value,
             )
             plt.plot(
-                public_demand, label=DemandType.PUBLIC.value,
+                public_demand,
+                label=DemandType.PUBLIC.value,
             )
             plt.plot(
-                total_demand, "--", label="total",
+                total_demand,
+                "--",
+                label="total",
             )
             plt.legend(loc="upper right")
             plt.xticks([entry for entry in (range(0, 23, 4))])
