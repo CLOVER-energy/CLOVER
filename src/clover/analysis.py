@@ -315,7 +315,7 @@ def plot_outputs(
     hw_pvt: bool = ColumnHeader.HW_PVT_ELECTRICITY_SUPPLIED.value in simulation_output
 
     with tqdm(
-        total=15
+        total=16
         + (17 if initial_cw_hourly_loads is not None else 0)
         + (4 if cw_pvt else 0)
         + (15 if initial_hw_hourly_loads is not None else 0),
@@ -410,9 +410,14 @@ def plot_outputs(
         pbar.update(1)
 
         # Plot the initial electric load of each device.
-        _, ax = plt.subplots()
+        fig, ax = plt.subplots()
+        cumulative_load = 0
         for device, load in initial_electric_hourly_loads.items():
-            ax.bar(range(len(load)), load[0], label=device)
+            ax.bar(range(len(load)), load[0], label=device, bottom=cumulative_load)
+            if isinstance(cumulative_load, int) and cumulative_load == 0:
+                cumulative_load = load[0]
+                continue
+            cumulative_load += load[0]
 
         ax.set_xlabel("Hour of simulation")
         ax.set_ylabel("Device load / W")
@@ -422,17 +427,39 @@ def plot_outputs(
             os.path.join(figures_directory, "electric_device_loads.png"),
             transparent=True,
         )
-        plt.close()
+        plt.close(fig)
         pbar.update(1)
 
         # Plot the average electric load of each device for the first year.
+        cumulative_load = 0
+        fig, ax = plt.subplots()
         for device, load in initial_electric_hourly_loads.items():
             average_load = np.nanmean(
                 np.asarray(load[0:CUT_OFF_TIME]).reshape((CUT_OFF_TIME // 24, 24),),
                 axis=0,
             )
-            _, ax = plt.subplots()
-            ax.bar(range(24), average_load, label=device)
+
+            # Only label washing machine
+            if device in {
+                "light",
+                "phone",
+                "radio",
+                "mill",
+                "laptop",
+                "fridge",
+                "washing machine",
+                "fan",
+                "tv",
+                "streetlight",
+                
+            }:
+                ax.bar(range(24), average_load, label=device, bottom=cumulative_load)
+            else:
+                ax.bar(range(24), average_load, bottom=cumulative_load)
+            if isinstance(cumulative_load, int) and cumulative_load == 0:
+                cumulative_load = average_load
+                continue
+            cumulative_load += average_load
 
         ax.set_xlabel("Hour of simulation")
         ax.set_ylabel("Device load / W")
@@ -446,7 +473,7 @@ def plot_outputs(
             os.path.join(figures_directory, "electric_device_loads_average.png"),
             transparent=True,
         )
-        plt.close()
+        plt.close(fig)
         pbar.update(1)
 
         # Plot the electric load breakdown by load type.
@@ -510,6 +537,7 @@ def plot_outputs(
             axis=0,
         )
 
+        # Plot as a line plot
         plt.plot(
             domestic_demand, label=DemandType.DOMESTIC.value,
         )
@@ -536,8 +564,36 @@ def plot_outputs(
         plt.close()
         pbar.update(1)
 
+        # Plot as a bar plot
+        fig, ax = plt.subplots()
+        ax.bar(range(len(domestic_demand)), domestic_demand, label="Domestic")
+        ax.bar(
+            range(len(commercial_demand)),
+            commercial_demand,
+            label="Commercial",
+            bottom=domestic_demand
+        )
+        ax.bar(
+            range(len(public_demand)),
+            public_demand,
+            label="Public",
+            bottom=domestic_demand + commercial_demand
+        )
+        ax.set_xlabel("Hour of simulation")
+        ax.set_ylabel("Electric power demand / kW")
+        ax.set_title(
+            "Average load profile of the community during the first simulation year"
+        )
+        ax.legend()
+        plt.savefig(
+            os.path.join(figures_directory, "electric_device_loads_average_bar.png"),
+            transparent=True,
+        )
+        plt.close(fig)
+        pbar.update(1)
+
         # Plot the annual variation of the electricity demand.
-        _, axis = plt.subplots(1, 2, figsize=(8, 4))
+        fig, axis = plt.subplots(1, 2, figsize=(8, 4))
         domestic_demand = np.sum(
             np.reshape(
                 total_electric_load[0:HOURS_PER_YEAR][DemandType.DOMESTIC.value].values,
@@ -617,7 +673,7 @@ def plot_outputs(
             os.path.join(figures_directory, "electric_demand_annual_variation.png"),
             transparent=True,
         )
-        plt.close()
+        plt.close(fig)
         pbar.update(1)
 
         # Plot the total seasonal variation as a stand-alone figure.
@@ -1044,7 +1100,7 @@ def plot_outputs(
             ),
             transparent=True,
         )
-        plt.close()
+        plt.close(fig)
         pbar.update(1)
 
         total_used = simulation_output.iloc[0:24][
@@ -1140,9 +1196,15 @@ def plot_outputs(
 
         if initial_cw_hourly_loads is not None:
             # Plot the initial clean-water load of each device.
-            _, ax = plt.subplots()
+            fig, ax = plt.subplots()
+            cumulative_load = 0
             for device, load in initial_cw_hourly_loads.items():
-                ax.bar(range(len(load)), load[0], label=device)
+                ax.bar(range(len(load)), load[0], label=device, bottom=cumulative_load)
+
+                if isinstance(cumulative_load, int) and cumulative_load == 0:
+                    cumulative_load = load[0]
+                    continue
+                cumulative_load += load[0]
 
             ax.set_xlabel("Hour of simulation")
             ax.set_ylabel("Device load / litres/hour")
@@ -1152,17 +1214,23 @@ def plot_outputs(
                 os.path.join(figures_directory, "clean_water_device_loads.png"),
                 transparent=True,
             )
-            plt.close()
+            plt.close(fig)
             pbar.update(1)
 
             # Plot the average clean-water load of each device for the first year.
-            _, ax = plt.subplots()
+            fig, ax = plt.subplots()
+            cumulative_load = 0
             for device, load in initial_cw_hourly_loads.items():
                 average_load = np.nanmean(
                     np.asarray(load[0:CUT_OFF_TIME]).reshape((CUT_OFF_TIME // 24, 24),),
                     axis=0,
                 )
-                ax.bar(range(24), average_load, label=device)
+                ax.bar(range(24), average_load, label=device, bottom=cumulative_load)
+
+                if isinstance(cumulative_load, int) and cumulative_load == 0:
+                    cumulative_load = average_load
+                    continue
+                cumulative_load += average_load
 
             ax.set_xlabel("Hour of simulation")
             ax.set_ylabel("Device load / litres/hour")
@@ -1177,7 +1245,7 @@ def plot_outputs(
                 os.path.join(figures_directory, "clean_water_device_loads_average.png"),
                 transparent=True,
             )
-            plt.close()
+            plt.close(fig)
             pbar.update(1)
 
             # Plot the clean-water load breakdown by load type.
@@ -1222,7 +1290,7 @@ def plot_outputs(
             pbar.update(1)
 
             # Plot the annual variation of the clean-water demand.
-            _, axis = plt.subplots(1, 2, figsize=(8, 4))
+            fig, axis = plt.subplots(1, 2, figsize=(8, 4))
             domestic_demand = 0.001 * np.sum(
                 np.reshape(
                     total_cw_load[0:HOURS_PER_YEAR][DemandType.DOMESTIC.value].values,
@@ -1300,7 +1368,7 @@ def plot_outputs(
                 ),
                 transparent=True,
             )
-            plt.close()
+            plt.close(fig)
             pbar.update(1)
 
             # Plot the total seasonal variation as a stand-alone figure.
@@ -2288,7 +2356,7 @@ def plot_outputs(
                 os.path.join(figures_directory, "seasonal_water_supply_variations.png"),
                 transparent=True,
             )
-            plt.close()
+            plt.close(fig)
             pbar.update(1)
 
             if cw_pvt:
@@ -2340,7 +2408,7 @@ def plot_outputs(
                 pbar.update(1)
 
                 # Plot the daily collector output temperature
-                _, ax1 = plt.subplots()
+                fig, ax1 = plt.subplots()
                 collector_output_temperature_january = simulation_output.iloc[0:24][
                     ColumnHeader.CW_PVT_OUTPUT_TEMPERATURE.value
                 ]
@@ -2429,11 +2497,11 @@ def plot_outputs(
                     ),
                     transparent=True,
                 )
-                plt.close()
+                plt.close(fig)
                 pbar.update(1)
 
                 # Plot the average collector output temperature
-                _, ax1 = plt.subplots()
+                fig, ax1 = plt.subplots()
                 collector_output_temperature_january = np.nanmean(
                     np.reshape(
                         simulation_output[0 : 31 * 24][
@@ -2591,14 +2659,20 @@ def plot_outputs(
                     ),
                     transparent=True,
                 )
-                plt.close()
+                plt.close(fig)
                 pbar.update(1)
 
         if initial_hw_hourly_loads is not None:
             # Plot the initial hot-water load of each device.
-            _, ax = plt.subplots()
+            fig, ax = plt.subplots()
+            cumulative_load = 0
             for device, load in initial_hw_hourly_loads.items():
-                ax.bar(range(len(load)), load[0], label=device)
+                ax.bar(range(len(load)), load[0], label=device, bottom=cumulative_load)
+
+                if isinstance(cumulative_load, int) and cumulative_load == 0:
+                    cumulative_load = load[0]
+                    continue
+                cumulative_load += load[0]
 
             ax.set_xlabel("Hour of simulation")
             ax.set_ylabel("Device load / litres/hour")
@@ -2608,17 +2682,23 @@ def plot_outputs(
                 os.path.join(figures_directory, "hot_water_device_loads.png"),
                 transparent=True,
             )
-            plt.close()
+            plt.close(fig)
             pbar.update(1)
 
             # Plot the average hot-water load of each device for the cut off period.
-            _, ax = plt.subplots()
+            fig, ax = plt.subplots()
+            cumulative_load = 0
             for device, load in initial_hw_hourly_loads.items():
                 average_load = np.nanmean(
                     np.asarray(load[0:CUT_OFF_TIME]).reshape((CUT_OFF_TIME // 24, 24),),
                     axis=0,
                 )
-                ax.bar(range(24), average_load, label=device)
+                ax.bar(range(24), average_load, label=device, bottom=cumulative_load)
+
+                if isinstance(cumulative_load, int) and cumulative_load == 0:
+                    cumulative_load = average_load
+                    continue
+                cumulative_load += average_load
 
             ax.set_xlabel("Hour of simulation")
             ax.set_ylabel("Device load / litres/hour")
@@ -2632,7 +2712,7 @@ def plot_outputs(
                 os.path.join(figures_directory, "hot_water_device_loads_average.png"),
                 transparent=True,
             )
-            plt.close()
+            plt.close(fig)
             pbar.update(1)
 
             # Plot the clean-water load breakdown by load type.
@@ -2673,11 +2753,11 @@ def plot_outputs(
                 os.path.join(figures_directory, "hot_water_demands.png"),
                 transparent=True,
             )
-            plt.close()
+            plt.close(fig)
             pbar.update(1)
 
             # Plot the annual variation of the clean-water demand.
-            _, axis = plt.subplots(1, 2, figsize=(8, 4))
+            fig, axis = plt.subplots(1, 2, figsize=(8, 4))
             domestic_demand = 0.001 * np.sum(
                 np.reshape(
                     total_hw_load[0:HOURS_PER_YEAR][DemandType.DOMESTIC.value].values,
@@ -2755,7 +2835,7 @@ def plot_outputs(
                 ),
                 transparent=True,
             )
-            plt.close()
+            plt.close(fig)
             pbar.update(1)
 
             # Plot the total seasonal variation as a stand-alone figure.
@@ -2907,7 +2987,7 @@ def plot_outputs(
             pbar.update(1)
 
             # Plot the daily collector output temperature
-            _, ax1 = plt.subplots()
+            fig, ax1 = plt.subplots()
             collector_output_temperature_january = simulation_output.iloc[0:24][
                 ColumnHeader.HW_PVT_OUTPUT_TEMPERATURE.value
             ]
@@ -3003,10 +3083,10 @@ def plot_outputs(
                 ),
                 transparent=True,
             )
-            plt.close()
+            plt.close(fig)
             pbar.update(1)
 
-            _, ax1 = plt.subplots()
+            fig, ax1 = plt.subplots()
             ax1.plot(
                 collector_output_temperature_january.values,
                 label="january pv-t output temp.",
@@ -3066,11 +3146,11 @@ def plot_outputs(
                 ),
                 transparent=True,
             )
-            plt.close()
+            plt.close(fig)
             pbar.update(1)
 
             # Plot the average collector output temperature
-            _, ax1 = plt.subplots()
+            fig, ax1 = plt.subplots()
             collector_output_temperature_january = np.nanmean(
                 np.reshape(
                     simulation_output[0 : 31 * 24][
@@ -3220,10 +3300,10 @@ def plot_outputs(
                 ),
                 transparent=True,
             )
-            plt.close()
+            plt.close(fig)
             pbar.update(1)
 
-            _, ax1 = plt.subplots()
+            fig, ax1 = plt.subplots()
             ax1.plot(
                 collector_output_temperature_january,
                 label="january collector output temp.",
@@ -3272,7 +3352,7 @@ def plot_outputs(
                 ),
                 transparent=True,
             )
-            plt.close()
+            plt.close(fig)
             pbar.update(1)
 
             hot_water_power_consumed = np.nanmean(
@@ -3361,7 +3441,7 @@ def plot_outputs(
                 axis=0,
             )
 
-            _, ax1 = plt.subplots()
+            fig, ax1 = plt.subplots()
             ax1.plot(collector_temperature_gain_july, label="T_c,out - T_c,in")
             ax1.plot(collector_minus_tank_july, label="T_c,out - T_tank")
             ax1.set_ylabel("Temperature / degC")
@@ -3379,7 +3459,7 @@ def plot_outputs(
                 ),
                 transparent=True,
             )
-            plt.close()
+            plt.close(fig)
             pbar.update(1)
 
             # Plot monthly renewable DHW fraction
@@ -3418,7 +3498,7 @@ def plot_outputs(
                 )
 
             # Plot the daily varying demand covered profiles.
-            _, ax1 = plt.subplots()
+            fig, ax1 = plt.subplots()
             ax2 = ax1.twinx()
             for key, value in dhw_renewable_fraction_daily.items():
                 ax1.plot(range(24), value, label=f"month #{key}")
@@ -3438,7 +3518,7 @@ def plot_outputs(
                 ),
                 transparent=True,
             )
-            plt.close()
+            plt.close(fig)
             pbar.update(1)
 
             # Plot the monthly averages.
