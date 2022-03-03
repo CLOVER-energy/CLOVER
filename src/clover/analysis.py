@@ -72,6 +72,36 @@ PLOT_RESOLUTION: int = 600
 #   The directory in which simulation plots should be saved.
 SIMULATION_PLOTS_DIRECTORY: str = "simulation_{simulation_number}_plots"
 
+# Style sheet:
+#   The preferred matplotlib stylesheet to use.
+STYLE_SHEET: str = "tableau-colorblind10"
+# Options available:
+#   _classic_test_patch
+#   bmh
+#   classic
+#   dark_background
+#   fast
+#   fivethirtyeight
+#   ggplot
+#   grayscale
+#   seaborn
+#   seaborn-bright
+#   seaborn-colorblind
+#   seaborn-dark
+#   seaborn-dark-palette
+#   seaborn-darkgrid
+#   seaborn-deep
+#   seaborn-muted
+#   seaborn-notebook
+#   seaborn-paper
+#   seaborn-pastel
+#   seaborn-poster
+#   seaborn-talk
+#   seaborn-ticks
+#   seaborn-white
+#   seaborn-whitegrid
+#   tableau-colorblind10
+
 
 def get_key_results(
     grid_input_profile: pd.DataFrame,
@@ -297,6 +327,7 @@ def plot_outputs(
     # Set plotting parameters.
     plt.rcParams["font.family"] = "sans-serif"
     plt.rcParams["font.sans-serif"] = ["Arial"]
+    plt.style.use(STYLE_SHEET)
 
     # Create an output directory for the various plots to be saved in.
     figures_directory = os.path.join(
@@ -413,7 +444,7 @@ def plot_outputs(
         # Plot the initial electric load of each device.
         fig, ax = plt.subplots()
         cumulative_load = 0
-        for device, load in initial_electric_hourly_loads.items():
+        for device, load in sorted(initial_electric_hourly_loads.items()):
             ax.bar(range(len(load)), load[0], label=device, bottom=cumulative_load)
             if isinstance(cumulative_load, int) and cumulative_load == 0:
                 cumulative_load = load[0]
@@ -434,7 +465,7 @@ def plot_outputs(
         # Plot the average electric load of each device for the first year.
         cumulative_load = 0
         fig, ax = plt.subplots()
-        for device, load in initial_electric_hourly_loads.items():
+        for device, load in sorted(initial_electric_hourly_loads.items()):
             average_load = np.nanmean(
                 np.asarray(load[0:CUT_OFF_TIME]).reshape(
                     (CUT_OFF_TIME // 24, 24),
@@ -442,23 +473,8 @@ def plot_outputs(
                 axis=0,
             )
 
-            # Only label washing machine
-            if device in {
-                "light",
-                "phone",
-                "radio",
-                "mill",
-                "laptop",
-                "fridge",
-                "washing machine",
-                "fan",
-                "tv",
-                "streetlight",
-                
-            }:
+            if np.sum(average_load) > 0:
                 ax.bar(range(24), average_load, label=device, bottom=cumulative_load)
-            else:
-                ax.bar(range(24), average_load, bottom=cumulative_load)
             if isinstance(cumulative_load, int) and cumulative_load == 0:
                 cumulative_load = average_load
                 continue
@@ -1214,7 +1230,7 @@ def plot_outputs(
             # Plot the initial clean-water load of each device.
             fig, ax = plt.subplots()
             cumulative_load = 0
-            for device, load in initial_cw_hourly_loads.items():
+            for device, load in sorted(initial_cw_hourly_loads.items()):
                 ax.bar(range(len(load)), load[0], label=device, bottom=cumulative_load)
 
                 if isinstance(cumulative_load, int) and cumulative_load == 0:
@@ -1236,7 +1252,7 @@ def plot_outputs(
             # Plot the average clean-water load of each device for the first year.
             fig, ax = plt.subplots()
             cumulative_load = 0
-            for device, load in initial_cw_hourly_loads.items():
+            for device, load in sorted(initial_cw_hourly_loads.items()):
                 average_load = np.nanmean(
                     np.asarray(load[0:CUT_OFF_TIME]).reshape(
                         (CUT_OFF_TIME // 24, 24),
@@ -2698,7 +2714,7 @@ def plot_outputs(
             # Plot the initial hot-water load of each device.
             fig, ax = plt.subplots()
             cumulative_load = 0
-            for device, load in initial_hw_hourly_loads.items():
+            for device, load in sorted(initial_hw_hourly_loads.items()):
                 ax.bar(range(len(load)), load[0], label=device, bottom=cumulative_load)
 
                 if isinstance(cumulative_load, int) and cumulative_load == 0:
@@ -2720,7 +2736,7 @@ def plot_outputs(
             # Plot the average hot-water load of each device for the cut off period.
             fig, ax = plt.subplots()
             cumulative_load = 0
-            for device, load in initial_hw_hourly_loads.items():
+            for device, load in sorted(initial_hw_hourly_loads.items()):
                 average_load = np.nanmean(
                     np.asarray(load[0:CUT_OFF_TIME]).reshape(
                         (CUT_OFF_TIME // 24, 24),
@@ -2871,6 +2887,8 @@ def plot_outputs(
                 transparent=True,
             )
             plt.close(fig)
+            plt.clf()
+            plt.close()
             pbar.update(1)
 
             # Plot the total seasonal variation as a stand-alone figure.
