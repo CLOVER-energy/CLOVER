@@ -1006,9 +1006,15 @@ def _appraise_hot_water_system_tech(
 
     solar_thermal_hw_fraction: float = round(
         float(
-            np.mean(
-                simulation_results[ColumnHeader.HW_SOLAR_THERMAL_FRACTION.value].values
+            np.sum(
+                (
+                    simulation_results[
+                        ColumnHeader.HW_SOLAR_THERMAL_FRACTION.value
+                    ].values
+                    * simulation_results[ColumnHeader.HW_TANK_OUTPUT.value].values
+                )
             )
+            / np.sum(simulation_results[ColumnHeader.HW_TANK_OUTPUT.value].values)
         ),
         3,
     )
@@ -1016,7 +1022,7 @@ def _appraise_hot_water_system_tech(
     hot_water_demand_covered: float = round(
         float(
             np.mean(
-                simulation_results[ColumnHeader.HW_VOL_DEMAND_COVERED.value]
+                simulation_results[ColumnHeader.HW_TANK_OUTPUT.value]
                 / simulation_results[ColumnHeader.TOTAL_HW_LOAD.value]
             )
         ),
