@@ -71,6 +71,7 @@ __all__ = (
     "ProgrammerJudgementFault",
     "RAW_CLOVER_PATH",
     "read_yaml",
+    "RegressorType",
     "RenewableEnergySource",
     "ResourceType",
     "RenewablesNinjaError",
@@ -1632,6 +1633,30 @@ def read_yaml(
         )
         raise
     return file_contents
+
+
+class RegressorType(enum.Enum):
+    """
+    Denotes types of regressor model.
+
+    - LOW_IRRADIANCE_LOW_TEMPERATURE:
+        Denotes a model trained on low-irradiance data where cooling is expected.
+
+    - LOW_IRRADIANCE_HIGH_TEMPERATURE:
+        Denotes a model trained on low-irradiance data where heating is expected.
+
+    - STANDARD_IRRADIANCE_LOW_TEMPERATURE:
+        Denotes a model trained on standard-irradiance data where cooling is expected.
+
+    - STANDARD_IRRADIANCE_HIGH_TEMPERATURE:
+        Denotes a model trained on standard-irradiance data where heating is expected.
+
+    """
+
+    LOW_IRRADIANCE_LOW_TEMPERATURE: str = "low_irradiance_low_temp"
+    LOW_IRRADIANCE_HIGH_TEMPERATURE: str = "low_irradiance_high_temp"
+    STANDARD_IRRADIANCE_LOW_TEMPERATURE: str = "standard_irradiance_low_temp"
+    STANDARD_IRRADIANCE_HIGH_TEMPERATURE: str = "standard_irradiance_high_temp"
 
 
 class RenewablesNinjaError(Exception):
