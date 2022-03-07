@@ -325,8 +325,13 @@ def plot_outputs(
     """
 
     # Set plotting parameters.
+    plt.rcParams["axes.labelsize"] = "20"
+    plt.rcParams["figure.figsize"] = (6.8, 6.8)
     plt.rcParams["font.family"] = "sans-serif"
     plt.rcParams["font.sans-serif"] = ["Arial"]
+    plt.rcParams["font.size"] = "20"
+    plt.rcParams["xtick.labelsize"] = "20"
+    plt.rcParams["ytick.labelsize"] = "20"
     plt.style.use(STYLE_SHEET)
 
     # Create an output directory for the various plots to be saved in.
@@ -379,6 +384,7 @@ def plot_outputs(
         plt.tight_layout()
         plt.savefig(
             os.path.join(figures_directory, "solar_output_hetamap.png"),
+            bbox_inches='tight',
             transparent=True,
         )
         plt.close()
@@ -391,9 +397,11 @@ def plot_outputs(
         plt.yticks(range(0, 9, 2))
         plt.xlabel("Day of year")
         plt.ylabel("Energy generation / kWh per day")
-        plt.title("Daily energy generation of 1 kWp of solar capacity")
+        # plt.title("Daily energy generation of 1 kWp of solar capacity")
         plt.savefig(
-            os.path.join(figures_directory, "solar_output_yearly.png"), transparent=True
+            os.path.join(figures_directory, "solar_output_yearly.png"),
+            bbox_inches='tight',
+            transparent=True
         )
         plt.close()
         pbar.update(1)
@@ -416,6 +424,7 @@ def plot_outputs(
         plt.tight_layout()
         plt.savefig(
             os.path.join(figures_directory, "grid_availability_heatmap.png"),
+            bbox_inches='tight',
             transparent=True,
         )
         plt.close()
@@ -431,11 +440,12 @@ def plot_outputs(
         plt.yticks(np.arange(0, 1.1, 0.2))
         plt.xlabel("Hour of day")
         plt.ylabel("Probability")
-        plt.title("Probability of grid electricity being available")
+        # plt.title("Probability of grid electricity being available")
         plt.savefig(
             os.path.join(
                 figures_directory, "grid_availability_randomisation_comparison.png"
             ),
+            bbox_inches='tight',
             transparent=True,
         )
         plt.close()
@@ -453,10 +463,11 @@ def plot_outputs(
 
         ax.set_xlabel("Hour of simulation")
         ax.set_ylabel("Device load / W")
-        ax.set_title("Electric load of each device")
+        # ax.set_title("Electric load of each device")
         ax.legend()
         plt.savefig(
             os.path.join(figures_directory, "electric_device_loads.png"),
+            bbox_inches='tight',
             transparent=True,
         )
         plt.close(fig)
@@ -482,14 +493,15 @@ def plot_outputs(
 
         ax.set_xlabel("Hour of simulation")
         ax.set_ylabel("Device load / W")
-        ax.set_title(
-            "Average electric load demand of each device over the first {} days.".format(
-                CUT_OFF_TIME // 24
-            )
-        )
+        # ax.set_title(
+        #     "Average electric load demand of each device over the first {} days.".format(
+        #         CUT_OFF_TIME // 24
+        #     )
+        # )
         ax.legend()
         plt.savefig(
             os.path.join(figures_directory, "electric_device_loads_average.png"),
+            bbox_inches='tight',
             transparent=True,
         )
         plt.close(fig)
@@ -523,9 +535,10 @@ def plot_outputs(
         )
         plt.xlabel("Hour of simulation")
         plt.ylabel("Electric power demand / kW")
-        plt.title(f"Load profile of the community for the first {CUT_OFF_TIME} hours")
+        # plt.title(f"Load profile of the community for the first {CUT_OFF_TIME} hours")
         plt.savefig(
             os.path.join(figures_directory, "electric_demands.png"),
+            bbox_inches='tight',
             transparent=True,
         )
         plt.close()
@@ -585,11 +598,12 @@ def plot_outputs(
         plt.xticks([entry for entry in (range(0, 23, 4))])
         plt.xlabel("Hour of simulation")
         plt.ylabel("Electric power demand / kW")
-        plt.title(
-            "Average load profile of the community during the first simulation year"
-        )
+        # plt.title(
+        #     "Average load profile of the community during the first simulation year"
+        # )
         plt.savefig(
             os.path.join(figures_directory, "electric_demands_yearly.png"),
+            bbox_inches='tight',
             transparent=True,
         )
         plt.close()
@@ -602,22 +616,23 @@ def plot_outputs(
             range(len(commercial_demand)),
             commercial_demand,
             label="Commercial",
-            bottom=domestic_demand
+            bottom=domestic_demand,
         )
         ax.bar(
             range(len(public_demand)),
             public_demand,
             label="Public",
-            bottom=domestic_demand + commercial_demand
+            bottom=domestic_demand + commercial_demand,
         )
         ax.set_xlabel("Hour of simulation")
         ax.set_ylabel("Electric power demand / kW")
-        ax.set_title(
-            "Average load profile of the community during the first simulation year"
-        )
+        # ax.set_title(
+        #     "Average load profile of the community during the first simulation year"
+        # )
         ax.legend()
         plt.savefig(
             os.path.join(figures_directory, "electric_device_loads_average_bar.png"),
+            bbox_inches='tight',
             transparent=True,
         )
         plt.close(fig)
@@ -703,6 +718,7 @@ def plot_outputs(
         plt.tight_layout()
         plt.savefig(
             os.path.join(figures_directory, "electric_demand_annual_variation.png"),
+            bbox_inches='tight',
             transparent=True,
         )
         plt.close(fig)
@@ -721,12 +737,13 @@ def plot_outputs(
         plt.xticks(range(0, 366, 60))
         plt.xlabel("Day of simulation period")
         plt.ylabel("Load / kWh/day")
-        plt.title("Total community energy demand")
+        # plt.title("Total community energy demand")
         plt.tight_layout()
         plt.savefig(
             os.path.join(
                 figures_directory, "electric_demand_total_annual_variation.png"
             ),
+            bbox_inches='tight',
             transparent=True,
         )
         plt.close()
@@ -796,9 +813,10 @@ def plot_outputs(
         plt.xticks(range(0, num_years, 2 if num_years > 2 else 1))
         plt.xlabel("Year of investigation period")
         plt.ylabel("Energy demand / MWh/year")
-        plt.title("Load growth of the community")
+        # plt.title("Load growth of the community")
         plt.savefig(
             os.path.join(figures_directory, "electric_load_growth.png"),
+            bbox_inches='tight',
             transparent=True,
         )
         plt.close()
@@ -985,9 +1003,10 @@ def plot_outputs(
         plt.xticks(range(0, 24, 1))
         plt.xlabel("Hour of day")
         plt.ylabel("Average energy / kWh/hour")
-        plt.title("Energy supply and demand on an average day")
+        # plt.title("Energy supply and demand on an average day")
         plt.savefig(
             os.path.join(figures_directory, "electricity_use_on_average_day.png"),
+            bbox_inches='tight',
             transparent=True,
         )
         plt.close()
@@ -1043,11 +1062,12 @@ def plot_outputs(
         plt.yticks(np.arange(0, 1.1, 0.25))
         plt.xlabel("Hour of day")
         plt.ylabel("Probability")
-        plt.title("Energy availability on an average day")
+        # plt.title("Energy availability on an average day")
         plt.savefig(
             os.path.join(
                 figures_directory, "electricity_avilability_on_average_day.png"
             ),
+            bbox_inches='tight',
             transparent=True,
         )
         plt.close()
@@ -1130,6 +1150,7 @@ def plot_outputs(
             os.path.join(
                 figures_directory, "seasonal_electricity_supply_variations.png"
             ),
+            bbox_inches='tight',
             transparent=True,
         )
         plt.close(fig)
@@ -1218,9 +1239,10 @@ def plot_outputs(
         plt.xticks(range(0, 24, 1))
         plt.xlabel("Hour of day")
         plt.ylabel("Average energy / kWh/hour")
-        plt.title("Energy supply and demand on the frist day")
+        # plt.title("Energy supply and demand on the frist day")
         plt.savefig(
             os.path.join(figures_directory, "electricity_use_on_first_day.png"),
+            bbox_inches='tight',
             transparent=True,
         )
         plt.close()
@@ -1240,10 +1262,11 @@ def plot_outputs(
 
             ax.set_xlabel("Hour of simulation")
             ax.set_ylabel("Device load / litres/hour")
-            ax.set_title("Clean water demand of each device")
+            # ax.set_title("Clean water demand of each device")
             ax.legend()
             plt.savefig(
                 os.path.join(figures_directory, "clean_water_device_loads.png"),
+                bbox_inches='tight',
                 transparent=True,
             )
             plt.close(fig)
@@ -1269,14 +1292,15 @@ def plot_outputs(
             ax.set_xlabel("Hour of simulation")
             ax.set_ylabel("Device load / litres/hour")
             ax.legend()
-            ax.set_title(
-                "Average clean water demand of each device over the first {} days.".format(
-                    CUT_OFF_TIME // 24
-                )
-            )
+            # ax.set_title(
+            #     "Average clean water demand of each device over the first {} days.".format(
+            #         CUT_OFF_TIME // 24
+            #     )
+            # )
             plt.legend()
             plt.savefig(
                 os.path.join(figures_directory, "clean_water_device_loads_average.png"),
+                bbox_inches='tight',
                 transparent=True,
             )
             plt.close(fig)
@@ -1313,11 +1337,12 @@ def plot_outputs(
             )
             plt.xlabel("Hour of simulation")
             plt.ylabel("Clean water demand / litres/hour")
-            plt.title(
-                f"Clean-water load profile of the community for the first {CUT_OFF_TIME} hours"
-            )
+            # plt.title(
+            #     f"Clean-water load profile of the community for the first {CUT_OFF_TIME} hours"
+            # )
             plt.savefig(
                 os.path.join(figures_directory, "clean_water_demands.png"),
+                bbox_inches='tight',
                 transparent=True,
             )
             plt.close()
@@ -1401,6 +1426,7 @@ def plot_outputs(
                 os.path.join(
                     figures_directory, "clean_water_demand_annual_variation.png"
                 ),
+                bbox_inches='tight',
                 transparent=True,
             )
             plt.close(fig)
@@ -1419,12 +1445,13 @@ def plot_outputs(
             plt.xticks(range(0, 366, 60))
             plt.xlabel("Day of simulation period")
             plt.ylabel("Load / m^3/day")
-            plt.title("Total community clean-water demand")
+            # plt.title("Total community clean-water demand")
             plt.tight_layout()
             plt.savefig(
                 os.path.join(
                     figures_directory, "clean_water_demand_total_annual_variation.png"
                 ),
+                bbox_inches='tight',
                 transparent=True,
             )
             plt.close()
@@ -1495,9 +1522,10 @@ def plot_outputs(
             plt.xticks(range(0, num_years, 2 if num_years > 2 else 1))
             plt.xlabel("Year of investigation period")
             plt.ylabel("Clean-water demand / Cubic meters/year")
-            plt.title("Load growth of the community")
+            # plt.title("Load growth of the community")
             plt.savefig(
                 os.path.join(figures_directory, "clean_water_load_growth.png"),
+                bbox_inches='tight',
                 transparent=True,
             )
             plt.close()
@@ -1557,11 +1585,12 @@ def plot_outputs(
             plt.xticks([entry for entry in (range(0, 23, 4))])
             plt.xlabel("Hour of simulation")
             plt.ylabel("Clean-water demand / litres/hour")
-            plt.title(
-                f"Average drinking water load profile of the community during the first year"
-            )
+            # plt.title(
+            #     f"Average drinking water load profile of the community during the first year"
+            # )
             plt.savefig(
                 os.path.join(figures_directory, "clean_water_demands_yearly.png"),
+                bbox_inches='tight',
                 transparent=True,
             )
             plt.close()
@@ -1688,9 +1717,10 @@ def plot_outputs(
             plt.xticks(range(0, 24, 1))
             plt.xlabel("Hour of day")
             plt.ylabel("Clean-water usage / litres/hour")
-            plt.title("Water supply and demand on an average day")
+            # plt.title("Water supply and demand on an average day")
             plt.savefig(
                 os.path.join(figures_directory, "clean_water_use_on_average_day.png"),
+                bbox_inches='tight',
                 transparent=True,
             )
             plt.close()
@@ -1817,11 +1847,12 @@ def plot_outputs(
             plt.xticks(range(0, 24, 1))
             plt.xlabel("Hour of day")
             plt.ylabel("Clean-water usage / litres/hour")
-            plt.title("Water supply and demand on an average July day")
+            # plt.title("Water supply and demand on an average July day")
             plt.savefig(
                 os.path.join(
                     figures_directory, "clean_water_use_on_average_july_day.png"
                 ),
+                bbox_inches='tight',
                 transparent=True,
             )
             plt.close()
@@ -1838,12 +1869,13 @@ def plot_outputs(
             plt.xticks(range(0, 24, 1))
             plt.xlabel("Hour of day")
             plt.ylabel("Clean-water usage / litres/hour")
-            plt.title("Water supply and demand on an average July day")
+            # plt.title("Water supply and demand on an average July day")
             plt.savefig(
                 os.path.join(
                     figures_directory,
                     "clean_water_use_on_average_july_day_reduced_plot.png",
                 ),
+                bbox_inches='tight',
                 transparent=True,
             )
             plt.close()
@@ -1859,14 +1891,15 @@ def plot_outputs(
             plt.xticks(range(0, 24, 1))
             plt.xlabel("Hour of day")
             plt.ylabel("Clean-water usage / litres/hour")
-            plt.title(
-                "Output from the thermal desalination plant on an average July day"
-            )
+            # plt.title(
+            #     "Output from the thermal desalination plant on an average July day"
+            # )
             plt.savefig(
                 os.path.join(
                     figures_directory,
                     "thermal_desal_cw_on_average_july_day.png",
                 ),
+                bbox_inches='tight',
                 transparent=True,
             )
             plt.close()
@@ -1993,11 +2026,12 @@ def plot_outputs(
             plt.xticks(range(0, 24, 1))
             plt.xlabel("Hour of day")
             plt.ylabel("Clean-water usage / litres/hour")
-            plt.title("Water supply and demand on an January average day")
+            # plt.title("Water supply and demand on an January average day")
             plt.savefig(
                 os.path.join(
                     figures_directory, "clean_water_use_on_average_january_day.png"
                 ),
+                bbox_inches='tight',
                 transparent=True,
             )
             plt.close()
@@ -2048,9 +2082,10 @@ def plot_outputs(
             plt.xticks(range(0, 24, 1))
             plt.xlabel("Hour of day")
             plt.ylabel("Clean-water usage / litres/hour")
-            plt.title("Water supply and demand on the first day")
+            # plt.title("Water supply and demand on the first day")
             plt.savefig(
                 os.path.join(figures_directory, "clean_water_use_on_first_day.png"),
+                bbox_inches='tight',
                 transparent=True,
             )
             plt.close()
@@ -2096,11 +2131,12 @@ def plot_outputs(
             plt.xticks(range(0, 48, 1))
             plt.xlabel("Hour of day")
             plt.ylabel("Clean-water usage / litres/hour")
-            plt.title("Water supply and demand in the first 48 hours")
+            # plt.title("Water supply and demand in the first 48 hours")
             plt.savefig(
                 os.path.join(
                     figures_directory, "clean_water_use_in_first_48_hours.png"
                 ),
+                bbox_inches='tight',
                 transparent=True,
             )
             plt.close()
@@ -2135,7 +2171,7 @@ def plot_outputs(
             # plt.yticks(np.arange(0, 1.1, 0.25))
             # plt.xlabel("Hour of day")
             # plt.ylabel("Probability")
-            # plt.title("Clean-water availability on an average day")
+            # # plt.title("Clean-water availability on an average day")
             # plt.savefig(
             #     os.path.join(
             #         figures_directory, "clean_water_avilability_on_average_day.png"
@@ -2219,11 +2255,12 @@ def plot_outputs(
             plt.xticks(range(0, 24, 1))
             plt.xlabel("Hour of day")
             plt.ylabel("Power consumption / kWh")
-            plt.title("Electriciy use by supply/device type on an average day")
+            # plt.title("Electriciy use by supply/device type on an average day")
             plt.savefig(
                 os.path.join(
                     figures_directory, "cw_electricity_use_by_supply_type.png"
                 ),
+                bbox_inches='tight',
                 transparent=True,
             )
             plt.close()
@@ -2402,6 +2439,7 @@ def plot_outputs(
             plt.xticks(rotation=0)
             plt.savefig(
                 os.path.join(figures_directory, "seasonal_water_supply_variations.png"),
+                bbox_inches='tight',
                 transparent=True,
             )
             plt.close(fig)
@@ -2447,7 +2485,7 @@ def plot_outputs(
                 plt.yticks(range(0, 9, 2))
                 plt.xlabel("Day of year")
                 plt.ylabel("Energy generation / kWh per day")
-                plt.title("Daily electric energy generation of 1 kWp of PV-T capacity")
+                # plt.title("Daily electric energy generation of 1 kWp of PV-T capacity")
                 plt.savefig(
                     os.path.join(figures_directory, "pv_t_electric_output_yearly.png"),
                     transparent=True,
@@ -2535,9 +2573,9 @@ def plot_outputs(
                 plt.xlabel("Hour of day")
                 ax1.set_ylabel("Collector output temperature / degC")
                 ax2.set_ylabel("Volume thermally desalinated / litres")
-                plt.title(
-                    "Collector output temprature on the first day of select months"
-                )
+                # plt.title(
+                #     "Collector output temprature on the first day of select months"
+                # )
                 plt.savefig(
                     os.path.join(
                         figures_directory,
@@ -2699,7 +2737,7 @@ def plot_outputs(
                 plt.xlabel("Hour of day")
                 ax1.set_ylabel("Collector output temperature / degC")
                 ax2.set_ylabel("Volume thermally desalinated / litres")
-                plt.title("Collector output temprature on an average seasonal days")
+                # plt.title("Collector output temprature on an average seasonal days")
                 plt.savefig(
                     os.path.join(
                         figures_directory,
@@ -2724,10 +2762,11 @@ def plot_outputs(
 
             ax.set_xlabel("Hour of simulation")
             ax.set_ylabel("Device load / litres/hour")
-            ax.set_title("Hot water demand of each device")
+            # ax.set_title("Hot water demand of each device")
             ax.legend()
             plt.savefig(
                 os.path.join(figures_directory, "hot_water_device_loads.png"),
+                bbox_inches='tight',
                 transparent=True,
             )
             plt.close(fig)
@@ -2752,14 +2791,15 @@ def plot_outputs(
 
             ax.set_xlabel("Hour of simulation")
             ax.set_ylabel("Device load / litres/hour")
-            ax.set_title(
-                "Average hot water demand of each device over the first {} days.".format(
-                    CUT_OFF_TIME // 24
-                )
-            )
+            # ax.set_title(
+            #     "Average hot water demand of each device over the first {} days.".format(
+            #         CUT_OFF_TIME // 24
+            #     )
+            # )
             ax.legend()
             plt.savefig(
                 os.path.join(figures_directory, "hot_water_device_loads_average.png"),
+                bbox_inches='tight',
                 transparent=True,
             )
             plt.close(fig)
@@ -2796,11 +2836,12 @@ def plot_outputs(
             )
             plt.xlabel("Hour of simulation")
             plt.ylabel("Hot water demand / litres/hour")
-            plt.title(
-                f"Hot-water load profile of the community for the first {CUT_OFF_TIME} hours"
-            )
+            # plt.title(
+            #     f"Hot-water load profile of the community for the first {CUT_OFF_TIME} hours"
+            # )
             plt.savefig(
                 os.path.join(figures_directory, "hot_water_demands.png"),
+                bbox_inches='tight',
                 transparent=True,
             )
             plt.close(fig)
@@ -2884,6 +2925,7 @@ def plot_outputs(
                 os.path.join(
                     figures_directory, "hot_water_demand_annual_variation.png"
                 ),
+                bbox_inches='tight',
                 transparent=True,
             )
             plt.close(fig)
@@ -2904,12 +2946,13 @@ def plot_outputs(
             plt.xticks(range(0, 366, 60))
             plt.xlabel("Day of simulation period")
             plt.ylabel("Load / m^3/day")
-            plt.title("Total community hot-water demand")
+            # plt.title("Total community hot-water demand")
             plt.tight_layout()
             plt.savefig(
                 os.path.join(
                     figures_directory, "hot_water_demand_total_annual_variation.png"
                 ),
+                bbox_inches='tight',
                 transparent=True,
             )
             plt.close()
@@ -2968,11 +3011,12 @@ def plot_outputs(
             plt.xticks([entry for entry in (range(0, 23, 4))])
             plt.xlabel("Hour of simulation")
             plt.ylabel("Hot-water demand / litres/hour")
-            plt.title(
-                "Average DHW load profile of the community during the first simulation year"
-            )
+            # plt.title(
+            #     "Average DHW load profile of the community during the first simulation year"
+            # )
             plt.savefig(
                 os.path.join(figures_directory, "hot_water_demands_yearly.png"),
+                bbox_inches='tight',
                 transparent=True,
             )
             plt.close()
@@ -3042,9 +3086,10 @@ def plot_outputs(
             plt.xticks(range(0, num_years, 2 if num_years > 2 else 1))
             plt.xlabel("Year of investigation period")
             plt.ylabel("Hot-water demand / Cubic meters/year")
-            plt.title("Load growth of the community")
+            # plt.title("Load growth of the community")
             plt.savefig(
                 os.path.join(figures_directory, "hot_water_load_growth.png"),
+                bbox_inches='tight',
                 transparent=True,
             )
             plt.close()
@@ -3139,12 +3184,13 @@ def plot_outputs(
             plt.xlabel("Hour of day")
             ax1.set_ylabel("Collector output temperature / degC")
             # ax2.set_ylabel("Fraction of demand covered renewably")
-            plt.title("Collector output temp. on the first day of select months")
+            # plt.title("Collector output temp. on the first day of select months")
             plt.savefig(
                 os.path.join(
                     figures_directory,
                     "hot_water_collector_output_temperature_on_first_month_days.png",
                 ),
+                bbox_inches='tight',
                 transparent=True,
             )
             plt.close(fig)
@@ -3199,15 +3245,16 @@ def plot_outputs(
             plt.xlabel("Hour of day")
             ax1.set_ylabel("Collector output temperature / degC")
             # ax2.set_ylabel("Fraction of demand covered renewably")
-            plt.title(
-                "Collector output temp. on the first day of select months and "
-                "renewable demand covered"
-            )
+            # plt.title(
+            #     "Collector output temp. on the first day of select months and "
+            #     "renewable demand covered"
+            # )
             plt.savefig(
                 os.path.join(
                     figures_directory,
                     "hot_water_collector_output_temperature_on_first_month_days_with_renewable_fraction.png",
                 ),
+                bbox_inches='tight',
                 transparent=True,
             )
             plt.close(fig)
@@ -3356,12 +3403,13 @@ def plot_outputs(
             plt.xlabel("Hour of day")
             ax1.set_ylabel("Collector output temperature / degC")
             # ax2.set_ylabel("Demand covered fraction through renewables.")
-            plt.title("Collector output temprature on an average seasonal days.")
+            # plt.title("Collector output temprature on an average seasonal days.")
             plt.savefig(
                 os.path.join(
                     figures_directory,
                     "hot_water_collector_output_temperature_on_average_month_days.png",
                 ),
+                bbox_inches='tight',
                 transparent=True,
             )
             plt.close(fig)
@@ -3406,14 +3454,15 @@ def plot_outputs(
             plt.xlabel("Hour of day")
             ax1.set_ylabel("Collector output temperature / degC")
             # ax2.set_ylabel("Demand covered fraction through renewables.")
-            plt.title(
-                "Collector output temprature on an average seasonal days and the demand covered."
-            )
+            # plt.title(
+            #     "Collector output temprature on an average seasonal days and the demand covered."
+            # )
             plt.savefig(
                 os.path.join(
                     figures_directory,
                     "hot_water_collector_output_temperature_on_average_days_with_renewables_fraction.png",
                 ),
+                bbox_inches='tight',
                 transparent=True,
             )
             plt.close(fig)
@@ -3465,11 +3514,12 @@ def plot_outputs(
             plt.xticks(range(0, 24, 1))
             plt.xlabel("Hour of day")
             plt.ylabel("Power consumption / kWh")
-            plt.title("Electriciy use by supply/device type on an average day")
+            # plt.title("Electriciy use by supply/device type on an average day")
             plt.savefig(
                 os.path.join(
                     figures_directory, "hot_water_electricity_use_by_supply_type.png"
                 ),
+                bbox_inches='tight',
                 transparent=True,
             )
             plt.close()
@@ -3516,11 +3566,12 @@ def plot_outputs(
             plt.xlim(0, 23)
             plt.xticks(range(0, 24, 1))
             plt.xlabel("Hour of day")
-            plt.title("PV-T in/out temperatures for an average July day")
+            # plt.title("PV-T in/out temperatures for an average July day")
             plt.savefig(
                 os.path.join(
                     figures_directory, "hot_water_pvt_tank_temperature_july.png"
                 ),
+                bbox_inches='tight',
                 transparent=True,
             )
             plt.close(fig)
@@ -3532,16 +3583,41 @@ def plot_outputs(
             dhw_dc_fraction: Dict[int:float] = {}
             dhw_dc_fraction_daily: Dict[int : np.ndarray] = {}
             for month in range(1, 13):
-                dhw_renewable_fraction[month] = np.nanmean(
-                    simulation_output[
-                        HOURS_UNTIL[month] : HOURS_UNTIL[month] + 30 * 24
-                    ][ColumnHeader.HW_SOLAR_THERMAL_FRACTION.value].values
-                )
-                dhw_renewable_fraction_daily[month] = np.nanmean(
-                    np.reshape(
+                dhw_renewable_fraction[month] = np.nansum(
+                    (
                         simulation_output[
                             HOURS_UNTIL[month] : HOURS_UNTIL[month] + 30 * 24
-                        ][ColumnHeader.HW_SOLAR_THERMAL_FRACTION.value].values,
+                        ][ColumnHeader.HW_SOLAR_THERMAL_FRACTION.value].values
+                    )
+                    * (
+                        simulation_output[
+                            HOURS_UNTIL[month] : HOURS_UNTIL[month] + 30 * 24
+                        ][ColumnHeader.HW_TANK_OUTPUT.value].values
+                    )
+                ) / np.sum(
+                    simulation_output[
+                        HOURS_UNTIL[month] : HOURS_UNTIL[month] + 30 * 24
+                    ][ColumnHeader.HW_TANK_OUTPUT.value].values
+                )
+                dhw_renewable_fraction_daily[month] = np.nansum(
+                    np.reshape(
+                        (
+                            simulation_output[
+                                HOURS_UNTIL[month] : HOURS_UNTIL[month] + 30 * 24
+                            ][ColumnHeader.HW_SOLAR_THERMAL_FRACTION.value].values
+                            * (
+                                simulation_output[
+                                    HOURS_UNTIL[month] : HOURS_UNTIL[month] + 30 * 24
+                                ][ColumnHeader.HW_TANK_OUTPUT.value].values
+                            )
+                        )
+                        / np.sum(
+                            (
+                                simulation_output[
+                                    HOURS_UNTIL[month] : HOURS_UNTIL[month] + 30 * 24
+                                ][ColumnHeader.HW_TANK_OUTPUT.value].values
+                            )
+                        ),
                         (30, 24),
                     ),
                     axis=0,
@@ -3574,12 +3650,13 @@ def plot_outputs(
             plt.xlabel("Hour of day")
             ax1.set_ylabel("Renewable DHW demand covered fraction")
             ax2.set_ylabel("Volumetric DHW demand covered fraction")
-            plt.title("Monthly averages of domestic demand covered fractions")
+            # plt.title("Monthly averages of domestic demand covered fractions")
             plt.savefig(
                 os.path.join(
                     figures_directory,
                     "hot_water_monthly_average_dc_fraction_daily.png",
                 ),
+                bbox_inches='tight',
                 transparent=True,
             )
             plt.close(fig)
@@ -3587,14 +3664,14 @@ def plot_outputs(
 
             # Plot the monthly averages.
             plt.bar(
-                [entry - 0.7 for entry in dhw_renewable_fraction.keys()],
+                [entry + 0.3 for entry in dhw_renewable_fraction.keys()],
                 dhw_renewable_fraction.values(),
                 width=0.35,
                 align="center",
                 label="CLOVER modelling",
             )
             plt.bar(
-                [entry + 0.7 for entry in dhw_dc_fraction.keys()],
+                [entry + 0.7 for entry in dhw_renewable_fraction.keys()],
                 [
                     0.123,
                     0.22,
@@ -3611,38 +3688,49 @@ def plot_outputs(
                 ],
                 width=0.35,
                 align="center",
-                label="Guarracino",
+                label="Guarracino et al.",
             )
 
             import json
 
-            with open("monthly_averages_lowerbound.json", "w") as f:
+            with open("monthly_averages_centrebound.json", "w") as f:
                 json.dump(dhw_renewable_fraction, f, indent=4)
 
-            plt.xlim(1, 12)
-            plt.xticks(
-                range(1, 13, 1),
-                [
-                    "Jan",
-                    "Feb",
-                    "Mar",
-                    "Apr",
-                    "May",
-                    "Jun",
-                    "Jul",
-                    "Aug",
-                    "Sep",
-                    "Oct",
-                    "Nov",
-                    "Dec",
-                ],
+            plt.xlim(1, 13)
+            plt.ylim(0, 1.0)
+            plt.xlabel(
+                "Month of year",
             )
-            plt.xlabel("Month of year")
             plt.ylabel("Demand covered fraction")
             plt.legend()
-            plt.title("Renewable DHW demand covered throughout the year")
+            # plt.title("Renewable DHW demand covered throughout the year")
+            plt.savefig(
+                os.path.join(figures_directory, "hot_water_renewable_dc_fraction_with_guarracino.png"),
+                bbox_inches='tight',
+                transparent=True,
+            )
+            plt.close()
+            pbar.update(1)
+
+            # Plot the monthly averages.
+            plt.bar(
+                dhw_renewable_fraction.keys(),
+                dhw_renewable_fraction.values(),
+                width=0.7,
+                align="center",
+            )
+
+            plt.xlim(0, 13)
+            plt.ylim(0, 1.0)
+            plt.xlabel(
+                "Month of year",
+            )
+            plt.ylabel("Demand covered fraction")
+            # plt.title("Renewable DHW demand covered throughout the year")
             plt.savefig(
                 os.path.join(figures_directory, "hot_water_renewable_dc_fraction.png"),
+                bbox_inches='tight',
+                bbox_inches='tight',
                 transparent=True,
             )
             plt.close()

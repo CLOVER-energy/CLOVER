@@ -540,25 +540,38 @@ def calculate_pvt_output(
         while not solution_found:
             # Use the AI to determine the output temperature of the collector, based on
             # the best guess of the collector input temperature.
-            if (1000 * irradiances[index]) > MINIMUM_IRRADIANCE_THRESHOLD:
+            if (1000 * (irradiances[index] * 1.00)) > MINIMUM_IRRADIANCE_THRESHOLD:
                 # If there is enough irradiance to trigger reliable modelling, use the
                 # in-built modelling tools.
                 (
                     fractional_electric_performance,
                     collector_output_temperature,
                 ) = minigrid.pvt_panel.calculate_performance(
-                    temperatures[index],
+                    (temperatures[index] + 0),
                     best_guess_collector_input_temperature,
                     logger,
                     mass_flow_rate,
-                    1000 * irradiances[index],
-                    wind_speeds[index],
+                    1000 * (irradiances[index] * 1.00),
+                    (wind_speeds[index] + 0),
                 )
+                collector_output_temperature -= 0
             else:
                 # Otherwise, assume that the collector is in steady state with the
                 # environment, a reasonable assumption given the one-hour resolution.
                 fractional_electric_performance = 0
-                collector_output_temperature = temperatures[index]
+                collector_output_temperature = max(
+                    tank_replacement_temperature,
+                    temperatures[index]
+                )
+
+            # If the PV-T collector flow was not on, then the output temperature should
+            # simply be the same as the input temperature.
+            if not pvt_flow_on:
+                collector_output_temperature = max(
+                    best_guess_collector_input_temperature,
+                    tank_replacement_temperature,
+                    temperatures[index]
+                )
 
             tank_load_enthalpy_transfer = (
                 volume_supplied  # [kg/hour]
@@ -568,19 +581,16 @@ def calculate_pvt_output(
 
             # Determine the tank temperature and collector input temperature that match.
             resultant_vector = [
-                (
-                    pvt_heat_transfer
-                    * (collector_output_temperature + ZERO_CELCIUS_OFFSET)
-                    if pvt_flow_on
-                    else 0
-                )
+                pvt_heat_transfer
+                * (collector_output_temperature + ZERO_CELCIUS_OFFSET)
                 + tank_environment_heat_transfer
                 * (temperatures[index] + ZERO_CELCIUS_OFFSET)
                 + tank_internal_energy
                 * (previous_tank_temperature + ZERO_CELCIUS_OFFSET)
                 + (
                     tank_load_enthalpy_transfer
-                    * (tank_replacement_temperature + ZERO_CELCIUS_OFFSET)
+                    # * (tank_replacement_temperature + ZERO_CELCIUS_OFFSET)
+                    * (max(temperatures[index], tank_replacement_temperature) + ZERO_CELCIUS_OFFSET)
                     if tank_supply_on
                     else 0
                 ),
@@ -594,7 +604,7 @@ def calculate_pvt_output(
                 [
                     0,
                     (
-                        (pvt_heat_transfer if pvt_flow_on else 0)
+                        pvt_heat_transfer
                         + tank_environment_heat_transfer
                         + tank_internal_energy
                         + (tank_load_enthalpy_transfer if tank_supply_on else 0)

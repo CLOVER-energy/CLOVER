@@ -61,7 +61,7 @@ LOW_IRRADIANCE_THRESHOLD: float = 25  # [W/m^2]
 # Low temperature threshold:
 #   The threshold at which to switch between a low-temperature model and a standard-
 #   temperature model.
-LOW_TEMPERATURE_THRESHOLD: float = 15  # [degC]
+LOW_TEMPERATURE_THRESHOLD: float = 50  # [degC]
 
 # Reference solar irradiance:
 #   The reference solar irradiance, used to compute fractional PV-T electric
@@ -470,12 +470,16 @@ class HybridPVTPanel(SolarPanel, panel_type=SolarPanelType.PV_T):
         # Determine which models to use.
         if solar_irradiance < LOW_IRRADIANCE_THRESHOLD:
             if input_temperature < LOW_TEMPERATURE_THRESHOLD:
-                regressor_type: RegressorType = RegressorType.LOW_IRRADIANCE_LOW_TEMPERATURE
+                regressor_type: RegressorType = (
+                    RegressorType.LOW_IRRADIANCE_LOW_TEMPERATURE
+                )
             else:
                 regressor_type = RegressorType.LOW_IRRADIANCE_HIGH_TEMPERATURE
         else:
             if input_temperature < LOW_TEMPERATURE_THRESHOLD:
-                regressor_type: RegressorType = RegressorType.STANDARD_IRRADIANCE_LOW_TEMPERATURE
+                regressor_type: RegressorType = (
+                    RegressorType.STANDARD_IRRADIANCE_LOW_TEMPERATURE
+                )
             else:
                 regressor_type = RegressorType.STANDARD_IRRADIANCE_HIGH_TEMPERATURE
 

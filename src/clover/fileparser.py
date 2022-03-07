@@ -1085,26 +1085,38 @@ def _parse_pvt_reduced_models(
                 if debug:
                     try:
                         with open(
-                            os.path.join(RAW_CLOVER_PATH, THERMAL_MODEL_FAST_FILE.format(model_type.value)), "rb"
+                            os.path.join(
+                                RAW_CLOVER_PATH,
+                                THERMAL_MODEL_FAST_FILE.format(model_type.value),
+                            ),
+                            "rb",
                         ) as f:
                             thermal_model = pickle.load(f)
                     except Exception:
                         logger.error(
                             "Failed to read fast PV-T reduced thermal model from raw source."
                         )
-                        logger.critical("Failed to determine PV-T reduced thermal model.")
+                        logger.critical(
+                            "Failed to determine PV-T reduced thermal model."
+                        )
                         raise
                 else:
                     try:
                         with open(
-                            os.path.join(RAW_CLOVER_PATH, THERMAL_MODEL_FILE.format(model_type.value)), "rb"
+                            os.path.join(
+                                RAW_CLOVER_PATH,
+                                THERMAL_MODEL_FILE.format(model_type.value),
+                            ),
+                            "rb",
                         ) as f:
                             thermal_model = pickle.load(f)
                     except Exception:
                         logger.error(
                             "Failed to read PV-T reduced thermal model from raw source."
                         )
-                        logger.critical("Failed to determine PV-T reduced thermal model.")
+                        logger.critical(
+                            "Failed to determine PV-T reduced thermal model."
+                        )
                         raise
                 logger.info(
                     "Successfully read PV-T reduced thermal model from local source."
@@ -1138,7 +1150,11 @@ def _parse_pvt_reduced_models(
                 if debug:
                     try:
                         with open(
-                            os.path.join(RAW_CLOVER_PATH, ELECTRIC_MODEL_FAST_FILE.format(model_type.value)), "rb"
+                            os.path.join(
+                                RAW_CLOVER_PATH,
+                                ELECTRIC_MODEL_FAST_FILE.format(model_type.value),
+                            ),
+                            "rb",
                         ) as f:
                             electric_model = pickle.load(f)
                     except Exception:
@@ -1146,25 +1162,33 @@ def _parse_pvt_reduced_models(
                             "Failed to read fast PV-T reduced electric model from raw "
                             "source."
                         )
-                        logger.critical("Failed to determine PV-T reduced electric model.")
+                        logger.critical(
+                            "Failed to determine PV-T reduced electric model."
+                        )
                         raise
                 else:
                     try:
                         with open(
-                            os.path.join(RAW_CLOVER_PATH, ELECTRIC_MODEL_FILE.format(model_type.value)), "rb"
+                            os.path.join(
+                                RAW_CLOVER_PATH,
+                                ELECTRIC_MODEL_FILE.format(model_type.value),
+                            ),
+                            "rb",
                         ) as f:
                             electric_model = pickle.load(f)
                     except Exception:
                         logger.error(
                             "Failed to read PV-T reduced electric model from raw source."
                         )
-                        logger.critical("Failed to determine PV-T reduced electric model.")
+                        logger.critical(
+                            "Failed to determine PV-T reduced electric model."
+                        )
                         raise
 
                 logger.info(
                     "Successfully read %s PV-T reduced electric model from local "
                     "source.",
-                    model_type.value
+                    model_type.value,
                 )
 
                 thermal_models[model_type] = thermal_model
