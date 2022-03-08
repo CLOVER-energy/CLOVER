@@ -540,21 +540,20 @@ def calculate_pvt_output(
         while not solution_found:
             # Use the AI to determine the output temperature of the collector, based on
             # the best guess of the collector input temperature.
-            if (1000 * (irradiances[index] * 1.00)) > MINIMUM_IRRADIANCE_THRESHOLD:
+            if (1000 * irradiances[index]) > MINIMUM_IRRADIANCE_THRESHOLD:
                 # If there is enough irradiance to trigger reliable modelling, use the
                 # in-built modelling tools.
                 (
                     fractional_electric_performance,
                     collector_output_temperature,
                 ) = minigrid.pvt_panel.calculate_performance(
-                    (temperatures[index] + 0),
+                    temperatures[index],
                     best_guess_collector_input_temperature,
                     logger,
                     mass_flow_rate,
-                    1000 * (irradiances[index] * 1.00),
-                    (wind_speeds[index] + 0),
+                    1000 * irradiances[index],
+                    wind_speeds[index],
                 )
-                collector_output_temperature -= 0
             else:
                 # Otherwise, assume that the collector is in steady state with the
                 # environment, a reasonable assumption given the one-hour resolution.
