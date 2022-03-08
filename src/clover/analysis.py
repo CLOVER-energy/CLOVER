@@ -3691,11 +3691,6 @@ def plot_outputs(
                 label="Guarracino et al.",
             )
 
-            import json
-
-            with open("monthly_averages_centrebound.json", "w") as f:
-                json.dump(dhw_renewable_fraction, f, indent=4)
-
             plt.xlim(1, 13)
             plt.ylim(0, 1.0)
             plt.xlabel(
@@ -3729,7 +3724,6 @@ def plot_outputs(
             # plt.title("Renewable DHW demand covered throughout the year")
             plt.savefig(
                 os.path.join(figures_directory, "hot_water_renewable_dc_fraction.png"),
-                bbox_inches='tight',
                 bbox_inches='tight',
                 transparent=True,
             )
