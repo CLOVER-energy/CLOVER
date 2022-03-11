@@ -325,13 +325,13 @@ def plot_outputs(
     """
 
     # Set plotting parameters.
-    plt.rcParams["axes.labelsize"] = "20"
-    plt.rcParams["figure.figsize"] = (6.8, 5.8)
+    plt.rcParams["axes.labelsize"] = "11"
+    # plt.rcParams["figure.figsize"] = (6.8, 5.8)
     plt.rcParams["font.family"] = "sans-serif"
     plt.rcParams["font.sans-serif"] = ["Arial"]
-    plt.rcParams["font.size"] = "20"
-    plt.rcParams["xtick.labelsize"] = "20"
-    plt.rcParams["ytick.labelsize"] = "20"
+    plt.rcParams["font.size"] = "11"
+    plt.rcParams["xtick.labelsize"] = "11"
+    plt.rcParams["ytick.labelsize"] = "11"
     plt.style.use(STYLE_SHEET)
 
     # Create an output directory for the various plots to be saved in.
