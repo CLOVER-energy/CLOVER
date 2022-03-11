@@ -326,7 +326,7 @@ def plot_outputs(
 
     # Set plotting parameters.
     plt.rcParams["axes.labelsize"] = "20"
-    plt.rcParams["figure.figsize"] = (6.8, 6.8)
+    plt.rcParams["figure.figsize"] = (6.8, 5.8)
     plt.rcParams["font.family"] = "sans-serif"
     plt.rcParams["font.sans-serif"] = ["Arial"]
     plt.rcParams["font.size"] = "20"
@@ -487,7 +487,7 @@ def plot_outputs(
             if np.sum(average_load) > 0:
                 ax.bar(range(24), average_load, label=device, bottom=cumulative_load)
             if isinstance(cumulative_load, int) and cumulative_load == 0:
-                cumulative_load = average_load
+                cumulative_load = average_load.copy()
                 continue
             cumulative_load += average_load
 
@@ -1285,7 +1285,7 @@ def plot_outputs(
                 ax.bar(range(24), average_load, label=device, bottom=cumulative_load)
 
                 if isinstance(cumulative_load, int) and cumulative_load == 0:
-                    cumulative_load = average_load
+                    cumulative_load = average_load.copy()
                     continue
                 cumulative_load += average_load
 
@@ -2785,7 +2785,7 @@ def plot_outputs(
                 ax.bar(range(24), average_load, label=device, bottom=cumulative_load)
 
                 if isinstance(cumulative_load, int) and cumulative_load == 0:
-                    cumulative_load = average_load
+                    cumulative_load = average_load.copy()
                     continue
                 cumulative_load += average_load
 
@@ -3066,20 +3066,20 @@ def plot_outputs(
             plt.plot(
                 range(num_years),
                 domestic_demand,
-                label=DemandType.DOMESTIC.value,
-                color="blue",
+                # label=DemandType.DOMESTIC.value,
+                label="hand clothes washing",
             )
             plt.plot(
                 range(num_years),
                 commercial_demand,
-                label=DemandType.COMMERCIAL.value,
-                color="orange",
+                # label=DemandType.COMMERCIAL.value,
+                label="dish washing",
             )
             plt.plot(
                 range(num_years),
                 public_demand,
-                label=DemandType.PUBLIC.value,
-                color="green",
+                # label=DemandType.PUBLIC.value,
+                label="bathing",
             )
             plt.plot(range(num_years), total_demand, "--", label="total", color="red")
             plt.legend(loc="upper left")

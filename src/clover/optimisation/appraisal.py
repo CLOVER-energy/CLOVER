@@ -568,7 +568,7 @@ def _simulation_financial_appraisal(
 
     # Calculate new equipment costs (discounted)
     (
-        additional_installation_costs,
+        additional_equipment_costs,
         subsystem_equipment_costs,
     ) = finance.discounted_equipment_cost(
         buffer_tank_addition,
@@ -684,9 +684,13 @@ def _simulation_financial_appraisal(
         diesel_fuel_costs, scenario, total_subsystem_costs, technical_appraisal
     )
 
-    # Add the connections cost for the electric subsystem.
+    # Add the connections cost for the electric subsystem and any costs that haven't yet
+    # been counted for.
     total_subsystem_costs[ResourceType.ELECTRIC] += (
-        additional_installation_costs + additional_om_costs + connections_cost
+        connections_cost
+    )
+    total_subsystem_costs[ResourceType.HOT_CLEAN_WATER] += (
+        additional_equipment_costs + additional_om_costs
     )
 
     # Total cost incurred during simulation period (discounted)
@@ -1006,7 +1010,7 @@ def _appraise_hot_water_system_tech(
 
     solar_thermal_hw_fraction: float = round(
         float(
-            np.sum(
+            np.nansum(
                 (
                     simulation_results[
                         ColumnHeader.HW_SOLAR_THERMAL_FRACTION.value
@@ -1014,7 +1018,7 @@ def _appraise_hot_water_system_tech(
                     * simulation_results[ColumnHeader.HW_TANK_OUTPUT.value].values
                 )
             )
-            / np.sum(simulation_results[ColumnHeader.HW_TANK_OUTPUT.value].values)
+            / np.nansum(simulation_results[ColumnHeader.HW_TANK_OUTPUT.value].values)
         ),
         3,
     )
@@ -1441,7 +1445,7 @@ def appraise_system(
         / cumulative_results.discounted_electricity
     )
     lcu_energy = float(
-        cumulative_results.system_cost / cumulative_results.discounted_electricity
+        cumulative_results.system_cost / cumulative_results.discounted_energy
     )
     lcu_h: Optional[float] = (
         float(
@@ -1487,10 +1491,10 @@ def appraise_system(
         Criterion.KEROSENE_COST_MITIGATED: financial_appraisal.kerosene_cost_mitigated,
         Criterion.KEROSENE_DISPLACEMENT: technical_appraisal.kerosene_displacement,
         Criterion.KEROSENE_GHGS_MITIGATED: environmental_appraisal.kerosene_ghgs_mitigated,
-        Criterion.LCU_ENERGY: round(lcu_energy, 3),
+        Criterion.LCU_ENERGY: round(lcu_energy, 6),
         Criterion.LCUE: round(lcu_electricity, 3),
-        Criterion.LCUH: round(lcu_h, 3) if lcu_h is not None else None,
-        Criterion.LCUW: round(lcu_w, 3) if lcu_w is not None else None,
+        Criterion.LCUH: round(lcu_h, 6) if lcu_h is not None else None,
+        Criterion.LCUW: round(lcu_w, 6) if lcu_w is not None else None,
         Criterion.RENEWABLES_ELECTRICITY_FRACTION: technical_appraisal.renewable_electricity_fraction,
         Criterion.TOTAL_BRINE: environmental_appraisal.total_brine,
         Criterion.TOTAL_COST: financial_appraisal.total_cost,
