@@ -686,9 +686,7 @@ def _simulation_financial_appraisal(
 
     # Add the connections cost for the electric subsystem and any costs that haven't yet
     # been counted for.
-    total_subsystem_costs[ResourceType.ELECTRIC] += (
-        connections_cost
-    )
+    total_subsystem_costs[ResourceType.ELECTRIC] += connections_cost
     total_subsystem_costs[ResourceType.HOT_CLEAN_WATER] += (
         additional_equipment_costs + additional_om_costs
     )

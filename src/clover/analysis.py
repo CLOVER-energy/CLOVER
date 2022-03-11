@@ -384,7 +384,7 @@ def plot_outputs(
         plt.tight_layout()
         plt.savefig(
             os.path.join(figures_directory, "solar_output_hetamap.png"),
-            bbox_inches='tight',
+            bbox_inches="tight",
             transparent=True,
         )
         plt.close()
@@ -400,8 +400,8 @@ def plot_outputs(
         # plt.title("Daily energy generation of 1 kWp of solar capacity")
         plt.savefig(
             os.path.join(figures_directory, "solar_output_yearly.png"),
-            bbox_inches='tight',
-            transparent=True
+            bbox_inches="tight",
+            transparent=True,
         )
         plt.close()
         pbar.update(1)
@@ -424,7 +424,7 @@ def plot_outputs(
         plt.tight_layout()
         plt.savefig(
             os.path.join(figures_directory, "grid_availability_heatmap.png"),
-            bbox_inches='tight',
+            bbox_inches="tight",
             transparent=True,
         )
         plt.close()
@@ -445,7 +445,7 @@ def plot_outputs(
             os.path.join(
                 figures_directory, "grid_availability_randomisation_comparison.png"
             ),
-            bbox_inches='tight',
+            bbox_inches="tight",
             transparent=True,
         )
         plt.close()
@@ -467,7 +467,7 @@ def plot_outputs(
         ax.legend()
         plt.savefig(
             os.path.join(figures_directory, "electric_device_loads.png"),
-            bbox_inches='tight',
+            bbox_inches="tight",
             transparent=True,
         )
         plt.close(fig)
@@ -501,7 +501,7 @@ def plot_outputs(
         ax.legend()
         plt.savefig(
             os.path.join(figures_directory, "electric_device_loads_average.png"),
-            bbox_inches='tight',
+            bbox_inches="tight",
             transparent=True,
         )
         plt.close(fig)
@@ -538,7 +538,7 @@ def plot_outputs(
         # plt.title(f"Load profile of the community for the first {CUT_OFF_TIME} hours")
         plt.savefig(
             os.path.join(figures_directory, "electric_demands.png"),
-            bbox_inches='tight',
+            bbox_inches="tight",
             transparent=True,
         )
         plt.close()
@@ -603,7 +603,7 @@ def plot_outputs(
         # )
         plt.savefig(
             os.path.join(figures_directory, "electric_demands_yearly.png"),
-            bbox_inches='tight',
+            bbox_inches="tight",
             transparent=True,
         )
         plt.close()
@@ -632,7 +632,7 @@ def plot_outputs(
         ax.legend()
         plt.savefig(
             os.path.join(figures_directory, "electric_device_loads_average_bar.png"),
-            bbox_inches='tight',
+            bbox_inches="tight",
             transparent=True,
         )
         plt.close(fig)
@@ -718,7 +718,7 @@ def plot_outputs(
         plt.tight_layout()
         plt.savefig(
             os.path.join(figures_directory, "electric_demand_annual_variation.png"),
-            bbox_inches='tight',
+            bbox_inches="tight",
             transparent=True,
         )
         plt.close(fig)
@@ -743,7 +743,7 @@ def plot_outputs(
             os.path.join(
                 figures_directory, "electric_demand_total_annual_variation.png"
             ),
-            bbox_inches='tight',
+            bbox_inches="tight",
             transparent=True,
         )
         plt.close()
@@ -816,7 +816,7 @@ def plot_outputs(
         # plt.title("Load growth of the community")
         plt.savefig(
             os.path.join(figures_directory, "electric_load_growth.png"),
-            bbox_inches='tight',
+            bbox_inches="tight",
             transparent=True,
         )
         plt.close()
@@ -1006,7 +1006,7 @@ def plot_outputs(
         # plt.title("Energy supply and demand on an average day")
         plt.savefig(
             os.path.join(figures_directory, "electricity_use_on_average_day.png"),
-            bbox_inches='tight',
+            bbox_inches="tight",
             transparent=True,
         )
         plt.close()
@@ -1067,7 +1067,7 @@ def plot_outputs(
             os.path.join(
                 figures_directory, "electricity_avilability_on_average_day.png"
             ),
-            bbox_inches='tight',
+            bbox_inches="tight",
             transparent=True,
         )
         plt.close()
@@ -1150,7 +1150,7 @@ def plot_outputs(
             os.path.join(
                 figures_directory, "seasonal_electricity_supply_variations.png"
             ),
-            bbox_inches='tight',
+            bbox_inches="tight",
             transparent=True,
         )
         plt.close(fig)
@@ -1242,7 +1242,7 @@ def plot_outputs(
         # plt.title("Energy supply and demand on the frist day")
         plt.savefig(
             os.path.join(figures_directory, "electricity_use_on_first_day.png"),
-            bbox_inches='tight',
+            bbox_inches="tight",
             transparent=True,
         )
         plt.close()
@@ -1266,7 +1266,7 @@ def plot_outputs(
             ax.legend()
             plt.savefig(
                 os.path.join(figures_directory, "clean_water_device_loads.png"),
-                bbox_inches='tight',
+                bbox_inches="tight",
                 transparent=True,
             )
             plt.close(fig)
@@ -1300,7 +1300,7 @@ def plot_outputs(
             plt.legend()
             plt.savefig(
                 os.path.join(figures_directory, "clean_water_device_loads_average.png"),
-                bbox_inches='tight',
+                bbox_inches="tight",
                 transparent=True,
             )
             plt.close(fig)
@@ -1342,7 +1342,7 @@ def plot_outputs(
             # )
             plt.savefig(
                 os.path.join(figures_directory, "clean_water_demands.png"),
-                bbox_inches='tight',
+                bbox_inches="tight",
                 transparent=True,
             )
             plt.close()
@@ -1426,7 +1426,7 @@ def plot_outputs(
                 os.path.join(
                     figures_directory, "clean_water_demand_annual_variation.png"
                 ),
-                bbox_inches='tight',
+                bbox_inches="tight",
                 transparent=True,
             )
             plt.close(fig)
@@ -1451,7 +1451,7 @@ def plot_outputs(
                 os.path.join(
                     figures_directory, "clean_water_demand_total_annual_variation.png"
                 ),
-                bbox_inches='tight',
+                bbox_inches="tight",
                 transparent=True,
             )
             plt.close()
@@ -1525,7 +1525,7 @@ def plot_outputs(
             # plt.title("Load growth of the community")
             plt.savefig(
                 os.path.join(figures_directory, "clean_water_load_growth.png"),
-                bbox_inches='tight',
+                bbox_inches="tight",
                 transparent=True,
             )
             plt.close()
@@ -1590,7 +1590,7 @@ def plot_outputs(
             # )
             plt.savefig(
                 os.path.join(figures_directory, "clean_water_demands_yearly.png"),
-                bbox_inches='tight',
+                bbox_inches="tight",
                 transparent=True,
             )
             plt.close()
@@ -1720,7 +1720,7 @@ def plot_outputs(
             # plt.title("Water supply and demand on an average day")
             plt.savefig(
                 os.path.join(figures_directory, "clean_water_use_on_average_day.png"),
-                bbox_inches='tight',
+                bbox_inches="tight",
                 transparent=True,
             )
             plt.close()
@@ -1852,7 +1852,7 @@ def plot_outputs(
                 os.path.join(
                     figures_directory, "clean_water_use_on_average_july_day.png"
                 ),
-                bbox_inches='tight',
+                bbox_inches="tight",
                 transparent=True,
             )
             plt.close()
@@ -1875,7 +1875,7 @@ def plot_outputs(
                     figures_directory,
                     "clean_water_use_on_average_july_day_reduced_plot.png",
                 ),
-                bbox_inches='tight',
+                bbox_inches="tight",
                 transparent=True,
             )
             plt.close()
@@ -1899,7 +1899,7 @@ def plot_outputs(
                     figures_directory,
                     "thermal_desal_cw_on_average_july_day.png",
                 ),
-                bbox_inches='tight',
+                bbox_inches="tight",
                 transparent=True,
             )
             plt.close()
@@ -2031,7 +2031,7 @@ def plot_outputs(
                 os.path.join(
                     figures_directory, "clean_water_use_on_average_january_day.png"
                 ),
-                bbox_inches='tight',
+                bbox_inches="tight",
                 transparent=True,
             )
             plt.close()
@@ -2085,7 +2085,7 @@ def plot_outputs(
             # plt.title("Water supply and demand on the first day")
             plt.savefig(
                 os.path.join(figures_directory, "clean_water_use_on_first_day.png"),
-                bbox_inches='tight',
+                bbox_inches="tight",
                 transparent=True,
             )
             plt.close()
@@ -2136,7 +2136,7 @@ def plot_outputs(
                 os.path.join(
                     figures_directory, "clean_water_use_in_first_48_hours.png"
                 ),
-                bbox_inches='tight',
+                bbox_inches="tight",
                 transparent=True,
             )
             plt.close()
@@ -2260,7 +2260,7 @@ def plot_outputs(
                 os.path.join(
                     figures_directory, "cw_electricity_use_by_supply_type.png"
                 ),
-                bbox_inches='tight',
+                bbox_inches="tight",
                 transparent=True,
             )
             plt.close()
@@ -2439,7 +2439,7 @@ def plot_outputs(
             plt.xticks(rotation=0)
             plt.savefig(
                 os.path.join(figures_directory, "seasonal_water_supply_variations.png"),
-                bbox_inches='tight',
+                bbox_inches="tight",
                 transparent=True,
             )
             plt.close(fig)
@@ -2766,7 +2766,7 @@ def plot_outputs(
             ax.legend()
             plt.savefig(
                 os.path.join(figures_directory, "hot_water_device_loads.png"),
-                bbox_inches='tight',
+                bbox_inches="tight",
                 transparent=True,
             )
             plt.close(fig)
@@ -2799,7 +2799,7 @@ def plot_outputs(
             ax.legend()
             plt.savefig(
                 os.path.join(figures_directory, "hot_water_device_loads_average.png"),
-                bbox_inches='tight',
+                bbox_inches="tight",
                 transparent=True,
             )
             plt.close(fig)
@@ -2841,7 +2841,7 @@ def plot_outputs(
             # )
             plt.savefig(
                 os.path.join(figures_directory, "hot_water_demands.png"),
-                bbox_inches='tight',
+                bbox_inches="tight",
                 transparent=True,
             )
             plt.close(fig)
@@ -2925,7 +2925,7 @@ def plot_outputs(
                 os.path.join(
                     figures_directory, "hot_water_demand_annual_variation.png"
                 ),
-                bbox_inches='tight',
+                bbox_inches="tight",
                 transparent=True,
             )
             plt.close(fig)
@@ -2952,7 +2952,7 @@ def plot_outputs(
                 os.path.join(
                     figures_directory, "hot_water_demand_total_annual_variation.png"
                 ),
-                bbox_inches='tight',
+                bbox_inches="tight",
                 transparent=True,
             )
             plt.close()
@@ -3016,7 +3016,7 @@ def plot_outputs(
             # )
             plt.savefig(
                 os.path.join(figures_directory, "hot_water_demands_yearly.png"),
-                bbox_inches='tight',
+                bbox_inches="tight",
                 transparent=True,
             )
             plt.close()
@@ -3089,7 +3089,7 @@ def plot_outputs(
             # plt.title("Load growth of the community")
             plt.savefig(
                 os.path.join(figures_directory, "hot_water_load_growth.png"),
-                bbox_inches='tight',
+                bbox_inches="tight",
                 transparent=True,
             )
             plt.close()
@@ -3190,7 +3190,7 @@ def plot_outputs(
                     figures_directory,
                     "hot_water_collector_output_temperature_on_first_month_days.png",
                 ),
-                bbox_inches='tight',
+                bbox_inches="tight",
                 transparent=True,
             )
             plt.close(fig)
@@ -3254,7 +3254,7 @@ def plot_outputs(
                     figures_directory,
                     "hot_water_collector_output_temperature_on_first_month_days_with_renewable_fraction.png",
                 ),
-                bbox_inches='tight',
+                bbox_inches="tight",
                 transparent=True,
             )
             plt.close(fig)
@@ -3409,7 +3409,7 @@ def plot_outputs(
                     figures_directory,
                     "hot_water_collector_output_temperature_on_average_month_days.png",
                 ),
-                bbox_inches='tight',
+                bbox_inches="tight",
                 transparent=True,
             )
             plt.close(fig)
@@ -3462,7 +3462,7 @@ def plot_outputs(
                     figures_directory,
                     "hot_water_collector_output_temperature_on_average_days_with_renewables_fraction.png",
                 ),
-                bbox_inches='tight',
+                bbox_inches="tight",
                 transparent=True,
             )
             plt.close(fig)
@@ -3519,7 +3519,7 @@ def plot_outputs(
                 os.path.join(
                     figures_directory, "hot_water_electricity_use_by_supply_type.png"
                 ),
-                bbox_inches='tight',
+                bbox_inches="tight",
                 transparent=True,
             )
             plt.close()
@@ -3571,7 +3571,7 @@ def plot_outputs(
                 os.path.join(
                     figures_directory, "hot_water_pvt_tank_temperature_july.png"
                 ),
-                bbox_inches='tight',
+                bbox_inches="tight",
                 transparent=True,
             )
             plt.close(fig)
@@ -3656,7 +3656,7 @@ def plot_outputs(
                     figures_directory,
                     "hot_water_monthly_average_dc_fraction_daily.png",
                 ),
-                bbox_inches='tight',
+                bbox_inches="tight",
                 transparent=True,
             )
             plt.close(fig)
@@ -3700,8 +3700,11 @@ def plot_outputs(
             plt.legend()
             # plt.title("Renewable DHW demand covered throughout the year")
             plt.savefig(
-                os.path.join(figures_directory, "hot_water_renewable_dc_fraction_with_guarracino.png"),
-                bbox_inches='tight',
+                os.path.join(
+                    figures_directory,
+                    "hot_water_renewable_dc_fraction_with_guarracino.png",
+                ),
+                bbox_inches="tight",
                 transparent=True,
             )
             plt.close()
@@ -3724,7 +3727,7 @@ def plot_outputs(
             # plt.title("Renewable DHW demand covered throughout the year")
             plt.savefig(
                 os.path.join(figures_directory, "hot_water_renewable_dc_fraction.png"),
-                bbox_inches='tight',
+                bbox_inches="tight",
                 transparent=True,
             )
             plt.close()
