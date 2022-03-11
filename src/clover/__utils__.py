@@ -1038,6 +1038,8 @@ class KeyResults:
                 self.min_cw_pvt_output_temperature, 3
             )
 
+        data_dict = {str(key): float(value) for key, value in data_dict.items()}
+
         return data_dict
 
 
