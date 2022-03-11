@@ -189,7 +189,7 @@ def calculate_misc_ghgs(capacity: float, ghg_inputs: Dict[str, Any]) -> float:
 def calculate_total_equipment_ghgs(
     buffer_tanks: int,
     clean_water_tanks: int,
-    converters: Dict[str, int],
+    converters: Dict[Convertor, int],
     diesel_size: float,
     ghg_inputs: Dict[str, Any],
     heat_exchangers: int,
@@ -443,20 +443,20 @@ def calculate_total_equipment_ghgs(
             + clean_water_tank_installation_ghgs
             + heat_exchanger_ghgs
             + heat_exchanger_installation_ghgs
-            + (bos_ghgs + pv_ghgs + pv_installation_ghgs + storage_ghgs)
+            + (bos_ghgs + misc_ghgs + pv_ghgs + pv_installation_ghgs + storage_ghgs)
             * technical_appraisal.power_consumed_fraction[ResourceType.CLEAN_WATER]
         )
 
     # Compute the electric subsystem ghgs.
     subsystem_emissions[ResourceType.ELECTRIC] += (
-        bos_ghgs + pv_ghgs + pv_installation_ghgs + storage_ghgs
+        bos_ghgs + misc_ghgs + pv_ghgs + pv_installation_ghgs + storage_ghgs
     ) * technical_appraisal.power_consumed_fraction[ResourceType.ELECTRIC]
 
     # Compute the hot-water subsystem ghgs.
     subsystem_emissions[ResourceType.HOT_CLEAN_WATER] += (
         hot_water_tank_ghgs
         + hot_water_tank_installation_ghgs
-        + (bos_ghgs + pv_ghgs + pv_installation_ghgs + storage_ghgs)
+        + (bos_ghgs + misc_ghgs + pv_ghgs + pv_installation_ghgs + storage_ghgs)
         * technical_appraisal.power_consumed_fraction[ResourceType.HOT_CLEAN_WATER]
     )
 
@@ -468,8 +468,7 @@ def calculate_total_equipment_ghgs(
         technical_appraisal,
     )
 
-    # FIXME: This needs to include the PV-T ghgs.
-    return 0, subsystem_emissions
+    return pvt_ghgs + pvt_installation_ghgs, subsystem_emissions
 
 
 def calculate_connections_ghgs(

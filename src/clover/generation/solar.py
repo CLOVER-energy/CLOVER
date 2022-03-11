@@ -477,7 +477,7 @@ class HybridPVTPanel(SolarPanel, panel_type=SolarPanelType.PV_T):
                 regressor_type = RegressorType.LOW_IRRADIANCE_HIGH_TEMPERATURE
         else:
             if input_temperature < LOW_TEMPERATURE_THRESHOLD:
-                regressor_type: RegressorType = (
+                regressor_type = (
                     RegressorType.STANDARD_IRRADIANCE_LOW_TEMPERATURE
                 )
             else:

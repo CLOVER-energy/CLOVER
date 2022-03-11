@@ -300,7 +300,7 @@ class CleanWaterScenario:
 
     """
 
-    conventional_sources: List[str]
+    conventional_sources: Set[str]
     mode: CleanWaterMode
     sources: List[str]
 
@@ -2482,7 +2482,7 @@ class CumulativeResults:
     subsystem_ghgs: Optional[Dict[ResourceType, float]] = None
     system_cost: float = 0
     system_ghgs: float = 0
-    waste_produced: Optional[Dict[str, float]] = None
+    waste_produced: Optional[Dict[ResourceType, float]] = None
 
     def to_dict(self) -> Dict[str, Any]:
         """
@@ -2900,18 +2900,19 @@ class TechnicalAppraisal:
         }
 
         # Add the fractions of power that were consumed providing each resource.
-        if ResourceType.CLEAN_WATER in self.power_consumed_fraction:
-            technical_appraisal_dict[
-                "clean_water_power_consumption_fraction"
-            ] = self.power_consumed_fraction[ResourceType.CLEAN_WATER]
-        if ResourceType.ELECTRIC in self.power_consumed_fraction:
-            technical_appraisal_dict[
-                "electricity_power_consumption_fraction"
-            ] = self.power_consumed_fraction[ResourceType.ELECTRIC]
-        if ResourceType.HOT_CLEAN_WATER in self.power_consumed_fraction:
-            technical_appraisal_dict[
-                "hot_water_power_consumption_fraction"
-            ] = self.power_consumed_fraction[ResourceType.HOT_CLEAN_WATER]
+        if self.power_consumed_fraction is not None:
+            if ResourceType.CLEAN_WATER in self.power_consumed_fraction:
+                technical_appraisal_dict[
+                    "clean_water_power_consumption_fraction"
+                ] = self.power_consumed_fraction[ResourceType.CLEAN_WATER]
+            if ResourceType.ELECTRIC in self.power_consumed_fraction:
+                technical_appraisal_dict[
+                    "electricity_power_consumption_fraction"
+                ] = self.power_consumed_fraction[ResourceType.ELECTRIC]
+            if ResourceType.HOT_CLEAN_WATER in self.power_consumed_fraction:
+                technical_appraisal_dict[
+                    "hot_water_power_consumption_fraction"
+                ] = self.power_consumed_fraction[ResourceType.HOT_CLEAN_WATER]
 
         # Remove any "Nan" entries.
         technical_appraisal_dict = {
