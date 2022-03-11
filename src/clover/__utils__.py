@@ -2551,7 +2551,13 @@ class TechnicalAppraisal:
         }
 
         if self.clean_water_blackouts is not None:
-            technical_appraisal_dict["clean_water_blackouts"] = self.clean_water_blackouts
+            technical_appraisal_dict[
+                "clean_water_blackouts"
+            ] = self.clean_water_blackouts
+
+        technical_appraisal_dict = {
+            str(key): float(value) for key, value in technical_appraisal_dict.items()
+        }
 
         return technical_appraisal_dict
 
