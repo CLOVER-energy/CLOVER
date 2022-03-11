@@ -559,8 +559,7 @@ def calculate_pvt_output(
                 # environment, a reasonable assumption given the one-hour resolution.
                 fractional_electric_performance = 0
                 collector_output_temperature = max(
-                    tank_replacement_temperature,
-                    temperatures[index]
+                    tank_replacement_temperature, temperatures[index]
                 )
 
             # If the PV-T collector flow was not on, then the output temperature should
@@ -569,7 +568,7 @@ def calculate_pvt_output(
                 collector_output_temperature = max(
                     best_guess_collector_input_temperature,
                     tank_replacement_temperature,
-                    temperatures[index]
+                    temperatures[index],
                 )
 
             tank_load_enthalpy_transfer = (
@@ -580,8 +579,7 @@ def calculate_pvt_output(
 
             # Determine the tank temperature and collector input temperature that match.
             resultant_vector = [
-                pvt_heat_transfer
-                * (collector_output_temperature + ZERO_CELCIUS_OFFSET)
+                pvt_heat_transfer * (collector_output_temperature + ZERO_CELCIUS_OFFSET)
                 + tank_environment_heat_transfer
                 * (temperatures[index] + ZERO_CELCIUS_OFFSET)
                 + tank_internal_energy
@@ -589,7 +587,10 @@ def calculate_pvt_output(
                 + (
                     tank_load_enthalpy_transfer
                     # * (tank_replacement_temperature + ZERO_CELCIUS_OFFSET)
-                    * (max(temperatures[index], tank_replacement_temperature) + ZERO_CELCIUS_OFFSET)
+                    * (
+                        max(temperatures[index], tank_replacement_temperature)
+                        + ZERO_CELCIUS_OFFSET
+                    )
                     if tank_supply_on
                     else 0
                 ),
