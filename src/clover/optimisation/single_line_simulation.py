@@ -141,6 +141,7 @@ def single_line_simulation(
 
     # Instantiate
     logger.info("Single-line optimisation to be carried out.")
+    sufficient_appraisals: List[SystemAppraisal] = []
     system_appraisals: List[SystemAppraisal] = []
 
     _converter_name_to_converter_mapping = {
@@ -1196,6 +1197,10 @@ def single_line_simulation(
 
         hw_pvt_size.max = test_hw_pvt_size
 
+    sufficient_appraisals.extend(
+        get_sufficient_appraisals(optimisation, system_appraisals)
+    )
+
     return (
         cw_pvt_size,
         cw_tanks,
@@ -1203,5 +1208,5 @@ def single_line_simulation(
         hw_tanks,
         pv_system_size,
         storage_size,
-        system_appraisals,
+        sufficient_appraisals,
     )
