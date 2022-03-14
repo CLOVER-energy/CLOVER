@@ -89,7 +89,7 @@ CONVENTIONAL_WATER_SOURCE_AVAILABILITY_DIRECTORY: str = os.path.join(
 )
 
 # Converters:
-#   Keyword used for parsing convertor information.
+#   Keyword used for parsing converter information.
 CONVERTERS: str = "converters"
 
 # Conversion inputs file:

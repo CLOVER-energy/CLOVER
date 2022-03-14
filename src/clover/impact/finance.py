@@ -543,7 +543,7 @@ def get_total_equipment_costs(
         )
         subsystem_costs[resource_type] += converter_costs + converter_installation_costs
         logger.debug(
-            "Convertor costs determined for resource %s: %s",
+            "Converter costs determined for resource %s: %s",
             resource_type.value,
             converter_costs + converter_installation_costs,
         )
@@ -1164,7 +1164,7 @@ def total_om(
             )
             subsystem_costs[resource_type] += converter_om
             logger.debug(
-                "Convertor OM costs determined for resource %s: %s",
+                "Converter OM costs determined for resource %s: %s",
                 resource_type.value,
                 converter_om,
             )
