@@ -189,7 +189,7 @@ def calculate_misc_ghgs(capacity: float, ghg_inputs: Dict[str, Any]) -> float:
 def calculate_total_equipment_ghgs(
     buffer_tanks: int,
     clean_water_tanks: int,
-    converters: Dict[Convertor, int],
+    converters: Dict[Converter, int],
     diesel_size: float,
     ghg_inputs: Dict[str, Any],
     heat_exchangers: int,
@@ -331,7 +331,7 @@ def calculate_total_equipment_ghgs(
             converter_ghgs + converter_installation_ghgs
         )
         logger.debug(
-            "Convertor costs determined for resource %s: %s",
+            "Converter costs determined for resource %s: %s",
             resource_type.value,
             converter_ghgs + converter_installation_ghgs,
         )
@@ -930,7 +930,7 @@ def calculate_total_om(
             )
             subsystem_emissions[resource_type] += converter_om
             logger.debug(
-                "Convertor OM emissions determined for resource %s: %s",
+                "Converter OM emissions determined for resource %s: %s",
                 resource_type.value,
                 converter_om,
             )

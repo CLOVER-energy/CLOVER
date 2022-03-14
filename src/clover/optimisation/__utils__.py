@@ -1070,7 +1070,7 @@ def recursive_iteration(
                     "occured as there were no criteria attached to the appraisal. More "
                     "information can be found in the logger directory.",
                 )
-            logger.debug(
+            logger.info(
                 "Threshold criteria: %s",
                 json.dumps(
                     {
