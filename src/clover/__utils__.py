@@ -1038,6 +1038,8 @@ class KeyResults:
                 self.min_cw_pvt_output_temperature, 3
             )
 
+        data_dict = {str(key): float(value) for key, value in data_dict.items()}
+
         return data_dict
 
 
@@ -2549,7 +2551,13 @@ class TechnicalAppraisal:
         }
 
         if self.clean_water_blackouts is not None:
-            technical_appraisal_dict["clean_water_blackouts"] = self.clean_water_blackouts
+            technical_appraisal_dict[
+                "clean_water_blackouts"
+            ] = self.clean_water_blackouts
+
+        technical_appraisal_dict = {
+            str(key): float(value) for key, value in technical_appraisal_dict.items()
+        }
 
         return technical_appraisal_dict
 

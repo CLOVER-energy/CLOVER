@@ -17,7 +17,7 @@ the clover module from the command-line interface.
 
 """
 
-__version__ = "5.0.0a1"
+__version__ = "5.0.0a1.post1"
 
 import datetime
 import logging
@@ -497,15 +497,13 @@ def main(args: List[Any]) -> None:
                 "%sCannot specify an output directory if only profile generation is "
                 "taking place.%s",
                 BColours.fail,
-                BColours.endc
+                BColours.endc,
             )
             raise Exception(
                 "The `output` flag can only be used if a simulation or optimisation "
                 "output is expected."
             )
-        if os.path.isdir(os.path.join(
-            output_directory,
-            parsed_args.output)):
+        if os.path.isdir(os.path.join(output_directory, parsed_args.output)):
             try:
                 confirm_overwrite = {"y": True, "n": False, "Y": True, "N": False}[
                     input(
