@@ -2187,8 +2187,8 @@ def run_simulation(
 
     # Do not do the itteration if no storage is being used
     if electric_storage_size == 0:
-        energy_surplus = ((battery_storage_profile > 0) * battery_storage_profile).abs()
-        energy_deficit = ((battery_storage_profile < 0) * battery_storage_profile).abs()
+        energy_surplus = None
+        energy_deficit = None
     # Carry out the itteration if there is some storage involved in the system.
     else:
         # Begin simulation, iterating over timesteps
@@ -2277,7 +2277,11 @@ def run_simulation(
     # Process the various outputs into dataframes.
     battery_health_frame: pd.DataFrame = dict_to_dataframe(battery_health, logger)
     # energy_deficit_frame: pd.DataFrame = dict_to_dataframe(energy_deficit)
-    energy_surplus_frane: pd.DataFrame = dict_to_dataframe(energy_surplus, logger)
+    if energy_surplus is not None:
+        energy_surplus_frame: pd.DataFrame = dict_to_dataframe(energy_surplus, logger)
+    else:
+        energy_surplus_frame =  = pd.DataFrame([0] * (end_hour - start_hour))
+
     hourly_battery_storage_frame: pd.DataFrame = dict_to_dataframe(
         hourly_battery_storage, logger
     )
@@ -2572,7 +2576,7 @@ def run_simulation(
     blackout_times.columns = pd.Index([ColumnHeader.BLACKOUTS.value])
     diesel_fuel_usage.columns = pd.Index([ColumnHeader.DIESEL_FUEL_USAGE.value])
     diesel_times.columns = pd.Index([ColumnHeader.DIESEL_GENERATOR_TIMES.value])
-    energy_surplus_frane.columns = pd.Index([ColumnHeader.DUMPED_ELECTRICITY.value])
+    energy_surplus_frame.columns = pd.Index([ColumnHeader.DUMPED_ELECTRICITY.value])
     hourly_battery_storage_frame.columns = pd.Index(
         [ColumnHeader.HOURLY_STORAGE_PROFILE.value]
     )
@@ -2674,7 +2678,7 @@ def run_simulation(
         pv_energy,
         renewables_energy,
         hourly_battery_storage_frame,
-        energy_surplus_frane,
+        energy_surplus_frame,
         battery_health_frame,
         households,
         kerosene_usage,
