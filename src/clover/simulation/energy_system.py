@@ -1572,7 +1572,7 @@ def run_simulation(
     if energy_surplus is not None:
         energy_surplus_frame: pd.DataFrame = dict_to_dataframe(energy_surplus, logger)
     else:
-        energy_surplus_frame =  = pd.DataFrame([0] * (end_hour - start_hour))
+        energy_surplus_frame = pd.DataFrame([0] * (end_hour - start_hour))
 
     hourly_battery_storage_frame: pd.DataFrame = dict_to_dataframe(
         hourly_battery_storage, logger
