@@ -277,25 +277,29 @@ def _find_optimum_system(
             )
 
             # Determine the optimum system from the new systems simulated.
-            logger.info(
-                "Determining optimum system from %s systems.",
-                len(new_system_appraisals),
-            )
-            potential_optimum_system = _fetch_optimum_system(
-                optimisation, new_system_appraisals
-            )
-
-            # Compare previous optimum system and new potential
-            system_comparison = [
-                optimum_system,
-                list(potential_optimum_system.values())[0],
-            ]
-            logger.info(
-                "Determining optimum system from %s systems.", len(system_comparison)
-            )
-            optimum_system = _fetch_optimum_system(optimisation, system_comparison)[
-                optimisation_criterion
-            ]
+            if len(new_system_appraisals) > 0:
+                logger.info(
+                    "Determining optimum system from %s systems.",
+                    len(new_system_appraisals),
+                )
+                potential_optimum_system = _fetch_optimum_system(
+                    optimisation, new_system_appraisals
+                )
+                # Compare previous optimum system and new potential
+                system_comparison = [
+                    optimum_system,
+                    list(potential_optimum_system.values())[0],
+                ]
+                logger.info(
+                    "Determining optimum system from %s systems.", len(system_comparison)
+                )
+                optimum_system = _fetch_optimum_system(optimisation, system_comparison)[
+                    optimisation_criterion
+                ]
+            else:
+                logger.info(
+                    "None of the additional systems considered were sufficient."
+                )
 
         optimum_systems[optimisation_criterion] = optimum_system
 
