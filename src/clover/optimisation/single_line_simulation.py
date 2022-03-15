@@ -373,7 +373,7 @@ def single_line_simulation(
             )
 
             if get_sufficient_appraisals(optimisation, [new_appraisal]) != []:
-                system_appraisals.extend(new_appraisal)
+                sufficient_appraisals.extend(new_appraisal)
 
         # Update the system details.
         storage_size.max = test_storage_size
@@ -488,7 +488,6 @@ def single_line_simulation(
         system_appraisals.extend(
             recursive_iteration(
                 conventional_cw_source_profiles,
-                converters,
                 end_year,
                 finance_inputs,
                 ghg_inputs,
@@ -621,7 +620,6 @@ def single_line_simulation(
         system_appraisals.extend(
             recursive_iteration(
                 conventional_cw_source_profiles,
-                converters,
                 end_year,
                 finance_inputs,
                 ghg_inputs,
@@ -800,7 +798,6 @@ def single_line_simulation(
         system_appraisals.extend(
             recursive_iteration(
                 conventional_cw_source_profiles,
-                converters,
                 end_year,
                 finance_inputs,
                 ghg_inputs,
@@ -984,7 +981,6 @@ def single_line_simulation(
         system_appraisals.extend(
             recursive_iteration(
                 conventional_cw_source_profiles,
-                converters,
                 end_year,
                 finance_inputs,
                 ghg_inputs,
@@ -1170,7 +1166,6 @@ def single_line_simulation(
         system_appraisals.extend(
             recursive_iteration(
                 conventional_cw_source_profiles,
-                converters,
                 end_year,
                 finance_inputs,
                 ghg_inputs,
