@@ -687,7 +687,7 @@ def calculate_grid_ghgs(
     grid_ghgs_final = ghg_inputs[ImpactingComponent.GRID.value][FINAL_GHGS]
     days = int(365 * (end_year - start_year))
     total_daily_energy = pd.DataFrame(
-        hourly_profile_to_daily_sum(pd.DataFrame(grid_energy_hourly.dropna()))
+        hourly_profile_to_daily_sum(pd.DataFrame(grid_energy_hourly.dropna()))  # type: ignore
     )
 
     # Account for reduction in grid GHG intensity

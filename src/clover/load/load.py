@@ -404,7 +404,7 @@ def _number_of_devices_daily(
                 device.name,
             )
             daily_ownership = pd.DataFrame(
-                np.floor(population_growth_rate * device.initial_ownership)
+                np.floor(population_growth_rate * device.initial_ownership)  # type: ignore
             )
         logger.info(
             "Ownership for device %s calculated.",
@@ -1100,7 +1100,9 @@ def process_load_profiles(
     )
 
 
-def compute_processed_load_profile(scenario: Scenario, total_load: pd.DataFrame):
+def compute_processed_load_profile(
+    scenario: Scenario, total_load: pd.DataFrame
+) -> pd.DataFrame:
     """
     Gets the total community load over 20 years in kW
 
@@ -1116,7 +1118,7 @@ def compute_processed_load_profile(scenario: Scenario, total_load: pd.DataFrame)
 
     """
 
-    processed_total_load: Optional[pd.DataFrame] = None
+    processed_total_load: Optional[pd.Series] = None
 
     if scenario.demands.domestic:
         processed_total_load = pd.DataFrame(
@@ -1125,19 +1127,19 @@ def compute_processed_load_profile(scenario: Scenario, total_load: pd.DataFrame)
 
     if scenario.demands.commercial:
         if processed_total_load is not None:
-            processed_total_load += pd.DataFrame(
+            processed_total_load += pd.DataFrame(  # type: ignore
                 total_load[DemandType.COMMERCIAL.value].values
             )
         else:
-            processed_total_load = total_load[DemandType.COMMERCIAL.value]
+            processed_total_load = pd.DataFrame(total_load[DemandType.COMMERCIAL.value])
 
     if scenario.demands.public:
         if processed_total_load is not None:
-            processed_total_load += pd.DataFrame(
+            processed_total_load += pd.DataFrame(  # type: ignore
                 total_load[DemandType.PUBLIC.value].values
             )
         else:
-            processed_total_load = total_load[DemandType.PUBLIC.value]
+            processed_total_load = pd.DataFrame(total_load[DemandType.PUBLIC.value])
 
     if processed_total_load is None:
         raise Exception("At least one load type must be specified.")

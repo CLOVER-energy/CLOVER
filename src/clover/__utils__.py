@@ -56,6 +56,7 @@ __all__ = (
     "InternalError",
     "KEROSENE_DEVICE_NAME",
     "KeyResults",
+    "Location",
     "LOCATIONS_FOLDER_NAME",
     "LOGGER_DIRECTORY",
     "monthly_profile_to_daily_profile",
@@ -1601,14 +1602,10 @@ class DesalinationScenario:
             ) from None
 
         clean_water_scenario: CleanWaterScenario = CleanWaterScenario(
-            set(
-                desalination_inputs[ResourceType.CLEAN_WATER.value][
-                    CONVENTIONAL_SOURCES
-                ]
-            )
+            desalination_inputs[ResourceType.CLEAN_WATER.value][CONVENTIONAL_SOURCES]
             if CONVENTIONAL_SOURCES
             in desalination_inputs[ResourceType.CLEAN_WATER.value]
-            else set(),
+            else [],
             clean_water_mode,
             list(desalination_inputs[ResourceType.CLEAN_WATER.value]["sources"]),
         )
@@ -2115,7 +2112,7 @@ class SystemDetails:
 
     diesel_capacity: float = 0
     end_year: int = 0
-    final_converter_sizes: Optional[Dict[str, float]] = None
+    final_converter_sizes: Optional[Dict[str, int]] = None
     final_cw_pvt_size: Optional[float] = 0
     final_hw_pvt_size: Optional[float] = 0
     final_num_buffer_tanks: Optional[int] = 0
@@ -2123,7 +2120,7 @@ class SystemDetails:
     final_num_hot_water_tanks: Optional[int] = 0
     final_pv_size: float = 0
     final_storage_size: float = 0
-    initial_converter_sizes: Optional[Dict[str, float]] = None
+    initial_converter_sizes: Optional[Dict[str, int]] = None
     initial_cw_pvt_size: Optional[float] = 0
     initial_hw_pvt_size: Optional[float] = 0
     initial_num_buffer_tanks: Optional[int] = 0

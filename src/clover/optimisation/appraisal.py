@@ -456,36 +456,42 @@ def _simulation_technical_appraisal(
         else None
     )
     total_clean_water = (
-        np.sum(simulation_results[ColumnHeader.TOTAL_CW_SUPPLIED.value])
+        np.sum(simulation_results[ColumnHeader.TOTAL_CW_SUPPLIED.value])  # type: ignore
         if ColumnHeader.TOTAL_CW_SUPPLIED.value in simulation_results
         else 0
     )
 
     # Energy system.
     total_energy = np.sum(
-        simulation_results[ColumnHeader.TOTAL_ELECTRICITY_CONSUMED.value]
+        simulation_results[ColumnHeader.TOTAL_ELECTRICITY_CONSUMED.value]  # type: ignore
     )
-    total_load_energy = np.sum(simulation_results[ColumnHeader.LOAD_ENERGY.value])
+    total_load_energy = np.sum(
+        simulation_results[ColumnHeader.LOAD_ENERGY.value]  # type: ignore
+    )
     total_renewables_used = np.sum(
-        simulation_results[ColumnHeader.RENEWABLE_ELECTRICITY_USED_DIRECTLY.value]
+        simulation_results[ColumnHeader.RENEWABLE_ELECTRICITY_USED_DIRECTLY.value]  # type: ignore
     )
     total_pv_energy = np.sum(
-        simulation_results[ColumnHeader.PV_ELECTRICITY_SUPPLIED.value]
+        simulation_results[ColumnHeader.PV_ELECTRICITY_SUPPLIED.value]  # type: ignore
     )
     total_pvt_energy = (
-        np.sum(simulation_results[ColumnHeader.TOTAL_PVT_ELECTRICITY_SUPPLIED.value])
+        np.sum(
+            simulation_results[ColumnHeader.TOTAL_PVT_ELECTRICITY_SUPPLIED.value]  # type: ignore
+        )
         if ColumnHeader.TOTAL_PVT_ELECTRICITY_SUPPLIED.value in simulation_results
         else None
     )
     total_storage_used = np.sum(
-        simulation_results[ColumnHeader.ELECTRICITY_FROM_STORAGE.value]
+        simulation_results[ColumnHeader.ELECTRICITY_FROM_STORAGE.value]  # type: ignore
     )
-    total_grid_used = np.sum(simulation_results[ColumnHeader.GRID_ENERGY.value])
+    total_grid_used = np.sum(
+        simulation_results[ColumnHeader.GRID_ENERGY.value]  # type: ignore
+    )
     total_diesel_used = np.sum(
-        simulation_results[ColumnHeader.DIESEL_ENERGY_SUPPLIED.value]
+        simulation_results[ColumnHeader.DIESEL_ENERGY_SUPPLIED.value]  # type: ignore
     )
     total_unmet_energy = np.sum(
-        simulation_results[ColumnHeader.UNMET_ELECTRICITY.value]
+        simulation_results[ColumnHeader.UNMET_ELECTRICITY.value]  # type: ignore
     )
     renewables_fraction = (total_renewables_used + total_storage_used) / total_energy
     unmet_fraction = total_unmet_energy / total_load_energy

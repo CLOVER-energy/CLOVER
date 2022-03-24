@@ -212,7 +212,7 @@ def _prepare_water_system(
     resource_type: ResourceType,
     water_source_times: Dict[WaterSource, pd.DataFrame],
 ) -> Tuple[
-    Dict[WaterSource, pd.DataFrame], pd.DataFrame, Dict[str, pd.DataFrame], pd.DataFrame
+    Dict[WaterSource, pd.DataFrame], Dict[str, pd.DataFrame], pd.DataFrame, pd.DataFrame
 ]:
     """
     Prepares the conventional-water system.
@@ -797,7 +797,7 @@ def main(args: List[Any]) -> None:
             )
             raise
 
-    clean_water_yearly_load_statistics: Optional[pd.DataFrame] = None
+    clean_water_yearly_load_statistics: pd.DataFrame
     conventional_cw_source_profiles: Optional[Dict[WaterSource, pd.DataFrame]] = None
     initial_cw_hourly_loads: Optional[Dict[str, pd.DataFrame]] = None
     total_cw_load: Optional[pd.DataFrame] = None
@@ -819,8 +819,8 @@ def main(args: List[Any]) -> None:
             water_source_times,
         )
 
-    conventional_hw_source_profiles: Optional[Dict[WaterSource, pd.DataFrame]] = None
-    hot_water_yearly_load_statistics: Optional[pd.DataFrame] = None
+    conventional_hw_source_profiles: Dict[WaterSource, pd.DataFrame]
+    hot_water_yearly_load_statistics: pd.DataFrame
     initial_hw_hourly_loads: Optional[Dict[str, pd.DataFrame]] = None
     total_hw_load: Optional[pd.DataFrame] = None
 
@@ -848,37 +848,41 @@ def main(args: List[Any]) -> None:
         ResourceType.HOT_CLEAN_WATER: total_hw_load,
     }
 
-    # Generate the grid-availability profiles.
-    logger.info("Generating grid-availability profiles.")
-    try:
-        grid.get_lifetime_grid_status(
-            os.path.join(auto_generated_files_directory, "grid"),
-            grid_times,
-            logger,
-            location.max_years,
-        )
-    except InputFileError:
-        print(
-            "Generating necessary profiles .................................    "
-            + f"{FAILED}"
-        )
-        raise
-    except Exception as e:
-        print(
-            "Generating necessary profiles .................................    "
-            + f"{FAILED}"
-        )
-        logger.error(
-            "%sAn unexpected error occurred generating the grid profiles. See %s for "
-            "details: %s%s",
-            BColours.fail,
-            "{}.log".format(os.path.join(LOGGER_DIRECTORY, LOGGER_NAME)),
-            str(e),
-            BColours.endc,
-        )
-        raise
+    # Generate the grid-availability profiles if relevant.
+    if scenario.grid:
+        logger.info("Generating grid-availability profiles.")
+        try:
+            grid.get_lifetime_grid_status(
+                os.path.join(auto_generated_files_directory, "grid"),
+                grid_times,
+                logger,
+                location.max_years,
+            )
+        except InputFileError:
+            print(
+                "Generating necessary profiles .................................    "
+                + f"{FAILED}"
+            )
+            raise
+        except Exception as e:
+            print(
+                "Generating necessary profiles .................................    "
+                + f"{FAILED}"
+            )
+            logger.error(
+                "%sAn unexpected error occurred generating the grid profiles. See %s for "
+                "details: %s%s",
+                BColours.fail,
+                "{}.log".format(os.path.join(LOGGER_DIRECTORY, LOGGER_NAME)),
+                str(e),
+                BColours.endc,
+            )
+            raise
 
-    logger.info("Grid-availability profiles successfully generated.")
+        logger.info("Grid-availability profiles successfully generated.")
+
+    else:
+        logger.info("Grid disabled, no grid profiles to be generated.")
 
     # Wait for all threads to finish before proceeding.
     logger.info("Waiting for all setup threads to finish before proceeding.")
@@ -936,28 +940,30 @@ def main(args: List[Any]) -> None:
     )
 
     # Load the relevant grid profile.
-    try:
-        with open(
-            os.path.join(
-                auto_generated_files_directory,
-                "grid",
-                f"{scenario.grid_type}_grid_status.csv",
-            ),
-            "r",
-        ) as f:
-            grid_profile = pd.read_csv(
-                f,
-                index_col=0,
+    grid_profile: Optional[pd.DataFrame] = None
+    if scenario.grid:
+        try:
+            with open(
+                os.path.join(
+                    auto_generated_files_directory,
+                    "grid",
+                    f"{scenario.grid_type}_grid_status.csv",
+                ),
+                "r",
+            ) as f:
+                grid_profile = pd.read_csv(
+                    f,
+                    index_col=0,
+                )
+        except FileNotFoundError as e:
+            logger.error(
+                "%sGrid profile file for profile '%s' could not be found: %s%s",
+                BColours.fail,
+                scenario.grid_type,
+                str(e),
+                BColours.endc,
             )
-    except FileNotFoundError as e:
-        logger.error(
-            "%sGrid profile file for profile '%s' could not be found: %s%s",
-            BColours.fail,
-            scenario.grid_type,
-            str(e),
-            BColours.endc,
-        )
-        raise
+            raise
 
     # Load the relevant kerosene profile.
     with open(
@@ -1089,6 +1095,11 @@ def main(args: List[Any]) -> None:
                 )
 
                 # Carry out an appraisal of the system.
+                if electric_yearly_load_statistics is None:
+                    raise InternalError(
+                        "No electric yearly load statistics were computed for the "
+                        "system despite these being needed to appraise the system."
+                    )
                 system_appraisal: Optional[SystemAppraisal] = appraise_system(
                     electric_yearly_load_statistics,
                     simulation.end_year,

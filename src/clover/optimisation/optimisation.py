@@ -111,7 +111,7 @@ def _fetch_optimum_system(
 
 
 def _find_optimum_system(
-    conventional_cw_source_profiles: Dict[WaterSource, pd.DataFrame],
+    conventional_cw_source_profiles: Optional[Dict[WaterSource, pd.DataFrame]],
     converters: List[Converter],
     end_year: int,
     finance_inputs: Dict[str, Any],
@@ -120,10 +120,10 @@ def _find_optimum_system(
     irradiance_data: pd.Series,
     kerosene_usage: pd.DataFrame,
     largest_converter_sizes: Dict[Converter, ConverterSize],
-    largest_cw_pvt_system_size: SolarSystemSize,
     largest_cw_tank_size: TankSize,
-    largest_hw_pvt_system_size: SolarSystemSize,
+    largest_cw_pvt_system_size: SolarSystemSize,
     largest_hw_tank_size: TankSize,
+    largest_hw_pvt_system_size: SolarSystemSize,
     largest_pv_system_size: SolarSystemSize,
     largest_storage_system_size: StorageSystemSize,
     location: Location,
@@ -291,7 +291,8 @@ def _find_optimum_system(
                     list(potential_optimum_system.values())[0],
                 ]
                 logger.info(
-                    "Determining optimum system from %s systems.", len(system_comparison)
+                    "Determining optimum system from %s systems.",
+                    len(system_comparison),
                 )
                 optimum_system = _fetch_optimum_system(optimisation, system_comparison)[
                     optimisation_criterion
@@ -458,7 +459,10 @@ def _simulation_iteration(
         for converter in converters
         if converter not in max_converter_sizes
     }
-    simulation_converter_sizes = {**max_converter_sizes, **static_converter_sizes}
+    simulation_converter_sizes: Dict[Convertor, int] = {
+        **max_converter_sizes,
+        **static_converter_sizes,
+    }
 
     _, simulation_results, system_details = energy_system.run_simulation(
         cw_pvt_system_size.max,
@@ -755,7 +759,7 @@ def _simulation_iteration(
     # Add the iterable converter sizes.
     for converter, sizes in converter_sizes.items():
         # Construct the list of available sizes for the given converter.
-        simulation_converter_sizes: List[int] = sorted(
+        simulation_converter_size_list: List[int] = sorted(
             range(
                 int(sizes.min),
                 int(max_converter_sizes[converter] + sizes.step),
@@ -764,18 +768,18 @@ def _simulation_iteration(
             reverse=True,
         )
 
-        if len(simulation_converter_sizes) > 1:
+        if len(simulation_converter_size_list) > 1:
             parameter_space.append(
                 (
                     converter,
                     "simulation"
                     if len(parameter_space) == 0
                     else f"{converter.name} size",
-                    simulation_converter_sizes,
+                    simulation_converter_size_list,
                 )
             )
         else:
-            component_sizes[converter] = simulation_converter_sizes[0]
+            component_sizes[converter] = float(simulation_converter_sizes[0])  # type: ignore
 
     # Add the static converter sizes.
     for converter, size in static_converter_sizes.items():
@@ -862,8 +866,12 @@ def _simulation_iteration(
     return (
         end_year,
         {
-            converter: ConverterSize(size.max, size.min, size.step)
-            for converter, size in max_converter_sizes.items()
+            converter: ConverterSize(
+                max_size,
+                converter_sizes[converter].min,
+                converter_sizes[converter].step,
+            )
+            for converter, max_size in max_converter_sizes.items()
         },
         SolarSystemSize(
             cw_pvt_size_max, cw_pvt_system_size.min, cw_pvt_system_size.step
@@ -1056,7 +1064,8 @@ def _optimisation_step(
     logger.info("Optimum systems determined.")
 
     # @@@ For now, the optimum system for a single threshold criterion will be returned.
-    return list(optimum_systems.values())[0]
+    optimum_system_appraisal: SystemAppraisal = list(optimum_systems.values())[0]
+    return optimum_system_appraisal
 
 
 def multiple_optimisation_step(
@@ -1169,9 +1178,7 @@ def multiple_optimisation_step(
         logger.info(
             "No converter sizes passed in, using default optimisation parameters."
         )
-        input_converter_sizes: Dict[
-            Converter, ConverterSize
-        ] = optimisation_parameters.converter_sizes.copy()
+        input_converter_sizes = optimisation_parameters.converter_sizes.copy()
     else:
         input_converter_sizes = {}
 
@@ -1327,7 +1334,7 @@ def multiple_optimisation_step(
         # Fetch the optimum systems for this step.
         optimum_system = _optimisation_step(
             conventional_cw_source_profiles,
-            input_converter_sizes.copy(),
+            input_converter_sizes.copy() if input_converter_sizes is not None else None,
             SolarSystemSize(
                 input_cw_pvt_system_size.max,
                 input_cw_pvt_system_size.min,
