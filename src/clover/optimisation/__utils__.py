@@ -850,7 +850,7 @@ def get_sufficient_appraisals(
 
 
 def recursive_iteration(
-    conventional_cw_source_profiles: Dict[WaterSource, pd.DataFrame],
+    conventional_cw_source_profiles: Optional[Dict[WaterSource, pd.DataFrame]],
     end_year: int,
     finance_inputs: Dict[str, Any],
     ghg_inputs: Dict[str, Any],

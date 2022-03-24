@@ -1169,6 +1169,12 @@ def run_simulation(
     start_hour = simulation.start_year * HOURS_PER_YEAR
     end_hour = simulation.end_year * HOURS_PER_YEAR
     simulation_hours = end_hour - start_hour
+
+    grid_profile: pd.DataFrame = (
+        grid_profile
+        if grid_profile is not None
+        else pd.DataFrame([0] * simulation_hours)
+    )
     total_cw_load: Optional[pd.DataFrame] = total_loads[ResourceType.CLEAN_WATER]
     total_electric_load: Optional[pd.DataFrame] = total_loads[ResourceType.ELECTRIC]
     total_hw_load: Optional[pd.DataFrame] = total_loads[ResourceType.HOT_CLEAN_WATER]
