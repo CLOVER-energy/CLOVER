@@ -753,24 +753,26 @@
             #     # License: Open source                                                         #
             #     ################################################################################
 
-            #     clean_water:
-            #       mode: backup # "backup", "prioritise" or "thermal_only"
-            #       conventional_sources:
-            #         - river
-            #       sources: # defined within the 'conversion_inputs.yaml' file
-            #         - med_liponi
-            #         - reverse_osmosis
-            #     feedwater:
-            #       sources:
-            #         - bore_hole # defined within the 'conversion_inputs.yaml' file
-            #         - bore_hole
-            #         - bore_hole
-            #         - bore_hole
-            #         - bore_hole
-            #       supply_temperature: 10 # [degC]
-            #     pvt_scenario:
-            #       heats: htf
-            #       mass_flow_rate: 7.37 # [litres/hour]
+            #     desalination_scenarios:
+            #       - name: default
+            #         clean_water:
+            #           mode: backup # "backup", "prioritise" or "thermal_only"
+            #           conventional_sources:
+            #             - river
+            #           sources: # defined within the 'conversion_inputs.yaml' file
+            #             - med_liponi
+            #             - reverse_osmosis
+            #         feedwater:
+            #           sources:
+            #             - bore_hole # defined within the 'conversion_inputs.yaml' file
+            #             - bore_hole
+            #             - bore_hole
+            #             - bore_hole
+            #             - bore_hole
+            #           supply_temperature: 10 # [degC]
+            #         pvt_scenario:
+            #           heats: htf
+            #           mass_flow_rate: 7.37 # [litres/hour]
             # - file: hot_water_scenario.yaml
             #   contents: |+
             #     ---
@@ -783,17 +785,19 @@
             #     # License: Open source                                                         #
             #     ################################################################################
 
-            #     hot_water:
-            #       auxiliary_heater: diesel # "diesel", "electric" or "none"
-            #       conventional_sources:
-            #         - natural_gas
-            #       demand_temperature: 60 # [degC]
-            #     cold_water:
-            #       supply: unlimited # "unlimited" or "clean_water"
-            #       supply_temperature: 10 # [degC]
-            #     pvt_scenario:
-            #       heats: cold_water
-            #       mass_flow_rate: 7.37 # [litres/hour]
+            #     hot_water_scenarios:
+            #     - name: default
+            #       hot_water:
+            #         auxiliary_heater: diesel # "diesel", "electric" or "none"
+            #         conventional_sources:
+            #           - natural_gas
+            #         demand_temperature: 60 # [degC]
+            #       cold_water:
+            #         supply: unlimited # "unlimited" or "clean_water"
+            #         supply_temperature: 10 # [degC]
+            #       pvt_scenario:
+            #         heats: cold_water
+            #         mass_flow_rate: 7.37 # [litres/hour]
             - file: scenario_inputs.yaml
               contents: |+
                 ---
@@ -806,27 +810,24 @@
                 # License: Open source                                                         #
                 ################################################################################
 
-                # Valid 'resource_types' are 'electric_power' or 'clean_water'.
-                # NOTE: If using 'clean_water', then there must be at least one device specified
-                # within the devices file which places a clean-water demand on the system.
-                #
-
-                pv: true # "true" or "false"
-                battery: true # "true" or "false"
-                diesel:
-                  mode: backup # "backup" only option currently
-                  backup:
-                    threshold: 0.1 # Maximum acceptible blackouts (0.0-1.0)
-                grid: true # "true" or "false"
-                grid_type: default # The grid profile to use
-                prioritise_self_generation: true # "true" or "false"
-                demands:
-                  domestic: true # "true" or "false"
-                  commercial: true # "true" or "false"
-                  public: true # "true" or "false"
-                distribution_network: dc # DC ("dc") or AC ("ac") distribution network
-                resource_types:
-                  - electric_power
+                scenarios:
+                  - name: default
+                    battery: true # "true" or "false"
+                    demands:
+                      domestic: true # "true" or "false"
+                      commercial: true # "true" or "false"
+                      public: true # "true" or "false"
+                    diesel:
+                      mode: backup # "backup" or "disabled" currently supported
+                      backup:
+                        threshold: 0.1 # Maximum acceptible blackouts (0.0-1.0)
+                    distribution_network: dc # DC ("dc") or AC ("ac") distribution network
+                    grid: true # "true" or "false"
+                    grid_type: bahraich # The grid profile to use
+                    prioritise_self_generation: true # "true" or "false"
+                    pv: true # "true" or "false"
+                    resource_types:
+                      - electric_power
         - directory: simulation
           contents:
             - file: "battery_inputs.yaml"
