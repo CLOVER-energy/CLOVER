@@ -565,7 +565,7 @@ def main(args: List[Any]) -> None:
             simulations,
             water_source_times,
             input_file_info,
-        ) = parse_input_files(parsed_args.debug, parsed_args.location, logger)
+        ) = parse_input_files(parsed_args.debug, parsed_args.location, logger, parsed_args.scenario)
     except FileNotFoundError as e:
         print(FAILED)
         logger.error(
