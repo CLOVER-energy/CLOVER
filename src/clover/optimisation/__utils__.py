@@ -237,7 +237,12 @@ class Optimisation:
         return hash(str(self))
 
     @classmethod
-    def from_dict(cls, logger: Logger, optimisation_data: Dict[str, Any], scenarios: List[Scenario]) -> Any:
+    def from_dict(
+        cls,
+        logger: Logger,
+        optimisation_data: Dict[str, Any],
+        scenarios: List[Scenario],
+    ) -> Any:
         """
         Creates a :class:`Optimisation` instance based on the input data.
 
@@ -286,33 +291,41 @@ class Optimisation:
 
         if SCENARIO in optimisation_data:
             try:
-                scenario = [scenario for scenario in scenarios if scenario.name == optimisation_data["scenario"]][0]
+                scenario = [
+                    scenario
+                    for scenario in scenarios
+                    if scenario.name == optimisation_data["scenario"]
+                ][0]
             except IndexError:
                 logger.error(
                     "%sError determining scenario for optimisation run: scenario '%s' "
                     "could not be found.%s",
                     BColours.fail,
                     optimisation_data["scenario"],
-                    BColours.endc
+                    BColours.endc,
                 )
                 raise InputFileError(
                     "optimisation inputs/scenario inputs",
-                    f"Scenario {optimisation_data['scenario']} could not be found."
+                    f"Scenario {optimisation_data['scenario']} could not be found.",
                 ) from None
         else:
             try:
-                scenario = [scenario for scenario in scenarios if scenario.name == DEFAULT_SCENARIO]
+                scenario = [
+                    scenario
+                    for scenario in scenarios
+                    if scenario.name == DEFAULT_SCENARIO
+                ]
             except IndexError:
                 logger.error(
                     "%sError determining scenario for optimisation run: default "
                     "scenario '%s' could not be found.%s",
                     BColours.fail,
                     DEFAULT_SCENARIO,
-                    BColours.endc
+                    BColours.endc,
                 )
                 raise InputFileError(
                     "optimisation inputs/scenario inputs",
-                    f"Default scenario {DEFAULT_SCENARIO} could not be found."
+                    f"Default scenario {DEFAULT_SCENARIO} could not be found.",
                 ) from None
 
         return cls(optimisation_criteria, scenario, threshold_criteria)
