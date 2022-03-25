@@ -49,9 +49,9 @@ from ..__utils__ import (
     dict_to_dataframe,
 )
 from ..conversion.conversion import Converter, ThermalDesalinationPlant, WaterSource
-from ..generation.solar import SolarPanelType, solar_degradation
+from ..generation.solar import solar_degradation
 from ..load.load import compute_processed_load_profile, population_hourly
-from .__utils__ import Minigrid
+from .__utils__ import Minigrid, check_scenario, determine_available_converters
 from .diesel import (
     DieselWaterHeater,
     get_diesel_energy_and_times,
@@ -62,9 +62,8 @@ from .storage import (
     battery_iteration_step,
     cw_tank_iteration_step,
     get_electric_battery_storage_profile,
-    get_water_storage_profile,
 )
-from .storage_utils import Battery, CleanWaterTank, HotWaterTank
+from .storage_utils import CleanWaterTank
 
 __all__ = (
     "Minigrid",
@@ -1170,6 +1169,14 @@ def run_simulation(
     end_hour = simulation.end_year * HOURS_PER_YEAR
     simulation_hours = end_hour - start_hour
 
+    available_converters = determine_available_converters(
+        converters, logger, minigrid, scenario
+    )
+    logger.info("Subset of available converters determined.")
+    logger.debug(
+        "Available converters: %s",
+        ", ".join([str(entry) for entry in available_converters]),
+    )
     grid_profile: pd.DataFrame = (
         grid_profile
         if grid_profile is not None
@@ -1198,7 +1205,7 @@ def run_simulation(
         required_cw_feedwater_sources,
         thermal_desalination_electric_power_consumed,
     ) = _calculate_renewable_cw_profiles(
-        converters,
+        available_converters,
         end_hour,
         irradiance_data,
         logger,
@@ -1304,7 +1311,7 @@ def run_simulation(
         hot_water_tank_volume_supplied,
         renewable_hw_fraction,
     ) = _calculate_renewable_hw_profiles(
-        converters,
+        available_converters,
         end_hour,
         irradiance_data,
         logger,
@@ -1465,7 +1472,7 @@ def run_simulation(
         energy_per_desalinated_litre,
         maximum_water_throughput,
     ) = _calculate_electric_desalination_parameters(
-        converters, feedwater_sources, logger, scenario
+        available_converters, feedwater_sources, logger, scenario
     )
 
     # Intialise tank accounting parameters
@@ -1894,7 +1901,10 @@ def run_simulation(
     system_details = SystemDetails(
         diesel_capacity,
         simulation.end_year,
-        {converter.name: converters.count(converter) for converter in converters},
+        {
+            converter.name: available_converters.count(converter)
+            for converter in available_converters
+        },
         clean_water_pvt_size
         * float(
             solar_degradation(minigrid.pvt_panel.lifetime, location.max_years).iloc[
@@ -1925,7 +1935,10 @@ def run_simulation(
             * minigrid.battery.storage_unit
             * np.min(battery_health_frame[ColumnHeader.BATTERY_HEALTH.value])
         ),
-        {converter.name: converters.count(converter) for converter in converters},
+        {
+            converter.name: available_converters.count(converter)
+            for converter in available_converters
+        },
         clean_water_pvt_size
         if minigrid.pvt_panel is not None and scenario.desalination_scenario is not None
         else None,

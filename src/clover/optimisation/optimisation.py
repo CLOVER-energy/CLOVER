@@ -1081,7 +1081,6 @@ def multiple_optimisation_step(
     minigrid: energy_system.Minigrid,
     optimisation: Optimisation,
     optimisation_parameters: OptimisationParameters,
-    scenario: Scenario,
     temperature_data: pd.Series,
     total_loads: Dict[ResourceType, Optional[pd.DataFrame]],
     total_solar_pv_power_produced: pd.Series,
@@ -1119,8 +1118,6 @@ def multiple_optimisation_step(
         - optimisation_parameters:
             A :class:`OptimisationParameters` instance outlining the optimisation
             bounds;
-        - scenario:
-            The scenatio being considered;
         - solar_lifetime:
             The lifetime of the solar setup;
         - temperature_data:
@@ -1185,7 +1182,7 @@ def multiple_optimisation_step(
     # Set up the clean-water PV-T sizes for the first loop.
     if (
         input_cw_pvt_system_size is None
-        and scenario.desalination_scenario is not None
+        and optinisation.scenario.desalination_scenario is not None
         and minigrid.pvt_panel is not None
     ):
         if optimisation_parameters.cw_pvt_size is None:
@@ -1211,7 +1208,7 @@ def multiple_optimisation_step(
     # Set up the clean-water tank sizes for the first loop.
     if (
         input_cw_tanks is None
-        and scenario.desalination_scenario is not None
+        and optimisation.scenario.desalination_scenario is not None
         and minigrid.clean_water_tank is not None
     ):
         if optimisation_parameters.clean_water_tanks is None:
