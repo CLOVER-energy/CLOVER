@@ -2268,7 +2268,7 @@ def parse_input_files(
         )
     try:
         optimisation_parameters = OptimisationParameters.from_dict(
-            available_converters, logger, optimisation_inputs
+            converters, logger, optimisation_inputs
         )
     except Exception as e:
         logger.error(
@@ -2516,7 +2516,7 @@ def parse_input_files(
         logger.info("PV-T disblaed in scenario file, skipping PV-T impact parsing.")
 
     # Add transmitter impacts.
-    for converter in available_converters:
+    for converter in converters:
         logger.info("Updating with %s impact data.", converter.name)
         finance_inputs[
             FINANCE_IMPACT.format(
@@ -2546,9 +2546,10 @@ def parse_input_files(
         logger.info("Transmitter %s impact data successfully updated.", transmitter)
 
     # Add desalination-specific impacts.
-    if (
+    if any(
         scenario.desalination_scenario is not None
         and scenario.desalination_scenario.pvt_scenario.heats == HTFMode.CLOSED_HTF
+        for scenario in scenarios
     ):
         # Update the clean-water tank impacts.
         logger.info("Updating with clean-water tank impact data.")
@@ -2587,7 +2588,7 @@ def parse_input_files(
         # Include the impacts of conventional water sources.
         logger.info("Updating with conventional water-source impact data.")
         if (
-            scenario.desalination_scenario is not None
+            any(scenario.desalination_scenario is not None for scenario in scenarios)
             and conventional_water_sources is not None
             and conventional_water_source_inputs is not None
         ):
@@ -2657,7 +2658,7 @@ def parse_input_files(
                 ] = defaultdict(float, conventional_source_emissions)
 
     # Add hot-water-specific impacts.
-    if scenario.hot_water_scenario is not None:
+    if any(scenario.hot_water_scenario is not None for scenario in scenarios):
         # Update the hot-water tank impacts.
         logger.info("Updating with hot-water tank impact data.")
         finance_inputs[ImpactingComponent.HOT_WATER_TANK.value] = defaultdict(
@@ -2691,13 +2692,13 @@ def parse_input_files(
         "grid_times": grid_times_filepath,
         "location_inputs": location_inputs_filepath,
         "optimisation_inputs": optimisation_inputs_filepath,
-        "scenario": scenario_inputs_filepath,
+        "scenarios": scenario_inputs_filepath,
         "simularion": simulations_inputs_filepath,
         "solar_inputs": solar_generation_inputs_filepath,
         "transmission_inputs": transmission_inputs_filepath,
     }
 
-    if scenario.desalination_scenario is not None:
+    if any(scenario.desalination_scenario is not None for scenario in scenarios):
         if conventional_water_source_inputs_filepath is not None:
             input_file_info[
                 "conventional_water_source_inputs"
@@ -2705,21 +2706,22 @@ def parse_input_files(
         if tank_inputs_filepath is not None:
             input_file_info["tank_inputs"] = tank_inputs_filepath
 
-    if (
+    if any(
         scenario.desalination_scenario is not None
         and scenario.desalination_scenario.pvt_scenario.heats == HTFMode.CLOSED_HTF
+        for scenario in scenarios
     ):
         input_file_info["desalination_scenario"] = desalination_scenario_inputs_filepath
         if exchanger_inputs_filepath is not None:
             input_file_info["exchanger_inputs"] = exchanger_inputs_filepath
 
-    if scenario.hot_water_scenario is not None:
+    if any(scenario.hot_water_scenario is not None for scenario in scenarios):
         input_file_info["hot_water_scenario"] = hot_water_scenario_inputs_filepath
 
     logger.debug("Input file parsing complete.")
     logger.debug(
-        "Available converters: %s",
-        ", ".join([str(converter) for converter in available_converters]),
+        "Converters: %s",
+        ", ".join([str(converter) for converter in converters]),
     )
     logger.debug("Devices: %s", ", ".join([str(device) for device in devices]))
     logger.debug("Energy system/minigrid: %s", str(minigrid))
@@ -2733,8 +2735,7 @@ def parse_input_files(
         "Optimisations: %s",
         ", ".join([str(optimisation) for optimisation in optimisations]),
     )
-    logger.debug("Scenario: %s", scenario)
-    logger.debug("Desalination scenario: %s", scenario.desalination_scenario)
+    logger.debug("Scenarios: %s", ", ".join([str(entry) for entry in scenarios]))
     logger.debug(
         "Simulations: %s", ", ".join([str(simulation) for simulation in simulations])
     )

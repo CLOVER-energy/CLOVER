@@ -727,14 +727,22 @@ def main(args: List[Any]) -> None:
     initial_cw_hourly_loads: Optional[Dict[str, pd.DataFrame]] = None
     total_cw_load: Optional[pd.DataFrame] = None
 
-    if scenario.desalination_scenario is not None:
+    if any(scenario.desalination_scenario is not None for scenario in scenarios):
+        # Create a set of all the conventional clean-water sources available.
+        conventional_sources: Set[str] = {
+            source
+            for scenario in scenarios
+            for source in scenario.desalination_scenario.clean_water_scenario.conventional_sources
+        }
+
+        # Generate the clean-water load profiles.
         (
             conventional_cw_source_profiles,
             initial_cw_hourly_loads,
             total_cw_load,
             clean_water_yearly_load_statistics,
         ) = _prepare_water_system(
-            scenario.desalination_scenario.clean_water_scenario.conventional_sources,
+            conventional_sources,
             auto_generated_files_directory,
             device_utilisations,
             location,
@@ -749,14 +757,21 @@ def main(args: List[Any]) -> None:
     initial_hw_hourly_loads: Optional[Dict[str, pd.DataFrame]] = None
     total_hw_load: Optional[pd.DataFrame] = None
 
-    if scenario.hot_water_scenario is not None:
+    if any(scenario.hot_water_scenario is not None for scenario in scenarios):
+        # Create a set of all the conventional hot-water sources available.
+        conventional_sources = {
+            source
+            for scenario in scenarios
+            for source in scenario.hot_water_scenario.conventional_sources
+        }
+
         (
             conventional_hw_source_profiles,
             initial_hw_hourly_loads,
             total_hw_load,
             hot_water_yearly_load_statistics,
         ) = _prepare_water_system(
-            scenario.hot_water_scenario.conventional_sources,
+            conventional_sources,
             auto_generated_files_directory,
             device_utilisations,
             location,
@@ -863,32 +878,6 @@ def main(args: List[Any]) -> None:
         end="\n",
     )
 
-    # Load the relevant grid profile.
-    grid_profile: Optional[pd.DataFrame] = None
-    if scenario.grid:
-        try:
-            with open(
-                os.path.join(
-                    auto_generated_files_directory,
-                    "grid",
-                    f"{scenario.grid_type}_grid_status.csv",
-                ),
-                "r",
-            ) as f:
-                grid_profile = pd.read_csv(
-                    f,
-                    index_col=0,
-                )
-        except FileNotFoundError as e:
-            logger.error(
-                "%sGrid profile file for profile '%s' could not be found: %s%s",
-                BColours.fail,
-                scenario.grid_type,
-                str(e),
-                BColours.endc,
-            )
-            raise
-
     # Load the relevant kerosene profile.
     with open(
         os.path.join(auto_generated_files_directory, KEROSENE_USAGE_FILE), "r"
@@ -939,6 +928,10 @@ def main(args: List[Any]) -> None:
         logger.info("Checking scenario parameters.")
         check_scenario(logger, minigrid, operating_mode, parsed_args, scenario)
         logger.info("Scenario parameters valid.")
+
+        logger.info("Loading grid profile.")
+        grid_profile = grid.load_grid_profile(auto_generated_files_directory, logger, scenario)
+        logger.info("Grid '%s' profile successfully loaded.", scenario.grid_type)
 
         simulation_string: str = generate_simulation_string(
             minigrid, overrided_default_sizes, parsed_args, scenario
@@ -1121,8 +1114,14 @@ def main(args: List[Any]) -> None:
         ):
             # Determine the scenario to use for the simulation.
             logger.info("Checking scenario parameters.")
-            check_scenario(logger, minigrid, operating_mode, parsed_args, optimisation.scenario)
+            check_scenario(
+                logger, minigrid, operating_mode, parsed_args, optimisation.scenario
+            )
             logger.info("Scenario parameters valid.")
+
+            logger.info("Loading grid profile.")
+            grid_profile = grid.load_grid_profile(auto_generated_files_directory, logger, optimisation.scenario)
+            logger.info("Grid '%s' profile successfully loaded.", optimisation.scenario.grid_type)
 
             optimisation_string = generate_optimisation_string(
                 minigrid, optimisation_inputs, optimisation.scenario
