@@ -212,7 +212,7 @@ def _daily_discount_rate(discount_rate: float) -> float:
 
     """
 
-    return ((1.0 + discount_rate) ** (1.0 / 365.0)) - 1.0
+    return float(((1.0 + discount_rate) ** (1.0 / 365.0)) - 1.0)
 
 
 def _discounted_fraction(
@@ -858,7 +858,7 @@ def discounted_energy_total(
     if not isinstance(total_daily, pd.Series):
         try:
             total_daily = total_daily.iloc[:, 0]
-        except pd.core.indexing.IndexingError as e:
+        except pd.core.indexing.IndexingError as e:  # type: ignore
             logger.error(
                 "%sAn unexpected internal error occured in the financial inputs file "
                 "when casting `pd.Series` to `pd.DataFrame`: %s%s",

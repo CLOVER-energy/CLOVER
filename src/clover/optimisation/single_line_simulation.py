@@ -76,7 +76,6 @@ def single_line_simulation(
     potential_system: SystemAppraisal,
     previous_system: Optional[SystemAppraisal],
     pv_system_size: SolarSystemSize,
-    scenario: Scenario,
     start_year: int,
     storage_size: StorageSystemSize,
     temperature_data: pd.Series,
@@ -141,6 +140,7 @@ def single_line_simulation(
 
     # Instantiate
     logger.info("Single-line optimisation to be carried out.")
+    sufficient_appraisals: List[SystemAppraisal] = []
     system_appraisals: List[SystemAppraisal] = []
 
     _converter_name_to_converter_mapping = {
@@ -315,7 +315,6 @@ def single_line_simulation(
                 minigrid,
                 optimisation,
                 previous_system,
-                scenario,
                 start_year,
                 temperature_data,
                 total_loads,
@@ -350,7 +349,7 @@ def single_line_simulation(
                 potential_num_hot_water_tanks,
                 total_solar_pv_power_produced,
                 pv_system_size.max,
-                scenario,
+                optimisation.scenario,
                 Simulation(end_year, start_year),
                 temperature_data,
                 total_loads,
@@ -373,7 +372,7 @@ def single_line_simulation(
             )
 
             if get_sufficient_appraisals(optimisation, [new_appraisal]) != []:
-                system_appraisals.extend(new_appraisal)
+                sufficient_appraisals.extend(new_appraisal)
 
         # Update the system details.
         storage_size.max = test_storage_size
@@ -381,7 +380,7 @@ def single_line_simulation(
     # If the number of clean-water tanks was maxed out:
     if (
         potential_num_clean_water_tanks == cw_tanks.max
-        and scenario.desalination_scenario is not None
+        and optimisation.scenario.desalination_scenario is not None
     ):
         logger.info("Increasing number of clean-water tanks.")
 
@@ -499,7 +498,6 @@ def single_line_simulation(
                 minigrid,
                 optimisation,
                 previous_system,
-                scenario,
                 start_year,
                 temperature_data,
                 total_loads,
@@ -515,7 +513,7 @@ def single_line_simulation(
     # If the number of hot-water tanks was maxed out:
     if (
         potential_num_hot_water_tanks == hw_tanks.max
-        and scenario.hot_water_scenario is not None
+        and optimisation.scenario.hot_water_scenario is not None
     ):
         logger.info("Increasing number of hot-water tanks.")
 
@@ -631,7 +629,6 @@ def single_line_simulation(
                 minigrid,
                 optimisation,
                 previous_system,
-                scenario,
                 start_year,
                 temperature_data,
                 total_loads,
@@ -809,7 +806,6 @@ def single_line_simulation(
                 minigrid,
                 optimisation,
                 previous_system,
-                scenario,
                 start_year,
                 temperature_data,
                 total_loads,
@@ -837,7 +833,10 @@ def single_line_simulation(
         )
 
     # If clean-water PV-T was maxed out:
-    if potential_cw_pvt_size == cw_pvt_size.max and scenario.desalination_scenario:
+    if (
+        potential_cw_pvt_size == cw_pvt_size.max
+        and optimisation.scenario.desalination_scenario
+    ):
         logger.info("Increasing clean-water PV size.")
 
         # Increase and iterate over the various storage sizes and other PV-T sizes.
@@ -992,7 +991,6 @@ def single_line_simulation(
                 minigrid,
                 optimisation,
                 previous_system,
-                scenario,
                 start_year,
                 temperature_data,
                 total_loads,
@@ -1020,7 +1018,10 @@ def single_line_simulation(
         )
 
     # If hot-water PV-T was maxed out:
-    if potential_hw_pvt_size == hw_pvt_size.max and scenario.hot_water_scenario:
+    if (
+        potential_hw_pvt_size == hw_pvt_size.max
+        and optimisation.scenario.hot_water_scenario
+    ):
         logger.info("Increasing hot-water PV size.")
 
         # Increase and iterate over the various storage sizes and other PV-T sizes.
@@ -1177,7 +1178,6 @@ def single_line_simulation(
                 minigrid,
                 optimisation,
                 previous_system,
-                scenario,
                 start_year,
                 temperature_data,
                 total_loads,
@@ -1192,6 +1192,10 @@ def single_line_simulation(
 
         hw_pvt_size.max = test_hw_pvt_size
 
+    sufficient_appraisals.extend(
+        get_sufficient_appraisals(optimisation, system_appraisals)
+    )
+
     return (
         cw_pvt_size,
         cw_tanks,
@@ -1199,5 +1203,5 @@ def single_line_simulation(
         hw_tanks,
         pv_system_size,
         storage_size,
-        system_appraisals,
+        sufficient_appraisals,
     )

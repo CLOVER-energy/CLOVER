@@ -59,6 +59,7 @@ from .__utils__ import (
     InternalError,
     Location,
     ResourceType,
+    Scenario,
     SystemAppraisal,
     get_logger,
     InputFileError,
@@ -67,6 +68,7 @@ from .__utils__ import (
     OperatingMode,
     save_simulation,
 )
+from .simulation.__utils__ import check_scenario
 
 __all__ = ("main",)
 
@@ -212,7 +214,7 @@ def _prepare_water_system(
     resource_type: ResourceType,
     water_source_times: Dict[WaterSource, pd.DataFrame],
 ) -> Tuple[
-    Dict[WaterSource, pd.DataFrame], pd.DataFrame, Dict[str, pd.DataFrame], pd.DataFrame
+    Dict[WaterSource, pd.DataFrame], Dict[str, pd.DataFrame], pd.DataFrame, pd.DataFrame
 ]:
     """
     Prepares the conventional-water system.
@@ -561,7 +563,7 @@ def main(args: List[Any]) -> None:
             location,
             optimisation_inputs,
             optimisations,
-            scenario,
+            scenarios,
             simulations,
             water_source_times,
             input_file_info,
@@ -595,98 +597,21 @@ def main(args: List[Any]) -> None:
         logger.info("All input files successfully parsed.")
         print(DONE)
 
-    # If the inputs do not match up correctly, then raise errors.
-    if scenario.desalination_scenario is not None and minigrid.clean_water_tank is None:
-        raise InputFileError(
-            "energy system inputs",
-            "No clean-water tank was provided despite there needing to be a tank "
-            "specified for dealing with clean-water demands.",
-        )
-    if operating_mode == OperatingMode.SIMULATION:
-        if (scenario.pv and parsed_args.pv_system_size is None) or (
-            not scenario.pv and parsed_args.pv_system_size is not None
-        ):
-            raise InputFileError(
-                "scenario",
-                "PV mode in the scenario file must match the command-line usage.",
-            )
-        if (
-            parsed_args.clean_water_pvt_system_size is not None
-            and (scenario.desalination_scenario is None)
-        ) or (
-            parsed_args.clean_water_pvt_system_size is None
-            and (
-                scenario.desalination_scenario is not None
-                and scenario.desalination_scenario.clean_water_scenario.mode
-                == CleanWaterMode.THERMAL_ONLY
-            )
-        ):
-            logger.error(
-                "%sPV-T mode and available resources in the scenario file must match "
-                "the command-line usage. Check the clean-water and PV-T scenario "
-                "specification.%s",
-                BColours.fail,
-                BColours.endc,
-            )
-            raise InputFileError(
-                "scenario",
-                "Mismatch between command-line usage and in-file usage.",
-            )
-        if (
-            parsed_args.hot_water_pvt_system_size is not None
-            and (scenario.hot_water_scenario is None)
-        ) or (
-            parsed_args.hot_water_pvt_system_size is None
-            and (scenario.hot_water_scenario is not None)
-        ):
-            logger.error(
-                "%sPV-T mode in the scenario file must match the command-line usage. "
-                "Check the hot-water and PV-T scenario specification.%s",
-                BColours.fail,
-                BColours.endc,
-            )
-            raise InputFileError(
-                "scenario",
-                "Mismatch between command-line usage and in-file usage.",
-            )
-        if (
-            scenario.pv_t
-            and scenario.desalination_scenario is None
-            and scenario.hot_water_scenario is None
-        ) or (
-            not scenario.pv_t
-            and scenario.desalination_scenario is not None
-            and scenario.hot_water_scenario is not None
-        ):
-            logger.error(
-                "%sDesalination or hot-water scenario usage does not match the "
-                "system's PV-T panel inclusion.%s",
-                BColours.fail,
-                BColours.endc,
-            )
-            raise InputFileError(
-                "scenario",
-                "The PV-T mode does not match the hot-water or desalination scenarios.",
-            )
-        if (scenario.battery and parsed_args.storage_size is None) or (
-            not scenario.battery and parsed_args.storage_size is not None
-        ):
-            raise InputFileError(
-                "scenario",
-                "Battery mode in the scenario file must match the command-line usage.",
-            )
-
     print("Generating necessary profiles", end="\n")
 
     # Determine the number of background tasks to carry out.
     num_ninjas: int = (
         1
-        + (1 if scenario.pv_t else 0)
-        + (1 if scenario.desalination_scenario is not None else 0)
+        + (1 if any(scenario.pv_t for scenario in scenarios) else 0)
+        + (
+            1
+            if any(scenario.desalination_scenario for scenario in scenarios) is not None
+            else 0
+        )
     )
 
     # Generate and save the wind data for each year as a background task.
-    if scenario.pv_t:
+    if any(scenario.pv_t for scenario in scenarios):
         logger.info("Beginning wind-data fetching.")
         wind_data_thread: Optional[wind.WindDataThread] = wind.WindDataThread(
             os.path.join(auto_generated_files_directory, "wind"),
@@ -708,7 +633,7 @@ def main(args: List[Any]) -> None:
         wind_data_thread = None
 
     # Generate and save the weather data for each year as a background task.
-    if scenario.desalination_scenario is not None:
+    if any(scenario.desalination_scenario is not None for scenario in scenarios):
         # Set up the system to call renewables.ninja at a slower rate.
         logger.info("Begining weather-data fetching.")
         weather_data_thread: Optional[
@@ -762,7 +687,7 @@ def main(args: List[Any]) -> None:
     total_electric_load: Optional[pd.DataFrame] = None
     electric_yearly_load_statistics: Optional[pd.DataFrame] = None
 
-    if ResourceType.ELECTRIC in scenario.resource_types:
+    if any(ResourceType.ELECTRIC in scenario.resource_types for scenario in scenarios):
         try:
             (
                 initial_electric_hourly_loads,
@@ -797,19 +722,27 @@ def main(args: List[Any]) -> None:
             )
             raise
 
-    clean_water_yearly_load_statistics: Optional[pd.DataFrame] = None
+    clean_water_yearly_load_statistics: pd.DataFrame
     conventional_cw_source_profiles: Optional[Dict[WaterSource, pd.DataFrame]] = None
     initial_cw_hourly_loads: Optional[Dict[str, pd.DataFrame]] = None
     total_cw_load: Optional[pd.DataFrame] = None
 
-    if scenario.desalination_scenario is not None:
+    if any(scenario.desalination_scenario is not None for scenario in scenarios):
+        # Create a set of all the conventional clean-water sources available.
+        conventional_sources: Set[str] = {
+            source
+            for scenario in scenarios
+            for source in scenario.desalination_scenario.clean_water_scenario.conventional_sources
+        }
+
+        # Generate the clean-water load profiles.
         (
             conventional_cw_source_profiles,
             initial_cw_hourly_loads,
             total_cw_load,
             clean_water_yearly_load_statistics,
         ) = _prepare_water_system(
-            scenario.desalination_scenario.clean_water_scenario.conventional_sources,
+            conventional_sources,
             auto_generated_files_directory,
             device_utilisations,
             location,
@@ -819,19 +752,26 @@ def main(args: List[Any]) -> None:
             water_source_times,
         )
 
-    conventional_hw_source_profiles: Optional[Dict[WaterSource, pd.DataFrame]] = None
-    hot_water_yearly_load_statistics: Optional[pd.DataFrame] = None
+    conventional_hw_source_profiles: Dict[WaterSource, pd.DataFrame]
+    hot_water_yearly_load_statistics: pd.DataFrame
     initial_hw_hourly_loads: Optional[Dict[str, pd.DataFrame]] = None
     total_hw_load: Optional[pd.DataFrame] = None
 
-    if scenario.hot_water_scenario is not None:
+    if any(scenario.hot_water_scenario is not None for scenario in scenarios):
+        # Create a set of all the conventional hot-water sources available.
+        conventional_sources = {
+            source
+            for scenario in scenarios
+            for source in scenario.hot_water_scenario.conventional_sources
+        }
+
         (
             conventional_hw_source_profiles,
             initial_hw_hourly_loads,
             total_hw_load,
             hot_water_yearly_load_statistics,
         ) = _prepare_water_system(
-            scenario.hot_water_scenario.conventional_sources,
+            conventional_sources,
             auto_generated_files_directory,
             device_utilisations,
             location,
@@ -848,37 +788,41 @@ def main(args: List[Any]) -> None:
         ResourceType.HOT_CLEAN_WATER: total_hw_load,
     }
 
-    # Generate the grid-availability profiles.
-    logger.info("Generating grid-availability profiles.")
-    try:
-        grid.get_lifetime_grid_status(
-            os.path.join(auto_generated_files_directory, "grid"),
-            grid_times,
-            logger,
-            location.max_years,
-        )
-    except InputFileError:
-        print(
-            "Generating necessary profiles .................................    "
-            + f"{FAILED}"
-        )
-        raise
-    except Exception as e:
-        print(
-            "Generating necessary profiles .................................    "
-            + f"{FAILED}"
-        )
-        logger.error(
-            "%sAn unexpected error occurred generating the grid profiles. See %s for "
-            "details: %s%s",
-            BColours.fail,
-            "{}.log".format(os.path.join(LOGGER_DIRECTORY, LOGGER_NAME)),
-            str(e),
-            BColours.endc,
-        )
-        raise
+    # Generate the grid-availability profiles if relevant.
+    if any(scenario.grid for scenario in scenarios):
+        logger.info("Generating grid-availability profiles.")
+        try:
+            grid.get_lifetime_grid_status(
+                os.path.join(auto_generated_files_directory, "grid"),
+                grid_times,
+                logger,
+                location.max_years,
+            )
+        except InputFileError:
+            print(
+                "Generating necessary profiles .................................    "
+                + f"{FAILED}"
+            )
+            raise
+        except Exception as e:
+            print(
+                "Generating necessary profiles .................................    "
+                + f"{FAILED}"
+            )
+            logger.error(
+                "%sAn unexpected error occurred generating the grid profiles. See %s for "
+                "details: %s%s",
+                BColours.fail,
+                "{}.log".format(os.path.join(LOGGER_DIRECTORY, LOGGER_NAME)),
+                str(e),
+                BColours.endc,
+            )
+            raise
 
-    logger.info("Grid-availability profiles successfully generated.")
+        logger.info("Grid-availability profiles successfully generated.")
+
+    else:
+        logger.info("Grid disabled, no grid profiles to be generated.")
 
     # Wait for all threads to finish before proceeding.
     logger.info("Waiting for all setup threads to finish before proceeding.")
@@ -898,7 +842,9 @@ def main(args: List[Any]) -> None:
     )
     logger.info("Total solar output successfully computed and saved.")
 
-    if scenario.desalination_scenario is not None:
+    if any(scenario.desalination_scenario is not None for scenario in scenarios) or any(
+        scenario.hot_water_scenario is not None for scenario in scenarios
+    ):
         logger.info("Generating and saving total weather output file.")
         total_weather_data = weather.total_weather_output(
             os.path.join(auto_generated_files_directory, "weather"),
@@ -908,7 +854,7 @@ def main(args: List[Any]) -> None:
         )
         logger.info("Total weather output successfully computed and saved.")
 
-    if scenario.pv_t:
+    if any(scenario.pv_t for scenario in scenarios):
         logger.info("Generating and saving total wind data output file.")
         total_wind_data: Optional[pd.DataFrame] = wind.total_wind_output(
             os.path.join(auto_generated_files_directory, "wind"),
@@ -931,30 +877,6 @@ def main(args: List[Any]) -> None:
         f"Generating necessary profiles .................................    {DONE}",
         end="\n",
     )
-
-    # Load the relevant grid profile.
-    try:
-        with open(
-            os.path.join(
-                auto_generated_files_directory,
-                "grid",
-                f"{scenario.grid_type}_grid_status.csv",
-            ),
-            "r",
-        ) as f:
-            grid_profile = pd.read_csv(
-                f,
-                index_col=0,
-            )
-    except FileNotFoundError as e:
-        logger.error(
-            "%sGrid profile file for profile '%s' could not be found: %s%s",
-            BColours.fail,
-            scenario.grid_type,
-            str(e),
-            BColours.endc,
-        )
-        raise
 
     # Load the relevant kerosene profile.
     with open(
@@ -984,6 +906,32 @@ def main(args: List[Any]) -> None:
         )
 
         simulation_times: List[str] = []
+
+        # Determine the scenario to use for the simulation.
+        try:
+            scenario = [
+                scenario
+                for scenario in scenarios
+                if scenario.name == parsed_args.scenario
+            ][0]
+        except IndexError:
+            logger.error(
+                "%sUnable to locate scenario '%s' from scenarios.%s",
+                BColours.fail,
+                parsed_args.scenario,
+                BColours.endc,
+            )
+            raise
+
+        logger.info("Scenario '%s' successfully determined.", parsed_args.scenario)
+
+        logger.info("Checking scenario parameters.")
+        check_scenario(logger, minigrid, operating_mode, parsed_args, scenario)
+        logger.info("Scenario parameters valid.")
+
+        logger.info("Loading grid profile.")
+        grid_profile = grid.load_grid_profile(auto_generated_files_directory, logger, scenario)
+        logger.info("Grid '%s' profile successfully loaded.", scenario.grid_type)
 
         simulation_string: str = generate_simulation_string(
             minigrid, overrided_default_sizes, parsed_args, scenario
@@ -1100,6 +1048,24 @@ def main(args: List[Any]) -> None:
                     * minigrid.pv_panel.pv_unit,
                 )
 
+                # Carry out an appraisal of the system.
+                if electric_yearly_load_statistics is None:
+                    raise InternalError(
+                        "No electric yearly load statistics were computed for the "
+                        "system despite these being needed to appraise the system."
+                    )
+                system_appraisal: Optional[SystemAppraisal] = appraise_system(
+                    electric_yearly_load_statistics,
+                    simulation.end_year,
+                    finance_inputs,
+                    ghg_inputs,
+                    location,
+                    logger,
+                    None,
+                    system_performance_outputs,
+                    simulation.start_year,
+                    system_details,
+                )
             else:
                 system_appraisal = None
                 logger.info("No analysis to be carried out.")
@@ -1158,14 +1124,25 @@ def main(args: List[Any]) -> None:
                 "the system.",
             )
 
-        optimisation_string = generate_optimisation_string(
-            minigrid, optimisation_inputs, scenario
-        )
-        print(f"Running an optimisation with:\n{optimisation_string}")
-
         for optimisation_number, optimisation in enumerate(
             tqdm(optimisations, desc="optimisations", unit="optimisation"), 1
         ):
+            # Determine the scenario to use for the simulation.
+            logger.info("Checking scenario parameters.")
+            check_scenario(
+                logger, minigrid, operating_mode, parsed_args, optimisation.scenario
+            )
+            logger.info("Scenario parameters valid.")
+
+            logger.info("Loading grid profile.")
+            grid_profile = grid.load_grid_profile(auto_generated_files_directory, logger, optimisation.scenario)
+            logger.info("Grid '%s' profile successfully loaded.", optimisation.scenario.grid_type)
+
+            optimisation_string = generate_optimisation_string(
+                minigrid, optimisation_inputs, optimisation.scenario
+            )
+            print(f"Running an optimisation with:\n{optimisation_string}")
+
             try:
                 time_delta, optimisation_results = multiple_optimisation_step(
                     conventional_cw_source_profiles,
@@ -1180,7 +1157,6 @@ def main(args: List[Any]) -> None:
                     minigrid,
                     optimisation,
                     optimisation_inputs,
-                    scenario,
                     total_solar_data[solar.SolarDataType.TEMPERATURE.value],
                     total_loads,
                     total_solar_data[solar.SolarDataType.ELECTRICITY.value]

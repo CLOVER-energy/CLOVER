@@ -17,7 +17,7 @@ import logging
 
 from typing import Any, List
 
-from .__utils__ import BColours
+from .__utils__ import BColours, DEFAULT_SCENARIO
 
 __all__ = (
     "parse_args",
@@ -113,7 +113,8 @@ def parse_args(args: List[Any]) -> argparse.Namespace:
     action_arguments.add_argument(
         "--scenario",
         type=str,
-        help="The location of the scenario file to use for the run.",
+        default=DEFAULT_SCENARIO,
+        help="The name of the scenario to use for the run.",
     )
     action_arguments.add_argument(
         "--storage-size",

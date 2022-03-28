@@ -1120,7 +1120,7 @@ def compute_processed_load_profile(
 
     """
 
-    processed_total_load: Optional[pd.DataFrame] = None
+    processed_total_load: Optional[pd.Series] = None
 
     if scenario.demands.domestic:
         processed_total_load = pd.DataFrame(
@@ -1133,7 +1133,7 @@ def compute_processed_load_profile(
                 total_load[DemandType.COMMERCIAL.value].values
             )
         else:
-            processed_total_load = total_load[DemandType.COMMERCIAL.value]
+            processed_total_load = pd.DataFrame(total_load[DemandType.COMMERCIAL.value])
 
     if scenario.demands.public:
         if processed_total_load is not None:
@@ -1141,7 +1141,7 @@ def compute_processed_load_profile(
                 total_load[DemandType.PUBLIC.value].values
             )
         else:
-            processed_total_load = total_load[DemandType.PUBLIC.value]
+            processed_total_load = pd.DataFrame(total_load[DemandType.PUBLIC.value])
 
     if processed_total_load is None:
         raise Exception("At least one load type must be specified.")
