@@ -2157,7 +2157,7 @@ def parse_input_files(
     pd.DataFrame,
     Location,
     Optional[OptimisationParameters],
-    Set[Optimisation],
+    List[Optimisation],
     List[Scenario],
     List[Simulation],
     Dict[WaterSource, pd.DataFrame],
@@ -2281,10 +2281,10 @@ def parse_input_files(
     logger.info("Optimisation inputs successfully parsed.")
 
     try:
-        optimisations: Set[Optimisation] = {
+        optimisations: List[Optimisation] = [
             Optimisation.from_dict(logger, entry, scenarios)
             for entry in optimisation_inputs[OPTIMISATIONS]
-        }
+        ]
     except Exception as e:
         logger.error(
             "%sError generating optimisations from inputs file: %s%s",
