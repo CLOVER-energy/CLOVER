@@ -330,6 +330,29 @@ class Optimisation:
 
         return cls(optimisation_criteria, scenario, threshold_criteria)
 
+    def to_dict(self) -> Dict[str, Any]:
+        """
+        Returns a `dict` summarising the :class:`Optimisation` instance.
+
+        Outputs:
+            - A `dict` summarising the information contained within the
+              :class:`Optimisation` instance.
+
+        """
+
+        optimisation_criteria = {
+            str(key.value): str(value.value) for key, value in self.optimisation_criteria.items()
+        }
+        threshold_criteria = {
+            str(key.value): float(value) for key, value in self.threshold_criteria.items()
+        }
+
+        return {
+            "optimisation_criteria": optimisation_criteria,
+            "scenario": self.scenario.to_dict(),
+            "threshold_criteria": threshold_criteria
+        }
+
 
 @dataclasses.dataclass
 class OptimisationComponent(enum.Enum):
@@ -1134,6 +1157,7 @@ def save_optimisation(
     optimisation_number: int,
     output: str,
     output_directory: str,
+    scenario: Scenario,
     system_appraisals: List[SystemAppraisal],
 ) -> None:
     """
@@ -1151,6 +1175,8 @@ def save_optimisation(
             to the output folder in which the system files are saved.
         - output_directory:
             The directory into which the files should be saved.
+        - scenario:
+            The scenario for the optimisation.
         - system_appraisals:
             A `list` of the :class:`SystemAppraisal` instances which specify the
             optimum systems at each time step.
@@ -1174,6 +1200,7 @@ def save_optimisation(
     # Add the optimisation parameter information.
     output_dict = {
         "optimisation_inputs": optimisation_inputs.to_dict(),
+        "scenario": scenario.to_dict(),
         "system_appraisals": system_appraisals_dict,
     }
 

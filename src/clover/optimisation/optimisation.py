@@ -1403,6 +1403,9 @@ def multiple_optimisation_step(
                 if optimum_system.system_details.final_cw_pvt_size is not None
                 else 0
             )
+            if optimisation.scenario.pv_t
+            and optimisation.scenario.desalination_scenario is not None
+            else 0
         )
         input_cw_pvt_system_size = SolarSystemSize(
             int(cw_pvt_size_max),
@@ -1423,6 +1426,8 @@ def multiple_optimisation_step(
                 if optimum_system.system_details.final_num_clean_water_tanks is not None
                 else 0
             )
+            if optimisation.scenario.desalination_scenario is not None
+            else 0
         )
         input_cw_tanks = TankSize(
             int(cw_tanks_max),
@@ -1443,6 +1448,9 @@ def multiple_optimisation_step(
                 if optimum_system.system_details.final_hw_pvt_size is not None
                 else 0
             )
+            if optimisation.scenario.pv_t
+            and optimisation.scenario.hot_water_scenario is not None
+            else 0
         )
         input_hw_pvt_system_size = SolarSystemSize(
             int(hw_pvt_size_max),
@@ -1463,6 +1471,9 @@ def multiple_optimisation_step(
                 if optimum_system.system_details.final_num_hot_water_tanks is not None
                 else 0
             )
+            if optimisation.scenario.pv_t
+            and optimisation.scenario.hot_water_scenario is not None
+            else 0
         )
         input_hw_tanks = TankSize(
             int(hw_tanks_max),
@@ -1483,6 +1494,8 @@ def multiple_optimisation_step(
                 if optimum_system.system_details.final_pv_size is not None
                 else 0
             )
+            if optimisation.scenario.pv
+            else 0
         )
         input_pv_sizes = SolarSystemSize(
             int(pv_size_max),
@@ -1503,6 +1516,7 @@ def multiple_optimisation_step(
                 if optimum_system.system_details.final_storage_size is not None
                 else 0
             )
+            if optimisation.scenario.battery else 0
         )
         input_storage_sizes = StorageSystemSize(
             int(storage_size_max),
