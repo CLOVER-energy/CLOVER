@@ -34,6 +34,7 @@ from tqdm import tqdm
 from ..simulation import energy_system
 
 from ..__utils__ import (
+    DEFAULT_SCENARIO,
     BColours,
     Criterion,
     ITERATION_LENGTH,
@@ -82,6 +83,10 @@ CONVERTER_NAME_STRING: str = "name"
 #   NOTE: The name of the group is not updated automatically in accordance with the
 # above string and needs to be udpated separately.
 CONVERTER_SIZE_REGEX: Pattern[str] = re.compile(r"(?P<name>.*)_size")
+
+# Scenario:
+#   Keyword used for parsing the scenario to use for a given optimisation.
+SCENARIO: str = "scenario"
 
 
 def converters_from_sizing(converter_sizes: Dict[Converter, int]) -> List[Converter]:
@@ -187,12 +192,16 @@ class Optimisation:
         A `dict` mapping optimisation criteria to whether they should be maximised or
         minimised.
 
+    .. attribute:: scenario
+        The :class:`Scenario` to use for this optimisation.
+
     .. attribute:: threshold_criteria
         A `dict` mapping threshold criteria to their values.
 
     """
 
     optimisation_criteria: Dict[Criterion, CriterionMode]
+    scenario: Scenario
     threshold_criteria: Dict[Criterion, float]
 
     def __str__(self) -> str:
@@ -208,6 +217,7 @@ class Optimisation:
         return (
             "Optimisation("
             + f"optimisation_crtieria: {self.optimisation_criteria}"
+            + f", scenario: {self.scenario}"
             + f", threshold_criteria: {self.threshold_criteria}"
             + ")"
         )
@@ -227,7 +237,12 @@ class Optimisation:
         return hash(str(self))
 
     @classmethod
-    def from_dict(cls, logger: Logger, optimisation_data: Dict[str, Any]) -> Any:
+    def from_dict(
+        cls,
+        logger: Logger,
+        optimisation_data: Dict[str, Any],
+        scenarios: List[Scenario],
+    ) -> Any:
         """
         Creates a :class:`Optimisation` instance based on the input data.
 
@@ -236,6 +251,8 @@ class Optimisation:
                 The logger to use for the run.
             - optimisation_data:
                 The optimisation data, extracted from the input file.
+            - scenarios:
+                The `list` of :class:`Scenario` instances available for the run.
 
         Outputs:
             - A :class:`Optimisation` instance based on the input data.
@@ -272,7 +289,46 @@ class Optimisation:
             )
             raise
 
-        return cls(optimisation_criteria, threshold_criteria)
+        if SCENARIO in optimisation_data:
+            try:
+                scenario = [
+                    scenario
+                    for scenario in scenarios
+                    if scenario.name == optimisation_data["scenario"]
+                ][0]
+            except IndexError:
+                logger.error(
+                    "%sError determining scenario for optimisation run: scenario '%s' "
+                    "could not be found.%s",
+                    BColours.fail,
+                    optimisation_data["scenario"],
+                    BColours.endc,
+                )
+                raise InputFileError(
+                    "optimisation inputs/scenario inputs",
+                    f"Scenario {optimisation_data['scenario']} could not be found.",
+                ) from None
+        else:
+            try:
+                scenario = [
+                    scenario
+                    for scenario in scenarios
+                    if scenario.name == DEFAULT_SCENARIO
+                ][0]
+            except IndexError:
+                logger.error(
+                    "%sError determining scenario for optimisation run: default "
+                    "scenario '%s' could not be found.%s",
+                    BColours.fail,
+                    DEFAULT_SCENARIO,
+                    BColours.endc,
+                )
+                raise InputFileError(
+                    "optimisation inputs/scenario inputs",
+                    f"Default scenario {DEFAULT_SCENARIO} could not be found.",
+                ) from None
+
+        return cls(optimisation_criteria, scenario, threshold_criteria)
 
 
 @dataclasses.dataclass
@@ -861,7 +917,7 @@ def get_sufficient_appraisals(
 
 
 def recursive_iteration(
-    conventional_cw_source_profiles: Dict[WaterSource, pd.DataFrame],
+    conventional_cw_source_profiles: Optional[Dict[WaterSource, pd.DataFrame]],
     end_year: int,
     finance_inputs: Dict[str, Any],
     ghg_inputs: Dict[str, Any],
@@ -873,7 +929,6 @@ def recursive_iteration(
     minigrid: energy_system.Minigrid,
     optimisation: Optimisation,
     previous_system: Optional[SystemAppraisal],
-    scenario: Scenario,
     start_year: int,
     temperature_data: pd.Series,
     total_loads: Dict[ResourceType, Optional[pd.DataFrame]],
@@ -980,7 +1035,7 @@ def recursive_iteration(
             int(component_sizes[ImpactingComponent.HOT_WATER_TANK]),
             total_solar_pv_power_produced,
             component_sizes[RenewableEnergySource.PV],
-            scenario,
+            optimisation.scenario,
             Simulation(end_year, start_year),
             temperature_data,
             total_loads,
@@ -1034,7 +1089,6 @@ def recursive_iteration(
             minigrid,
             optimisation,
             previous_system,
-            scenario,
             start_year,
             temperature_data,
             total_loads,

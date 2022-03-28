@@ -52,13 +52,13 @@ from ..__utils__ import (
 )
 from ..conversion.conversion import Converter, ThermalDesalinationPlant, WaterSource
 from ..generation.solar import SolarPanelType, solar_degradation
-from ..impact.__utils__ import WasteProduct
 from ..load.load import (
     compute_processed_load_profile,
     HOT_WATER_USAGE,
     population_hourly,
 )
-from .__utils__ import Minigrid
+from ..impact.__utils__ import WasteProduct
+from .__utils__ import determine_available_converters, Minigrid
 from .diesel import (
     DieselWaterHeater,
     get_diesel_energy_and_times,
@@ -69,9 +69,8 @@ from .storage import (
     battery_iteration_step,
     cw_tank_iteration_step,
     get_electric_battery_storage_profile,
-    get_water_storage_profile,
 )
-from .storage_utils import Battery, CleanWaterTank, HotWaterTank
+from .storage_utils import CleanWaterTank
 
 __all__ = (
     "Minigrid",
@@ -1324,6 +1323,20 @@ def run_simulation(
     start_hour = simulation.start_year * HOURS_PER_YEAR
     end_hour = simulation.end_year * HOURS_PER_YEAR
     simulation_hours = end_hour - start_hour
+
+    available_converters = determine_available_converters(
+        converters, logger, minigrid, scenario
+    )
+    logger.info("Subset of available converters determined.")
+    logger.debug(
+        "Available converters: %s",
+        ", ".join([str(entry) for entry in available_converters]),
+    )
+    grid_profile: pd.DataFrame = (
+        grid_profile
+        if grid_profile is not None
+        else pd.DataFrame([0] * simulation_hours)
+    )
     total_cw_load: Optional[pd.DataFrame] = total_loads[ResourceType.CLEAN_WATER]
     total_electric_load: Optional[pd.DataFrame] = total_loads[ResourceType.ELECTRIC]
     total_hw_load: Optional[pd.DataFrame] = total_loads[ResourceType.HOT_CLEAN_WATER]
@@ -1351,7 +1364,7 @@ def run_simulation(
         thermal_desalination_electric_power_consumed,
         total_waste_produced,
     ) = _calculate_renewable_cw_profiles(
-        converters,
+        available_converters,
         end_hour,
         irradiance_data,
         logger,
@@ -1466,7 +1479,7 @@ def run_simulation(
         total_waste_produced,
         volumetric_hw_dc_fraction,
     ) = _calculate_renewable_hw_profiles(
-        converters,
+        available_converters,
         end_hour,
         irradiance_data,
         logger,
@@ -1639,7 +1652,7 @@ def run_simulation(
         energy_per_desalinated_litre,
         maximum_water_throughput,
     ) = _calculate_electric_desalination_parameters(
-        converters, feedwater_sources, logger, scenario
+        available_converters, feedwater_sources, logger, scenario
     )
 
     # Intialise tank accounting parameters

@@ -17,14 +17,17 @@ This module generates grid-availability profiles for CLOVER.
 
 """
 
+import os
+
 from logging import Logger
-from typing import Dict
+from typing import Dict, Optional
 
-import pandas as pd  # pylint: disable=import-error
+import pandas as pd
 
+from ..__utils__ import BColours, Scenario
 from .__utils__ import get_intermittent_supply_status
 
-__all__ = ("get_lifetime_grid_status",)
+__all__ = ("get_lifetime_grid_status", "load_grid_profile")
 
 
 def get_lifetime_grid_status(
@@ -74,3 +77,49 @@ def get_lifetime_grid_status(
 #         else:
 #             output = pd.concat([output, new_profile], axis=1)
 #         output.to_csv(self.generation_filepath + "Grid inputs.csv")
+
+
+def load_grid_profile(
+    auto_generated_files_directory: str,
+    logger: Logger,
+    scenario: Scenario
+) -> pd.DataFrame:
+    """
+    Loads the grid profile required for the run.
+
+    Inputs:
+        - auto_generated_files_directory:
+            The file into which auto-generated files are saved.
+        - logger:
+            The :class:`logging.Logger` to use for the run.
+        - scenario:
+            The scenario to use for the run.
+
+    """
+
+    grid_profile: Optional[pd.DataFrame] = None
+    if scenario.grid:
+        try:
+            with open(
+                os.path.join(
+                    auto_generated_files_directory,
+                    "grid",
+                    f"{scenario.grid_type}_grid_status.csv",
+                ),
+                "r",
+            ) as f:
+                grid_profile = pd.read_csv(
+                    f,
+                    index_col=0,
+                )
+        except FileNotFoundError as e:
+            logger.error(
+                "%sGrid profile file for profile '%s' could not be found: %s%s",
+                BColours.fail,
+                scenario.grid_type,
+                str(e),
+                BColours.endc,
+            )
+            raise
+
+    return grid_profile

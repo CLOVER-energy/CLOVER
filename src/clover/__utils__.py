@@ -40,6 +40,7 @@ __all__ = (
     "Criterion",
     "CUT_OFF_TIME",
     "daily_sum_to_monthly_sum",
+    "DEFAULT_SCENARIO",
     "DemandType",
     "DesalinationScenario",
     "dict_to_dataframe",
@@ -58,6 +59,7 @@ __all__ = (
     "InternalError",
     "KEROSENE_DEVICE_NAME",
     "KeyResults",
+    "Location",
     "LOCATIONS_FOLDER_NAME",
     "LOGGER_DIRECTORY",
     "monthly_profile_to_daily_profile",
@@ -96,6 +98,14 @@ CONVENTIONAL_SOURCES: str = "conventional_sources"
 #   The time up and to which information about the load of each device will be returned.
 CUT_OFF_TIME: int = 480  # [hours]
 
+# Default scenario:
+#   The name of the default scenario to be used in CLOVER.
+DEFAULT_SCENARIO: str = "default"
+
+# Desalination scenario:
+#   Keyword for parsing the desalination scenario from the scenario inputs.
+DESALINATION_SCENARIO: str = "desalination_scenario"
+
 # Done message:
 #   The message to display when a task was successful.
 DONE: str = "[   DONE   ]"
@@ -115,6 +125,10 @@ FAILED: str = "[  FAILED  ]"
 # Heat capacity of water:
 #   The heat capacity of water, measured in Joules per kilogram Kelvin.
 HEAT_CAPACITY_OF_WATER: int = 4182
+
+# Hot water scenario:
+#   Keyword used for parsing the hot-water scenario to use.
+HOT_WATER_SCENARIO: str = "hot_water_scenario"
 
 # Hours per year:
 #   The number of hours in a year, used for reshaping arrays.
@@ -1694,6 +1708,9 @@ class DesalinationScenario:
     .. attribute:: feedwater_supply_temperature
         The supply temperature of the feedwater input to the system.
 
+    .. attribute:: name
+        The name of the scenario.
+
     .. attribute:: pvt_scenario
         The PV-T scenario.
 
@@ -1704,6 +1721,7 @@ class DesalinationScenario:
 
     clean_water_scenario: CleanWaterScenario
     feedwater_supply_temperature: float
+    name: str
     pvt_scenario: PVTScenario
     unclean_water_sources: List[str]
 
@@ -1751,14 +1769,10 @@ class DesalinationScenario:
             ) from None
 
         clean_water_scenario: CleanWaterScenario = CleanWaterScenario(
-            set(
-                desalination_inputs[ResourceType.CLEAN_WATER.value][
-                    CONVENTIONAL_SOURCES
-                ]
-            )
+            desalination_inputs[ResourceType.CLEAN_WATER.value][CONVENTIONAL_SOURCES]
             if CONVENTIONAL_SOURCES
             in desalination_inputs[ResourceType.CLEAN_WATER.value]
-            else set(),
+            else [],
             clean_water_mode,
             list(desalination_inputs[ResourceType.CLEAN_WATER.value]["sources"]),
         )
@@ -1820,6 +1834,7 @@ class DesalinationScenario:
         return cls(
             clean_water_scenario,
             feedwater_supply_temperature,
+            desalination_inputs[NAME],
             pvt_scenario,
             unclean_water_sources,
         )
@@ -1846,6 +1861,9 @@ class HotWaterScenario:
     .. attribute:: demand_temperature
         The temperature, in degrees Celcius, at which hot water should be supplied to the end user.
 
+    .. attribute:: name
+        The name of the hot-water scenario.
+
     .. attribute:: pvt_scenario
         The PV-T scenario.
 
@@ -1856,6 +1874,7 @@ class HotWaterScenario:
     cold_water_supply_temperature: float
     conventional_sources: List[str]
     demand_temperature: float
+    name: str
     pvt_scenario: PVTScenario
 
     @classmethod
@@ -2011,6 +2030,7 @@ class HotWaterScenario:
             cold_water_supply_temperature,
             conventional_sources,
             demand_temperature,
+            hot_water_inputs[NAME],
             pvt_scenario,
         )
 
@@ -2045,6 +2065,9 @@ class Scenario:
     .. attribute:: hot_water_scneario
         The :class:`HotWaterScenario` for the run.
 
+    .. attribute:: name
+        The name of the scenario.
+
     .. attribute:: resource_types
         The load types being modelled.
 
@@ -2073,6 +2096,7 @@ class Scenario:
     grid: bool
     grid_type: str
     hot_water_scenario: Optional[HotWaterScenario]
+    name: str
     resource_types: Set[ResourceType]
     prioritise_self_generation: bool
     pv: bool
@@ -2083,8 +2107,8 @@ class Scenario:
     @classmethod
     def from_dict(
         cls,
-        desalination_scenario: Optional[DesalinationScenario],
-        hot_water_scenario: Optional[HotWaterScenario],
+        desalination_scenarios: Optional[List[DesalinationScenario]],
+        hot_water_scenarios: Optional[List[HotWaterScenario]],
         logger: logging.Logger,
         scenario_inputs: Dict[str, Any],
     ) -> Any:
@@ -2092,8 +2116,10 @@ class Scenario:
         Returns a :class:`Scenario` instance based on the input data.
 
         Inputs:
-            - desalination_scenario:
-                The :class:`DesalinationScenario` to use for the run.
+            - desalination_scenarios:
+                The list of :class:`DesalinationScenario` to use for the run.
+            - hot_water_scenarios:
+                The list of :class:`HotWaterScenario` to use for the run.
             - logger:
                 The :class:`logging.Logger` to use for the run.
             - scenario_inputs:
@@ -2126,6 +2152,81 @@ class Scenario:
             for resource_name in scenario_inputs["resource_types"]
         }
 
+        # Determine the desalination and hot-water scenarios to use for the run.
+        if desalination_scenarios is not None:
+            if DESALINATION_SCENARIO in scenario_inputs:
+                try:
+                    desalination_scenario: Optional[DesalinationScenario] = [
+                        entry
+                        for entry in desalination_scenarios
+                        if entry.name == scenario_inputs[DESALINATION_SCENARIO]
+                    ][0]
+                except IndexError:
+                    logger.error(
+                        "%sError creating scenario from inputs. Deslination scenario '%s' "
+                        "could not be found in scenario '%s'.%s",
+                        BColours.fail,
+                        scenario_inputs[DESALINATION_SCENARIO],
+                        scenario_inputs[NAME],
+                        BColours.endc,
+                    )
+            else:
+                try:
+                    desalination_scenario: DesalinationScenario = [
+                        entry
+                        for entry in desalination_scenarios
+                        if entry.name == DEFAULT_SCENARIO
+                    ][0]
+                except IndexError:
+                    logger.error(
+                        "%sError creating scenario from inputs. Deslination scenario '%s' "
+                        "could not be found in scenario '%s'.%s",
+                        BColours.fail,
+                        scenario_inputs[DESALINATION_SCENARIO],
+                        scenario_inputs[NAME],
+                        BColours.endc,
+                    )
+        else:
+            desalination_scenario = None
+
+        if hot_water_scenarios is not None:
+            if HOT_WATER_SCENARIO in scenario_inputs:
+                try:
+                    hot_water_scenario: Optional[HotWaterScenario] = [
+                        entry
+                        for entry in hot_water_scenarios
+                        if entry.name == scenario_inputs[HOT_WATER_SCENARIO]
+                    ][0]
+                except IndexError:
+                    logger.error(
+                        "%sError creating scenario from inputs. Hot-water scenario '%s' "
+                        "could not be found in scenario '%s'.%s",
+                        BColours.fail,
+                        scenario_inputs[HOT_WATER_SCENARIO],
+                        scenario_inputs[NAME],
+                        BColours.endc,
+                    )
+                    raise
+            else:
+                try:
+                    hot_water_scenario: HotWaterScenario = [
+                        entry
+                        for entry in hot_water_scenarios
+                        if entry.name == DEFAULT_SCENARIO
+                    ][0]
+                except IndexError:
+                    logger.error(
+                        "%sError creating scenario from inputs. Hot-water scenario '%s' "
+                        "could not be found in scenario '%s'.%s",
+                        BColours.fail,
+                        scenario_inputs[HOT_WATER_SCENARIO],
+                        scenario_inputs[NAME],
+                        BColours.endc,
+                    )
+                    raise
+        else:
+            hot_water_scenario = None
+
         return cls(
             scenario_inputs["battery"],
             demands,
@@ -2135,6 +2236,7 @@ class Scenario:
             scenario_inputs["grid"],
             scenario_inputs["grid_type"],
             hot_water_scenario,
+            scenario_inputs[NAME],
             resource_types,
             scenario_inputs["prioritise_self_generation"],
             scenario_inputs["pv"],
@@ -2916,7 +3018,7 @@ class TechnicalAppraisal:
 
         # Remove any "Nan" entries.
         technical_appraisal_dict = {
-            key: value
+            str(key): float(value)
             for key, value in technical_appraisal_dict.items()
             if value is not None
         }

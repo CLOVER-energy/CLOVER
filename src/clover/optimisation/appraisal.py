@@ -905,19 +905,20 @@ def _appraise_electric_system_tech(
         simulation_results[ColumnHeader.RENEWABLE_ELECTRICITY_USED_DIRECTLY.value]
     )
     total_pv_energy = np.sum(
-        simulation_results[ColumnHeader.PV_ELECTRICITY_SUPPLIED.value]
+        simulation_results[ColumnHeader.PV_ELECTRICITY_SUPPLIED.value]  # type: ignore
     )
     total_pvt_energy = (
-        np.sum(simulation_results[ColumnHeader.TOTAL_PVT_ELECTRICITY_SUPPLIED.value])
+        np.sum(
+            simulation_results[ColumnHeader.TOTAL_PVT_ELECTRICITY_SUPPLIED.value]  # type: ignore
+        )
         if ColumnHeader.TOTAL_PVT_ELECTRICITY_SUPPLIED.value in simulation_results
         else None
     )
     storage_electricity_used = np.sum(
         simulation_results[ColumnHeader.ELECTRICITY_FROM_STORAGE.value]
     )
-    total_grid_used = np.sum(simulation_results[ColumnHeader.GRID_ENERGY.value])
     total_diesel_used = np.sum(
-        simulation_results[ColumnHeader.DIESEL_ENERGY_SUPPLIED.value]
+        simulation_results[ColumnHeader.DIESEL_ENERGY_SUPPLIED.value]  # type: ignore
     )
     unmet_electricity = np.sum(simulation_results[ColumnHeader.UNMET_ELECTRICITY.value])
     renewables_fraction = (

@@ -111,7 +111,7 @@ def _fetch_optimum_system(
 
 
 def _find_optimum_system(
-    conventional_cw_source_profiles: Dict[WaterSource, pd.DataFrame],
+    conventional_cw_source_profiles: Optional[Dict[WaterSource, pd.DataFrame]],
     converters: List[Converter],
     end_year: int,
     finance_inputs: Dict[str, Any],
@@ -120,10 +120,10 @@ def _find_optimum_system(
     irradiance_data: pd.Series,
     kerosene_usage: pd.DataFrame,
     largest_converter_sizes: Dict[Converter, ConverterSize],
-    largest_cw_pvt_system_size: SolarSystemSize,
     largest_cw_tank_size: TankSize,
-    largest_hw_pvt_system_size: SolarSystemSize,
+    largest_cw_pvt_system_size: SolarSystemSize,
     largest_hw_tank_size: TankSize,
+    largest_hw_pvt_system_size: SolarSystemSize,
     largest_pv_system_size: SolarSystemSize,
     largest_storage_system_size: StorageSystemSize,
     location: Location,
@@ -131,7 +131,6 @@ def _find_optimum_system(
     minigrid: energy_system.Minigrid,
     optimisation: Optimisation,
     previous_system: Optional[SystemAppraisal],
-    scenario: Scenario,
     start_year: int,
     system_appraisals: List[SystemAppraisal],
     temperature_data: pd.Series,
@@ -206,34 +205,34 @@ def _find_optimum_system(
             or (
                 optimum_system.system_details.initial_cw_pvt_size
                 == largest_cw_pvt_system_size.max
-                and scenario.desalination_scenario is not None
-                and scenario.pv_t
+                and optimisation.scenario.desalination_scenario is not None
+                and optimisation.scenario.pv_t
             )
             or (
                 optimum_system.system_details.initial_num_clean_water_tanks
                 == largest_cw_tank_size.max
-                and scenario.desalination_scenario is not None
+                and optimisation.scenario.desalination_scenario is not None
             )
             or (
                 optimum_system.system_details.initial_hw_pvt_size
                 == largest_hw_pvt_system_size.max
-                and scenario.hot_water_scenario is not None
-                and scenario.pv_t
+                and optimisation.scenario.hot_water_scenario is not None
+                and optimisation.scenario.pv_t
             )
             or (
                 optimum_system.system_details.initial_num_hot_water_tanks
                 == largest_hw_tank_size.max
-                and scenario.hot_water_scenario is not None
+                and optimisation.scenario.hot_water_scenario is not None
             )
             or (
                 optimum_system.system_details.initial_pv_size
                 == largest_pv_system_size.max
-                and scenario.pv
+                and optimisation.scenario.pv
             )
             or (
                 optimum_system.system_details.initial_storage_size
                 == largest_storage_system_size.max
-                and scenario.battery
+                and optimisation.scenario.battery
             )
         ):
             # Do single line optimisation to see if larger system is superior
@@ -266,7 +265,6 @@ def _find_optimum_system(
                 optimum_system,
                 previous_system,
                 largest_pv_system_size,
-                scenario,
                 start_year,
                 largest_storage_system_size,
                 temperature_data,
@@ -277,25 +275,30 @@ def _find_optimum_system(
             )
 
             # Determine the optimum system from the new systems simulated.
-            logger.info(
-                "Determining optimum system from %s systems.",
-                len(new_system_appraisals),
-            )
-            potential_optimum_system = _fetch_optimum_system(
-                optimisation, new_system_appraisals
-            )
-
-            # Compare previous optimum system and new potential
-            system_comparison = [
-                optimum_system,
-                list(potential_optimum_system.values())[0],
-            ]
-            logger.info(
-                "Determining optimum system from %s systems.", len(system_comparison)
-            )
-            optimum_system = _fetch_optimum_system(optimisation, system_comparison)[
-                optimisation_criterion
-            ]
+            if len(new_system_appraisals) > 0:
+                logger.info(
+                    "Determining optimum system from %s systems.",
+                    len(new_system_appraisals),
+                )
+                potential_optimum_system = _fetch_optimum_system(
+                    optimisation, new_system_appraisals
+                )
+                # Compare previous optimum system and new potential
+                system_comparison = [
+                    optimum_system,
+                    list(potential_optimum_system.values())[0],
+                ]
+                logger.info(
+                    "Determining optimum system from %s systems.",
+                    len(system_comparison),
+                )
+                optimum_system = _fetch_optimum_system(optimisation, system_comparison)[
+                    optimisation_criterion
+                ]
+            else:
+                logger.info(
+                    "None of the additional systems considered were sufficient."
+                )
 
         optimum_systems[optimisation_criterion] = optimum_system
 
@@ -323,7 +326,6 @@ def _simulation_iteration(
     optimisation_parameters: OptimisationParameters,
     previous_system: Optional[SystemAppraisal],
     pv_sizes: SolarSystemSize,
-    scenario: Scenario,
     start_year: int,
     storage_sizes: StorageSystemSize,
     temperature_data: pd.Series,
@@ -383,8 +385,6 @@ def _simulation_iteration(
             Range of PV sizes.
         - pvt_sizes:
             Range of PV-T sizes.
-        - scenario:
-            The scenatio being considered.
         - solar_lifetime:
             The lifetime of the solar setup.
         - start_year:
@@ -454,7 +454,10 @@ def _simulation_iteration(
         for converter in converters
         if converter not in max_converter_sizes
     }
-    simulation_converter_sizes = {**max_converter_sizes, **static_converter_sizes}
+    simulation_converter_sizes: Dict[Convertor, int] = {
+        **max_converter_sizes,
+        **static_converter_sizes,
+    }
 
     _, simulation_results, system_details = energy_system.run_simulation(
         cw_pvt_system_size.max,
@@ -472,7 +475,7 @@ def _simulation_iteration(
         hw_tanks.max,
         total_solar_pv_power_produced,
         pv_sizes.max,
-        scenario,
+        optimisation.scenario,
         Simulation(end_year, start_year),
         temperature_data,
         total_loads,
@@ -531,16 +534,18 @@ def _simulation_iteration(
             pv_size_max,
             storage_size_max,
             f", clean-water PV-T size: {cw_pvt_size_max}"
-            if scenario.desalination_scenario is not None and scenario.pv_t
+            if optimisation.scenario.desalination_scenario is not None
+            and optimisation.scenario.pv_t
             else "",
             f", num clean-water tanks: {cw_tanks_max}"
-            if scenario.desalination_scenario is not None
+            if optimisation.scenario.desalination_scenario is not None
             else "",
             f", hot-water PV-T size: {hw_pvt_size_max}"
-            if scenario.hot_water_scenario is not None and scenario.pv_t
+            if optimisation.scenario.hot_water_scenario is not None
+            and optimisation.scenario.pv_t
             else "",
             f", num hot-water tanks: {hw_tanks_max}"
-            if scenario.hot_water_scenario is not None
+            if optimisation.scenario.hot_water_scenario is not None
             else "",
             ", ".join(
                 [f"{converter.name} size: {size}"]
@@ -565,7 +570,7 @@ def _simulation_iteration(
             hw_tanks_max,
             total_solar_pv_power_produced,
             pv_size_max,
-            scenario,
+            optimisation.scenario,
             Simulation(end_year, start_year),
             temperature_data,
             total_loads,
@@ -596,25 +601,31 @@ def _simulation_iteration(
         # Increment the system sizes.
         cw_pvt_size_max += (
             cw_pvt_system_size.step
-            if scenario.desalination_scenario is not None and scenario.pv_t
+            if optimisation.scenario.desalination_scenario is not None
+            and optimisation.scenario.pv_t
             else 0
         )
         cw_tanks_max += (
-            cw_tanks.step if scenario.desalination_scenario is not None else 0
+            cw_tanks.step
+            if optimisation.scenario.desalination_scenario is not None
+            else 0
         )
         hw_pvt_size_max += (
             hw_pvt_system_size.step
-            if scenario.hot_water_scenario is not None and scenario.pv_t
+            if optimisation.scenario.hot_water_scenario is not None
+            and optimisation.scenario.pv_t
             else 0
         )
-        hw_tanks_max += hw_tanks.step if scenario.hot_water_scenario is not None else 0
+        hw_tanks_max += (
+            hw_tanks.step if optimisation.scenario.hot_water_scenario is not None else 0
+        )
         max_converter_sizes = {
             converter: max_converter_sizes[converter] + size.step
             for converter, size in converter_sizes.items()
         }
         simulation_converter_sizes = {**max_converter_sizes, **static_converter_sizes}
-        pv_size_max += pv_sizes.step if scenario.pv else 0
-        storage_size_max += storage_sizes.step if scenario.battery else 0
+        pv_size_max += pv_sizes.step if optimisation.scenario.pv else 0
+        storage_size_max += storage_sizes.step if optimisation.scenario.battery else 0
 
     # Output that the search for the largest suitable system was successful.
     tqdm.write(
@@ -650,18 +661,20 @@ def _simulation_iteration(
         "Largest system size determined:\n- pv_size: %s\n%s%s%s%s- storage_size: %s",
         pv_size_max,
         f"- clean-water pvt-size: {cw_pvt_size_max}\n"
-        if minigrid.pvt_panel is not None and scenario.desalination_scenario is not None
+        if minigrid.pvt_panel is not None
+        and optimisation.scenario.desalination_scenario is not None
         else "",
         f"- num clean-water tanks: {cw_tanks_max}\n"
         if minigrid.clean_water_tank is not None
-        and scenario.desalination_scenario is not None
+        and optimisation.scenario.desalination_scenario is not None
         else "",
         f"- hot-water pvt-size: {hw_pvt_size_max}\n"
-        if minigrid.pvt_panel is not None and scenario.hot_water_scenario is not None
+        if minigrid.pvt_panel is not None
+        and optimisation.scenario.hot_water_scenario is not None
         else "",
         f"- num hot-water tanks: {hw_tanks_max}\n"
         if minigrid.hot_water_tank is not None
-        and scenario.hot_water_scenario is not None
+        and optimisation.scenario.hot_water_scenario is not None
         else "",
         storage_size_max,
     )
@@ -753,7 +766,7 @@ def _simulation_iteration(
     # Add the iterable converter sizes.
     for converter, sizes in converter_sizes.items():
         # Construct the list of available sizes for the given converter.
-        simulation_converter_sizes: List[int] = sorted(
+        simulation_converter_size_list: List[int] = sorted(
             range(
                 int(sizes.min),
                 int(max_converter_sizes[converter] + sizes.step),
@@ -762,18 +775,18 @@ def _simulation_iteration(
             reverse=True,
         )
 
-        if len(simulation_converter_sizes) > 1:
+        if len(simulation_converter_size_list) > 1:
             parameter_space.append(
                 (
                     converter,
                     "simulation"
                     if len(parameter_space) == 0
                     else f"{converter.name} size",
-                    simulation_converter_sizes,
+                    simulation_converter_size_list,
                 )
             )
         else:
-            component_sizes[converter] = simulation_converter_sizes[0]
+            component_sizes[converter] = float(simulation_converter_sizes[0])  # type: ignore
 
     # Add the static converter sizes.
     for converter, size in static_converter_sizes.items():
@@ -844,7 +857,6 @@ def _simulation_iteration(
         minigrid,
         optimisation,
         previous_system,
-        scenario,
         start_year,
         temperature_data,
         total_loads,
@@ -860,8 +872,12 @@ def _simulation_iteration(
     return (
         end_year,
         {
-            converter: ConverterSize(size.max, size.min, size.step)
-            for converter, size in max_converter_sizes.items()
+            converter: ConverterSize(
+                max_size,
+                converter_sizes[converter].min,
+                converter_sizes[converter].step,
+            )
+            for converter, max_size in max_converter_sizes.items()
         },
         SolarSystemSize(
             cw_pvt_size_max, cw_pvt_system_size.min, cw_pvt_system_size.step
@@ -900,7 +916,6 @@ def _optimisation_step(
     optimisation_parameters: OptimisationParameters,
     previous_system: Optional[SystemAppraisal],
     pv_sizes: SolarSystemSize,
-    scenario: Scenario,
     start_year: int,
     storage_sizes: StorageSystemSize,
     temperature_data: pd.Series,
@@ -949,8 +964,6 @@ def _optimisation_step(
             Appraisal of the system already in place before this simulation period.
         - pv_sizes:
             Range of PV sizes.
-        - scenario:
-            The scenatio being considered.
         - solar_lifetime:
             The lifetime of the solar setup.
         - start_year:
@@ -1009,7 +1022,6 @@ def _optimisation_step(
         optimisation_parameters,
         previous_system,
         pv_sizes,
-        scenario,
         start_year,
         storage_sizes,
         temperature_data,
@@ -1042,7 +1054,6 @@ def _optimisation_step(
         minigrid,
         optimisation,
         previous_system,
-        scenario,
         start_year,
         sufficient_systems,
         temperature_data,
@@ -1054,7 +1065,8 @@ def _optimisation_step(
     logger.info("Optimum systems determined.")
 
     # @@@ For now, the optimum system for a single threshold criterion will be returned.
-    return list(optimum_systems.values())[0]
+    optimum_system_appraisal: SystemAppraisal = list(optimum_systems.values())[0]
+    return optimum_system_appraisal
 
 
 def multiple_optimisation_step(
@@ -1070,7 +1082,6 @@ def multiple_optimisation_step(
     minigrid: energy_system.Minigrid,
     optimisation: Optimisation,
     optimisation_parameters: OptimisationParameters,
-    scenario: Scenario,
     temperature_data: pd.Series,
     total_loads: Dict[ResourceType, Optional[pd.DataFrame]],
     total_solar_pv_power_produced: pd.Series,
@@ -1108,8 +1119,6 @@ def multiple_optimisation_step(
         - optimisation_parameters:
             A :class:`OptimisationParameters` instance outlining the optimisation
             bounds;
-        - scenario:
-            The scenatio being considered;
         - solar_lifetime:
             The lifetime of the solar setup;
         - temperature_data:
@@ -1167,16 +1176,14 @@ def multiple_optimisation_step(
         logger.info(
             "No converter sizes passed in, using default optimisation parameters."
         )
-        input_converter_sizes: Dict[
-            Converter, ConverterSize
-        ] = optimisation_parameters.converter_sizes.copy()
+        input_converter_sizes = optimisation_parameters.converter_sizes.copy()
     else:
         input_converter_sizes = {}
 
     # Set up the clean-water PV-T sizes for the first loop.
     if (
         input_cw_pvt_system_size is None
-        and scenario.desalination_scenario is not None
+        and optimisation.scenario.desalination_scenario is not None
         and minigrid.pvt_panel is not None
     ):
         if optimisation_parameters.cw_pvt_size is None:
@@ -1202,7 +1209,7 @@ def multiple_optimisation_step(
     # Set up the clean-water tank sizes for the first loop.
     if (
         input_cw_tanks is None
-        and scenario.desalination_scenario is not None
+        and optimisation.scenario.desalination_scenario is not None
         and minigrid.clean_water_tank is not None
     ):
         if optimisation_parameters.clean_water_tanks is None:
@@ -1228,7 +1235,7 @@ def multiple_optimisation_step(
     # Set up the hot-water PV-T sizes for the first loop.
     if (
         input_hw_pvt_system_size is None
-        and scenario.hot_water_scenario is not None
+        and optimisation.scenario.hot_water_scenario is not None
         and minigrid.pvt_panel is not None
     ):
         if optimisation_parameters.hw_pvt_size is None:
@@ -1254,7 +1261,7 @@ def multiple_optimisation_step(
     # Set up the hot-water tank sizes for the first loop
     if (
         input_hw_tanks is None
-        and scenario.hot_water_scenario is not None
+        and optimisation.scenario.hot_water_scenario is not None
         and minigrid.hot_water_tank is not None
     ):
         if optimisation_parameters.hot_water_tanks is None:
@@ -1278,7 +1285,7 @@ def multiple_optimisation_step(
         input_hw_tanks = TankSize()
 
     if input_pv_sizes is None:
-        if scenario.pv:
+        if optimisation.scenario.pv:
             logger.info("No pv sizes passed in, using default optimisation parameters.")
             input_pv_sizes = SolarSystemSize(
                 optimisation_parameters.pv_size.max,
@@ -1295,7 +1302,7 @@ def multiple_optimisation_step(
             input_pv_sizes = SolarSystemSize()
 
     if input_storage_sizes is None:
-        if scenario.battery:
+        if optimisation.scenario.battery:
             logger.info(
                 "No storage sizes passed in, using default optimisation parameters."
             )
@@ -1325,7 +1332,7 @@ def multiple_optimisation_step(
         # Fetch the optimum systems for this step.
         optimum_system = _optimisation_step(
             conventional_cw_source_profiles,
-            input_converter_sizes.copy(),
+            input_converter_sizes.copy() if input_converter_sizes is not None else None,
             SolarSystemSize(
                 input_cw_pvt_system_size.max,
                 input_cw_pvt_system_size.min,
@@ -1361,7 +1368,6 @@ def multiple_optimisation_step(
             SolarSystemSize(
                 input_pv_sizes.max, input_pv_sizes.min, input_pv_sizes.step
             ),
-            scenario,
             start_year,
             StorageSystemSize(
                 input_storage_sizes.max,
