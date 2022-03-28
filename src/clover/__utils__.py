@@ -2127,10 +2127,12 @@ class Scenario:
             "grid": self.grid,
             "grid_type": self.grid_type,
             "name": self.name,
-            "resource_types": {str(e.value) for e in self.resource_types},
+            "resource_types": [str(e.value) for e in self.resource_types],
             "prioritise_self_generation": self.prioritise_self_generation,
             "pv": self.pv,
         }
+
+        return scenario_dict
 
 
 @dataclasses.dataclass
