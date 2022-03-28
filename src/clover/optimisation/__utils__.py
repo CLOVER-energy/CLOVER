@@ -314,7 +314,7 @@ class Optimisation:
                     scenario
                     for scenario in scenarios
                     if scenario.name == DEFAULT_SCENARIO
-                ]
+                ][0]
             except IndexError:
                 logger.error(
                     "%sError determining scenario for optimisation run: default "
@@ -918,7 +918,6 @@ def recursive_iteration(
     minigrid: energy_system.Minigrid,
     optimisation: Optimisation,
     previous_system: Optional[SystemAppraisal],
-    scenario: Scenario,
     start_year: int,
     temperature_data: pd.Series,
     total_loads: Dict[ResourceType, Optional[pd.DataFrame]],
@@ -1025,7 +1024,7 @@ def recursive_iteration(
             int(component_sizes[ImpactingComponent.HOT_WATER_TANK]),
             total_solar_pv_power_produced,
             component_sizes[RenewableEnergySource.PV],
-            scenario,
+            optimisation.scenario,
             Simulation(end_year, start_year),
             temperature_data,
             total_loads,
@@ -1078,7 +1077,6 @@ def recursive_iteration(
             minigrid,
             optimisation,
             previous_system,
-            scenario,
             start_year,
             temperature_data,
             total_loads,
