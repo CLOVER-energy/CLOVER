@@ -100,7 +100,7 @@ def _fetch_optimum_system(
     for (criterion, criterion_mode) in optimisation.optimisation_criteria.items():
         # Sort by the optimisation criterion.
         sufficient_systems.sort(
-            key=lambda appraisal, crit=criterion: appraisal.criteria[crit],
+            key=lambda appraisal, crit=criterion: appraisal.criteria[crit],  # type: ignore
             reverse=(criterion_mode == CriterionMode.MAXIMISE),
         )
 
@@ -138,7 +138,7 @@ def _find_optimum_system(
     total_solar_pv_power_produced: pd.Series,
     wind_speed_data: Optional[pd.Series],
     yearly_electric_load_statistics: pd.DataFrame,
-):
+) -> Dict[Criterion, SystemAppraisal]:
     """
     Finds the optimum system from a group of sufficient systems.
 
@@ -178,13 +178,26 @@ def _find_optimum_system(
     # Check to find optimum system
     logger.info("Determining optimum system from %s systems.", len(system_appraisals))
     optimum_systems = _fetch_optimum_system(optimisation, system_appraisals)
+    if any(system.criteria is None for system in optimum_systems.values()):
+        logger.error(
+            "%sNot all systems passed to `find_optimum_system` function contained "
+            "optimisation criteria.%s",
+            BColours.fail,
+            BColours.endc,
+        )
+        raise InternalError(
+            "{}Threshold criteria not set on system appraisal.{}".format(
+                BColours.fail, BColours.endc
+            )
+        )
+
     logger.info(
         "Optimum system(s) determined: %s",
         "\n".join(
             [
                 "criterion: {}, value: {}\nsystem_details: {}".format(
                     criterion,
-                    system.criteria[criterion],
+                    system.criteria[criterion],  # type: ignore
                     system.system_details,
                 )
                 for criterion, system in optimum_systems.items()
@@ -198,9 +211,9 @@ def _find_optimum_system(
         # Check if optimum system was the largest system simulated
         while (
             any(
-                optimum_system.system_details.initial_converter_sizes[converter.name]
+                optimum_system.system_details.initial_converter_sizes[converter.name]  # type: ignore
                 == sizes.max
-                for converter, sizes in largest_converter_sizes
+                for converter, sizes in largest_converter_sizes.items()
             )
             or (
                 optimum_system.system_details.initial_cw_pvt_size
@@ -237,6 +250,7 @@ def _find_optimum_system(
         ):
             # Do single line optimisation to see if larger system is superior
             (
+                largest_converter_sizes,
                 largest_cw_pvt_system_size,
                 largest_cw_tank_size,
                 largest_hw_pvt_system_size,
@@ -454,18 +468,18 @@ def _simulation_iteration(
         for converter in converters
         if converter not in max_converter_sizes
     }
-    simulation_converter_sizes: Dict[Convertor, int] = {
+    simulation_converter_sizes: Dict[Converter, int] = {
         **max_converter_sizes,
         **static_converter_sizes,
     }
 
     _, simulation_results, system_details = energy_system.run_simulation(
-        cw_pvt_system_size.max,
+        int(cw_pvt_system_size.max),
         conventional_cw_source_profiles,
         converters_from_sizing(simulation_converter_sizes),
         storage_sizes.max,
         grid_profile,
-        hw_pvt_system_size.max,
+        int(hw_pvt_system_size.max),
         irradiance_data,
         kerosene_usage,
         location,
@@ -506,6 +520,18 @@ def _simulation_iteration(
 
     # Increase system size until largest system is sufficient (if necessary)
     while get_sufficient_appraisals(optimisation, [largest_system_appraisal]) == []:
+        if largest_system_appraisal.criteria is None:
+            logger.error(
+                "%sOptimisation failed to return threshold criteria.%s",
+                BColours.fail,
+                BColours.endc,
+            )
+            raise InternalError(
+                "{}Threshold criteria not set on system appraisal.{}".format(
+                    BColours.fail, BColours.endc
+                )
+            )
+
         logger.info(
             "The largest system was found to be insufficient. Threshold criteria: %s",
             json.dumps(
@@ -548,19 +574,21 @@ def _simulation_iteration(
             if optimisation.scenario.hot_water_scenario is not None
             else "",
             ", ".join(
-                [f"{converter.name} size: {size}"]
-                for converter, size in max_converter_sizes.items()
+                [
+                    f"{converter.name} size: {size}"
+                    for converter, size in max_converter_sizes.items()
+                ]
             ),
         )
 
         # Run a simulation and appraise it.
         _, simulation_results, system_details = energy_system.run_simulation(
-            cw_pvt_size_max,
+            int(cw_pvt_size_max),
             conventional_cw_source_profiles,
             converters_from_sizing(simulation_converter_sizes),
             storage_size_max,
             grid_profile,
-            hw_pvt_size_max,
+            int(hw_pvt_size_max),
             irradiance_data,
             kerosene_usage,
             location,
@@ -592,6 +620,11 @@ def _simulation_iteration(
         )
 
         if largest_system_appraisal.criteria is None:
+            logger.error(
+                "%sOptimisation failed to return threshold criteria.%s",
+                BColours.fail,
+                BColours.endc,
+            )
             raise InternalError(
                 "{}Threshold criteria not set on system appraisal.{}".format(
                     BColours.fail, BColours.endc
@@ -632,6 +665,18 @@ def _simulation_iteration(
         "Determining largest suitable system {}    {}".format("." * 27, DONE),
         end="\n",
     )
+    if largest_system_appraisal.criteria is None:
+        logger.error(
+            "%sOptimisation failed to return threshold criteria.%s",
+            BColours.fail,
+            BColours.endc,
+        )
+        raise InternalError(
+            "{}Threshold criteria not set on system appraisal.{}".format(
+                BColours.fail, BColours.endc
+            )
+        )
+
     logger.info(
         "System was found to be sufficient. Threshold criteria: %s",
         json.dumps(
@@ -1518,7 +1563,8 @@ def multiple_optimisation_step(
                 if optimum_system.system_details.final_storage_size is not None
                 else 0
             )
-            if optimisation.scenario.battery else 0
+            if optimisation.scenario.battery
+            else 0
         )
         input_storage_sizes = StorageSystemSize(
             int(storage_size_max),

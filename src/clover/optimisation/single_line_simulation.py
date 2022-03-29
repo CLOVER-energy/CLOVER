@@ -56,7 +56,7 @@ __all__ = ("single_line_simulation",)
 
 
 def single_line_simulation(
-    conventional_cw_source_profiles: Dict[WaterSource, pd.DataFrame],
+    conventional_cw_source_profiles: Optional[Dict[WaterSource, pd.DataFrame]],
     converter_sizes: Dict[Converter, ConverterSize],
     cw_pvt_size: SolarSystemSize,
     cw_tanks: TankSize,
@@ -223,7 +223,7 @@ def single_line_simulation(
 
         # Prep variables for the iteration process.
         component_sizes: Dict[
-            Union[Converter, ImpactingComponent, RenewableEnergySource]
+            Union[Converter, ImpactingComponent, RenewableEnergySource], int
         ] = {
             ImpactingComponent.CLEAN_WATER_TANK: potential_num_clean_water_tanks,
             ImpactingComponent.HOT_WATER_TANK: potential_num_hot_water_tanks,
@@ -334,12 +334,12 @@ def single_line_simulation(
             != pv_system_size.max
         ):
             _, simulation_results, system_details = energy_system.run_simulation(
-                potential_cw_pvt_size,
+                int(potential_cw_pvt_size),
                 conventional_cw_source_profiles,
                 converters,
                 test_storage_size,
                 grid_profile,
-                potential_hw_pvt_size,
+                int(potential_hw_pvt_size),
                 irradiance_data,
                 kerosene_usage,
                 location,
@@ -372,7 +372,7 @@ def single_line_simulation(
             )
 
             if get_sufficient_appraisals(optimisation, [new_appraisal]) != []:
-                sufficient_appraisals.extend(new_appraisal)
+                sufficient_appraisals.append(new_appraisal)
 
         # Update the system details.
         storage_size.max = test_storage_size
@@ -421,7 +421,7 @@ def single_line_simulation(
         # Add the iterable converter sizes.
         for converter, sizes in converter_sizes.items():
             # Construct the list of available sizes for the given converter.
-            simulation_converter_sizes: List[int] = sorted(
+            simulation_converter_sizes = sorted(
                 range(
                     int(sizes.min),
                     int(np.ceil(sizes.max + sizes.step)),
@@ -554,7 +554,7 @@ def single_line_simulation(
         # Add the iterable converter sizes.
         for converter, sizes in converter_sizes.items():
             # Construct the list of available sizes for the given converter.
-            simulation_converter_sizes: List[int] = sorted(
+            simulation_converter_sizes = sorted(
                 range(
                     int(sizes.min),
                     int(np.ceil(sizes.max + sizes.step)),
@@ -707,7 +707,7 @@ def single_line_simulation(
         # Add the iterable converter sizes.
         for converter, sizes in converter_sizes.items():
             # Construct the list of available sizes for the given converter.
-            simulation_converter_sizes: List[int] = sorted(
+            simulation_converter_sizes = sorted(
                 range(
                     int(sizes.min),
                     int(np.ceil(sizes.max + sizes.step)),
@@ -892,7 +892,7 @@ def single_line_simulation(
         # Add the iterable converter sizes.
         for converter, sizes in converter_sizes.items():
             # Construct the list of available sizes for the given converter.
-            simulation_converter_sizes: List[int] = sorted(
+            simulation_converter_sizes = sorted(
                 range(
                     int(sizes.min),
                     int(np.ceil(sizes.max + sizes.step)),
@@ -1077,7 +1077,7 @@ def single_line_simulation(
         # Add the iterable converter sizes.
         for converter, sizes in converter_sizes.items():
             # Construct the list of available sizes for the given converter.
-            simulation_converter_sizes: List[int] = sorted(
+            simulation_converter_sizes = sorted(
                 range(
                     int(sizes.min),
                     int(np.ceil(sizes.max + sizes.step)),
@@ -1197,6 +1197,7 @@ def single_line_simulation(
     )
 
     return (
+        converter_sizes,
         cw_pvt_size,
         cw_tanks,
         hw_pvt_size,
