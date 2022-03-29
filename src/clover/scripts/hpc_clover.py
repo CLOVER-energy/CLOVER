@@ -18,5 +18,3 @@ Imperial College London owns a series of high-performance computers. This module
 provides an entry point for running CLOVER across the various HPC computers.
 
 """
-
-
