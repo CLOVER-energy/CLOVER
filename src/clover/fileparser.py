@@ -106,9 +106,14 @@ DESALINATION_SCENARIO_INPUTS_FILE: str = os.path.join(
     "scenario", "desalination_scenario.yaml"
 )
 
+# Load inputs directory path:
+#   The relative path to the load inputs directory to use when parsing total load
+# profiles.
+LOAD_INPUTS_DIRECTORY: str = "load"
+
 # Device inputs file:
 #   The relative path to the device-inputs file.
-DEVICE_INPUTS_FILE: str = os.path.join("load", "devices.yaml")
+DEVICE_INPUTS_FILE: str = os.path.join(LOAD_INPUTS_DIRECTORY, "devices.yaml")
 
 # Device utilisation template filename:
 #   The template filename of device-utilisation profiles used for parsing the files.
@@ -116,7 +121,9 @@ DEVICE_UTILISATION_TEMPLATE_FILENAME: str = "{device}_times.csv"
 
 # Device utilisations input directory:
 #   The relative path to the directory contianing the device-utilisaion information.
-DEVICE_UTILISATIONS_INPUT_DIRECTORY: str = os.path.join("load", "device_utilisation")
+DEVICE_UTILISATIONS_INPUT_DIRECTORY: str = os.path.join(
+    LOAD_INPUTS_DIRECTORY, "device_utilisation"
+)
 
 # Diesel generator:
 #   Keyword used for parsing diesel-generator information.
@@ -195,12 +202,14 @@ INPUTS_DIRECTORY: str = "inputs"
 # Kerosene filepath:
 #   The path to the kerosene information file which needs to be provided for CLOVER.
 KEROSENE_TIMES_FILE: str = os.path.join(
-    "load", "device_utilisation", "kerosene_times.csv"
+    LOAD_INPUTS_DIRECTORY, "device_utilisation", "kerosene_times.csv"
 )
 
 # Kerosene utilisation filepath:
 #   The path to the kerosene utilisation profile.
-KEROSENE_USAGE_FILE: str = os.path.join("load", "device_usage", "kerosene_in_use.csv")
+KEROSENE_USAGE_FILE: str = os.path.join(
+    LOAD_INPUTS_DIRECTORY, "device_usage", "kerosene_in_use.csv"
+)
 
 # Location inputs file:
 #   The relative path to the location inputs file.
@@ -2207,7 +2216,10 @@ def _parse_transmission_inputs(
 
 
 def parse_input_files(
-    debug: bool, location_name: str, logger: Logger
+    debug: bool,
+    electric_load_profile: Optional[str],
+    location_name: str,
+    logger: Logger,
 ) -> Tuple[
     List[Converter],
     Dict[load.load.Device, pd.DataFrame],
@@ -2221,6 +2233,7 @@ def parse_input_files(
     List[Optimisation],
     List[Scenario],
     List[Simulation],
+    Optional[pd.DataFrame],
     Dict[WaterSource, pd.DataFrame],
     Dict[str, str],
 ]:
@@ -2231,6 +2244,9 @@ def parse_input_files(
         - debug:
             Whether to use the PV-T reduced models (False) or invented data for
             debugging purposes (True).
+        - electric_load_profile:
+            If specified, the name of the overriding electric load profile file to use
+            in for the run.
         - location_name:
             The name of the location_name being considered.
         - logger:
@@ -2239,7 +2255,7 @@ def parse_input_files(
     Outputs:
         - A tuple containing:
             - converters,
-            - device_utilisations,
+            - device_utilisations, optional if carrying out load-profile generation,
             - diesel_inputs,
             - minigrid,
             - finance_inputs,
@@ -2251,6 +2267,7 @@ def parse_input_files(
             - simulations, the `list` of simulations to run,
             - a `list` of :class:`solar.SolarPanel` instances and their children which
               contain information about the PV panels being considered,
+            - total_load_profile, optional if specified to be overriden,
             - a `dict` mapping the :class:`WaterSource`s available to provide
               conventional water to the system and the seasonal availabilities,
             - a `dict` containing information about the input files used.
@@ -2308,6 +2325,29 @@ def parse_input_files(
                 BColours.endc,
             )
             raise
+
+    # Parse the override electric profile file if specified.
+    if electric_load_profile is not None:
+        try:
+            with open(
+                os.path.join(
+                    inputs_directory_relative_path,
+                    LOAD_INPUTS_DIRECTORY,
+                    electric_load_profile,
+                ),
+                "r",
+            ) as f:
+                total_load_profile: Optional[pd.DataFrame] = pd.read_csv(f, index_col=0)
+        except FileNotFoundError:
+            logger.error(
+                "%sTotal load profile '%s' could not be found.%s",
+                BColours.fail,
+                electric_load_profile,
+                BColours.endc,
+            )
+            raise
+    else:
+        total_load_profile = None
 
     # Parse the scenario input information.
     (
@@ -2852,6 +2892,7 @@ def parse_input_files(
         optimisations,
         scenarios,
         simulations,
+        total_load_profile,
         water_source_times,
         input_file_info,
     )
