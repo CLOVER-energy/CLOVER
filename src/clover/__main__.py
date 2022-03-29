@@ -26,7 +26,7 @@ import os
 import sys
 
 from argparse import Namespace
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 import pandas as pd  # pylint: disable=import-error
 
@@ -568,7 +568,12 @@ def main(args: List[Any]) -> None:
             electric_load_profile,
             water_source_times,
             input_file_info,
-        ) = parse_input_files(parsed_args.debug, parsed_args.electric_load_profile, parsed_args.location, logger)
+        ) = parse_input_files(
+            parsed_args.debug,
+            parsed_args.electric_load_profile,
+            parsed_args.location,
+            logger,
+        )
     except FileNotFoundError as e:
         print(FAILED)
         logger.error(
@@ -731,6 +736,7 @@ def main(args: List[Any]) -> None:
 
     if any(scenario.desalination_scenario is not None for scenario in scenarios):
         # Create a set of all the conventional clean-water sources available.
+        # FIXME
         conventional_sources: Set[str] = {
             source
             for scenario in scenarios
@@ -761,6 +767,7 @@ def main(args: List[Any]) -> None:
 
     if any(scenario.hot_water_scenario is not None for scenario in scenarios):
         # Create a set of all the conventional hot-water sources available.
+        # FIXME
         conventional_sources = {
             source
             for scenario in scenarios

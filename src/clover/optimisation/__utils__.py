@@ -341,16 +341,18 @@ class Optimisation:
         """
 
         optimisation_criteria = {
-            str(key.value): str(value.value) for key, value in self.optimisation_criteria.items()
+            str(key.value): str(value.value)
+            for key, value in self.optimisation_criteria.items()
         }
         threshold_criteria = {
-            str(key.value): float(value) for key, value in self.threshold_criteria.items()
+            str(key.value): float(value)
+            for key, value in self.threshold_criteria.items()
         }
 
         return {
             "optimisation_criteria": optimisation_criteria,
             "scenario": self.scenario.to_dict(),
-            "threshold_criteria": threshold_criteria
+            "threshold_criteria": threshold_criteria,
         }
 
 
