@@ -565,9 +565,10 @@ def main(args: List[Any]) -> None:
             optimisations,
             scenarios,
             simulations,
+            electric_load_profile,
             water_source_times,
             input_file_info,
-        ) = parse_input_files(parsed_args.debug, parsed_args.location, logger)
+        ) = parse_input_files(parsed_args.debug, parsed_args.electric_load_profile, parsed_args.location, logger)
     except FileNotFoundError as e:
         print(FAILED)
         logger.error(
@@ -700,6 +701,7 @@ def main(args: List[Any]) -> None:
                 location,
                 logger,
                 parsed_args.regenerate,
+                electric_load_profile,
             )
         except InputFileError:
             print(
@@ -930,7 +932,9 @@ def main(args: List[Any]) -> None:
         logger.info("Scenario parameters valid.")
 
         logger.info("Loading grid profile.")
-        grid_profile = grid.load_grid_profile(auto_generated_files_directory, logger, scenario)
+        grid_profile = grid.load_grid_profile(
+            auto_generated_files_directory, logger, scenario
+        )
         logger.info("Grid '%s' profile successfully loaded.", scenario.grid_type)
 
         simulation_string: str = generate_simulation_string(
@@ -1135,8 +1139,13 @@ def main(args: List[Any]) -> None:
             logger.info("Scenario parameters valid.")
 
             logger.info("Loading grid profile.")
-            grid_profile = grid.load_grid_profile(auto_generated_files_directory, logger, optimisation.scenario)
-            logger.info("Grid '%s' profile successfully loaded.", optimisation.scenario.grid_type)
+            grid_profile = grid.load_grid_profile(
+                auto_generated_files_directory, logger, optimisation.scenario
+            )
+            logger.info(
+                "Grid '%s' profile successfully loaded.",
+                optimisation.scenario.grid_type,
+            )
 
             optimisation_string = generate_optimisation_string(
                 minigrid, optimisation_inputs, optimisation.scenario
@@ -1205,6 +1214,7 @@ def main(args: List[Any]) -> None:
                 optimisation_number,
                 output,
                 optimisation_output_directory,
+                optimisation.scenario,
                 optimisation_results,
             )
 

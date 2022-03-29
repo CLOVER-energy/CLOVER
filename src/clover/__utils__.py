@@ -771,6 +771,21 @@ class DieselScenario:
     backup_threshold: Optional[float]
     mode: DieselMode
 
+    def to_dict(self) -> Dict[str, Any]:
+        """
+        Returns a `dict` summarising the :class:`DieselScenario` instance.
+
+        Outputs:
+            - A `dict` summarising the information contained within the
+              :class:`DieselScenario` instance.
+
+        """
+
+        return {
+            "backup_threshold": float(self.backup_threshold) if self.backup_threshold is not None else str(None),
+            "mode": str(self.mode.value)
+        }
+
 
 class DistributionNetwork(enum.Enum):
     """
@@ -2246,6 +2261,35 @@ class Scenario:
             if "reference_thermal_efficiency" in scenario_inputs
             else 0,
         )
+
+    def to_dict(self) -> Dict[str, Any]:
+        """
+        Returns a `dict` summarising the :class:`Scenario` instance.
+
+        Outputs:
+            - A `dict` summarising the information contained within the
+              :class:`Scenario` instance.
+
+        """
+
+        scenario_dict = {
+            "battery": self.battery,
+            "demands": {
+                DemandType.COMMERCIAL.value: self.demands.commercial,
+                DemandType.DOMESTIC.value: self.demands.domestic,
+                DemandType.PUBLIC.value: self.demands.public
+            },
+            "diesel_scenario": self.diesel_scenario.to_dict(),
+            "distribution_network": str(self.distribution_network.value),
+            "grid": self.grid,
+            "grid_type": self.grid_type,
+            "name": self.name,
+            "resource_types": [str(e.value) for e in self.resource_types],
+            "prioritise_self_generation": self.prioritise_self_generation,
+            "pv": self.pv,
+        }
+
+        return scenario_dict
 
 
 @dataclasses.dataclass
