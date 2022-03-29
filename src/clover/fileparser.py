@@ -2160,12 +2160,12 @@ def parse_input_files(
     location_name: str,
     logger: Logger,
 ) -> Tuple[
-    List[Converter],
+    Dict[str, Converter],
     Dict[load.load.Device, pd.DataFrame],
     Minigrid,
-    Dict[str, Dict[str, float]],
+    DefaultDict[str, DefaultDict[str, float]],
     Dict[str, Union[int, str]],
-    Dict[str, Dict[str, float]],
+    DefaultDict[str, DefaultDict[str, float]],
     pd.DataFrame,
     Location,
     Optional[OptimisationParameters],
@@ -2308,7 +2308,7 @@ def parse_input_files(
         )
     try:
         optimisation_parameters = OptimisationParameters.from_dict(
-            converters, logger, optimisation_inputs
+            list(converters.values()), logger, optimisation_inputs
         )
     except Exception as e:
         logger.error(
@@ -2543,7 +2543,7 @@ def parse_input_files(
     ghg_inputs[ImpactingComponent.STORAGE.value] = defaultdict(float, battery_emissions)
     logger.info("Battery impact data successfully updated.")
 
-    if minigrid.pvt_panel is not None and scenario.pv_t:
+    if minigrid.pvt_panel is not None and any(scenario.pv_t for scenario in scenarios):
         if pvt_panel_costs is None or pvt_panel_emissions is None:
             raise InternalError("Error processing PV-T panel cost and emissions.")
         finance_inputs[ImpactingComponent.PV_T.value] = defaultdict(
@@ -2556,7 +2556,7 @@ def parse_input_files(
         logger.info("PV-T disblaed in scenario file, skipping PV-T impact parsing.")
 
     # Add transmitter impacts.
-    for converter in converters:
+    for converter in converters.values():
         logger.info("Updating with %s impact data.", converter.name)
         finance_inputs[
             FINANCE_IMPACT.format(

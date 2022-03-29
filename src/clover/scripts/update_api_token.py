@@ -93,9 +93,9 @@ def main(args: List[Any]) -> None:
         )
 
     # Attempt to update the token.
-    filedata: Dict[str, Union[int, str]]
+    filedata: Dict[str, Any]
     try:
-        filedata = read_yaml(generation_file_path, logger)
+        filedata = read_yaml(generation_file_path, logger)  # type: ignore
     except Exception:
         logger.error("Error reading generation inputs file '%s'.", generation_file_path)
         raise

@@ -743,8 +743,10 @@ class DieselScenario:
         """
 
         return {
-            "backup_threshold": float(self.backup_threshold) if self.backup_threshold is not None else str(None),
-            "mode": str(self.mode.value)
+            "backup_threshold": float(self.backup_threshold)
+            if self.backup_threshold is not None
+            else str(None),
+            "mode": str(self.mode.value),
         }
 
 
@@ -2120,7 +2122,7 @@ class Scenario:
             "demands": {
                 DemandType.COMMERCIAL.value: self.demands.commercial,
                 DemandType.DOMESTIC.value: self.demands.domestic,
-                DemandType.PUBLIC.value: self.demands.public
+                DemandType.PUBLIC.value: self.demands.public,
             },
             "diesel_scenario": self.diesel_scenario.to_dict(),
             "distribution_network": str(self.distribution_network.value),
