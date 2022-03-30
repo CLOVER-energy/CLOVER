@@ -61,6 +61,7 @@ def single_line_simulation(
     cw_pvt_size: SolarSystemSize,
     cw_tanks: TankSize,
     converters: List[Converter],
+    disable_tqdm: bool,
     end_year: int,
     finance_inputs: Dict[str, Any],
     ghg_inputs: Dict[str, Any],
@@ -107,6 +108,8 @@ def single_line_simulation(
             The largest clean-water PV-T size that was simulated.
         - cw_pvt_size:
             The largest clean-water tank size that was simulated.
+        - disable_tqdm:
+            Whether to disable the tqdm progress bars (True) or display them (False).
         - hw_pvt_size:
             The largest hot-water PV-T size that was simulated.
         - hw_pvt_size:
@@ -304,6 +307,7 @@ def single_line_simulation(
         system_appraisals.extend(
             recursive_iteration(
                 conventional_cw_source_profiles,
+                disable_tqdm,
                 end_year,
                 finance_inputs,
                 ghg_inputs,
@@ -337,6 +341,7 @@ def single_line_simulation(
                 int(potential_cw_pvt_size),
                 conventional_cw_source_profiles,
                 converters,
+                disable_tqdm,
                 test_storage_size,
                 grid_profile,
                 int(potential_hw_pvt_size),
@@ -486,6 +491,7 @@ def single_line_simulation(
         system_appraisals.extend(
             recursive_iteration(
                 conventional_cw_source_profiles,
+                disable_tqdm,
                 end_year,
                 finance_inputs,
                 ghg_inputs,
@@ -617,6 +623,7 @@ def single_line_simulation(
         system_appraisals.extend(
             recursive_iteration(
                 conventional_cw_source_profiles,
+                disable_tqdm,
                 end_year,
                 finance_inputs,
                 ghg_inputs,
@@ -794,6 +801,7 @@ def single_line_simulation(
         system_appraisals.extend(
             recursive_iteration(
                 conventional_cw_source_profiles,
+                disable_tqdm,
                 end_year,
                 finance_inputs,
                 ghg_inputs,
@@ -979,6 +987,7 @@ def single_line_simulation(
         system_appraisals.extend(
             recursive_iteration(
                 conventional_cw_source_profiles,
+                disable_tqdm,
                 end_year,
                 finance_inputs,
                 ghg_inputs,
@@ -1166,6 +1175,7 @@ def single_line_simulation(
         system_appraisals.extend(
             recursive_iteration(
                 conventional_cw_source_profiles,
+                disable_tqdm,
                 end_year,
                 finance_inputs,
                 ghg_inputs,

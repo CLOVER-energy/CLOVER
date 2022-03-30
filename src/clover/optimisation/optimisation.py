@@ -113,6 +113,7 @@ def _fetch_optimum_system(
 def _find_optimum_system(
     conventional_cw_source_profiles: Optional[Dict[WaterSource, pd.DataFrame]],
     converters: List[Converter],
+    disable_tqdm: bool,
     end_year: int,
     finance_inputs: Dict[str, Any],
     ghg_inputs: Dict[str, Any],
@@ -147,6 +148,8 @@ def _find_optimum_system(
     the simulation is an edge case
 
     Inputs:
+        - disable_tqdm:
+            Whether to disable the tqdm progress bars (True) or display them (False).
         - end_year:
             The end year of the simulation run currently being considered.
         - largest_converter_sizes:
@@ -206,7 +209,11 @@ def _find_optimum_system(
     )
 
     for optimisation_criterion, optimum_system in tqdm(
-        optimum_systems.items(), desc="checking upper bound", leave=False, unit="system"
+        optimum_systems.items(),
+        desc="checking upper bound",
+        disable=disable_tqdm,
+        leave=False,
+        unit="system",
     ):
         # Check if optimum system was the largest system simulated
         while (
@@ -264,6 +271,7 @@ def _find_optimum_system(
                 largest_cw_pvt_system_size,
                 largest_cw_tank_size,
                 converters,
+                disable_tqdm,
                 end_year,
                 finance_inputs,
                 ghg_inputs,
@@ -326,6 +334,7 @@ def _simulation_iteration(
     cw_pvt_system_size: SolarSystemSize,
     cw_tanks: TankSize,
     converters: List[Converter],
+    disable_tqdm: bool,
     finance_inputs: Dict[str, Any],
     ghg_inputs: Dict[str, Any],
     grid_profile: pd.DataFrame,
@@ -373,6 +382,8 @@ def _simulation_iteration(
             profiles.
         - cw_tanks:
             Range of clean-water tanks.
+        - disable_tqdm:
+            Whether to disable the tqdm progress bars (True) or display them (False).
         - finance_inputs:
             The financial input information.
         - ghg_inputs:
@@ -477,6 +488,7 @@ def _simulation_iteration(
         int(cw_pvt_system_size.max),
         conventional_cw_source_profiles,
         converters_from_sizing(simulation_converter_sizes),
+        disable_tqdm,
         storage_sizes.max,
         grid_profile,
         int(hw_pvt_system_size.max),
@@ -585,6 +597,7 @@ def _simulation_iteration(
             int(cw_pvt_size_max),
             conventional_cw_source_profiles,
             converters_from_sizing(simulation_converter_sizes),
+            disable_tqdm,
             storage_size_max,
             grid_profile,
             int(hw_pvt_size_max),
@@ -889,6 +902,7 @@ def _simulation_iteration(
     # information.
     _ = recursive_iteration(
         conventional_cw_source_profiles,
+        disable_tqdm,
         end_year,
         finance_inputs,
         ghg_inputs,
@@ -945,6 +959,7 @@ def _optimisation_step(
     cw_pvt_system_size: SolarSystemSize,
     cw_tanks: TankSize,
     converters: List[Converter],
+    disable_tqdm: bool,
     finance_inputs: Dict[str, Any],
     ghg_inputs: Dict[str, Any],
     grid_profile: pd.DataFrame,
@@ -983,6 +998,8 @@ def _optimisation_step(
             Range of clean-water tank sizes.
         - converters:
             The `list` of converters available to the system.
+        - disable_tqdm:
+            Whether to disable the tqdm progress bars (True) or display them (False).
         - finance_inputs:
             The finance input information.
         - grid_profile:
@@ -1051,6 +1068,7 @@ def _optimisation_step(
         cw_pvt_system_size,
         cw_tanks,
         converters,
+        disable_tqdm,
         finance_inputs,
         ghg_inputs,
         grid_profile,
@@ -1079,6 +1097,7 @@ def _optimisation_step(
     optimum_systems = _find_optimum_system(
         conventional_cw_source_profiles,
         converters,
+        disable_tqdm,
         end_year,
         finance_inputs,
         ghg_inputs,
@@ -1115,6 +1134,7 @@ def _optimisation_step(
 def multiple_optimisation_step(
     conventional_cw_source_profiles: Optional[Dict[WaterSource, pd.DataFrame]],
     converters: List[Converter],
+    disable_tqdm: bool,
     finance_inputs: Dict[str, Any],
     ghg_inputs: Dict[str, Any],
     grid_profile: pd.DataFrame,
@@ -1147,6 +1167,8 @@ def multiple_optimisation_step(
     Inputs:
         - converters:
             The `list` of converters available to the system;
+        - disable_tqdm:
+            Whether to disable the tqdm progress bars (True) or display them (False).
         - grid_profile:
             The grid-availability profile;
         - irradiance_data:
@@ -1367,6 +1389,7 @@ def multiple_optimisation_step(
     for _ in tqdm(
         range(int(optimisation_parameters.number_of_iterations)),
         desc="optimisation steps",
+        disable=disable_tqdm,
         leave=False,
         unit="step",
     ):
@@ -1387,6 +1410,7 @@ def multiple_optimisation_step(
                 input_cw_tanks.step,
             ),
             converters,
+            disable_tqdm,
             finance_inputs,
             ghg_inputs,
             grid_profile,

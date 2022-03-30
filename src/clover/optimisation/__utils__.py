@@ -932,6 +932,7 @@ def get_sufficient_appraisals(
 
 def recursive_iteration(
     conventional_cw_source_profiles: Optional[Dict[WaterSource, pd.DataFrame]],
+    disable_tqdm: bool,
     end_year: int,
     finance_inputs: Dict[str, Any],
     ghg_inputs: Dict[str, Any],
@@ -1037,6 +1038,7 @@ def recursive_iteration(
             int(component_sizes[RenewableEnergySource.CLEAN_WATER_PVT]),
             conventional_cw_source_profiles,
             converters,
+            disable_tqdm,
             component_sizes[ImpactingComponent.STORAGE],
             grid_profile,
             int(component_sizes[RenewableEnergySource.HOT_WATER_PVT]),
@@ -1078,6 +1080,7 @@ def recursive_iteration(
     for size in tqdm(
         sizes,
         desc=f"{component.value} size options",
+        disable=disable_tqdm,
         leave=False,
         unit=unit,
     ):
@@ -1091,6 +1094,7 @@ def recursive_iteration(
         # Call the function recursively.
         sufficient_appraisals = recursive_iteration(
             conventional_cw_source_profiles,
+            disable_tqdm,
             end_year,
             finance_inputs,
             ghg_inputs,
@@ -1154,6 +1158,7 @@ def recursive_iteration(
 
 
 def save_optimisation(
+    disable_tqdm: bool,
     logger: Logger,
     optimisation_inputs: OptimisationParameters,
     optimisation_number: int,
@@ -1166,6 +1171,8 @@ def save_optimisation(
     Saves simulation outputs to a .csv file
 
     Inputs:
+        - disable_tqdm:
+            Whether to disable the tqdm progress bars (True) or display them (False).
         - logger:
             The logger to use for the run.
         - optimisation_inputs:
@@ -1206,7 +1213,13 @@ def save_optimisation(
         "system_appraisals": system_appraisals_dict,
     }
 
-    with tqdm(total=1, desc="saving output files", leave=False, unit="file") as pbar:
+    with tqdm(
+        total=1,
+        desc="saving output files",
+        disable=disable_tqdm,
+        leave=False,
+        unit="file",
+    ) as pbar:
         # Save the optimisation data.
         logger.info("Saving optimisation output.")
         with open(

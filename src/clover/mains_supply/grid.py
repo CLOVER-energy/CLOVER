@@ -31,12 +31,18 @@ __all__ = ("get_lifetime_grid_status", "load_grid_profile")
 
 
 def get_lifetime_grid_status(
-    generation_directory: str, grid_times: pd.DataFrame, logger: Logger, max_years: int
+    disable_tqdm: bool,
+    generation_directory: str,
+    grid_times: pd.DataFrame,
+    logger: Logger,
+    max_years: int,
 ) -> Dict[str, pd.DataFrame]:
     """
     Calculates, and saves, the grid-availability profiles of all input types.
 
     Inputs:
+        - disable_tqdm:
+            Whether to disable tqdm progress bars (True) or display them (False).
         - generation_directory:
             The directory in which auto-generated files should be saved.
         - grid_times:
@@ -53,7 +59,7 @@ def get_lifetime_grid_status(
     """
 
     return get_intermittent_supply_status(
-        generation_directory, "grid", logger, max_years, grid_times
+        disable_tqdm, generation_directory, "grid", logger, max_years, grid_times
     )
 
 
