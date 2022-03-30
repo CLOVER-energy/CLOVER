@@ -29,7 +29,7 @@ from typing import Union
 
 from ..__utils__ import LOCATIONS_FOLDER_NAME, BColours, get_logger
 from ..fileparser import INPUTS_DIRECTORY, LOAD_INPUTS_DIRECTORY, parse_scenario_inputs
-from .hpc_utils import HpcOptimisation, HpcSimulation, InvalidRunError, parse_args_and_hpc_input_file
+from .hpc_utils import HpcOptimisation, HpcRunType, HpcSimulation, InvalidRunError, parse_args_and_hpc_input_file
 
 
 # Hpc submission script file:
@@ -55,12 +55,6 @@ def _check_run(logger: Logger, run: Union[HpcOptimisation, HpcSimulation]) -> bo
         - Whether the run is valid or not.
 
     """
-
-    # Parse the scenario files for the location.
-    logger.info("%sParsing scenario input file.%s", BColours.fail, BColours.endc)
-    _, _, scenarios, _ = parse_scenario_inputs(
-        os.path.join(LOCATIONS_FOLDER_NAME, run.location, INPUTS_DIRECTORY), logger
-    )
 
     # Check that the locations folder exists.
     if not os.path.isfile(os.path.join(LOCATIONS_FOLDER_NAME, run.location)):
@@ -91,14 +85,22 @@ def _check_run(logger: Logger, run: Union[HpcOptimisation, HpcSimulation]) -> bo
         return False
 
     # Check that the scenario exists as a scenario.
-    if run.scenario not in {scenario.name for scenario in scenarios}:
-        logger.error(
-            "%sScenario '%s' not in the scenarios file.%s",
-            BColours.fail,
-            run.scenario,
-            BColours.endc,
+    if run.type == HpcRunType.SIMULATION:
+        # Parse the scenario files for the location.
+        logger.info("%sParsing scenario input file.%s", BColours.fail, BColours.endc)
+        _, _, scenarios, _ = parse_scenario_inputs(
+            os.path.join(LOCATIONS_FOLDER_NAME, run.location, INPUTS_DIRECTORY), logger
         )
-        return False
+
+
+        if run.scenario not in {scenario.name for scenario in scenarios}:
+            logger.error(
+                "%sScenario '%s' not in the scenarios file.%s",
+                BColours.fail,
+                run.scenario,
+                BColours.endc,
+            )
+            return False
 
     # Returns false if not.
     return True
@@ -114,7 +116,7 @@ def main(args) -> None:
     logger.info("HPC-CLOVER script called.")
 
     # Call the utility module to parse the HPC run information.
-    run_file, runs = parse_args_and_hpc_input_file(args)
+    run_file, runs = parse_args_and_hpc_input_file(args, logger)
     logger.info("Command-line arguments successfully parsed. Run file: %s", runs)
 
     # Check that all of the runs are valid.
