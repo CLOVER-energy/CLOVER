@@ -19,3 +19,30 @@ provides a wrapper around the main functionality of CLOVER to enable it to be ru
 the HPC.
 
 """
+
+import os
+
+
+__all__ = ("main")
+
+# HPC Job Number:
+#   Name of the environment variable for the HPC job number.
+HPC_JOB_NUMBER: str = "PBS_ARRAY_INDEX"
+
+
+def main(args) -> None:
+    """
+    Wrapper around CLOVER when run on the HPC.
+
+    """
+
+    # Call the utility module to parse the HPC run information.
+    # Determine the run that is to be carried out.
+    hpc_job_number = os.getenv(HPC_JOB_NUMBER)
+
+    # Call CLOVER with this information.
+
+
+
+if __name__ == "__main__":
+    main(sys.argv[1:])
