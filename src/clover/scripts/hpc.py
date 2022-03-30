@@ -22,6 +22,7 @@ the HPC.
 
 import os
 import sys
+from typing import Any, List
 
 from ..__main__ import main as clover_main
 from ..__utils__ import BColours, get_logger
@@ -44,19 +45,19 @@ HPC_JOB_NUMBER: str = "PBS_ARRAY_INDEX"
 LOGGER_NAME: str = "hpc_run_{}"
 
 
-def main(args) -> None:
+def main(args: List[Any]) -> None:
     """
     Wrapper around CLOVER when run on the HPC.
 
     """
 
     # Determine the run that is to be carried out.
-    hpc_job_number = os.getenv(HPC_JOB_NUMBER)
+    hpc_job_number = int(os.getenv(HPC_JOB_NUMBER))
     logger = get_logger(LOGGER_NAME.format(hpc_job_number), False)
 
     # Call the utility module to parse the HPC run information.
     logger.info("Parsing HPC input file.")
-    _, runs = parse_args_and_hpc_input_file(args)
+    _, runs = parse_args_and_hpc_input_file(args, logger)
     logger.info("HPC input file successfully parsed.")
 
     # Determine the run.
