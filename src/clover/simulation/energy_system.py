@@ -231,6 +231,7 @@ def _calculate_electric_desalination_parameters(
 
 def _calculate_renewable_cw_profiles(
     converters: List[Converter],
+    disable_tqdm: bool,
     end_hour: int,
     irradiance_data: pd.Series,
     logger: Logger,
@@ -257,6 +258,8 @@ def _calculate_renewable_cw_profiles(
     Inputs:
         - converters:
             The `list` of :class:`Converter` instances available to be used.
+        - disable_tqdm:
+            Whether to disable the tqdm progress bars (True) or display them (False).
         - end_hour:
             The final hour for which the simulation will be carried out.
         - irradiance_data:
@@ -468,6 +471,7 @@ def _calculate_renewable_cw_profiles(
             buffer_tank_temperature,
             buffer_tank_volume_supplied,
         ) = calculate_pvt_output(
+            disable_tqdm,
             end_hour,
             irradiance_data[start_hour:end_hour],
             logger,
@@ -552,6 +556,7 @@ def _calculate_renewable_cw_profiles(
 
 def _calculate_renewable_hw_profiles(
     converters: List[Converter],
+    disable_tqdm: bool,
     end_hour: int,
     irradiance_data: pd.Series,
     logger: Logger,
@@ -578,6 +583,8 @@ def _calculate_renewable_hw_profiles(
     Inputs:
         - converters:
             The `list` of :class:`Converter` instances available to be used.
+        - disable_tqdm:
+            Whether to disable the tqdm progress bars (True) or display them (False).
         - end_hour:
             The final hour for which the simulation will be carried out.
         - irradiance_data:
@@ -742,6 +749,7 @@ def _calculate_renewable_hw_profiles(
             hot_water_tank_temperature,
             hot_water_tank_volume_supplied,
         ) = calculate_pvt_output(
+            disable_tqdm,
             end_hour,
             irradiance_data[start_hour:end_hour],
             logger,
@@ -1033,6 +1041,7 @@ def run_simulation(
     clean_water_pvt_size: int,
     conventional_cw_source_profiles: Optional[Dict[WaterSource, pd.DataFrame]],
     converters: List[Converter],
+    disable_tqdm: bool,
     electric_storage_size: float,
     grid_profile: pd.DataFrame,
     hot_water_pvt_size: int,
@@ -1065,8 +1074,8 @@ def run_simulation(
             that can be drawn from the source throughout the duration of the simulation.
         - converters:
             The `list` of :class:`Converter` instances available to be used.
-        - diesel_generator:
-            The backup diesel generator for the system being modelled.
+        - disable_tqdm:
+            Whether to disable the tqdm progress bars (True) or display them (False).
         - electric_storage_size:
             Amount of storage in terms of the number of batteries included.
         - grid_profile:
@@ -1206,6 +1215,7 @@ def run_simulation(
         thermal_desalination_electric_power_consumed,
     ) = _calculate_renewable_cw_profiles(
         available_converters,
+        disable_tqdm,
         end_hour,
         irradiance_data,
         logger,
@@ -1312,6 +1322,7 @@ def run_simulation(
         renewable_hw_fraction,
     ) = _calculate_renewable_hw_profiles(
         available_converters,
+        disable_tqdm,
         end_hour,
         irradiance_data,
         logger,
@@ -1500,6 +1511,7 @@ def run_simulation(
         for t in tqdm(
             range(int(battery_storage_profile.size)),
             desc="hourly computation",
+            disable=disable_tqdm,
             leave=False,
             unit="hour",
         ):

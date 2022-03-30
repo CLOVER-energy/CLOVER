@@ -425,6 +425,7 @@ def compute_total_hourly_load(
     *,
     device_hourly_loads: Dict[str, pd.DataFrame],
     devices: Set[Device],
+    disable_tqdm: bool,
     generated_device_load_filepath: str,
     logger: Logger,
     total_load_profile: Optional[pd.DataFrame],
@@ -438,6 +439,8 @@ def compute_total_hourly_load(
             A mapping between device name and the hourly load profile of the device.
         - devices:
             The set of devices included in the system.
+        - disable_tqdm:
+            Whether to disable the tqdm progress bars (True) or display them (False).
         - generated_device_load_filepath:
             The directory in which to store the generated hourly load profiles for the
             device.
@@ -475,7 +478,11 @@ def compute_total_hourly_load(
 
         # Sum over the device loads.
         for device in tqdm(
-            devices, desc="total load profile", leave=True, unit="device"
+            devices,
+            desc="total load profile",
+            disable=disable_tqdm,
+            leave=True,
+            unit="device",
         ):
             # Skip the device if it is not available in the community.
             if not device.available:
@@ -964,10 +971,11 @@ def process_device_utilisation(
 def process_load_profiles(
     auto_generated_files_directory: str,
     device_utilisations: Dict[Device, pd.DataFrame],
-    resource_type: ResourceType,
+    disable_tqdm: bool,
     location: Location,
     logger: Logger,
     regenerate: bool,
+    resource_type: ResourceType,
     total_load_profile: Optional[pd.DataFrame] = None,
 ) -> Tuple[Dict[str, pd.DataFrame], pd.DataFrame, pd.DataFrame]:
     """
@@ -981,6 +989,8 @@ def process_load_profiles(
             The directory in which auto-generated files should be saved.
         - device_utilisations:
             The processed device utilisation information.
+        - disable_tqdm:
+            Whether to disable the tqdm progress bars (True) or display them (False).
         - resource_type:
             The type of load being investigated.
         - location:
@@ -1040,6 +1050,7 @@ def process_load_profiles(
         for device in tqdm(
             relevant_device_utilisations,
             desc=f"{resource_name.replace('_', ' ')} load profiles",
+            disable=disable_tqdm,
             leave=True,
             unit="device",
         ):
@@ -1119,6 +1130,7 @@ def process_load_profiles(
     total_load, yearly_statistics = compute_total_hourly_load(
         device_hourly_loads=device_hourly_loads,
         devices=set(relevant_device_utilisations.keys()),
+        disable_tqdm=disable_tqdm,
         generated_device_load_filepath=os.path.join(
             auto_generated_files_directory, "load", resource_name, "device_load"
         ),

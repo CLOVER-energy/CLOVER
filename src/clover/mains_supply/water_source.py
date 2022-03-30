@@ -245,6 +245,7 @@ def _process_water_soure_hourly_probability(
 
 
 def get_lifetime_water_source_status(
+    disable_tqdm: bool,
     generation_directory: str,
     keyword: str,
     location: Location,
@@ -256,6 +257,8 @@ def get_lifetime_water_source_status(
     Calculates, and saves, the water-source availability profiles of all input types.
 
     Inputs:
+        - disable_tqdm:
+            Whether to disable the tqdm progress bars (True) or display them (False).
         - generation_directory:
             The directory in which auto-generated files should be saved.
         - keyword:
@@ -297,6 +300,7 @@ def get_lifetime_water_source_status(
     for source, availability in tqdm(
         water_source_times.items(),
         desc=f"conventional {keyword} water availability",
+        disable=disable_tqdm,
         leave=True,
         unit="source",
     ):
