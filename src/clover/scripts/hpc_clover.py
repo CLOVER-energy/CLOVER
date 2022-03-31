@@ -186,7 +186,8 @@ def main(args) -> None:
 
     # Call the utility module to parse the HPC run information.
     run_file, runs = parse_args_and_hpc_input_file(args, logger)
-    logger.info("Command-line arguments successfully parsed. Run file: %s", runs)
+    logger.info("Command-line arguments successfully parsed. Run file: %s", run_file)
+    logger.debug("Runs:\n%s- ", "\n- ".join(str(run) for run in runs))
 
     # Check that all of the runs are valid.
     print("Checking HPC runs .............................................    ", end="")
