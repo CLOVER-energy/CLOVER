@@ -397,9 +397,9 @@ def _process_hpc_input_file(
     runs: List[Union[HpcOptimisation, HpcSimulation]]
     for entry in filedata:
         if entry[TYPE] == HpcRunType.OPTIMISATION.value:
-            entry.append(HpcOptimisation.from_dict(entry))
+            runs.append(HpcOptimisation.from_dict(entry))
         elif entry[TYPE] == HpcRunType.SIMULATION.value:
-            entry.append(HpcSimulation.from_dict(entry))
+            runs.append(HpcSimulation.from_dict(entry))
         else:
             logger.error(
                 "%sInvalid HPC run type '%s'. Valid types are %s.%s",
