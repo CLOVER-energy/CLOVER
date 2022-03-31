@@ -16,7 +16,7 @@ echo -e "HPC array script executed"
 
 # Load the anaconda environment
 module load anaconda3/personal
-source activate base
+source activate py37
 
 cd $PBS_O_WORKDIR
 

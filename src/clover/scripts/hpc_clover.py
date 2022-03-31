@@ -38,23 +38,27 @@ from .hpc_utils import (
 )
 
 
-# Hpc submission script file:
+# Hpc submission script filename:
+#   The name of the HPC script submission file.
+HPC_SUBMISSION_SCRIPT_FILENAME: str = "hpc.sh"
+
+# Hpc submission script filepath:
 #   The path to the HPC script submission file.
-HPC_SUBMISSION_SCRIPT_FILE: str = os.path.join("bin", "hpc.sh")
+HPC_SUBMISSION_SCRIPT_FILEPATH: str = os.path.join("bin", HPC_SUBMISSION_SCRIPT_FILENAME)
 
 # Logger name:
 #   The name to use for the logger for this script.
 LOGGER_NAME: str = "hpc_clover"
 
 
-def _check_run(logger: Logger, run: Union[HpcOptimisation, HpcSimulation]) -> bool:
+def _check_run(logger: Logger, hpc_run: Union[HpcOptimisation, HpcSimulation]) -> bool:
     """
     Checks that the HPC run is valid.
 
     Inputs:
         - logger:
             The logger to use for the run.
-        - run:
+        - hpc_run:
             The HPC run to carry out.
 
     Outputs:
@@ -63,46 +67,47 @@ def _check_run(logger: Logger, run: Union[HpcOptimisation, HpcSimulation]) -> bo
     """
 
     # Check that the locations folder exists.
-    if not os.path.isfile(os.path.join(LOCATIONS_FOLDER_NAME, run.location)):
+    if not os.path.isdir(os.path.join(LOCATIONS_FOLDER_NAME, hpc_run.location)):
         logger.error(
             "%sLocation '%s' does not exist.%s",
             BColours.fail,
-            run.location,
+            hpc_run.location,
             BColours.endc,
         )
         return False
 
     # Check that the total load file exists if specified.
-    if run.total_load_file is not None and not os.path.isfile(
+    if hpc_run.total_load_file is not None and not os.path.isfile(
         os.path.join(
             LOCATIONS_FOLDER_NAME,
-            run.location,
+            hpc_run.location,
+            INPUTS_DIRECTORY,
             LOAD_INPUTS_DIRECTORY,
-            run.total_load_file,
+            hpc_run.total_load_file,
         )
     ):
         logger.error(
             "%sThe total run file '%s' could not be found in the load inputs directory."
             "%s",
             BColours.fail,
-            run.total_load_file,
+            hpc_run.total_load_file,
             BColours.endc,
         )
         return False
 
     # Check that the scenario exists as a scenario.
-    if run.type == HpcRunType.SIMULATION:
+    if hpc_run.type == HpcRunType.SIMULATION:
         # Parse the scenario files for the location.
         logger.info("%sParsing scenario input file.%s", BColours.fail, BColours.endc)
         _, _, scenarios, _ = parse_scenario_inputs(
-            os.path.join(LOCATIONS_FOLDER_NAME, run.location, INPUTS_DIRECTORY), logger
+            os.path.join(LOCATIONS_FOLDER_NAME, hpc_run.location, INPUTS_DIRECTORY), logger
         )
 
-        if run.scenario not in {scenario.name for scenario in scenarios}:
+        if hpc_run.scenario not in {scenario.name for scenario in scenarios}:
             logger.error(
                 "%sScenario '%s' not in the scenarios file.%s",
                 BColours.fail,
-                run.scenario,
+                hpc_run.scenario,
                 BColours.endc,
             )
             return False
@@ -137,27 +142,27 @@ def main(args) -> None:
     # Parse the default HPC job submission script.
     logger.info("Parsing base HPC job submission script.")
     try:
-        with open(HPC_SUBMISSION_SCRIPT_FILE, "r") as f:
+        with open(HPC_SUBMISSION_SCRIPT_FILEPATH, "r") as f:
             hpc_submission_script_file_contents = f.read()
     except FileNotFoundError:
         logger.error(
             "%sHPC job submission file not found. Check that the file, '%s', has not "
             "been removed.%s",
             BColours.fail,
-            HPC_SUBMISSION_SCRIPT_FILE,
+            HPC_SUBMISSION_SCRIPT_FILEPATH,
             BColours.endc,
         )
         raise
 
     logger.info("HPC job submission file successfully parsed.")
 
-    hpc_submission_script_file_contents.format(len(runs))
+    hpc_submission_script_file_contents.format(NUM_RUNS=len(runs))
     logger.info("HPC job submission script updated with %s runs.", len(runs))
 
     # Setup the HPC job submission script.
     with tempfile.TemporaryDirectory() as tmpdirname:
         hpc_submission_script_filepath = os.path.join(
-            tmpdirname, HPC_SUBMISSION_SCRIPT_FILE
+            tmpdirname, HPC_SUBMISSION_SCRIPT_FILENAME
         )
 
         # Write the submission script file.
@@ -167,10 +172,14 @@ def main(args) -> None:
 
         logger.info("HPC job submission script successfully submitted.")
 
+        # Update permissions on the file.
+        os.chmod(hpc_submission_script_filepath, 0o775)
+        logger.info("HPC job submission script permissions successfully updated.")
+
         # Submit the script to the HPC.
         logger.info("Submitting CLOVER jobs to the HPC.")
         subprocess.run(
-            [hpc_submission_script_filepath, "--runs", run_file], check=False
+            ["bash", hpc_submission_script_filepath, "--runs", run_file], check=False
         )
         logger.info("HPC runs submitted. Exiting.")
 
