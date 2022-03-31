@@ -221,7 +221,9 @@ def main(args) -> None:
     print(DONE)
     logger.info("HPC job submission file successfully parsed.")
 
-    hpc_submission_script_file_contents.format(NUM_RUNS=len(runs), RUNS_FILE=run_file)
+    hpc_submission_script_file_contents = hpc_submission_script_file_contents.format(
+        NUM_RUNS=len(runs), RUNS_FILE=run_file
+    )
     logger.info("HPC job submission script updated with %s runs.", len(runs))
 
     # Setup the HPC job submission script.
@@ -245,7 +247,7 @@ def main(args) -> None:
         logger.info("Submitting CLOVER jobs to the HPC.")
         print(
             "Sending jobs to the HPC .......................................    ",
-            end=""
+            end="",
         )
         try:
             subprocess.run(["qsub", hpc_submission_script_filepath], check=False)
