@@ -175,7 +175,13 @@ class HpcOptimisation(_BaseHpcRun, type=HpcRunType.OPTIMISATION):
         try:
             total_load_input: str = input_data["total_load"]
         except KeyError:
-            logger.error("%sMissing total-load information.%s", BColours.fail, BColours.endc)
+            logger.info(
+                "%sMissing total-load information. Defaulting to %s.%s",
+                BColours.fail,
+                FALSE,
+                BColours.endc,
+            )
+            total_load_input = FALSE
 
         if total_load_input == FALSE:
             total_load: bool = False
@@ -184,11 +190,7 @@ class HpcOptimisation(_BaseHpcRun, type=HpcRunType.OPTIMISATION):
             total_load = True
             total_load_file = total_load_input
 
-        return cls(
-            input_data["location"],
-            total_load,
-            total_load_file
-        )
+        return cls(input_data["location"], total_load, total_load_file)
 
 
 class HpcSimulation(_BaseHpcRun, type=HpcRunType.SIMULATION):
@@ -258,8 +260,13 @@ class HpcSimulation(_BaseHpcRun, type=HpcRunType.SIMULATION):
         try:
             total_load_input: str = input_data["total_load"]
         except KeyError:
-            logger.error("%sMissing total-load information.%s", BColours.fail, BColours.endc)
-            raise InvalidRunError("Missing total-load information in input file.")
+            logger.info(
+                "%sMissing total-load information. Defaulting to %s.%s",
+                BColours.fail,
+                FALSE,
+                BColours.endc,
+            )
+            total_load_input = FALSE
 
         if total_load_input == FALSE:
             total_load: bool = False
@@ -271,19 +278,25 @@ class HpcSimulation(_BaseHpcRun, type=HpcRunType.SIMULATION):
         try:
             pv_system_size: str = input_data["pv_system_size"]
         except KeyError:
-            logger.error("%sMissing pv system size information.%s", BColours.fail, BColours.endc)
+            logger.error(
+                "%sMissing pv system size information.%s", BColours.fail, BColours.endc
+            )
             raise InvalidRunError("Missing pv system size information in input file.")
 
         try:
             scenario: str = input_data["scenario"]
         except KeyError:
-            logger.error("%sMissing scenario information.%s", BColours.fail, BColours.endc)
+            logger.error(
+                "%sMissing scenario information.%s", BColours.fail, BColours.endc
+            )
             raise InvalidRunError("Missing scenario information in input file.")
 
         try:
             storage_size: str = input_data["storage_size"]
         except KeyError:
-            logger.error("%sMissing storage size information.%s", BColours.fail, BColours.endc)
+            logger.error(
+                "%sMissing storage size information.%s", BColours.fail, BColours.endc
+            )
             raise InvalidRunError("Missing storage size information in input file.")
 
         return cls(
@@ -292,7 +305,7 @@ class HpcSimulation(_BaseHpcRun, type=HpcRunType.SIMULATION):
             scenario,
             storage_size,
             total_load,
-            total_load_file
+            total_load_file,
         )
 
 
@@ -313,12 +326,9 @@ def _parse_hpc_args(args: List[Any]) -> argparse.Namespace:
 
     # Runs:
     #   The name of the HPC runs file.
-    parser.add_argument(
-        "--runs", "-r", type=str, help="The path to the HPC runs file."
-    )
+    parser.add_argument("--runs", "-r", type=str, help="The path to the HPC runs file.")
 
     return parser.parse_args(args)
-
 
 
 def _parse_hpc_input_file(input_filename: str, logger: Logger) -> List[Dict[str, Any]]:
@@ -340,12 +350,22 @@ def _parse_hpc_input_file(input_filename: str, logger: Logger) -> List[Dict[str,
     try:
         filedata = read_yaml(input_filename, logger)
     except FileNotFoundError:
-        logger.error("%sHPC input file '%s' could not be found.%s", BColours.fail, input_filename, BColours.endc)
+        logger.error(
+            "%sHPC input file '%s' could not be found.%s",
+            BColours.fail,
+            input_filename,
+            BColours.endc,
+        )
         raise
 
     # Raise an error if the format of the file is invalid.
     if not isinstance(filedata, list):
-        logger.error("%sHPC input file '%s' was not of format `list`.%s", BColours.fail, input_filename, BColours.endc)
+        logger.error(
+            "%sHPC input file '%s' was not of format `list`.%s",
+            BColours.fail,
+            input_filename,
+            BColours.endc,
+        )
         raise
 
     logger.info("HPC input successfully parsed.")
@@ -353,7 +373,9 @@ def _parse_hpc_input_file(input_filename: str, logger: Logger) -> List[Dict[str,
     return filedata
 
 
-def _process_hpc_input_file(input_filename: str, logger: Logger) -> List[Union[HpcOptimisation, HpcSimulation]]:
+def _process_hpc_input_file(
+    input_filename: str, logger: Logger
+) -> List[Union[HpcOptimisation, HpcSimulation]]:
     """
     Parses the HPC input file into a list of runs.
 
@@ -384,11 +406,9 @@ def _process_hpc_input_file(input_filename: str, logger: Logger) -> List[Union[H
                 BColours.fail,
                 entry[TYPE],
                 ", ".join([str(e.valu) for e in HpcRunType]),
-                BColours.endc
+                BColours.endc,
             )
-            raise InvalidRunError(
-                f"Invalid HPC run type {entry[TYPE]}."
-            )
+            raise InvalidRunError(f"Invalid HPC run type {entry[TYPE]}.")
 
     # Return this list of HPC optimisations and simulations.
     return runs

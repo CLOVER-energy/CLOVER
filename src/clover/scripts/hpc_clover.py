@@ -29,7 +29,13 @@ from typing import Union
 
 from ..__utils__ import LOCATIONS_FOLDER_NAME, BColours, get_logger
 from ..fileparser import INPUTS_DIRECTORY, LOAD_INPUTS_DIRECTORY, parse_scenario_inputs
-from .hpc_utils import HpcOptimisation, HpcRunType, HpcSimulation, InvalidRunError, parse_args_and_hpc_input_file
+from .hpc_utils import (
+    HpcOptimisation,
+    HpcRunType,
+    HpcSimulation,
+    InvalidRunError,
+    parse_args_and_hpc_input_file,
+)
 
 
 # Hpc submission script file:
@@ -91,7 +97,6 @@ def _check_run(logger: Logger, run: Union[HpcOptimisation, HpcSimulation]) -> bo
         _, _, scenarios, _ = parse_scenario_inputs(
             os.path.join(LOCATIONS_FOLDER_NAME, run.location, INPUTS_DIRECTORY), logger
         )
-
 
         if run.scenario not in {scenario.name for scenario in scenarios}:
             logger.error(
