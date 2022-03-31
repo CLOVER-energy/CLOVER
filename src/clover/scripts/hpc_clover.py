@@ -245,16 +245,18 @@ def main(args) -> None:
 
         # Submit the script to the HPC.
         logger.info("Submitting CLOVER jobs to the HPC.")
-        print(
-            "Sending jobs to the HPC .......................................    ",
-            end="",
-        )
+        print("Sending jobs to the HPC:")
         try:
             subprocess.run(["qsub", hpc_submission_script_filepath], check=False)
         except Exception:
             logger.error("Failed. See logs for details.")
-            print(FAILED)
-        print(DONE)
+            print(
+                "Sending jobs to the HPC .......................................    "
+                f"{FAILED}"
+            )
+        print(
+            "Sending jobs to the HPC .......................................    {DONE}"
+        )
         logger.info("HPC runs submitted. Exiting.")
 
 

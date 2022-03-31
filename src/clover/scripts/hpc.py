@@ -62,7 +62,7 @@ def main(args: List[Any]) -> None:
 
     # Determine the run.
     try:
-        run = runs[hpc_job_number]
+        hpc_run = runs[hpc_job_number - 1]
     except IndexError:
         logger.error(
             "%sRun number %s out of bounds. Only %s runs submitted.%s",
@@ -71,31 +71,32 @@ def main(args: List[Any]) -> None:
             len(runs),
             BColours.endc,
         )
-    logger.info("Run successfully determined: %s", str(run))
+        raise
+    logger.info("Run successfully determined: %s", str(hpc_run))
 
     # Setup the arguments to pass to CLOVER.
     clover_arguments = [
         "--location",
-        run.location,
+        hpc_run.location,
     ]
 
-    if isinstance(run, HpcOptimisation):
+    if isinstance(hpc_run, HpcOptimisation):
         logger.info("Run %s is an optimisation.", hpc_job_number)
         clover_arguments.append("--optimisation")
-    elif isinstance(run, HpcSimulation):
+    elif isinstance(hpc_run, HpcSimulation):
         logger.info("Run %s is a simulation.", hpc_job_number)
         clover_arguments.extend(
             [
                 "--simulation",
                 "--pv-system-size",
-                run.pv_system_size,
+                hpc_run.pv_system_size,
                 "--storage-size",
-                run.storage_size,
+                hpc_run.storage_size,
             ]
         )
 
-    if run.total_load:
-        clover_arguments.extend(["--electric-load-profile", run.total_load_file])
+    if hpc_run.total_load:
+        clover_arguments.extend(["--electric-load-profile", hpc_run.total_load_file])
 
     # Call CLOVER with this information.
     clover_main(clover_arguments, True, hpc_job_number)
