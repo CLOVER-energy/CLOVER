@@ -1580,19 +1580,24 @@ def run_simulation(
                 time_index=t,
             )
     # Process the various outputs into dataframes.
-    battery_health_frame: pd.DataFrame = dict_to_dataframe(battery_health, logger)
     # energy_deficit_frame: pd.DataFrame = dict_to_dataframe(energy_deficit)
     if energy_surplus is not None:
         energy_surplus_frame: pd.DataFrame = dict_to_dataframe(energy_surplus, logger)
     else:
         energy_surplus_frame = pd.DataFrame([0] * (end_hour - start_hour))
 
-    hourly_battery_storage_frame: pd.DataFrame = dict_to_dataframe(
-        hourly_battery_storage, logger
-    )
-    storage_power_supplied_frame: pd.DataFrame = dict_to_dataframe(
-        storage_power_supplied, logger
-    )
+    if scenario.battery:
+        battery_health_frame: pd.DataFrame = dict_to_dataframe(battery_health, logger)
+        hourly_battery_storage_frame: pd.DataFrame = dict_to_dataframe(
+            hourly_battery_storage, logger
+        )
+        storage_power_supplied_frame: pd.DataFrame = dict_to_dataframe(
+            storage_power_supplied, logger
+        )
+    else:
+        battery_health_frame = pd.DataFrame([0] * (end_hour - start_hour))
+        hourly_battery_storage_frame = pd.DataFrame([0] * (end_hour - start_hour))
+        storage_power_supplied_frame = pd.DataFrame([0] * (end_hour - start_hour))
 
     if scenario.desalination_scenario is not None:
         backup_desalinator_water_frame: pd.DataFrame = dict_to_dataframe(
