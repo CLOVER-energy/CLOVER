@@ -23,7 +23,7 @@ import enum
 from logging import Logger
 from typing import Any, Dict, List, Optional, Tuple, Union
 
-from ..__utils__ import BColours, read_yaml
+from ..__utils__ import DEFAULT_SCENARIO, BColours, read_yaml
 
 
 __all__ = (
@@ -265,7 +265,7 @@ class HpcSimulation(_BaseHpcRun, type=HpcRunType.SIMULATION):
             raise InvalidRunError("Missing pv system size information in input file.")
 
         try:
-            scenario: str = input_data["scenario"]
+            scenario: str = input_data["scenario", DEFAULT_SCENARIO]
         except KeyError:
             logger.error(
                 "%sMissing scenario information.%s", BColours.fail, BColours.endc
