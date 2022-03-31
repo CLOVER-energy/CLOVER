@@ -394,7 +394,7 @@ def _process_hpc_input_file(
     filedata = _parse_hpc_input_file(input_filename, logger)
 
     # Parse this into HPC Optimisations and Simulations.
-    runs: List[Union[HpcOptimisation, HpcSimulation]]
+    runs: List[Union[HpcOptimisation, HpcSimulation]] = []
     for entry in filedata:
         if entry[TYPE] == HpcRunType.OPTIMISATION.value:
             runs.append(HpcOptimisation.from_dict(entry))
