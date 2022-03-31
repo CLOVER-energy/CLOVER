@@ -255,7 +255,7 @@ def main(args) -> None:
                 f"{FAILED}"
             )
         print(
-            "Sending jobs to the HPC .......................................    {DONE}"
+            f"Sending jobs to the HPC .......................................    {DONE}"
         )
         logger.info("HPC runs submitted. Exiting.")
 
