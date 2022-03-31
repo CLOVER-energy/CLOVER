@@ -144,6 +144,7 @@ class _BaseHpcRun:
                 if self.total_load_file is not None
                 else ""
             )
+            + ")"
         )
 
 
