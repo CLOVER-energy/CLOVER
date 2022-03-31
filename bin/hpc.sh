@@ -21,7 +21,7 @@ source activate py37
 cd $PBS_O_WORKDIR
 
 echo -e "Running CLOVER HPC python script."
-if python -m src.clover.scripts.hpc $@ ; then
+if python -m src.clover.scripts.hpc --runs {RUNS_FILE} ; then
     echo -e "CLOVER successfully run."
 else
     echo -e "FAILED. See logs for details."
