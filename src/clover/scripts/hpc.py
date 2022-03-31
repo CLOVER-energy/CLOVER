@@ -28,7 +28,9 @@ from ..__main__ import main as clover_main
 from ..__utils__ import BColours, get_logger
 from .hpc_utils import (
     HpcOptimisation,
+    HpcRunType,
     HpcSimulation,
+    InvalidRunError,
     parse_args_and_hpc_input_file,
 )
 
@@ -80,10 +82,10 @@ def main(args: List[Any]) -> None:
         hpc_run.location,
     ]
 
-    if isinstance(hpc_run, HpcOptimisation):
+    if hpc_run.type == HpcRunType.OPTIMISATION:
         logger.info("Run %s is an optimisation.", hpc_job_number)
         clover_arguments.append("--optimisation")
-    elif isinstance(hpc_run, HpcSimulation):
+    elif hpc_run.type == HpcRunType.SIMULATION:
         logger.info("Run %s is a simulation.", hpc_job_number)
         clover_arguments.extend(
             [
@@ -94,11 +96,23 @@ def main(args: List[Any]) -> None:
                 hpc_run.storage_size,
             ]
         )
+    else:
+        logger.error(
+            "%sRun %s was not a supported run type. Supported run types are %s.%s",
+            BColours.fail,
+            hpc_job_number,
+            ", ".join(str(e.value) for e in HpcRunType),
+            BColours.endc
+        )
+        raise InvalidRunError(
+            f"Run {hpc_job_number} was not of a supported run type."
+        )
 
     if hpc_run.total_load:
         clover_arguments.extend(["--electric-load-profile", hpc_run.total_load_file])
 
     # Call CLOVER with this information.
+    logger.info("Calling CLOVER with arguments: %s", " ".join(clover_arguments))
     clover_main(clover_arguments, True, hpc_job_number)
 
 
