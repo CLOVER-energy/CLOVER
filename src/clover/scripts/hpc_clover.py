@@ -28,8 +28,10 @@ import tempfile
 from logging import Logger
 from typing import Union
 
+from tqdm import tqdm
+
 from ..__main__ import __version__
-from ..__utils__ import LOCATIONS_FOLDER_NAME, BColours, get_logger
+from ..__utils__ import DONE, FAILED, LOCATIONS_FOLDER_NAME, BColours, get_logger
 from ..fileparser import INPUTS_DIRECTORY, LOAD_INPUTS_DIRECTORY, parse_scenario_inputs
 from .hpc_utils import (
     HpcOptimisation,
@@ -187,16 +189,20 @@ def main(args) -> None:
     logger.info("Command-line arguments successfully parsed. Run file: %s", runs)
 
     # Check that all of the runs are valid.
+    print("Checking HPC runs .............................................    ", end="")
     logger.info("Checking all run files are valid.")
     if not all(_check_run(logger, run) for run in runs):
         logger.error(
             "%sNot all HPC runs were valid, exiting.%s", BColours.fail, BColours.endc
         )
+        print(FAILED)
         raise InvalidRunError("Not all HPC runs were valid, see logs for details.")
 
+    print(DONE)
     logger.info("All HPC runs valid.")
 
     # Parse the default HPC job submission script.
+    print("Processing HPC job submission script ..........................    ", end="")
     logger.info("Parsing base HPC job submission script.")
     try:
         with open(HPC_SUBMISSION_SCRIPT_FILEPATH, "r") as f:
@@ -209,8 +215,10 @@ def main(args) -> None:
             HPC_SUBMISSION_SCRIPT_FILEPATH,
             BColours.endc,
         )
+        print(FAILED)
         raise
 
+    print(DONE)
     logger.info("HPC job submission file successfully parsed.")
 
     hpc_submission_script_file_contents.format(NUM_RUNS=len(runs), RUNS_FILE=run_file)
@@ -235,7 +243,16 @@ def main(args) -> None:
 
         # Submit the script to the HPC.
         logger.info("Submitting CLOVER jobs to the HPC.")
-        subprocess.run(["qsub", hpc_submission_script_filepath], check=False)
+        print(
+            "Sending jobs to the HPC .......................................    ",
+            end=""
+        )
+        try:
+            subprocess.run(["qsub", hpc_submission_script_filepath], check=False)
+        except Exception:
+            logger.error("Failed. See logs for details.")
+            print(FAILED)
+        print(DONE)
         logger.info("HPC runs submitted. Exiting.")
 
 
