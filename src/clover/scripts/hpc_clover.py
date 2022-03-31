@@ -19,6 +19,7 @@ provides an entry point for running CLOVER across the various HPC computers.
 
 """
 
+import math
 import os
 import subprocess
 import sys
@@ -27,6 +28,7 @@ import tempfile
 from logging import Logger
 from typing import Union
 
+from ..__main__ import __version__
 from ..__utils__ import LOCATIONS_FOLDER_NAME, BColours, get_logger
 from ..fileparser import INPUTS_DIRECTORY, LOAD_INPUTS_DIRECTORY, parse_scenario_inputs
 from .hpc_utils import (
@@ -38,13 +40,56 @@ from .hpc_utils import (
 )
 
 
+# Clover hpc header string:
+#   The ascii text to display when starting CLOVER on the HPC.
+CLOVER_HPC_HEADER_STRING = """
+
+        (((((*    /(((
+        ((((((( ((((((((
+   (((((((((((( ((((((((((((
+   ((((((((((((*(((((((((((((       _____ _      ______      ________ _____
+     *((((((((( ((((((((((((       / ____| |    / __ \\ \\    / /  ____|  __ \\
+   (((((((. /((((((((((/          | |    | |   | |  | \\ \\  / /| |__  | |__) |
+ ((((((((((((((((((((((((((,      | |    | |   | |  | |\\ \\/ / |  __| |  _  /
+ (((((((((((*  (((((((((((((      | |____| |___| |__| | \\  /  | |____| | \\ \\
+   ,(((((((. (  (((((((((((/       \\_____|______\\____/   \\/   |______|_|  \\_\\
+   .((((((   (   ((((((((
+             /     (((((
+             ,
+              ,
+               (
+                 (
+                   (
+
+                ___                     _      _   _  _ ___  ___
+               |_ _|_ __  _ __  ___ _ _(_)__ _| | | || | _ \\/ __|
+                | || '  \\| '_ \\/ -_) '_| / _` | | | __ |  _/ (__
+               |___|_|_|_| .__/\\___|_| |_\\__,_|_| |_||_|_|  \\___|
+                         |_|
+
+       Continuous Lifetime Optimisation of Variable Electricity Resources
+                         Copyright Phil Sandwell, 2018
+{version_line}
+
+   This version of CLOVER has been adapted for Imperial College London's HPC
+  See the user guide for more information on how to use this version of CLOVER
+
+                         For more information, contact
+                   Phil Sandwell (philip.sandwell@gmail.com),
+                    Hamish Beath (hamishbeath@outlook.com),
+               or Ben Winchester (benedict.winchester@gmail.com)
+
+"""
+
 # Hpc submission script filename:
 #   The name of the HPC script submission file.
 HPC_SUBMISSION_SCRIPT_FILENAME: str = "hpc.sh"
 
 # Hpc submission script filepath:
 #   The path to the HPC script submission file.
-HPC_SUBMISSION_SCRIPT_FILEPATH: str = os.path.join("bin", HPC_SUBMISSION_SCRIPT_FILENAME)
+HPC_SUBMISSION_SCRIPT_FILEPATH: str = os.path.join(
+    "bin", HPC_SUBMISSION_SCRIPT_FILENAME
+)
 
 # Logger name:
 #   The name to use for the logger for this script.
@@ -100,7 +145,8 @@ def _check_run(logger: Logger, hpc_run: Union[HpcOptimisation, HpcSimulation]) -
         # Parse the scenario files for the location.
         logger.info("%sParsing scenario input file.%s", BColours.fail, BColours.endc)
         _, _, scenarios, _ = parse_scenario_inputs(
-            os.path.join(LOCATIONS_FOLDER_NAME, hpc_run.location, INPUTS_DIRECTORY), logger
+            os.path.join(LOCATIONS_FOLDER_NAME, hpc_run.location, INPUTS_DIRECTORY),
+            logger,
         )
 
         if hpc_run.scenario not in {scenario.name for scenario in scenarios}:
@@ -121,6 +167,17 @@ def main(args) -> None:
     Wrapper around CLOVER when run on the HPC.
 
     """
+
+    version_string = f"Version {__version__}"
+    print(
+        CLOVER_HPC_HEADER_STRING.format(
+            version_line="{}{}{}".format(
+                " " * (40 - math.ceil(len(version_string) / 2)),
+                version_string,
+                " " * (40 - math.floor(len(version_string) / 2)),
+            )
+        )
+    )
 
     logger = get_logger(LOGGER_NAME, False)
     logger.info("HPC-CLOVER script called.")
@@ -156,7 +213,7 @@ def main(args) -> None:
 
     logger.info("HPC job submission file successfully parsed.")
 
-    hpc_submission_script_file_contents.format(NUM_RUNS=len(runs))
+    hpc_submission_script_file_contents.format(NUM_RUNS=len(runs), RUNS_FILE=run_file)
     logger.info("HPC job submission script updated with %s runs.", len(runs))
 
     # Setup the HPC job submission script.
@@ -178,9 +235,7 @@ def main(args) -> None:
 
         # Submit the script to the HPC.
         logger.info("Submitting CLOVER jobs to the HPC.")
-        subprocess.run(
-            ["qsub", hpc_submission_script_filepath, "--runs", run_file], check=False
-        )
+        subprocess.run(["qsub", hpc_submission_script_filepath], check=False)
         logger.info("HPC runs submitted. Exiting.")
 
 
