@@ -179,7 +179,7 @@ def main(args) -> None:
         # Submit the script to the HPC.
         logger.info("Submitting CLOVER jobs to the HPC.")
         subprocess.run(
-            ["bash", hpc_submission_script_filepath, "--runs", run_file], check=False
+            ["qsub", hpc_submission_script_filepath, "--runs", run_file], check=False
         )
         logger.info("HPC runs submitted. Exiting.")
 
