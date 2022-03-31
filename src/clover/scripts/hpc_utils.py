@@ -19,7 +19,6 @@ CLOVER designed to improve ease of use.
 
 import argparse
 import enum
-import os
 
 from logging import Logger
 from typing import Any, Dict, List, Optional, Tuple, Union
@@ -172,18 +171,9 @@ class HpcOptimisation(_BaseHpcRun, type=HpcRunType.OPTIMISATION):
 
         """
 
-        try:
-            total_load_input: str = input_data["total_load"]
-        except KeyError:
-            logger.info(
-                "%sMissing total-load information. Defaulting to %s.%s",
-                BColours.fail,
-                FALSE,
-                BColours.endc,
-            )
-            total_load_input = FALSE
+        total_load_input: Union[str, bool] = input_data.get("total_load", False)
 
-        if total_load_input == FALSE:
+        if not total_load_input:
             total_load: bool = False
             total_load_file: Optional[str] = None
         else:
@@ -257,18 +247,9 @@ class HpcSimulation(_BaseHpcRun, type=HpcRunType.SIMULATION):
 
         """
 
-        try:
-            total_load_input: str = input_data["total_load"]
-        except KeyError:
-            logger.info(
-                "%sMissing total-load information. Defaulting to %s.%s",
-                BColours.fail,
-                FALSE,
-                BColours.endc,
-            )
-            total_load_input = FALSE
+        total_load_input: str = input_data.get("total_load", False)
 
-        if total_load_input == FALSE:
+        if not total_load_input:
             total_load: bool = False
             total_load_file: Optional[str] = None
         else:
@@ -397,9 +378,9 @@ def _process_hpc_input_file(
     runs: List[Union[HpcOptimisation, HpcSimulation]] = []
     for entry in filedata:
         if entry[TYPE] == HpcRunType.OPTIMISATION.value:
-            runs.append(HpcOptimisation.from_dict(entry))
+            runs.append(HpcOptimisation.from_dict(entry, logger))
         elif entry[TYPE] == HpcRunType.SIMULATION.value:
-            runs.append(HpcSimulation.from_dict(entry))
+            runs.append(HpcSimulation.from_dict(entry, logger))
         else:
             logger.error(
                 "%sInvalid HPC run type '%s'. Valid types are %s.%s",
