@@ -98,7 +98,7 @@ def main(args: List[Any]) -> None:
         clover_arguments.extend(["--electric-load-profile", run.total_load_file])
 
     # Call CLOVER with this information.
-    clover_main(clover_arguments)
+    clover_main(clover_arguments, True, hpc_job_number)
 
 
 if __name__ == "__main__":
