@@ -91,9 +91,9 @@ def main(args: List[Any]) -> None:
             [
                 "--simulation",
                 "--pv-system-size",
-                hpc_run.pv_system_size,
+                str(hpc_run.pv_system_size),
                 "--storage-size",
-                hpc_run.storage_size,
+                str(hpc_run.storage_size),
             ]
         )
     else:
