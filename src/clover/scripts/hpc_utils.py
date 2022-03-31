@@ -264,13 +264,7 @@ class HpcSimulation(_BaseHpcRun, type=HpcRunType.SIMULATION):
             )
             raise InvalidRunError("Missing pv system size information in input file.")
 
-        try:
-            scenario: str = input_data["scenario", DEFAULT_SCENARIO]
-        except KeyError:
-            logger.error(
-                "%sMissing scenario information.%s", BColours.fail, BColours.endc
-            )
-            raise InvalidRunError("Missing scenario information in input file.")
+        scenario: str = input_data.get("scenario", DEFAULT_SCENARIO)
 
         try:
             storage_size: str = input_data["storage_size"]
