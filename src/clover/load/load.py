@@ -542,7 +542,7 @@ def compute_total_hourly_load(
             )
             logger.info(
                 "The total load file given must have columns which match %s.",
-                ", ".join(str(e.value) for e in DemandType),
+                ", ".join(f"'{e.value}'" for e in DemandType),
             )
             raise InputFileError("The total load profile is not of the correct format.")
 
@@ -1046,85 +1046,84 @@ def process_load_profiles(
             )
         )
 
-    if total_load_profile is None:
-        for device in tqdm(
-            relevant_device_utilisations,
-            desc=f"{resource_name.replace('_', ' ')} load profiles",
-            disable=disable_tqdm,
-            leave=True,
-            unit="device",
-        ):
-            # If the device is not available, then skip it.
-            if not device.available:
-                continue
+    for device in tqdm(
+        relevant_device_utilisations,
+        desc=f"{resource_name.replace('_', ' ')} load profiles",
+        disable=disable_tqdm,
+        leave=True,
+        unit="device",
+    ):
+        # If the device is not available, then skip it.
+        if not device.available and not device.name == KEROSENE_DEVICE_NAME:
+            continue
 
-            # Compute the device ownership.
-            daily_device_ownership = process_device_ownership(
-                device,
-                generated_device_ownership_directory=os.path.join(
-                    auto_generated_files_directory,
-                    "load",
-                    "device_ownership",
-                ),
-                location=location,
-                logger=logger,
-                regenerate=regenerate,
-            )
-            logger.info(
-                "Device ownership information for %s successfully computed.",
-                device.name,
-            )
+        # Compute the device ownership.
+        daily_device_ownership = process_device_ownership(
+            device,
+            generated_device_ownership_directory=os.path.join(
+                auto_generated_files_directory,
+                "load",
+                "device_ownership",
+            ),
+            location=location,
+            logger=logger,
+            regenerate=regenerate,
+        )
+        logger.info(
+            "Device ownership information for %s successfully computed.",
+            device.name,
+        )
 
-            # Compute the device utilisation.
-            daily_device_utilisaion = process_device_utilisation(
-                device,
-                device_utilisations=relevant_device_utilisations,
-                generated_device_utilisation_directory=os.path.join(
-                    auto_generated_files_directory,
-                    "load",
-                    "device_utilisation",
-                ),
-                location=location,
-                logger=logger,
-                regenerate=regenerate,
-            )
-            logger.info(
-                "Device utilisation information for %s successfully computed.",
-                device.name,
-            )
+        # Compute the device utilisation.
+        daily_device_utilisaion = process_device_utilisation(
+            device,
+            device_utilisations=relevant_device_utilisations,
+            generated_device_utilisation_directory=os.path.join(
+                auto_generated_files_directory,
+                "load",
+                "device_utilisation",
+            ),
+            location=location,
+            logger=logger,
+            regenerate=regenerate,
+        )
+        logger.info(
+            "Device utilisation information for %s successfully computed.",
+            device.name,
+        )
 
-            # Compute the device usage.
-            hourly_device_usage = process_device_hourly_usage(
-                device,
-                daily_device_ownership=daily_device_ownership,
-                daily_device_utilisation=daily_device_utilisaion,
-                generated_device_usage_filepath=os.path.join(
-                    auto_generated_files_directory, "load", "device_usage"
-                ),
-                logger=logger,
-                years=location.max_years,
-                regenerate=regenerate,
-            )
-            logger.info(
-                "Device hourly usage information for %s successfully computed.",
-                device.name,
-            )
+        # Compute the device usage.
+        hourly_device_usage = process_device_hourly_usage(
+            device,
+            daily_device_ownership=daily_device_ownership,
+            daily_device_utilisation=daily_device_utilisaion,
+            generated_device_usage_filepath=os.path.join(
+                auto_generated_files_directory, "load", "device_usage"
+            ),
+            logger=logger,
+            years=location.max_years,
+            regenerate=regenerate,
+        )
+        logger.info(
+            "Device hourly usage information for %s successfully computed.",
+            device.name,
+        )
 
-            # Compute the load profile based on this usage.
-            device_hourly_loads[device.name] = process_device_hourly_power(
-                device,
-                generated_device_load_filepath=os.path.join(
-                    auto_generated_files_directory, "load", resource_name, "device_load"
-                ),
-                hourly_device_usage=hourly_device_usage,
-                resource_type=resource_type,
-                logger=logger,
-                regenerate=regenerate,
-            )
-            logger.info(
-                "Device hourly load information for %s successfully computed.",
-                device.name,
-            )
+        # Compute the load profile based on this usage.
+        device_hourly_loads[device.name] = process_device_hourly_power(
+            device,
+            generated_device_load_filepath=os.path.join(
+                auto_generated_files_directory, "load", resource_name, "device_load"
+            ),
+            hourly_device_usage=hourly_device_usage,
+            resource_type=resource_type,
+            logger=logger,
+            regenerate=regenerate,
+        )
+        logger.info(
+            "Device hourly load information for %s successfully computed.",
+            device.name,
+        )
 
     logger.info("Computing the total device hourly load and yearly load statistics.")
     total_load, yearly_statistics = compute_total_hourly_load(
