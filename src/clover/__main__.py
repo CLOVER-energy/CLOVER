@@ -908,10 +908,21 @@ def main(
     )
 
     # Load the relevant kerosene profile.
-    with open(
-        os.path.join(auto_generated_files_directory, KEROSENE_USAGE_FILE), "r"
-    ) as f:
-        kerosene_usage = pd.read_csv(f, header=None, index_col=False)
+    try:
+        with open(
+            os.path.join(auto_generated_files_directory, KEROSENE_USAGE_FILE), "r"
+        ) as f:
+            kerosene_usage = pd.read_csv(f, header=None, index_col=False)
+    except FileNotFoundError:
+        logger.error(
+            "%sKerosene usage file '%s' could not be found in '%s'. Check that this "
+            "file has not been deleted.%s",
+            BColours.fail,
+            KEROSENE_USAGE_FILE,
+            auto_generated_files_directory,
+            BColours.endc
+        )
+        raise
 
         # Remove the index from the file.
         kerosene_usage.reset_index(drop=True)
