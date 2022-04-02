@@ -185,7 +185,7 @@ def main(args) -> None:
     logger.info("HPC-CLOVER script called.")
 
     # Call the utility module to parse the HPC run information.
-    run_file, runs = parse_args_and_hpc_input_file(args, logger)
+    run_file, runs, verbose = parse_args_and_hpc_input_file(args, logger)
     logger.info("Command-line arguments successfully parsed. Run file: %s", run_file)
     logger.debug("Runs:\n%s- ", "\n- ".join(str(run) for run in runs))
 
@@ -223,7 +223,7 @@ def main(args) -> None:
     logger.info("HPC job submission file successfully parsed.")
 
     hpc_submission_script_file_contents = hpc_submission_script_file_contents.format(
-        NUM_RUNS=len(runs), RUNS_FILE=run_file
+        NUM_RUNS=len(runs), RUNS_FILE=run_file, VERBOSE=("--verbose" if verbose else "")
     )
     logger.info("HPC job submission script updated with %s runs.", len(runs))
 

@@ -304,6 +304,12 @@ def _parse_hpc_args(args: List[Any]) -> argparse.Namespace:
     #   The name of the HPC runs file.
     parser.add_argument("--runs", "-r", type=str, help="The path to the HPC runs file.")
 
+    # Verbose:
+    #   Used for generating verbose logs for debugging.
+    parser.add_argument(
+        "--verbose", "-v", action="store_true", default=False, help=argparse.SUPPRESS
+    )
+
     return parser.parse_args(args)
 
 
@@ -414,4 +420,4 @@ def parse_args_and_hpc_input_file(
     runs = _process_hpc_input_file(parsed_args.runs, logger)
 
     # Return these runs along with the filename.
-    return parsed_args.runs, runs
+    return parsed_args.runs, runs, parsed_args.verbose
