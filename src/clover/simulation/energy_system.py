@@ -1586,7 +1586,7 @@ def run_simulation(
     else:
         energy_surplus_frame = pd.DataFrame([0] * (end_hour - start_hour))
 
-    if scenario.battery:
+    if scenario.battery and electric_storage_size > 0:
         battery_health_frame: pd.DataFrame = dict_to_dataframe(battery_health, logger)
         hourly_battery_storage_frame: pd.DataFrame = dict_to_dataframe(
             hourly_battery_storage, logger
