@@ -1761,7 +1761,7 @@ def run_simulation(
             hourly_battery_storage[t] = new_hourly_battery_storage
 
             # Update battery health
-            if scenario.battery:
+            if scenario.battery and electric_storage_size > 0:
                 (
                     cumulative_battery_storage_power,
                     maximum_battery_storage,
@@ -1778,14 +1778,6 @@ def run_simulation(
                     time_index=t,
                 )
 
-        # Process the various outputs into dataframes.
-        battery_health_frame = dict_to_dataframe(battery_health, logger)
-        battery_health_frame.columns = pd.Index([ColumnHeader.BATTERY_HEALTH.value])
-        # energy_deficit_frame: pd.DataFrame = dict_to_dataframe(energy_deficit)
-        energy_surplus_frame = dict_to_dataframe(energy_surplus, logger)
-        hourly_battery_storage_frame = dict_to_dataframe(hourly_battery_storage, logger)
-        storage_power_supplied_frame = dict_to_dataframe(storage_power_supplied, logger)
-
         # Determine the initial and final storage sizes
         initial_storage_size = float(
             electric_storage_size * minigrid.battery.storage_unit
@@ -1794,6 +1786,26 @@ def run_simulation(
             initial_storage_size
             * np.min(battery_health_frame[ColumnHeader.BATTERY_HEALTH.value])
         )
+
+    # Process the various outputs into dataframes.
+    # energy_deficit_frame: pd.DataFrame = dict_to_dataframe(energy_deficit)
+    if energy_surplus is not None:
+        energy_surplus_frame: pd.DataFrame = dict_to_dataframe(energy_surplus, logger)
+    else:
+        energy_surplus_frame = pd.DataFrame([0] * (end_hour - start_hour))
+
+    if scenario.battery and electric_storage_size > 0:
+        battery_health_frame: pd.DataFrame = dict_to_dataframe(battery_health, logger)
+        hourly_battery_storage_frame: pd.DataFrame = dict_to_dataframe(
+            hourly_battery_storage, logger
+        )
+        storage_power_supplied_frame: pd.DataFrame = dict_to_dataframe(
+            storage_power_supplied, logger
+        )
+    else:
+        battery_health_frame = pd.DataFrame([0] * (end_hour - start_hour))
+        hourly_battery_storage_frame = pd.DataFrame([0] * (end_hour - start_hour))
+        storage_power_supplied_frame = pd.DataFrame([0] * (end_hour - start_hour))
 
     if scenario.desalination_scenario is not None:
         backup_desalinator_water_frame: Optional[pd.DataFrame] = dict_to_dataframe(
