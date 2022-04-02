@@ -19,4 +19,4 @@ jobs:
           pip install black
       - name: Analysing the code with black
         run: |
-          python -m black clover
+          python -m black src/clover
