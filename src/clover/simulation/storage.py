@@ -138,12 +138,12 @@ def cw_tank_iteration_step(
     clean_water_power_consumed_mapping: Dict[int, float],
     clean_water_demand_met_by_excess_energy: Dict[int, float],
     clean_water_supplied_by_excess_energy: Dict[int, float],
-    conventional_cw_source_profiles: Dict[WaterSource, pd.DataFrame],
+    conventional_cw_source_profiles: Optional[Dict[WaterSource, pd.DataFrame]],
     conventional_water_supplied: Dict[int, float],
     energy_per_desalinated_litre: float,
     excess_energy: float,
     excess_energy_used_desalinating: Dict[int, float],
-    hourly_cw_tank_storage: pd.DataFrame,
+    hourly_cw_tank_storage: Dict[int, float],
     initial_cw_tank_storage: float,
     maximum_battery_storage: float,
     maximum_cw_tank_storage: float,
@@ -309,12 +309,14 @@ def cw_tank_iteration_step(
         # sources if available.
         if current_unmet_water_demand > 0:
             # Compute the clean water supplied using convnetional sources.
-            conventional_cw_available = float(
-                sum(
-                    entry.iloc[time_index]
-                    for entry in conventional_cw_source_profiles.values()
+            conventional_cw_available: float = 0
+            if conventional_cw_source_profiles is not None:
+                conventional_cw_available = float(
+                    sum(
+                        entry.iloc[time_index]
+                        for entry in conventional_cw_source_profiles.values()
+                    )
                 )
-            )
             conventional_cw_supplied = min(
                 conventional_cw_available, current_unmet_water_demand
             )
@@ -351,13 +353,13 @@ def cw_tank_iteration_step(
 
 def get_electric_battery_storage_profile(
     *,
-    grid_profile: pd.DataFrame,
-    kerosene_usage: pd.DataFrame,
+    grid_profile: pd.Series,
+    kerosene_usage: pd.Series,
     location: Location,
     logger: Logger,
     minigrid: Minigrid,
     processed_total_electric_load: pd.DataFrame,
-    renewables_power_produced: Dict[SolarPanelType, pd.DataFrame],
+    renewables_power_produced: Dict[RenewableEnergySource, pd.DataFrame],
     scenario: Scenario,
     clean_water_pvt_size: int = 0,
     end_hour: int = 4,

@@ -2035,7 +2035,7 @@ class Scenario:
                     )
             else:
                 try:
-                    desalination_scenario: DesalinationScenario = [
+                    desalination_scenario = [
                         entry
                         for entry in desalination_scenarios
                         if entry.name == DEFAULT_SCENARIO
@@ -2072,7 +2072,7 @@ class Scenario:
                     raise
             else:
                 try:
-                    hot_water_scenario: HotWaterScenario = [
+                    hot_water_scenario = [
                         entry
                         for entry in hot_water_scenarios
                         if entry.name == DEFAULT_SCENARIO
