@@ -537,7 +537,10 @@ def compute_total_hourly_load(
                 "The total load file given must have columns which match %s.",
                 ", ".join(str(e.value) for e in DemandType),
             )
-            raise InputFileError("The total load profile is not of the correct format.")
+            raise InputFileError(
+                "total-load file",
+                "The total load profile is not of the correct format.",
+            )
 
     # Attempt to read the yearly load statistics from a file and compute if it doesn't
     # exist.
@@ -1156,7 +1159,7 @@ def compute_processed_load_profile(
 
     """
 
-    processed_total_load: Optional[pd.Series] = None
+    processed_total_load: Optional[pd.DataFrame] = None
 
     if scenario.demands.domestic:
         processed_total_load = pd.DataFrame(

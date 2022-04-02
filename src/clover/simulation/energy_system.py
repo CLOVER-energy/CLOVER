@@ -40,6 +40,7 @@ from ..__utils__ import (
     HTFMode,
     InputFileError,
     InternalError,
+    ProgrammerJudgementFault,
     RenewableEnergySource,
     ResourceType,
     Location,
@@ -845,7 +846,7 @@ def _setup_tank_storage_profiles(
     resource_type: ResourceType,
     scenario: Scenario,
     tank: Optional[CleanWaterTank],
-) -> Tuple[Optional[Dict[int, float]], float, float, float, Dict[int, float]]:
+) -> Tuple[Dict[int, float], float, float, float, Dict[int, float]]:
     """
     Sets up tank storage parameters.
 
@@ -894,7 +895,7 @@ def _setup_tank_storage_profiles(
                 f"No {resource_type.value} tank specified on the energy system despite "
                 + f"{resource_type.value} loads being requested.",
             )
-        hourly_tank_storage: Optional[Dict[int, float]] = {}
+        hourly_tank_storage: Dict[int, float] = {}
         initial_tank_storage: float = 0.0
 
         # Determine the maximum tank storage.
@@ -933,7 +934,7 @@ def _setup_tank_storage_profiles(
             ) from None
 
     else:
-        hourly_tank_storage = None
+        hourly_tank_storage = {}
         initial_tank_storage = 0
         maximum_tank_storage = 0
         minimum_tank_storage = 0
@@ -1032,9 +1033,9 @@ def _update_battery_health(
 def run_simulation(
     clean_water_pvt_size: int,
     conventional_cw_source_profiles: Optional[Dict[WaterSource, pd.DataFrame]],
-    converters: List[Converter],
+    converters: Union[Dict[str, Converter], List[Converter]],
     electric_storage_size: float,
-    grid_profile: pd.DataFrame,
+    grid_profile: Optional[pd.DataFrame],
     hot_water_pvt_size: int,
     irradiance_data: pd.Series,
     kerosene_usage: pd.DataFrame,
@@ -1169,10 +1170,24 @@ def run_simulation(
     end_hour = simulation.end_year * HOURS_PER_YEAR
     simulation_hours = end_hour - start_hour
 
-    available_converters = determine_available_converters(
-        converters, logger, minigrid, scenario
-    )
-    logger.info("Subset of available converters determined.")
+    if isinstance(converters, dict):
+        available_converters = determine_available_converters(
+            converters, logger, minigrid, scenario
+        )
+        logger.info("Subset of available converters determined.")
+    elif isinstance(converters, list):
+        available_converters = converters
+        logger.info("Converter sizes manually passed in, using information provided.")
+    else:
+        logger.error(
+            "Unsupported type '%s' for converters in call to run_simulation.%s",
+            BColours.fail,
+            str(type(converters)),
+            BColours.endc,
+        )
+        raise ProgrammerJudgementFault(
+            "Misuse of `converters` parameter when calling `run_simulation`."
+        )
     logger.debug(
         "Available converters: %s",
         ", ".join([str(entry) for entry in available_converters]),
@@ -1402,7 +1417,7 @@ def run_simulation(
 
     # Determine the number of households in the community.
     households = pd.DataFrame(
-        population_hourly(location)[
+        population_hourly(location)[  # type: ignore
             simulation.start_year
             * HOURS_PER_YEAR : simulation.end_year
             * HOURS_PER_YEAR
@@ -1486,8 +1501,8 @@ def run_simulation(
     # water_deficit: List[float] = []
 
     # Initialise energy accounting parameters
-    energy_surplus: Dict[int, float] = {}
-    energy_deficit: Dict[int, float] = {}
+    energy_surplus: Optional[Dict[int, float]] = {}
+    energy_deficit: Optional[Dict[int, float]] = {}
     storage_power_supplied: Dict[int, float] = {}
 
     # Do not do the itteration if no storage is being used
@@ -1547,8 +1562,8 @@ def run_simulation(
             )
 
             # Dumped energy and unmet demand
-            energy_surplus[t] = excess_energy  # Battery too full
-            energy_deficit[t] = max(
+            energy_surplus[t] = excess_energy  # type: ignore
+            energy_deficit[t] = max(  # type: ignore
                 minimum_battery_storage - new_hourly_battery_storage, 0.0
             )  # Battery too empty
 
@@ -1586,7 +1601,7 @@ def run_simulation(
     else:
         energy_surplus_frame = pd.DataFrame([0] * (end_hour - start_hour))
 
-    if scenario.battery:
+    if scenario.battery and electric_storage_size > 0:
         battery_health_frame: pd.DataFrame = dict_to_dataframe(battery_health, logger)
         hourly_battery_storage_frame: pd.DataFrame = dict_to_dataframe(
             hourly_battery_storage, logger
@@ -1690,9 +1705,11 @@ def run_simulation(
     unmet_energy = ((unmet_energy > 0) * unmet_energy).abs()  # type: ignore
     # Ensure all unmet clean-water energy is considered.
     clean_water_power_consumed = clean_water_power_consumed.mul(1 - blackout_times)  # type: ignore
+    # fmt: off
     thermal_desalination_electric_power_consumed = (
-        thermal_desalination_electric_power_consumed.mul(1 - blackout_times)
-    )  # type: ignore
+        thermal_desalination_electric_power_consumed.mul(1 - blackout_times)  # type: ignore
+    )
+    # fmt: on
 
     # Find how many kerosene lamps are in use
     kerosene_usage = pd.DataFrame(blackout_times.loc[:, 0].mul(kerosene_profile.values))  # type: ignore
