@@ -59,7 +59,7 @@ def main(args: List[Any]) -> None:
 
     # Call the utility module to parse the HPC run information.
     logger.info("Parsing HPC input file.")
-    _, runs = parse_args_and_hpc_input_file(args, logger)
+    _, runs, verbose = parse_args_and_hpc_input_file(args, logger)
     logger.info("HPC input file successfully parsed.")
 
     # Determine the run.
@@ -110,6 +110,9 @@ def main(args: List[Any]) -> None:
 
     if hpc_run.total_load:
         clover_arguments.extend(["--electric-load-profile", hpc_run.total_load_file])
+
+    if verbose:
+        clover_arguments.append("--verbose")
 
     # Call CLOVER with this information.
     logger.info("Calling CLOVER with arguments: %s", " ".join(clover_arguments))
