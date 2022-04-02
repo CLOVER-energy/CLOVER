@@ -1,4 +1,4 @@
-name: Black
+name: Yamllint
 
 on: [push]
 
@@ -16,7 +16,8 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-          pip install black
-      - name: Analysing the code with black
+          pip install yamllint
+          pip install Pyyaml
+      - name: Analysing the code with yamllint
         run: |
-          python -m black src/clover
+          yamllint -c .yamllint-config.yaml locations/Bahraich/ src/

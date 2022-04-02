@@ -19,4 +19,4 @@ jobs:
           pip install pylint
       - name: Analysing the code with pylint
         run: |
-          python -m pylint `ls clover -R | grep .py$ | xargs`
+          python -m pylint src/clover
