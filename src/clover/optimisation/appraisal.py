@@ -28,11 +28,13 @@ import pandas as pd
 from ..impact import finance, ghgs
 
 from ..__utils__ import (
+    BColours,
     ColumnHeader,
     Criterion,
     CumulativeResults,
     EnvironmentalAppraisal,
     FinancialAppraisal,
+    InternalError,
     hourly_profile_to_daily_sum,
     Location,
     SystemAppraisal,
@@ -619,6 +621,16 @@ def appraise_system(
         and previous_system.system_details.final_num_clean_water_tanks is not None
         else 0
     )
+    if system_details.initial_converter_sizes is None:
+        logger.error(
+            "%sNo converter sizes on system details when calling system appraisal. "
+            "Only systems that have been simulated can be appraised.%s",
+            BColours.fail,
+            BColours.endc
+        )
+        raise InternalError(
+            "Misuse of system appraisal function."
+        )
     converter_addition: Dict[str, int] = {
         converter: size
         - (

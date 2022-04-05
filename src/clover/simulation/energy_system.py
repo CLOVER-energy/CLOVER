@@ -1330,9 +1330,9 @@ def run_simulation(
 
     # Calculate hot-water PV-T related performance profiles.
     hot_water_pump_electric_power_consumed: pd.DataFrame
-    hot_water_pvt_collector_output_temperature: Optional[pd.DataFrame]
+    hot_water_pvt_collector_output_temperature: pd.DataFrame
     hot_water_pvt_electric_power_per_unit: pd.DataFrame
-    hot_water_tank_temperature: Optional[pd.DataFrame]
+    hot_water_tank_temperature: pd.DataFrame
     hot_water_tank_volume_supplied: pd.DataFrame
     renewable_hw_fraction: pd.DataFrame
 
@@ -1344,7 +1344,7 @@ def run_simulation(
         hot_water_tank_temperature,
         hot_water_tank_volume_supplied,
         renewable_hw_fraction,
-    ) = _calculate_renewable_hw_profiles(
+    ) = _calculate_renewable_hw_profiles(  # type: ignore
         available_converters,
         end_hour,
         irradiance_data,
@@ -1395,9 +1395,9 @@ def run_simulation(
     load_energy: pd.DataFrame
     renewables_energy: pd.DataFrame
     renewables_energy_map: Dict[
-        RenewableEnergySource, Union[pd.DataFrame, pd.Series]
+        RenewableEnergySource, pd.DataFrame
     ] = {
-        RenewableEnergySource.PV: pv_power_produced,
+        RenewableEnergySource.PV: pv_power_produced,  # type: ignore
         RenewableEnergySource.CLEAN_WATER_PVT: (
             clean_water_pvt_electric_power_per_unit
         ),
