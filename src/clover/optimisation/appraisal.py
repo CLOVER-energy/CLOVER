@@ -510,18 +510,26 @@ def _simulation_technical_appraisal(
 
     # Calculate proportion of kerosene displaced (defaults to zero if kerosene is not
     # originally used
-    if np.sum(simulation_results[ColumnHeader.KEROSENE_LAMPS.value]) > 0.0:
+    if np.sum(simulation_results[ColumnHeader.KEROSENE_LAMPS.value]) > 0.0:  # type: ignore
         kerosene_displacement = (
-            np.sum(simulation_results[ColumnHeader.KEROSENE_MITIGATION.value])
+            np.sum(
+                simulation_results[ColumnHeader.KEROSENE_MITIGATION.value]  # type: ignore
+            )
         ) / (
-            np.sum(simulation_results[ColumnHeader.KEROSENE_MITIGATION.value])
-            + np.sum(simulation_results[ColumnHeader.KEROSENE_LAMPS.value])
+            np.sum(
+                simulation_results[ColumnHeader.KEROSENE_MITIGATION.value]  # type: ignore
+            )
+            + np.sum(
+                simulation_results[ColumnHeader.KEROSENE_LAMPS.value]  # type: ignore
+            )
         )
     else:
         kerosene_displacement = 0.0
 
     # Calculate diesel fuel usage
-    total_diesel_fuel = np.sum(simulation_results[ColumnHeader.DIESEL_FUEL_USAGE.value])
+    total_diesel_fuel = np.sum(
+        simulation_results[ColumnHeader.DIESEL_FUEL_USAGE.value]  # type: ignore
+    )
 
     # Return outputs
     return TechnicalAppraisal(

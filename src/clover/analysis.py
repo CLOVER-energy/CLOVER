@@ -226,7 +226,7 @@ def get_key_results(
 
 def plot_outputs(
     grid_input_profile: pd.DataFrame,
-    grid_profile: pd.DataFrame,
+    grid_profile: Optional[pd.DataFrame],
     initial_cw_hourly_loads: Optional[Dict[str, pd.DataFrame]],
     initial_electric_hourly_loads: Dict[str, pd.DataFrame],
     initial_hw_hourly_loads: Dict[str, pd.DataFrame],
@@ -290,7 +290,10 @@ def plot_outputs(
     hw_pvt: bool = ColumnHeader.HW_PVT_ELECTRICITY_SUPPLIED.value in simulation_output
 
     with tqdm(
-        total=10,
+        total=(
+            9
+            + (1 if grid_profile is not None else 0)
+        ),
         desc="plots",
         leave=False,
         unit="plot",
@@ -339,27 +342,28 @@ def plot_outputs(
         pbar.update(1)
 
         # Plot the grid availablity profile.
-        reshaped_data = np.reshape(
-            grid_profile.iloc[0:HOURS_PER_YEAR].values, (365, 24)
-        )
-        heatmap = sns.heatmap(reshaped_data, vmin=0, vmax=1, cmap="Greys_r", cbar=False)
-        heatmap.set(
-            xticks=range(0, 24, 2),
-            xticklabels=range(0, 24, 2),
-            yticks=range(0, 365, 30),
-            yticklabels=range(0, 365, 30),
-            xlabel="Hour of day",
-            ylabel="Day of year",
-            title="Grid availability of the selected profile.",
-        )
-        plt.xticks(rotation=0)
-        plt.tight_layout()
-        plt.savefig(
-            os.path.join(figures_directory, "grid_availability_heatmap.png"),
-            transparent=True,
-        )
-        plt.close()
-        pbar.update(1)
+        if grid_profile is not None:
+            reshaped_data = np.reshape(
+                grid_profile.iloc[0:HOURS_PER_YEAR].values, (365, 24)
+            )
+            heatmap = sns.heatmap(reshaped_data, vmin=0, vmax=1, cmap="Greys_r", cbar=False)
+            heatmap.set(
+                xticks=range(0, 24, 2),
+                xticklabels=range(0, 24, 2),
+                yticks=range(0, 365, 30),
+                yticklabels=range(0, 365, 30),
+                xlabel="Hour of day",
+                ylabel="Day of year",
+                title="Grid availability of the selected profile.",
+            )
+            plt.xticks(rotation=0)
+            plt.tight_layout()
+            plt.savefig(
+                os.path.join(figures_directory, "grid_availability_heatmap.png"),
+                transparent=True,
+            )
+            plt.close()
+            pbar.update(1)
 
         # Plot the input vs. randomised grid avialability profiles.
         plt.plot(range(24), grid_input_profile, color="k", label="Input")
