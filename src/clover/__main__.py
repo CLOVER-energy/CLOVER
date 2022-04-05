@@ -205,7 +205,7 @@ def _prepare_location(location: str, logger: logging.Logger) -> None:
 
 
 def _prepare_water_system(
-    available_conventional_sources: List[str],
+    available_conventional_sources: Set[str],
     auto_generated_files_directory: str,
     device_utilisations: Dict[load.Device, pd.DataFrame],
     location: Location,

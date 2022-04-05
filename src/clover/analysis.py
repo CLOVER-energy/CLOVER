@@ -290,10 +290,7 @@ def plot_outputs(
     hw_pvt: bool = ColumnHeader.HW_PVT_ELECTRICITY_SUPPLIED.value in simulation_output
 
     with tqdm(
-        total=(
-            9
-            + (1 if grid_profile is not None else 0)
-        ),
+        total=(9 + (1 if grid_profile is not None else 0)),
         desc="plots",
         leave=False,
         unit="plot",
@@ -346,7 +343,9 @@ def plot_outputs(
             reshaped_data = np.reshape(
                 grid_profile.iloc[0:HOURS_PER_YEAR].values, (365, 24)
             )
-            heatmap = sns.heatmap(reshaped_data, vmin=0, vmax=1, cmap="Greys_r", cbar=False)
+            heatmap = sns.heatmap(
+                reshaped_data, vmin=0, vmax=1, cmap="Greys_r", cbar=False
+            )
             heatmap.set(
                 xticks=range(0, 24, 2),
                 xticklabels=range(0, 24, 2),
