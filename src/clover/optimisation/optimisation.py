@@ -39,8 +39,9 @@ import json
 import numpy as np  # pylint: disable=import-error
 import pandas as pd  # pylint: disable=import-error
 
-from tqdm import tqdm  # pylint: disable=import-error
+from tqdm import tqdm
 
+from ..simulation.__utils__ import determine_available_converters
 from ..simulation import energy_system
 
 from ..__utils__ import (
@@ -112,11 +113,11 @@ def _fetch_optimum_system(
 
 def _find_optimum_system(
     conventional_cw_source_profiles: Optional[Dict[WaterSource, pd.DataFrame]],
-    converters: List[Converter],
+    converters: Dict[str, Converter],
     end_year: int,
     finance_inputs: Dict[str, Any],
     ghg_inputs: Dict[str, Any],
-    grid_profile: pd.DataFrame,
+    grid_profile: Optional[pd.DataFrame],
     irradiance_data: pd.Series,
     kerosene_usage: pd.DataFrame,
     largest_converter_sizes: Dict[Converter, ConverterSize],
@@ -325,10 +326,10 @@ def _simulation_iteration(
     converter_sizes: Dict[Converter, ConverterSize],
     cw_pvt_system_size: SolarSystemSize,
     cw_tanks: TankSize,
-    converters: List[Converter],
+    converters: Dict[str, Converter],
     finance_inputs: Dict[str, Any],
     ghg_inputs: Dict[str, Any],
-    grid_profile: pd.DataFrame,
+    grid_profile: Optional[pd.DataFrame],
     hw_pvt_system_size: SolarSystemSize,
     hw_tanks: TankSize,
     irradiance_data: pd.Series,
@@ -463,9 +464,12 @@ def _simulation_iteration(
     }
 
     # Append converters defined elsewhere.
+    available_converters: List[Converter] = determine_available_converters(
+        converters, logger, minigrid, optimisation.scenario
+    )
     static_converter_sizes: Dict[Converter, int] = {
-        converter: converters.count(converter)
-        for converter in converters
+        converter: available_converters.count(converter)
+        for converter in available_converters
         if converter not in max_converter_sizes
     }
     simulation_converter_sizes: Dict[Converter, int] = {
@@ -944,10 +948,10 @@ def _optimisation_step(
     converter_sizes: Dict[Converter, ConverterSize],
     cw_pvt_system_size: SolarSystemSize,
     cw_tanks: TankSize,
-    converters: List[Converter],
+    converters: Dict[str, Converter],
     finance_inputs: Dict[str, Any],
     ghg_inputs: Dict[str, Any],
-    grid_profile: pd.DataFrame,
+    grid_profile: Optional[pd.DataFrame],
     hw_pvt_system_size: SolarSystemSize,
     hw_tanks: TankSize,
     irradiance_data: pd.Series,
@@ -1114,10 +1118,10 @@ def _optimisation_step(
 
 def multiple_optimisation_step(
     conventional_cw_source_profiles: Optional[Dict[WaterSource, pd.DataFrame]],
-    converters: List[Converter],
+    converters: Dict[str, Converter],
     finance_inputs: Dict[str, Any],
     ghg_inputs: Dict[str, Any],
-    grid_profile: pd.DataFrame,
+    grid_profile: Optional[pd.DataFrame],
     irradiance_data: pd.Series,
     kerosene_usage: pd.DataFrame,
     location: Location,

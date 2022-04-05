@@ -28,11 +28,13 @@ import pandas as pd
 from ..impact import finance, ghgs
 
 from ..__utils__ import (
+    BColours,
     ColumnHeader,
     Criterion,
     CumulativeResults,
     EnvironmentalAppraisal,
     FinancialAppraisal,
+    InternalError,
     hourly_profile_to_daily_sum,
     Location,
     SystemAppraisal,
@@ -439,7 +441,7 @@ def _simulation_technical_appraisal(
 
     # Calculate system blackouts
     system_blackouts: float = float(
-        np.mean(simulation_results[ColumnHeader.BLACKOUTS.value].values)
+        np.mean(simulation_results[ColumnHeader.BLACKOUTS.value].values)  # type: ignore
     )
 
     # Clean-water system.
@@ -447,7 +449,9 @@ def _simulation_technical_appraisal(
         round(
             float(
                 np.mean(
-                    simulation_results[ColumnHeader.CLEAN_WATER_BLACKOUTS.value].values
+                    simulation_results[  # type: ignore
+                        ColumnHeader.CLEAN_WATER_BLACKOUTS.value
+                    ].values
                 )
             ),
             3,
@@ -510,18 +514,26 @@ def _simulation_technical_appraisal(
 
     # Calculate proportion of kerosene displaced (defaults to zero if kerosene is not
     # originally used
-    if np.sum(simulation_results[ColumnHeader.KEROSENE_LAMPS.value]) > 0.0:
+    if np.sum(simulation_results[ColumnHeader.KEROSENE_LAMPS.value]) > 0.0:  # type: ignore
         kerosene_displacement = (
-            np.sum(simulation_results[ColumnHeader.KEROSENE_MITIGATION.value])
+            np.sum(
+                simulation_results[ColumnHeader.KEROSENE_MITIGATION.value]  # type: ignore
+            )
         ) / (
-            np.sum(simulation_results[ColumnHeader.KEROSENE_MITIGATION.value])
-            + np.sum(simulation_results[ColumnHeader.KEROSENE_LAMPS.value])
+            np.sum(
+                simulation_results[ColumnHeader.KEROSENE_MITIGATION.value]  # type: ignore
+            )
+            + np.sum(
+                simulation_results[ColumnHeader.KEROSENE_LAMPS.value]  # type: ignore
+            )
         )
     else:
         kerosene_displacement = 0.0
 
     # Calculate diesel fuel usage
-    total_diesel_fuel = np.sum(simulation_results[ColumnHeader.DIESEL_FUEL_USAGE.value])
+    total_diesel_fuel = np.sum(
+        simulation_results[ColumnHeader.DIESEL_FUEL_USAGE.value]  # type: ignore
+    )
 
     # Return outputs
     return TechnicalAppraisal(
@@ -611,6 +623,14 @@ def appraise_system(
         and previous_system.system_details.final_num_clean_water_tanks is not None
         else 0
     )
+    if system_details.initial_converter_sizes is None:
+        logger.error(
+            "%sNo converter sizes on system details when calling system appraisal. "
+            "Only systems that have been simulated can be appraised.%s",
+            BColours.fail,
+            BColours.endc,
+        )
+        raise InternalError("Misuse of system appraisal function.")
     converter_addition: Dict[str, int] = {
         converter: size
         - (
