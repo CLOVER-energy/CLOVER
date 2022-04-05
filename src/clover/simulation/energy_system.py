@@ -1394,9 +1394,7 @@ def run_simulation(
     kerosene_profile: pd.Series
     load_energy: pd.DataFrame
     renewables_energy: pd.DataFrame
-    renewables_energy_map: Dict[
-        RenewableEnergySource, pd.DataFrame
-    ] = {
+    renewables_energy_map: Dict[RenewableEnergySource, pd.DataFrame] = {
         RenewableEnergySource.PV: pv_power_produced,  # type: ignore
         RenewableEnergySource.CLEAN_WATER_PVT: (
             clean_water_pvt_electric_power_per_unit
