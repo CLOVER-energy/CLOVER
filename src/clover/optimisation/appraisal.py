@@ -626,11 +626,9 @@ def appraise_system(
             "%sNo converter sizes on system details when calling system appraisal. "
             "Only systems that have been simulated can be appraised.%s",
             BColours.fail,
-            BColours.endc
+            BColours.endc,
         )
-        raise InternalError(
-            "Misuse of system appraisal function."
-        )
+        raise InternalError("Misuse of system appraisal function.")
     converter_addition: Dict[str, int] = {
         converter: size
         - (
