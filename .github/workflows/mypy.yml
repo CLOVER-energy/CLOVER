@@ -11,12 +11,12 @@ jobs:
       - name: Set up Python 3.7
         uses: actions/setup-python@v2
         with:
-          python-version: 3.7.11
+          python-version: 3.7
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-          pip install mypy
+          pip install "mypy==0.942"
           pip install types-PyYAML
       - name: Analysing the code with mypy
         run: |
