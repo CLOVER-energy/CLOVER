@@ -441,7 +441,7 @@ def _simulation_technical_appraisal(
 
     # Calculate system blackouts
     system_blackouts: float = float(
-        np.mean(simulation_results[ColumnHeader.BLACKOUTS.value].values)
+        np.mean(simulation_results[ColumnHeader.BLACKOUTS.value].values)  # type: ignore
     )
 
     # Clean-water system.
@@ -449,7 +449,9 @@ def _simulation_technical_appraisal(
         round(
             float(
                 np.mean(
-                    simulation_results[ColumnHeader.CLEAN_WATER_BLACKOUTS.value].values
+                    simulation_results[  # type: ignore
+                        ColumnHeader.CLEAN_WATER_BLACKOUTS.value
+                    ].values
                 )
             ),
             3,
@@ -626,11 +628,9 @@ def appraise_system(
             "%sNo converter sizes on system details when calling system appraisal. "
             "Only systems that have been simulated can be appraised.%s",
             BColours.fail,
-            BColours.endc
+            BColours.endc,
         )
-        raise InternalError(
-            "Misuse of system appraisal function."
-        )
+        raise InternalError("Misuse of system appraisal function.")
     converter_addition: Dict[str, int] = {
         converter: size
         - (
