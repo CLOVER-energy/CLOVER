@@ -740,6 +740,7 @@ def main(args: List[Any]) -> None:
         conventional_sources: Set[str] = {
             source
             for scenario in scenarios
+            if scenario.desalination_scenario is not None
             for source in scenario.desalination_scenario.clean_water_scenario.conventional_sources
         }
 
@@ -771,6 +772,7 @@ def main(args: List[Any]) -> None:
         conventional_sources = {
             source
             for scenario in scenarios
+            if scenario.hot_water_scenario is not None
             for source in scenario.hot_water_scenario.conventional_sources
         }
 
