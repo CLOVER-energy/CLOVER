@@ -81,7 +81,7 @@ def get_lifetime_grid_status(
 
 def load_grid_profile(
     auto_generated_files_directory: str, logger: Logger, scenario: Scenario
-) -> pd.DataFrame:
+) -> Optional[pd.DataFrame]:
     """
     Loads the grid profile required for the run.
 
