@@ -14,13 +14,19 @@
 module load anaconda3/personal
 
 # Create the required environment
-echo -e "Creating anaconda virtual environment .........................    "
-if source create -n "py37" python=3.7.10 ipython ; then
-    echo -e "Creating anaconda virtual environment .........................    [   DONE   ]"
+if ! ( conda env list | grep "clover" ) ; then
+    echo -e "Creating anaconda virtual environment .........................    "
+    if conda create -n "clover" python=3.7.12 ipython --yes ; then
+        echo -e "Creating anaconda virtual environment .........................    [   DONE   ]"
+    else
+        echo -e "Creating anaconda virtual environment .........................    [  FAILED  ]"
+	exit 1
+    fi
 else
-    echo -e "Creating anaconda virtual environment .........................    [  FAILED  ]"
+    echo -e "Anaconda environment clover already exists, skipping."
 fi
-source activate py37
+
+source activate clover
 
 # Install the necessary packages.
 echo -e "Installing necessary packages .................................    "
@@ -28,4 +34,5 @@ if python -u -m pip install -r requirements.txt ; then
     echo -e "Installing necessary packages .................................    [   DONE   ]"
 else
     echo -e "Installing necessary packages .................................    [  FAILED  ]"
+    exit 1
 fi
