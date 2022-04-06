@@ -30,7 +30,9 @@ import pandas as pd
 from ..simulation import energy_system
 
 from ..__utils__ import (
+    BColours,
     Location,
+    ProgrammerJudgementFault,
     RenewableEnergySource,
     ResourceType,
     Scenario,
@@ -60,12 +62,12 @@ def single_line_simulation(
     converter_sizes: Dict[Converter, ConverterSize],
     cw_pvt_size: SolarSystemSize,
     cw_tanks: TankSize,
-    converters: List[Converter],
+    converters: Dict[str, Converter],
     disable_tqdm: bool,
     end_year: int,
     finance_inputs: Dict[str, Any],
     ghg_inputs: Dict[str, Any],
-    grid_profile: pd.DataFrame,
+    grid_profile: Optional[pd.DataFrame],
     hw_pvt_size: SolarSystemSize,
     hw_tanks: TankSize,
     irradiance_data: pd.Series,
@@ -149,6 +151,18 @@ def single_line_simulation(
     _converter_name_to_converter_mapping = {
         converter.name: converter for converter in converter_sizes
     }
+    if potential_system.system_details.initial_converter_sizes is None:
+        logger.error(
+            "%sInitial converter sizes undefined when calling single-line simulation. "
+            "%s",
+            BColours.fail,
+            BColours.endc,
+        )
+        raise ProgrammerJudgementFault(
+            "single line simulation",
+            "Misuse of single-line-simulation function: initial converter sizes must "
+            "be defined.",
+        )
     potential_converter_sizes = {
         _converter_name_to_converter_mapping[name]: value
         for name, value in potential_system.system_details.initial_converter_sizes.items()
@@ -177,7 +191,7 @@ def single_line_simulation(
     # Determine the static converters based on those that were modelled but were not
     # passed in as part of the maximum system size parameters.
     static_converter_sizes: Dict[Converter, int] = {
-        converter: potential_converter_sizes.count(converter)
+        converter: potential_converter_sizes[converter]
         for converter in potential_converter_sizes
         if converter not in converter_sizes
     }
@@ -226,7 +240,8 @@ def single_line_simulation(
 
         # Prep variables for the iteration process.
         component_sizes: Dict[
-            Union[Converter, ImpactingComponent, RenewableEnergySource], int
+            Union[Converter, ImpactingComponent, RenewableEnergySource],
+            Union[int, float],
         ] = {
             ImpactingComponent.CLEAN_WATER_TANK: potential_num_clean_water_tanks,
             ImpactingComponent.HOT_WATER_TANK: potential_num_hot_water_tanks,

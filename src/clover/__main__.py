@@ -205,7 +205,7 @@ def _prepare_location(location: str, logger: logging.Logger) -> None:
 
 
 def _prepare_water_system(
-    available_conventional_sources: List[str],
+    available_conventional_sources: Set[str],
     auto_generated_files_directory: str,
     device_utilisations: Dict[load.Device, pd.DataFrame],
     disable_tqdm: bool,
@@ -757,6 +757,7 @@ def main(
         conventional_sources: Set[str] = {
             source
             for scenario in scenarios
+            if scenario.desalination_scenario is not None
             for source in scenario.desalination_scenario.clean_water_scenario.conventional_sources
         }
 
@@ -789,6 +790,7 @@ def main(
         conventional_sources = {
             source
             for scenario in scenarios
+            if scenario.hot_water_scenario is not None
             for source in scenario.hot_water_scenario.conventional_sources
         }
 
