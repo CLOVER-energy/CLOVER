@@ -138,13 +138,14 @@ def cw_tank_iteration_step(
     clean_water_power_consumed_mapping: Dict[int, float],
     clean_water_demand_met_by_excess_energy: Dict[int, float],
     clean_water_supplied_by_excess_energy: Dict[int, float],
-    conventional_cw_source_profiles: Dict[WaterSource, pd.DataFrame],
+    conventional_cw_source_profiles: Optional[Dict[WaterSource, pd.DataFrame]],
     conventional_water_supplied: Dict[int, float],
     energy_per_desalinated_litre: float,
     excess_energy: float,
     excess_energy_used_desalinating: Dict[int, float],
-    hourly_cw_tank_storage: pd.DataFrame,
+    hourly_cw_tank_storage: Dict[int, float],
     initial_cw_tank_storage: float,
+    logger: Logger,
     maximum_battery_storage: float,
     maximum_cw_tank_storage: float,
     maximum_water_throughput: float,
@@ -220,13 +221,26 @@ def cw_tank_iteration_step(
     if scenario.desalination_scenario is not None:
         tank_water_flow = tank_storage_profile.iloc[time_index, 0]
 
+        # Raise an error if there is no clean-water tank defined.
+        if minigrid.clean_water_tank is not None:
+            logger.error(
+                "%sNo clean-water tank defined despite desalination being carried out"
+                ".%s",
+                BColours.fail,
+                BColours.endc,
+            )
+            raise InputFileError(
+                "minigrid inputs",
+                "No clean-water tank defined despite desalination being modelled.",
+            )
+
         # Compute the new tank level based on the previous level and the flow.
         if time_index == 0:
             current_net_water_flow = initial_cw_tank_storage + tank_water_flow
         else:
             current_net_water_flow = (
                 hourly_cw_tank_storage[time_index - 1]
-                * (1.0 - minigrid.clean_water_tank.leakage)
+                * (1.0 - minigrid.clean_water_tank.leakage)  # type: ignore
                 + tank_water_flow
             )
 
@@ -290,7 +304,7 @@ def cw_tank_iteration_step(
 
             # Withdraw this energy from the batteries.
             new_hourly_battery_storage -= (
-                1.0 / minigrid.battery.conversion_out
+                1.0 / minigrid.battery.conversion_out  # type: ignore
             ) * energy_consumed
 
             # Ensure that the excess energy is normalised correctly.
@@ -309,12 +323,14 @@ def cw_tank_iteration_step(
         # sources if available.
         if current_unmet_water_demand > 0:
             # Compute the clean water supplied using convnetional sources.
-            conventional_cw_available = float(
-                sum(
-                    entry.iloc[time_index]
-                    for entry in conventional_cw_source_profiles.values()
+            conventional_cw_available: float = 0
+            if conventional_cw_source_profiles is not None:
+                conventional_cw_available = float(
+                    sum(
+                        entry.iloc[time_index]  # type: ignore
+                        for entry in conventional_cw_source_profiles.values()
+                    )
                 )
-            )
             conventional_cw_supplied = min(
                 conventional_cw_available, current_unmet_water_demand
             )
@@ -341,7 +357,7 @@ def cw_tank_iteration_step(
         else:
             storage_water_supplied[time_index] = max(
                 hourly_cw_tank_storage[time_index - 1]
-                * (1.0 - minigrid.clean_water_tank.leakage)
+                * (1.0 - minigrid.clean_water_tank.leakage)  # type: ignore
                 - hourly_cw_tank_storage[time_index],
                 0.0,
             )
@@ -351,13 +367,13 @@ def cw_tank_iteration_step(
 
 def get_electric_battery_storage_profile(
     *,
-    grid_profile: pd.DataFrame,
-    kerosene_usage: pd.DataFrame,
+    grid_profile: pd.Series,
+    kerosene_usage: pd.Series,
     location: Location,
     logger: Logger,
     minigrid: Minigrid,
     processed_total_electric_load: pd.DataFrame,
-    renewables_power_produced: Dict[SolarPanelType, pd.DataFrame],
+    renewables_power_produced: Dict[RenewableEnergySource, pd.DataFrame],
     scenario: Scenario,
     clean_water_pvt_size: int = 0,
     end_hour: int = 4,
@@ -367,12 +383,10 @@ def get_electric_battery_storage_profile(
 ) -> Tuple[
     pd.DataFrame,
     pd.DataFrame,
+    pd.Series,
     pd.DataFrame,
     pd.DataFrame,
-    pd.DataFrame,
-    pd.DataFrame,
-    pd.DataFrame,
-    Dict[SolarPanelType, pd.DataFrame],
+    Dict[RenewableEnergySource, pd.DataFrame],
     pd.DataFrame,
 ]:
     """
@@ -453,7 +467,7 @@ def get_electric_battery_storage_profile(
     # Initialise PV-T power generation, including degradation of PV
     if minigrid.pvt_panel is not None:
         # Determine the PV-T degredation.
-        pvt_degradation_array = solar_degradation(
+        pvt_degradation_array = solar_degradation(  # type: ignore
             minigrid.pvt_panel.lifetime, location.max_years
         )[0 : (end_hour - start_hour)]
 
@@ -521,7 +535,7 @@ def get_electric_battery_storage_profile(
             hot_water_pvt_electric_generation_array = (
                 hot_water_pvt_electric_power_produced * hot_water_pvt_size
             )
-            hot_water_pvt_electric_generation: Optional[pd.DataFrame] = pd.DataFrame(
+            hot_water_pvt_electric_generation: pd.DataFrame = pd.DataFrame(
                 np.asarray(hot_water_pvt_electric_generation_array)
                 * np.asarray(pvt_degradation_array)
             )
@@ -535,21 +549,19 @@ def get_electric_battery_storage_profile(
             [0] * (end_hour - start_hour)
         )
         hot_water_pvt_electric_generation = pd.DataFrame([0] * (end_hour - start_hour))
-        pvt_electric_generation = None
-
-    pvt_electric_generation: Optional[pd.DataFrame] = pd.DataFrame(
-        clean_water_pvt_electric_generation.values
-        + hot_water_pvt_electric_generation.values
-    )
 
     # Consider power distribution network
     if scenario.distribution_network == DistributionNetwork.DC:
-        pv_generation = pv_generation.mul(minigrid.dc_to_dc_conversion_efficiency)
+        pv_generation = pv_generation.mul(  # type: ignore
+            minigrid.dc_to_dc_conversion_efficiency
+        )
         transmission_efficiency = minigrid.dc_transmission_efficiency
         # grid_conversion_eff = minigrid.ac_to_dc_conversion
 
     else:
-        pv_generation = pv_generation.mul(minigrid.dc_to_ac_conversion_efficiency)
+        pv_generation = pv_generation.mul(  # type: ignore
+            minigrid.dc_to_ac_conversion_efficiency
+        )
         transmission_efficiency = minigrid.ac_transmission_efficiency
         # grid_conversion_efficiency = minigrid.ac_to_ac_conversion
 
@@ -567,7 +579,9 @@ def get_electric_battery_storage_profile(
         )
 
     # Consider transmission efficiency
-    load_energy: pd.DataFrame = processed_total_electric_load / transmission_efficiency
+    load_energy: pd.DataFrame = (
+        processed_total_electric_load / transmission_efficiency  # type: ignore
+    )
     pv_energy = pv_generation * transmission_efficiency
 
     if clean_water_pvt_electric_generation is not None:
@@ -585,7 +599,7 @@ def get_electric_battery_storage_profile(
         pvt_hw_electric_energy = pd.DataFrame([0] * pv_energy.size)
 
     # Combine energy from all renewables sources
-    renewables_energy_map: Dict[SolarPanelType, pd.DataFrame] = {
+    renewables_energy_map: Dict[RenewableEnergySource, pd.DataFrame] = {
         RenewableEnergySource.PV: pv_energy,
         RenewableEnergySource.CLEAN_WATER_PVT: pvt_cw_electric_energy,
         RenewableEnergySource.HOT_WATER_PVT: pvt_hw_electric_energy,
@@ -593,7 +607,7 @@ def get_electric_battery_storage_profile(
     }
 
     # Add more renewable sources here as required
-    renewables_energy: pd.DataFrame = pd.DataFrame(sum(renewables_energy_map.values()))
+    renewables_energy: pd.DataFrame = pd.DataFrame(sum(renewables_energy_map.values()))  # type: ignore
 
     # Check for self-generation prioritisation
     if scenario.prioritise_self_generation:
@@ -607,7 +621,7 @@ def get_electric_battery_storage_profile(
         # Then take energy from grid if available
         if scenario.grid:
             grid_energy: pd.DataFrame = pd.DataFrame(
-                ((remaining_profile < 0) * remaining_profile).iloc[:, 0]
+                ((remaining_profile < 0) * remaining_profile).iloc[:, 0]  # type: ignore
                 * -1.0
                 * grid_profile.values
             )
@@ -620,19 +634,19 @@ def get_electric_battery_storage_profile(
     else:
         # Take energy from grid first if available
         if scenario.grid:
-            grid_energy: pd.DataFrame = grid_profile.mul(load_energy)
+            grid_energy: pd.DataFrame = grid_profile.mul(load_energy)  # type: ignore
         else:
             grid_energy = pd.DataFrame([0] * (end_hour - start_hour))
         # as needed for load
-        remaining_profile = (grid_energy <= 0).mul(load_energy)
+        remaining_profile = (grid_energy <= 0).mul(load_energy)  # type: ignore
         # Then take energy from PV
         battery_storage_profile = pd.DataFrame(
-            renewables_energy.values.subtrace(remaining_profile.values)
+            renewables_energy.values.subtrace(remaining_profile.values)  # type: ignore
         )
         renewables_energy_used_directly = pd.DataFrame(
-            (battery_storage_profile > 0)
+            (battery_storage_profile > 0)  # type: ignore
             .mul(remaining_profile)
-            .add((battery_storage_profile < 0).mul(renewables_energy))
+            .add((battery_storage_profile < 0).mul(renewables_energy))  # type: ignore
         )
 
     battery_storage_profile.columns = pd.Index([ColumnHeader.STORAGE_PROFILE.value])
@@ -705,8 +719,10 @@ def get_water_storage_profile(
 
     tank_storage_profile: pd.DataFrame = pd.DataFrame(remaining_profile.values)
 
+    electric_power_consumed: pd.DataFrame = 0.001 * pd.DataFrame([0] * processed_total_cw_load.size)  # type: ignore
+
     return (
-        0.001 * pd.DataFrame([0] * processed_total_cw_load.size),
+        electric_power_consumed,
         renewable_cw_used_directly,
         tank_storage_profile,
     )
