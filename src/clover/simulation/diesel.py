@@ -197,7 +197,7 @@ def _find_deficit_threshold(
     """
 
     # Find the blackout percentage
-    blackout_percentage = float(blackouts.mean(axis=0))
+    blackout_percentage = float(blackouts.mean(axis=0))  # type: ignore
 
     # Find the difference in reliability
     reliability_difference = blackout_percentage - backup_threshold

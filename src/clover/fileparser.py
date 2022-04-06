@@ -434,7 +434,9 @@ def _parse_conversion_inputs(
     # If the file exists, parse the converters contained.
     if os.path.isfile(conversion_file_relative_path):
         parsed_converters: List[Converter] = []
-        conversion_inputs = read_yaml(conversion_file_relative_path, logger)
+        conversion_inputs: List[Dict[str, Any]] = read_yaml(  # type: ignore
+            conversion_file_relative_path, logger
+        )
         if conversion_inputs is not None:
             if not isinstance(conversion_inputs, list):
                 logger.error(
@@ -762,8 +764,12 @@ def _parse_diesel_inputs(
             logger.info("Diesel water-heater emission information successfully parsed.")
 
     elif any(scenario.hot_water_scenario is not None for scenario in scenarios) and any(
-        scenario.hot_water_scenario.auxiliary_heater == AuxiliaryHeaterType.DIESEL
-        for scenario in scenarios
+        scenario.hot_water_scenario.auxiliary_heater == AuxiliaryHeaterType.DIESEL  # type: ignore
+        for scenario in [
+            scenario
+            for scenario in scenarios
+            if scenario.hot_water_scenario is not None
+        ]
     ):
         logger.error(
             "%sDiesel water heater must be specified in the energy system inputs file "
@@ -899,8 +905,12 @@ def _parse_exchanger_inputs(
     if (
         any(scenario.desalination_scenario is not None for scenario in scenarios)
         and any(
-            scenario.desalination_scenario.pvt_scenario.heats == HTFMode.CLOSED_HTF
-            for scenario in scenarios
+            scenario.desalination_scenario.pvt_scenario.heats == HTFMode.CLOSED_HTF  # type: ignore
+            for scenario in [
+                scenario
+                for scenario in scenarios
+                if scenario.desalination_scenario is not None
+            ]
         )
     ) or any(scenario.hot_water_scenario is not None for scenario in scenarios):
         logger.info("Parsing exchanger impact information.")
@@ -1575,10 +1585,14 @@ def _parse_tank_inputs(
 
     # If clean-water is present, extract the cost and emissions information.
     if any(
-        scenario.desalination_scenario is not None for scenario in scenarios
+        scenario.desalination_scenario is not None for scenario in scenarios  # type: ignore
     ) and any(
-        scenario.desalination_scenario.pvt_scenario.heats == HTFMode.CLOSED_HTF
-        for scenario in scenarios
+        scenario.desalination_scenario.pvt_scenario.heats == HTFMode.CLOSED_HTF  # type: ignore
+        for scenario in [
+            scenario
+            for scenario in scenarios
+            if scenario.desalination_scenario is not None
+        ]
     ):
         logger.info("Parsing buffer-water tank impact information.")
         # Parse the buffer-water tank costs information.
@@ -1932,8 +1946,12 @@ def _parse_minigrid_inputs(
 
     # If applicable, determine the electric water heater for the system.
     if any(scenario.hot_water_scenario is not None for scenario in scenarios) and any(
-        scenario.hot_water_scenario.auxiliary_heater == AuxiliaryHeaterType.ELECTRIC
-        for scenario in scenarios
+        scenario.hot_water_scenario.auxiliary_heater == AuxiliaryHeaterType.ELECTRIC  # type: ignore
+        for scenario in [
+            scenario
+            for scenario in scenarios
+            if scenario.hot_water_scenario is not None
+        ]
     ):
         try:
             electric_water_heater: Optional[Converter] = converters[
@@ -2523,7 +2541,7 @@ def parse_input_files(
     ghg_inputs: DefaultDict[str, DefaultDict[str, float]] = defaultdict(
         lambda: defaultdict(float)
     )
-    ghg_inputs.update(ghg_data)
+    ghg_inputs.update(ghg_data)  # type: ignore
     logger.info("GHG inputs successfully parsed.")
 
     # Update the finance and GHG inputs accordingly with the PV data.
@@ -2540,8 +2558,12 @@ def parse_input_files(
 
     # Update the impact inputs with the battery data.
     logger.info("Updating with battery impact data.")
-    finance_inputs[ImpactingComponent.STORAGE.value] = defaultdict(float, battery_costs)
-    ghg_inputs[ImpactingComponent.STORAGE.value] = defaultdict(float, battery_emissions)
+    finance_inputs[ImpactingComponent.STORAGE.value] = defaultdict(
+        float, battery_costs  # type: ignore
+    )
+    ghg_inputs[ImpactingComponent.STORAGE.value] = defaultdict(
+        float, battery_emissions  # type: ignore
+    )
     logger.info("Battery impact data successfully updated.")
 
     if minigrid.pvt_panel is not None and any(scenario.pv_t for scenario in scenarios):
@@ -2595,10 +2617,10 @@ def parse_input_files(
         # Update the clean-water tank impacts.
         logger.info("Updating with clean-water tank impact data.")
         finance_inputs[ImpactingComponent.CLEAN_WATER_TANK.value] = defaultdict(
-            float, clean_water_tank_costs
+            float, clean_water_tank_costs  # type: ignore
         )
         ghg_inputs[ImpactingComponent.CLEAN_WATER_TANK.value] = defaultdict(
-            float, clean_water_tank_emissions
+            float, clean_water_tank_emissions  # type: ignore
         )
         logger.info("Clean-water tank impact data successfully updated.")
 
@@ -2703,20 +2725,20 @@ def parse_input_files(
         # Update the hot-water tank impacts.
         logger.info("Updating with hot-water tank impact data.")
         finance_inputs[ImpactingComponent.HOT_WATER_TANK.value] = defaultdict(
-            float, hot_water_tank_costs
+            float, hot_water_tank_costs  # type: ignore
         )
         ghg_inputs[ImpactingComponent.HOT_WATER_TANK.value] = defaultdict(
-            float, hot_water_tank_emissions
+            float, hot_water_tank_emissions  # type: ignore
         )
         logger.info("Hot-water tank impact data successfully updated.")
 
         # Update the diesel water-heater impacts.
         logger.info("Updating with diesel water-heater impact data.")
         finance_inputs[ImpactingComponent.DIESEL_WATER_HEATER.value] = defaultdict(
-            float, diesel_water_heater_costs
+            float, diesel_water_heater_costs  # type: ignore
         )
         ghg_inputs[ImpactingComponent.DIESEL_WATER_HEATER.value] = defaultdict(
-            float, diesel_water_heater_emissions
+            float, diesel_water_heater_emissions  # type: ignore
         )
         logger.info("Diesel water-heater impact data successfully updated.")
 
