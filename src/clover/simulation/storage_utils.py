@@ -28,7 +28,6 @@ from ..__utils__ import (
 
 __all__ = (
     "battery_iteration_step",
-    "cw_tank_iteration_step",
     "get_electric_battery_storage_profile",
     "get_water_storage_profile",
 )
