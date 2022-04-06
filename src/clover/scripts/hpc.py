@@ -102,11 +102,9 @@ def main(args: List[Any]) -> None:
             BColours.fail,
             hpc_job_number,
             ", ".join(str(e.value) for e in HpcRunType),
-            BColours.endc
+            BColours.endc,
         )
-        raise InvalidRunError(
-            f"Run {hpc_job_number} was not of a supported run type."
-        )
+        raise InvalidRunError(f"Run {hpc_job_number} was not of a supported run type.")
 
     if hpc_run.total_load:
         clover_arguments.extend(["--electric-load-profile", hpc_run.total_load_file])
