@@ -21,6 +21,10 @@ Any other information which is useful for the pull request.
 ## Requirements
 ### Reviewers
 All pull requests must be approved by an administrator of the CLOVER-energy organisation. Make sure to request a review or your pull request will not be approved.
+Potential reviewers:
+* @BenWinchester
+* @philsandwell
+* @hamishbeath
 
 ### Checks
 CLOVER runs a series of automated tests. Run the `./bin/test-clover.sh` helper script to run these prior to opening the pull request. You will not be able to merge your pull request unless all of these automated checks are passing on your code base.
