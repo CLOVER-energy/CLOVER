@@ -1368,7 +1368,9 @@ def _parse_solar_inputs(  # pylint: disable=too-many-locals, too-many-statements
             solar_panels.append(solar.PVPanel.from_dict(logger, panel_input))
 
     # Parse the PV-T models if relevant for the code flow.
-    electric_models, thermal_models = _parse_pvt_reduced_models(debug, logger, scenarios)
+    electric_models, thermal_models = _parse_pvt_reduced_models(
+        debug, logger, scenarios
+    )
 
     # Parse the PV-T panel information
     for panel_input in solar_generation_inputs["panels"]:
