@@ -21,7 +21,6 @@ from logging import Logger
 from typing import Any, DefaultDict, Dict, List, Optional, Set, Tuple, Union
 
 import json
-from numpy import isin
 import pandas as pd  # pylint: disable=import-error
 
 # from sklearn.linear_model._coordinate_descent import Lasso
@@ -444,94 +443,98 @@ def _parse_conversion_inputs(
                     BColours.fail,
                     BColours.endc,
                 )
-        if conversion_inputs is not None and len(conversion_inputs) > 0:
-            for entry in conversion_inputs:
-                if not isinstance(entry, dict):
-                    logger.error(
-                        "%sConverter not of correct format `dict`: %s%s",
-                        BColours.fail,
-                        str(entry),
-                        BColours.endc,
-                    )
-                    raise InputFileError(
-                        "conversion inputs", "Converters not correctly defined."
-                    )
+            if len(conversion_inputs) > 0:
+                for entry in conversion_inputs:
+                    if not isinstance(entry, dict):
+                        logger.error(
+                            "%sConverter not of correct format `dict`: %s%s",
+                            BColours.fail,
+                            str(entry),
+                            BColours.endc,
+                        )
+                        raise InputFileError(
+                            "conversion inputs", "Converters not correctly defined."
+                        )
 
-                # Attempt to parse as a water source.
-                try:
-                    parsed_converters.append(WaterSource.from_dict(entry, logger))
-                except InputFileError:
-                    logger.info(
-                        "Failed to create a single-input converter, trying a thermal "
-                        "desalination plant."
-                    )
-
-                    # Attempt to parse as a thermal desalination plant.
+                    # Attempt to parse as a water source.
                     try:
-                        parsed_converters.append(
-                            ThermalDesalinationPlant.from_dict(entry, logger)
-                        )
-                    except KeyError:
+                        parsed_converters.append(WaterSource.from_dict(entry, logger))
+                    except InputFileError:
                         logger.info(
-                            "Failed to create a thermal desalination plant, trying "
-                            "a multi-input converter."
+                            "Failed to create a single-input converter, trying a thermal "
+                            "desalination plant."
                         )
 
-                        # Parse as a generic multi-input converter.
-                        parsed_converters.append(
-                            MultiInputConverter.from_dict(entry, logger)
+                        # Attempt to parse as a thermal desalination plant.
+                        try:
+                            parsed_converters.append(
+                                ThermalDesalinationPlant.from_dict(entry, logger)
+                            )
+                        except KeyError:
+                            logger.info(
+                                "Failed to create a thermal desalination plant, trying "
+                                "a multi-input converter."
+                            )
+
+                            # Parse as a generic multi-input converter.
+                            parsed_converters.append(
+                                MultiInputConverter.from_dict(entry, logger)
+                            )
+                            logger.info("Parsed multi-input converter from input data.")
+                        logger.info(
+                            "Parsed thermal desalination plant from input data."
                         )
-                        logger.info("Parsed multi-input converter from input data.")
-                    logger.info("Parsed thermal desalination plant from input data.")
 
-                else:
-                    logger.info("Parsed single-input converter from input data.")
+                    else:
+                        logger.info("Parsed single-input converter from input data.")
 
-            # Convert the list to the required format.
-            converters: Dict[str, Converter] = {
-                converter.name: converter for converter in parsed_converters
-            }
+                # Convert the list to the required format.
+                converters: Dict[str, Converter] = {
+                    converter.name: converter for converter in parsed_converters
+                }
 
-            # Parse the transmission impact information.
-            for converter in converters.values():
-                try:
-                    converter_costs[converter] = [
-                        entry[COSTS]
-                        for entry in conversion_inputs
-                        if entry[NAME] == converter.name
-                    ][0]
-                except (KeyError, IndexError):
-                    logger.error(
-                        "Failed to determine converter cost information for %s.",
-                        converter.name,
-                    )
-                    raise
-                else:
-                    logger.info(
-                        "Converter cost information for %s successfully parsed.",
-                        converter.name,
-                    )
-                try:
-                    converter_emissions[converter] = [
-                        entry[EMISSIONS]
-                        for entry in conversion_inputs
-                        if entry[NAME] == converter.name
-                    ][0]
-                except (KeyError, IndexError):
-                    logger.error(
-                        "Failed to determine converter emission information for %s.",
-                        converter.name,
-                    )
-                    raise
-                else:
-                    logger.info(
-                        "Converter emission information for %s successfully parsed.",
-                        converter.name,
-                    )
+                # Parse the transmission impact information.
+                for converter in converters.values():
+                    try:
+                        converter_costs[converter] = [
+                            entry[COSTS]
+                            for entry in conversion_inputs
+                            if entry[NAME] == converter.name
+                        ][0]
+                    except (KeyError, IndexError):
+                        logger.error(
+                            "Failed to determine converter cost information for %s.",
+                            converter.name,
+                        )
+                        raise
+                    else:
+                        logger.info(
+                            "Converter cost information for %s successfully parsed.",
+                            converter.name,
+                        )
+                    try:
+                        converter_emissions[converter] = [
+                            entry[EMISSIONS]
+                            for entry in conversion_inputs
+                            if entry[NAME] == converter.name
+                        ][0]
+                    except (KeyError, IndexError):
+                        logger.error(
+                            "Failed to determine converter emission information for %s.",
+                            converter.name,
+                        )
+                        raise
+                    else:
+                        logger.info(
+                            "Converter emission information for %s successfully parsed.",
+                            converter.name,
+                        )
 
-        else:
-            converters = {}
-            logger.info("Conversion file empty, continuing with no defined converters.")
+            else:
+                converters = {}
+                logger.info(
+                    "Conversion file empty, continuing with no defined converters."
+                )
 
     else:
         converters = {}
@@ -545,7 +548,7 @@ def _parse_conversion_inputs(
     )
 
 
-def _parse_diesel_inputs(
+def _parse_diesel_inputs(  # pylint: disable=too-many-statements
     energy_system_inputs: Dict[str, Any],
     inputs_directory_relative_path: str,
     logger: Logger,
@@ -631,9 +634,8 @@ def _parse_diesel_inputs(
             )
             raise InputFileError(
                 "energy system inputs",
-                "Diesel generator '{}' not found in diesel inputs.".format(
-                    energy_system_inputs[DIESEL_GENERATOR]
-                ),
+                f"Diesel generator '{energy_system_inputs[DIESEL_GENERATOR]}' not "
+                + "found in diesel inputs.",
             ) from None
     else:
         logger.error(
@@ -713,9 +715,8 @@ def _parse_diesel_inputs(
             )
             raise InputFileError(
                 "energy system inputs",
-                "Diesel water heater '{}' not found in diesel inputs.".format(
-                    energy_system_inputs[DIESEL_WATER_HEATER]
-                ),
+                f"Diesel water heater '{energy_system_inputs[DIESEL_WATER_HEATER]}' "
+                + "not found in diesel inputs.",
             ) from None
 
         if diesel_water_heater is None:
@@ -951,7 +952,7 @@ def _parse_exchanger_inputs(
     )
 
 
-def _parse_pvt_reduced_models(
+def _parse_pvt_reduced_models(  # pylint: disable=too-many-statements
     debug: bool, logger: Logger, scenarios: List[Scenario]
 ) -> Tuple[Any, Any]:
     """
@@ -1250,7 +1251,7 @@ def parse_scenario_inputs(
     )
 
 
-def _parse_solar_inputs(
+def _parse_solar_inputs(  # pylint: disable=too-many-locals, too-many-statements
     debug: bool,
     energy_system_inputs: Dict[str, Any],
     inputs_directory_relative_path: str,
@@ -1486,7 +1487,7 @@ def _parse_solar_inputs(
     )
 
 
-def _parse_tank_inputs(
+def _parse_tank_inputs(  # pylint: disable=too-many-statements
     energy_system_inputs: Dict[str, Any],
     inputs_directory_relative_path: str,
     logger: Logger,
@@ -1702,7 +1703,7 @@ def _parse_tank_inputs(
     )
 
 
-def _parse_minigrid_inputs(
+def _parse_minigrid_inputs(  # pylint: disable=too-many-locals, too-many-statements
     converters: Dict[str, Converter],
     debug: bool,
     inputs_directory_relative_path: str,
@@ -1927,7 +1928,9 @@ def _parse_minigrid_inputs(
                 BColours.fail,
                 BColours.endc,
             )
-            raise InputFileError("energy system inputs", "Water pump not defined.")
+            raise InputFileError(
+                "energy system inputs", "Water pump not defined."
+            ) from None
 
     else:
         buffer_tank_costs = None
@@ -2173,7 +2176,7 @@ def _parse_transmission_inputs(
     )
 
 
-def parse_input_files(
+def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
     debug: bool,
     electric_load_profile: Optional[str],
     location_name: str,

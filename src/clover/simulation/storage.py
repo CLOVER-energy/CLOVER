@@ -25,11 +25,9 @@ import numpy as np
 from ..__utils__ import (
     BColours,
     CleanWaterMode,
-    HEAT_CAPACITY_OF_WATER,
     ColumnHeader,
     DistributionNetwork,
     InputFileError,
-    NAME,
     InternalError,
     Location,
     RenewableEnergySource,
@@ -37,7 +35,7 @@ from ..__utils__ import (
 )
 from .__utils__ import Minigrid
 from ..conversion.conversion import WaterSource
-from ..generation.solar import SolarPanelType, solar_degradation
+from ..generation.solar import solar_degradation
 
 __all__ = (
     "battery_iteration_step",
@@ -133,7 +131,7 @@ def battery_iteration_step(
     return battery_energy_flow, excess_energy, new_hourly_battery_storage
 
 
-def cw_tank_iteration_step(
+def cw_tank_iteration_step(  # pylint: disable=too-many-locals
     backup_desalinator_water_supplied: Dict[int, float],
     clean_water_power_consumed_mapping: Dict[int, float],
     clean_water_demand_met_by_excess_energy: Dict[int, float],
@@ -365,7 +363,7 @@ def cw_tank_iteration_step(
     return excess_energy
 
 
-def get_electric_battery_storage_profile(
+def get_electric_battery_storage_profile(  # pylint: disable=too-many-locals, too-many-statements
     *,
     grid_profile: pd.Series,
     kerosene_usage: pd.Series,
@@ -482,7 +480,8 @@ def get_electric_battery_storage_profile(
                 BColours.endc,
             )
             raise InternalError(
-                "No PV-T electric power produced despite a PV-T panel being defined for the system.."
+                "No PV-T electric power produced despite a PV-T panel being defined "
+                "for the system.."
             )
 
         # Compute the clean-water PV-T electricity generated.
@@ -607,7 +606,9 @@ def get_electric_battery_storage_profile(
     }
 
     # Add more renewable sources here as required
-    renewables_energy: pd.DataFrame = pd.DataFrame(sum(renewables_energy_map.values()))  # type: ignore
+    renewables_energy: pd.DataFrame = pd.DataFrame(
+        sum(renewables_energy_map.values())  # type: ignore
+    )
 
     # Check for self-generation prioritisation
     if scenario.prioritise_self_generation:
@@ -719,7 +720,9 @@ def get_water_storage_profile(
 
     tank_storage_profile: pd.DataFrame = pd.DataFrame(remaining_profile.values)
 
-    electric_power_consumed: pd.DataFrame = 0.001 * pd.DataFrame([0] * processed_total_cw_load.size)  # type: ignore
+    electric_power_consumed: pd.DataFrame = 0.001 * pd.DataFrame(  # type: ignore
+        [0] * processed_total_cw_load.size
+    )
 
     return (
         electric_power_consumed,

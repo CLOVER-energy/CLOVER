@@ -96,9 +96,6 @@ class DieselWaterHeater(Converter):
         Instnatiate a :class:`DieselWaterHeater` instance.
 
         Inputs:
-            - consunmption:
-                The amount of input load type which is consumed per unit output load
-                produced.
             - input_resource_types:
                 The types of load inputted to the d:class:`DieselWaterHeater`evice.
             - maximum_output_capcity:
@@ -112,6 +109,7 @@ class DieselWaterHeater(Converter):
 
         """
 
+        # @BenWinchester - Waste consumption needed in this diesel water heater.
         super().__init__(
             input_resource_consumption,
             maximum_output_capacity,

@@ -196,13 +196,15 @@ def _volume_withdrawn_from_tank(
         if thermal_desalination_plant.htf_mode == HTFMode.CLOSED_HTF:
             if thermal_desalination_plant.minimum_htf_temperature is None:
                 logger.error(
-                    "%sNo minimum htf temperature defined despite '%s' being the HTF mode.%s",
+                    "%sNo minimum htf temperature defined despite '%s' being the HTF "
+                    "mode.%s",
                     BColours.fail,
                     thermal_desalination_plant.htf_mode.value,
                     BColours.endc,
                 )
                 raise InternalError(
-                    "Minimum HTF temperature unexpectly undefined when computing plant supply volume."
+                    "Minimum HTF temperature unexpectly undefined when computing plant "
+                    "supply volume."
                 )
 
             tank_supply_on: bool = (
@@ -221,13 +223,15 @@ def _volume_withdrawn_from_tank(
         if thermal_desalination_plant.htf_mode == HTFMode.FEEDWATER_HEATING:
             if thermal_desalination_plant.minimum_feedwater_temperature is None:
                 logger.error(
-                    "%sNo minimum feedwater temperature defined despite '%s' being the HTF mode.%s",
+                    "%sNo minimum feedwater temperature defined despite '%s' being the "
+                    "HTF mode.%s",
                     BColours.fail,
                     thermal_desalination_plant.htf_mode.value,
                     BColours.endc,
                 )
                 raise InternalError(
-                    "Minimum feedwater temperature unexpectly undefined when computing plant supply volume."
+                    "Minimum feedwater temperature unexpectly undefined when computing "
+                    "plant supply volume."
                 )
 
             tank_supply_on = (
@@ -260,7 +264,7 @@ def _volume_withdrawn_from_tank(
     return tank_supply_on, volume_supplied
 
 
-def calculate_pvt_output(
+def calculate_pvt_output(  # pylint: disable=too-many-locals, too-many-statements
     disable_tqdm: bool,
     end_hour: int,
     irradiances: pd.Series,
@@ -361,7 +365,9 @@ def calculate_pvt_output(
     # Instantiate maps for easy PV-T power lookups.
     pvt_electric_power_per_unit_map: Dict[int, float] = {}
     pvt_pump_times_map: Dict[int, int] = {}
-    tank_supply_temperature_map: Dict[int, float] = {}
+    tank_supply_temperature_map: Dict[  # pylint: disable=unused-variable
+        int, float
+    ] = {}
     tank_volume_supplied_map: Dict[int, float] = {}
 
     # Compute the various terms which remain common across all time steps.
