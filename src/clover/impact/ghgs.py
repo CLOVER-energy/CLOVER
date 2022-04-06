@@ -31,7 +31,6 @@ from ..__utils__ import (
     Location,
     hourly_profile_to_daily_sum,
 )
-from ..conversion.conversion import Converter
 from .__utils__ import SIZE_INCREMENT, ImpactingComponent, LIFETIME
 
 __all__ = (
@@ -182,7 +181,7 @@ def calculate_misc_ghgs(capacity: float, ghg_inputs: Dict[str, Any]) -> float:
     return misc_ghgs
 
 
-def calculate_total_equipment_ghgs(
+def calculate_total_equipment_ghgs(  # pylint: disable=too-many-locals
     buffer_tanks: int,
     clean_water_tanks: int,
     converters: Dict[str, int],
@@ -518,7 +517,7 @@ def calculate_independent_ghgs(
     return total_ghgs
 
 
-def calculate_inverter_ghgs(
+def calculate_inverter_ghgs(  # pylint: disable=too-many-locals
     electric_yearly_load_statistics: pd.DataFrame,
     end_year: int,
     ghg_inputs: Dict[str, Any],
@@ -766,7 +765,7 @@ def calculate_om_ghgs(
 
 
 #   Total O&M for entire system
-def calculate_total_om(
+def calculate_total_om(  # pylint: disable=too-many-locals
     buffer_tanks: int,
     clean_water_tanks: int,
     converters: Optional[Dict[str, int]],

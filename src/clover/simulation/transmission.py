@@ -147,11 +147,14 @@ class Transmitter:
                 )
                 raise InputFileError(
                     "transmission inputs",
-                    "f{BColours.fail}Invalid value type in transmission file: {str(e)}{BColours.endc}",
+                    f"Invalid value type in transmission file: {str(e)}",
                 ) from None
 
+        # Determine the single resource type allowed for the transmitter.
+        input_resource = input_resource_list[0]
+
         consumption = input_resource_consumption[
-            RESOURCE_NAME_TO_RESOURCE_TYPE_MAPPING[input_resource_list[0]]
+            RESOURCE_NAME_TO_RESOURCE_TYPE_MAPPING[input_resource]
         ]
 
         return cls(
