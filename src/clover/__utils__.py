@@ -832,9 +832,9 @@ def hourly_profile_to_daily_sum(
     """
 
     days = int(hourly_profile.shape[0] / (24))
-    daily_profile = pd.DataFrame(hourly_profile.values.reshape((days, 24)))
+    daily_profile = pd.DataFrame(hourly_profile.values.reshape((days, 24)))  # type: ignore
     # return pd.DataFrame(np.sum(daily_profile, 1))
-    return daily_profile.sum(axis=1)
+    return daily_profile.sum(axis=1)  # type: ignore
 
 
 class InputFileError(Exception):
