@@ -30,7 +30,6 @@ import pandas as pd
 from ..impact import finance, ghgs
 
 from ..__utils__ import (
-    HEAT_CAPACITY_OF_WATER,
     AuxiliaryHeaterType,
     BColours,
     CleanWaterMode,
@@ -39,6 +38,7 @@ from ..__utils__ import (
     CumulativeResults,
     EnvironmentalAppraisal,
     FinancialAppraisal,
+    HEAT_CAPACITY_OF_WATER,
     InternalError,
     ResourceType,
     Scenario,
@@ -1208,18 +1208,26 @@ def _simulation_technical_appraisal(
 
     # Calculate proportion of kerosene displaced (defaults to zero if kerosene is not
     # originally used
-    if np.sum(simulation_results[ColumnHeader.KEROSENE_LAMPS.value]) > 0.0:
+    if np.sum(simulation_results[ColumnHeader.KEROSENE_LAMPS.value]) > 0.0:  # type: ignore
         kerosene_displacement = (
-            np.sum(simulation_results[ColumnHeader.KEROSENE_MITIGATION.value])
+            np.sum(
+                simulation_results[ColumnHeader.KEROSENE_MITIGATION.value]  # type: ignore
+            )
         ) / (
-            np.sum(simulation_results[ColumnHeader.KEROSENE_MITIGATION.value])
-            + np.sum(simulation_results[ColumnHeader.KEROSENE_LAMPS.value])
+            np.sum(
+                simulation_results[ColumnHeader.KEROSENE_MITIGATION.value]  # type: ignore
+            )
+            + np.sum(
+                simulation_results[ColumnHeader.KEROSENE_LAMPS.value]  # type: ignore
+            )
         )
     else:
         kerosene_displacement = 0.0
 
     # Calculate diesel fuel usage
-    total_diesel_fuel = np.sum(simulation_results[ColumnHeader.DIESEL_FUEL_USAGE.value])
+    total_diesel_fuel = np.sum(
+        simulation_results[ColumnHeader.DIESEL_FUEL_USAGE.value]  # type: ignore
+    )
 
     # Return outputs
     return TechnicalAppraisal(
@@ -1342,6 +1350,14 @@ def appraise_system(
         and previous_system.system_details.final_num_clean_water_tanks is not None
         else 0
     )
+    if system_details.initial_converter_sizes is None:
+        logger.error(
+            "%sNo converter sizes on system details when calling system appraisal. "
+            "Only systems that have been simulated can be appraised.%s",
+            BColours.fail,
+            BColours.endc,
+        )
+        raise InternalError("Misuse of system appraisal function.")
     converter_addition: Dict[Converter, int] = {
         converter: size
         - (

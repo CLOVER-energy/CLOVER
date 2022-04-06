@@ -235,7 +235,7 @@ def generate_simulation_string(
             "- {}x {} litres hot-water storage".format(
                 parsed_args.num_hot_water_tanks, minigrid.hot_water_tank.mass
             )
-            if scenario.hot_water_scenario is not None
+            if minigrid.hot_water_tank is not None
             else ""
         )
 
