@@ -274,7 +274,7 @@ def _simulation_cumulative_results(
     )
 
 
-def _simulation_environmental_appraisal(
+def _simulation_environmental_appraisal(  # pylint: disable=too-many-locals
     buffer_tank_addition: int,
     clean_water_tank_addition: int,
     converter_addition: Dict[str, int],
@@ -501,7 +501,7 @@ def _simulation_environmental_appraisal(
     )
 
 
-def _simulation_financial_appraisal(
+def _simulation_financial_appraisal(  # pylint: disable=too-many-locals
     buffer_tank_addition: int,
     clean_water_tank_addition: int,
     converter_addition: Dict[Converter, int],
@@ -714,7 +714,7 @@ def _simulation_financial_appraisal(
     )
 
 
-def _appraise_clean_water_system_tech(
+def _appraise_clean_water_system_tech(  # pylint: disable=too-many-locals
     finance_inputs: Dict[str, Any],
     logger: Logger,
     renewables_fraction: float,
@@ -1280,7 +1280,7 @@ def _simulation_technical_appraisal(
     )
 
 
-def appraise_system(
+def appraise_system(  # pylint: disable=too-many-locals
     electric_yearly_load_statistics: pd.DataFrame,
     end_year: int,
     finance_inputs: Dict[str, Any],

@@ -25,10 +25,9 @@ from logging import Logger
 from typing import Any, Dict, List, Optional, Pattern, Tuple, Union
 
 import json
-import numpy as np  # pylint: disable=import-error
-import pandas as pd  # pylint: disable=import-error
 import re
 
+import pandas as pd  # pylint: disable=import-error
 from tqdm import tqdm
 
 from ..simulation import energy_system
@@ -37,6 +36,7 @@ from ..__utils__ import (
     DEFAULT_SCENARIO,
     BColours,
     Criterion,
+    InputFileError,
     ITERATION_LENGTH,
     Location,
     MAX,
@@ -48,8 +48,6 @@ from ..__utils__ import (
     Scenario,
     Simulation,
     STEP,
-    SystemAppraisal,
-    InputFileError,
     SystemAppraisal,
 )
 from ..conversion.conversion import Converter, WaterSource
@@ -499,7 +497,7 @@ class OptimisationParameters:
     storage_size: StorageSystemSize
 
     @classmethod
-    def from_dict(
+    def from_dict(  # pylint: disable=too-many-statements
         cls,
         available_converters: List[Converter],
         logger: Logger,
@@ -618,13 +616,14 @@ class OptimisationParameters:
                 if CONVERTER_SIZE_REGEX.match(key).group(CONVERTER_NAME_STRING)  # type: ignore
                 in {converter.name for converter in available_converters}
             }
-        except AttributeError as e:
+        except AttributeError:
             logger.error(
                 "%sError parsing converter input information, unable to match groups."
                 "%s",
                 BColours.fail,
                 BColours.endc,
             )
+            raise
 
         converter_name_to_converter = {
             converter.name: converter for converter in available_converters
@@ -858,7 +857,6 @@ THRESHOLD_CRITERION_TO_MODE: Dict[Criterion, ThresholdMode] = {
     Criterion.CUMULATIVE_COST: ThresholdMode.MAXIMUM,
     Criterion.CUMULATIVE_GHGS: ThresholdMode.MAXIMUM,
     Criterion.CUMULATIVE_SYSTEM_COST: ThresholdMode.MAXIMUM,
-    Criterion.CUMULATIVE_SYSTEM_COST: ThresholdMode.MAXIMUM,
     Criterion.CW_DEMAND_COVERED: ThresholdMode.MINIMUM,
     Criterion.EMISSIONS_INTENSITY: ThresholdMode.MAXIMUM,
     Criterion.HW_DEMAND_COVERED: ThresholdMode.MINIMUM,
@@ -941,7 +939,7 @@ def get_sufficient_appraisals(
     return sufficient_appraisals
 
 
-def recursive_iteration(
+def recursive_iteration(  # pylint: disable=too-many-locals
     conventional_cw_source_profiles: Optional[Dict[WaterSource, pd.DataFrame]],
     end_year: int,
     finance_inputs: Dict[str, Any],
@@ -1129,9 +1127,8 @@ def recursive_iteration(
             if len(parameter_space) == 0:
                 logger.info("Probing lowest depth - skipping further size options.")
                 break
-            else:
-                logger.info("Probing non-lowest depth - continuing iteration.")
-                continue
+            logger.info("Probing non-lowest depth - continuing iteration.")
+            continue
 
         # Store the new appraisal if it is sufficient.
         logger.info("Sufficient system found, storing.")

@@ -277,7 +277,7 @@ def _volume_withdrawn_from_tank(
     return tank_supply_on, volume_supplied
 
 
-def calculate_pvt_output(
+def calculate_pvt_output(  # pylint: disable=too-many-locals, too-many-statements
     end_hour: int,
     irradiances: pd.Series,
     logger: Logger,
@@ -380,7 +380,9 @@ def calculate_pvt_output(
     # Instantiate maps for easy PV-T power lookups.
     pvt_electric_power_per_unit_map: Dict[int, float] = {}
     pvt_pump_times_map: Dict[int, int] = {}
-    tank_supply_temperature_map: Dict[int, float] = {}
+    tank_supply_temperature_map: Dict[  # pylint: disable=unused-variable
+        int, float
+    ] = {}
     tank_volume_supplied_map: Dict[int, float] = {}
 
     # Compute the various terms which remain common across all time steps.

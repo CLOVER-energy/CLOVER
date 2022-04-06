@@ -23,7 +23,6 @@ import enum
 from logging import Logger
 from typing import Any, Dict, List, Optional, Tuple
 
-import numpy as np  # pylint: disable=import-error
 import pandas as pd  # pylint: disable=import-error
 
 from sklearn.linear_model._coordinate_descent import Lasso
@@ -88,7 +87,7 @@ class SolarPanelType(enum.Enum):
     PV_T = "pv_t"
 
 
-class SolarPanel:
+class SolarPanel:  # pylint: disable=too-few-public-methods
     """
     Represents a solar panel being considered.
 
@@ -198,7 +197,9 @@ class SolarPanel:
         return super().__init_subclass__()
 
 
-class PVPanel(SolarPanel, panel_type=SolarPanelType.PV):
+class PVPanel(
+    SolarPanel, panel_type=SolarPanelType.PV
+):  # pylint: disable=too-few-public-methods
     """
     Represents a photovoltaic panel.
 
@@ -489,11 +490,12 @@ class HybridPVTPanel(SolarPanel, panel_type=SolarPanelType.PV_T):
         # Use the model selected to predict the collector performance.
         try:
             electric_efficiency = float(electric_model.predict(input_data_frame))
-        except Exception as e:
+        except Exception as e:  # pylint: disable=broad-except
             logger.error(
                 "Error attempting to predict electric efficiency of the PV-T collector: %s",
                 str(e),
             )
+            raise
 
         # Convert the efficiency to a fractional performance.
         fractional_electric_performance: float = (
@@ -502,11 +504,12 @@ class HybridPVTPanel(SolarPanel, panel_type=SolarPanelType.PV_T):
 
         try:
             output_temperature = float(thermal_model.predict(input_data_frame))
-        except Exception as e:
+        except Exception as e:  # pylint: disable=broad-except
             logger.error(
                 "Error attempting to predict electric efficiency of the PV-T collector: %s",
                 str(e),
             )
+            raise
 
         return fractional_electric_performance, output_temperature
 
