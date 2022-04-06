@@ -559,7 +559,7 @@ def _parse_conversion_inputs(
     )
 
 
-def _parse_diesel_inputs(
+def _parse_diesel_inputs(  # pylint: disable=too-many-statements
     energy_system_inputs: Dict[str, Any],
     inputs_directory_relative_path: str,
     logger: Logger,
@@ -645,9 +645,8 @@ def _parse_diesel_inputs(
             )
             raise InputFileError(
                 "energy system inputs",
-                "Diesel generator '{}' not found in diesel inputs.".format(
-                    energy_system_inputs[DIESEL_GENERATOR]
-                ),
+                f"Diesel generator '{energy_system_inputs[DIESEL_GENERATOR]}' not "
+                + "found in diesel inputs.",
             ) from None
     else:
         logger.error(
@@ -727,9 +726,8 @@ def _parse_diesel_inputs(
             )
             raise InputFileError(
                 "energy system inputs",
-                "Diesel water heater '{}' not found in diesel inputs.".format(
-                    energy_system_inputs[DIESEL_WATER_HEATER]
-                ),
+                f"Diesel water heater '{energy_system_inputs[DIESEL_WATER_HEATER]}' "
+                + "not found in diesel inputs.",
             ) from None
 
         if diesel_water_heater is None:
@@ -965,7 +963,7 @@ def _parse_exchanger_inputs(
     )
 
 
-def _parse_pvt_reduced_models(
+def _parse_pvt_reduced_models(  # pylint: disable=too-many-statements
     debug: bool, logger: Logger, scenarios: List[Scenario]
 ) -> Tuple[Dict[RegressorType, Lasso], Dict[RegressorType, Lasso]]:
     """
@@ -1305,7 +1303,7 @@ def _parse_scenario_inputs(
     )
 
 
-def _parse_solar_inputs(
+def _parse_solar_inputs(  # pylint: disable=too-many-locals, too-many-statements
     debug: bool,
     energy_system_inputs: Dict[str, Any],
     inputs_directory_relative_path: str,
@@ -1541,7 +1539,7 @@ def _parse_solar_inputs(
     )
 
 
-def _parse_tank_inputs(
+def _parse_tank_inputs(  # pylint: disable=too-many-statements
     energy_system_inputs: Dict[str, Any],
     inputs_directory_relative_path: str,
     logger: Logger,
@@ -1762,7 +1760,7 @@ def _parse_tank_inputs(
     )
 
 
-def _parse_minigrid_inputs(
+def _parse_minigrid_inputs(  # pylint: disable=too-many-locals, too-many-statements
     converters: Dict[str, Converter],
     debug: bool,
     inputs_directory_relative_path: str,
@@ -1987,7 +1985,9 @@ def _parse_minigrid_inputs(
                 BColours.fail,
                 BColours.endc,
             )
-            raise InputFileError("energy system inputs", "Water pump not defined.")
+            raise InputFileError(
+                "energy system inputs", "Water pump not defined."
+            ) from None
 
     else:
         buffer_tank_costs = None
@@ -2233,7 +2233,7 @@ def _parse_transmission_inputs(
     )
 
 
-def parse_input_files(
+def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
     debug: bool,
     electric_load_profile: Optional[str],
     location_name: str,

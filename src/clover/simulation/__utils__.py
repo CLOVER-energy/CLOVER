@@ -159,7 +159,7 @@ class Minigrid:
     water_pump: Optional[Transmitter]
 
     @classmethod
-    def from_dict(
+    def from_dict(  # pylint: disable=too-many-locals
         cls,
         diesel_generator: DieselGenerator,
         diesel_water_heater: Optional[DieselWaterHeater],
@@ -241,7 +241,7 @@ class Minigrid:
                         raise InputFileError(
                             "tank inputs",
                             f"Error parsing clean-water tank {entry['name']}: {str(e)}",
-                        )
+                        ) from None
                 elif (
                     RESOURCE_NAME_TO_RESOURCE_TYPE_MAPPING[entry[RESOURCE_TYPE]]
                     == ResourceType.HOT_CLEAN_WATER
@@ -252,7 +252,7 @@ class Minigrid:
                         raise InputFileError(
                             "tank inputs",
                             f"Error parsing hot-water tank {entry['name']}: {str(e)}",
-                        )
+                        ) from None
                 else:
                     raise InputFileError(
                         "tank inputs",
@@ -461,7 +461,7 @@ def determine_available_converters(
         for entry in scenario.desalination_scenario.clean_water_scenario.sources:
             try:
                 available_converters.append(converters[entry])
-            except KeyError as e:
+            except KeyError:
                 logger.error(
                     "%sUnknown clean-water source specified in the scenario file: %s%s",
                     BColours.fail,
@@ -478,7 +478,7 @@ def determine_available_converters(
         for entry in scenario.desalination_scenario.unclean_water_sources:
             try:
                 available_converters.append(converters[entry])
-            except KeyError as e:
+            except KeyError:
                 logger.error(
                     "%sUnknown unclean-water source specified in the scenario file: %s"
                     "%s",
@@ -497,7 +497,7 @@ def determine_available_converters(
         for entry in scenario.hot_water_scenario.conventional_sources:
             try:
                 available_converters.append(converters[entry])
-            except KeyError as e:
+            except KeyError:
                 logger.error(
                     "%sUnknown conventional hot-water source specified in the "
                     "hot-water scenario file: %s%s",

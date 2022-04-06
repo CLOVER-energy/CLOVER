@@ -67,9 +67,7 @@ __all__ = (
     "NAME",
     "open_simulation",
     "OperatingMode",
-    "OptimisationParameters",
     "PACKAGE_NAME",
-    "POWER_CONSUMED_BY_DESALINATION",
     "ProgrammerJudgementFault",
     "RAW_CLOVER_PATH",
     "read_yaml",
@@ -979,7 +977,9 @@ class KeyResults:
     min_buffer_tank_temperature: Optional[float] = None
     min_cw_pvt_output_temperature: Optional[float] = None
 
-    def to_dict(self) -> Dict[str, float]:
+    def to_dict(  # pylint: disable=too-many-branches, too-many-statements
+        self,
+    ) -> Dict[str, float]:
         """
         Returns the :class:`KeyResults` information as a `dict` ready for saving.
 
@@ -2440,7 +2440,11 @@ class SystemDetails:
     start_year: int = 0
     file_information: Optional[Dict[str, str]] = None
 
-    def to_dict(self) -> Dict[str, Optional[Union[int, float, str, Dict[str, str]]]]:
+    def to_dict(
+        self,
+    ) -> Dict[
+        str, Optional[Union[int, float, str, Dict[str, str]]]
+    ]:  # pylint: disable=too-many-branches
         """
         Returns a `dict` containing information the :class:`SystemDetails`' information.
 

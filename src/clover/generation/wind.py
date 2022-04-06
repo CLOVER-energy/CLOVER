@@ -20,7 +20,7 @@ use locally within CLOVER.
 
 import enum
 
-from typing import Any, Dict, Union
+from typing import Any, Dict
 
 import pandas as pd  # pylint: disable=import-error
 

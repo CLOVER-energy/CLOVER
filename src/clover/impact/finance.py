@@ -251,7 +251,7 @@ def _discounted_fraction(
     return pd.DataFrame(discounted_fraction_array)
 
 
-def _inverter_expenditure(
+def _inverter_expenditure(  # pylint: disable=too-many-locals
     finance_inputs: Dict[str, Any],
     location: Location,
     yearly_load_statistics: pd.DataFrame,
@@ -372,7 +372,7 @@ def _misc_costs(diesel_size: float, misc_costs: float, pv_array_size: float) -> 
 ###############################
 
 
-def get_total_equipment_costs(
+def get_total_equipment_costs(  # pylint: disable=too-many-locals, too-many-statements
     buffer_tanks: float,
     clean_water_tanks: float,
     converters: Dict[Converter, int],
@@ -1035,7 +1035,7 @@ def independent_expenditure(
     return total_expenditure
 
 
-def total_om(
+def total_om(  # pylint: disable=too-many-locals
     buffer_tanks: int,
     clean_water_tanks: int,
     converters: Optional[Dict[Converter, int]],
