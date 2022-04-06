@@ -946,7 +946,7 @@ def recursive_iteration(
     end_year: int,
     finance_inputs: Dict[str, Any],
     ghg_inputs: Dict[str, Any],
-    grid_profile: pd.DataFrame,
+    grid_profile: Optional[pd.DataFrame],
     irradiance_data: pd.Series,
     kerosene_usage: pd.DataFrame,
     location: Location,

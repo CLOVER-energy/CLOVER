@@ -29,9 +29,10 @@ from logging import Logger
 from typing import Any, Dict, List, Optional, Union
 
 from ..__utils__ import (
-    EXCHANGER,
+    AuxiliaryHeaterType,
     BColours,
     CleanWaterMode,
+    EXCHANGER,
     InputFileError,
     NAME,
     RESOURCE_NAME_TO_RESOURCE_TYPE_MAPPING,
