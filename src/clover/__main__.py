@@ -922,7 +922,7 @@ def main(
             BColours.fail,
             KEROSENE_USAGE_FILE,
             auto_generated_files_directory,
-            BColours.endc
+            BColours.endc,
         )
         raise
 
