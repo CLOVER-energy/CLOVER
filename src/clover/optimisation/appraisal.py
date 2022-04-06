@@ -441,7 +441,7 @@ def _simulation_technical_appraisal(
 
     # Calculate system blackouts
     system_blackouts: float = float(
-        np.mean(simulation_results[ColumnHeader.BLACKOUTS.value].values)
+        np.mean(simulation_results[ColumnHeader.BLACKOUTS.value].values)  # type: ignore
     )
 
     # Clean-water system.
@@ -449,7 +449,9 @@ def _simulation_technical_appraisal(
         round(
             float(
                 np.mean(
-                    simulation_results[ColumnHeader.CLEAN_WATER_BLACKOUTS.value].values
+                    simulation_results[  # type: ignore
+                        ColumnHeader.CLEAN_WATER_BLACKOUTS.value
+                    ].values
                 )
             ),
             3,

@@ -763,10 +763,10 @@ def process_device_hourly_usage(
 
         logger.info("Calculating number of %ss in use", device.name)
         try:
-            hourly_device_usage = pd.concat(
+            hourly_device_usage = pd.concat(  # type: ignore
                 [
-                    pd.DataFrame(
-                        np.random.binomial(
+                    pd.DataFrame(  # type: ignore
+                        np.random.binomial(  # type: ignore
                             float(daily_device_ownership.iloc[day, 0]),
                             daily_device_utilisation.iloc[day, :],
                         )
