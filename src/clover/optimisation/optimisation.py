@@ -52,7 +52,7 @@ from ..__utils__ import (
     Location,
     RenewableEnergySource,
     ResourceType,
-    Scenario,
+    # Scenario,
     Simulation,
 )
 from ..conversion.conversion import Converter, WaterSource
@@ -71,7 +71,6 @@ from .__utils__ import (
     SolarSystemSize,
     StorageSystemSize,
     TankSize,
-    ThresholdMode,
 )
 
 __all__ = ("multiple_optimisation_step",)
@@ -111,7 +110,7 @@ def _fetch_optimum_system(
     return optimum_systems
 
 
-def _find_optimum_system(
+def _find_optimum_system(  # pylint: disable=too-many-locals
     conventional_cw_source_profiles: Optional[Dict[WaterSource, pd.DataFrame]],
     converters: Dict[str, Converter],
     disable_tqdm: bool,
@@ -189,21 +188,15 @@ def _find_optimum_system(
             BColours.fail,
             BColours.endc,
         )
-        raise InternalError(
-            "{}Threshold criteria not set on system appraisal.{}".format(
-                BColours.fail, BColours.endc
-            )
-        )
+        raise InternalError("Threshold criteria not set on system appraisal.")
 
     logger.info(
         "Optimum system(s) determined: %s",
         "\n".join(
             [
-                "criterion: {}, value: {}\nsystem_details: {}".format(
-                    criterion,
-                    system.criteria[criterion],  # type: ignore
-                    system.system_details,
-                )
+                f"criterion: {criterion}, "
+                + f"value: {system.criteria[criterion]}\n"  # type: ignore
+                + f"system_details: {system.system_details}"
                 for criterion, system in optimum_systems.items()
             ]
         ),
@@ -219,7 +212,9 @@ def _find_optimum_system(
         # Check if optimum system was the largest system simulated
         while (
             any(
-                optimum_system.system_details.initial_converter_sizes[converter.name]  # type: ignore
+                optimum_system.system_details.initial_converter_sizes[  # type: ignore
+                    converter.name
+                ]
                 == sizes.max
                 for converter, sizes in largest_converter_sizes.items()
             )
@@ -329,7 +324,7 @@ def _find_optimum_system(
     return optimum_systems
 
 
-def _simulation_iteration(
+def _simulation_iteration(  # pylint: disable=too-many-locals, too-many-statements
     conventional_cw_source_profiles: Optional[Dict[WaterSource, pd.DataFrame]],
     converter_sizes: Dict[Converter, ConverterSize],
     cw_pvt_system_size: SolarSystemSize,
@@ -463,9 +458,7 @@ def _simulation_iteration(
     # Check if largest system is sufficient
     logger.info("Checking whether the largest system is sufficient.")
     tqdm.write(
-        "Determining largest suitable system {}    ".format(
-            "." * 27,
-        ),
+        f"Determining largest suitable system {'.' * 27}    ",
         end="\n",
     )
 
@@ -534,18 +527,14 @@ def _simulation_iteration(
     storage_size_max = storage_sizes.max
 
     # Increase system size until largest system is sufficient (if necessary)
-    while get_sufficient_appraisals(optimisation, [largest_system_appraisal]) == []:
+    while not get_sufficient_appraisals(optimisation, [largest_system_appraisal]):
         if largest_system_appraisal.criteria is None:
             logger.error(
                 "%sOptimisation failed to return threshold criteria.%s",
                 BColours.fail,
                 BColours.endc,
             )
-            raise InternalError(
-                "{}Threshold criteria not set on system appraisal.{}".format(
-                    BColours.fail, BColours.endc
-                )
-            )
+            raise InternalError("Threshold criteria not set on system appraisal.")
 
         logger.info(
             "The largest system was found to be insufficient. Threshold criteria: %s",
@@ -640,11 +629,7 @@ def _simulation_iteration(
                 BColours.fail,
                 BColours.endc,
             )
-            raise InternalError(
-                "{}Threshold criteria not set on system appraisal.{}".format(
-                    BColours.fail, BColours.endc
-                )
-            )
+            raise InternalError("Threshold criteria not set on system appraisal.")
 
         # Increment the system sizes.
         cw_pvt_size_max += (
@@ -677,7 +662,7 @@ def _simulation_iteration(
 
     # Output that the search for the largest suitable system was successful.
     tqdm.write(
-        "Determining largest suitable system {}    {}".format("." * 27, DONE),
+        f"Determining largest suitable system {'.' * 27}    {DONE}",
         end="\n",
     )
     if largest_system_appraisal.criteria is None:
@@ -686,11 +671,7 @@ def _simulation_iteration(
             BColours.fail,
             BColours.endc,
         )
-        raise InternalError(
-            "{}Threshold criteria not set on system appraisal.{}".format(
-                BColours.fail, BColours.endc
-            )
-        )
+        raise InternalError("Threshold criteria not set on system appraisal.")
 
     logger.info(
         "System was found to be sufficient. Threshold criteria: %s",
@@ -957,7 +938,7 @@ def _simulation_iteration(
     )
 
 
-def _optimisation_step(
+def _optimisation_step(  # pylint: disable=too-many-locals
     conventional_cw_source_profiles: Optional[Dict[WaterSource, pd.DataFrame]],
     converter_sizes: Dict[Converter, ConverterSize],
     cw_pvt_system_size: SolarSystemSize,
@@ -1135,7 +1116,7 @@ def _optimisation_step(
     return optimum_system_appraisal
 
 
-def multiple_optimisation_step(
+def multiple_optimisation_step(  # pylint: disable=too-many-locals, too-many-statements
     conventional_cw_source_profiles: Optional[Dict[WaterSource, pd.DataFrame]],
     converters: Dict[str, Converter],
     disable_tqdm: bool,
@@ -1257,12 +1238,9 @@ def multiple_optimisation_step(
     ):
         if optimisation_parameters.cw_pvt_size is None:
             raise InternalError(
-                "{}Optimisation parameters do not have hot-water PV-T params ".format(
-                    BColours.fail
-                )
-                + "despite hot-water being specified in the scenario.{}".format(
-                    BColours.endc
-                )
+                f"{BColours.fail}Optimisation parameters do not have hot-water PV-T "
+                + "params despite hot-water being specified in the scenario."
+                + f"{BColours.endc}"
             )
         logger.info(
             "No clean-water PV-T sizes passed in, using default optimisation parameters."
@@ -1283,12 +1261,9 @@ def multiple_optimisation_step(
     ):
         if optimisation_parameters.clean_water_tanks is None:
             raise InternalError(
-                "{}Optimisation parameters do not have clean-water tank params ".format(
-                    BColours.fail
-                )
-                + "despite clean-water being specified in the scenario.{}".format(
-                    BColours.endc
-                )
+                f"{BColours.fail}Optimisation parameters do not have clean-water tank "
+                + "params despite clean-water being specified in the scenario."
+                + f"{BColours.endc}"
             )
         logger.info(
             "No clean-water tank sizes passed in, using default optimisation parameters."
@@ -1309,12 +1284,9 @@ def multiple_optimisation_step(
     ):
         if optimisation_parameters.hw_pvt_size is None:
             raise InternalError(
-                "{}Optimisation parameters do not have hot-water PV-T params ".format(
-                    BColours.fail
-                )
-                + "despite hot-water being specified in the scenario.{}".format(
-                    BColours.endc
-                )
+                f"{BColours.fail}Optimisation parameters do not have hot-water PV-T "
+                + "params despite hot-water being specified in the scenario."
+                + f"{BColours.endc}"
             )
         logger.info(
             "No hot-water PV-T sizes passed in, using default optimisation parameters."
@@ -1335,12 +1307,9 @@ def multiple_optimisation_step(
     ):
         if optimisation_parameters.hot_water_tanks is None:
             raise InternalError(
-                "{}Optimisation parameters do not have hot-water tank params ".format(
-                    BColours.fail
-                )
-                + "despite hot-water being specified in the scenario.{}".format(
-                    BColours.endc
-                )
+                f"{BColours.fail}Optimisation parameters do not have hot-water tank "
+                + "params despite hot-water being specified in the scenario."
+                + f"{BColours.endc}"
             )
         logger.info(
             "No hot-water tank sizes passed in, using default optimisation parameters."

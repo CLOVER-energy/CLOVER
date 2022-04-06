@@ -22,7 +22,6 @@ import os
 from logging import Logger
 from typing import Dict
 
-import numpy as np  # pylint: disable=import-error
 import pandas as pd  # pylint: disable=import-error
 
 from tqdm import tqdm
@@ -137,7 +136,6 @@ def _process_water_soure_hourly_probability(
     keyword: str,
     logger: Logger,
     regenerate: bool,
-    years: int,
 ) -> pd.DataFrame:
     """
     Calculate the probability that the water source is available at any given time.
@@ -291,9 +289,9 @@ def get_lifetime_water_source_status(
     # Do not compute conventional profiles if there are none available.
     if len(water_source_times) == 0:
         tqdm.write(
-            "No conventional {} water profiles defined {}    {}".format(
-                keyword, "." * (35 - (len(keyword) + len(SKIPPING))), SKIPPING
-            )
+            f"No conventional {keyword} water profiles defined "
+            + "." * (35 - (len(keyword) + len(SKIPPING)))
+            + f"    {SKIPPING}"
         )
         return water_source_profiles
 
@@ -327,7 +325,6 @@ def get_lifetime_water_source_status(
             keyword=keyword,
             logger=logger,
             regenerate=regenerate,
-            years=location.max_years,
         )
 
         water_source_profiles[source] = (
