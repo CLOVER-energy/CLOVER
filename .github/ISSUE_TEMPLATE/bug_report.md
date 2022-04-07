@@ -27,11 +27,12 @@ If applicable, add screenshots to help explain your problem.
 ### Desktop
 **(please complete the following information)**
  - OS: [e.g. iOS]
- - Browser [e.g. chrome, safari]
- - Version [e.g. 22]
+ - Installation setup [e.g. "installed Python package" or "downloaded source from Github"]
+ - Version [e.g. 5.0.1a1.post1]
+- Branch, if relevant [e.g. `master`]
 
-### Version
-Please state the version of CLOVER you were using and, if relevant, which branch you were on at the time of the issue.
+### Modifications
+If you have made any modifications to CLOVER or are working on your own fork of the repo, then please direct the developers to it here.
 
 ## Additional context
-Add any other context about the problem here.
+Add any other context about the problem here. Please **tag the CLOVER development team** so that they are alerted to this issue.
