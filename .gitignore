@@ -1,13 +1,30 @@
+# Ignore assembled python packages
+**/build
+**/dist
+**/*.egg*
+# Ignore HPC log files
+*e[0-9]*
+*o[0-9]*
+# Ignore internal Python directories
+**/__pycache__
+# Ignore internal Python files
+*.pyc
+# Ignore legacy location folders
+**/Locations
+# Ignore location folders
+**/locations
 # Ignore model outputs
 **/logs
 *.log*
-# Ignore VSCode files
-.vscode
-# Ignore internal Python directories
-**/__pycache__
+*.json
 # Ignore output files
 *output_*
 **/output*
-# HPC log files
-*e[0-9]*
-*o[0-9]*
+*.png
+*.jpg
+# Ignore VSCode files
+.vscode
+# Ignore model files for now
+*.sav
+# Ignore misc. files
+*.zip
