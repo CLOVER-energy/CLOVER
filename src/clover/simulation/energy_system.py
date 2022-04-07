@@ -963,9 +963,6 @@ def _calculate_renewable_hw_profiles(  # pylint: disable=too-many-locals, too-ma
             drop=True
         )
         hot_water_temperature_gain = hot_water_temperature_gain.reset_index(drop=True)
-        renewable_hw_fraction = renewable_hw_fraction.reset_index(  # type: ignore
-            drop=True
-        )
         solar_thermal_hw_fraction = solar_thermal_hw_fraction.reset_index(drop=True)
         logger.debug("Hot-water PV-T performance profiles determined.")
 
@@ -1821,15 +1818,6 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
                     time_index=t,
                 )
 
-        # Determine the initial and final storage sizes
-        initial_storage_size = float(
-            electric_storage_size * minigrid.battery.storage_unit
-        )
-        final_storage_size = float(
-            initial_storage_size
-            * np.min(battery_health_frame[ColumnHeader.BATTERY_HEALTH.value])
-        )
-
     # Process the various outputs into dataframes.
     # energy_deficit_frame: pd.DataFrame = dict_to_dataframe(energy_deficit)
     if energy_surplus is not None:
@@ -1846,9 +1834,18 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
             storage_power_supplied, logger
         )
     else:
-        battery_health_frame = pd.DataFrame([0] * (end_hour - start_hour))
+        battery_health_frame = pd.DataFrame([1] * (end_hour - start_hour))
         hourly_battery_storage_frame = pd.DataFrame([0] * (end_hour - start_hour))
         storage_power_supplied_frame = pd.DataFrame([0] * (end_hour - start_hour))
+
+    # Determine the initial and final storage sizes
+    initial_storage_size = float(
+        electric_storage_size * minigrid.battery.storage_unit
+    )
+    final_storage_size = float(
+        initial_storage_size
+        * np.min(battery_health_frame[0])
+    )
 
     if scenario.desalination_scenario is not None:
         backup_desalinator_water_frame: Optional[pd.DataFrame] = dict_to_dataframe(
@@ -2218,6 +2215,7 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
         brine_produced.columns = pd.Index([ColumnHeader.BRINE.value])
 
     # Electric system performance outputs
+    battery_health_frame.columns = pd.Index([ColumnHeader.BATTERY_HEALTH.value])
     blackout_times.columns = pd.Index([ColumnHeader.BLACKOUTS.value])
     diesel_fuel_usage.columns = pd.Index([ColumnHeader.DIESEL_FUEL_USAGE.value])
     diesel_times.columns = pd.Index([ColumnHeader.DIESEL_GENERATOR_TIMES.value])
