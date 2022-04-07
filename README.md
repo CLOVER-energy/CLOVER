@@ -36,6 +36,43 @@ This will fetch the latest stable version of CLOVER and install it into your cur
 
 To download the CLOVER source code directly from Github, simply click the green `Code` button near the top of this page, and select `Download ZIP`. Once downloaded, unpack the zip file into a directory of your choice. You will now be able to run CLOVER from a terminal in this directory. Use the `cd` command to change the directory of your terminal to the extracted folder in order to run CLOVER.
 
+#### Downloading Git LFS files
+
+For modelling certain renewable technologies, CLOVER utilises Github's large file store (LFS). If you don't intend to consider any thermal technologies, you can skip this section for now and jump straight to [Setting up your Python environment](#setting-up-your-python-environment). Otherwise, you should follow the steps below.
+
+##### Installing Git LFS
+
+If this is your first time using Git's LFS, you will need to install git lfs on your system:
+
+1. Check the version of `git` that you have by running `git --version`. You need to have version `1.8.2` of Git, or a later version, in order to install Git LFS. If your version is older than this, then you will need to upgrade your installation;
+2. Run `git lfs install` to install Git LFS on your system. If this command fails, you may need to download the `git-lfs` package manually:
+   a. For Linux machines, use the `curl` command:
+      
+      ```
+      curl -s https://packagecloud.io/install/repositories/github/git-lfs/script.deb.sh | sudo bash
+      ```
+   
+   b. For MacOS machines, use the `brew` command:
+      
+      ```
+      brew update
+      brew install git-lfs
+      ```
+   
+   c. For Windows machines, download the latest version of Git LFS from the developers' [Releases](https://github.com/git-lfs/git-lfs/releases) page.
+
+##### Fetching files
+
+Once you have installed Git LFS, you will need to download the LFS files manually. This can be done from the command-line:
+```
+git lfs fetch
+```
+to download the files, and
+```
+git lfs pull
+```
+to merge them into your local branches.
+
 ### Setting up your Python environment
 
 CLOVER is a scientific package and, as such, uses Python packages that may not have come installed by default on your system. These packages can be easily installed, provided that you are connected to the internet, either using `pip`, the python package manager, or `conda`, a virtual-environment-based system. Instructions for `conda` are provided below:
