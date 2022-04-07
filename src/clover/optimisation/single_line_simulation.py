@@ -35,7 +35,6 @@ from ..__utils__ import (
     ProgrammerJudgementFault,
     RenewableEnergySource,
     ResourceType,
-    Scenario,
     Simulation,
     SystemAppraisal,
 )
@@ -57,7 +56,7 @@ from .appraisal import appraise_system
 __all__ = ("single_line_simulation",)
 
 
-def single_line_simulation(
+def single_line_simulation(  # pylint: disable=too-many-locals, too-many-statements
     conventional_cw_source_profiles: Optional[Dict[WaterSource, pd.DataFrame]],
     converter_sizes: Dict[Converter, ConverterSize],
     cw_pvt_size: SolarSystemSize,
@@ -385,7 +384,7 @@ def single_line_simulation(
                 system_details,
             )
 
-            if get_sufficient_appraisals(optimisation, [new_appraisal]) != []:
+            if get_sufficient_appraisals(optimisation, [new_appraisal]):
                 sufficient_appraisals.append(new_appraisal)
 
         # Update the system details.
