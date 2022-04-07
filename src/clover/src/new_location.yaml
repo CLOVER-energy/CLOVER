@@ -512,36 +512,6 @@
                   imitation: 0
                   type: public
 
-                # Non-potable water possible
-                #
-                - device: bath
-                  available: true
-                  clean_water_usage: 120  # [40 l per person per day]
-                  electric_power: 0
-                  initial_ownership: 0.33
-                  final_ownership: 0.33
-                  innovation: 0.02
-                  imitation: 0.1
-                  type: public
-                - device: dish_washing
-                  available: true
-                  clean_water_usage: 6
-                  electric_power: 0
-                  initial_ownership: 1
-                  final_ownership: 1
-                  innovation: 0.01
-                  imitation: 0.1
-                  type: domestic
-                - device: washing_machine
-                  available: true
-                  clean_water_usage: 16
-                  electric_power: 250
-                  initial_ownership: 0.25
-                  final_ownership: 0.25
-                  innovation: 0.01
-                  imitation: 0.1
-                  type: domestic
-
                 # Toilet options
                 #
                 - device: pour_flush_toilet
@@ -562,6 +532,38 @@
                   innovation: 0
                   imitation: 0
                   type: public
+
+                #####################
+                # Hot-water devices #
+                #####################
+
+                - device: bath
+                  available: true
+                  electric_power: 0
+                  hot_water_usage: 120  # [40 l per person per day]
+                  initial_ownership: 0.33
+                  final_ownership: 0.33
+                  innovation: 0.02
+                  imitation: 0.1
+                  type: public
+                - device: dish_washing
+                  available: true
+                  electric_power: 0
+                  hot_water_usage: 6
+                  initial_ownership: 1
+                  final_ownership: 1
+                  innovation: 0.01
+                  imitation: 0.1
+                  type: domestic
+                - device: washing_machine
+                  available: true
+                  electric_power: 250
+                  hot_water_usage: 16
+                  initial_ownership: 0.25
+                  final_ownership: 0.25
+                  innovation: 0.01
+                  imitation: 0.1
+                  type: domestic
             - directory: device_utilisation
               contents:
                 - file: bath_times.csv
