@@ -848,9 +848,7 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
     )
     logger.info("Total solar output successfully computed and saved.")
 
-    if any(scenario.desalination_scenario is not None for scenario in scenarios) or any(
-        scenario.hot_water_scenario is not None for scenario in scenarios
-    ):
+    if any(scenario.desalination_scenario is not None for scenario in scenarios):
         logger.info("Generating and saving total weather output file.")
         total_weather_data = (  # pylint: disable=unused-variable
             weather.total_weather_output(

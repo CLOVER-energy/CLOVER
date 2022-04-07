@@ -843,7 +843,7 @@ def _calculate_renewable_hw_profiles(  # pylint: disable=too-many-locals, too-ma
         # Compute the electric power consumed by the auxiliary heater.
         if auxiliary_heater is not None:
             # Determine the electric power consumed by the auxiliary heater.
-            auxiliary_heater_power_consumption: Optional[pd.DataFrame] = pd.DataFrame(
+            auxiliary_heater_power_consumption: pd.DataFrame = pd.DataFrame(
                 0.001
                 * auxiliary_heater.input_resource_consumption[
                     ResourceType.ELECTRIC
@@ -863,9 +863,7 @@ def _calculate_renewable_hw_profiles(  # pylint: disable=too-many-locals, too-ma
 
             if isinstance(auxiliary_heater, DieselWaterHeater):
                 # Compute the heat consumed by the auxiliary heater.
-                auxiliary_heater_heat_consumption: Optional[
-                    pd.DataFrame
-                ] = pd.DataFrame(
+                auxiliary_heater_heat_consumption: pd.DataFrame = pd.DataFrame(
                     (hot_water_tank_volume_supplied > 0)
                     * hot_water_tank_volume_supplied
                     * minigrid.hot_water_tank.heat_capacity
@@ -875,7 +873,9 @@ def _calculate_renewable_hw_profiles(  # pylint: disable=too-many-locals, too-ma
                     )
                 )
             else:
-                auxiliary_heater_heat_consumption = None
+                auxiliary_heater_heat_consumption = pd.DataFrame(
+                    [0] * (end_hour - start_hour)
+                )
 
             # Update the waste production calculation with the waste that's produced by
             # the auxiliary water heater.
@@ -905,8 +905,8 @@ def _calculate_renewable_hw_profiles(  # pylint: disable=too-many-locals, too-ma
             )
 
         else:
-            auxiliary_heater_power_consumption = None
-            auxiliary_heater_heat_consumption = None
+            auxiliary_heater_power_consumption = pd.DataFrame([0] * (end_hour - start_hour))
+            auxiliary_heater_heat_consumption = pd.DataFrame([0] * (end_hour - start_hour))
 
         # Compute the power consumed by the thermal desalination plant.
         hot_water_power_consumed: pd.DataFrame = pd.DataFrame(
