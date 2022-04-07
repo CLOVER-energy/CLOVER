@@ -1,0 +1,26 @@
+---
+################################################################################
+# transmission_inputs.yaml - Transmitter input information.                    #
+#                                                                              #
+# Author: Ben Winchester                                                       #
+# Copyright: Phil Sandwell & Ben Winchester, 2021                              #
+# Date created: 08/11/2021                                                     #
+# License: Open source                                                         #
+################################################################################
+
+transmitters:
+  - name: default_water_pump
+    electric_power: 40 # [W]
+    maximum_throughput: 1000 # [l/hour]
+    transmits: water
+    costs:
+      cost: 120 # [$/unit]
+      installation_cost: 20 # [$/unit]
+      installation_cost_decrease: 0 # [% p.a.]
+      o&m: 20 # [$/unit p.a.]
+      cost_decrease: 0 # [% p.a.]
+    emissions:
+      ghgs: 120 # [kgCO2/unit]
+      ghg_decrease: 0 # [% p.a.]
+      installation_ghgs: 50 # [kgCO2/unit]
+      installation_ghg_decrease: 0 # [% p.a.]

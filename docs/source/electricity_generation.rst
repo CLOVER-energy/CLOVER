@@ -328,8 +328,8 @@ the inputs:
 
 .. code:: ipython3
 
-    grid_inputs = pd.read_csv("/Users/prs09/Documents/CLOVER/Locations/Bahraich/Generation/Grid/Grid inputs.csv",header=0)
-    print(grid_inputs)
+    grid_times = pd.read_csv("/Users/prs09/Documents/CLOVER/Locations/Bahraich/Generation/Grid/Grid inputs.csv",header=0)
+    print(grid_times)
 
 
 .. parsed-literal::
@@ -421,7 +421,7 @@ many hours per day it is available on average:
 
 .. code:: ipython3
 
-    bahraich_daily_hours = np.sum(grid_inputs['bahraich'],axis=0)
+    bahraich_daily_hours = np.sum(grid_times['bahraich'],axis=0)
     print(str(bahraich_daily_hours) + ' hours per day')
 
 
@@ -437,7 +437,7 @@ plot the grid availability throughout the day
 
 .. code:: ipython3
 
-    plt.plot(range(24),grid_inputs['bahraich'],color='k')
+    plt.plot(range(24),grid_times['bahraich'],color='k')
     plt.xticks(range(0,24,2))
     plt.yticks(np.arange(0,1.1,0.2))
     plt.xlabel('Hour of day')
@@ -491,7 +491,7 @@ availability profile to make sure they match up:
 
 .. code:: ipython3
 
-    plt.plot(range(24),grid_inputs['bahraich'],color='k',label='Input')
+    plt.plot(range(24),grid_times['bahraich'],color='k',label='Input')
     plt.plot(range(24),np.mean(bahraich_profile,axis=0),color='r',label='Output')
     plt.legend()
     plt.xticks(range(0,24,2))
