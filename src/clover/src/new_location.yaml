@@ -1192,6 +1192,25 @@
                 exchangers:
                   - name: default_heat_exchanger
                     efficiency: 0.4 # [unitless] defined between 0 and 1
+                    # Cost information from:
+                    # https://doi.org/10.1002/er.1449
+                    # Shell-and-tube heat exchanger (STHE) type stainless steel (SS) selected
+                    #
+                    costs:
+                      cost: 18426 # [$/exchanger]
+                      cost_decrease: 7 # [% p.a.]
+                      installation_cost: 960 # [$/exchanger]
+                      installation_cost_decrease: 7 # [% p.a.]
+                      o&m: 7294 # [$/exchanger p.a.]
+                    # NOTE: The emissions information is assumed to be the same as for PV.
+                    # This will affect environmental impact assessments only.
+                    #
+                    emissions:
+                      # ghgs: 3000 # [kgCO2/exchanger]
+                      # ghg_decrease: 5 # [% p.a.]
+                      # installation_ghgs: 50 # [kgCO2/exchanger]
+                      # installation_ghg_decrease: 0 # [% p.a.]
+                      # o&m: 5 # [kgCO2/exchanger p.a.]
             - file: "simulations.yaml"
               contents: |+
                 ---
