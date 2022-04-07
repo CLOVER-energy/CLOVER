@@ -17,7 +17,6 @@ The following is a set of guidelines for contributing to CLOVER, which are hoste
   * [Merging patches](#merging-patches)
     * [Cosmetic patches](#cosmetic-patches)
   * [Questions](#questions)
-  * [New features](#new-features)
   * [Contributing to the documentation](#contributing-to-the-documentation)
 
 [Styleguides](#styleguides)
@@ -80,14 +79,6 @@ Fundamentally, CLOVER is an energy balance model which accounts for the generati
 
 **Did you fix whitespace, format code, or make a purely cosmetic patch?** Changes that are cosmetic in nature and do not add anything substantial to the stability, functionality, or testability of CLOVER will generally not be accepted. Contact the developers directly, or save your cosmetic changes until you are able to merge them as part of a feature or bug issue.
 
-### New features
-
-**Do you intend to add a new feature or change an existing one?** If you have a new feature for CLOVER, 
-
-* Suggest your change in the [rubyonrails-core mailing list](https://discuss.rubyonrails.org/c/rubyonrails-core) and start writing code.
-
-* Do not open an issue on GitHub until you have collected positive feedback about the change. GitHub issues are primarily intended for bug reports and fixes.
-
 ### Questions
 
 **Do you have questions about the source code?** Ask any question about how to use CLOVER on the [Discussions](https://github.com/CLOVER-energy/CLOVER/discussions) page.
@@ -96,7 +87,7 @@ Fundamentally, CLOVER is an energy balance model which accounts for the generati
 
 **Do you want to contribute to the CLOVER documentation?** CLOVER is an ever-evolving piece of software. If you want to contribute to the CLOVER documentation, get in touch with the development team. CLOVER documentation updates are usually produced for major releases.
 
-## Styleguidelines
+## Styleguides
 
 ### Git commit messages
 
@@ -109,7 +100,6 @@ Fundamentally, CLOVER is an energy balance model which accounts for the generati
 * Consider starting the commit message with an applicable emoji:
   * 🎨 `:art:` when improving the format/structure of the code
   * 🐎 `:racehorse:` when improving performance
-  * 🚱 `:non-potable_water:` when plugging memory leaks
   * 📝 `:memo:` when writing docs
   * 🐧 `:penguin:` when fixing something on Linux
   * 🍎 `:apple:` when fixing something on macOS
@@ -146,20 +136,20 @@ If you have any changes for the styleguides, make these **very clear** within yo
 ### Issue and pull request labels
 
 | Label name | `CLOVER-energy/CLOVER` :mag_right: | Description |
-| --- | --- | --- | --- |
-| `bug` | [search][search-clover-repo-label-bug] | Confirmed bugs or reports that are very likely to be bugs. |
-| `documentation` | [search][search-clover-repo-label-documentation] | Improvements or additions to documentation. |
-| `duplicate` | [search][search-clover-repo-label-duplicate] | Issues which are duplicates of other issues, i.e. they have been reported before. |
-| `enhancement` | [search][search-clover-repo-label-enhancement] | New feature or request. |
-| `feature` | [search][search-clover-repo-label-feature] | A new feature for CLOVER, considerably more important than an enhancement. |
-| `good first issue` | [search][search-clover-repo-label-good-first-issue] | Less complex issues which would be good first issues to work on for users who want to contribute to CLOVER. |
-| `good masters issue` | [search][search-clover-repo-label-good-masters-issue] | More complex issues which would be good issues to work on as part of an MSc project. |
-| `helpwanted` | [search][search-clover-repo-label-help-wanted] | The feature or bug requires more work or attention than would be used for an ordinary issue. |
-| `invalid` | [search][search-clover-repo-label-invalid] | Issues which aren't valid (e.g. user errors). |
-| `needs-reproduction` | [search][search-clover-repo-label-needs-reproduction] | Likely bugs, but haven't been reliably reproduced. |
-| `not-urgent` | [search][search-clover-repo-label-not-urgent] | Not an urgent fix, can be sorted down the line. |
-| `question` | [search][search-clover-repo-label-question] | Questions more than bug reports or feature requests (e.g. how do I do X). You should **raise questions in the discussions page** rather than raising an issue if possible. |
-| `wontfix` | [search][search-clover-repo-label-wontfix] | The CLOVER core team has decided not to fix these issues for now, either because they're working as intended or for some other reason. |
+| --- | --- | --- |
+| `bug` | [search](search-clover-repo-label-bug) | Confirmed bugs or reports that are very likely to be bugs. |
+| `documentation` | [search](search-clover-repo-label-documentation) | Improvements or additions to documentation. |
+| `duplicate` | [search](search-clover-repo-label-duplicate) | Issues which are duplicates of other issues, i.e. they have been reported before. |
+| `enhancement` | [search](search-clover-repo-label-enhancement) | New feature or request. |
+| `feature` | [search](search-clover-repo-label-feature) | A new feature for CLOVER, considerably more important than an enhancement. |
+| `good first issue` | [search](search-clover-repo-label-good-first-issue) | Less complex issues which would be good first issues to work on for users who want to contribute to CLOVER. |
+| `good masters issue` | [search](search-clover-repo-label-good-masters-issue) | More complex issues which would be good issues to work on as part of an MSc project. |
+| `helpwanted` | [search](search-clover-repo-label-help-wanted) | The feature or bug requires more work or attention than would be used for an ordinary issue. |
+| `invalid` | [search](search-clover-repo-label-invalid) | Issues which aren't valid (e.g. user errors). |
+| `needs-reproduction` | [search](search-clover-repo-label-needs-reproduction) | Likely bugs, but haven't been reliably reproduced. |
+| `not-urgent` | [search](search-clover-repo-label-not-urgent) | Not an urgent fix, can be sorted down the line. |
+| `question` | [search](search-clover-repo-label-question) | Questions more than bug reports or feature requests (e.g. how do I do X). You should **raise questions in the discussions page** rather than raising an issue if possible. |
+| `wontfix` | [search](search-clover-repo-label-wontfix) | The CLOVER core team has decided not to fix these issues for now, either because they're working as intended or for some other reason. |
 
 Thanks! :heart: :heart: :heart:
 
