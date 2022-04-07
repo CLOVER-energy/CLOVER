@@ -1117,6 +1117,7 @@
                     grid_type: bahraich # The grid profile to use
                     prioritise_self_generation: true # "true" or "false"
                     pv: true # "true" or "false"
+                    pv_t: false # "true" or "false"
                     resource_types:
                       - electric_power
         - directory: simulation
