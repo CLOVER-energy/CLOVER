@@ -1,0 +1,29 @@
+---
+################################################################################
+# tank_inputs.yaml - Parameters for specifying a tank within CLOVER.           #
+#                                                                              #
+# Author: Phil Sandwell, Ben Winchester                                        #
+# Copyright: Phil Sandwell & Ben Winchester, 2021                              #
+# Date created: 19/08/2021                                                     #
+# License: Open source                                                         #
+################################################################################
+
+- name: cold_water_tank
+  cycle_lifetime: 1500 # Expected number of cycles over lifetime
+  leakage: 0 # Fractional leakage per hour
+  mass: 150 # [kg or litres]
+  maximum_charge: 1 # State of charge (0.0 - 1.0)
+  minimum_charge: 0 # State of charge (0.0 - 1.0)
+  resource_type: clean_water
+  costs:
+    cost: 100 # [$/tank]
+    cost_decrease: 5 # [% p.a.]
+    installation_cost: 20 # [$/tank]
+    installation_cost_decrease: 0 # [% p.a.]
+    o&m: 10 # [$/kWh p.a.]
+  emissions:
+    ghgs: 110 # [kgCO2/tank]
+    ghg_decrease: 5 # [% p.a.]
+    installation_ghgs: 10 # [kwCO2/tank]
+    installation_ghg_decrease: 0
+    o&m_ghgs: 5 # [kgCO2/tank p.a.]

@@ -1,0 +1,53 @@
+---
+################################################################################
+# optimisation_inputs.yaml - Specifications for running optimisations.         #
+#                                                                              #
+# Author: Phil Sandwell, Ben Winchester                                        #
+# Copyright: Phil Sandwell & Ben Winchester, 2021                              #
+# Date created: 14/07/2021                                                     #
+# License: Open source                                                         #
+################################################################################
+
+# Valid optimisation criteria, usually set to "minimise":
+#   CRITERION                       UNIT
+#   blackouts
+#   clean_water_blackouts
+#   lcue                            $/kWh
+#   emissions_intensity             gCO2/kWh
+#   unmet_energy_fraction
+#   cumulative_cost                 $
+#   cumulative_ghgs                 kgCO2eq
+#   cumulative_system_cost          $
+#   cumulative_system_ghgs          kgCO2eq
+#   emissions_intensity             gCO2/kWh
+#   lcue                            $/kWh
+#   total_cost                      $
+#   total_system_cost               $
+#   total_ghgs                      kgCO2eq
+#   total_system_ghgs               kgCO2eq
+#   unmet_energy_fraction
+# Valid optimisation criteria, usually set to "maximise":
+#   kerosene_cost_mitigated         $
+#   kerosene_displacement
+#   kerosene_ghgs_mitigated         kgCO2eq
+#   renewables_fraction
+#
+# NOTE: Not all optimisation criteria may be available for the system depending
+# on the resource types being considered.
+#
+
+iteration_length: 4 # [years]
+number_of_iterations: 3 # number of iterations to carry out
+pv_size:
+  min: 5 # [PV units], [kWp] by default
+  max: 20 # [PV units], [kWp] by default
+  step: 5 # [PV units], [kWp] by default
+storage_size:
+  min: 5 # [storage units], [kWh] by default
+  max: 30 # [storage units], [kWh] by default
+  step: 5 # [storage units], [kWh] by default
+optimisations:
+  - optimisation_criteria:
+      - lcue: minimise # Name of the column and whether to maximise/minimise.
+    threshold_criteria:
+      - blackouts: 0.1 # Max/min value permitted (see guidance)
