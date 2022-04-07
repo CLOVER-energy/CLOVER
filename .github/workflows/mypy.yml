@@ -1,6 +1,6 @@
 name: Mypy
 
-on: [push]
+on: [push, pull_request]
 
 jobs:
   build:
@@ -20,4 +20,4 @@ jobs:
           pip install types-PyYAML
       - name: Analysing the code with mypy
         run: |
-          python -m mypy clover
+          python -m mypy src/clover
