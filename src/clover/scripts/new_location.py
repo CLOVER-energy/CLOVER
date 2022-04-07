@@ -93,9 +93,7 @@ def _create_file(
     """
 
     if not os.path.isdir(directory):
-        raise FileNotFoundError(
-            "The directory {} could not be found.".format(directory)
-        )
+        raise FileNotFoundError(f"The directory '{directory}' could not be found.")
 
     if os.path.isfile(os.path.join(directory, filename)):
         logger.info(
@@ -108,11 +106,9 @@ def _create_file(
     if filename.endswith(".csv"):
         for match in REPEATED_LINE_REGEX.finditer(contents):
             contents = re.sub(
-                r"{}:{}".format(
-                    match.group("multiplier"), match.group("line_to_repeat")
-                ),
+                rf"{match.group('multiplier')}:{match.group('line_to_repeat')}",
                 "\n".join(
-                    ["{}".format(match.group("line_to_repeat"))]
+                    [str(match.group("line_to_repeat"))]
                     * int(match.group("multiplier"))
                 ),
                 contents,
@@ -121,9 +117,7 @@ def _create_file(
     with open(os.path.join(directory, filename), "w") as new_file:
         new_file.write(contents)
 
-    logger.info(
-        "File successfully created: {}".format(os.path.join(directory, filename))
-    )
+    logger.info("File successfully created: %s", os.path.join(directory, filename))
 
 
 def _create_folder_and_contents(
@@ -234,12 +228,12 @@ def create_new_location(
             logger.error("Failed to read location data from raw source.")
             logger.critical("Failed to determine location of the location data file.")
             raise
-        logger.info("Successfully read location data file form local source.")
+        logger.info("Successfully read location data file from local source.")
     else:
         if package_data is None:
             raise Exception("Package data read but no data within file.")
         new_location_data = yaml.safe_load(package_data)
-        logger.info("Successfully read location data file form installed package file.")
+        logger.info("Successfully read location data file from installed package file.")
     logger.info("Data file successfully read.")
 
     if not isinstance(new_location_data, list):
@@ -290,9 +284,7 @@ def create_new_location(
                 from_existing,
             )
             raise FileNotFoundError(
-                "The existing location, {}, could not be found.".format(
-                    existing_location_directory
-                )
+                f"The existing location, {existing_location_directory}, could not be found."
             )
 
         # Copy over any of the files as per the set up in the new location.

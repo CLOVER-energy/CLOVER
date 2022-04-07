@@ -27,7 +27,7 @@ import numpy as np  # pylint: disable=import-error
 import pandas as pd
 
 from ..__utils__ import BColours, ELECTRIC_POWER, InputFileError, NAME, ResourceType
-from ..conversion.conversion import MAXIMUM_OUTPUT, Convertor
+from ..conversion.conversion import MAXIMUM_OUTPUT, Converter
 
 
 __all__ = (
@@ -71,7 +71,7 @@ class DieselGenerator:
 
 
 @dataclasses.dataclass
-class DieselWaterHeater(Convertor):
+class DieselWaterHeater(Converter):
     """
     Represents a diesel water heater.
 
@@ -96,9 +96,6 @@ class DieselWaterHeater(Convertor):
         Instnatiate a :class:`DieselWaterHeater` instance.
 
         Inputs:
-            - consunmption:
-                The amount of input load type which is consumed per unit output load
-                produced.
             - input_resource_types:
                 The types of load inputted to the d:class:`DieselWaterHeater`evice.
             - maximum_output_capcity:
@@ -112,6 +109,7 @@ class DieselWaterHeater(Convertor):
 
         """
 
+        # @BenWinchester - Waste consumption needed in this diesel water heater.
         super().__init__(
             input_resource_consumption,
             maximum_output_capacity,
@@ -197,7 +195,7 @@ def _find_deficit_threshold(
     """
 
     # Find the blackout percentage
-    blackout_percentage = float(np.mean(blackouts)[0])
+    blackout_percentage = float(blackouts.mean(axis=0))  # type: ignore
 
     # Find the difference in reliability
     reliability_difference = blackout_percentage - backup_threshold

@@ -1,4 +1,5 @@
 # Ignore assembled python packages
+**/build
 **/dist
 **/*.egg*
 # Ignore HPC log files
@@ -23,3 +24,7 @@
 *.jpg
 # Ignore VSCode files
 .vscode
+# Ignore model files for now
+*.sav
+# Ignore misc. files
+*.zip

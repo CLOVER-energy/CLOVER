@@ -31,7 +31,7 @@ import time
 from json.decoder import JSONDecodeError
 from logging import Logger
 from math import ceil
-from typing import Any, Dict, List, Union
+from typing import Any, Dict, Union
 
 import numpy as np  # pylint: disable=import-error
 import pandas as pd  # pylint: disable=import-error
@@ -204,9 +204,7 @@ def _get_profile_from_rn(
     # Remove leap days
     if year % 4 == 0:
         logger.debug("Dataframe:\n%s", data_frame)
-        data_frame = data_frame.drop(
-            [entry for entry in range(FEB_29, FEB_29 + 24)]  # type: ignore
-        )
+        data_frame = data_frame.drop(list(range(FEB_29, FEB_29 + 24)))  # type: ignore
         data_frame = data_frame.reset_index(drop=True)
 
     # Remove empty rows from the dataframe.
@@ -512,7 +510,7 @@ class BaseRenewablesNinjaThread(threading.Thread):
         except Exception:
             self.logger.error(
                 "Error occured in profile fetching. See %s for details.",
-                "{}".format(os.path.join("logs", f"{self.logger_name}.log")),
+                f"{os.path.join('logs', self.logger_name)}.log",
             )
             raise
 

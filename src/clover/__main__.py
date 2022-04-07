@@ -17,7 +17,7 @@ the clover module from the command-line interface.
 
 """
 
-__version__ = "5.0.0a2.dev1"
+__version__ = "5.0.0rc1.post1"
 
 import datetime
 import logging
@@ -26,7 +26,7 @@ import os
 import sys
 
 from argparse import Namespace
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 import pandas as pd  # pylint: disable=import-error
 
@@ -45,17 +45,20 @@ from .load import load
 from .mains_supply import grid, water_source
 from .scripts import new_location
 from .simulation import energy_system
+
 from .optimisation.__utils__ import save_optimisation
+from .optimisation.appraisal import appraise_system
 from .optimisation.optimisation import multiple_optimisation_step
+from .printer import generate_optimisation_string, generate_simulation_string
 
 from .__utils__ import (
     BColours,
-    CleanWaterMode,
     DONE,
     FAILED,
     InternalError,
     Location,
     ResourceType,
+    SystemAppraisal,
     get_logger,
     InputFileError,
     LOCATIONS_FOLDER_NAME,
@@ -63,6 +66,7 @@ from .__utils__ import (
     OperatingMode,
     save_simulation,
 )
+from .simulation.__utils__ import check_scenario
 
 __all__ = ("main",)
 
@@ -155,7 +159,7 @@ def _get_operating_mode(parsed_args: Namespace) -> OperatingMode:
     return OperatingMode.PROFILE_GENERATION
 
 
-def _prepare_location(location: str, logger: logging.Logger):
+def _prepare_location(location: str, logger: logging.Logger) -> None:
     """
     Prepares the location and raises an error if the location cannot be found.
 
@@ -178,9 +182,7 @@ def _prepare_location(location: str, logger: logging.Logger):
             location,
             BColours.endc,
         )
-        raise FileNotFoundError(
-            "The location, {}, could not be found.".format(location)
-        )
+        raise FileNotFoundError(f"The location, {location}, could not be found.")
 
     if not os.path.isfile(
         os.path.join(
@@ -199,7 +201,7 @@ def _prepare_location(location: str, logger: logging.Logger):
 
 
 def _prepare_water_system(
-    available_conventional_sources: List[str],
+    available_conventional_sources: Set[str],
     auto_generated_files_directory: str,
     device_utilisations: Dict[load.Device, pd.DataFrame],
     location: Location,
@@ -208,7 +210,7 @@ def _prepare_water_system(
     resource_type: ResourceType,
     water_source_times: Dict[WaterSource, pd.DataFrame],
 ) -> Tuple[
-    Dict[WaterSource, pd.DataFrame], pd.DataFrame, Dict[str, pd.DataFrame], pd.DataFrame
+    Dict[WaterSource, pd.DataFrame], Dict[str, pd.DataFrame], pd.DataFrame, pd.DataFrame
 ]:
     """
     Prepares the conventional-water system.
@@ -306,7 +308,7 @@ def _prepare_water_system(
             "for details: %s%s",
             BColours.fail,
             resource_type.value,
-            "{}.log".format(os.path.join(LOGGER_DIRECTORY, LOGGER_NAME)),
+            f"{os.path.join(LOGGER_DIRECTORY, LOGGER_NAME)}.log",
             str(e),
             BColours.endc,
         )
@@ -344,7 +346,7 @@ def _prepare_water_system(
             "water-source profiles. See %s for details: %s%s",
             BColours.fail,
             resource_type.value,
-            "{}.log".format(os.path.join(LOGGER_DIRECTORY, LOGGER_NAME)),
+            f"{os.path.join(LOGGER_DIRECTORY, LOGGER_NAME)}.log",
             str(e),
             BColours.endc,
         )
@@ -356,9 +358,7 @@ def _prepare_water_system(
     logger.debug(
         "Conventional %s water sources: %s",
         resource_type.value,
-        ", ".join(
-            [str(source) for source in conventional_water_source_profiles.keys()]
-        ),
+        ", ".join([str(source) for source in conventional_water_source_profiles]),
     )
 
     conventional_water_source_profiles = {
@@ -375,7 +375,9 @@ def _prepare_water_system(
     )
 
 
-def main(args: List[Any]) -> None:
+def main(  # pylint: disable=too-many-locals, too-many-statements
+    args: List[Any],
+) -> None:
     """
     The main module for CLOVER executing all functionality as appropriate.
 
@@ -401,13 +403,12 @@ def main(args: List[Any]) -> None:
             "%sInvalid command-line arguments. Check that all required arguments have "
             "been specified correctly. See %s for details.%s",
             BColours.fail,
-            "{}.log".format(os.path.join(LOGGER_DIRECTORY, LOGGER_NAME)),
+            f"{os.path.join(LOGGER_DIRECTORY, LOGGER_NAME)}.log",
             BColours.endc,
         )
         raise ValueError(
-            "The command-line arguments were invalid. See {} for details.".format(
-                "{}.log".format(os.path.join(LOGGER_DIRECTORY, LOGGER_NAME))
-            )
+            "The command-line arguments were invalid. See "
+            f"{os.path.join(LOGGER_DIRECTORY, LOGGER_NAME)}.log for details."
         )
 
     logger.info("Command-line arguments successfully validated.")
@@ -415,10 +416,10 @@ def main(args: List[Any]) -> None:
     version_string = f"Version {__version__}"
     print(
         CLOVER_HEADER_STRING.format(
-            version_line="{}{}{}".format(
-                " " * (40 - math.ceil(len(version_string) / 2)),
-                version_string,
-                " " * (40 - math.floor(len(version_string) / 2)),
+            version_line=(
+                " " * (40 - math.ceil(len(version_string) / 2))
+                + version_string
+                + " " * (40 - math.floor(len(version_string) / 2))
             )
         )
     )
@@ -446,46 +447,60 @@ def main(args: List[Any]) -> None:
     # Determine the operating mode for the run.
     operating_mode = _get_operating_mode(parsed_args)
     if operating_mode == OperatingMode.SIMULATION:
+        output_directory: Optional[str] = simulation_output_directory
         logger.info(
             "A single CLOVER simulation will be run for locatation '%s'",
             parsed_args.location,
         )
         print(
-            "A single CLOVER simulation will be run for {}{}.".format(
-                parsed_args.location,
+            f"A single CLOVER simulation will be run for {parsed_args.location}"
+            + (
                 f" {BColours.okblue}in debug mode{BColours.endc}"
                 if parsed_args.debug
-                else "",
+                else ""
             )
         )
     if operating_mode == OperatingMode.OPTIMISATION:
+        output_directory = optimisation_output_directory
         logger.info(
             "A CLOVER optimisation will be run for location '%s'", parsed_args.location
         )
         print(
-            "A CLOVER optimisation will be run for {}{}.".format(
-                parsed_args.location,
+            f"A CLOVER optimisation will be run for {parsed_args.location}"
+            + (
                 f" {BColours.okblue}in debug mode{BColours.endc}"
                 if parsed_args.debug
-                else "",
+                else ""
             )
         )
     if operating_mode == OperatingMode.PROFILE_GENERATION:
+        output_directory = None
         logger.info("No CLI mode was specified, CLOVER will only generate profiles.")
         print(
             "Neither `simulation` or `optimisation` specified, running profile "
-            "generation only for {}{}.".format(
-                parsed_args.location,
+            f"generation only for {parsed_args.location}"
+            + (
                 f" {BColours.okblue}in debug mode{BColours.endc}"
                 if parsed_args.debug
-                else "",
+                else ""
             )
         )
 
     # If the output folder already exists, then confirm from the user that they wish to
     # overwrite its contents.
     if parsed_args.output is not None:
-        if os.path.isdir(os.path.join(simulation_output_directory, parsed_args.output)):
+        if output_directory is None:
+            logger.error(
+                "%sCannot specify an output directory if only profile generation is "
+                "taking place.%s",
+                BColours.fail,
+                BColours.endc,
+            )
+            raise Exception(
+                "The `output` flag can only be used if a simulation or optimisation "
+                "output is expected."
+            )
+        if os.path.isdir(os.path.join(output_directory, parsed_args.output)):
             try:
                 confirm_overwrite = {"y": True, "n": False, "Y": True, "N": False}[
                     input(
@@ -519,7 +534,7 @@ def main(args: List[Any]) -> None:
             "script to identify missing files. See %s for details.%s",
             BColours.fail,
             parsed_args.location,
-            "{}.log".format(os.path.join(LOGGER_DIRECTORY, LOGGER_NAME)),
+            f"{os.path.join(LOGGER_DIRECTORY, LOGGER_NAME)}.log",
             BColours.endc,
         )
         raise
@@ -533,7 +548,7 @@ def main(args: List[Any]) -> None:
 
     try:
         (
-            convertors,
+            converters,
             device_utilisations,
             minigrid,
             finance_inputs,
@@ -543,17 +558,23 @@ def main(args: List[Any]) -> None:
             location,
             optimisation_inputs,
             optimisations,
-            scenario,
+            scenarios,
             simulations,
+            electric_load_profile,
             water_source_times,
             input_file_info,
-        ) = parse_input_files(parsed_args.debug, parsed_args.location, logger)
+        ) = parse_input_files(
+            parsed_args.debug,
+            parsed_args.electric_load_profile,
+            parsed_args.location,
+            logger,
+        )
     except FileNotFoundError as e:
         print(FAILED)
         logger.error(
             "%sNot all input files present. See %s for details: %s%s",
             BColours.fail,
-            "{}.log".format(os.path.join(LOGGER_DIRECTORY, LOGGER_NAME)),
+            f"{os.path.join(LOGGER_DIRECTORY, LOGGER_NAME)}.log",
             str(e),
             BColours.endc,
         )
@@ -568,7 +589,7 @@ def main(args: List[Any]) -> None:
             "%sAn unexpected error occured parsing input files. See %s for details: "
             "%s%s",
             BColours.fail,
-            "{}.log".format(os.path.join(LOGGER_DIRECTORY, LOGGER_NAME)),
+            f"{os.path.join(LOGGER_DIRECTORY, LOGGER_NAME)}.log",
             str(e),
             BColours.endc,
         )
@@ -577,98 +598,21 @@ def main(args: List[Any]) -> None:
         logger.info("All input files successfully parsed.")
         print(DONE)
 
-    # If the inputs do not match up correctly, then raise errors.
-    if scenario.desalination_scenario is not None and minigrid.clean_water_tank is None:
-        raise InputFileError(
-            "energy system inputs",
-            "No clean-water tank was provided despite there needing to be a tank "
-            "specified for dealing with clean-water demands.",
-        )
-    if operating_mode == OperatingMode.SIMULATION:
-        if (scenario.pv and parsed_args.pv_system_size is None) or (
-            not scenario.pv and parsed_args.pv_system_size is not None
-        ):
-            raise InputFileError(
-                "scenario",
-                "PV mode in the scenario file must match the command-line usage.",
-            )
-        if (
-            parsed_args.clean_water_pvt_system_size is not None
-            and (scenario.desalination_scenario is None)
-        ) or (
-            parsed_args.clean_water_pvt_system_size is None
-            and (
-                scenario.desalination_scenario is not None
-                and scenario.desalination_scenario.clean_water_scenario.mode
-                == CleanWaterMode.THERMAL_ONLY
-            )
-        ):
-            logger.error(
-                "%sPV-T mode and available resources in the scenario file must match "
-                "the command-line usage. Check the clean-water and PV-T scenario "
-                "specification.%s",
-                BColours.fail,
-                BColours.endc,
-            )
-            raise InputFileError(
-                "scenario",
-                "Mismatch between command-line usage and in-file usage.",
-            )
-        if (
-            parsed_args.hot_water_pvt_system_size is not None
-            and (scenario.hot_water_scenario is None)
-        ) or (
-            parsed_args.hot_water_pvt_system_size is None
-            and (scenario.hot_water_scenario is not None)
-        ):
-            logger.error(
-                "%sPV-T mode in the scenario file must match the command-line usage. "
-                "Check the hot-water and PV-T scenario specification.%s",
-                BColours.fail,
-                BColours.endc,
-            )
-            raise InputFileError(
-                "scenario",
-                "Mismatch between command-line usage and in-file usage.",
-            )
-        if (
-            scenario.pv_t
-            and scenario.desalination_scenario is None
-            and scenario.hot_water_scenario is None
-        ) or (
-            not scenario.pv_t
-            and scenario.desalination_scenario is not None
-            and scenario.hot_water_scenario is not None
-        ):
-            logger.error(
-                "%sDesalination or hot-water scenario usage does not match the "
-                "system's PV-T panel inclusion.%s",
-                BColours.fail,
-                BColours.endc,
-            )
-            raise InputFileError(
-                "scenario",
-                "The PV-T mode does not match the hot-water or desalination scenarios.",
-            )
-        if (scenario.battery and parsed_args.storage_size is None) or (
-            not scenario.battery and parsed_args.storage_size is not None
-        ):
-            raise InputFileError(
-                "scenario",
-                "Battery mode in the scenario file must match the command-line usage.",
-            )
-
     print("Generating necessary profiles", end="\n")
 
     # Determine the number of background tasks to carry out.
     num_ninjas: int = (
         1
-        + (1 if scenario.pv_t else 0)
-        + (1 if scenario.desalination_scenario is not None else 0)
+        + (1 if any(scenario.pv_t for scenario in scenarios) else 0)
+        + (
+            1
+            if any(scenario.desalination_scenario for scenario in scenarios) is not None
+            else 0
+        )
     )
 
     # Generate and save the wind data for each year as a background task.
-    if scenario.pv_t:
+    if any(scenario.pv_t for scenario in scenarios):
         logger.info("Beginning wind-data fetching.")
         wind_data_thread: Optional[wind.WindDataThread] = wind.WindDataThread(
             os.path.join(auto_generated_files_directory, "wind"),
@@ -684,13 +628,13 @@ def main(args: List[Any]) -> None:
         wind_data_thread.start()
         logger.info(
             "Wind-data thread successfully instantiated. See %s for details.",
-            "{}.log".format(os.path.join(LOGGER_DIRECTORY, wind.WIND_LOGGER_NAME)),
+            f"{os.path.join(LOGGER_DIRECTORY, wind.WIND_LOGGER_NAME)}.log",
         )
     else:
         wind_data_thread = None
 
     # Generate and save the weather data for each year as a background task.
-    if scenario.desalination_scenario is not None:
+    if any(scenario.desalination_scenario is not None for scenario in scenarios):
         # Set up the system to call renewables.ninja at a slower rate.
         logger.info("Begining weather-data fetching.")
         weather_data_thread: Optional[
@@ -711,9 +655,7 @@ def main(args: List[Any]) -> None:
         weather_data_thread.start()
         logger.info(
             "Weather-data thread successfully instantiated. See %s for details.",
-            "{}.log".format(
-                os.path.join(LOGGER_DIRECTORY, weather.WEATHER_LOGGER_NAME)
-            ),
+            f"{os.path.join(LOGGER_DIRECTORY, weather.WEATHER_LOGGER_NAME)}.log",
         )
     else:
         weather_data_thread = None
@@ -733,7 +675,7 @@ def main(args: List[Any]) -> None:
     solar_data_thread.start()
     logger.info(
         "Solar-data thread successfully instantiated. See %s for details.",
-        "{}.log".format(os.path.join(LOGGER_DIRECTORY, solar.SOLAR_LOGGER_NAME)),
+        f"{os.path.join(LOGGER_DIRECTORY, solar.SOLAR_LOGGER_NAME)}.log",
     )
 
     # Generate and save the device-ownership profiles.
@@ -744,7 +686,7 @@ def main(args: List[Any]) -> None:
     total_electric_load: Optional[pd.DataFrame] = None
     electric_yearly_load_statistics: Optional[pd.DataFrame] = None
 
-    if ResourceType.ELECTRIC in scenario.resource_types:
+    if any(ResourceType.ELECTRIC in scenario.resource_types for scenario in scenarios):
         try:
             (
                 initial_electric_hourly_loads,
@@ -757,6 +699,7 @@ def main(args: List[Any]) -> None:
                 location,
                 logger,
                 parsed_args.regenerate,
+                electric_load_profile,
             )
         except InputFileError:
             print(
@@ -773,25 +716,35 @@ def main(args: List[Any]) -> None:
                 "%sAn unexpected error occurred generating the load profiles. See %s for "
                 "details: %s%s",
                 BColours.fail,
-                "{}.log".format(os.path.join(LOGGER_DIRECTORY, LOGGER_NAME)),
+                f"{os.path.join(LOGGER_DIRECTORY, LOGGER_NAME)}.log",
                 str(e),
                 BColours.endc,
             )
             raise
 
-    clean_water_yearly_load_statistics: Optional[pd.DataFrame] = None
+    clean_water_yearly_load_statistics: pd.DataFrame  # pylint: disable=unused-variable
     conventional_cw_source_profiles: Optional[Dict[WaterSource, pd.DataFrame]] = None
     initial_cw_hourly_loads: Optional[Dict[str, pd.DataFrame]] = None
     total_cw_load: Optional[pd.DataFrame] = None
 
-    if scenario.desalination_scenario is not None:
+    if any(scenario.desalination_scenario is not None for scenario in scenarios):
+        # Create a set of all the conventional clean-water sources available.
+        # @ BenWinchester - Repair conventional sources logic.
+        conventional_sources: Set[str] = {
+            source
+            for scenario in scenarios
+            if scenario.desalination_scenario is not None
+            for source in scenario.desalination_scenario.clean_water_scenario.conventional_sources
+        }
+
+        # Generate the clean-water load profiles.
         (
             conventional_cw_source_profiles,
             initial_cw_hourly_loads,
             total_cw_load,
             clean_water_yearly_load_statistics,
         ) = _prepare_water_system(
-            scenario.desalination_scenario.clean_water_scenario.conventional_sources,
+            conventional_sources,
             auto_generated_files_directory,
             device_utilisations,
             location,
@@ -801,19 +754,30 @@ def main(args: List[Any]) -> None:
             water_source_times,
         )
 
-    conventional_hw_source_profiles: Optional[Dict[WaterSource, pd.DataFrame]] = None
-    hot_water_yearly_load_statistics: Optional[pd.DataFrame] = None
+    conventional_hw_source_profiles: Dict[  # pylint: disable=unused-variable
+        WaterSource, pd.DataFrame
+    ]
+    hot_water_yearly_load_statistics: pd.DataFrame  # pylint: disable=unused-variable
     initial_hw_hourly_loads: Optional[Dict[str, pd.DataFrame]] = None
     total_hw_load: Optional[pd.DataFrame] = None
 
-    if scenario.hot_water_scenario is not None:
+    if any(scenario.hot_water_scenario is not None for scenario in scenarios):
+        # Create a set of all the conventional hot-water sources available.
+        # @ BenWinchester - Repair conventional sources logic.
+        conventional_sources = {
+            source
+            for scenario in scenarios
+            if scenario.hot_water_scenario is not None
+            for source in scenario.hot_water_scenario.conventional_sources
+        }
+
         (
             conventional_hw_source_profiles,
             initial_hw_hourly_loads,
             total_hw_load,
             hot_water_yearly_load_statistics,
         ) = _prepare_water_system(
-            scenario.hot_water_scenario.conventional_sources,
+            conventional_sources,
             auto_generated_files_directory,
             device_utilisations,
             location,
@@ -826,41 +790,45 @@ def main(args: List[Any]) -> None:
     # Assemble a means of storing the relevant loads.
     total_loads: Dict[ResourceType, Optional[pd.DataFrame]] = {
         ResourceType.CLEAN_WATER: total_cw_load,
-        ResourceType.ELECTRIC: 0.001 * total_electric_load,
+        ResourceType.ELECTRIC: 0.001 * total_electric_load,  # type: ignore
         ResourceType.HOT_CLEAN_WATER: total_hw_load,
     }
 
-    # Generate the grid-availability profiles.
-    logger.info("Generating grid-availability profiles.")
-    try:
-        grid.get_lifetime_grid_status(
-            os.path.join(auto_generated_files_directory, "grid"),
-            grid_times,
-            logger,
-            location.max_years,
-        )
-    except InputFileError:
-        print(
-            "Generating necessary profiles .................................    "
-            + f"{FAILED}"
-        )
-        raise
-    except Exception as e:
-        print(
-            "Generating necessary profiles .................................    "
-            + f"{FAILED}"
-        )
-        logger.error(
-            "%sAn unexpected error occurred generating the grid profiles. See %s for "
-            "details: %s%s",
-            BColours.fail,
-            "{}.log".format(os.path.join(LOGGER_DIRECTORY, LOGGER_NAME)),
-            str(e),
-            BColours.endc,
-        )
-        raise
+    # Generate the grid-availability profiles if relevant.
+    if any(scenario.grid for scenario in scenarios):
+        logger.info("Generating grid-availability profiles.")
+        try:
+            grid.get_lifetime_grid_status(
+                os.path.join(auto_generated_files_directory, "grid"),
+                grid_times,
+                logger,
+                location.max_years,
+            )
+        except InputFileError:
+            print(
+                "Generating necessary profiles .................................    "
+                + f"{FAILED}"
+            )
+            raise
+        except Exception as e:
+            print(
+                "Generating necessary profiles .................................    "
+                + f"{FAILED}"
+            )
+            logger.error(
+                "%sAn unexpected error occurred generating the grid profiles. See %s for "
+                "details: %s%s",
+                BColours.fail,
+                f"{os.path.join(LOGGER_DIRECTORY, LOGGER_NAME)}.log",
+                str(e),
+                BColours.endc,
+            )
+            raise
 
-    logger.info("Grid-availability profiles successfully generated.")
+        logger.info("Grid-availability profiles successfully generated.")
+
+    else:
+        logger.info("Grid disabled, no grid profiles to be generated.")
 
     # Wait for all threads to finish before proceeding.
     logger.info("Waiting for all setup threads to finish before proceeding.")
@@ -880,20 +848,21 @@ def main(args: List[Any]) -> None:
     )
     logger.info("Total solar output successfully computed and saved.")
 
-    if (
-        scenario.desalination_scenario is not None
-        or scenario.hot_water_scenario is not None
+    if any(scenario.desalination_scenario is not None for scenario in scenarios) or any(
+        scenario.hot_water_scenario is not None for scenario in scenarios
     ):
         logger.info("Generating and saving total weather output file.")
-        total_weather_data = weather.total_weather_output(
-            os.path.join(auto_generated_files_directory, "weather"),
-            parsed_args.regenerate,
-            generation_inputs["start_year"],
-            location.max_years,
+        total_weather_data = (  # pylint: disable=unused-variable
+            weather.total_weather_output(
+                os.path.join(auto_generated_files_directory, "weather"),
+                parsed_args.regenerate,
+                generation_inputs["start_year"],
+                location.max_years,
+            )
         )
         logger.info("Total weather output successfully computed and saved.")
 
-    if scenario.pv_t:
+    if any(scenario.pv_t for scenario in scenarios):
         logger.info("Generating and saving total wind data output file.")
         total_wind_data: Optional[pd.DataFrame] = wind.total_wind_output(
             os.path.join(auto_generated_files_directory, "wind"),
@@ -917,30 +886,6 @@ def main(args: List[Any]) -> None:
         end="\n",
     )
 
-    # Load the relevant grid profile.
-    try:
-        with open(
-            os.path.join(
-                auto_generated_files_directory,
-                "grid",
-                f"{scenario.grid_type}_grid_status.csv",
-            ),
-            "r",
-        ) as f:
-            grid_profile = pd.read_csv(
-                f,
-                index_col=0,
-            )
-    except FileNotFoundError as e:
-        logger.error(
-            "%sGrid profile file for profile '%s' could not be found: %s%s",
-            BColours.fail,
-            scenario.grid_type,
-            str(e),
-            BColours.endc,
-        )
-        raise
-
     # Load the relevant kerosene profile.
     with open(
         os.path.join(auto_generated_files_directory, KEROSENE_USAGE_FILE), "r"
@@ -962,73 +907,42 @@ def main(args: List[Any]) -> None:
     # Run a simulation or optimisation as appropriate.
     if operating_mode == OperatingMode.SIMULATION:
         print(
-            "Beginning CLOVER simulation runs {}    ".format(
-                "." * 30,
-            ),
+            f"Beginning CLOVER simulation runs {'.' * 30}    ",
             end="\n",
         )
+
         simulation_times: List[str] = []
 
-        simulation_string: str = (
-            (
-                (
-                    f"- {parsed_args.pv_system_size * minigrid.pv_panel.pv_unit} kWp of PV"
-                    + (
-                        (
-                            f" ({parsed_args.pv_system_size}x "
-                            + f"{minigrid.pv_panel.pv_unit} kWp panels)"
-                        )
-                        if overrided_default_sizes
-                        else ""
-                    )
-                    + "\n"
-                )
-                if parsed_args.pv_system_size is not None and scenario.pv
-                else ""
+        # Determine the scenario to use for the simulation.
+        try:
+            scenario = [
+                scenario
+                for scenario in scenarios
+                if scenario.name == parsed_args.scenario
+            ][0]
+        except IndexError:
+            logger.error(
+                "%sUnable to locate scenario '%s' from scenarios.%s",
+                BColours.fail,
+                parsed_args.scenario,
+                BColours.endc,
             )
-            + f"- {parsed_args.storage_size * minigrid.battery.storage_unit} kWh of "
-            + "storage"
-            + (
-                (
-                    f" ({parsed_args.storage_size}x "
-                    + f"{minigrid.battery.storage_unit} kWh batteries)"
-                )
-                if overrided_default_sizes
-                else ""
-            )
-            + "\n"
-            + (
-                "- {} Clean-water PV-T panel units ({} kWp PV per unit)\n".format(
-                    parsed_args.clean_water_pvt_system_size,
-                    minigrid.pvt_panel.pv_unit,
-                )
-                if parsed_args.clean_water_pvt_system_size is not None
-                else ""
-            )
-            + (
-                "- {}x {} litres clean-water storage{}".format(
-                    parsed_args.num_clean_water_tanks,
-                    minigrid.clean_water_tank.mass,
-                    "\n" if scenario.hot_water_scenario is not None else "",
-                )
-                if scenario.desalination_scenario is not None
-                else ""
-            )
-            + (
-                "- {} Hot-water PV-T panel units ({} kWp PV per unit)\n".format(
-                    parsed_args.hot_water_pvt_system_size,
-                    minigrid.pvt_panel.pv_unit,
-                )
-                if parsed_args.hot_water_pvt_system_size is not None
-                else ""
-            )
-            + (
-                "- {}x {} litres hot-water storage".format(
-                    parsed_args.num_hot_water_tanks, minigrid.hot_water_tank.mass
-                )
-                if scenario.hot_water_scenario is not None
-                else ""
-            )
+            raise
+
+        logger.info("Scenario '%s' successfully determined.", parsed_args.scenario)
+
+        logger.info("Checking scenario parameters.")
+        check_scenario(logger, minigrid, operating_mode, parsed_args, scenario)
+        logger.info("Scenario parameters valid.")
+
+        logger.info("Loading grid profile.")
+        grid_profile = grid.load_grid_profile(
+            auto_generated_files_directory, logger, scenario
+        )
+        logger.info("Grid '%s' profile successfully loaded.", scenario.grid_type)
+
+        simulation_string: str = generate_simulation_string(
+            minigrid, overrided_default_sizes, parsed_args, scenario
         )
         print(f"Running a simulation with:\n{simulation_string}")
 
@@ -1048,7 +962,7 @@ def main(args: List[Any]) -> None:
                     if parsed_args.clean_water_pvt_system_size is not None
                     else 0,
                     conventional_cw_source_profiles,
-                    convertors,
+                    converters,
                     parsed_args.storage_size,
                     grid_profile,
                     parsed_args.hot_water_pvt_system_size
@@ -1075,15 +989,13 @@ def main(args: List[Any]) -> None:
                     else None,
                 )
             except Exception as e:
-                print(
-                    "Beginning CLOVER simulation runs {}    {}".format("." * 30, FAILED)
-                )
+                print(f"Beginning CLOVER simulation runs {'.' * 30}    {FAILED}")
                 logger.error(
                     "%sAn unexpected error occurred running a CLOVER simulation. See "
                     "%s for "
                     "details: %s%s",
                     BColours.fail,
-                    "{}.log".format(os.path.join(LOGGER_DIRECTORY, LOGGER_NAME)),
+                    f"{os.path.join(LOGGER_DIRECTORY, LOGGER_NAME)}.log",
                     str(e),
                     BColours.endc,
                 )
@@ -1091,7 +1003,7 @@ def main(args: List[Any]) -> None:
 
             # Add the time to the counter.
             simulation_times.append(
-                "{0:.3f} s/year".format(
+                "{0:.3f} s/year".format(  # pylint: disable=consider-using-f-string
                     (time_delta.seconds + time_delta.microseconds * 0.000001)
                     / (simulation.end_year - simulation.start_year)
                 )
@@ -1101,7 +1013,7 @@ def main(args: List[Any]) -> None:
             system_details.file_information = input_file_info
 
             # Compute the key results.
-            key_results = analysis.get_key_results(
+            key_results = analysis.get_key_results(  # type: ignore
                 grid_times[scenario.grid_type],
                 simulation.end_year - simulation.start_year,
                 system_performance_outputs,
@@ -1111,7 +1023,7 @@ def main(args: List[Any]) -> None:
 
             if parsed_args.analyse:
                 # Generate and save the various plots.
-                analysis.plot_outputs(
+                analysis.plot_outputs(  # type: ignore
                     grid_times[scenario.grid_type],
                     grid_profile,
                     initial_cw_hourly_loads,
@@ -1126,7 +1038,27 @@ def main(args: List[Any]) -> None:
                     total_solar_data[solar.SolarDataType.ELECTRICITY.value]
                     * minigrid.pv_panel.pv_unit,
                 )
+
+                # Carry out an appraisal of the system.
+                if electric_yearly_load_statistics is None:
+                    raise InternalError(
+                        "No electric yearly load statistics were computed for the "
+                        "system despite these being needed to appraise the system."
+                    )
+                system_appraisal: Optional[SystemAppraisal] = appraise_system(
+                    electric_yearly_load_statistics,
+                    simulation.end_year,
+                    finance_inputs,
+                    ghg_inputs,
+                    location,
+                    logger,
+                    None,
+                    system_performance_outputs,
+                    simulation.start_year,
+                    system_details,
+                )
             else:
+                system_appraisal = None
                 logger.info("No analysis to be carried out.")
 
             # Save the simulation output.
@@ -1137,23 +1069,19 @@ def main(args: List[Any]) -> None:
                 simulation_output_directory,
                 system_performance_outputs,
                 simulation_number,
+                system_appraisal,
                 system_details,
             )
 
-        print("Beginning CLOVER simulation runs {}    {}".format("." * 30, DONE))
+        print(f"Beginning CLOVER simulation runs {'.' * 30}    {DONE}")
 
         print(
-            "Time taken for simulations: {}".format(", ".join(simulation_times)),
+            f"Time taken for simulations: {', '.join(simulation_times)}",
             end="\n",
         )
 
     if operating_mode == OperatingMode.OPTIMISATION:
-        print(
-            "Beginning CLOVER optimisation runs {}    ".format(
-                "." * 28,
-            ),
-            end="\n",
-        )
+        print(f"Beginning CLOVER optimisation runs {'.' * 28}    ", end="\n")
         optimisation_times: List[str] = []
 
         # Enforce that the optimisation inputs are set correctly before attempting an
@@ -1182,88 +1110,34 @@ def main(args: List[Any]) -> None:
                 "the system.",
             )
 
-        optimisation_string_list = [
-            entry
-            for entry in [
-                "- PV resolution of {} units ({} kWp per unit)".format(
-                    optimisation_inputs.pv_size.step, minigrid.pv_panel.pv_unit
-                )
-                if scenario.pv and optimisation_inputs.pv_size is not None
-                else None,
-                "- Storage resolution of {} units ({} kWh per unit)".format(
-                    optimisation_inputs.storage_size.step,
-                    minigrid.battery.storage_unit,
-                )
-                if scenario.battery and optimisation_inputs.storage_size is not None
-                else None,
-                (
-                    "- Clean-water PV-T resolution of "
-                    + "{} units ({} kWp and {} kWth per unit)".format(
-                        optimisation_inputs.cw_pvt_size.step,
-                        minigrid.pvt_panel.pv_unit,
-                        minigrid.pvt_panel.thermal_unit,
-                    )
-                )
-                if scenario.desalination_scenario is not None
-                and optimisation_inputs.cw_pvt_size is not None
-                else "",
-                (
-                    "- Clean-water tank resolution of {} ".format(
-                        optimisation_inputs.clean_water_tanks.step
-                    )
-                    + "units (1 tank of size {} litres per unit)".format(
-                        minigrid.clean_water_tank.mass
-                    )
-                )
-                if scenario.desalination_scenario is not None
-                and optimisation_inputs.clean_water_tanks is not None
-                else None,
-                (
-                    "- Hot-water PV-T resolution of "
-                    + "{} units ({} kWp and {} kWth per unit)".format(
-                        optimisation_inputs.hw_pvt_size.step,
-                        minigrid.pvt_panel.pv_unit,
-                        minigrid.pvt_panel.thermal_unit,
-                    )
-                )
-                if scenario.hot_water_scenario is not None
-                and optimisation_inputs.hw_pvt_size is not None
-                else "",
-                (
-                    "- Hot-water tank resolution of {} ".format(
-                        optimisation_inputs.hot_water_tanks.step
-                    )
-                    + "units (1 tank of size {} litres per unit)".format(
-                        minigrid.clean_water_tank.mass
-                    )
-                )
-                if scenario.hot_water_scenario is not None
-                and optimisation_inputs.hot_water_tanks is not None
-                else None,
-            ]
-            if entry is not None
-        ] + [
-            "- {} resolution of {} units (1 {} device of {} max output per unit)".format(
-                convertor.name,
-                sizing.step,
-                convertor.name,
-                convertor.maximum_output_capacity,
-            )
-            for convertor, sizing in optimisation_inputs.convertor_sizes.items()
-        ]
-
-        optimisation_string: str = "\n".join(
-            [entry for entry in optimisation_string_list if entry != ""]
-        )
-        print(f"Running an optimisation with:\n{optimisation_string}")
-
         for optimisation_number, optimisation in enumerate(
             tqdm(optimisations, desc="optimisations", unit="optimisation"), 1
         ):
+            # Determine the scenario to use for the simulation.
+            logger.info("Checking scenario parameters.")
+            check_scenario(
+                logger, minigrid, operating_mode, parsed_args, optimisation.scenario
+            )
+            logger.info("Scenario parameters valid.")
+
+            logger.info("Loading grid profile.")
+            grid_profile = grid.load_grid_profile(
+                auto_generated_files_directory, logger, optimisation.scenario
+            )
+            logger.info(
+                "Grid '%s' profile successfully loaded.",
+                optimisation.scenario.grid_type,
+            )
+
+            optimisation_string = generate_optimisation_string(
+                minigrid, optimisation_inputs, optimisation.scenario
+            )
+            print(f"Running an optimisation with:\n{optimisation_string}")
+
             try:
                 time_delta, optimisation_results = multiple_optimisation_step(
                     conventional_cw_source_profiles,
-                    convertors,
+                    converters,
                     finance_inputs,
                     ghg_inputs,
                     grid_profile,
@@ -1274,7 +1148,6 @@ def main(args: List[Any]) -> None:
                     minigrid,
                     optimisation,
                     optimisation_inputs,
-                    scenario,
                     total_solar_data[solar.SolarDataType.TEMPERATURE.value],
                     total_loads,
                     total_solar_data[solar.SolarDataType.ELECTRICITY.value]
@@ -1285,17 +1158,13 @@ def main(args: List[Any]) -> None:
                     electric_yearly_load_statistics,
                 )
             except Exception as e:
-                print(
-                    "Beginning CLOVER optimisation runs {}    {}".format(
-                        "." * 28, FAILED
-                    )
-                )
+                print(f"Beginning CLOVER optimisation runs {'.' * 28}    {FAILED}")
                 logger.error(
                     "%sAn unexpected error occurred running a CLOVER optimisation. See "
                     "%s for "
                     "details: %s%s",
                     BColours.fail,
-                    "{}.log".format(os.path.join(LOGGER_DIRECTORY, LOGGER_NAME)),
+                    f"{os.path.join(LOGGER_DIRECTORY, LOGGER_NAME)}.log",
                     str(e),
                     BColours.endc,
                 )
@@ -1303,7 +1172,7 @@ def main(args: List[Any]) -> None:
 
             # Add the time to the counter.
             optimisation_times.append(
-                "{0:.3f} s/year".format(
+                "{0:.3f} s/year".format(  # pylint: disable=consider-using-f-string
                     (time_delta.seconds + time_delta.microseconds * 0.000001)
                     / (
                         optimisation_results[-1].system_details.end_year
@@ -1323,13 +1192,14 @@ def main(args: List[Any]) -> None:
                 optimisation_number,
                 output,
                 optimisation_output_directory,
+                optimisation.scenario,
                 optimisation_results,
             )
 
-        print("Beginning CLOVER optimisation runs {}    {}".format("." * 28, DONE))
+        print(f"Beginning CLOVER optimisation runs {'.' * 28}    {DONE}")
 
         print(
-            "Time taken for optimisations: {}".format(", ".join(optimisation_times)),
+            f"Time taken for optimisations: {', '.join(optimisation_times)}",
             end="\n",
         )
 
@@ -1337,9 +1207,9 @@ def main(args: List[Any]) -> None:
         print("No simulations or optimisations to be carried out.")
 
     print(
-        "Finished. See {} for output files.".format(
-            os.path.join(LOCATIONS_FOLDER_NAME, parsed_args.location, "outputs")
-        )
+        "Finished. See "
+        + os.path.join(LOCATIONS_FOLDER_NAME, parsed_args.location, "outputs")
+        + " for output files."
     )
 
 

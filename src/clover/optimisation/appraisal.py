@@ -28,27 +28,28 @@ import pandas as pd
 from ..impact import finance, ghgs
 
 from ..__utils__ import (
+    BColours,
     ColumnHeader,
     Criterion,
     CumulativeResults,
     EnvironmentalAppraisal,
     FinancialAppraisal,
+    InternalError,
     hourly_profile_to_daily_sum,
     Location,
     SystemAppraisal,
     SystemDetails,
     TechnicalAppraisal,
 )
-from ..conversion.conversion import Convertor
 from ..impact.__utils__ import ImpactingComponent
 
 __all__ = ("appraise_system",)
 
 
-def _simulation_environmental_appraisal(
+def _simulation_environmental_appraisal(  # pylint: disable=too-many-locals
     buffer_tank_addition: int,
     clean_water_tank_addition: int,
-    convertor_addition: Dict[str, int],
+    converter_addition: Dict[str, int],
     diesel_addition: float,
     electric_yearly_load_statistics: pd.DataFrame,
     end_year: int,
@@ -72,8 +73,8 @@ def _simulation_environmental_appraisal(
             The additional number of buffer tanks added this iteration.
         - clean_water_tank_addition:
             The additional number of clean-water tanks added this iteration.
-        - convertor_addition:
-            A mapping between convertor names and the size of each that was added to the
+        - converter_addition:
+            A mapping between converter names and the size of each that was added to the
             system this iteration.
         - diesel_addition:
             The additional diesel capacity added this iteration.
@@ -115,7 +116,7 @@ def _simulation_environmental_appraisal(
         equipment_ghgs = ghgs.calculate_total_equipment_ghgs(
             buffer_tank_addition,
             clean_water_tank_addition,
-            convertor_addition,
+            converter_addition,
             diesel_addition,
             ghg_inputs,
             heat_exchanger_addition,
@@ -149,8 +150,8 @@ def _simulation_environmental_appraisal(
             system_details.initial_num_clean_water_tanks
             if system_details.initial_num_clean_water_tanks is not None
             else 0,
-            system_details.initial_convertor_sizes
-            if system_details.initial_convertor_sizes is not None
+            system_details.initial_converter_sizes
+            if system_details.initial_converter_sizes is not None
             else None,
             system_details.diesel_capacity,
             ghg_inputs,
@@ -236,10 +237,10 @@ def _simulation_environmental_appraisal(
     )
 
 
-def _simulation_financial_appraisal(
+def _simulation_financial_appraisal(  # pylint: disable=too-many-locals
     buffer_tank_addition: int,
     clean_water_tank_addition: int,
-    convertor_addition: Dict[str, int],
+    converter_addition: Dict[str, int],
     diesel_addition: float,
     finance_inputs: Dict[str, Any],
     heat_exchanger_addition: int,
@@ -261,8 +262,8 @@ def _simulation_financial_appraisal(
             The additional number of buffer tanks added this iteration.
         - clean_water_tank_addition:
             The additional number of clean-water tanks added this iteration.
-        - convertor_addition:
-            A mapping between convertor names and the size of each that was added to the
+        - converter_addition:
+            A mapping between converter names and the size of each that was added to the
             system this iteration.
         - diesel_addition:
             The additional diesel capacity added this iteration.
@@ -299,7 +300,7 @@ def _simulation_financial_appraisal(
     equipment_costs = finance.discounted_equipment_cost(
         buffer_tank_addition,
         clean_water_tank_addition,
-        convertor_addition,
+        converter_addition,
         diesel_addition,
         finance_inputs,
         heat_exchanger_addition,
@@ -332,8 +333,8 @@ def _simulation_financial_appraisal(
         system_details.initial_num_clean_water_tanks
         if system_details.initial_num_clean_water_tanks is not None
         else 0,
-        system_details.initial_convertor_sizes
-        if system_details.initial_convertor_sizes is not None
+        system_details.initial_converter_sizes
+        if system_details.initial_converter_sizes is not None
         else None,
         system_details.diesel_capacity,
         finance_inputs,
@@ -413,7 +414,7 @@ def _simulation_financial_appraisal(
     )
 
 
-def _simulation_technical_appraisal(
+def _simulation_technical_appraisal(  # pylint: disable=too-many-locals
     finance_inputs: Dict[str, Any],
     logger: Logger,
     simulation_results: pd.DataFrame,
@@ -439,7 +440,7 @@ def _simulation_technical_appraisal(
 
     # Calculate system blackouts
     system_blackouts: float = float(
-        np.mean(simulation_results[ColumnHeader.BLACKOUTS.value].values)
+        np.mean(simulation_results[ColumnHeader.BLACKOUTS.value].values)  # type: ignore
     )
 
     # Clean-water system.
@@ -447,7 +448,9 @@ def _simulation_technical_appraisal(
         round(
             float(
                 np.mean(
-                    simulation_results[ColumnHeader.CLEAN_WATER_BLACKOUTS.value].values
+                    simulation_results[  # type: ignore
+                        ColumnHeader.CLEAN_WATER_BLACKOUTS.value
+                    ].values
                 )
             ),
             3,
@@ -456,36 +459,42 @@ def _simulation_technical_appraisal(
         else None
     )
     total_clean_water = (
-        np.sum(simulation_results[ColumnHeader.TOTAL_CW_SUPPLIED.value])
+        np.sum(simulation_results[ColumnHeader.TOTAL_CW_SUPPLIED.value])  # type: ignore
         if ColumnHeader.TOTAL_CW_SUPPLIED.value in simulation_results
         else 0
     )
 
     # Energy system.
     total_energy = np.sum(
-        simulation_results[ColumnHeader.TOTAL_ELECTRICITY_CONSUMED.value]
+        simulation_results[ColumnHeader.TOTAL_ELECTRICITY_CONSUMED.value]  # type: ignore
     )
-    total_load_energy = np.sum(simulation_results[ColumnHeader.LOAD_ENERGY.value])
+    total_load_energy = np.sum(
+        simulation_results[ColumnHeader.LOAD_ENERGY.value]  # type: ignore
+    )
     total_renewables_used = np.sum(
-        simulation_results[ColumnHeader.RENEWABLE_ELECTRICITY_USED_DIRECTLY.value]
+        simulation_results[ColumnHeader.RENEWABLE_ELECTRICITY_USED_DIRECTLY.value]  # type: ignore
     )
     total_pv_energy = np.sum(
-        simulation_results[ColumnHeader.PV_ELECTRICITY_SUPPLIED.value]
+        simulation_results[ColumnHeader.PV_ELECTRICITY_SUPPLIED.value]  # type: ignore
     )
     total_pvt_energy = (
-        np.sum(simulation_results[ColumnHeader.TOTAL_PVT_ELECTRICITY_SUPPLIED.value])
+        np.sum(
+            simulation_results[ColumnHeader.TOTAL_PVT_ELECTRICITY_SUPPLIED.value]  # type: ignore
+        )
         if ColumnHeader.TOTAL_PVT_ELECTRICITY_SUPPLIED.value in simulation_results
         else None
     )
     total_storage_used = np.sum(
-        simulation_results[ColumnHeader.ELECTRICITY_FROM_STORAGE.value]
+        simulation_results[ColumnHeader.ELECTRICITY_FROM_STORAGE.value]  # type: ignore
     )
-    total_grid_used = np.sum(simulation_results[ColumnHeader.GRID_ENERGY.value])
+    total_grid_used = np.sum(
+        simulation_results[ColumnHeader.GRID_ENERGY.value]  # type: ignore
+    )
     total_diesel_used = np.sum(
-        simulation_results[ColumnHeader.DIESEL_ENERGY_SUPPLIED.value]
+        simulation_results[ColumnHeader.DIESEL_ENERGY_SUPPLIED.value]  # type: ignore
     )
     total_unmet_energy = np.sum(
-        simulation_results[ColumnHeader.UNMET_ELECTRICITY.value]
+        simulation_results[ColumnHeader.UNMET_ELECTRICITY.value]  # type: ignore
     )
     renewables_fraction = (total_renewables_used + total_storage_used) / total_energy
     unmet_fraction = total_unmet_energy / total_load_energy
@@ -504,18 +513,26 @@ def _simulation_technical_appraisal(
 
     # Calculate proportion of kerosene displaced (defaults to zero if kerosene is not
     # originally used
-    if np.sum(simulation_results[ColumnHeader.KEROSENE_LAMPS.value]) > 0.0:
+    if np.sum(simulation_results[ColumnHeader.KEROSENE_LAMPS.value]) > 0.0:  # type: ignore
         kerosene_displacement = (
-            np.sum(simulation_results[ColumnHeader.KEROSENE_MITIGATION.value])
+            np.sum(
+                simulation_results[ColumnHeader.KEROSENE_MITIGATION.value]  # type: ignore
+            )
         ) / (
-            np.sum(simulation_results[ColumnHeader.KEROSENE_MITIGATION.value])
-            + np.sum(simulation_results[ColumnHeader.KEROSENE_LAMPS.value])
+            np.sum(
+                simulation_results[ColumnHeader.KEROSENE_MITIGATION.value]  # type: ignore
+            )
+            + np.sum(
+                simulation_results[ColumnHeader.KEROSENE_LAMPS.value]  # type: ignore
+            )
         )
     else:
         kerosene_displacement = 0.0
 
     # Calculate diesel fuel usage
-    total_diesel_fuel = np.sum(simulation_results[ColumnHeader.DIESEL_FUEL_USAGE.value])
+    total_diesel_fuel = np.sum(
+        simulation_results[ColumnHeader.DIESEL_FUEL_USAGE.value]  # type: ignore
+    )
 
     # Return outputs
     return TechnicalAppraisal(
@@ -538,7 +555,7 @@ def _simulation_technical_appraisal(
     )
 
 
-def appraise_system(
+def appraise_system(  # pylint: disable=too-many-locals
     electric_yearly_load_statistics: pd.DataFrame,
     end_year: int,
     finance_inputs: Dict[str, Any],
@@ -605,14 +622,22 @@ def appraise_system(
         and previous_system.system_details.final_num_clean_water_tanks is not None
         else 0
     )
-    convertor_addition: Dict[str, int] = {
-        convertor: size
+    if system_details.initial_converter_sizes is None:
+        logger.error(
+            "%sNo converter sizes on system details when calling system appraisal. "
+            "Only systems that have been simulated can be appraised.%s",
+            BColours.fail,
+            BColours.endc,
+        )
+        raise InternalError("Misuse of system appraisal function.")
+    converter_addition: Dict[str, int] = {
+        converter: size
         - (
-            previous_system.system_details.final_convertor_sizes[convertor]
-            if previous_system.system_details.final_convertor_sizes is not None
+            previous_system.system_details.final_converter_sizes[converter]
+            if previous_system.system_details.final_converter_sizes is not None
             else 0
         )
-        for convertor, size in system_details.initial_convertor_sizes.items()
+        for converter, size in system_details.initial_converter_sizes.items()
     }
     diesel_addition = (
         system_details.diesel_capacity - previous_system.system_details.diesel_capacity
@@ -653,7 +678,7 @@ def appraise_system(
     financial_appraisal = _simulation_financial_appraisal(
         buffer_tank_addition,
         clean_water_tank_addition,
-        convertor_addition,
+        converter_addition,
         diesel_addition,
         finance_inputs,
         heat_exchanger_addition,
@@ -670,7 +695,7 @@ def appraise_system(
     environmental_appraisal = _simulation_environmental_appraisal(
         buffer_tank_addition,
         clean_water_tank_addition,
-        convertor_addition,
+        converter_addition,
         diesel_addition,
         electric_yearly_load_statistics,
         end_year,

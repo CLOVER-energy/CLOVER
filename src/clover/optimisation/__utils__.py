@@ -25,39 +25,39 @@ from logging import Logger
 from typing import Any, Dict, List, Optional, Pattern, Tuple, Union
 
 import json
-import numpy as np  # pylint: disable=import-error
-import pandas as pd  # pylint: disable=import-error
 import re
 
+import pandas as pd  # pylint: disable=import-error
 from tqdm import tqdm
 
 from ..simulation import energy_system
 
 from ..__utils__ import (
+    DEFAULT_SCENARIO,
     BColours,
     Criterion,
+    InputFileError,
     ITERATION_LENGTH,
     Location,
     MAX,
     MIN,
     NUMBER_OF_ITERATIONS,
+    ProgrammerJudgementFault,
     RenewableEnergySource,
     ResourceType,
     Scenario,
     Simulation,
     STEP,
     SystemAppraisal,
-    InputFileError,
-    SystemAppraisal,
 )
-from ..conversion.conversion import Convertor, WaterSource
+from ..conversion.conversion import Converter, WaterSource
 from ..impact.__utils__ import ImpactingComponent
 
 from .appraisal import appraise_system
 
 __all__ = (
-    "convertors_from_sizing",
-    "ConvertorSize",
+    "converters_from_sizing",
+    "ConverterSize",
     "CriterionMode",
     "get_sufficient_appraisals",
     "Optimisation",
@@ -70,62 +70,66 @@ __all__ = (
     "ThresholdMode",
 )
 
-# Convertor name string:
-#   The name used for parsing the convertor name group.
+# Converter name string:
+#   The name used for parsing the converter name group.
 #   NOTE: This name is not updated within the regex and needs to be updated separately.
-CONVERTOR_NAME_STRING: str = "name"
+CONVERTER_NAME_STRING: str = "name"
 
-# Convertor size regex:
-#   Regular expression used for parsing the size of various convertors for
+# Converter size regex:
+#   Regular expression used for parsing the size of various converters for
 # optimisations.
 #   NOTE: The name of the group is not updated automatically in accordance with the
 # above string and needs to be udpated separately.
-CONVERTOR_SIZE_REGEX: Pattern[str] = re.compile(r"(?P<name>.*)_size")
+CONVERTER_SIZE_REGEX: Pattern[str] = re.compile(r"(?P<name>.*)_size")
+
+# Scenario:
+#   Keyword used for parsing the scenario to use for a given optimisation.
+SCENARIO: str = "scenario"
 
 
-def convertors_from_sizing(convertor_sizes: Dict[Convertor, int]) -> List[Convertor]:
+def converters_from_sizing(converter_sizes: Dict[Converter, int]) -> List[Converter]:
     """
-    Generates a `list` of available convertors based on the number of each available.
+    Generates a `list` of available converters based on the number of each available.
 
     As the system is optimised, it becomes necessary to generate a `list` containing the
-    available convertors, with duplicates allowed to indiciate multiple instances of a
+    available converters, with duplicates allowed to indiciate multiple instances of a
     single type present, from the various values.
 
     Inputs:
-        - convertor_sizes:
-            A `dict` mapping :class:`Convertor` instances to the number of each type
+        - converter_sizes:
+            A `dict` mapping :class:`Converter` instances to the number of each type
             present during the iteration.
 
     Outputs:
-        - A `list` of :class:`Convertor` instances present based on the mapping passed
+        - A `list` of :class:`Converter` instances present based on the mapping passed
         in.
 
     """
 
-    convertors: List[Convertor] = []
+    converters: List[Converter] = []
 
-    for convertor, size in convertor_sizes.items():
-        convertors.extend([convertor] * size)
+    for converter, size in converter_sizes.items():
+        converters.extend([converter] * size)
 
-    return convertors
+    return converters
 
 
 @dataclasses.dataclass
-class ConvertorSize:
+class ConverterSize:
     """
-    Used to wrap the convertor size information.
+    Used to wrap the converter size information.
 
     .. atttribute:: max
-        The maximum size of the :class:`converseion.Convertor` in question, measured in
-        number of :class:`conversion.Convertor` instances.
+        The maximum size of the :class:`converseion.Converter` in question, measured in
+        number of :class:`conversion.Converter` instances.
 
     .. attribute:: min
-        The minimum size of the :class:`converseion.Convertor` in question, measured in
-        number of :class:`conversion.Convertor` instances.
+        The minimum size of the :class:`converseion.Converter` in question, measured in
+        number of :class:`conversion.Converter` instances.
 
     .. attribute:: step
-        The step to use for the :class:`converseion.Convertor` in question, measured in
-        number of :class:`conversion.Convertor` instances.
+        The step to use for the :class:`converseion.Converter` in question, measured in
+        number of :class:`conversion.Converter` instances.
 
     """
 
@@ -186,12 +190,16 @@ class Optimisation:
         A `dict` mapping optimisation criteria to whether they should be maximised or
         minimised.
 
+    .. attribute:: scenario
+        The :class:`Scenario` to use for this optimisation.
+
     .. attribute:: threshold_criteria
         A `dict` mapping threshold criteria to their values.
 
     """
 
     optimisation_criteria: Dict[Criterion, CriterionMode]
+    scenario: Scenario
     threshold_criteria: Dict[Criterion, float]
 
     def __str__(self) -> str:
@@ -207,6 +215,7 @@ class Optimisation:
         return (
             "Optimisation("
             + f"optimisation_crtieria: {self.optimisation_criteria}"
+            + f", scenario: {self.scenario}"
             + f", threshold_criteria: {self.threshold_criteria}"
             + ")"
         )
@@ -226,7 +235,12 @@ class Optimisation:
         return hash(str(self))
 
     @classmethod
-    def from_dict(cls, logger: Logger, optimisation_data: Dict[str, Any]) -> Any:
+    def from_dict(
+        cls,
+        logger: Logger,
+        optimisation_data: Dict[str, Any],
+        scenarios: List[Scenario],
+    ) -> Any:
         """
         Creates a :class:`Optimisation` instance based on the input data.
 
@@ -235,6 +249,8 @@ class Optimisation:
                 The logger to use for the run.
             - optimisation_data:
                 The optimisation data, extracted from the input file.
+            - scenarios:
+                The `list` of :class:`Scenario` instances available for the run.
 
         Outputs:
             - A :class:`Optimisation` instance based on the input data.
@@ -271,7 +287,71 @@ class Optimisation:
             )
             raise
 
-        return cls(optimisation_criteria, threshold_criteria)
+        if SCENARIO in optimisation_data:
+            try:
+                scenario = [
+                    scenario
+                    for scenario in scenarios
+                    if scenario.name == optimisation_data["scenario"]
+                ][0]
+            except IndexError:
+                logger.error(
+                    "%sError determining scenario for optimisation run: scenario '%s' "
+                    "could not be found.%s",
+                    BColours.fail,
+                    optimisation_data["scenario"],
+                    BColours.endc,
+                )
+                raise InputFileError(
+                    "optimisation inputs/scenario inputs",
+                    f"Scenario {optimisation_data['scenario']} could not be found.",
+                ) from None
+        else:
+            try:
+                scenario = [
+                    scenario
+                    for scenario in scenarios
+                    if scenario.name == DEFAULT_SCENARIO
+                ][0]
+            except IndexError:
+                logger.error(
+                    "%sError determining scenario for optimisation run: default "
+                    "scenario '%s' could not be found.%s",
+                    BColours.fail,
+                    DEFAULT_SCENARIO,
+                    BColours.endc,
+                )
+                raise InputFileError(
+                    "optimisation inputs/scenario inputs",
+                    f"Default scenario {DEFAULT_SCENARIO} could not be found.",
+                ) from None
+
+        return cls(optimisation_criteria, scenario, threshold_criteria)
+
+    def to_dict(self) -> Dict[str, Any]:
+        """
+        Returns a `dict` summarising the :class:`Optimisation` instance.
+
+        Outputs:
+            - A `dict` summarising the information contained within the
+              :class:`Optimisation` instance.
+
+        """
+
+        optimisation_criteria = {
+            str(key.value): str(value.value)
+            for key, value in self.optimisation_criteria.items()
+        }
+        threshold_criteria = {
+            str(key.value): float(value)
+            for key, value in self.threshold_criteria.items()
+        }
+
+        return {
+            "optimisation_criteria": optimisation_criteria,
+            "scenario": self.scenario.to_dict(),
+            "threshold_criteria": threshold_criteria,
+        }
 
 
 @dataclasses.dataclass
@@ -379,8 +459,8 @@ class OptimisationParameters:
     .. attribute:: clean_water_tanks
         The sizing bounds for the clean-water tanks.
 
-    .. attribute:: convertor_sizes
-        The sizing bounds for the various :class:`conversion.Convertor` instances
+    .. attribute:: converter_sizes
+        The sizing bounds for the various :class:`conversion.Converter` instances
         associated with the system.
 
     .. attribute:: cw_pvt_size
@@ -407,7 +487,7 @@ class OptimisationParameters:
     """
 
     clean_water_tanks: TankSize
-    convertor_sizes: Dict[Convertor, ConvertorSize]
+    converter_sizes: Dict[Converter, ConverterSize]
     cw_pvt_size: SolarSystemSize
     hot_water_tanks: TankSize
     hw_pvt_size: SolarSystemSize
@@ -417,9 +497,9 @@ class OptimisationParameters:
     storage_size: StorageSystemSize
 
     @classmethod
-    def from_dict(
+    def from_dict(  # pylint: disable=too-many-statements
         cls,
-        available_convertors: List[Convertor],
+        available_converters: List[Converter],
         logger: Logger,
         optimisation_inputs: Dict[str, Any],
     ) -> Any:
@@ -427,8 +507,8 @@ class OptimisationParameters:
         Returns a :class:`OptimisationParameters` instance based on the input info.
 
         Inputs:
-            - available_convertors:
-                The `list` of :class:`conversion.Convertor` instances that are defined
+            - available_converters:
+                The `list` of :class:`conversion.Converter` instances that are defined
                 and which are available to the system.
             - logger:
                 The :class:`logging.Loggger` to use for the run.
@@ -521,31 +601,43 @@ class OptimisationParameters:
         else:
             clean_water_tanks = TankSize()
 
-        # Parse the convertors that are to be optimised.
-        convertor_sizing_inputs: Dict[str, Dict[str, float]] = {
+        # Parse the converters that are to be optimised.
+        converter_sizing_inputs: Dict[str, Dict[str, int]] = {
             key: value  # type: ignore
             for key, value in optimisation_inputs.items()
-            if CONVERTOR_SIZE_REGEX.match(key) is not None
+            if CONVERTER_SIZE_REGEX.match(key) is not None
         }
-        convertor_sizing_inputs = {
-            CONVERTOR_SIZE_REGEX.match(key).group(CONVERTOR_NAME_STRING): value
-            for key, value in convertor_sizing_inputs.items()
-            if CONVERTOR_SIZE_REGEX.match(key).group(CONVERTOR_NAME_STRING)
-            in {convertor.name for convertor in available_convertors}
-        }
-        convertor_name_to_convertor = {
-            convertor.name: convertor for convertor in available_convertors
+
+        # NOTE: Explicit error handling is done for the type-check ignored lines.
+        try:
+            converter_sizing_inputs = {
+                CONVERTER_SIZE_REGEX.match(key).group(CONVERTER_NAME_STRING): value  # type: ignore
+                for key, value in converter_sizing_inputs.items()
+                if CONVERTER_SIZE_REGEX.match(key).group(CONVERTER_NAME_STRING)  # type: ignore
+                in {converter.name for converter in available_converters}
+            }
+        except AttributeError:
+            logger.error(
+                "%sError parsing converter input information, unable to match groups."
+                "%s",
+                BColours.fail,
+                BColours.endc,
+            )
+            raise
+
+        converter_name_to_converter = {
+            converter.name: converter for converter in available_converters
         }
         try:
-            convertor_sizes: Dict[Convertor, ConvertorSize] = {
-                convertor_name_to_convertor[key]: ConvertorSize(
+            converter_sizes: Dict[Converter, ConverterSize] = {
+                converter_name_to_converter[key]: ConverterSize(
                     entry[MAX], entry[MIN], entry[STEP]
                 )
-                for key, entry in convertor_sizing_inputs.items()
+                for key, entry in converter_sizing_inputs.items()
             }
         except KeyError:
             logger.error(
-                "%sNot all information was provided for the convertors defined within "
+                "%sNot all information was provided for the converters defined within "
                 "the optimisation inputs file.%s",
                 BColours.fail,
                 BColours.endc,
@@ -670,7 +762,7 @@ class OptimisationParameters:
 
         return cls(
             clean_water_tanks,
-            convertor_sizes,
+            converter_sizes,
             cw_pvt_size,
             hot_water_tanks,
             hw_pvt_size,
@@ -764,7 +856,6 @@ THRESHOLD_CRITERION_TO_MODE: Dict[Criterion, ThresholdMode] = {
     Criterion.CUMULATIVE_COST: ThresholdMode.MAXIMUM,
     Criterion.CUMULATIVE_GHGS: ThresholdMode.MAXIMUM,
     Criterion.CUMULATIVE_SYSTEM_COST: ThresholdMode.MAXIMUM,
-    Criterion.CUMULATIVE_SYSTEM_COST: ThresholdMode.MAXIMUM,
     Criterion.EMISSIONS_INTENSITY: ThresholdMode.MAXIMUM,
     Criterion.KEROSENE_COST_MITIGATED: ThresholdMode.MINIMUM,
     Criterion.KEROSENE_DISPLACEMENT: ThresholdMode.MINIMUM,
@@ -802,8 +893,9 @@ def get_sufficient_appraisals(
     # Cycle through the provided appraisals.
     for appraisal in system_appraisals:
         if appraisal.criteria is None:
-            raise InternalError(
-                "A system appraisal was returned which does not have criteria defined."
+            raise ProgrammerJudgementFault(
+                "appraisal",
+                "A system appraisal was returned which does not have criteria defined.",
             )
         criteria_met = set()
         for (
@@ -836,12 +928,12 @@ def get_sufficient_appraisals(
     return sufficient_appraisals
 
 
-def recursive_iteration(
-    conventional_cw_source_profiles: Dict[WaterSource, pd.DataFrame],
+def recursive_iteration(  # pylint: disable=too-many-locals
+    conventional_cw_source_profiles: Optional[Dict[WaterSource, pd.DataFrame]],
     end_year: int,
     finance_inputs: Dict[str, Any],
     ghg_inputs: Dict[str, Any],
-    grid_profile: pd.DataFrame,
+    grid_profile: Optional[pd.DataFrame],
     irradiance_data: pd.Series,
     kerosene_usage: pd.DataFrame,
     location: Location,
@@ -849,7 +941,6 @@ def recursive_iteration(
     minigrid: energy_system.Minigrid,
     optimisation: Optimisation,
     previous_system: Optional[SystemAppraisal],
-    scenario: Scenario,
     start_year: int,
     temperature_data: pd.Series,
     total_loads: Dict[ResourceType, Optional[pd.DataFrame]],
@@ -858,11 +949,12 @@ def recursive_iteration(
     yearly_electric_load_statistics: pd.DataFrame,
     *,
     component_sizes: Dict[
-        Union[Convertor, ImpactingComponent, RenewableEnergySource], float
+        Union[Converter, ImpactingComponent, RenewableEnergySource],
+        Union[int, float],
     ],
     parameter_space: List[
         Tuple[
-            Union[Convertor, ImpactingComponent, RenewableEnergySource],
+            Union[Converter, ImpactingComponent, RenewableEnergySource],
             str,
             Union[List[int], List[float]],
         ]
@@ -919,23 +1011,33 @@ def recursive_iteration(
             ),
         )
 
-        # Determine the convertor sizes.
-        convertors = convertors_from_sizing(
+        # Determine the converter sizes.
+        if not all(isinstance(value, int) for value in component_sizes.values()):
+            logger.error(
+                "%sNon-integer component sizes were specified, exiting.%s",
+                BColours.fail,
+                BColours.endc,
+            )
+            raise InputFileError(
+                "optimisation inputs",
+                "Component size inputs specified non-integer converter sizes.",
+            )
+        converters = converters_from_sizing(
             {
-                key: value
+                key: int(value)
                 for key, value in component_sizes.items()
-                if isinstance(key, Convertor)
+                if isinstance(key, Converter)
             }
         )
 
         # Run the simulation
         (_, simulation_results, system_details,) = energy_system.run_simulation(
-            component_sizes[RenewableEnergySource.CLEAN_WATER_PVT],
+            int(component_sizes[RenewableEnergySource.CLEAN_WATER_PVT]),
             conventional_cw_source_profiles,
-            convertors,
+            converters,
             component_sizes[ImpactingComponent.STORAGE],
             grid_profile,
-            component_sizes[RenewableEnergySource.HOT_WATER_PVT],
+            int(component_sizes[RenewableEnergySource.HOT_WATER_PVT]),
             irradiance_data,
             kerosene_usage,
             location,
@@ -945,7 +1047,7 @@ def recursive_iteration(
             int(component_sizes[ImpactingComponent.HOT_WATER_TANK]),
             total_solar_pv_power_produced,
             component_sizes[RenewableEnergySource.PV],
-            scenario,
+            optimisation.scenario,
             Simulation(end_year, start_year),
             temperature_data,
             total_loads,
@@ -979,7 +1081,8 @@ def recursive_iteration(
     ):
         # Update the set of fixed sizes accordingly.
         updated_component_sizes: Dict[
-            ImpactingComponent, float
+            Union[Converter, ImpactingComponent, RenewableEnergySource],
+            Union[int, float],
         ] = component_sizes.copy()
         updated_component_sizes[component] = size
 
@@ -997,7 +1100,6 @@ def recursive_iteration(
             minigrid,
             optimisation,
             previous_system,
-            scenario,
             start_year,
             temperature_data,
             total_loads,
@@ -1013,13 +1115,25 @@ def recursive_iteration(
             if len(parameter_space) == 0:
                 logger.info("Probing lowest depth - skipping further size options.")
                 break
-            else:
-                logger.info("Probing non-lowest depth - continuing iteration.")
-                continue
+            logger.info("Probing non-lowest depth - continuing iteration.")
+            continue
 
         # Store the new appraisal if it is sufficient.
         logger.info("Sufficient system found, storing.")
         for appraisal in sufficient_appraisals:
+            if appraisal.criteria is None:
+                logger.error(
+                    "%sNo appraisal criteria for appraisal.%s",
+                    BColours.fail,
+                    BColours.endc,
+                )
+                logger.debug("System appraisal: %s", appraisal)
+                raise ProgrammerJudgementFault(
+                    "appraisal module",
+                    "When processing debug output for sufficient appraisals, an error "
+                    "occured as there were no criteria attached to the appraisal. More "
+                    "information can be found in the logger directory.",
+                )
             logger.debug(
                 "Threshold criteria: %s",
                 json.dumps(
@@ -1042,6 +1156,7 @@ def save_optimisation(
     optimisation_number: int,
     output: str,
     output_directory: str,
+    scenario: Scenario,
     system_appraisals: List[SystemAppraisal],
 ) -> None:
     """
@@ -1059,6 +1174,8 @@ def save_optimisation(
             to the output folder in which the system files are saved.
         - output_directory:
             The directory into which the files should be saved.
+        - scenario:
+            The scenario for the optimisation.
         - system_appraisals:
             A `list` of the :class:`SystemAppraisal` instances which specify the
             optimum systems at each time step.
@@ -1082,6 +1199,7 @@ def save_optimisation(
     # Add the optimisation parameter information.
     output_dict = {
         "optimisation_inputs": optimisation_inputs.to_dict(),
+        "scenario": scenario.to_dict(),
         "system_appraisals": system_appraisals_dict,
     }
 

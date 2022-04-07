@@ -32,7 +32,7 @@ from tqdm import tqdm  # pylint: disable=import-error
 __all__ = ("get_intermittent_supply_status",)
 
 
-def get_intermittent_supply_status(
+def get_intermittent_supply_status(  # pylint: disable=too-many-locals
     generation_directory: str,
     keyword: str,
     logger: Logger,

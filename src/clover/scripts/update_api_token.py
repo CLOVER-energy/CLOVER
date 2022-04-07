@@ -20,7 +20,7 @@ import argparse
 import os
 import sys
 
-from typing import Any, Dict, List, Union
+from typing import Any, Dict, List
 
 import yaml  # pylint: disable=import-error
 
@@ -88,14 +88,14 @@ def main(args: List[Any]) -> None:
 
     if not os.path.isfile(generation_file_path):
         raise FileNotFoundError(
-            "The generation inputs file could not be found within the location %s.",
-            parsed_args.location,
+            "The generation inputs file could not be found within the location "
+            f"{parsed_args.location}.",
         )
 
     # Attempt to update the token.
-    filedata: Dict[str, Union[int, str]]
+    filedata: Dict[str, Any]
     try:
-        filedata = read_yaml(generation_file_path, logger)
+        filedata = read_yaml(generation_file_path, logger)  # type: ignore
     except Exception:
         logger.error("Error reading generation inputs file '%s'.", generation_file_path)
         raise
