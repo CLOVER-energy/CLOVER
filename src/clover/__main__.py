@@ -53,13 +53,11 @@ from .printer import generate_optimisation_string, generate_simulation_string
 
 from .__utils__ import (
     BColours,
-    CleanWaterMode,
     DONE,
     FAILED,
     InternalError,
     Location,
     ResourceType,
-    Scenario,
     SystemAppraisal,
     get_logger,
     InputFileError,
@@ -184,9 +182,7 @@ def _prepare_location(location: str, logger: logging.Logger) -> None:
             location,
             BColours.endc,
         )
-        raise FileNotFoundError(
-            "The location, {}, could not be found.".format(location)
-        )
+        raise FileNotFoundError(f"The location, {location}, could not be found.")
 
     if not os.path.isfile(
         os.path.join(
@@ -312,7 +308,7 @@ def _prepare_water_system(
             "for details: %s%s",
             BColours.fail,
             resource_type.value,
-            "{}.log".format(os.path.join(LOGGER_DIRECTORY, LOGGER_NAME)),
+            f"{os.path.join(LOGGER_DIRECTORY, LOGGER_NAME)}.log",
             str(e),
             BColours.endc,
         )
@@ -350,7 +346,7 @@ def _prepare_water_system(
             "water-source profiles. See %s for details: %s%s",
             BColours.fail,
             resource_type.value,
-            "{}.log".format(os.path.join(LOGGER_DIRECTORY, LOGGER_NAME)),
+            f"{os.path.join(LOGGER_DIRECTORY, LOGGER_NAME)}.log",
             str(e),
             BColours.endc,
         )
@@ -362,9 +358,7 @@ def _prepare_water_system(
     logger.debug(
         "Conventional %s water sources: %s",
         resource_type.value,
-        ", ".join(
-            [str(source) for source in conventional_water_source_profiles.keys()]
-        ),
+        ", ".join([str(source) for source in conventional_water_source_profiles]),
     )
 
     conventional_water_source_profiles = {
@@ -381,7 +375,9 @@ def _prepare_water_system(
     )
 
 
-def main(args: List[Any]) -> None:
+def main(  # pylint: disable=too-many-locals, too-many-statements
+    args: List[Any],
+) -> None:
     """
     The main module for CLOVER executing all functionality as appropriate.
 
@@ -407,13 +403,12 @@ def main(args: List[Any]) -> None:
             "%sInvalid command-line arguments. Check that all required arguments have "
             "been specified correctly. See %s for details.%s",
             BColours.fail,
-            "{}.log".format(os.path.join(LOGGER_DIRECTORY, LOGGER_NAME)),
+            f"{os.path.join(LOGGER_DIRECTORY, LOGGER_NAME)}.log",
             BColours.endc,
         )
         raise ValueError(
-            "The command-line arguments were invalid. See {} for details.".format(
-                "{}.log".format(os.path.join(LOGGER_DIRECTORY, LOGGER_NAME))
-            )
+            "The command-line arguments were invalid. See "
+            f"{os.path.join(LOGGER_DIRECTORY, LOGGER_NAME)}.log for details."
         )
 
     logger.info("Command-line arguments successfully validated.")
@@ -421,10 +416,10 @@ def main(args: List[Any]) -> None:
     version_string = f"Version {__version__}"
     print(
         CLOVER_HEADER_STRING.format(
-            version_line="{}{}{}".format(
-                " " * (40 - math.ceil(len(version_string) / 2)),
-                version_string,
-                " " * (40 - math.floor(len(version_string) / 2)),
+            version_line=(
+                " " * (40 - math.ceil(len(version_string) / 2))
+                + version_string
+                + " " * (40 - math.floor(len(version_string) / 2))
             )
         )
     )
@@ -458,11 +453,11 @@ def main(args: List[Any]) -> None:
             parsed_args.location,
         )
         print(
-            "A single CLOVER simulation will be run for {}{}.".format(
-                parsed_args.location,
+            f"A single CLOVER simulation will be run for {parsed_args.location}"
+            + (
                 f" {BColours.okblue}in debug mode{BColours.endc}"
                 if parsed_args.debug
-                else "",
+                else ""
             )
         )
     if operating_mode == OperatingMode.OPTIMISATION:
@@ -471,11 +466,11 @@ def main(args: List[Any]) -> None:
             "A CLOVER optimisation will be run for location '%s'", parsed_args.location
         )
         print(
-            "A CLOVER optimisation will be run for {}{}.".format(
-                parsed_args.location,
+            f"A CLOVER optimisation will be run for {parsed_args.location}"
+            + (
                 f" {BColours.okblue}in debug mode{BColours.endc}"
                 if parsed_args.debug
-                else "",
+                else ""
             )
         )
     if operating_mode == OperatingMode.PROFILE_GENERATION:
@@ -483,11 +478,11 @@ def main(args: List[Any]) -> None:
         logger.info("No CLI mode was specified, CLOVER will only generate profiles.")
         print(
             "Neither `simulation` or `optimisation` specified, running profile "
-            "generation only for {}{}.".format(
-                parsed_args.location,
+            f"generation only for {parsed_args.location}"
+            + (
                 f" {BColours.okblue}in debug mode{BColours.endc}"
                 if parsed_args.debug
-                else "",
+                else ""
             )
         )
 
@@ -539,7 +534,7 @@ def main(args: List[Any]) -> None:
             "script to identify missing files. See %s for details.%s",
             BColours.fail,
             parsed_args.location,
-            "{}.log".format(os.path.join(LOGGER_DIRECTORY, LOGGER_NAME)),
+            f"{os.path.join(LOGGER_DIRECTORY, LOGGER_NAME)}.log",
             BColours.endc,
         )
         raise
@@ -579,7 +574,7 @@ def main(args: List[Any]) -> None:
         logger.error(
             "%sNot all input files present. See %s for details: %s%s",
             BColours.fail,
-            "{}.log".format(os.path.join(LOGGER_DIRECTORY, LOGGER_NAME)),
+            f"{os.path.join(LOGGER_DIRECTORY, LOGGER_NAME)}.log",
             str(e),
             BColours.endc,
         )
@@ -594,7 +589,7 @@ def main(args: List[Any]) -> None:
             "%sAn unexpected error occured parsing input files. See %s for details: "
             "%s%s",
             BColours.fail,
-            "{}.log".format(os.path.join(LOGGER_DIRECTORY, LOGGER_NAME)),
+            f"{os.path.join(LOGGER_DIRECTORY, LOGGER_NAME)}.log",
             str(e),
             BColours.endc,
         )
@@ -633,7 +628,7 @@ def main(args: List[Any]) -> None:
         wind_data_thread.start()
         logger.info(
             "Wind-data thread successfully instantiated. See %s for details.",
-            "{}.log".format(os.path.join(LOGGER_DIRECTORY, wind.WIND_LOGGER_NAME)),
+            f"{os.path.join(LOGGER_DIRECTORY, wind.WIND_LOGGER_NAME)}.log",
         )
     else:
         wind_data_thread = None
@@ -660,9 +655,7 @@ def main(args: List[Any]) -> None:
         weather_data_thread.start()
         logger.info(
             "Weather-data thread successfully instantiated. See %s for details.",
-            "{}.log".format(
-                os.path.join(LOGGER_DIRECTORY, weather.WEATHER_LOGGER_NAME)
-            ),
+            f"{os.path.join(LOGGER_DIRECTORY, weather.WEATHER_LOGGER_NAME)}.log",
         )
     else:
         weather_data_thread = None
@@ -682,7 +675,7 @@ def main(args: List[Any]) -> None:
     solar_data_thread.start()
     logger.info(
         "Solar-data thread successfully instantiated. See %s for details.",
-        "{}.log".format(os.path.join(LOGGER_DIRECTORY, solar.SOLAR_LOGGER_NAME)),
+        f"{os.path.join(LOGGER_DIRECTORY, solar.SOLAR_LOGGER_NAME)}.log",
     )
 
     # Generate and save the device-ownership profiles.
@@ -723,20 +716,20 @@ def main(args: List[Any]) -> None:
                 "%sAn unexpected error occurred generating the load profiles. See %s for "
                 "details: %s%s",
                 BColours.fail,
-                "{}.log".format(os.path.join(LOGGER_DIRECTORY, LOGGER_NAME)),
+                f"{os.path.join(LOGGER_DIRECTORY, LOGGER_NAME)}.log",
                 str(e),
                 BColours.endc,
             )
             raise
 
-    clean_water_yearly_load_statistics: pd.DataFrame
+    clean_water_yearly_load_statistics: pd.DataFrame  # pylint: disable=unused-variable
     conventional_cw_source_profiles: Optional[Dict[WaterSource, pd.DataFrame]] = None
     initial_cw_hourly_loads: Optional[Dict[str, pd.DataFrame]] = None
     total_cw_load: Optional[pd.DataFrame] = None
 
     if any(scenario.desalination_scenario is not None for scenario in scenarios):
         # Create a set of all the conventional clean-water sources available.
-        # FIXME
+        # @ BenWinchester - Repair conventional sources logic.
         conventional_sources: Set[str] = {
             source
             for scenario in scenarios
@@ -761,14 +754,16 @@ def main(args: List[Any]) -> None:
             water_source_times,
         )
 
-    conventional_hw_source_profiles: Dict[WaterSource, pd.DataFrame]
-    hot_water_yearly_load_statistics: pd.DataFrame
+    conventional_hw_source_profiles: Dict[  # pylint: disable=unused-variable
+        WaterSource, pd.DataFrame
+    ]
+    hot_water_yearly_load_statistics: pd.DataFrame  # pylint: disable=unused-variable
     initial_hw_hourly_loads: Optional[Dict[str, pd.DataFrame]] = None
     total_hw_load: Optional[pd.DataFrame] = None
 
     if any(scenario.hot_water_scenario is not None for scenario in scenarios):
         # Create a set of all the conventional hot-water sources available.
-        # FIXME
+        # @ BenWinchester - Repair conventional sources logic.
         conventional_sources = {
             source
             for scenario in scenarios
@@ -824,7 +819,7 @@ def main(args: List[Any]) -> None:
                 "%sAn unexpected error occurred generating the grid profiles. See %s for "
                 "details: %s%s",
                 BColours.fail,
-                "{}.log".format(os.path.join(LOGGER_DIRECTORY, LOGGER_NAME)),
+                f"{os.path.join(LOGGER_DIRECTORY, LOGGER_NAME)}.log",
                 str(e),
                 BColours.endc,
             )
@@ -857,11 +852,13 @@ def main(args: List[Any]) -> None:
         scenario.hot_water_scenario is not None for scenario in scenarios
     ):
         logger.info("Generating and saving total weather output file.")
-        total_weather_data = weather.total_weather_output(
-            os.path.join(auto_generated_files_directory, "weather"),
-            parsed_args.regenerate,
-            generation_inputs["start_year"],
-            location.max_years,
+        total_weather_data = (  # pylint: disable=unused-variable
+            weather.total_weather_output(
+                os.path.join(auto_generated_files_directory, "weather"),
+                parsed_args.regenerate,
+                generation_inputs["start_year"],
+                location.max_years,
+            )
         )
         logger.info("Total weather output successfully computed and saved.")
 
@@ -910,9 +907,7 @@ def main(args: List[Any]) -> None:
     # Run a simulation or optimisation as appropriate.
     if operating_mode == OperatingMode.SIMULATION:
         print(
-            "Beginning CLOVER simulation runs {}    ".format(
-                "." * 30,
-            ),
+            f"Beginning CLOVER simulation runs {'.' * 30}    ",
             end="\n",
         )
 
@@ -994,15 +989,13 @@ def main(args: List[Any]) -> None:
                     else None,
                 )
             except Exception as e:
-                print(
-                    "Beginning CLOVER simulation runs {}    {}".format("." * 30, FAILED)
-                )
+                print(f"Beginning CLOVER simulation runs {'.' * 30}    {FAILED}")
                 logger.error(
                     "%sAn unexpected error occurred running a CLOVER simulation. See "
                     "%s for "
                     "details: %s%s",
                     BColours.fail,
-                    "{}.log".format(os.path.join(LOGGER_DIRECTORY, LOGGER_NAME)),
+                    f"{os.path.join(LOGGER_DIRECTORY, LOGGER_NAME)}.log",
                     str(e),
                     BColours.endc,
                 )
@@ -1010,7 +1003,7 @@ def main(args: List[Any]) -> None:
 
             # Add the time to the counter.
             simulation_times.append(
-                "{0:.3f} s/year".format(
+                "{0:.3f} s/year".format(  # pylint: disable=consider-using-f-string
                     (time_delta.seconds + time_delta.microseconds * 0.000001)
                     / (simulation.end_year - simulation.start_year)
                 )
@@ -1080,20 +1073,15 @@ def main(args: List[Any]) -> None:
                 system_details,
             )
 
-        print("Beginning CLOVER simulation runs {}    {}".format("." * 30, DONE))
+        print(f"Beginning CLOVER simulation runs {'.' * 30}    {DONE}")
 
         print(
-            "Time taken for simulations: {}".format(", ".join(simulation_times)),
+            f"Time taken for simulations: {', '.join(simulation_times)}",
             end="\n",
         )
 
     if operating_mode == OperatingMode.OPTIMISATION:
-        print(
-            "Beginning CLOVER optimisation runs {}    ".format(
-                "." * 28,
-            ),
-            end="\n",
-        )
+        print(f"Beginning CLOVER optimisation runs {'.' * 28}    ", end="\n")
         optimisation_times: List[str] = []
 
         # Enforce that the optimisation inputs are set correctly before attempting an
@@ -1170,17 +1158,13 @@ def main(args: List[Any]) -> None:
                     electric_yearly_load_statistics,
                 )
             except Exception as e:
-                print(
-                    "Beginning CLOVER optimisation runs {}    {}".format(
-                        "." * 28, FAILED
-                    )
-                )
+                print(f"Beginning CLOVER optimisation runs {'.' * 28}    {FAILED}")
                 logger.error(
                     "%sAn unexpected error occurred running a CLOVER optimisation. See "
                     "%s for "
                     "details: %s%s",
                     BColours.fail,
-                    "{}.log".format(os.path.join(LOGGER_DIRECTORY, LOGGER_NAME)),
+                    f"{os.path.join(LOGGER_DIRECTORY, LOGGER_NAME)}.log",
                     str(e),
                     BColours.endc,
                 )
@@ -1188,7 +1172,7 @@ def main(args: List[Any]) -> None:
 
             # Add the time to the counter.
             optimisation_times.append(
-                "{0:.3f} s/year".format(
+                "{0:.3f} s/year".format(  # pylint: disable=consider-using-f-string
                     (time_delta.seconds + time_delta.microseconds * 0.000001)
                     / (
                         optimisation_results[-1].system_details.end_year
@@ -1212,10 +1196,10 @@ def main(args: List[Any]) -> None:
                 optimisation_results,
             )
 
-        print("Beginning CLOVER optimisation runs {}    {}".format("." * 28, DONE))
+        print(f"Beginning CLOVER optimisation runs {'.' * 28}    {DONE}")
 
         print(
-            "Time taken for optimisations: {}".format(", ".join(optimisation_times)),
+            f"Time taken for optimisations: {', '.join(optimisation_times)}",
             end="\n",
         )
 
@@ -1223,9 +1207,9 @@ def main(args: List[Any]) -> None:
         print("No simulations or optimisations to be carried out.")
 
     print(
-        "Finished. See {} for output files.".format(
-            os.path.join(LOCATIONS_FOLDER_NAME, parsed_args.location, "outputs")
-        )
+        "Finished. See "
+        + os.path.join(LOCATIONS_FOLDER_NAME, parsed_args.location, "outputs")
+        + " for output files."
     )
 
 
