@@ -7,7 +7,7 @@
 # Date created: 13/07/2021                                                             #
 #                                                                                      #
 # For more information, please email:                                                  #
-#   philip.sandwell@gmail.com                                                          #
+#   benedict.winchester@gmail.com                                                      #
 ########################################################################################
 
 export PYTHONPATH=$PYTHONPATH:clover

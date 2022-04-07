@@ -8,6 +8,6 @@
 # License: Open source                                                         #
 ################################################################################
 
-exchangers:
-  - name: default_heat_exchanger
-    efficiency: 0.4 # [unitless] defined between 0 and 1
+# exchangers:
+#   - name: default_heat_exchanger
+#     efficiency: 0.4 # [unitless] defined between 0 and 1

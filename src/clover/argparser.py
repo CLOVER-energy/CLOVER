@@ -17,7 +17,7 @@ import logging
 
 from typing import Any, List
 
-from .__utils__ import BColours
+from .__utils__ import BColours, DEFAULT_SCENARIO
 
 __all__ = (
     "parse_args",
@@ -95,9 +95,10 @@ def parse_args(args: List[Any]) -> argparse.Namespace:
         "simulation and optimisation arguments",
     )
     action_arguments.add_argument(
-        "--load-profile",
+        "--electric-load-profile",
         type=str,
-        help="The name of the load profile to use for the run.",
+        help="The name of the load profile to use for the run. This overrides CLOVER's "
+        "in-built load-profile generation.",
     )
     action_arguments.add_argument(
         "--output",
@@ -113,7 +114,8 @@ def parse_args(args: List[Any]) -> argparse.Namespace:
     action_arguments.add_argument(
         "--scenario",
         type=str,
-        help="The location of the scenario file to use for the run.",
+        default=DEFAULT_SCENARIO,
+        help="The name of the scenario to use for the run.",
     )
     action_arguments.add_argument(
         "--storage-size",
@@ -216,6 +218,15 @@ def validate_args(logger: logging.Logger, parsed_args: argparse.Namespace) -> bo
     if parsed_args.simulation and parsed_args.optimisation:
         logger.error(
             "%sCannot run both a simulation and an optimisation.%s",
+            BColours.fail,
+            BColours.endc,
+        )
+        return False
+
+    if parsed_args.electric_load_profile is not None and parsed_args.regenerate:
+        logger.error(
+            "%sCannot request profile regeneration if a total-load profile is "
+            "specified.%s",
             BColours.fail,
             BColours.endc,
         )

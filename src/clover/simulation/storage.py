@@ -11,574 +11,721 @@
 """
 storage.py - The storage module for CLOVER.
 
-CLOVER considers several storage media for various forms of energy. These are all
-contained and considered within this module.
+CLOVER considers several storage media for various forms of energy. The various
+calculations associated with these storage media are carried out in this module.
 
 """
 
-import dataclasses
+from logging import Logger
+from typing import Dict, Optional, Tuple
 
-from typing import Any, Dict, Union
+import pandas as pd
+import numpy as np
 
-from ..__utils__ import HEAT_CAPACITY_OF_WATER, NAME, ResourceType
+from ..__utils__ import (
+    BColours,
+    CleanWaterMode,
+    ColumnHeader,
+    DistributionNetwork,
+    InputFileError,
+    InternalError,
+    Location,
+    RenewableEnergySource,
+    Scenario,
+)
+from .__utils__ import Minigrid
+from ..conversion.conversion import WaterSource
+from ..generation.solar import solar_degradation
 
 __all__ = (
-    "Battery",
-    "CleanWaterTank",
-    "HotWaterTank",
-    "WaterTank",
+    "battery_iteration_step",
+    "cw_tank_iteration_step",
+    "get_electric_battery_storage_profile",
+    "get_water_storage_profile",
 )
 
 
-# Default storage unit:
-#   The default unit size, in kWh, of the batteries being considered.
-DEFAULT_STORAGE_UNIT = 1  # [kWh]
-
-
-class _BaseStorage:
+def battery_iteration_step(
+    battery_storage_profile: pd.DataFrame,
+    hourly_battery_storage: Dict[int, float],
+    initial_battery_storage: float,
+    logger: Logger,
+    maximum_battery_storage: float,
+    minigrid: Minigrid,
+    minimum_battery_storage: float,
+    *,
+    time_index: int,
+) -> Tuple[float, float, float]:
     """
-    Repsesents an abstract base storage unit.
+    Carries out an iteration calculation for the battery.
 
-    .. attribute:: cycle_lifetime
-        The number of cycles for which the :class:`_BaseStorage` can perform.
+    Inputs:
+        - battery_storage_profile:
+            The battery storage profile, as a :class:`pandas.DataFrame`, giving the net
+            flow into and out of the battery due to renewable electricity generation.
+        - hourly_battery_storage:
+            The mapping between time and computed battery storage.
+        - initial_battery_storage:
+            The initial amount of energy stored in the batteries.
+        - logger:
+            The :class:`logging.Logger` to use for the run.
+        - maximum_battery_storage:
+            The maximum amount of energy that can be stored in the batteries.
+        - minigrid:
+            The :class:`Minigrid` representing the system being considered.
+        - minimum_battery_storage:
+            The minimum amount of energy that can be stored in the batteries.
+        - time_index:
+            The current time (hour) being considered.
 
-    .. attribute:: label
-        The label given to the :class:`_BaseStorage` instance.
-
-    .. attribute:: leakage
-        The rate of level leakage from the :class:`_BaseStorage`.
-
-    .. attribute:: maximum_charge
-        The maximum level of the :class:`_BaseStorage`, defined between 0 (able to hold
-        no charge) and 1 (able to fully charge).
-
-    .. attribute:: minimum_charge
-        The minimum level of the :class:`_BaseStorage`, defined between 0 (able to fully
-        discharge) and 1 (unable to discharge any amount).
-
-    .. attribute:: name
-        A unique name for identifying the :class:`_BaseStorage`.
-
-    .. attribute:: resource_type
-        The type of resource being stored by the :class:`_BaseStorage` instance.
-
-    """
-
-    label: str
-    resource_type: ResourceType
-
-    def __init__(
-        self,
-        cycle_lifetime: int,
-        leakage: float,
-        maximum_charge: float,
-        minimum_charge: float,
-        name: str,
-    ) -> None:
-        """
-        Instantiate a :class:`Storage` instance.
-
-        Inputs:
-            - cycle_lifetime:
-                The number of cycles for which the :class:`Storage` instance can
-                perform.
-            - leakage:
-                The rate of leakage from the storage.
-            - maximum_charge:
-                The maximum level that can be held by the :class:`_BaseStorage`.
-            - minimum_charge:
-                The minimum level to which the :class:`_BaseStorage` instance can
-                discharge.
-            - name:
-                The name to assign to the :class:`Storage` instance.
-
-        """
-
-        self.cycle_lifetime: int = cycle_lifetime
-        self.leakage: float = leakage
-        self.maximum_charge: float = maximum_charge
-        self.minimum_charge: float = minimum_charge
-        self.name: str = name
-
-    def __hash__(self) -> int:
-        """
-        Return a unique hash identifying the :class:`_BaseStorage` instance.
-
-        Outputs:
-            - Return a unique hash identifying the :class:`_BaseStorage` instance.
-
-        """
-
-        return hash(self.name)
-
-    def __init_subclass__(cls, label: str, resource_type: ResourceType) -> None:
-        """
-        Method run when a :class:`_BaseStorage` child is instantiated.
-
-        Inputs:
-            - label:
-                A `str` that identifies the class type.
-            - resource_type:
-                The type of load being modelled.
-
-        """
-
-        super().__init_subclass__()
-        cls.label = label
-        cls.resource_type = resource_type
-
-    def __str__(self) -> str:
-        """
-        Returns a nice-looking string describing the :class:`_BaseStorage` instance.
-
-        Outputs:
-            - A `str` giving information about the :class:`_BaseStorage` instance.
-
-        """
-
-        return (
-            "Storage("
-            + f"name={self.name}, "
-            + f"cycle_lifetime={self.cycle_lifetime} cycles, "
-            + f"leakage={self.leakage}, "
-            + f"maximum_charge={self.maximum_charge}, "
-            + f"minimum_charge={self.minimum_charge}"
-            + ")"
-        )
-
-    @classmethod
-    def from_dict(cls, storage_data: Dict[str, Any]) -> Any:
-        """
-        Create a :class:`_BaseStorage` instance based on the file data passed in.
-
-        Inputs:
-            - storage_data:
-                The storage data, extracted from the relevant input file.
-
-        Outputs:
-            - A :class:`_BaseStorage` instance.
-
-        """
-
-        return cls(
-            storage_data["cycle_lifetime"],
-            storage_data["leakage"],
-            storage_data["maximum_charge"],
-            storage_data["minimum_charge"],
-            storage_data[NAME],
-        )
-
-
-@dataclasses.dataclass
-class Battery(_BaseStorage, label="battery", resource_type=ResourceType.ELECTRIC):
-    """
-    Represents a battery within CLOVER.
-
-    .. attribute:: charge_rate
-        The rate of charge of the :class:`Battery`.
-
-    .. attribute:: conversion_in
-        The input conversion efficiency of the :class:`Battery`.
-
-    .. attribute:: conversion_out
-        The output conversion efficiency of the :class:`Battery`.
-
-    .. attribute:: discharge_rate
-        The rate of discharge of the :class:`Battery`.
-
-    .. attribute:: lifetime_loss
-        The overall loss in capacity of the :class:`Battery` over its lifetime.
-
-    .. attribute:: storage_unit
-        The storage_unit of the :class:`Battery`, measured in kWh.
+    Outputs:
+        - battery_energy_flow:
+            The net flow into or out of the battery.
+        - excess_energy:
+            The energy surplus generated which could not be stored in the batteries.
+        - new_hourly_battery_storage;
+            The computed level of energy stored in the batteries at this time step.
 
     """
 
-    def __init__(
-        self,
-        cycle_lifetime: int,
-        leakage: float,
-        maximum_charge: float,
-        minimum_charge: float,
-        name: str,
-        charge_rate: float,
-        conversion_in: float,
-        conversion_out: float,
-        discharge_rate: float,
-        lifetime_loss: float,
-        storage_unit: float,
-        storage_unit_overrided: bool,
-    ) -> None:
-        """
-        Instantiate a :class:`Battery` instance.
-
-        Inputs:
-            - cycle_lifetime:
-                The number of cycles for which the :class:`Battery` instance can
-                perform.
-            - leakage:
-                The rate of leakage from the storage.
-            - maximum_charge:
-                The maximum level that can be held by the :class:`Battery`.
-            - minimum_charge:
-                The minimum level to which the :class:`Battery` instance can
-                discharge.
-            - name:
-                The name to assign to the :class:`Battery` instance.
-            - charge_rate:
-                The rate of charge of the :class:`Battery`.
-            - conversion_in:
-                The efficiency of conversion of energy into the :class:`Battery`.
-            - conversion_out:
-                The efficiency of conversion of energy out of the :class:`Battery`.
-            - discharge_rate:
-                The rate of discharge of the :class:`Battery`.
-            - lifetime_loss:
-                The loss in capacity of the :class:`Battery` over its lifetime.
-            - storage_unit:
-                The storage_unit of the :class:`Battery` in kWh.
-            - storage_unit_overrided:
-                Whether the default storage unit has been overrided (True) or not
-                (False).
-
-        """
-
-        super().__init__(cycle_lifetime, leakage, maximum_charge, minimum_charge, name)
-        self.charge_rate: float = charge_rate
-        self.conversion_in: float = conversion_in
-        self.conversion_out: float = conversion_out
-        self.discharge_rate: float = discharge_rate
-        self.lifetime_loss: float = lifetime_loss
-        self.storage_unit = storage_unit
-        self.storage_unit_overrided = storage_unit_overrided
-
-    def __str__(self) -> str:
-        """
-        Returns a nice-looking string describing the :class:`_BaseStorage` instance.
-
-        Outputs:
-            - A `str` giving information about the :class:`_BaseStorage` instance.
-
-        """
-
-        return (
-            "Battery("
-            + f"{self.label} storing {self.resource_type.value} loads, "
-            + f"name={self.name}, "
-            + f"cycle_lifetime={self.cycle_lifetime} cycles, "
-            + f"leakage={self.leakage}, "
-            + f"maximum_charge={self.maximum_charge}, "
-            + f"minimum_charge={self.minimum_charge}, "
-            + f"charge_rate={self.charge_rate}, "
-            + f"discharge_rate={self.discharge_rate}, "
-            + f"conversion_in={self.conversion_in}, "
-            + f"conversion_out={self.conversion_out}, "
-            + f"lifetime_loss={self.lifetime_loss}, "
-            + f"size={self.storage_unit} kWh"
-            + ")"
+    if minigrid.battery is None:
+        logger.error(
+            "%sNo battery was defined on the minigrid despite the iteration "
+            "calculation being called to compute the energy stored within the "
+            "batteries. Either define a valid battery for the energy system, or adjust "
+            "the scenario to no longer consider battery inputs.%s",
+            BColours.fail,
+            BColours.endc,
+        )
+        raise InputFileError(
+            "energy system inputs",
+            "Battery undefined despite an itteration step being called.",
         )
 
-    def __repr__(self) -> str:
-        """
-        Defines the default representation of the :class:`Battery` instance.
+    battery_energy_flow = battery_storage_profile.iloc[time_index, 0]
+    if time_index == 0:
+        new_hourly_battery_storage = initial_battery_storage + battery_energy_flow
+    else:
+        # Battery charging
+        if battery_energy_flow >= 0.0:
+            new_hourly_battery_storage = hourly_battery_storage[time_index - 1] * (
+                1.0 - minigrid.battery.leakage
+            ) + minigrid.battery.conversion_in * min(
+                battery_energy_flow,
+                minigrid.battery.charge_rate
+                * (maximum_battery_storage - minimum_battery_storage),
+            )
+        # Battery discharging
+        else:
+            new_hourly_battery_storage = hourly_battery_storage[time_index - 1] * (
+                1.0 - minigrid.battery.leakage
+            ) + (1.0 / minigrid.battery.conversion_out) * max(
+                battery_energy_flow,
+                (-1.0)
+                * minigrid.battery.discharge_rate
+                * (maximum_battery_storage - minimum_battery_storage),
+            )
 
-        Outputs:
-            - A `str` giving the default representation of the :class:`Battery`
-              instance.
+    excess_energy = max(new_hourly_battery_storage - maximum_battery_storage, 0.0)
 
-        """
-
-        return (
-            "Battery("
-            + f"{self.label} storing {self.resource_type.value} loads, "
-            + f"name={self.name}"
-            + ")"
-        )
-
-    @classmethod
-    def from_dict(cls, storage_data: Dict[str, Any]) -> Any:
-        """
-        Create a :class:`Battery` instance based on the file data passed in.
-
-        Inputs:
-            - storage_data:
-                The battery data, extracted from the relevant input file.
-
-        Outputs:
-            - A :class:`Battery` instance.
-
-        """
-
-        return cls(
-            storage_data["cycle_lifetime"],
-            storage_data["leakage"],
-            storage_data["maximum_charge"],
-            storage_data["minimum_charge"],
-            storage_data[NAME],
-            storage_data["c_rate_charging"],
-            storage_data["conversion_in"],
-            storage_data["conversion_out"],
-            storage_data["c_rate_discharging"],
-            storage_data["lifetime_loss"],
-            storage_data["storage_unit"]
-            if "storage_unit" in storage_data
-            else DEFAULT_STORAGE_UNIT,
-            "storage_unit" in storage_data,
-        )
+    return battery_energy_flow, excess_energy, new_hourly_battery_storage
 
 
-@dataclasses.dataclass
-class CleanWaterTank(
-    _BaseStorage, label="clean_water_tank", resource_type=ResourceType.CLEAN_WATER
-):
+def cw_tank_iteration_step(  # pylint: disable=too-many-locals
+    backup_desalinator_water_supplied: Dict[int, float],
+    clean_water_power_consumed_mapping: Dict[int, float],
+    clean_water_demand_met_by_excess_energy: Dict[int, float],
+    clean_water_supplied_by_excess_energy: Dict[int, float],
+    conventional_cw_source_profiles: Optional[Dict[WaterSource, pd.DataFrame]],
+    conventional_water_supplied: Dict[int, float],
+    energy_per_desalinated_litre: float,
+    excess_energy: float,
+    excess_energy_used_desalinating: Dict[int, float],
+    hourly_cw_tank_storage: Dict[int, float],
+    initial_cw_tank_storage: float,
+    logger: Logger,
+    maximum_battery_storage: float,
+    maximum_cw_tank_storage: float,
+    maximum_water_throughput: float,
+    minigrid: Minigrid,
+    minimum_cw_tank_storage: float,
+    new_hourly_battery_storage: float,
+    scenario: Scenario,
+    storage_water_supplied: Dict[int, float],
+    tank_storage_profile: pd.DataFrame,
+    *,
+    time_index: int,
+) -> float:
     """
-    Represents a clean-water tank within CLOVER.
+    Caries out an iteration calculation for the clean-water tanks.
+
+    Inputs:
+        - backup_desalinator_water_supplied:
+            The water supplied by the backup (electric) desalination.
+        - clean_water_power_consumed_mapping:
+            The power consumed in providing clean water.
+        - clean_water_demand_met_by_excess_energy:
+            The clean-water demand that was met through excess energy from the renewable
+            system.
+        - clean_water_supplied_by_excess_energy:
+            The clean water that was supplied by the excess energy from the renewable
+            system.
+        - conventioanl_cw_source_profiles:
+            A mapping between :class:`WaterSource` instances, corresponding to
+            conventional sources of drinking water within the system, and their
+            associated maximum output throughout the duration of the simulation.
+        - conventional_water_supplied:
+            A mapping between time index and the amount of clean water supplied through
+            conventional sources available to the system.
+        - energy_per_desalinated_litre:
+            The electrical energy required to desalinate a single litre.
+        - excess_energy:
+            The excess electrical energy from the renewable system.
+        - excess_energy_used_desalinating:
+            The amount of excess electrical energy that was used desalinating.
+        - hourly_cw_tank_storage:
+            A mapping between time index and the amount of clean water stored in the
+            system.
+        - initial_cw_tank_storage:
+            The initial level of the clean water tanks.
+        - maximum_battery_storage:
+            The maximum amount of energy that can be stored in the batteries.
+        - maximum_cw_tank_storage:
+            The maximum storage of the clean-water tanks.
+        - maximum_water_throughput:
+            The maximum amount of water that can be desalinated electrically.
+        - minigrid:
+            The :class:`Minigrid` being used for the run.
+        - minimum_cw_tank_storage:
+            The minimum amount of water that must be held in the clean-water tanks.
+        - new_hourly_battery_storage:
+            The level of electricity stored in the batteries at the time step being
+            considered.
+        - scenario:
+            The :class:`Scenario` for the run being carried out.
+        - storage_water_supplied:
+            The amount of clean water, in litres, that was supplied by the clean-water
+            storage tanks.
+        - time_index:
+            The current index being considered.
+
+    Outputs:
+        - excess_energy:
+            The excess electrical energy, generated by the renewables, after what can be
+            used for desalination has been used for electrical desalination.
 
     """
 
-    def __init__(
-        self,
-        cycle_lifetime: int,
-        leakage: float,
-        maximum_charge: float,
-        minimum_charge: float,
-        name: str,
-        mass: float,
-    ) -> None:
-        """
-        Instantiate a :class:`CleanWaterTank`.
+    if scenario.desalination_scenario is not None:
+        tank_water_flow = tank_storage_profile.iloc[time_index, 0]
 
-        Inputs:
-            - cycle_lifetime:
-                The number of cycles for which the :class:`CleanWaterTank` instance can
-                perform.
-            - leakage:
-                The rate of leakage from the storage.
-            - maximum_charge:
-                The maximum level that can be held by the :class:`CleanWaterTank`.
-            - minimum_charge:
-                The minimum level to which the :class:`CleanWaterTank` instance can
-                discharge.
-            - name:
-                The name to assign to the :class:`CleanWaterTank` instance.
-            - mass:
-                The mass of water that can be held in the clean-water tank.
+        # Raise an error if there is no clean-water tank defined.
+        if minigrid.clean_water_tank is not None:
+            logger.error(
+                "%sNo clean-water tank defined despite desalination being carried out"
+                ".%s",
+                BColours.fail,
+                BColours.endc,
+            )
+            raise InputFileError(
+                "minigrid inputs",
+                "No clean-water tank defined despite desalination being modelled.",
+            )
 
-        """
+        # Compute the new tank level based on the previous level and the flow.
+        if time_index == 0:
+            current_net_water_flow = initial_cw_tank_storage + tank_water_flow
+        else:
+            current_net_water_flow = (
+                hourly_cw_tank_storage[time_index - 1]
+                * (1.0 - minigrid.clean_water_tank.leakage)  # type: ignore
+                + tank_water_flow
+            )
 
-        super().__init__(cycle_lifetime, leakage, maximum_charge, minimum_charge, name)
-        self.mass: float = mass
+        # Use the excess energy to desalinate if there is space.
+        if (
+            excess_energy > 0
+            and scenario.desalination_scenario is not None
+            and scenario.desalination_scenario.clean_water_scenario.mode
+            == CleanWaterMode.BACKUP
+        ):
+            # Compute the maximum amount of water that can be desalinated.
+            maximum_desalinated_water = min(
+                excess_energy / energy_per_desalinated_litre,
+                maximum_water_throughput,
+            )
 
-    def __str__(self) -> str:
-        """
-        Returns a nice-looking string describing the :class:`CleanWaterTank` instance.
+            # Add this to the tank and fulfil the demand if relevant.
+            current_hourly_cw_tank_storage = (
+                current_net_water_flow + maximum_desalinated_water
+            )
 
-        Outputs:
-            - A `str` giving information about the :class:`CleanWaterTank` instance.
+            # Compute the amount of water that was actually desalinated.
+            desalinated_water = min(
+                maximum_desalinated_water,
+                maximum_cw_tank_storage - current_net_water_flow,
+            )
 
-        """
+            # Compute the remaining excess energy and the energy used in
+            # desalination.
+            energy_consumed = energy_per_desalinated_litre * desalinated_water
+            new_hourly_battery_storage -= energy_consumed
 
-        return (
-            "CleanWaterTank("
-            + f"{self.label} storing {self.resource_type.value} loads, "
-            + f"name={self.name}, "
-            + f"capacity={self.mass} litres, "
-            + f"cycle_lifetime={self.cycle_lifetime} cycles, "
-            + f"leakage={self.leakage}, "
-            + f"maximum_charge={self.maximum_charge}, "
-            + f"minimum_charge={self.minimum_charge}"
-            + ")"
+            # Ensure that the excess energy is normalised correctly.
+            excess_energy = max(
+                new_hourly_battery_storage - maximum_battery_storage, 0.0
+            )
+
+            # Store this as water and electricity supplied using excess power.
+            excess_energy_used_desalinating[time_index] = energy_consumed
+            clean_water_demand_met_by_excess_energy[time_index] = max(
+                0, -current_net_water_flow
+            )
+            clean_water_supplied_by_excess_energy[time_index] = desalinated_water
+        else:
+            excess_energy_used_desalinating[time_index] = 0
+            clean_water_demand_met_by_excess_energy[time_index] = 0
+            clean_water_supplied_by_excess_energy[time_index] = 0
+            current_hourly_cw_tank_storage = current_net_water_flow
+
+        # If there is still unmet water demand, then carry out desalination and
+        # pumping to fulfil the demand.
+        current_unmet_water_demand: float = -current_hourly_cw_tank_storage
+        if (
+            current_unmet_water_demand > 0
+            and scenario.desalination_scenario is not None
+            and scenario.desalination_scenario.clean_water_scenario.mode
+            == CleanWaterMode.PRIORITISE
+        ):
+            # Compute the electricity consumed meeting this demand.
+            energy_consumed = energy_per_desalinated_litre * current_unmet_water_demand
+
+            # Withdraw this energy from the batteries.
+            new_hourly_battery_storage -= (
+                1.0 / minigrid.battery.conversion_out  # type: ignore
+            ) * energy_consumed
+
+            # Ensure that the excess energy is normalised correctly.
+            excess_energy = max(
+                new_hourly_battery_storage - maximum_battery_storage, 0.0
+            )
+
+            # Store this as water and electricity supplied by backup.
+            clean_water_power_consumed_mapping[time_index] += energy_consumed
+            backup_desalinator_water_supplied[time_index] = current_unmet_water_demand
+        else:
+            clean_water_power_consumed_mapping[time_index] = 0
+            backup_desalinator_water_supplied[time_index] = 0
+
+        # Any remaining unmet water demand should be met using conventional clean-water
+        # sources if available.
+        if current_unmet_water_demand > 0:
+            # Compute the clean water supplied using convnetional sources.
+            conventional_cw_available: float = 0
+            if conventional_cw_source_profiles is not None:
+                conventional_cw_available = float(
+                    sum(
+                        entry.iloc[time_index]  # type: ignore
+                        for entry in conventional_cw_source_profiles.values()
+                    )
+                )
+            conventional_cw_supplied = min(
+                conventional_cw_available, current_unmet_water_demand
+            )
+            current_unmet_water_demand -= conventional_cw_supplied
+
+            # Store this as water supplied through conventional means.
+            conventional_water_supplied[time_index] = conventional_cw_supplied
+        else:
+            conventional_water_supplied[time_index] = 0
+
+        current_hourly_cw_tank_storage = min(
+            current_hourly_cw_tank_storage,
+            maximum_cw_tank_storage,
+        )
+        current_hourly_cw_tank_storage = max(
+            current_hourly_cw_tank_storage,
+            minimum_cw_tank_storage,
         )
 
-    def __repr__(self) -> str:
-        """
-        Defines the default representation of the :class:`CleanWaterTank` instance.
+        hourly_cw_tank_storage[time_index] = current_hourly_cw_tank_storage
 
-        Outputs:
-            - A `str` giving the default representation of the :class:`CleanWaterTank`
-              instance.
+        if time_index == 0:
+            storage_water_supplied[time_index] = 0.0 - tank_water_flow
+        else:
+            storage_water_supplied[time_index] = max(
+                hourly_cw_tank_storage[time_index - 1]
+                * (1.0 - minigrid.clean_water_tank.leakage)  # type: ignore
+                - hourly_cw_tank_storage[time_index],
+                0.0,
+            )
 
-        """
-
-        return (
-            "CleanWaterTank("
-            + f"{self.label} storing {self.resource_type.value} loads, "
-            + f"name={self.name}"
-            + ")"
-        )
-
-    @classmethod
-    def from_dict(cls, storage_data: Dict[str, Any]) -> Any:
-        """
-        Create a :class:`CleanWaterTank` instance based on the file data passed in.
-
-        Inputs:
-            - storage_data:
-                The tank data, extracted from the relevant input file.
-
-        Outputs:
-            - A :class:`CleanWaterTank` instance.
-
-        """
-
-        return cls(
-            storage_data["cycle_lifetime"],
-            storage_data["leakage"],
-            storage_data["maximum_charge"],
-            storage_data["minimum_charge"],
-            storage_data[NAME],
-            storage_data["mass"],
-        )
+    return excess_energy
 
 
-@dataclasses.dataclass
-class HotWaterTank(
-    CleanWaterTank, label="hot_water_tank", resource_type=ResourceType.HOT_CLEAN_WATER
-):
+def get_electric_battery_storage_profile(  # pylint: disable=too-many-locals, too-many-statements
+    *,
+    grid_profile: pd.Series,
+    kerosene_usage: pd.Series,
+    location: Location,
+    logger: Logger,
+    minigrid: Minigrid,
+    processed_total_electric_load: pd.DataFrame,
+    renewables_power_produced: Dict[RenewableEnergySource, pd.DataFrame],
+    scenario: Scenario,
+    clean_water_pvt_size: int = 0,
+    end_hour: int = 4,
+    hot_water_pvt_size: int = 0,
+    pv_size: float = 10,
+    start_hour: int = 0,
+) -> Tuple[
+    pd.DataFrame,
+    pd.DataFrame,
+    pd.Series,
+    pd.DataFrame,
+    pd.DataFrame,
+    Dict[RenewableEnergySource, pd.DataFrame],
+    pd.DataFrame,
+]:
     """
-    Represents a hot-water tank within CLOVER.
+    Gets the storage profile (energy in/out the battery) and other system energies.
 
-    .. attribute:: area
-        The area of the hot-water tank, measured in meters squared.
+    Inputs:
+        - grid_profile:
+            The relevant grid profile, based on the scenario, for the simulation.
+        - kerosene_usage:
+            The kerosene usage.
+        - logger:
+            The logger to use for the run.
+        - minigrid:
+            The energy system being modelled.
+        - processed_total_electric_load:
+            The total electric load for the system.
+        - renewables_power_produced:
+            The total electric power produced, per renewable type, as a mapping between
+            :class:`SolarPanelType` and :class:`pandas.DataFrame` instances, with units
+            of technology size.
+        - scenario:
+            The scenatio being considered.
+        - clean_water_pvt_size:
+            Amount of PV-T in units of PV-T associated with the clean-water system.
+        - end_year:
+            End year of this simulation period.
+        - hot_water_pvt_size:
+            Amount of PV-T in units of PV-T associated with the hot-water system.
+        - pv_size:
+            Amount of PV in units of PV.
+        - start_year:
+            Start year of this simulation period.
 
-    .. attribute:: heat_capacity
-        The specific heat capacity of the contents of the tank, measured in Joules per
-        kilogram Kelvin, defaults to that of water at stp.
-
-    .. attribute:: heat_loss_coefficient
-        The heat loss from the tank, measured in Watts per meter squared per Kelvin.
-
-    .. attribute:: heat_transfer_coefficient
-        The heat transfer coefficient from the tank to its surroundings, measured in
-        Watts per Kelvin.
+    Outputs:
+        - battery_storage_profile:
+            Amount of energy (kWh) into (+ve) and out of (-ve) the battery.
+        - grid_energy:
+            Amount of energy (kWh) supplied by the grid.
+        - kerosene_usage:
+            Number of kerosene lamps in use (if no power available).
+        - load_energy:
+            Amount of energy (kWh) required to satisfy the loads.
+        - pvt_energy:
+            Amount of energy (kWh) provided by PV to the system.
+        - pvt_energy:
+            Amount of electric energy (kWh) provided by PV-T to the system.
+        - renewables_energy:
+            Amount of energy (kWh) provided by renewables to the system.
+        - renewables_energy_map:
+            A mapping between :class:`RenewableEnergySource` and the associated
+            electrical energy produced.
+        - renewables_energy_used_directly:
+            Amount of energy (kWh) from renewables used directly to satisfy load (kWh).
 
     """
 
-    def __init__(
-        self,
-        cycle_lifetime: int,
-        leakage: float,
-        maximum_charge: float,
-        minimum_charge: float,
-        name: str,
-        mass: float,
-        area: float,
-        heat_capacity: float,
-        heat_loss_coefficient: float,
-    ) -> None:
-        """
-        Instantiate a :class:`CleanWaterTank`.
-
-        Inputs:
-            - cycle_lifetime:
-                The number of cycles for which the :class:`HotWaterTank` instance can
-                perform.
-            - leakage:
-                The rate of leakage from the storage.
-            - maximum_charge:
-                The maximum level that can be held by the :class:`HotWaterTank`.
-            - minimum_charge:
-                The minimum level to which the :class:`HotWaterTank` instance can
-                discharge.
-            - name:
-                The name to assign to the :class:`HotWaterTank` instance.
-            - mass:
-                The mass of water that can be held in the clean-water tank.
-            - area:
-                The surface area of the tank.
-            - heat_capacity:
-                The specific heat capacity of the contents of the :class:`HotWaterTank`.
-            - heta_loss_coefficient:
-                The heat-loss coefficient for the :class:`HotWaterTank`.
-
-        """
-
-        super().__init__(
-            cycle_lifetime, leakage, maximum_charge, minimum_charge, name, mass
+    # Initialise power generation, including degradation of PV
+    try:
+        pv_power_produced = renewables_power_produced[RenewableEnergySource.PV]
+    except KeyError:
+        logger.critical(
+            "%sCould not determine PV power produced from renewables production.%s",
+            BColours.fail,
+            BColours.endc,
         )
-        self.area = area
-        self.heat_capacity = heat_capacity
-        self.heat_loss_coefficient = heat_loss_coefficient
+        raise InternalError(
+            "No PV power in renewables_power_produced mapping, fatal."
+        ) from None
+    pv_generation_array = pv_power_produced * pv_size
+    solar_degradation_array = solar_degradation(
+        minigrid.pv_panel.lifetime, location.max_years
+    ).iloc[start_hour:end_hour, 0]
+    pv_generation = pd.DataFrame(
+        np.asarray(pv_generation_array.iloc[start_hour:end_hour])
+        * np.asarray(solar_degradation_array)
+    )
 
-    @property
-    def heat_transfer_coefficient(self) -> float:
-        """
-        Return the heat-transfer coefficient from the :class:`HotWaterTank`.
+    # Initialise PV-T power generation, including degradation of PV
+    if minigrid.pvt_panel is not None:
+        # Determine the PV-T degredation.
+        pvt_degradation_array = solar_degradation(  # type: ignore
+            minigrid.pvt_panel.lifetime, location.max_years
+        )[0 : (end_hour - start_hour)]
 
-        Outputs:
-            - The heat-transfer coefficient from the :class:`HotWaterTank` to its
-              surroundings, measured in Watts per Kelvin.
+        if (
+            RenewableEnergySource.CLEAN_WATER_PVT not in renewables_power_produced
+            and RenewableEnergySource.HOT_WATER_PVT not in renewables_power_produced
+        ):
+            logger.error(
+                "%sA PV-T panel was defined on the system but no clean-water PV-T or "
+                "hot-water PV-T electricity was generated.%s",
+                BColours.fail,
+                BColours.endc,
+            )
+            raise InternalError(
+                "No PV-T electric power produced despite a PV-T panel being defined "
+                "for the system.."
+            )
 
-        """
+        # Compute the clean-water PV-T electricity generated.
+        if RenewableEnergySource.CLEAN_WATER_PVT in renewables_power_produced:
+            try:
+                clean_water_pvt_electric_power_produced = renewables_power_produced[
+                    RenewableEnergySource.CLEAN_WATER_PVT
+                ]
+            except KeyError:
+                logger.error(
+                    "%sCould not determine clean-water PV-T power produced from "
+                    "renewables production despite a PV-T panel being defined on the "
+                    "system.%s",
+                    BColours.fail,
+                    BColours.endc,
+                )
+                raise InternalError(
+                    "No PV-T power in renewables_power_produced mapping despite a PV-T "
+                    "panel being specified."
+                ) from None
+            clean_water_pvt_electric_generation_array = (
+                clean_water_pvt_electric_power_produced * clean_water_pvt_size
+            )
+            clean_water_pvt_electric_generation: pd.DataFrame = pd.DataFrame(
+                np.asarray(clean_water_pvt_electric_generation_array)
+                * np.asarray(pvt_degradation_array)
+            )
+        else:
+            clean_water_pvt_electric_generation = pd.DataFrame(
+                [0] * (end_hour - start_hour)
+            )
 
-        return self.heat_loss_coefficient * self.area
+        # Compute the clean-water source.
+        if RenewableEnergySource.HOT_WATER_PVT in renewables_power_produced:
+            try:
+                hot_water_pvt_electric_power_produced = renewables_power_produced[
+                    RenewableEnergySource.HOT_WATER_PVT
+                ]
+            except KeyError:
+                logger.error(
+                    "%sCould not determine PV-T power produced from renewables "
+                    "production despite a PV-T panel being defined on the system.%s",
+                    BColours.fail,
+                    BColours.endc,
+                )
+                raise InternalError(
+                    "No PV-T power in renewables_power_produced mapping despite a PV-T "
+                    "panel being specified."
+                ) from None
+            hot_water_pvt_electric_generation_array = (
+                hot_water_pvt_electric_power_produced * hot_water_pvt_size
+            )
+            hot_water_pvt_electric_generation: pd.DataFrame = pd.DataFrame(
+                np.asarray(hot_water_pvt_electric_generation_array)
+                * np.asarray(pvt_degradation_array)
+            )
+        else:
+            hot_water_pvt_electric_generation = pd.DataFrame(
+                [0] * (end_hour - start_hour)
+            )
 
-    def __str__(self) -> str:
-        """
-        Returns a nice-looking string describing the :class:`HotWaterTank` instance.
+    else:
+        clean_water_pvt_electric_generation = pd.DataFrame(
+            [0] * (end_hour - start_hour)
+        )
+        hot_water_pvt_electric_generation = pd.DataFrame([0] * (end_hour - start_hour))
 
-        Outputs:
-            - A `str` giving information about the :class:`HotWaterTank` instance.
+    # Consider power distribution network
+    if scenario.distribution_network == DistributionNetwork.DC:
+        pv_generation = pv_generation.mul(  # type: ignore
+            minigrid.dc_to_dc_conversion_efficiency
+        )
+        transmission_efficiency = minigrid.dc_transmission_efficiency
+        # grid_conversion_eff = minigrid.ac_to_dc_conversion
 
-        """
+    else:
+        pv_generation = pv_generation.mul(  # type: ignore
+            minigrid.dc_to_ac_conversion_efficiency
+        )
+        transmission_efficiency = minigrid.ac_transmission_efficiency
+        # grid_conversion_efficiency = minigrid.ac_to_ac_conversion
 
-        return (
-            "HotWaterTank("
-            + f"{self.label} storing {self.resource_type.value} loads, "
-            + f"name={self.name}, "
-            + f"area={self.area} m^2, "
-            + f"capacity={self.mass} litres, "
-            + f"cycle_lifetime={self.cycle_lifetime} cycles, "
-            + f"heat_capacity={self.heat_capacity} J/kg*K, "
-            + f"heat_loss_coefficient={self.heat_loss_coefficient} W/m^2K, "
-            + f"heat_transfer_coefficient={self.heat_transfer_coefficient} W/K, "
-            + f"leakage={self.leakage}, "
-            + f"maximum_charge={self.maximum_charge}, "
-            + f"minimum_charge={self.minimum_charge}"
-            + ")"
+    if transmission_efficiency is None:
+        logger.error(
+            "%sNo valid transmission efficiency was determined based on the energy "
+            "system inputs. Check this before continuing.%s",
+            BColours.fail,
+            BColours.endc,
+        )
+        raise InputFileError(
+            "energy system inputs",
+            "No valid transmission efficiency was determined based on the energy "
+            "system inputs. Check this before continuing.",
         )
 
-    def __repr__(self) -> str:
-        """
-        Defines the default representation of the :class:`HotWaterTank` instance.
+    # Consider transmission efficiency
+    load_energy: pd.DataFrame = (
+        processed_total_electric_load / transmission_efficiency  # type: ignore
+    )
+    pv_energy = pv_generation * transmission_efficiency
 
-        Outputs:
-            - A `str` giving the default representation of the :class:`HotWaterTank`
-              instance.
+    if clean_water_pvt_electric_generation is not None:
+        pvt_cw_electric_energy: pd.DataFrame = (
+            clean_water_pvt_electric_generation * transmission_efficiency
+        )
+    else:
+        pvt_cw_electric_energy = pd.DataFrame([0] * pv_energy.size)
 
-        """
+    if hot_water_pvt_electric_generation is not None:
+        pvt_hw_electric_energy: pd.DataFrame = (
+            hot_water_pvt_electric_generation * transmission_efficiency
+        )
+    else:
+        pvt_hw_electric_energy = pd.DataFrame([0] * pv_energy.size)
 
-        return (
-            "HotWaterTank("
-            + f"{self.label} storing {self.resource_type.value} loads, "
-            + f"name={self.name}"
-            + ")"
+    # Combine energy from all renewables sources
+    renewables_energy_map: Dict[RenewableEnergySource, pd.DataFrame] = {
+        RenewableEnergySource.PV: pv_energy,
+        RenewableEnergySource.CLEAN_WATER_PVT: pvt_cw_electric_energy,
+        RenewableEnergySource.HOT_WATER_PVT: pvt_hw_electric_energy,
+        # RenewableGenerationSource.WIND: wind_energy, etc.
+    }
+
+    # Add more renewable sources here as required
+    renewables_energy: pd.DataFrame = pd.DataFrame(
+        sum(renewables_energy_map.values())  # type: ignore
+    )
+
+    # Check for self-generation prioritisation
+    if scenario.prioritise_self_generation:
+        # Take energy from PV first
+        remaining_profile = pd.DataFrame(renewables_energy.values - load_energy.values)
+        renewables_energy_used_directly: pd.DataFrame = pd.DataFrame(
+            (remaining_profile > 0) * load_energy.values
+            + (remaining_profile < 0) * renewables_energy.values
         )
 
-    @classmethod
-    def from_dict(cls, storage_data: Dict[str, Any]) -> Any:
-        """
-        Create a :class:`HotWaterTank` instance based on the file data passed in.
-
-        Inputs:
-            - storage_data:
-                The tank data, extracted from the relevant input file.
-
-        Outputs:
-            - A :class:`HotWaterTank` instance.
-
-        """
-
-        return cls(
-            storage_data["cycle_lifetime"],
-            storage_data["leakage"],
-            storage_data["maximum_charge"],
-            storage_data["minimum_charge"],
-            storage_data[NAME],
-            storage_data["mass"],
-            storage_data["area"],
-            storage_data["heat_capacity"]
-            if "heat_capacity" in storage_data
-            else HEAT_CAPACITY_OF_WATER,
-            storage_data["heat_loss_coefficient"],
+        # Then take energy from grid if available
+        if scenario.grid:
+            grid_energy: pd.DataFrame = pd.DataFrame(
+                ((remaining_profile < 0) * remaining_profile).iloc[:, 0]  # type: ignore
+                * -1.0
+                * grid_profile.values
+            )
+        else:
+            grid_energy = pd.DataFrame([0] * (end_hour - start_hour))
+        battery_storage_profile: pd.DataFrame = pd.DataFrame(
+            remaining_profile.values + grid_energy.values
         )
+
+    else:
+        # Take energy from grid first if available
+        if scenario.grid:
+            grid_energy: pd.DataFrame = grid_profile.mul(load_energy)  # type: ignore
+        else:
+            grid_energy = pd.DataFrame([0] * (end_hour - start_hour))
+        # as needed for load
+        remaining_profile = (grid_energy <= 0).mul(load_energy)  # type: ignore
+        # Then take energy from PV
+        battery_storage_profile = pd.DataFrame(
+            renewables_energy.values.subtrace(remaining_profile.values)  # type: ignore
+        )
+        renewables_energy_used_directly = pd.DataFrame(
+            (battery_storage_profile > 0)  # type: ignore
+            .mul(remaining_profile)
+            .add((battery_storage_profile < 0).mul(renewables_energy))  # type: ignore
+        )
+
+    battery_storage_profile.columns = pd.Index([ColumnHeader.STORAGE_PROFILE.value])
+    grid_energy.columns = pd.Index([ColumnHeader.GRID_ENERGY.value])
+    load_energy.columns = pd.Index([ColumnHeader.LOAD_ENERGY.value])
+    renewables_energy.columns = pd.Index(
+        [ColumnHeader.RENEWABLE_ELECTRICITY_SUPPLIED.value]
+    )
+    renewables_energy_map[RenewableEnergySource.PV].columns = pd.Index(
+        [ColumnHeader.PV_ELECTRICITY_SUPPLIED.value]
+    )
+    renewables_energy_map[RenewableEnergySource.CLEAN_WATER_PVT].columns = pd.Index(
+        [ColumnHeader.CW_PVT_ELECTRICITY_SUPPLIED.value]
+    )
+    renewables_energy_map[RenewableEnergySource.HOT_WATER_PVT].columns = pd.Index(
+        [ColumnHeader.HW_PVT_ELECTRICITY_SUPPLIED.value]
+    )
+    renewables_energy_used_directly.columns = pd.Index(
+        [ColumnHeader.RENEWABLE_ELECTRICITY_USED_DIRECTLY.value]
+    )
+
+    return (
+        battery_storage_profile,
+        grid_energy,
+        kerosene_usage,
+        load_energy,
+        renewables_energy,
+        renewables_energy_map,
+        renewables_energy_used_directly,
+    )
+
+
+def get_water_storage_profile(
+    processed_total_cw_load: pd.DataFrame,
+    renewable_cw_produced: pd.DataFrame,
+) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+    """
+    Gets the storage profile for the clean-water system.
+
+    Inputs:
+        - minigrid:
+            The minigrid being modelled.
+        - processed_total_cw_load:
+            The total clean-water load placed on the system.
+        - renewable_cw_produced:
+            The total clean water produced directly from renewables, i.e., solar-based
+            or solar-thermal-based desalination technologies.
+        - scenario:
+            The scenario being considered.
+
+    Outputs:
+        - power_consumed:
+            The electric power consumed in providing the water demand.
+        - renewable_cw_used_directly:
+            The renewable clean water which was directly consumed.
+        - tank_storage_profile:
+            The amount of water (litres) into (+ve) and out of (-ve) the clean-water
+            tanks.
+
+    """
+
+    # Clean water is either produced directly or drawn from the storage tanks.
+    remaining_profile = pd.DataFrame(
+        renewable_cw_produced.values - processed_total_cw_load.values
+    )
+    renewable_cw_used_directly: pd.DataFrame = pd.DataFrame(
+        (remaining_profile > 0) * processed_total_cw_load.values
+        + (remaining_profile < 0) * renewable_cw_produced.values
+    )
+
+    tank_storage_profile: pd.DataFrame = pd.DataFrame(remaining_profile.values)
+
+    electric_power_consumed: pd.DataFrame = 0.001 * pd.DataFrame(  # type: ignore
+        [0] * processed_total_cw_load.size
+    )
+
+    return (
+        electric_power_consumed,
+        renewable_cw_used_directly,
+        tank_storage_profile,
+    )

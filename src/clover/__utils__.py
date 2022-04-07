@@ -39,6 +39,7 @@ __all__ = (
     "Criterion",
     "CUT_OFF_TIME",
     "daily_sum_to_monthly_sum",
+    "DEFAULT_SCENARIO",
     "DemandType",
     "DesalinationScenario",
     "dict_to_dataframe",
@@ -56,6 +57,7 @@ __all__ = (
     "InternalError",
     "KEROSENE_DEVICE_NAME",
     "KeyResults",
+    "Location",
     "LOCATIONS_FOLDER_NAME",
     "LOGGER_DIRECTORY",
     "monthly_profile_to_daily_profile",
@@ -63,9 +65,7 @@ __all__ = (
     "NAME",
     "open_simulation",
     "OperatingMode",
-    "OptimisationParameters",
     "PACKAGE_NAME",
-    "POWER_CONSUMED_BY_DESALINATION",
     "ProgrammerJudgementFault",
     "RAW_CLOVER_PATH",
     "read_yaml",
@@ -93,6 +93,14 @@ CONVENTIONAL_SOURCES: str = "conventional_sources"
 #   The time up and to which information about the load of each device will be returned.
 CUT_OFF_TIME: int = 72  # [hours]
 
+# Default scenario:
+#   The name of the default scenario to be used in CLOVER.
+DEFAULT_SCENARIO: str = "default"
+
+# Desalination scenario:
+#   Keyword for parsing the desalination scenario from the scenario inputs.
+DESALINATION_SCENARIO: str = "desalination_scenario"
+
 # Done message:
 #   The message to display when a task was successful.
 DONE: str = "[   DONE   ]"
@@ -112,6 +120,14 @@ FAILED: str = "[  FAILED  ]"
 # Heat capacity of water:
 #   The heat capacity of water, measured in Joules per kilogram Kelvin.
 HEAT_CAPACITY_OF_WATER: int = 4182
+
+# Hot water scenario:
+#   Keyword used for parsing the hot-water scenario to use.
+HOT_WATER_SCENARIO: str = "hot_water_scenario"
+
+# Hours per year:
+#   The number of hours in a year, used for reshaping arrays.
+HOURS_PER_YEAR: int = 8760
 
 # Iteration length:
 #   Used when parsing information about the iteration length to use in optimisations.
@@ -167,7 +183,7 @@ MONTH_MID_DAY: List[int] = [
 MONTH_START_DAY: List[int] = [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334]
 
 # Name:
-#   Keyword used for parsing convertor name information.
+#   Keyword used for parsing converter name information.
 NAME: str = "name"
 
 # Number of iterations:
@@ -264,7 +280,7 @@ class CleanWaterMode(enum.Enum):
     - BACKUP:
         The clean-water demand will only be fulfiled using minigrid power as backup to
         carry out electric desalination if there are any electric desalination
-        convertors present.
+        converters present.
 
     - PRIORITISE:
         The clean-water demand will be fulfiled always, utilising diesel generators if
@@ -293,7 +309,7 @@ class CleanWaterScenario:
 
     """
 
-    conventional_sources: Set[str]
+    conventional_sources: List[str]
     mode: CleanWaterMode
     sources: List[str]
 
@@ -714,6 +730,23 @@ class DieselScenario:
     backup_threshold: Optional[float]
     mode: DieselMode
 
+    def to_dict(self) -> Dict[str, Any]:
+        """
+        Returns a `dict` summarising the :class:`DieselScenario` instance.
+
+        Outputs:
+            - A `dict` summarising the information contained within the
+              :class:`DieselScenario` instance.
+
+        """
+
+        return {
+            "backup_threshold": float(self.backup_threshold)
+            if self.backup_threshold is not None
+            else str(None),
+            "mode": str(self.mode.value),
+        }
+
 
 class DistributionNetwork(enum.Enum):
     """
@@ -797,9 +830,9 @@ def hourly_profile_to_daily_sum(
     """
 
     days = int(hourly_profile.shape[0] / (24))
-    daily_profile = pd.DataFrame(hourly_profile.values.reshape((days, 24)))
+    daily_profile = pd.DataFrame(hourly_profile.values.reshape((days, 24)))  # type: ignore
     # return pd.DataFrame(np.sum(daily_profile, 1))
-    return daily_profile.sum(axis=1)
+    return daily_profile.sum(axis=1)  # type: ignore
 
 
 class InputFileError(Exception):
@@ -899,7 +932,9 @@ class KeyResults:
     min_buffer_tank_temperature: Optional[float] = None
     min_cw_pvt_output_temperature: Optional[float] = None
 
-    def to_dict(self) -> Dict[str, float]:
+    def to_dict(  # pylint: disable=too-many-branches, too-many-statements
+        self,
+    ) -> Dict[str, float]:
         """
         Returns the :class:`KeyResults` information as a `dict` ready for saving.
 
@@ -1033,6 +1068,8 @@ class KeyResults:
             data_dict["Minimum clean-water PV-T output temperature / degC"] = round(
                 self.min_cw_pvt_output_temperature, 3
             )
+
+        data_dict = {str(key): float(value) for key, value in data_dict.items()}
 
         return data_dict
 
@@ -1220,7 +1257,7 @@ class Location:
 
         Inputs:
             - location_inputs:
-                The location input information, extracted form the location inputs file.
+                The location input information, extracted from the location inputs file.
 
         Outputs:
             - A :class:`Location` instance based on the input information provided.
@@ -1538,6 +1575,9 @@ class DesalinationScenario:
     .. attribute:: feedwater_supply_temperature
         The supply temperature of the feedwater input to the system.
 
+    .. attribute:: name
+        The name of the scenario.
+
     .. attribute:: pvt_scenario
         The PV-T scenario.
 
@@ -1548,6 +1588,7 @@ class DesalinationScenario:
 
     clean_water_scenario: CleanWaterScenario
     feedwater_supply_temperature: float
+    name: str
     pvt_scenario: PVTScenario
     unclean_water_sources: List[str]
 
@@ -1595,14 +1636,10 @@ class DesalinationScenario:
             ) from None
 
         clean_water_scenario: CleanWaterScenario = CleanWaterScenario(
-            set(
-                desalination_inputs[ResourceType.CLEAN_WATER.value][
-                    CONVENTIONAL_SOURCES
-                ]
-            )
+            desalination_inputs[ResourceType.CLEAN_WATER.value][CONVENTIONAL_SOURCES]
             if CONVENTIONAL_SOURCES
             in desalination_inputs[ResourceType.CLEAN_WATER.value]
-            else set(),
+            else [],
             clean_water_mode,
             list(desalination_inputs[ResourceType.CLEAN_WATER.value]["sources"]),
         )
@@ -1664,6 +1701,7 @@ class DesalinationScenario:
         return cls(
             clean_water_scenario,
             feedwater_supply_temperature,
+            desalination_inputs[NAME],
             pvt_scenario,
             unclean_water_sources,
         )
@@ -1690,6 +1728,9 @@ class HotWaterScenario:
     .. attribute:: demand_temperature
         The temperature, in degrees Celcius, at which hot water should be supplied to the end user.
 
+    .. attribute:: name
+        The name of the hot-water scenario.
+
     .. attribute:: pvt_scenario
         The PV-T scenario.
 
@@ -1700,6 +1741,7 @@ class HotWaterScenario:
     cold_water_supply_temperature: float
     conventional_sources: List[str]
     demand_temperature: float
+    name: str
     pvt_scenario: PVTScenario
 
     @classmethod
@@ -1855,6 +1897,7 @@ class HotWaterScenario:
             cold_water_supply_temperature,
             conventional_sources,
             demand_temperature,
+            hot_water_inputs[NAME],
             pvt_scenario,
         )
 
@@ -1889,6 +1932,9 @@ class Scenario:
     .. attribute:: hot_water_scneario
         The :class:`HotWaterScenario` for the run.
 
+    .. attribute:: name
+        The name of the scenario.
+
     .. attribute:: resource_types
         The load types being modelled.
 
@@ -1914,6 +1960,7 @@ class Scenario:
     grid: bool
     grid_type: str
     hot_water_scenario: Optional[HotWaterScenario]
+    name: str
     resource_types: Set[ResourceType]
     prioritise_self_generation: bool
     pv: bool
@@ -1923,8 +1970,8 @@ class Scenario:
     @classmethod
     def from_dict(
         cls,
-        desalination_scenario: Optional[DesalinationScenario],
-        hot_water_scenario: Optional[HotWaterScenario],
+        desalination_scenarios: Optional[List[DesalinationScenario]],
+        hot_water_scenarios: Optional[List[HotWaterScenario]],
         logger: logging.Logger,
         scenario_inputs: Dict[str, Any],
     ) -> Any:
@@ -1932,8 +1979,10 @@ class Scenario:
         Returns a :class:`Scenario` instance based on the input data.
 
         Inputs:
-            - desalination_scenario:
-                The :class:`DesalinationScenario` to use for the run.
+            - desalination_scenarios:
+                The list of :class:`DesalinationScenario` to use for the run.
+            - hot_water_scenarios:
+                The list of :class:`HotWaterScenario` to use for the run.
             - logger:
                 The :class:`logging.Logger` to use for the run.
             - scenario_inputs:
@@ -1966,6 +2015,81 @@ class Scenario:
             for resource_name in scenario_inputs["resource_types"]
         }
 
+        # Determine the desalination and hot-water scenarios to use for the run.
+        if desalination_scenarios is not None:
+            if DESALINATION_SCENARIO in scenario_inputs:
+                try:
+                    desalination_scenario: Optional[DesalinationScenario] = [
+                        entry
+                        for entry in desalination_scenarios
+                        if entry.name == scenario_inputs[DESALINATION_SCENARIO]
+                    ][0]
+                except IndexError:
+                    logger.error(
+                        "%sError creating scenario from inputs. Deslination scenario '%s' "
+                        "could not be found in scenario '%s'.%s",
+                        BColours.fail,
+                        scenario_inputs[DESALINATION_SCENARIO],
+                        scenario_inputs[NAME],
+                        BColours.endc,
+                    )
+            else:
+                try:
+                    desalination_scenario = [
+                        entry
+                        for entry in desalination_scenarios
+                        if entry.name == DEFAULT_SCENARIO
+                    ][0]
+                except IndexError:
+                    logger.error(
+                        "%sError creating scenario from inputs. Deslination scenario '%s' "
+                        "could not be found in scenario '%s'.%s",
+                        BColours.fail,
+                        scenario_inputs[DESALINATION_SCENARIO],
+                        scenario_inputs[NAME],
+                        BColours.endc,
+                    )
+        else:
+            desalination_scenario = None
+
+        if hot_water_scenarios is not None:
+            if HOT_WATER_SCENARIO in scenario_inputs:
+                try:
+                    hot_water_scenario: Optional[HotWaterScenario] = [
+                        entry
+                        for entry in hot_water_scenarios
+                        if entry.name == scenario_inputs[HOT_WATER_SCENARIO]
+                    ][0]
+                except IndexError:
+                    logger.error(
+                        "%sError creating scenario from inputs. Hot-water scenario '%s' "
+                        "could not be found in scenario '%s'.%s",
+                        BColours.fail,
+                        scenario_inputs[HOT_WATER_SCENARIO],
+                        scenario_inputs[NAME],
+                        BColours.endc,
+                    )
+                    raise
+            else:
+                try:
+                    hot_water_scenario = [
+                        entry
+                        for entry in hot_water_scenarios
+                        if entry.name == DEFAULT_SCENARIO
+                    ][0]
+                except IndexError:
+                    logger.error(
+                        "%sError creating scenario from inputs. Hot-water scenario '%s' "
+                        "could not be found in scenario '%s'.%s",
+                        BColours.fail,
+                        scenario_inputs[HOT_WATER_SCENARIO],
+                        scenario_inputs[NAME],
+                        BColours.endc,
+                    )
+                    raise
+        else:
+            hot_water_scenario = None
+
         return cls(
             scenario_inputs["battery"],
             demands,
@@ -1975,12 +2099,42 @@ class Scenario:
             scenario_inputs["grid"],
             scenario_inputs["grid_type"],
             hot_water_scenario,
+            scenario_inputs[NAME],
             resource_types,
             scenario_inputs["prioritise_self_generation"],
             scenario_inputs["pv"],
             scenario_inputs["pv_d"] if "pv_d" in scenario_inputs else False,
             scenario_inputs["pv_t"] if "pv_t" in scenario_inputs else False,
         )
+
+    def to_dict(self) -> Dict[str, Any]:
+        """
+        Returns a `dict` summarising the :class:`Scenario` instance.
+
+        Outputs:
+            - A `dict` summarising the information contained within the
+              :class:`Scenario` instance.
+
+        """
+
+        scenario_dict = {
+            "battery": self.battery,
+            "demands": {
+                DemandType.COMMERCIAL.value: self.demands.commercial,
+                DemandType.DOMESTIC.value: self.demands.domestic,
+                DemandType.PUBLIC.value: self.demands.public,
+            },
+            "diesel_scenario": self.diesel_scenario.to_dict(),
+            "distribution_network": str(self.distribution_network.value),
+            "grid": self.grid,
+            "grid_type": self.grid_type,
+            "name": self.name,
+            "resource_types": [str(e.value) for e in self.resource_types],
+            "prioritise_self_generation": self.prioritise_self_generation,
+            "pv": self.pv,
+        }
+
+        return scenario_dict
 
 
 @dataclasses.dataclass
@@ -2045,8 +2199,8 @@ class SystemDetails:
     .. attribute:: end_year
         The end year of the simulation.
 
-    .. attribute:: final_convertor_sizes:
-        A mapping between the name of the various convertors associated with the system
+    .. attribute:: final_converter_sizes:
+        A mapping between the name of the various converters associated with the system
         and the final size of each that remained at the end of the simiulation.
 
     .. attribute:: final_cw_pvt_size
@@ -2070,8 +2224,8 @@ class SystemDetails:
     .. attribute:: final_storage_size
         The final storage size of the system.
 
-    .. attribute:: initial_convertor_sizes:
-        A mapping between the name of the various convertors associated with the system
+    .. attribute:: initial_converter_sizes:
+        A mapping between the name of the various converters associated with the system
         and the initial size of each that was installed.
 
     .. attribute:: initial_cw_pvt_size
@@ -2109,7 +2263,7 @@ class SystemDetails:
 
     diesel_capacity: float = 0
     end_year: int = 0
-    final_convertor_sizes: Optional[Dict[str, float]] = None
+    final_converter_sizes: Optional[Dict[str, int]] = None
     final_cw_pvt_size: Optional[float] = 0
     final_hw_pvt_size: Optional[float] = 0
     final_num_buffer_tanks: Optional[int] = 0
@@ -2117,7 +2271,7 @@ class SystemDetails:
     final_num_hot_water_tanks: Optional[int] = 0
     final_pv_size: float = 0
     final_storage_size: float = 0
-    initial_convertor_sizes: Optional[Dict[str, float]] = None
+    initial_converter_sizes: Optional[Dict[str, int]] = None
     initial_cw_pvt_size: Optional[float] = 0
     initial_hw_pvt_size: Optional[float] = 0
     initial_num_buffer_tanks: Optional[int] = 0
@@ -2129,7 +2283,11 @@ class SystemDetails:
     start_year: int = 0
     file_information: Optional[Dict[str, str]] = None
 
-    def to_dict(self) -> Dict[str, Optional[Union[int, float, str, Dict[str, str]]]]:
+    def to_dict(
+        self,
+    ) -> Dict[
+        str, Optional[Union[int, float, str, Dict[str, str]]]
+    ]:  # pylint: disable=too-many-branches
         """
         Returns a `dict` containing information the :class:`SystemDetails`' information.
 
@@ -2152,18 +2310,18 @@ class SystemDetails:
             "start_year": round(self.start_year, 3),
         }
 
-        if self.initial_convertor_sizes is not None:
+        if self.initial_converter_sizes is not None:
             system_details_as_dict.update(
                 {
                     f"intial_num_{key}": value
-                    for key, value in self.initial_convertor_sizes.items()
+                    for key, value in self.initial_converter_sizes.items()
                 }
             )
-        if self.final_convertor_sizes is not None:
+        if self.final_converter_sizes is not None:
             system_details_as_dict.update(
                 {
                     f"intial_num_{key}": value
-                    for key, value in self.final_convertor_sizes.items()
+                    for key, value in self.final_converter_sizes.items()
                 }
             )
         if self.initial_num_buffer_tanks is not None:
@@ -2528,9 +2686,8 @@ class TechnicalAppraisal:
 
         """
 
-        return {
+        technical_appraisal_dict = {
             "blackouts": self.blackouts,
-            "clean_water_blackouts": self.clean_water_blackouts,
             "diesel_energy": self.diesel_energy,
             "diesel_fuel_usage": self.diesel_fuel_usage,
             "discounted_energy": self.discounted_energy,
@@ -2544,6 +2701,17 @@ class TechnicalAppraisal:
             "unmet_energy": self.unmet_energy,
             "unmet_energy_fraction": self.unmet_energy_fraction,
         }
+
+        if self.clean_water_blackouts is not None:
+            technical_appraisal_dict[
+                "clean_water_blackouts"
+            ] = self.clean_water_blackouts
+
+        technical_appraisal_dict = {
+            str(key): float(value) for key, value in technical_appraisal_dict.items()
+        }
+
+        return technical_appraisal_dict
 
 
 @dataclasses.dataclass
@@ -2607,6 +2775,7 @@ def save_simulation(
     output_directory: str,
     simulation: pd.DataFrame,
     simulation_number: int,
+    system_appraisal: Optional[SystemAppraisal],
     system_details: SystemDetails,
 ) -> None:
     """
@@ -2626,6 +2795,8 @@ def save_simulation(
             DataFrame output from Energy_System().simulation(...).
         - simulation_number:
             The number of the simulation being run.
+        - system_appraisal:
+            An optional appraisal of the system.
         - system_details:
             Information about the run to save.
 
@@ -2642,6 +2813,10 @@ def save_simulation(
     # Add the key results to the system data.
     simulation_details_dict: Dict[str, Any] = system_details.to_dict()
     simulation_details_dict["analysis_results"] = key_results.to_dict()
+
+    # Add the appraisal results to the system data if relevant.
+    if system_appraisal is not None:
+        simulation_details_dict["system_appraisal"] = system_appraisal.to_dict()
 
     # Save the system data.
     simulation_details_filepath = os.path.join(

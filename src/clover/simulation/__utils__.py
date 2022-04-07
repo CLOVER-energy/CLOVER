@@ -22,27 +22,37 @@ that is passed in to the module.
 
 """
 
+from argparse import Namespace
 import dataclasses
+from logging import Logger
 
-from typing import Any, Dict, List, Optional, Set, Union
+from typing import Any, Dict, List, Optional, Union
 
 from ..__utils__ import (
-    EXCHANGER,
+    AuxiliaryHeaterType,
     BColours,
+    CleanWaterMode,
+    EXCHANGER,
     InputFileError,
     NAME,
     RESOURCE_NAME_TO_RESOURCE_TYPE_MAPPING,
+    OperatingMode,
     ResourceType,
+    Scenario,
 )
 
-from ..conversion.conversion import Convertor
+from ..conversion.conversion import Converter
 from ..generation.solar import HybridPVTPanel, PVPanel
 from .diesel import DieselGenerator, DieselWaterHeater
 from .exchanger import Exchanger
-from .storage import Battery, CleanWaterTank, HotWaterTank
+from .storage_utils import Battery, CleanWaterTank, HotWaterTank
 from .transmission import Transmitter
 
-__all__ = ("Minigrid",)
+__all__ = (
+    "check_scenario",
+    "determine_available_converters",
+    "Minigrid",
+)
 
 # AC-to-AC:
 #   Keyword used for parsing ac-to-ac conversion parameters.
@@ -141,7 +151,7 @@ class Minigrid:
     dc_transmission_efficiency: Optional[float]
     diesel_generator: Optional[DieselGenerator]
     diesel_water_heater: Optional[DieselWaterHeater]
-    electric_water_heater: Optional[Convertor]
+    electric_water_heater: Optional[Converter]
     heat_exchanger: Optional[Exchanger]
     hot_water_tank: Optional[HotWaterTank]
     pv_panel: PVPanel
@@ -149,11 +159,11 @@ class Minigrid:
     water_pump: Optional[Transmitter]
 
     @classmethod
-    def from_dict(
+    def from_dict(  # pylint: disable=too-many-locals
         cls,
         diesel_generator: DieselGenerator,
         diesel_water_heater: Optional[DieselWaterHeater],
-        electric_water_heater: Optional[Convertor],
+        electric_water_heater: Optional[Converter],
         minigrid_inputs: Dict[str, Any],
         pv_panel: PVPanel,
         pvt_panel: Optional[HybridPVTPanel],
@@ -226,7 +236,7 @@ class Minigrid:
                         raise InputFileError(
                             "tank inputs",
                             f"Error parsing clean-water tank {entry['name']}: {str(e)}",
-                        )
+                        ) from None
                 elif (
                     RESOURCE_NAME_TO_RESOURCE_TYPE_MAPPING[entry[RESOURCE_TYPE]]
                     == ResourceType.HOT_CLEAN_WATER
@@ -237,7 +247,7 @@ class Minigrid:
                         raise InputFileError(
                             "tank inputs",
                             f"Error parsing hot-water tank {entry['name']}: {str(e)}",
-                        )
+                        ) from None
                 else:
                     raise InputFileError(
                         "tank inputs",
@@ -320,3 +330,213 @@ class Minigrid:
             pvt_panel,
             water_pump,
         )
+
+
+def check_scenario(
+    logger: Logger,
+    minigrid: Minigrid,
+    operating_mode: OperatingMode,
+    parsed_args: Namespace,
+    scenario: Scenario,
+) -> None:
+    """
+    Check that the scenario inputs match up correctly.
+
+    Inputs:
+        - logger:
+            The logger to use for the run.
+        - minigrid:
+            The minigrid being simulated.
+        - operating_mode:
+            The operating mode being carried out.
+        - parsed_args:
+            The parsed command-line arguments.
+        - scenario:
+            The current scenario beign modelled.
+
+    """
+
+    if scenario.desalination_scenario is not None and minigrid.clean_water_tank is None:
+        raise InputFileError(
+            "energy system inputs",
+            "No clean-water tank was provided despite there needing to be a tank "
+            "specified for dealing with clean-water demands.",
+        )
+
+    if operating_mode == OperatingMode.SIMULATION:
+        if (scenario.pv and parsed_args.pv_system_size is None) or (
+            not scenario.pv and parsed_args.pv_system_size is not None
+        ):
+            raise InputFileError(
+                "scenario",
+                "PV mode in the scenario file must match the command-line usage.",
+            )
+        if (
+            parsed_args.clean_water_pvt_system_size is not None
+            and (scenario.desalination_scenario is None)
+        ) or (
+            parsed_args.clean_water_pvt_system_size is None
+            and (
+                scenario.desalination_scenario is not None
+                and scenario.desalination_scenario.clean_water_scenario.mode
+                == CleanWaterMode.THERMAL_ONLY
+            )
+        ):
+            logger.error(
+                "%sPV-T mode and available resources in the scenario file must match "
+                "the command-line usage. Check the clean-water and PV-T scenario "
+                "specification.%s",
+                BColours.fail,
+                BColours.endc,
+            )
+            raise InputFileError(
+                "scenario",
+                "Mismatch between command-line usage and in-file usage.",
+            )
+        if (
+            parsed_args.hot_water_pvt_system_size is not None
+            and (scenario.hot_water_scenario is None)
+        ) or (
+            parsed_args.hot_water_pvt_system_size is None
+            and (scenario.hot_water_scenario is not None)
+        ):
+            logger.error(
+                "%sPV-T mode in the scenario file must match the command-line usage. "
+                "Check the hot-water and PV-T scenario specification.%s",
+                BColours.fail,
+                BColours.endc,
+            )
+            raise InputFileError(
+                "scenario",
+                "Mismatch between command-line usage and in-file usage.",
+            )
+        if (
+            scenario.pv_t
+            and scenario.desalination_scenario is None
+            and scenario.hot_water_scenario is None
+        ) or (
+            not scenario.pv_t
+            and scenario.desalination_scenario is not None
+            and scenario.hot_water_scenario is not None
+        ):
+            logger.error(
+                "%sDesalination or hot-water scenario usage does not match the "
+                "system's PV-T panel inclusion.%s",
+                BColours.fail,
+                BColours.endc,
+            )
+            raise InputFileError(
+                "scenario",
+                "The PV-T mode does not match the hot-water or desalination scenarios.",
+            )
+        if (scenario.battery and parsed_args.storage_size is None) or (
+            not scenario.battery and parsed_args.storage_size is not None
+        ):
+            raise InputFileError(
+                "scenario",
+                "Battery mode in the scenario file must match the command-line usage.",
+            )
+
+
+def determine_available_converters(
+    converters: Dict[str, Converter],
+    logger: Logger,
+    minigrid: Minigrid,
+    scenario: Scenario,
+) -> List[Converter]:
+    """
+    Determines the available :class:`Converter` instances based on the :class:`Scenario`
+
+    Inputs:
+        - converters:
+            The :class:`Converter` instances defined, parsed from the conversion inputs
+            file.
+        - logger:
+            The :class:`logging.Logger` to use for the run.
+        - minigrid:
+            The :class:`Minigrid` to use for the run.
+        - scenario:
+            The :class:`Scenario` to use for the run.
+
+    Outputs:
+        - A `list` of :class:`Converter` instances available to the system.
+
+    """
+
+    available_converters: List[Converter] = []
+
+    if scenario.desalination_scenario is None and scenario.hot_water_scenario is None:
+        return available_converters
+
+    # Determine the available converters from the scenarios file.
+    if scenario.desalination_scenario is not None:
+        # Process the clean-water converters.
+        for entry in scenario.desalination_scenario.clean_water_scenario.sources:
+            try:
+                available_converters.append(converters[entry])
+            except KeyError:
+                logger.error(
+                    "%sUnknown clean-water source specified in the scenario file: %s%s",
+                    BColours.fail,
+                    entry,
+                    BColours.endc,
+                )
+                raise InputFileError(
+                    "desalination scenario",
+                    f"{BColours.fail}Unknown clean-water source(s) in the scenario "
+                    + f"file: {entry}{BColours.endc}",
+                ) from None
+
+        # Process the feedwater sources.
+        for entry in scenario.desalination_scenario.unclean_water_sources:
+            try:
+                available_converters.append(converters[entry])
+            except KeyError:
+                logger.error(
+                    "%sUnknown unclean-water source specified in the scenario file: %s"
+                    "%s",
+                    BColours.fail,
+                    entry,
+                    BColours.endc,
+                )
+                raise InputFileError(
+                    "desalination scenario",
+                    f"{BColours.fail}Unknown unclean-water source in the scenario "
+                    + f"file: {entry}{BColours.endc}",
+                ) from None
+
+    if scenario.hot_water_scenario is not None:
+        # Process the hot-water converters.
+        for entry in scenario.hot_water_scenario.conventional_sources:
+            try:
+                available_converters.append(converters[entry])
+            except KeyError:
+                logger.error(
+                    "%sUnknown conventional hot-water source specified in the "
+                    "hot-water scenario file: %s%s",
+                    BColours.fail,
+                    entry,
+                    BColours.endc,
+                )
+                raise InputFileError(
+                    "hot-water scenario",
+                    f"{BColours.fail}Unknown conventional hot-water source(s) in the "
+                    + f"hot-water scenario file: {entry}{BColours.endc}",
+                ) from None
+
+        if scenario.hot_water_scenario.auxiliary_heater == AuxiliaryHeaterType.ELECTRIC:
+            if minigrid.electric_water_heater is None:
+                logger.error(
+                    "%sAuxiliary heating method of electric heating specified despite "
+                    "no electric water heater being selected in the energy-system "
+                    "inputs.%s",
+                    BColours.fail,
+                    BColours.endc,
+                )
+                raise InputFileError(
+                    "energy system inputs OR hot-water scenario",
+                    "Mismatch between electric water heating scenario.",
+                )
+            available_converters.append(converters[minigrid.electric_water_heater.name])
+
+    return available_converters

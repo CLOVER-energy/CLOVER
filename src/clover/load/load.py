@@ -41,11 +41,13 @@ from ..__utils__ import (
     KEROSENE_DEVICE_NAME,
     ResourceType,
     Location,
+    Scenario,
     monthly_times_to_daily_times,
 )
 
 __all__ = (
     "compute_total_hourly_load",
+    "compute_processed_load_profile",
     "DEFAULT_KEROSENE_DEVICE",
     "Device",
     "LOAD_LOGGER_NAME",
@@ -212,9 +214,7 @@ class Device:
                 "device inputs",
                 "All devices must specify an electric power value explicitly, even if "
                 "this is set to zero. "
-                "The device, {}, does not specify such a value.".format(
-                    device_input["device"]
-                ),
+                f"The device, {device_input['device']}, does not specify such a value.",
             )
 
         return cls(
@@ -334,11 +334,17 @@ def _yearly_load_statistics(total_load: pd.DataFrame, years: int) -> pd.DataFram
         )
     )
 
-    yearly_maximum: pd.DataFrame = pd.DataFrame(total_load_yearly.max(axis=1))  # type: ignore
+    yearly_maximum: pd.DataFrame = pd.DataFrame(
+        total_load_yearly.max(axis=1)  # type: ignore
+    )
     yearly_maximum.columns = pd.Index([ColumnHeader.MAXIMUM.value])
-    yearly_mean: pd.DataFrame = pd.DataFrame(total_load_yearly.mean(axis=1).round(0))  # type: ignore
+    yearly_mean: pd.DataFrame = pd.DataFrame(
+        total_load_yearly.mean(axis=1).round(0)  # type: ignore
+    )
     yearly_mean.columns = pd.Index([MEAN])
-    yearly_median: pd.DataFrame = pd.DataFrame(np.percentile(total_load_yearly, 50, axis=1))  # type: ignore
+    yearly_median: pd.DataFrame = pd.DataFrame(
+        np.percentile(total_load_yearly, 50, axis=1)  # type: ignore
+    )
     yearly_median.columns = pd.Index([MEDIAN])
     yearly_load_statistics = pd.concat(
         [yearly_maximum, yearly_mean, yearly_median], axis=1
@@ -402,7 +408,7 @@ def _number_of_devices_daily(
                 device.name,
             )
             daily_ownership = pd.DataFrame(
-                np.floor(population_growth_rate * device.initial_ownership)
+                np.floor(population_growth_rate * device.initial_ownership)  # type: ignore
             )
         logger.info(
             "Ownership for device %s calculated.",
@@ -425,6 +431,7 @@ def compute_total_hourly_load(
     devices: Set[Device],
     generated_device_load_filepath: str,
     logger: Logger,
+    total_load_profile: Optional[pd.DataFrame],
     years: int,
 ) -> Tuple[pd.DataFrame, pd.DataFrame]:
     """
@@ -442,6 +449,8 @@ def compute_total_hourly_load(
             The logger to use for the run.
         - regenerate:
             Whether to force regenerate the profiles.
+        - total_load_profile:
+            The total load profile to use in lieu of profile generation if specified.
         - years:
             The nbumber of years for which the simulation is being run.
 
@@ -457,52 +466,85 @@ def compute_total_hourly_load(
         generated_device_load_filepath, "yearly_load_statistics.csv"
     )
 
-    logger.info("Total load data must be recomputed, calculating total load data.")
+    if total_load_profile is None:
+        logger.info(
+            "Total load data must be recomputed each run unless an override profile is "
+            "specified. Calculating total load data."
+        )
 
-    # Instantiate empty dataframes.
-    domestic_load = pd.DataFrame(np.zeros((years * 365 * 24, 1)))
-    commercial_load = pd.DataFrame(np.zeros((years * 365 * 24, 1)))
-    public_load = pd.DataFrame(np.zeros((years * 365 * 24, 1)))
+        # Instantiate empty dataframes.
+        domestic_load = pd.DataFrame(np.zeros((years * 365 * 24, 1)))
+        commercial_load = pd.DataFrame(np.zeros((years * 365 * 24, 1)))
+        public_load = pd.DataFrame(np.zeros((years * 365 * 24, 1)))
 
-    # Sum over the device loads.
-    for device in tqdm(devices, desc="total load profile", leave=True, unit="device"):
-        # Skip the device if it is not available in the community.
-        if not device.available:
-            continue
+        # Sum over the device loads.
+        for device in tqdm(
+            devices, desc="total load profile", leave=True, unit="device"
+        ):
+            # Skip the device if it is not available in the community.
+            if not device.available:
+                continue
 
-        if device.demand_type == DemandType.DOMESTIC:
-            domestic_load = pd.DataFrame(
-                domestic_load.values + device_hourly_loads[device.name].values
+            if device.demand_type == DemandType.DOMESTIC:
+                domestic_load = pd.DataFrame(
+                    domestic_load.values + device_hourly_loads[device.name].values
+                )
+            elif device.demand_type == DemandType.COMMERCIAL:
+                commercial_load = pd.DataFrame(
+                    commercial_load.values + device_hourly_loads[device.name].values
+                )
+            elif device.demand_type == DemandType.PUBLIC:
+                public_load = pd.DataFrame(
+                    public_load.values + device_hourly_loads[device.name].values
+                )
+            else:
+                logger.error(
+                    "Demand type of device %s is unknown. Type: %s.",
+                    device.name,
+                    device.demand_type,
+                )
+
+        logger.info("Total load for all devices successfully computed.")
+        total_load = pd.concat([domestic_load, commercial_load, public_load], axis=1)
+        total_load.columns = pd.Index(
+            [
+                DemandType.DOMESTIC.value,
+                DemandType.COMMERCIAL.value,
+                DemandType.PUBLIC.value,
+            ]
+        )
+
+        logger.info("Saving total load.")
+        with open(total_load_filepath, "w") as f:
+            total_load.to_csv(f, line_terminator="")  # type: ignore
+        logger.info("Total device load successfully saved to %s.", total_load_filepath)
+
+    else:
+        total_load = total_load_profile
+        if not all(
+            total_load.columns
+            == pd.Index(
+                [
+                    DemandType.DOMESTIC.value,
+                    DemandType.COMMERCIAL.value,
+                    DemandType.PUBLIC.value,
+                ]
             )
-        elif device.demand_type == DemandType.COMMERCIAL:
-            commercial_load = pd.DataFrame(
-                commercial_load.values + device_hourly_loads[device.name].values
-            )
-        elif device.demand_type == DemandType.PUBLIC:
-            public_load = pd.DataFrame(
-                public_load.values + device_hourly_loads[device.name].values
-            )
-        else:
+        ):
             logger.error(
-                "Demand type of device %s is unknown. Type: %s.",
-                device.name,
-                device.demand_type,
+                "%sThe total load profile specified is not of the right format. See "
+                "logs for details.%s",
+                BColours.fail,
+                BColours.endc,
             )
-
-    logger.info("Total load for all devices successfully computed.")
-    total_load = pd.concat([domestic_load, commercial_load, public_load], axis=1)
-    total_load.columns = pd.Index(
-        [
-            DemandType.DOMESTIC.value,
-            DemandType.COMMERCIAL.value,
-            DemandType.PUBLIC.value,
-        ]
-    )
-
-    logger.info("Saving total load.")
-    with open(total_load_filepath, "w") as f:
-        total_load.to_csv(f, line_terminator="")  # type: ignore
-    logger.info("Total device load successfully saved to %s.", total_load_filepath)
+            logger.info(
+                "The total load file given must have columns which match %s.",
+                ", ".join(str(e.value) for e in DemandType),
+            )
+            raise InputFileError(
+                "total-load file",
+                "The total load profile is not of the correct format.",
+            )
 
     # Attempt to read the yearly load statistics from a file and compute if it doesn't
     # exist.
@@ -719,21 +761,16 @@ def process_device_hourly_usage(
         hourly_device_usage = pd.DataFrame()
 
         # Calculate the hourly-usage profile.
-        logger.info("Calculating number of %ss in use", device.name)
-        # for day in range(0, 365 * years):
-        #     devices = float(daily_device_ownership.iloc[day])
-        #     day_profile = daily_device_utilisation.iloc[day]
-        #     day_devices_on = pd.DataFrame(np.random.binomial(devices, day_profile))
-        #     hourly_device_usage = pd.concat(hourly_device_usage, day_devices_on)
-
         # This processes a random distribution for usage based on the device ownership and
         # utilisation on any given day for all days within the simulation range.
         #
+
+        logger.info("Calculating number of %ss in use", device.name)
         try:
-            hourly_device_usage = pd.concat(
+            hourly_device_usage = pd.concat(  # type: ignore
                 [
-                    pd.DataFrame(
-                        np.random.binomial(
+                    pd.DataFrame(  # type: ignore
+                        np.random.binomial(  # type: ignore
                             float(daily_device_ownership.iloc[day, 0]),
                             daily_device_utilisation.iloc[day, :],
                         )
@@ -931,13 +968,14 @@ def process_device_utilisation(
     return interpolated_daily_profile
 
 
-def process_load_profiles(
+def process_load_profiles(  # pylint: disable=too-many-locals
     auto_generated_files_directory: str,
     device_utilisations: Dict[Device, pd.DataFrame],
     resource_type: ResourceType,
     location: Location,
     logger: Logger,
     regenerate: bool,
+    total_load_profile: Optional[pd.DataFrame] = None,
 ) -> Tuple[Dict[str, pd.DataFrame], pd.DataFrame, pd.DataFrame]:
     """
     Process all the load information and profiles to generate the total load.
@@ -958,6 +996,8 @@ def process_load_profiles(
             The logger to use for the run.
         - regenerate:
             Whether to force-regenerate the various profiles.
+        - total_load_profile:
+            The total load profile to use in lieu of profile generation if specified.
 
     Outputs:
         - A mapping between the device and the load demand that it generates for the
@@ -998,90 +1038,89 @@ def process_load_profiles(
             BColours.endc,
         )
         raise Exception(
-            "{}Unknown load type: {}{}".format(
-                BColours.fail, resource_type.value, BColours.endc
+            f"{BColours.fail}Unknown load type: {resource_type.value}{BColours.endc}"
+        )
+
+    if total_load_profile is None:
+        for device in tqdm(
+            relevant_device_utilisations,
+            desc=f"{resource_name.replace('_', ' ')} load profiles",
+            leave=True,
+            unit="device",
+        ):
+            # If the device is not available, then skip it.
+            if not device.available:
+                continue
+
+            # Compute the device ownership.
+            daily_device_ownership = process_device_ownership(
+                device,
+                generated_device_ownership_directory=os.path.join(
+                    auto_generated_files_directory,
+                    "load",
+                    "device_ownership",
+                ),
+                location=location,
+                logger=logger,
+                regenerate=regenerate,
             )
-        )
+            logger.info(
+                "Device ownership information for %s successfully computed.",
+                device.name,
+            )
 
-    for device in tqdm(
-        relevant_device_utilisations,
-        desc=f"{resource_name.replace('_', ' ')} load profiles",
-        leave=True,
-        unit="device",
-    ):
-        # If the device is not available, then skip it.
-        if not device.available:
-            continue
+            # Compute the device utilisation.
+            daily_device_utilisaion = process_device_utilisation(
+                device,
+                device_utilisations=relevant_device_utilisations,
+                generated_device_utilisation_directory=os.path.join(
+                    auto_generated_files_directory,
+                    "load",
+                    "device_utilisation",
+                ),
+                location=location,
+                logger=logger,
+                regenerate=regenerate,
+            )
+            logger.info(
+                "Device utilisation information for %s successfully computed.",
+                device.name,
+            )
 
-        # Compute the device ownership.
-        daily_device_ownership = process_device_ownership(
-            device,
-            generated_device_ownership_directory=os.path.join(
-                auto_generated_files_directory,
-                "load",
-                "device_ownership",
-            ),
-            location=location,
-            logger=logger,
-            regenerate=regenerate,
-        )
-        logger.info(
-            "Device ownership information for %s successfully computed.",
-            device.name,
-        )
+            # Compute the device usage.
+            hourly_device_usage = process_device_hourly_usage(
+                device,
+                daily_device_ownership=daily_device_ownership,
+                daily_device_utilisation=daily_device_utilisaion,
+                generated_device_usage_filepath=os.path.join(
+                    auto_generated_files_directory, "load", "device_usage"
+                ),
+                logger=logger,
+                years=location.max_years,
+                regenerate=regenerate,
+            )
+            logger.info(
+                "Device hourly usage information for %s successfully computed.",
+                device.name,
+            )
 
-        # Compute the device utilisation.
-        daily_device_utilisaion = process_device_utilisation(
-            device,
-            device_utilisations=relevant_device_utilisations,
-            generated_device_utilisation_directory=os.path.join(
-                auto_generated_files_directory,
-                "load",
-                "device_utilisation",
-            ),
-            location=location,
-            logger=logger,
-            regenerate=regenerate,
-        )
-        logger.info(
-            "Device utilisation information for %s successfully computed.",
-            device.name,
-        )
+            # Compute the load profile based on this usage.
+            device_hourly_loads[device.name] = process_device_hourly_power(
+                device,
+                generated_device_load_filepath=os.path.join(
+                    auto_generated_files_directory, "load", resource_name, "device_load"
+                ),
+                hourly_device_usage=hourly_device_usage,
+                resource_type=resource_type,
+                logger=logger,
+                regenerate=regenerate,
+            )
+            logger.info(
+                "Device hourly load information for %s successfully computed.",
+                device.name,
+            )
 
-        # Compute the device usage.
-        hourly_device_usage = process_device_hourly_usage(
-            device,
-            daily_device_ownership=daily_device_ownership,
-            daily_device_utilisation=daily_device_utilisaion,
-            generated_device_usage_filepath=os.path.join(
-                auto_generated_files_directory, "load", "device_usage"
-            ),
-            logger=logger,
-            years=location.max_years,
-            regenerate=regenerate,
-        )
-        logger.info(
-            "Device hourly usage information for %s successfully computed.",
-            device.name,
-        )
-
-        # Compute the load profile based on this usage.
-        device_hourly_loads[device.name] = process_device_hourly_power(
-            device,
-            generated_device_load_filepath=os.path.join(
-                auto_generated_files_directory, "load", resource_name, "device_load"
-            ),
-            hourly_device_usage=hourly_device_usage,
-            resource_type=resource_type,
-            logger=logger,
-            regenerate=regenerate,
-        )
-        logger.info(
-            "Device hourly load information for %s successfully computed.",
-            device.name,
-        )
-
-    logger.info("Computing the total device hourly load.")
+    logger.info("Computing the total device hourly load and yearly load statistics.")
     total_load, yearly_statistics = compute_total_hourly_load(
         device_hourly_loads=device_hourly_loads,
         devices=set(relevant_device_utilisations.keys()),
@@ -1089,6 +1128,7 @@ def process_load_profiles(
             auto_generated_files_directory, "load", resource_name, "device_load"
         ),
         logger=logger,
+        total_load_profile=total_load_profile,
         years=location.max_years,
     )
     logger.info("Total load and yearly statistics successfully computed.")
@@ -1101,3 +1141,50 @@ def process_load_profiles(
         total_load,
         yearly_statistics,
     )
+
+
+def compute_processed_load_profile(
+    scenario: Scenario, total_load: pd.DataFrame
+) -> pd.DataFrame:
+    """
+    Gets the total community load over 20 years in kW
+
+    Inputs:
+        - scenario:
+            Information about the scenario currently being run.
+        - total_load:
+            The total load as a :class:`pandas.DataFrame`.
+
+    Outputs:
+        - A :class:`pandas.DataFrame` with columns for the load of domestic,
+            commercial and public devices.
+
+    """
+
+    processed_total_load: Optional[pd.DataFrame] = None
+
+    if scenario.demands.domestic:
+        processed_total_load = pd.DataFrame(
+            total_load[DemandType.DOMESTIC.value].values
+        )
+
+    if scenario.demands.commercial:
+        if processed_total_load is not None:
+            processed_total_load += pd.DataFrame(  # type: ignore
+                total_load[DemandType.COMMERCIAL.value].values
+            )
+        else:
+            processed_total_load = pd.DataFrame(total_load[DemandType.COMMERCIAL.value])
+
+    if scenario.demands.public:
+        if processed_total_load is not None:
+            processed_total_load += pd.DataFrame(  # type: ignore
+                total_load[DemandType.PUBLIC.value].values
+            )
+        else:
+            processed_total_load = pd.DataFrame(total_load[DemandType.PUBLIC.value])
+
+    if processed_total_load is None:
+        raise Exception("At least one load type must be specified.")
+
+    return processed_total_load

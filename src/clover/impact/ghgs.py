@@ -31,7 +31,6 @@ from ..__utils__ import (
     Location,
     hourly_profile_to_daily_sum,
 )
-from ..conversion.conversion import Convertor
 from .__utils__ import SIZE_INCREMENT, ImpactingComponent, LIFETIME
 
 __all__ = (
@@ -78,6 +77,14 @@ INITIAL_GHGS = "initial_ghgs"
 # Infrastructure Ghgs:
 #   Keyword used for denoting infrastructure ghgs.
 INFRASTRUCTURE_GHGS = "infrastructure_ghgs"
+
+# Installation GHGS:
+#   Keyword for describing GHG data.
+INSTALLATION_GHGS = "installation_ghgs"
+
+# GHG_DECREASE:
+#   Keyword for describing GHG decrease.
+INSTALLATION_GHGS_DECREASE = "installation_ghg_decrease"
 
 # Final GHGs:
 #   Keyword for the final GHGs.
@@ -144,8 +151,12 @@ def calculate_installation_ghgs(
 
     """
 
-    installation_ghgs: float = capacity * ghg_inputs[system_component][GHGS]
-    annual_reduction: float = 0.01 * ghg_inputs[system_component][GHG_DECREASE]
+    installation_ghgs: float = (
+        capacity * ghg_inputs[system_component][INSTALLATION_GHGS]
+    )
+    annual_reduction: float = (
+        0.01 * ghg_inputs[system_component][INSTALLATION_GHGS_DECREASE]
+    )
 
     return installation_ghgs * (1.0 - annual_reduction) ** year
 
@@ -170,10 +181,10 @@ def calculate_misc_ghgs(capacity: float, ghg_inputs: Dict[str, Any]) -> float:
     return misc_ghgs
 
 
-def calculate_total_equipment_ghgs(
+def calculate_total_equipment_ghgs(  # pylint: disable=too-many-locals
     buffer_tanks: int,
     clean_water_tanks: int,
-    convertors: Dict[str, int],
+    converters: Dict[str, int],
     diesel_size: float,
     ghg_inputs: Dict[str, Any],
     heat_exchangers: int,
@@ -192,8 +203,8 @@ def calculate_total_equipment_ghgs(
             Number of buffer tanks being installed.
         - clean_water_tanks:
             Capacity of clean-water tanks being installed.
-        - convertors:
-            A mapping between convertor names and the size of each that was added to the
+        - converters:
+            A mapping between converter names and the size of each that was added to the
             system this iteration.
         - diesel_size:
             Capacity of diesel generator being installed
@@ -276,23 +287,23 @@ def calculate_total_equipment_ghgs(
             year,
         )
 
-    convertor_ghgs = sum(
+    converter_ghgs = sum(
         calculate_ghgs(
             size,
             ghg_inputs,
-            GHG_IMPACT.format(type=ImpactingComponent.CONVERTOR.value, name=convertor),
+            GHG_IMPACT.format(type=ImpactingComponent.CONVERTER.value, name=converter),
             year,
         )
-        for convertor, size in convertors.items()
+        for converter, size in converters.items()
     )
-    convertor_installation_ghgs = sum(
+    converter_installation_ghgs = sum(
         calculate_installation_ghgs(
             size,
             ghg_inputs,
-            GHG_IMPACT.format(type=ImpactingComponent.CONVERTOR.value, name=convertor),
+            GHG_IMPACT.format(type=ImpactingComponent.CONVERTER.value, name=converter),
             year,
         )
-        for convertor, size in convertors.items()
+        for converter, size in converters.items()
     )
 
     diesel_ghgs = calculate_ghgs(
@@ -398,8 +409,8 @@ def calculate_total_equipment_ghgs(
         + buffer_tank_installation_ghgs
         + clean_water_tank_installation_ghgs
         + clean_water_tank_ghgs
-        + convertor_ghgs
-        + convertor_installation_ghgs
+        + converter_ghgs
+        + converter_installation_ghgs
         + diesel_installation_ghgs
         + diesel_ghgs
         + heat_exchanger_ghgs
@@ -407,11 +418,10 @@ def calculate_total_equipment_ghgs(
         + hot_water_tank_ghgs
         + hot_water_tank_installation_ghgs
         + misc_ghgs
-        + pv_installation_ghgs
         + pv_ghgs
         + pv_installation_ghgs
-        + pvt_installation_ghgs
         + pvt_ghgs
+        + pvt_installation_ghgs
         + storage_ghgs
     )
 
@@ -507,7 +517,7 @@ def calculate_independent_ghgs(
     return total_ghgs
 
 
-def calculate_inverter_ghgs(
+def calculate_inverter_ghgs(  # pylint: disable=too-many-locals
     electric_yearly_load_statistics: pd.DataFrame,
     end_year: int,
     ghg_inputs: Dict[str, Any],
@@ -542,7 +552,7 @@ def calculate_inverter_ghgs(
     replacement_intervals.columns = pd.Index([ColumnHeader.INSTALLATION_YEAR.value])
 
     # Check if inverter should be replaced in the specified time interval
-    if any(
+    if not any(
         replacement_intervals[ColumnHeader.INSTALLATION_YEAR.value].isin(
             list(np.array(range(start_year, end_year)))
         )
@@ -676,7 +686,7 @@ def calculate_grid_ghgs(
     grid_ghgs_final = ghg_inputs[ImpactingComponent.GRID.value][FINAL_GHGS]
     days = int(365 * (end_year - start_year))
     total_daily_energy = pd.DataFrame(
-        hourly_profile_to_daily_sum(pd.DataFrame(grid_energy_hourly.dropna()))
+        hourly_profile_to_daily_sum(pd.DataFrame(grid_energy_hourly.dropna()))  # type: ignore
     )
 
     # Account for reduction in grid GHG intensity
@@ -755,10 +765,10 @@ def calculate_om_ghgs(
 
 
 #   Total O&M for entire system
-def calculate_total_om(
+def calculate_total_om(  # pylint: disable=too-many-locals
     buffer_tanks: int,
     clean_water_tanks: int,
-    convertors: Optional[Dict[str, int]],
+    converters: Optional[Dict[str, int]],
     diesel_size: float,
     ghg_inputs: Dict[str, Any],
     heat_exchangers: int,
@@ -778,8 +788,8 @@ def calculate_total_om(
             Capacity of buffer tanks installed.
         - clean_water_tanks:
             Capacity of clean-water tanks installed.
-        - convertors:
-            A mapping between convertor names and the size of each that was added to the
+        - converters:
+            A mapping between converter names and the size of each that was added to the
             system this iteration.
         - diesel_size:
             Capacity of diesel generator installed.
@@ -852,22 +862,22 @@ def calculate_total_om(
             end_year,
         )
 
-    convertor_om_ghgs: float = 0
-    if convertors is not None:
-        convertor_om_ghgs = sum(
+    converter_om_ghgs: float = 0
+    if converters is not None:
+        converter_om_ghgs = sum(
             calculate_om_ghgs(
                 size,
                 ghg_inputs,
                 GHG_IMPACT.format(
-                    type=ImpactingComponent.CONVERTOR.value, name=convertor
+                    type=ImpactingComponent.CONVERTER.value, name=converter
                 ),
                 start_year,
                 end_year,
             )
-            for convertor, size in convertors.items()
+            for converter, size in converters.items()
         )
     else:
-        logger.debug("No convertors installed so no convertor OM GHGs to calcualte.")
+        logger.debug("No converters installed so no converter OM GHGs to calcualte.")
 
     diesel_om_ghgs = calculate_om_ghgs(
         diesel_size, ghg_inputs, ImpactingComponent.PV.value, start_year, end_year
@@ -954,7 +964,7 @@ def calculate_total_om(
     return (
         buffer_tank_om_ghgs
         + clean_water_tank_om_ghgs
-        + convertor_om_ghgs
+        + converter_om_ghgs
         + diesel_om_ghgs
         + general_om_ghgs
         + heat_exchanger_om_ghgs
