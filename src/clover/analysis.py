@@ -224,12 +224,14 @@ def get_key_results(
     return key_results
 
 
-def plot_outputs(
+def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
     grid_input_profile: pd.DataFrame,
     grid_profile: Optional[pd.DataFrame],
-    initial_cw_hourly_loads: Optional[Dict[str, pd.DataFrame]],
+    initial_cw_hourly_loads: Optional[
+        Dict[str, pd.DataFrame]
+    ],  # pylint: disable=unused-argument
     initial_electric_hourly_loads: Dict[str, pd.DataFrame],
-    initial_hw_hourly_loads: Dict[str, pd.DataFrame],
+    initial_hw_hourly_loads: Dict[str, pd.DataFrame],  # pylint: disable=unused-argument
     num_years: int,
     output_directory: str,
     simulation_name: str,
@@ -281,9 +283,9 @@ def plot_outputs(
     os.makedirs(os.path.join(output_directory, simulation_name), exist_ok=True)
     os.makedirs(figures_directory, exist_ok=True)
 
-    total_cw_load = total_loads[ResourceType.CLEAN_WATER]
+    # total_cw_load = total_loads[ResourceType.CLEAN_WATER]
     total_electric_load = total_loads[ResourceType.ELECTRIC]
-    total_hw_load = total_loads[ResourceType.HOT_CLEAN_WATER]
+    # total_hw_load = total_loads[ResourceType.HOT_CLEAN_WATER]
 
     # Determine which aspects of the system need plotting.
     cw_pvt: bool = ColumnHeader.CW_PVT_ELECTRICITY_SUPPLIED.value in simulation_output
@@ -421,9 +423,7 @@ def plot_outputs(
             label="total",
         )
         plt.legend(loc="upper right")
-        plt.xticks(
-            [entry for entry in (range(0, CUT_OFF_TIME - 1, min(4, CUT_OFF_TIME - 1)))]
-        )
+        plt.xticks(list(range(0, CUT_OFF_TIME - 1, min(4, CUT_OFF_TIME - 1))))
         plt.xlabel("Hour of simulation")
         plt.ylabel("Electric power demand / kW")
         plt.title(f"Load profile of the community for the first {CUT_OFF_TIME} hours")
