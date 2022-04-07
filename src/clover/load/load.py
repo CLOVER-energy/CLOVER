@@ -214,9 +214,7 @@ class Device:
                 "device inputs",
                 "All devices must specify an electric power value explicitly, even if "
                 "this is set to zero. "
-                "The device, {}, does not specify such a value.".format(
-                    device_input["device"]
-                ),
+                f"The device, {device_input['device']}, does not specify such a value.",
             )
 
         return cls(
@@ -336,11 +334,17 @@ def _yearly_load_statistics(total_load: pd.DataFrame, years: int) -> pd.DataFram
         )
     )
 
-    yearly_maximum: pd.DataFrame = pd.DataFrame(total_load_yearly.max(axis=1))  # type: ignore
+    yearly_maximum: pd.DataFrame = pd.DataFrame(
+        total_load_yearly.max(axis=1)  # type: ignore
+    )
     yearly_maximum.columns = pd.Index([ColumnHeader.MAXIMUM.value])
-    yearly_mean: pd.DataFrame = pd.DataFrame(total_load_yearly.mean(axis=1).round(0))  # type: ignore
+    yearly_mean: pd.DataFrame = pd.DataFrame(
+        total_load_yearly.mean(axis=1).round(0)  # type: ignore
+    )
     yearly_mean.columns = pd.Index([MEAN])
-    yearly_median: pd.DataFrame = pd.DataFrame(np.percentile(total_load_yearly, 50, axis=1))  # type: ignore
+    yearly_median: pd.DataFrame = pd.DataFrame(
+        np.percentile(total_load_yearly, 50, axis=1)  # type: ignore
+    )
     yearly_median.columns = pd.Index([MEDIAN])
     yearly_load_statistics = pd.concat(
         [yearly_maximum, yearly_mean, yearly_median], axis=1
@@ -964,7 +968,7 @@ def process_device_utilisation(
     return interpolated_daily_profile
 
 
-def process_load_profiles(
+def process_load_profiles(  # pylint: disable=too-many-locals
     auto_generated_files_directory: str,
     device_utilisations: Dict[Device, pd.DataFrame],
     resource_type: ResourceType,
@@ -1034,9 +1038,7 @@ def process_load_profiles(
             BColours.endc,
         )
         raise Exception(
-            "{}Unknown load type: {}{}".format(
-                BColours.fail, resource_type.value, BColours.endc
-            )
+            f"{BColours.fail}Unknown load type: {resource_type.value}{BColours.endc}"
         )
 
     if total_load_profile is None:

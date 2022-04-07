@@ -160,15 +160,12 @@ class Converter:
         maximum_output_capacity: float,
         name: str,
         output_resource_type: ResourceType,
-        waste_production: Dict[WasteProduct, float] = {},
+        waste_production: Optional[Dict[WasteProduct, float]] = None,
     ) -> None:
         """
         Instantiate a :class:`Converter` instance.
 
         Inputs:
-            - consunmption:
-                The amount of input load type which is consumed per unit output load
-                produced.
             - input_resource_types:
                 The types of load inputted to the converter.
             - maximum_output_capcity:
@@ -188,7 +185,9 @@ class Converter:
         self.maximum_output_capacity: float = maximum_output_capacity
         self.name: str = name
         self.output_resource_type: ResourceType = output_resource_type
-        self.waste_production: Dict[WasteProduct, float] = waste_production
+        self.waste_production: Dict[WasteProduct, float] = (
+            waste_production if waste_production is not None else {}
+        )
 
     def __eq__(self, other: Any) -> bool:
         """
@@ -218,10 +217,7 @@ class Converter:
 
         """
 
-        consumption_dict = {
-            index: value
-            for index, value in enumerate(self.input_resource_consumption.values())
-        }
+        consumption_dict = dict(enumerate(self.input_resource_consumption.values()))
         consumption_int = sum(
             value * 10 ** (5 * index) for index, value in consumption_dict.items()
         )
@@ -271,17 +267,17 @@ class Converter:
 
         """
 
+        input_resource_consumption = ", ".join(
+            [
+                f"{key.value}={value}"
+                for key, value in self.input_resource_consumption.items()
+            ]
+        )
+
         return (
             "Converter("
             + f"name={self.name}"
-            + ", input_resource_consumption=({})".format(
-                ", ".join(
-                    [
-                        f"{key.value}={value}"
-                        for key, value in self.input_resource_consumption.items()
-                    ]
-                )
-            )
+            + f", input_resource_consumption=({input_resource_consumption})"
             + f", output_resource_type = {self.output_resource_type.value}"
             + f", maximum_output_capacity = {self.maximum_output_capacity}"
             + (
@@ -669,17 +665,17 @@ class WaterSource(Converter):
 
         """
 
+        input_resource_consumption = ", ".join(
+            [
+                f"{key.value}={value} units/output unit"
+                for key, value in self.input_resource_consumption.items()
+            ]
+        )
+
         return (
             "Converter("
             + f"name={self.name}"
-            + ", input_resource_consumption=({})".format(
-                ", ".join(
-                    [
-                        f"{key.value}={value} units/output unit"
-                        for key, value in self.input_resource_consumption.items()
-                    ]
-                )
-            )
+            + f", input_resource_consumption=({input_resource_consumption})"
             + f", output_resource_type = {self.output_resource_type.value}"
             + f", maximum_output_capacity = {self.maximum_output_capacity}"
             + ")"
