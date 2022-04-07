@@ -1582,7 +1582,7 @@ def _parse_tank_inputs(  # pylint: disable=too-many-statements
 
     """
 
-    if scenario.desalination_scenario is None and scenario.hot_water_scenario is None:
+    if all(scenario.desalination_scenario is None for scenario in scenarios) and all(scenario.hot_water_scenario is None for scenario in scenarios):
         return None, None, None, None, None, None, None, None, None
 
     # Parse the tank input information.
@@ -2613,7 +2613,7 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
     logger.info("PV impact data successfully updated.")
 
     # Update the impact inputs with the diesel data.
-    if scenario.diesel_scenario.mode != DieselMode.DISABLED:
+    if any(scenario.diesel_scenario.mode != DieselMode.DISABLED for scenario in scenarios):
         logger.info("Updating with diesel impact data.")
         finance_inputs[ImpactingComponent.DIESEL.value] = defaultdict(
             float, diesel_costs
