@@ -2769,6 +2769,7 @@ class SystemAppraisal:
 
 
 def save_simulation(
+    disable_tqdm: bool,
     key_results: KeyResults,
     logger: logging.Logger,
     output: str,
@@ -2782,6 +2783,8 @@ def save_simulation(
     Saves simulation outputs to a .csv file
 
     Inputs:
+        - disable_tqdm:
+            Whether to disable the tqdm progress bars (True) or display them (False).
         - key_results:
             The key results from the run.
         - logger:
@@ -2833,7 +2836,13 @@ def save_simulation(
         f"simulation_{simulation_number}"
     ] = simulation_details_dict
 
-    with tqdm(total=2, desc="saving output files", leave=False, unit="file") as pbar:
+    with tqdm(
+        total=2,
+        desc="saving output files",
+        disable=disable_tqdm,
+        leave=False,
+        unit="file",
+    ) as pbar:
         # Save the simulation data in a CSV file.
         logger.info("Saving simulation output.")
 
