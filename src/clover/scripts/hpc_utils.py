@@ -398,7 +398,7 @@ def _process_hpc_input_file(
 
 def parse_args_and_hpc_input_file(
     args: List[Any], logger: Logger
-) -> Tuple[str, List[Union[HpcOptimisation, HpcSimulation]]]:
+) -> Tuple[str, List[Union[HpcOptimisation, HpcSimulation]], bool]:
     """
     Parses command-line arguments and returns the HPC runs to be carried out.
 

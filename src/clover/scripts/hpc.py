@@ -25,7 +25,7 @@ import sys
 from typing import Any, List
 
 from ..__main__ import main as clover_main
-from ..__utils__ import BColours, get_logger
+from ..__utils__ import BColours, InternalError, get_logger
 from .hpc_utils import (
     HpcOptimisation,
     HpcRunType,
@@ -54,7 +54,14 @@ def main(args: List[Any]) -> None:
     """
 
     # Determine the run that is to be carried out.
-    hpc_job_number = int(os.getenv(HPC_JOB_NUMBER))
+    try:
+        hpc_job_number = int(os.getenv(HPC_JOB_NUMBER))  # type: ignore
+    except ValueError:
+        print(
+            f"{BColours.fail}HPC environmental variable {HPC_JOB_NUMBER} was not of "
+            + f"type int.{BColours.endc}",
+        )
+        raise
     logger = get_logger(LOGGER_NAME.format(hpc_job_number), False)
 
     # Call the utility module to parse the HPC run information.
@@ -83,9 +90,32 @@ def main(args: List[Any]) -> None:
     ]
 
     if hpc_run.type == HpcRunType.OPTIMISATION:
+        if not isinstance(hpc_run, HpcOptimisation):
+            logger.error(
+                "%sRun %s marked as optimisation but was processed as a simulation.%s",
+                BColours.fail,
+                hpc_job_number,
+                BColours.endc,
+            )
+            raise InternalError(
+                f"Failure processing run #{hpc_job_number} as a optimisation."
+            )
+
         logger.info("Run %s is an optimisation.", hpc_job_number)
         clover_arguments.append("--optimisation")
+
     elif hpc_run.type == HpcRunType.SIMULATION:
+        if not isinstance(hpc_run, HpcSimulation):
+            logger.error(
+                "%sRun %s marked as simulation but was processed as an optimisation.%s",
+                BColours.fail,
+                hpc_job_number,
+                BColours.endc,
+            )
+            raise InternalError(
+                f"Failure processing run #{hpc_job_number} as a simulation."
+            )
+
         logger.info("Run %s is a simulation.", hpc_job_number)
         clover_arguments.extend(
             [
@@ -107,6 +137,18 @@ def main(args: List[Any]) -> None:
         raise InvalidRunError(f"Run {hpc_job_number} was not of a supported run type.")
 
     if hpc_run.total_load:
+        if hpc_run.total_load_file is None:
+            logger.error(
+                "%sRun %s was processed as having a total-load file but an internal "
+                "error occurred determining the total-load file name.%s",
+                BColours.fail,
+                hpc_job_number,
+                BColours.endc,
+            )
+            raise InternalError(
+                "Error occurred processing total-load filename for run #"
+                f"{hpc_job_number}."
+            )
         clover_arguments.extend(["--electric-load-profile", hpc_run.total_load_file])
 
     if verbose:
