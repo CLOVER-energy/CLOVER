@@ -177,6 +177,14 @@ class HpcOptimisation(_BaseHpcRun, type=HpcRunType.OPTIMISATION):
         if not total_load_input:
             total_load: bool = False
             total_load_file: Optional[str] = None
+        elif not isinstance(total_load_input, str):
+            logger.error(
+                "%sCannot set total-load to be `true`.%s", BColours.fail, BColours.endc
+            )
+            raise InvalidRunError(
+                "Cannot set total-load file to be `true` in HPC input file. Either "
+                "`false` or the name of the file can be used."
+            )
         else:
             total_load = True
             total_load_file = total_load_input
@@ -258,22 +266,36 @@ class HpcSimulation(_BaseHpcRun, type=HpcRunType.SIMULATION):
             total_load_file = total_load_input
 
         try:
-            pv_system_size: str = input_data["pv_system_size"]
+            pv_system_size: float = float(input_data["pv_system_size"])
         except KeyError:
             logger.error(
                 "%sMissing pv system size information.%s", BColours.fail, BColours.endc
             )
             raise InvalidRunError("Missing pv system size information in input file.")
+        except ValueError:
+            logger.error(
+                "%PV system size must be either an integer or float, `str` is not "
+                "allowed.%s",
+                BColours.fail,
+                BColours.endc
+            )
 
         scenario: str = input_data.get("scenario", DEFAULT_SCENARIO)
 
         try:
-            storage_size: str = input_data["storage_size"]
+            storage_size: float = float(input_data["storage_size"])
         except KeyError:
             logger.error(
                 "%sMissing storage size information.%s", BColours.fail, BColours.endc
             )
             raise InvalidRunError("Missing storage size information in input file.")
+        except ValueError:
+            logger.error(
+                "%sStorage size must be either an integer or float, `str` is not "
+                "allowed.%s",
+                BColours.fail,
+                BColours.endc
+            )
 
         return cls(
             input_data["location"],
@@ -387,7 +409,7 @@ def _process_hpc_input_file(
                 "%sInvalid HPC run type '%s'. Valid types are %s.%s",
                 BColours.fail,
                 entry[TYPE],
-                ", ".join([str(e.valu) for e in HpcRunType]),
+                ", ".join([str(e.value) for e in HpcRunType]),
                 BColours.endc,
             )
             raise InvalidRunError(f"Invalid HPC run type {entry[TYPE]}.")
