@@ -28,8 +28,6 @@ import tempfile
 from logging import Logger
 from typing import Union
 
-from tqdm import tqdm
-
 from ..__main__ import __version__
 from ..__utils__ import (
     DONE,
@@ -190,10 +188,10 @@ def main(args) -> None:
     version_string = f"Version {__version__}"
     print(
         CLOVER_HPC_HEADER_STRING.format(
-            version_line="{}{}{}".format(
-                " " * (40 - math.ceil(len(version_string) / 2)),
-                version_string,
-                " " * (40 - math.floor(len(version_string) / 2)),
+            version_line=(
+                " " * (40 - math.ceil(len(version_string) / 2))
+                + version_string
+                + " " * (40 - math.floor(len(version_string) / 2))
             )
         )
     )
@@ -266,12 +264,13 @@ def main(args) -> None:
         print("Sending jobs to the HPC:")
         try:
             subprocess.run(["qsub", hpc_submission_script_filepath], check=False)
-        except Exception:
+        except Exception:  # pylint: disable=broad-except
             logger.error("Failed. See logs for details.")
             print(
                 "Sending jobs to the HPC .......................................    "
                 f"{FAILED}"
             )
+            raise
         print(
             f"Sending jobs to the HPC .......................................    {DONE}"
         )

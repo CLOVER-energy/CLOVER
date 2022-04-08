@@ -23,7 +23,7 @@ import enum
 from logging import Logger
 from typing import Any, Dict, List, Optional, Tuple, Union
 
-from ..__utils__ import DEFAULT_SCENARIO, BColours, read_yaml
+from ..__utils__ import DEFAULT_SCENARIO, BColours, InputFileError, read_yaml
 
 
 __all__ = (
@@ -74,7 +74,7 @@ class InvalidRunError(Exception):
         super().__init__(f"Invalid HPC run in hpc inputs file: {msg}")
 
 
-class _BaseHpcRun:
+class _BaseHpcRun:  # pylint: disable=too-few-public-methods
     """
     Represents a base run that can be carried out on the HPC.
 
@@ -114,18 +114,18 @@ class _BaseHpcRun:
         self.total_load = total_load
         self.total_load_file = total_load_file
 
-    def __init_subclass__(cls, type: HpcRunType) -> None:
+    def __init_subclass__(cls, run_type: HpcRunType) -> None:
         """
-        Method run when instantiating a :class:`BaseRenewablesNinjaThread` child.
+        Method run when instantiating a :class:`_BaseHpcRun` child.
 
         Inputs:
-            - profile_name:
-                The name of the profile that is being generated.
+            - run_type:
+                The type of HPC run being carried out.
 
         """
 
         super().__init_subclass__()
-        cls.type = type
+        cls.type = run_type
 
     def __str__(self) -> str:
         """
@@ -148,13 +148,13 @@ class _BaseHpcRun:
         )
 
 
-class HpcOptimisation(_BaseHpcRun, type=HpcRunType.OPTIMISATION):
+class HpcOptimisation(
+    _BaseHpcRun, run_type=HpcRunType.OPTIMISATION
+):  # pylint: disable=too-few-public-methods
     """
     Represents an optimisation to be carried out on the HPC.
 
     """
-
-    pass
 
     @classmethod
     def from_dict(cls, input_data: Dict[str, Any], logger: Logger) -> Any:
@@ -192,7 +192,9 @@ class HpcOptimisation(_BaseHpcRun, type=HpcRunType.OPTIMISATION):
         return cls(input_data["location"], total_load, total_load_file)
 
 
-class HpcSimulation(_BaseHpcRun, type=HpcRunType.SIMULATION):
+class HpcSimulation(
+    _BaseHpcRun, run_type=HpcRunType.SIMULATION
+):  # pylint: disable=too-few-public-methods
     """
     Representst a simulation, or multiple simulations, to be carried out on the HPC.
 
@@ -271,7 +273,9 @@ class HpcSimulation(_BaseHpcRun, type=HpcRunType.SIMULATION):
             logger.error(
                 "%sMissing pv system size information.%s", BColours.fail, BColours.endc
             )
-            raise InvalidRunError("Missing pv system size information in input file.")
+            raise InvalidRunError(
+                "Missing pv system size information in input file."
+            ) from None
         except ValueError:
             logger.error(
                 "%PV system size must be either an integer or float, `str` is not "
@@ -279,6 +283,9 @@ class HpcSimulation(_BaseHpcRun, type=HpcRunType.SIMULATION):
                 BColours.fail,
                 BColours.endc,
             )
+            raise InvalidRunError(
+                "PV system size must be of type `float` or `int`."
+            ) from None
 
         scenario: str = input_data.get("scenario", DEFAULT_SCENARIO)
 
@@ -288,7 +295,9 @@ class HpcSimulation(_BaseHpcRun, type=HpcRunType.SIMULATION):
             logger.error(
                 "%sMissing storage size information.%s", BColours.fail, BColours.endc
             )
-            raise InvalidRunError("Missing storage size information in input file.")
+            raise InvalidRunError(
+                "Missing storage size information in input file."
+            ) from None
         except ValueError:
             logger.error(
                 "%sStorage size must be either an integer or float, `str` is not "
@@ -296,6 +305,9 @@ class HpcSimulation(_BaseHpcRun, type=HpcRunType.SIMULATION):
                 BColours.fail,
                 BColours.endc,
             )
+            raise InvalidRunError(
+                "Storage size must be of type `float` or `int`."
+            ) from None
 
         return cls(
             input_data["location"],
@@ -370,7 +382,11 @@ def _parse_hpc_input_file(input_filename: str, logger: Logger) -> List[Dict[str,
             input_filename,
             BColours.endc,
         )
-        raise
+        raise InputFileError(
+            "hpc run inputs",
+            f"The HPC run inputs file '{input_filename}' was not of the format `list`. "
+            + "See the user guide/wiki for more information on the format of this file.",
+        )
 
     logger.info("HPC input successfully parsed.")
 

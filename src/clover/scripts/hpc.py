@@ -35,7 +35,7 @@ from .hpc_utils import (
 )
 
 
-__all__ = "main"
+__all__ = ("main",)
 
 # HPC Job Number:
 #   Name of the environment variable for the HPC job number.

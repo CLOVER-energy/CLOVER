@@ -425,7 +425,7 @@ def _number_of_devices_daily(
     return daily_ownership
 
 
-def compute_total_hourly_load(
+def compute_total_hourly_load(  # pylint: disable=too-many-locals
     *,
     device_hourly_loads: Dict[str, pd.DataFrame],
     devices: Set[Device],

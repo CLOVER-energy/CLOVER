@@ -399,12 +399,9 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
 
     # Parse the command-line arguments and instantiate the logger.
     parsed_args = argparser.parse_args(args)
+    run_number_string: str = f"_{run_number}" if run_number is not None else ""
     logger = get_logger(
-        "{}_{}{}".format(
-            parsed_args.location,
-            LOGGER_NAME,
-            f"_{run_number}" if run_number is not None else "",
-        ),
+        f"{parsed_args.location}_{LOGGER_NAME}{run_number_string}",
         parsed_args.verbose,
     )
     logger.info("CLOVER run initiated. Options specified: %s", " ".join(args))
@@ -921,8 +918,8 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
         )
         raise
 
-        # Remove the index from the file.
-        kerosene_usage.reset_index(drop=True)
+    # Remove the index from the file.
+    kerosene_usage.reset_index(drop=True)
 
     # Determine whether any default sizes have been overrided.
     overrided_default_sizes: bool = (
