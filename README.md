@@ -57,7 +57,7 @@ The CLOVER package is published as an installable package, `clover-energy`, whic
 ```
 python -m pip install clover-energy
 ```
-This should install all of the relevant dependencies for CLOVER as well as providing three installable executable files: `new-clover-location`, `update-api-token` and `clover`, which are described in more detail below.
+This should install all of the relevant dependencies for CLOVER as well as providing four installable executable files: `new-clover-location`, `update-api-token`, `clover-hpc` and `clover`, which are described in more detail below.
 
 Note, installing CLOVER in this way will install the package to your conda environment or local computer and will not provide you with easy access to the source code files. To develop CLOVER and have access to the source code, ensure that you download the code from GitHub.
 
@@ -196,9 +196,24 @@ or, if you have installed the `clover-energy` package
 clover --location <location_name> --optimisation
 ```
 
-##### Analysis
+#### Analysis
 
 When running CLOVER simulations, in-built graph plotting can be carried out by CLOVER. To activate this functionality, simply use the `--analyse` flag when initialising a CLOVER simulation from the command-line interface.
+
+### Running CLOVER on Imperial College London's high-performance computers
+
+The operation of CLOVER can be broken down into the same steps as per running CLOVER on a local machine. These are described in [Running CLOVER](#running-clover). On Imperial's high-performance computers (HPCs), this functionality is wrapped up in such a way that a single entry point is provided for launching runs and a single additional input file is required in addition to those described in [Completing input files](#completing-input-files). Consult the user guide or wiki pages for more information on what is required of the input jobs file.
+
+#### Launching jobs
+
+Once you have completed your input runs file, jobs are launched to the HPC by calling CLOVER's launch script from the command-line:
+```
+python -m src.clover.scripts.clover_hpc --runs <jobs_file>
+```
+or, if you have installed the `clover-energy` package
+```
+clover-hpc --runs <jobs_file>
+```
 
 ***
 

@@ -69,6 +69,7 @@ __all__ = (
     "KEROSENE_USAGE_FILE",
     "LOCATIONS_FOLDER_NAME",
     "parse_input_files",
+    "parse_scenario_inputs",
 )
 
 
@@ -1086,7 +1087,7 @@ def _parse_pvt_reduced_models(  # pylint: disable=too-many-statements
     return electric_model, thermal_model
 
 
-def _parse_scenario_inputs(
+def parse_scenario_inputs(
     inputs_directory_relative_path: str,
     logger: Logger,
 ) -> Tuple[str, str, List[Scenario], str]:
@@ -2315,7 +2316,7 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
         hot_water_scenario_inputs_filepath,
         scenarios,
         scenario_inputs_filepath,
-    ) = _parse_scenario_inputs(inputs_directory_relative_path, logger)
+    ) = parse_scenario_inputs(inputs_directory_relative_path, logger)
     logger.info("Scenario inputs successfully parsed.")
 
     # Parse the optimisation input information.
