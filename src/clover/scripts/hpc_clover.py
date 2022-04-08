@@ -46,6 +46,8 @@ from .hpc_utils import (
     parse_args_and_hpc_input_file,
 )
 
+__all__ = ("main",)
+
 
 # Clover hpc header string:
 #   The ascii text to display when starting CLOVER on the HPC.
