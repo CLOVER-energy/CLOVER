@@ -277,7 +277,7 @@ class HpcSimulation(_BaseHpcRun, type=HpcRunType.SIMULATION):
                 "%PV system size must be either an integer or float, `str` is not "
                 "allowed.%s",
                 BColours.fail,
-                BColours.endc
+                BColours.endc,
             )
 
         scenario: str = input_data.get("scenario", DEFAULT_SCENARIO)
@@ -294,7 +294,7 @@ class HpcSimulation(_BaseHpcRun, type=HpcRunType.SIMULATION):
                 "%sStorage size must be either an integer or float, `str` is not "
                 "allowed.%s",
                 BColours.fail,
-                BColours.endc
+                BColours.endc,
             )
 
         return cls(

@@ -31,7 +31,14 @@ from typing import Union
 from tqdm import tqdm
 
 from ..__main__ import __version__
-from ..__utils__ import DONE, FAILED, LOCATIONS_FOLDER_NAME, BColours, get_logger
+from ..__utils__ import (
+    DONE,
+    FAILED,
+    LOCATIONS_FOLDER_NAME,
+    BColours,
+    ProgrammerJudgementFault,
+    get_logger,
+)
 from ..fileparser import INPUTS_DIRECTORY, LOAD_INPUTS_DIRECTORY, parse_scenario_inputs
 from .hpc_utils import (
     HpcOptimisation,
@@ -144,6 +151,16 @@ def _check_run(logger: Logger, hpc_run: Union[HpcOptimisation, HpcSimulation]) -
 
     # Check that the scenario exists as a scenario.
     if hpc_run.type == HpcRunType.SIMULATION:
+        if not isinstance(hpc_run, HpcSimulation):
+            logger.error(
+                "%sRun marked as simulation but was processed as an optimisation.%s",
+                BColours.fail,
+                BColours.endc,
+            )
+            raise ProgrammerJudgementFault(
+                "hpc_clover.py", "Failure processing run as a simulation."
+            )
+
         # Parse the scenario files for the location.
         logger.info("%sParsing scenario input file.%s", BColours.fail, BColours.endc)
         _, _, scenarios, _ = parse_scenario_inputs(
