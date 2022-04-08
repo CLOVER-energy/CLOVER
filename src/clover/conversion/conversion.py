@@ -112,7 +112,7 @@ def _parse_waste_production(
             raise InputFileError(
                 "conversion inputs",
                 f"Converter {name} has invalid waste-product '{waste_product}'. Valid "
-                + f"waste products are {', '.join(str(e.value) for e in WasteProduct)}."
+                + f"waste products are {', '.join(str(e.value) for e in WasteProduct)}.",
             )
 
         # Type check the value generated.
