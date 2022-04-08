@@ -15,7 +15,13 @@ test_conversion.py - Tests for the conversion module of CLOVER.
 import unittest
 import unittest.mock as mock
 
-from ..conversion import _parse_waste_production, Converter, MultiInputConverter, ThermalDesalinationPlant, WasteProduct
+from ..conversion import (
+    _parse_waste_production,
+    Converter,
+    MultiInputConverter,
+    ThermalDesalinationPlant,
+    WasteProduct,
+)
 
 
 class TestConverter(unittest.TestCase):
@@ -38,5 +44,5 @@ class TestWasteProduct(unittest.TestCase):
     """Tests the convertor class."""
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()
