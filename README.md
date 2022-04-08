@@ -196,13 +196,9 @@ or, if you have installed the `clover-energy` package
 clover --location <location_name> --optimisation
 ```
 
-##### Analysis
+#### Analysis
 
 When running CLOVER simulations, in-built graph plotting can be carried out by CLOVER. To activate this functionality, simply use the `--analyse` flag when initialising a CLOVER simulation from the command-line interface.
-
-***
-
-For more information, contact Phil Sandwell (philip.sandwell@gmail.com) or Ben Winchester (benedict.winchester@gmail.com).
 
 ### Running CLOVER on Imperial College London's high-performance computers
 
@@ -218,3 +214,7 @@ or, if you have installed the `clover-energy` package
 ```
 clover-hpc --runs <jobs_file>
 ```
+
+***
+
+For more information, contact Phil Sandwell (philip.sandwell@gmail.com) or Ben Winchester (benedict.winchester@gmail.com).
