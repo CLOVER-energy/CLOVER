@@ -1712,7 +1712,7 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
     # Determine the times for which the system experienced a blackout.
     blackout_times = ((unmet_energy > 0) * 1).astype(float)
 
-    # Use backup diesel generator
+    # Use backup diesel generator if present
     diesel_energy: pd.DataFrame
     diesel_fuel_usage: pd.DataFrame
     diesel_times: pd.DataFrame
@@ -1735,11 +1735,21 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
         raise InputFileError(
             "scenario inputs", "Cycle charing is not currently supported."
         )
-    else:
+    elif scenario.diesel_scenario.mode == DieselMode.DISABLED:
         diesel_energy = pd.DataFrame([0.0] * int(battery_storage_profile.size))
         diesel_times = pd.DataFrame([0.0] * int(battery_storage_profile.size))
         diesel_fuel_usage = pd.DataFrame([0.0] * int(battery_storage_profile.size))
         diesel_capacity = 0.0
+    else:
+        logger.error(
+            "%sDiesel mode must be specified. Valid modes are %s.%s",
+            BColours.fail,
+            ", ".join({e.value for e in DieselMode}),
+            BColours.endc,
+        )
+        raise InputFileError(
+            "scenario inputs", "Diesel mode must be specified in the scenario file."
+        )
 
     # Find new blackout times, according to when there is unmet energy
     blackout_times = ((unmet_energy > 0) * 1).astype(float)

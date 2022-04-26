@@ -35,6 +35,7 @@ from .__utils__ import (
     AuxiliaryHeaterType,
     BColours,
     DesalinationScenario,
+    DieselMode,
     EXCHANGER,
     HotWaterScenario,
     HTFMode,
@@ -2554,20 +2555,30 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
     logger.info("PV impact data successfully updated.")
 
     # Update the impact inputs with the diesel data.
-    logger.info("Updating with diesel impact data.")
-    finance_inputs[ImpactingComponent.DIESEL.value] = defaultdict(float, diesel_costs)
-    ghg_inputs[ImpactingComponent.DIESEL.value] = defaultdict(float, diesel_emissions)
-    logger.info("Diesel impact data successfully updated.")
+    if any(scenario.diesel_scenario.mode != DieselMode.DISABLED for scenario in scenarios):
+        logger.info("Updating with diesel impact data.")
+        finance_inputs[ImpactingComponent.DIESEL.value] = defaultdict(
+            float, diesel_costs
+        )
+        ghg_inputs[ImpactingComponent.DIESEL.value] = defaultdict(
+            float, diesel_emissions
+        )
+        logger.info("Diesel impact data successfully updated.")
+    else:
+        logger.info("No diesel generator present, skipping impact data.")
 
     # Update the impact inputs with the battery data.
-    logger.info("Updating with battery impact data.")
-    finance_inputs[ImpactingComponent.STORAGE.value] = defaultdict(
-        float, battery_costs  # type: ignore
-    )
-    ghg_inputs[ImpactingComponent.STORAGE.value] = defaultdict(
-        float, battery_emissions  # type: ignore
-    )
-    logger.info("Battery impact data successfully updated.")
+    if any(scenario.battery for scenario in scenarios):
+        logger.info("Updating with battery impact data.")
+        finance_inputs[ImpactingComponent.STORAGE.value] = defaultdict(
+            float, battery_costs
+        )
+        ghg_inputs[ImpactingComponent.STORAGE.value] = defaultdict(
+            float, battery_emissions
+        )
+        logger.info("Battery impact data successfully updated.")
+    else:
+        logger.info("No battery present, skipping impact data.")
 
     if minigrid.pvt_panel is not None and any(scenario.pv_t for scenario in scenarios):
         if pvt_panel_costs is None or pvt_panel_emissions is None:
