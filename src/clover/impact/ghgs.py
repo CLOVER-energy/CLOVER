@@ -30,6 +30,7 @@ from ..__utils__ import (
     ColumnHeader,
     InputFileError,
     Location,
+    ProgrammerJudgementFault,
     ResourceType,
     Scenario,
     TechnicalAppraisal,
@@ -239,6 +240,17 @@ def calculate_total_equipment_ghgs(  # pylint: disable=too-many-locals
         - Emissions associated with each subsystem.
 
     """
+
+    if technical_appraisal.power_consumed_fraction is None:
+        logger.error(
+            "%sNo power consumed fraction was calculated. This is needed.%s",
+            BColours.fail,
+            BColours.endc,
+        )
+        raise ProgrammerJudgementFault(
+            "impact.ghgs",
+            "No power consumed fraction on technical appraisal despite being needed.",
+        )
 
     # Instantiate a mapping for storing total ghgs information.
     subsystem_emissions: Dict[ResourceType, float] = collections.defaultdict(float)
@@ -453,12 +465,13 @@ def calculate_total_equipment_ghgs(  # pylint: disable=too-many-locals
     ) * technical_appraisal.power_consumed_fraction[ResourceType.ELECTRIC]
 
     # Compute the hot-water subsystem ghgs.
-    subsystem_emissions[ResourceType.HOT_CLEAN_WATER] += (
-        hot_water_tank_ghgs
-        + hot_water_tank_installation_ghgs
-        + (bos_ghgs + misc_ghgs + pv_ghgs + pv_installation_ghgs + storage_ghgs)
-        * technical_appraisal.power_consumed_fraction[ResourceType.HOT_CLEAN_WATER]
-    )
+    if scenario.hot_water_scenario is not None:
+        subsystem_emissions[ResourceType.HOT_CLEAN_WATER] += (
+            hot_water_tank_ghgs
+            + hot_water_tank_installation_ghgs
+            + (bos_ghgs + misc_ghgs + pv_ghgs + pv_installation_ghgs + storage_ghgs)
+            * technical_appraisal.power_consumed_fraction[ResourceType.HOT_CLEAN_WATER]
+        )
 
     # Compute the ghgs associated when carrying out prioritisation desalination.
     update_diesel_costs(
@@ -865,6 +878,17 @@ def calculate_total_om(  # pylint: disable=too-many-locals
 
     """
 
+    if technical_appraisal.power_consumed_fraction is None:
+        logger.error(
+            "%sNo power consumed fraction was calculated. This is needed.%s",
+            BColours.fail,
+            BColours.endc,
+        )
+        raise ProgrammerJudgementFault(
+            "impact.ghgs",
+            "No power consumed fraction on technical appraisal despite being needed.",
+        )
+
     # Instantiate a mapping for storing total ghgs information.
     subsystem_emissions: Dict[ResourceType, float] = collections.defaultdict(float)
 
@@ -912,6 +936,10 @@ def calculate_total_om(  # pylint: disable=too-many-locals
             start_year,
             end_year,
         )
+
+    import pdb
+
+    pdb.set_trace(header="Investigate type of converters.")
 
     if converters is not None:
         for resource_type in [ResourceType.CLEAN_WATER, ResourceType.HOT_CLEAN_WATER]:

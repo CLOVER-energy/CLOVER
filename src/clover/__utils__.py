@@ -3107,7 +3107,7 @@ class SystemAppraisal:
     financial_appraisal: FinancialAppraisal
     system_details: SystemDetails
     technical_appraisal: TechnicalAppraisal
-    criteria: Optional[Dict[Criterion, float]] = None
+    criteria: Optional[Dict[Criterion, Optional[float]]] = None
 
     def to_dict(self) -> Dict[str, Any]:
         """
