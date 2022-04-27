@@ -2555,7 +2555,9 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
     logger.info("PV impact data successfully updated.")
 
     # Update the impact inputs with the diesel data.
-    if any(scenario.diesel_scenario.mode != DieselMode.DISABLED for scenario in scenarios):
+    if any(
+        scenario.diesel_scenario.mode != DieselMode.DISABLED for scenario in scenarios
+    ):
         logger.info("Updating with diesel impact data.")
         finance_inputs[ImpactingComponent.DIESEL.value] = defaultdict(
             float, diesel_costs
@@ -2569,6 +2571,28 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
 
     # Update the impact inputs with the battery data.
     if any(scenario.battery for scenario in scenarios):
+        if battery_costs is None:
+            logger.error(
+                "%sNo battery cost information parsed despite a battery being present "
+                "in one or more of the scenarios.%s",
+                BColours.fail,
+                BColours.endc
+            )
+            raise InputFileError(
+                "scenario inputs OR finance inputs",
+                "No battery cost information despite a battery being requested."
+            )
+        if battery_emissions is None:
+            logger.error(
+                "%sNo battery emissions information parsed despite a battery being "
+                "present in one or more of the scenarios.%s",
+                BColours.fail,
+                BColours.endc
+            )
+            raise InputFileError(
+                "scenario inputs OR finance inputs",
+                "No battery emissions information despite a battery being requested."
+            )
         logger.info("Updating with battery impact data.")
         finance_inputs[ImpactingComponent.STORAGE.value] = defaultdict(
             float, battery_costs
