@@ -66,7 +66,7 @@ def main(args: List[Any]) -> None:
 
     # Call the utility module to parse the HPC run information.
     logger.info("Parsing HPC input file.")
-    _, runs, verbose = parse_args_and_hpc_input_file(args, logger)
+    _, runs, verbose, _ = parse_args_and_hpc_input_file(args, logger)
     logger.info("HPC input file successfully parsed.")
 
     # Determine the run.
