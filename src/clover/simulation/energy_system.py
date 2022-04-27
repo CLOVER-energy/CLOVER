@@ -913,8 +913,12 @@ def _calculate_renewable_hw_profiles(  # pylint: disable=too-many-locals, too-ma
             )
 
         else:
-            auxiliary_heater_power_consumption = pd.DataFrame([0] * (end_hour - start_hour))
-            auxiliary_heater_heat_consumption = pd.DataFrame([0] * (end_hour - start_hour))
+            auxiliary_heater_power_consumption = pd.DataFrame(
+                [0] * (end_hour - start_hour)
+            )
+            auxiliary_heater_heat_consumption = pd.DataFrame(
+                [0] * (end_hour - start_hour)
+            )
 
         # Compute the power consumed by the thermal desalination plant.
         hot_water_power_consumed: pd.DataFrame = pd.DataFrame(
@@ -1851,13 +1855,8 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
         storage_power_supplied_frame = pd.DataFrame([0] * (end_hour - start_hour))
 
     # Determine the initial and final storage sizes
-    initial_storage_size = float(
-        electric_storage_size * minigrid.battery.storage_unit
-    )
-    final_storage_size = float(
-        initial_storage_size
-        * np.min(battery_health_frame[0])
-    )
+    initial_storage_size = float(electric_storage_size * minigrid.battery.storage_unit)
+    final_storage_size = float(initial_storage_size * np.min(battery_health_frame[0]))
 
     if scenario.desalination_scenario is not None:
         backup_desalinator_water_frame: Optional[pd.DataFrame] = dict_to_dataframe(

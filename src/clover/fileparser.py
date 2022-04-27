@@ -1584,7 +1584,9 @@ def _parse_tank_inputs(  # pylint: disable=too-many-statements
 
     """
 
-    if all(scenario.desalination_scenario is None for scenario in scenarios) and all(scenario.hot_water_scenario is None for scenario in scenarios):
+    if all(scenario.desalination_scenario is None for scenario in scenarios) and all(
+        scenario.hot_water_scenario is None for scenario in scenarios
+    ):
         return None, None, None, None, None, None, None, None, None
 
     # Parse the tank input information.
