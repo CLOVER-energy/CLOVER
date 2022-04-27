@@ -2636,22 +2636,22 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
                 "%sNo battery cost information parsed despite a battery being present "
                 "in one or more of the scenarios.%s",
                 BColours.fail,
-                BColours.endc
+                BColours.endc,
             )
             raise InputFileError(
                 "scenario inputs OR finance inputs",
-                "No battery cost information despite a battery being requested."
+                "No battery cost information despite a battery being requested.",
             )
         if battery_emissions is None:
             logger.error(
                 "%sNo battery emissions information parsed despite a battery being "
                 "present in one or more of the scenarios.%s",
                 BColours.fail,
-                BColours.endc
+                BColours.endc,
             )
             raise InputFileError(
                 "scenario inputs OR finance inputs",
-                "No battery emissions information despite a battery being requested."
+                "No battery emissions information despite a battery being requested.",
             )
         logger.info("Updating with battery impact data.")
         finance_inputs[ImpactingComponent.STORAGE.value] = defaultdict(

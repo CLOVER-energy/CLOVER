@@ -9,7 +9,7 @@
 #   benedict.winchester@gmail.com                                                      #
 ########################################################################################
 #PBS -J 1-{NUM_RUNS}
-#PBS -lwalltime=1:00:00
+#PBS -lwalltime={WALLTIME}:00:00
 #PBS -lselect=1:ncpus=8:mem=11800Mb
 
 echo -e "HPC array script executed"
