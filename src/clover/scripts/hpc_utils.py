@@ -512,7 +512,7 @@ def parse_args_and_hpc_input_file(
     logger.info("Command-line arguments successfully parsed.")
 
     # Check that the walltime is valid.
-    walltime = _check_walltime(parsed_args.walltime)
+    walltime = _check_walltime(logger, parsed_args.walltime)
 
     # Parse the input file to determine the runs to be carried out.
     runs = _process_hpc_input_file(parsed_args.runs, logger)
