@@ -297,7 +297,7 @@ class Minigrid:
             batteries[minigrid_inputs["battery"]]
             if "battery" in minigrid_inputs
             else None,
-            buffer_tank,
+            buffer_tank,  # type: ignore
             clean_water_tank,
             minigrid_inputs[CONVERSION][DC_TO_AC]
             if DC_TO_AC in minigrid_inputs[CONVERSION]
@@ -312,7 +312,7 @@ class Minigrid:
             diesel_water_heater,
             electric_water_heater,
             heat_exchanger,
-            hot_water_tank,
+            hot_water_tank,  # type: ignore
             pv_panel,
             pvt_panel,
             water_pump,
