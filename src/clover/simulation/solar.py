@@ -278,6 +278,7 @@ def _volume_withdrawn_from_tank(
 
 
 def calculate_pvt_output(  # pylint: disable=too-many-locals, too-many-statements
+    disable_tqdm: bool,
     end_hour: int,
     irradiances: pd.Series,
     logger: Logger,
@@ -298,6 +299,8 @@ def calculate_pvt_output(  # pylint: disable=too-many-locals, too-many-statement
     Computes the output of a PV-T system.
 
     Inputs:
+        - disable_tqdm:
+            Whether to disable the tqdm progress bars (True) or display them (False).
         - end_hour:
             The end hour for the simulation being carried out.
         - irradiances:
@@ -503,6 +506,7 @@ def calculate_pvt_output(  # pylint: disable=too-many-locals, too-many-statement
     for index in tqdm(
         range(start_hour, end_hour),
         desc=f"{resource_type.value.replace('_', ' ')} pv-t performance",
+        disable=disable_tqdm,
         leave=False,
         unit="hour",
     ):
