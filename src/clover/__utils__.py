@@ -708,10 +708,14 @@ class DieselMode(enum.Enum):
     - CYCLE_CHARGING:
         The diesel generator is operated as a dynamic 'cycle-charging' generator.
 
+    - DISABLED:
+        No diesel generator is present.
+
     """
 
     BACKUP = "backup"
     CYCLE_CHARGING = "cycle_charging"
+    DISABLED = "disabled"
 
 
 @dataclasses.dataclass
