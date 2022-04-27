@@ -343,7 +343,7 @@ def _check_walltime(logger: Logger, walltime: Optional[int]) -> int:
         )
         raise Exception("Walltime must be specified.")
 
-    if not isinstance(walltime, float):
+    if not isinstance(walltime, int):
         logger.error("%sWalltime must be an integer.%s", BColours.fail, BColours.endc)
         raise Exception("Walltime must be an integer.")
 
