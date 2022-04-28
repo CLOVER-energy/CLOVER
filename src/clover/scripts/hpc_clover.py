@@ -200,6 +200,7 @@ def main(args) -> None:
 
     logger = get_logger(LOGGER_NAME, False)
     logger.info("HPC-CLOVER script called.")
+    logger.info("Arguments: %s", ", ".join(args))
 
     # Call the utility module to parse the HPC run information.
     run_file, runs, verbose, walltime = parse_args_and_hpc_input_file(args, logger)
