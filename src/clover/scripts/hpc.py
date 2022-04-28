@@ -63,6 +63,8 @@ def main(args: List[Any]) -> None:
         )
         raise
     logger = get_logger(LOGGER_NAME.format(hpc_job_number), False)
+    logger.info("HPC run script executed.")
+    logger.info("CLI arguments: %s", ", ".join(args))
 
     # Call the utility module to parse the HPC run information.
     logger.info("Parsing HPC input file.")
