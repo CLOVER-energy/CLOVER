@@ -21,7 +21,7 @@ source activate clover
 cd $PBS_O_WORKDIR
 
 echo -e "Running CLOVER HPC python script."
-if python -m src.clover.scripts.hpc --runs {RUNS_FILE} {VERBOSE} ; then
+if python -m src.clover.scripts.hpc --runs {RUNS_FILE} --walltime {WALLTIME} {VERBOSE} ; then
     echo -e "CLOVER successfully run."
 else
     echo -e "FAILED. See logs for details."
