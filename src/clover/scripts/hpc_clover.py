@@ -246,7 +246,11 @@ def main(args) -> None:
         VERBOSE=("--verbose" if verbose else ""),
         WALLTIME=walltime,
     )
-    logger.info("HPC job submission script updated with %s runs.", len(runs))
+    logger.info(
+        "HPC job submission script updated with %s runs, %s walltime.",
+        len(runs),
+        walltime,
+    )
 
     # Setup the HPC job submission script.
     with tempfile.TemporaryDirectory() as tmpdirname:
