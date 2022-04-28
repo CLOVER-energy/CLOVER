@@ -1050,21 +1050,6 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
             )
 
             if parsed_args.analyse:
-                # Carry out an appraisal of the system.
-                system_appraisal: Optional[SystemAppraisal] = appraise_system(
-                    electric_yearly_load_statistics,
-                    simulation.end_year,
-                    finance_inputs,
-                    ghg_inputs,
-                    location,
-                    logger,
-                    None,
-                    scenario,
-                    system_performance_outputs,
-                    simulation.start_year,
-                    system_details,
-                )
-
                 # Generate and save the various plots.
                 analysis.plot_outputs(  # type: ignore
                     grid_times[scenario.grid_type],
@@ -1088,7 +1073,7 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
                         "No electric yearly load statistics were computed for the "
                         "system despite these being needed to appraise the system."
                     )
-                system_appraisal: Optional[SystemAppraisal] = appraise_system(
+                system_appraisal = appraise_system(
                     electric_yearly_load_statistics,
                     simulation.end_year,
                     finance_inputs,
@@ -1096,6 +1081,7 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
                     location,
                     logger,
                     None,
+                    scenario,
                     system_performance_outputs,
                     simulation.start_year,
                     system_details,
