@@ -78,7 +78,7 @@ AUTO_GENERATED_FILES_DIRECTORY = "auto_generated"
 # Clover header string:
 #   The ascii text to display when starting CLOVER.
 CLOVER_HEADER_STRING = """
-
+\033[38;5;40m
         (((((*    /(((
         ((((((( ((((((((
    (((((((((((( ((((((((((((
@@ -95,7 +95,7 @@ CLOVER_HEADER_STRING = """
                (
                  (
                    (
-
+\033[0m
 
 
        Continuous Lifetime Optimisation of Variable Electricity Resources
