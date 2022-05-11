@@ -635,7 +635,9 @@ def get_electric_battery_storage_profile(  # pylint: disable=too-many-locals, to
     else:
         # Take energy from grid first if available
         if scenario.grid:
-            grid_energy: pd.DataFrame = pd.DataFrame(grid_profile.mul(load_energy[0]))  # type: ignore
+            grid_energy: pd.DataFrame = pd.DataFrame(
+                grid_profile.mul(load_energy[0])  # type: ignore
+            )
         else:
             grid_energy = pd.DataFrame([0] * (end_hour - start_hour))
         # as needed for load
