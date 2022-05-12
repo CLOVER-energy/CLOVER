@@ -32,7 +32,6 @@ from ..impact import finance, ghgs
 from ..__utils__ import (
     AuxiliaryHeaterType,
     BColours,
-    CleanWaterMode,
     ColumnHeader,
     Criterion,
     CumulativeResults,
@@ -47,9 +46,10 @@ from ..__utils__ import (
     SystemAppraisal,
     SystemDetails,
     TechnicalAppraisal,
+    WasteProduct,
 )
 from ..conversion.conversion import Converter
-from ..impact.__utils__ import ImpactingComponent, WasteProduct, update_diesel_costs
+from ..impact.__utils__ import ImpactingComponent, update_diesel_costs
 
 __all__ = ("appraise_system",)
 
@@ -1490,11 +1490,13 @@ def appraise_system(  # pylint: disable=too-many-locals
     criteria: Dict[Criterion, Optional[float]] = {
         Criterion.BLACKOUTS: technical_appraisal.blackouts,
         Criterion.CLEAN_WATER_BLACKOUTS: technical_appraisal.clean_water_blackouts,
-        Criterion.CUMULATIVE_BRINE: cumulative_results.waste_produced[
-            WasteProduct.BRINE
-        ]
-        if WasteProduct.BRINE in cumulative_results.waste_produced
-        else None,
+        Criterion.CUMULATIVE_BRINE: (
+            cumulative_results.waste_produced[
+                WasteProduct.BRINE
+            ]
+            if WasteProduct.BRINE in cumulative_results.waste_produced
+            else None
+        ),
         Criterion.CUMULATIVE_COST: cumulative_results.cost,
         Criterion.CUMULATIVE_GHGS: cumulative_results.ghgs,
         Criterion.CUMULATIVE_SYSTEM_COST: cumulative_results.system_cost,

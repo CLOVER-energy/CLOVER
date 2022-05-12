@@ -37,6 +37,7 @@ from ..__utils__ import (
     CleanWaterMode,
     ColdWaterSupply,
     ColumnHeader,
+    dict_to_dataframe,
     DieselMode,
     HOURS_PER_YEAR,
     HTFMode,
@@ -49,12 +50,11 @@ from ..__utils__ import (
     Scenario,
     Simulation,
     SystemDetails,
-    dict_to_dataframe,
+    WasteProduct,
 )
 from ..conversion.conversion import Converter, ThermalDesalinationPlant, WaterSource
 from ..generation.solar import solar_degradation
 from ..load.load import compute_processed_load_profile, population_hourly
-from ..impact.__utils__ import WasteProduct
 from .__utils__ import determine_available_converters, Minigrid
 from .diesel import (
     DieselWaterHeater,
