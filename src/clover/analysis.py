@@ -298,6 +298,8 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
     NOTE: To add an output to be plotted, simply add to this function.
 
     Inputs:
+        - disable_tqdm:
+            Whether to disable the tqdm progress bars (True) or display them (False).
         - grid_input_profile:
             The relevant grid input profile for the simulation that was run.
         - grid_profile:
