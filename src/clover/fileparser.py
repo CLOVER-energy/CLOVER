@@ -440,7 +440,7 @@ def _parse_conversion_inputs(
     # If the file exists, parse the converters contained.
     if os.path.isfile(conversion_file_relative_path):
         parsed_converters: List[Converter] = []
-        conversion_inputs: List[Dict[str, Any]] = read_yaml(  # type: ignore
+        conversion_inputs: Dict[str, List[Dict[str, Any]]] = read_yaml(  # type: ignore
             conversion_file_relative_path, logger
         )
         if conversion_inputs is not None:
@@ -1133,11 +1133,6 @@ def _parse_pvt_reduced_models(  # pylint: disable=too-many-statements
 
             logger.info("PV-T reduced electric model file successfully read.")
 
-    # If there is no PV-T being used in the system, do not attempt to read the files.
-    else:
-        thermal_models = None
-        electric_models = None
-
     return electric_models, thermal_models
 
 
@@ -1555,8 +1550,8 @@ def _parse_tank_inputs(  # pylint: disable=too-many-statements
     Optional[Dict[str, float]],
     Optional[Dict[str, float]],
     Optional[Dict[str, float]],
-    List[Dict[str, Any]],
-    str,
+    Optional[List[Dict[str, Any]]],
+    Optional[str],
 ]:
     """
     Parses the tank inputs file.
