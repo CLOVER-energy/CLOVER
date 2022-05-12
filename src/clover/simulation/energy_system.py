@@ -235,6 +235,7 @@ def _calculate_electric_desalination_parameters(
 
 def _calculate_renewable_cw_profiles(  # pylint: disable=too-many-locals, too-many-statements
     converters: List[Converter],
+    disable_tqdm: bool,
     end_hour: int,
     irradiance_data: pd.Series,
     logger: Logger,
@@ -261,6 +262,8 @@ def _calculate_renewable_cw_profiles(  # pylint: disable=too-many-locals, too-ma
     Inputs:
         - converters:
             The `list` of :class:`Converter` instances available to be used.
+        - disable_tqdm:
+            Whether to disable the tqdm progress bars (True) or display them (False).
         - end_hour:
             The final hour for which the simulation will be carried out.
         - irradiance_data:
@@ -472,6 +475,7 @@ def _calculate_renewable_cw_profiles(  # pylint: disable=too-many-locals, too-ma
             buffer_tank_temperature,
             buffer_tank_volume_supplied,
         ) = calculate_pvt_output(
+            disable_tqdm,
             end_hour,
             irradiance_data[start_hour:end_hour],
             logger,
@@ -556,6 +560,7 @@ def _calculate_renewable_cw_profiles(  # pylint: disable=too-many-locals, too-ma
 
 def _calculate_renewable_hw_profiles(  # pylint: disable=too-many-locals, too-many-statements
     converters: List[Converter],
+    disable_tqdm: bool,
     end_hour: int,
     irradiance_data: pd.Series,
     logger: Logger,
@@ -582,6 +587,8 @@ def _calculate_renewable_hw_profiles(  # pylint: disable=too-many-locals, too-ma
     Inputs:
         - converters:
             The `list` of :class:`Converter` instances available to be used.
+        - disable_tqdm:
+            Whether to disable the tqdm progress bars (True) or display them (False).
         - end_hour:
             The final hour for which the simulation will be carried out.
         - irradiance_data:
@@ -746,6 +753,7 @@ def _calculate_renewable_hw_profiles(  # pylint: disable=too-many-locals, too-ma
             hot_water_tank_temperature,
             hot_water_tank_volume_supplied,
         ) = calculate_pvt_output(
+            disable_tqdm,
             end_hour,
             irradiance_data[start_hour:end_hour],
             logger,
@@ -1048,6 +1056,7 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
     clean_water_pvt_size: int,
     conventional_cw_source_profiles: Optional[Dict[WaterSource, pd.DataFrame]],
     converters: Union[Dict[str, Converter], List[Converter]],
+    disable_tqdm: bool,
     electric_storage_size: float,
     grid_profile: Optional[pd.DataFrame],
     hot_water_pvt_size: int,
@@ -1080,8 +1089,8 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
             that can be drawn from the source throughout the duration of the simulation.
         - converters:
             The `list` of :class:`Converter` instances available to be used.
-        - diesel_generator:
-            The backup diesel generator for the system being modelled.
+        - disable_tqdm:
+            Whether to disable the tqdm progress bars (True) or display them (False).
         - electric_storage_size:
             Amount of storage in terms of the number of batteries included.
         - grid_profile:
@@ -1237,6 +1246,7 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
         thermal_desalination_electric_power_consumed,
     ) = _calculate_renewable_cw_profiles(
         available_converters,
+        disable_tqdm,
         end_hour,
         irradiance_data,
         logger,
@@ -1355,6 +1365,7 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
         renewable_hw_fraction,
     ) = _calculate_renewable_hw_profiles(  # type: ignore
         available_converters,
+        disable_tqdm,
         end_hour,
         irradiance_data,
         logger,
@@ -1544,6 +1555,7 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
         for t in tqdm(
             range(int(battery_storage_profile.size)),
             desc="hourly computation",
+            disable=disable_tqdm,
             leave=False,
             unit="hour",
         ):
@@ -1700,7 +1712,7 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
     # Determine the times for which the system experienced a blackout.
     blackout_times = ((unmet_energy > 0) * 1).astype(float)
 
-    # Use backup diesel generator
+    # Use backup diesel generator if present
     diesel_energy: pd.DataFrame
     diesel_fuel_usage: pd.DataFrame
     diesel_times: pd.DataFrame
@@ -1723,11 +1735,21 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
         raise InputFileError(
             "scenario inputs", "Cycle charing is not currently supported."
         )
-    else:
+    elif scenario.diesel_scenario.mode == DieselMode.DISABLED:
         diesel_energy = pd.DataFrame([0.0] * int(battery_storage_profile.size))
         diesel_times = pd.DataFrame([0.0] * int(battery_storage_profile.size))
         diesel_fuel_usage = pd.DataFrame([0.0] * int(battery_storage_profile.size))
         diesel_capacity = 0.0
+    else:
+        logger.error(
+            "%sDiesel mode must be specified. Valid modes are %s.%s",
+            BColours.fail,
+            ", ".join({e.value for e in DieselMode}),
+            BColours.endc,
+        )
+        raise InputFileError(
+            "scenario inputs", "Diesel mode must be specified in the scenario file."
+        )
 
     # Find new blackout times, according to when there is unmet energy
     blackout_times = ((unmet_energy > 0) * 1).astype(float)
