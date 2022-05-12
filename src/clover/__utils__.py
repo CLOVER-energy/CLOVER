@@ -2420,7 +2420,7 @@ class SystemDetails:
 
     diesel_capacity: float = 0
     end_year: int = 0
-    final_converter_sizes: Optional[Dict[Any, float]] = None
+    final_converter_sizes: Optional[Dict[Any, int]] = None
     final_cw_pvt_size: Optional[float] = 0
     final_hw_pvt_size: Optional[float] = 0
     final_num_buffer_tanks: Optional[int] = 0
@@ -2428,7 +2428,7 @@ class SystemDetails:
     final_num_hot_water_tanks: Optional[int] = 0
     final_pv_size: float = 0
     final_storage_size: float = 0
-    initial_converter_sizes: Optional[Dict[Any, float]] = None
+    initial_converter_sizes: Optional[Dict[Any, int]] = None
     initial_cw_pvt_size: Optional[float] = 0
     initial_hw_pvt_size: Optional[float] = 0
     initial_num_buffer_tanks: Optional[int] = 0
@@ -3107,7 +3107,7 @@ class SystemAppraisal:
     financial_appraisal: FinancialAppraisal
     system_details: SystemDetails
     technical_appraisal: TechnicalAppraisal
-    criteria: Optional[Dict[Criterion, float]] = None
+    criteria: Optional[Dict[Criterion, Optional[float]]] = None
 
     def to_dict(self) -> Dict[str, Any]:
         """

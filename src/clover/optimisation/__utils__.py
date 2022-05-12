@@ -913,13 +913,18 @@ def get_sufficient_appraisals(
             threshold_criterion,
             threshold_value,
         ) in optimisation.threshold_criteria.items():
+            # Skip threshold criteria that are not in use.
+            appraisal_criterion = appraisal.criteria[threshold_criterion]
+            if appraisal_criterion is None:
+                continue
+
             # Add a `True` marker if the threshold criteria are met, otherwise add
             # False.
             if (
                 THRESHOLD_CRITERION_TO_MODE[threshold_criterion]
                 == ThresholdMode.MAXIMUM
             ):
-                if appraisal.criteria[threshold_criterion] <= threshold_value:
+                if appraisal_criterion <= threshold_value:
                     criteria_met.add(True)
                 else:
                     criteria_met.add(False)
@@ -927,7 +932,7 @@ def get_sufficient_appraisals(
                 THRESHOLD_CRITERION_TO_MODE[threshold_criterion]
                 == ThresholdMode.MINIMUM
             ):
-                if appraisal.criteria[threshold_criterion] >= threshold_value:
+                if appraisal_criterion >= threshold_value:
                     criteria_met.add(True)
                 else:
                     criteria_met.add(False)
@@ -1075,7 +1080,7 @@ def recursive_iteration(  # pylint: disable=too-many-locals
             location,
             logger,
             previous_system,
-            scenario,
+            optimisation.scenario,
             simulation_results,
             start_year,
             system_details,

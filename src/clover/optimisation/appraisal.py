@@ -917,6 +917,9 @@ def _appraise_electric_system_tech(
     storage_electricity_used = np.sum(
         simulation_results[ColumnHeader.ELECTRICITY_FROM_STORAGE.value]
     )
+    total_grid_used = np.sum(
+        simulation_results[ColumnHeader.GRID_ENERGY.value]  # type: ignore
+    )
     total_diesel_used = np.sum(
         simulation_results[ColumnHeader.DIESEL_ENERGY_SUPPLIED.value]  # type: ignore
     )
