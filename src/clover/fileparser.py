@@ -35,6 +35,7 @@ from .__utils__ import (
     AuxiliaryHeaterType,
     BColours,
     DesalinationScenario,
+    DieselMode,
     EXCHANGER,
     DieselMode,
     HotWaterScenario,
@@ -71,6 +72,7 @@ __all__ = (
     "KEROSENE_USAGE_FILE",
     "LOCATIONS_FOLDER_NAME",
     "parse_input_files",
+    "parse_scenario_inputs",
 )
 
 
@@ -1139,7 +1141,7 @@ def _parse_pvt_reduced_models(  # pylint: disable=too-many-statements
     return electric_models, thermal_models
 
 
-def _parse_scenario_inputs(
+def parse_scenario_inputs(
     inputs_directory_relative_path: str,
     logger: Logger,
 ) -> Tuple[str, str, List[Scenario], str]:
@@ -2375,7 +2377,7 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
         hot_water_scenario_inputs_filepath,
         scenarios,
         scenario_inputs_filepath,
-    ) = _parse_scenario_inputs(inputs_directory_relative_path, logger)
+    ) = parse_scenario_inputs(inputs_directory_relative_path, logger)
     logger.info("Scenario inputs successfully parsed.")
 
     # Parse the optimisation input information.
@@ -2613,7 +2615,9 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
     logger.info("PV impact data successfully updated.")
 
     # Update the impact inputs with the diesel data.
-    if any(scenario.diesel_scenario.mode != DieselMode.DISABLED for scenario in scenarios):
+    if any(
+        scenario.diesel_scenario.mode != DieselMode.DISABLED for scenario in scenarios
+    ):
         logger.info("Updating with diesel impact data.")
         finance_inputs[ImpactingComponent.DIESEL.value] = defaultdict(
             float, diesel_costs
@@ -2627,6 +2631,28 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
 
     # Update the impact inputs with the battery data.
     if any(scenario.battery for scenario in scenarios):
+        if battery_costs is None:
+            logger.error(
+                "%sNo battery cost information parsed despite a battery being present "
+                "in one or more of the scenarios.%s",
+                BColours.fail,
+                BColours.endc,
+            )
+            raise InputFileError(
+                "scenario inputs OR finance inputs",
+                "No battery cost information despite a battery being requested.",
+            )
+        if battery_emissions is None:
+            logger.error(
+                "%sNo battery emissions information parsed despite a battery being "
+                "present in one or more of the scenarios.%s",
+                BColours.fail,
+                BColours.endc,
+            )
+            raise InputFileError(
+                "scenario inputs OR finance inputs",
+                "No battery emissions information despite a battery being requested.",
+            )
         logger.info("Updating with battery impact data.")
         finance_inputs[ImpactingComponent.STORAGE.value] = defaultdict(
             float, battery_costs
