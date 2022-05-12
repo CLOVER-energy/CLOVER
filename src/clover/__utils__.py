@@ -379,6 +379,9 @@ class ColumnHeader(enum.Enum):
     - CW_PVT_ELECTRICITY_SUPPLIED_PER_KWP:
         The electricity supplied by the clean-water PV-T per kWp installed.
 
+    - CW_PVT_INPUT_TEMPERATURE:
+        The input temperature of the clean-water PV-T installed.
+
     - CW_PVT_OUTPUT_TEMPERATURE:
         The output temperature of the clean-water PV-T installed.
 
@@ -556,6 +559,7 @@ class ColumnHeader(enum.Enum):
     CW_PVT_ELECTRICITY_SUPPLIED_PER_KWP = (
         "Clean-water PV-T electric energy supplied per kWp"
     )
+    CW_PVT_INPUT_TEMPERATURE = "Clean-water PV-T input temperature (degC)"
     CW_PVT_OUTPUT_TEMPERATURE = "Clean-water PV-T output temperature (degC)"
     CW_TANK_STORAGE_PROFILE = "Water held in clean-water storage tanks (l)"
     DESALINATION_PLANT_RENEWABLE_FRACTION = (
