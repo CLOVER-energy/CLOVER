@@ -1044,7 +1044,7 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
 
             # Compute the key results.
             key_results = analysis.get_key_results(  # type: ignore
-                grid_times[scenario.grid_type],
+                grid_profile,
                 simulation.end_year - simulation.start_year,
                 system_performance_outputs,
                 total_solar_data[solar.SolarDataType.ELECTRICITY.value]
