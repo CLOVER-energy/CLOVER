@@ -347,9 +347,9 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
     os.makedirs(os.path.join(output_directory, simulation_name), exist_ok=True)
     os.makedirs(figures_directory, exist_ok=True)
 
-    # total_cw_load = total_loads[ResourceType.CLEAN_WATER]
+    total_cw_load = total_loads[ResourceType.CLEAN_WATER]
     total_electric_load = total_loads[ResourceType.ELECTRIC]
-    # total_hw_load = total_loads[ResourceType.HOT_CLEAN_WATER]
+    total_hw_load = total_loads[ResourceType.HOT_CLEAN_WATER]
 
     # Determine which aspects of the system need plotting.
     cw_pvt: bool = ColumnHeader.CW_PVT_ELECTRICITY_SUPPLIED.value in simulation_output
