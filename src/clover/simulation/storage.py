@@ -32,11 +32,11 @@ from ..__utils__ import (
     Location,
     RenewableEnergySource,
     Scenario,
+    WasteProduct,
 )
 from .__utils__ import Minigrid
 from ..conversion.conversion import WaterSource
 from ..generation.solar import solar_degradation
-from ..impact.__utils__ import WasteProduct
 
 __all__ = (
     "battery_iteration_step",
