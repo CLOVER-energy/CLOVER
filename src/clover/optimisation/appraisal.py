@@ -1491,9 +1491,7 @@ def appraise_system(  # pylint: disable=too-many-locals
         Criterion.BLACKOUTS: technical_appraisal.blackouts,
         Criterion.CLEAN_WATER_BLACKOUTS: technical_appraisal.clean_water_blackouts,
         Criterion.CUMULATIVE_BRINE: (
-            cumulative_results.waste_produced[
-                WasteProduct.BRINE
-            ]
+            cumulative_results.waste_produced[WasteProduct.BRINE]
             if WasteProduct.BRINE in cumulative_results.waste_produced
             else None
         ),
