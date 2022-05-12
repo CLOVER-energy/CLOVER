@@ -24,6 +24,7 @@ from typing import Dict
 from ..__utils__ import (
     CleanWaterMode,
     EXCHANGER,
+    ProgrammerJudgementFault,
     ResourceType,
     Scenario,
     TechnicalAppraisal,
@@ -178,6 +179,13 @@ def update_diesel_costs(
             The :class:`TechnicalAppraisal` of the system that has just run.
 
     """
+
+    if technical_appraisal.power_consumed_fraction is None:
+        raise ProgrammerJudgementFault(
+            "impact.__utils__",
+            "No power consumed fraction on technical appraisal despite being needed.",
+        )
+
     if (
         scenario.desalination_scenario is not None
         and scenario.desalination_scenario.clean_water_scenario.mode

@@ -384,7 +384,7 @@ def single_line_simulation(  # pylint: disable=too-many-locals, too-many-stateme
                 location,
                 logger,
                 previous_system,
-                scenario,
+                optimisation.scenario,
                 simulation_results,
                 start_year,
                 system_details,

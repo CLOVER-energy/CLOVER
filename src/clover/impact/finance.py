@@ -35,6 +35,7 @@ from ..__utils__ import (
     InputFileError,
     InternalError,
     Location,
+    ProgrammerJudgementFault,
     ResourceType,
     Scenario,
     TechnicalAppraisal,
@@ -429,6 +430,17 @@ def get_total_equipment_costs(  # pylint: disable=too-many-locals, too-many-stat
           resource type.
 
     """
+
+    if technical_appraisal.power_consumed_fraction is None:
+        logger.error(
+            "%sNo power consumed fraction was calculated. This is needed.%s",
+            BColours.fail,
+            BColours.endc,
+        )
+        raise ProgrammerJudgementFault(
+            "impact.finance",
+            "No power consumed fraction on technical appraisal despite being needed.",
+        )
 
     # Instantiate a mapping for storing total cost information.
     subsystem_costs: Dict[ResourceType, float] = collections.defaultdict(float)
@@ -1093,6 +1105,17 @@ def total_om(  # pylint: disable=too-many-locals
         - A mapping between :class:`ResourceType` and the O&M costs of this.
 
     """
+
+    if technical_appraisal.power_consumed_fraction is None:
+        logger.error(
+            "%sNo power consumed fraction was calculated. This is needed.%s",
+            BColours.fail,
+            BColours.endc,
+        )
+        raise ProgrammerJudgementFault(
+            "impact.finance",
+            "No power consumed fraction on technical appraisal despite being needed.",
+        )
 
     # Instantiate a mapping for storing total cost information.
     subsystem_costs: Dict[ResourceType, float] = collections.defaultdict(float)
