@@ -263,6 +263,18 @@ def _volume_withdrawn_from_tank(
                 "calculation method despite hot water being defined in the scenario "
                 "file."
             )
+        if minigrid.hot_water_tank is None:
+            logger.error(
+                "%sNo hot-water tank defined despite a hot-water system being "
+                "specified.%s",
+                BColours.fail,
+                BColours.endc,
+            )
+            raise InternalError(
+                "No hot-water tank was defined on the minigrid when calling the 'tank "
+                "volume supplied' calculation method despite hot water being defined "
+                "in the scenario file."
+            )
 
         # The tank should only supply water if the load is less than the capacity of the
         # tanks.
