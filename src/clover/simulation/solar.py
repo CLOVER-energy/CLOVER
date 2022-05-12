@@ -681,19 +681,34 @@ def calculate_pvt_output(  # pylint: disable=too-many-locals, too-many-statement
     pvt_collector_input_temperature: pd.DataFrame = dict_to_dataframe(
         pvt_collector_input_temperature_map, logger
     )
+    pvt_collector_input_temperature = pvt_collector_input_temperature.reset_index(
+        drop=True
+    )
+
     pvt_collector_output_temperature: pd.DataFrame = dict_to_dataframe(
         pvt_collector_output_temperature_map, logger
     )
+    pvt_collector_output_temperature = pvt_collector_output_temperature.reset_index(
+        drop=True
+    )
+
     pvt_electric_power_per_unit: pd.DataFrame = dict_to_dataframe(
         pvt_electric_power_per_unit_map, logger
     )
+    pvt_electric_power_per_unit = pvt_electric_power_per_unit.reset_index(drop=True)
+
     pvt_pump_times_frame: pd.DataFrame = dict_to_dataframe(pvt_pump_times_map, logger)
+    pvt_pump_times_frame = pvt_pump_times_frame.reset_index(drop=True)
+
     tank_temperature_frame: pd.DataFrame = dict_to_dataframe(
         tank_temperature_map, logger
     )
+    tank_temperature_frame = tank_temperature_frame.reset_index(drop=True)
+
     tank_volume_output_supplied: pd.DataFrame = dict_to_dataframe(
         tank_volume_supplied_map, logger
     )
+    tank_volume_output_supplied = tank_volume_output_supplied.reset_index(drop=True)
 
     return (
         pvt_collector_input_temperature,

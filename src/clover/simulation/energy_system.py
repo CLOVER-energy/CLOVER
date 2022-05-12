@@ -2250,7 +2250,10 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
     system_details = SystemDetails(
         diesel_capacity,
         simulation.end_year,
-        {converter: converters.count(converter) for converter in converters},
+        {
+            available_converters: available_converters.count(converter)
+            for converter in available_converters
+        },
         clean_water_pvt_size
         * float(
             solar_degradation(minigrid.pvt_panel.lifetime, location.max_years).iloc[
@@ -2277,7 +2280,10 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
             ]
         ),
         final_storage_size,
-        {converter: converters.count(converter) for converter in converters},
+        {
+            converter: available_converters.count(converter)
+            for converter in available_converters
+        },
         clean_water_pvt_size
         if minigrid.pvt_panel is not None and scenario.desalination_scenario is not None
         else None,
