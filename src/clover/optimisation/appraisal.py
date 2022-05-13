@@ -278,7 +278,7 @@ def _simulation_cumulative_results(
 def _simulation_environmental_appraisal(  # pylint: disable=too-many-locals
     buffer_tank_addition: int,
     clean_water_tank_addition: int,
-    converter_addition: Dict[str, int],
+    converter_addition: Dict[Converter, int],
     diesel_addition: float,
     electric_yearly_load_statistics: pd.DataFrame,
     end_year: int,
@@ -982,7 +982,14 @@ def _appraise_hot_water_system_tech(
     scenario: Scenario,
     simulation_results: pd.DataFrame,
     system_details: SystemDetails,
-) -> Tuple[Optional[pd.Series], Optional[float], Optional[float], Optional[float]]:
+) -> Tuple[
+    Optional[float],
+    Optional[pd.Series],
+    Optional[float],
+    Optional[float],
+    Optional[float],
+    Optional[float],
+]:
     """
     Appraises the hot-water system's technical parameters.
 
