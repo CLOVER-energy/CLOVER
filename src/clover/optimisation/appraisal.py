@@ -808,7 +808,9 @@ def _appraise_clean_water_system_tech(  # pylint: disable=too-many-locals
 
     solar_thermal_cw_fraction: float = (
         np.sum(
-            simulation_results[ColumnHeader.CLEAN_WATER_FROM_THERMAL_RENEWABLES.value]
+            simulation_results[  # type: ignore
+                ColumnHeader.CLEAN_WATER_FROM_THERMAL_RENEWABLES.value
+            ]
             * simulation_results[
                 ColumnHeader.DESALINATION_PLANT_RENEWABLE_FRACTION.value
             ]
@@ -818,11 +820,11 @@ def _appraise_clean_water_system_tech(  # pylint: disable=too-many-locals
     )
 
     total_clean_water: float = np.sum(
-        simulation_results[ColumnHeader.TOTAL_CW_SUPPLIED.value]
+        simulation_results[ColumnHeader.TOTAL_CW_SUPPLIED.value]  # type: ignore
     )
 
     clean_water_demand_covered: float = total_clean_water / np.sum(
-        simulation_results[ColumnHeader.TOTAL_CW_LOAD.value]
+        simulation_results[ColumnHeader.TOTAL_CW_LOAD.value]  # type: ignore
     )
 
     # Calculate total discounted clean water values
@@ -913,12 +915,12 @@ def _appraise_electric_system_tech(
     electricity_consumed = simulation_results[
         ColumnHeader.TOTAL_ELECTRICITY_CONSUMED.value
     ]
-    total_electricity_consumed: float = np.sum(electricity_consumed)
+    total_electricity_consumed: float = np.sum(electricity_consumed)  # type: ignore
     total_load_energy: float = np.sum(
-        simulation_results[ColumnHeader.LOAD_ENERGY.value]
+        simulation_results[ColumnHeader.LOAD_ENERGY.value]  # type: ignore
     )
     renewable_electricity_used: float = np.sum(
-        simulation_results[ColumnHeader.RENEWABLE_ELECTRICITY_USED_DIRECTLY.value]
+        simulation_results[ColumnHeader.RENEWABLE_ELECTRICITY_USED_DIRECTLY.value]  # type: ignore
     )
     total_pv_energy: float = np.sum(
         simulation_results[ColumnHeader.PV_ELECTRICITY_SUPPLIED.value]  # type: ignore
@@ -931,7 +933,7 @@ def _appraise_electric_system_tech(
         else None
     )
     storage_electricity_used: float = np.sum(
-        simulation_results[ColumnHeader.ELECTRICITY_FROM_STORAGE.value]
+        simulation_results[ColumnHeader.ELECTRICITY_FROM_STORAGE.value]  # type: ignore
     )
     total_grid_used: float = np.sum(
         simulation_results[ColumnHeader.GRID_ENERGY.value]  # type: ignore
@@ -940,7 +942,7 @@ def _appraise_electric_system_tech(
         simulation_results[ColumnHeader.DIESEL_ENERGY_SUPPLIED.value]  # type: ignore
     )
     unmet_electricity: float = np.sum(
-        simulation_results[ColumnHeader.UNMET_ELECTRICITY.value]
+        simulation_results[ColumnHeader.UNMET_ELECTRICITY.value]  # type: ignore
     )
     renewables_fraction: float = (
         renewable_electricity_used + storage_electricity_used
@@ -1053,7 +1055,7 @@ def _appraise_hot_water_system_tech(
     hot_water_demand_covered: float = round(
         float(
             np.mean(
-                simulation_results[ColumnHeader.HW_TANK_OUTPUT.value]
+                simulation_results[ColumnHeader.HW_TANK_OUTPUT.value]  # type: ignore
                 / simulation_results[ColumnHeader.TOTAL_HW_LOAD.value]
             )
         ),
@@ -1061,6 +1063,16 @@ def _appraise_hot_water_system_tech(
     )
 
     # Compute the renewable fraction based on the scenario.
+    if scenario.hot_water_scenario is None:
+        logger.error(
+            "%sNo hot-water scenario despite hot-water appraisal requetsed.%s",
+            BColours.fail,
+            BColours.endc,
+        )
+        raise ProgrammerJudgementFault(
+            "hot-water technical appraisal",
+            "Cannot appraise a hot-water system if no hot-water scenario defined.",
+        )
     if scenario.hot_water_scenario.auxiliary_heater == AuxiliaryHeaterType.ELECTRIC:
         renewable_hot_water_fraction: float = round(
             renewables_fraction * (hot_water_demand_covered - solar_thermal_hw_fraction)
@@ -1074,10 +1086,10 @@ def _appraise_hot_water_system_tech(
     hot_water_consumed: pd.Series = simulation_results[
         ColumnHeader.HW_TANK_OUTPUT.value
     ]
-    total_hot_water: Optional[float] = np.sum(hot_water_consumed)
+    total_hot_water: float = np.sum(hot_water_consumed)  # type: ignore
 
     # Calculate total discounted hot water values.
-    total_hot_water_consumed_daily: Optional[pd.Series] = hourly_profile_to_daily_sum(
+    total_hot_water_consumed_daily: pd.Series = hourly_profile_to_daily_sum(
         pd.DataFrame(hot_water_consumed)
     )
     discounted_hot_water: Optional[float] = finance.discounted_energy_total(
@@ -1191,21 +1203,25 @@ def _simulation_technical_appraisal(
 
     # Heating system.
     if hot_water_consumed is not None:
-        heating_consumed: Optional[pd.DataFrame] = (
+        heating_consumed: Optional[pd.Series] = (
             hot_water_consumed  # [kg]
             * HEAT_CAPACITY_OF_WATER  # [J/kg*K]
-            * simulation_results[ColumnHeader.HW_TEMPERATURE_GAIN.value]  # [K]
+            * simulation_results[  # type: ignore
+                ColumnHeader.HW_TEMPERATURE_GAIN.value
+            ]  # [K]
         ) / 1000  # + clean_water_system_heat + ...
-        total_heating_consumed = np.sum(heating_consumed)
+        total_heating_consumed: Optional[float] = np.sum(heating_consumed)  # type: ignore
 
         # Append the energy consumption information.
-        energy_consumed += scenario.reference_thermal_efficiency * heating_consumed
-        total_energy_consumed += scenario.reference_thermal_efficiency * (
+        energy_consumed += (
+            scenario.reference_thermal_efficiency * heating_consumed  # type: ignore
+        )
+        total_energy_consumed += scenario.reference_thermal_efficiency * (  # type: ignore
             total_heating_consumed
         )
 
         # Calculate discounted heating information.
-        total_heating_consumed_daily: Optional[pd.Series] = hourly_profile_to_daily_sum(
+        total_heating_consumed_daily: pd.Series = hourly_profile_to_daily_sum(
             pd.DataFrame(heating_consumed)
         )
         discounted_heating: Optional[float] = finance.discounted_energy_total(
@@ -1220,7 +1236,6 @@ def _simulation_technical_appraisal(
         discounted_heating = None
         heating_consumed = None
         total_heating_consumed = None
-        total_heating_consumed_daily = None
 
     # Calculate total discounted energy values
     total_energy_consumed_daily = hourly_profile_to_daily_sum(
