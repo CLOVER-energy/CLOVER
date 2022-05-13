@@ -39,6 +39,7 @@ from ..__utils__ import (
     FinancialAppraisal,
     HEAT_CAPACITY_OF_WATER,
     InternalError,
+    ProgrammerJudgementFault,
     ResourceType,
     Scenario,
     hourly_profile_to_daily_sum,
@@ -851,7 +852,20 @@ def _appraise_electric_system_tech(
     logger: Logger,
     simulation_results: pd.DataFrame,
     system_details: SystemDetails,
-) -> Tuple[pd.Series, float, float, float, float, float, float, float, float]:
+) -> Tuple[
+    float,
+    pd.Series,
+    float,
+    float,
+    float,
+    float,
+    float,
+    float,
+    float,
+    Optional[float],
+    float,
+    float,
+]:
     """
     Calculates electric system technical appraisal parameters.
 
@@ -900,34 +914,38 @@ def _appraise_electric_system_tech(
         ColumnHeader.TOTAL_ELECTRICITY_CONSUMED.value
     ]
     total_electricity_consumed: float = np.sum(electricity_consumed)
-    total_load_energy = np.sum(simulation_results[ColumnHeader.LOAD_ENERGY.value])
-    renewable_electricity_used = np.sum(
+    total_load_energy: float = np.sum(
+        simulation_results[ColumnHeader.LOAD_ENERGY.value]
+    )
+    renewable_electricity_used: float = np.sum(
         simulation_results[ColumnHeader.RENEWABLE_ELECTRICITY_USED_DIRECTLY.value]
     )
-    total_pv_energy = np.sum(
+    total_pv_energy: float = np.sum(
         simulation_results[ColumnHeader.PV_ELECTRICITY_SUPPLIED.value]  # type: ignore
     )
-    total_pvt_energy = (
+    total_pvt_energy: Optional[float] = (
         np.sum(
             simulation_results[ColumnHeader.TOTAL_PVT_ELECTRICITY_SUPPLIED.value]  # type: ignore
         )
         if ColumnHeader.TOTAL_PVT_ELECTRICITY_SUPPLIED.value in simulation_results
         else None
     )
-    storage_electricity_used = np.sum(
+    storage_electricity_used: float = np.sum(
         simulation_results[ColumnHeader.ELECTRICITY_FROM_STORAGE.value]
     )
-    total_grid_used = np.sum(
+    total_grid_used: float = np.sum(
         simulation_results[ColumnHeader.GRID_ENERGY.value]  # type: ignore
     )
-    total_diesel_used = np.sum(
+    total_diesel_used: float = np.sum(
         simulation_results[ColumnHeader.DIESEL_ENERGY_SUPPLIED.value]  # type: ignore
     )
-    unmet_electricity = np.sum(simulation_results[ColumnHeader.UNMET_ELECTRICITY.value])
-    renewables_fraction = (
+    unmet_electricity: float = np.sum(
+        simulation_results[ColumnHeader.UNMET_ELECTRICITY.value]
+    )
+    renewables_fraction: float = (
         renewable_electricity_used + storage_electricity_used
     ) / total_electricity_consumed
-    unmet_fraction = unmet_electricity / total_load_energy
+    unmet_fraction: float = unmet_electricity / total_load_energy
 
     # Calculate total discounted electricity values
     total_electricity_consumed_daily = hourly_profile_to_daily_sum(
@@ -1458,6 +1476,16 @@ def appraise_system(  # pylint: disable=too-many-locals
     )
 
     # Compute the levilised costs of the system.
+    if cumulative_results.subsystem_costs is None:
+        logger.error(
+            "%sSubsystem costs not determined despite this being necessary.%s",
+            BColours.fail,
+            BColours.endc,
+        )
+        raise ProgrammerJudgementFault(
+            "appraisal::appraise_system",
+            "Subsystem costs were not determined, check internal code flows.",
+        )
     lcu_electricity = float(
         cumulative_results.subsystem_costs[ResourceType.ELECTRIC]
         / cumulative_results.discounted_electricity
@@ -1473,28 +1501,36 @@ def appraise_system(  # pylint: disable=too-many-locals
         if cumulative_results.discounted_heating > 0
         else None
     )
-    lcu_w: Optional[float] = (
-        float(
+    if (
+        cumulative_results.discounted_clean_water is not None
+        and cumulative_results.discounted_clean_water > 0
+    ):
+        lcu_w: Optional[float] = float(
             cumulative_results.subsystem_costs[ResourceType.CLEAN_WATER]
             / cumulative_results.discounted_clean_water
         )
-        if cumulative_results.discounted_clean_water > 0
-        else None
-    )
+    else:
+        lcu_w = None
 
     # Compute the emissions intensity of the system.
     emissions_intensity = 1000.0 * float(
         cumulative_results.system_ghgs / cumulative_results.energy
     )
 
-    criteria: Dict[Criterion, Optional[float]] = {
-        Criterion.BLACKOUTS: technical_appraisal.blackouts,
-        Criterion.CLEAN_WATER_BLACKOUTS: technical_appraisal.clean_water_blackouts,
-        Criterion.CUMULATIVE_BRINE: (
+    # Compute cumulative waste products.
+    if cumulative_results.waste_produced is not None:
+        cumulative_brine: Optional[float] = (
             cumulative_results.waste_produced[WasteProduct.BRINE]
             if WasteProduct.BRINE in cumulative_results.waste_produced
             else None
-        ),
+        )
+    else:
+        cumulative_brine = None
+
+    criteria: Dict[Criterion, Optional[float]] = {
+        Criterion.BLACKOUTS: technical_appraisal.blackouts,
+        Criterion.CLEAN_WATER_BLACKOUTS: technical_appraisal.clean_water_blackouts,
+        Criterion.CUMULATIVE_BRINE: cumulative_brine,
         Criterion.CUMULATIVE_COST: cumulative_results.cost,
         Criterion.CUMULATIVE_GHGS: cumulative_results.ghgs,
         Criterion.CUMULATIVE_SYSTEM_COST: cumulative_results.system_cost,
