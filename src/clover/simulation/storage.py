@@ -229,7 +229,7 @@ def cw_tank_iteration_step(  # pylint: disable=too-many-locals
         tank_water_flow = tank_storage_profile.iloc[time_index, 0]
 
         # Raise an error if there is no clean-water tank defined.
-        if minigrid.clean_water_tank is not None:
+        if minigrid.clean_water_tank is None:
             logger.error(
                 "%sNo clean-water tank defined despite desalination being carried out"
                 ".%s",
