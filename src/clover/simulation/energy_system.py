@@ -271,6 +271,7 @@ def _calculate_renewable_cw_profiles(  # pylint: disable=too-many-locals, too-ma
     pd.DataFrame,
     List[Converter],
     Optional[pd.DataFrame],
+    Optional[pd.DataFrame],
     pd.DataFrame,
     pd.DataFrame,
     List[Converter],
@@ -317,6 +318,9 @@ def _calculate_renewable_cw_profiles(  # pylint: disable=too-many-locals, too-ma
         - feedwater_sources:
             The :class:`Converter` instances which are a source of feedwater to the PV-T
             system.
+        - clean_water_pvt_collector_input_temperature:
+            The input temperature of the HTF entering the PV-T collectors, measured in
+            degrees Celcius.
         - clean_water_pvt_collector_output_temperature:
             The output temperature of HTF from the PV-T collectors, measured in degrees
             Celcius.
@@ -496,6 +500,7 @@ def _calculate_renewable_cw_profiles(  # pylint: disable=too-many-locals, too-ma
         clean_water_pvt_collector_output_temperature: Optional[pd.DataFrame]
         buffer_tank_temperature: Optional[pd.DataFrame]
         (
+            clean_water_pvt_collector_input_temperature,
             clean_water_pvt_collector_output_temperature,
             clean_water_pvt_electric_power_per_unit,
             clean_water_pvt_pump_times,
@@ -558,6 +563,9 @@ def _calculate_renewable_cw_profiles(  # pylint: disable=too-many-locals, too-ma
         )
 
         buffer_tank_temperature = buffer_tank_temperature.reset_index(drop=True)
+        clean_water_pvt_collector_input_temperature = (
+            clean_water_pvt_collector_input_temperature.reset_index(drop=True)
+        )
         clean_water_pvt_collector_output_temperature = (
             clean_water_pvt_collector_output_temperature.reset_index(drop=True)
         )
@@ -577,6 +585,7 @@ def _calculate_renewable_cw_profiles(  # pylint: disable=too-many-locals, too-ma
         logger.debug("Skipping clean-water PV-T performance-profile calculation.")
         buffer_tank_temperature = None
         buffer_tank_volume_supplied = pd.DataFrame([0] * (end_hour - start_hour))
+        clean_water_pvt_collector_input_temperature = None
         clean_water_pvt_collector_output_temperature = None
         clean_water_pvt_electric_power_per_unit = pd.DataFrame(
             [0] * (end_hour - start_hour)
@@ -591,6 +600,7 @@ def _calculate_renewable_cw_profiles(  # pylint: disable=too-many-locals, too-ma
         buffer_tank_temperature,
         buffer_tank_volume_supplied,
         feedwater_sources,
+        clean_water_pvt_collector_input_temperature,
         clean_water_pvt_collector_output_temperature,
         clean_water_pvt_electric_power_per_unit,
         renewable_thermal_cw_produced,
@@ -1396,6 +1406,7 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
         buffer_tank_temperature,
         buffer_tank_volume_supplied,
         feedwater_sources,
+        clean_water_pvt_collector_input_temperature,
         clean_water_pvt_collector_output_temperature,
         clean_water_pvt_electric_power_per_unit,
         renewable_thermal_cw_produced,
@@ -2136,6 +2147,19 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
             buffer_tank_volume_supplied.columns = pd.Index(
                 [ColumnHeader.BUFFER_TANK_OUTPUT.value]
             )
+            if clean_water_pvt_collector_input_temperature is None:
+                logger.error(
+                    "%sInternal error: PV-T input temperature was None despite PV-T "
+                    "being present.%s",
+                    BColours.fail,
+                    BColours.endc,
+                )
+                raise InternalError(
+                    "PV-T input temperature was expected but was `None`."
+                )
+            clean_water_pvt_collector_input_temperature.columns = pd.Index(
+                [ColumnHeader.CW_PVT_INPUT_TEMPERATURE.value]
+            )
             if clean_water_pvt_collector_output_temperature is None:
                 logger.error(
                     "%sInternal error: PV-T output temperature was None despite PV-T "
@@ -2251,7 +2275,7 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
         diesel_capacity,
         simulation.end_year,
         {
-            available_converters: available_converters.count(converter)
+            converter: available_converters.count(converter)
             for converter in available_converters
         },
         clean_water_pvt_size
@@ -2361,6 +2385,7 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
             renewable_thermal_cw_produced,
             renewable_cw_used_directly,
             storage_water_supplied_frame,
+            thermal_desalination_plant_renewable_fraction,
             total_cw_supplied,
             total_cw_used,
             unmet_clean_water,
@@ -2388,6 +2413,7 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
             clean_water_performance_outputs: List[Optional[pd.DataFrame]] = [
                 buffer_tank_temperature,
                 buffer_tank_volume_supplied,
+                clean_water_pvt_collector_input_temperature,
                 clean_water_pvt_collector_output_temperature,
                 clean_water_pvt_electric_power_per_kwh,
                 clean_water_pvt_energy,

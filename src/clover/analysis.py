@@ -1650,7 +1650,7 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
             renewable_clean_water = np.nanmean(
                 np.reshape(
                     simulation_output[0:HOURS_PER_YEAR][
-                        ColumnHeader.RENEWABLE_CW_USED_DIRECTLY
+                        ColumnHeader.RENEWABLE_CW_USED_DIRECTLY.value
                     ].values,
                     (365, 24),
                 ),
@@ -1695,7 +1695,7 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
             unmet_clean_water = np.nanmean(
                 np.reshape(
                     simulation_output[0:HOURS_PER_YEAR][
-                        ColumnHeader.UNMET_CLEAN_WATER
+                        ColumnHeader.UNMET_CLEAN_WATER.value
                     ].values,
                     (365, 24),
                 ),
@@ -1780,7 +1780,7 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
             renewable_clean_water = np.nanmean(
                 np.reshape(
                     simulation_output[HOURS_UNTIL[7] : HOURS_UNTIL[7] + 31 * 24][
-                        ColumnHeader.RENEWABLE_CW_USED_DIRECTLY
+                        ColumnHeader.RENEWABLE_CW_USED_DIRECTLY.value
                     ].values,
                     (31, 24),
                 ),
@@ -1825,7 +1825,7 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
             unmet_clean_water = np.nanmean(
                 np.reshape(
                     simulation_output[HOURS_UNTIL[7] : HOURS_UNTIL[7] + 31 * 24][
-                        ColumnHeader.UNMET_CLEAN_WATER
+                        ColumnHeader.UNMET_CLEAN_WATER.value
                     ].values,
                     (31, 24),
                 ),
@@ -1959,7 +1959,7 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
             renewable_clean_water = np.nanmean(
                 np.reshape(
                     simulation_output[0 : 24 * 31][
-                        ColumnHeader.RENEWABLE_CW_USED_DIRECTLY
+                        ColumnHeader.RENEWABLE_CW_USED_DIRECTLY.value
                     ].values,
                     (31, 24),
                 ),
@@ -2004,7 +2004,7 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
             unmet_clean_water = np.nanmean(
                 np.reshape(
                     simulation_output[0 : 24 * 31][
-                        ColumnHeader.UNMET_CLEAN_WATER
+                        ColumnHeader.UNMET_CLEAN_WATER.value
                     ].values,
                     (31, 24),
                 ),
@@ -2053,7 +2053,7 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
                 ColumnHeader.CLEAN_WATER_FROM_EXCESS_ELECTRICITY.value
             ]
             renewable = simulation_output.iloc[0:24][
-                ColumnHeader.RENEWABLE_CW_USED_DIRECTLY
+                ColumnHeader.RENEWABLE_CW_USED_DIRECTLY.value
             ]
             renewable_produced = simulation_output.iloc[0:24][
                 ColumnHeader.CLEAN_WATER_FROM_THERMAL_RENEWABLES.value
@@ -2069,7 +2069,7 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
                 ColumnHeader.TOTAL_CW_SUPPLIED.value
             ]
             unmet_clean_water = simulation_output.iloc[0:24][
-                ColumnHeader.UNMET_CLEAN_WATER
+                ColumnHeader.UNMET_CLEAN_WATER.value
             ]
 
             plt.plot(total_used, "--", label="Total used", zorder=1)
@@ -2103,7 +2103,7 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
                 ColumnHeader.CLEAN_WATER_FROM_EXCESS_ELECTRICITY.value
             ]
             renewable = simulation_output.iloc[0:48][
-                ColumnHeader.RENEWABLE_CW_USED_DIRECTLY
+                ColumnHeader.RENEWABLE_CW_USED_DIRECTLY.value
             ]
             renewable_produced = simulation_output.iloc[0:48][
                 ColumnHeader.CLEAN_WATER_FROM_THERMAL_RENEWABLES.value
@@ -2119,7 +2119,7 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
                 ColumnHeader.TOTAL_CW_SUPPLIED.value
             ]
             unmet_clean_water = simulation_output.iloc[0:48][
-                ColumnHeader.UNMET_CLEAN_WATER
+                ColumnHeader.UNMET_CLEAN_WATER.value
             ]
 
             plt.plot(total_used, "--", label="Total used", zorder=1)
@@ -2302,14 +2302,14 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
             )
             renewable_water = np.reshape(
                 simulation_output[0:HOURS_PER_YEAR][
-                    ColumnHeader.RENEWABLE_CW_USED_DIRECTLY
+                    ColumnHeader.RENEWABLE_CW_USED_DIRECTLY.value
                 ].values
                 / 1000,
                 (365, 24),
             )
             unmet_water = np.reshape(
                 simulation_output[0:HOURS_PER_YEAR][
-                    ColumnHeader.UNMET_CLEAN_WATER
+                    ColumnHeader.UNMET_CLEAN_WATER.value
                 ].values
                 / 1000,
                 (365, 24),
