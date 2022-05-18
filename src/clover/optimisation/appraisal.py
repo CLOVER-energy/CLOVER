@@ -77,7 +77,9 @@ def _calculate_power_consumed_fraction(
     power_consumed_fraction: Dict[ResourceType, float] = collections.defaultdict(float)
     if ColumnHeader.POWER_CONSUMED_BY_DESALINATION.value in simulation_results:
         total_clean_water_power_consumed = np.sum(
-            simulation_results[ColumnHeader.POWER_CONSUMED_BY_DESALINATION.value]
+            simulation_results[  # type: ignore
+                ColumnHeader.POWER_CONSUMED_BY_DESALINATION.value
+            ]
         )
         power_consumed_fraction[ResourceType.CLEAN_WATER] = (
             total_clean_water_power_consumed / total_electricity_consumed
@@ -85,7 +87,9 @@ def _calculate_power_consumed_fraction(
 
     if ColumnHeader.POWER_CONSUMED_BY_HOT_WATER.value in simulation_results:
         total_hot_water_power_consumed_fraction = np.sum(
-            simulation_results[ColumnHeader.POWER_CONSUMED_BY_HOT_WATER.value]
+            simulation_results[  # type: ignore
+                ColumnHeader.POWER_CONSUMED_BY_HOT_WATER.value
+            ]
         )
         power_consumed_fraction[ResourceType.HOT_CLEAN_WATER] = (
             total_hot_water_power_consumed_fraction / total_electricity_consumed
@@ -93,7 +97,9 @@ def _calculate_power_consumed_fraction(
 
     if ColumnHeader.POWER_CONSUMED_BY_ELECTRIC_DEVICES.value in simulation_results:
         total_electricity_power_consumed_fraction = np.sum(
-            simulation_results[ColumnHeader.POWER_CONSUMED_BY_ELECTRIC_DEVICES.value]
+            simulation_results[  # type: ignore
+                ColumnHeader.POWER_CONSUMED_BY_ELECTRIC_DEVICES.value
+            ]
         )
         power_consumed_fraction[ResourceType.ELECTRIC] = (
             total_electricity_power_consumed_fraction / total_electricity_consumed
@@ -137,13 +143,13 @@ def _simulation_cumulative_results(
     """
 
     # Compute the cumulative waste products.
-    cumulative_brine: Optional[float] = (
+    cumulative_brine: float = (
         (
             environmental_appraisal.total_brine
             + previous_system.cumulative_results.waste_produced[WasteProduct.BRINE]
         )
         if environmental_appraisal.total_brine is not None
-        else None
+        else 0
     )
     cumulative_waste_produced = {WasteProduct.BRINE: cumulative_brine}
 
@@ -186,7 +192,7 @@ def _simulation_cumulative_results(
         previous_system.cumulative_results.heating > 0
         and technical_appraisal.total_heating_consumed is not None
     ):
-        cumulative_hot_water: float = (
+        cumulative_heating: float = (
             technical_appraisal.total_heating_consumed
             + previous_system.cumulative_results.heating
         )
@@ -346,6 +352,18 @@ def _simulation_environmental_appraisal(  # pylint: disable=too-many-locals
 
     """
 
+    if technical_appraisal.power_consumed_fraction is None:
+        logger.error(
+            "%sCannot carry out an environmental appraisal with no power-consumed fraction defined.%s",
+            BColours.fail,
+            BColours.endc,
+        )
+        raise ProgrammerJudgementFault(
+            "simulation environmental appraisal",
+            "The technical apparisal provided did not contain a valid power-consumed "
+            "fraction. This is required to carry out an environmental appraisal.",
+        )
+
     # Calculate the total brine produced.
     total_brine = (
         round(simulation_results[ColumnHeader.BRINE.value].sum(), 3)
@@ -496,7 +514,7 @@ def _simulation_environmental_appraisal(  # pylint: disable=too-many-locals
         round(total_equipment_emissions, 3),
         round(total_om_emissions, 3),
         {key: round(value, 3) for key, value in total_subsystem_emissions.items()},
-        round(total_brine, 3) if total_brine is not None else None,
+        round(total_brine, 3) if total_brine is not None else 0,
         round(total_ghgs, 3),
         round(total_system_ghgs, 3),
     )
@@ -566,6 +584,18 @@ def _simulation_financial_appraisal(  # pylint: disable=too-many-locals
         The financial appraisal of the system.
 
     """
+
+    if technical_appraisal.power_consumed_fraction is None:
+        logger.error(
+            "%sCannot carry out a financial appraisal with no power-consumed fraction defined.%s",
+            BColours.fail,
+            BColours.endc,
+        )
+        raise ProgrammerJudgementFault(
+            "simulation financial appraisal",
+            "The technical apparisal provided did not contain a valid power-consumed "
+            "fraction. This is required to carry out a financial appraisal.",
+        )
 
     # Calculate new equipment costs (discounted)
     (
@@ -777,7 +807,7 @@ def _appraise_clean_water_system_tech(  # pylint: disable=too-many-locals
         (
             # Clean water taken from the thermal desalination plant(s) directly.
             np.sum(
-                simulation_results[
+                simulation_results[  # type: ignore
                     ColumnHeader.CLEAN_WATER_FROM_THERMAL_RENEWABLES.value
                 ]
                 * simulation_results[
@@ -789,22 +819,32 @@ def _appraise_clean_water_system_tech(  # pylint: disable=too-many-locals
             else 0
         )
         # Clean water taken from tank storage.
-        + np.sum(simulation_results[ColumnHeader.CLEAN_WATER_FROM_STORAGE.value])
+        + np.sum(
+            simulation_results[  # type: ignore
+                ColumnHeader.CLEAN_WATER_FROM_STORAGE.value
+            ]
+        )
         # Clean water generated using excess power in the minigrid.
         + np.sum(
-            simulation_results[ColumnHeader.CLEAN_WATER_FROM_EXCESS_ELECTRICITY.value]
+            simulation_results[  # type: ignore
+                ColumnHeader.CLEAN_WATER_FROM_EXCESS_ELECTRICITY.value
+            ]
         )
         # Clean water generated using a prioritisation approach. This will be as
         # renewable as the electricity mix of the minigrid (on average).
         + (
             renewables_fraction
             * np.sum(
-                simulation_results[ColumnHeader.CLEAN_WATER_FROM_PRIORITISATION.value]
+                simulation_results[  # type: ignore
+                    ColumnHeader.CLEAN_WATER_FROM_PRIORITISATION.value
+                ]
             )
             if ColumnHeader.CLEAN_WATER_FROM_PRIORITISATION.value in simulation_results
             else 0
         )
-    ) / np.sum(clean_water_consumed)
+    ) / np.sum(
+        clean_water_consumed  # type: ignore
+    )
 
     solar_thermal_cw_fraction: float = (
         np.sum(

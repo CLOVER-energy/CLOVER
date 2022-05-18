@@ -2634,23 +2634,23 @@ class CumulativeResults:
 
     """
 
-    clean_water: Optional[float] = 0
+    clean_water: float = 0
     cost: float = 0
-    discounted_clean_water: Optional[float] = 0
+    discounted_clean_water: float = 0
     discounted_electricity: float = 0
     discounted_energy: float = 0
     discounted_heating: float = 0
-    discounted_hot_water: Optional[float] = 0
+    discounted_hot_water: float = 0
     electricity: float = 0
     energy: float = 0
     ghgs: float = 0
     heating: float = 0
-    hot_water: Optional[float] = 0
-    subsystem_costs: Optional[Dict[ResourceType, float]] = None
-    subsystem_ghgs: Optional[Dict[ResourceType, float]] = None
+    hot_water: float = 0
+    subsystem_costs: Dict[ResourceType, float] = None  # type: ignore
+    subsystem_ghgs: Dict[ResourceType, float] = None  # type: ignore
     system_cost: float = 0
     system_ghgs: float = 0
-    waste_produced: Optional[Dict[WasteProduct, float]] = None
+    waste_produced: Dict[WasteProduct, float] = None  # type: ignore
 
     def to_dict(self) -> Dict[str, Any]:
         """
@@ -2699,8 +2699,8 @@ class CumulativeResults:
                 cumulative_results[f"cumulative_{key.value}_subsystem_ghgs"] = value
 
         if self.waste_produced is not None:
-            for key, value in self.waste_produced.items():
-                cumulative_results[f"cumulative_{key.value}_waste"] = value
+            for product, value in self.waste_produced.items():
+                cumulative_results[f"cumulative_{product.value}_waste"] = value
 
         return cumulative_results
 
@@ -2752,7 +2752,7 @@ class EnvironmentalAppraisal:
     new_connection_ghgs: float = 0
     new_equipment_ghgs: float = 0
     om_ghgs: float = 0
-    subsystem_ghgs: Optional[Dict[ResourceType, float]] = None
+    subsystem_ghgs: Dict[ResourceType, float] = None  # type: ignore
     total_brine: float = 0
     total_ghgs: float = 0
     total_system_ghgs: float = 0
@@ -2841,7 +2841,7 @@ class FinancialAppraisal:
     new_connection_cost: float = 0
     new_equipment_cost: float = 0
     om_cost: float = 0
-    subsystem_costs: Optional[Dict[ResourceType, float]] = None
+    subsystem_costs: Dict[ResourceType, float] = None  # type: ignore
     total_cost: float = 0
     total_system_cost: float = 0
 
@@ -3010,7 +3010,7 @@ class TechnicalAppraisal:
     grid_energy: float = 0
     hw_demand_covered: Optional[float] = 0
     kerosene_displacement: float = 0
-    power_consumed_fraction: Optional[Dict[ResourceType, float]] = None
+    power_consumed_fraction: Dict[ResourceType, float] = None  # type: ignore
     pv_energy: float = 0
     pvt_energy: Optional[float] = 0
     renewable_clean_water_fraction: Optional[float] = 0
