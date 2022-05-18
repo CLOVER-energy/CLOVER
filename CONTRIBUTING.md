@@ -98,20 +98,25 @@ Fundamentally, CLOVER is an energy balance model which accounts for the generati
 * Reference issues and pull requests liberally after the first line
 * When only changing documentation, include [ci skip] in the commit title
 * Consider starting the commit message with an applicable emoji:
+  * 🎉 `:tada` when adding an initial commit or solving a difficult problem
   * 🎨 `:art:` when improving the format/structure of the code
   * 🐎 `:racehorse:` when improving performance
   * 📝 `:memo:` when writing docs
   * 🐧 `:penguin:` when fixing something on Linux
+  * ✨ `:sparkles:` when adding a new feature
+  * 🚧 `:construction:` when part-way through working on code
   * 🍎 `:apple:` when fixing something on macOS
   * 🏁 `:checkered_flag:` when fixing something on Windows
+  * ⏪ `:rewind:` when backing out a commit or changes
   * 🐛 `:bug:` when fixing a bug
   * 🔥 `:fire:` when removing code or files
   * 💚 `:green_heart:` when fixing the CI build
+  * 👕 `:shirt:` when removing linter warnings
   * ✅ `:white_check_mark:` when adding tests
   * 🔒 `:lock:` when dealing with security
   * ⬆️ `:arrow_up:` when upgrading dependencies
   * ⬇️ `:arrow_down:` when downgrading dependencies
-  * 👕 `:shirt:` when removing linter warnings
+  * 🚀 `:rocket:` when deploying code
 
 ### Python styleguide
 
