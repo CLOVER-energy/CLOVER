@@ -826,7 +826,7 @@ def calculate_om_ghgs(
 def calculate_total_om(  # pylint: disable=too-many-locals
     buffer_tanks: int,
     clean_water_tanks: int,
-    converters: Optional[Dict[str, int]],
+    converters: Optional[Dict[Converter, int]],
     diesel_size: float,
     ghg_inputs: Dict[str, Any],
     heat_exchangers: int,
@@ -936,10 +936,6 @@ def calculate_total_om(  # pylint: disable=too-many-locals
             start_year,
             end_year,
         )
-
-    import pdb
-
-    pdb.set_trace(header="Investigate type of converters.")
 
     if converters is not None:
         for resource_type in [ResourceType.CLEAN_WATER, ResourceType.HOT_CLEAN_WATER]:
