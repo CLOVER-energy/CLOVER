@@ -187,7 +187,7 @@ def calculate_misc_ghgs(capacity: float, ghg_inputs: Dict[str, Any]) -> float:
     return misc_ghgs
 
 
-def calculate_total_equipment_ghgs(  # pylint: disable=too-many-locals
+def calculate_total_equipment_ghgs(  # pylint: disable=too-many-locals, too-many-statements
     buffer_tanks: int,
     clean_water_tanks: int,
     converters: Dict[Converter, int],
