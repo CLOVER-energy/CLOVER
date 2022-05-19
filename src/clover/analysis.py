@@ -2543,8 +2543,14 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
                     collector_output_temperature_january.values,
                     label="january pv-t output temp.",
                 )
-                # ax1.plot(collector_output_temperature_march.values, label="march pv-t output temp.")
-                # ax1.plot(collector_output_temperature_may.values, label="may pv-t output temp.")
+                # ax1.plot(
+                #     collector_output_temperature_march.values,
+                #     label="march pv-t output temp.",
+                # )
+                # ax1.plot(
+                #     collector_output_temperature_may.values,
+                #     label="may pv-t output temp.",
+                # )
                 ax1.plot(
                     collector_output_temperature_july.values,
                     label="july pv-t output temp.",
@@ -3257,7 +3263,8 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
             plt.savefig(
                 os.path.join(
                     figures_directory,
-                    "hot_water_collector_output_temperature_on_first_month_days_with_renewable_fraction.png",
+                    "hot_water_collector_output_temperature_on_first_month_days_with_"
+                    "renewable_fraction.png",
                 ),
                 bbox_inches="tight",
                 transparent=True,
@@ -3465,7 +3472,8 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
             plt.savefig(
                 os.path.join(
                     figures_directory,
-                    "hot_water_collector_output_temperature_on_average_days_with_renewables_fraction.png",
+                    "hot_water_collector_output_temperature_on_average_days_with_"
+                    "renewables_fraction.png",
                 ),
                 bbox_inches="tight",
                 transparent=True,

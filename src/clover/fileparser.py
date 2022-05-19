@@ -1005,7 +1005,9 @@ def _parse_pvt_reduced_models(  # pylint: disable=too-many-statements
         for model_type in {e for e in RegressorType}:
             try:
                 thermal_model: Optional[Lasso] = pickle.load(
-                    pkgutil.get_data(PACKAGE_NAME, THERMAL_MODEL_FILE.format(model_type.value))  # type: ignore
+                    pkgutil.get_data(  # type: ignore
+                        PACKAGE_NAME, THERMAL_MODEL_FILE.format(model_type.value)
+                    )
                 )
             except (AttributeError, FileNotFoundError, TypeError):
                 logger.info("Failed to read data as if package was installed.")
@@ -1070,7 +1072,9 @@ def _parse_pvt_reduced_models(  # pylint: disable=too-many-statements
                 # Attempt to read the electric model file as per CLOVER being an installed
                 # package.
                 electric_model: Optional[Lasso] = pickle.load(
-                    pkgutil.get_data(PACKAGE_NAME, ELECTRIC_MODEL_FILE.format(model_type.value))  # type: ignore
+                    pkgutil.get_data(  # type: ignore
+                        PACKAGE_NAME, ELECTRIC_MODEL_FILE.format(model_type.value)
+                    )
                 )
             except (AttributeError, FileNotFoundError, TypeError):
                 logger.info("Failed to read data as if package was installed.")
@@ -2834,9 +2838,7 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
         )
         ghg_inputs[ImpactingComponent.HOT_WATER_TANK.value] = defaultdict(
             float,
-            hot_water_tank_emissions
-            if hot_water_tank_emissions is not None
-            else {},
+            hot_water_tank_emissions if hot_water_tank_emissions is not None else {},
         )
         logger.info("Hot-water tank impact data successfully updated.")
 
@@ -2844,9 +2846,7 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
         logger.info("Updating with diesel water-heater impact data.")
         finance_inputs[ImpactingComponent.DIESEL_WATER_HEATER.value] = defaultdict(
             float,
-            diesel_water_heater_costs
-            if diesel_water_heater_costs is not None
-            else {},
+            diesel_water_heater_costs if diesel_water_heater_costs is not None else {},
         )
         ghg_inputs[ImpactingComponent.DIESEL_WATER_HEATER.value] = defaultdict(
             float,

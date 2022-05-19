@@ -560,7 +560,10 @@ def _calculate_renewable_cw_profiles(  # pylint: disable=too-many-locals, too-ma
                         * amount_produced
                     )[0].to_dict(),
                 )
-                for waste_product, amount_produced in thermal_desalination_plant.waste_production.items()
+                for (
+                    waste_product,
+                    amount_produced,
+                ) in thermal_desalination_plant.waste_production.items()
             }
         )
 
@@ -721,7 +724,7 @@ def _calculate_renewable_hw_profiles(  # pylint: disable=too-many-locals, too-ma
             None,
             None,
             total_waste_produced,
-            None
+            None,
         )
 
     logger.info("Calculating hot-water PV-T performance profiles.")
@@ -804,9 +807,7 @@ def _calculate_renewable_hw_profiles(  # pylint: disable=too-many-locals, too-ma
                 "scenario specifying that this is needed.",
             )
 
-    elif (
-        scenario.hot_water_scenario.auxiliary_heater == AuxiliaryHeaterType.ELECTRIC
-    ):
+    elif scenario.hot_water_scenario.auxiliary_heater == AuxiliaryHeaterType.ELECTRIC:
         try:
             auxiliary_heater = [
                 converter
@@ -885,9 +886,7 @@ def _calculate_renewable_hw_profiles(  # pylint: disable=too-many-locals, too-ma
             ]  # [Wh/degC]
             * (
                 hot_water_tank_volume_supplied  # type: ignore [operator]
-                / auxiliary_heater.input_resource_consumption[
-                    ResourceType.CLEAN_WATER
-                ]
+                / auxiliary_heater.input_resource_consumption[ResourceType.CLEAN_WATER]
             )  # [operating fraction]
             * (hot_water_tank_volume_supplied > 0)  # type: ignore [operator]
             * (  # type: ignore [arg-type]
@@ -930,7 +929,7 @@ def _calculate_renewable_hw_profiles(  # pylint: disable=too-many-locals, too-ma
                             )
                             * (hot_water_tank_volume_supplied > 0)  # type: ignore [operator]
                             * (  # type: ignore [attr-defined]
-                                scenario.hot_water_scenario.demand_temperature  # type: ignore [operator]
+                                scenario.hot_water_scenario.demand_temperature  # type: ignore [operator]  # pylint: disable=line-too-long
                                 - hot_water_tank_temperature
                             )
                         ).values
@@ -941,12 +940,8 @@ def _calculate_renewable_hw_profiles(  # pylint: disable=too-many-locals, too-ma
         )
 
     else:
-        auxiliary_heater_power_consumption = pd.DataFrame(
-            [0] * (end_hour - start_hour)
-        )
-        auxiliary_heater_heat_consumption = pd.DataFrame(
-            [0] * (end_hour - start_hour)
-        )
+        auxiliary_heater_power_consumption = pd.DataFrame([0] * (end_hour - start_hour))
+        auxiliary_heater_heat_consumption = pd.DataFrame([0] * (end_hour - start_hour))
 
     # Compute the power consumed by the thermal desalination plant.
     hot_water_power_consumed: pd.DataFrame = pd.DataFrame(
@@ -1003,7 +998,7 @@ def _calculate_renewable_hw_profiles(  # pylint: disable=too-many-locals, too-ma
     hot_water_tank_volume_supplied = hot_water_tank_volume_supplied.reset_index(
         drop=True
     )
-    hot_water_temperature_gain = hot_water_temperature_gain.reset_index(  # type: ignore  [union-attr]
+    hot_water_temperature_gain = hot_water_temperature_gain.reset_index(  # type: ignore  [union-attr]  # pylint: disable=line-too-long
         drop=True
     )
     solar_thermal_hw_fraction = solar_thermal_hw_fraction.reset_index(drop=True)
