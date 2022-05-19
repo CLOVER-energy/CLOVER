@@ -58,7 +58,6 @@ from .__utils__ import (
     InternalError,
     Location,
     ResourceType,
-    SystemAppraisal,
     get_logger,
     InputFileError,
     LOCATIONS_FOLDER_NAME,
