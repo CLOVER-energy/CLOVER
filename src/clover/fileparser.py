@@ -37,7 +37,6 @@ from .__utils__ import (
     DesalinationScenario,
     DieselMode,
     EXCHANGER,
-    DieselMode,
     HotWaterScenario,
     HTFMode,
     InputFileError,
