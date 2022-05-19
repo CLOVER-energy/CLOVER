@@ -115,7 +115,7 @@ def _calculate_power_consumed_fraction(
     return power_consumed_fraction
 
 
-def _simulation_cumulative_results(
+def _simulation_cumulative_results(  # pylint: disable=too-many-locals
     environmental_appraisal: EnvironmentalAppraisal,
     financial_appraisal: FinancialAppraisal,
     logger: Logger,
@@ -890,7 +890,7 @@ def _appraise_clean_water_system_tech(  # pylint: disable=too-many-locals
     )
 
 
-def _appraise_electric_system_tech(
+def _appraise_electric_system_tech(  # pylint: disable=too-many-locals
     finance_inputs: Dict[str, Any],
     logger: Logger,
     simulation_results: pd.DataFrame,
@@ -1151,7 +1151,7 @@ def _appraise_hot_water_system_tech(
     )
 
 
-def _simulation_technical_appraisal(
+def _simulation_technical_appraisal(  # pylint: disable=too-many-locals
     finance_inputs: Dict[str, Any],
     logger: Logger,
     scenario: Scenario,

@@ -885,7 +885,7 @@ def discounted_energy_total(
     return float(np.sum(discounted_energy))  # type: ignore
 
 
-def discounted_equipment_cost(
+def discounted_equipment_cost(  # pylint: disable=too-many-locals
     buffer_tanks: int,
     clean_water_tanks: int,
     converters: Dict[Converter, int],
