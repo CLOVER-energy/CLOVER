@@ -354,7 +354,8 @@ def _simulation_environmental_appraisal(  # pylint: disable=too-many-locals
 
     if technical_appraisal.power_consumed_fraction is None:
         logger.error(
-            "%sCannot carry out an environmental appraisal with no power-consumed fraction defined.%s",
+            "%sCannot carry out an environmental appraisal with no power-consumed "
+            "fraction defined.%s",
             BColours.fail,
             BColours.endc,
         )
@@ -1589,6 +1590,7 @@ def appraise_system(  # pylint: disable=too-many-locals
     else:
         cumulative_brine = None
 
+    # pylint: disable=line-too-long
     criteria: Dict[Criterion, Optional[float]] = {
         Criterion.BLACKOUTS: technical_appraisal.blackouts,
         Criterion.CLEAN_WATER_BLACKOUTS: technical_appraisal.clean_water_blackouts,
