@@ -1001,7 +1001,7 @@ def _parse_pvt_reduced_models(  # pylint: disable=too-many-statements
             "Attempting to read PV-T reduced thermal model(s) from installed package "
             "info."
         )
-        for model_type in {e for e in RegressorType}:
+        for model_type in RegressorType:
             try:
                 thermal_model: Optional[Lasso] = pickle.load(
                     pkgutil.get_data(  # type: ignore

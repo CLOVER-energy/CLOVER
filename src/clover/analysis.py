@@ -600,7 +600,7 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
             label="total",
         )
         plt.legend(loc="upper right")
-        plt.xticks([entry for entry in (range(0, 23, 4))])
+        plt.xticks(list(range(0, 23, 4)))
         plt.xlabel("Hour of simulation")
         plt.ylabel("Electric power demand / kW")
         # plt.title(
@@ -1334,12 +1334,7 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
                 label="total",
             )
             plt.legend(loc="upper right")
-            plt.xticks(
-                [
-                    entry
-                    for entry in range(0, CUT_OFF_TIME - 1, min(4, CUT_OFF_TIME - 2))
-                ]
-            )
+            plt.xticks(list(range(0, CUT_OFF_TIME - 1, min(4, CUT_OFF_TIME - 2))))
             plt.xlabel("Hour of simulation")
             plt.ylabel("Clean water demand / litres/hour")
             # plt.title(
@@ -1587,7 +1582,7 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
                 label="total",
             )
             plt.legend(loc="upper right")
-            plt.xticks([entry for entry in (range(0, 23, 4))])
+            plt.xticks(list(range(0, 23, 4)))
             plt.xlabel("Hour of simulation")
             plt.ylabel("Clean-water demand / litres/hour")
             # plt.title(
@@ -2839,12 +2834,7 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
                 label="total",
             )
             plt.legend(loc="upper right")
-            plt.xticks(
-                [
-                    entry
-                    for entry in range(0, CUT_OFF_TIME - 1, min(4, CUT_OFF_TIME - 2))
-                ]
-            )
+            plt.xticks(list(range(0, CUT_OFF_TIME - 1, min(4, CUT_OFF_TIME - 2))))
             plt.xlabel("Hour of simulation")
             plt.ylabel("Hot water demand / litres/hour")
             # plt.title(
@@ -3019,7 +3009,7 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
                 label="total",
             )
             plt.legend(loc="upper right")
-            plt.xticks([entry for entry in (range(0, 23, 4))])
+            plt.xticks(list(range(0, 23, 4)))
             plt.xlabel("Hour of simulation")
             plt.ylabel("Hot-water demand / litres/hour")
             # plt.title(
