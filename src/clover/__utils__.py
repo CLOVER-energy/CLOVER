@@ -720,7 +720,7 @@ def dict_to_dataframe(
         )
 
     frame = pd.DataFrame(
-        list(input_dict.values()), index=list(input_dict.keys())
+        list(input_dict.values()), index=list(input_dict)
     ).sort_index()
 
     if not isinstance(frame, pd.DataFrame):
