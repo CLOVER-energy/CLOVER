@@ -21,7 +21,6 @@ simulations.
 
 import collections
 from logging import Logger
-from tkinter import N
 from typing import Any, Dict, Optional, Tuple
 
 import numpy as np  # pylint: disable=import-error

@@ -29,7 +29,6 @@ import pandas as pd  # pylint: disable=import-error
 
 from .__utils__ import ImpactingComponent, LIFETIME, SIZE_INCREMENT, update_diesel_costs
 from ..__utils__ import (
-    ELECTRIC_POWER,
     BColours,
     ColumnHeader,
     InputFileError,
