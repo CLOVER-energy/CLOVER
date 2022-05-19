@@ -2684,7 +2684,7 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
             float,
             converter_costs[converter]
             if converter_costs[converter] is not None
-            else dict(),
+            else {},
         )
         ghg_inputs[
             GHG_IMPACT.format(
@@ -2694,7 +2694,7 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
             float,
             converter_emissions[converter]
             if converter_emissions[converter] is not None
-            else dict(),
+            else {},
         )
         logger.info("Converter %s impact data successfully updated.", converter.name)
 
@@ -2830,13 +2830,13 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
         # Update the hot-water tank impacts.
         logger.info("Updating with hot-water tank impact data.")
         finance_inputs[ImpactingComponent.HOT_WATER_TANK.value] = defaultdict(
-            float, hot_water_tank_costs if hot_water_tank_costs is not None else dict()
+            float, hot_water_tank_costs if hot_water_tank_costs is not None else {}
         )
         ghg_inputs[ImpactingComponent.HOT_WATER_TANK.value] = defaultdict(
             float,
             hot_water_tank_emissions
             if hot_water_tank_emissions is not None
-            else dict(),
+            else {},
         )
         logger.info("Hot-water tank impact data successfully updated.")
 
@@ -2846,13 +2846,13 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
             float,
             diesel_water_heater_costs
             if diesel_water_heater_costs is not None
-            else dict(),
+            else {},
         )
         ghg_inputs[ImpactingComponent.DIESEL_WATER_HEATER.value] = defaultdict(
             float,
             diesel_water_heater_emissions
             if diesel_water_heater_emissions is not None
-            else dict(),
+            else {},
         )
         logger.info("Diesel water-heater impact data successfully updated.")
 
