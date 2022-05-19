@@ -896,7 +896,7 @@ def _calculate_renewable_hw_profiles(  # pylint: disable=too-many-locals, too-ma
 
         if isinstance(auxiliary_heater, DieselWaterHeater):
             # Compute the heat consumed by the auxiliary heater.
-            auxiliary_heater_heat_consumption: pd.DataFrame = pd.DataFrame(
+            auxiliary_heater_heat_consumption: pd.DataFrame = pd.DataFrame(  # pylint: disable=unused-variable
                 (hot_water_tank_volume_supplied > 0)
                 * hot_water_tank_volume_supplied  # type: ignore [operator]
                 * minigrid.hot_water_tank.heat_capacity
@@ -1849,20 +1849,15 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
                 )
 
     # Process the various outputs into dataframes.
-    # energy_deficit_frame: pd.DataFrame = dict_to_dataframe(energy_deficit)
+    if energy_deficit is not None:
+        energy_deficit_frame: pd.DataFrame = dict_to_dataframe(energy_deficit)
     if energy_surplus is not None:
         energy_surplus_frame = dict_to_dataframe(energy_surplus, logger)
-    else:
-        energy_surplus_frame = pd.DataFrame([0] * (end_hour - start_hour))
 
     if scenario.battery and electric_storage_size > 0:
         battery_health_frame = dict_to_dataframe(battery_health, logger)
         hourly_battery_storage_frame = dict_to_dataframe(hourly_battery_storage, logger)
         storage_power_supplied_frame = dict_to_dataframe(storage_power_supplied, logger)
-    else:
-        battery_health_frame = pd.DataFrame([1] * (end_hour - start_hour))
-        hourly_battery_storage_frame = pd.DataFrame([0] * (end_hour - start_hour))
-        storage_power_supplied_frame = pd.DataFrame([0] * (end_hour - start_hour))
 
     # Determine the initial and final storage sizes
     initial_storage_size = float(electric_storage_size * minigrid.battery.storage_unit)
@@ -2248,6 +2243,7 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
     blackout_times.columns = pd.Index([ColumnHeader.BLACKOUTS.value])
     diesel_fuel_usage.columns = pd.Index([ColumnHeader.DIESEL_FUEL_USAGE.value])
     diesel_times.columns = pd.Index([ColumnHeader.DIESEL_GENERATOR_TIMES.value])
+    energy_deficit_frame.columns = pd.Index([ColumnHeader.ELECTRICITY_DEFICIT])
     energy_surplus_frame.columns = pd.Index([ColumnHeader.DUMPED_ELECTRICITY.value])
     hourly_battery_storage_frame.columns = pd.Index(
         [ColumnHeader.HOURLY_STORAGE_PROFILE.value]
@@ -2353,6 +2349,7 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
         pv_energy,
         renewables_energy,
         hourly_battery_storage_frame,
+        energy_deficit_frame,
         energy_surplus_frame,
         battery_health_frame,
         households,
