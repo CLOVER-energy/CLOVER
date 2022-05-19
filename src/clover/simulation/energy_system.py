@@ -1850,7 +1850,7 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
 
     # Process the various outputs into dataframes.
     if energy_deficit is not None:
-        energy_deficit_frame: pd.DataFrame = dict_to_dataframe(energy_deficit)
+        energy_deficit_frame: pd.DataFrame = dict_to_dataframe(energy_deficit, logger)
     if energy_surplus is not None:
         energy_surplus_frame = dict_to_dataframe(energy_surplus, logger)
 
