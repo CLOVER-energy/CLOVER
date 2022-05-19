@@ -2608,24 +2608,24 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
                     ),
                     axis=0,
                 )
-                collector_output_temperature_march = np.nanmean(
-                    np.reshape(
-                        simulation_output[HOURS_UNTIL[3] : HOURS_UNTIL[3] + 31 * 24][
-                            ColumnHeader.CW_PVT_OUTPUT_TEMPERATURE.value
-                        ].values,
-                        (31, 24),
-                    ),
-                    axis=0,
-                )
-                collector_output_temperature_may = np.nanmean(
-                    np.reshape(
-                        simulation_output[HOURS_UNTIL[5] : HOURS_UNTIL[5] + 31 * 24][
-                            ColumnHeader.CW_PVT_OUTPUT_TEMPERATURE.value
-                        ].values,
-                        (31, 24),
-                    ),
-                    axis=0,
-                )
+                # collector_output_temperature_march = np.nanmean(
+                #     np.reshape(
+                #         simulation_output[HOURS_UNTIL[3] : HOURS_UNTIL[3] + 31 * 24][
+                #             ColumnHeader.CW_PVT_OUTPUT_TEMPERATURE.value
+                #         ].values,
+                #         (31, 24),
+                #     ),
+                #     axis=0,
+                # )
+                # collector_output_temperature_may = np.nanmean(
+                #     np.reshape(
+                #         simulation_output[HOURS_UNTIL[5] : HOURS_UNTIL[5] + 31 * 24][
+                #             ColumnHeader.CW_PVT_OUTPUT_TEMPERATURE.value
+                #         ].values,
+                #         (31, 24),
+                #     ),
+                #     axis=0,
+                # )
                 collector_output_temperature_july = np.nanmean(
                     np.reshape(
                         simulation_output[HOURS_UNTIL[7] : HOURS_UNTIL[7] + 31 * 24][
@@ -2645,24 +2645,24 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
                     ),
                     axis=0,
                 )
-                buffer_tank_temperature_march = np.nanmean(
-                    np.reshape(
-                        simulation_output[HOURS_UNTIL[3] : HOURS_UNTIL[3] + 31 * 24][
-                            ColumnHeader.BUFFER_TANK_TEMPERATURE.value
-                        ].values,
-                        (31, 24),
-                    ),
-                    axis=0,
-                )
-                buffer_tank_temperature_may = np.nanmean(
-                    np.reshape(
-                        simulation_output[HOURS_UNTIL[5] : HOURS_UNTIL[5] + 31 * 24][
-                            ColumnHeader.BUFFER_TANK_TEMPERATURE.value
-                        ].values,
-                        (31, 24),
-                    ),
-                    axis=0,
-                )
+                # buffer_tank_temperature_march = np.nanmean(
+                #     np.reshape(
+                #         simulation_output[HOURS_UNTIL[3] : HOURS_UNTIL[3] + 31 * 24][
+                #             ColumnHeader.BUFFER_TANK_TEMPERATURE.value
+                #         ].values,
+                #         (31, 24),
+                #     ),
+                #     axis=0,
+                # )
+                # buffer_tank_temperature_may = np.nanmean(
+                #     np.reshape(
+                #         simulation_output[HOURS_UNTIL[5] : HOURS_UNTIL[5] + 31 * 24][
+                #             ColumnHeader.BUFFER_TANK_TEMPERATURE.value
+                #         ].values,
+                #         (31, 24),
+                #     ),
+                #     axis=0,
+                # )
                 buffer_tank_temperature_july = np.nanmean(
                     np.reshape(
                         simulation_output[HOURS_UNTIL[7] : HOURS_UNTIL[7] + 31 * 24][
@@ -2683,24 +2683,24 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
                     ),
                     axis=0,
                 )
-                volume_supplied_march = np.nanmean(
-                    np.reshape(
-                        simulation_output[HOURS_UNTIL[3] : HOURS_UNTIL[3] + 31 * 24][
-                            ColumnHeader.CLEAN_WATER_FROM_THERMAL_RENEWABLES.value
-                        ].values,
-                        (31, 24),
-                    ),
-                    axis=0,
-                )
-                volume_supplied_may = np.nanmean(
-                    np.reshape(
-                        simulation_output[HOURS_UNTIL[5] : HOURS_UNTIL[5] + 31 * 24][
-                            ColumnHeader.CLEAN_WATER_FROM_THERMAL_RENEWABLES.value
-                        ].values,
-                        (31, 24),
-                    ),
-                    axis=0,
-                )
+                # volume_supplied_march = np.nanmean(
+                #     np.reshape(
+                #         simulation_output[HOURS_UNTIL[3] : HOURS_UNTIL[3] + 31 * 24][
+                #             ColumnHeader.CLEAN_WATER_FROM_THERMAL_RENEWABLES.value
+                #         ].values,
+                #         (31, 24),
+                #     ),
+                #     axis=0,
+                # )
+                # volume_supplied_may = np.nanmean(
+                #     np.reshape(
+                #         simulation_output[HOURS_UNTIL[5] : HOURS_UNTIL[5] + 31 * 24][
+                #             ColumnHeader.CLEAN_WATER_FROM_THERMAL_RENEWABLES.value
+                #         ].values,
+                #         (31, 24),
+                #     ),
+                #     axis=0,
+                # )
                 volume_supplied_july = np.nanmean(
                     np.reshape(
                         simulation_output[HOURS_UNTIL[7] : HOURS_UNTIL[7] + 31 * 24][
@@ -3111,12 +3111,12 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
             collector_output_temperature_january = simulation_output.iloc[0:24][
                 ColumnHeader.HW_PVT_OUTPUT_TEMPERATURE.value
             ]
-            collector_output_temperature_march = simulation_output.iloc[
-                HOURS_UNTIL[3] : HOURS_UNTIL[3] + 24
-            ][ColumnHeader.HW_PVT_OUTPUT_TEMPERATURE.value]
-            collector_output_temperature_may = simulation_output.iloc[
-                HOURS_UNTIL[5] : HOURS_UNTIL[5] + 24
-            ][ColumnHeader.HW_PVT_OUTPUT_TEMPERATURE.value]
+            # collector_output_temperature_march = simulation_output.iloc[
+            #     HOURS_UNTIL[3] : HOURS_UNTIL[3] + 24
+            # ][ColumnHeader.HW_PVT_OUTPUT_TEMPERATURE.value]
+            # collector_output_temperature_may = simulation_output.iloc[
+            #     HOURS_UNTIL[5] : HOURS_UNTIL[5] + 24
+            # ][ColumnHeader.HW_PVT_OUTPUT_TEMPERATURE.value]
             collector_output_temperature_july = simulation_output.iloc[
                 HOURS_UNTIL[7] : HOURS_UNTIL[7] + 24
             ][ColumnHeader.HW_PVT_OUTPUT_TEMPERATURE.value]
@@ -3124,12 +3124,12 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
             hot_water_tank_temperature_january = simulation_output.iloc[0:24][
                 ColumnHeader.HW_TANK_TEMPERATURE.value
             ]
-            hot_water_tank_temperature_march = simulation_output.iloc[
-                HOURS_UNTIL[3] : HOURS_UNTIL[3] + 24
-            ][ColumnHeader.HW_TANK_TEMPERATURE.value]
-            hot_water_tank_temperature_may = simulation_output.iloc[
-                HOURS_UNTIL[5] : HOURS_UNTIL[5] + 24
-            ][ColumnHeader.HW_TANK_TEMPERATURE.value]
+            # hot_water_tank_temperature_march = simulation_output.iloc[
+            #     HOURS_UNTIL[3] : HOURS_UNTIL[3] + 24
+            # ][ColumnHeader.HW_TANK_TEMPERATURE.value]
+            # hot_water_tank_temperature_may = simulation_output.iloc[
+            #     HOURS_UNTIL[5] : HOURS_UNTIL[5] + 24
+            # ][ColumnHeader.HW_TANK_TEMPERATURE.value]
             hot_water_tank_temperature_july = simulation_output.iloc[
                 HOURS_UNTIL[7] : HOURS_UNTIL[7] + 24
             ][ColumnHeader.HW_TANK_TEMPERATURE.value]
@@ -3137,12 +3137,12 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
             renewable_fraction_january = simulation_output.iloc[0:24][
                 ColumnHeader.HW_SOLAR_THERMAL_FRACTION.value
             ]
-            renewable_fraction_march = simulation_output.iloc[
-                HOURS_UNTIL[3] : HOURS_UNTIL[3] + 24
-            ][ColumnHeader.HW_SOLAR_THERMAL_FRACTION.value]
-            renewable_fraction_may = simulation_output.iloc[
-                HOURS_UNTIL[5] : HOURS_UNTIL[5] + 24
-            ][ColumnHeader.HW_SOLAR_THERMAL_FRACTION.value]
+            # renewable_fraction_march = simulation_output.iloc[
+            #     HOURS_UNTIL[3] : HOURS_UNTIL[3] + 24
+            # ][ColumnHeader.HW_SOLAR_THERMAL_FRACTION.value]
+            # renewable_fraction_may = simulation_output.iloc[
+            #     HOURS_UNTIL[5] : HOURS_UNTIL[5] + 24
+            # ][ColumnHeader.HW_SOLAR_THERMAL_FRACTION.value]
             renewable_fraction_july = simulation_output.iloc[
                 HOURS_UNTIL[7] : HOURS_UNTIL[7] + 24
             ][ColumnHeader.HW_SOLAR_THERMAL_FRACTION.value]

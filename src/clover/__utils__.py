@@ -572,6 +572,7 @@ class ColumnHeader(enum.Enum):
     DISCOUNT_RATE = "Discount rate"
     DUMPED_ELECTRICITY = "Dumped energy (kWh)"
     ELECTRICITY_FROM_STORAGE = "Storage energy supplied (kWh)"
+    ELECTRICITY_DEFICIT = "Electricity deficit (kWh)"
     EXCESS_POWER_CONSUMED_BY_DESALINATION = (
         "Excess power consumed desalinating clean water (kWh)"
     )
