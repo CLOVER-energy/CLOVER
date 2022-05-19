@@ -1135,7 +1135,7 @@ def process_load_profiles(  # pylint: disable=too-many-locals
     logger.info("Computing the total device hourly load and yearly load statistics.")
     total_load, yearly_statistics = compute_total_hourly_load(
         device_hourly_loads=device_hourly_loads,
-        devices=set(relevant_device_utilisations.keys()),
+        devices=set(relevant_device_utilisations),
         disable_tqdm=disable_tqdm,
         generated_device_load_filepath=os.path.join(
             auto_generated_files_directory, "load", resource_name, "device_load"

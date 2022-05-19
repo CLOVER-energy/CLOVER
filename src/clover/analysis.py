@@ -3677,14 +3677,14 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
 
             # Plot the monthly averages.
             plt.bar(
-                [entry + 0.3 for entry in dhw_renewable_fraction.keys()],
+                [entry + 0.3 for entry in dhw_renewable_fraction],
                 dhw_renewable_fraction.values(),
                 width=0.35,
                 align="center",
                 label="CLOVER modelling",
             )
             plt.bar(
-                [entry + 0.7 for entry in dhw_renewable_fraction.keys()],
+                [entry + 0.7 for entry in dhw_renewable_fraction],
                 [
                     0.123,
                     0.22,
