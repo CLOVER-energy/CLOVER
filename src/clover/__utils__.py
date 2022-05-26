@@ -720,9 +720,7 @@ def dict_to_dataframe(
             f"Misuse of internal helper functions. See {LOGGER_DIRECTORY} for details."
         )
 
-    frame = pd.DataFrame(
-        list(input_dict.values()), index=list(input_dict)
-    ).sort_index()
+    frame = pd.DataFrame(list(input_dict.values()), index=list(input_dict)).sort_index()
 
     if not isinstance(frame, pd.DataFrame):
         logger.error(

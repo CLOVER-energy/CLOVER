@@ -1850,7 +1850,7 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
 
     # Process the various outputs into dataframes.
     if energy_deficit is not None:
-        energy_deficit_frame: pd.DataFrame = dict_to_dataframe(energy_deficit, logger)
+        energy_deficit_frame = dict_to_dataframe(energy_deficit, logger)
     if energy_surplus is not None:
         energy_surplus_frame = dict_to_dataframe(energy_surplus, logger)
 
@@ -2243,7 +2243,7 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
     blackout_times.columns = pd.Index([ColumnHeader.BLACKOUTS.value])
     diesel_fuel_usage.columns = pd.Index([ColumnHeader.DIESEL_FUEL_USAGE.value])
     diesel_times.columns = pd.Index([ColumnHeader.DIESEL_GENERATOR_TIMES.value])
-    energy_deficit_frame.columns = pd.Index([ColumnHeader.ELECTRICITY_DEFICIT])
+    energy_deficit_frame.columns = pd.Index([ColumnHeader.ELECTRICITY_DEFICIT.value])
     energy_surplus_frame.columns = pd.Index([ColumnHeader.DUMPED_ELECTRICITY.value])
     hourly_battery_storage_frame.columns = pd.Index(
         [ColumnHeader.HOURLY_STORAGE_PROFILE.value]
