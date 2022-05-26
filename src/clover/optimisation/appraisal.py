@@ -796,7 +796,9 @@ def _appraise_clean_water_system_tech(  # pylint: disable=too-many-locals
 
     clean_water_blackouts: float = round(
         float(
-            np.mean(simulation_results[ColumnHeader.CLEAN_WATER_BLACKOUTS.value].values)
+            np.mean(  # type: ignore [arg-type]
+                simulation_results[ColumnHeader.CLEAN_WATER_BLACKOUTS.value].values
+            )
         ),
         3,
     )
@@ -1081,7 +1083,7 @@ def _appraise_hot_water_system_tech(
         float(
             np.nansum(
                 (
-                    simulation_results[
+                    simulation_results[  # type: ignore [operator]
                         ColumnHeader.HW_SOLAR_THERMAL_FRACTION.value
                     ].values
                     * simulation_results[ColumnHeader.HW_TANK_OUTPUT.value].values
@@ -1181,7 +1183,9 @@ def _simulation_technical_appraisal(  # pylint: disable=too-many-locals
 
     # Calculate system blackouts
     system_blackouts: float = float(
-        np.mean(simulation_results[ColumnHeader.BLACKOUTS.value].values)
+        np.mean(  # type: ignore [arg-type]
+            simulation_results[ColumnHeader.BLACKOUTS.value].values
+        )
     )
 
     # Electricity system.
