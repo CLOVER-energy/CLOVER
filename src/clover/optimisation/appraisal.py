@@ -796,8 +796,8 @@ def _appraise_clean_water_system_tech(  # pylint: disable=too-many-locals
 
     clean_water_blackouts: float = round(
         float(
-            np.mean(  # type: ignore [arg-type]
-                simulation_results[ColumnHeader.CLEAN_WATER_BLACKOUTS.value].values
+            np.mean(
+                simulation_results[ColumnHeader.CLEAN_WATER_BLACKOUTS.value].values  # type: ignore [arg-type]
             )
         ),
         3,
@@ -1183,8 +1183,8 @@ def _simulation_technical_appraisal(  # pylint: disable=too-many-locals
 
     # Calculate system blackouts
     system_blackouts: float = float(
-        np.mean(  # type: ignore [arg-type]
-            simulation_results[ColumnHeader.BLACKOUTS.value].values
+        np.mean(
+            simulation_results[ColumnHeader.BLACKOUTS.value].values  # type: ignore [arg-type]
         )
     )
 
