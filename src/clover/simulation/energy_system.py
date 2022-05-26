@@ -553,7 +553,7 @@ def _calculate_renewable_cw_profiles(  # pylint: disable=too-many-locals, too-ma
                 waste_product: defaultdict(
                     float,
                     (
-                        pd.DataFrame(  # type: ignore [call-overload]
+                        pd.DataFrame(  # type: ignore [arg-type,call-overload]
                             (renewable_thermal_cw_produced > 0).values
                         )
                         * amount_produced
@@ -1741,10 +1741,10 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
             [float(0)] * (end_hour - start_hour)
         )
         energy_surplus_frame: pd.DataFrame = (
-            (battery_storage_profile > 0) * battery_storage_profile  # type: ignore [operator]
+            (battery_storage_profile > 0) * battery_storage_profile  # type: ignore [assignment,operator]
         ).abs()
         energy_deficit_frame: pd.DataFrame = (
-            (battery_storage_profile < 0) * battery_storage_profile  # type: ignore [operator]
+            (battery_storage_profile < 0) * battery_storage_profile  # type: ignore [assignment,operator]
         ).abs()
         initial_storage_size: float = 0
         final_storage_size: float = 0
@@ -2227,7 +2227,7 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
     brine_produced: Optional[pd.DataFrame] = (
         pd.DataFrame.from_dict(  # type: ignore [attr-defined]
             {
-                int(key): float(value)
+                int(key): float(value)  # type: ignore [misc]
                 for key, value in dict(total_waste_produced[WasteProduct.BRINE]).items()
             },
             orient="index",
