@@ -33,6 +33,7 @@ __all__ = ("get_intermittent_supply_status",)
 
 
 def get_intermittent_supply_status(  # pylint: disable=too-many-locals
+    disable_tqdm: bool,
     generation_directory: str,
     keyword: str,
     logger: Logger,
@@ -43,6 +44,8 @@ def get_intermittent_supply_status(  # pylint: disable=too-many-locals
     Computes the availability profiles for an intermittent supply.
 
     Inputs:
+        - disable_tqdm:
+            Whether to disable the tqdm progress bars (True) or display them (False).
         - generation_directory:
             The directory into which the generated inputs should be saved.
         - keyword:
@@ -70,6 +73,7 @@ def get_intermittent_supply_status(  # pylint: disable=too-many-locals
     for index in tqdm(
         range(profile_inputs.shape[1]),
         desc=f"{keyword} profiles",
+        disable=disable_tqdm,
         leave=True,
         unit=keyword,
     ):
