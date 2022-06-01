@@ -1962,7 +1962,7 @@ class Scenario:
     diesel_scenario: DieselScenario
     distribution_network: DistributionNetwork
     grid: bool
-    grid_type: str
+    grid_type: list
     hot_water_scenario: Optional[HotWaterScenario]
     name: str
     resource_types: Set[ResourceType]
