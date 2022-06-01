@@ -1,0 +1,66 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Tue May 31 19:25:45 2022
+
+@author: pahar
+"""
+exchange_rate:25000 #[LBP/$]
+
+grid:
+
+- name: dieselg # DIESEL GENERATOR GRID
+    costs:
+      cost: 10457 # [LBP/kWh]
+      extension cost: 0 # [$/km]
+      infrastructure_cost: 0 # [$]
+      
+    emissions:
+      ghgs: 2560 # [kgCO2/kWp]
+      ghg_decrease: 0 # [% p.a.]
+      installation_ghgs: 50 # [kgCO2/kW]
+      installation_ghg_decrease: 0 # [% p.a.]
+      o&m: 5 #[kgCO2/kWp p.a.]
+  - name: dieselg_5A
+    subscription_cost: 50000 #[LBP/month] #division by exchange rate in main files
+  - name: dieselg_10A
+    subscription_cost: 150000 #[LBP/month] #division by exchange rate in main files 
+
+ -name: edl   # ELECTRICTY DU LIBAN GRID
+ 
+  - name: edl_threshold_1
+    lower_bound: 0 # [kWh/day]
+    costs:
+      cost:35  # [LBP/kWh]
+      extension cost: 0 # [$/km]
+      infrastructure_cost: 0 # [$]
+  - name: edl_threshold_2
+    lower_bound: 101 # [kWh/day]
+    costs:
+      cost: 55 # [LBP/kWh]
+      extension cost: 0 # [$/km]
+      infrastructure_cost: 0 # [$]
+  - name: edl_threshold_3
+    lower_bound: 201 # [kWh/day]
+    costs:
+      cost: 80 # [LBP/kWh]
+      extension cost: 0 # [$/km]
+      infrastructure_cost: 0 # [$]     
+  - name: edl_threshold_4
+    lower_bound: 301 # [kWh/day]
+    costs:
+      cost: 120 # [LBP/kWh]
+      extension cost: 0 # [$/km]
+      infrastructure_cost: 0 # [$]
+  - name: edl_threshold_5
+    lower_bound: 401 # [kWh/day]
+    costs:
+      cost: 200 # [LBP/kWh]
+      extension cost: 0 # [$/km]
+      infrastructure_cost: 0 # [$] 
+    
+emissions:
+  ghgs: 2560 # [kgCO2/kWp]
+  ghg_decrease: 0 # [% p.a.]
+  installation_ghgs: 50 # [kgCO2/kW]
+  installation_ghg_decrease: 0 # [% p.a.]
+  o&m: 5 #[kgCO2/kWp p.a.]
