@@ -243,7 +243,7 @@ class SimulationTests(_BaseTest):
             self.fail("CLOVER simulation failed to produce an output info_file.json.")
 
         with open(os.path.join(output_file_name), "r") as f:
-            info_file_data = json.load(f)
+            info_file_data: Dict[str, Any] = json.load(f)
 
         return info_file_data
 
