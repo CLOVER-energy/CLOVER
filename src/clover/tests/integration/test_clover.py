@@ -1008,7 +1008,7 @@ class SimulationTests(_BaseTest):
             info_file_data["simulation_1"]["analysis_results"][
                 "Average daily renewables energy used / kWh"
             ],
-            4.271,
+            0.0,
         )
         self.assertEqual(
             info_file_data["simulation_1"]["analysis_results"][
@@ -1250,23 +1250,23 @@ class SimulationTests(_BaseTest):
             info_file_data["simulation_1"]["system_appraisal"]["criteria"][
                 "cumulative_cost"
             ],
-            19782.022,
+            28565.669,
         )
         self.assertEqual(
             info_file_data["simulation_1"]["system_appraisal"]["criteria"][
                 "cumulative_ghgs"
             ],
-            131289.11,
+            133907.16,
         )
         self.assertEqual(
             info_file_data["simulation_1"]["system_appraisal"]["criteria"]["lcue"],
-            0.605,
+            1.492,
         )
         self.assertEqual(
             info_file_data["simulation_1"]["system_appraisal"]["criteria"][
                 "renewables_fraction"
             ],
-            0.0,
+            0.001,
         )
         self.assertEqual(
             info_file_data["simulation_1"]["system_appraisal"]["criteria"][
@@ -1306,7 +1306,7 @@ class SimulationTests(_BaseTest):
             info_file_data["simulation_1"]["analysis_results"][
                 "Average daily renewables energy used / kWh"
             ],
-            4.271,
+            0.0,
         )
         self.assertEqual(
             info_file_data["simulation_1"]["analysis_results"][
@@ -1322,10 +1322,10 @@ class SimulationTests(_BaseTest):
             info_file_data["simulation_1"]["analysis_results"][
                 "Average daily stored energy supplied / kWh"
             ],
-            0.001,
+            0.005,
         )
-        self.assertEqual(info_file_data["simulation_1"]["final_storage_size"], 4.999)
-        self.assertEqual(info_file_data["simulation_1"]["initial_storage_size"], 5.0)
+        self.assertEqual(info_file_data["simulation_1"]["final_storage_size"], 24.997)
+        self.assertEqual(info_file_data["simulation_1"]["initial_storage_size"], 25.0)
 
     def test_no_diesel_grid_no_pv_no_storage(self):
         """
