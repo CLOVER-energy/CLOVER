@@ -224,6 +224,9 @@ class SimulationTests(_BaseTest):
                     "Cannot run a CLOVER test simulation with PV but no pv size specified."
                 )
             clover_args.extend(["--storage-size", str(storage_size)])
+        # This else block will be removed under #70.
+        else:
+            clover_args.extend(["--storage-size", "0"])
 
         # Call CLOVER with these arguments.
         clover_main(clover_args)
@@ -258,3 +261,213 @@ class SimulationTests(_BaseTest):
             True, True, True, True, pv_size=20, storage_size=5
         )
 
+    def test_diesel_grid_pv_no_storage(self):
+        """
+        Tests the case with diesel, grid, PV and storage.
+
+        The test simulation uses:
+            - a PV system size of 20 kWP;
+            - a storage system size of 5 kWh.
+
+        """
+
+        info_file_data = self._run_clover_simulation(
+            True, True, True, False, pv_size=20
+        )
+
+    def test_diesel_grid_no_pv_storage(self):
+        """
+        Tests the case with diesel, grid, PV and storage.
+
+        The test simulation uses:
+            - a PV system size of 20 kWP;
+            - a storage system size of 5 kWh.
+
+        """
+
+        info_file_data = self._run_clover_simulation(
+            True, True, False, True, storage_size=5
+        )
+
+    def test_diesel_grid_no_pv_no_storage(self):
+        """
+        Tests the case with diesel, grid, PV and storage.
+
+        The test simulation uses:
+            - a PV system size of 20 kWP;
+            - a storage system size of 5 kWh.
+
+        """
+
+        info_file_data = self._run_clover_simulation(
+            True, True, False, False
+        )
+
+    def test_diesel_no_grid_pv_storage(self):
+        """
+        Tests the case with diesel, grid, PV and storage.
+
+        The test simulation uses:
+            - a PV system size of 20 kWP;
+            - a storage system size of 5 kWh.
+
+        """
+
+        info_file_data = self._run_clover_simulation(
+            True, False, True, True, pv_size=20, storage_size=5
+        )
+
+    def test_diesel_no_grid_pv_no_storage(self):
+        """
+        Tests the case with diesel, grid, PV and storage.
+
+        The test simulation uses:
+            - a PV system size of 20 kWP;
+            - a storage system size of 5 kWh.
+
+        """
+
+        info_file_data = self._run_clover_simulation(
+            True, False, True, False, pv_size=20
+        )
+
+    def test_diesel_no_grid_no_pv_storage(self):
+        """
+        Tests the case with diesel, grid, PV and storage.
+
+        The test simulation uses:
+            - a PV system size of 20 kWP;
+            - a storage system size of 5 kWh.
+
+        """
+
+        info_file_data = self._run_clover_simulation(
+            True, False, False, True, storage_size=5
+        )
+
+    def test_diesel_no_grid_no_pv_no_storage(self):
+        """
+        Tests the case with diesel, grid, PV and storage.
+
+        The test simulation uses:
+            - a PV system size of 20 kWP;
+            - a storage system size of 5 kWh.
+
+        """
+
+        info_file_data = self._run_clover_simulation(
+            True, False, False, False
+        )
+
+    def test_no_diesel_grid_pv_storage(self):
+        """
+        Tests the case with diesel, grid, PV and storage.
+
+        The test simulation uses:
+            - a PV system size of 20 kWP;
+            - a storage system size of 5 kWh.
+
+        """
+
+        info_file_data = self._run_clover_simulation(
+            False, True, True, True, pv_size=20, storage_size=5
+        )
+
+    def test_no_diesel_grid_pv_no_storage(self):
+        """
+        Tests the case with diesel, grid, PV and storage.
+
+        The test simulation uses:
+            - a PV system size of 20 kWP;
+            - a storage system size of 5 kWh.
+
+        """
+
+        info_file_data = self._run_clover_simulation(
+            False, True, True, False, pv_size=20
+        )
+
+    def test_no_diesel_grid_no_pv_storage(self):
+        """
+        Tests the case with diesel, grid, PV and storage.
+
+        The test simulation uses:
+            - a PV system size of 20 kWP;
+            - a storage system size of 5 kWh.
+
+        """
+
+        info_file_data = self._run_clover_simulation(
+            False, True, False, True, storage_size=5
+        )
+
+    def test_no_diesel_grid_no_pv_no_storage(self):
+        """
+        Tests the case with diesel, grid, PV and storage.
+
+        The test simulation uses:
+            - a PV system size of 20 kWP;
+            - a storage system size of 5 kWh.
+
+        """
+
+        info_file_data = self._run_clover_simulation(
+            False, True, False, False
+        )
+
+    def test_no_diesel_no_grid_pv_storage(self):
+        """
+        Tests the case with diesel, grid, PV and storage.
+
+        The test simulation uses:
+            - a PV system size of 20 kWP;
+            - a storage system size of 5 kWh.
+
+        """
+
+        info_file_data = self._run_clover_simulation(
+            False, False, True, True, pv_size=20, storage_size=5
+        )
+
+    def test_no_diesel_no_grid_pv_no_storage(self):
+        """
+        Tests the case with diesel, grid, PV and storage.
+
+        The test simulation uses:
+            - a PV system size of 20 kWP;
+            - a storage system size of 5 kWh.
+
+        """
+
+        info_file_data = self._run_clover_simulation(
+            False, False, True, False, pv_size=20
+        )
+
+    def test_no_diesel_no_grid_no_pv_storage(self):
+        """
+        Tests the case with diesel, grid, PV and storage.
+
+        The test simulation uses:
+            - a PV system size of 20 kWP;
+            - a storage system size of 5 kWh.
+
+        """
+
+        info_file_data = self._run_clover_simulation(
+            False, False, False, True, storage_size=5
+        )
+
+    @unittest.skip("No need to test scenario with no power generation sources.")
+    def test_no_diesel_no_grid_no_pv_no_storage(self):
+        """
+        Tests the case with diesel, grid, PV and storage.
+
+        The test simulation uses:
+            - a PV system size of 20 kWP;
+            - a storage system size of 5 kWh.
+
+        """
+
+        info_file_data = self._run_clover_simulation(
+            False, False, False, False
+        )
