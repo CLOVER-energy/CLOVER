@@ -295,9 +295,7 @@ class SimulationTests(_BaseTest):
 
         """
 
-        info_file_data = self._run_clover_simulation(
-            True, True, False, False
-        )
+        info_file_data = self._run_clover_simulation(True, True, False, False)
 
     def test_diesel_no_grid_pv_storage(self):
         """
@@ -347,9 +345,7 @@ class SimulationTests(_BaseTest):
 
         """
 
-        info_file_data = self._run_clover_simulation(
-            True, False, False, False
-        )
+        info_file_data = self._run_clover_simulation(True, False, False, False)
 
     def test_no_diesel_grid_pv_storage(self):
         """
@@ -399,9 +395,7 @@ class SimulationTests(_BaseTest):
 
         """
 
-        info_file_data = self._run_clover_simulation(
-            False, True, False, False
-        )
+        info_file_data = self._run_clover_simulation(False, True, False, False)
 
     def test_no_diesel_no_grid_pv_storage(self):
         """
@@ -452,6 +446,4 @@ class SimulationTests(_BaseTest):
 
         """
 
-        info_file_data = self._run_clover_simulation(
-            False, False, False, False
-        )
+        info_file_data = self._run_clover_simulation(False, False, False, False)
