@@ -17,7 +17,7 @@ the clover module from the command-line interface.
 
 """
 
-__version__ = "5.0.1b2.dev1"
+__version__ = "5.0.2b1"
 
 import datetime
 import logging
@@ -78,7 +78,7 @@ AUTO_GENERATED_FILES_DIRECTORY = "auto_generated"
 # Clover header string:
 #   The ascii text to display when starting CLOVER.
 CLOVER_HEADER_STRING = """
-
+\033[38;5;40m
         (((((*    /(((
         ((((((( ((((((((
    (((((((((((( ((((((((((((
@@ -95,7 +95,7 @@ CLOVER_HEADER_STRING = """
                (
                  (
                    (
-
+\033[0m
 
 
        Continuous Lifetime Optimisation of Variable Electricity Resources
@@ -1044,7 +1044,7 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
 
             # Compute the key results.
             key_results = analysis.get_key_results(  # type: ignore
-                grid_times[scenario.grid_type],
+                grid_profile,
                 simulation.end_year - simulation.start_year,
                 system_performance_outputs,
                 total_solar_data[solar.SolarDataType.ELECTRICITY.value]

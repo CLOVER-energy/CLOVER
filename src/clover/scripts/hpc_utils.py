@@ -319,6 +319,51 @@ class HpcSimulation(
         )
 
 
+def _check_walltime(logger: Logger, walltime: Optional[int]) -> int:
+    """
+    Checks that the walltime is a valid integer for the HPC.
+
+    Inputs:
+        - logger:
+            The logger to use for the run.
+        - walltime:
+            The walltime argument to check.
+
+    Outputs:
+        The parsed walltime argument.
+
+    Raises:
+        - Exception:
+            Raised if the walltime is not valid.
+
+    """
+    if walltime is None:
+        logger.error(
+            "%sWalltime must be specified for HPC runs.%s", BColours.fail, BColours.endc
+        )
+        raise Exception("Walltime must be specified.")
+
+    if not isinstance(walltime, int):
+        logger.error("%sWalltime must be an integer.%s", BColours.fail, BColours.endc)
+        raise Exception("Walltime must be an integer.")
+
+    if walltime <= 0:
+        logger.error(
+            "%sWalltime must be a positive integer.%s", BColours.fail, BColours.endc
+        )
+        raise Exception("Walltime must be a positive integer.")
+
+    if walltime > 72:
+        logger.error(
+            "%sMaximum allowed walltime for HPC runs is 72 hours, i.e., 3 days.%s",
+            BColours.fail,
+            BColours.endc,
+        )
+        raise Exception("Walltime must be between 1 and 72 hours.")
+
+    return walltime
+
+
 def _parse_hpc_args(args: List[Any]) -> argparse.Namespace:
     """
     Parses the input arguments to the hpc script to determine the HPC input file.
@@ -342,6 +387,16 @@ def _parse_hpc_args(args: List[Any]) -> argparse.Namespace:
     #   Used for generating verbose logs for debugging.
     parser.add_argument(
         "--verbose", "-v", action="store_true", default=False, help=argparse.SUPPRESS
+    )
+
+    # Walltime:
+    #   Used for specifying the walltime for the runs.
+    parser.add_argument(
+        "--walltime",
+        "-w",
+        default=None,
+        type=int,
+        help="The walltime, in hours, for the HPC runs.",
     )
 
     return parser.parse_args(args)
@@ -436,7 +491,7 @@ def _process_hpc_input_file(
 
 def parse_args_and_hpc_input_file(
     args: List[Any], logger: Logger
-) -> Tuple[str, List[Union[HpcOptimisation, HpcSimulation]], bool]:
+) -> Tuple[str, List[Union[HpcOptimisation, HpcSimulation]], bool, float]:
     """
     Parses command-line arguments and returns the HPC runs to be carried out.
 
@@ -445,8 +500,10 @@ def parse_args_and_hpc_input_file(
             Unparsed command-line arguments.
 
     Outputs:
-        - The run file name.
-        - A `list` of the hpc optimisations and simulations to be carried out.
+        - The run file name,
+        - A `list` of the hpc optimisations and simulations to be carried out,
+        - Whether the logging should be verbose or not,
+        - The walltime for the run.
 
     """
 
@@ -454,8 +511,11 @@ def parse_args_and_hpc_input_file(
     parsed_args = _parse_hpc_args(args)
     logger.info("Command-line arguments successfully parsed.")
 
+    # Check that the walltime is valid.
+    walltime = _check_walltime(logger, parsed_args.walltime)
+
     # Parse the input file to determine the runs to be carried out.
     runs = _process_hpc_input_file(parsed_args.runs, logger)
 
     # Return these runs along with the filename.
-    return parsed_args.runs, runs, parsed_args.verbose
+    return parsed_args.runs, runs, parsed_args.verbose, walltime
