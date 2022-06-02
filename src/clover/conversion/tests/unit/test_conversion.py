@@ -14,9 +14,9 @@ test_conversion.py - Tests for the conversion module of CLOVER.
 
 import unittest
 
-from unittest import mock
+from unittest import mock  # pylint: disable=unused-import
 
-from ...conversion import (
+from ...conversion import (  # pylint: disable=unused-import
     _parse_waste_production,
     Converter,
     MultiInputConverter,

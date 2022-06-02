@@ -12,6 +12,6 @@ test_utils.py - Tests for the utility module for CLOVER's optimisation component
 
 """
 
-import unittest
+import unittest  # pylint: disable=unused-import
 
-from unittest import mock
+from unittest import mock  # pylint: disable=unused-import

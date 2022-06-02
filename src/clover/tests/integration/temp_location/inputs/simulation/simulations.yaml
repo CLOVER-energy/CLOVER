@@ -9,4 +9,4 @@
 ################################################################################
 
 - start_year: 0 # The start year for the simulation run.
-  end_year: 1 # The end year for the simulation.
+  end_year: 5 # The end year for the simulation.

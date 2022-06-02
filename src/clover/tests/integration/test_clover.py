@@ -23,13 +23,12 @@ import time
 import unittest
 
 import json
-import pytest
 import shutil
-import yaml
 
 from distutils.dir_util import copy_tree
 from typing import Any, Dict, List, Optional, Union
-from unittest import mock
+
+import yaml
 
 from clover.fileparser import INPUTS_DIRECTORY, SCENARIO_INPUTS_FILE
 
@@ -59,7 +58,9 @@ TEMP_LOCATION_PATH: str = os.path.join(
 )
 
 
-def _recursive_updater(dictionary: Dict[Any, Any], update_key: List[Any], value: Any):
+def _recursive_updater(
+    dictionary: Dict[Any, Any], update_key: List[Any], value: Any
+) -> None:
     """
     Helper function for recusively nested dictionaries.
 
@@ -80,7 +81,8 @@ def _recursive_updater(dictionary: Dict[Any, Any], update_key: List[Any], value:
 
     # Otherwise, go one level deeper.
     this_key = update_key.pop(0)
-    return _recursive_updater(dictionary[this_key], update_key, value)
+    _recursive_updater(dictionary[this_key], update_key, value)
+    return
 
 
 class _BaseTest(unittest.TestCase):
@@ -103,7 +105,7 @@ class _BaseTest(unittest.TestCase):
 
         self.temp_location_name: str = (
             f"{TEMP_LOCATION_FOLDER_NAME}_"
-            + f"{time.ctime().replace(' ', '_').replace(':', '_')}"
+            + f"{time.ctime().replace(' ', '_').replace(':', '_').replace('__', '_')}"
         )
         self.temp_location_path: str = os.path.join(
             LOCATIONS_FOLDER_NAME, self.temp_location_name
@@ -153,7 +155,7 @@ class SimulationTests(_BaseTest):
         """
 
         super().setUp()
-        self.args.append("--simulation")
+        self.args.extend(["--simulation", "--analyse", "--skip-plots"])
 
     def _update_scenario_file(
         self, key: Union[str, List[str]], value: Union[bool, str]
@@ -253,13 +255,99 @@ class SimulationTests(_BaseTest):
 
         The test simulation uses:
             - a PV system size of 20 kWP;
-            - a storage system size of 5 kWh.
+            - a storage system size of 25 kWh.
 
         """
 
         info_file_data = self._run_clover_simulation(
-            True, True, True, True, pv_size=20, storage_size=5
+            True, True, True, True, pv_size=20, storage_size=25
         )
+
+        # Check appraisal criteria
+        self.assertEqual(
+            info_file_data["simulation_1"]["system_appraisal"]["criteria"]["blackouts"],
+            0.1,
+        )
+        self.assertEqual(
+            info_file_data["simulation_1"]["system_appraisal"]["criteria"][
+                "cumulative_cost"
+            ],
+            32249.869,
+        )
+        self.assertEqual(
+            info_file_data["simulation_1"]["system_appraisal"]["criteria"][
+                "cumulative_ghgs"
+            ],
+            91620.383,
+        )
+        self.assertEqual(
+            info_file_data["simulation_1"]["system_appraisal"]["criteria"]["lcue"],
+            1.124,
+        )
+        self.assertEqual(
+            info_file_data["simulation_1"]["system_appraisal"]["criteria"][
+                "renewables_fraction"
+            ],
+            0.571,
+        )
+        self.assertEqual(
+            info_file_data["simulation_1"]["system_appraisal"]["criteria"][
+                "unmet_energy_fraction"
+            ],
+            0.018,
+        )
+
+        # Check diesel parameters
+        self.assertEqual(
+            info_file_data["simulation_1"]["analysis_results"][
+                "Average daily diesel energy supplied / kWh"
+            ],
+            1.65,
+        )
+        self.assertEqual(
+            info_file_data["simulation_1"]["analysis_results"]["Diesel times"], 0.12
+        )
+        self.assertEqual(info_file_data["simulation_1"]["diesel_capacity"], 3.0)
+
+        # Check grid parameters
+        self.assertEqual(
+            info_file_data["simulation_1"]["analysis_results"][
+                "Average daily grid energy supplied / kWh"
+            ],
+            7.196,
+        )
+        self.assertEqual(
+            info_file_data["simulation_1"]["analysis_results"][
+                "Average grid availability / hours/day"
+            ],
+            67939.0,
+        )
+
+        # Check PV parameters
+        self.assertEqual(
+            info_file_data["simulation_1"]["analysis_results"][
+                "Average daily renewables energy used / kWh"
+            ],
+            4.262,
+        )
+        self.assertEqual(
+            info_file_data["simulation_1"]["analysis_results"][
+                "Cumulative pv generation / kWh"
+            ],
+            36685.0,
+        )
+        self.assertEqual(info_file_data["simulation_1"]["final_pv_size"], 20.0)
+        self.assertEqual(info_file_data["simulation_1"]["initial_pv_size"], 19.0)
+
+        # Check storage parameters
+        self.assertEqual(
+            info_file_data["simulation_1"]["analysis_results"][
+                "Average daily stored energy supplied / kWh"
+            ],
+            7.52,
+        )
+        self.assertEqual(info_file_data["simulation_1"]["final_storage_size"], 21.34)
+        self.assertEqual(info_file_data["simulation_1"]["initial_storage_size"], 25.0)
 
     def test_diesel_grid_pv_no_storage(self):
         """
@@ -274,18 +362,190 @@ class SimulationTests(_BaseTest):
             True, True, True, False, pv_size=20
         )
 
+        # Check appraisal criteria
+        self.assertEqual(
+            info_file_data["simulation_1"]["system_appraisal"]["criteria"]["blackouts"],
+            0.1,
+        )
+        self.assertEqual(
+            info_file_data["simulation_1"]["system_appraisal"]["criteria"][
+                "cumulative_cost"
+            ],
+            26343.181,
+        )
+        self.assertEqual(
+            info_file_data["simulation_1"]["system_appraisal"]["criteria"][
+                "cumulative_ghgs"
+            ],
+            100650.761,
+        )
+        self.assertEqual(
+            info_file_data["simulation_1"]["system_appraisal"]["criteria"]["lcue"],
+            0.934,
+        )
+        self.assertEqual(
+            info_file_data["simulation_1"]["system_appraisal"]["criteria"][
+                "renewables_fraction"
+            ],
+            0.21,
+        )
+        self.assertEqual(
+            info_file_data["simulation_1"]["system_appraisal"]["criteria"][
+                "unmet_energy_fraction"
+            ],
+            0.016,
+        )
+
+        # Check diesel parameters
+        self.assertEqual(
+            info_file_data["simulation_1"]["analysis_results"][
+                "Average daily diesel energy supplied / kWh"
+            ],
+            8.821,
+        )
+        self.assertEqual(
+            info_file_data["simulation_1"]["analysis_results"]["Diesel times"], 0.394
+        )
+        self.assertEqual(info_file_data["simulation_1"]["diesel_capacity"], 3.0)
+
+        # Check grid parameters
+        self.assertEqual(
+            info_file_data["simulation_1"]["analysis_results"][
+                "Average daily grid energy supplied / kWh"
+            ],
+            7.196,
+        )
+        self.assertEqual(
+            info_file_data["simulation_1"]["analysis_results"][
+                "Average grid availability / hours/day"
+            ],
+            67939.0,
+        )
+
+        # Check PV parameters
+        self.assertEqual(
+            info_file_data["simulation_1"]["analysis_results"][
+                "Average daily renewables energy used / kWh"
+            ],
+            4.262,
+        )
+        self.assertEqual(
+            info_file_data["simulation_1"]["analysis_results"][
+                "Cumulative pv generation / kWh"
+            ],
+            36685.0,
+        )
+        self.assertEqual(info_file_data["simulation_1"]["final_pv_size"], 20.0)
+        self.assertEqual(info_file_data["simulation_1"]["initial_pv_size"], 19.0)
+
+        # Check storage parameters
+        self.assertEqual(
+            info_file_data["simulation_1"]["analysis_results"][
+                "Average daily stored energy supplied / kWh"
+            ],
+            0.0,
+        )
+        self.assertEqual(info_file_data["simulation_1"]["final_storage_size"], 0.0)
+        self.assertEqual(info_file_data["simulation_1"]["initial_storage_size"], 0.0)
+
     def test_diesel_grid_no_pv_storage(self):
         """
         Tests the case with diesel, grid, PV and storage.
 
         The test simulation uses:
-            - a storage system size of 5 kWh.
+            - a storage system size of 25 kWh.
 
         """
 
         info_file_data = self._run_clover_simulation(
-            True, True, False, True, storage_size=5
+            True, True, False, True, storage_size=25
         )
+
+        # Check appraisal criteria
+        self.assertEqual(
+            info_file_data["simulation_1"]["system_appraisal"]["criteria"]["blackouts"],
+            0.099,
+        )
+        self.assertEqual(
+            info_file_data["simulation_1"]["system_appraisal"]["criteria"][
+                "cumulative_cost"
+            ],
+            15841.411,
+        )
+        self.assertEqual(
+            info_file_data["simulation_1"]["system_appraisal"]["criteria"][
+                "cumulative_ghgs"
+            ],
+            42714.989,
+        )
+        self.assertEqual(
+            info_file_data["simulation_1"]["system_appraisal"]["criteria"]["lcue"],
+            0.628,
+        )
+        self.assertEqual(
+            info_file_data["simulation_1"]["system_appraisal"]["criteria"][
+                "renewables_fraction"
+            ],
+            0.0,
+        )
+        self.assertEqual(
+            info_file_data["simulation_1"]["system_appraisal"]["criteria"][
+                "unmet_energy_fraction"
+            ],
+            0.026,
+        )
+
+        # Check diesel parameters
+        self.assertEqual(
+            info_file_data["simulation_1"]["analysis_results"][
+                "Average daily diesel energy supplied / kWh"
+            ],
+            11.149,
+        )
+        self.assertEqual(
+            info_file_data["simulation_1"]["analysis_results"]["Diesel times"], 0.511
+        )
+        self.assertEqual(info_file_data["simulation_1"]["diesel_capacity"], 3.0)
+
+        # Check grid parameters
+        self.assertEqual(
+            info_file_data["simulation_1"]["analysis_results"][
+                "Average daily grid energy supplied / kWh"
+            ],
+            7.196,
+        )
+        self.assertEqual(
+            info_file_data["simulation_1"]["analysis_results"][
+                "Average grid availability / hours/day"
+            ],
+            67939.0,
+        )
+
+        # Check PV parameters
+        self.assertEqual(
+            info_file_data["simulation_1"]["analysis_results"][
+                "Average daily renewables energy used / kWh"
+            ],
+            0.0,
+        )
+        self.assertEqual(
+            info_file_data["simulation_1"]["analysis_results"][
+                "Cumulative pv generation / kWh"
+            ],
+            0.0,
+        )
+        self.assertEqual(info_file_data["simulation_1"]["final_pv_size"], 0.0)
+        self.assertEqual(info_file_data["simulation_1"]["initial_pv_size"], 0.0)
+
+        # Check storage parameters
+        self.assertEqual(
+            info_file_data["simulation_1"]["analysis_results"][
+                "Average daily stored energy supplied / kWh"
+            ],
+            0.005,
+        )
+        self.assertEqual(info_file_data["simulation_1"]["final_storage_size"], 24.997)
+        self.assertEqual(info_file_data["simulation_1"]["initial_storage_size"], 25.0)
 
     def test_diesel_grid_no_pv_no_storage(self):
         """
@@ -297,19 +557,189 @@ class SimulationTests(_BaseTest):
 
         info_file_data = self._run_clover_simulation(True, True, False, False)
 
+        # Check appraisal criteria
+        self.assertEqual(
+            info_file_data["simulation_1"]["system_appraisal"]["criteria"]["blackouts"],
+            0.1,
+        )
+        self.assertEqual(
+            info_file_data["simulation_1"]["system_appraisal"]["criteria"][
+                "cumulative_cost"
+            ],
+            9916.962,
+        )
+        self.assertEqual(
+            info_file_data["simulation_1"]["system_appraisal"]["criteria"][
+                "cumulative_ghgs"
+            ],
+            39335.849,
+        )
+        self.assertEqual(
+            info_file_data["simulation_1"]["system_appraisal"]["criteria"]["lcue"],
+            0.393,
+        )
+        self.assertEqual(
+            info_file_data["simulation_1"]["system_appraisal"]["criteria"][
+                "renewables_fraction"
+            ],
+            0.0,
+        )
+        self.assertEqual(
+            info_file_data["simulation_1"]["system_appraisal"]["criteria"][
+                "unmet_energy_fraction"
+            ],
+            0.026,
+        )
+
+        # Check diesel parameters
+        self.assertEqual(
+            info_file_data["simulation_1"]["analysis_results"][
+                "Average daily diesel energy supplied / kWh"
+            ],
+            11.153,
+        )
+        self.assertEqual(
+            info_file_data["simulation_1"]["analysis_results"]["Diesel times"], 0.511
+        )
+        self.assertEqual(info_file_data["simulation_1"]["diesel_capacity"], 3.0)
+
+        # Check grid parameters
+        self.assertEqual(
+            info_file_data["simulation_1"]["analysis_results"][
+                "Average daily grid energy supplied / kWh"
+            ],
+            7.196,
+        )
+        self.assertEqual(
+            info_file_data["simulation_1"]["analysis_results"][
+                "Average grid availability / hours/day"
+            ],
+            67939.0,
+        )
+
+        # Check PV parameters
+        self.assertEqual(
+            info_file_data["simulation_1"]["analysis_results"][
+                "Average daily renewables energy used / kWh"
+            ],
+            0.0,
+        )
+        self.assertEqual(
+            info_file_data["simulation_1"]["analysis_results"][
+                "Cumulative pv generation / kWh"
+            ],
+            0.0,
+        )
+        self.assertEqual(info_file_data["simulation_1"]["final_pv_size"], 0.0)
+        self.assertEqual(info_file_data["simulation_1"]["initial_pv_size"], 0.0)
+
+        # Check storage parameters
+        self.assertEqual(
+            info_file_data["simulation_1"]["analysis_results"][
+                "Average daily stored energy supplied / kWh"
+            ],
+            0.0,
+        )
+        self.assertEqual(info_file_data["simulation_1"]["final_storage_size"], 0.0)
+        self.assertEqual(info_file_data["simulation_1"]["initial_storage_size"], 0.0)
+
     def test_diesel_no_grid_pv_storage(self):
         """
         Tests the case with diesel, grid, PV and storage.
 
         The test simulation uses:
             - a PV system size of 20 kWP;
-            - a storage system size of 5 kWh.
+            - a storage system size of 25 kWh.
 
         """
 
         info_file_data = self._run_clover_simulation(
-            True, False, True, True, pv_size=20, storage_size=5
+            True, False, True, True, pv_size=20, storage_size=25
         )
+
+        # Check appraisal criteria
+        self.assertEqual(
+            info_file_data["simulation_1"]["system_appraisal"]["criteria"]["blackouts"],
+            0.099,
+        )
+        self.assertEqual(
+            info_file_data["simulation_1"]["system_appraisal"]["criteria"][
+                "cumulative_cost"
+            ],
+            32209.939,
+        )
+        self.assertEqual(
+            info_file_data["simulation_1"]["system_appraisal"]["criteria"][
+                "cumulative_ghgs"
+            ],
+            91493.592,
+        )
+        self.assertEqual(
+            info_file_data["simulation_1"]["system_appraisal"]["criteria"]["lcue"],
+            1.179,
+        )
+        self.assertEqual(
+            info_file_data["simulation_1"]["system_appraisal"]["criteria"][
+                "renewables_fraction"
+            ],
+            0.717,
+        )
+        self.assertEqual(
+            info_file_data["simulation_1"]["system_appraisal"]["criteria"][
+                "unmet_energy_fraction"
+            ],
+            0.011,
+        )
+
+        # Check diesel parameters
+        self.assertEqual(
+            info_file_data["simulation_1"]["analysis_results"][
+                "Average daily diesel energy supplied / kWh"
+            ],
+            5.548,
+        )
+        self.assertEqual(
+            info_file_data["simulation_1"]["analysis_results"]["Diesel times"], 0.356
+        )
+        self.assertEqual(info_file_data["simulation_1"]["diesel_capacity"], 3.0)
+
+        # Check grid parameters
+        self.assertEqual(
+            info_file_data["simulation_1"]["analysis_results"][
+                "Average daily grid energy supplied / kWh"
+            ],
+            0.0,
+        )
+        self.assertNotIn(
+            "Average grid availability / hours/day",
+            info_file_data["simulation_1"]["analysis_results"],
+        )
+
+        # Check PV parameters
+        self.assertEqual(
+            info_file_data["simulation_1"]["analysis_results"][
+                "Average daily renewables energy used / kWh"
+            ],
+            4.271,
+        )
+        self.assertEqual(
+            info_file_data["simulation_1"]["analysis_results"][
+                "Cumulative pv generation / kWh"
+            ],
+            36685.0,
+        )
+        self.assertEqual(info_file_data["simulation_1"]["final_pv_size"], 20.0)
+        self.assertEqual(info_file_data["simulation_1"]["initial_pv_size"], 19.0)
+
+        # Check storage parameters
+        self.assertEqual(
+            info_file_data["simulation_1"]["analysis_results"][
+                "Average daily stored energy supplied / kWh"
+            ],
+            9.807,
+        )
+        self.assertEqual(info_file_data["simulation_1"]["final_storage_size"], 20.277)
+        self.assertEqual(info_file_data["simulation_1"]["initial_storage_size"], 25.0)
 
     def test_diesel_no_grid_pv_no_storage(self):
         """
@@ -324,18 +754,186 @@ class SimulationTests(_BaseTest):
             True, False, True, False, pv_size=20
         )
 
+        # Check appraisal criteria
+        self.assertEqual(
+            info_file_data["simulation_1"]["system_appraisal"]["criteria"]["blackouts"],
+            0.1,
+        )
+        self.assertEqual(
+            info_file_data["simulation_1"]["system_appraisal"]["criteria"][
+                "cumulative_cost"
+            ],
+            29025.727,
+        )
+        self.assertEqual(
+            info_file_data["simulation_1"]["system_appraisal"]["criteria"][
+                "cumulative_ghgs"
+            ],
+            104115.842,
+        )
+        self.assertEqual(
+            info_file_data["simulation_1"]["system_appraisal"]["criteria"]["lcue"],
+            1.092,
+        )
+        self.assertEqual(
+            info_file_data["simulation_1"]["system_appraisal"]["criteria"][
+                "renewables_fraction"
+            ],
+            0.223,
+        )
+        self.assertEqual(
+            info_file_data["simulation_1"]["system_appraisal"]["criteria"][
+                "unmet_energy_fraction"
+            ],
+            0.011,
+        )
+
+        # Check diesel parameters
+        self.assertEqual(
+            info_file_data["simulation_1"]["analysis_results"][
+                "Average daily diesel energy supplied / kWh"
+            ],
+            14.879,
+        )
+        self.assertEqual(
+            info_file_data["simulation_1"]["analysis_results"]["Diesel times"], 0.726
+        )
+        self.assertEqual(info_file_data["simulation_1"]["diesel_capacity"], 3.0)
+
+        # Check grid parameters
+        self.assertEqual(
+            info_file_data["simulation_1"]["analysis_results"][
+                "Average daily grid energy supplied / kWh"
+            ],
+            0.0,
+        )
+        self.assertNotIn(
+            "Average grid availability / hours/day",
+            info_file_data["simulation_1"]["analysis_results"],
+        )
+
+        # Check PV parameters
+        self.assertEqual(
+            info_file_data["simulation_1"]["analysis_results"][
+                "Average daily renewables energy used / kWh"
+            ],
+            4.271,
+        )
+        self.assertEqual(
+            info_file_data["simulation_1"]["analysis_results"][
+                "Cumulative pv generation / kWh"
+            ],
+            36685.0,
+        )
+        self.assertEqual(info_file_data["simulation_1"]["final_pv_size"], 19.0)
+        self.assertEqual(info_file_data["simulation_1"]["initial_pv_size"], 20.0)
+
+        # Check storage parameters
+        self.assertEqual(
+            info_file_data["simulation_1"]["analysis_results"][
+                "Average daily stored energy supplied / kWh"
+            ],
+            0.0,
+        )
+        self.assertEqual(info_file_data["simulation_1"]["final_storage_size"], 0.0)
+        self.assertEqual(info_file_data["simulation_1"]["initial_storage_size"], 0.0)
+
     def test_diesel_no_grid_no_pv_storage(self):
         """
         Tests the case with diesel, grid, PV and storage.
 
         The test simulation uses:
-            - a storage system size of 5 kWh.
+            - a storage system size of 25 kWh.
 
         """
 
         info_file_data = self._run_clover_simulation(
-            True, False, False, True, storage_size=5
+            True, False, False, True, storage_size=25
         )
+
+        # Check appraisal criteria
+        self.assertEqual(
+            info_file_data["simulation_1"]["system_appraisal"]["criteria"]["blackouts"],
+            0.098,
+        )
+        self.assertEqual(
+            info_file_data["simulation_1"]["system_appraisal"]["criteria"][
+                "cumulative_cost"
+            ],
+            15694.76,
+        )
+        self.assertEqual(
+            info_file_data["simulation_1"]["system_appraisal"]["criteria"][
+                "cumulative_ghgs"
+            ],
+            48238.701,
+        )
+        self.assertEqual(
+            info_file_data["simulation_1"]["system_appraisal"]["criteria"]["lcue"],
+            0.621,
+        )
+        self.assertEqual(
+            info_file_data["simulation_1"]["system_appraisal"]["criteria"][
+                "renewables_fraction"
+            ],
+            0.0,
+        )
+        self.assertEqual(
+            info_file_data["simulation_1"]["system_appraisal"]["criteria"][
+                "unmet_energy_fraction"
+            ],
+            0.021,
+        )
+
+        # Check diesel parameters
+        self.assertEqual(
+            info_file_data["simulation_1"]["analysis_results"][
+                "Average daily diesel energy supplied / kWh"
+            ],
+            18.43,
+        )
+        self.assertEqual(
+            info_file_data["simulation_1"]["analysis_results"]["Diesel times"], 0.901
+        )
+        self.assertEqual(info_file_data["simulation_1"]["diesel_capacity"], 3.0)
+
+        # Check grid parameters
+        self.assertEqual(
+            info_file_data["simulation_1"]["analysis_results"][
+                "Average daily grid energy supplied / kWh"
+            ],
+            0.0,
+        )
+        self.assertNotIn(
+            "Average grid availability / hours/day",
+            info_file_data["simulation_1"]["analysis_results"],
+        )
+
+        # Check PV parameters
+        self.assertEqual(
+            info_file_data["simulation_1"]["analysis_results"][
+                "Average daily renewables energy used / kWh"
+            ],
+            0.0,
+        )
+        self.assertEqual(
+            info_file_data["simulation_1"]["analysis_results"][
+                "Cumulative pv generation / kWh"
+            ],
+            0.0,
+        )
+        self.assertEqual(info_file_data["simulation_1"]["final_pv_size"], 0.0)
+        self.assertEqual(info_file_data["simulation_1"]["initial_pv_size"], 0.0)
+
+        # Check storage parameters
+        self.assertEqual(
+            info_file_data["simulation_1"]["analysis_results"][
+                "Average daily stored energy supplied / kWh"
+            ],
+            0.006,
+        )
+        self.assertEqual(info_file_data["simulation_1"]["final_storage_size"], 24.997)
+        self.assertEqual(info_file_data["simulation_1"]["initial_storage_size"], 25.0)
 
     def test_diesel_no_grid_no_pv_no_storage(self):
         """
@@ -347,19 +945,189 @@ class SimulationTests(_BaseTest):
 
         info_file_data = self._run_clover_simulation(True, False, False, False)
 
+        # Check appraisal criteria
+        self.assertEqual(
+            info_file_data["simulation_1"]["system_appraisal"]["criteria"]["blackouts"],
+            0.098,
+        )
+        self.assertEqual(
+            info_file_data["simulation_1"]["system_appraisal"]["criteria"][
+                "cumulative_cost"
+            ],
+            12580.977,
+        )
+        self.assertEqual(
+            info_file_data["simulation_1"]["system_appraisal"]["criteria"][
+                "cumulative_ghgs"
+            ],
+            44878.006,
+        )
+        self.assertEqual(
+            info_file_data["simulation_1"]["system_appraisal"]["criteria"]["lcue"],
+            0.498,
+        )
+        self.assertEqual(
+            info_file_data["simulation_1"]["system_appraisal"]["criteria"][
+                "renewables_fraction"
+            ],
+            0.0,
+        )
+        self.assertEqual(
+            info_file_data["simulation_1"]["system_appraisal"]["criteria"][
+                "unmet_energy_fraction"
+            ],
+            0.021,
+        )
+
+        # Check diesel parameters
+        self.assertEqual(
+            info_file_data["simulation_1"]["analysis_results"][
+                "Average daily diesel energy supplied / kWh"
+            ],
+            18.435,
+        )
+        self.assertEqual(
+            info_file_data["simulation_1"]["analysis_results"]["Diesel times"], 0.902
+        )
+        self.assertEqual(info_file_data["simulation_1"]["diesel_capacity"], 3.0)
+
+        # Check grid parameters
+        self.assertEqual(
+            info_file_data["simulation_1"]["analysis_results"][
+                "Average daily grid energy supplied / kWh"
+            ],
+            0.0,
+        )
+        self.assertNotIn(
+            "Average grid availability / hours/day",
+            info_file_data["simulation_1"]["analysis_results"],
+        )
+
+        # Check PV parameters
+        self.assertEqual(
+            info_file_data["simulation_1"]["analysis_results"][
+                "Average daily renewables energy used / kWh"
+            ],
+            4.271,
+        )
+        self.assertEqual(
+            info_file_data["simulation_1"]["analysis_results"][
+                "Cumulative pv generation / kWh"
+            ],
+            0.0,
+        )
+        self.assertEqual(info_file_data["simulation_1"]["final_pv_size"], 0.0)
+        self.assertEqual(info_file_data["simulation_1"]["initial_pv_size"], 0.0)
+
+        # Check storage parameters
+        self.assertEqual(
+            info_file_data["simulation_1"]["analysis_results"][
+                "Average daily stored energy supplied / kWh"
+            ],
+            0.0,
+        )
+        self.assertEqual(info_file_data["simulation_1"]["final_storage_size"], 0.0)
+        self.assertEqual(info_file_data["simulation_1"]["initial_storage_size"], 0.0)
+
     def test_no_diesel_grid_pv_storage(self):
         """
         Tests the case with diesel, grid, PV and storage.
 
         The test simulation uses:
             - a PV system size of 20 kWP;
-            - a storage system size of 5 kWh.
+            - a storage system size of 25 kWh.
 
         """
 
         info_file_data = self._run_clover_simulation(
-            False, True, True, True, pv_size=20, storage_size=5
+            False, True, True, True, pv_size=20, storage_size=25
         )
+
+        # Check appraisal criteria
+        self.assertEqual(
+            info_file_data["simulation_1"]["system_appraisal"]["criteria"]["blackouts"],
+            0.22,
+        )
+        self.assertEqual(
+            info_file_data["simulation_1"]["system_appraisal"]["criteria"][
+                "cumulative_cost"
+            ],
+            31728.191,
+        )
+        self.assertEqual(
+            info_file_data["simulation_1"]["system_appraisal"]["criteria"][
+                "cumulative_ghgs"
+            ],
+            85650.33,
+        )
+        self.assertEqual(
+            info_file_data["simulation_1"]["system_appraisal"]["criteria"]["lcue"],
+            1.172,
+        )
+        self.assertEqual(
+            info_file_data["simulation_1"]["system_appraisal"]["criteria"][
+                "renewables_fraction"
+            ],
+            0.621,
+        )
+        self.assertEqual(
+            info_file_data["simulation_1"]["system_appraisal"]["criteria"][
+                "unmet_energy_fraction"
+            ],
+            0.105,
+        )
+
+        # Check diesel parameters
+        self.assertEqual(
+            info_file_data["simulation_1"]["analysis_results"][
+                "Average daily diesel energy supplied / kWh"
+            ],
+            0.0,
+        )
+        self.assertEqual(
+            info_file_data["simulation_1"]["analysis_results"]["Diesel times"], 0.0
+        )
+        self.assertEqual(info_file_data["simulation_1"]["diesel_capacity"], 0.0)
+
+        # Check grid parameters
+        self.assertEqual(
+            info_file_data["simulation_1"]["analysis_results"][
+                "Average daily grid energy supplied / kWh"
+            ],
+            7.196,
+        )
+        self.assertEqual(
+            info_file_data["simulation_1"]["analysis_results"][
+                "Average grid availability / hours/day"
+            ],
+            67939.0,
+        )
+
+        # Check PV parameters
+        self.assertEqual(
+            info_file_data["simulation_1"]["analysis_results"][
+                "Average daily renewables energy used / kWh"
+            ],
+            4.262,
+        )
+        self.assertEqual(
+            info_file_data["simulation_1"]["analysis_results"][
+                "Cumulative pv generation / kWh"
+            ],
+            36685.0,
+        )
+        self.assertEqual(info_file_data["simulation_1"]["final_pv_size"], 19.0)
+        self.assertEqual(info_file_data["simulation_1"]["initial_pv_size"], 20.0)
+
+        # Check storage parameters
+        self.assertEqual(
+            info_file_data["simulation_1"]["analysis_results"][
+                "Average daily stored energy supplied / kWh"
+            ],
+            7.52,
+        )
+        self.assertEqual(info_file_data["simulation_1"]["final_storage_size"], 21.34)
+        self.assertEqual(info_file_data["simulation_1"]["initial_storage_size"], 25.0)
 
     def test_no_diesel_grid_pv_no_storage(self):
         """
@@ -374,18 +1142,190 @@ class SimulationTests(_BaseTest):
             False, True, True, False, pv_size=20
         )
 
+        # Check appraisal criteria
+        self.assertEqual(
+            info_file_data["simulation_1"]["system_appraisal"]["criteria"]["blackouts"],
+            0.493,
+        )
+        self.assertEqual(
+            info_file_data["simulation_1"]["system_appraisal"]["criteria"][
+                "cumulative_cost"
+            ],
+            33980.723,
+        )
+        self.assertEqual(
+            info_file_data["simulation_1"]["system_appraisal"]["criteria"][
+                "cumulative_ghgs"
+            ],
+            196112.02,
+        )
+        self.assertEqual(
+            info_file_data["simulation_1"]["system_appraisal"]["criteria"]["lcue"],
+            1.256,
+        )
+        self.assertEqual(
+            info_file_data["simulation_1"]["system_appraisal"]["criteria"][
+                "renewables_fraction"
+            ],
+            0.372,
+        )
+        self.assertEqual(
+            info_file_data["simulation_1"]["system_appraisal"]["criteria"][
+                "unmet_energy_fraction"
+            ],
+            0.485,
+        )
+
+        # Check diesel parameters
+        self.assertEqual(
+            info_file_data["simulation_1"]["analysis_results"][
+                "Average daily diesel energy supplied / kWh"
+            ],
+            0.0,
+        )
+        self.assertEqual(
+            info_file_data["simulation_1"]["analysis_results"]["Diesel times"], 0.0
+        )
+        self.assertEqual(info_file_data["simulation_1"]["diesel_capacity"], 0.0)
+
+        # Check grid parameters
+        self.assertEqual(
+            info_file_data["simulation_1"]["analysis_results"][
+                "Average daily grid energy supplied / kWh"
+            ],
+            7.196,
+        )
+        self.assertEqual(
+            info_file_data["simulation_1"]["analysis_results"][
+                "Average grid availability / hours/day"
+            ],
+            67939.0,
+        )
+
+        # Check PV parameters
+        self.assertEqual(
+            info_file_data["simulation_1"]["analysis_results"][
+                "Average daily renewables energy used / kWh"
+            ],
+            4.271,
+        )
+        self.assertEqual(
+            info_file_data["simulation_1"]["analysis_results"][
+                "Cumulative pv generation / kWh"
+            ],
+            36685.0,
+        )
+        self.assertEqual(info_file_data["simulation_1"]["final_pv_size"], 19.0)
+        self.assertEqual(info_file_data["simulation_1"]["initial_pv_size"], 20.0)
+
+        # Check storage parameters
+        self.assertEqual(
+            info_file_data["simulation_1"]["analysis_results"][
+                "Average daily stored energy supplied / kWh"
+            ],
+            0.0,
+        )
+        self.assertEqual(info_file_data["simulation_1"]["final_storage_size"], 0.0)
+        self.assertEqual(info_file_data["simulation_1"]["initial_storage_size"], 0.0)
+
     def test_no_diesel_grid_no_pv_storage(self):
         """
         Tests the case with diesel, grid, PV and storage.
 
         The test simulation uses:
-            - a storage system size of 5 kWh.
+            - a storage system size of 25 kWh.
 
         """
 
         info_file_data = self._run_clover_simulation(
-            False, True, False, True, storage_size=5
+            False, True, False, True, storage_size=25
         )
+
+        # Check appraisal criteria
+        self.assertEqual(
+            info_file_data["simulation_1"]["system_appraisal"]["criteria"]["blackouts"],
+            0.611,
+        )
+        self.assertEqual(
+            info_file_data["simulation_1"]["system_appraisal"]["criteria"][
+                "cumulative_cost"
+            ],
+            19782.022,
+        )
+        self.assertEqual(
+            info_file_data["simulation_1"]["system_appraisal"]["criteria"][
+                "cumulative_ghgs"
+            ],
+            131289.11,
+        )
+        self.assertEqual(
+            info_file_data["simulation_1"]["system_appraisal"]["criteria"]["lcue"],
+            0.605,
+        )
+        self.assertEqual(
+            info_file_data["simulation_1"]["system_appraisal"]["criteria"][
+                "renewables_fraction"
+            ],
+            0.0,
+        )
+        self.assertEqual(
+            info_file_data["simulation_1"]["system_appraisal"]["criteria"][
+                "unmet_energy_fraction"
+            ],
+            0.618,
+        )
+
+        # Check diesel parameters
+        self.assertEqual(
+            info_file_data["simulation_1"]["analysis_results"][
+                "Average daily diesel energy supplied / kWh"
+            ],
+            0.0,
+        )
+        self.assertEqual(
+            info_file_data["simulation_1"]["analysis_results"]["Diesel times"], 0.0
+        )
+        self.assertEqual(info_file_data["simulation_1"]["diesel_capacity"], 0.0)
+
+        # Check grid parameters
+        self.assertEqual(
+            info_file_data["simulation_1"]["analysis_results"][
+                "Average daily grid energy supplied / kWh"
+            ],
+            7.196,
+        )
+        self.assertEqual(
+            info_file_data["simulation_1"]["analysis_results"][
+                "Average grid availability / hours/day"
+            ],
+            67939.0,
+        )
+
+        # Check PV parameters
+        self.assertEqual(
+            info_file_data["simulation_1"]["analysis_results"][
+                "Average daily renewables energy used / kWh"
+            ],
+            4.271,
+        )
+        self.assertEqual(
+            info_file_data["simulation_1"]["analysis_results"][
+                "Cumulative pv generation / kWh"
+            ],
+            0.0,
+        )
+        self.assertEqual(info_file_data["simulation_1"]["final_pv_size"], 0.0)
+        self.assertEqual(info_file_data["simulation_1"]["initial_pv_size"], 0.0)
+
+        # Check storage parameters
+        self.assertEqual(
+            info_file_data["simulation_1"]["analysis_results"][
+                "Average daily stored energy supplied / kWh"
+            ],
+            0.001,
+        )
+        self.assertEqual(info_file_data["simulation_1"]["final_storage_size"], 4.999)
+        self.assertEqual(info_file_data["simulation_1"]["initial_storage_size"], 5.0)
 
     def test_no_diesel_grid_no_pv_no_storage(self):
         """
@@ -397,19 +1337,191 @@ class SimulationTests(_BaseTest):
 
         info_file_data = self._run_clover_simulation(False, True, False, False)
 
+        # Check appraisal criteria
+        self.assertEqual(
+            info_file_data["simulation_1"]["system_appraisal"]["criteria"]["blackouts"],
+            0.611,
+        )
+        self.assertEqual(
+            info_file_data["simulation_1"]["system_appraisal"]["criteria"][
+                "cumulative_cost"
+            ],
+            17585.402,
+        )
+        self.assertEqual(
+            info_file_data["simulation_1"]["system_appraisal"]["criteria"][
+                "cumulative_ghgs"
+            ],
+            130629.73,
+        )
+        self.assertEqual(
+            info_file_data["simulation_1"]["system_appraisal"]["criteria"]["lcue"],
+            0.383,
+        )
+        self.assertEqual(
+            info_file_data["simulation_1"]["system_appraisal"]["criteria"][
+                "renewables_fraction"
+            ],
+            0.0,
+        )
+        self.assertEqual(
+            info_file_data["simulation_1"]["system_appraisal"]["criteria"][
+                "unmet_energy_fraction"
+            ],
+            0.618,
+        )
+
+        # Check diesel parameters
+        self.assertEqual(
+            info_file_data["simulation_1"]["analysis_results"][
+                "Average daily diesel energy supplied / kWh"
+            ],
+            0.0,
+        )
+        self.assertEqual(
+            info_file_data["simulation_1"]["analysis_results"]["Diesel times"], 0.0
+        )
+        self.assertEqual(info_file_data["simulation_1"]["diesel_capacity"], 0.0)
+
+        # Check grid parameters
+        self.assertEqual(
+            info_file_data["simulation_1"]["analysis_results"][
+                "Average daily grid energy supplied / kWh"
+            ],
+            7.196,
+        )
+        self.assertEqual(
+            info_file_data["simulation_1"]["analysis_results"][
+                "Average grid availability / hours/day"
+            ],
+            67939.0,
+        )
+
+        # Check PV parameters
+        self.assertEqual(
+            info_file_data["simulation_1"]["analysis_results"][
+                "Average daily renewables energy used / kWh"
+            ],
+            4.271,
+        )
+        self.assertEqual(
+            info_file_data["simulation_1"]["analysis_results"][
+                "Cumulative pv generation / kWh"
+            ],
+            0.0,
+        )
+        self.assertEqual(info_file_data["simulation_1"]["final_pv_size"], 0.0)
+        self.assertEqual(info_file_data["simulation_1"]["initial_pv_size"], 0.0)
+
+        # Check storage parameters
+        self.assertEqual(
+            info_file_data["simulation_1"]["analysis_results"][
+                "Average daily stored energy supplied / kWh"
+            ],
+            0.0,
+        )
+        self.assertEqual(info_file_data["simulation_1"]["final_storage_size"], 0.0)
+        self.assertEqual(info_file_data["simulation_1"]["initial_storage_size"], 0.0)
+
     def test_no_diesel_no_grid_pv_storage(self):
         """
         Tests the case with diesel, grid, PV and storage.
 
         The test simulation uses:
             - a PV system size of 20 kWP;
-            - a storage system size of 5 kWh.
+            - a storage system size of 25 kWh.
 
         """
 
         info_file_data = self._run_clover_simulation(
-            False, False, True, True, pv_size=20, storage_size=5
+            False, False, True, True, pv_size=20, storage_size=25
         )
+
+        # Check appraisal criteria
+        self.assertEqual(
+            info_file_data["simulation_1"]["system_appraisal"]["criteria"]["blackouts"],
+            0.454,
+        )
+        self.assertEqual(
+            info_file_data["simulation_1"]["system_appraisal"]["criteria"][
+                "cumulative_cost"
+            ],
+            34386.293,
+        )
+        self.assertEqual(
+            info_file_data["simulation_1"]["system_appraisal"]["criteria"][
+                "cumulative_ghgs"
+            ],
+            102913.66,
+        )
+        self.assertEqual(
+            info_file_data["simulation_1"]["system_appraisal"]["criteria"]["lcue"],
+            1.534,
+        )
+        self.assertEqual(
+            info_file_data["simulation_1"]["system_appraisal"]["criteria"][
+                "renewables_fraction"
+            ],
+            1.0,
+        )
+        self.assertEqual(
+            info_file_data["simulation_1"]["system_appraisal"]["criteria"][
+                "unmet_energy_fraction"
+            ],
+            0.306,
+        )
+
+        # Check diesel parameters
+        self.assertEqual(
+            info_file_data["simulation_1"]["analysis_results"][
+                "Average daily diesel energy supplied / kWh"
+            ],
+            0.0,
+        )
+        self.assertEqual(
+            info_file_data["simulation_1"]["analysis_results"]["Diesel times"], 0.0
+        )
+        self.assertEqual(info_file_data["simulation_1"]["diesel_capacity"], 0.0)
+
+        # Check grid parameters
+        self.assertEqual(
+            info_file_data["simulation_1"]["analysis_results"][
+                "Average daily grid energy supplied / kWh"
+            ],
+            0.0,
+        )
+        self.assertEqual(
+            info_file_data["simulation_1"]["analysis_results"][
+                "Average grid availability / hours/day"
+            ],
+            0.0,
+        )
+
+        # Check PV parameters
+        self.assertEqual(
+            info_file_data["simulation_1"]["analysis_results"][
+                "Average daily renewables energy used / kWh"
+            ],
+            4.271,
+        )
+        self.assertEqual(
+            info_file_data["simulation_1"]["analysis_results"][
+                "Cumulative pv generation / kWh"
+            ],
+            36685.0,
+        )
+        self.assertEqual(info_file_data["simulation_1"]["final_pv_size"], 19.0)
+        self.assertEqual(info_file_data["simulation_1"]["initial_pv_size"], 20.0)
+
+        # Check storage parameters
+        self.assertEqual(
+            info_file_data["simulation_1"]["analysis_results"][
+                "Average daily stored energy supplied / kWh"
+            ],
+            9.807,
+        )
+        self.assertEqual(info_file_data["simulation_1"]["final_storage_size"], 20.227)
+        self.assertEqual(info_file_data["simulation_1"]["initial_storage_size"], 25.0)
 
     def test_no_diesel_no_grid_pv_no_storage(self):
         """
@@ -424,18 +1536,190 @@ class SimulationTests(_BaseTest):
             False, False, True, False, pv_size=20
         )
 
+        # Check appraisal criteria
+        self.assertEqual(
+            info_file_data["simulation_1"]["system_appraisal"]["criteria"]["blackouts"],
+            0.826,
+        )
+        self.assertEqual(
+            info_file_data["simulation_1"]["system_appraisal"]["criteria"][
+                "cumulative_cost"
+            ],
+            41931.345,
+        )
+        self.assertEqual(
+            info_file_data["simulation_1"]["system_appraisal"]["criteria"][
+                "cumulative_ghgs"
+            ],
+            256032.195,
+        )
+        self.assertEqual(
+            info_file_data["simulation_1"]["system_appraisal"]["criteria"]["lcue"],
+            3.249,
+        )
+        self.assertEqual(
+            info_file_data["simulation_1"]["system_appraisal"]["criteria"][
+                "renewables_fraction"
+            ],
+            1.0,
+        )
+        self.assertEqual(
+            info_file_data["simulation_1"]["system_appraisal"]["criteria"][
+                "unmet_energy_fraction"
+            ],
+            0.801,
+        )
+
+        # Check diesel parameters
+        self.assertEqual(
+            info_file_data["simulation_1"]["analysis_results"][
+                "Average daily diesel energy supplied / kWh"
+            ],
+            0.0,
+        )
+        self.assertEqual(
+            info_file_data["simulation_1"]["analysis_results"]["Diesel times"], 0.0
+        )
+        self.assertEqual(info_file_data["simulation_1"]["diesel_capacity"], 0.0)
+
+        # Check grid parameters
+        self.assertEqual(
+            info_file_data["simulation_1"]["analysis_results"][
+                "Average daily grid energy supplied / kWh"
+            ],
+            0.0,
+        )
+        self.assertEqual(
+            info_file_data["simulation_1"]["analysis_results"][
+                "Average grid availability / hours/day"
+            ],
+            0.0,
+        )
+
+        # Check PV parameters
+        self.assertEqual(
+            info_file_data["simulation_1"]["analysis_results"][
+                "Average daily renewables energy used / kWh"
+            ],
+            4.271,
+        )
+        self.assertEqual(
+            info_file_data["simulation_1"]["analysis_results"][
+                "Cumulative pv generation / kWh"
+            ],
+            0.0,
+        )
+        self.assertEqual(info_file_data["simulation_1"]["final_pv_size"], 19.0)
+        self.assertEqual(info_file_data["simulation_1"]["initial_pv_size"], 20.0)
+
+        # Check storage parameters
+        self.assertEqual(
+            info_file_data["simulation_1"]["analysis_results"][
+                "Average daily stored energy supplied / kWh"
+            ],
+            0.0,
+        )
+        self.assertEqual(info_file_data["simulation_1"]["final_storage_size"], 0.0)
+        self.assertEqual(info_file_data["simulation_1"]["initial_storage_size"], 0.0)
+
     def test_no_diesel_no_grid_no_pv_storage(self):
         """
         Tests the case with diesel, grid, PV and storage.
 
         The test simulation uses:
-            - a storage system size of 5 kWh.
+            - a storage system size of 25 kWh.
 
         """
 
         info_file_data = self._run_clover_simulation(
-            False, False, False, True, storage_size=5
+            False, False, False, True, storage_size=25
         )
+
+        # Check appraisal criteria
+        self.assertEqual(
+            info_file_data["simulation_1"]["system_appraisal"]["criteria"]["blackouts"],
+            0.999,
+        )
+        self.assertEqual(
+            info_file_data["simulation_1"]["system_appraisal"]["criteria"][
+                "cumulative_cost"
+            ],
+            36512.623,
+        )
+        self.assertEqual(
+            info_file_data["simulation_1"]["system_appraisal"]["criteria"][
+                "cumulative_ghgs"
+            ],
+            193802.42,
+        )
+        self.assertEqual(
+            info_file_data["simulation_1"]["system_appraisal"]["criteria"]["lcue"],
+            1377.525,
+        )
+        self.assertEqual(
+            info_file_data["simulation_1"]["system_appraisal"]["criteria"][
+                "renewables_fraction"
+            ],
+            1.0,
+        )
+        self.assertEqual(
+            info_file_data["simulation_1"]["system_appraisal"]["criteria"][
+                "unmet_energy_fraction"
+            ],
+            1.0,
+        )
+
+        # Check diesel parameters
+        self.assertEqual(
+            info_file_data["simulation_1"]["analysis_results"][
+                "Average daily diesel energy supplied / kWh"
+            ],
+            0.0,
+        )
+        self.assertEqual(
+            info_file_data["simulation_1"]["analysis_results"]["Diesel times"], 0.0
+        )
+        self.assertEqual(info_file_data["simulation_1"]["diesel_capacity"], 0.0)
+
+        # Check grid parameters
+        self.assertEqual(
+            info_file_data["simulation_1"]["analysis_results"][
+                "Average daily grid energy supplied / kWh"
+            ],
+            0.0,
+        )
+        self.assertEqual(
+            info_file_data["simulation_1"]["analysis_results"][
+                "Average grid availability / hours/day"
+            ],
+            0.0,
+        )
+
+        # Check PV parameters
+        self.assertEqual(
+            info_file_data["simulation_1"]["analysis_results"][
+                "Average daily renewables energy used / kWh"
+            ],
+            0.0,
+        )
+        self.assertEqual(
+            info_file_data["simulation_1"]["analysis_results"][
+                "Cumulative pv generation / kWh"
+            ],
+            0.0,
+        )
+        self.assertEqual(info_file_data["simulation_1"]["final_pv_size"], 0.0)
+        self.assertEqual(info_file_data["simulation_1"]["initial_pv_size"], 0.0)
+
+        # Check storage parameters
+        self.assertEqual(
+            info_file_data["simulation_1"]["analysis_results"][
+                "Average daily stored energy supplied / kWh"
+            ],
+            0.0,
+        )
+        self.assertEqual(info_file_data["simulation_1"]["final_storage_size"], 0.0)
+        self.assertEqual(info_file_data["simulation_1"]["initial_storage_size"], 0.0)
 
     @unittest.skip("No need to test scenario with no power generation sources.")
     def test_no_diesel_no_grid_no_pv_no_storage(self):
@@ -446,4 +1730,4 @@ class SimulationTests(_BaseTest):
 
         """
 
-        info_file_data = self._run_clover_simulation(False, False, False, False)
+        _ = self._run_clover_simulation(False, False, False, False)
