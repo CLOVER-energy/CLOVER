@@ -336,8 +336,8 @@ class SimulationTests(_BaseTest):
             ],
             36685.0,
         )
-        self.assertEqual(info_file_data["simulation_1"]["final_pv_size"], 20.0)
-        self.assertEqual(info_file_data["simulation_1"]["initial_pv_size"], 19.0)
+        self.assertEqual(info_file_data["simulation_1"]["final_pv_size"], 19.0)
+        self.assertEqual(info_file_data["simulation_1"]["initial_pv_size"], 20.0)
 
         # Check storage parameters
         self.assertEqual(
@@ -435,8 +435,8 @@ class SimulationTests(_BaseTest):
             ],
             36685.0,
         )
-        self.assertEqual(info_file_data["simulation_1"]["final_pv_size"], 20.0)
-        self.assertEqual(info_file_data["simulation_1"]["initial_pv_size"], 19.0)
+        self.assertEqual(info_file_data["simulation_1"]["final_pv_size"], 19.0)
+        self.assertEqual(info_file_data["simulation_1"]["initial_pv_size"], 20.0)
 
         # Check storage parameters
         self.assertEqual(
@@ -728,8 +728,8 @@ class SimulationTests(_BaseTest):
             ],
             36685.0,
         )
-        self.assertEqual(info_file_data["simulation_1"]["final_pv_size"], 20.0)
-        self.assertEqual(info_file_data["simulation_1"]["initial_pv_size"], 19.0)
+        self.assertEqual(info_file_data["simulation_1"]["final_pv_size"], 19.0)
+        self.assertEqual(info_file_data["simulation_1"]["initial_pv_size"], 20.0)
 
         # Check storage parameters
         self.assertEqual(
@@ -738,7 +738,7 @@ class SimulationTests(_BaseTest):
             ],
             9.807,
         )
-        self.assertEqual(info_file_data["simulation_1"]["final_storage_size"], 20.277)
+        self.assertEqual(info_file_data["simulation_1"]["final_storage_size"], 20.227)
         self.assertEqual(info_file_data["simulation_1"]["initial_storage_size"], 25.0)
 
     def test_diesel_no_grid_pv_no_storage(self):
@@ -1207,7 +1207,7 @@ class SimulationTests(_BaseTest):
             info_file_data["simulation_1"]["analysis_results"][
                 "Average daily renewables energy used / kWh"
             ],
-            4.271,
+            4.262,
         )
         self.assertEqual(
             info_file_data["simulation_1"]["analysis_results"][
@@ -1244,7 +1244,7 @@ class SimulationTests(_BaseTest):
         # Check appraisal criteria
         self.assertEqual(
             info_file_data["simulation_1"]["system_appraisal"]["criteria"]["blackouts"],
-            0.611,
+            0.61,
         )
         self.assertEqual(
             info_file_data["simulation_1"]["system_appraisal"]["criteria"][
@@ -1402,7 +1402,7 @@ class SimulationTests(_BaseTest):
             info_file_data["simulation_1"]["analysis_results"][
                 "Average daily renewables energy used / kWh"
             ],
-            4.271,
+            0.0,
         )
         self.assertEqual(
             info_file_data["simulation_1"]["analysis_results"][
@@ -1490,12 +1490,8 @@ class SimulationTests(_BaseTest):
             ],
             0.0,
         )
-        self.assertEqual(
-            info_file_data["simulation_1"]["analysis_results"][
-                "Average grid availability / hours/day"
-            ],
-            0.0,
-        )
+        self.assertNotIn("Average grid availability / hours/day", info_file_data["simulation_1"]["analysis_results"])
+
 
         # Check PV parameters
         self.assertEqual(
@@ -1589,12 +1585,8 @@ class SimulationTests(_BaseTest):
             ],
             0.0,
         )
-        self.assertEqual(
-            info_file_data["simulation_1"]["analysis_results"][
-                "Average grid availability / hours/day"
-            ],
-            0.0,
-        )
+        self.assertNotIn("Average grid availability / hours/day", info_file_data["simulation_1"]["analysis_results"])
+
 
         # Check PV parameters
         self.assertEqual(
@@ -1607,7 +1599,7 @@ class SimulationTests(_BaseTest):
             info_file_data["simulation_1"]["analysis_results"][
                 "Cumulative pv generation / kWh"
             ],
-            0.0,
+            36685.0,
         )
         self.assertEqual(info_file_data["simulation_1"]["final_pv_size"], 19.0)
         self.assertEqual(info_file_data["simulation_1"]["initial_pv_size"], 20.0)
@@ -1688,12 +1680,7 @@ class SimulationTests(_BaseTest):
             ],
             0.0,
         )
-        self.assertEqual(
-            info_file_data["simulation_1"]["analysis_results"][
-                "Average grid availability / hours/day"
-            ],
-            0.0,
-        )
+        self.assertNotIn("Average grid availability / hours/day", info_file_data["simulation_1"]["analysis_results"])
 
         # Check PV parameters
         self.assertEqual(
