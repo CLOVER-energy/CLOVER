@@ -10,7 +10,7 @@
 
 diesel_generators:
   - name: default_diesel
-    diesel_consumption: 0.4, # [litres per kW capacity per hour]
+    diesel_consumption: 0.4 # [litres per kW capacity per hour]
     minimum_load: 0.35 # Minimum capacity factor (0.0 - 1.0)
     costs:
       cost: 200 # [$/kW]
