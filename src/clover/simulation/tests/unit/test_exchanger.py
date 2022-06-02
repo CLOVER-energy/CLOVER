@@ -12,6 +12,6 @@ test_exchanger.py - Module-level tests for CLOVER's exchanger simulation module.
 
 """
 
-import unittest
+import unittest  # pylint: disable=unused-import
 
-from unittest import mock
+from unittest import mock  # pylint: disable=unused-import

@@ -12,6 +12,6 @@ test_main.py - Module-level tests for CLOVER's main module.
 
 """
 
-import unittest
+import unittest  # pylint: disable=unused-import
 
-from unittest import mock
+from unittest import mock  # pylint: disable=unused-import

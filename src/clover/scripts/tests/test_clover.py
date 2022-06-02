@@ -12,6 +12,6 @@ test_clover.py - Tests for CLOVER's main-module wrapper script.
 
 """
 
-import unittest
+import unittest  # pylint: disable=unused-import
 
-from unittest import mock
+from unittest import mock  # pylint: disable=unused-import

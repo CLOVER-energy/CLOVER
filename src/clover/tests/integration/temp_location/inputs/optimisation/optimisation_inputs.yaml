@@ -70,8 +70,8 @@ optimisations:
     threshold_criteria:
       - blackouts: 0.05 # Max/min value permitted (see guidance)
     scenario: default
-  # - optimisation_criteria:
-  #     - lcue: minimise
-  #   threshold_criteria:
-  #     - blackouts: 0.05
-  #   scenario: no_pv_no_storage
+#   - optimisation_criteria:
+#       - lcue: minimise
+#     threshold_criteria:
+#       - blackouts: 0.05
+#     scenario: no_pv_no_storage

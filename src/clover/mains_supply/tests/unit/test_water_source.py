@@ -12,6 +12,6 @@ test_water_source.py - Tests for the water-source module for CLOVER.
 
 """
 
-import unittest
+import unittest  # pylint: disable=unused-import
 
-from unittest import mock
+from unittest import mock  # pylint: disable=unused-import

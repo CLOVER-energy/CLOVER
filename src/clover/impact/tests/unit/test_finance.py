@@ -12,6 +12,6 @@ test_finance.py - Tests for the finance module for CLOVER's impact component.
 
 """
 
-import unittest
+import unittest  # pylint: disable=unused-import
 
-from unittest import mock
+from unittest import mock  # pylint: disable=unused-import

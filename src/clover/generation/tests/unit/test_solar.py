@@ -12,6 +12,6 @@ test_solar.py - Tests for the solar generation module of CLOVER.
 
 """
 
-import unittest
+import unittest  # pylint: disable=unused-import
 
-from unittest import mock
+from unittest import mock  # pylint: disable=unused-import

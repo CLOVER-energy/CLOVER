@@ -309,7 +309,7 @@ class HybridPVTPanel(SolarPanel, panel_type=SolarPanelType.PV_T):
                 "solar generation inputs",
                 f"PV-layer data for layer {solar_inputs['pv']} could not be found "
                 + f"whilst processing PV-T panel {solar_inputs[NAME]}.",
-            )
+            ) from None
 
         if pv_layer.reference_efficiency is None:
             logger.error("PV reference efficiency must be defined if using PV-T.")

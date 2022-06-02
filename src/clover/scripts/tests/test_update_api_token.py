@@ -12,6 +12,6 @@ test_update_api_token.py - Tests for CLOVER's update-api-token script.
 
 """
 
-import unittest
+import unittest  # pylint: disable=unused-import
 
-from unittest import mock
+from unittest import mock  # pylint: disable=unused-import
