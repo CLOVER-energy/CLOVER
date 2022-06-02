@@ -13,4 +13,5 @@ test_storage_utils.py - Module-level tests for CLOVER's storage utility module.
 """
 
 import unittest
-import unittest.mock as mock
+
+from unittest import mock

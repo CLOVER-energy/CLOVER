@@ -13,4 +13,5 @@ test_exchanger.py - Module-level tests for CLOVER's exchanger simulation module.
 """
 
 import unittest
-import unittest.mock as mock
+
+from unittest import mock

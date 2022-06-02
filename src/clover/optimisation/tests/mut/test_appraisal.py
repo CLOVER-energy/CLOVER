@@ -13,4 +13,5 @@ test_utils.py - Tests for the appraisal module for CLOVER's optimisation compone
 """
 
 import unittest
-import unittest.mock as mock
+
+from unittest import mock

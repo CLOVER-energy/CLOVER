@@ -15,4 +15,5 @@ The overall optimisation component of CLOVER is tested as a single component.
 """
 
 import unittest
-import unittest.mock as mock
+
+from unittest import mock

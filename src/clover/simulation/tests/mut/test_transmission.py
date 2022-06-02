@@ -13,4 +13,5 @@ test_transmission.py - Module-level tests for CLOVER's transmission simulation m
 """
 
 import unittest
-import unittest.mock as mock
+
+from unittest import mock

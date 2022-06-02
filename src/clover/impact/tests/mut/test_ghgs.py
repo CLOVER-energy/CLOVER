@@ -13,4 +13,5 @@ test_ghgs.py - Tests for the ghgs module for CLOVER's impact component.
 """
 
 import unittest
-import unittest.mock as mock
+
+from unittest import mock

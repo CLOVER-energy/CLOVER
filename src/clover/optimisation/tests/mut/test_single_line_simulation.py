@@ -13,4 +13,5 @@ test_utils.py - Tests for CLOVER's single-line-simulation module.
 """
 
 import unittest
-import unittest.mock as mock
+
+from unittest import mock

@@ -13,4 +13,5 @@ test_new_location.py - Tests for CLOVER's new-location generation script.
 """
 
 import unittest
-import unittest.mock as mock
+
+from unittest import mock

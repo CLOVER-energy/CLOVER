@@ -13,4 +13,5 @@ test_main.py - Module-level tests for CLOVER's main module.
 """
 
 import unittest
-import unittest.mock as mock
+
+from unittest import mock

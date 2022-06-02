@@ -13,4 +13,5 @@ test_finance.py - Tests for the finance module for CLOVER's impact component.
 """
 
 import unittest
-import unittest.mock as mock
+
+from unittest import mock

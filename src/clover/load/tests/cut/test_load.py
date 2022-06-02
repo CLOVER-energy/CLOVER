@@ -13,4 +13,5 @@ test_load.py - Tests for the load module for CLOVER's load component.
 """
 
 import unittest
-import unittest.mock as mock
+
+from unittest import mock

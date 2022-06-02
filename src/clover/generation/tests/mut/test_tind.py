@@ -13,4 +13,5 @@ test_wind.py - Tests for the wind generation module of CLOVER.
 """
 
 import unittest
-import unittest.mock as mock
+
+from unittest import mock
