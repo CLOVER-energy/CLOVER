@@ -13,4 +13,5 @@ test_diesel.py - Module-level tests for CLOVER's diesel simulation module.
 """
 
 import unittest
-import unittest.mock as mock
+
+from unittest import mock

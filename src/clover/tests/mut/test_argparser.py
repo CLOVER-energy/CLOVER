@@ -13,4 +13,5 @@ test_utils.py - Module-level tests for CLOVER's argument-parsing module.
 """
 
 import unittest
-import unittest.mock as mock
+
+from unittest import mock

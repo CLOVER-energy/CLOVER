@@ -13,4 +13,5 @@ test_clover.py - Tests for CLOVER's main-module wrapper script.
 """
 
 import unittest
-import unittest.mock as mock
+
+from unittest import mock

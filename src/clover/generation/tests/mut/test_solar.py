@@ -13,4 +13,5 @@ test_solar.py - Tests for the solar generation module of CLOVER.
 """
 
 import unittest
-import unittest.mock as mock
+
+from unittest import mock

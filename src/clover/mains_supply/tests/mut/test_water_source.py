@@ -13,4 +13,5 @@ test_water_source.py - Tests for the water-source module for CLOVER.
 """
 
 import unittest
-import unittest.mock as mock
+
+from unittest import mock

@@ -13,4 +13,5 @@ test_clover_new_location.py - Tests for CLOVER's new location wrapper script.
 """
 
 import unittest
-import unittest.mock as mock
+
+from unittest import mock

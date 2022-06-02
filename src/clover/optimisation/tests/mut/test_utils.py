@@ -13,4 +13,5 @@ test_utils.py - Tests for the utility module for CLOVER's optimisation component
 """
 
 import unittest
-import unittest.mock as mock
+
+from unittest import mock

@@ -13,4 +13,5 @@ test_update_api_token.py - Tests for CLOVER's update-api-token script.
 """
 
 import unittest
-import unittest.mock as mock
+
+from unittest import mock

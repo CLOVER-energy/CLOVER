@@ -13,4 +13,5 @@ test_grid.py - Tests for the grid module for CLOVER's mains-supply component.
 """
 
 import unittest
-import unittest.mock as mock
+
+from unittest import mock

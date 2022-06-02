@@ -16,4 +16,5 @@ module runs unit tests of this module in isolation.
 """
 
 import unittest
-import unittest.mock as mock
+
+from unittest import mock

@@ -13,7 +13,8 @@ test_conversion.py - Tests for the conversion module of CLOVER.
 """
 
 import unittest
-import unittest.mock as mock
+
+from unittest import mock
 
 from ...conversion import (
     _parse_waste_production,
