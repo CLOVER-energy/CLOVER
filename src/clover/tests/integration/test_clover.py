@@ -1490,8 +1490,10 @@ class SimulationTests(_BaseTest):
             ],
             0.0,
         )
-        self.assertNotIn("Average grid availability / hours/day", info_file_data["simulation_1"]["analysis_results"])
-
+        self.assertNotIn(
+            "Average grid availability / hours/day",
+            info_file_data["simulation_1"]["analysis_results"],
+        )
 
         # Check PV parameters
         self.assertEqual(
@@ -1585,8 +1587,10 @@ class SimulationTests(_BaseTest):
             ],
             0.0,
         )
-        self.assertNotIn("Average grid availability / hours/day", info_file_data["simulation_1"]["analysis_results"])
-
+        self.assertNotIn(
+            "Average grid availability / hours/day",
+            info_file_data["simulation_1"]["analysis_results"],
+        )
 
         # Check PV parameters
         self.assertEqual(
@@ -1680,7 +1684,10 @@ class SimulationTests(_BaseTest):
             ],
             0.0,
         )
-        self.assertNotIn("Average grid availability / hours/day", info_file_data["simulation_1"]["analysis_results"])
+        self.assertNotIn(
+            "Average grid availability / hours/day",
+            info_file_data["simulation_1"]["analysis_results"],
+        )
 
         # Check PV parameters
         self.assertEqual(
