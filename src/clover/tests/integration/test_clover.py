@@ -266,8 +266,7 @@ class SimulationTests(_BaseTest):
         Tests the case with diesel, grid, PV and storage.
 
         The test simulation uses:
-            - a PV system size of 20 kWP;
-            - a storage system size of 5 kWh.
+            - a PV system size of 20 kWP.
 
         """
 
@@ -280,7 +279,6 @@ class SimulationTests(_BaseTest):
         Tests the case with diesel, grid, PV and storage.
 
         The test simulation uses:
-            - a PV system size of 20 kWP;
             - a storage system size of 5 kWh.
 
         """
@@ -293,9 +291,7 @@ class SimulationTests(_BaseTest):
         """
         Tests the case with diesel, grid, PV and storage.
 
-        The test simulation uses:
-            - a PV system size of 20 kWP;
-            - a storage system size of 5 kWh.
+        The test simulation uses no PV or storage.
 
         """
 
@@ -322,8 +318,7 @@ class SimulationTests(_BaseTest):
         Tests the case with diesel, grid, PV and storage.
 
         The test simulation uses:
-            - a PV system size of 20 kWP;
-            - a storage system size of 5 kWh.
+            - a PV system size of 20.
 
         """
 
@@ -336,7 +331,6 @@ class SimulationTests(_BaseTest):
         Tests the case with diesel, grid, PV and storage.
 
         The test simulation uses:
-            - a PV system size of 20 kWP;
             - a storage system size of 5 kWh.
 
         """
@@ -349,9 +343,7 @@ class SimulationTests(_BaseTest):
         """
         Tests the case with diesel, grid, PV and storage.
 
-        The test simulation uses:
-            - a PV system size of 20 kWP;
-            - a storage system size of 5 kWh.
+        The test simulation uses no PV or storage.
 
         """
 
@@ -378,8 +370,7 @@ class SimulationTests(_BaseTest):
         Tests the case with diesel, grid, PV and storage.
 
         The test simulation uses:
-            - a PV system size of 20 kWP;
-            - a storage system size of 5 kWh.
+            - a PV system size of 20 kWP.
 
         """
 
@@ -392,7 +383,6 @@ class SimulationTests(_BaseTest):
         Tests the case with diesel, grid, PV and storage.
 
         The test simulation uses:
-            - a PV system size of 20 kWP;
             - a storage system size of 5 kWh.
 
         """
@@ -405,9 +395,7 @@ class SimulationTests(_BaseTest):
         """
         Tests the case with diesel, grid, PV and storage.
 
-        The test simulation uses:
-            - a PV system size of 20 kWP;
-            - a storage system size of 5 kWh.
+        The test simulation uses no PV or storage.
 
         """
 
@@ -434,8 +422,7 @@ class SimulationTests(_BaseTest):
         Tests the case with diesel, grid, PV and storage.
 
         The test simulation uses:
-            - a PV system size of 20 kWP;
-            - a storage system size of 5 kWh.
+            - a PV system size of 20 kWP.
 
         """
 
@@ -448,7 +435,6 @@ class SimulationTests(_BaseTest):
         Tests the case with diesel, grid, PV and storage.
 
         The test simulation uses:
-            - a PV system size of 20 kWP;
             - a storage system size of 5 kWh.
 
         """
@@ -462,9 +448,7 @@ class SimulationTests(_BaseTest):
         """
         Tests the case with diesel, grid, PV and storage.
 
-        The test simulation uses:
-            - a PV system size of 20 kWP;
-            - a storage system size of 5 kWh.
+        The test simulation uses no PV or storage.
 
         """
 
