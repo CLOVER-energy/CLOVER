@@ -50,7 +50,7 @@ TEMP_LOCATION_PATH: str = os.path.join(
     RAW_CLOVER_PATH,
     TESTS_FOLDER_NAME,
     INTEGRATION_FOLDER_NAME,
-    TEMP_LOCATION_FOLDER_NAME
+    TEMP_LOCATION_FOLDER_NAME,
 )
 
 
@@ -72,11 +72,17 @@ class _BaseTest(unittest.TestCase):
 
         """
 
-        self.temp_location_name: str = f"{TEMP_LOCATION_FOLDER_NAME}_{time.ctime().replace(' ', '_')}"
-        self.locations_path: str = os.path.join(LOCATIONS_FOLDER_NAME, self.temp_location_name)
+        self.temp_location_name: str = (
+            f"{TEMP_LOCATION_FOLDER_NAME}_{time.ctime().replace(' ', '_')}"
+        )
+        self.locations_path: str = os.path.join(
+            LOCATIONS_FOLDER_NAME, self.temp_location_name
+        )
 
         if os.path.isdir(self.locations_path):
-            raise Exception(f"Temporary location, {self.temp_location_name}, already exists.")
+            raise Exception(
+                f"Temporary location, {self.temp_location_name}, already exists."
+            )
 
         # Copy the temporary location to CLOVER's locations folder, saving the name.
         os.makedirs(LOCATIONS_FOLDER_NAME, exist_ok=True)
@@ -113,7 +119,16 @@ class SimulationTests(_BaseTest):
         super().setUp()
         self.args.append("--simulation")
 
-    def _run_clover_simulation(self, diesel: bool, grid: bool, pv: bool, storage: bool, *, pv_size: Optional[float] = None, storage_size: Optional[float] = None):
+    def _run_clover_simulation(
+        self,
+        diesel: bool,
+        grid: bool,
+        pv: bool,
+        storage: bool,
+        *,
+        pv_size: Optional[float] = None,
+        storage_size: Optional[float] = None,
+    ):
         """
         Wrapper to run a CLOVER simulation.lo
 
@@ -129,8 +144,6 @@ class SimulationTests(_BaseTest):
         Tests the case with diesel, grid, PV and storage.
 
         """
-
-        
 
     def test_existence_of_customer(self):
         customer = self.app.get_customer(id=10)
