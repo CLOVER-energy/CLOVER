@@ -12,7 +12,8 @@ test_clover.py - Integration tests for the CLOVER Python package.
 
 """
 
-import pytest
 import unittest
+
+import pytest
 
 from unittest import mock
