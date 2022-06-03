@@ -42,6 +42,7 @@ __all__ = (
     "PVPanel",
     "SolarDataThread",
     "SolarDataType",
+    "SolarPanelType",
     "solar_degradation",
     "SOLAR_LOGGER_NAME",
     "total_solar_output",
@@ -317,6 +318,11 @@ class HybridPVTPanel(SolarPanel, panel_type=SolarPanelType.PV_T):
                 solar_inputs["pv"],
                 solar_inputs[NAME],
             )
+            raise InputFileError(
+                "solar generation inputs",
+                f"PV-layer data for layer {solar_inputs['pv']} could not be found "
+                + f"whilst processing PV-T panel {solar_inputs[NAME]}.",
+            ) from None
 
         if pv_layer.reference_efficiency is None:
             logger.error("PV reference efficiency must be defined if using PV-T.")
@@ -360,7 +366,7 @@ class HybridPVTPanel(SolarPanel, panel_type=SolarPanelType.PV_T):
         self.max_mass_flow_rate = solar_inputs["max_mass_flow_rate"]
         self.min_mass_flow_rate = solar_inputs["min_mass_flow_rate"]
         self.thermal_models = thermal_models
-        self.thermal_unit = solar_inputs["thermal_unit"]
+        self.thermal_unit = solar_inputs.get("thermal_unit", None)
 
     def __repr__(self) -> str:
         """

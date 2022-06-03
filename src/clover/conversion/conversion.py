@@ -109,6 +109,11 @@ def _parse_waste_production(
                 ", ".join(e.value for e in WasteProduct),
                 BColours.endc,
             )
+            raise InputFileError(
+                "conversion inputs",
+                f"Converter {name} has invalid waste-product '{waste_product}'. Valid "
+                + f"waste products are {', '.join(str(e.value) for e in WasteProduct)}.",
+            ) from None
 
         # Type check the value generated.
         if not isinstance(waste_production[WasteProduct(waste_product)], (int, float)):
@@ -121,7 +126,7 @@ def _parse_waste_production(
             )
             raise InputFileError(
                 "conversion inputs",
-                f"Thermal desalination plant {name} has invalid " "waste-product type.",
+                f"Converter {name} has invalid waste-product type.",
             )
 
     return waste_production

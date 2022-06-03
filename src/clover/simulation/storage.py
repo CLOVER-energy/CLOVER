@@ -335,7 +335,7 @@ def cw_tank_iteration_step(  # pylint: disable=too-many-locals
             conventional_cw_available: float = 0
             if conventional_cw_source_profiles is not None:
                 conventional_cw_available = float(
-                    sum(
+                    sum(  # type: ignore [arg-type]
                         entry.iloc[time_index]  # type: ignore
                         for entry in conventional_cw_source_profiles.values()
                     )
