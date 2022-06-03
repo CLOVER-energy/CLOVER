@@ -36,6 +36,13 @@ This will fetch the latest stable version of CLOVER and install it into your cur
 
 To download the CLOVER source code directly from Github, simply click the green `Code` button near the top of this page, and select `Download ZIP`. Once downloaded, unpack the zip file into a directory of your choice. You will now be able to run CLOVER from a terminal in this directory. Use the `cd` command to change the directory of your terminal to the extracted folder in order to run CLOVER.
 
+#### Downloading as a developer
+
+To download the CLOVER source, with a view to editing and helping to develop the code, simply click the green `Code` button near the top of this page, copy the URL, and, in your local terminal, run `git clone <URL>` to get your local copy of CLOVER. From there, check out a new branch for any of your edits:
+```
+git checkout -b <new_branch_name>
+```
+
 ### Setting up your Python environment
 
 CLOVER is a scientific package and, as such, uses Python packages that may not have come installed by default on your system. These packages can be easily installed, provided that you are connected to the internet, either using `pip`, the python package manager, or `conda`, a virtual-environment-based system. Instructions for `conda` are provided below:
