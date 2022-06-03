@@ -320,7 +320,7 @@ class SimulationTests(_BaseTest):
             info_file_data["simulation_1"]["analysis_results"][
                 "Average grid availability / hours/day"
             ],
-            67939.0,
+            9.338,
         )
 
         # Check PV parameters
@@ -419,7 +419,7 @@ class SimulationTests(_BaseTest):
             info_file_data["simulation_1"]["analysis_results"][
                 "Average grid availability / hours/day"
             ],
-            67939.0,
+            9.338,
         )
 
         # Check PV parameters
@@ -518,7 +518,7 @@ class SimulationTests(_BaseTest):
             info_file_data["simulation_1"]["analysis_results"][
                 "Average grid availability / hours/day"
             ],
-            67939.0,
+            9.338,
         )
 
         # Check PV parameters
@@ -614,7 +614,7 @@ class SimulationTests(_BaseTest):
             info_file_data["simulation_1"]["analysis_results"][
                 "Average grid availability / hours/day"
             ],
-            67939.0,
+            9.338,
         )
 
         # Check PV parameters
@@ -1100,7 +1100,7 @@ class SimulationTests(_BaseTest):
             info_file_data["simulation_1"]["analysis_results"][
                 "Average grid availability / hours/day"
             ],
-            67939.0,
+            9.338,
         )
 
         # Check PV parameters
@@ -1199,7 +1199,7 @@ class SimulationTests(_BaseTest):
             info_file_data["simulation_1"]["analysis_results"][
                 "Average grid availability / hours/day"
             ],
-            67939.0,
+            9.338,
         )
 
         # Check PV parameters
@@ -1298,7 +1298,7 @@ class SimulationTests(_BaseTest):
             info_file_data["simulation_1"]["analysis_results"][
                 "Average grid availability / hours/day"
             ],
-            67939.0,
+            9.338,
         )
 
         # Check PV parameters
@@ -1394,7 +1394,7 @@ class SimulationTests(_BaseTest):
             info_file_data["simulation_1"]["analysis_results"][
                 "Average grid availability / hours/day"
             ],
-            67939.0,
+            9.338,
         )
 
         # Check PV parameters
