@@ -50,18 +50,14 @@ The latter has included investigations into:
 * The benefits of providing electricity for açaí processing in rural Brazil
 * System design options for minigrids in refugee camps in Djibouti
 
-More recently, CLOVER has been expanded to include clean- and hot-water system
-modelling, with ongoing MSc theses investigating the inclusion of heating and
-cooling loads in CLOVER.
-
 What is CLOVER for?
 ~~~~~~~~~~~~~~~~~~~
 
 CLOVER is a software tool for simulating and optimising community-scale
-electricity, clean- and hot-water systems, typically minigrids to support rural
+electricity systems, typically minigrids to support rural
 electrification in developing countries. CLOVER allows users to model
-electricity, clean- and hot-water demand and supply in locations and communities
-at an hourly resolution, for example allowing them to investigate how a specific
+electricity demand and supply in locations and communities at an hourly
+resolution, for example allowing them to investigate how a specific
 electricity system might perform or to find the generation and storage
 capacity required to meet the needs of the community at the lowest cost.
 CLOVER can provide an insight into the technical performance, costs, and
@@ -90,7 +86,7 @@ Getting CLOVER on your computer
 Downloading CLOVER
 ~~~~~~~~~~~~~~~~~~
 
-Go to https://github.com/phil-sandwell/CLOVER to download the latest stable
+Go to https://github.com/phil-sandwell/CLOVER to download the latest
 version of CLOVER by clicking the “Clone or download” button and
 selecting “Download ZIP”. This will download a zipped folder containing
 all of the files you need to get started.
@@ -100,22 +96,24 @@ CLOVER file structure
 
 The file structure from the download has two branches:
 
-* a *src* branch which contains Python files that constitute the source code behind CLOVER which are used to generate outputs and perform simulations and optimisations,
-* a *locations* branch that describes individual locations and the specifics of a given scenario being investigated.
+* a *Scripts* branch which contains Python files that the user runs and uses to generate outputs and perform simulations and optimisations,
+* a *Locations* branch that describes individual locations and the specifics of a given scenario being investigated.
 
 An example location, *Bahraich* in India, is included in the initial
-download for reference. New locations can be set up using the helper script
-provided. It is recommended that the user makes their first new location
-utilising the helper script provided and its default values which can then be
-adjusted as needed.
+download for reference. New locations can be set up using the generic
+*New_Location* folder structure. It is recommended that the user makes a
+copy of the entire *New_Location* folder and renames it as their
+location to ensure that all of the necessary files are included.
 
 CLOVER modules
 ~~~~~~~~~~~~~~
 
 CLOVER is designed to be modular, with each module or script performing
 a specific function (e.g. calculating the load of a community, getting
-the solar generation, or simulating the performance of a system). CLOVER should
-be run as a single compomnent or as an installed package.
+the solar generation, or simulating the performance of a system). Each
+module can be run independently and some modules use (*import*) others
+to use as an input, for example the *Optimisation* module uses the
+*Energy_System*, which in turn uses the *Solar* module.
 
 Running CLOVER
 ~~~~~~~~~~~~~~
@@ -126,7 +124,7 @@ are available. This IDE is software which allows the user to view and
 edit scripts, run the code, run individual functions, and view the
 outputs easily. The easiest way to get Spyder is to download
 `Anaconda <https://www.anaconda.com/distribution>`__ which includes
-Spyder as a default package. CLOVER is written using Python 3.7 so the
+Spyder as a default package. CLOVER is written using Python 3 so the
 user should make sure that their Python environment uses this version;
 the packages that CLOVER uses are all included in the Anaconda
 distribution.
@@ -139,7 +137,7 @@ downloading CLOVER to being able to run their own simulations and
 optimisations. It contains worked examples of using the code and, owing
 to the format of the document, several pieces of code are included in
 this document which will not be necessary when running CLOVER using
-Spyder. These include viewing the input CSV and YAML files (which can be done in
+Spyder. These include viewing the input CSV files (which can be done in
 your file browser) and executing the code (which can be done by clicking
 the green arrow in Spyder) but are necessary to compile the code here.
 These will be highlighted as they come up.
