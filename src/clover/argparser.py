@@ -175,6 +175,14 @@ def parse_args(args: List[Any]) -> argparse.Namespace:
         help="If specified, plots will be generated and saved and key results will be "
         "calculated and saved for the simulation.",
     )
+    simulation_parser.add_argument(
+        "--skip-plots",
+        action="store_true",
+        default=False,
+        help="If specified, plots will be skipped. Note, only affects cases where "
+        "analysis has been requested; plot generation cannot be carried out without "
+        "analysis.",
+    )
 
     # Optimisation arguments
     optimisation_parser = parser.add_argument_group(

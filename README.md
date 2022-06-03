@@ -72,6 +72,12 @@ to download the files, and
 git lfs pull
 ```
 to merge them into your local branches.
+#### Downloading as a developer
+
+To download the CLOVER source, with a view to editing and helping to develop the code, simply click the green `Code` button near the top of this page, copy the URL, and, in your local terminal, run `git clone <URL>` to get your local copy of CLOVER. From there, check out a new branch for any of your edits:
+```
+git checkout -b <new_branch_name>
+```
 
 ### Setting up your Python environment
 
