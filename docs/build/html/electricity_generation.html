@@ -1,231 +1,343 @@
 <!DOCTYPE html>
-<html class="writer-html5" lang="en" >
-<head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+<html class="writer-html4" lang="en">
 
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<head>
+  <meta charset="utf-8">
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
   <title>Electricity generation &mdash; CLOVER 4.0.1 documentation</title>
-      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+
+
+
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+
+
+
+
+
+
+
   <!--[if lt IE 9]>
     <script src="_static/js/html5shiv.min.js"></script>
   <![endif]-->
-  
-        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
-        <script src="_static/jquery.js"></script>
-        <script src="_static/underscore.js"></script>
-        <script src="_static/doctools.js"></script>
-        <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
-    <script src="_static/js/theme.js"></script>
-    <link rel="index" title="Index" href="genindex.html" />
-    <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Load profiles" href="load.html" />
-    <link rel="prev" title="General setup" href="general_setup.html" /> 
+
+
+  <script type="text/javascript" id="documentation_options" data-url_root="./"
+    src="_static/documentation_options.js"></script>
+  <script type="text/javascript" src="_static/jquery.js"></script>
+  <script type="text/javascript" src="_static/underscore.js"></script>
+  <script type="text/javascript" src="_static/doctools.js"></script>
+  <script type="text/javascript" src="_static/language_data.js"></script>
+  <script async="async" type="text/javascript"
+    src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  <script type="text/javascript" src="_static/js/theme.js"></script>
+
+
+  <link rel="index" title="Index" href="genindex.html" />
+  <link rel="search" title="Search" href="search.html" />
+  <link rel="prev" title="General setup" href="general_setup.html" />
 </head>
 
-<body class="wy-body-for-nav"> 
+<body class="wy-body-for-nav">
+
+
   <div class="wy-grid-for-nav">
+
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
-        <div class="wy-side-nav-search" >
-            <a href="index.html" class="icon icon-home"> CLOVER
+        <div class="wy-side-nav-search">
+
+
+
+          <a href="index.html" class="icon icon-home" alt="Documentation Home"> CLOVER
+
+
+
           </a>
-<div role="search">
-  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
-    <input type="text" name="q" placeholder="Search docs" />
-    <input type="hidden" name="check_keywords" value="yes" />
-    <input type="hidden" name="area" value="default" />
-  </form>
-</div>
-        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
-              <ul class="current">
-<li class="toctree-l1"><a class="reference internal" href="overview.html">Introduction</a></li>
-<li class="toctree-l1"><a class="reference internal" href="general_setup.html">General setup</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">Electricity generation</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#solar">Solar</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#preparation">Preparation</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#getting-solar-generation">Getting solar generation</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#extension-and-visualisation">Extension and visualisation</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#troubleshooting">Troubleshooting</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="#grid">Grid</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#id1">Preparation</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#getting-grid-availability-profiles">Getting grid availability profiles</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#id2">Extension and visualisation</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#id3">Troubleshooting</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="#diesel">Diesel</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#id4">Preparation</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#getting-diesel-generation">Getting diesel generation</a></li>
-</ul>
-</li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="load.html">Load profiles</a></li>
-<li class="toctree-l1"><a class="reference internal" href="energy_system_simulation.html">Electricity system simulation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="optimisation.html">Electricity system optimisation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="get_involved.html">CLOVER development</a></li>
-<li class="toctree-l1"><a class="reference internal" href="license.html">License</a></li>
-</ul>
+
+
+
+
+
+
+
+          <div role="search">
+            <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+              <input type="text" name="q" placeholder="Search docs" />
+              <input type="hidden" name="check_keywords" value="yes" />
+              <input type="hidden" name="area" value="default" />
+            </form>
+          </div>
+
 
         </div>
+
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+
+
+
+
+
+
+          <ul class="current">
+            <li class="toctree-l1"><a class="reference internal" href="overview.html">Introduction</a></li>
+            <li class="toctree-l1"><a class="reference internal" href="general_setup.html">General setup</a></li>
+            <li class="toctree-l1 current"><a class="current reference internal" href="#">Electricity generation</a>
+              <ul>
+                <li class="toctree-l2"><a class="reference internal" href="#solar">Solar</a>
+                  <ul>
+                    <li class="toctree-l3"><a class="reference internal" href="#preparation">Preparation</a></li>
+                    <li class="toctree-l3"><a class="reference internal" href="#getting-solar-generation">Getting solar
+                        generation</a></li>
+                    <li class="toctree-l3"><a class="reference internal" href="#extension-and-visualisation">Extension
+                        and visualisation</a></li>
+                    <li class="toctree-l3"><a class="reference internal" href="#troubleshooting">Troubleshooting</a>
+                    </li>
+                  </ul>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="#grid">Grid</a>
+                  <ul>
+                    <li class="toctree-l3"><a class="reference internal" href="#id1">Preparation</a></li>
+                    <li class="toctree-l3"><a class="reference internal"
+                        href="#getting-grid-availability-profiles">Getting grid availability profiles</a></li>
+                    <li class="toctree-l3"><a class="reference internal" href="#id2">Extension and visualisation</a>
+                    </li>
+                    <li class="toctree-l3"><a class="reference internal" href="#id3">Troubleshooting</a></li>
+                  </ul>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="#diesel">Diesel</a>
+                  <ul>
+                    <li class="toctree-l3"><a class="reference internal" href="#id4">Preparation</a></li>
+                    <li class="toctree-l3"><a class="reference internal" href="#getting-diesel-generation">Getting
+                        diesel generation</a></li>
+                  </ul>
+                </li>
+              </ul>
+            </li>
+          </ul>
+
+
+
+        </div>
+
       </div>
     </nav>
 
-    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
-          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-          <a href="index.html">CLOVER</a>
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+
+      <nav class="wy-nav-top" aria-label="top navigation">
+
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="index.html">CLOVER</a>
+
       </nav>
 
+
       <div class="wy-nav-content">
+
         <div class="rst-content">
-          <div role="navigation" aria-label="Page navigation">
-  <ul class="wy-breadcrumbs">
-      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
-      <li>Electricity generation</li>
-      <li class="wy-breadcrumbs-aside">
-            <a href="_sources/electricity_generation.rst.txt" rel="nofollow"> View page source</a>
-      </li>
-  </ul>
-  <hr/>
-</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+          <div role="navigation" aria-label="breadcrumbs navigation">
+
+            <ul class="wy-breadcrumbs">
+
+              <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+
+              <li>Electricity generation</li>
+
+
+              <li class="wy-breadcrumbs-aside">
+
+
+                <a href="_sources/electricity_generation.rst.txt" rel="nofollow"> View page source</a>
+
+
+              </li>
+
+            </ul>
+
+
+            <hr />
+          </div>
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
-           <div itemprop="articleBody">
-             
-  <section id="electricity-generation">
-<h1>Electricity generation<a class="headerlink" href="#electricity-generation" title="Permalink to this headline"></a></h1>
-<p>This section provides an overview of how to set up the electricity
-generation in CLOVER using its three modules solar, diesel and the
-national grid network. Further modules with new technologies could be
-added in the future to increase its functionality.</p>
-<section id="solar">
-<h2>Solar<a class="headerlink" href="#solar" title="Permalink to this headline"></a></h2>
-<section id="preparation">
-<h3>Preparation<a class="headerlink" href="#preparation" title="Permalink to this headline"></a></h3>
-<p>The <em>Solar</em> module allows the user to get solar generation data for
-their location using the <em>Renewables.ninja</em> interface. Because this
-module relies on this external source of data it acts differently from
-other CLOVER modules, but ultimately returns the format of data that we
-expect from all of the generation files.</p>
-<p>First, <strong>complete the “PV generation inputs” CSV file in the PV
-folder</strong>, which itself is located in the <em>Generation</em> folder. Let’s take
-a look at the inputs:</p>
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>import pandas as pd
-solar_inputs = pd.read_csv(&quot;/Users/prs09/Documents/CLOVER/Locations/Bahraich/Generation/PV/PV generation inputs.csv&quot;,header=None)
-solar_inputs.head(len(solar_inputs))
-</pre></div>
-</div>
-<div>
-<style scoped>
-    .dataframe tbody tr th:only-of-type {
-        vertical-align: middle;
-    }
+            <div itemprop="articleBody">
 
-    .dataframe tbody tr th {
-        vertical-align: top;
-    }
+              <div class="section" id="electricity-generation">
+                <h1>Electricity generation<a class="headerlink" href="#electricity-generation"
+                    title="Permalink to this headline">¶</a></h1>
+                <p>This section provides an overview of how to set up the electricity
+                  generation in CLOVER using its three modules solar, diesel and the
+                  national grid network. Further modules with new technologies could be
+                  added in the future to increase its functionality.</p>
+                <div class="section" id="solar">
+                  <h2>Solar<a class="headerlink" href="#solar" title="Permalink to this headline">¶</a></h2>
+                  <div class="section" id="preparation">
+                    <h3>Preparation<a class="headerlink" href="#preparation" title="Permalink to this headline">¶</a>
+                    </h3>
+                    <p>The <em>Solar</em> module allows the user to get solar generation data for
+                      their location using the <em>Renewables.ninja</em> interface. Because this
+                      module relies on this external source of data it acts differently from
+                      other CLOVER modules, but ultimately returns the format of data that we
+                      expect from all of the generation files.</p>
+                    <p>First, <strong>complete the “PV generation inputs” CSV file in the PV
+                        folder</strong>, which itself is located in the <em>Generation</em> folder. Let’s take
+                      a look at the inputs:</p>
+                    <div class="code ipython3 highlight-default notranslate">
+                      <div class="highlight">
+                        <pre><span></span><span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="n">solar_inputs</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="s2">&quot;/Users/prs09/Documents/CLOVER/Locations/Bahraich/Generation/PV/PV generation inputs.csv&quot;</span><span class="p">,</span><span class="n">header</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+<span class="n">solar_inputs</span><span class="o">.</span><span class="n">head</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">solar_inputs</span><span class="p">))</span>
+</pre>
+                      </div>
+                    </div>
+                    <div>
+                      <style scoped>
+                        .dataframe tbody tr th:only-of-type {
+                          vertical-align: middle;
+                        }
 
-    .dataframe thead th {
-        text-align: right;
-    }
-</style>
-<table border="1" class="dataframe">
-  <thead>
-    <tr style="text-align: right;">
-      <th></th>
-      <th>0</th>
-      <th>1</th>
-      <th>2</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <th>0</th>
-      <td>tilt</td>
-      <td>29</td>
-      <td>degrees above horizontal</td>
-    </tr>
-    <tr>
-      <th>1</th>
-      <td>azim</td>
-      <td>180</td>
-      <td>degrees from north</td>
-    </tr>
-    <tr>
-      <th>2</th>
-      <td>lifetime</td>
-      <td>20</td>
-      <td>years</td>
-    </tr>
-  </tbody>
-</table>
-</div><div class="line-block">
-<div class="line"><br /></div>
-</div>
-<p>These should all be straightforward: we assume our panels are
-south-facing (180<span class="math notranslate nohighlight">\(^{\circ}\)</span> from North) and has a lifetime of 20
-years, typical for a solar panel and used by CLOVER to account for
-module degradation. We also have stated that our panels will have a tilt
-(or elevation) of 29<span class="math notranslate nohighlight">\(^{\circ}\)</span> above the horizontal, or make a
-29<span class="math notranslate nohighlight">\(^{\circ}\)</span> angle compared to flat ground (which would be
-0<span class="math notranslate nohighlight">\(^{\circ}\)</span>). This angle could (for example) be the tilt of a
-roof that the panels are assumed to be located on, or it could be the
-optimum angle that maximises total energy generation over the course of
-a year (which can be found using the <em>Renewables.ninja</em> web interface,
-or many other programmes).</p>
-</section>
-<section id="getting-solar-generation">
-<h3>Getting solar generation<a class="headerlink" href="#getting-solar-generation" title="Permalink to this headline"></a></h3>
-<p>Our goal is to get 20 years of solar generation data for our location at
-an hourly resolution. The data will be the output energy of one
-functional unit of nominal power of the PV for each hour of the year,
-assuming it is installed at the specified location and orientation. The
-functional unit of nominal power (also called the nameplate capacity) is
-the kilowatt-peak (kWp), defined to be instantaneous power output of a
-PV array under standard test conditions (1000 W/m<span class="math notranslate nohighlight">\(^2\)</span>). This
-value is most commonly reported when buying solar modules, for example a
-panel with a nominal power (or nameplate capacity) of 300 Wp (0.3 kWp)
-would provide 300 W of power when illuminated under standard test
-conditions, or have a higher output if the illumination were higher (and
-vice versa). The actual power received from a module of a given capacity
-depends on many factors, for example the amount of illumination on the
-panel and the losses from a variety of sources, but <em>Renewables.ninja</em>
-calculates these automatically for us.</p>
-<p>Using this functional unit makes it easy to scale up the generation
-capacity to the desired amount in a simulated system. First, check that
-you have already updated the location and filepaths of the <em>Solar</em>
-module and <strong>run the script (using the green arrow in the Spyder
-console)</strong>. Here we run it like so:</p>
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>import sys
-sys.path.insert(0, &#39;/Users/prs09/Documents/CLOVER/Scripts/Generation scripts/&#39;)
-from Solar import Solar
-</pre></div>
-</div>
-<p>The <em>Solar</em> module contains several nested functions which automatically
-provide a step-by-step process to send data to <em>Renewables.ninja</em> about
-the system parameters, account for the orientation of the system, and
-return ready-to-use data. We want to get 20 years of solar data but
-unfortunately the archives do not go back that far, so instead we will
-get 10 years of data and repeat it: this will allow us to keep the
-year-on-year variation whilst also covering our entire desired time
-period.</p>
-<p>To do this we run a function which gets one year of solar generation and
-repeat the process until we have 10 years. In the Bahraich example we
-have data from 2007 to 2016, so let’s replicate this. First we will
-generate the data for 2007 by running the following function:</p>
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>Solar().save_solar_output(gen_year = 2007)
-</pre></div>
-</div>
-<p>This automatically saves a CSV file for us, and we can look at the first
-day’s worth of entries:</p>
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>solar_generation_2007 = pd.read_csv(&quot;/Users/prs09/Documents/CLOVER/Locations/Bahraich/Generation/PV/solar_generation_2007.csv&quot;,header=None)
-solar_generation_2007.columns = [&#39;Hour&#39;,&#39;kW&#39;]
-print(solar_generation_2007[0:24])
-</pre></div>
-</div>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>    <span class="n">Hour</span>     <span class="n">kW</span>
+                        .dataframe tbody tr th {
+                          vertical-align: top;
+                        }
+
+                        .dataframe thead th {
+                          text-align: right;
+                        }
+                      </style>
+                      <table border="1" class="dataframe">
+                        <thead>
+                          <tr style="text-align: right;">
+                            <th></th>
+                            <th>0</th>
+                            <th>1</th>
+                            <th>2</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr>
+                            <th>0</th>
+                            <td>tilt</td>
+                            <td>29</td>
+                            <td>degrees above horizontal</td>
+                          </tr>
+                          <tr>
+                            <th>1</th>
+                            <td>azim</td>
+                            <td>180</td>
+                            <td>degrees from north</td>
+                          </tr>
+                          <tr>
+                            <th>2</th>
+                            <td>lifetime</td>
+                            <td>20</td>
+                            <td>years</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                    <div class="line-block">
+                      <div class="line"><br /></div>
+                    </div>
+                    <p>These should all be straightforward: we assume our panels are
+                      south-facing (180<span class="math notranslate nohighlight">\(^{\circ}\)</span> from North) and
+                      has a lifetime of 20
+                      years, typical for a solar panel and used by CLOVER to account for
+                      module degradation. We also have stated that our panels will have a tilt
+                      (or elevation) of 29<span class="math notranslate nohighlight">\(^{\circ}\)</span> above the
+                      horizontal, or make a
+                      29<span class="math notranslate nohighlight">\(^{\circ}\)</span> angle compared to flat ground
+                      (which would be
+                      0<span class="math notranslate nohighlight">\(^{\circ}\)</span>). This angle could (for example)
+                      be the tilt of a
+                      roof that the panels are assumed to be located on, or it could be the
+                      optimum angle that maximises total energy generation over the course of
+                      a year (which can be found using the <em>Renewables.ninja</em> web interface,
+                      or many other programmes).</p>
+                  </div>
+                  <div class="section" id="getting-solar-generation">
+                    <h3>Getting solar generation<a class="headerlink" href="#getting-solar-generation"
+                        title="Permalink to this headline">¶</a></h3>
+                    <p>Our goal is to get 20 years of solar generation data for our location at
+                      an hourly resolution. The data will be the output energy of one
+                      functional unit of nominal power of the PV for each hour of the year,
+                      assuming it is installed at the specified location and orientation. The
+                      functional unit of nominal power (also called the nameplate capacity) is
+                      the kilowatt-peak (kWp), defined to be instantaneous power output of a
+                      PV array under standard test conditions (1000 W/m<span
+                        class="math notranslate nohighlight">\(^2\)</span>). This
+                      value is most commonly reported when buying solar modules, for example a
+                      panel with a nominal power (or nameplate capacity) of 300 Wp (0.3 kWp)
+                      would provide 300 W of power when illuminated under standard test
+                      conditions, or have a higher output if the illumination were higher (and
+                      vice versa). The actual power received from a module of a given capacity
+                      depends on many factors, for example the amount of illumination on the
+                      panel and the losses from a variety of sources, but <em>Renewables.ninja</em>
+                      calculates these automatically for us.</p>
+                    <p>Using this functional unit makes it easy to scale up the generation
+                      capacity to the desired amount in a simulated system. First, check that
+                      you have already updated the location and filepaths of the <em>Solar</em>
+                      module and <strong>run the script (using the green arrow in the Spyder
+                        console)</strong>. Here we run it like so:</p>
+                    <div class="code ipython3 highlight-default notranslate">
+                      <div class="highlight">
+                        <pre><span></span><span class="kn">import</span> <span class="nn">sys</span>
+<span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="s1">&#39;/Users/prs09/Documents/CLOVER/Scripts/Generation scripts/&#39;</span><span class="p">)</span>
+<span class="kn">from</span> <span class="nn">Solar</span> <span class="k">import</span> <span class="n">Solar</span>
+</pre>
+                      </div>
+                    </div>
+                    <p>The <em>Solar</em> module contains several nested functions which automatically
+                      provide a step-by-step process to send data to <em>Renewables.ninja</em> about
+                      the system parameters, account for the orientation of the system, and
+                      return ready-to-use data. We want to get 20 years of solar data but
+                      unfortunately the archives do not go back that far, so instead we will
+                      get 10 years of data and repeat it: this will allow us to keep the
+                      year-on-year variation whilst also covering our entire desired time
+                      period.</p>
+                    <p>To do this we run a function which gets one year of solar generation and
+                      repeat the process until we have 10 years. In the Bahraich example we
+                      have data from 2007 to 2016, so let’s replicate this. First we will
+                      generate the data for 2007 by running the following function:</p>
+                    <div class="code ipython3 highlight-default notranslate">
+                      <div class="highlight">
+                        <pre><span></span><span class="n">Solar</span><span class="p">()</span><span class="o">.</span><span class="n">save_solar_output</span><span class="p">(</span><span class="n">gen_year</span> <span class="o">=</span> <span class="mi">2007</span><span class="p">)</span>
+</pre>
+                      </div>
+                    </div>
+                    <p>This automatically saves a CSV file for us, and we can look at the first
+                      day’s worth of entries:</p>
+                    <div class="code ipython3 highlight-default notranslate">
+                      <div class="highlight">
+                        <pre><span></span><span class="n">solar_generation_2007</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="s2">&quot;/Users/prs09/Documents/CLOVER/Locations/Bahraich/Generation/PV/solar_generation_2007.csv&quot;</span><span class="p">,</span><span class="n">header</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+<span class="n">solar_generation_2007</span><span class="o">.</span><span class="n">columns</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;Hour&#39;</span><span class="p">,</span><span class="s1">&#39;kW&#39;</span><span class="p">]</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">solar_generation_2007</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">24</span><span class="p">])</span>
+</pre>
+                      </div>
+                    </div>
+                    <div class="highlight-default notranslate">
+                      <div class="highlight">
+                        <pre><span></span>    <span class="n">Hour</span>     <span class="n">kW</span>
 <span class="mi">0</span>      <span class="mi">0</span>  <span class="mf">0.000</span>
 <span class="mi">1</span>      <span class="mi">1</span>  <span class="mf">0.000</span>
 <span class="mi">2</span>      <span class="mi">2</span>  <span class="mf">0.000</span>
@@ -250,130 +362,162 @@ print(solar_generation_2007[0:24])
 <span class="mi">21</span>    <span class="mi">21</span>  <span class="mf">0.000</span>
 <span class="mi">22</span>    <span class="mi">22</span>  <span class="mf">0.000</span>
 <span class="mi">23</span>    <span class="mi">23</span>  <span class="mf">0.000</span>
-</pre></div>
-</div>
-<p>As expected, we start getting solar generation from 6:00 (note that
-Python begins counting from 0, so the hours of the day run from 0 to 23)
-which peaks in the middle of the day and finishes by 17:00.</p>
-<p>We then run the same function for the following nine years:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Solar</span><span class="p">()</span><span class="o">.</span><span class="n">save_solar_output</span><span class="p">(</span><span class="n">gen_year</span> <span class="o">=</span> <span class="mi">2008</span><span class="p">)</span>
+</pre>
+                      </div>
+                    </div>
+                    <p>As expected, we start getting solar generation from 6:00 (note that
+                      Python begins counting from 0, so the hours of the day run from 0 to 23)
+                      which peaks in the middle of the day and finishes by 17:00.</p>
+                    <p>We then run the same function for the following nine years:</p>
+                    <div class="highlight-default notranslate">
+                      <div class="highlight">
+                        <pre><span></span><span class="n">Solar</span><span class="p">()</span><span class="o">.</span><span class="n">save_solar_output</span><span class="p">(</span><span class="n">gen_year</span> <span class="o">=</span> <span class="mi">2008</span><span class="p">)</span>
 <span class="n">Solar</span><span class="p">()</span><span class="o">.</span><span class="n">save_solar_output</span><span class="p">(</span><span class="n">gen_year</span> <span class="o">=</span> <span class="mi">2009</span><span class="p">)</span>
 <span class="o">...</span>
 <span class="n">Solar</span><span class="p">()</span><span class="o">.</span><span class="n">save_solar_output</span><span class="p">(</span><span class="n">gen_year</span> <span class="o">=</span> <span class="mi">2016</span><span class="p">)</span>
-</pre></div>
-</div>
-<p>Until we have 10 years of data. Now we can compile the data together
-using a function that stitches the data together in order, from the
-starting year of 2007, then repeats it to give the full 20 years of
-generation data:</p>
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>Solar().total_solar_output(start_year = 2007)
-</pre></div>
-</div>
-<p>This file contains the total solar generation expected for the 1 kWp
-unit panel over the course of 20 years, which is what we aimed to
-achieve. This is the file that is imported in the <em>Energy_System</em> module
-and used to calculate the total PV generation in a system. <strong>Use this
-process to generate solar data for your location.</strong></p>
-</section>
-<section id="extension-and-visualisation">
-<h3>Extension and visualisation<a class="headerlink" href="#extension-and-visualisation" title="Permalink to this headline"></a></h3>
-<p>For interest, let’s see its cumulative generation over its lifetime,
-rounded to the nearest kWh:</p>
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>import numpy as np
-solar_generation_lifetime = pd.read_csv(&quot;/Users/prs09/Documents/CLOVER/Locations/Bahraich/Generation/PV/solar_generation_20_years.csv&quot;)
-total_generation = np.round(np.sum(solar_generation_lifetime[&#39;0.0&#39;]))
-print(&#39;Cumulative generation: &#39; + str(total_generation)+&#39; kWh&#39;)
-print(&#39;Average generation: &#39;+str(round(total_generation/(20*365)))+&#39; kWh per day&#39;)
-</pre></div>
-</div>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Cumulative</span> <span class="n">generation</span><span class="p">:</span> <span class="mf">36655.0</span> <span class="n">kWh</span>
+</pre>
+                      </div>
+                    </div>
+                    <p>Until we have 10 years of data. Now we can compile the data together
+                      using a function that stitches the data together in order, from the
+                      starting year of 2007, then repeats it to give the full 20 years of
+                      generation data:</p>
+                    <div class="code ipython3 highlight-default notranslate">
+                      <div class="highlight">
+                        <pre><span></span><span class="n">Solar</span><span class="p">()</span><span class="o">.</span><span class="n">total_solar_output</span><span class="p">(</span><span class="n">start_year</span> <span class="o">=</span> <span class="mi">2007</span><span class="p">)</span>
+</pre>
+                      </div>
+                    </div>
+                    <p>This file contains the total solar generation expected for the 1 kWp
+                      unit panel over the course of 20 years, which is what we aimed to
+                      achieve. This is the file that is imported in the <em>Energy_System</em> module
+                      and used to calculate the total PV generation in a system. <strong>Use this
+                        process to generate solar data for your location.</strong></p>
+                  </div>
+                  <div class="section" id="extension-and-visualisation">
+                    <h3>Extension and visualisation<a class="headerlink" href="#extension-and-visualisation"
+                        title="Permalink to this headline">¶</a></h3>
+                    <p>For interest, let’s see its cumulative generation over its lifetime,
+                      rounded to the nearest kWh:</p>
+                    <div class="code ipython3 highlight-default notranslate">
+                      <div class="highlight">
+                        <pre><span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="n">solar_generation_lifetime</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="s2">&quot;/Users/prs09/Documents/CLOVER/Locations/Bahraich/Generation/PV/solar_generation_20_years.csv&quot;</span><span class="p">)</span>
+<span class="n">total_generation</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">solar_generation_lifetime</span><span class="p">[</span><span class="s1">&#39;0.0&#39;</span><span class="p">]))</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Cumulative generation: &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">total_generation</span><span class="p">)</span><span class="o">+</span><span class="s1">&#39; kWh&#39;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Average generation: &#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="n">total_generation</span><span class="o">/</span><span class="p">(</span><span class="mi">20</span><span class="o">*</span><span class="mi">365</span><span class="p">)))</span><span class="o">+</span><span class="s1">&#39; kWh per day&#39;</span><span class="p">)</span>
+</pre>
+                      </div>
+                    </div>
+                    <div class="highlight-default notranslate">
+                      <div class="highlight">
+                        <pre><span></span><span class="n">Cumulative</span> <span class="n">generation</span><span class="p">:</span> <span class="mf">36655.0</span> <span class="n">kWh</span>
 <span class="n">Average</span> <span class="n">generation</span><span class="p">:</span> <span class="mf">5.0</span> <span class="n">kWh</span> <span class="n">per</span> <span class="n">day</span>
-</pre></div>
-</div>
-<p>This panel is expected to produce 36.7 MWh of energy over its lifetime,
-or around 5.0 kWh of energy per day - this is reasonable given the
-location of the panel in a relatively sunny location in India.</p>
-<p>We can quickly visualise its generation over the course of the first
-year of its lifetime by taking the first 8760 hours (24 hours times 365
-days) and plotting this as a heatmap:</p>
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>solar_gen_year = solar_generation_lifetime.iloc[0:8760][&#39;0.0&#39;]
-solar_gen_year = np.reshape(solar_gen_year.values,(365,24))
+</pre>
+                      </div>
+                    </div>
+                    <p>This panel is expected to produce 36.7 MWh of energy over its lifetime,
+                      or around 5.0 kWh of energy per day - this is reasonable given the
+                      location of the panel in a relatively sunny location in India.</p>
+                    <p>We can quickly visualise its generation over the course of the first
+                      year of its lifetime by taking the first 8760 hours (24 hours times 365
+                      days) and plotting this as a heatmap:</p>
+                    <div class="code ipython3 highlight-default notranslate">
+                      <div class="highlight">
+                        <pre><span></span><span class="n">solar_gen_year</span> <span class="o">=</span> <span class="n">solar_generation_lifetime</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">8760</span><span class="p">][</span><span class="s1">&#39;0.0&#39;</span><span class="p">]</span>
+<span class="n">solar_gen_year</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">solar_gen_year</span><span class="o">.</span><span class="n">values</span><span class="p">,(</span><span class="mi">365</span><span class="p">,</span><span class="mi">24</span><span class="p">))</span>
 
-import seaborn as sns
-import matplotlib.pyplot as plt
-import matplotlib as mpl
+<span class="kn">import</span> <span class="nn">seaborn</span> <span class="k">as</span> <span class="nn">sns</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="kn">import</span> <span class="nn">matplotlib</span> <span class="k">as</span> <span class="nn">mpl</span>
 
-%matplotlib inline
-mpl.rcParams[&#39;figure.dpi&#39;] = 300
+<span class="o">%</span><span class="n">matplotlib</span> <span class="n">inline</span>
+<span class="n">mpl</span><span class="o">.</span><span class="n">rcParams</span><span class="p">[</span><span class="s1">&#39;figure.dpi&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">300</span>
 
-g = sns.heatmap(solar_gen_year,
-                       vmin = 0.0, vmax = 1.0,
-                       cmap = &#39;Blues&#39;, cbar_kws = {&#39;label&#39;:&#39;Power output (kW)&#39;})
-g.set(xticks = range(0,24,2), xticklabels = range(0,24,2),
-      yticks = range(0,365,30), yticklabels = range(0,365,30),
-      xlabel = &#39;Hour of day&#39;, ylabel = &#39;Day of year&#39;,
-      title = &#39;Output of 1 kWp of solar capacity&#39;)
-plt.xticks(rotation = 0)
-plt.tight_layout()
-plt.show()
-</pre></div>
-</div>
-<img alt="_images/output_13_0.png" src="_images/output_13_0.png" />
-<p>As we might expect, the solar output varies throughout the year with
-longer periods of generation during the summer months. Some days have
-far less generation, potentially due to cloudy conditions. We can also
-see the total daily generation over the course of the year by taking the
-sum of the reshaped <code class="docutils literal notranslate"><span class="pre">solar_gen_year</span></code> object and plotting the result:</p>
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>solar_daily_sums = pd.DataFrame(np.sum(solar_gen_year,axis=1))
-plt.plot(range(365),solar_daily_sums)
-plt.xticks(range(0,365,30))
-plt.yticks(range(0,9,2))
-plt.xlabel(&#39;Day of year&#39;)
-plt.ylabel(&#39;Energy generation (kWh per day)&#39;)
-plt.title(&#39;Daily energy generation of 1 kWp of solar capacity&#39;)
-plt.show()
-</pre></div>
-</div>
-<img alt="_images/output_15_0.png" src="_images/output_15_0.png" />
-</section>
-<section id="troubleshooting">
-<h3>Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permalink to this headline"></a></h3>
-<p>The reason why we need to import the data from <em>Renewables.ninja</em>
-manually is because the API will flag multiple repeated requests to its
-servers and deny access. This makes it not possible to put the
-<code class="docutils literal notranslate"><span class="pre">Solar().save_solar_output(gen_year)</span></code> function into a for loop for
-convenience, as the code will be executed faster than that which the API
-will allow. This will also apply if you manually run the function too
-quickly, so if you receive an error message relating to the API then
-wait for around one minute and try again.</p>
-<p>Periodically the <em>Renewables.ninja</em> changes its API settings which
-affects the way that the <em>Solar</em> module interacts with the website. This
-requires the CLOVER code to be updated, so if you identify this
-happening please email <a class="reference external" href="mailto:philip&#46;sandwell&#37;&#52;&#48;gmail&#46;com">Philip
-Sandwell</a>.</p>
-</section>
-</section>
-<section id="grid">
-<h2>Grid<a class="headerlink" href="#grid" title="Permalink to this headline"></a></h2>
-<section id="id1">
-<h3>Preparation<a class="headerlink" href="#id1" title="Permalink to this headline"></a></h3>
-<p>The <em>Grid</em> module simulates the availability of the national grid
-network at the location, particularly when the grid is unreliable or has
-variable availability throughout the day. CLOVER assumes that when the
-grid is available it can provide an unlimited amount of power to satisfy
-the needs of the community for the entire hour in question or, if
-unavailable, no power can be drawn from it. The goal of the <em>Grid</em>
-module is to provide an hourly profile of whether the grid is available
-or not by using a user-specified availability profile (or several of
-them, if many are to be investigated).</p>
-<p>First, <strong>complete the “Grid inputs” CSV file</strong> in the <em>Grid</em> folder,
-which itself is located in the <em>Generation</em> folder. Let’s take a look at
-the inputs:</p>
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>grid_times = pd.read_csv(&quot;/Users/prs09/Documents/CLOVER/Locations/Bahraich/Generation/Grid/Grid inputs.csv&quot;,header=0)
-print(grid_times)
-</pre></div>
-</div>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>    <span class="n">Name</span>  <span class="n">none</span>  <span class="nb">all</span>  <span class="n">daytime</span>  <span class="n">eight_hours</span>  <span class="n">bahraich</span>
+<span class="n">g</span> <span class="o">=</span> <span class="n">sns</span><span class="o">.</span><span class="n">heatmap</span><span class="p">(</span><span class="n">solar_gen_year</span><span class="p">,</span>
+                       <span class="n">vmin</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">vmax</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">,</span>
+                       <span class="n">cmap</span> <span class="o">=</span> <span class="s1">&#39;Blues&#39;</span><span class="p">,</span> <span class="n">cbar_kws</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;label&#39;</span><span class="p">:</span><span class="s1">&#39;Power output (kW)&#39;</span><span class="p">})</span>
+<span class="n">g</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">xticks</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">24</span><span class="p">,</span><span class="mi">2</span><span class="p">),</span> <span class="n">xticklabels</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">24</span><span class="p">,</span><span class="mi">2</span><span class="p">),</span>
+      <span class="n">yticks</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">365</span><span class="p">,</span><span class="mi">30</span><span class="p">),</span> <span class="n">yticklabels</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">365</span><span class="p">,</span><span class="mi">30</span><span class="p">),</span>
+      <span class="n">xlabel</span> <span class="o">=</span> <span class="s1">&#39;Hour of day&#39;</span><span class="p">,</span> <span class="n">ylabel</span> <span class="o">=</span> <span class="s1">&#39;Day of year&#39;</span><span class="p">,</span>
+      <span class="n">title</span> <span class="o">=</span> <span class="s1">&#39;Output of 1 kWp of solar capacity&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xticks</span><span class="p">(</span><span class="n">rotation</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre>
+                      </div>
+                    </div>
+                    <img alt="_images/output_13_0.png" src="_images/output_13_0.png" />
+                    <p>As we might expect, the solar output varies throughout the year with
+                      longer periods of generation during the summer months. Some days have
+                      far less generation, potentially due to cloudy conditions. We can also
+                      see the total daily generation over the course of the year by taking the
+                      sum of the reshaped <code
+                        class="docutils literal notranslate"><span class="pre">solar_gen_year</span></code> object and
+                      plotting the result:</p>
+                    <div class="code ipython3 highlight-default notranslate">
+                      <div class="highlight">
+                        <pre><span></span><span class="n">solar_daily_sums</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">solar_gen_year</span><span class="p">,</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">))</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">365</span><span class="p">),</span><span class="n">solar_daily_sums</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xticks</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">365</span><span class="p">,</span><span class="mi">30</span><span class="p">))</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">yticks</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">9</span><span class="p">,</span><span class="mi">2</span><span class="p">))</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s1">&#39;Day of year&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s1">&#39;Energy generation (kWh per day)&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s1">&#39;Daily energy generation of 1 kWp of solar capacity&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre>
+                      </div>
+                    </div>
+                    <img alt="_images/output_15_0.png" src="_images/output_15_0.png" />
+                  </div>
+                  <div class="section" id="troubleshooting">
+                    <h3>Troubleshooting<a class="headerlink" href="#troubleshooting"
+                        title="Permalink to this headline">¶</a></h3>
+                    <p>The reason why we need to import the data from <em>Renewables.ninja</em>
+                      manually is because the API will flag multiple repeated requests to its
+                      servers and deny access. This makes it not possible to put the
+                      <code
+                        class="docutils literal notranslate"><span class="pre">Solar().save_solar_output(gen_year)</span></code>
+                      function into a for loop for
+                      convenience, as the code will be executed faster than that which the API
+                      will allow. This will also apply if you manually run the function too
+                      quickly, so if you receive an error message relating to the API then
+                      wait for around one minute and try again.
+                    </p>
+                    <p>Periodically the <em>Renewables.ninja</em> changes its API settings which
+                      affects the way that the <em>Solar</em> module interacts with the website. This
+                      requires the CLOVER code to be updated, so if you identify this
+                      happening please email <a class="reference external"
+                        href="mailto:philip&#46;sandwell&#37;&#52;&#48;gmail&#46;com">Philip
+                        Sandwell</a>.</p>
+                  </div>
+                </div>
+                <div class="section" id="grid">
+                  <h2>Grid<a class="headerlink" href="#grid" title="Permalink to this headline">¶</a></h2>
+                  <div class="section" id="id1">
+                    <h3>Preparation<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h3>
+                    <p>The <em>Grid</em> module simulates the availability of the national grid
+                      network at the location, particularly when the grid is unreliable or has
+                      variable availability throughout the day. CLOVER assumes that when the
+                      grid is available it can provide an unlimited amount of power to satisfy
+                      the needs of the community for the entire hour in question or, if
+                      unavailable, no power can be drawn from it. The goal of the <em>Grid</em>
+                      module is to provide an hourly profile of whether the grid is available
+                      or not by using a user-specified availability profile (or several of
+                      them, if many are to be investigated).</p>
+                    <p>First, <strong>complete the “Grid inputs” CSV file</strong> in the <em>Grid</em> folder,
+                      which itself is located in the <em>Generation</em> folder. Let’s take a look at
+                      the inputs:</p>
+                    <div class="code ipython3 highlight-default notranslate">
+                      <div class="highlight">
+                        <pre><span></span><span class="n">grid_times</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="s2">&quot;/Users/prs09/Documents/CLOVER/Locations/Bahraich/Generation/Grid/Grid inputs.csv&quot;</span><span class="p">,</span><span class="n">header</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">grid_times</span><span class="p">)</span>
+</pre>
+                      </div>
+                    </div>
+                    <div class="highlight-default notranslate">
+                      <div class="highlight">
+                        <pre><span></span>    <span class="n">Name</span>  <span class="n">none</span>  <span class="nb">all</span>  <span class="n">daytime</span>  <span class="n">eight_hours</span>  <span class="n">bahraich</span>
 <span class="mi">0</span>      <span class="mi">0</span>     <span class="mi">0</span>    <span class="mi">1</span>        <span class="mi">0</span>         <span class="mf">0.33</span>      <span class="mf">0.57</span>
 <span class="mi">1</span>      <span class="mi">1</span>     <span class="mi">0</span>    <span class="mi">1</span>        <span class="mi">0</span>         <span class="mf">0.33</span>      <span class="mf">0.61</span>
 <span class="mi">2</span>      <span class="mi">2</span>     <span class="mi">0</span>    <span class="mi">1</span>        <span class="mi">0</span>         <span class="mf">0.33</span>      <span class="mf">0.54</span>
@@ -398,230 +542,316 @@ print(grid_times)
 <span class="mi">21</span>    <span class="mi">21</span>     <span class="mi">0</span>    <span class="mi">1</span>        <span class="mi">0</span>         <span class="mf">0.33</span>      <span class="mf">0.46</span>
 <span class="mi">22</span>    <span class="mi">22</span>     <span class="mi">0</span>    <span class="mi">1</span>        <span class="mi">0</span>         <span class="mf">0.33</span>      <span class="mf">0.47</span>
 <span class="mi">23</span>    <span class="mi">23</span>     <span class="mi">0</span>    <span class="mi">1</span>        <span class="mi">0</span>         <span class="mf">0.33</span>      <span class="mf">0.51</span>
-</pre></div>
-</div>
-<p>This file describes five grid availability profiles, with each of the
-values corresponding to the probability that the grid will be available
-in the hour of the day specified on the left. Taking the sum of those
-values will give the average number of hours per day that the grid will
-be available. The profiles we have here are:</p>
-<ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">none</span></code> has no grid availability at all throughout the day, equivalent to not being connected to the grid</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">all</span></code> has full grid availability at all times</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">daytime</span></code> has grid availability throughout the day (8:00 until 17:59) but never at night</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">eight_hours</span></code> will provide approximately eight hours of power, randomly available throughout the day</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">bahraich</span></code> is an example profile from data gathered from Bahraich district, where availability is higher in the early morning and late evening but lower during the daty and early evening.</p></li>
-</ul>
-<p>You can add further grid profiles by adding additional columns in the
-CSV file; they can have any name and values for grid availability must
-be in the range 0-1 as they represent probabilities. Save this file before
-moving on.</p>
-</section>
-<section id="getting-grid-availability-profiles">
-<h3>Getting grid availability profiles<a class="headerlink" href="#getting-grid-availability-profiles" title="Permalink to this headline"></a></h3>
-<p>Our goal is to get 20 years of grid availability data at an hourly
-resolution, represented as 0s (grid is unavailable) and 1s (grid is
-available), for each of the grid profiles listed in <em>Grid inputs</em>.</p>
-<p>First, check that you have already updated the location and filepaths of
-the <em>Grid</em> module and <strong>run the script (using the green arrow in the
-Spyder console)</strong>. Here we run it like so:</p>
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>from Grid import Grid
-</pre></div>
-</div>
-<p>The <em>Grid</em> module is quite straightforward as it uses a single function
-to take an input grid profile, repeats the probability profile over a 20
-year period, uses binomial statistics to transsform them into a profile
-of 0s and 1s, and save this availability as a new output CSV file to use
-later. To do this for all of the grid profiles <strong>run the following
-function</strong> in your console:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Grid</span><span class="p">()</span><span class="o">.</span><span class="n">get_lifetime_grid_status</span><span class="p">()</span>
-</pre></div>
-</div>
-<p>Once this function is completed your new grid profiles will appear in
-your <em>Grid</em> folder and be ready to use, with their file names
-corresponding to the name of the status given in the input file (e.g.
-<code class="docutils literal notranslate"><span class="pre">eight_hours_grid_status.csv</span></code>). Given the nature of the calculation,
-this function will take a while to complete. This is normal and
-fortunately this process needs to be completed only once: the same grid
-availability profiles can be used in each of your investigations for
-reproducibility.</p>
-</section>
-<section id="id2">
-<h3>Extension and visualisation<a class="headerlink" href="#id2" title="Permalink to this headline"></a></h3>
-<p>Let’s take a closer look the <code class="docutils literal notranslate"><span class="pre">bahraich</span></code> grid profile by seeing how
-many hours per day it is available on average:</p>
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>bahraich_daily_hours = np.sum(grid_times[&#39;bahraich&#39;],axis=0)
-print(str(bahraich_daily_hours) + &#39; hours per day&#39;)
-</pre></div>
-</div>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="mf">9.34</span> <span class="n">hours</span> <span class="n">per</span> <span class="n">day</span>
-</pre></div>
-</div>
-<p>The <code class="docutils literal notranslate"><span class="pre">bahraich</span></code> profile gives an average of 9.34 hours of availability
-per day, relatively normal for that region of rural India but definitely
-has potential to be improved by installing a minigrid system. Now let’s
-plot the grid availability throughout the day</p>
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>plt.plot(range(24),grid_times[&#39;bahraich&#39;],color=&#39;k&#39;)
-plt.xticks(range(0,24,2))
-plt.yticks(np.arange(0,1.1,0.2))
-plt.xlabel(&#39;Hour of day&#39;)
-plt.ylabel(&#39;Probability&#39;)
-plt.title(&#39;Probability of grid electricity being available&#39;)
-plt.show()
-</pre></div>
-</div>
-<img alt="_images/output_24_0.png" src="_images/output_24_0.png" />
-<p>As we saw before, the grid is most likely to be available in the early
-morning and least likely to be available in the evening. We can also
-investigate the <code class="docutils literal notranslate"><span class="pre">bahraich</span></code> grid availability profile that we made
-using <code class="docutils literal notranslate"><span class="pre">Grid().get_lifetime_grid_status()</span></code>, for example by viewing
-whether the grid is available or not over the first year. Here we plot
-it using a colour scheme of white meaning the grid is available, or
-black when it is not (i.e. a blackout):</p>
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>bahraich_profile = pd.read_csv(&quot;/Users/prs09/Documents/CLOVER/Locations/Bahraich/Generation/Grid/bahraich_grid_status.csv&quot;)
-bahraich_profile = bahraich_profile.iloc[0:8760][&#39;0&#39;]
-bahraich_profile = np.reshape(bahraich_profile.values,(365,24))
+</pre>
+                      </div>
+                    </div>
+                    <p>This file describes five grid availability profiles, with each of the
+                      values corresponding to the probability that the grid will be available
+                      in the hour of the day specified on the left. Taking the sum of those
+                      values will give the average number of hours per day that the grid will
+                      be available. The profiles we have here are:</p>
+                    <ul class="simple">
+                      <li><code class="docutils literal notranslate"><span class="pre">none</span></code> has no grid
+                        availability at all throughout the day, equivalent to not being connected to the grid</li>
+                      <li><code class="docutils literal notranslate"><span class="pre">all</span></code> has full grid
+                        availability at all times</li>
+                      <li><code class="docutils literal notranslate"><span class="pre">daytime</span></code> has grid
+                        availability throughout the day (8:00 until 17:59) but never at night</li>
+                      <li><code class="docutils literal notranslate"><span class="pre">eight_hours</span></code> will
+                        provide approximately eight hours of power, randomly available throughout the day</li>
+                      <li><code class="docutils literal notranslate"><span class="pre">bahraich</span></code> is an
+                        example profile from data gathered from Bahraich district, where availability is higher in the
+                        early morning and late evening but lower during the daty and early evening.</li>
+                    </ul>
+                    <p>You can add further grid profiles by adding additional columns in the
+                      CSV file; they can have any name and values for grid availability must
+                      be in the range 0-1 as they represent probabilities. Save this file before
+                      moving on.</p>
+                  </div>
+                  <div class="section" id="getting-grid-availability-profiles">
+                    <h3>Getting grid availability profiles<a class="headerlink"
+                        href="#getting-grid-availability-profiles" title="Permalink to this headline">¶</a></h3>
+                    <p>Our goal is to get 20 years of grid availability data at an hourly
+                      resolution, represented as 0s (grid is unavailable) and 1s (grid is
+                      available), for each of the grid profiles listed in <em>Grid inputs</em>.</p>
+                    <p>First, check that you have already updated the location and filepaths of
+                      the <em>Grid</em> module and <strong>run the script (using the green arrow in the
+                        Spyder console)</strong>. Here we run it like so:</p>
+                    <div class="code ipython3 highlight-default notranslate">
+                      <div class="highlight">
+                        <pre><span></span><span class="kn">from</span> <span class="nn">Grid</span> <span class="k">import</span> <span class="n">Grid</span>
+</pre>
+                      </div>
+                    </div>
+                    <p>The <em>Grid</em> module is quite straightforward as it uses a single function
+                      to take an input grid profile, repeats the probability profile over a 20
+                      year period, uses binomial statistics to transsform them into a profile
+                      of 0s and 1s, and save this availability as a new output CSV file to use
+                      later. To do this for all of the grid profiles <strong>run the following
+                        function</strong> in your console:</p>
+                    <div class="highlight-default notranslate">
+                      <div class="highlight">
+                        <pre><span></span><span class="n">Grid</span><span class="p">()</span><span class="o">.</span><span class="n">get_lifetime_grid_status</span><span class="p">()</span>
+</pre>
+                      </div>
+                    </div>
+                    <p>Once this function is completed your new grid profiles will appear in
+                      your <em>Grid</em> folder and be ready to use, with their file names
+                      corresponding to the name of the status given in the input file (e.g.
+                      <code
+                        class="docutils literal notranslate"><span class="pre">eight_hours_grid_status.csv</span></code>).
+                      Given the nature of the calculation,
+                      this function will take a while to complete. This is normal and
+                      fortunately this process needs to be completed only once: the same grid
+                      availability profiles can be used in each of your investigations for
+                      reproducibility.
+                    </p>
+                  </div>
+                  <div class="section" id="id2">
+                    <h3>Extension and visualisation<a class="headerlink" href="#id2"
+                        title="Permalink to this headline">¶</a></h3>
+                    <p>Let’s take a closer look the <code
+                        class="docutils literal notranslate"><span class="pre">bahraich</span></code> grid profile by
+                      seeing how
+                      many hours per day it is available on average:</p>
+                    <div class="code ipython3 highlight-default notranslate">
+                      <div class="highlight">
+                        <pre><span></span><span class="n">bahraich_daily_hours</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">grid_times</span><span class="p">[</span><span class="s1">&#39;bahraich&#39;</span><span class="p">],</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">bahraich_daily_hours</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39; hours per day&#39;</span><span class="p">)</span>
+</pre>
+                      </div>
+                    </div>
+                    <div class="highlight-default notranslate">
+                      <div class="highlight">
+                        <pre><span></span><span class="mf">9.34</span> <span class="n">hours</span> <span class="n">per</span> <span class="n">day</span>
+</pre>
+                      </div>
+                    </div>
+                    <p>The <code class="docutils literal notranslate"><span class="pre">bahraich</span></code> profile
+                      gives an average of 9.34 hours of availability
+                      per day, relatively normal for that region of rural India but definitely
+                      has potential to be improved by installing a minigrid system. Now let’s
+                      plot the grid availability throughout the day</p>
+                    <div class="code ipython3 highlight-default notranslate">
+                      <div class="highlight">
+                        <pre><span></span><span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">24</span><span class="p">),</span><span class="n">grid_times</span><span class="p">[</span><span class="s1">&#39;bahraich&#39;</span><span class="p">],</span><span class="n">color</span><span class="o">=</span><span class="s1">&#39;k&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xticks</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">24</span><span class="p">,</span><span class="mi">2</span><span class="p">))</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">yticks</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mf">1.1</span><span class="p">,</span><span class="mf">0.2</span><span class="p">))</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s1">&#39;Hour of day&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s1">&#39;Probability&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s1">&#39;Probability of grid electricity being available&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre>
+                      </div>
+                    </div>
+                    <img alt="_images/output_24_0.png" src="_images/output_24_0.png" />
+                    <p>As we saw before, the grid is most likely to be available in the early
+                      morning and least likely to be available in the evening. We can also
+                      investigate the <code
+                        class="docutils literal notranslate"><span class="pre">bahraich</span></code> grid availability
+                      profile that we made
+                      using <code
+                        class="docutils literal notranslate"><span class="pre">Grid().get_lifetime_grid_status()</span></code>,
+                      for example by viewing
+                      whether the grid is available or not over the first year. Here we plot
+                      it using a colour scheme of white meaning the grid is available, or
+                      black when it is not (i.e.&nbsp;a blackout):</p>
+                    <div class="code ipython3 highlight-default notranslate">
+                      <div class="highlight">
+                        <pre><span></span><span class="n">bahraich_profile</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="s2">&quot;/Users/prs09/Documents/CLOVER/Locations/Bahraich/Generation/Grid/bahraich_grid_status.csv&quot;</span><span class="p">)</span>
+<span class="n">bahraich_profile</span> <span class="o">=</span> <span class="n">bahraich_profile</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">8760</span><span class="p">][</span><span class="s1">&#39;0&#39;</span><span class="p">]</span>
+<span class="n">bahraich_profile</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">bahraich_profile</span><span class="o">.</span><span class="n">values</span><span class="p">,(</span><span class="mi">365</span><span class="p">,</span><span class="mi">24</span><span class="p">))</span>
 
-g = sns.heatmap(bahraich_profile,
-                vmin = 0.0, vmax = 1.0,
-                cmap = &#39;Greys_r&#39;, cbar=False)
-g.set(xticks = range(0,24,2), xticklabels = range(0,24,2),
-      yticks = range(0,365,30), yticklabels = range(0,365,30),
-      xlabel = &#39;Hour of day&#39;, ylabel = &#39;Day of year&#39;,
-      title = &#39;Grid availability of the Bahraich profile&#39;)
-plt.xticks(rotation = 0)
-plt.tight_layout()
-plt.show()
-</pre></div>
-</div>
-<img alt="_images/output_26_0.png" src="_images/output_26_0.png" />
-<p>We can once again see the expected structure from the one-day
-availability input profile, but now with the randomness of day-to-day
-variations. There is greater availability in the mornings, but not
-always, and only on a very small number of days is power available
-between 19:00 and 21:00.</p>
-<p>We can also compare the <code class="docutils literal notranslate"><span class="pre">bahraich</span></code> input profile to the synthesised
-availability profile to make sure they match up:</p>
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>plt.plot(range(24),grid_times[&#39;bahraich&#39;],color=&#39;k&#39;,label=&#39;Input&#39;)
-plt.plot(range(24),np.mean(bahraich_profile,axis=0),color=&#39;r&#39;,label=&#39;Output&#39;)
-plt.legend()
-plt.xticks(range(0,24,2))
-plt.yticks(np.arange(0,1.1,0.2))
-plt.xlabel(&#39;Hour of day&#39;)
-plt.ylabel(&#39;Probability&#39;)
-plt.title(&#39;Probability of grid electricity being available&#39;)
-plt.show()
-</pre></div>
-</div>
-<img alt="_images/output_28_0.png" src="_images/output_28_0.png" />
-<p>As we should expect, the output profile matches the input profile
-closely, but not exactly, owing to the random process that was used to
-generate it.</p>
-</section>
-<section id="id3">
-<h3>Troubleshooting<a class="headerlink" href="#id3" title="Permalink to this headline"></a></h3>
-<p>Rerunning the <code class="docutils literal notranslate"><span class="pre">Grid().get_lifetime_grid_status()</span></code> function will create
-new profiles: these will share the same statistics as a previously
-generated grid status but not be exactly the same. If you want to
-generate a new grid status but also want to keep ones you have already
-generated, it is recommended that you save your original files in
-another location and copy them back to the <em>Grid</em> folder once your new
-profile is complete.</p>
-<p>CLOVER has the functionality to create grid profiles with variation
-throughout the day, but not throughout the year. If you want to include
-this, create an availability profile in a compatible format (20 years of
-hourly data, composed of 0s and 1s) using some other means, name it
-using the<code class="docutils literal notranslate"><span class="pre">[name]_grid_status.csv</span></code> format, and copy this CSV file to
-the <em>Grid</em> folder. CLOVER should be able to use this CSV file as an
-input later, the same as any others that it generates.</p>
-</section>
-</section>
-<section id="diesel">
-<h2>Diesel<a class="headerlink" href="#diesel" title="Permalink to this headline"></a></h2>
-<section id="id4">
-<h3>Preparation<a class="headerlink" href="#id4" title="Permalink to this headline"></a></h3>
-<p>The <em>Diesel</em> module is a passive script, meaning that the user needs to
-provide it with inputs but not actively run any of its functions (CLOVER
-does this automatically instead). In the current release of CLOVER
-diesel generation is treated as a backup source of power when the other
-sources are unable to provide electricity, filling in periods of
-blackouts after a simulation is complete to provide greater levels of
-reliability. This means it can be used as a backup source of power in a
-hybrid system (for example switching on automatically when renewable
-generation is not sufficient) but not as dispatchable generation coming
-on at user-specified times. This functionality will be included in the
-next update of CLOVER.</p>
-<p>First, <strong>complete the “Diesel inputs” CSV file</strong> in the <em>Diesel</em>
-folder, which itself is located in the <em>Generation</em> folder. Let’s take a
-look at the inputs:</p>
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>diesel_inputs = pd.read_csv(&quot;/Users/prs09/Documents/CLOVER/Locations/Bahraich/Generation/Diesel/Diesel inputs.csv&quot;)
-print(diesel_inputs)
-</pre></div>
-</div>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>    <span class="n">Diesel</span> <span class="n">consumption</span>   <span class="mf">0.4</span>    <span class="n">litres</span> <span class="n">per</span> <span class="n">kW</span> <span class="n">capacity</span> <span class="n">per</span> <span class="n">hour</span>
+<span class="n">g</span> <span class="o">=</span> <span class="n">sns</span><span class="o">.</span><span class="n">heatmap</span><span class="p">(</span><span class="n">bahraich_profile</span><span class="p">,</span>
+                <span class="n">vmin</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">vmax</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">,</span>
+                <span class="n">cmap</span> <span class="o">=</span> <span class="s1">&#39;Greys_r&#39;</span><span class="p">,</span> <span class="n">cbar</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="n">g</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">xticks</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">24</span><span class="p">,</span><span class="mi">2</span><span class="p">),</span> <span class="n">xticklabels</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">24</span><span class="p">,</span><span class="mi">2</span><span class="p">),</span>
+      <span class="n">yticks</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">365</span><span class="p">,</span><span class="mi">30</span><span class="p">),</span> <span class="n">yticklabels</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">365</span><span class="p">,</span><span class="mi">30</span><span class="p">),</span>
+      <span class="n">xlabel</span> <span class="o">=</span> <span class="s1">&#39;Hour of day&#39;</span><span class="p">,</span> <span class="n">ylabel</span> <span class="o">=</span> <span class="s1">&#39;Day of year&#39;</span><span class="p">,</span>
+      <span class="n">title</span> <span class="o">=</span> <span class="s1">&#39;Grid availability of the Bahraich profile&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xticks</span><span class="p">(</span><span class="n">rotation</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre>
+                      </div>
+                    </div>
+                    <img alt="_images/output_26_0.png" src="_images/output_26_0.png" />
+                    <p>We can once again see the expected structure from the one-day
+                      availability input profile, but now with the randomness of day-to-day
+                      variations. There is greater availability in the mornings, but not
+                      always, and only on a very small number of days is power available
+                      between 19:00 and 21:00.</p>
+                    <p>We can also compare the <code
+                        class="docutils literal notranslate"><span class="pre">bahraich</span></code> input profile to
+                      the synthesised
+                      availability profile to make sure they match up:</p>
+                    <div class="code ipython3 highlight-default notranslate">
+                      <div class="highlight">
+                        <pre><span></span><span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">24</span><span class="p">),</span><span class="n">grid_times</span><span class="p">[</span><span class="s1">&#39;bahraich&#39;</span><span class="p">],</span><span class="n">color</span><span class="o">=</span><span class="s1">&#39;k&#39;</span><span class="p">,</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;Input&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">24</span><span class="p">),</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">bahraich_profile</span><span class="p">,</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">),</span><span class="n">color</span><span class="o">=</span><span class="s1">&#39;r&#39;</span><span class="p">,</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;Output&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xticks</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">24</span><span class="p">,</span><span class="mi">2</span><span class="p">))</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">yticks</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mf">1.1</span><span class="p">,</span><span class="mf">0.2</span><span class="p">))</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s1">&#39;Hour of day&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s1">&#39;Probability&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s1">&#39;Probability of grid electricity being available&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre>
+                      </div>
+                    </div>
+                    <img alt="_images/output_28_0.png" src="_images/output_28_0.png" />
+                    <p>As we should expect, the output profile matches the input profile
+                      closely, but not exactly, owing to the random process that was used to
+                      generate it.</p>
+                  </div>
+                  <div class="section" id="id3">
+                    <h3>Troubleshooting<a class="headerlink" href="#id3" title="Permalink to this headline">¶</a></h3>
+                    <p>Rerunning the <code
+                        class="docutils literal notranslate"><span class="pre">Grid().get_lifetime_grid_status()</span></code>
+                      function will create
+                      new profiles: these will share the same statistics as a previously
+                      generated grid status but not be exactly the same. If you want to
+                      generate a new grid status but also want to keep ones you have already
+                      generated, it is recommended that you save your original files in
+                      another location and copy them back to the <em>Grid</em> folder once your new
+                      profile is complete.</p>
+                    <p>CLOVER has the functionality to create grid profiles with variation
+                      throughout the day, but not throughout the year. If you want to include
+                      this, create an availability profile in a compatible format (20 years of
+                      hourly data, composed of 0s and 1s) using some other means, name it
+                      using the<code
+                        class="docutils literal notranslate"><span class="pre">[name]_grid_status.csv</span></code>
+                      format, and copy this CSV file to
+                      the <em>Grid</em> folder. CLOVER should be able to use this CSV file as an
+                      input later, the same as any others that it generates.</p>
+                  </div>
+                </div>
+                <div class="section" id="diesel">
+                  <h2>Diesel<a class="headerlink" href="#diesel" title="Permalink to this headline">¶</a></h2>
+                  <div class="section" id="id4">
+                    <h3>Preparation<a class="headerlink" href="#id4" title="Permalink to this headline">¶</a></h3>
+                    <p>The <em>Diesel</em> module is a passive script, meaning that the user needs to
+                      provide it with inputs but not actively run any of its functions (CLOVER
+                      does this automatically instead). In the current release of CLOVER
+                      diesel generation is treated as a backup source of power when the other
+                      sources are unable to provide electricity, filling in periods of
+                      blackouts after a simulation is complete to provide greater levels of
+                      reliability. This means it can be used as a backup source of power in a
+                      hybrid system (for example switching on automatically when renewable
+                      generation is not sufficient) but not as dispatchable generation coming
+                      on at user-specified times. This functionality will be included in the
+                      next update of CLOVER.</p>
+                    <p>First, <strong>complete the “Diesel inputs” CSV file</strong> in the <em>Diesel</em>
+                      folder, which itself is located in the <em>Generation</em> folder. Let’s take a
+                      look at the inputs:</p>
+                    <div class="code ipython3 highlight-default notranslate">
+                      <div class="highlight">
+                        <pre><span></span><span class="n">diesel_inputs</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="s2">&quot;/Users/prs09/Documents/CLOVER/Locations/Bahraich/Generation/Diesel/Diesel inputs.csv&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">diesel_inputs</span><span class="p">)</span>
+</pre>
+                      </div>
+                    </div>
+                    <div class="highlight-default notranslate">
+                      <div class="highlight">
+                        <pre><span></span>    <span class="n">Diesel</span> <span class="n">consumption</span>   <span class="mf">0.4</span>    <span class="n">litres</span> <span class="n">per</span> <span class="n">kW</span> <span class="n">capacity</span> <span class="n">per</span> <span class="n">hour</span>
 <span class="mi">0</span>  <span class="n">Diesel</span> <span class="n">minimum</span> <span class="n">load</span>  <span class="mf">0.35</span>  <span class="n">Minimum</span> <span class="n">capacity</span> <span class="n">factor</span> <span class="p">(</span><span class="mf">0.0</span><span class="o">-</span><span class="mf">1.0</span><span class="p">)</span>
-</pre></div>
-</div>
-<p>This input file contains just two variables but more parameters
-governing the usage of the diesel generator are included elsewhere.
-<code class="docutils literal notranslate"><span class="pre">Diesel</span> <span class="pre">consumption</span></code> refers to the hourly fuel consumption of the
-generator per kW of output, for example a generator providing 10 kW
-would use 4.0 litres of fuel per hour. CLOVER assumes that this fuel
-consumption is constant per kW of power being supplied, although in real
-systems diesel generators may have varying efficiencies dependent on the
-load factor.</p>
-<p><code class="docutils literal notranslate"><span class="pre">Diesel</span> <span class="pre">minimum</span> <span class="pre">load</span></code> is the lowest load factor that the generator is
-permitted to operate at (for example to avoid mechanical issues or
-degradation), expressed as a fraction. For example, a 5 kW generator
-would be forced to provide at least 1.75 kW (5.0 kW x 0.35) of power to
-ensure it runs above the minimum load factor even if the load were less
-than this, with the remaining energy being dumped.</p>
-</section>
-<section id="getting-diesel-generation">
-<h3>Getting diesel generation<a class="headerlink" href="#getting-diesel-generation" title="Permalink to this headline"></a></h3>
-<p>As mentioned above, as a passive script CLOVER uses the <em>Diesel</em> module
-automatically so the user does not need to run any of its functions.
-Nevertheless it is good practice to ensure that the script runs as
-expected, so check that you have already updated the location and
-filepaths of the <em>Diesel</em> module and <strong>run the script (using the green
-arrow in the Spyder console)</strong>. Here we run it like so:</p>
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>from Diesel import Diesel
-</pre></div>
-</div>
-<p>Now the script is ready to be used by the rest of CLOVER.</p>
-</section>
-</section>
-</section>
+</pre>
+                      </div>
+                    </div>
+                    <p>This input file contains just two variables but more parameters
+                      governing the usage of the diesel generator are included elsewhere.
+                      <code
+                        class="docutils literal notranslate"><span class="pre">Diesel</span> <span class="pre">consumption</span></code>
+                      refers to the hourly fuel consumption of the
+                      generator per kW of output, for example a generator providing 10 kW
+                      would use 4.0 litres of fuel per hour. CLOVER assumes that this fuel
+                      consumption is constant per kW of power being supplied, although in real
+                      systems diesel generators may have varying efficiencies dependent on the
+                      load factor.
+                    </p>
+                    <p><code
+                        class="docutils literal notranslate"><span class="pre">Diesel</span> <span class="pre">minimum</span> <span class="pre">load</span></code>
+                      is the lowest load factor that the generator is
+                      permitted to operate at (for example to avoid mechanical issues or
+                      degradation), expressed as a fraction. For example, a 5 kW generator
+                      would be forced to provide at least 1.75 kW (5.0 kW x 0.35) of power to
+                      ensure it runs above the minimum load factor even if the load were less
+                      than this, with the remaining energy being dumped.</p>
+                  </div>
+                  <div class="section" id="getting-diesel-generation">
+                    <h3>Getting diesel generation<a class="headerlink" href="#getting-diesel-generation"
+                        title="Permalink to this headline">¶</a></h3>
+                    <p>As mentioned above, as a passive script CLOVER uses the <em>Diesel</em> module
+                      automatically so the user does not need to run any of its functions.
+                      Nevertheless it is good practice to ensure that the script runs as
+                      expected, so check that you have already updated the location and
+                      filepaths of the <em>Diesel</em> module and <strong>run the script (using the green
+                        arrow in the Spyder console)</strong>. Here we run it like so:</p>
+                    <div class="code ipython3 highlight-default notranslate">
+                      <div class="highlight">
+                        <pre><span></span><span class="kn">from</span> <span class="nn">Diesel</span> <span class="k">import</span> <span class="n">Diesel</span>
+</pre>
+                      </div>
+                    </div>
+                    <p>Now the script is ready to be used by the rest of CLOVER.</p>
+                  </div>
+                </div>
+              </div>
 
 
-           </div>
+            </div>
+
           </div>
-          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="general_setup.html" class="btn btn-neutral float-left" title="General setup" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-        <a href="load.html" class="btn btn-neutral float-right" title="Load profiles" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
-    </div>
+          <footer>
 
-  <hr/>
+            <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
 
-  <div role="contentinfo">
-    <p>&#169; Copyright 2020, Philip Sandwell.</p>
-  </div>
 
-  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
-    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
-    provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   
+              <a href="general_setup.html" class="btn btn-neutral float-left" title="General setup" accesskey="p"
+                rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
 
-</footer>
+            </div>
+
+
+            <hr />
+
+            <div role="contentinfo">
+              <p>
+
+                &copy; Copyright 2020, Philip Sandwell
+
+              </p>
+            </div>
+
+
+
+            Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+
+            <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+
+            provided by <a href="https://readthedocs.org">Read the Docs</a>.
+
+          </footer>
+
         </div>
       </div>
+
     </section>
+
   </div>
-  <script>
+
+
+  <script type="text/javascript">
       jQuery(function () {
           SphinxRtdTheme.Navigation.enable(true);
       });
-  </script> 
+  </script>
+
+
+
+
+
 
 </body>
+
 </html>
