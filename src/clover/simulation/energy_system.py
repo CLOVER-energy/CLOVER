@@ -1843,10 +1843,15 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
                 )
 
     # Process the various outputs into dataframes.
-    if energy_deficit is not None:
+    if energy_deficit is not None and len(energy_deficit) > 0:
         energy_deficit_frame = dict_to_dataframe(energy_deficit, logger)
-    if energy_surplus is not None:
+    else:
+        energy_deficit_frame = pd.DataFrame([0] * (end_hour - start_hour))
+
+    if energy_surplus is not None and len(energy_surplus) > 0:
         energy_surplus_frame = dict_to_dataframe(energy_surplus, logger)
+    else:
+        energy_surplus_frame = pd.DataFrame([0] * (end_hour - start_hour))
 
     if scenario.battery and electric_storage_size > 0:
         battery_health_frame = dict_to_dataframe(battery_health, logger)

@@ -2650,7 +2650,7 @@ class CumulativeResults:
     subsystem_ghgs: Dict[ResourceType, float] = None  # type: ignore
     system_cost: float = 0
     system_ghgs: float = 0
-    waste_produced: DefaultDict[WasteProduct, float] = defaultdict(float)
+    waste_produced: DefaultDict[WasteProduct, float] = None  # type: ignore
 
     def to_dict(self) -> Dict[str, Any]:
         """
