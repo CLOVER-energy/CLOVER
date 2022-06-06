@@ -407,6 +407,7 @@ class SimulationTests(_BaseTest):
             unmet_energy_fraction=0.018,
         )
 
+    @pytest.mark.integrest
     def test_diesel_grid_and_pv(self):
         """
         Tests the case with diesel, grid and PV.
@@ -441,6 +442,7 @@ class SimulationTests(_BaseTest):
             unmet_energy_fraction=0.016,
         )
 
+    @pytest.mark.integrest
     def test_diesel_grid_and_storage(self):
         """
         Tests the case with diesel, grid and storage.
@@ -475,6 +477,7 @@ class SimulationTests(_BaseTest):
             unmet_energy_fraction=0.026,
         )
 
+    @pytest.mark.integrest
     def test_diesel_and_grid(self):
         """
         Tests the case with diesel and grid.
@@ -506,6 +509,7 @@ class SimulationTests(_BaseTest):
             unmet_energy_fraction=0.026,
         )
 
+    @pytest.mark.integrest
     def test_diesel_pv_and_storage(self):
         """
         Tests the case with diesel, PV and storage.
@@ -541,6 +545,7 @@ class SimulationTests(_BaseTest):
             unmet_energy_fraction=0.011,
         )
 
+    @pytest.mark.integrest
     def test_diesel_and_pv(self):
         """
         Tests the case with diesel and PV.
@@ -575,6 +580,7 @@ class SimulationTests(_BaseTest):
             unmet_energy_fraction=0.011,
         )
 
+    @pytest.mark.integrest
     def test_diesel_and_storage(self):
         """
         Tests the case with diesel and storage.
@@ -609,6 +615,7 @@ class SimulationTests(_BaseTest):
             unmet_energy_fraction=0.021,
         )
 
+    @pytest.mark.integrest
     def test_diesel_only(self):
         """
         Tests the case with diesel only.
@@ -640,6 +647,7 @@ class SimulationTests(_BaseTest):
             unmet_energy_fraction=0.021,
         )
 
+    @pytest.mark.integrest
     def test_grid_pv_and_storage(self):
         """
         Tests the case with grid, PV and storage.
@@ -675,6 +683,7 @@ class SimulationTests(_BaseTest):
             unmet_energy_fraction=0.105,
         )
 
+    @pytest.mark.integrest
     def test_grid_and_pv(self):
         """
         Tests the case with grid and PV.
@@ -709,6 +718,7 @@ class SimulationTests(_BaseTest):
             unmet_energy_fraction=0.485,
         )
 
+    @pytest.mark.integrest
     def test_grid_and_storage(self):
         """
         Tests the case with grid and storage.
@@ -743,6 +753,7 @@ class SimulationTests(_BaseTest):
             unmet_energy_fraction=0.618,
         )
 
+    @pytest.mark.integrest
     def test_grid_only(self):
         """
         Tests the case with only grid.
@@ -774,6 +785,7 @@ class SimulationTests(_BaseTest):
             unmet_energy_fraction=0.618,
         )
 
+    @pytest.mark.integrest
     def test_pv_and_storage(self):
         """
         Tests the case with PV and storage.
@@ -809,6 +821,7 @@ class SimulationTests(_BaseTest):
             unmet_energy_fraction=0.306,
         )
 
+    @pytest.mark.integrest
     def test_pv_only(self):
         """
         Tests the case with only PV.
@@ -906,6 +919,7 @@ class SimulationTests(_BaseTest):
         self.assertEqual(info_file_data["simulation_1"]["final_storage_size"], 0.0)
         self.assertEqual(info_file_data["simulation_1"]["initial_storage_size"], 0.0)
 
+    @pytest.mark.integtest
     def test_storage_only(self):
         """
         Tests the case with only storage.
@@ -941,6 +955,7 @@ class SimulationTests(_BaseTest):
         )
 
     @unittest.skip("No need to test scenario with no power generation sources.")
+    # @pytest.mark.integrest
     def test_no_diesel_no_grid_no_pv_no_storage(self):
         """
         Tests the case with diesel, grid, PV and storage.
