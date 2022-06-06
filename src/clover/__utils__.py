@@ -18,12 +18,13 @@ issues and increase the ease of code alterations.
 
 """
 
+from collections import defaultdict
 import dataclasses
 import enum
 import logging
 import os
 
-from typing import Any, Dict, List, Optional, Set, Union
+from typing import Any, DefaultDict, Dict, List, Optional, Set, Union
 
 import json
 import numpy as np  # pylint: disable=import-error
@@ -2649,7 +2650,7 @@ class CumulativeResults:
     subsystem_ghgs: Dict[ResourceType, float] = None  # type: ignore
     system_cost: float = 0
     system_ghgs: float = 0
-    waste_produced: Dict[WasteProduct, float] = None  # type: ignore
+    waste_produced: DefaultDict[WasteProduct, float] = defaultdict(float)
 
     def to_dict(self) -> Dict[str, Any]:
         """
