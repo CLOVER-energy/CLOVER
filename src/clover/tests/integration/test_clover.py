@@ -19,7 +19,6 @@ not affect the overall running of the code.
 """
 
 import os
-import pytest
 import time
 import unittest
 
@@ -29,6 +28,7 @@ import shutil
 from distutils.dir_util import copy_tree
 from typing import Any, Dict, List, Optional, Union
 
+import pytest
 import yaml
 
 from clover.fileparser import INPUTS_DIRECTORY, SCENARIO_INPUTS_FILE
@@ -250,7 +250,7 @@ class SimulationTests(_BaseTest):
 
         return info_file_data
 
-    def _check_output(
+    def _check_output(  # pylint: disable=too-many-locals
         self,
         info_file_data: Dict[str, Any],
         *,
@@ -269,7 +269,7 @@ class SimulationTests(_BaseTest):
         initial_pv_size: float,
         final_storage_size: float,
         initial_storage_size: float,
-        lcue:float,
+        lcue: float,
         renewables_fraction: float,
         unmet_energy_fraction: float,
     ) -> None:
@@ -320,9 +320,12 @@ class SimulationTests(_BaseTest):
             average_daily_diesel,
         )
         self.assertEqual(
-            info_file_data["simulation_1"]["analysis_results"]["Diesel times"], diesel_times
+            info_file_data["simulation_1"]["analysis_results"]["Diesel times"],
+            diesel_times,
         )
-        self.assertEqual(info_file_data["simulation_1"]["diesel_capacity"], diesel_capacity)
+        self.assertEqual(
+            info_file_data["simulation_1"]["diesel_capacity"], diesel_capacity
+        )
 
         # Check grid parameters
         self.assertEqual(
@@ -359,7 +362,9 @@ class SimulationTests(_BaseTest):
             cumulative_pv_generation,
         )
         self.assertEqual(info_file_data["simulation_1"]["final_pv_size"], final_pv_size)
-        self.assertEqual(info_file_data["simulation_1"]["initial_pv_size"], initial_pv_size)
+        self.assertEqual(
+            info_file_data["simulation_1"]["initial_pv_size"], initial_pv_size
+        )
 
         # Check storage parameters
         self.assertEqual(
@@ -368,8 +373,12 @@ class SimulationTests(_BaseTest):
             ],
             average_daily_storage_energy,
         )
-        self.assertEqual(info_file_data["simulation_1"]["final_storage_size"], final_storage_size)
-        self.assertEqual(info_file_data["simulation_1"]["initial_storage_size"], initial_storage_size)
+        self.assertEqual(
+            info_file_data["simulation_1"]["final_storage_size"], final_storage_size
+        )
+        self.assertEqual(
+            info_file_data["simulation_1"]["initial_storage_size"], initial_storage_size
+        )
 
     @pytest.mark.integrest
     def test_diesel_grid_pv_and_storage(self):
