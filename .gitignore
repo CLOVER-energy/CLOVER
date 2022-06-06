@@ -13,6 +13,8 @@
 **/Locations
 # Ignore location folders
 **/locations
+# Ignore mac files
+*.DS_store
 # Ignore model outputs
 **/logs
 *.log*
