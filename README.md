@@ -36,6 +36,43 @@ This will fetch the latest stable version of CLOVER and install it into your cur
 
 To download the CLOVER source code directly from Github, simply click the green `Code` button near the top of this page, and select `Download ZIP`. Once downloaded, unpack the zip file into a directory of your choice. You will now be able to run CLOVER from a terminal in this directory. Use the `cd` command to change the directory of your terminal to the extracted folder in order to run CLOVER.
 
+#### Downloading Git LFS files
+
+For modelling certain renewable technologies, CLOVER utilises Github's large file store (LFS). If you don't intend to consider any thermal technologies, you can skip this section for now and jump straight to [Setting up your Python environment](#setting-up-your-python-environment). Otherwise, you should follow the steps below.
+
+##### Installing Git LFS
+
+If this is your first time using Git's LFS, you will need to install git lfs on your system:
+
+1. Check the version of `git` that you have by running `git --version`. You need to have version `1.8.2` of Git, or a later version, in order to install Git LFS. If your version is older than this, then you will need to upgrade your installation;
+2. Run `git lfs install` to install Git LFS on your system. If this command fails, you may need to download the `git-lfs` package manually:
+   a. For Linux machines, use the `curl` command:
+      
+      ```
+      curl -s https://packagecloud.io/install/repositories/github/git-lfs/script.deb.sh | sudo bash
+      ```
+   
+   b. For MacOS machines, use the `brew` command:
+      
+      ```
+      brew update
+      brew install git-lfs
+      ```
+   
+   c. For Windows machines, download the latest version of Git LFS from the developers' [Releases](https://github.com/git-lfs/git-lfs/releases) page.
+
+##### Fetching files
+
+Once you have installed Git LFS, you will need to download the LFS files manually. This can be done from the command-line:
+```
+git lfs fetch
+```
+to download the files, and
+```
+git lfs pull
+```
+to merge them into your local branches.
+
 ### Setting up your Python environment
 
 CLOVER is a scientific package and, as such, uses Python packages that may not have come installed by default on your system. These packages can be easily installed, provided that you are connected to the internet, either using `pip`, the python package manager, or `conda`, a virtual-environment-based system. Instructions for `conda` are provided below:
@@ -57,7 +94,7 @@ The CLOVER package is published as an installable package, `clover-energy`, whic
 ```
 python -m pip install clover-energy
 ```
-This should install all of the relevant dependencies for CLOVER as well as providing three installable executable files: `new-clover-location`, `update-api-token` and `clover`, which are described in more detail below.
+This should install all of the relevant dependencies for CLOVER as well as providing four installable executable files: `new-clover-location`, `update-api-token`, `clover-hpc` and `clover`, which are described in more detail below.
 
 Note, installing CLOVER in this way will install the package to your conda environment or local computer and will not provide you with easy access to the source code files. To develop CLOVER and have access to the source code, ensure that you download the code from GitHub.
 
@@ -196,9 +233,24 @@ or, if you have installed the `clover-energy` package
 clover --location <location_name> --optimisation
 ```
 
-##### Analysis
+#### Analysis
 
 When running CLOVER simulations, in-built graph plotting can be carried out by CLOVER. To activate this functionality, simply use the `--analyse` flag when initialising a CLOVER simulation from the command-line interface.
+
+### Running CLOVER on Imperial College London's high-performance computers
+
+The operation of CLOVER can be broken down into the same steps as per running CLOVER on a local machine. These are described in [Running CLOVER](#running-clover). On Imperial's high-performance computers (HPCs), this functionality is wrapped up in such a way that a single entry point is provided for launching runs and a single additional input file is required in addition to those described in [Completing input files](#completing-input-files). Consult the user guide or wiki pages for more information on what is required of the input jobs file.
+
+#### Launching jobs
+
+Once you have completed your input runs file, jobs are launched to the HPC by calling CLOVER's launch script from the command-line:
+```
+python -m src.clover.scripts.clover_hpc --runs <jobs_file>
+```
+or, if you have installed the `clover-energy` package
+```
+clover-hpc --runs <jobs_file>
+```
 
 ***
 

@@ -1,2 +1,5 @@
 # Set line endings to be LF rather than CRLF.
-* text eol=lf
+*.py text eol=lf
+*.txt text eol=lf
+*.yaml text eol=lf
+*.sav filter=lfs diff=lfs merge=lfs -text
