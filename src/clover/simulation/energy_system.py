@@ -230,12 +230,10 @@ def _calculate_electric_desalination_parameters(
         # Compute the maximum throughput
         maximum_water_throughput: float = min(
             sum(
-                [
-                    desalinator.maximum_output_capacity
-                    for desalinator in electric_desalinators
-                ]
+                desalinator.maximum_output_capacity
+                for desalinator in electric_desalinators
             ),
-            sum([source.maximum_output_capacity for source in feedwater_sources]),
+            sum(source.maximum_output_capacity for source in feedwater_sources),
         )
     else:
         brine_per_desalinated_litre = 0
@@ -447,10 +445,8 @@ def _calculate_renewable_cw_profiles(  # pylint: disable=too-many-locals, too-ma
 
         if (
             sum(
-                [
-                    feedwater_source.maximum_output_capacity
-                    for feedwater_source in feedwater_sources
-                ]
+                feedwater_source.maximum_output_capacity
+                for feedwater_source in feedwater_sources
             )
             < thermal_desalination_plant_input_flow_rate
         ):
@@ -539,10 +535,8 @@ def _calculate_renewable_cw_profiles(  # pylint: disable=too-many-locals, too-ma
                     ]
                     + 0.001
                     * sum(
-                        [
-                            source.input_resource_consumption[ResourceType.ELECTRIC]
-                            for source in required_feedwater_sources
-                        ]
+                        source.input_resource_consumption[ResourceType.ELECTRIC]
+                        for source in required_feedwater_sources
                     )
                 )
             ).values
@@ -1849,10 +1843,15 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
                 )
 
     # Process the various outputs into dataframes.
-    if energy_deficit is not None:
+    if energy_deficit is not None and len(energy_deficit) > 0:
         energy_deficit_frame = dict_to_dataframe(energy_deficit, logger)
-    if energy_surplus is not None:
+    else:
+        energy_deficit_frame = pd.DataFrame([0] * (end_hour - start_hour))
+
+    if energy_surplus is not None and len(energy_surplus) > 0:
         energy_surplus_frame = dict_to_dataframe(energy_surplus, logger)
+    else:
+        energy_surplus_frame = pd.DataFrame([0] * (end_hour - start_hour))
 
     if scenario.battery and electric_storage_size > 0:
         battery_health_frame = dict_to_dataframe(battery_health, logger)
@@ -2074,55 +2073,55 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
         # demand
         clean_water_blackout_times = ((unmet_clean_water > 0) * 1).astype(float)
 
-    # Clean-water system performance outputs
-    backup_desalinator_water_frame.columns = pd.Index(
-        [ColumnHeader.CLEAN_WATER_FROM_PRIORITISATION.value]
-    )
-    clean_water_blackout_times.columns = pd.Index(
-        [ColumnHeader.CLEAN_WATER_BLACKOUTS.value]
-    )
-    clean_water_demand_met_by_excess_energy_frame.columns = pd.Index(
-        [ColumnHeader.CLEAN_WATER_FROM_EXCESS_ELECTRICITY]  # type: ignore
-    )
-    clean_water_power_consumed.columns = pd.Index(
-        [ColumnHeader.POWER_CONSUMED_BY_DESALINATION.value]
-    )
-    clean_water_supplied_by_excess_energy_frame.columns = pd.Index(
-        [ColumnHeader.CLEAN_WATER_FROM_EXCESS_ELECTRICITY.value]
-    )
-    conventional_cw_supplied_frame.columns = pd.Index(
-        [ColumnHeader.CLEAN_WATER_FROM_CONVENTIONAL_SOURCES.value]
-    )
-    excess_energy_used_desalinating_frame.columns = pd.Index(
-        [ColumnHeader.EXCESS_POWER_CONSUMED_BY_DESALINATION.value]
-    )
-    hourly_cw_tank_storage_frame.columns = pd.Index(
-        [ColumnHeader.CW_TANK_STORAGE_PROFILE.value]
-    )
-    processed_total_cw_load.columns = pd.Index([ColumnHeader.TOTAL_CW_LOAD.value])
-    renewable_thermal_cw_produced.columns = pd.Index(
-        [ColumnHeader.CLEAN_WATER_FROM_THERMAL_RENEWABLES.value]
-    )
-    renewable_cw_used_directly.columns = pd.Index(
-        [ColumnHeader.RENEWABLE_CW_USED_DIRECTLY.value]
-    )
-    storage_water_supplied_frame.columns = pd.Index(
-        [ColumnHeader.CLEAN_WATER_FROM_STORAGE.value]
-    )
-    # FIXME: This calculation needs fixing to take into account different operation
-    # scenarios for the desalination plant.
-    thermal_desalination_plant_renewable_fraction = pd.DataFrame(
-        [1] * (end_hour - start_hour)
-    )
-    thermal_desalination_plant_renewable_fraction.columns = pd.Index(
-        [ColumnHeader.DESALINATION_PLANT_RENEWABLE_FRACTION.value]
-    )
-    total_cw_used.columns = pd.Index([ColumnHeader.TOTAL_CW_CONSUMED.value])
-    total_cw_supplied.columns = pd.Index(  # type: ignore
-        [ColumnHeader.TOTAL_CW_SUPPLIED.value]
-    )
-    unmet_clean_water.columns = pd.Index([ColumnHeader.UNMET_CLEAN_WATER.value])
-    water_surplus_frame.columns = pd.Index([ColumnHeader.WATER_SURPLUS.value])
+        # Clean-water system performance outputs
+        backup_desalinator_water_frame.columns = pd.Index(
+            [ColumnHeader.CLEAN_WATER_FROM_PRIORITISATION.value]
+        )
+        clean_water_blackout_times.columns = pd.Index(
+            [ColumnHeader.CLEAN_WATER_BLACKOUTS.value]
+        )
+        clean_water_demand_met_by_excess_energy_frame.columns = pd.Index(
+            [ColumnHeader.CLEAN_WATER_FROM_EXCESS_ELECTRICITY]  # type: ignore
+        )
+        clean_water_power_consumed.columns = pd.Index(
+            [ColumnHeader.POWER_CONSUMED_BY_DESALINATION.value]
+        )
+        clean_water_supplied_by_excess_energy_frame.columns = pd.Index(
+            [ColumnHeader.CLEAN_WATER_FROM_EXCESS_ELECTRICITY.value]
+        )
+        conventional_cw_supplied_frame.columns = pd.Index(
+            [ColumnHeader.CLEAN_WATER_FROM_CONVENTIONAL_SOURCES.value]
+        )
+        excess_energy_used_desalinating_frame.columns = pd.Index(
+            [ColumnHeader.EXCESS_POWER_CONSUMED_BY_DESALINATION.value]
+        )
+        hourly_cw_tank_storage_frame.columns = pd.Index(
+            [ColumnHeader.CW_TANK_STORAGE_PROFILE.value]
+        )
+        processed_total_cw_load.columns = pd.Index([ColumnHeader.TOTAL_CW_LOAD.value])
+        renewable_thermal_cw_produced.columns = pd.Index(
+            [ColumnHeader.CLEAN_WATER_FROM_THERMAL_RENEWABLES.value]
+        )
+        renewable_cw_used_directly.columns = pd.Index(
+            [ColumnHeader.RENEWABLE_CW_USED_DIRECTLY.value]
+        )
+        storage_water_supplied_frame.columns = pd.Index(
+            [ColumnHeader.CLEAN_WATER_FROM_STORAGE.value]
+        )
+        # FIXME: This calculation needs fixing to take into account different operation
+        # scenarios for the desalination plant.
+        thermal_desalination_plant_renewable_fraction = pd.DataFrame(
+            [1] * (end_hour - start_hour)
+        )
+        thermal_desalination_plant_renewable_fraction.columns = pd.Index(
+            [ColumnHeader.DESALINATION_PLANT_RENEWABLE_FRACTION.value]
+        )
+        total_cw_used.columns = pd.Index([ColumnHeader.TOTAL_CW_CONSUMED.value])
+        total_cw_supplied.columns = pd.Index(  # type: ignore
+            [ColumnHeader.TOTAL_CW_SUPPLIED.value]
+        )
+        unmet_clean_water.columns = pd.Index([ColumnHeader.UNMET_CLEAN_WATER.value])
+        water_surplus_frame.columns = pd.Index([ColumnHeader.WATER_SURPLUS.value])
 
     if scenario.pv_t:
         if buffer_tank_temperature is None:

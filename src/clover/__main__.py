@@ -17,7 +17,7 @@ the clover module from the command-line interface.
 
 """
 
-__version__ = "5.1.0a1.dev2"
+__version__ = "5.1.0b1"
 
 import datetime
 import logging
@@ -740,7 +740,6 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
 
     if any(scenario.desalination_scenario is not None for scenario in scenarios):
         # Create a set of all the conventional clean-water sources available.
-        # @ BenWinchester - Repair conventional sources logic.
         conventional_sources: Set[str] = {
             source
             for scenario in scenarios
@@ -775,7 +774,6 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
 
     if any(scenario.hot_water_scenario is not None for scenario in scenarios):
         # Create a set of all the conventional hot-water sources available.
-        # @ BenWinchester - Repair conventional sources logic.
         conventional_sources = {
             source
             for scenario in scenarios
@@ -1049,22 +1047,23 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
             )
 
             if parsed_args.analyse:
-                # Generate and save the various plots.
-                analysis.plot_outputs(  # type: ignore
-                    grid_times[scenario.grid_type],
-                    grid_profile,
-                    initial_cw_hourly_loads,
-                    initial_electric_hourly_loads,
-                    initial_hw_hourly_loads,
-                    simulation.end_year - simulation.start_year,
-                    simulation_output_directory,
-                    output,
-                    simulation_number,
-                    system_performance_outputs,
-                    total_loads,
-                    total_solar_data[solar.SolarDataType.ELECTRICITY.value]
-                    * minigrid.pv_panel.pv_unit,
-                )
+                if not parsed_args.skip_plots:
+                    # Generate and save the various plots.
+                    analysis.plot_outputs(  # type: ignore
+                        grid_times[scenario.grid_type],
+                        grid_profile,
+                        initial_cw_hourly_loads,
+                        initial_electric_hourly_loads,
+                        initial_hw_hourly_loads,
+                        simulation.end_year - simulation.start_year,
+                        simulation_output_directory,
+                        output,
+                        simulation_number,
+                        system_performance_outputs,
+                        total_loads,
+                        total_solar_data[solar.SolarDataType.ELECTRICITY.value]
+                        * minigrid.pv_panel.pv_unit,
+                    )
 
                 # Carry out an appraisal of the system.
                 if electric_yearly_load_statistics is None:

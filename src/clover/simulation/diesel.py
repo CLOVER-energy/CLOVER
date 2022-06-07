@@ -281,7 +281,6 @@ def get_diesel_fuel_usage(
     below_minimum = (
         load_factor <= diesel_generator.minimum_load
     ) * diesel_generator.minimum_load
-    # @@@ Investigate variable reassignment here.
     load_factor = pd.DataFrame(
         diesel_times.values * (above_minimum.values + below_minimum.values)
     )
