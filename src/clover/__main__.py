@@ -740,7 +740,6 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
 
     if any(scenario.desalination_scenario is not None for scenario in scenarios):
         # Create a set of all the conventional clean-water sources available.
-        # @ BenWinchester - Repair conventional sources logic.
         conventional_sources: Set[str] = {
             source
             for scenario in scenarios
@@ -775,7 +774,6 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
 
     if any(scenario.hot_water_scenario is not None for scenario in scenarios):
         # Create a set of all the conventional hot-water sources available.
-        # @ BenWinchester - Repair conventional sources logic.
         conventional_sources = {
             source
             for scenario in scenarios

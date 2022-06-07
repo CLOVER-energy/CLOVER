@@ -18,13 +18,12 @@ issues and increase the ease of code alterations.
 
 """
 
-from collections import defaultdict
 import dataclasses
 import enum
 import logging
 import os
 
-from typing import Any, DefaultDict, Dict, List, Optional, Set, Union
+from typing import Any, Dict, List, Optional, Set, Union
 
 import json
 import numpy as np  # pylint: disable=import-error
