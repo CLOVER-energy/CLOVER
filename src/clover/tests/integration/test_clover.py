@@ -882,6 +882,7 @@ class SimulationTests(_BaseTest):
         info_file_data = self._run_clover_simulation(
             False, False, True, True, pv_size=20, storage_size=25
         )
+
         self._check_output(
             info_file_data,
             average_daily_diesel=0.0,
@@ -917,90 +918,27 @@ class SimulationTests(_BaseTest):
         info_file_data = self._run_clover_simulation(
             False, False, True, False, pv_size=20
         )
-
-        # Check appraisal criteria
-        self.assertEqual(
-            info_file_data["simulation_1"]["system_appraisal"]["criteria"]["blackouts"],
-            0.826,
+        self._check_output(
+            info_file_data,
+            average_daily_diesel=0.0,
+            average_daily_grid_energy=0.0,
+            average_daily_grid_times=0.0,
+            average_daily_renewables_energy=4.271,
+            average_daily_storage_energy=0.0,
+            blackouts=0.826,
+            cumulative_cost=41931.345,
+            cumulative_ghgs=256032.195,
+            cumulative_pv_generation=36685.0,
+            diesel_capacity=0.0,
+            diesel_times=0.0,
+            final_pv_size=19.0,
+            final_storage_size=0.0,
+            initial_pv_size=20.0,
+            initial_storage_size=0.0,
+            lcue=3.249,
+            renewables_fraction=1.0,
+            unmet_energy_fraction=0.801,
         )
-        self.assertEqual(
-            info_file_data["simulation_1"]["system_appraisal"]["criteria"][
-                "cumulative_cost"
-            ],
-            41931.345,
-        )
-        self.assertEqual(
-            info_file_data["simulation_1"]["system_appraisal"]["criteria"][
-                "cumulative_ghgs"
-            ],
-            256032.195,
-        )
-        self.assertEqual(
-            info_file_data["simulation_1"]["system_appraisal"]["criteria"]["lcue"],
-            3.249,
-        )
-        self.assertEqual(
-            info_file_data["simulation_1"]["system_appraisal"]["criteria"][
-                "renewables_fraction"
-            ],
-            1.0,
-        )
-        self.assertEqual(
-            info_file_data["simulation_1"]["system_appraisal"]["criteria"][
-                "unmet_energy_fraction"
-            ],
-            0.801,
-        )
-
-        # Check diesel parameters
-        self.assertEqual(
-            info_file_data["simulation_1"]["analysis_results"][
-                "Average daily diesel energy supplied / kWh"
-            ],
-            0.0,
-        )
-        self.assertEqual(
-            info_file_data["simulation_1"]["analysis_results"]["Diesel times"], 0.0
-        )
-        self.assertEqual(info_file_data["simulation_1"]["diesel_capacity"], 0.0)
-
-        # Check grid parameters
-        self.assertEqual(
-            info_file_data["simulation_1"]["analysis_results"][
-                "Average daily grid energy supplied / kWh"
-            ],
-            0.0,
-        )
-        self.assertNotIn(
-            "Average grid availability / hours/day",
-            info_file_data["simulation_1"]["analysis_results"],
-        )
-
-        # Check PV parameters
-        self.assertEqual(
-            info_file_data["simulation_1"]["analysis_results"][
-                "Average daily renewables energy used / kWh"
-            ],
-            4.271,
-        )
-        self.assertEqual(
-            info_file_data["simulation_1"]["analysis_results"][
-                "Cumulative pv generation / kWh"
-            ],
-            36685.0,
-        )
-        self.assertEqual(info_file_data["simulation_1"]["final_pv_size"], 19.0)
-        self.assertEqual(info_file_data["simulation_1"]["initial_pv_size"], 20.0)
-
-        # Check storage parameters
-        self.assertEqual(
-            info_file_data["simulation_1"]["analysis_results"][
-                "Average daily stored energy supplied / kWh"
-            ],
-            0.0,
-        )
-        self.assertEqual(info_file_data["simulation_1"]["final_storage_size"], 0.0)
-        self.assertEqual(info_file_data["simulation_1"]["initial_storage_size"], 0.0)
 
     @pytest.mark.integtest
     def test_storage_only(self):
