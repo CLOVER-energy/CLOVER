@@ -73,7 +73,6 @@ __all__ = (
     "parse_scenario_inputs",
 )
 
-
 # Battery:
 #   Keyword used for parsing battery-related information.
 BATTERY: str = "battery"
@@ -791,7 +790,7 @@ def _parse_diesel_inputs(  # pylint: disable=too-many-statements
         diesel_water_heater = None
         diesel_water_heater_costs = None
         diesel_water_heater_emissions = None
-
+    # print (diesel_costs)
     return (
         diesel_costs,
         diesel_emissions,
@@ -2176,6 +2175,63 @@ def _parse_transmission_inputs(
         transmitters,
     )
 
+# Grid inputs file:
+
+#   Keyword used for parsing diesel-generator information.
+GRID: str = "grid"
+GRID_EMISSIONS: str="emissions"
+
+# # The relative path to the grid inputs file.
+
+GRID_INPUTS_FILE: str = os.path.join("generation", "grid_inputs.yaml")
+
+def _parse_grid_inputs(
+    inputs_directory_relative_path: str,
+    logger: Logger,
+    scenarios: List[Scenario],
+) -> Tuple [
+    float,
+    Dict[str, float],
+]:
+
+    grid_inputs_filepath = os.path.join(
+        inputs_directory_relative_path, GRID_INPUTS_FILE
+    )
+    grid_inputs = read_yaml(grid_inputs_filepath, logger)
+    if not isinstance(grid_inputs, dict):
+        raise InputFileError(
+            "Grid inputs", "Grid input file is not of type `list`."
+        )
+    logger.info("Grid inputs successfully parsed.")
+
+    exchange_rate=grid_inputs["exchange_rate"] #why if we ADD [0] this doesn't work
+
+    # Determine the emissions
+    grid_emissions = grid_inputs["emissions"]
+        # entry [GRID_EMISSIONS]
+        # for entry in grid_inputs[GRID]
+    diesel_5A_costs= grid_inputs["grid"][0]["costs"]
+    diesel_10A_costs= grid_inputs["grid"][1]["costs"]
+    edl_threshold_1=grid_inputs["grid"][2]["costs"]
+    edl_threshold_2=grid_inputs["grid"][3]["costs"]
+    edl_threshold_3=grid_inputs["grid"][4]["costs"]
+    edl_threshold_4=grid_inputs["grid"][5]["costs"]
+    edl_threshold_5=grid_inputs["grid"][6]["costs"]
+    thresholds=[]
+    for i in range (2,7):
+        thresholds.append(grid_inputs["grid"][i]["lower_bound"])    
+    return (
+        exchange_rate,
+        grid_emissions,
+        diesel_5A_costs,
+        diesel_10A_costs,
+        edl_threshold_1,
+        edl_threshold_2,
+        edl_threshold_3,
+        edl_threshold_4,
+        edl_threshold_5,
+        thresholds,
+    )
 
 def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
     debug: bool,
@@ -2363,6 +2419,7 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
         inputs_directory_relative_path,
         SIMULATIONS_INPUTS_FILE,
     )
+
     simulations_file_contents = read_yaml(
         simulations_inputs_filepath,
         logger,
@@ -2410,7 +2467,7 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
         converters, debug, inputs_directory_relative_path, logger, scenarios
     )
     logger.info("Energy-system inputs successfully parsed.")
-
+   
     generation_inputs_filepath = os.path.join(
         inputs_directory_relative_path, GENERATION_INPUTS_FILE
     )
