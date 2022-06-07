@@ -11,7 +11,7 @@
 
 echo "Running test suite: black, mypy, pylint and pytest."
 echo -e "Running black...\e[0m"
-python3.7 -m black src/clover
+python3.7 -m black src/clover --check --diff
 echo -e "\e[1mBlack formatter done, see above for details.\e[0m"
 echo -e "\e[1mRunning mypy...\e[0m"
 python3.7 -m mypy src/clover
