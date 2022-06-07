@@ -1423,7 +1423,9 @@ def appraise_system(  # pylint: disable=too-many-locals
         )
 
         # Workaround for mutuable objects.
-        previous_system.cumulative_results.waste_produced = collections.defaultdict(float)
+        previous_system.cumulative_results.waste_produced = collections.defaultdict(
+            float
+        )
 
     # Compute the additions made to the system.
     buffer_tank_addition: int = (
