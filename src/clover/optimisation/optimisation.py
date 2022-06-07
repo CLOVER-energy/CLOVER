@@ -113,6 +113,7 @@ def _fetch_optimum_system(
 def _find_optimum_system(  # pylint: disable=too-many-locals
     conventional_cw_source_profiles: Optional[Dict[WaterSource, pd.DataFrame]],
     converters: Dict[str, Converter],
+    disable_tqdm: bool,
     end_year: int,
     finance_inputs: Dict[str, Any],
     ghg_inputs: Dict[str, Any],
@@ -147,6 +148,8 @@ def _find_optimum_system(  # pylint: disable=too-many-locals
     the simulation is an edge case
 
     Inputs:
+        - disable_tqdm:
+            Whether to disable the tqdm progress bars (True) or display them (False).
         - end_year:
             The end year of the simulation run currently being considered.
         - largest_converter_sizes:
@@ -200,7 +203,11 @@ def _find_optimum_system(  # pylint: disable=too-many-locals
     )
 
     for optimisation_criterion, optimum_system in tqdm(
-        optimum_systems.items(), desc="checking upper bound", leave=False, unit="system"
+        optimum_systems.items(),
+        desc="checking upper bound",
+        disable=disable_tqdm,
+        leave=False,
+        unit="system",
     ):
         # Check if optimum system was the largest system simulated
         while (
@@ -260,6 +267,7 @@ def _find_optimum_system(  # pylint: disable=too-many-locals
                 largest_cw_pvt_system_size,
                 largest_cw_tank_size,
                 converters,
+                disable_tqdm,
                 end_year,
                 finance_inputs,
                 ghg_inputs,
@@ -322,6 +330,7 @@ def _simulation_iteration(  # pylint: disable=too-many-locals, too-many-statemen
     cw_pvt_system_size: SolarSystemSize,
     cw_tanks: TankSize,
     converters: Dict[str, Converter],
+    disable_tqdm: bool,
     finance_inputs: Dict[str, Any],
     ghg_inputs: Dict[str, Any],
     grid_profile: Optional[pd.DataFrame],
@@ -369,6 +378,8 @@ def _simulation_iteration(  # pylint: disable=too-many-locals, too-many-statemen
             profiles.
         - cw_tanks:
             Range of clean-water tanks.
+        - disable_tqdm:
+            Whether to disable the tqdm progress bars (True) or display them (False).
         - finance_inputs:
             The financial input information.
         - ghg_inputs:
@@ -474,6 +485,7 @@ def _simulation_iteration(  # pylint: disable=too-many-locals, too-many-statemen
         int(cw_pvt_system_size.max),
         conventional_cw_source_profiles,
         converters_from_sizing(simulation_converter_sizes),
+        disable_tqdm,
         storage_sizes.max,
         grid_profile,
         int(hw_pvt_system_size.max),
@@ -501,6 +513,7 @@ def _simulation_iteration(  # pylint: disable=too-many-locals, too-many-statemen
         location,
         logger,
         previous_system,
+        optimisation.scenario,
         simulation_results,
         start_year,
         system_details,
@@ -528,7 +541,7 @@ def _simulation_iteration(  # pylint: disable=too-many-locals, too-many-statemen
             "The largest system was found to be insufficient. Threshold criteria: %s",
             json.dumps(
                 {
-                    str(key): value
+                    str(key.value): value
                     for key, value in largest_system_appraisal.criteria.items()
                 },
                 indent=4,
@@ -578,6 +591,7 @@ def _simulation_iteration(  # pylint: disable=too-many-locals, too-many-statemen
             int(cw_pvt_size_max),
             conventional_cw_source_profiles,
             converters_from_sizing(simulation_converter_sizes),
+            disable_tqdm,
             storage_size_max,
             grid_profile,
             int(hw_pvt_size_max),
@@ -605,6 +619,7 @@ def _simulation_iteration(  # pylint: disable=too-many-locals, too-many-statemen
             location,
             logger,
             previous_system,
+            optimisation.scenario,
             simulation_results,
             start_year,
             system_details,
@@ -664,7 +679,7 @@ def _simulation_iteration(  # pylint: disable=too-many-locals, too-many-statemen
         "System was found to be sufficient. Threshold criteria: %s",
         json.dumps(
             {
-                str(key): value
+                str(key.value): value
                 for key, value in largest_system_appraisal.criteria.items()
             },
             indent=4,
@@ -874,6 +889,7 @@ def _simulation_iteration(  # pylint: disable=too-many-locals, too-many-statemen
     # information.
     _ = recursive_iteration(
         conventional_cw_source_profiles,
+        disable_tqdm,
         end_year,
         finance_inputs,
         ghg_inputs,
@@ -930,6 +946,7 @@ def _optimisation_step(  # pylint: disable=too-many-locals
     cw_pvt_system_size: SolarSystemSize,
     cw_tanks: TankSize,
     converters: Dict[str, Converter],
+    disable_tqdm: bool,
     finance_inputs: Dict[str, Any],
     ghg_inputs: Dict[str, Any],
     grid_profile: Optional[pd.DataFrame],
@@ -968,6 +985,8 @@ def _optimisation_step(  # pylint: disable=too-many-locals
             Range of clean-water tank sizes.
         - converters:
             The `list` of converters available to the system.
+        - disable_tqdm:
+            Whether to disable the tqdm progress bars (True) or display them (False).
         - finance_inputs:
             The finance input information.
         - grid_profile:
@@ -1036,6 +1055,7 @@ def _optimisation_step(  # pylint: disable=too-many-locals
         cw_pvt_system_size,
         cw_tanks,
         converters,
+        disable_tqdm,
         finance_inputs,
         ghg_inputs,
         grid_profile,
@@ -1064,6 +1084,7 @@ def _optimisation_step(  # pylint: disable=too-many-locals
     optimum_systems = _find_optimum_system(
         conventional_cw_source_profiles,
         converters,
+        disable_tqdm,
         end_year,
         finance_inputs,
         ghg_inputs,
@@ -1100,6 +1121,7 @@ def _optimisation_step(  # pylint: disable=too-many-locals
 def multiple_optimisation_step(  # pylint: disable=too-many-locals, too-many-statements
     conventional_cw_source_profiles: Optional[Dict[WaterSource, pd.DataFrame]],
     converters: Dict[str, Converter],
+    disable_tqdm: bool,
     finance_inputs: Dict[str, Any],
     ghg_inputs: Dict[str, Any],
     grid_profile: Optional[pd.DataFrame],
@@ -1132,6 +1154,8 @@ def multiple_optimisation_step(  # pylint: disable=too-many-locals, too-many-sta
     Inputs:
         - converters:
             The `list` of converters available to the system;
+        - disable_tqdm:
+            Whether to disable the tqdm progress bars (True) or display them (False).
         - grid_profile:
             The grid-availability profile;
         - irradiance_data:
@@ -1340,6 +1364,7 @@ def multiple_optimisation_step(  # pylint: disable=too-many-locals, too-many-sta
     for _ in tqdm(
         range(int(optimisation_parameters.number_of_iterations)),
         desc="optimisation steps",
+        disable=disable_tqdm,
         leave=False,
         unit="step",
     ):
@@ -1360,6 +1385,7 @@ def multiple_optimisation_step(  # pylint: disable=too-many-locals, too-many-sta
                 input_cw_tanks.step,
             ),
             converters,
+            disable_tqdm,
             finance_inputs,
             ghg_inputs,
             grid_profile,

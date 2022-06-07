@@ -853,20 +853,31 @@ class OptimisationParameters:
 THRESHOLD_CRITERION_TO_MODE: Dict[Criterion, ThresholdMode] = {
     Criterion.BLACKOUTS: ThresholdMode.MAXIMUM,
     Criterion.CLEAN_WATER_BLACKOUTS: ThresholdMode.MAXIMUM,
+    Criterion.CUMULATIVE_BRINE: ThresholdMode.MAXIMUM,
     Criterion.CUMULATIVE_COST: ThresholdMode.MAXIMUM,
     Criterion.CUMULATIVE_GHGS: ThresholdMode.MAXIMUM,
     Criterion.CUMULATIVE_SYSTEM_COST: ThresholdMode.MAXIMUM,
+    Criterion.CW_DEMAND_COVERED: ThresholdMode.MINIMUM,
     Criterion.EMISSIONS_INTENSITY: ThresholdMode.MAXIMUM,
+    Criterion.HW_DEMAND_COVERED: ThresholdMode.MINIMUM,
+    Criterion.HW_RENEWABLES_FRACTION: ThresholdMode.MAXIMUM,
+    Criterion.HW_SOLAR_THERMAL_FRACTION: ThresholdMode.MINIMUM,
     Criterion.KEROSENE_COST_MITIGATED: ThresholdMode.MINIMUM,
     Criterion.KEROSENE_DISPLACEMENT: ThresholdMode.MINIMUM,
     Criterion.KEROSENE_GHGS_MITIGATED: ThresholdMode.MINIMUM,
+    Criterion.LCU_ENERGY: ThresholdMode.MAXIMUM,
     Criterion.LCUE: ThresholdMode.MAXIMUM,
-    Criterion.RENEWABLES_FRACTION: ThresholdMode.MINIMUM,
+    Criterion.LCUH: ThresholdMode.MAXIMUM,
+    Criterion.LCUW: ThresholdMode.MAXIMUM,
+    Criterion.RENEWABLES_ELECTRICITY_FRACTION: ThresholdMode.MINIMUM,
+    Criterion.TOTAL_BRINE: ThresholdMode.MAXIMUM,
     Criterion.TOTAL_COST: ThresholdMode.MAXIMUM,
     Criterion.TOTAL_GHGS: ThresholdMode.MAXIMUM,
     Criterion.TOTAL_SYSTEM_COST: ThresholdMode.MAXIMUM,
     Criterion.TOTAL_SYSTEM_GHGS: ThresholdMode.MAXIMUM,
-    Criterion.UNMET_ENERGY_FRACTION: ThresholdMode.MAXIMUM,
+    Criterion.UNMET_CLEAN_WATER_FRACTION: ThresholdMode.MAXIMUM,
+    Criterion.UNMET_ELECTRICITY_FRACTION: ThresholdMode.MAXIMUM,
+    Criterion.UNMET_HOT_WATER_FRACTION: ThresholdMode.MAXIMUM,
 }
 
 
@@ -902,13 +913,18 @@ def get_sufficient_appraisals(
             threshold_criterion,
             threshold_value,
         ) in optimisation.threshold_criteria.items():
+            # Skip threshold criteria that are not in use.
+            appraisal_criterion = appraisal.criteria[threshold_criterion]
+            if appraisal_criterion is None:
+                continue
+
             # Add a `True` marker if the threshold criteria are met, otherwise add
             # False.
             if (
                 THRESHOLD_CRITERION_TO_MODE[threshold_criterion]
                 == ThresholdMode.MAXIMUM
             ):
-                if appraisal.criteria[threshold_criterion] <= threshold_value:
+                if appraisal_criterion <= threshold_value:
                     criteria_met.add(True)
                 else:
                     criteria_met.add(False)
@@ -916,7 +932,7 @@ def get_sufficient_appraisals(
                 THRESHOLD_CRITERION_TO_MODE[threshold_criterion]
                 == ThresholdMode.MINIMUM
             ):
-                if appraisal.criteria[threshold_criterion] >= threshold_value:
+                if appraisal_criterion >= threshold_value:
                     criteria_met.add(True)
                 else:
                     criteria_met.add(False)
@@ -930,6 +946,7 @@ def get_sufficient_appraisals(
 
 def recursive_iteration(  # pylint: disable=too-many-locals
     conventional_cw_source_profiles: Optional[Dict[WaterSource, pd.DataFrame]],
+    disable_tqdm: bool,
     end_year: int,
     finance_inputs: Dict[str, Any],
     ghg_inputs: Dict[str, Any],
@@ -1035,6 +1052,7 @@ def recursive_iteration(  # pylint: disable=too-many-locals
             int(component_sizes[RenewableEnergySource.CLEAN_WATER_PVT]),
             conventional_cw_source_profiles,
             converters,
+            disable_tqdm,
             component_sizes[ImpactingComponent.STORAGE],
             grid_profile,
             int(component_sizes[RenewableEnergySource.HOT_WATER_PVT]),
@@ -1062,6 +1080,7 @@ def recursive_iteration(  # pylint: disable=too-many-locals
             location,
             logger,
             previous_system,
+            optimisation.scenario,
             simulation_results,
             start_year,
             system_details,
@@ -1076,6 +1095,7 @@ def recursive_iteration(  # pylint: disable=too-many-locals
     for size in tqdm(
         sizes,
         desc=f"{component.value} size options",
+        disable=disable_tqdm,
         leave=False,
         unit=unit,
     ):
@@ -1089,6 +1109,7 @@ def recursive_iteration(  # pylint: disable=too-many-locals
         # Call the function recursively.
         sufficient_appraisals = recursive_iteration(
             conventional_cw_source_profiles,
+            disable_tqdm,
             end_year,
             finance_inputs,
             ghg_inputs,
@@ -1134,7 +1155,7 @@ def recursive_iteration(  # pylint: disable=too-many-locals
                     "occured as there were no criteria attached to the appraisal. More "
                     "information can be found in the logger directory.",
                 )
-            logger.debug(
+            logger.info(
                 "Threshold criteria: %s",
                 json.dumps(
                     {
@@ -1151,6 +1172,7 @@ def recursive_iteration(  # pylint: disable=too-many-locals
 
 
 def save_optimisation(
+    disable_tqdm: bool,
     logger: Logger,
     optimisation_inputs: OptimisationParameters,
     optimisation_number: int,
@@ -1163,6 +1185,8 @@ def save_optimisation(
     Saves simulation outputs to a .csv file
 
     Inputs:
+        - disable_tqdm:
+            Whether to disable the tqdm progress bars (True) or display them (False).
         - logger:
             The logger to use for the run.
         - optimisation_inputs:
@@ -1203,7 +1227,13 @@ def save_optimisation(
         "system_appraisals": system_appraisals_dict,
     }
 
-    with tqdm(total=1, desc="saving output files", leave=False, unit="file") as pbar:
+    with tqdm(
+        total=1,
+        desc="saving output files",
+        disable=disable_tqdm,
+        leave=False,
+        unit="file",
+    ) as pbar:
         # Save the optimisation data.
         logger.info("Saving optimisation output.")
         with open(

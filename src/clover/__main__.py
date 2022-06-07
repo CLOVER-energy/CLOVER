@@ -17,7 +17,7 @@ the clover module from the command-line interface.
 
 """
 
-__version__ = "5.0.1"
+__version__ = "5.1.0a1.dev2"
 
 import datetime
 import logging
@@ -58,7 +58,6 @@ from .__utils__ import (
     InternalError,
     Location,
     ResourceType,
-    SystemAppraisal,
     get_logger,
     InputFileError,
     LOCATIONS_FOLDER_NAME,
@@ -78,7 +77,7 @@ AUTO_GENERATED_FILES_DIRECTORY = "auto_generated"
 # Clover header string:
 #   The ascii text to display when starting CLOVER.
 CLOVER_HEADER_STRING = """
-
+\033[38;5;40m
         (((((*    /(((
         ((((((( ((((((((
    (((((((((((( ((((((((((((
@@ -95,7 +94,7 @@ CLOVER_HEADER_STRING = """
                (
                  (
                    (
-
+\033[0m
 
 
        Continuous Lifetime Optimisation of Variable Electricity Resources
@@ -204,6 +203,7 @@ def _prepare_water_system(
     available_conventional_sources: Set[str],
     auto_generated_files_directory: str,
     device_utilisations: Dict[load.Device, pd.DataFrame],
+    disable_tqdm: bool,
     location: Location,
     logger: logging.Logger,
     parsed_args: Namespace,
@@ -237,6 +237,8 @@ def _prepare_water_system(
         - conventional_water_source_profiles:
             The availability profiles of the conventional water sources being
             considered.
+        - disable_tqdm:
+            Whether to disable the tqdm progress bars (True) or display them (False).
         - initial_loads:
             The initial hourly loads placed on the conventional water system.
         - total_load:
@@ -287,10 +289,11 @@ def _prepare_water_system(
         ) = load.process_load_profiles(
             auto_generated_files_directory,
             device_utilisations,
-            resource_type,
+            disable_tqdm,
             location,
             logger,
             parsed_args.regenerate,
+            resource_type,
         )
     except InputFileError:
         print(
@@ -322,6 +325,7 @@ def _prepare_water_system(
     try:
         conventional_water_source_profiles = (
             water_source.get_lifetime_water_source_status(
+                disable_tqdm,
                 os.path.join(auto_generated_files_directory, resource_type.value),
                 resource_type.value.split("_")[0],
                 location,
@@ -376,7 +380,7 @@ def _prepare_water_system(
 
 
 def main(  # pylint: disable=too-many-locals, too-many-statements
-    args: List[Any],
+    args: List[Any], disable_tqdm: bool = False, run_number: Optional[int] = None
 ) -> None:
     """
     The main module for CLOVER executing all functionality as appropriate.
@@ -384,13 +388,19 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
     Inputs:
         - args
             The command-line arguments, passed in as a list.
+        - disable_tqdm:
+            Whether to disable the tqdm progress bars (True) or display them (False).
+        - run_number:
+            Used to differentiate between runs if multiple runs are being carried out
+            for the same location.
 
     """
 
     # Parse the command-line arguments and instantiate the logger.
     parsed_args = argparser.parse_args(args)
+    run_number_string: str = f"_{run_number}" if run_number is not None else ""
     logger = get_logger(
-        f"{parsed_args.location}_{LOGGER_NAME}",
+        f"{parsed_args.location}_{LOGGER_NAME}{run_number_string}",
         parsed_args.verbose,
     )
     logger.info("CLOVER run initiated. Options specified: %s", " ".join(args))
@@ -695,10 +705,11 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
             ) = load.process_load_profiles(
                 auto_generated_files_directory,
                 device_utilisations,
-                load.ResourceType.ELECTRIC,
+                disable_tqdm,
                 location,
                 logger,
                 parsed_args.regenerate,
+                load.ResourceType.ELECTRIC,
                 electric_load_profile,
             )
         except InputFileError:
@@ -747,6 +758,7 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
             conventional_sources,
             auto_generated_files_directory,
             device_utilisations,
+            disable_tqdm,
             location,
             logger,
             parsed_args,
@@ -780,6 +792,7 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
             conventional_sources,
             auto_generated_files_directory,
             device_utilisations,
+            disable_tqdm,
             location,
             logger,
             parsed_args,
@@ -799,6 +812,7 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
         logger.info("Generating grid-availability profiles.")
         try:
             grid.get_lifetime_grid_status(
+                disable_tqdm,
                 os.path.join(auto_generated_files_directory, "grid"),
                 grid_times,
                 logger,
@@ -848,9 +862,7 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
     )
     logger.info("Total solar output successfully computed and saved.")
 
-    if any(scenario.desalination_scenario is not None for scenario in scenarios) or any(
-        scenario.hot_water_scenario is not None for scenario in scenarios
-    ):
+    if any(scenario.desalination_scenario is not None for scenario in scenarios):
         logger.info("Generating and saving total weather output file.")
         total_weather_data = (  # pylint: disable=unused-variable
             weather.total_weather_output(
@@ -887,13 +899,24 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
     )
 
     # Load the relevant kerosene profile.
-    with open(
-        os.path.join(auto_generated_files_directory, KEROSENE_USAGE_FILE), "r"
-    ) as f:
-        kerosene_usage = pd.read_csv(f, header=None, index_col=False)
+    try:
+        with open(
+            os.path.join(auto_generated_files_directory, KEROSENE_USAGE_FILE), "r"
+        ) as f:
+            kerosene_usage = pd.read_csv(f, header=None, index_col=False)
+    except FileNotFoundError:
+        logger.error(
+            "%sKerosene usage file '%s' could not be found in '%s'. Check that this "
+            "file has not been deleted.%s",
+            BColours.fail,
+            KEROSENE_USAGE_FILE,
+            auto_generated_files_directory,
+            BColours.endc,
+        )
+        raise
 
-        # Remove the index from the file.
-        kerosene_usage.reset_index(drop=True)
+    # Remove the index from the file.
+    kerosene_usage.reset_index(drop=True)
 
     # Determine whether any default sizes have been overrided.
     overrided_default_sizes: bool = (
@@ -947,7 +970,10 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
         print(f"Running a simulation with:\n{simulation_string}")
 
         for simulation_number, simulation in enumerate(
-            tqdm(simulations, desc="simulations", unit="simulation"), 1
+            tqdm(
+                simulations, desc="simulations", disable=disable_tqdm, unit="simulation"
+            ),
+            1,
         ):
             logger.info(
                 "Carrying out simulation %s of %s.", simulation_number, len(simulations)
@@ -963,6 +989,7 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
                     else 0,
                     conventional_cw_source_profiles,
                     converters,
+                    disable_tqdm,
                     parsed_args.storage_size,
                     grid_profile,
                     parsed_args.hot_water_pvt_system_size
@@ -1014,7 +1041,7 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
 
             # Compute the key results.
             key_results = analysis.get_key_results(  # type: ignore
-                grid_times[scenario.grid_type],
+                grid_profile,
                 simulation.end_year - simulation.start_year,
                 system_performance_outputs,
                 total_solar_data[solar.SolarDataType.ELECTRICITY.value]
@@ -1045,7 +1072,7 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
                         "No electric yearly load statistics were computed for the "
                         "system despite these being needed to appraise the system."
                     )
-                system_appraisal: Optional[SystemAppraisal] = appraise_system(
+                system_appraisal = appraise_system(
                     electric_yearly_load_statistics,
                     simulation.end_year,
                     finance_inputs,
@@ -1053,6 +1080,7 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
                     location,
                     logger,
                     None,
+                    scenario,
                     system_performance_outputs,
                     simulation.start_year,
                     system_details,
@@ -1063,6 +1091,7 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
 
             # Save the simulation output.
             save_simulation(
+                disable_tqdm,
                 key_results,
                 logger,
                 output,
@@ -1111,7 +1140,13 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
             )
 
         for optimisation_number, optimisation in enumerate(
-            tqdm(optimisations, desc="optimisations", unit="optimisation"), 1
+            tqdm(
+                optimisations,
+                desc="optimisations",
+                disable=disable_tqdm,
+                unit="optimisation",
+            ),
+            1,
         ):
             # Determine the scenario to use for the simulation.
             logger.info("Checking scenario parameters.")
@@ -1138,6 +1173,7 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
                 time_delta, optimisation_results = multiple_optimisation_step(
                     conventional_cw_source_profiles,
                     converters,
+                    disable_tqdm,
                     finance_inputs,
                     ghg_inputs,
                     grid_profile,
@@ -1187,6 +1223,7 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
 
             # Save the optimisation output.
             save_optimisation(
+                disable_tqdm,
                 logger,
                 optimisation_inputs,
                 optimisation_number,

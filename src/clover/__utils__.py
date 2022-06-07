@@ -52,6 +52,7 @@ __all__ = (
     "HEAT_CAPACITY_OF_WATER",
     "HotWaterScenario",
     "hourly_profile_to_daily_sum",
+    "HOURS_PER_YEAR",
     "HTFMode",
     "InputFileError",
     "InternalError",
@@ -69,6 +70,7 @@ __all__ = (
     "ProgrammerJudgementFault",
     "RAW_CLOVER_PATH",
     "read_yaml",
+    "RegressorType",
     "RenewableEnergySource",
     "ResourceType",
     "RenewablesNinjaError",
@@ -77,6 +79,7 @@ __all__ = (
     "Simulation",
     "SystemAppraisal",
     "SystemDetails",
+    "WasteProduct",
     "ZERO_CELCIUS_OFFSET",
 )
 
@@ -91,7 +94,7 @@ CONVENTIONAL_SOURCES: str = "conventional_sources"
 
 # Cut off time:
 #   The time up and to which information about the load of each device will be returned.
-CUT_OFF_TIME: int = 72  # [hours]
+CUT_OFF_TIME: int = 480  # [hours]
 
 # Default scenario:
 #   The name of the default scenario to be used in CLOVER.
@@ -309,7 +312,7 @@ class CleanWaterScenario:
 
     """
 
-    conventional_sources: List[str]
+    conventional_sources: Set[str]
     mode: CleanWaterMode
     sources: List[str]
 
@@ -337,11 +340,14 @@ class ColumnHeader(enum.Enum):
     """
     Contains column header information.
 
+    - BATTERY_HEALTH:
+        The health of the batteries installed.
+
     - BLACKOUTS:
         The times for which the electricity system experienced a blackout in supply.
 
-    - BATTERY_HEALTH:
-        The health of the batteries installed.
+    - BRINE:
+        The brine produced by the system as a waste product.
 
     - BUFFER_TANK_OUTPUT:
         The output of the buffer tank(s) installed.
@@ -361,11 +367,11 @@ class ColumnHeader(enum.Enum):
     - CLEAN_WATER_FROM_PRIORITISATION:
         The clean water which was supplied through prioritising clean-water loads.
 
-    - CLEAN_WATER_FROM_RENEWABLES:
-        The clean water which was supplied by renewable technologies.
-
     - CLEAN_WATER_FROM_STORAGE:
         The clean water which was supplied from tank storage.
+
+    - CLEAN_WATER_FROM_THERMAL_RENEWABLES:
+        The clean water which was supplied by renewable technologies.
 
     - CW_PVT_ELECTRICITY_SUPPLIED:
         The electricity supplied by the clean-water PV-T.
@@ -373,11 +379,18 @@ class ColumnHeader(enum.Enum):
     - CW_PVT_ELECTRICITY_SUPPLIED_PER_KWP:
         The electricity supplied by the clean-water PV-T per kWp installed.
 
+    - CW_PVT_INPUT_TEMPERATURE:
+        The input temperature of the clean-water PV-T installed.
+
     - CW_PVT_OUTPUT_TEMPERATURE:
         The output temperature of the clean-water PV-T installed.
 
     - CW_TANK_STORAGE_PROFILE:
         The storage profile of the clean-water tanks.
+
+    - DESALINATION_PLANT_RENEWABLE_FRACTION
+        The fraction of the thermal energy which was supplied to the desalination
+        plant(s) which was renewable.
 
     - DIESEL_ENERGY_SUPPLIED:
         The energy which was supplied by the diesel generators present in the system.
@@ -415,8 +428,11 @@ class ColumnHeader(enum.Enum):
     - HOUSEHOLDS:
         The number of households present in the community.
 
+    - HW_PVT_INPUT_TEMPERATURE:
+        The input temperature of HTF entering the hot-water PV-T collectors.
+
     - HW_PVT_OUTPUT_TEMPERATURE:
-        The output temperature of HTF leaving the hot-water PV-T installed.
+        The output temperature of HTF leaving the hot-water PV-T collectors.
 
     - HW_PVT_ELECTRICITY_SUPPLIED:
         The electricity supplied by the hot-water PV-T.
@@ -424,7 +440,10 @@ class ColumnHeader(enum.Enum):
     - HW_PVT_ELECTRICITY_SUPPLIED_PER_KWP:
         The electricity supplied by the hot-water PV-T per kWp of installed PV.
 
-    - HW_RENEWABLES_FRACTION:
+    - HW_PVT_ELECTRICITY_SUPPLIED_PER_UNIT:
+        The electricity supplied by the hot-water PV-T per unit of installed PV-T panel.
+
+    - HW_SOLAR_THERMAL_FRACTION:
         The fraction of hot-water demand that was met through renewables.
 
     - HW_TANK_OUTPUT:
@@ -432,6 +451,13 @@ class ColumnHeader(enum.Enum):
 
     - HW_TANK_TEMPERATURE:
         The temperature profile of the hot-water tank(s) installed.
+
+    - HW_TEMPERATURE_GAIN:
+        The temperature gain of the water passing through the hot-water system compared
+        with the hot-water input temperature.
+
+    - HW_VOL_DEMAND_COVERED:
+        The volumetric demand covered by the hot-water tank(s) installed.
 
     - INSTALLATION_YEAR:
         The year in which the installation was made.
@@ -512,8 +538,9 @@ class ColumnHeader(enum.Enum):
 
     """
 
-    BLACKOUTS = "Blackouts"
     BATTERY_HEALTH = "Battery health"
+    BLACKOUTS = "Blackouts"
+    BRINE = "Brine produced (l)"
     BUFFER_TANK_OUTPUT = "Buffer tank output volume (l)"
     BUFFER_TANK_TEMPERATURE = "Buffer tank temperature (degC)"
     CLEAN_WATER_BLACKOUTS = "Clean water blackouts"
@@ -524,14 +551,20 @@ class ColumnHeader(enum.Enum):
         "Clean water supplied using excess minigrid energy (l)"
     )
     CLEAN_WATER_FROM_PRIORITISATION = "Clean water supplied via backup desalination (l)"
-    CLEAN_WATER_FROM_RENEWABLES = "Renewable clean water produced (l)"
     CLEAN_WATER_FROM_STORAGE = "Clean water supplied via tank storage (l)"
+    CLEAN_WATER_FROM_THERMAL_RENEWABLES = (
+        "Renewable clean water produced directly and thermally (l)"
+    )
     CW_PVT_ELECTRICITY_SUPPLIED = "Clean-water PV-T electric energy supplied (kWh)"
     CW_PVT_ELECTRICITY_SUPPLIED_PER_KWP = (
         "Clean-water PV-T electric energy supplied per kWp"
     )
+    CW_PVT_INPUT_TEMPERATURE = "Clean-water PV-T input temperature (degC)"
     CW_PVT_OUTPUT_TEMPERATURE = "Clean-water PV-T output temperature (degC)"
     CW_TANK_STORAGE_PROFILE = "Water held in clean-water storage tanks (l)"
+    DESALINATION_PLANT_RENEWABLE_FRACTION = (
+        "Thermal desalination plant(s) renewable fraction"
+    )
     DIESEL_ENERGY_SUPPLIED = "Diesel energy (kWh)"
     DIESEL_FUEL_USAGE = "Diesel fuel usage (l)"
     DIESEL_GENERATOR_TIMES = "Diesel times"
@@ -539,20 +572,27 @@ class ColumnHeader(enum.Enum):
     DISCOUNT_RATE = "Discount rate"
     DUMPED_ELECTRICITY = "Dumped energy (kWh)"
     ELECTRICITY_FROM_STORAGE = "Storage energy supplied (kWh)"
+    ELECTRICITY_DEFICIT = "Electricity deficit (kWh)"
     EXCESS_POWER_CONSUMED_BY_DESALINATION = (
         "Excess power consumed desalinating clean water (kWh)"
     )
     GRID_ENERGY = "Grid energy (kWh)"
     HOURLY_STORAGE_PROFILE = "Hourly storage (kWh)"
     HOUSEHOLDS = "Households"
+    HW_PVT_INPUT_TEMPERATURE = "Hot-water PV-T input temperature (degC)"
     HW_PVT_OUTPUT_TEMPERATURE = "Hot-water PV-T output temperature (degC)"
     HW_PVT_ELECTRICITY_SUPPLIED = "Hot-water PV-T electric energy supplied (kWh)"
     HW_PVT_ELECTRICITY_SUPPLIED_PER_KWP = (
         "Hot-water PV-T electric energy supplied per kWp"
     )
-    HW_RENEWABLES_FRACTION = "Renewable hot-water fraction"
+    HW_PVT_ELECTRICITY_SUPPLIED_PER_UNIT = (
+        "Hot-water PV-T electric energy supplied per unit panel"
+    )
+    HW_SOLAR_THERMAL_FRACTION = "Renewable hot-water fraction"
     HW_TANK_OUTPUT = "Hot-water tank volume supplied (l)"
     HW_TANK_TEMPERATURE = "Hot-water tank temperature (degC)"
+    HW_TEMPERATURE_GAIN = "Hot water temperature gain (degC)"
+    HW_VOL_DEMAND_COVERED = "Hot-water demand covered fraction"
     INSTALLATION_YEAR = "Installation year"
     INVERTER_COST = "Inverter cost ($/kW)"
     INVERTER_SIZE = "Inverter size (kW)"
@@ -680,9 +720,7 @@ def dict_to_dataframe(
             f"Misuse of internal helper functions. See {LOGGER_DIRECTORY} for details."
         )
 
-    frame = pd.DataFrame(
-        list(input_dict.values()), index=list(input_dict.keys())
-    ).sort_index()
+    frame = pd.DataFrame(list(input_dict.values()), index=list(input_dict)).sort_index()
 
     if not isinstance(frame, pd.DataFrame):
         logger.error(
@@ -708,10 +746,14 @@ class DieselMode(enum.Enum):
     - CYCLE_CHARGING:
         The diesel generator is operated as a dynamic 'cycle-charging' generator.
 
+    - DISABLED:
+        No diesel generator is present.
+
     """
 
     BACKUP = "backup"
     CYCLE_CHARGING = "cycle_charging"
+    DISABLED = "disabled"
 
 
 @dataclasses.dataclass
@@ -876,14 +918,18 @@ class KeyResults:
     """
     Contains the key results from a simulation.
 
-    .. attribute:: average_pv_generation
-        The average energy generated by the PV set up per day, measured in kWh/day.
+    .. attribute:: average_renewable_generation
+        The average energy generated by the renewable set up per day, measured in
+        kWh/day.
 
     .. attribute:: blackouts
         The fraction of time for which blackouts occurred.
 
     .. attribute:: clean_water_blackouts
         The fraction of time for which the clean-water system experienced a blackout.
+
+    .. attribute:: cumulative_brine
+        The total brine that was produced by the system, measured in litres.
 
     .. attribute:: cumulative_pv_generation
         The total electric power that was generated by the PV installation over its
@@ -902,20 +948,22 @@ class KeyResults:
     average_daily_cw_supplied: Optional[float] = None
     average_daily_diesel_energy_supplied: Optional[float] = None
     average_daily_dumped_energy: Optional[float] = None
-    average_daily_energy_consumption: Optional[float] = None
+    average_daily_electricity_consumption: Optional[float] = None
     average_daily_grid_energy_supplied: Optional[float] = None
     average_daily_hw_demand_covered: Optional[float] = None
     average_daily_hw_pvt_generation: Optional[float] = None
+    average_daily_hw_renewable_fraction: Optional[float] = None
     average_daily_hw_supplied: Optional[float] = None
     average_daily_pv_energy_supplied: Optional[float] = None
     average_daily_renewables_energy_supplied: Optional[float] = None
     average_daily_renewables_energy_used: Optional[float] = None
     average_daily_stored_energy_supplied: Optional[float] = None
     average_daily_unmet_energy: Optional[float] = None
-    average_pv_generation: Optional[float] = None
     average_pvt_electric_generation: Optional[float] = None
+    average_renewable_generation: Optional[float] = None
     blackouts: Optional[float] = None
     clean_water_blackouts: Optional[float] = None
+    cumulative_brine: Optional[float] = None
     cumulative_cw_load: Optional[float] = None
     cumulative_cw_pvt_generation: Optional[float] = None
     cumulative_cw_supplied: Optional[float] = None
@@ -966,22 +1014,26 @@ class KeyResults:
             data_dict["Average daily dumped energy / kWh"] = round(
                 self.average_daily_dumped_energy, 3
             )
-        if self.average_daily_energy_consumption is not None:
+        if self.average_daily_electricity_consumption is not None:
             data_dict["Average daily energy consumption / kWh"] = round(
-                self.average_daily_energy_consumption, 3
+                self.average_daily_electricity_consumption, 3
             )
         if self.average_daily_grid_energy_supplied is not None:
             data_dict["Average daily grid energy supplied / kWh"] = round(
                 self.average_daily_grid_energy_supplied, 3
             )
         if self.average_daily_hw_demand_covered is not None:
-            data_dict["Average hot-water demand covered"] = round(
+            data_dict["Average daily hot-water demand covered"] = round(
                 self.average_daily_hw_demand_covered, 3
             )
         if self.average_daily_hw_pvt_generation is not None:
             data_dict[
                 "Average daily hot-water PV-T electricity supplied / kWh"
             ] = round(self.average_daily_hw_pvt_generation, 3)
+        if self.average_daily_hw_renewable_fraction is not None:
+            data_dict["Average daily hot-water renewable fraction"] = round(
+                self.average_daily_hw_renewable_fraction, 3
+            )
         if self.average_daily_hw_supplied is not None:
             data_dict["Average daily hot water supplied / litres"] = round(
                 self.average_daily_hw_supplied, 3
@@ -1002,9 +1054,9 @@ class KeyResults:
             data_dict["Average daily unmet energy / kWh"] = round(
                 self.average_daily_unmet_energy, 3
             )
-        if self.average_pv_generation is not None:
+        if self.average_renewable_generation is not None:
             data_dict["Average pv generation / kWh/day"] = round(
-                self.average_pv_generation, 3
+                self.average_renewable_generation, 3
             )
         if self.average_pvt_electric_generation is not None:
             data_dict["Average pv-t electric generation / kWh/day"] = round(
@@ -1015,6 +1067,10 @@ class KeyResults:
         if self.clean_water_blackouts is not None:
             data_dict[ColumnHeader.CLEAN_WATER_BLACKOUTS.value] = round(
                 self.clean_water_blackouts, 3
+            )
+        if self.cumulative_brine is not None:
+            data_dict["Cumulative brine produced / litres"] = round(
+                self.cumulative_brine, 3
             )
         if self.cumulative_cw_load is not None:
             data_dict["Cumulative clean-water load / litres"] = round(
@@ -1124,6 +1180,9 @@ class ResourceType(enum.Enum):
     - CLEAN_WATER:
         Represents a clean-water load.
 
+    - COOLING:
+        Represents a cooling load.
+
     - DIESEL:
         Represents the resource of diesel.
 
@@ -1156,6 +1215,7 @@ class ResourceType(enum.Enum):
     """
 
     CLEAN_WATER = "clean_water"
+    COOLING = "cooling"
     DIESEL = "diesel"
     ELECTRIC = "electricity"
     GENERIC_WATER = "generic_water"
@@ -1171,6 +1231,7 @@ class ResourceType(enum.Enum):
 RESOURCE_NAME_TO_RESOURCE_TYPE_MAPPING = {
     "clean_water": ResourceType.CLEAN_WATER,
     "cold_water": ResourceType.CLEAN_WATER,
+    "cooling": ResourceType.COOLING,
     "diesel_consumption": ResourceType.DIESEL,
     ELECTRIC_POWER: ResourceType.ELECTRIC,
     "feedwater": ResourceType.UNCLEAN_WATER,
@@ -1406,6 +1467,9 @@ class Criterion(enum.Enum):
         Denotes the portion of time for which the clean-water system experienced a
         blackout.
 
+    - CUMULATIVE_BRINE:
+        Denotes the cumulative brine produced by the system.
+
     - CUMULATIVE_COST:
         Denotes the cumulative cost incurred.
 
@@ -1418,8 +1482,26 @@ class Criterion(enum.Enum):
     - CUMULATIVE_SYSTEM_GHGS:
         Denotes the cumulative GHGs emitted by the system.
 
+    - CW_DEMAND_COVERED:
+        The fraction of the clean-water demand that was covered by the system.
+
+    - CW_RENEWABLES_FRACTION:
+        The fraction of the clean-water demand that was met through renewables.
+
+    - CW_SOLAR_THERMAL_FRACTION:
+        The fraction of the solar-thermal demand that was met through
+        solar-thermal technologies.
+
     - EMISSIONS_INTENSITY:
         Denotes the intensity of GHG emissions emitted.
+
+    - HW_RENEWABLES_FRACTION:
+        The fraction of HW demand that was met through renewables, whether it's
+        solar-thermal energy being used directly to heat the water, or auxiliary
+        electricity from the minigrid.
+
+    - HW_SOLAR_THERMAL_FRACTION:
+        The fraction of HW demand that was met through solar-thermal renewables.
 
     - KEROSENE_COST_MITIGATED:
         The cost of kerosene which was not incurred through use of the system.
@@ -1430,11 +1512,39 @@ class Criterion(enum.Enum):
     - KEROSENE_GHGS_MITIGATED:
         The mitigated GHGs by not consuming kerosene.
 
-    - LCUE:
-        Denotes the levilised code of electricity.
+    - LCU_ENERGY:
+        Denotes the levilised cost of energy where both heating (for clean-water
+        production and hot-water heating) and electricity have been combined.
 
-    - RENEWABLES_FRACTION:
+    - LCUE:
+        Denotes the levilised cost of electricity.
+
+    - LCUH:
+        Denotes the levilised cost of heating.
+
+    - LCUW:
+        Denotes the levilised cost of clean water produced.
+
+    - RENEWABLES_CLEAN_WATER_FRACTION:
+        The fraction of the clean water produced by the system which was generated using
+        renewables.
+
+    - RENEWABLES_ELECTRICITY_FRACTION:
         The fraction of energy which was emitted renewably.
+
+    - RENEWABLES_HOT_WATER_FRACTION:
+        The fraction of hot-water heating that was carried out using renewables.
+
+    - SOLAR_THERMAL_CLEAN_WATER_FRACTION:
+        The fraction of the clean-water demand which was met using solar-thermal heat,
+        both PV-T and solar-thermal collectors if present.
+
+    - SOLAR_THERMAL_HOT_WATER_FRACTION:
+        The fraction of the hot-water demand which was met using solar-thermal heat,
+        both PV-T and solar-thermal collectors if present.
+
+    - TOTAL_BRINE:
+        The total brine produced.
 
     - TOTAL_COST:
         The total cost incurred.
@@ -1448,28 +1558,47 @@ class Criterion(enum.Enum):
     - TOTAL_SYSTEM_GHGS:
         The total GHGs emitted by the system.
 
-    - UNMET_ENERGY_FRACTION:
+    - UNMET_CLEAN_WATER_FRACTION:
+        The fraction of clean-water demand which went unmet.
+
+    - UNMET_ELECTRICITY_FRACTION:
         The fraction of energy which went unmet.
+
+    - UNMET_HOT_WATER_FRACTION:
+        The fraction of hot-water demand which went unmet.
 
     """
 
     BLACKOUTS = "blackouts"
     CLEAN_WATER_BLACKOUTS = "clean_water_blackouts"
+    CUMULATIVE_BRINE = "cumulative_brine"
     CUMULATIVE_COST = "cumulative_cost"
     CUMULATIVE_GHGS = "cumulative_ghgs"
     CUMULATIVE_SYSTEM_COST = "cumulative_system_cost"
     CUMULATIVE_SYSTEM_GHGS = "cumulative_system_ghgs"
+    CW_DEMAND_COVERED = "cw_demand_covered"
+    CW_RENEWABLES_FRACTION = "cw_renewables_fraction"
+    CW_SOLAR_THERMAL_FRACTION = "solar_thermal_cw_fraction"
     EMISSIONS_INTENSITY = "emissions_intensity"
+    HW_DEMAND_COVERED = "hw_demand_covered"
+    HW_RENEWABLES_FRACTION = "hw_renewables_fraction"
+    HW_SOLAR_THERMAL_FRACTION = "solar_thermal_hw_fraction"
     KEROSENE_COST_MITIGATED = "kerosene_cost_mitigated"
     KEROSENE_DISPLACEMENT = "kerosene_displacement"
     KEROSENE_GHGS_MITIGATED = "kerosene_ghgs_mitigated"
+    LCU_ENERGY = "lcu_energy"
     LCUE = "lcue"
-    RENEWABLES_FRACTION = "renewables_fraction"
+    LCUH = "lcuh"
+    LCUW = "lcuw"
+    RENEWABLES_ELECTRICITY_FRACTION = "renewables_fraction"
+    TOTAL_BRINE = "total_brine"
     TOTAL_COST = "total_cost"
     TOTAL_GHGS = "total_ghgs"
     TOTAL_SYSTEM_COST = "total_system_cost"
     TOTAL_SYSTEM_GHGS = "total_system_ghgs"
-    UNMET_ENERGY_FRACTION = "unmet_energy_fraction"
+    UNMET_CLEAN_WATER_FRACTION = "unmet_cw_fraction"
+    UNMET_ELECTRICITY_FRACTION = "unmet_electricity_fraction"
+    UNMET_HOT_WATER_FRACTION = "unmet_hw_fraction"
 
     def __str__(self) -> str:
         """
@@ -1540,6 +1669,30 @@ def read_yaml(
         )
         raise
     return file_contents
+
+
+class RegressorType(enum.Enum):
+    """
+    Denotes types of regressor model.
+
+    - LOW_IRRADIANCE_LOW_TEMPERATURE:
+        Denotes a model trained on low-irradiance data where cooling is expected.
+
+    - LOW_IRRADIANCE_HIGH_TEMPERATURE:
+        Denotes a model trained on low-irradiance data where heating is expected.
+
+    - STANDARD_IRRADIANCE_LOW_TEMPERATURE:
+        Denotes a model trained on standard-irradiance data where cooling is expected.
+
+    - STANDARD_IRRADIANCE_HIGH_TEMPERATURE:
+        Denotes a model trained on standard-irradiance data where heating is expected.
+
+    """
+
+    LOW_IRRADIANCE_LOW_TEMPERATURE: str = "low_irradiance_low_temp"
+    LOW_IRRADIANCE_HIGH_TEMPERATURE: str = "low_irradiance_high_temp"
+    STANDARD_IRRADIANCE_LOW_TEMPERATURE: str = "standard_irradiance_low_temp"
+    STANDARD_IRRADIANCE_HIGH_TEMPERATURE: str = "standard_irradiance_high_temp"
 
 
 class RenewablesNinjaError(Exception):
@@ -1950,6 +2103,9 @@ class Scenario:
     .. attribute:: pv_t
         Whether PV-T is being included in the scenario.
 
+    .. attribute:: reference_thermal_efficiency
+        If defined, gives the reference efficiency of a thermal power plant.
+
     """
 
     battery: bool
@@ -1966,6 +2122,7 @@ class Scenario:
     pv: bool
     pv_d: bool
     pv_t: bool
+    reference_thermal_efficiency: float = 0
 
     @classmethod
     def from_dict(
@@ -2105,6 +2262,9 @@ class Scenario:
             scenario_inputs["pv"],
             scenario_inputs["pv_d"] if "pv_d" in scenario_inputs else False,
             scenario_inputs["pv_t"] if "pv_t" in scenario_inputs else False,
+            scenario_inputs["reference_thermal_efficiency"]
+            if "reference_thermal_efficiency" in scenario_inputs
+            else 0,
         )
 
     def to_dict(self) -> Dict[str, Any]:
@@ -2200,8 +2360,8 @@ class SystemDetails:
         The end year of the simulation.
 
     .. attribute:: final_converter_sizes:
-        A mapping between the name of the various converters associated with the system
-        and the final size of each that remained at the end of the simiulation.
+        A mapping between the various converters associated with the system and the
+        final size of each that remained at the end of the simiulation.
 
     .. attribute:: final_cw_pvt_size
         The final clean-water pv-t size of the system.
@@ -2225,8 +2385,8 @@ class SystemDetails:
         The final storage size of the system.
 
     .. attribute:: initial_converter_sizes:
-        A mapping between the name of the various converters associated with the system
-        and the initial size of each that was installed.
+        A mapping between the various converters associated with the system and the
+        initial size of each that was installed.
 
     .. attribute:: initial_cw_pvt_size
         The initial clean-water pv-t size of the system.
@@ -2263,7 +2423,7 @@ class SystemDetails:
 
     diesel_capacity: float = 0
     end_year: int = 0
-    final_converter_sizes: Optional[Dict[str, int]] = None
+    final_converter_sizes: Optional[Dict[Any, int]] = None
     final_cw_pvt_size: Optional[float] = 0
     final_hw_pvt_size: Optional[float] = 0
     final_num_buffer_tanks: Optional[int] = 0
@@ -2271,7 +2431,7 @@ class SystemDetails:
     final_num_hot_water_tanks: Optional[int] = 0
     final_pv_size: float = 0
     final_storage_size: float = 0
-    initial_converter_sizes: Optional[Dict[str, int]] = None
+    initial_converter_sizes: Optional[Dict[Any, int]] = None
     initial_cw_pvt_size: Optional[float] = 0
     initial_hw_pvt_size: Optional[float] = 0
     initial_num_buffer_tanks: Optional[int] = 0
@@ -2313,14 +2473,14 @@ class SystemDetails:
         if self.initial_converter_sizes is not None:
             system_details_as_dict.update(
                 {
-                    f"intial_num_{key}": value
+                    f"intial_num_{key.name}": value
                     for key, value in self.initial_converter_sizes.items()
                 }
             )
         if self.final_converter_sizes is not None:
             system_details_as_dict.update(
                 {
-                    f"intial_num_{key}": value
+                    f"final_num_{key.name}": value
                     for key, value in self.final_converter_sizes.items()
                 }
             )
@@ -2400,10 +2560,25 @@ class SystemDetails:
         )
 
 
+class WasteProduct(enum.Enum):
+    """
+    Used to keep track of waste products generated by the system.
+
+    - BRINE:
+        Denotes the brine that is produced as a by-product of desalination.
+
+    """
+
+    BRINE = "brine"
+
+
 @dataclasses.dataclass
 class CumulativeResults:
     """
     Contains cumulative results about the system.
+
+    .. attribute:: brine
+        The cumulative brine produced, measured in litres.
 
     .. attribute:: clean_water
         The cumulative clean water produced, measured in litres.
@@ -2411,8 +2586,23 @@ class CumulativeResults:
     .. attribute:: cost
         The cumulative cost, measured in USD.
 
+    .. attribute:: discounted_clean_water
+        The discounted clean water produced, measured in litres.
+
+    .. attribute:: discounted_electricity
+        The discounted electricity produced, measured in kWh.
+
     .. attribute:: discounted_energy
         The discounted energy produced, measured in kWh.
+
+    .. attribute:: discounted_heating
+        The discounted heating produced, measured in kWh.
+
+    .. attribute:: discounted_hot_water
+        The discounted hot water produced, measured in litres.
+
+    .. attribute:: electricity
+        The electricity produced, measured in kWh.
 
     .. attribute:: energy
         The energy produced, measured in kWh.
@@ -2420,22 +2610,46 @@ class CumulativeResults:
     .. attribute:: ghgs
         The total green-house gasses emitted by the system, mesaured in kgCO2eq.
 
+    .. attribute:: heating
+        The total heating produced, measured in kWh_th.
+
+    .. attribute:: hot_water
+        The cumulative hot water produced, measured in litres.
+
+    .. attribute:: subsystem_costs
+        The cumulative costs of each individual subsystem.
+
+    .. attribute:: subsystem_ghgs
+        The cumulative emissions caused by each individual subsystem.
+
     .. attribute:: system_cost
         The cumulative cost of the system, measured in USD.
 
     .. attribute:: system_ghgs
         The total system-related GHGs, mesaured in kgCO2eq.
 
+    .. attribute:: waste_produced
+        The cumulative waste produced by the system.
+
     """
 
-    clean_water: Optional[float] = None
+    clean_water: float = 0
     cost: float = 0
+    discounted_clean_water: float = 0
+    discounted_electricity: float = 0
     discounted_energy: float = 0
+    discounted_heating: float = 0
+    discounted_hot_water: float = 0
+    electricity: float = 0
     energy: float = 0
     ghgs: float = 0
+    heating: float = 0
+    hot_water: float = 0
+    subsystem_costs: Dict[ResourceType, float] = None  # type: ignore
+    subsystem_ghgs: Dict[ResourceType, float] = None  # type: ignore
     system_cost: float = 0
     system_ghgs: float = 0
-    waste_produced: Optional[Dict[str, float]] = None
+    waste_produced: Dict[WasteProduct, float] = None  # type: ignore
 
     def to_dict(self) -> Dict[str, Any]:
         """
@@ -2448,6 +2662,8 @@ class CumulativeResults:
 
         cumulative_results = {
             "cumulative_cost": self.cost,
+            "cumulative_discounted_electricity": self.discounted_electricity,
+            "cumulative_electricity": self.electricity,
             "cumulative_discounted_energy": self.discounted_energy,
             "cumulative_energy": self.energy,
             "cumulative_ghgs": self.ghgs,
@@ -2457,9 +2673,33 @@ class CumulativeResults:
 
         if self.clean_water is not None:
             cumulative_results["clean_water"] = self.clean_water
+
+        if self.discounted_clean_water is not None:
+            cumulative_results["discounted_clean_water"] = self.discounted_clean_water
+
+        if self.discounted_heating is not None:
+            cumulative_results["discounted_heating"] = self.discounted_heating
+
+        if self.discounted_hot_water is not None:
+            cumulative_results["discounted_hot_water"] = self.discounted_hot_water
+
+        if self.heating is not None:
+            cumulative_results["heating"] = self.heating
+
+        if self.hot_water is not None:
+            cumulative_results["hot_water"] = self.hot_water
+
+        if self.subsystem_costs is not None:
+            for key, value in self.subsystem_costs.items():
+                cumulative_results[f"cumulative_{key.value}_subsystem_cost"] = value
+
+        if self.subsystem_ghgs is not None:
+            for key, value in self.subsystem_ghgs.items():
+                cumulative_results[f"cumulative_{key.value}_subsystem_ghgs"] = value
+
         if self.waste_produced is not None:
-            for key, value in self.waste_produced.items():
-                cumulative_results[f"cumulative_{key}_waste"] = value
+            for product, value in self.waste_produced.items():
+                cumulative_results[f"cumulative_{product.value}_waste"] = value
 
         return cumulative_results
 
@@ -2490,6 +2730,12 @@ class EnvironmentalAppraisal:
     .. attribute:: om_ghgs
         The O&M GHGs emitted by the system.
 
+    .. attribute:: subsystem_ghgs
+        The total GHGs associated with each subsystem emitted.
+
+    .. attribute:: total_brine
+        The total brine produced.
+
     .. attribute:: total_ghgs
         The total GHGs emitted.
 
@@ -2505,6 +2751,8 @@ class EnvironmentalAppraisal:
     new_connection_ghgs: float = 0
     new_equipment_ghgs: float = 0
     om_ghgs: float = 0
+    subsystem_ghgs: Dict[ResourceType, float] = None  # type: ignore
+    total_brine: float = 0
     total_ghgs: float = 0
     total_system_ghgs: float = 0
 
@@ -2517,7 +2765,7 @@ class EnvironmentalAppraisal:
 
         """
 
-        return {
+        environmental_appraisal_dict: Dict[str, float] = {
             "diesel_ghgs": self.diesel_ghgs,
             "grid_ghgs": self.grid_ghgs,
             "kerosene_ghgs": self.kerosene_ghgs,
@@ -2525,9 +2773,26 @@ class EnvironmentalAppraisal:
             "new_connection_ghgs": self.new_connection_ghgs,
             "new_equipment_ghgs": self.new_equipment_ghgs,
             "om_ghgs": self.om_ghgs,
+            "total_brine": self.total_brine,
             "total_ghgs": self.total_ghgs,
             "total_system_ghgs": self.total_system_ghgs,
         }
+
+        if self.subsystem_ghgs is not None:
+            environmental_appraisal_dict.update(
+                {
+                    f"{resource_type.value}_subsystem_ghgs": ghgs
+                    for resource_type, ghgs in self.subsystem_ghgs.items()
+                }
+            )
+
+        environmental_appraisal_dict = {
+            key: value
+            for key, value in environmental_appraisal_dict.items()
+            if value is not None
+        }
+
+        return environmental_appraisal_dict
 
 
 @dataclasses.dataclass
@@ -2535,7 +2800,7 @@ class FinancialAppraisal:
     """
     Contains financial-appraisal information.
 
-    .. attribute:: diesel_cost
+    .. attribute:: diesel_fuel_cost
         The cost of diesel fuel used, measured in USD.
 
     .. attribute:: grid_cost
@@ -2554,6 +2819,9 @@ class FinancialAppraisal:
         The cost of the new equipment purchased in this optimisation cycle, measured in
         USD
 
+    .. attribute:: subsystem_costs
+        The total cost of the subsystems present in the energy system.
+
     .. attribute:: om_cost
         The O&M cost, measured in USD.
 
@@ -2565,13 +2833,14 @@ class FinancialAppraisal:
 
     """
 
-    diesel_cost: float = 0
+    diesel_fuel_cost: float = 0
     grid_cost: float = 0
     kerosene_cost: float = 0
     kerosene_cost_mitigated: float = 0
     new_connection_cost: float = 0
     new_equipment_cost: float = 0
     om_cost: float = 0
+    subsystem_costs: Dict[ResourceType, float] = None  # type: ignore
     total_cost: float = 0
     total_system_cost: float = 0
 
@@ -2584,8 +2853,8 @@ class FinancialAppraisal:
 
         """
 
-        return {
-            "diesel_cost": self.diesel_cost,
+        financial_appraisal_dict: Dict[str, float] = {
+            "diesel_fuel_cost": self.diesel_fuel_cost,
             "grid_cost": self.grid_cost,
             "kerosene_cost": self.kerosene_cost,
             "kerosene_cost_mitigated": self.kerosene_cost_mitigated,
@@ -2595,6 +2864,22 @@ class FinancialAppraisal:
             "total_cost": self.total_cost,
             "total_system_cost": self.total_system_cost,
         }
+
+        if self.subsystem_costs is not None:
+            financial_appraisal_dict.update(
+                {
+                    f"{resource_type.value}_subsystem_cost": cost
+                    for resource_type, cost in self.subsystem_costs.items()
+                }
+            )
+
+        financial_appraisal_dict = {
+            key: value
+            for key, value in financial_appraisal_dict.items()
+            if value is not None
+        }
+
+        return financial_appraisal_dict
 
 
 @dataclasses.dataclass
@@ -2609,6 +2894,9 @@ class TechnicalAppraisal:
     .. attribute:: clean_water_blackouts
         The portion of time for which the clean-water system experienced a blackout.
 
+    .. attribute:: cw_demand_covered
+        The fraction of the clean-water demand that was covered by the system.
+
     .. attribute:: diesel_energy
         The total amount of energy which was provided by the diesel generators, measured
         in kWh.
@@ -2616,11 +2904,26 @@ class TechnicalAppraisal:
     .. attribute:: diesel_fuel_usage
         The amount of diesel fuel usage, measured in litres.
 
+    .. attribute:: discounted_clean_water
+        The total discounted clean water consumed, measured in litres.
+
+    .. attribute:: discounted_electricity
+        The total discounted electricity consumed, measured in kWh.
+
     .. attribute:: discounted_energy
         The total discounted energy consumed, measured in kWh.
 
+    .. attribute:: discounted_heating
+        The total discounted heating consumed, measured in kWh.
+
+    .. attribute:: discounted_hot_water
+        The total discounted hot water consumed, measured in litres.
+
     .. attribute:: grid_energy
         The total energy which was supplied by the grid, measured in kWh.
+
+    .. attribute:: hw_demand_covered
+        The fraction of hot-water demand that was met by the system.
 
     .. attribute:: kerosene_displacement
         The proportion of kerosene which was displacement by the minigrid, defined
@@ -2631,16 +2934,39 @@ class TechnicalAppraisal:
     .. attribute:: new_connection_cost
         The cost of connecting a new household to the grid, measured in USD.
 
+    .. attribute:: power_consumed_fraction
+        Mapping between :class:`ResourceType` and the fraction of power that was
+        consumed providing the resource of the given type from the electricity system.
+
     .. attribute:: pv_energy
         The total amount of energy that was supplied by the PV system, measured in kWh.
 
-    .. attribute:: renewable_energy
+    .. attribute:: pvt_energy
+        The total amount of energy that was supplied by the PV-T system, measured in
+        kWh.
+
+    .. attribute:: renewable_clean_water_fraction
+        The fraction of clean water that was supplied through renewables, defined
+        between 0 (none of the clean water supplied was supplied by renewables) and 1
+        (all of the clean water was produced using renwables).
+
+    .. attribute:: renewable_electricity_fraction
+        The fraction of energy that was supplied through renewables, defined between 0
+        (no renewable energy supplied) and 1 (all energy supplied through renewables).
+
+    .. attribute:: renewable_electricity
         The total amount of renewable energy that was supplied by all the renewable
         sources, measured in kWh.
 
-    .. attribute:: renewable_energy_fraction
-        The fraction of energy that was supplied through renewables, defined between 0
-        (no renewable energy supplied) and 1 (all energy supplied through renewables).
+    .. attribute:: renewable_hot_water_fraction
+        The fraction of hot-water demand that was met renewably.
+
+    .. attribute:: solar_thermal_cw_fraction
+        The fraction of the clean-water demand that was met through solar-thermal
+        energy.
+
+    .. attribute:: solar_thermal_hw_fraction
+        The fraction of the hot-water demand that was met through solar-thermal energy.
 
     .. attribute:: storage_energy
         The total energy which was supplied by the storage system, measured in kWh.
@@ -2648,8 +2974,18 @@ class TechnicalAppraisal:
     .. attribute:: total_clean_water
         The total clean water which was produced by the system, measured in litres.
 
-    .. attribute:: total_energy
+    .. attribute:: total_hot_water
+        The total volume of hot water which was produced by the system, measured in
+        litres.
+
+    .. attribute:: total_electricity_consumed
+        The total electricity which was used in the system, measured in kWh.
+
+    .. attribute:: total_energy_consumed
         The total energy which was used in the system, measured in kWh.
+
+    .. attribute:: total_heating_consumed
+        The total heating which was used inthe system.
 
     .. attribute:: unmet_energy
         The total energy which went unmet, measured in kWh.
@@ -2662,18 +2998,32 @@ class TechnicalAppraisal:
 
     blackouts: float = 0
     clean_water_blackouts: Optional[float] = 0
+    cw_demand_covered: Optional[float] = 0
     diesel_energy: float = 0
     diesel_fuel_usage: float = 0
+    discounted_clean_water: Optional[float] = 0
+    discounted_electricity: float = 0
     discounted_energy: float = 0
+    discounted_heating: Optional[float] = 0
+    discounted_hot_water: Optional[float] = 0
     grid_energy: float = 0
+    hw_demand_covered: Optional[float] = 0
     kerosene_displacement: float = 0
+    power_consumed_fraction: Dict[ResourceType, float] = None  # type: ignore
     pv_energy: float = 0
     pvt_energy: Optional[float] = 0
-    renewable_energy: float = 0
-    renewable_energy_fraction: float = 0
+    renewable_clean_water_fraction: Optional[float] = 0
+    renewable_electricity_fraction: float = 0
+    renewable_electricity: float = 0
+    renewable_hot_water_fraction: Optional[float] = 0
+    solar_thermal_cw_fraction: Optional[float] = 0
+    solar_thermal_hw_fraction: Optional[float] = 0
     storage_energy: float = 0
-    total_clean_water: float = 0
-    total_energy: float = 0
+    total_clean_water: Optional[float] = 0
+    total_hot_water: Optional[float] = 0
+    total_electricity_consumed: float = 0
+    total_energy_consumed: float = 0
+    total_heating_consumed: Optional[float] = 0
     unmet_energy: float = 0
     unmet_energy_fraction: float = 0
 
@@ -2686,29 +3036,56 @@ class TechnicalAppraisal:
 
         """
 
-        technical_appraisal_dict = {
+        technical_appraisal_dict: Dict[str, Optional[float]] = {
             "blackouts": self.blackouts,
+            "clean_water_blackouts": self.clean_water_blackouts,
+            "cw_demand_covered": self.cw_demand_covered,
             "diesel_energy": self.diesel_energy,
             "diesel_fuel_usage": self.diesel_fuel_usage,
+            "discounted_clean_water": self.discounted_clean_water,
+            "discounted_electricity": self.discounted_energy,
             "discounted_energy": self.discounted_energy,
-            "grid_energy": self.grid_energy,
+            "discounted_heating": self.discounted_energy,
+            "discounted_hot_water": self.discounted_hot_water,
+            "grid_energy": float(self.grid_energy),
+            "hot_water_demand_covered": self.hw_demand_covered,
             "kerosene_displacement": self.kerosene_displacement,
-            "renewable_energy": self.renewable_energy,
-            "renewable_energy_fraction": self.renewable_energy_fraction,
+            "renewable_clean_water_fraction": self.renewable_clean_water_fraction,
+            "renewable_electricity_fraction": self.renewable_electricity_fraction,
+            "renewable_electricity": self.renewable_electricity,
+            "renewable_hot_water_fraction": self.renewable_hot_water_fraction,
+            "solar_thermal_cw_fraction": self.solar_thermal_cw_fraction,
+            "solar_thermal_hw_fraction": self.solar_thermal_hw_fraction,
             "storage_energy": self.storage_energy,
             "total_clean_water": self.total_clean_water,
-            "total_energy": self.total_energy,
+            "total_hot_water": self.total_hot_water,
+            "total_electricity_consumed": self.total_electricity_consumed,
+            "total_energy_consumed": self.total_energy_consumed,
+            "total_heating_consumed": self.total_heating_consumed,
             "unmet_energy": self.unmet_energy,
             "unmet_energy_fraction": self.unmet_energy_fraction,
         }
 
-        if self.clean_water_blackouts is not None:
-            technical_appraisal_dict[
-                "clean_water_blackouts"
-            ] = self.clean_water_blackouts
+        # Add the fractions of power that were consumed providing each resource.
+        if self.power_consumed_fraction is not None:
+            if ResourceType.CLEAN_WATER in self.power_consumed_fraction:
+                technical_appraisal_dict[
+                    "clean_water_power_consumption_fraction"
+                ] = self.power_consumed_fraction[ResourceType.CLEAN_WATER]
+            if ResourceType.ELECTRIC in self.power_consumed_fraction:
+                technical_appraisal_dict[
+                    "electricity_power_consumption_fraction"
+                ] = self.power_consumed_fraction[ResourceType.ELECTRIC]
+            if ResourceType.HOT_CLEAN_WATER in self.power_consumed_fraction:
+                technical_appraisal_dict[
+                    "hot_water_power_consumption_fraction"
+                ] = self.power_consumed_fraction[ResourceType.HOT_CLEAN_WATER]
 
+        # Remove any "Nan" entries.
         technical_appraisal_dict = {
-            str(key): float(value) for key, value in technical_appraisal_dict.items()
+            str(key): float(value)
+            for key, value in technical_appraisal_dict.items()
+            if value is not None
         }
 
         return technical_appraisal_dict
@@ -2745,7 +3122,7 @@ class SystemAppraisal:
     financial_appraisal: FinancialAppraisal
     system_details: SystemDetails
     technical_appraisal: TechnicalAppraisal
-    criteria: Optional[Dict[Criterion, float]] = None
+    criteria: Optional[Dict[Criterion, Optional[float]]] = None
 
     def to_dict(self) -> Dict[str, Any]:
         """
@@ -2769,6 +3146,7 @@ class SystemAppraisal:
 
 
 def save_simulation(
+    disable_tqdm: bool,
     key_results: KeyResults,
     logger: logging.Logger,
     output: str,
@@ -2782,6 +3160,8 @@ def save_simulation(
     Saves simulation outputs to a .csv file
 
     Inputs:
+        - disable_tqdm:
+            Whether to disable the tqdm progress bars (True) or display them (False).
         - key_results:
             The key results from the run.
         - logger:
@@ -2833,7 +3213,13 @@ def save_simulation(
         f"simulation_{simulation_number}"
     ] = simulation_details_dict
 
-    with tqdm(total=2, desc="saving output files", leave=False, unit="file") as pbar:
+    with tqdm(
+        total=2,
+        desc="saving output files",
+        disable=disable_tqdm,
+        leave=False,
+        unit="file",
+    ) as pbar:
         # Save the simulation data in a CSV file.
         logger.info("Saving simulation output.")
 

@@ -18,8 +18,9 @@ emitted by the system, need to be assed.
 
 """
 
+import collections
 from logging import Logger
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np  # pylint: disable=import-error
 import pandas as pd  # pylint: disable=import-error
@@ -29,9 +30,14 @@ from ..__utils__ import (
     ColumnHeader,
     InputFileError,
     Location,
+    ProgrammerJudgementFault,
+    ResourceType,
+    Scenario,
+    TechnicalAppraisal,
     hourly_profile_to_daily_sum,
 )
-from .__utils__ import SIZE_INCREMENT, ImpactingComponent, LIFETIME
+from ..conversion.conversion import Converter
+from .__utils__ import SIZE_INCREMENT, ImpactingComponent, LIFETIME, update_diesel_costs
 
 __all__ = (
     "calculate_connections_ghgs",
@@ -181,10 +187,10 @@ def calculate_misc_ghgs(capacity: float, ghg_inputs: Dict[str, Any]) -> float:
     return misc_ghgs
 
 
-def calculate_total_equipment_ghgs(  # pylint: disable=too-many-locals
+def calculate_total_equipment_ghgs(  # pylint: disable=too-many-locals, too-many-statements
     buffer_tanks: int,
     clean_water_tanks: int,
-    converters: Dict[str, int],
+    converters: Dict[Converter, int],
     diesel_size: float,
     ghg_inputs: Dict[str, Any],
     heat_exchangers: int,
@@ -192,9 +198,11 @@ def calculate_total_equipment_ghgs(  # pylint: disable=too-many-locals
     logger: Logger,
     pv_array_size: float,
     pvt_array_size: float,
+    scenario: Scenario,
     storage_size: float,
+    technical_appraisal: TechnicalAppraisal,
     year: int = 0,
-) -> float:
+) -> Tuple[float, Dict[ResourceType, float]]:
     """
     Calculates ghgs of all newly installed equipment
 
@@ -218,15 +226,34 @@ def calculate_total_equipment_ghgs(  # pylint: disable=too-many-locals
             Capacity of PV being installed.
         - pvt_array_size:
             Capacity of PV-T being installed.
+        - scenario:
+            The scenario currently being considered.
         - storage_size:
             Capacity of battery storage being installed.
+        - technical_appraisal:
+            The :class:`TechnicalAppraisal` for the system being considered.
         - year:
             ColumnHeader.INSTALLATION_YEAR.value.
 
     Outputs:
-        GHGs
+        - Additional emissions associated with the system;
+        - Emissions associated with each subsystem.
 
     """
+
+    if technical_appraisal.power_consumed_fraction is None:
+        logger.error(
+            "%sNo power consumed fraction was calculated. This is needed.%s",
+            BColours.fail,
+            BColours.endc,
+        )
+        raise ProgrammerJudgementFault(
+            "impact.ghgs",
+            "No power consumed fraction on technical appraisal despite being needed.",
+        )
+
+    # Instantiate a mapping for storing total ghgs information.
+    subsystem_emissions: Dict[ResourceType, float] = collections.defaultdict(float)
 
     # Calculate system ghgs.
     bos_ghgs = calculate_ghgs(
@@ -287,24 +314,39 @@ def calculate_total_equipment_ghgs(  # pylint: disable=too-many-locals
             year,
         )
 
-    converter_ghgs = sum(
-        calculate_ghgs(
-            size,
-            ghg_inputs,
-            GHG_IMPACT.format(type=ImpactingComponent.CONVERTER.value, name=converter),
-            year,
+    # Sum up the converter emissions for each of the relevant subsystems.
+    for resource_type in [ResourceType.CLEAN_WATER, ResourceType.HOT_CLEAN_WATER]:
+        converter_ghgs = sum(
+            calculate_ghgs(
+                size,
+                ghg_inputs,
+                GHG_IMPACT.format(
+                    type=ImpactingComponent.CONVERTER.value, name=converter
+                ),
+                year,
+            )
+            for converter, size in converters.items()
+            if converter.output_resource_type == resource_type
         )
-        for converter, size in converters.items()
-    )
-    converter_installation_ghgs = sum(
-        calculate_installation_ghgs(
-            size,
-            ghg_inputs,
-            GHG_IMPACT.format(type=ImpactingComponent.CONVERTER.value, name=converter),
-            year,
+        converter_installation_ghgs = sum(
+            calculate_installation_ghgs(
+                size,
+                ghg_inputs,
+                GHG_IMPACT.format(
+                    type=ImpactingComponent.CONVERTER.value, name=converter
+                ),
+                year,
+            )
+            for converter, size in converters.items()
         )
-        for converter, size in converters.items()
-    )
+        subsystem_emissions[resource_type] += (
+            converter_ghgs + converter_installation_ghgs
+        )
+        logger.debug(
+            "Converter costs determined for resource %s: %s",
+            resource_type.value,
+            converter_ghgs + converter_installation_ghgs,
+        )
 
     diesel_ghgs = calculate_ghgs(
         diesel_size, ghg_inputs, ImpactingComponent.DIESEL.value, year
@@ -403,27 +445,43 @@ def calculate_total_equipment_ghgs(  # pylint: disable=too-many-locals
     # Calculate misc GHGs.
     misc_ghgs = calculate_misc_ghgs(diesel_size + pv_array_size, ghg_inputs)
 
-    return (
-        bos_ghgs
-        + buffer_tank_ghgs
-        + buffer_tank_installation_ghgs
-        + clean_water_tank_installation_ghgs
-        + clean_water_tank_ghgs
-        + converter_ghgs
-        + converter_installation_ghgs
-        + diesel_installation_ghgs
-        + diesel_ghgs
-        + heat_exchanger_ghgs
-        + heat_exchanger_installation_ghgs
-        + hot_water_tank_ghgs
-        + hot_water_tank_installation_ghgs
-        + misc_ghgs
-        + pv_ghgs
-        + pv_installation_ghgs
-        + pvt_ghgs
-        + pvt_installation_ghgs
-        + storage_ghgs
+    # Compute the various subsystem emissions.
+    if scenario.desalination_scenario is not None:
+        # Compute the clean-water subsystem ghgs.
+        subsystem_emissions[ResourceType.CLEAN_WATER] += (
+            buffer_tank_ghgs
+            + buffer_tank_installation_ghgs
+            + clean_water_tank_ghgs
+            + clean_water_tank_installation_ghgs
+            + heat_exchanger_ghgs
+            + heat_exchanger_installation_ghgs
+            + (bos_ghgs + misc_ghgs + pv_ghgs + pv_installation_ghgs + storage_ghgs)
+            * technical_appraisal.power_consumed_fraction[ResourceType.CLEAN_WATER]
+        )
+
+    # Compute the electric subsystem ghgs.
+    subsystem_emissions[ResourceType.ELECTRIC] += (
+        bos_ghgs + misc_ghgs + pv_ghgs + pv_installation_ghgs + storage_ghgs
+    ) * technical_appraisal.power_consumed_fraction[ResourceType.ELECTRIC]
+
+    # Compute the hot-water subsystem ghgs.
+    if scenario.hot_water_scenario is not None:
+        subsystem_emissions[ResourceType.HOT_CLEAN_WATER] += (
+            hot_water_tank_ghgs
+            + hot_water_tank_installation_ghgs
+            + (bos_ghgs + misc_ghgs + pv_ghgs + pv_installation_ghgs + storage_ghgs)
+            * technical_appraisal.power_consumed_fraction[ResourceType.HOT_CLEAN_WATER]
+        )
+
+    # Compute the ghgs associated when carrying out prioritisation desalination.
+    update_diesel_costs(
+        diesel_ghgs + diesel_installation_ghgs,
+        scenario,
+        subsystem_emissions,
+        technical_appraisal,
     )
+
+    return pvt_ghgs + pvt_installation_ghgs, subsystem_emissions
 
 
 def calculate_connections_ghgs(
@@ -768,7 +826,7 @@ def calculate_om_ghgs(
 def calculate_total_om(  # pylint: disable=too-many-locals
     buffer_tanks: int,
     clean_water_tanks: int,
-    converters: Optional[Dict[str, int]],
+    converters: Optional[Dict[Converter, int]],
     diesel_size: float,
     ghg_inputs: Dict[str, Any],
     heat_exchangers: int,
@@ -776,10 +834,12 @@ def calculate_total_om(  # pylint: disable=too-many-locals
     logger: Logger,
     pv_array_size: float,
     pvt_array_size: float,
+    scenario: Scenario,
     storage_size: float,
+    technical_appraisal: TechnicalAppraisal,
     start_year: int = 0,
     end_year: int = 20,
-) -> float:
+) -> Tuple[float, Dict[ResourceType, float]]:
     """
     Calculates total O&M ghgs over the simulation period
 
@@ -813,9 +873,24 @@ def calculate_total_om(  # pylint: disable=too-many-locals
             End year of simulation period.
 
     Outputs:
-        GHGs
+        - Additional emissions associated with the system;
+        - Emissions associated with each subsystem.
 
     """
+
+    if technical_appraisal.power_consumed_fraction is None:
+        logger.error(
+            "%sNo power consumed fraction was calculated. This is needed.%s",
+            BColours.fail,
+            BColours.endc,
+        )
+        raise ProgrammerJudgementFault(
+            "impact.ghgs",
+            "No power consumed fraction on technical appraisal despite being needed.",
+        )
+
+    # Instantiate a mapping for storing total ghgs information.
+    subsystem_emissions: Dict[ResourceType, float] = collections.defaultdict(float)
 
     if ImpactingComponent.BUFFER_TANK.value not in ghg_inputs and buffer_tanks > 0:
         logger.error(
@@ -862,22 +937,33 @@ def calculate_total_om(  # pylint: disable=too-many-locals
             end_year,
         )
 
-    converter_om_ghgs: float = 0
     if converters is not None:
-        converter_om_ghgs = sum(
-            calculate_om_ghgs(
-                size,
-                ghg_inputs,
-                GHG_IMPACT.format(
-                    type=ImpactingComponent.CONVERTER.value, name=converter
-                ),
-                start_year,
-                end_year,
+        for resource_type in [ResourceType.CLEAN_WATER, ResourceType.HOT_CLEAN_WATER]:
+            converter_om = sum(
+                calculate_om_ghgs(
+                    size,
+                    ghg_inputs,
+                    GHG_IMPACT.format(
+                        type=ImpactingComponent.CONVERTER.value, name=converter
+                    ),
+                    start_year,
+                    end_year,
+                )
+                for converter, size in converters.items()
+                if resource_type == converter.output_resource_type
             )
-            for converter, size in converters.items()
-        )
+            subsystem_emissions[resource_type] += converter_om
+            logger.debug(
+                "Converter OM emissions determined for resource %s: %s",
+                resource_type.value,
+                converter_om,
+            )
+
     else:
-        logger.debug("No converters installed so no converter OM GHGs to calcualte.")
+        logger.debug(
+            "No converters were installed in the system, hence no OM emissions to "
+            "compute."
+        )
 
     diesel_om_ghgs = calculate_om_ghgs(
         diesel_size, ghg_inputs, ImpactingComponent.PV.value, start_year, end_year
@@ -939,6 +1025,7 @@ def calculate_total_om(  # pylint: disable=too-many-locals
         pv_array_size, ghg_inputs, ImpactingComponent.PV.value, start_year, end_year
     )
 
+    # FIXME: Include PV-T O&M GHGs.
     if ImpactingComponent.PV_T.value not in ghg_inputs and pvt_array_size > 0:
         logger.error(
             "%sNo PV-T GHG input information provided.%s", BColours.fail, BColours.endc
@@ -948,7 +1035,7 @@ def calculate_total_om(  # pylint: disable=too-many-locals
             "No PV-T ghg input information provided and a non-zero number of PV-T"
             "panels are being considered.",
         )
-    pvt_om_ghgs: float = 0
+    pvt_om_ghgs: float = 0  # pylint: disable=unused-variable
     if pvt_array_size > 0:
         pvt_om_ghgs = calculate_om_ghgs(
             pvt_array_size,
@@ -961,15 +1048,36 @@ def calculate_total_om(  # pylint: disable=too-many-locals
         storage_size, ghg_inputs, ImpactingComponent.STORAGE.value, start_year, end_year
     )
 
-    return (
-        buffer_tank_om_ghgs
-        + clean_water_tank_om_ghgs
-        + converter_om_ghgs
-        + diesel_om_ghgs
-        + general_om_ghgs
-        + heat_exchanger_om_ghgs
-        + hot_water_tank_om_ghgs
-        + pv_om_ghgs
-        + pvt_om_ghgs
-        + storage_om_ghgs
+    # Compute the clean-water subsystem costs.
+    if scenario.desalination_scenario is not None:
+        subsystem_emissions[ResourceType.CLEAN_WATER] += (
+            buffer_tank_om_ghgs
+            + clean_water_tank_om_ghgs
+            + heat_exchanger_om_ghgs
+            + (
+                (general_om_ghgs + pv_om_ghgs + storage_om_ghgs)
+                * technical_appraisal.power_consumed_fraction[ResourceType.CLEAN_WATER]
+            )
+        )
+
+    # Compute the electric subsystem costs.
+    subsystem_emissions[ResourceType.ELECTRIC] += (
+        general_om_ghgs + pv_om_ghgs + storage_om_ghgs
+    ) * technical_appraisal.power_consumed_fraction[ResourceType.ELECTRIC]
+
+    # Compute the hot-water subsystem costs.
+    subsystem_emissions[ResourceType.HOT_CLEAN_WATER] += (
+        hot_water_tank_om_ghgs
+        + (general_om_ghgs + pv_om_ghgs + storage_om_ghgs)
+        * technical_appraisal.power_consumed_fraction[ResourceType.HOT_CLEAN_WATER]
     )
+
+    # Compute the costs associated when carrying out prioritisation desalination.
+    update_diesel_costs(
+        diesel_om_ghgs,
+        scenario,
+        subsystem_emissions,
+        technical_appraisal,
+    )
+
+    return 0, subsystem_emissions
