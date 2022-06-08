@@ -1,36 +1,34 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Tue May 31 19:25:45 2022
+---
+################################################################################
+# grid_inputs.yaml - Grid parameters.                                          #
+#                                                                              #
+# Author: Paul Harfouche                                                       #
+# Copyright: Phil Sandwell, Ben Winchester & Paul Harfouche 2022               #
+# Date created: 01/06/2022                                                     #
+# License: Open source                                                         #
+################################################################################
 
-@author: pahar
-"""
-exchange_rate:25000 #[LBP/$]
+exchange_rate: 25000 #[LBP/$]
 
 grid:
-
-- name: dieselg # DIESEL GENERATOR GRID
+# Diesel Generator (split into 5A and 10A subcriptions)
+  - name: dieselg_5A # DIESEL GENERATOR GRID
     costs:
       cost: 10457 # [LBP/kWh]
       extension cost: 0 # [$/km]
       infrastructure_cost: 0 # [$]
-      
-    emissions:
-      ghgs: 2560 # [kgCO2/kWp]
-      ghg_decrease: 0 # [% p.a.]
-      installation_ghgs: 50 # [kgCO2/kW]
-      installation_ghg_decrease: 0 # [% p.a.]
-      o&m: 5 #[kgCO2/kWp p.a.]
-  - name: dieselg_5A
-    subscription_cost: 50000 #[LBP/month] #division by exchange rate in main files
-  - name: dieselg_10A
-    subscription_cost: 150000 #[LBP/month] #division by exchange rate in main files 
-
- -name: edl   # ELECTRICTY DU LIBAN GRID
- 
+      subscription_cost: 50000 #[LBP/month] #division by exchange rate in main files
+  - name: dieselg_10A # DIESEL GENERATOR GRID
+    costs:
+      cost: 10457 # [LBP/kWh]
+      extension cost: 0 # [$/km]
+      infrastructure_cost: 0 # [$]
+      subscription_cost: 150000 #[LBP/month] #division by exchange rate in main files
+# ELECTRICTY DU LIBAN GRID
   - name: edl_threshold_1
     lower_bound: 0 # [kWh/day]
     costs:
-      cost:35  # [LBP/kWh]
+      cost: 35  # [LBP/kWh]
       extension cost: 0 # [$/km]
       infrastructure_cost: 0 # [$]
   - name: edl_threshold_2
@@ -57,7 +55,7 @@ grid:
       cost: 200 # [LBP/kWh]
       extension cost: 0 # [$/km]
       infrastructure_cost: 0 # [$] 
-    
+# Both grids EDL and Diesel Generator have the same emissions        
 emissions:
   ghgs: 2560 # [kgCO2/kWp]
   ghg_decrease: 0 # [% p.a.]
