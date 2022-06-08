@@ -673,7 +673,7 @@ def _simulation_financial_appraisal(  # pylint: disable=too-many-locals
         start_year=system_details.start_year,
         end_year=system_details.end_year,
     )
-    # FIXME: The diesel fuel usage of any diesel water heaters should be calcaulted here
+    # The diesel fuel usage of any diesel water heaters should be calcaulted here
     grid_costs = finance.expenditure(
         ImpactingComponent.GRID,
         finance_inputs,
