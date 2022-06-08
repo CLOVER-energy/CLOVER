@@ -1906,6 +1906,27 @@ class HotWaterScenario:
         )
 
 
+class GridType(enum.Enum):
+    """I say what type of grid it is."""
+    CURRENT_DRAW = "current_draw"
+    DAILY_POWER = "daily_power"
+
+
+@dataclasses.dataclass
+class GridTier:
+    """I'm a grid tier."""
+    upper_bound_type: GridType
+    upper_bound_value: float
+    costs: Dict[str, float]
+
+
+@dataclasses.dataclass
+class Grid:
+    """I'm a grid."""
+    name: str
+    tiers: List[GridTier]
+
+
 @dataclasses.dataclass
 class Scenario:
     """
@@ -1929,7 +1950,7 @@ class Scenario:
     .. attribute:: grid
         Whether the grid is being included in the scenario.
 
-    .. attribute:: grid_type
+    .. attribute:: grids
         The type of grid being modelled, i.e., whether the grid is full, etc. These
         options are written in the grid inputs file as headers.
 
@@ -1962,7 +1983,7 @@ class Scenario:
     diesel_scenario: DieselScenario
     distribution_network: DistributionNetwork
     grid: bool
-    grid_type: list
+    grids: List[Grid]
     hot_water_scenario: Optional[HotWaterScenario]
     name: str
     resource_types: Set[ResourceType]

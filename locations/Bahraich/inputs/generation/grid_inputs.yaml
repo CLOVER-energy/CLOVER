@@ -12,25 +12,35 @@ exchange_rate: 25000 #[LBP/$]
 
 grid:
 # Diesel Generator (split into 5A and 10A subcriptions)
-  - name: dieselg_5A # DIESEL GENERATOR GRID
-    costs:
-      cost: 10457 # [LBP/kWh]
-      extension cost: 0 # [$/km]
-      infrastructure_cost: 0 # [$]
-      subscription_cost: 50000 #[LBP/month] #division by exchange rate in main files
-  - name: dieselg_10A # DIESEL GENERATOR GRID
-    costs:
-      cost: 10457 # [LBP/kWh]
-      extension cost: 0 # [$/km]
-      infrastructure_cost: 0 # [$]
-      subscription_cost: 150000 #[LBP/month] #division by exchange rate in main files
+  - name: dieselg # Corresponds to one grid profile
+    tiers:
+      - upper_bound:
+          consumption: 5 # DIESEL GENERATOR GRID
+          type: current_draw
+        costs:
+          cost: 10457 # [LBP/kWh]
+          extension cost: 0 # [$/km]
+          infrastructure_cost: 0 # [$]
+          subscription_cost: 50000 #[LBP/month] #division by exchange rate in main files
+      - upper_bound:
+          type: current_draw
+          consumption: 10 # [A] # DIESEL GENERATOR GRID
+        costs:
+          cost: 10457 # [LBP/kWh]
+          extension cost: 0 # [$/km]
+          infrastructure_cost: 0 # [$]
+          subscription_cost: 150000 #[LBP/month] #division by exchange rate in main files
 # ELECTRICTY DU LIBAN GRID
-  - name: edl_threshold_1
-    lower_bound: 0 # [kWh/day]
-    costs:
-      cost: 35  # [LBP/kWh]
-      extension cost: 0 # [$/km]
-      infrastructure_cost: 0 # [$]
+  - name: edl
+    tiers:
+      - upper_bound:
+          type: daily_power
+          consumption: 100 # [kWh/day]
+        costs:
+          cost: 35  # [LBP/kWh]
+          extension cost: 0 # [$/km]
+          infrastructure_cost: 0 # [$]
+          subscription_cost: 0
   - name: edl_threshold_2
     lower_bound: 101 # [kWh/day]
     costs:

@@ -962,7 +962,7 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
         logger.info("Scenario parameters valid.")
 
         logger.info("Loading grid profile.")
-        grid_profile = grid.load_grid_profile(
+        grid_profiles = grid.load_grid_profile(
             auto_generated_files_directory, logger, scenario
         )
         logger.info("Grid '%s' profile successfully loaded.", scenario.grid_type)
@@ -994,7 +994,7 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
                     converters,
                     disable_tqdm,
                     parsed_args.storage_size,
-                    grid_profile,
+                    grid_profiles,
                     parsed_args.hot_water_pvt_system_size
                     if parsed_args.hot_water_pvt_system_size is not None
                     else 0,
@@ -1158,7 +1158,7 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
             logger.info("Scenario parameters valid.")
 
             logger.info("Loading grid profile.")
-            grid_profile = grid.load_grid_profile(
+            grid_profiles = grid.load_grid_profile(
                 auto_generated_files_directory, logger, optimisation.scenario
             )
             logger.info(
@@ -1178,7 +1178,7 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
                     disable_tqdm,
                     finance_inputs,
                     ghg_inputs,
-                    grid_profile,
+                    grid_profiles,
                     total_solar_data[solar.SolarDataType.TOTAL_IRRADIANCE.value],
                     kerosene_usage,
                     location,

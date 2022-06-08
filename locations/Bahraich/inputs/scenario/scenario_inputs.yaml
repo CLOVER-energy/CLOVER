@@ -17,7 +17,9 @@ scenarios:
       backup:
         threshold: 0.1 # Maximum acceptible blackouts (0.0-1.0)
     grid: true # "true" or "false"
-    grid_type: bahraich # The grid profile to use
+    grid_types: # The grid profile to use
+      - edl
+      - diesel
     prioritise_self_generation: true # "true" or "false"
     demands:
       domestic: true # "true" or "false"
