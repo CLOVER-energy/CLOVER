@@ -37,6 +37,7 @@ from .__utils__ import (
     DesalinationScenario,
     DieselMode,
     EXCHANGER,
+    Grid,
     HotWaterScenario,
     HTFMode,
     InputFileError,
@@ -2189,10 +2190,7 @@ def _parse_grid_inputs(
     inputs_directory_relative_path: str,
     logger: Logger,
     scenarios: List[Scenario],
-) -> Tuple [
-    float,
-    Dict[str, float],
-]:
+) -> List[Grid]:
 
     grid_inputs_filepath = os.path.join(
         inputs_directory_relative_path, GRID_INPUTS_FILE
@@ -2204,34 +2202,52 @@ def _parse_grid_inputs(
         )
     logger.info("Grid inputs successfully parsed.")
 
-    exchange_rate=grid_inputs["exchange_rate"] #why if we ADD [0] this doesn't work
+    grids: List[Grid] = []
+    for entry in grid_inputs:
+        tiers: List[GridTier] = []
+        for tier_entry in entry["tiers"]:
+            tiers.append(
+                GridTier(
+                    GridType(tier_entry["upper_bound"]["type"]),
+                    tier_entry["upper_bound"]["consumption"],
+                    tier_entry["costs"],
+                )
+            )
+        grids.append(Grid(
+            entry["name"],
+            tiers
+        ))
 
-    # Determine the emissions
-    grid_emissions = grid_inputs["emissions"]
-        # entry [GRID_EMISSIONS]
-        # for entry in grid_inputs[GRID]
-    diesel_5A_costs= grid_inputs["grid"][0]["costs"]
-    diesel_10A_costs= grid_inputs["grid"][1]["costs"]
-    edl_threshold_1=grid_inputs["grid"][2]["costs"]
-    edl_threshold_2=grid_inputs["grid"][3]["costs"]
-    edl_threshold_3=grid_inputs["grid"][4]["costs"]
-    edl_threshold_4=grid_inputs["grid"][5]["costs"]
-    edl_threshold_5=grid_inputs["grid"][6]["costs"]
-    thresholds=[]
-    for i in range (2,7):
-        thresholds.append(grid_inputs["grid"][i]["lower_bound"])    
-    return (
-        exchange_rate,
-        grid_emissions,
-        diesel_5A_costs,
-        diesel_10A_costs,
-        edl_threshold_1,
-        edl_threshold_2,
-        edl_threshold_3,
-        edl_threshold_4,
-        edl_threshold_5,
-        thresholds,
-    )
+    return grids
+
+    # exchange_rate=grid_inputs["exchange_rate"] #why if we ADD [0] this doesn't work
+
+    # # Determine the emissions
+    # grid_emissions = grid_inputs["emissions"]
+    #     # entry [GRID_EMISSIONS]
+    #     # for entry in grid_inputs[GRID]
+    # diesel_5A_costs= grid_inputs["grid"][0]["costs"]
+    # diesel_10A_costs= grid_inputs["grid"][1]["costs"]
+    # edl_threshold_1=grid_inputs["grid"][2]["costs"]
+    # edl_threshold_2=grid_inputs["grid"][3]["costs"]
+    # edl_threshold_3=grid_inputs["grid"][4]["costs"]
+    # edl_threshold_4=grid_inputs["grid"][5]["costs"]
+    # edl_threshold_5=grid_inputs["grid"][6]["costs"]
+    # thresholds=[]
+    # for i in range (2,7):
+    #     thresholds.append(grid_inputs["grid"][i]["lower_bound"])    
+    # return (
+    #     exchange_rate,
+    #     grid_emissions,
+    #     diesel_5A_costs,
+    #     diesel_10A_costs,
+    #     edl_threshold_1,
+    #     edl_threshold_2,
+    #     edl_threshold_3,
+    #     edl_threshold_4,
+    #     edl_threshold_5,
+    #     thresholds,
+    # )
 
 def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
     debug: bool,

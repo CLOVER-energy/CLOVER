@@ -101,29 +101,30 @@ def load_grid_profile(
 
     """
 
-    grid_profile: Optional[pd.DataFrame] = None
+    grid_profiles: Dict[str, pd.DataFrame] = {}
     if scenario.grid:
-        try:
-            with open(
-                os.path.join(
-                    auto_generated_files_directory,
-                    "grid",
-                    f"{scenario.grid_type}_grid_status.csv",
-                ),
-                "r",
-            ) as f:
-                grid_profile = pd.read_csv(
-                    f,
-                    index_col=0,
+        for grid_type in scenario.grid_types:
+            try:
+                with open(
+                    os.path.join(
+                        auto_generated_files_directory,
+                        "grid",
+                        f"{grid_type}_grid_status.csv",
+                    ),
+                    "r",
+                ) as f:
+                    grid_profiles[grid_type] = pd.read_csv(
+                        f,
+                        index_col=0,
+                    )
+            except FileNotFoundError as e:
+                logger.error(
+                    "%sGrid profile file for profile '%s' could not be found: %s%s",
+                    BColours.fail,
+                    scenario.grid_type,
+                    str(e),
+                    BColours.endc,
                 )
-        except FileNotFoundError as e:
-            logger.error(
-                "%sGrid profile file for profile '%s' could not be found: %s%s",
-                BColours.fail,
-                scenario.grid_type,
-                str(e),
-                BColours.endc,
-            )
-            raise
+                raise
 
-    return grid_profile
+    return grid_profiles

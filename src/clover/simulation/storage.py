@@ -365,7 +365,7 @@ def cw_tank_iteration_step(  # pylint: disable=too-many-locals
 
 def get_electric_battery_storage_profile(  # pylint: disable=too-many-locals, too-many-statements
     *,
-    grid_profile: pd.Series,
+    grid_profiles: Dict[str, pd.Series],
     kerosene_usage: pd.Series,
     location: Location,
     logger: Logger,
@@ -620,20 +620,27 @@ def get_electric_battery_storage_profile(  # pylint: disable=too-many-locals, to
         )
 
         # Then take energy from grid if available
+        grid_energies: Dict[str, pd.DataFrame] = {}
         if scenario.grid:
-            grid_energy: pd.DataFrame = pd.DataFrame(
-                ((remaining_profile < 0) * remaining_profile).iloc[:, 0]  # type: ignore
-                * -1.0
-                * grid_profile.values
-            )
+            for grid_type in scenario.grid_type:
+                grid_profile = grid_profiles[grid_type] # {"edl": [0, 1, 2, 3, 4]} <---- [0, 1, 2, 3, 4]
+                grid_energies[grid_type] = pd.DataFrame( # {"edl": [usage, 1, 2, 3, 4, 5]} <--- [0, 1, 2, 3, 4, 5, 6, 7]
+                    ((remaining_profile < 0) * remaining_profile).iloc[:, 0]  # type: ignore
+                    * -1.0
+                    * grid_profile.values
+                )
+
         else:
             grid_energy = pd.DataFrame([0] * (end_hour - start_hour))
+        
+        # @paulharfouche Need to sum over grid energies here.
         battery_storage_profile: pd.DataFrame = pd.DataFrame(
-            remaining_profile.values + grid_energy.values
+            remaining_profile.values + total_grid_energy #  Now a dictionary
         )
 
     else:
         # Take energy from grid first if available
+        # @paulharfouche: Need to do the same here.
         if scenario.grid:
             grid_energy = pd.DataFrame(grid_profile.mul(load_energy[0]))  # type: ignore
         else:
@@ -652,7 +659,10 @@ def get_electric_battery_storage_profile(  # pylint: disable=too-many-locals, to
         )
 
     battery_storage_profile.columns = pd.Index([ColumnHeader.STORAGE_PROFILE.value])
-    grid_energy.columns = pd.Index([ColumnHeader.GRID_ENERGY.value])
+    # @paulharfouche
+    # Will need multiple grid energies
+    for name, grid_energy in grid_energies:
+        grid_energy.columns = pd.Index([f"{name} {ColumnHeader.GRID_ENERGY.value}"])
     load_energy.columns = pd.Index([ColumnHeader.LOAD_ENERGY.value])
     renewables_energy.columns = pd.Index(
         [ColumnHeader.RENEWABLE_ELECTRICITY_SUPPLIED.value]

@@ -34,6 +34,8 @@ from ..__utils__ import (
     CumulativeResults,
     EnvironmentalAppraisal,
     FinancialAppraisal,
+    GridTier,
+    GridType,
     InternalError,
     hourly_profile_to_daily_sum,
     Location,
@@ -45,6 +47,15 @@ from ..impact.__utils__ import ImpactingComponent
 
 __all__ = ("appraise_system",)
 
+
+def _get_grid_pricing_tier(
+    grid_energy: pd.Series,
+    tiers: List[GridTier],
+) -> GridTier:
+    if tier.type== GridType.CURRENT_DRAW:
+        max_current = max(grid_energy / 12000)  # kW -> A
+        # ...
+        return appropriate_tier
 
 def _simulation_environmental_appraisal(  # pylint: disable=too-many-locals
     buffer_tank_addition: int,
@@ -362,14 +373,19 @@ def _simulation_financial_appraisal(  # pylint: disable=too-many-locals
         start_year=system_details.start_year,
         end_year=system_details.end_year,
     )
-    grid_costs = finance.expenditure(
-        ImpactingComponent.GRID,
-        finance_inputs,
-        simulation_results[ColumnHeader.GRID_ENERGY.value],
-        logger,
-        start_year=system_details.start_year,
-        end_year=system_details.end_year,
-    )
+    # This function will need:
+    #   - to know how much energy was used, from each grid
+    for grid_name in scenario.grid_types:
+        grid_energy = simulation_results["{grid_name} {ColumnHeader.GRID_ENERGY.value}"]
+        grid = [grid for grid in grids if grid.name == grid_name][0]
+        
+        tiers = grid.tiers
+
+        tier_i_am_in = _get_grid_pricing_tier(grid_energy, tiers)
+        costs = tier_i_am_in.costs
+        costs_of_this_grid: float = 0
+        grid_costs += costs_of_this_grid
+
     kerosene_costs = finance.expenditure(
         ImpactingComponent.KEROSENE,
         finance_inputs,
