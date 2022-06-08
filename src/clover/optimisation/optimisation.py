@@ -1113,7 +1113,7 @@ def _optimisation_step(  # pylint: disable=too-many-locals
     )
     logger.info("Optimum systems determined.")
 
-    # @@@ For now, the optimum system for a single threshold criterion will be returned.
+    # For now, the optimum system for a single threshold criterion will be returned.
     optimum_system_appraisal: SystemAppraisal = list(optimum_systems.values())[0]
     return optimum_system_appraisal
 

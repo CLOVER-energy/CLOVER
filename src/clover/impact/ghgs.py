@@ -1025,7 +1025,6 @@ def calculate_total_om(  # pylint: disable=too-many-locals
         pv_array_size, ghg_inputs, ImpactingComponent.PV.value, start_year, end_year
     )
 
-    # FIXME: Include PV-T O&M GHGs.
     if ImpactingComponent.PV_T.value not in ghg_inputs and pvt_array_size > 0:
         logger.error(
             "%sNo PV-T GHG input information provided.%s", BColours.fail, BColours.endc
@@ -1035,6 +1034,7 @@ def calculate_total_om(  # pylint: disable=too-many-locals
             "No PV-T ghg input information provided and a non-zero number of PV-T"
             "panels are being considered.",
         )
+    # Include PV-T O&M GHGs in the total GHGs.
     pvt_om_ghgs: float = 0  # pylint: disable=unused-variable
     if pvt_array_size > 0:
         pvt_om_ghgs = calculate_om_ghgs(
