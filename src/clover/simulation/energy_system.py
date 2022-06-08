@@ -906,7 +906,6 @@ def _calculate_renewable_hw_profiles(  # pylint: disable=too-many-locals, too-ma
 
         # Update the waste production calculation with the waste that's produced by
         # the auxiliary water heater.
-        # @@@ Check type of total-waste produced.
         total_waste_produced.update(
             {
                 waste_product: defaultdict(
@@ -2108,8 +2107,6 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
         storage_water_supplied_frame.columns = pd.Index(
             [ColumnHeader.CLEAN_WATER_FROM_STORAGE.value]
         )
-        # FIXME: This calculation needs fixing to take into account different operation
-        # scenarios for the desalination plant.
         thermal_desalination_plant_renewable_fraction = pd.DataFrame(
             [1] * (end_hour - start_hour)
         )
