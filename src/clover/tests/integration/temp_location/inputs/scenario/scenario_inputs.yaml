@@ -1,0 +1,67 @@
+---
+################################################################################
+# scenario_inputs.yaml - Parameters for specifying a scenario.                 #
+#                                                                              #
+# Author: Phil Sandwell, Ben Winchester                                        #
+# Copyright: Phil Sandwell & Ben Winchester, 2021                              #
+# Date created: 14/07/2021                                                     #
+# License: Open source                                                         #
+################################################################################
+
+# Valid 'resource_types' are 'electric_power' or 'clean_water'.
+# NOTE: If using 'clean_water', then there must be at least one device specified
+# within the devices file which places a clean-water demand on the system.
+#
+
+scenarios:
+  - name: default
+    pv: true # "true" or "false"
+    battery: true # "true" or "false"
+    diesel:
+      mode: backup # "backup" only option currently
+      backup:
+        threshold: 0.1 # Maximum acceptible blackouts (0.0-1.0)
+    grid: true # "true" or "false"
+    grid_type: default # The grid profile to use
+    prioritise_self_generation: false # "true" or "false"
+    demands:
+      domestic: true # "true" or "false"
+      commercial: false # "true" or "false"
+      public: false # "true" or "false"
+    distribution_network: dc # DC ("dc") or AC ("ac") distribution network
+    resource_types:
+      - electric_power
+  - name: no_pv
+    pv: false # "true" or "false"
+    battery: true # "true" or "false"
+    diesel:
+      mode: backup # "backup" only option currently
+      backup:
+        threshold: 0.1 # Maximum acceptible blackouts (0.0-1.0)
+    grid: true # "true" or "false"
+    grid_type: default # The grid profile to use
+    prioritise_self_generation: false # "true" or "false"
+    demands:
+      domestic: true # "true" or "false"
+      commercial: true # "true" or "false"
+      public: true # "true" or "false"
+    distribution_network: dc # DC ("dc") or AC ("ac") distribution network
+    resource_types:
+      - electric_power
+  - name: no_pv_no_storage
+    pv: false # "true" or "false"
+    battery: false # "true" or "false"
+    diesel:
+      mode: backup # "backup" only option currently
+      backup:
+        threshold: 0.1 # Maximum acceptible blackouts (0.0-1.0)
+    grid: true # "true" or "false"
+    grid_type: default # The grid profile to use
+    prioritise_self_generation: false # "true" or "false"
+    demands:
+      domestic: true # "true" or "false"
+      commercial: true # "true" or "false"
+      public: true # "true" or "false"
+    distribution_network: dc # DC ("dc") or AC ("ac") distribution network
+    resource_types:
+      - electric_power
