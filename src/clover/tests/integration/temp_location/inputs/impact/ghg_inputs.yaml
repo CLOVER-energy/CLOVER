@@ -1,0 +1,37 @@
+---
+################################################################################
+# ghg_inputs.yaml - GHG input information.                                     #
+#                                                                              #
+# Author: Phil Sandwell, Ben Winchester                                        #
+# Copyright: Phil Sandwell & Ben Winchester, 2021                              #
+# Date created: 14/07/2021                                                     #
+# License: Open source                                                         #
+################################################################################
+
+# NOTE: Missing GHG input data values default to 0.
+#
+
+general:
+  o&m: 200 # [kgCO2 p.a.]
+misc:
+  ghgs: 0 # [kgCO2/kW]
+bos:
+  ghgs: 200 # [kgCO2/kW]
+  ghg_decrease: 2 # [% p.a.]
+diesel_fuel:
+  ghgs: 2 # [kgCO2/litre]
+  o&m: 10 # [kgCO2/kW p.a.]
+grid:
+  extension_ghgs: 290000 # [kgCO2/km]
+  infrastructure_GHGs: 1200000 # [kgCO2]
+  initial_ghgs: 0.8 # [kgCO2/kWh]
+  final_ghgs: 0.4 # [kgCO2/kWh]
+households:
+  connection_ghgs: 10 # [kgCO2/household]
+inverter:
+  ghgs: 75 # [kgCO2/kW]
+  ghg_decrease: 2 # [2,% p.a.]
+  lifetime: 4 # [years]
+  size_increment: 1 # [kW]
+kerosene:
+  ghgs: 0.055 # [kgCO2/hour]
