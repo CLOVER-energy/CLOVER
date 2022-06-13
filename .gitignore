@@ -24,6 +24,8 @@
 **/output*
 *.png
 *.jpg
+# Ignore testing files
+*.coverage
 # Ignore VSCode files
 .vscode
 # Ignore model files for now
