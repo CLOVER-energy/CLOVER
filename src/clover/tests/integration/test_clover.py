@@ -431,7 +431,7 @@ class SimulationTests(_BaseTest):
         )
         self.assertEqual(
             info_file_data["simulation_1"]["analysis_results"][
-                "Cumulative pv generation / kWh"
+                "Cumulative pv generation / kWh/kWp"
             ],
             cumulative_pv_generation,
         )
