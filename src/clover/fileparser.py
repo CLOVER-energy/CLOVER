@@ -2177,11 +2177,11 @@ def _parse_transmission_inputs(
     )
 
 # Grid inputs file:
-
 #   Keyword used for parsing diesel-generator information.
 GRID: str = "grid"
 GRID_EMISSIONS: str="emissions"
-
+GridTier: str="tier"
+GridType: str="type"
 # # The relative path to the grid inputs file.
 
 GRID_INPUTS_FILE: str = os.path.join("generation", "grid_inputs.yaml")
@@ -2190,7 +2190,7 @@ def _parse_grid_inputs(
     inputs_directory_relative_path: str,
     logger: Logger,
     scenarios: List[Scenario],
-) -> List[Grid]:
+) -> List[GRID]:
 
     grid_inputs_filepath = os.path.join(
         inputs_directory_relative_path, GRID_INPUTS_FILE
@@ -2217,8 +2217,8 @@ def _parse_grid_inputs(
             entry["name"],
             tiers
         ))
-
     return grids
+
 
     # exchange_rate=grid_inputs["exchange_rate"] #why if we ADD [0] this doesn't work
 
@@ -2918,7 +2918,7 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
         ", ".join([f"{key}: {value}" for key, value in transmitters.items()]),
     )
     logger.debug("Input file information: %s", input_file_info)
-
+    # print(grid_times)
     return (
         converters,
         device_utilisations,

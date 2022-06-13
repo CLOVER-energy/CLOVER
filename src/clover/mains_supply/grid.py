@@ -64,19 +64,19 @@ def get_lifetime_grid_status(
 
 
 #     #%%
-#     def change_grid_coverage(self, grid_type="bahraich", hours=12):
-#         grid_profile = self.grid_times[grid_type]
+#     def change_grid_coverage(self, grid_types="bahraich", hours=12):
+#         grid_profile = self.grid_times[grid_types]
 #         baseline_hours = np.sum(grid_profile)
 #         new_profile = pd.DataFrame([0] * 24)
 #         for hour in range(24):
 #             m = interp1d([0, baseline_hours, 24], [0, grid_profile[hour], 1])
 #             new_profile.iloc[hour] = m(hours).round(3)
-#         new_profile.columns = [grid_type + "_" + str(hours)]
+#         new_profile.columns = [grid_types + "_" + str(hours)]
 #         return new_profile
 
-#     def save_grid_coverage(self, grid_type="bahraich", hours=12):
-#         new_profile = self.change_grid_coverage(grid_type, hours)
-#         new_profile_name = grid_type + "_" + str(hours)
+#     def save_grid_coverage(self, grid_types="bahraich", hours=12):
+#         new_profile = self.change_grid_coverage(grid_types, hours)
+#         new_profile_name = grid_types + "_" + str(hours)
 #         output = self.grid_times
 #         if new_profile_name in output.columns:
 #             output[new_profile_name] = new_profile
@@ -102,6 +102,7 @@ def load_grid_profile(
     """
 
     grid_profiles: Dict[str, pd.DataFrame] = {}
+
     if scenario.grid:
         for grid_type in scenario.grid_types:
             try:
@@ -109,7 +110,7 @@ def load_grid_profile(
                     os.path.join(
                         auto_generated_files_directory,
                         "grid",
-                        f"{grid_type}_grid_status.csv",
+                        f"{scenario.grid_types}_grid_status.csv",
                     ),
                     "r",
                 ) as f:
@@ -121,7 +122,7 @@ def load_grid_profile(
                 logger.error(
                     "%sGrid profile file for profile '%s' could not be found: %s%s",
                     BColours.fail,
-                    scenario.grid_type,
+                    scenario.grid_types,
                     str(e),
                     BColours.endc,
                 )

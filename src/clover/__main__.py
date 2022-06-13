@@ -965,7 +965,7 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
         grid_profiles = grid.load_grid_profile(
             auto_generated_files_directory, logger, scenario
         )
-        logger.info("Grid '%s' profile successfully loaded.", scenario.grid_type)
+        logger.info("Grid '%s' profile successfully loaded.", scenario.grid_types)
 
         simulation_string: str = generate_simulation_string(
             minigrid, overrided_default_sizes, parsed_args, scenario
@@ -1044,7 +1044,7 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
 
             # Compute the key results.
             key_results = analysis.get_key_results(  # type: ignore
-                grid_profile,
+                grid_profiles,
                 simulation.end_year - simulation.start_year,
                 system_performance_outputs,
                 total_solar_data[solar.SolarDataType.ELECTRICITY.value]
@@ -1054,8 +1054,8 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
             if parsed_args.analyse:
                 # Generate and save the various plots.
                 analysis.plot_outputs(  # type: ignore
-                    grid_times[scenario.grid_type],
-                    grid_profile,
+                    grid_times[scenario.grid_types],
+                    grid_profiles, #to check that
                     initial_cw_hourly_loads,
                     initial_electric_hourly_loads,
                     initial_hw_hourly_loads,
@@ -1163,7 +1163,7 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
             )
             logger.info(
                 "Grid '%s' profile successfully loaded.",
-                optimisation.scenario.grid_type,
+                optimisation.scenario.grid_types,
             )
 
             optimisation_string = generate_optimisation_string(

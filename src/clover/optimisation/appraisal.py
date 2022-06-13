@@ -47,15 +47,14 @@ from ..impact.__utils__ import ImpactingComponent
 
 __all__ = ("appraise_system",)
 
-
-def _get_grid_pricing_tier(
-    grid_energy: pd.Series,
-    tiers: List[GridTier],
-) -> GridTier:
-    if tier.type== GridType.CURRENT_DRAW:
-        max_current = max(grid_energy / 12000)  # kW -> A
-        # ...
-        return appropriate_tier
+# def _get_grid_pricing_tier(
+#     grid_energy: pd.Series,
+#     tiers: list[GridTier],
+# ) -> GridTier:
+#     if tier.type== GridType.CURRENT_DRAW:
+#         max_current = max(grid_energy / 12000)  # kW -> A
+#         # ...
+#         return appropriate_tier
 
 def _simulation_environmental_appraisal(  # pylint: disable=too-many-locals
     buffer_tank_addition: int,
@@ -375,7 +374,7 @@ def _simulation_financial_appraisal(  # pylint: disable=too-many-locals
     )
     # This function will need:
     #   - to know how much energy was used, from each grid
-    for grid_name in scenario.grid_types:
+    for grid_name in scenario.grid_typess:
         grid_energy = simulation_results["{grid_name} {ColumnHeader.GRID_ENERGY.value}"]
         grid = [grid for grid in grids if grid.name == grid_name][0]
         

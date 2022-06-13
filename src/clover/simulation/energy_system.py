@@ -1087,8 +1087,8 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
             Whether to disable the tqdm progress bars (True) or display them (False).
         - electric_storage_size:
             Amount of storage in terms of the number of batteries included.
-        - grid_profile:
-            The grid-availability profile.
+        - grid_profiles:
+            The Multiple grid-availability profile.
         - hot_water_pvt_size:
             Amount of PV-T in PV-T units associated with the hot-water system.
         - irradiance_data:
@@ -1211,9 +1211,10 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
         "Available converters: %s",
         ", ".join([str(entry) for entry in available_converters]),
     )
-    grid_profile = (
-        grid_profile
-        if grid_profile is not None
+    
+    grid_profiles = (
+        grid_profiles
+        if grid_profiles is not None
         else pd.DataFrame([0] * simulation_hours)
     )
     total_cw_load: Optional[pd.DataFrame] = total_loads[ResourceType.CLEAN_WATER]
@@ -1417,8 +1418,8 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
     }
     renewables_energy_used_directly: pd.DataFrame
 
-    for name, profile in grid_profiles.items():
-        grid_profiles[name] = profile.iloc[start_hour: end_hour, 0]
+    for name, profile in grid_profiles.items():                  # to check that
+        grid_profiles[name] = profile.iloc[start_hour:end_hour, 0]
 
     (
         battery_storage_profile,
@@ -1430,7 +1431,9 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
         renewables_energy_used_directly,
     ) = get_electric_battery_storage_profile(
         clean_water_pvt_size=clean_water_pvt_size,
-        grid_profiles={name: grid_profile.iloc[start_hour:end_hour, 0] for name, grid_profile in grid_profiles},  # type: ignore
+        grid_profiles={
+            name: grid_profile.iloc[start_hour:end_hour, 0] for name, grid_profile in grid_profiles.items()
+            },  # type: ignore # to check that
         hot_water_pvt_size=hot_water_pvt_size,
         kerosene_usage=kerosene_usage.iloc[start_hour:end_hour, 0],
         location=location,

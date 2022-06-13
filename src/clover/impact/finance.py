@@ -903,6 +903,7 @@ def discounted_equipment_cost(
 def expenditure(
     component: ImpactingComponent,
     finance_inputs: Dict[str, Any],
+    grid_inputs: Dict[str, Any], #added the grid inputs.
     hourly_usage: pd.Series,
     logger: Logger,
     *,
@@ -928,8 +929,9 @@ def expenditure(
         Discounted cost
 
     """
-
+    #what to do here! --> 
     hourly_cost = hourly_usage * finance_inputs[component.value][COST]
+    print(hourly_cost)
     total_daily_cost = hourly_profile_to_daily_sum(hourly_cost)
     total_discounted_cost = discounted_energy_total(
         finance_inputs,

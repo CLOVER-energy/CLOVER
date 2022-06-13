@@ -1983,7 +1983,7 @@ class Scenario:
     diesel_scenario: DieselScenario
     distribution_network: DistributionNetwork
     grid: bool
-    grids: List[Grid]
+    grid_types: List[Grid]
     hot_water_scenario: Optional[HotWaterScenario]
     name: str
     resource_types: Set[ResourceType]
@@ -2152,7 +2152,7 @@ class Scenario:
             "diesel_scenario": self.diesel_scenario.to_dict(),
             "distribution_network": str(self.distribution_network.value),
             "grid": self.grid,
-            "grid_type": self.grid_type,
+            "grid_types": self.grid_types,
             "name": self.name,
             "resource_types": [str(e.value) for e in self.resource_types],
             "prioritise_self_generation": self.prioritise_self_generation,

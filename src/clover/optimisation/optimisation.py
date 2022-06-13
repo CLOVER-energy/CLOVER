@@ -117,7 +117,7 @@ def _find_optimum_system(  # pylint: disable=too-many-locals
     end_year: int,
     finance_inputs: Dict[str, Any],
     ghg_inputs: Dict[str, Any],
-    grid_profile: Optional[pd.DataFrame],
+    grid_profiles: Optional[pd.DataFrame], # to check that
     irradiance_data: pd.Series,
     kerosene_usage: pd.DataFrame,
     largest_converter_sizes: Dict[Converter, ConverterSize],
@@ -271,7 +271,7 @@ def _find_optimum_system(  # pylint: disable=too-many-locals
                 end_year,
                 finance_inputs,
                 ghg_inputs,
-                grid_profile,
+                grid_profiles,
                 largest_hw_pvt_system_size,
                 largest_hw_tank_size,
                 irradiance_data,
@@ -333,7 +333,7 @@ def _simulation_iteration(  # pylint: disable=too-many-locals, too-many-statemen
     disable_tqdm: bool,
     finance_inputs: Dict[str, Any],
     ghg_inputs: Dict[str, Any],
-    grid_profile: Optional[pd.DataFrame],
+    grid_profiles: Optional[pd.DataFrame],
     hw_pvt_system_size: SolarSystemSize,
     hw_tanks: TankSize,
     irradiance_data: pd.Series,
@@ -384,7 +384,7 @@ def _simulation_iteration(  # pylint: disable=too-many-locals, too-many-statemen
             The financial input information.
         - ghg_inputs:
             The green-house-gas input information.
-        - grid_profile:
+        - grid_profiles:
             The grid-availability profile.
         - irradiance_data:
             The irradaince data series.
@@ -487,7 +487,7 @@ def _simulation_iteration(  # pylint: disable=too-many-locals, too-many-statemen
         converters_from_sizing(simulation_converter_sizes),
         disable_tqdm,
         storage_sizes.max,
-        grid_profile,
+        grid_profiles,
         int(hw_pvt_system_size.max),
         irradiance_data,
         kerosene_usage,
@@ -592,7 +592,7 @@ def _simulation_iteration(  # pylint: disable=too-many-locals, too-many-statemen
             converters_from_sizing(simulation_converter_sizes),
             disable_tqdm,
             storage_size_max,
-            grid_profile,
+            grid_profiles,
             int(hw_pvt_size_max),
             irradiance_data,
             kerosene_usage,
@@ -891,7 +891,7 @@ def _simulation_iteration(  # pylint: disable=too-many-locals, too-many-statemen
         end_year,
         finance_inputs,
         ghg_inputs,
-        grid_profile,
+        grid_profiles,
         irradiance_data,
         kerosene_usage,
         location,
@@ -947,7 +947,7 @@ def _optimisation_step(  # pylint: disable=too-many-locals
     disable_tqdm: bool,
     finance_inputs: Dict[str, Any],
     ghg_inputs: Dict[str, Any],
-    grid_profile: Optional[pd.DataFrame],
+    grid_profiles: Optional[pd.DataFrame],
     hw_pvt_system_size: SolarSystemSize,
     hw_tanks: TankSize,
     irradiance_data: pd.Series,
@@ -987,7 +987,7 @@ def _optimisation_step(  # pylint: disable=too-many-locals
             Whether to disable the tqdm progress bars (True) or display them (False).
         - finance_inputs:
             The finance input information.
-        - grid_profile:
+        - grid_profiles:
             The grid-availability profile.
         - irradiance_data:
             The total irradiance throughout the period of the simulation.
@@ -1056,7 +1056,7 @@ def _optimisation_step(  # pylint: disable=too-many-locals
         disable_tqdm,
         finance_inputs,
         ghg_inputs,
-        grid_profile,
+        grid_profiles,
         hw_pvt_system_size,
         hw_tanks,
         irradiance_data,
@@ -1086,7 +1086,7 @@ def _optimisation_step(  # pylint: disable=too-many-locals
         end_year,
         finance_inputs,
         ghg_inputs,
-        grid_profile,
+        grid_profiles,
         irradiance_data,
         kerosene_usage,
         converter_sizes,
@@ -1122,7 +1122,7 @@ def multiple_optimisation_step(  # pylint: disable=too-many-locals, too-many-sta
     disable_tqdm: bool,
     finance_inputs: Dict[str, Any],
     ghg_inputs: Dict[str, Any],
-    grid_profile: Optional[pd.DataFrame],
+    grid_profiles: Optional[pd.DataFrame],
     irradiance_data: pd.Series,
     kerosene_usage: pd.DataFrame,
     location: Location,
@@ -1154,7 +1154,7 @@ def multiple_optimisation_step(  # pylint: disable=too-many-locals, too-many-sta
             The `list` of converters available to the system;
         - disable_tqdm:
             Whether to disable the tqdm progress bars (True) or display them (False).
-        - grid_profile:
+        - grid_profiles:
             The grid-availability profile;
         - irradiance_data:
             The total irradiance throughout the period of the simulation.
@@ -1386,7 +1386,7 @@ def multiple_optimisation_step(  # pylint: disable=too-many-locals, too-many-sta
             disable_tqdm,
             finance_inputs,
             ghg_inputs,
-            grid_profile,
+            grid_profiles,
             SolarSystemSize(
                 input_hw_pvt_system_size.max,
                 input_hw_pvt_system_size.min,
