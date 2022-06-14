@@ -25,7 +25,7 @@ from typing import Any, Dict, Optional
 import numpy as np  # pylint: disable=import-error
 import pandas as pd
 
-from ..impact import finance, ghgs
+from ..impact import finance, ghgs #scenario 
 
 from ..__utils__ import (
     BColours,
@@ -35,8 +35,10 @@ from ..__utils__ import (
     EnvironmentalAppraisal,
     FinancialAppraisal,
     GridTier,
-    GridType,
+    Gridype,
+    grids,
     InternalError,
+    Scenario,
     hourly_profile_to_daily_sum,
     Location,
     SystemAppraisal,
@@ -246,6 +248,42 @@ def _simulation_environmental_appraisal(  # pylint: disable=too-many-locals
         round(total_system_ghgs, 3),
     )
 
+def _get_grid_pricing_tier(
+    grid_energy:float,
+    tiers: Dict[str, Any],
+    daily_peak_demand: float,
+    exchange_rate: float,
+):
+#run on a daily basis
+
+    if grid_type=='dieselg':
+        if household_daily_peak_demand<= 1.1: #A to kW and because peak so kWh so here I am saying if at anytime during a day the peak demand <=5A power then we only need tier 5A
+            tier_i_am_in= grid_type#upper_bound-consumption_5
+            subscription_cost=(tier_i_am_in.subscription_cost)/exchange_rate
+            costs=(tier_i_am_in.cost)/exchange_rate
+        else:
+            tier_i_am_in= grid_type#upper_bound-consumption_10
+            subscription_cost=(tier_i_am_in.subscription_cost)/exchange_rate
+            costs=(tier_i_am_in.cost)/exchange_rate
+
+#run on a monthly basis
+
+    if grid_type=='edl':
+        if household_monthly_demand<= 100:
+            tier_i_am_in #is the tier with ["upper_bound"]["consumption"]=100
+            costs=(tier_i_am_in.cost)/exchange_rate
+        elif household_monthly_demand<= 100 & household_monthly_demand<= 200:
+            tier_i_am_in #is the tier with ["upper_bound"]["consumption"]=200
+            costs=(tier_i_am_in.cost)/exchange_rate
+        elif household_monthly_demand<= 200 & household_monthly_demand<= 300:
+            tier_i_am_in #is the tier with ["upper_bound"]["consumption"]=300
+            costs=(tier_i_am_in.cost)/exchange_rate
+        elif household_monthly_demand<= 300 & household_monthly_demand<= 400:
+            tier_i_am_in #is the tier with ["upper_bound"]["consumption"]=400
+            costs=(tier_i_am_in.cost)/exchange_rate
+        elif household_monthly_demand<= 400 &  household_monthly_demand<= 1000:
+            tier_i_am_in #is the tier with ["upper_bound"]["consumption"]=1000
+            costs=(tier_i_am_in.cost)/exchange_rate
 
 def _simulation_financial_appraisal(  # pylint: disable=too-many-locals
     buffer_tank_addition: int,
@@ -257,6 +295,7 @@ def _simulation_financial_appraisal(  # pylint: disable=too-many-locals
     hot_water_tank_addition: int,
     location: Location,
     logger: Logger,
+    scenario: Scenario, #added scenrario in the inputs of the definition 
     pv_addition: float,
     pvt_addition: float,
     simulation_results: pd.DataFrame,
@@ -326,6 +365,7 @@ def _simulation_financial_appraisal(  # pylint: disable=too-many-locals
         yearly_load_statistics,
         start_year=system_details.start_year,
         end_year=system_details.end_year,
+        #not going to add here the grid
     )
 
     # Calculate costs of connecting new households (discounted)
@@ -333,6 +373,7 @@ def _simulation_financial_appraisal(  # pylint: disable=too-many-locals
         finance_inputs,
         simulation_results[ColumnHeader.HOUSEHOLDS.value],
         system_details.start_year,
+        #not going to add here the grid
     )
 
     # Calculate operating costs of the system during this simulation (discounted)
@@ -362,6 +403,7 @@ def _simulation_financial_appraisal(  # pylint: disable=too-many-locals
         system_details.initial_storage_size,
         start_year=system_details.start_year,
         end_year=system_details.end_year,
+        #not going to add here the grid
     )
 
     # Calculate running costs of the system (discounted)
@@ -374,17 +416,23 @@ def _simulation_financial_appraisal(  # pylint: disable=too-many-locals
     )
     # This function will need:
     #   - to know how much energy was used, from each grid
-    for grid_name in scenario.grid_typess:
+
+    #APPRAISAL TO CHANGE: 
+
+    for grid_name in scenario.grid_types:
         grid_energy = simulation_results["{grid_name} {ColumnHeader.GRID_ENERGY.value}"]
         grid = [grid for grid in grids if grid.name == grid_name][0]
         
         tiers = grid.tiers
 
         tier_i_am_in = _get_grid_pricing_tier(grid_energy, tiers)
+        #get the function _get_grid_pricing_tier for it to read the grid_energy and the tiers as inputs
+        #and the output is the tier we are working in.
         costs = tier_i_am_in.costs
-        costs_of_this_grid: float = 0
-        grid_costs += costs_of_this_grid
+        costs_of_this_grid: float = 0 #once you know what tier we are talking about then,the cost of the grid is based on the tier (for EDL)
+        grid_costs = costs_of_this_grid
 
+    # add the subscription costs
     kerosene_costs = finance.expenditure(
         ImpactingComponent.KEROSENE,
         finance_inputs,
@@ -410,6 +458,7 @@ def _simulation_financial_appraisal(  # pylint: disable=too-many-locals
         + diesel_costs
         + grid_costs
         + kerosene_costs
+        # +dieselg_subscription_costs        IMPORTANT
     )
     total_system_cost = (
         equipment_costs + connections_cost + om_costs + diesel_costs + grid_costs

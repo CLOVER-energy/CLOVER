@@ -17,7 +17,7 @@ the clover module from the command-line interface.
 
 """
 
-__version__ = "5.0.2b1"
+__version__ = "5.0.2"
 
 import datetime
 import logging
@@ -1048,7 +1048,8 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
                 simulation.end_year - simulation.start_year,
                 system_performance_outputs,
                 total_solar_data[solar.SolarDataType.ELECTRICITY.value]
-                * minigrid.pv_panel.pv_unit,
+                * minigrid.pv_panel.pv_unit
+                * scenario.pv,
             )
 
             if parsed_args.analyse:

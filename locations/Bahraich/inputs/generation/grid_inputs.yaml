@@ -15,8 +15,8 @@ grid:
   - name: dieselg # Corresponds to one grid profile
     tiers:
       - upper_bound:
-          consumption: 5 # DIESEL GENERATOR GRID
           type: current_draw
+          consumption: 5 # DIESEL GENERATOR GRID
         costs:
           cost: 10457 # [LBP/kWh]
           extension cost: 0 # [$/km]

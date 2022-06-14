@@ -2217,8 +2217,9 @@ def _parse_grid_inputs(
             entry["name"],
             tiers
         ))
-    return grids
-
+        # WHERE ARE THE EMISSIONS IN PARSE GRID
+    #print (grids)
+    return grids # but we are not returning the tiers?
 
     # exchange_rate=grid_inputs["exchange_rate"] #why if we ADD [0] this doesn't work
 
