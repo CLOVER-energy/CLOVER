@@ -254,39 +254,40 @@ def _get_grid_pricing_tier(
     daily_peak_demand: float,
     exchange_rate: float,
 ):
-#run on a daily basis
+#run on a daily basis # should this be a for loop? every month over 20 years
 
     if grid_type=='dieselg':
         if household_daily_peak_demand<= 1.1: #A to kW and because peak so kWh so here I am saying if at anytime during a day the peak demand <=5A power then we only need tier 5A
             tier_i_am_in= grid_type#upper_bound-consumption_5
-            subscription_cost=(tier_i_am_in.subscription_cost)/exchange_rate
+            #subscription_cost=(tier_i_am_in.subscription_cost)/exchange_rate
             # I want the subscription costs to add them to the total_cost
-            costs=(tier_i_am_in.cost)/exchange_rate
+            #costs=(tier_i_am_in.cost)/exchange_rate
         else:
             tier_i_am_in= grid_type#upper_bound-consumption_10
-            subscription_cost=(tier_i_am_in.subscription_cost)/exchange_rate
-            costs=(tier_i_am_in.cost)/exchange_rate
+            #subscription_cost=(tier_i_am_in.subscription_cost)/exchange_rate
+            #costs=(tier_i_am_in.cost)/exchange_rate
 
-#run on a monthly basis
+#run on a monthly basis # for loop monthly over 20 years
 
     if grid_type=='edl':
         if household_monthly_demand<= 100:
             tier_i_am_in #is the tier with ["upper_bound"]["consumption"]=100
-            costs=(tier_i_am_in.cost)/exchange_rate #could add costs here?
+            #costs=(tier_i_am_in.cost)/exchange_rate #could add costs here?
         elif household_monthly_demand<= 100 & household_monthly_demand<= 200:
             tier_i_am_in #is the tier with ["upper_bound"]["consumption"]=200
-            costs=(tier_i_am_in.cost)/exchange_rate
+            #costs=(tier_i_am_in.cost)/exchange_rate
         elif household_monthly_demand<= 200 & household_monthly_demand<= 300:
             tier_i_am_in #is the tier with ["upper_bound"]["consumption"]=300
-            costs=(tier_i_am_in.cost)/exchange_rate
+            #costs=(tier_i_am_in.cost)/exchange_rate
         elif household_monthly_demand<= 300 & household_monthly_demand<= 400:
             tier_i_am_in #is the tier with ["upper_bound"]["consumption"]=400
-            costs=(tier_i_am_in.cost)/exchange_rate
+            #costs=(tier_i_am_in.cost)/exchange_rate
         elif household_monthly_demand<= 400 &  household_monthly_demand<= 1000:
             tier_i_am_in #is the tier with ["upper_bound"]["consumption"]=1000
-            costs=(tier_i_am_in.cost)/exchange_rate
+            #costs=(tier_i_am_in.cost)/exchange_rate
 
 def _simulation_financial_appraisal(  # pylint: disable=too-many-locals
+    exchange_rate: float,
     buffer_tank_addition: int,
     clean_water_tank_addition: int,
     converter_addition: Dict[str, int],
@@ -429,7 +430,8 @@ def _simulation_financial_appraisal(  # pylint: disable=too-many-locals
         tier_i_am_in = _get_grid_pricing_tier(grid_energy, tiers)
         #get the function _get_grid_pricing_tier for it to read the grid_energy and the tiers as inputs
         #and the output is the tier we are working in.
-        costs = tier_i_am_in.costs
+        costs = (tier_i_am_in.costs)/exchange_rate
+        subscription_cost=(tier_i_am_in.subscription_cost)/exchange_rate
         costs_of_this_grid: float = 0 #once you know what tier we are talking about then,the cost of the grid is based on the tier (for EDL)
         grid_costs = costs_of_this_grid
 
