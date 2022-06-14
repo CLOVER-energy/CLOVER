@@ -260,6 +260,7 @@ def _get_grid_pricing_tier(
         if household_daily_peak_demand<= 1.1: #A to kW and because peak so kWh so here I am saying if at anytime during a day the peak demand <=5A power then we only need tier 5A
             tier_i_am_in= grid_type#upper_bound-consumption_5
             subscription_cost=(tier_i_am_in.subscription_cost)/exchange_rate
+            # I want the subscription costs to add them to the total_cost
             costs=(tier_i_am_in.cost)/exchange_rate
         else:
             tier_i_am_in= grid_type#upper_bound-consumption_10
@@ -271,7 +272,7 @@ def _get_grid_pricing_tier(
     if grid_type=='edl':
         if household_monthly_demand<= 100:
             tier_i_am_in #is the tier with ["upper_bound"]["consumption"]=100
-            costs=(tier_i_am_in.cost)/exchange_rate
+            costs=(tier_i_am_in.cost)/exchange_rate #could add costs here?
         elif household_monthly_demand<= 100 & household_monthly_demand<= 200:
             tier_i_am_in #is the tier with ["upper_bound"]["consumption"]=200
             costs=(tier_i_am_in.cost)/exchange_rate
@@ -458,7 +459,7 @@ def _simulation_financial_appraisal(  # pylint: disable=too-many-locals
         + diesel_costs
         + grid_costs
         + kerosene_costs
-        # +dieselg_subscription_costs        IMPORTANT
+        + subscription_cost       #IMPORTANT
     )
     total_system_cost = (
         equipment_costs + connections_cost + om_costs + diesel_costs + grid_costs
