@@ -324,8 +324,8 @@ def cw_tank_iteration_step(  # pylint: disable=too-many-locals
             conventional_cw_available: float = 0
             if conventional_cw_source_profiles is not None:
                 conventional_cw_available = float(
-                    sum(
-                        entry.iloc[time_index]  # type: ignore
+                    sum(  # type: ignore [arg-type]
+                        entry.iloc[time_index]
                         for entry in conventional_cw_source_profiles.values()
                     )
                 )
@@ -635,18 +635,19 @@ def get_electric_battery_storage_profile(  # pylint: disable=too-many-locals, to
     else:
         # Take energy from grid first if available
         if scenario.grid:
-            grid_energy: pd.DataFrame = grid_profile.mul(load_energy)  # type: ignore
+            grid_energy = pd.DataFrame(grid_profile.mul(load_energy[0]))  # type: ignore
         else:
             grid_energy = pd.DataFrame([0] * (end_hour - start_hour))
         # as needed for load
-        remaining_profile = (grid_energy <= 0).mul(load_energy)  # type: ignore
-        # Then take energy from PV
+        remaining_profile = (grid_energy[0] <= 0).mul(load_energy[0])  # type: ignore
+
+        # Then take energy from PV if generated
         battery_storage_profile = pd.DataFrame(
-            renewables_energy.values.subtrace(remaining_profile.values)  # type: ignore
+            renewables_energy[0].values - remaining_profile.values  # type: ignore
         )
         renewables_energy_used_directly = pd.DataFrame(
             (battery_storage_profile > 0)  # type: ignore
-            .mul(remaining_profile)
+            .mul(remaining_profile[0])  # type: ignore
             .add((battery_storage_profile < 0).mul(renewables_energy))  # type: ignore
         )
 

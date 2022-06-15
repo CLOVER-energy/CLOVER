@@ -36,6 +36,13 @@ This will fetch the latest stable version of CLOVER and install it into your cur
 
 To download the CLOVER source code directly from Github, simply click the green `Code` button near the top of this page, and select `Download ZIP`. Once downloaded, unpack the zip file into a directory of your choice. You will now be able to run CLOVER from a terminal in this directory. Use the `cd` command to change the directory of your terminal to the extracted folder in order to run CLOVER.
 
+#### Downloading as a developer
+
+To download the CLOVER source, with a view to editing and helping to develop the code, simply click the green `Code` button near the top of this page, copy the URL, and, in your local terminal, run `git clone <URL>` to get your local copy of CLOVER. From there, check out a new branch for any of your edits:
+```
+git checkout -b <new_branch_name>
+```
+
 ### Setting up your Python environment
 
 CLOVER is a scientific package and, as such, uses Python packages that may not have come installed by default on your system. These packages can be easily installed, provided that you are connected to the internet, either using `pip`, the python package manager, or `conda`, a virtual-environment-based system. Instructions for `conda` are provided below:
@@ -57,7 +64,7 @@ The CLOVER package is published as an installable package, `clover-energy`, whic
 ```
 python -m pip install clover-energy
 ```
-This should install all of the relevant dependencies for CLOVER as well as providing three installable executable files: `new-clover-location`, `update-api-token` and `clover`, which are described in more detail below.
+This should install all of the relevant dependencies for CLOVER as well as providing four installable executable files: `new-clover-location`, `update-api-token`, `clover-hpc` and `clover`, which are described in more detail below.
 
 Note, installing CLOVER in this way will install the package to your conda environment or local computer and will not provide you with easy access to the source code files. To develop CLOVER and have access to the source code, ensure that you download the code from GitHub.
 
@@ -196,9 +203,24 @@ or, if you have installed the `clover-energy` package
 clover --location <location_name> --optimisation
 ```
 
-##### Analysis
+#### Analysis
 
 When running CLOVER simulations, in-built graph plotting can be carried out by CLOVER. To activate this functionality, simply use the `--analyse` flag when initialising a CLOVER simulation from the command-line interface.
+
+### Running CLOVER on Imperial College London's high-performance computers
+
+The operation of CLOVER can be broken down into the same steps as per running CLOVER on a local machine. These are described in [Running CLOVER](#running-clover). On Imperial's high-performance computers (HPCs), this functionality is wrapped up in such a way that a single entry point is provided for launching runs and a single additional input file is required in addition to those described in [Completing input files](#completing-input-files). Consult the user guide or wiki pages for more information on what is required of the input jobs file.
+
+#### Launching jobs
+
+Once you have completed your input runs file, jobs are launched to the HPC by calling CLOVER's launch script from the command-line:
+```
+python -m src.clover.scripts.clover_hpc --runs <jobs_file>
+```
+or, if you have installed the `clover-energy` package
+```
+clover-hpc --runs <jobs_file>
+```
 
 ***
 

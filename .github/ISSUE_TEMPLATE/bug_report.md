@@ -27,9 +27,9 @@ If applicable, add screenshots to help explain your problem.
 ### Desktop
 **(please complete the following information)**
  - OS: [e.g. iOS]
- - Installation setup [e.g. "installed Python package" or "downloaded source from Github"]
- - Version [e.g. 5.0.1a1.post1]
-- Branch, if relevant [e.g. `master`]
+ - Installation setup: [e.g. "installed Python package" or "downloaded source from Github"]
+ - Version: [e.g. 5.0.1a1.post1]
+ - Branch, if relevant: [e.g. `master`]
 
 ### Modifications
 If you have made any modifications to CLOVER or are working on your own fork of the repo, then please direct the developers to it here.

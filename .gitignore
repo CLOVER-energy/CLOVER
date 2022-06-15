@@ -13,6 +13,8 @@
 **/Locations
 # Ignore location folders
 **/locations
+# Ignore mac files
+*.DS_store
 # Ignore model outputs
 **/logs
 *.log*
@@ -22,6 +24,8 @@
 **/output*
 *.png
 *.jpg
+# Ignore testing files
+*.coverage
 # Ignore VSCode files
 .vscode
 # Ignore model files for now

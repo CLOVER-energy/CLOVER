@@ -35,6 +35,7 @@ from .__utils__ import (
     AuxiliaryHeaterType,
     BColours,
     DesalinationScenario,
+    DieselMode,
     EXCHANGER,
     HotWaterScenario,
     HTFMode,
@@ -69,6 +70,7 @@ __all__ = (
     "KEROSENE_USAGE_FILE",
     "LOCATIONS_FOLDER_NAME",
     "parse_input_files",
+    "parse_scenario_inputs",
 )
 
 
@@ -1086,7 +1088,7 @@ def _parse_pvt_reduced_models(  # pylint: disable=too-many-statements
     return electric_model, thermal_model
 
 
-def _parse_scenario_inputs(
+def parse_scenario_inputs(
     inputs_directory_relative_path: str,
     logger: Logger,
 ) -> Tuple[str, str, List[Scenario], str]:
@@ -2315,7 +2317,7 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
         hot_water_scenario_inputs_filepath,
         scenarios,
         scenario_inputs_filepath,
-    ) = _parse_scenario_inputs(inputs_directory_relative_path, logger)
+    ) = parse_scenario_inputs(inputs_directory_relative_path, logger)
     logger.info("Scenario inputs successfully parsed.")
 
     # Parse the optimisation input information.
@@ -2553,20 +2555,54 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
     logger.info("PV impact data successfully updated.")
 
     # Update the impact inputs with the diesel data.
-    logger.info("Updating with diesel impact data.")
-    finance_inputs[ImpactingComponent.DIESEL.value] = defaultdict(float, diesel_costs)
-    ghg_inputs[ImpactingComponent.DIESEL.value] = defaultdict(float, diesel_emissions)
-    logger.info("Diesel impact data successfully updated.")
+    if any(
+        scenario.diesel_scenario.mode != DieselMode.DISABLED for scenario in scenarios
+    ):
+        logger.info("Updating with diesel impact data.")
+        finance_inputs[ImpactingComponent.DIESEL.value] = defaultdict(
+            float, diesel_costs
+        )
+        ghg_inputs[ImpactingComponent.DIESEL.value] = defaultdict(
+            float, diesel_emissions
+        )
+        logger.info("Diesel impact data successfully updated.")
+    else:
+        logger.info("No diesel generator present, skipping impact data.")
 
     # Update the impact inputs with the battery data.
-    logger.info("Updating with battery impact data.")
-    finance_inputs[ImpactingComponent.STORAGE.value] = defaultdict(
-        float, battery_costs  # type: ignore
-    )
-    ghg_inputs[ImpactingComponent.STORAGE.value] = defaultdict(
-        float, battery_emissions  # type: ignore
-    )
-    logger.info("Battery impact data successfully updated.")
+    if any(scenario.battery for scenario in scenarios):
+        if battery_costs is None:
+            logger.error(
+                "%sNo battery cost information parsed despite a battery being present "
+                "in one or more of the scenarios.%s",
+                BColours.fail,
+                BColours.endc,
+            )
+            raise InputFileError(
+                "scenario inputs OR finance inputs",
+                "No battery cost information despite a battery being requested.",
+            )
+        if battery_emissions is None:
+            logger.error(
+                "%sNo battery emissions information parsed despite a battery being "
+                "present in one or more of the scenarios.%s",
+                BColours.fail,
+                BColours.endc,
+            )
+            raise InputFileError(
+                "scenario inputs OR finance inputs",
+                "No battery emissions information despite a battery being requested.",
+            )
+        logger.info("Updating with battery impact data.")
+        finance_inputs[ImpactingComponent.STORAGE.value] = defaultdict(
+            float, battery_costs
+        )
+        ghg_inputs[ImpactingComponent.STORAGE.value] = defaultdict(
+            float, battery_emissions
+        )
+        logger.info("Battery impact data successfully updated.")
+    else:
+        logger.info("No battery present, skipping impact data.")
 
     if minigrid.pvt_panel is not None and any(scenario.pv_t for scenario in scenarios):
         if pvt_panel_costs is None or pvt_panel_emissions is None:
