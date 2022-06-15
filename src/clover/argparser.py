@@ -70,7 +70,10 @@ def parse_args(args: List[Any]) -> argparse.Namespace:
     # Mandatory arguments regardless of the use case.
     mandatory_arguments = parser.add_argument_group("mandatory arguments")
     mandatory_arguments.add_argument(
-        "--location", type=str, help="The name of the location for which to run CLOVER."
+        "--location",
+        "-l",
+        type=str,
+        help="The name of the location for which to run CLOVER.",
     )
 
     # Arguments used only when specifying how profiles should be generated or used.
@@ -96,29 +99,34 @@ def parse_args(args: List[Any]) -> argparse.Namespace:
     )
     action_arguments.add_argument(
         "--electric-load-profile",
+        "-el",
         type=str,
         help="The name of the load profile to use for the run. This overrides CLOVER's "
         "in-built load-profile generation.",
     )
     action_arguments.add_argument(
         "--output",
+        "-o",
         type=str,
         help="The location of the output file in which simulation data will be saved.",
     )
     action_arguments.add_argument(
         "--pv-system-size",
+        "-pv",
         type=float,
         help="The size of the PV system being modelled in PV panel units, defaulting "
         "to kWp.",
     )
     action_arguments.add_argument(
         "--scenario",
+        "-s",
         type=str,
         default=DEFAULT_SCENARIO,
         help="The name of the scenario to use for the run.",
     )
     action_arguments.add_argument(
         "--storage-size",
+        "-b",
         type=float,
         help="The size of the battery system being modelled in battery units, "
         "defaulting to kWh.",
@@ -130,12 +138,14 @@ def parse_args(args: List[Any]) -> argparse.Namespace:
     )
     clean_water_parser.add_argument(
         "--num-clean-water-tanks",
+        "-ncwt",
         default=0,
         type=int,
         help="The number of clean-water tanks to be included in the system.",
     )
     clean_water_parser.add_argument(
         "--clean-water-pvt-system-size",
+        "-cwpvt",
         type=float,
         help="The size of the PV-T system being modelled, associated with the "
         "clean-water supply system, in PV-T panel units.",
@@ -147,12 +157,14 @@ def parse_args(args: List[Any]) -> argparse.Namespace:
     )
     hot_water_parser.add_argument(
         "--num-hot-water-tanks",
+        "-nhwt",
         default=0,
         type=int,
         help="The number of hpt-water tanks to be included in the system.",
     )
     hot_water_parser.add_argument(
         "--hot-water-pvt-system-size",
+        "-hwpvt",
         type=float,
         help="The size of the PV-T system being modelled, associated with the "
         "hot-water supply system, in PV-T panel units.",
@@ -164,12 +176,14 @@ def parse_args(args: List[Any]) -> argparse.Namespace:
     )
     simulation_parser.add_argument(
         "--simulation",
+        "-sim",
         action="store_true",
         default=False,
         help="If specified, CLOVER will carry out a single simulation.",
     )
     simulation_parser.add_argument(
         "--analyse",
+        "-a",
         action="store_true",
         default=False,
         help="If specified, plots will be generated and saved and key results will be "
@@ -177,6 +191,7 @@ def parse_args(args: List[Any]) -> argparse.Namespace:
     )
     simulation_parser.add_argument(
         "--skip-plots",
+        "-sp",
         action="store_true",
         default=False,
         help="If specified, plots will be skipped. Note, only affects cases where "
@@ -190,6 +205,7 @@ def parse_args(args: List[Any]) -> argparse.Namespace:
     )
     optimisation_parser.add_argument(
         "--optimisation",
+        "-opt",
         action="store_true",
         default=False,
         help="If specified, CLOVER will carry out optimisations in accordance with "
