@@ -1,0 +1,118 @@
+---
+################################################################################
+# devices.yaml - Device input information.                                     #
+#                                                                              #
+# Author: Phil Sandwell, Ben Winchester                                        #
+# Copyright: Phil Sandwell & Ben Winchester, 2021                              #
+# Date created: 14/07/2021                                                     #
+# License: Open source                                                         #
+################################################################################
+
+# A template device is provided below:
+# - device: light # device name
+#   available: true # whether the device is available to the community
+#   electric_power: 3 # the electric power consumption in Watts
+#   initial_ownership: 2 # the initial number of devices owned per household
+#   final_ownership: 4 # the final number of devices owned per household
+#   innovation: 0.04 # the rate of new households spontaneousl purchasing one
+#   imitation: 0.5 # the rate of new households copying neighbours
+#   type: domestic # the type of the device demand
+#   clean_water_usage: # the water consumption of the device, when on, in litres/hour
+#
+
+- device: light
+  available: true
+  electric_power: 3
+  initial_ownership: 2
+  final_ownership: 4
+  innovation: 0.04
+  imitation: 0.5
+  type: domestic
+- device: phone
+  available: true
+  electric_power: 5
+  initial_ownership: 2.2
+  final_ownership: 3
+  innovation: 0.02
+  imitation: 0.2
+  type: domestic
+- device: radio
+  available: true
+  electric_power: 10
+  initial_ownership: 0.28
+  final_ownership: 0.35
+  innovation: 0.01
+  imitation: 0.2
+  type: domestic
+- device: tv
+  available: true
+  electric_power: 20
+  initial_ownership: 0.08
+  final_ownership: 0.9
+  innovation: 0.03
+  imitation: 0.25
+  type: domestic
+- device: laptop
+  available: true
+  electric_power: 40
+  initial_ownership: 0.01
+  final_ownership: 0.5
+  innovation: 0.02
+  imitation: 0.2
+  type: domestic
+- device: fridge
+  available: true
+  electric_power: 50
+  initial_ownership: 0
+  final_ownership: 0.5
+  innovation: 0.02
+  imitation: 0.2
+  type: domestic
+- device: fan
+  available: true
+  electric_power: 10
+  initial_ownership: 0.1
+  final_ownership: 2
+  innovation: 0.04
+  imitation: 0.3
+  type: domestic
+- device: kerosene
+  available: false
+  electric_power: 1
+  initial_ownership: 3.4
+  final_ownership: 2
+  innovation: 0.02
+  imitation: 0.1
+  type: domestic
+- device: mill
+  available: false
+  electric_power: 750
+  initial_ownership: 0.01
+  final_ownership: 0.1
+  innovation: 0.02
+  imitation: 0.2
+  type: commercial
+- device: workshop
+  available: false
+  electric_power: 350
+  initial_ownership: 0.05
+  final_ownership: 0.05
+  innovation: 0.02
+  imitation: 0.2
+  type: commercial
+- device: sme
+  available: false
+  electric_power: 200
+  initial_ownership: 0.05
+  final_ownership: 0.03
+  innovation: 0.25
+  imitation: 0.25
+  type: commercial
+- device: streetlight
+  available: false
+  electric_power: 25
+  initial_ownership: 0.2
+  final_ownership: 0.2
+  innovation: 0
+  imitation: 0
+  type: public

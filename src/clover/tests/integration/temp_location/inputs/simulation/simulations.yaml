@@ -1,0 +1,12 @@
+---
+################################################################################
+# simulations.yaml - Parameters for running a CLOVER simulations.              #
+#                                                                              #
+# Author: Phil Sandwell, Ben Winchester                                        #
+# Copyright: Phil Sandwell & Ben Winchester, 2021                              #
+# Date created: 14/07/2021                                                     #
+# License: Open source                                                         #
+################################################################################
+
+- start_year: 0 # The start year for the simulation run.
+  end_year: 5 # The end year for the simulation.
