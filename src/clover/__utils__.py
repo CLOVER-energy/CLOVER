@@ -1089,7 +1089,7 @@ class KeyResults:
                 self.cumulative_hw_pvt_generation, 3
             )
         if self.cumulative_pv_generation is not None:
-            data_dict["Cumulative pv generation / kWh"] = round(
+            data_dict["Cumulative pv generation / kWh/kWp"] = round(
                 self.cumulative_pv_generation, 3
             )
         if self.diesel_times is not None:
