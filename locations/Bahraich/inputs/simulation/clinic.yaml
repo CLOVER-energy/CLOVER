@@ -1,0 +1,11 @@
+# clinic.yaml 
+#
+# Author: Ilaria
+#
+#
+
+clinics:
+  # A dash here means one entry, i.e., clinic.
+  - name: uganda_1
+    area: 500 # [m^2]
+    heat_loss_coeffieint: 20 # [W/m^2*K]
