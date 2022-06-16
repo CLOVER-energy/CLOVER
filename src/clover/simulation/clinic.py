@@ -10,8 +10,21 @@ clinic.py - Works out the health centre load.
 
 """
 
+import dataclasses
+
+@dataclasses.dataclass
+class Clinic:
+  """
+  Represents a clinic.
+  
+  """
+  
+  area: float # Tells python that a clinic has an area, and it's a number
+  heat_loss_coefficient: float
+  mean_occupancy: float
+    
 def building_temperature_difference_load(
-  building,
+  building: Clinic,
   inside_ideal_temperature,
   outside_temperature
 ):
