@@ -1304,21 +1304,21 @@ def parse_scenario_inputs(
 
 
 def _parse_clinic_inputs(
-    ...
+    args,
 ):
-    
+
     # Work out where the file is
     clinic_inputs_filepath = os.path.join(
         inputs_directory_relative_path,
         "simulation/clinics.yaml",
     )
-    
+
     # Turn it into a Python dictionary
     clinic_inputs = read_yaml(
         clinic_inputs_filepath,
         logger,
     )
-    
+
     # {"clinics": [{"name": "uganda_1", "area": 500}]}
 
     # Turn it into "Clinics"
@@ -1330,7 +1330,7 @@ def _parse_clinic_inputs(
     logger.info("Clinic information is parsed!")
 
     return clincs
-        
+
 
 def _parse_solar_inputs(  # pylint: disable=too-many-locals, too-many-statements
     debug: bool,
