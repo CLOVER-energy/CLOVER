@@ -25,7 +25,7 @@ from typing import Any, Dict, Optional
 import numpy as np  # pylint: disable=import-error
 import pandas as pd
 
-from ..impact import finance, ghgs #scenario 
+from ..impact import finance, ghgs
 
 from ..__utils__ import (
     BColours,
@@ -35,7 +35,7 @@ from ..__utils__ import (
     EnvironmentalAppraisal,
     FinancialAppraisal,
     GridTier,
-    Gridype,
+    GridType,
     grids,
     InternalError,
     Scenario,
@@ -48,15 +48,6 @@ from ..__utils__ import (
 from ..impact.__utils__ import ImpactingComponent
 
 __all__ = ("appraise_system",)
-
-# def _get_grid_pricing_tier(
-#     grid_energy: pd.Series,
-#     tiers: list[GridTier],
-# ) -> GridTier:
-#     if tier.type== GridType.CURRENT_DRAW:
-#         max_current = max(grid_energy / 12000)  # kW -> A
-#         # ...
-#         return appropriate_tier
 
 def _simulation_environmental_appraisal(  # pylint: disable=too-many-locals
     buffer_tank_addition: int,
@@ -254,37 +245,33 @@ def _get_grid_pricing_tier(
     daily_peak_demand: float,
     exchange_rate: float,
 ):
-#run on a daily basis # should this be a for loop? every month over 20 years
-
-    if grid_type=='dieselg':
-        if household_daily_peak_demand<= 1.1: #A to kW and because peak so kWh so here I am saying if at anytime during a day the peak demand <=5A power then we only need tier 5A
-            tier_i_am_in= grid_type#upper_bound-consumption_5
-            #subscription_cost=(tier_i_am_in.subscription_cost)/exchange_rate
-            # I want the subscription costs to add them to the total_cost
-            #costs=(tier_i_am_in.cost)/exchange_rate
-        else:
-            tier_i_am_in= grid_type#upper_bound-consumption_10
-            #subscription_cost=(tier_i_am_in.subscription_cost)/exchange_rate
-            #costs=(tier_i_am_in.cost)/exchange_rate
-
-#run on a monthly basis # for loop monthly over 20 years
-
-    if grid_type=='edl':
-        if household_monthly_demand<= 100:
-            tier_i_am_in #is the tier with ["upper_bound"]["consumption"]=100
-            #costs=(tier_i_am_in.cost)/exchange_rate #could add costs here?
-        elif household_monthly_demand<= 100 & household_monthly_demand<= 200:
-            tier_i_am_in #is the tier with ["upper_bound"]["consumption"]=200
-            #costs=(tier_i_am_in.cost)/exchange_rate
-        elif household_monthly_demand<= 200 & household_monthly_demand<= 300:
-            tier_i_am_in #is the tier with ["upper_bound"]["consumption"]=300
-            #costs=(tier_i_am_in.cost)/exchange_rate
-        elif household_monthly_demand<= 300 & household_monthly_demand<= 400:
-            tier_i_am_in #is the tier with ["upper_bound"]["consumption"]=400
-            #costs=(tier_i_am_in.cost)/exchange_rate
-        elif household_monthly_demand<= 400 &  household_monthly_demand<= 1000:
-            tier_i_am_in #is the tier with ["upper_bound"]["consumption"]=1000
-            #costs=(tier_i_am_in.cost)/exchange_rate
+# Filter out based on whether the grid is current drawing or max-power in its pricing
+ if grid.type == GridType.CURRENT_DRAW: #DIESEL GENERATOR
+    #Determine the peak current
+    if household_daily_peak_demand<= tier_5A_supply: #A to kW and because peak so kWh so here I am saying if at anytime during a day the peak demand <=5A power then we only need tier 5A
+        tier_i_am_in= grid_type#upper_bound-consumption_5
+    else:
+        tier_i_am_in= grid_type #upper_bound-consumption_10
+    # Compare this to the tariff numbers, possibly with some dictionary
+ elif grid.type == GridType.DAILY_POWER: #EDL
+    # Sum over the time period, you will need to code this somewhere, here would be fine for now
+    # Determine the energy that was consumed
+    if household_monthly_demand<= upper_bound_tier_edl_1:
+        tier_i_am_in #is the tier with ["upper_bound"]["consumption"]=100
+    elif household_monthly_demand<= upper_bound_tier_edl_1 & household_monthly_demand<= upper_bound_tier_edl_2:
+        tier_i_am_in #is the tier with ["upper_bound"]["consumption"]=200
+    elif household_monthly_demand<= upper_bound_tier_edl_2 & household_monthly_demand<= upper_bound_tier_edl_3:
+        tier_i_am_in #is the tier with ["upper_bound"]["consumption"]=300
+    elif household_monthly_demand<= upper_bound_tier_edl_3 & household_monthly_demand<= upper_bound_tier_edl_4:
+        tier_i_am_in #is the tier with ["upper_bound"]["consumption"]=400
+    elif household_monthly_demand<= upper_bound_tier_edl_4 &  household_monthly_demand<= upper_bound_tier_edl_5:
+        tier_i_am_in #is the tier with ["upper_bound"]["consumption"]=1000
+ else:
+    raise Exception(
+        "Grid type must be one of {}".format(
+            ", ".join({e.value for e in GridType}) # This will print all the allowed values
+        )
+    )
 
 def _simulation_financial_appraisal(  # pylint: disable=too-many-locals
     exchange_rate: float,
@@ -420,7 +407,8 @@ def _simulation_financial_appraisal(  # pylint: disable=too-many-locals
     #   - to know how much energy was used, from each grid
 
     #APPRAISAL TO CHANGE: 
-
+        
+    grid_costs: float = 0
     for grid_name in scenario.grid_types:
         grid_energy = simulation_results["{grid_name} {ColumnHeader.GRID_ENERGY.value}"]
         grid = [grid for grid in grids if grid.name == grid_name][0]
@@ -433,7 +421,7 @@ def _simulation_financial_appraisal(  # pylint: disable=too-many-locals
         costs = (tier_i_am_in.costs)/exchange_rate
         subscription_cost=(tier_i_am_in.subscription_cost)/exchange_rate
         costs_of_this_grid: float = 0 #once you know what tier we are talking about then,the cost of the grid is based on the tier (for EDL)
-        grid_costs = costs_of_this_grid
+        grid_costs += costs_of_this_grid
 
     # add the subscription costs
     kerosene_costs = finance.expenditure(

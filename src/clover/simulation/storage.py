@@ -634,7 +634,7 @@ def get_electric_battery_storage_profile(  # pylint: disable=too-many-locals, to
         else:
             grid_energy = pd.DataFrame([0] * (end_hour - start_hour))
         
-        total_grid_energy= sum(grid_energies)#sum over the grid energies here
+        total_grid_energy= sum(grid_energies.values())#sum over the grid energies here
        
         battery_storage_profile: pd.DataFrame = pd.DataFrame(
             remaining_profile.values + total_grid_energy #  Now a dictionary
@@ -653,17 +653,7 @@ def get_electric_battery_storage_profile(  # pylint: disable=too-many-locals, to
         
         total_grid_energy= sum(grid_energies)#sum over the grid energies here
         remaining_profile=(total_grid_energy <=0).mul(load_energy) #type ignore
-       
-        #OLD VERSION
-
-        # if scenario.grid:
-        #     grid_energy = pd.DataFrame(grid_profile.mul(load_energy[0]))  # type: ignore
-        # else:
-        #     grid_energy = pd.DataFrame([0] * (end_hour - start_hour))
-        # as needed for load
-        # remaining_profile = (grid_energy[0] <= 0).mul(load_energy[0])  # type: ignore
-
-        # Then take energy from PV if generated
+        
         battery_storage_profile = pd.DataFrame(
             renewables_energy[0].values - remaining_profile.values  # type: ignore
         )

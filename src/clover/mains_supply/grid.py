@@ -62,29 +62,6 @@ def get_lifetime_grid_status(
         disable_tqdm, generation_directory, "grid", logger, max_years, grid_times
     )
 
-
-#     #%%
-#     def change_grid_coverage(self, grid_types="bahraich", hours=12):
-#         grid_profile = self.grid_times[grid_types]
-#         baseline_hours = np.sum(grid_profile)
-#         new_profile = pd.DataFrame([0] * 24)
-#         for hour in range(24):
-#             m = interp1d([0, baseline_hours, 24], [0, grid_profile[hour], 1])
-#             new_profile.iloc[hour] = m(hours).round(3)
-#         new_profile.columns = [grid_types + "_" + str(hours)]
-#         return new_profile
-
-#     def save_grid_coverage(self, grid_types="bahraich", hours=12):
-#         new_profile = self.change_grid_coverage(grid_types, hours)
-#         new_profile_name = grid_types + "_" + str(hours)
-#         output = self.grid_times
-#         if new_profile_name in output.columns:
-#             output[new_profile_name] = new_profile
-#         else:
-#             output = pd.concat([output, new_profile], axis=1)
-#         output.to_csv(self.generation_filepath + "Grid inputs.csv")
-
-
 def load_grid_profile(
     auto_generated_files_directory: str, logger: Logger, scenario: Scenario
 ) -> Optional[pd.DataFrame]:

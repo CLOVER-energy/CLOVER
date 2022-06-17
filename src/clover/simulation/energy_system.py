@@ -1052,7 +1052,7 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
     converters: Union[Dict[str, Converter], List[Converter]],
     disable_tqdm: bool,
     electric_storage_size: float,
-    grid_profiles: Optional[pd.DataFrame],
+    grid_profiles : Dict[str, pd.DataFrame],
     hot_water_pvt_size: int,
     irradiance_data: pd.Series,
     kerosene_usage: pd.DataFrame,
@@ -1215,7 +1215,7 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
     grid_profiles = (
         grid_profiles
         if grid_profiles is not None
-        else pd.DataFrame([0] * simulation_hours)
+        else {some_grid_name: pd.DataFrame([0] * simulation_hours)}
     )
     total_cw_load: Optional[pd.DataFrame] = total_loads[ResourceType.CLEAN_WATER]
     total_electric_load: Optional[pd.DataFrame] = total_loads[ResourceType.ELECTRIC]
@@ -1431,9 +1431,9 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
         renewables_energy_used_directly,
     ) = get_electric_battery_storage_profile(
         clean_water_pvt_size=clean_water_pvt_size,
-        grid_profiles={
-            name: grid_profile.iloc[start_hour:end_hour, 0] for name, grid_profile in grid_profiles.items()
-            },  # type: ignore # to check that
+        # grid_profiles={
+        #     name: grid_profile.iloc[start_hour:end_hour, 0] for name, grid_profile in grid_profiles.items()
+        #     },  # type: ignore # to check that
         hot_water_pvt_size=hot_water_pvt_size,
         kerosene_usage=kerosene_usage.iloc[start_hour:end_hour, 0],
         location=location,

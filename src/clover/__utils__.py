@@ -1907,22 +1907,32 @@ class HotWaterScenario:
 
 
 class GridType(enum.Enum):
-    """I say what type of grid it is."""
+    """
+    Represents what type of grid is operating
+    
+    """
     CURRENT_DRAW = "current_draw"
     DAILY_POWER = "daily_power"
 
 
 @dataclasses.dataclass
 class GridTier:
-    """I'm a grid tier."""
+    """
+    Represents a tier within the grid (both EDL and Dieselg)
+    
+    """
     upper_bound_type: GridType
     upper_bound_value: float
     costs: Dict[str, float]
 
 
+
 @dataclasses.dataclass
 class Grid:
-    """I'm a grid."""
+    """
+    Represents a grid class being run
+    
+    """
     name: str
     tiers: List[GridTier]
 
@@ -1940,6 +1950,9 @@ class Scenario:
 
     .. attribute:: desalination_scenario
         The :class:`DesalinationScenario` for the run.
+        
+    .. attribute:: grids
+        The type of grid being modelled, i.e., whether the grid is full, etc. These options are written in the grid inputs file as headers.
 
     .. attribute:: diesel_scenario
         The diesel scenario being modelled.

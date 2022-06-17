@@ -10,7 +10,7 @@
 
 exchange_rate: 25000 #[LBP/$]
 
-grid:
+grids:
 # Diesel Generator (split into 5A and 10A subcriptions)
   - name: dieselg # Corresponds to one grid profile
     tiers:
@@ -35,36 +35,44 @@ grid:
     tiers:
       - upper_bound:
           type: daily_power
-          consumption: 100 # [kWh/day]
+          consumption: 100 # [kWh/monthly]
         costs:
           cost: 35  # [LBP/kWh]
           extension cost: 0 # [$/km]
           infrastructure_cost: 0 # [$]
           subscription_cost: 0
-  - name: edl_threshold_2
-    lower_bound: 101 # [kWh/day]
-    costs:
-      cost: 55 # [LBP/kWh]
-      extension cost: 0 # [$/km]
-      infrastructure_cost: 0 # [$]
-  - name: edl_threshold_3
-    lower_bound: 201 # [kWh/day]
-    costs:
-      cost: 80 # [LBP/kWh]
-      extension cost: 0 # [$/km]
-      infrastructure_cost: 0 # [$]     
-  - name: edl_threshold_4
-    lower_bound: 301 # [kWh/day]
-    costs:
-      cost: 120 # [LBP/kWh]
-      extension cost: 0 # [$/km]
-      infrastructure_cost: 0 # [$]
-  - name: edl_threshold_5
-    lower_bound: 401 # [kWh/day]
-    costs:
-      cost: 200 # [LBP/kWh]
-      extension cost: 0 # [$/km]
-      infrastructure_cost: 0 # [$] 
+      - upper_bound:
+          type: daily_power
+          consumption: 200 # [kWh/monthly]
+        costs:
+          cost: 55  # [LBP/kWh]
+          extension cost: 0 # [$/km]
+          infrastructure_cost: 0 # [$]
+          subscription_cost: 0
+      - upper_bound:
+          type: daily_power
+          consumption: 300 # [kWh/monthly]
+        costs:
+          cost: 80  # [LBP/kWh]
+          extension cost: 0 # [$/km]
+          infrastructure_cost: 0 # [$]
+          subscription_cost: 0
+      - upper_bound:
+          type: daily_power
+          consumption: 400 # [kWh/monthly]
+        costs:
+          cost: 120  # [LBP/kWh]
+          extension cost: 0 # [$/km]
+          infrastructure_cost: 0 # [$]
+          subscription_cost: 0
+      - upper_bound:
+          type: daily_power
+          consumption: 1000 # [kWh/monthly]
+        costs:
+          cost: 200  # [LBP/kWh]
+          extension cost: 0 # [$/km]
+          infrastructure_cost: 0 # [$]
+          subscription_cost: 0
 # Both grids EDL and Diesel Generator have the same emissions        
 emissions:
   ghgs: 2560 # [kgCO2/kWp]
