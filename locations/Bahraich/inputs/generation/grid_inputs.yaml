@@ -10,8 +10,7 @@
 
 exchange_rate: 25000 #[LBP/$]
 
-grids:
-# Diesel Generator (split into 5A and 10A subcriptions)
+grids: # Diesel Generator (split into 5A and 10A subcriptions)
   - name: dieselg # Corresponds to one grid profile
     tiers:
       - upper_bound:
@@ -30,7 +29,6 @@ grids:
           extension cost: 0 # [$/km]
           infrastructure_cost: 0 # [$]
           subscription_cost: 150000 #[LBP/month] #division by exchange rate in main files
-# ELECTRICTY DU LIBAN GRID
   - name: edl
     tiers:
       - upper_bound:
@@ -73,7 +71,6 @@ grids:
           extension cost: 0 # [$/km]
           infrastructure_cost: 0 # [$]
           subscription_cost: 0
-# Both grids EDL and Diesel Generator have the same emissions        
 emissions:
   ghgs: 2560 # [kgCO2/kWp]
   ghg_decrease: 0 # [% p.a.]

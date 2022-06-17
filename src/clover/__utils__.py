@@ -1963,10 +1963,6 @@ class Scenario:
     .. attribute:: grid
         Whether the grid is being included in the scenario.
 
-    .. attribute:: grids
-        The type of grid being modelled, i.e., whether the grid is full, etc. These
-        options are written in the grid inputs file as headers.
-
     .. attribute:: hot_water_scneario
         The :class:`HotWaterScenario` for the run.
 
