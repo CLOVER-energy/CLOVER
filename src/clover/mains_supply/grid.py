@@ -78,7 +78,7 @@ def load_grid_profile(
 
     """
 
-    grid_profiles: Dict[str, pd.DataFrame] = {}
+    grid_profiles: Optional[Dict[str, pd.DataFrame]] = {}
 
     if scenario.grid:
         for grid_type in scenario.grid_types:

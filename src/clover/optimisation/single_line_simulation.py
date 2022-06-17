@@ -66,7 +66,7 @@ def single_line_simulation(  # pylint: disable=too-many-locals, too-many-stateme
     end_year: int,
     finance_inputs: Dict[str, Any],
     ghg_inputs: Dict[str, Any],
-   grid_profiles : Dict[str, pd.DataFrame],
+    grid_profiles: Optional[Dict[str, pd.DataFrame]],
     hw_pvt_size: SolarSystemSize,
     hw_tanks: TankSize,
     irradiance_data: pd.Series,
