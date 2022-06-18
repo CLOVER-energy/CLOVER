@@ -391,6 +391,8 @@ def get_electric_battery_storage_profile(  # pylint: disable=too-many-locals, to
     Inputs:
         - grid_profile:
             The relevant grid profile, based on the scenario, for the simulation.
+        - grid_profiles:
+            The relevant multiple grid profile based on scenario covering different grids.
         - kerosene_usage:
             The kerosene usage.
         - logger:

@@ -2141,7 +2141,16 @@ def _parse_transmission_inputs(
 def _parse_grid_inputs(
     inputs_directory_relative_path: str, logger: Logger, scenarios: List[Scenario],
 ) -> List[GRID]:
-
+    """
+        Gets the grid pricing tier.
+        TO BE EDITED
+        Inputs:
+            - minigrid:
+                The minigrid being modelled.
+        Outputs:
+            - power_consumed:
+                The electric power consumed in providing the water demand.
+    """
     grid_inputs_filepath = os.path.join(
         inputs_directory_relative_path, GRID_INPUTS_FILE
     )

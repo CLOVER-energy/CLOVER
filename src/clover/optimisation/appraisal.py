@@ -250,6 +250,16 @@ def _get_grid_pricing_tier(
     daily_peak_demand: float,
     exchange_rate: float,
 ):
+    """
+        Gets the grid pricing tier.
+        TO BE EDITED
+        Inputs:
+            - minigrid:
+                The minigrid being modelled.
+        Outputs:
+            - power_consumed:
+                The electric power consumed in providing the water demand.
+    """
     pdb.set_trace()
 
     # Filter out based on whether the grid is current drawing or max-power in its pricing
