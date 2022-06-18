@@ -1911,6 +1911,7 @@ class GridType(enum.Enum):
     Represents what type of grid is operating
     
     """
+
     CURRENT_DRAW = "current_draw"
     DAILY_POWER = "daily_power"
 
@@ -1921,10 +1922,10 @@ class GridTier:
     Represents a tier within the grid (both EDL and Dieselg)
     
     """
+
     upper_bound_type: GridType
     upper_bound_value: float
     costs: Dict[str, float]
-
 
 
 @dataclasses.dataclass
@@ -1933,6 +1934,7 @@ class Grid:
     Represents a grid class being run
     
     """
+
     name: str
     tiers: List[GridTier]
 

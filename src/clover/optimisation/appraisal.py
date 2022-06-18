@@ -49,6 +49,7 @@ from ..impact.__utils__ import ImpactingComponent
 
 __all__ = ("appraise_system",)
 
+
 def _simulation_environmental_appraisal(  # pylint: disable=too-many-locals
     buffer_tank_addition: int,
     clean_water_tank_addition: int,
@@ -239,39 +240,63 @@ def _simulation_environmental_appraisal(  # pylint: disable=too-many-locals
         round(total_system_ghgs, 3),
     )
 
+
 def _get_grid_pricing_tier(
-    grid_energy:float,
+    grid_energy: float,
+    #grid: Any,
     tiers: Dict[str, Any],
     daily_peak_demand: float,
     exchange_rate: float,
 ):
-# Filter out based on whether the grid is current drawing or max-power in its pricing
- if grid.type == GridType.CURRENT_DRAW: #DIESEL GENERATOR
-    #Determine the peak current
-    if household_daily_peak_demand<= tier_5A_supply: #A to kW and because peak so kWh so here I am saying if at anytime during a day the peak demand <=5A power then we only need tier 5A
-        tier_i_am_in= grid_type#upper_bound-consumption_5
+    # Filter out based on whether the grid is current drawing or max-power in its pricing
+    if grid.type == GridType.CURRENT_DRAW:  # DIESEL GENERATOR
+        # Determine the peak current
+        if (
+            household_daily_peak_demand <= tier_5A_supply
+        ):  # A to kW and because peak so kWh so here I am saying if at anytime during a day the peak demand <=5A power then we only need tier 5A
+            tier_i_am_in = grid_type  # upper_bound-consumption_5
+        else:
+            tier_i_am_in = grid_type  # upper_bound-consumption_10
+        # Compare this to the tariff numbers, possibly with some dictionary
+    elif grid.type == GridType.DAILY_POWER:  # EDL
+        # Sum over the time period, you will need to code this somewhere, here would be fine for now
+        # Determine the energy that was consumed
+        if household_monthly_demand <= upper_bound_tier_edl_1:
+            tier_i_am_in  # is the tier with ["upper_bound"]["consumption"]=100
+        elif (
+            household_monthly_demand
+            <= upper_bound_tier_edl_1 & household_monthly_demand
+            <= upper_bound_tier_edl_2
+        ):
+            tier_i_am_in  # is the tier with ["upper_bound"]["consumption"]=200
+        elif (
+            household_monthly_demand
+            <= upper_bound_tier_edl_2 & household_monthly_demand
+            <= upper_bound_tier_edl_3
+        ):
+            tier_i_am_in  # is the tier with ["upper_bound"]["consumption"]=300
+        elif (
+            household_monthly_demand
+            <= upper_bound_tier_edl_3 & household_monthly_demand
+            <= upper_bound_tier_edl_4
+        ):
+            tier_i_am_in  # is the tier with ["upper_bound"]["consumption"]=400
+        elif (
+            household_monthly_demand
+            <= upper_bound_tier_edl_4 & household_monthly_demand
+            <= upper_bound_tier_edl_5
+        ):
+            tier_i_am_in  # is the tier with ["upper_bound"]["consumption"]=1000
     else:
-        tier_i_am_in= grid_type #upper_bound-consumption_10
-    # Compare this to the tariff numbers, possibly with some dictionary
- elif grid.type == GridType.DAILY_POWER: #EDL
-    # Sum over the time period, you will need to code this somewhere, here would be fine for now
-    # Determine the energy that was consumed
-    if household_monthly_demand<= upper_bound_tier_edl_1:
-        tier_i_am_in #is the tier with ["upper_bound"]["consumption"]=100
-    elif household_monthly_demand<= upper_bound_tier_edl_1 & household_monthly_demand<= upper_bound_tier_edl_2:
-        tier_i_am_in #is the tier with ["upper_bound"]["consumption"]=200
-    elif household_monthly_demand<= upper_bound_tier_edl_2 & household_monthly_demand<= upper_bound_tier_edl_3:
-        tier_i_am_in #is the tier with ["upper_bound"]["consumption"]=300
-    elif household_monthly_demand<= upper_bound_tier_edl_3 & household_monthly_demand<= upper_bound_tier_edl_4:
-        tier_i_am_in #is the tier with ["upper_bound"]["consumption"]=400
-    elif household_monthly_demand<= upper_bound_tier_edl_4 &  household_monthly_demand<= upper_bound_tier_edl_5:
-        tier_i_am_in #is the tier with ["upper_bound"]["consumption"]=1000
- else:
-    raise Exception(
-        "Grid type must be one of {}".format(
-            ", ".join({e.value for e in GridType}) # This will print all the allowed values
+        raise Exception(
+            "Grid type must be one of {}".format(
+                ", ".join(
+                    {e.value for e in GridType}
+                )  # This will print all the allowed values
+            )
         )
-    )
+    return (tier_i_am_in)
+
 
 def _simulation_financial_appraisal(  # pylint: disable=too-many-locals
     exchange_rate: float,
@@ -284,7 +309,7 @@ def _simulation_financial_appraisal(  # pylint: disable=too-many-locals
     hot_water_tank_addition: int,
     location: Location,
     logger: Logger,
-    scenario: Scenario, #added scenrario in the inputs of the definition 
+    scenario: Scenario,  # added scenrario in the inputs of the definition
     pv_addition: float,
     pvt_addition: float,
     simulation_results: pd.DataFrame,
@@ -354,7 +379,7 @@ def _simulation_financial_appraisal(  # pylint: disable=too-many-locals
         yearly_load_statistics,
         start_year=system_details.start_year,
         end_year=system_details.end_year,
-        #not going to add here the grid
+        # not going to add here the grid
     )
 
     # Calculate costs of connecting new households (discounted)
@@ -362,7 +387,7 @@ def _simulation_financial_appraisal(  # pylint: disable=too-many-locals
         finance_inputs,
         simulation_results[ColumnHeader.HOUSEHOLDS.value],
         system_details.start_year,
-        #not going to add here the grid
+        # not going to add here the grid
     )
 
     # Calculate operating costs of the system during this simulation (discounted)
@@ -392,7 +417,7 @@ def _simulation_financial_appraisal(  # pylint: disable=too-many-locals
         system_details.initial_storage_size,
         start_year=system_details.start_year,
         end_year=system_details.end_year,
-        #not going to add here the grid
+        # not going to add here the grid
     )
 
     # Calculate running costs of the system (discounted)
@@ -406,21 +431,21 @@ def _simulation_financial_appraisal(  # pylint: disable=too-many-locals
     # This function will need:
     #   - to know how much energy was used, from each grid
 
-    #APPRAISAL TO CHANGE: 
-        
+    # APPRAISAL TO CHANGE:
+
     grid_costs: float = 0
     for grid_name in scenario.grid_types:
         grid_energy = simulation_results["{grid_name} {ColumnHeader.GRID_ENERGY.value}"]
         grid = [grid for grid in grids if grid.name == grid_name][0]
-        
+
         tiers = grid.tiers
 
         tier_i_am_in = _get_grid_pricing_tier(grid_energy, tiers)
-        #get the function _get_grid_pricing_tier for it to read the grid_energy and the tiers as inputs
-        #and the output is the tier we are working in.
-        costs = (tier_i_am_in.costs)/exchange_rate
-        subscription_cost=(tier_i_am_in.subscription_cost)/exchange_rate
-        costs_of_this_grid: float = 0 #once you know what tier we are talking about then,the cost of the grid is based on the tier (for EDL)
+        # get the function _get_grid_pricing_tier for it to read the grid_energy and the tiers as inputs
+        # and the output is the tier we are working in.
+        costs = (tier_i_am_in.costs) / exchange_rate
+        subscription_cost = (tier_i_am_in.subscription_cost) / exchange_rate
+        costs_of_this_grid: float = 0  # once you know what tier we are talking about then,the cost of the grid is based on the tier (for EDL)
         grid_costs += costs_of_this_grid
 
     # add the subscription costs
@@ -449,7 +474,7 @@ def _simulation_financial_appraisal(  # pylint: disable=too-many-locals
         + diesel_costs
         + grid_costs
         + kerosene_costs
-        + subscription_cost       #IMPORTANT
+        + subscription_cost  # IMPORTANT
     )
     total_system_cost = (
         equipment_costs + connections_cost + om_costs + diesel_costs + grid_costs

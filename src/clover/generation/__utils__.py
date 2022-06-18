@@ -288,10 +288,7 @@ def _get_profile_output(
 
 
 def _save_profile_output(
-    filepath: str,
-    gen_year: int,
-    logger: Logger,
-    profile: pd.DataFrame,
+    filepath: str, gen_year: int, logger: Logger, profile: pd.DataFrame,
 ) -> None:
     """
     Saves PV generation data as a named .csv file in the location generation file.
@@ -410,9 +407,7 @@ class BaseRenewablesNinjaThread(threading.Thread):
         cls.profile_name = profile_name
         cls.profile_key = profile_key
 
-    def run(
-        self,
-    ) -> None:
+    def run(self,) -> None:
         """
         Execute a renewables-ninja data-fetching thread.
 
@@ -457,9 +452,7 @@ class BaseRenewablesNinjaThread(threading.Thread):
                     continue
 
                 self.logger.info(
-                    "Fetching %s data for year %s.",
-                    self.profile_name,
-                    year,
+                    "Fetching %s data for year %s.", self.profile_name, year,
                 )
                 try:
                     data = _get_profile_output(
@@ -496,10 +489,7 @@ class BaseRenewablesNinjaThread(threading.Thread):
 
                 self.logger.info("Saving Renewables.ninja profile.")
                 _save_profile_output(
-                    filepath,
-                    year,
-                    self.logger,
-                    data,
+                    filepath, year, self.logger, data,
                 )
 
                 # The system waits to prevent overloading the renewables.ninja API and being
@@ -544,8 +534,7 @@ def total_profile_output(
     output = pd.DataFrame([])
 
     total_output_filename = os.path.join(
-        generation_directory,
-        f"{profile_name}_generation_{num_years}_years.csv",
+        generation_directory, f"{profile_name}_generation_{num_years}_years.csv",
     )
 
     # If the total output file already exists then simply read this in.
@@ -569,9 +558,7 @@ def total_profile_output(
                 ),
                 "r",
             ) as f:
-                iteration_year_data = pd.read_csv(
-                    f,
-                )
+                iteration_year_data = pd.read_csv(f,)
             output = pd.concat([output, iteration_year_data], ignore_index=True)
 
         # Repeat the initial data in consecutive periods

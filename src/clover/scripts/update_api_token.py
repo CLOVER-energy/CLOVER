@@ -44,9 +44,7 @@ def _parse_args(args: List[Any]) -> argparse.Namespace:
     parser = argparse.ArgumentParser()
 
     parser.add_argument(
-        "--token",
-        type=str,
-        help="The renewables.ninja API token to use.",
+        "--token", type=str, help="The renewables.ninja API token to use.",
     )
     parser.add_argument(
         "--location", type=str, help="The name of the location to update."

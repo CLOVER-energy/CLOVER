@@ -27,9 +27,7 @@ __all__ = ("generate_optimisation_string", "generate_simulation_string")
 
 
 def generate_optimisation_string(
-    minigrid: Minigrid,
-    optimisation_inputs: OptimisationParameters,
-    scenario: Scenario,
+    minigrid: Minigrid, optimisation_inputs: OptimisationParameters, scenario: Scenario,
 ) -> str:
     """
     Generate and return the optimisation string.

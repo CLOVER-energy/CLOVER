@@ -19,7 +19,7 @@ to make an accurate decision.
 import json
 
 # Opening JSON file
-f = open('optimisation_output_1.json')
+f = open("optimisation_output_1.json")
 
 # returns JSON object as
 # a dictionary
@@ -27,8 +27,8 @@ data = json.load(f)
 
 # Iterating through the json
 # list
-for i in data['emp_details']:
-	print(i)
+for i in data["emp_details"]:
+    print(i)
 
 # Closing file
 f.close()

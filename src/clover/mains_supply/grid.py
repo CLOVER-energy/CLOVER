@@ -62,6 +62,7 @@ def get_lifetime_grid_status(
         disable_tqdm, generation_directory, "grid", logger, max_years, grid_times
     )
 
+
 def load_grid_profile(
     auto_generated_files_directory: str, logger: Logger, scenario: Scenario
 ) -> Optional[pd.DataFrame]:
@@ -91,10 +92,7 @@ def load_grid_profile(
                     ),
                     "r",
                 ) as f:
-                    grid_profiles[grid_type] = pd.read_csv(
-                        f,
-                        index_col=0,
-                    )
+                    grid_profiles[grid_type] = pd.read_csv(f, index_col=0,)
             except FileNotFoundError as e:
                 logger.error(
                     "%sGrid profile file for profile '%s' could not be found: %s%s",

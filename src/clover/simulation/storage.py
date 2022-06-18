@@ -251,8 +251,7 @@ def cw_tank_iteration_step(  # pylint: disable=too-many-locals
         ):
             # Compute the maximum amount of water that can be desalinated.
             maximum_desalinated_water = min(
-                excess_energy / energy_per_desalinated_litre,
-                maximum_water_throughput,
+                excess_energy / energy_per_desalinated_litre, maximum_water_throughput,
             )
 
             # Add this to the tank and fulfil the demand if relevant.
@@ -340,12 +339,10 @@ def cw_tank_iteration_step(  # pylint: disable=too-many-locals
             conventional_water_supplied[time_index] = 0
 
         current_hourly_cw_tank_storage = min(
-            current_hourly_cw_tank_storage,
-            maximum_cw_tank_storage,
+            current_hourly_cw_tank_storage, maximum_cw_tank_storage,
         )
         current_hourly_cw_tank_storage = max(
-            current_hourly_cw_tank_storage,
-            minimum_cw_tank_storage,
+            current_hourly_cw_tank_storage, minimum_cw_tank_storage,
         )
 
         hourly_cw_tank_storage[time_index] = current_hourly_cw_tank_storage
@@ -624,8 +621,12 @@ def get_electric_battery_storage_profile(  # pylint: disable=too-many-locals, to
 
         if scenario.grid:
             for grid_type in scenario.grid_types:
-                grid_profile = grid_profile[grid_type] # {"edl": [0, 1, 2, 3, 4]} <---- [0, 1, 2, 3, 4]
-                grid_energies[grid_type] = pd.DataFrame( # {"edl": [usage, 1, 2, 3, 4, 5]} <--- [0, 1, 2, 3, 4, 5, 6, 7]
+                grid_profile = grid_profile[
+                    grid_type
+                ]  # {"edl": [0, 1, 2, 3, 4]} <---- [0, 1, 2, 3, 4]
+                grid_energies[
+                    grid_type
+                ] = pd.DataFrame(  # {"edl": [usage, 1, 2, 3, 4, 5]} <--- [0, 1, 2, 3, 4, 5, 6, 7]
                     ((remaining_profile < 0) * remaining_profile).iloc[:, 0]  # type: ignore
                     * -1.0
                     * grid_profile.values
@@ -633,11 +634,13 @@ def get_electric_battery_storage_profile(  # pylint: disable=too-many-locals, to
 
         else:
             grid_energy = pd.DataFrame([0] * (end_hour - start_hour))
-        
-        total_grid_energy= sum(grid_energies.values())#sum over the grid energies here
-       
+
+        total_grid_energy = sum(
+            grid_energies.values()
+        )  # sum over the grid energies here
+
         battery_storage_profile: pd.DataFrame = pd.DataFrame(
-            remaining_profile.values + total_grid_energy #  Now a dictionary
+            remaining_profile.values + total_grid_energy  #  Now a dictionary
         )
 
     else:
@@ -646,14 +649,16 @@ def get_electric_battery_storage_profile(  # pylint: disable=too-many-locals, to
         if scenario.grid:
             for grid_type in scenario.grid_types:
                 grid_profile = grid_profile[grid_type]
-                grid_energies[grid_type] = pd.DataFrame(grid_profile.mul(load_energy[0])) 
+                grid_energies[grid_type] = pd.DataFrame(
+                    grid_profile.mul(load_energy[0])
+                )
 
         else:
             grid_energy = pd.DataFrame([0] * (end_hour - start_hour))
-        
-        total_grid_energy= sum(grid_energies)#sum over the grid energies here
-        remaining_profile=(total_grid_energy <=0).mul(load_energy) #type ignore
-        
+
+        total_grid_energy = sum(grid_energies)  # sum over the grid energies here
+        remaining_profile = (total_grid_energy <= 0).mul(load_energy)  # type ignore
+
         battery_storage_profile = pd.DataFrame(
             renewables_energy[0].values - remaining_profile.values  # type: ignore
         )
@@ -699,8 +704,7 @@ def get_electric_battery_storage_profile(  # pylint: disable=too-many-locals, to
 
 
 def get_water_storage_profile(
-    processed_total_cw_load: pd.DataFrame,
-    renewable_cw_produced: pd.DataFrame,
+    processed_total_cw_load: pd.DataFrame, renewable_cw_produced: pd.DataFrame,
 ) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """
     Gets the storage profile for the clean-water system.
