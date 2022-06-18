@@ -24,6 +24,8 @@ from typing import Any, Dict, Optional
 
 import numpy as np  # pylint: disable=import-error
 import pandas as pd
+import pdb
+
 
 from ..impact import finance, ghgs
 
@@ -36,7 +38,7 @@ from ..__utils__ import (
     FinancialAppraisal,
     GridTier,
     GridType,
-    grids,
+    #grids,
     InternalError,
     Scenario,
     hourly_profile_to_daily_sum,
@@ -248,6 +250,8 @@ def _get_grid_pricing_tier(
     daily_peak_demand: float,
     exchange_rate: float,
 ):
+    pdb.set_trace()
+
     # Filter out based on whether the grid is current drawing or max-power in its pricing
     if grid.type == GridType.CURRENT_DRAW:  # DIESEL GENERATOR
         # Determine the peak current

@@ -362,6 +362,7 @@ def cw_tank_iteration_step(  # pylint: disable=too-many-locals
 
 def get_electric_battery_storage_profile(  # pylint: disable=too-many-locals, too-many-statements
     *,
+    grid_profile:pd.Series,
     grid_profiles: Optional[Dict[str, pd.DataFrame]],
     kerosene_usage: pd.Series,
     location: Location,
