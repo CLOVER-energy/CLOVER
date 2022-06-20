@@ -2180,8 +2180,9 @@ def _parse_grid_inputs(
             )
         grids.append(Grid(entry["name"], tiers))
         # WHERE ARE THE EMISSIONS IN PARSE GRID
-
-    return grids  # but we are not returning the tiers?
+    grid_emissions = grid_inputs["emissions"]
+    return (grids, grid_emissions)
+    # but we are not returning the tiers?
 
 
 def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
