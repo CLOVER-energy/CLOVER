@@ -248,17 +248,22 @@ def _get_grid_pricing_tier(
     #grid: Any,
     tiers: Dict[str, Any],
     daily_peak_demand: float,
-    exchange_rate: float,
 ):
     """
         Gets the grid pricing tier.
         TO BE EDITED
         Inputs:
-            - minigrid:
-                The minigrid being modelled.
+            - grid:
+                Needed to identify the grid criteria and data.
+            - scenario:
+                Needed to identify what grids are deployed in the scenario tested.
+            - Daily household hourly consumption:
+                Needed to identify the peak consumption per day.
+            - Monthly household consumption:
+                Needed to identify the consumption tier of a household on a monthly basis.
         Outputs:
-            - power_consumed:
-                The electric power consumed in providing the water demand.
+            - tier_iam_in:
+                The tier corresponding to the household consumption based on the grid in use.
     """
     pdb.set_trace()
 

@@ -2142,14 +2142,22 @@ def _parse_grid_inputs(
     inputs_directory_relative_path: str, logger: Logger, scenarios: List[Scenario],
 ) -> List[GRID]:
     """
-        Gets the grid pricing tier.
-        TO BE EDITED
-        Inputs:
-            - minigrid:
-                The minigrid being modelled.
-        Outputs:
-            - power_consumed:
-                The electric power consumed in providing the water demand.
+    Parses the grid inputs file.
+
+    Inputs:
+        - inputs_directory_relative_path:
+            The relative path to the inputs folder directory.
+        - logger:
+            The :class:`logging.Logger` to use for the run.
+        - scenarios:
+            The list of scenarios.
+
+    Outputs:
+        - The grid types (CURRENT.DRAW AND DAILY POWER).
+        - The grid tiers for each types.
+        - The grid costs for each tiers.
+        - The overall grid emissions (similar for all types and tiers).
+
     """
     grid_inputs_filepath = os.path.join(
         inputs_directory_relative_path, GRID_INPUTS_FILE
