@@ -84,6 +84,10 @@ INSTALLATION_COST: str = "installation_cost"
 #   Keyword used to denote the installation cost decrease of a component.
 INSTALLATION_COST_DECREASE: str = "installation_cost_decrease"
 
+# Subscription cost: 
+# Keyword used to denote the subscription cost of the diesel generator.
+SUBSCRIPTION_COST: str = "subscription_cost"
+
 # OM:
 #   Keyword used to denote O&M costs.
 OM = "o&m"

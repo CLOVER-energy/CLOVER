@@ -16,7 +16,7 @@ grid.py - The grid-generation module for CLOVER.
 This module generates grid-availability profiles for CLOVER.
 
 """
-
+import enum
 import os
 
 from logging import Logger
@@ -27,8 +27,7 @@ import pandas as pd
 from ..__utils__ import BColours, Scenario
 from .__utils__ import get_intermittent_supply_status
 
-__all__ = ("get_lifetime_grid_status", "load_grid_profile")
-
+__all__ = ("get_lifetime_grid_status", "load_grid_profile",)
 
 def get_lifetime_grid_status(
     disable_tqdm: bool,

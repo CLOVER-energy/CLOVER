@@ -1908,36 +1908,52 @@ class HotWaterScenario:
 
 class GridType(enum.Enum):
     """
-    Represents what type of grid is operating
-    
-    """
+    Specifies the type of grid being considered.
 
+    - Current draw:
+        Denotes that the grid is based on the current draw so Diesel Generator.
+    - Daily power:
+        Denotes that the grid is based on the daily power so EDL.
+
+    """
     CURRENT_DRAW = "current_draw"
     DAILY_POWER = "daily_power"
-
 
 @dataclasses.dataclass
 class GridTier:
     """
-    Represents a tier within the grid (both EDL and Dieselg)
+    Specifies the grid tier following an upper bound threshold.
+
+    - Upper Bound type:
+        Denotes the type of the upper bound tier.
+    - Upper Bound value:
+        Denotes the value of the upper bound tier.
+    - costs:
+        Denotes the costs associated with every tier.
     
     """
 
     upper_bound_type: GridType
-    upper_bound_value: float
+    upper_bound_consumption: float
     costs: Dict[str, float]
 
 
 @dataclasses.dataclass
 class Grid:
     """
-    Represents a grid class being run
-    
+    Specifies the grid class being run.
+
+    - name: 
+        Denotes the name of the grid used.
+    - tiers:
+        Denotes the list of different grid tiers for the different types of grids.
+    - grid emissions:
+        Denotes the general emissions for any type of grid (considering similar emissions for all types.)
     """
 
     name: str
     tiers: List[GridTier]
-
+    emissions: Dict[str,float]
 
 @dataclasses.dataclass
 class Scenario:

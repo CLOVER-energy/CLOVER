@@ -87,8 +87,7 @@ BATTERY_INPUTS_FILE: str = os.path.join("simulation", "battery_inputs.yaml")
 # Conventional water-source-availability directory:
 #   The directory containing availability profiles for conventional water sources.
 CONVENTIONAL_WATER_SOURCE_AVAILABILITY_DIRECTORY: str = os.path.join(
-    "generation", "conventional_water_sources"
-)
+    "generation", "conventional_water_sources")
 
 # Conversion inputs file:
 #   The relative path to the conversion-inputs file.
@@ -183,13 +182,6 @@ GHG_INPUTS_FILE: str = os.path.join("impact", "ghg_inputs.yaml")
 # The relative path to the grid inputs file.
 GRID_INPUTS_FILE: str = os.path.join("generation", "grid_inputs.yaml")
 
-# Keyword used for parsing diesel-generator information.
-GRID: str = "grid"
-GRID_EMISSIONS: str = "emissions"
-GRID_TIER: str = "tier"
-GRID_TYPE: str = "type"
-
-
 # Grid inputs file:
 #   The relative path to the grid-inputs file.
 GRID_TIMES_FILE: str = os.path.join("generation", "grid_times.csv")
@@ -280,6 +272,12 @@ WATER_SOURCE_AVAILABILTY_TEMPLATE_FILENAME: str = "{water_source}_times.csv"
 #   The relative path to the water-source inputs file.
 WATER_SOURCE_INPUTS_FILE: str = os.path.join("generation", "water_source_inputs.yaml")
 
+#Grid inputs:
+# Keyword used for parsing diesel-generator information.
+GRID: str = "grid"
+GRID_EMISSIONS: str = "emissions"
+GRID_TIER: str = "tier"
+GRID_TYPE: str = "type"
 
 def _parse_battery_inputs(
     energy_system_inputs: Dict[str, Any],
@@ -2159,16 +2157,17 @@ def _parse_grid_inputs(
         - The overall grid emissions (similar for all types and tiers).
 
     """
+    # Parse the grid input information.
     grid_inputs_filepath = os.path.join(
         inputs_directory_relative_path, GRID_INPUTS_FILE
     )
-    grid_inputs = read_yaml(grid_inputs_filepath, logger)
+    grid_inputs = read_yaml(grid_inputs_filepath, logger,)
     if not isinstance(grid_inputs, dict):
         raise InputFileError("Grid inputs", "Grid input file is not of type `list`.")
     logger.info("Grid inputs successfully parsed.")
 
     grids: List[Grid] = []
-    for entry in grid_inputs:
+    for entry in grid_inputs["grids"]:
         tiers: List[GridTier] = []
         for tier_entry in entry["tiers"]:
             tiers.append(
@@ -2179,11 +2178,8 @@ def _parse_grid_inputs(
                 )
             )
         grids.append(Grid(entry["name"], tiers))
-        # WHERE ARE THE EMISSIONS IN PARSE GRID
-    grid_emissions = grid_inputs["emissions"]
+    grid_emissions = grid_inputs["emissions"] #the same for all the grids (EDL,Diesel)
     return (grids, grid_emissions)
-    # but we are not returning the tiers?
-
 
 def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
     debug: bool,

@@ -38,7 +38,7 @@ from ..__utils__ import (
     FinancialAppraisal,
     GridTier,
     GridType,
-    #grids,
+    Grid,
     InternalError,
     Scenario,
     hourly_profile_to_daily_sum,
@@ -244,14 +244,12 @@ def _simulation_environmental_appraisal(  # pylint: disable=too-many-locals
 
 
 def _get_grid_pricing_tier(
-    grid_energy: float,
-    #grid: Any,
-    tiers: Dict[str, Any],
-    daily_peak_demand: float,
-):
+    household_daily_peak_demand: pd.DataFrame,
+    household_monthly_demand: pd.DataFrame,
+): 
     """
         Gets the grid pricing tier.
-        TO BE EDITED
+
         Inputs:
             - grid:
                 Needed to identify the grid criteria and data.
@@ -268,16 +266,15 @@ def _get_grid_pricing_tier(
     pdb.set_trace()
 
     # Filter out based on whether the grid is current drawing or max-power in its pricing
-    if grid.type == GridType.CURRENT_DRAW:  # DIESEL GENERATOR
+    if Grid.type == GridType.CURRENT_DRAW:  # DIESEL GENERATOR
         # Determine the peak current
         if (
-            household_daily_peak_demand <= tier_5A_supply
+            household_daily_peak_demand <= GridTier.upper_bound_consumption
         ):  # A to kW and because peak so kWh so here I am saying if at anytime during a day the peak demand <=5A power then we only need tier 5A
             tier_i_am_in = grid_type  # upper_bound-consumption_5
         else:
             tier_i_am_in = grid_type  # upper_bound-consumption_10
-        # Compare this to the tariff numbers, possibly with some dictionary
-    elif grid.type == GridType.DAILY_POWER:  # EDL
+    elif Grid.type == GridType.DAILY_POWER:  # EDL
         # Sum over the time period, you will need to code this somewhere, here would be fine for now
         # Determine the energy that was consumed
         if household_monthly_demand <= upper_bound_tier_edl_1:
