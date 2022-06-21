@@ -53,7 +53,7 @@ def get_lifetime_grid_status(
 
     Outputs:
         - grid_profiles:
-            A dictionary mapping the grid name to the grid profile.
+            A dictionary mapping the grid name to the grid profiles (DataFrame).
 
     """
 
