@@ -1048,7 +1048,6 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
     converters: Union[Dict[str, Converter], List[Converter]],
     disable_tqdm: bool,
     electric_storage_size: float,
-    grid_profile: Optional[pd.DataFrame],
     grid_profiles: Optional[Dict[str, pd.DataFrame]],
     hot_water_pvt_size: int,
     irradiance_data: pd.Series,
