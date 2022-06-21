@@ -71,42 +71,15 @@ To download the CLOVER source, with a view to editing and helping to develop the
 ```
 git checkout -b <new_branch_name>
 ```
-#### Downloading Git LFS files
+#### Downloading PV-T modelling files
 
-For modelling certain renewable technologies, CLOVER utilises Github's large file store (LFS). If you don't intend to consider any thermal technologies, you can skip this section for now and jump straight to [Setting up your Python environment](#setting-up-your-python-environment). Otherwise, you should follow the steps below.
+For modelling certain renewable technologies, CLOVER utilises external file-hosting platforms. If you don't intend to consider any thermal technologies, you can skip this section for now and jump straight to [Setting up your Python environment](#setting-up-your-python-environment). Otherwise, you should follow the steps below.
 
-##### Installing Git LFS
+##### Zenodo
 
-If this is your first time using Git's LFS, you will need to install git lfs on your system:
+[Zenodo](https://about.zenodo.org/) is a library for storing, sharing, and accessing open source data, files, and modelling tools. 
 
-1. Check the version of `git` that you have by running `git --version`. You need to have version `1.8.2` of Git, or a later version, in order to install Git LFS. If your version is older than this, then you will need to upgrade your installation;
-2. Run `git lfs install` to install Git LFS on your system. If this command fails, you may need to download the `git-lfs` package manually:
-   a. For Linux machines, use the `curl` command:
-      
-      ```
-      curl -s https://packagecloud.io/install/repositories/github/git-lfs/script.deb.sh | sudo bash
-      ```
-   
-   b. For MacOS machines, use the `brew` command:
-      
-      ```
-      brew update
-      brew install git-lfs
-      ```
-   
-   c. For Windows machines, download the latest version of Git LFS from the developers' [Releases](https://github.com/git-lfs/git-lfs/releases) page.
-
-##### Fetching files
-
-Once you have installed Git LFS, you will need to download the LFS files manually. This can be done from the command-line:
-```
-git lfs fetch
-```
-to download the files, and
-```
-git lfs pull
-```
-to merge them into your local branches.
+[here](doi.org/10.5281/zenodo.6647054) or [here](https://zenodo.org/record/6647054)
 
 ### ⚠️ One-time download from Github
 
