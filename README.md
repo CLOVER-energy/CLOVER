@@ -77,9 +77,9 @@ For modelling certain renewable technologies, CLOVER utilises external file-host
 
 ##### Zenodo
 
-[Zenodo](https://about.zenodo.org/) is a library for storing, sharing, and accessing open source data, files, and modelling tools. 
+[Zenodo](https://about.zenodo.org/) is a library for storing, sharing, and accessing open source data, files, and modelling tools. Large modelling files for CLOVER are hosted on Zenodo and should be downloaded should these be required in the development version of CLOVER.
 
-[here](doi.org/10.5281/zenodo.6647054) or [here](https://zenodo.org/record/6647054)
+These files can be downlaoded [here](doi.org/10.5281/zenodo.6647054) or [here](https://zenodo.org/record/6647054). Once downloaded, extract the archive into the `src/clover/src` directory within your repository.
 
 ### ⚠️ One-time download from Github
 
