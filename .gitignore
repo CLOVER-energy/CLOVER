@@ -29,4 +29,5 @@
 # Ignore VSCode files
 .vscode
 # Ignore misc. files
+*.sav
 *.zip
