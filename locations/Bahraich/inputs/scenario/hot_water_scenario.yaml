@@ -1,0 +1,23 @@
+---
+################################################################################
+# hot_water_scenario.yaml - Hot-water and PV-T specific scenario params.       #
+#                                                                              #
+# Author: Phil Sandwell, Ben Winchester                                        #
+# Copyright: Phil Sandwell & Ben Winchester, 2021                              #
+# Date created: 11/11/2021                                                     #
+# License: Open source                                                         #
+################################################################################
+
+hot_water_scenarios:
+  - name: default
+    hot_water:
+      auxiliary_heater: diesel # "diesel", "electric" or "none"
+      conventional_sources:
+        - natural_gas
+      demand_temperature: 60 # [degC]
+    cold_water:
+      supply: unlimited # "unlimited" or "clean_water"
+      supply_temperature: 10 # [degC]
+    pvt_scenario:
+      heats: cold_water
+      mass_flow_rate: 72 # [litres/hour]

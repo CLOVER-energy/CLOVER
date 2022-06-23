@@ -1,0 +1,30 @@
+---
+################################################################################
+# conversion_inputs.yaml - Parameters for defining converting devices.         #
+#                                                                              #
+# Author: Ben Winchester                                                       #
+# Copyright: Phil Sandwell & Ben Winchester, 2021                              #
+# Date created: 09/08/2021                                                     #
+# License: Open source                                                         #
+################################################################################
+
+converters:
+  - name: bore_hole
+    electric_power: 600 # [W]
+    output: feedwater
+    maximum_output: 830 # [litres/hour]
+    costs:
+      cost: 0 # [$/unit]
+      cost_decrease: 5 # [% p.a.]
+      installation_cost: 0 # [$/unit]
+      installation_cost_decrease: 0 # [% p.a.]
+      o&m: 8.5 # [$/unit p.a.]
+    emissions:
+      # ghgs: 614000 # [kgCO2/unit]
+      ghgs: 0
+      ghg_decrease: 5 # [% p.a.]
+      # installation_ghgs: 78000 # [kgCO2/unit]
+      installation_ghgs: 0
+      installation_ghg_decrease: 0 # [% p.a.]
+      o&m: 0 #[kgCO2/litre p.a.]
+
