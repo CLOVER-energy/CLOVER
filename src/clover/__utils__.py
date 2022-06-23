@@ -1956,6 +1956,18 @@ class Grid:
     upper_bound_type: GridType
 
 @dataclasses.dataclass
+class Grids:
+    """
+    Specifies the grid class being run.
+
+    - name: 
+        Denotes the name of the grid used.
+    
+    """
+
+    grids: List[Grid]
+
+@dataclasses.dataclass
 class Scenario:
     """
     Represents a scenario being run.

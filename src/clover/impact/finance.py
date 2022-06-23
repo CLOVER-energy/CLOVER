@@ -29,6 +29,7 @@ from .__utils__ import ImpactingComponent, LIFETIME, SIZE_INCREMENT
 from ..__utils__ import (
     BColours,
     ColumnHeader,
+    Grid,
     InputFileError,
     InternalError,
     Location,
@@ -942,6 +943,45 @@ def expenditure(
         end_year=end_year,
     )
     return total_discounted_cost
+
+def grid_expenditure(
+    tier_i_am_in: Dict[str,Any],
+    finance_inputs: Dict [str,Any],
+    hourly_usage: pd.Series,
+    logger: Logger,
+    *,
+    start_year: int = 0,
+    end_year: int = 20
+) -> float:
+    """
+    Calculates cost of the usage of a component.
+
+    Inputs:
+        - tier I am in:
+            The Grid Tier the household is in where we can find the costs.
+        - finance_inputs:
+            The financial input information.
+        - hourly_usage:
+            Output from Energy_System().simulation(...)
+        - start_year:
+            Start year of simulation period
+        - end_year:
+            End year of simulation period
+
+    Outputs:
+        Discounted cost
+
+    """
+    hourly_cost = hourly_usage * tier_i_am_in.costs
+    total_daily_cost = hourly_profile_to_daily_sum(hourly_cost)
+    total_grid_discounted_cost = discounted_energy_total(
+        finance_inputs,
+        logger,
+        total_daily_cost,
+        start_year=start_year,
+        end_year=end_year,
+    )
+    return total_grid_discounted_cost
 
 
 def independent_expenditure(
