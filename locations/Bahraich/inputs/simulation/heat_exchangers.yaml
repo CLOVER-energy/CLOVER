@@ -25,8 +25,8 @@ exchangers:
     # This will affect environmental impact assessments only.
     #
     emissions:
-      # ghgs: 3000 # [kgCO2/exchanger]
-      # ghg_decrease: 5 # [% p.a.]
-      # installation_ghgs: 50 # [kgCO2/exchanger]
-      # installation_ghg_decrease: 0 # [% p.a.]
-      # o&m: 5 # [kgCO2/exchanger p.a.]
+    #   ghgs: 3000 # [kgCO2/exchanger]
+    #   ghg_decrease: 5 # [% p.a.]
+    #   installation_ghgs: 50 # [kgCO2/exchanger]
+    #   installation_ghg_decrease: 0 # [% p.a.]
+    #   o&m: 5 # [kgCO2/exchanger p.a.]

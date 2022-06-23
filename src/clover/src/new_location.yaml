@@ -104,7 +104,6 @@
                       installation_ghgs: 0
                       installation_ghg_decrease: 0 # [% p.a.]
                       o&m: 0 #[kgCO2/litre p.a.]
-
             - file: "diesel_inputs.yaml"
               contents: |+
                 ---
@@ -228,53 +227,52 @@
                       installation_ghgs: 50 # [kgCO2/kW]
                       installation_ghg_decrease: 0 # [% p.a.]
                       o&m: 5 #[kgCO2/kWp p.a.]
-                  # - name: default_pvt
-                  #   azimuthal_orientation: 180
-                  #   lifetime: 20
-                  #   max_mass_flow_rate: 7.37 # [litres/hour]
-                  #   min_mass_flow_rate: 7.37 # [litres/hour]
-                  #   pv: default_pv
-                  #   pv_unit: 0.2 # [kW]
-                  #   tilt: 29
-                  #   type: pv_t
-                  #   costs:
-                  #     cost: 500 # [$/PV unit], [$/kWp] by default
-                  #     cost_decrease: 5 # [% p.a.]
-                  #     installation_cost: 100 # [$/PV unit], [$/kWp] by default
-                  #     installation_cost_decrease: 0 # [% p.a.]
-                  #     o&m: 5 # [$/kWp p.a.]
-                  #   emissions:
-                  #     ghgs: 3000 # [kgCO2/kWp]
-                  #     ghg_decrease: 5 # [% p.a.]
-                  #     installation_ghgs: 50 # [kgCO2/kW]
-                  #     installation_ghg_decrease: 0 # [% p.a.]
-                  #     o&m: 5 #[kgCO2/kWp p.a.]
-                  # - name: default_thermal_panel
-                  #   area: 2.106 # [m^2]
-                  #   azimuthal_orientation: 180
-                  #   lifetime: 20
-                  #   max_mass_flow_rate: 250 # [litres/hour]
-                  #   min_mass_flow_rate: 60 # [litres/hour]
-                  #   nominal_mass_flow_rate: 125
-                  #   tilt: 29
-                  #   type: solar_thermal
-                  #   costs:
-                  #     # cost: 500 # [$/PV unit], [$/kWp] by default
-                  #     # cost_decrease: 5 # [% p.a.]
-                  #     # installation_cost: 100 # [$/PV unit], [$/kWp] by default
-                  #     # installation_cost_decrease: 0 # [% p.a.]
-                  #     # o&m: 5 # [$/kWp p.a.]
-                  #   emissions:
-                  #     # ghgs: 3000 # [kgCO2/kWp]
-                  #     # ghg_decrease: 5 # [% p.a.]
-                  #     # installation_ghgs: 50 # [kgCO2/kW]
-                  #     # installation_ghg_decrease: 0 # [% p.a.]
-                  #     # o&m: 5 #[kgCO2/kWp p.a.]
-                  #   performance_curve:
-                  #     zeroth_order: 0.694
-                  #     first_order: 3.53
-                  #     second_order: 0.0047
-
+                #   - name: default_pvt
+                #     azimuthal_orientation: 180
+                #     lifetime: 20
+                #     max_mass_flow_rate: 7.37 # [litres/hour]
+                #     min_mass_flow_rate: 7.37 # [litres/hour]
+                #     pv: default_pv
+                #     pv_unit: 0.2 # [kW]
+                #     tilt: 29
+                #     type: pv_t
+                #     costs:
+                #       cost: 500 # [$/PV unit], [$/kWp] by default
+                #       cost_decrease: 5 # [% p.a.]
+                #       installation_cost: 100 # [$/PV unit], [$/kWp] by default
+                #       installation_cost_decrease: 0 # [% p.a.]
+                #       o&m: 5 # [$/kWp p.a.]
+                #     emissions:
+                #       ghgs: 3000 # [kgCO2/kWp]
+                #       ghg_decrease: 5 # [% p.a.]
+                #       installation_ghgs: 50 # [kgCO2/kW]
+                #       installation_ghg_decrease: 0 # [% p.a.]
+                #       o&m: 5 #[kgCO2/kWp p.a.]
+                #   - name: default_thermal_panel
+                #     area: 2.106 # [m^2]
+                #     azimuthal_orientation: 180
+                #     lifetime: 20
+                #     max_mass_flow_rate: 250 # [litres/hour]
+                #     min_mass_flow_rate: 60 # [litres/hour]
+                #     nominal_mass_flow_rate: 125
+                #     tilt: 29
+                #     type: solar_thermal
+                #     costs:
+                #       # cost: 500 # [$/PV unit], [$/kWp] by default
+                #       # cost_decrease: 5 # [% p.a.]
+                #       # installation_cost: 100 # [$/PV unit], [$/kWp] by default
+                #       # installation_cost_decrease: 0 # [% p.a.]
+                #       # o&m: 5 # [$/kWp p.a.]
+                #     emissions:
+                #       # ghgs: 3000 # [kgCO2/kWp]
+                #       # ghg_decrease: 5 # [% p.a.]
+                #       # installation_ghgs: 50 # [kgCO2/kW]
+                #       # installation_ghg_decrease: 0 # [% p.a.]
+                #       # o&m: 5 #[kgCO2/kWp p.a.]
+                #     performance_curve:
+                #       zeroth_order: 0.694
+                #       first_order: 3.53
+                #       second_order: 0.0047
             - file: water_source_inputs.yaml
               contents: |+
                 ---
@@ -1124,10 +1122,12 @@
                     grid_type: default # The grid profile to use
                     prioritise_self_generation: true # "true" or "false"
                     pv: true # "true" or "false"
-                    pv_t: false # "true" or "false"
-                    solar_thermal: false # "true" or "false"
+                    # pv_t: false # "true" or "false"
+                    # solar_thermal: false # "true" or "false"
                     resource_types:
                       - electric_power
+                      # - clean_water
+                      # - hot_water
         - directory: simulation
           contents:
             - file: "battery_inputs.yaml"
@@ -1218,11 +1218,11 @@
                     # This will affect environmental impact assessments only.
                     #
                     emissions:
-                      # ghgs: 3000 # [kgCO2/exchanger]
-                      # ghg_decrease: 5 # [% p.a.]
-                      # installation_ghgs: 50 # [kgCO2/exchanger]
-                      # installation_ghg_decrease: 0 # [% p.a.]
-                      # o&m: 5 # [kgCO2/exchanger p.a.]
+                    #   ghgs: 3000 # [kgCO2/exchanger]
+                    #   ghg_decrease: 5 # [% p.a.]
+                    #   installation_ghgs: 50 # [kgCO2/exchanger]
+                    #   installation_ghg_decrease: 0 # [% p.a.]
+                    #   o&m: 5 # [kgCO2/exchanger p.a.]
             - file: "simulations.yaml"
               contents: |+
                 ---

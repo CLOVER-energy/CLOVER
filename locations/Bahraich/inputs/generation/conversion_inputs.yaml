@@ -27,4 +27,3 @@ converters:
       installation_ghgs: 0
       installation_ghg_decrease: 0 # [% p.a.]
       o&m: 0 #[kgCO2/litre p.a.]
-

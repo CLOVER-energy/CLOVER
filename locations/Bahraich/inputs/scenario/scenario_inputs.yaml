@@ -27,6 +27,6 @@ scenarios:
     # pv_t: false # "true" or "false"
     # solar_thermal: false # "true" or "false"
     resource_types:
-      # - clean_water
       - electric_power
+      # - clean_water
       # - hot_water
