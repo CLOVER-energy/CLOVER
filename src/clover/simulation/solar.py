@@ -669,7 +669,8 @@ def calculate_pvt_output(  # pylint: disable=too-many-locals, too-many-statement
         pvt_collector_input_temperature_map[index] = collector_input_temperature
         pvt_collector_output_temperature_map[index] = collector_output_temperature
         pvt_electric_power_per_unit_map[index] = (
-            fractional_electric_performance * minigrid.pvt_panel.pv_unit
+            fractional_electric_performance  # type: ignore [operator]
+            * minigrid.pvt_panel.pv_layer.pv_unit
         )
         pvt_pump_times_map[index] = int(pvt_flow_on)
         tank_temperature_map[index] = tank_temperature

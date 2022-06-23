@@ -307,7 +307,7 @@ class PVPanel(
             tilt,
         )
 
-        self.pv_unit: Optional[float] = pv_unit
+        self.pv_unit: float = pv_unit if pv_unit is not None else DEFAULT_PV_UNIT
         self.pv_unit_overrided: bool = pv_unit_overrided
         self.reference_efficiency: Optional[float] = reference_efficiency
         self.reference_temperature: Optional[float] = reference_temperature
@@ -432,6 +432,18 @@ class HybridPVTPanel(SolarPanel, panel_type=SolarPanelType.PV_T):
                 "solar generation inputs",
                 f"PV-layer data for layer {solar_inputs['pv']} could not be found "
                 + f"whilst processing PV-T panel {solar_inputs[NAME]}.",
+            ) from None
+
+        if not isinstance(pv_layer, PVPanel):
+            logger.error(
+                "%sThe PV layer defined, %s, is not a PVPanel instance.%s",
+                BColours.fail,
+                solar_inputs["pv"],
+                BColours.endc
+            )
+            raise InputFileError(
+                "solar generation inputs",
+                f"PV-layer data for layer {solar_inputs['pv']} is not a valid PV panel."
             ) from None
 
         if pv_layer.reference_efficiency is None:
@@ -712,7 +724,7 @@ class SolarThermalPanel(SolarPanel, panel_type=SolarPanelType.SOLAR_THERMAL):
         logger: Logger,
         mass_flow_rate: float,
         solar_irradiance: float,
-    ) -> Tuple[float, float]:
+    ) -> float:
         """
         Calculates the performance characteristics of the solar-thermal collector.
 
@@ -780,6 +792,8 @@ class SolarThermalPanel(SolarPanel, panel_type=SolarPanelType.SOLAR_THERMAL):
         # * Use numpy or Pandas to solve the quadratic to determine the performance of
         # * the collector.
 
+        output_temperature: float = 0.0
+
         return output_temperature
 
     @classmethod
@@ -811,7 +825,7 @@ class SolarThermalPanel(SolarPanel, panel_type=SolarPanelType.SOLAR_THERMAL):
                 BColours.endc,
             )
             raise InputFileError(
-                "solar_generation_inputs",
+                "solar generation inputs",
                 f"Solar thermal panel {solar_inputs['name']} is missing a performance curve.",
             )
 

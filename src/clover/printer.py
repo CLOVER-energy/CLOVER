@@ -76,7 +76,7 @@ def generate_optimisation_string(
             optimisation_string_list.append(
                 "- Clean-water PV-T resolution of "
                 + f"{optimisation_inputs.cw_pvt_size.step} units "
-                + f"({minigrid.pvt_panel.pv_unit} kWp and "
+                + f"({minigrid.pvt_panel.pv_layer.pv_unit} kWp and "
                 + f"{minigrid.pvt_panel.thermal_unit} kWth per unit)"
             )
         if (
@@ -98,7 +98,7 @@ def generate_optimisation_string(
             optimisation_string_list.append(
                 "- Hot-water PV-T resolution of "
                 f"{optimisation_inputs.hw_pvt_size.step} units "
-                + f"({minigrid.pvt_panel.pv_unit} kWp and "
+                + f"({minigrid.pvt_panel.pv_layer.pv_unit} kWp and "
                 + f"{minigrid.pvt_panel.thermal_unit} kWth per unit)"
             )
         if (
@@ -190,7 +190,7 @@ def generate_simulation_string(
         ):
             simulation_string_list.append(
                 f"- {parsed_args.clean_water_pvt_system_size} Clean-water PV-T panel "
-                + f"units ({minigrid.pvt_panel.pv_unit} kWp PV per unit)\n"
+                + f"units ({minigrid.pvt_panel.pv_layer.pv_unit} kWp PV per unit)\n"
             )
         if minigrid.clean_water_tank is not None:
             simulation_string_list.append(
@@ -209,7 +209,7 @@ def generate_simulation_string(
         ):
             simulation_string_list.append(
                 f"- {parsed_args.hot_water_pvt_system_size} Hot-water PV-T panel units "
-                + f"({minigrid.pvt_panel.pv_unit} kWp PV per unit)\n"
+                + f"({minigrid.pvt_panel.pv_layer.pv_unit} kWp PV per unit)\n"
             )
         simulation_string_list.append(
             f"- {parsed_args.num_hot_water_tanks}x {minigrid.hot_water_tank.mass} "
