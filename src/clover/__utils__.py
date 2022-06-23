@@ -2103,6 +2103,9 @@ class Scenario:
     .. attribute:: pv_t
         Whether PV-T is being included in the scenario.
 
+    .. attribute:: solar_thermal
+        Whether solar-thermal collectors are being included in the scenario.
+
     .. attribute:: reference_thermal_efficiency
         If defined, gives the reference efficiency of a thermal power plant.
 
@@ -2122,6 +2125,7 @@ class Scenario:
     pv: bool
     pv_d: bool
     pv_t: bool
+    solar_thermal: bool
     reference_thermal_efficiency: float = 0
 
     @classmethod
@@ -2262,6 +2266,9 @@ class Scenario:
             scenario_inputs["pv"],
             scenario_inputs["pv_d"] if "pv_d" in scenario_inputs else False,
             scenario_inputs["pv_t"] if "pv_t" in scenario_inputs else False,
+            scenario_inputs["solar_thermal"]
+            if "solar_thermal" in scenario_inputs
+            else False,
             scenario_inputs["reference_thermal_efficiency"]
             if "reference_thermal_efficiency" in scenario_inputs
             else 0,
