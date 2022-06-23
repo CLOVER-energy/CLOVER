@@ -1924,8 +1924,6 @@ class GridTier:
     """
     Specifies the grid tier following an upper bound threshold.
 
-    - Upper Bound type:
-        Denotes the type of the upper bound tier.
     - Upper Bound value:
         Denotes the value of the upper bound tier.
     - costs:
@@ -1933,7 +1931,6 @@ class GridTier:
     
     """
 
-    upper_bound_type: GridType
     upper_bound_consumption: float
     costs: Dict[str, float]
 
@@ -1949,11 +1946,14 @@ class Grid:
         Denotes the list of different grid tiers for the different types of grids.
     - grid emissions:
         Denotes the general emissions for any type of grid (considering similar emissions for all types.)
+    - Upper Bound type:
+        Denotes the type of the upper bound tier.
     """
 
     name: str
     tiers: List[GridTier]
     emissions: Dict[str,float]
+    upper_bound_type: GridType
 
 @dataclasses.dataclass
 class Scenario:
@@ -1969,12 +1969,12 @@ class Scenario:
     .. attribute:: desalination_scenario
         The :class:`DesalinationScenario` for the run.
         
-    .. attribute:: grids
+    .. attribute:: grid_types
         The type of grid being modelled, i.e., whether the grid is full, etc. These options are written in the grid inputs file as headers.
 
     .. attribute:: diesel_scenario
         The diesel scenario being modelled.
-
+    
     .. attribute:: distribution_network
         The distribution-network type being modelled.
 

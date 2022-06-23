@@ -955,8 +955,7 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
         grid_profiles = grid.load_grid_profile(
             auto_generated_files_directory, logger, scenario
         )
-        logger.info("Grid '%s' profile successfully loaded.", scenario.grid_types)
-
+        logger.info("Grid  profile(s) %s successfully loaded.", ", ".join([f"'{grid_type}'" for grid_type in scenario.grid_types]))
         simulation_string: str = generate_simulation_string(
             minigrid, overrided_default_sizes, parsed_args, scenario
         )
@@ -1151,10 +1150,7 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
             grid_profiles = grid.load_grid_profile(
                 auto_generated_files_directory, logger, optimisation.scenario
             )
-            logger.info(
-                "Grid '%s' profile successfully loaded.",
-                optimisation.scenario.grid_types,
-            )
+            logger.info("Grid  profile(s) %s successfully loaded.", ", ".join([f"'{grid_type}'" for grid_type in optimisation.scenario.grid_types]))
 
             optimisation_string = generate_optimisation_string(
                 minigrid, optimisation_inputs, optimisation.scenario

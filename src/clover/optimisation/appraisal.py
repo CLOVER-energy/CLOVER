@@ -246,6 +246,7 @@ def _simulation_environmental_appraisal(  # pylint: disable=too-many-locals
 def _get_grid_pricing_tier(
     household_daily_peak_demand: pd.DataFrame,
     household_monthly_demand: pd.DataFrame,
+
 ): 
     """
         Gets the grid pricing tier.
@@ -266,7 +267,7 @@ def _get_grid_pricing_tier(
     pdb.set_trace()
 
     # Filter out based on whether the grid is current drawing or max-power in its pricing
-    if Grid.type == GridType.CURRENT_DRAW:  # DIESEL GENERATOR
+    if grids.type == GridType.CURRENT_DRAW:  # DIESEL GENERATOR
         # Determine the peak current
         if (
             household_daily_peak_demand <= GridTier.upper_bound_consumption
@@ -274,7 +275,7 @@ def _get_grid_pricing_tier(
             tier_i_am_in = grid_type  # upper_bound-consumption_5
         else:
             tier_i_am_in = grid_type  # upper_bound-consumption_10
-    elif Grid.type == GridType.DAILY_POWER:  # EDL
+    elif grids.type == GridType.DAILY_POWER:  # EDL
         # Sum over the time period, you will need to code this somewhere, here would be fine for now
         # Determine the energy that was consumed
         if household_monthly_demand <= upper_bound_tier_edl_1:
@@ -325,7 +326,6 @@ def _simulation_financial_appraisal(  # pylint: disable=too-many-locals
     hot_water_tank_addition: int,
     location: Location,
     logger: Logger,
-    scenario: Scenario,  # added scenrario in the inputs of the definition
     pv_addition: float,
     pvt_addition: float,
     simulation_results: pd.DataFrame,
