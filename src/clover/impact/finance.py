@@ -84,7 +84,7 @@ INSTALLATION_COST: str = "installation_cost"
 #   Keyword used to denote the installation cost decrease of a component.
 INSTALLATION_COST_DECREASE: str = "installation_cost_decrease"
 
-# Subscription cost: 
+# Subscription cost:
 # Keyword used to denote the subscription cost of the diesel generator.
 SUBSCRIPTION_COST: str = "subscription_cost"
 
@@ -242,7 +242,7 @@ def _discounted_fraction(
 
     # Compute a list containing all the discounted fractions over the time period.
     discounted_fraction_array = [
-        denominator ** -time for time in range(start_day, end_day)
+        denominator**-time for time in range(start_day, end_day)
     ]
 
     return pd.DataFrame(discounted_fraction_array)

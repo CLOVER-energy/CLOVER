@@ -103,7 +103,8 @@ def _process_water_source_availability(
             water_source.name,
         )
         interpolated_daily_profile = monthly_times_to_daily_times(
-            availability, location.max_years,
+            availability,
+            location.max_years,
         )
         logger.info(
             "Daily %s water-source availability profile for %s successfully computed.",
@@ -222,7 +223,10 @@ def _process_water_soure_hourly_probability(
             water_source.name,
         )
 
-        with open(filepath, "w",) as f:
+        with open(
+            filepath,
+            "w",
+        ) as f:
             hourly_availability.to_csv(
                 f, header=None, index=False, line_terminator=""  # type: ignore
             )

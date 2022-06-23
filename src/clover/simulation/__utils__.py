@@ -390,7 +390,8 @@ def check_scenario(
                 BColours.endc,
             )
             raise InputFileError(
-                "scenario", "Mismatch between command-line usage and in-file usage.",
+                "scenario",
+                "Mismatch between command-line usage and in-file usage.",
             )
         if (
             parsed_args.hot_water_pvt_system_size is not None
@@ -406,7 +407,8 @@ def check_scenario(
                 BColours.endc,
             )
             raise InputFileError(
-                "scenario", "Mismatch between command-line usage and in-file usage.",
+                "scenario",
+                "Mismatch between command-line usage and in-file usage.",
             )
         if (
             scenario.pv_t

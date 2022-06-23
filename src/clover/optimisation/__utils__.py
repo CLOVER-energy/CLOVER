@@ -950,7 +950,8 @@ def recursive_iteration(  # pylint: disable=too-many-locals
     yearly_electric_load_statistics: pd.DataFrame,
     *,
     component_sizes: Dict[
-        Union[Converter, ImpactingComponent, RenewableEnergySource], Union[int, float],
+        Union[Converter, ImpactingComponent, RenewableEnergySource],
+        Union[int, float],
     ],
     parameter_space: List[
         Tuple[

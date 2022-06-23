@@ -246,23 +246,22 @@ def _simulation_environmental_appraisal(  # pylint: disable=too-many-locals
 def _get_grid_pricing_tier(
     household_daily_peak_demand: pd.DataFrame,
     household_monthly_demand: pd.DataFrame,
-
-): 
+):
     """
-        Gets the grid pricing tier.
+    Gets the grid pricing tier.
 
-        Inputs:
-            - grid:
-                Needed to identify the grid criteria and data.
-            - scenario:
-                Needed to identify what grids are deployed in the scenario tested.
-            - Daily household hourly consumption:
-                Needed to identify the peak consumption per day.
-            - Monthly household consumption:
-                Needed to identify the consumption tier of a household on a monthly basis.
-        Outputs:
-            - tier_iam_in:
-                The tier corresponding to the household consumption based on the grid in use.
+    Inputs:
+        - grid:
+            Needed to identify the grid criteria and data.
+        - scenario:
+            Needed to identify what grids are deployed in the scenario tested.
+        - Daily household hourly consumption:
+            Needed to identify the peak consumption per day.
+        - Monthly household consumption:
+            Needed to identify the consumption tier of a household on a monthly basis.
+    Outputs:
+        - tier_iam_in:
+            The tier corresponding to the household consumption based on the grid in use.
     """
     pdb.set_trace()
 
@@ -312,7 +311,7 @@ def _get_grid_pricing_tier(
                 )  # This will print all the allowed values
             )
         )
-    return (tier_i_am_in)
+    return tier_i_am_in
 
 
 def _simulation_financial_appraisal(  # pylint: disable=too-many-locals
