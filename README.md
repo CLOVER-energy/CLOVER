@@ -10,7 +10,7 @@ CLOVER minigrid simulation and optimisation for supporting rural electrification
  * [Stable installation](#stable-installation)
    * [Upgrading](#upgrading)
  * [Downloading as a developer](#downloading-as-a-developer)
- 
+   * [Downloading PV-T modelling files](#downloading-pv-t-modelling-files)
  
 🐍[Setting up your Python environment](#setting-up-your-python-environment)
   * [Anaconda method](#anaconda-method)
@@ -75,11 +75,11 @@ git checkout -b <new_branch_name>
 
 For modelling certain renewable technologies, CLOVER utilises external file-hosting platforms. If you don't intend to consider any thermal technologies, you can skip this section for now and jump straight to [Setting up your Python environment](#setting-up-your-python-environment). Otherwise, you should follow the steps below.
 
-##### Zenodo
-
 [Zenodo](https://about.zenodo.org/) is a library for storing, sharing, and accessing open source data, files, and modelling tools. Large modelling files for CLOVER are hosted on Zenodo and should be downloaded should these be required in the development version of CLOVER.
 
-These files can be downlaoded [here](doi.org/10.5281/zenodo.6647054) or [here](https://zenodo.org/record/6647054). Once downloaded, extract the archive into the `src/clover/src` directory within your repository.
+These files can be downlaoded using the latest DOI link below. Once downloaded, extract the archive into the `src/clover/src` directory within your repository:
+
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.6647054.svg)](https://doi.org/10.5281/zenodo.6647054)  
 
 ### ⚠️ One-time download from Github
 
