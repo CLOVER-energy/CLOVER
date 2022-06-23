@@ -109,14 +109,17 @@ New locations can be set up in one of two ways:
   ```bash
   python -m src.clover.scripts.new_location <new_location_name>
   ```
+
   or, if on a Linux machine,
   ```bash
   ./bin/new_location.sh <new_location_name>
   ```
+
   or, if you have installed the `clover-energy` package:
   ```bash
   new-clover-location <new_location_name>
   ```
+
 * By basing the location on an existing location. To do this, call the `new_location` helper script with the `--from-existing` flag:
   ```bash
   python -m src.clover.scripts.new_location <new_location_name> --from-existing <existing_location>
