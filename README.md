@@ -19,7 +19,7 @@ CLOVER minigrid simulation and optimisation for supporting rural electrification
 ⛅[Setting up a new location](#setting-up-a-new-location)
   * [Updating an existing location](#updating-an-existing-location)
 
-🥷[Renewables ninja](#renewables-ninja)
+🌦️[Renewables ninja](#renewables-ninja)
 
 :memo:[Completing input files](#completing-input-files)
 * [Simulation and optimisation files](#simulation-and-optimisation-files)
