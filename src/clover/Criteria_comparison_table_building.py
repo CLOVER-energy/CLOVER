@@ -402,7 +402,7 @@ Panel_size = 2.1  # (read it from the yaml)
 PV_size = ((Technical_dataframe["Final_PV_size"]) / Panel_capacity) * 2.1
 
 PV_dataframe = pd.DataFrame(
-    columns=["PV_size","PV_number"],
+    columns=["PV_size", "PV_number"],
     index=["Offgrid", "Ongrid", "Hybrid_NEM_EDL", "Hybrid_NEM_DG", "Hybrid_NEM_DG_EDL"],
 )
 PV_dataframe.index.name = "Scenario"
@@ -427,7 +427,9 @@ PV_dataframe.to_csv("Pv_size.csv")
 # PLOTTING:
 
 PV_dataframe.plot(
-    y=["PV_size",],
+    y=[
+        "PV_size",
+    ],
     use_index=True,
     kind="bar",
     title="Final Area needed for the PV system (m2)",

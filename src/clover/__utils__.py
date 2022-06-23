@@ -1916,8 +1916,10 @@ class GridType(enum.Enum):
         Denotes that the grid is based on the daily power so EDL.
 
     """
+
     CURRENT_DRAW = "current_draw"
     DAILY_POWER = "daily_power"
+
 
 @dataclasses.dataclass
 class GridTier:
@@ -1928,7 +1930,7 @@ class GridTier:
         Denotes the value of the upper bound tier.
     - costs:
         Denotes the costs associated with every tier.
-    
+
     """
 
     upper_bound_consumption: float
@@ -1940,7 +1942,7 @@ class Grid:
     """
     Specifies the grid class being run.
 
-    - name: 
+    - name:
         Denotes the name of the grid used.
     - tiers:
         Denotes the list of different grid tiers for the different types of grids.
@@ -1952,8 +1954,9 @@ class Grid:
 
     name: str
     tiers: List[GridTier]
-    emissions: Dict[str,float]
+    emissions: Dict[str, float]
     upper_bound_type: GridType
+
 
 @dataclasses.dataclass
 class Grids:
@@ -1980,13 +1983,13 @@ class Scenario:
 
     .. attribute:: desalination_scenario
         The :class:`DesalinationScenario` for the run.
-        
+
     .. attribute:: grid_types
         The type of grid being modelled, i.e., whether the grid is full, etc. These options are written in the grid inputs file as headers.
 
     .. attribute:: diesel_scenario
         The diesel scenario being modelled.
-    
+
     .. attribute:: distribution_network
         The distribution-network type being modelled.
 

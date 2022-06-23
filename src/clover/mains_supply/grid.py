@@ -27,7 +27,11 @@ import pandas as pd
 from ..__utils__ import BColours, Scenario
 from .__utils__ import get_intermittent_supply_status
 
-__all__ = ("get_lifetime_grid_status", "load_grid_profile",)
+__all__ = (
+    "get_lifetime_grid_status",
+    "load_grid_profile",
+)
+
 
 def get_lifetime_grid_status(
     disable_tqdm: bool,
@@ -91,7 +95,10 @@ def load_grid_profile(
                     ),
                     "r",
                 ) as f:
-                    grid_profiles[grid_type] = pd.read_csv(f, index_col=0,)
+                    grid_profiles[grid_type] = pd.read_csv(
+                        f,
+                        index_col=0,
+                    )
             except FileNotFoundError as e:
                 logger.error(
                     "%sGrid profile file for profile '%s' could not be found: %s%s",

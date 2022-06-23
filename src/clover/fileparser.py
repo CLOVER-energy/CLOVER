@@ -87,7 +87,8 @@ BATTERY_INPUTS_FILE: str = os.path.join("simulation", "battery_inputs.yaml")
 # Conventional water-source-availability directory:
 #   The directory containing availability profiles for conventional water sources.
 CONVENTIONAL_WATER_SOURCE_AVAILABILITY_DIRECTORY: str = os.path.join(
-    "generation", "conventional_water_sources")
+    "generation", "conventional_water_sources"
+)
 
 # Conversion inputs file:
 #   The relative path to the conversion-inputs file.
@@ -272,12 +273,13 @@ WATER_SOURCE_AVAILABILTY_TEMPLATE_FILENAME: str = "{water_source}_times.csv"
 #   The relative path to the water-source inputs file.
 WATER_SOURCE_INPUTS_FILE: str = os.path.join("generation", "water_source_inputs.yaml")
 
-#Grid inputs:
+# Grid inputs:
 # Keyword used for parsing diesel-generator information.
 GRID: str = "grid"
 GRID_EMISSIONS: str = "emissions"
 GRID_TIER: str = "tier"
 GRID_TYPE: str = "type"
+
 
 def _parse_battery_inputs(
     energy_system_inputs: Dict[str, Any],
@@ -285,7 +287,10 @@ def _parse_battery_inputs(
     logger: Logger,
     scenarios: List[Scenario],
 ) -> Tuple[
-    Optional[Dict[str, float]], Optional[Dict[str, float]], List[Dict[str, Any]], str,
+    Optional[Dict[str, float]],
+    Optional[Dict[str, float]],
+    List[Dict[str, Any]],
+    str,
 ]:
     """
     Parses the battery inputs file.
@@ -354,7 +359,8 @@ def _parse_battery_inputs(
 
 
 def _parse_conventional_water_source_inputs(
-    inputs_directory_relative_path: str, logger: Logger,
+    inputs_directory_relative_path: str,
+    logger: Logger,
 ) -> Tuple[List[Dict[str, Any]], str, Set[WaterSource]]:
     """
     Parses the device inputs file.
@@ -374,9 +380,13 @@ def _parse_conventional_water_source_inputs(
     """
 
     water_source_inputs_filepath = os.path.join(
-        inputs_directory_relative_path, WATER_SOURCE_INPUTS_FILE,
+        inputs_directory_relative_path,
+        WATER_SOURCE_INPUTS_FILE,
     )
-    water_source_inputs = read_yaml(water_source_inputs_filepath, logger,)
+    water_source_inputs = read_yaml(
+        water_source_inputs_filepath,
+        logger,
+    )
     if not isinstance(water_source_inputs, list):
         logger.error(
             "%sWater source inputs information must be of type `list`.%s",
@@ -394,7 +404,8 @@ def _parse_conventional_water_source_inputs(
 
 
 def _parse_conversion_inputs(
-    inputs_directory_relative_path: str, logger: Logger,
+    inputs_directory_relative_path: str,
+    logger: Logger,
 ) -> Tuple[
     str,
     Dict[Converter, Dict[str, float]],
@@ -592,9 +603,13 @@ def _parse_diesel_inputs(  # pylint: disable=too-many-statements
 
     # Parse the diesel inputs file.
     diesel_inputs_filepath = os.path.join(
-        inputs_directory_relative_path, DIESEL_INPUTS_FILE,
+        inputs_directory_relative_path,
+        DIESEL_INPUTS_FILE,
     )
-    diesel_inputs = read_yaml(diesel_inputs_filepath, logger,)
+    diesel_inputs = read_yaml(
+        diesel_inputs_filepath,
+        logger,
+    )
 
     if not isinstance(diesel_inputs, dict):
         raise InputFileError("diesel inputs", "Diesel inputs are not of type `dict`.")
@@ -801,7 +816,8 @@ def _parse_diesel_inputs(  # pylint: disable=too-many-statements
 
 
 def _parse_device_inputs(
-    inputs_directory_relative_path: str, logger: Logger,
+    inputs_directory_relative_path: str,
+    logger: Logger,
 ) -> Tuple[str, Set[load.load.Device]]:
     """
     Parses the device inputs file.
@@ -820,9 +836,13 @@ def _parse_device_inputs(
     """
 
     device_inputs_filepath = os.path.join(
-        inputs_directory_relative_path, DEVICE_INPUTS_FILE,
+        inputs_directory_relative_path,
+        DEVICE_INPUTS_FILE,
     )
-    device_inputs = read_yaml(device_inputs_filepath, logger,)
+    device_inputs = read_yaml(
+        device_inputs_filepath,
+        logger,
+    )
     if not isinstance(device_inputs, list):
         logger.error(
             "%sDevice input information was not of type `list`. The devices file must "
@@ -1081,7 +1101,8 @@ def _parse_pvt_reduced_models(  # pylint: disable=too-many-statements
 
 
 def parse_scenario_inputs(
-    inputs_directory_relative_path: str, logger: Logger,
+    inputs_directory_relative_path: str,
+    logger: Logger,
 ) -> Tuple[str, str, List[Scenario], str]:
     """
     Parses the scenario input files.
@@ -1101,7 +1122,8 @@ def parse_scenario_inputs(
     """
 
     desalination_scenario_inputs_filepath: str = os.path.join(
-        inputs_directory_relative_path, DESALINATION_SCENARIO_INPUTS_FILE,
+        inputs_directory_relative_path,
+        DESALINATION_SCENARIO_INPUTS_FILE,
     )
     hot_water_scenario_inputs_filepath: str = os.path.join(
         inputs_directory_relative_path, HOT_WATER_SCENARIO_INPUTS_FILE
@@ -1111,7 +1133,8 @@ def parse_scenario_inputs(
     if os.path.isfile(desalination_scenario_inputs_filepath):
         logger.info("Parsing desalination inputs file.")
         desalination_scenario_inputs = read_yaml(
-            desalination_scenario_inputs_filepath, logger,
+            desalination_scenario_inputs_filepath,
+            logger,
         )
         if not isinstance(desalination_scenario_inputs, dict):
             raise InputFileError(
@@ -1139,7 +1162,8 @@ def parse_scenario_inputs(
     if os.path.isfile(hot_water_scenario_inputs_filepath):
         logger.info("Parsing hot-water inputs file.")
         hot_water_scenario_inputs = read_yaml(
-            hot_water_scenario_inputs_filepath, logger,
+            hot_water_scenario_inputs_filepath,
+            logger,
         )
         if not isinstance(hot_water_scenario_inputs, dict):
             raise InputFileError(
@@ -1165,9 +1189,13 @@ def parse_scenario_inputs(
 
     # Parse the scenario input information.
     scenario_inputs_filepath = os.path.join(
-        inputs_directory_relative_path, SCENARIO_INPUTS_FILE,
+        inputs_directory_relative_path,
+        SCENARIO_INPUTS_FILE,
     )
-    scenario_inputs = read_yaml(scenario_inputs_filepath, logger,)
+    scenario_inputs = read_yaml(
+        scenario_inputs_filepath,
+        logger,
+    )
     if not isinstance(scenario_inputs, dict):
         raise InputFileError(
             "scenario inputs", "Scenario inputs is not of type `dict`."
@@ -1281,9 +1309,13 @@ def _parse_solar_inputs(  # pylint: disable=too-many-locals, too-many-statements
 
     # Parse the solar input information.
     solar_generation_inputs_filepath = os.path.join(
-        inputs_directory_relative_path, SOLAR_INPUTS_FILE,
+        inputs_directory_relative_path,
+        SOLAR_INPUTS_FILE,
     )
-    solar_generation_inputs = read_yaml(solar_generation_inputs_filepath, logger,)
+    solar_generation_inputs = read_yaml(
+        solar_generation_inputs_filepath,
+        logger,
+    )
     if not isinstance(solar_generation_inputs, dict):
         raise InputFileError(
             "solar generation inputs", "Solar generation inputs are not of type `dict`."
@@ -1304,7 +1336,11 @@ def _parse_solar_inputs(  # pylint: disable=too-many-locals, too-many-statements
         if panel_input["type"] == solar.SolarPanelType.PV_T.value:
             solar_panels.append(
                 solar.HybridPVTPanel(
-                    electric_model, logger, panel_input, solar_panels, thermal_model,
+                    electric_model,
+                    logger,
+                    panel_input,
+                    solar_panels,
+                    thermal_model,
                 )
             )
 
@@ -1791,7 +1827,10 @@ def _parse_minigrid_inputs(  # pylint: disable=too-many-locals, too-many-stateme
         diesel_water_heater_costs,
         diesel_water_heater_emissions,
     ) = _parse_diesel_inputs(
-        energy_system_inputs, inputs_directory_relative_path, logger, scenarios,
+        energy_system_inputs,
+        inputs_directory_relative_path,
+        logger,
+        scenarios,
     )
     logger.info(
         "Diesel generator %sinformation successfully parsed.",
@@ -1814,7 +1853,11 @@ def _parse_minigrid_inputs(  # pylint: disable=too-many-locals, too-many-stateme
         pvt_panel_emissions,
         solar_generation_inputs_filepath,
     ) = _parse_solar_inputs(
-        debug, energy_system_inputs, inputs_directory_relative_path, logger, scenarios,
+        debug,
+        energy_system_inputs,
+        inputs_directory_relative_path,
+        logger,
+        scenarios,
     )
     logger.info("Solar panel information successfully parsed.")
 
@@ -1824,7 +1867,10 @@ def _parse_minigrid_inputs(  # pylint: disable=too-many-locals, too-many-stateme
         battery_inputs,
         battery_inputs_filepath,
     ) = _parse_battery_inputs(
-        energy_system_inputs, inputs_directory_relative_path, logger, scenarios,
+        energy_system_inputs,
+        inputs_directory_relative_path,
+        logger,
+        scenarios,
     )
     logger.info("Battery information successfully parsed.")
 
@@ -1837,7 +1883,10 @@ def _parse_minigrid_inputs(  # pylint: disable=too-many-locals, too-many-stateme
         transmission_emissions,
         transmission_inputs_filepath,
         transmitters,
-    ) = _parse_transmission_inputs(inputs_directory_relative_path, logger,)
+    ) = _parse_transmission_inputs(
+        inputs_directory_relative_path,
+        logger,
+    )
     logger.info("Transmission inputs successfully parsed.")
 
     buffer_tank_costs: Optional[Dict[str, float]]
@@ -1865,7 +1914,10 @@ def _parse_minigrid_inputs(  # pylint: disable=too-many-locals, too-many-stateme
             tank_inputs,
             tank_inputs_filepath,
         ) = _parse_tank_inputs(
-            energy_system_inputs, inputs_directory_relative_path, logger, scenarios,
+            energy_system_inputs,
+            inputs_directory_relative_path,
+            logger,
+            scenarios,
         )
         logger.info("Tank information successfully parsed.")
 
@@ -2012,7 +2064,8 @@ def _parse_minigrid_inputs(  # pylint: disable=too-many-locals, too-many-stateme
 
 
 def _parse_transmission_inputs(
-    inputs_directory_relative_path: str, logger: Logger,
+    inputs_directory_relative_path: str,
+    logger: Logger,
 ) -> Tuple[
     Dict[str, Dict[str, float]],
     Dict[str, Dict[str, float]],
@@ -2137,7 +2190,9 @@ def _parse_transmission_inputs(
 
 
 def _parse_grid_inputs(
-    inputs_directory_relative_path: str, logger: Logger, scenarios: List[Scenario],
+    inputs_directory_relative_path: str,
+    logger: Logger,
+    scenarios: List[Scenario],
 ) -> List[GRID]:
     """
     Parses the grid inputs file.
@@ -2161,7 +2216,10 @@ def _parse_grid_inputs(
     grid_inputs_filepath = os.path.join(
         inputs_directory_relative_path, GRID_INPUTS_FILE
     )
-    grid_inputs = read_yaml(grid_inputs_filepath, logger,)
+    grid_inputs = read_yaml(
+        grid_inputs_filepath,
+        logger,
+    )
     if not isinstance(grid_inputs, dict):
         raise InputFileError("Grid inputs", "Grid input file is not of type `list`.")
     logger.info("Grid inputs successfully parsed.")
@@ -2178,8 +2236,9 @@ def _parse_grid_inputs(
                 )
             )
         grids.append(Grid(entry["name"], tiers))
-    grid_emissions = grid_inputs["emissions"] #the same for all the grids (EDL,Diesel)
+    grid_emissions = grid_inputs["emissions"]  # the same for all the grids (EDL,Diesel)
     return (grids, grid_emissions)
+
 
 def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
     debug: bool,
@@ -2241,7 +2300,9 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
     """
 
     inputs_directory_relative_path = os.path.join(
-        LOCATIONS_FOLDER_NAME, location_name, INPUTS_DIRECTORY,
+        LOCATIONS_FOLDER_NAME,
+        location_name,
+        INPUTS_DIRECTORY,
     )
 
     # Parse the conversion inputs file.
@@ -2250,12 +2311,16 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
         converter_costs,
         converter_emissions,
         converters,
-    ) = _parse_conversion_inputs(inputs_directory_relative_path, logger,)
+    ) = _parse_conversion_inputs(
+        inputs_directory_relative_path,
+        logger,
+    )
     logger.info("Conversion inputs successfully parsed.")
 
     # Parse the device inputs file.
     device_inputs_filepath, devices = _parse_device_inputs(
-        inputs_directory_relative_path, logger,
+        inputs_directory_relative_path,
+        logger,
     )
     logger.info("Device inputs successfully parsed.")
 
@@ -2272,7 +2337,9 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
                 "r",
             ) as f:
                 device_utilisations[device] = pd.read_csv(
-                    f, header=None, index_col=None,
+                    f,
+                    header=None,
+                    index_col=None,
                 )
         except FileNotFoundError:
             logger.error(
@@ -2356,9 +2423,13 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
 
     # Parse the simulation(s) input information.
     simulations_inputs_filepath = os.path.join(
-        inputs_directory_relative_path, SIMULATIONS_INPUTS_FILE,
+        inputs_directory_relative_path,
+        SIMULATIONS_INPUTS_FILE,
     )
-    simulations_file_contents = read_yaml(simulations_inputs_filepath, logger,)
+    simulations_file_contents = read_yaml(
+        simulations_inputs_filepath,
+        logger,
+    )
     if not isinstance(simulations_file_contents, list):
         raise InputFileError(
             "simulation inputs", "Simulation inputs must be of type `list`."
@@ -2421,10 +2492,17 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
         )
     logger.info("Generation inputs successfully parsed.")
 
-    grid_times_filepath = os.path.join(inputs_directory_relative_path, GRID_TIMES_FILE,)
-    with open(grid_times_filepath, "r",) as grid_times_file:
+    grid_times_filepath = os.path.join(
+        inputs_directory_relative_path,
+        GRID_TIMES_FILE,
+    )
+    with open(
+        grid_times_filepath,
+        "r",
+    ) as grid_times_file:
         grid_times: pd.DataFrame = pd.read_csv(
-            grid_times_file, index_col=0,
+            grid_times_file,
+            index_col=0,
         )
     logger.info("Grid times successfully parsed.")
 
@@ -2438,7 +2516,8 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
             conventional_water_source_inputs_filepath,
             conventional_water_sources,
         ) = _parse_conventional_water_source_inputs(
-            inputs_directory_relative_path, logger,
+            inputs_directory_relative_path,
+            logger,
         )
         logger.info("Conventional water-source inputs file successfully parsed.")
         logger.debug(
@@ -2460,7 +2539,9 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
                     "r",
                 ) as f:
                     water_source_times[source] = pd.read_csv(
-                        f, header=None, index_col=None,
+                        f,
+                        header=None,
+                        index_col=None,
                     )
             except FileNotFoundError:
                 logger.error(
@@ -2482,9 +2563,13 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
         water_source_times = {}
 
     location_inputs_filepath = os.path.join(
-        inputs_directory_relative_path, LOCATION_INPUTS_FILE,
+        inputs_directory_relative_path,
+        LOCATION_INPUTS_FILE,
     )
-    location_inputs = read_yaml(location_inputs_filepath, logger,)
+    location_inputs = read_yaml(
+        location_inputs_filepath,
+        logger,
+    )
     if not isinstance(location_inputs, dict):
         raise InputFileError(
             "location inputs", "Location inputs is not of type `dict`."
@@ -2799,7 +2884,8 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
 
     logger.debug("Input file parsing complete.")
     logger.debug(
-        "Converters: %s", ", ".join([str(converter) for converter in converters]),
+        "Converters: %s",
+        ", ".join([str(converter) for converter in converters]),
     )
     logger.debug("Devices: %s", ", ".join([str(device) for device in devices]))
     logger.debug("Energy system/minigrid: %s", str(minigrid))

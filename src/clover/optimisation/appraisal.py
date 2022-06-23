@@ -255,7 +255,7 @@ def _get_grid_pricing_tier(
 
 ): 
     """
-        Gets the grid pricing tier.
+    Gets the grid pricing tier.
 
         Inputs:
             - grid:

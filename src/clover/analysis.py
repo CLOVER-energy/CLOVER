@@ -193,7 +193,8 @@ def get_key_results(
             max(simulation_results[ColumnHeader.CW_PVT_OUTPUT_TEMPERATURE.value]), 3
         )
         key_results.mean_buffer_tank_temperature = round(
-            np.mean(simulation_results[ColumnHeader.BUFFER_TANK_TEMPERATURE.value]), 3,
+            np.mean(simulation_results[ColumnHeader.BUFFER_TANK_TEMPERATURE.value]),
+            3,
         )
         key_results.mean_cw_pvt_output_temperature = round(
             np.mean(simulation_results[ColumnHeader.CW_PVT_OUTPUT_TEMPERATURE.value]), 3
@@ -228,7 +229,7 @@ def get_key_results(
 
 def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
     grid_input_profile: pd.DataFrame,
-    grid_profile: Optional [pd.DataFrame],
+    grid_profile: Optional[pd.DataFrame],
     grid_profiles: Optional[Dict[str, pd.DataFrame]],  # to check that
     initial_cw_hourly_loads: Optional[
         Dict[str, pd.DataFrame]
@@ -343,7 +344,8 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
             plt.ylabel("Energy generation / kWh per day")
             plt.title("Daily energy generation of 1 kWp of solar capacity")
             plt.savefig(
-                os.path.join(figures_directory, "solar_output_yearly.png"), transparent=True
+                os.path.join(figures_directory, "solar_output_yearly.png"),
+                transparent=True,
             )
             plt.close()
             pbar.update(1)
@@ -436,7 +438,8 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
         plt.ylabel("Electric power demand / kW")
         plt.title(f"Load profile of the community for the first {CUT_OFF_TIME} hours")
         plt.savefig(
-            os.path.join(figures_directory, "electric_demands.png"), transparent=True,
+            os.path.join(figures_directory, "electric_demands.png"),
+            transparent=True,
         )
         plt.close()
         pbar.update(1)
@@ -468,7 +471,8 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
         )
         total_demand = np.sum(
             np.reshape(
-                np.sum(total_electric_load[0:HOURS_PER_YEAR].values, axis=1), (365, 24),
+                np.sum(total_electric_load[0:HOURS_PER_YEAR].values, axis=1),
+                (365, 24),
             ),
             axis=1,
         )

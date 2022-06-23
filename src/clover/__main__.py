@@ -324,14 +324,16 @@ def _prepare_water_system(
         resource_type.value,
     )
     try:
-        conventional_water_source_profiles = water_source.get_lifetime_water_source_status(
-            disable_tqdm,
-            os.path.join(auto_generated_files_directory, resource_type.value),
-            resource_type.value.split("_")[0],
-            location,
-            logger,
-            parsed_args.regenerate,
-            water_source_times,
+        conventional_water_source_profiles = (
+            water_source.get_lifetime_water_source_status(
+                disable_tqdm,
+                os.path.join(auto_generated_files_directory, resource_type.value),
+                resource_type.value.split("_")[0],
+                location,
+                logger,
+                parsed_args.regenerate,
+                water_source_times,
+            )
         )
     except InputFileError:
         print(
@@ -399,7 +401,8 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
     parsed_args = argparser.parse_args(args)
     run_number_string: str = f"_{run_number}" if run_number is not None else ""
     logger = get_logger(
-        f"{parsed_args.location}_{LOGGER_NAME}{run_number_string}", parsed_args.verbose,
+        f"{parsed_args.location}_{LOGGER_NAME}{run_number_string}",
+        parsed_args.verbose,
     )
     logger.info("CLOVER run initiated. Options specified: %s", " ".join(args))
 
@@ -437,12 +440,16 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
 
     # Define common variables.
     auto_generated_files_directory = os.path.join(
-        LOCATIONS_FOLDER_NAME, parsed_args.location, AUTO_GENERATED_FILES_DIRECTORY,
+        LOCATIONS_FOLDER_NAME,
+        parsed_args.location,
+        AUTO_GENERATED_FILES_DIRECTORY,
     )
 
     # If the output filename is not provided, then generate it.
     simulation_output_directory = os.path.join(
-        LOCATIONS_FOLDER_NAME, parsed_args.location, SIMULATION_OUTPUTS_FOLDER,
+        LOCATIONS_FOLDER_NAME,
+        parsed_args.location,
+        SIMULATION_OUTPUTS_FOLDER,
     )
     optimisation_output_directory = os.path.join(
         LOCATIONS_FOLDER_NAME, parsed_args.location, OPTIMISATION_OUTPUTS_FOLDER
@@ -860,11 +867,13 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
         scenario.hot_water_scenario is not None for scenario in scenarios
     ):
         logger.info("Generating and saving total weather output file.")
-        total_weather_data = weather.total_weather_output(  # pylint: disable=unused-variable
-            os.path.join(auto_generated_files_directory, "weather"),
-            parsed_args.regenerate,
-            generation_inputs["start_year"],
-            location.max_years,
+        total_weather_data = (
+            weather.total_weather_output(  # pylint: disable=unused-variable
+                os.path.join(auto_generated_files_directory, "weather"),
+                parsed_args.regenerate,
+                generation_inputs["start_year"],
+                location.max_years,
+            )
         )
         logger.info("Total weather output successfully computed and saved.")
 
@@ -924,7 +933,8 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
     # Run a simulation or optimisation as appropriate.
     if operating_mode == OperatingMode.SIMULATION:
         print(
-            f"Beginning CLOVER simulation runs {'.' * 30}    ", end="\n",
+            f"Beginning CLOVER simulation runs {'.' * 30}    ",
+            end="\n",
         )
 
         simulation_times: List[str] = []
@@ -955,7 +965,10 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
         grid_profiles = grid.load_grid_profile(
             auto_generated_files_directory, logger, scenario
         )
-        logger.info("Grid  profile(s) %s successfully loaded.", ", ".join([f"'{grid_type}'" for grid_type in scenario.grid_types]))
+        logger.info(
+            "Grid  profile(s) %s successfully loaded.",
+            ", ".join([f"'{grid_type}'" for grid_type in scenario.grid_types]),
+        )
         simulation_string: str = generate_simulation_string(
             minigrid, overrided_default_sizes, parsed_args, scenario
         )
@@ -1097,7 +1110,8 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
         print(f"Beginning CLOVER simulation runs {'.' * 30}    {DONE}")
 
         print(
-            f"Time taken for simulations: {', '.join(simulation_times)}", end="\n",
+            f"Time taken for simulations: {', '.join(simulation_times)}",
+            end="\n",
         )
 
     if operating_mode == OperatingMode.OPTIMISATION:
@@ -1150,7 +1164,12 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
             grid_profiles = grid.load_grid_profile(
                 auto_generated_files_directory, logger, optimisation.scenario
             )
-            logger.info("Grid  profile(s) %s successfully loaded.", ", ".join([f"'{grid_type}'" for grid_type in optimisation.scenario.grid_types]))
+            logger.info(
+                "Grid  profile(s) %s successfully loaded.",
+                ", ".join(
+                    [f"'{grid_type}'" for grid_type in optimisation.scenario.grid_types]
+                ),
+            )
 
             optimisation_string = generate_optimisation_string(
                 minigrid, optimisation_inputs, optimisation.scenario
@@ -1224,7 +1243,8 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
         print(f"Beginning CLOVER optimisation runs {'.' * 28}    {DONE}")
 
         print(
-            f"Time taken for optimisations: {', '.join(optimisation_times)}", end="\n",
+            f"Time taken for optimisations: {', '.join(optimisation_times)}",
+            end="\n",
         )
 
     if operating_mode == OperatingMode.PROFILE_GENERATION:
