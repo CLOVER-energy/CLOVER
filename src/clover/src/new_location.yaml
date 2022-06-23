@@ -249,6 +249,32 @@
                   #     installation_ghgs: 50 # [kgCO2/kW]
                   #     installation_ghg_decrease: 0 # [% p.a.]
                   #     o&m: 5 #[kgCO2/kWp p.a.]
+                  # - name: default_thermal_panel
+                  #   area: 2.106 # [m^2]
+                  #   azimuthal_orientation: 180
+                  #   lifetime: 20
+                  #   max_mass_flow_rate: 250 # [litres/hour]
+                  #   min_mass_flow_rate: 60 # [litres/hour]
+                  #   nominal_mass_flow_rate: 125
+                  #   tilt: 29
+                  #   type: solar_thermal
+                  #   costs:
+                  #     # cost: 500 # [$/PV unit], [$/kWp] by default
+                  #     # cost_decrease: 5 # [% p.a.]
+                  #     # installation_cost: 100 # [$/PV unit], [$/kWp] by default
+                  #     # installation_cost_decrease: 0 # [% p.a.]
+                  #     # o&m: 5 # [$/kWp p.a.]
+                  #   emissions:
+                  #     # ghgs: 3000 # [kgCO2/kWp]
+                  #     # ghg_decrease: 5 # [% p.a.]
+                  #     # installation_ghgs: 50 # [kgCO2/kW]
+                  #     # installation_ghg_decrease: 0 # [% p.a.]
+                  #     # o&m: 5 #[kgCO2/kWp p.a.]
+                  #   performance_curve:
+                  #     zeroth_order: 0.694
+                  #     first_order: 3.53
+                  #     second_order: 0.0047
+
             - file: water_source_inputs.yaml
               contents: |+
                 ---
@@ -1099,6 +1125,7 @@
                     prioritise_self_generation: true # "true" or "false"
                     pv: true # "true" or "false"
                     pv_t: false # "true" or "false"
+                    solar_thermal: false # "true" or "false"
                     resource_types:
                       - electric_power
         - directory: simulation
@@ -1160,6 +1187,7 @@
                 # hot_water_tank: hot_water_tank
                 pv_panel: default_pv
                 # pvt_panel: default_pvt
+                # solar_thermal_panel: default_thermal_panel
                 # water_pump: default_water_pump
             - file: "heat_exchangers.yaml"
               contents: |+
