@@ -439,11 +439,11 @@ class HybridPVTPanel(SolarPanel, panel_type=SolarPanelType.PV_T):
                 "%sThe PV layer defined, %s, is not a PVPanel instance.%s",
                 BColours.fail,
                 solar_inputs["pv"],
-                BColours.endc
+                BColours.endc,
             )
             raise InputFileError(
                 "solar generation inputs",
-                f"PV-layer data for layer {solar_inputs['pv']} is not a valid PV panel."
+                f"PV-layer data for layer {solar_inputs['pv']} is not a valid PV panel.",
             ) from None
 
         if pv_layer.reference_efficiency is None:
@@ -827,7 +827,7 @@ class SolarThermalPanel(SolarPanel, panel_type=SolarPanelType.SOLAR_THERMAL):
             raise InputFileError(
                 "solar generation inputs",
                 f"Solar thermal panel {solar_inputs['name']} is missing a performance curve.",
-            )
+            ) from None
 
         try:
             performance_curve = PerformanceCurve(
