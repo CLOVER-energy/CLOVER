@@ -18,6 +18,7 @@ for use locally within CLOVER.
 
 """
 
+from abc import ABC, abstractmethod
 import enum
 
 from dataclasses import dataclass
@@ -164,7 +165,7 @@ class SolarPanelType(enum.Enum):
     SOLAR_THERMAL = "solar_thermal"
 
 
-class SolarPanel:  # pylint: disable=too-few-public-methods
+class SolarPanel(ABC):  # pylint: disable=too-few-public-methods
     """
     Represents a solar panel being considered.
 
@@ -231,6 +232,47 @@ class SolarPanel:  # pylint: disable=too-few-public-methods
         cls.panel_type = panel_type
 
         return super().__init_subclass__()
+
+    @abstractmethod
+    def calculate_performance(
+        self,
+        ambient_temperature: float,
+        input_temperature: float,
+        logger: Logger,
+        mass_flow_rate: float,
+        solar_irradiance: float,
+        wind_speed: float,
+    ) -> Tuple[Optional[float], Optional[float]]:
+        """
+        Abstract method for calculation of collector performance.
+
+        Inputs:
+            - ambient_temperature:
+                The ambient temperature, measured in degrees Celcius.
+            - input_temperature:
+                The input temperature of the HTF entering the collector, measured in
+                in degrees Celcius.
+            - logger:
+                The :class:`logging.Logger` to use for the run.
+            - mass_flow_rate:
+                The mass-flow rate of HTF passing through the collector, measured in
+                kilograms per second.
+            - solar_irradiance:
+                The solar irradiance incident on the surface of the collector, measured
+                in Watts per meter squared.
+            - wind_speed:
+                The wind speed at the collector, measured in meters per second.
+
+        Outputs:
+            - fractional_electric_performance:
+                The fractional electric performance defined between 0 (panel is not
+                operating, i.e., no output) and 1 (panel is operating at full test
+                potential of reference efficiency under reference irradiance).
+            - output_temperature:
+                The temperature of the HTF leaving the collector, measured in degrees
+                Celcius.
+
+        """
 
 
 class PVPanel(
@@ -358,6 +400,29 @@ class PVPanel(
             if "thermal_coefficient" in solar_inputs
             else None,
             solar_inputs["tilt"],
+        )
+
+    def calculate_performance(
+        self,
+        ambient_temperature: float,
+        input_temperature: float,
+        logger: Logger,
+        mass_flow_rate: float,
+        solar_irradiance: float,
+        wind_speed: float,
+    ) -> Tuple[Optional[float], Optional[float]]:
+        """
+        Not yet developed.
+
+        Once developed, this function will calculate the performance of the PV panel.
+        This issue is being tracked: https://github.com/CLOVER-energy/CLOVER/issues/93
+
+        """
+
+        raise ProgrammerJudgementFault(
+            ":class:`PVPanel`::calculate_performance",
+            "The calculation of the performance of electrical PV collectors is not yet "
+            "supported.",
         )
 
 
@@ -525,7 +590,7 @@ class HybridPVTPanel(SolarPanel, panel_type=SolarPanelType.PV_T):
         mass_flow_rate: float,
         solar_irradiance: float,
         wind_speed: float,
-    ) -> Tuple[float, float]:
+    ) -> Tuple[Optional[float], Optional[float]]:
         """
         Calculates the performance characteristics of the hybrid PV-T collector.
 
@@ -724,7 +789,8 @@ class SolarThermalPanel(SolarPanel, panel_type=SolarPanelType.SOLAR_THERMAL):
         logger: Logger,
         mass_flow_rate: float,
         solar_irradiance: float,
-    ) -> float:
+        wind_speed: float,
+    ) -> Tuple[Optional[float], Optional[float]]:
         """
         Calculates the performance characteristics of the solar-thermal collector.
 
@@ -779,8 +845,15 @@ class SolarThermalPanel(SolarPanel, panel_type=SolarPanelType.SOLAR_THERMAL):
             - solar_irradiance:
                 The solar irradiance incident on the surface of the collector, measured
                 in Watts per meter squared.
+            - wind_speed:
+                The wind speed passing over the collector, measured in meters per
+                second. This parameter is not used, but is defined in the base function.
 
         Outputs:
+            - fractional_electric_performance:
+                The fractional electric performance defined between 0 (panel is not
+                operating, i.e., no output) and 1 (panel is operating at full test
+                potential of reference efficiency under reference irradiance).
             - output_temperature:
                 The temperature of the HTF leaving the collector, measured in degrees
                 Celcius.
@@ -794,7 +867,7 @@ class SolarThermalPanel(SolarPanel, panel_type=SolarPanelType.SOLAR_THERMAL):
 
         output_temperature: float = 0.0
 
-        return output_temperature
+        return None, output_temperature
 
     @classmethod
     def from_dict(

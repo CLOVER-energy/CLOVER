@@ -33,6 +33,7 @@ from ..__utils__ import (
     HTFMode,
     InputFileError,
     InternalError,
+    ProgrammerJudgementFault,
     ResourceType,
     Scenario,
     ZERO_CELCIUS_OFFSET,
@@ -553,6 +554,8 @@ def calculate_pvt_output(  # pylint: disable=too-many-locals, too-many-statement
         )
 
         # Only compute outputs if there is input irradiance.
+        collector_output_temperature: float
+        fractional_electric_performance: float
         solution_found: bool = False
         # Keep processing until the temperatures are consistent.
         while not solution_found:
@@ -564,7 +567,7 @@ def calculate_pvt_output(  # pylint: disable=too-many-locals, too-many-statement
                 (
                     fractional_electric_performance,
                     collector_output_temperature,
-                ) = minigrid.pvt_panel.calculate_performance(
+                ) = minigrid.pvt_panel.calculate_performance(  # type: ignore [assignment]
                     temperatures[index],
                     best_guess_collector_input_temperature,
                     logger,
@@ -572,6 +575,30 @@ def calculate_pvt_output(  # pylint: disable=too-many-locals, too-many-statement
                     1000 * irradiances[index],
                     wind_speeds[index],
                 )
+
+                if fractional_electric_performance is None:
+                    logger.error(
+                        "%sPV-T performance function returned `None` for electrical output.%s",
+                        BColours.fail,
+                        BColours.endc,
+                    )
+                    raise ProgrammerJudgementFault(
+                        ":class:`HybridPVTPanel`::calculate_performance",
+                        "Function returned `None` for electrical performance of a PV-T "
+                        "collector.",
+                    )
+                if collector_output_temperature is None:
+                    logger.error(
+                        "%sPV-T performance function returned `None` for thermal output.%s",
+                        BColours.fail,
+                        BColours.endc,
+                    )
+                    raise ProgrammerJudgementFault(
+                        ":class:`HybridPVTPanel`::calculate_performance",
+                        "Function returned `None` for thermal performance of a PV-T "
+                        "collector.",
+                    )
+
             else:
                 # Otherwise, assume that the collector is in steady state with the
                 # environment, a reasonable assumption given the one-hour resolution.
