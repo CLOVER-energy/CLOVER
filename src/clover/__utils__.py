@@ -1935,6 +1935,7 @@ class GridTier:
 
     upper_bound_consumption: float
     costs: Dict[str, float]
+    upper_bound_type: GridType
 
 
 @dataclasses.dataclass
@@ -1954,8 +1955,7 @@ class Grid:
 
     name: str
     tiers: List[GridTier]
-    emissions: Dict[str, float]
-    upper_bound_type: GridType
+    # emissions: Dict[str, float]
 
 
 @dataclasses.dataclass

@@ -2192,7 +2192,6 @@ def _parse_transmission_inputs(
 def _parse_grid_inputs(
     inputs_directory_relative_path: str,
     logger: Logger,
-    scenarios: List[Scenario],
 ) -> List[GRID]:
     """
     Parses the grid inputs file.
@@ -2261,6 +2260,7 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
     Optional[pd.DataFrame],
     Dict[WaterSource, pd.DataFrame],
     Dict[str, str],
+    List[Dict[str, Any]], #grid output
 ]:
     """
     Parse the various input files and return content-related information.
@@ -2296,6 +2296,7 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
             - a `dict` mapping the :class:`WaterSource`s available to provide
               conventional water to the system and the seasonal availabilities,
             - a `dict` containing information about the input files used.
+            - a 'list' of 'dict' containing information about the grid input file.
 
     """
 
@@ -2316,6 +2317,15 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
         logger,
     )
     logger.info("Conversion inputs successfully parsed.")
+
+    # Parse the grids inputs file.
+    (
+        grids,
+    ) = _parse_grid_inputs(
+        inputs_directory_relative_path,
+        logger,
+    )
+    logger.info("Grids inputs successfully parsed.")
 
     # Parse the device inputs file.
     device_inputs_filepath, devices = _parse_device_inputs(
@@ -2908,6 +2918,8 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
         ", ".join([f"{key}: {value}" for key, value in transmitters.items()]),
     )
     logger.debug("Input file information: %s", input_file_info)
+    print (grids)
+
     return (
         converters,
         device_utilisations,
@@ -2924,4 +2936,5 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
         total_load_profile,
         water_source_times,
         input_file_info,
+        grids,
     )

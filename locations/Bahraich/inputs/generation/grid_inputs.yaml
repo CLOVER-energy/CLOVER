@@ -11,10 +11,10 @@
 exchange_rate: 25000 #[LBP/$]
 
 grids: # Diesel Generator (split into 5A and 10A subcriptions)
-  - name: dieselg # Corresponds to one grid profile
+  - name: dieselg
+    type: current_draw
     tiers:
       - upper_bound:
-          type: current_draw
           consumption: 5 # DIESEL GENERATOR GRID
         costs:
           cost: 10457 # [LBP/kWh]
@@ -22,7 +22,6 @@ grids: # Diesel Generator (split into 5A and 10A subcriptions)
           infrastructure_cost: 0 # [$]
           subscription_cost: 50000 #[LBP/month] #division by exchange rate in main files
       - upper_bound:
-          type: current_draw
           consumption: 10 # [A] # DIESEL GENERATOR GRID
         costs:
           cost: 10457 # [LBP/kWh]
@@ -30,9 +29,9 @@ grids: # Diesel Generator (split into 5A and 10A subcriptions)
           infrastructure_cost: 0 # [$]
           subscription_cost: 150000 #[LBP/month] #division by exchange rate in main files
   - name: edl
+    type: daily_power
     tiers:
       - upper_bound:
-          type: daily_power
           consumption: 100 # [kWh/monthly]
         costs:
           cost: 35  # [LBP/kWh]
@@ -40,7 +39,6 @@ grids: # Diesel Generator (split into 5A and 10A subcriptions)
           infrastructure_cost: 0 # [$]
           subscription_cost: 0
       - upper_bound:
-          type: daily_power
           consumption: 200 # [kWh/monthly]
         costs:
           cost: 55  # [LBP/kWh]
@@ -48,7 +46,6 @@ grids: # Diesel Generator (split into 5A and 10A subcriptions)
           infrastructure_cost: 0 # [$]
           subscription_cost: 0
       - upper_bound:
-          type: daily_power
           consumption: 300 # [kWh/monthly]
         costs:
           cost: 80  # [LBP/kWh]
@@ -56,7 +53,6 @@ grids: # Diesel Generator (split into 5A and 10A subcriptions)
           infrastructure_cost: 0 # [$]
           subscription_cost: 0
       - upper_bound:
-          type: daily_power
           consumption: 400 # [kWh/monthly]
         costs:
           cost: 120  # [LBP/kWh]
@@ -64,7 +60,6 @@ grids: # Diesel Generator (split into 5A and 10A subcriptions)
           infrastructure_cost: 0 # [$]
           subscription_cost: 0
       - upper_bound:
-          type: daily_power
           consumption: 1000 # [kWh/monthly]
         costs:
           cost: 200  # [LBP/kWh]
