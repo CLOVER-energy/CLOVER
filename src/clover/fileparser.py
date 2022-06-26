@@ -2226,23 +2226,21 @@ def _parse_grid_inputs(
     grids: List[Grid] = []
     for entry in grid_inputs["grids"]:
         type: List[GridType]= []
-        for type_entry in entry["type"]:
-            print(type_entry)
-            tiers: List[GridTier] = []
-            for tier_entry in entry["tiers"]:
-                    tiers.append(
-                        GridTier(
-                            tier_entry["upper_bound"]["consumption"],
-                            tier_entry["costs"],
-                        )
+        tiers: List[GridTier] = []
+        for tier_entry in entry["tiers"]:
+                tiers.append(
+                    GridTier(
+                        tier_entry["upper_bound"]["consumption"],
+                        tier_entry["costs"],
                     )
-            type.append(
-                GridType(
-                    type_entry.write(),
-                ),
-            tiers
+                )
+        type.append(
+            GridType(
+                entry["type"],
             )
-        grids.append(Grid(entry["name"]), type)
+        )
+        print(type)
+        grids.append(Grid(entry["name"],type, tiers))
     # grid_emissions = grid_inputs["emissions"]  # the same for all the grids (EDL,Diesel)
     return (grids) #grid_emissions can be added here
 

@@ -1952,8 +1952,8 @@ class Grid:
     """
 
     name: str
-    tiers: List[GridTier]
     upper_bound_type: GridType
+    tiers: List[GridTier]
     # emissions: Dict[str, float]
 
 
