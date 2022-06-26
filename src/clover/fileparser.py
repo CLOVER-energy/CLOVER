@@ -2225,18 +2225,22 @@ def _parse_grid_inputs(
 
     grids: List[Grid] = []
     for entry in grid_inputs["grids"]:
-        tiers: List[GridTier] = []
-        for tier_entry in entry["tiers"]:
-            tiers.append(
-                GridTier(
-                    GridType(tier_entry["upper_bound"]["type"]),
-                    tier_entry["upper_bound"]["consumption"],
-                    tier_entry["costs"],
-                )
+        type: List[GridType]= []
+        for type_entry in entry ["type"]:
+            GridType(
+                type_entry["type"],
             )
-        grids.append(Grid(entry["name"], tiers))
-    grid_emissions = grid_inputs["emissions"]  # the same for all the grids (EDL,Diesel)
-    return (grids, grid_emissions)
+            tiers: List[GridTier] = []
+            for tier_entry in entry["tiers"]:
+                tiers.append(
+                    GridTier(
+                        tier_entry["upper_bound"]["consumption"],
+                        tier_entry["costs"],
+                    )
+                )
+            grids.append(Grid(entry["name"], type, tiers))
+    # grid_emissions = grid_inputs["emissions"]  # the same for all the grids (EDL,Diesel)
+    return (grids) #grid_emissions can be added here
 
 
 def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
