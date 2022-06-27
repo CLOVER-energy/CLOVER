@@ -24,6 +24,10 @@ desalination_scenarios:
         - bore_hole
         - bore_hole
       supply_temperature: 10 # [degC]
-    pvt_scenario:
-      heats: htf
-      mass_flow_rate: 72 # [litres/hour]
+    solar_thermal_collector_scenarios:
+      - type: solar_thermal
+        heats: htf
+        mass_flow_rate: 72 # [litres/hour]
+      - type: pv_t
+        heats: cold_water
+        mass_flow_rate: 72 # [litres/hour]

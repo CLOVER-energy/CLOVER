@@ -11,13 +11,17 @@
 hot_water_scenarios:
   - name: default
     hot_water:
-      auxiliary_heater: diesel # "diesel", "electric" or "none"
-      conventional_sources:
-        - natural_gas
+      auxiliary_heater: none # "diesel", "electric" or "none"
+      # conventional_sources:
+      #   - natural_gas
       demand_temperature: 60 # [degC]
     cold_water:
       supply: unlimited # "unlimited" or "clean_water"
       supply_temperature: 10 # [degC]
-    pvt_scenario:
-      heats: cold_water
-      mass_flow_rate: 72 # [litres/hour]
+    solar_thermal_collector_scenarios:
+      - type: solar_thermal
+        heats: htf
+        mass_flow_rate: 72 # [litres/hour]
+      - type: pv_t
+        heats: cold_water
+        mass_flow_rate: 72 # [litres/hour]
