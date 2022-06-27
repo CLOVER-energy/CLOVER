@@ -40,6 +40,7 @@ from ..__utils__ import (
     ResourceType,
     Scenario,
     ZERO_CELCIUS_OFFSET,
+    SolarPanelType,
     dict_to_dataframe,
 )
 from ..conversion.conversion import ThermalDesalinationPlant
@@ -376,16 +377,17 @@ def calculate_solar_thermal_output(  # pylint: disable=too-many-locals, too-many
 
     if minigrid.heat_exchanger is None:
         logger.error(
-            "%sThe energy system does not contain a heat exchanger despite the PV-T or "
-            "solar-thermal output computation function being called which is reliant "
+            "%sThe energy system does not contain a heat exchanger despite the %s "
+            "output computation function being called which is reliant "
             "on the definition of a heat exchanger.%s",
             BColours.fail,
             BColours.endc,
         )
         raise InputFileError(
             "energy system inputs",
-            "The energy system specified does not contain a heat exchanger but PV-T or "
-            "solar-thermal modelling was requested for which this is required.",
+            "The energy system specified does not contain a heat exchanger but "
+            f"{solar_thermal_collector.panel_type.value} modelling was requested for "
+            "which this is required.",
         )
 
     # Instantiate debugging variables
@@ -406,37 +408,53 @@ def calculate_solar_thermal_output(  # pylint: disable=too-many-locals, too-many
     ):
         if minigrid.buffer_tank is None:
             logger.error(
-                "%sThe energy system does not contain a buffer tank despite the PV-T/"
-                "solar-thermal output computation function being called for a "
+                "%sThe energy system does not contain a buffer tank despite the %s "
+                "output computation function being called for a "
                 "clean-water load.%s",
                 BColours.fail,
                 BColours.endc,
             )
             raise InputFileError(
                 "energy system inputs",
-                "The energy system specified does not contain a buffer tank but PV-T "
-                "or solar-thermal modelling for desalination was requested.",
+                "The energy system specified does not contain a buffer tank but "
+                f"{solar_thermal_collector.panel_type.value} modelling for desalination "
+                "was requested.",
+            )
+
+        # Determine the collector scenario being considered.
+        if solar_thermal_collector.panel_type == SolarPanelType.PV_T:
+            collector_scenario = scenario.desalination_scenario.pvt_scenario
+        elif solar_thermal_collector.panel_type == SolarPanelType.SOLAR_THERMAL:
+            collector_scenario = scenario.desalination_scenario.solar_thermal_scenario
+        else:
+            logger.error(
+                "%sCurrently, only PV-T or solar-thermal collectors are supported as "
+                "means of generating heat renewably.%s",
+                BColours.fail,
+                BColours.endc,
+            )
+            raise ProgrammerJudgementFault(
+                "simulation/solar::calculate_solar_thermal_output",
+                "The `calculate_solar_thermal_output` function can only be called for "
+                "PV-T or solar-thermal collectors.",
             )
 
         default_supply_temperature: float = (
             scenario.desalination_scenario.feedwater_supply_temperature
         )
-        mass_flow_rate: float = (
-            scenario.desalination_scenario.pvt_scenario.mass_flow_rate
-        )
         tank: HotWaterTank = minigrid.buffer_tank
 
         collector_heat_transfer: float = (
             collector_system_size
-            * mass_flow_rate  # [kg/hour]
-            * scenario.desalination_scenario.pvt_scenario.htf_heat_capacity  # [J/kg*K]
+            * collector_scenario.mass_flow_rate  # [kg/hour]
+            * collector_scenario.htf_heat_capacity  # [J/kg*K]
             * minigrid.heat_exchanger.efficiency
             / 3600  # [s/hour]
         )  # [W/K]
         tank_replacement_temperature: float = default_supply_temperature  # [degC]
 
         # Throw an error if the PV-T is not heating an intermediary HTF.
-        if scenario.desalination_scenario.pvt_scenario.heats != HTFMode.CLOSED_HTF:
+        if collector_scenario.heats != HTFMode.CLOSED_HTF:
             logger.error(
                 "%sCurrently, closed HTF PV-T modelling is supported only.%s",
                 BColours.fail,
@@ -444,7 +462,8 @@ def calculate_solar_thermal_output(  # pylint: disable=too-many-locals, too-many
             )
             raise InputFileError(
                 "desalination scenario",
-                "The PV-T heating mode requested is not supported.",
+                f"The {collector_scenario.collector_type.value} heating mode requested "
+                "is not supported.",
             )
 
     elif (
@@ -464,16 +483,33 @@ def calculate_solar_thermal_output(  # pylint: disable=too-many-locals, too-many
                 "PV-T modelling for hot-water loads was requested.",
             )
 
+        # Determine the collector scenario being considered.
+        if solar_thermal_collector.panel_type == SolarPanelType.PV_T:
+            collector_scenario = scenario.hot_water_scenario.pvt_scenario
+        elif solar_thermal_collector.panel_type == SolarPanelType.SOLAR_THERMAL:
+            collector_scenario = scenario.hot_water_scenario.solar_thermal_scenario
+        else:
+            logger.error(
+                "%sCurrently, only PV-T or solar-thermal collectors are supported as "
+                "means of generating heat renewably.%s",
+                BColours.fail,
+                BColours.endc,
+            )
+            raise ProgrammerJudgementFault(
+                "simulation/solar::calculate_solar_thermal_output",
+                "The `calculate_solar_thermal_output` function can only be called for "
+                "PV-T or solar-thermal collectors.",
+            )
+
         default_supply_temperature = (
             scenario.hot_water_scenario.cold_water_supply_temperature
         )
-        mass_flow_rate = scenario.hot_water_scenario.pvt_scenario.mass_flow_rate
         tank = minigrid.hot_water_tank
 
-        pvt_heat_transfer = (
-            pvt_system_size
-            * mass_flow_rate  # [kg/hour]
-            * scenario.hot_water_scenario.pvt_scenario.htf_heat_capacity  # [J/kg*K]
+        collector_heat_transfer = (
+            collector_system_size
+            * collector_scenario.mass_flow_rate  # [kg/hour]
+            * collector_scenario.htf_heat_capacity  # [J/kg*K]
             * minigrid.heat_exchanger.efficiency
             / 3600  # [s/hour]
         )  # [W/K]
@@ -493,10 +529,10 @@ def calculate_solar_thermal_output(  # pylint: disable=too-many-locals, too-many
         )
 
     best_guess_collector_input_temperature: float = default_supply_temperature
-    pvt_collector_input_temperature_map: Dict[int, float] = collections.defaultdict(
+    collector_input_temperature_map: Dict[int, float] = collections.defaultdict(
         lambda: default_supply_temperature
     )
-    pvt_collector_output_temperature_map: Dict[int, float] = collections.defaultdict(
+    collector_output_temperature_map: Dict[int, float] = collections.defaultdict(
         lambda: default_supply_temperature
     )
     tank_environment_heat_transfer: float = (
@@ -517,19 +553,20 @@ def calculate_solar_thermal_output(  # pylint: disable=too-many-locals, too-many
     )
     for index in tqdm(
         range(start_hour, end_hour),
-        desc=f"{resource_type.value.replace('_', ' ')} pv-t performance",
+        desc=f"{resource_type.value.replace('_', ' ')} "
+        + f"{collector_scenario.collector_type.value} performance",
         disable=disable_tqdm,
         leave=False,
         unit="hour",
     ):
         # Determine whether the PV-T is flowing.
         if index > start_hour:
-            pvt_flow_on: bool = (
-                pvt_collector_output_temperature_map[index - 1]
+            collector_flow_on: bool = (
+                collector_output_temperature_map[index - 1]
                 > tank_temperature_map[index - 1]
             ) and irradiances[index] > 0
         else:
-            pvt_flow_on = False
+            collector_flow_on = False
 
         previous_tank_temperature: float = (
             tank_temperature_map[index - 1]
@@ -566,34 +603,40 @@ def calculate_solar_thermal_output(  # pylint: disable=too-many-locals, too-many
                 (
                     fractional_electric_performance,
                     collector_output_temperature,
-                ) = minigrid.pvt_panel.calculate_performance(  # type: ignore [assignment]
+                ) = solar_thermal_collector.calculate_performance(  # type: ignore [assignment]
                     temperatures[index],
                     best_guess_collector_input_temperature,
                     logger,
-                    mass_flow_rate,
+                    collector_scenario.mass_flow_rate,
                     1000 * irradiances[index],
                     wind_speeds[index],
                 )
 
                 if fractional_electric_performance is None:
                     logger.error(
-                        "%sPV-T performance function returned `None` for electrical output.%s",
+                        "%s%s performance function returned `None` for electrical "
+                        "output.%s",
                         BColours.fail,
+                        collector_scenario.collector_type.value.capitalize(),
                         BColours.endc,
                     )
                     raise ProgrammerJudgementFault(
-                        ":class:`HybridPVTPanel`::calculate_performance",
+                        f"simularion/solar/{collector_scenario.collector_type.value}::"
+                        "calculate_performance",
                         "Function returned `None` for electrical performance of a PV-T "
                         "collector.",
                     )
                 if collector_output_temperature is None:
                     logger.error(
-                        "%sPV-T performance function returned `None` for thermal output.%s",
+                        "%s%s performance function returned `None` for thermal output."
+                        "%s",
                         BColours.fail,
+                        collector_scenario.collector_type.value.capitalize(),
                         BColours.endc,
                     )
                     raise ProgrammerJudgementFault(
-                        ":class:`HybridPVTPanel`::calculate_performance",
+                        f"simularion/solar/{collector_scenario.collector_type.value}::"
+                        "calculate_performance",
                         "Function returned `None` for thermal performance of a PV-T "
                         "collector.",
                     )
@@ -608,7 +651,7 @@ def calculate_solar_thermal_output(  # pylint: disable=too-many-locals, too-many
 
             # If the PV-T collector flow was not on, then the output temperature should
             # simply be the same as the input temperature.
-            if not pvt_flow_on:
+            if not collector_flow_on:
                 collector_output_temperature = max(
                     best_guess_collector_input_temperature,
                     tank_replacement_temperature,
@@ -623,7 +666,8 @@ def calculate_solar_thermal_output(  # pylint: disable=too-many-locals, too-many
 
             # Determine the tank temperature and collector input temperature that match.
             resultant_vector = [
-                pvt_heat_transfer * (collector_output_temperature + ZERO_CELCIUS_OFFSET)
+                collector_heat_transfer
+                * (collector_output_temperature + ZERO_CELCIUS_OFFSET)
                 + tank_environment_heat_transfer
                 * (temperatures[index] + ZERO_CELCIUS_OFFSET)
                 + tank_internal_energy
@@ -648,7 +692,7 @@ def calculate_solar_thermal_output(  # pylint: disable=too-many-locals, too-many
                 [
                     0,
                     (
-                        pvt_heat_transfer
+                        collector_heat_transfer
                         + tank_environment_heat_transfer
                         + tank_internal_energy
                         + (tank_load_enthalpy_transfer if tank_supply_on else 0)
@@ -683,7 +727,7 @@ def calculate_solar_thermal_output(  # pylint: disable=too-many-locals, too-many
                     "T_tank=%s degC",
                     index,
                     runs,
-                    "on" if pvt_flow_on else "off",
+                    "on" if collector_flow_on else "off",
                     "on" if tank_supply_on else "off",
                     round(collector_input_temperature, 3),
                     round(best_guess_collector_input_temperature, 3),
@@ -691,41 +735,43 @@ def calculate_solar_thermal_output(  # pylint: disable=too-many-locals, too-many
                 )
             best_guess_collector_input_temperature = collector_input_temperature
 
-        # Save the fractional electrical performance and output temp.
-        pvt_collector_input_temperature_map[index] = collector_input_temperature
-        pvt_collector_output_temperature_map[index] = collector_output_temperature
-        pvt_electric_power_per_unit_map[index] = (
-            fractional_electric_performance  # type: ignore [operator]
-            * minigrid.pvt_panel.pv_layer.pv_unit
-        )
-        pvt_pump_times_map[index] = int(pvt_flow_on)
+        # Save the performance characteristics and output temp.
+        collector_input_temperature_map[index] = collector_input_temperature
+        collector_output_temperature_map[index] = collector_output_temperature
+        pump_times_map[index] = int(collector_flow_on)
         tank_temperature_map[index] = tank_temperature
         tank_volume_supplied_map[index] = volume_supplied
+
+        if isinstance(solar_thermal_collector, HybridPVTPanel):
+            electric_power_per_unit_map[index] = (
+                fractional_electric_performance  # type: ignore [operator]
+                * solar_thermal_collector.pv_layer.pv_unit
+            )
 
     logger.info("Hourly %s PV-T performance calculation complete.", resource_type.value)
 
     # Convert these outputs to dataframes and return.
-    pvt_collector_input_temperature: pd.DataFrame = dict_to_dataframe(
-        pvt_collector_input_temperature_map, logger
+    collector_input_temperature_frame: pd.DataFrame = dict_to_dataframe(
+        collector_input_temperature_map, logger
     )
-    pvt_collector_input_temperature = pvt_collector_input_temperature.reset_index(
+    collector_input_temperature_frame = collector_input_temperature_frame.reset_index(
         drop=True
     )
 
-    pvt_collector_output_temperature: pd.DataFrame = dict_to_dataframe(
-        pvt_collector_output_temperature_map, logger
+    collector_output_temperature_frame: pd.DataFrame = dict_to_dataframe(
+        collector_output_temperature_map, logger
     )
-    pvt_collector_output_temperature = pvt_collector_output_temperature.reset_index(
+    collector_output_temperature_frame = collector_output_temperature_frame.reset_index(
         drop=True
     )
 
-    pvt_electric_power_per_unit: pd.DataFrame = dict_to_dataframe(
-        pvt_electric_power_per_unit_map, logger
+    electric_power_per_unit: pd.DataFrame = dict_to_dataframe(
+        electric_power_per_unit_map, logger
     )
-    pvt_electric_power_per_unit = pvt_electric_power_per_unit.reset_index(drop=True)
+    electric_power_per_unit = electric_power_per_unit.reset_index(drop=True)
 
-    pvt_pump_times_frame: pd.DataFrame = dict_to_dataframe(pvt_pump_times_map, logger)
-    pvt_pump_times_frame = pvt_pump_times_frame.reset_index(drop=True)
+    pump_times_frame: pd.DataFrame = dict_to_dataframe(pump_times_map, logger)
+    pump_times_frame = pump_times_frame.reset_index(drop=True)
 
     tank_temperature_frame: pd.DataFrame = dict_to_dataframe(
         tank_temperature_map, logger
@@ -738,10 +784,10 @@ def calculate_solar_thermal_output(  # pylint: disable=too-many-locals, too-many
     tank_volume_output_supplied = tank_volume_output_supplied.reset_index(drop=True)
 
     return (
-        pvt_collector_input_temperature,
-        pvt_collector_output_temperature,
-        pvt_electric_power_per_unit,
-        pvt_pump_times_frame,
+        collector_input_temperature_frame,
+        collector_output_temperature_frame,
+        electric_power_per_unit,
+        pump_times_frame,
         tank_temperature_frame,
         tank_volume_output_supplied,
     )
