@@ -91,7 +91,7 @@ def load_grid_profile(
                     os.path.join(
                         auto_generated_files_directory,
                         "grid",
-                        f"{scenario.grid_types}_grid_status.csv",
+                        f"{grid_type}_grid_status.csv",
                     ),
                     "r",
                 ) as f:
@@ -103,7 +103,7 @@ def load_grid_profile(
                 logger.error(
                     "%sGrid profile file for profile '%s' could not be found: %s%s",
                     BColours.fail,
-                    scenario.grid_types,
+                    grid_type,
                     str(e),
                     BColours.endc,
                 )

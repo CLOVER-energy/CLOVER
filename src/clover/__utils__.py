@@ -18,6 +18,7 @@ issues and increase the ease of code alterations.
 
 """
 
+import collections
 import dataclasses
 import enum
 import logging
@@ -928,7 +929,7 @@ class KeyResults:
     cumulative_hw_supplied: Optional[float] = None
     cumulative_pv_generation: Optional[float] = None
     diesel_times: Optional[float] = None
-    grid_daily_hours: Optional[float] = None
+    grid_daily_hours: Optional[Dict[str, float]] = None
     max_buffer_tank_temperature: Optional[float] = None
     max_cw_pvt_output_temperature: Optional[float] = None
     mean_buffer_tank_temperature: Optional[float] = None
@@ -1045,9 +1046,10 @@ class KeyResults:
                 self.diesel_times, 3
             )
         if self.grid_daily_hours is not None:
-            data_dict["Average grid availability / hours/day"] = round(
-                self.grid_daily_hours, 3
-            )
+            for name, hours in self.grid_daily_hours.items():
+                data_dict[f"Average {name.capitalize()} grid availability / hours/day"] = round(
+                    self.grid_daily_hours, 3
+                )
         if self.max_buffer_tank_temperature is not None:
             data_dict["Maximum buffer-tank temperature / degC"] = round(
                 self.max_buffer_tank_temperature, 3

@@ -365,7 +365,7 @@ def cw_tank_iteration_step(  # pylint: disable=too-many-locals
 
 def get_electric_battery_storage_profile(  # pylint: disable=too-many-locals, too-many-statements
     *,
-    grid_profiles: Optional[Dict[str, pd.DataFrame]], #grid_profiles
+    grid_profiles: Optional[Dict[str, pd.DataFrame]],
     kerosene_usage: pd.Series,
     location: Location,
     logger: Logger,
@@ -391,8 +391,6 @@ def get_electric_battery_storage_profile(  # pylint: disable=too-many-locals, to
     Gets the storage profile (energy in/out the battery) and other system energies.
 
     Inputs:
-        - grid_profile:
-            The relevant grid profile, based on the scenario, for the simulation.
         - grid_profiles:
             The relevant multiple grid profile based on scenario covering different grids.
         - kerosene_usage:
@@ -626,7 +624,7 @@ def get_electric_battery_storage_profile(  # pylint: disable=too-many-locals, to
 
         if scenario.grid:
             for grid_type in scenario.grid_types:
-                grid_profile = grid_profile[
+                grid_profile = grid_profiles[
                     grid_type
                 ]  # {"edl": [0, 1, 2, 3, 4]} <---- [0, 1, 2, 3, 4]
                 grid_energies[
@@ -678,8 +676,8 @@ def get_electric_battery_storage_profile(  # pylint: disable=too-many-locals, to
     # @paulharfouche
     # Will need multiple grid energies
     # I didn't get here what do I need to do? kindly advise
-    for name, grid_energy in grid_energies:
-        grid_energy.columns = pd.Index([f"{name} {ColumnHeader.GRID_ENERGY.value}"])
+    for name, grid_energy in grid_energies.items():
+        grid_energy.columns = pd.Index([f"{name.capitalize()} {ColumnHeader.GRID_ENERGY.value}"])
     load_energy.columns = pd.Index([ColumnHeader.LOAD_ENERGY.value])
 
     renewables_energy.columns = pd.Index(

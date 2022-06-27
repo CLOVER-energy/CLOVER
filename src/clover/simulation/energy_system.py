@@ -1431,6 +1431,7 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
         renewables_energy_used_directly,
     ) = get_electric_battery_storage_profile(
         clean_water_pvt_size=clean_water_pvt_size,
+        grid_profiles=grid_profiles,  # type: ignore # to check that
         hot_water_pvt_size=hot_water_pvt_size,
         kerosene_usage=kerosene_usage.iloc[start_hour:end_hour, 0],
         location=location,
