@@ -1443,10 +1443,6 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
         end_hour=end_hour,
         pv_size=pv_size,
         start_hour=start_hour,
-        grid_profiles={
-            name: grid_profile.iloc(0)[start_hour:end_hour] #to resolve the Too many indexers issue
-            for name, grid_profile in grid_profiles.items()
-            },  # type: ignore # to check that
     )
 
     if all(renewables_energy.values == 0):

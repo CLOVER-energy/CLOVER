@@ -577,7 +577,6 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
             electric_load_profile,
             water_source_times,
             input_file_info,
-            grids
         ) = parse_input_files(
             parsed_args.debug,
             parsed_args.electric_load_profile,

@@ -1048,7 +1048,7 @@ class KeyResults:
         if self.grid_daily_hours is not None:
             for name, hours in self.grid_daily_hours.items():
                 data_dict[f"Average {name.capitalize()} grid availability / hours/day"] = round(
-                    self.grid_daily_hours, 3
+                    hours, 3
                 )
         if self.max_buffer_tank_temperature is not None:
             data_dict["Maximum buffer-tank temperature / degC"] = round(
