@@ -102,7 +102,7 @@ def get_key_results(
     key_results.average_pv_generation = float(
         round(total_solar_generation / (20 * 365))
     )
-    
+
     # Compute the grid results.
     for grid_profile in grid_profiles:
         if grid_input_profile is not None:
@@ -349,7 +349,7 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
         )
         plt.close()
         pbar.update(1)
-        
+
         for grid_profile in grid_profiles:
             # Plot the grid availablity profile.
             if grid_profile is not None:

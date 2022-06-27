@@ -1936,6 +1936,7 @@ class GridTier:
     upper_bound_consumption: float
     costs: Dict[str, float]
 
+
 @dataclasses.dataclass
 class Grid:
     """
@@ -2150,7 +2151,7 @@ class Scenario:
             diesel_scenario,
             distribution_network,
             scenario_inputs["grid"],
-            scenario_inputs["grid_type"],
+            scenario_inputs["grid_types"],
             hot_water_scenario,
             scenario_inputs[NAME],
             resource_types,

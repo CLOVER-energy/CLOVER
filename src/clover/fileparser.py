@@ -2227,12 +2227,11 @@ def _parse_grid_inputs(
     for entry in grid_inputs["grids"]:
         tiers: List[GridTier] = []
         for tier_entry in entry["tiers"]:
-                tiers.append(
-                    GridTier(
-                        tier_entry["upper_bound"]["consumption"],
-                        tier_entry["costs"],
-                    )
-                )
+            tiers.append(
+                GridTier(
+                    tier_entry["upper_bound"]["consumption"],
+                    tier_entry["costs"],
+                ))
         type=GridType(entry["type"])
         grids.append(Grid(entry["name"],type, tiers))
     # grid_emissions = grid_inputs["emissions"]  # the same for all the grids (EDL,Diesel)
@@ -2260,7 +2259,7 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
     Optional[pd.DataFrame],
     Dict[WaterSource, pd.DataFrame],
     Dict[str, str],
-    List[Dict[str, Any]], #grid output
+    List[Dict[str, Any]],  # grid output
 ]:
     """
     Parse the various input files and return content-related information.
@@ -2319,9 +2318,7 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
     logger.info("Conversion inputs successfully parsed.")
 
     # Parse the grids inputs file.
-    (
-        grids
-    ) = _parse_grid_inputs(
+    grids = _parse_grid_inputs(
         inputs_directory_relative_path,
         logger,
     )
@@ -2918,6 +2915,7 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
         ", ".join([f"{key}: {value}" for key, value in transmitters.items()]),
     )
     logger.debug("Input file information: %s", input_file_info)
+    logger.debug("Grid information: %s", ", ".join(str(grid) for grid in grids))
 
     return (
         converters,
@@ -2927,6 +2925,7 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
         generation_inputs,
         ghg_inputs,
         grid_times,
+        grids,
         location,
         optimisation_parameters,
         optimisations,
@@ -2935,5 +2934,4 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
         total_load_profile,
         water_source_times,
         input_file_info,
-        grids,
     )

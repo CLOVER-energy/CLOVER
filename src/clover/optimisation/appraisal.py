@@ -246,21 +246,19 @@ def _simulation_environmental_appraisal(  # pylint: disable=too-many-locals
 #   The voltage rate of the location being considered.
 VOLTAGE: int = 220
 
-#Monthly demand:
-
+# Monthly demand:
 
 def _get_grid_pricing_tier(
-    grid:Grid,
+    grid: Grid,
     grid_energy: pd.Series,
-
-): 
+):
     """
     Gets the grid pricing tier.
 
         Inputs:
             - grid:
                 Needed to identify the grid criteria and data.
-            - grid energy: 
+            - grid energy:
                 Energy that was supplied by the grid.
             - Daily household hourly consumption:
                 Needed to identify the peak consumption per day.
@@ -270,42 +268,56 @@ def _get_grid_pricing_tier(
             - tier_iam_in:
                 The tier corresponding to the household consumption based on the grid in use.
     """
-    grid.tiers.sort() #sorting the tiers (upper bound and costs)
-    #[5A,10A,100kWh,200kWh,300kWh,400kWh,1000kWh]
-    for GridTier.upper_bound_consumption in grid.tiers: #run over the list of tiers where we have the different upper bound consumption
-    # Filter out based on whether the grid is current drawing or max-power in its pricing
+    grid.tiers.sort()  # sorting the tiers (upper bound and costs)
+    # [5A,10A,100kWh,200kWh,300kWh,400kWh,1000kWh]
+    for (
+        GridTier.upper_bound_consumption
+    ) in (
+        grid.tiers
+    ):  # run over the list of tiers where we have the different upper bound consumption
+        # Filter out based on whether the grid is current drawing or max-power in its pricing
         if grid.type == GridType.CURRENT_DRAW:  # DIESEL GENERATOR
             if (max(grid_energy) / voltage <= grid_tier.threshold):
                 return tier
         elif grid.type == GridType.DAILY_POWER:  # EDL
-        # Sum over the time period, you will need to code this somewhere, here would be fine for now
-        # Determine the energy that was consumed
+            # Sum over the time period, you will need to code this somewhere, here would be fine for now
+            # Determine the energy that was consumed
             if household_monthly_demand <= GridTier.upper_bound_consumption[2]:
-                tier_i_am_in = grid.tiers[2] # is the tier with ["upper_bound"]["consumption"]=100
+                tier_i_am_in = grid.tiers[
+                    2
+                ]  # is the tier with ["upper_bound"]["consumption"]=100
             elif (
                 household_monthly_demand
                 <= GridTier.upper_bound_consumption[2] & household_monthly_demand
                 <= GridTier.upper_bound_consumption[3]
             ):
-                tier_i_am_in = grid.tiers[3]  # is the tier with ["upper_bound"]["consumption"]=200
+                tier_i_am_in = grid.tiers[
+                    3
+                ]  # is the tier with ["upper_bound"]["consumption"]=200
             elif (
                 household_monthly_demand
                 <= GridTier.upper_bound_consumption[3] & household_monthly_demand
                 <= GridTier.upper_bound_consumption[4]
             ):
-                tier_i_am_in = grid.tiers[4] # is the tier with ["upper_bound"]["consumption"]=300
+                tier_i_am_in = grid.tiers[
+                    4
+                ]  # is the tier with ["upper_bound"]["consumption"]=300
             elif (
                 household_monthly_demand
                 <= GridTier.upper_bound_consumption[4] & household_monthly_demand
                 <= GridTier.upper_bound_consumption[5]
             ):
-                tier_i_am_in = grid.tiers[5]  # is the tier with ["upper_bound"]["consumption"]=400
+                tier_i_am_in = grid.tiers[
+                    5
+                ]  # is the tier with ["upper_bound"]["consumption"]=400
             elif (
                 household_monthly_demand
                 <= GridTier.upper_bound_consumption[5] & household_monthly_demand
                 <= GridTier.upper_bound_consumption[6]
             ):
-                tier_i_am_in = grid.tiers[6]  # is the tier with ["upper_bound"]["consumption"]=1000
+                tier_i_am_in = grid.tiers[
+                    6
+                ]  # is the tier with ["upper_bound"]["consumption"]=1000
         else:
             raise Exception(
                 "Grid type must be one of {}".format(
@@ -314,7 +326,7 @@ def _get_grid_pricing_tier(
                     )  # This will print all the allowed values
                 )
             )
-    return (tier_i_am_in)
+    return tier_i_am_in
 
 
 def _simulation_financial_appraisal(  # pylint: disable=too-many-locals
