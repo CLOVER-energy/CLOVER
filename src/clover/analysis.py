@@ -13,11 +13,12 @@ analysis.py - The analysis module for CLOVER.
 
 In order to best check and validate the results produced by CLOVER simulations and
 optimisations, an in-built analysis module is provied which generates plots and figures
-corresponding to the sugetsed analysis within the user guide.
+corresponding to the suggetsed analysis within the user guide.
 
 """
 
 import collections
+from optparse import Option
 import os
 
 from typing import Dict, Optional
@@ -70,7 +71,8 @@ SIMULATION_PLOTS_DIRECTORY: str = "simulation_{simulation_number}_plots"
 
 
 def get_key_results(
-    grid_input_profiles: Dict[str, pd.DataFrame],
+    grid_input_profile: pd.DataFrame,
+    grid_profiles: Optional[Dict[str,pd.DataFrame]],
     num_years: int,
     simulation_results: pd.DataFrame,
     total_solar_output: pd.DataFrame,
@@ -106,10 +108,10 @@ def get_key_results(
 
     # Compute the grid results.
     key_results.grid_daily_hours = collections.defaultdict(float)
-    for grid_name, grid_profile in grid_input_profiles.items():
-        if grid_profile is not None:
+    for grid_name, grid_input_profile in grid_profiles.items():
+        if grid_input_profile is not None:
             key_results.grid_daily_hours[grid_name] = np.sum(
-                grid_profile[: num_years * HOURS_PER_YEAR], axis=0
+                grid_input_profile[: num_years * HOURS_PER_YEAR], axis=0
             ) / (365 * num_years)
 
     # Compute the simulation related averages and sums.
@@ -232,7 +234,7 @@ def get_key_results(
 
 def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
     grid_input_profile: pd.DataFrame,
-    grid_profile: pd.Series,
+    grid_profile: pd.DataFrame,
     grid_profiles: Optional[Dict[str, pd.DataFrame]],  # to check that
     initial_cw_hourly_loads: Optional[
         Dict[str, pd.DataFrame]
@@ -257,8 +259,6 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
             Whether to disable the tqdm progress bars (True) or display them (False).
         - grid_input_profile:
             The relevant grid input profile for the simulation that was run.
-        - grid_profile:
-            The relevant grid profile for the simulation that was run under the list of grid profiles
         - grid_profiles:
             The relevant list of grid profile for the simulation that was run.
         - initial_cw_hourly_loads:
@@ -379,23 +379,23 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
                 plt.close()
                 pbar.update(1)
 
-        # Plot the input vs. randomised grid avialability profiles.
-        plt.plot(range(24), grid_input_profile, color="k", label="Input")
-        plt.plot(range(24), np.mean(reshaped_data, axis=0), color="r", label="Output")
-        plt.legend()
-        plt.xticks(range(0, 24, 2))
-        plt.yticks(np.arange(0, 1.1, 0.2))
-        plt.xlabel("Hour of day")
-        plt.ylabel("Probability")
-        plt.title("Probability of grid electricity being available")
-        plt.savefig(
-            os.path.join(
-                figures_directory, "grid_availability_randomisation_comparison.png"
-            ),
-            transparent=True,
-        )
-        plt.close()
-        pbar.update(1)
+            # Plot the input vs. randomised grid avialability profiles.
+            plt.plot(range(24), grid_input_profile, color="k", label="Input")
+            plt.plot(range(24), np.mean(reshaped_data, axis=0), color="r", label="Output")
+            plt.legend()
+            plt.xticks(range(0, 24, 2))
+            plt.yticks(np.arange(0, 1.1, 0.2))
+            plt.xlabel("Hour of day")
+            plt.ylabel("Probability")
+            plt.title("Probability of grid electricity being available")
+            plt.savefig(
+                os.path.join(
+                    figures_directory, "grid_availability_randomisation_comparison.png"
+                ),
+                transparent=True,
+            )
+            plt.close()
+            pbar.update(1)
 
         # Plot the initial electric load of each device.
         for device, load in initial_electric_hourly_loads.items():

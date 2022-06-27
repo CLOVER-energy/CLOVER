@@ -964,7 +964,7 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
         check_scenario(logger, minigrid, operating_mode, parsed_args, scenario)
         logger.info("Scenario parameters valid.")
 
-        logger.info("Loading grid profile.")
+        logger.info("Loading grid profiles.")
         grid_profiles = grid.load_grid_profile(
             auto_generated_files_directory, logger, scenario
         )
