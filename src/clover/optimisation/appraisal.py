@@ -20,7 +20,7 @@ simulations.
 """
 
 from logging import Logger
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 import numpy as np  # pylint: disable=import-error
 import pandas as pd
@@ -39,7 +39,6 @@ from ..__utils__ import (
     GridTier,
     GridType,
     Grid,
-    Grids,
     InternalError,
     Scenario,
     hourly_profile_to_daily_sum,
@@ -243,8 +242,9 @@ def _simulation_environmental_appraisal(  # pylint: disable=too-many-locals
         round(total_system_ghgs, 3),
     )
 
-#Voltage in Lebanon:
-voltage=220
+# Voltage:
+#   The voltage rate of the location being considered.
+VOLTAGE: int = 220
 
 #Monthly demand:
 
@@ -275,12 +275,8 @@ def _get_grid_pricing_tier(
     for GridTier.upper_bound_consumption in grid.tiers: #run over the list of tiers where we have the different upper bound consumption
     # Filter out based on whether the grid is current drawing or max-power in its pricing
         if grid.type == GridType.CURRENT_DRAW:  # DIESEL GENERATOR
-            if (
-                max(grid_energy)/voltage <= GridTier.upper_bound_consumption[0]
-            ):  # A to kW and because peak so kWh so here I am saying if at anytime during a day the peak demand <=5A power then we only need tier 5A
-                tier_i_am_in = grid.tiers[0]  # upper_bound-consumption_5
-            else:
-                tier_i_am_in = grid.tiers[1]  # upper_bound-consumption_10
+            if (max(grid_energy) / voltage <= grid_tier.threshold):
+                return tier
         elif grid.type == GridType.DAILY_POWER:  # EDL
         # Sum over the time period, you will need to code this somewhere, here would be fine for now
         # Determine the energy that was consumed
@@ -338,7 +334,7 @@ def _simulation_financial_appraisal(  # pylint: disable=too-many-locals
     storage_addition: float,
     system_details: SystemDetails,
     yearly_load_statistics: pd.DataFrame,
-    grids: Grids,
+    grids: List[Grid],
 ) -> FinancialAppraisal:
     """
     Appraises the financial performance of a minigrid system.
@@ -469,7 +465,7 @@ def _simulation_financial_appraisal(  # pylint: disable=too-many-locals
             start_year=system_details.start_year,
             end_year=system_details.end_year,
         )
-        subscription_cost = (tier_i_am_in.costs[3]) / exchange_rate
+        subscription_cost = tier_i_am_in.costs[SUBSCRIPTION_COST] / exchange_rate
         # get the function _get_grid_pricing_tier for it to read the grid_energy and the tiers as inputs
         # and the output is the tier we are working in.
         # costs = (tier_i_am_in.costs) / exchange_rate

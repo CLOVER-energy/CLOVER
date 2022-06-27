@@ -2192,7 +2192,7 @@ def _parse_transmission_inputs(
 def _parse_grid_inputs(
     inputs_directory_relative_path: str,
     logger: Logger,
-) -> List[GRID]:
+) -> List[Grid]:
     """
     Parses the grid inputs file.
 
@@ -2225,7 +2225,6 @@ def _parse_grid_inputs(
 
     grids: List[Grid] = []
     for entry in grid_inputs["grids"]:
-        type: List[GridType]= []
         tiers: List[GridTier] = []
         for tier_entry in entry["tiers"]:
                 tiers.append(
@@ -2234,15 +2233,10 @@ def _parse_grid_inputs(
                         tier_entry["costs"],
                     )
                 )
-        type.append(
-            GridType(
-                entry["type"],
-            )
-        )
-        print(type)
+        type=GridType(entry["type"])
         grids.append(Grid(entry["name"],type, tiers))
     # grid_emissions = grid_inputs["emissions"]  # the same for all the grids (EDL,Diesel)
-    return (grids) #grid_emissions can be added here
+    return grids #grid_emissions can be added here
 
 
 def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
@@ -2326,12 +2320,12 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
 
     # Parse the grids inputs file.
     (
-        grids,
+        grids
     ) = _parse_grid_inputs(
         inputs_directory_relative_path,
         logger,
     )
-    logger.info("Grids inputs successfully parsed.")
+    logger.info("Grid inputs successfully parsed.")
 
     # Parse the device inputs file.
     device_inputs_filepath, devices = _parse_device_inputs(
@@ -2924,7 +2918,6 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
         ", ".join([f"{key}: {value}" for key, value in transmitters.items()]),
     )
     logger.debug("Input file information: %s", input_file_info)
-    print (grids)
 
     return (
         converters,

@@ -365,8 +365,7 @@ def cw_tank_iteration_step(  # pylint: disable=too-many-locals
 
 def get_electric_battery_storage_profile(  # pylint: disable=too-many-locals, too-many-statements
     *,
-    grid_profile: pd.Series,
-    grid_profiles: Optional[Dict[str, pd.DataFrame]],
+    grid_profiles: Optional[Dict[str, pd.DataFrame]], #grid_profiles
     kerosene_usage: pd.Series,
     location: Location,
     logger: Logger,
@@ -612,7 +611,7 @@ def get_electric_battery_storage_profile(  # pylint: disable=too-many-locals, to
     renewables_energy: pd.DataFrame = pd.DataFrame(
         sum(renewables_energy_map.values())  # type: ignore
     )
-
+    grid_profile: pd.Series
     # Check for self-generation prioritisation
     if scenario.prioritise_self_generation:
         # Take energy from PV first
@@ -682,6 +681,7 @@ def get_electric_battery_storage_profile(  # pylint: disable=too-many-locals, to
     for name, grid_energy in grid_energies:
         grid_energy.columns = pd.Index([f"{name} {ColumnHeader.GRID_ENERGY.value}"])
     load_energy.columns = pd.Index([ColumnHeader.LOAD_ENERGY.value])
+
     renewables_energy.columns = pd.Index(
         [ColumnHeader.RENEWABLE_ELECTRICITY_SUPPLIED.value]
     )

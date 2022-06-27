@@ -574,6 +574,7 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
             electric_load_profile,
             water_source_times,
             input_file_info,
+            grids
         ) = parse_input_files(
             parsed_args.debug,
             parsed_args.electric_load_profile,
@@ -1018,7 +1019,7 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
                     total_loads,
                     total_wind_data[wind.WindDataType.WIND_SPEED.value]
                     if total_wind_data is not None
-                    else None,
+                    else None,               
                 )
             except Exception as e:
                 print(f"Beginning CLOVER simulation runs {'.' * 30}    {FAILED}")

@@ -1087,8 +1087,6 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
             Whether to disable the tqdm progress bars (True) or display them (False).
         - electric_storage_size:
             Amount of storage in terms of the number of batteries included.
-        - grid_profile:
-            Single grid profile
         - grid_profiles:
             The Multiple grid-availability profile.
         - hot_water_pvt_size:
@@ -1217,7 +1215,7 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
     # grid_profiles = (
     #     grid_profiles
     #     if grid_profiles is not None
-    #     else {some_grid_name: pd.DataFrame([0] * simulation_hours)}
+    #     else {grid_name: pd.DataFrame([0] * simulation_hours)}
     # )
     total_cw_load: Optional[pd.DataFrame] = total_loads[ResourceType.CLEAN_WATER]
     total_electric_load: Optional[pd.DataFrame] = total_loads[ResourceType.ELECTRIC]
@@ -1433,11 +1431,6 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
         renewables_energy_used_directly,
     ) = get_electric_battery_storage_profile(
         clean_water_pvt_size=clean_water_pvt_size,
-        grid_profile=grid_profile,
-        grid_profiles={
-            name: grid_profile.iloc[start_hour:end_hour, 0]
-            for name, grid_profile in grid_profiles.items()
-        },  # type: ignore # to check that
         hot_water_pvt_size=hot_water_pvt_size,
         kerosene_usage=kerosene_usage.iloc[start_hour:end_hour, 0],
         location=location,
@@ -1449,6 +1442,10 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
         end_hour=end_hour,
         pv_size=pv_size,
         start_hour=start_hour,
+        grid_profiles={
+            name: grid_profile.iloc(0)[start_hour:end_hour] #to resolve the Too many indexers issue
+            for name, grid_profile in grid_profiles.items()
+            },  # type: ignore # to check that
     )
 
     if all(renewables_energy.values == 0):
