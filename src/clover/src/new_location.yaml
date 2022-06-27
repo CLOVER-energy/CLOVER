@@ -1018,7 +1018,7 @@
               contents: |+
                 ---
                 ################################################################################
-                # hot_water_scenario.yaml - Hot-water and PV-T specific scenario params.       #
+                # desalination_scenario.yaml - Desalination and PV-T specific scenario params. #
                 #                                                                              #
                 # Author: Phil Sandwell, Ben Winchester                                        #
                 # Copyright: Phil Sandwell & Ben Winchester, 2021                              #
