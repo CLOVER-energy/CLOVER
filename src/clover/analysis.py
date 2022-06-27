@@ -71,7 +71,6 @@ SIMULATION_PLOTS_DIRECTORY: str = "simulation_{simulation_number}_plots"
 
 
 def get_key_results(
-    grid_input_profile: pd.DataFrame,
     grid_profiles: Optional[Dict[str,pd.DataFrame]],
     num_years: int,
     simulation_results: pd.DataFrame,
@@ -108,10 +107,10 @@ def get_key_results(
 
     # Compute the grid results.
     key_results.grid_daily_hours = collections.defaultdict(float)
-    for grid_name, grid_input_profile in grid_profiles.items():
-        if grid_input_profile is not None:
+    for grid_name, grid_profile in grid_profiles.items():
+        if grid_profile is not None:
             key_results.grid_daily_hours[grid_name] = np.sum(
-                grid_input_profile[: num_years * HOURS_PER_YEAR], axis=0
+                grid_profile[: num_years * HOURS_PER_YEAR], axis=0
             ) / (365 * num_years)
 
     # Compute the simulation related averages and sums.
@@ -127,6 +126,7 @@ def get_key_results(
         ColumnHeader.TOTAL_ELECTRICITY_CONSUMED.value
     ].sum() / (365 * num_years)
 
+    #was commented before! why?
     # key_results.average_daily_grid_energy_supplied = simulation_results[
     #     ColumnHeader.GRID_ENERGY.value
     # ].sum() / (365 * num_years)
@@ -234,7 +234,7 @@ def get_key_results(
 
 def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
     grid_input_profile: pd.DataFrame,
-    grid_profile: pd.DataFrame,
+    grid_profile: Optional[pd.DataFrame],
     grid_profiles: Optional[Dict[str, pd.DataFrame]],  # to check that
     initial_cw_hourly_loads: Optional[
         Dict[str, pd.DataFrame]

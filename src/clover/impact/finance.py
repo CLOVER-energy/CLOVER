@@ -946,7 +946,7 @@ def expenditure(
 
 
 def grid_expenditure(
-    tier_i_am_in: Dict[str, Any],
+    tier: Dict[str, Any],
     finance_inputs: Dict[str, Any],
     hourly_usage: pd.Series,
     logger: Logger,
@@ -973,7 +973,7 @@ def grid_expenditure(
         Discounted cost
 
     """
-    hourly_cost = hourly_usage * tier_i_am_in.costs
+    hourly_cost = hourly_usage * tier.costs
     total_daily_cost = hourly_profile_to_daily_sum(hourly_cost)
     total_grid_discounted_cost = discounted_energy_total(
         finance_inputs,
