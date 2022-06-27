@@ -14,14 +14,17 @@
 solar.py - Solar-panel modelling code for CLOVER.
 
 In order to accurately model a solar panel within CLOVER, various information about its
-performance under environmental conditions needs to be calculated.
+performance under environmental conditions needs to be calculated. This module provides
+the functionality to model various types of solar collectors, including solar-thermal
+and PV-T collectors, over the course of the simulation, computing their output
+parameters using a quasi-steady-state model.
 
 """
 
 import collections
 
 from logging import Logger
-from typing import Dict, Optional, Tuple
+from typing import Dict, Optional, Tuple, Union
 
 import pandas as pd  # pylint: disable=import-error
 
@@ -40,11 +43,12 @@ from ..__utils__ import (
     dict_to_dataframe,
 )
 from ..conversion.conversion import ThermalDesalinationPlant
+from ..generation.solar import HybridPVTPanel, SolarThermalPanel
 from .__utils__ import Minigrid
 from .storage_utils import HotWaterTank
 
 
-__all__ = ("calculate_pvt_output",)
+__all__ = ("calculate_solar_thermal_output",)
 
 
 # Minimum irradiance threshold;
@@ -290,7 +294,8 @@ def _volume_withdrawn_from_tank(
     return tank_supply_on, volume_supplied
 
 
-def calculate_pvt_output(  # pylint: disable=too-many-locals, too-many-statements
+def calculate_solar_thermal_output(  # pylint: disable=too-many-locals, too-many-statements
+    collector_system_size: int,
     disable_tqdm: bool,
     end_hour: int,
     irradiances: pd.Series,
@@ -298,9 +303,9 @@ def calculate_pvt_output(  # pylint: disable=too-many-locals, too-many-statement
     minigrid: Minigrid,
     num_tanks: int,
     processed_total_hw_load: Optional[pd.Series],
-    pvt_system_size: int,
     resource_type: ResourceType,
     scenario: Scenario,
+    solar_thermal_collector: Union[HybridPVTPanel, SolarThermalPanel],
     start_hour: int,
     temperatures: pd.Series,
     thermal_desalination_plant: Optional[ThermalDesalinationPlant],
@@ -309,9 +314,11 @@ def calculate_pvt_output(  # pylint: disable=too-many-locals, too-many-statement
     pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame
 ]:
     """
-    Computes the output of a PV-T system.
+    Computes the output of a solar-thermal system, either PV-T or solar-thermal.
 
     Inputs:
+        - collector_system_size:
+            The size of the PV-T or solar-thermal system being modelled.
         - disable_tqdm:
             Whether to disable the tqdm progress bars (True) or display them (False).
         - end_hour:
@@ -329,12 +336,13 @@ def calculate_pvt_output(  # pylint: disable=too-many-locals, too-many-statement
             systems).
         - processed_total_hw_load:
             The total hot-water load placed on the system, measured in litres per hour.
-        - pvt_system_size:
-            The size of the PV-T system being modelled.
         - resource_type:
             The resource type for which the PV-T output is being determined.
         - scenario:
             The :class:`Scenario` being considered.
+        - solar_thermal_collector:
+            The solar-thermal collector to model, either a solar-thermal collector as a
+            :class:`SolarThermalPanel` instance, or a :class:`HybridPVTPanel` instance.
         - start_hour:
             The start hour for the simulation being carried out.
         - temperatures:
@@ -347,15 +355,17 @@ def calculate_pvt_output(  # pylint: disable=too-many-locals, too-many-statement
             being modelled.
 
     Outputs:
-        - pvt_collector_input_temperature:
-            The input temperature of the HTF entering the PV-T collectors at each time
-            step.
-        - pvt_collector_output_temperature:
-            The output temperature of HTF leaving the PV-T collectors at each time step.
-        - pvt_electric_power_per_unit:
-            The electric power, per unit PV-T, delivered by the PV-T system.
-        - pvt_pump_times_frame:
-            The times for which the PV-T pump was switched on.
+        - collector_input_temperature:
+            The input temperature of the HTF entering the PV-T/solar-thermal collectors
+            at each time step.
+        - collector_output_temperature:
+            The output temperature of HTF leaving the PV-T/solar-thermal collectors at
+            each time step.
+        - electric_power_per_unit:
+            The electric power, per unit PV-T or solar-thermal collector, delivered by
+            the PV-T/solar-thermal system.
+        - pump_times_frame:
+            The times for which the PV-T/solar-thermal HTF pump was switched on.
         - tank_temperature:
             The tank temperatures throughout the simulation, measured in degrees C.
         - tank_volume_supplied:
@@ -364,38 +374,26 @@ def calculate_pvt_output(  # pylint: disable=too-many-locals, too-many-statement
 
     """
 
-    if minigrid.pvt_panel is None:
-        logger.error(
-            "%sThe energy system does not contain a PV-T panel despite the PV-T output "
-            "computation function being called.%s",
-            BColours.fail,
-            BColours.endc,
-        )
-        raise InputFileError(
-            "energy system inputs",
-            "The energy system specified does not contain a PV-T panel but PV-T "
-            "modelling was requested.",
-        )
     if minigrid.heat_exchanger is None:
         logger.error(
-            "%sThe energy system does not contain a heat exchanger despite the PV-T "
-            "output computation function being called which is reliant on the "
-            "definition of a heat exchanger.%s",
+            "%sThe energy system does not contain a heat exchanger despite the PV-T or "
+            "solar-thermal output computation function being called which is reliant "
+            "on the definition of a heat exchanger.%s",
             BColours.fail,
             BColours.endc,
         )
         raise InputFileError(
             "energy system inputs",
-            "The energy system specified does not contain a heat exchanger but PV-T "
-            "modelling was requested for which this is required.",
+            "The energy system specified does not contain a heat exchanger but PV-T or "
+            "solar-thermal modelling was requested for which this is required.",
         )
 
     # Instantiate debugging variables
     runs: int = 0
 
     # Instantiate maps for easy PV-T power lookups.
-    pvt_electric_power_per_unit_map: Dict[int, float] = {}
-    pvt_pump_times_map: Dict[int, int] = {}
+    electric_power_per_unit_map: Dict[int, float] = {}
+    pump_times_map: Dict[int, int] = {}
     tank_supply_temperature_map: Dict[  # pylint: disable=unused-variable
         int, float
     ] = {}
@@ -408,15 +406,16 @@ def calculate_pvt_output(  # pylint: disable=too-many-locals, too-many-statement
     ):
         if minigrid.buffer_tank is None:
             logger.error(
-                "%sThe energy system does not contain a buffer tank despite the PV-T "
-                "output computation function being called for a clean-water load.%s",
+                "%sThe energy system does not contain a buffer tank despite the PV-T/"
+                "solar-thermal output computation function being called for a "
+                "clean-water load.%s",
                 BColours.fail,
                 BColours.endc,
             )
             raise InputFileError(
                 "energy system inputs",
                 "The energy system specified does not contain a buffer tank but PV-T "
-                "modelling for desalination was requested.",
+                "or solar-thermal modelling for desalination was requested.",
             )
 
         default_supply_temperature: float = (
@@ -427,8 +426,8 @@ def calculate_pvt_output(  # pylint: disable=too-many-locals, too-many-statement
         )
         tank: HotWaterTank = minigrid.buffer_tank
 
-        pvt_heat_transfer: float = (
-            pvt_system_size
+        collector_heat_transfer: float = (
+            collector_system_size
             * mass_flow_rate  # [kg/hour]
             * scenario.desalination_scenario.pvt_scenario.htf_heat_capacity  # [J/kg*K]
             * minigrid.heat_exchanger.efficiency

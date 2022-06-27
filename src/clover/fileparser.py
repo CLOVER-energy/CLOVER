@@ -52,6 +52,7 @@ from .__utils__ import (
     read_yaml,
     Scenario,
     Simulation,
+    SolarPanelType,
 )
 from .conversion.conversion import (
     Converter,
@@ -1382,7 +1383,7 @@ def _parse_solar_inputs(  # pylint: disable=too-many-locals, too-many-statements
     # Parse the PV-panel information.
     solar_panels: List[solar.SolarPanel] = []
     for panel_input in solar_generation_inputs["panels"]:
-        if panel_input["type"] == solar.SolarPanelType.PV.value:
+        if panel_input["type"] == SolarPanelType.PV.value:
             solar_panels.append(solar.PVPanel.from_dict(logger, panel_input))
 
     # Parse the PV-T models if relevant for the code flow.
@@ -1392,7 +1393,7 @@ def _parse_solar_inputs(  # pylint: disable=too-many-locals, too-many-statements
 
     # Parse the PV-T panel information
     for panel_input in solar_generation_inputs["panels"]:
-        if panel_input["type"] == solar.SolarPanelType.PV_T.value:
+        if panel_input["type"] == SolarPanelType.PV_T.value:
             solar_panels.append(
                 solar.HybridPVTPanel(
                     electric_models,
@@ -1405,7 +1406,7 @@ def _parse_solar_inputs(  # pylint: disable=too-many-locals, too-many-statements
 
     # Parse the solar-thermal panel information
     for panel_input in solar_generation_inputs["panels"]:
-        if panel_input["type"] == solar.SolarPanelType.SOLAR_THERMAL.value:
+        if panel_input["type"] == SolarPanelType.SOLAR_THERMAL.value:
             solar_panels.append(
                 solar.SolarThermalPanel.from_dict(
                     logger,
@@ -1418,7 +1419,7 @@ def _parse_solar_inputs(  # pylint: disable=too-many-locals, too-many-statements
         pv_panel: Union[solar.PVPanel, solar.SolarPanel] = [
             panel
             for panel in solar_panels
-            if panel.panel_type == solar.SolarPanelType.PV  # type: ignore
+            if panel.panel_type == SolarPanelType.PV  # type: ignore
             and panel.name == energy_system_inputs[PV_PANEL]
         ][0]
     except IndexError:
@@ -1483,7 +1484,7 @@ def _parse_solar_inputs(  # pylint: disable=too-many-locals, too-many-statements
             pvt_panel: Optional[Union[solar.HybridPVTPanel, solar.SolarPanel]] = [
                 panel
                 for panel in solar_panels
-                if panel.panel_type == solar.SolarPanelType.PV_T  # type: ignore
+                if panel.panel_type == SolarPanelType.PV_T  # type: ignore
                 and panel.name == energy_system_inputs[PV_T_PANEL]
             ][0]
             logger.info("PV-T panel successfully determined.")
@@ -1566,7 +1567,7 @@ def _parse_solar_inputs(  # pylint: disable=too-many-locals, too-many-statements
             ] = [
                 panel
                 for panel in solar_panels
-                if panel.panel_type == solar.SolarPanelType.SOLAR_THERMAL  # type: ignore
+                if panel.panel_type == SolarPanelType.SOLAR_THERMAL  # type: ignore
                 and panel.name == energy_system_inputs[SOLAR_THERMAL_PANEL]
             ][
                 0

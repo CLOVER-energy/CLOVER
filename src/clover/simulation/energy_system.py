@@ -60,7 +60,7 @@ from .diesel import (
     get_diesel_energy_and_times,
     get_diesel_fuel_usage,
 )
-from .solar import calculate_pvt_output
+from .solar import calculate_solar_thermal_output
 from .storage import (
     battery_iteration_step,
     cw_tank_iteration_step,
@@ -501,7 +501,7 @@ def _calculate_renewable_cw_profiles(  # pylint: disable=too-many-locals, too-ma
             clean_water_pvt_pump_times,
             buffer_tank_temperature,
             buffer_tank_volume_supplied,
-        ) = calculate_pvt_output(
+        ) = calculate_solar_thermal_output(
             disable_tqdm,
             end_hour,
             irradiance_data[start_hour:end_hour],
@@ -851,7 +851,7 @@ def _calculate_renewable_hw_profiles(  # pylint: disable=too-many-locals, too-ma
         hot_water_pvt_pump_times,
         hot_water_tank_temperature,
         hot_water_tank_volume_supplied,
-    ) = calculate_pvt_output(
+    ) = calculate_solar_thermal_output(
         disable_tqdm,
         end_hour,
         irradiance_data[start_hour:end_hour],

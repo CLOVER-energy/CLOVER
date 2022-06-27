@@ -36,6 +36,7 @@ from ..__utils__ import (
     NAME,
     ProgrammerJudgementFault,
     RegressorType,
+    SolarPanelType,
 )
 from .__utils__ import BaseRenewablesNinjaThread, SolarDataType, total_profile_output
 
@@ -45,7 +46,6 @@ __all__ = (
     "PVPanel",
     "SolarDataThread",
     "SolarDataType",
-    "SolarPanelType",
     "SolarThermalPanel",
     "solar_degradation",
     "SOLAR_LOGGER_NAME",
@@ -145,24 +145,6 @@ class PerformanceCurve:
         """
 
         return self.second_order_coefficient
-
-
-class SolarPanelType(enum.Enum):
-    """
-    Specifies the type of solar panel being considered.
-
-    - PV:
-        Denotes that a PV panel is being considered.
-    - PV_T:
-        Denotes that a PV-T panel is being considered.
-    - SOLAR_THERMAL:
-        Denotes that a solar-thermal panel is being considered.
-
-    """
-
-    PV = "pv"
-    PV_T = "pv_t"
-    SOLAR_THERMAL = "solar_thermal"
 
 
 class SolarPanel(ABC):  # pylint: disable=too-few-public-methods

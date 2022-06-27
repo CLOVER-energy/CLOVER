@@ -198,10 +198,6 @@ NUMBER_OF_ITERATIONS: str = "number_of_iterations"
 #   packaged but are accessed locally in developer code.
 PACKAGE_NAME: str = "clover"
 
-# PVT Scenario:
-#   Keyword used for parsing PV-T scenario information.
-PVT_SCENARIO: str = "pvt_scenario"
-
 # Raw CLOVER path:
 #   The path to the clover source directory to use when running in github mode.
 RAW_CLOVER_PATH: str = os.path.join("src", "clover")
@@ -209,6 +205,10 @@ RAW_CLOVER_PATH: str = os.path.join("src", "clover")
 # Skipped:
 #   Keyword used when skipping part of the CLOVER flow.
 SKIPPING: str = "[ SKIPPING ]"
+
+# Solar-thermal Collector Scenarios:
+#   Keyword used for parsing PV-T and solar-thermal scenario information.
+SOLAR_THERMAL_COLLECTOR_SCENARIOS: str = "solar_thermal_collector_scenarios"
 
 # Step:
 #   Keyword used when parsing information about the system size step to consider in
@@ -1242,6 +1242,24 @@ RESOURCE_NAME_TO_RESOURCE_TYPE_MAPPING = {
 }
 
 
+class SolarPanelType(enum.Enum):
+    """
+    Specifies the type of solar panel being considered.
+
+    - PV:
+        Denotes that a PV panel is being considered.
+    - PV_T:
+        Denotes that a PV-T panel is being considered.
+    - SOLAR_THERMAL:
+        Denotes that a solar-thermal panel is being considered.
+
+    """
+
+    PV = "pv"
+    PV_T = "pv_t"
+    SOLAR_THERMAL = "solar_thermal"
+
+
 class HTFMode(enum.Enum):
     """
     Specifies the type of material being used as the PV-T HTF.
@@ -1627,9 +1645,14 @@ class PVTMode(enum.Enum):
 
 
 @dataclasses.dataclass
-class PVTScenario:
+class ThermalCollectorScenario:
     """
-    Specifies the PV-T scenario being carried out.
+    Specifies the solar-thermal-collector scenario being carried out.
+
+    This scenario can describe solar-thermal of PV-T collectors.
+
+    .. attribute:: collector_type
+        The type of collector that this scenario corresponds to.
 
     .. attribute:: heats
         The resource which is heated by the PV-T system.
@@ -1642,9 +1665,28 @@ class PVTScenario:
 
     """
 
+    collector_type: SolarPanelType
     heats: HTFMode
     htf_heat_capacity: float
     mass_flow_rate: float
+
+    def __repr__(self) -> str:
+        """
+        The default representation of the :class:`ThermalCollectorScenario`.
+
+        Outputs:
+            - A nice-looking `str` giving a representation of the class.
+
+        """
+
+        return (
+            "ThermalCollectorScenario("
+            + f"collector_type: {self.collector_type.value}"
+            + f", heats: {self.heats.value}"
+            + f", htf_heat_capacity: {self.htf_heat_capacity}"
+            + f", mass_flow_rate: {self.mass_flow_rate}"
+            + ")"
+        )
 
 
 def read_yaml(
@@ -1735,6 +1777,9 @@ class DesalinationScenario:
     .. attribute:: pvt_scenario
         The PV-T scenario.
 
+    .. attribute:: solar_thermal_scenario
+        The solar-thermal scenario
+
     .. attribute:: unclean_water_sources
         A `set` of `str` giving the unclean water sources.
 
@@ -1743,7 +1788,8 @@ class DesalinationScenario:
     clean_water_scenario: CleanWaterScenario
     feedwater_supply_temperature: float
     name: str
-    pvt_scenario: PVTScenario
+    pvt_scenario: ThermalCollectorScenario
+    solar_thermal_scenario: ThermalCollectorScenario
     unclean_water_sources: List[str]
 
     @classmethod
@@ -1799,26 +1845,67 @@ class DesalinationScenario:
         )
 
         try:
-            pvt_scenario: PVTScenario = PVTScenario(
-                HTFMode(desalination_inputs[PVT_SCENARIO]["heats"]),
-                desalination_inputs[PVT_SCENARIO]["htf_heat_capacity"]
-                if "htf_heat_capacity" in desalination_inputs[PVT_SCENARIO]
-                else HEAT_CAPACITY_OF_WATER,
-                desalination_inputs[PVT_SCENARIO]["mass_flow_rate"],
-            )
-        except ValueError:
+            thermal_collector_scenarios = [
+                ThermalCollectorScenario(
+                    collector_scenario_inputs["type"],
+                    HTFMode(collector_scenario_inputs["heats"]),
+                    collector_scenario_inputs["htf_heat_capacity"]
+                    if "htf_heat_capacity" in collector_scenario_inputs
+                    else HEAT_CAPACITY_OF_WATER,
+                    collector_scenario_inputs["mass_flow_rate"],
+                )
+                for collector_scenario_inputs in desalination_inputs[
+                    SOLAR_THERMAL_COLLECTOR_SCENARIOS
+                ]
+            ]
+        except ValueError as e:
             logger.error(
-                "%sInvalid HTF mode specified: %s%s",
+                "%sInvalid HTF mode specified: %s\tValid HTF modes: %s%s",
                 BColours.fail,
-                desalination_inputs[PVT_SCENARIO]["heats"],
+                str(e),
+                {e.value for e in HTFMode},
                 BColours.endc,
             )
             raise InputFileError(
                 "desalination scenario", "Invalid HTF mode specified in PV-T scenario."
             ) from None
-        except KeyError:
+        except KeyError as e:
             logger.error(
-                "%sMissing PV-T information in deslination scenario file.%s",
+                "%sMissing thermal0collector information in deslination scenario file: "
+                "%s%s",
+                BColours.fail,
+                str(e),
+                BColours.endc,
+            )
+            raise InputFileError(
+                "desalination scenario", "Missing PV-T scenario information."
+            ) from None
+
+        try:
+            pvt_scenario = [
+                scenario
+                for scenario in thermal_collector_scenarios
+                if scenario.collector_type == SolarPanelType.PV_T
+            ][0]
+        except IndexError:
+            logger.error(
+                "%sNo PV-T scenario information in desalination file.%s",
+                BColours.fail,
+                BColours.endc,
+            )
+            raise InputFileError(
+                "desalination scenario", "Missing PV-T scenario information."
+            ) from None
+
+        try:
+            solar_thermal_scenario = [
+                scenario
+                for scenario in thermal_collector_scenarios
+                if scenario.collector_type == SolarPanelType.SOLAR_THERMAL
+            ][0]
+        except IndexError:
+            logger.error(
+                "%sNo PV-T scenario information in desalination file.%s",
                 BColours.fail,
                 BColours.endc,
             )
@@ -1857,6 +1944,7 @@ class DesalinationScenario:
             feedwater_supply_temperature,
             desalination_inputs[NAME],
             pvt_scenario,
+            solar_thermal_scenario,
             unclean_water_sources,
         )
 
@@ -1888,6 +1976,9 @@ class HotWaterScenario:
     .. attribute:: pvt_scenario
         The PV-T scenario.
 
+    .. attribute:: solar_thermal_scenario
+        The PV-T scenario.
+
     """
 
     auxiliary_heater: Optional[AuxiliaryHeaterType]
@@ -1896,7 +1987,8 @@ class HotWaterScenario:
     conventional_sources: List[str]
     demand_temperature: float
     name: str
-    pvt_scenario: PVTScenario
+    pvt_scenario: ThermalCollectorScenario
+    solar_thermal_scenario: ThermalCollectorScenario
 
     @classmethod
     def from_dict(cls, hot_water_inputs: Dict[str, Any], logger: logging.Logger) -> Any:
@@ -2018,31 +2110,72 @@ class HotWaterScenario:
             ) from None
 
         try:
-            pvt_scenario: PVTScenario = PVTScenario(
-                HTFMode(hot_water_inputs[PVT_SCENARIO]["heats"]),
-                hot_water_inputs[PVT_SCENARIO]["htf_heat_capacity"]
-                if "htf_heat_capacity" in hot_water_inputs[PVT_SCENARIO]
-                else HEAT_CAPACITY_OF_WATER,
-                hot_water_inputs[PVT_SCENARIO]["mass_flow_rate"],
-            )
-        except ValueError:
+            thermal_collector_scenarios = [
+                ThermalCollectorScenario(
+                    collector_scenario_inputs["type"],
+                    HTFMode(collector_scenario_inputs["heats"]),
+                    collector_scenario_inputs["htf_heat_capacity"]
+                    if "htf_heat_capacity" in collector_scenario_inputs
+                    else HEAT_CAPACITY_OF_WATER,
+                    collector_scenario_inputs["mass_flow_rate"],
+                )
+                for collector_scenario_inputs in hot_water_inputs[
+                    SOLAR_THERMAL_COLLECTOR_SCENARIOS
+                ]
+            ]
+        except ValueError as e:
             logger.error(
-                "%sInvalid HTF mode specified: %s%s",
+                "%sInvalid HTF mode specified: %s\tValid HTF modes: %s%s",
                 BColours.fail,
-                hot_water_inputs[PVT_SCENARIO]["heats"],
+                str(e),
+                {e.value for e in HTFMode},
                 BColours.endc,
             )
             raise InputFileError(
-                "hot-water scenario", "Invalid HTF mode specified in PV-T scenario."
+                "desalination scenario", "Invalid HTF mode specified in PV-T scenario."
             ) from None
-        except KeyError:
+        except KeyError as e:
             logger.error(
-                "%sMissing PV-T information in hot-water scenario file.%s",
+                "%sMissing thermal0collector information in deslination scenario file: "
+                "%s%s",
+                BColours.fail,
+                str(e),
+                BColours.endc,
+            )
+            raise InputFileError(
+                "desalination scenario", "Missing PV-T scenario information."
+            ) from None
+
+        try:
+            pvt_scenario = [
+                scenario
+                for scenario in thermal_collector_scenarios
+                if scenario.collector_type == SolarPanelType.PV_T
+            ][0]
+        except IndexError:
+            logger.error(
+                "%sNo PV-T scenario information in desalination file.%s",
                 BColours.fail,
                 BColours.endc,
             )
             raise InputFileError(
-                "hot-water scenario", "Missing PV-T scenario information."
+                "desalination scenario", "Missing PV-T scenario information."
+            ) from None
+
+        try:
+            solar_thermal_scenario = [
+                scenario
+                for scenario in thermal_collector_scenarios
+                if scenario.collector_type == SolarPanelType.SOLAR_THERMAL
+            ][0]
+        except IndexError:
+            logger.error(
+                "%sNo PV-T scenario information in desalination file.%s",
+                BColours.fail,
+                BColours.endc,
+            )
+            raise InputFileError(
+                "desalination scenario", "Missing PV-T scenario information."
             ) from None
 
         return cls(
@@ -2053,6 +2186,7 @@ class HotWaterScenario:
             demand_temperature,
             hot_water_inputs[NAME],
             pvt_scenario,
+            solar_thermal_scenario,
         )
 
 
