@@ -2154,7 +2154,7 @@ class Scenario:
             diesel_scenario,
             distribution_network,
             scenario_inputs["grid"],
-            scenario_inputs["grid_types"],
+            scenario_inputs["grid_types"], #could change to types but will need to change yaml too
             hot_water_scenario,
             scenario_inputs[NAME],
             resource_types,
