@@ -1047,9 +1047,9 @@ class KeyResults:
             )
         if self.grid_daily_hours is not None:
             for name, hours in self.grid_daily_hours.items():
-                data_dict[f"Average {name.capitalize()} grid availability / hours/day"] = round(
-                    hours, 3
-                )
+                data_dict[
+                    f"Average {name.capitalize()} grid availability / hours/day"
+                ] = round(hours, 3)
         if self.max_buffer_tank_temperature is not None:
             data_dict["Maximum buffer-tank temperature / degC"] = round(
                 self.max_buffer_tank_temperature, 3
@@ -1958,6 +1958,7 @@ class Grid:
     upper_bound_type: GridType
     tiers: List[GridTier]
     # emissions: Dict[str, float]
+
 
 @dataclasses.dataclass
 class Scenario:

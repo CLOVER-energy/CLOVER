@@ -677,7 +677,9 @@ def get_electric_battery_storage_profile(  # pylint: disable=too-many-locals, to
     # Will need multiple grid energies
     # I didn't get here what do I need to do? kindly advise
     for name, grid_energy in grid_energies.items():
-        grid_energy.columns = pd.Index([f"{name.capitalize()} {ColumnHeader.GRID_ENERGY.value}"])
+        grid_energy.columns = pd.Index(
+            [f"{name.capitalize()} {ColumnHeader.GRID_ENERGY.value}"]
+        )
     load_energy.columns = pd.Index([ColumnHeader.LOAD_ENERGY.value])
 
     renewables_energy.columns = pd.Index(

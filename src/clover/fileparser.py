@@ -2231,11 +2231,12 @@ def _parse_grid_inputs(
                 GridTier(
                     tier_entry["upper_bound"]["consumption"],
                     tier_entry["costs"],
-                ))
-        type=GridType(entry["type"])
-        grids.append(Grid(entry["name"],type, tiers))
+                )
+            )
+        type = GridType(entry["type"])
+        grids.append(Grid(entry["name"], type, tiers))
     # grid_emissions = grid_inputs["emissions"]  # the same for all the grids (EDL,Diesel)
-    return grids #grid_emissions can be added here
+    return grids  # grid_emissions can be added here
 
 
 def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements

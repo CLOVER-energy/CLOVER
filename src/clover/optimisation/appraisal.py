@@ -242,11 +242,13 @@ def _simulation_environmental_appraisal(  # pylint: disable=too-many-locals
         round(total_system_ghgs, 3),
     )
 
+
 # Voltage:
 #   The voltage rate of the location being considered.
 VOLTAGE: int = 220
 
 # Monthly demand:
+
 
 def _get_grid_pricing_tier(
     grid: Grid,
@@ -277,7 +279,7 @@ def _get_grid_pricing_tier(
     ):  # run over the list of tiers where we have the different upper bound consumption
         # Filter out based on whether the grid is current drawing or max-power in its pricing
         if grid.type == GridType.CURRENT_DRAW:  # DIESEL GENERATOR
-            if (max(grid_energy) / voltage <= grid_tier.threshold):
+            if max(grid_energy) / voltage <= grid_tier.threshold:
                 return tier
         elif grid.type == GridType.DAILY_POWER:  # EDL
             # Sum over the time period, you will need to code this somewhere, here would be fine for now

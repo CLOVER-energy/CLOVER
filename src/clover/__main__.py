@@ -1021,7 +1021,7 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
                     total_loads,
                     total_wind_data[wind.WindDataType.WIND_SPEED.value]
                     if total_wind_data is not None
-                    else None,               
+                    else None,
                 )
             except Exception as e:
                 print(f"Beginning CLOVER simulation runs {'.' * 30}    {FAILED}")
