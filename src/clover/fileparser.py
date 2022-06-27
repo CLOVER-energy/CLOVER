@@ -2225,24 +2225,31 @@ def _parse_grid_inputs(
 
     grids: List[Grid] = []
     for entry in grid_inputs["grids"]:
-        type: List[GridType]= []
         tiers: List[GridTier] = []
         for tier_entry in entry["tiers"]:
-                tiers.append(
-                    GridTier(
-                        tier_entry["upper_bound"]["consumption"],
-                        tier_entry["costs"],
-                    )
+            tiers.append(
+                GridTier(
+                    tier_entry["upper_bound"]["consumption"],
+                    tier_entry["costs"],
                 )
-        type.append(
-            GridType(
-                entry["type"],
+            )
+
+        grids.append(
+            Grid(
+                entry["name"],
+                GridType(
+                    entry["type"],
+                ),
+                tiers,
             )
         )
-        print(type)
-        grids.append(Grid(entry["name"],type, tiers))
+        logger.debug(
+            "Grid %s successfully parsed, grid is of type %s.",
+            grids[-1].name,
+            grids[-1].upper_bound_type.value,
+        )
     # grid_emissions = grid_inputs["emissions"]  # the same for all the grids (EDL,Diesel)
-    return (grids) #grid_emissions can be added here
+    return grids  # grid_emissions can be added here
 
 
 def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
@@ -2266,7 +2273,7 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
     Optional[pd.DataFrame],
     Dict[WaterSource, pd.DataFrame],
     Dict[str, str],
-    List[Dict[str, Any]], #grid output
+    List[Dict[str, Any]],  # grid output
 ]:
     """
     Parse the various input files and return content-related information.
@@ -2325,9 +2332,7 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
     logger.info("Conversion inputs successfully parsed.")
 
     # Parse the grids inputs file.
-    (
-        grids,
-    ) = _parse_grid_inputs(
+    grids = _parse_grid_inputs(
         inputs_directory_relative_path,
         logger,
     )
@@ -2924,7 +2929,7 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
         ", ".join([f"{key}: {value}" for key, value in transmitters.items()]),
     )
     logger.debug("Input file information: %s", input_file_info)
-    print (grids)
+    logger.debug("Grid information: %s", ", ".join(str(grid) for grid in grids))
 
     return (
         converters,
@@ -2934,6 +2939,7 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
         generation_inputs,
         ghg_inputs,
         grid_times,
+        grids,
         location,
         optimisation_parameters,
         optimisations,
@@ -2942,5 +2948,4 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
         total_load_profile,
         water_source_times,
         input_file_info,
-        grids,
     )

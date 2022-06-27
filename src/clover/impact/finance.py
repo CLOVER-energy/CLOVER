@@ -944,9 +944,10 @@ def expenditure(
     )
     return total_discounted_cost
 
+
 def grid_expenditure(
-    tier_i_am_in: Dict[str,Any],
-    finance_inputs: Dict [str,Any],
+    tier_i_am_in: Dict[str, Any],
+    finance_inputs: Dict[str, Any],
     hourly_usage: pd.Series,
     logger: Logger,
     *,

@@ -381,7 +381,9 @@ def _prepare_water_system(
 
 
 def main(  # pylint: disable=too-many-locals, too-many-statements
-    args: List[Any], disable_tqdm: bool = False, run_number: Optional[int] = None,
+    args: List[Any],
+    disable_tqdm: bool = False,
+    run_number: Optional[int] = None,
 ) -> None:
     """
     The main module for CLOVER executing all functionality as appropriate.
@@ -566,6 +568,7 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
             generation_inputs,
             ghg_inputs,
             grid_times,
+            grids,
             location,
             optimisation_inputs,
             optimisations,
