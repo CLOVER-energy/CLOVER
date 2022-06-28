@@ -444,7 +444,7 @@ def _simulation_financial_appraisal(  # pylint: disable=too-many-locals
 
     grid_costs: float = 0
     for grid_name in Scenario.grid_types:
-        grid_energy = simulation_results["{grid_name} {ColumnHeader.GRID_ENERGY.value}"]
+        grid_energy = simulation_results[f"{grid_name} {ColumnHeader.GRID_ENERGY.value}"]
         grid = [grid for grid in grids if grid.name == grid_name][0]
         tiers = grid.tiers
         tier = _get_grid_pricing_tier(grid_energy, tiers)
