@@ -291,7 +291,7 @@ def _get_grid_pricing_tier(
         elif grid_type == GridType.DAILY_POWER:  # EDL
             sorted_tiers=grid.tiers["upper_bound_consumption"].sort() #[100,200,300,400,1000] #ATTRIBUTE ERROR I KNOW
             for tier in sorted_tiers:
-                for day in range (0,):
+                for day in range (0,30): 
                     household_monthly_demand=sum(daily_demand)
                     for hour in range(0,24):
                         daily_demand=sum(grid_energy.values())
@@ -305,7 +305,6 @@ def _get_grid_pricing_tier(
                     )  # This will print all the allowed values
                 )
             )
-
 
 # do i need to return something here or can I simply keep it at the ifs
 
