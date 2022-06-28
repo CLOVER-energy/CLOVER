@@ -860,6 +860,7 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
         pbar.update(1)
 
         #Plot the seasonal variation in electricity supply sources.
+        #for loop
         grid_energy = np.reshape(
             simulation_output[0:HOURS_PER_YEAR][ColumnHeader.GRID_ENERGY.value].values,
             (365, 24),
@@ -950,6 +951,7 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
         storage_energy = simulation_output.iloc[0:24][
             ColumnHeader.ELECTRICITY_FROM_STORAGE.value
         ]
+        # for loop
         grid_energy = simulation_output.iloc[0:24][ColumnHeader.GRID_ENERGY.value]
         diesel_energy = simulation_output.iloc[0:24][
             ColumnHeader.DIESEL_ENERGY_SUPPLIED.value

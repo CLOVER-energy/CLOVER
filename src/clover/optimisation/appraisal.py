@@ -41,6 +41,7 @@ from ..__utils__ import (
     Grid,
     InternalError,
     Scenario,
+    dict_to_dataframe,
     hourly_profile_to_daily_sum,
     Location,
     SystemAppraisal,
@@ -250,14 +251,11 @@ def _simulation_environmental_appraisal(  # pylint: disable=too-many-locals
 #   The voltage rate of the location being considered.
 VOLTAGE: int = 220
 
-# Monthly demand:
-
-
+#move to finance
 def _get_grid_pricing_tier(
-    grid: Grid,
+    grid: pd.DataFrame,
     grid_energy: pd.Series,
     grid_tier: GridTier,
-    tier: pd.DataFrame,
     household_monthly_demand=pd.Series, 
     #  """
     # for years in lifetime (20 years)
@@ -265,7 +263,7 @@ def _get_grid_pricing_tier(
     #       for days in months (30 days)
     #           monthly_demand=sum(grid_energy.values()) 
     #  """
-):
+): 
     """
     Gets the grid pricing tier.
 
@@ -283,20 +281,21 @@ def _get_grid_pricing_tier(
                 The tier corresponding to the household consumption based on the grid in use.
     """
 
-    grid.tiers.sort()  # sorting the tiers (upper bound and costs) # [5A,10A,100kWh,200kWh,300kWh,400kWh,1000kWh]
-    for GridTier.upper_bound_consumption in grid.tiers:  # run over the list of tiers where we have the different upper bound consumption
-        if grid.type == GridType.CURRENT_DRAW:  # DIESEL GENERATOR
-            if max(grid_energy) / VOLTAGE <= grid_tier.threshold:
-                return tier
-        elif grid.type == GridType.DAILY_POWER:  # EDL
-            for year in range(0, years):
-                for month in range (0,months):
-                    for day in range (0,days):
-                        household_monthly_demand=sum(daily_demand)
-                        for hour in range(0,hours):
-                            daily_demand=sum(grid_energy.values())
-                    if household_monthly_demand<=grid_tier.threshold:
-                        return tier
+    for grid_type in grid:  # run over the list of tiers where we have the different upper bound consumption
+        if grid_type == GridType.CURRENT_DRAW:  # DIESEL GENERATOR
+            sorted_tiers=grid.tiers["upper_bound_consumption"].sort() #[5A, 10A] #ATTRIBUTE ERROR I KNOW
+            for tier in sorted_tiers: 
+                if max(grid_energy) / VOLTAGE <= grid_tier.upper_bound_consumption:
+                    return tier
+        elif grid_type == GridType.DAILY_POWER:  # EDL
+            sorted_tiers=grid.tiers["upper_bound_consumption"].sort() #[100,200,300,400,1000] #ATTRIBUTE ERROR I KNOW
+            for tier in sorted_tiers:
+                for day in range (0,):
+                    household_monthly_demand=sum(daily_demand)
+                    for hour in range(0,24):
+                        daily_demand=sum(grid_energy.values())
+                if household_monthly_demand<=grid_tier.upper_bound_consumption: #ATTRIBUTE ERROR I KNOW
+                    return tier
         else:
             raise Exception(
                 "Grid type must be one of {}".format(
@@ -443,10 +442,10 @@ def _simulation_financial_appraisal(  # pylint: disable=too-many-locals
     # APPRAISAL TO CHANGE:
 
     grid_costs: float = 0
-    for grid_name in Scenario.grid_types:
+    for grid_name in Scenario.grid_types: #ATTRIBUTE ERROR I KNOW
         grid_energy = simulation_results[f"{grid_name} {ColumnHeader.GRID_ENERGY.value}"]
         grid = [grid for grid in grids if grid.name == grid_name][0]
-        tiers = grid.tiers
+        tiers = grid.tiers #ATTRIBUTE ERROR I KNOW
         tier = _get_grid_pricing_tier(grid_energy, tiers)
         grid_costs += finance.grid_expenditure(
             tier,

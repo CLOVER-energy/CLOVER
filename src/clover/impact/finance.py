@@ -958,7 +958,7 @@ def grid_expenditure(
     Calculates cost of the usage of a component.
 
     Inputs:
-        - tier I am in:
+        - tier:
             The Grid Tier the household is in where we can find the costs.
         - finance_inputs:
             The financial input information.
