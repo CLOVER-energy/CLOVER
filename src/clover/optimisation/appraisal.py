@@ -55,6 +55,7 @@ __all__ = ("appraise_system",)
 # Keyword used to denote the subscription cost of the diesel generator.
 SUBSCRIPTION_COST: str = "subscription_cost"
 
+
 def _simulation_environmental_appraisal(  # pylint: disable=too-many-locals
     buffer_tank_addition: int,
     clean_water_tank_addition: int,
@@ -258,12 +259,12 @@ def _get_grid_pricing_tier(
     grid_energy: pd.Series,
     grid_tier: GridTier,
     tier: pd.DataFrame,
-    household_monthly_demand=pd.Series, 
+    household_monthly_demand=pd.Series,
     #  """
     # for years in lifetime (20 years)
     #   for months in year (12 months)
     #       for days in months (30 days)
-    #           monthly_demand=sum(grid_energy.values()) 
+    #           monthly_demand=sum(grid_energy.values())
     #  """
 ):
     """
@@ -284,18 +285,22 @@ def _get_grid_pricing_tier(
     """
 
     grid.tiers.sort()  # sorting the tiers (upper bound and costs) # [5A,10A,100kWh,200kWh,300kWh,400kWh,1000kWh]
-    for GridTier.upper_bound_consumption in grid.tiers:  # run over the list of tiers where we have the different upper bound consumption
+    for (
+        GridTier.upper_bound_consumption
+    ) in (
+        grid.tiers
+    ):  # run over the list of tiers where we have the different upper bound consumption
         if grid.type == GridType.CURRENT_DRAW:  # DIESEL GENERATOR
             if max(grid_energy) / VOLTAGE <= grid_tier.threshold:
                 return tier
         elif grid.type == GridType.DAILY_POWER:  # EDL
             for year in range(0, years):
-                for month in range (0,months):
-                    for day in range (0,days):
-                        household_monthly_demand=sum(daily_demand)
-                        for hour in range(0,hours):
-                            daily_demand=sum(grid_energy.values())
-                    if household_monthly_demand<=grid_tier.threshold:
+                for month in range(0, months):
+                    for day in range(0, days):
+                        household_monthly_demand = sum(daily_demand)
+                        for hour in range(0, hours):
+                            daily_demand = sum(grid_energy.values())
+                    if household_monthly_demand <= grid_tier.threshold:
                         return tier
         else:
             raise Exception(
@@ -305,7 +310,10 @@ def _get_grid_pricing_tier(
                     )  # This will print all the allowed values
                 )
             )
+
+
 # do i need to return something here or can I simply keep it at the ifs
+
 
 def _simulation_financial_appraisal(  # pylint: disable=too-many-locals
     exchange_rate: float,
@@ -444,7 +452,9 @@ def _simulation_financial_appraisal(  # pylint: disable=too-many-locals
 
     grid_costs: float = 0
     for grid_name in Scenario.grid_types:
-        grid_energy = simulation_results[f"{grid_name} {ColumnHeader.GRID_ENERGY.value}"]
+        grid_energy = simulation_results[
+            f"{grid_name} {ColumnHeader.GRID_ENERGY.value}"
+        ]
         grid = [grid for grid in grids if grid.name == grid_name][0]
         tiers = grid.tiers
         tier = _get_grid_pricing_tier(grid_energy, tiers)
