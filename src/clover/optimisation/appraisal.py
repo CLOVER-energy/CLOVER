@@ -47,7 +47,7 @@ from ..__utils__ import (
     SystemDetails,
     TechnicalAppraisal,
 )
-from ..impact.__utils__ import ImpactingComponent
+from ..impact.__utils__ import LIFETIME, ImpactingComponent
 
 __all__ = ("appraise_system",)
 
@@ -256,10 +256,10 @@ VOLTAGE: int = 220
 def _get_grid_pricing_tier(
     grid: Grid,
     grid_energy: pd.Series,
-    grid_tier: pd.Series,
-    tier: Dict[str, Any],
+    grid_tier: GridTier,
+    tier: pd.DataFrame,
     household_monthly_demand=pd.Series, 
-    #"""
+    #  """
     # for years in lifetime (20 years)
     #   for months in year (12 months)
     #       for days in months (30 days)
@@ -282,14 +282,21 @@ def _get_grid_pricing_tier(
             - tier:
                 The tier corresponding to the household consumption based on the grid in use.
     """
+
     grid.tiers.sort()  # sorting the tiers (upper bound and costs) # [5A,10A,100kWh,200kWh,300kWh,400kWh,1000kWh]
     for GridTier.upper_bound_consumption in grid.tiers:  # run over the list of tiers where we have the different upper bound consumption
         if grid.type == GridType.CURRENT_DRAW:  # DIESEL GENERATOR
             if max(grid_energy) / VOLTAGE <= grid_tier.threshold:
                 return tier
         elif grid.type == GridType.DAILY_POWER:  # EDL
-            if household_monthly_demand <= grid_tier.threshold:
-                return tier
+            for years in LIFETIME:
+                for month in years:
+                    for days in month:
+                        household_monthly_demand=sum(daily_demand)
+                        for hours in days:
+                            daily_demand=sum(grid_energy.values())
+                    if household_monthly_demand<=grid_tier.threshold:
+                        return tier
         else:
             raise Exception(
                 "Grid type must be one of {}".format(
