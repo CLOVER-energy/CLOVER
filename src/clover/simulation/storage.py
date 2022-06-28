@@ -610,6 +610,7 @@ def get_electric_battery_storage_profile(  # pylint: disable=too-many-locals, to
         sum(renewables_energy_map.values())  # type: ignore
     )
     grid_profile: pd.Series
+    grid_energies: Dict[str, pd.DataFrame] = {}
     # Check for self-generation prioritisation
     if scenario.prioritise_self_generation:
         # Take energy from PV first
@@ -620,7 +621,6 @@ def get_electric_battery_storage_profile(  # pylint: disable=too-many-locals, to
         )
 
         # Then take energy from grid if available
-        grid_energies: Dict[str, pd.DataFrame] = {}
 
         if scenario.grid:
             for grid_type in scenario.grid_types:
@@ -659,7 +659,7 @@ def get_electric_battery_storage_profile(  # pylint: disable=too-many-locals, to
         else:
             grid_energy = pd.DataFrame([0] * (end_hour - start_hour))
 
-        total_grid_energy = sum(grid_energies)  # sum over the grid energies here
+        total_grid_energy = sum(grid_energies.values())  # sum over the grid energies here
         remaining_profile = (total_grid_energy <= 0).mul(load_energy)  # type ignore
 
         battery_storage_profile = pd.DataFrame(
@@ -682,6 +682,8 @@ def get_electric_battery_storage_profile(  # pylint: disable=too-many-locals, to
         )
     load_energy.columns = pd.Index([ColumnHeader.LOAD_ENERGY.value])
 
+    # renewables_energy.columns = pd.Index(
+    #     [ColumnHeader.TOTAL_GRID_ENERGY.value]
     renewables_energy.columns = pd.Index(
         [ColumnHeader.RENEWABLE_ELECTRICITY_SUPPLIED.value]
     )

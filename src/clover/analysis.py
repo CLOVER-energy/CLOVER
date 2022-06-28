@@ -126,10 +126,10 @@ def get_key_results(
         ColumnHeader.TOTAL_ELECTRICITY_CONSUMED.value
     ].sum() / (365 * num_years)
 
-    #was commented before! why?
-    # key_results.average_daily_grid_energy_supplied = simulation_results[
-    #     ColumnHeader.GRID_ENERGY.value
-    # ].sum() / (365 * num_years)
+    # was commented before! why?
+    key_results.average_daily_total_grid_energy_supplied = simulation_results[
+        ColumnHeader.TOTAL_GRID_ENERGY.value
+    ].sum() / (365 * num_years)
 
     key_results.average_daily_renewables_energy_supplied = simulation_results[
         ColumnHeader.RENEWABLE_ELECTRICITY_SUPPLIED.value
@@ -234,7 +234,6 @@ def get_key_results(
 
 def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
     grid_input_profile: pd.DataFrame,
-    grid_profile: Optional[pd.DataFrame],
     grid_profiles: Optional[Dict[str, pd.DataFrame]],  # to check that
     initial_cw_hourly_loads: Optional[
         Dict[str, pd.DataFrame]
@@ -303,7 +302,7 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
     hw_pvt: bool = ColumnHeader.HW_PVT_ELECTRICITY_SUPPLIED.value in simulation_output
 
     with tqdm(
-        total=(9 + (1 if grid_profile is not None else 0)),
+        total = (9 + (len(grid_profiles) if grid_profiles is not None else 0)),
         desc="plots",
         leave=False,
         unit="plot",
@@ -352,9 +351,11 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
         plt.close()
         pbar.update(1)
 
-        for grid_profile in grid_profiles:
-            # Plot the grid availablity profile.
+        for grid_name, grid_profile in grid_profiles.items():
             if grid_profile is not None:
+        # for grid_profile in grid_profiles:
+        #     # Plot the grid availablity profile.
+        #     if grid_profile is not None:
                 reshaped_data = np.reshape(
                     grid_profile.iloc[0:HOURS_PER_YEAR].values, (365, 24)
                 )
@@ -631,10 +632,10 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
             ),
             axis=0,
         )
-        grid_energy = np.mean(
+        total_grid_energy = np.mean(
             np.reshape(
                 simulation_output[0:HOURS_PER_YEAR][
-                    ColumnHeader.GRID_ENERGY.value
+                    ColumnHeader.TOTAL_GRID_ENERGY.value
                 ].values,
                 (365, 24),
             ),
@@ -707,7 +708,7 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
         plt.plot(unmet_energy, label="Unmet", zorder=2)
         plt.plot(diesel_energy, label="Diesel", zorder=3)
         plt.plot(dumped, label="Dumped", zorder=4)
-        plt.plot(grid_energy, label="Grid", zorder=5)
+        plt.plot(total_grid_energy, label="Grid", zorder=5)
         plt.plot(storage_energy, label="Storage", zorder=6)
         plt.plot(renewable_energy, label="Renewables used directly", zorder=7)
         plt.plot(pv_supplied, label="PV electricity generated", zorder=8)
@@ -834,7 +835,7 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
         plt.plot(blackouts, label=ColumnHeader.BLACKOUTS.value)
         plt.plot(solar_usage, label="Renewables")
         plt.plot(storage_energy, label="Storage")
-        plt.plot(grid_energy, label="Grid")
+        plt.plot(total_grid_energy, label="Grid")
         plt.plot(diesel_times, label="Diesel")
         plt.legend()
         plt.xlim(0, 23)
@@ -853,9 +854,9 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
         plt.close()
         pbar.update(1)
 
-        # Plot the seasonal variation in electricity supply sources.
-        grid_energy = np.reshape(
-            simulation_output[0:HOURS_PER_YEAR][ColumnHeader.GRID_ENERGY.value].values,
+        #Plot the seasonal variation in electricity supply sources.
+        total_grid_energy = np.reshape(
+            simulation_output[0:HOURS_PER_YEAR][ColumnHeader.TOTAL_GRID_ENERGY.value].values,
             (365, 24),
         )
         storage_energy = np.reshape(
@@ -902,7 +903,7 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
             ylabel="Day of year",
             title="Storage",
         )
-        sns.heatmap(grid_energy, vmin=0.0, vmax=4.0, cmap="Blues", cbar=True, ax=ax3)
+        sns.heatmap(total_grid_energy, vmin=0.0, vmax=4.0, cmap="Blues", cbar=True, ax=ax3)
         ax3.set(
             xticks=range(0, 25, 6),
             xticklabels=range(0, 25, 6),
@@ -944,7 +945,7 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
         storage_energy = simulation_output.iloc[0:24][
             ColumnHeader.ELECTRICITY_FROM_STORAGE.value
         ]
-        grid_energy = simulation_output.iloc[0:24][ColumnHeader.GRID_ENERGY.value]
+        total_grid_energy = simulation_output.iloc[0:24][ColumnHeader.TOTAL_GRID_ENERGY.value]
         diesel_energy = simulation_output.iloc[0:24][
             ColumnHeader.DIESEL_ENERGY_SUPPLIED.value
         ]
@@ -972,7 +973,7 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
         plt.plot(unmet_energy, label="Unmet", zorder=2)
         plt.plot(diesel_energy, label="Diesel", zorder=3)
         plt.plot(dumped_energy, label="Dumped", zorder=4)
-        plt.plot(grid_energy, label="Grid", zorder=5)
+        plt.plot(total_grid_energy, label="Grid", zorder=5)
         plt.plot(storage_energy, label="Storage", zorder=6)
         plt.plot(renewable_energy, label="Solar used directly", zorder=7)
         plt.plot(pv_supplied, label="PV generated", zorder=8)

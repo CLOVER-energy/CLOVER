@@ -289,11 +289,11 @@ def _get_grid_pricing_tier(
             if max(grid_energy) / VOLTAGE <= grid_tier.threshold:
                 return tier
         elif grid.type == GridType.DAILY_POWER:  # EDL
-            for years in LIFETIME:
-                for month in years:
-                    for days in month:
+            for year in range(0, years):
+                for month in range (0,months):
+                    for day in range (0,days):
                         household_monthly_demand=sum(daily_demand)
-                        for hours in days:
+                        for hour in range(0,hours):
                             daily_demand=sum(grid_energy.values())
                     if household_monthly_demand<=grid_tier.threshold:
                         return tier
