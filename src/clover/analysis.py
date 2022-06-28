@@ -71,7 +71,7 @@ SIMULATION_PLOTS_DIRECTORY: str = "simulation_{simulation_number}_plots"
 
 
 def get_key_results(
-    grid_profiles: Optional[Dict[str,pd.DataFrame]],
+    grid_profiles: Optional[Dict[str, pd.DataFrame]],
     num_years: int,
     simulation_results: pd.DataFrame,
     total_solar_output: pd.DataFrame,
@@ -127,8 +127,9 @@ def get_key_results(
     ].sum() / (365 * num_years)
 
     import pdb
+
     pdb.set_trace()
-    
+
     # was commented before! why?
     for grid_name, grid_profile in grid_profiles.items():
         if grid_profile is not None:
@@ -307,7 +308,7 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
     hw_pvt: bool = ColumnHeader.HW_PVT_ELECTRICITY_SUPPLIED.value in simulation_output
 
     with tqdm(
-        total = (9 + (len(grid_profiles) if grid_profiles is not None else 0)),
+        total=(9 + (len(grid_profiles) if grid_profiles is not None else 0)),
         desc="plots",
         leave=False,
         unit="plot",
@@ -358,9 +359,9 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
 
         for grid_name, grid_profile in grid_profiles.items():
             if grid_profile is not None:
-        # for grid_profile in grid_profiles:
-        #     # Plot the grid availablity profile.
-        #     if grid_profile is not None:
+                # for grid_profile in grid_profiles:
+                #     # Plot the grid availablity profile.
+                #     if grid_profile is not None:
                 reshaped_data = np.reshape(
                     grid_profile.iloc[0:HOURS_PER_YEAR].values, (365, 24)
                 )
@@ -387,7 +388,9 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
 
             # Plot the input vs. randomised grid avialability profiles.
             plt.plot(range(24), grid_input_profile, color="k", label="Input")
-            plt.plot(range(24), np.mean(reshaped_data, axis=0), color="r", label="Output")
+            plt.plot(
+                range(24), np.mean(reshaped_data, axis=0), color="r", label="Output"
+            )
             plt.legend()
             plt.xticks(range(0, 24, 2))
             plt.yticks(np.arange(0, 1.1, 0.2))
@@ -641,7 +644,9 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
             if grid_profile is not None:
                 grid_energy = np.mean(
                     np.reshape(
-                        simulation_output[0:HOURS_PER_YEAR][f"{grid_name} {ColumnHeader.GRID_ENERGY.value}"],
+                        simulation_output[0:HOURS_PER_YEAR][
+                            f"{grid_name} {ColumnHeader.GRID_ENERGY.value}"
+                        ],
                         (365, 24),
                     ),
                     axis=0,
@@ -859,8 +864,7 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
         plt.close()
         pbar.update(1)
 
-        #Plot the seasonal variation in electricity supply sources.
-        #for loop
+        # Plot the seasonal variation in electricity supply sources.
         grid_energy = np.reshape(
             simulation_output[0:HOURS_PER_YEAR][ColumnHeader.GRID_ENERGY.value].values,
             (365, 24),

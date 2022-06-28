@@ -659,7 +659,9 @@ def get_electric_battery_storage_profile(  # pylint: disable=too-many-locals, to
         else:
             grid_energy = pd.DataFrame([0] * (end_hour - start_hour))
 
-        total_grid_energy = sum(grid_energies.values())  # sum over the grid energies here
+        total_grid_energy = sum(
+            grid_energies.values()
+        )  # sum over the grid energies here
         remaining_profile = (total_grid_energy <= 0).mul(load_energy)  # type ignore
 
         battery_storage_profile = pd.DataFrame(

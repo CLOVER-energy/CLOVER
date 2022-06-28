@@ -570,7 +570,7 @@ class ColumnHeader(enum.Enum):
     PV_ELECTRICITY_SUPPLIED = "PV energy supplied (kWh)"
     RENEWABLE_CW_USED_DIRECTLY = "Renewable clean water used directly (l)"
     RENEWABLE_ELECTRICITY_SUPPLIED = "Renewables energy supplied (kWh)"
-    TOTAL_GRID_ENERGY =" Total grid energy (kWh)"
+    TOTAL_GRID_ENERGY = " Total grid energy (kWh)"
     RENEWABLE_ELECTRICITY_USED_DIRECTLY = "Renewables energy used (kWh)"
     STORAGE_PROFILE = "Storage profile (kWh)"
     TOTAL_CW_CONSUMED = "Total clean water consumed (l)"
@@ -2155,7 +2155,9 @@ class Scenario:
             diesel_scenario,
             distribution_network,
             scenario_inputs["grid"],
-            scenario_inputs["grid_types"], #could change to types but will need to change yaml too
+            scenario_inputs[
+                "grid_types"
+            ],  # could change to types but will need to change yaml too
             hot_water_scenario,
             scenario_inputs[NAME],
             resource_types,

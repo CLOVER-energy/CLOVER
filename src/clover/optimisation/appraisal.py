@@ -56,6 +56,7 @@ __all__ = ("appraise_system",)
 # Keyword used to denote the subscription cost of the diesel generator.
 SUBSCRIPTION_COST: str = "subscription_cost"
 
+
 def _simulation_environmental_appraisal(  # pylint: disable=too-many-locals
     buffer_tank_addition: int,
     clean_water_tank_addition: int,
@@ -261,7 +262,7 @@ def _get_grid_pricing_tier(
     # for years in lifetime (20 years)
     #   for months in year (12 months)
     #       for days in months (30 days)
-    #           monthly_demand=sum(grid_energy.values()) 
+    #           monthly_demand=sum(grid_energy.values())
     #  """
 ): 
     """
@@ -304,7 +305,10 @@ def _get_grid_pricing_tier(
                     )  # This will print all the allowed values
                 )
             )
+
+
 # do i need to return something here or can I simply keep it at the ifs
+
 
 def _simulation_financial_appraisal(  # pylint: disable=too-many-locals
     exchange_rate: float,
