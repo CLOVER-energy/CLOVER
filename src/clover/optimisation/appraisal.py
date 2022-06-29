@@ -620,15 +620,19 @@ def _simulation_technical_appraisal(  # pylint: disable=too-many-locals
         if GRID_REGEX.match(entry) is not None
     ]
     if len(grid_energy_column_headers) > 0:
-        total_grid_used: float = float(np.sum(pd.DataFrame(
-            pd.concat(
-                [
-                    pd.DataFrame(simulation_results[header.group(0)].values)
-                    for header in grid_energy_column_headers
-                ],
-                axis=1,
-            ).sum(axis=1)
-        )))
+        total_grid_used: float = float(
+            np.sum(
+                pd.DataFrame(
+                    pd.concat(
+                        [
+                            pd.DataFrame(simulation_results[header.group(0)].values)
+                            for header in grid_energy_column_headers
+                        ],
+                        axis=1,
+                    ).sum(axis=1)
+                )
+            )
+        )
     else:
         total_grid_used = 0
 
