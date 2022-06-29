@@ -383,12 +383,10 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
         )
         plt.close()
         pbar.update(1)
-
         # Plot the input vs. randomised grid avialability profiles
-        plt.plot(range(24), grid_input_profile, label=grid_name)
-        total_reshape_data=np.sum(reshaped_data_list, axis=0)
-        plt.plot(
-            range(24), np.mean(total_reshape_data, axis=0), label="Output"
+        plt.plot(range(24), grid_input_profile, label="grid_name") #becomes grid_name for iteration
+        total_reshaped_data=np.sum(reshaped_data_list, axis=0)
+        plt.plot(range(24), np.mean(total_reshaped_data, axis=0), label="Output" #reshaped_data for iteration
         )
         plt.legend()
         plt.xticks(range(0, 24, 2))
@@ -1006,7 +1004,7 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
 
         plt.plot(total_used, "--", label="Total used", zorder=1)
         plt.plot(unmet_energy, label="Unmet", zorder=2)
-        plt.plot(diesel_energy, label="Diesel", zorder=3)
+        # plt.plot(diesel_energy, label="Diesel", zorder=3)
         plt.plot(dumped_energy, label="Dumped", zorder=4)
         for grid_energy in grid_energies:
             plt.plot(grid_energy, label=grid_name, zorder=5)
