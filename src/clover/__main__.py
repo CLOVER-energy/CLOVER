@@ -1187,6 +1187,7 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
                     finance_inputs,
                     ghg_inputs,
                     grid_profiles,
+                    grids,
                     total_solar_data[solar.SolarDataType.TOTAL_IRRADIANCE.value],
                     kerosene_usage,
                     location,

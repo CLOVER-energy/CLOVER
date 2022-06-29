@@ -20,12 +20,11 @@ simulations.
 """
 
 from logging import Logger
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Pattern
 
 import numpy as np  # pylint: disable=import-error
 import pandas as pd
-import pdb
-
+import re
 
 from ..impact import finance, ghgs
 
@@ -40,17 +39,23 @@ from ..__utils__ import (
     GridType,
     Grid,
     InternalError,
-    Scenario,
-    dict_to_dataframe,
     hourly_profile_to_daily_sum,
     Location,
     SystemAppraisal,
     SystemDetails,
     TechnicalAppraisal,
 )
-from ..impact.__utils__ import LIFETIME, ImpactingComponent
+from ..impact.__utils__ import ImpactingComponent
 
 __all__ = ("appraise_system",)
+
+# Grid regex:
+#   Regex used for parsing grid energy profiles from simulation outputs.
+GRID_REGEX: Pattern[str] = re.compile(
+    r"(P?[A-za-z]+) {}".format(
+        ColumnHeader.GRID_ENERGY.value.replace("(", "\(").replace(")", "\)")
+    )
+)
 
 # Subscription cost:
 # Keyword used to denote the subscription cost of the diesel generator.
@@ -194,22 +199,25 @@ def _simulation_environmental_appraisal(  # pylint: disable=too-many-locals
         logger.error("Missing diesel-fuel GHG input information: %s", str(e))
         raise
 
-    # @paulharfouche
-    # FIXME - You will need to iterate here if you want to compute the GHGs from the
-    # grid as well.
-    #
+    grid_ghgs: float = 0
+    grid_energy_column_headers = [
+        GRID_REGEX.match(entry)
+        for entry in simulation_results.columns
+        if GRID_REGEX.match(entry) is not None
+    ]
+    for header in grid_energy_column_headers:
+        try:
+            grid_ghgs += ghgs.calculate_grid_ghgs(
+                ghg_inputs,
+                simulation_results[header.group(0)],
+                location,
+                start_year,
+                end_year,
+            )
+        except KeyError as e:
+            logger.error("Missing grid GHG input information: %s", str(e))
+            raise
 
-    try:
-        grid_ghgs = ghgs.calculate_grid_ghgs(
-            ghg_inputs,
-            simulation_results[ColumnHeader.GRID_ENERGY.value],
-            location,
-            start_year,
-            end_year,
-        )
-    except KeyError as e:
-        logger.error("Missing grid GHG input information: %s", str(e))
-        raise
     try:
         kerosene_ghgs = ghgs.calculate_kerosene_ghgs(
             ghg_inputs, simulation_results[ColumnHeader.KEROSENE_LAMPS.value]
@@ -257,19 +265,19 @@ def _simulation_environmental_appraisal(  # pylint: disable=too-many-locals
 #   The voltage rate of the location being considered.
 VOLTAGE: int = 220
 
-#move to finance
+# move to finance
 def _get_grid_pricing_tier(
     grid: pd.DataFrame,
     grid_energy: pd.Series,
     grid_tier: GridTier,
-    household_monthly_demand=pd.Series, 
+    household_monthly_demand=pd.Series,
     #  """
     # for years in lifetime (20 years)
     #   for months in year (12 months)
     #       for days in months (30 days)
     #           monthly_demand=sum(grid_energy.values())
     #  """
-): 
+):
     """
     Gets the grid pricing tier.
 
@@ -287,20 +295,30 @@ def _get_grid_pricing_tier(
                 The tier corresponding to the household consumption based on the grid in use.
     """
 
-    for grid_type in grid:  # run over the list of tiers where we have the different upper bound consumption
+    for (
+        grid_type
+    ) in (
+        grid
+    ):  # run over the list of tiers where we have the different upper bound consumption
         if grid_type == GridType.CURRENT_DRAW:  # DIESEL GENERATOR
-            sorted_tiers=grid.tiers["upper_bound_consumption"].sort() #[5A, 10A] #ATTRIBUTE ERROR I KNOW
-            for tier in sorted_tiers: 
+            sorted_tiers = grid.tiers[
+                "upper_bound_consumption"
+            ].sort()  # [5A, 10A] #ATTRIBUTE ERROR I KNOW
+            for tier in sorted_tiers:
                 if max(grid_energy) / VOLTAGE <= grid_tier.upper_bound_consumption:
                     return tier
         elif grid_type == GridType.DAILY_POWER:  # EDL
-            sorted_tiers=grid.tiers["upper_bound_consumption"].sort() #[100,200,300,400,1000] #ATTRIBUTE ERROR I KNOW
+            sorted_tiers = grid.tiers[
+                "upper_bound_consumption"
+            ].sort()  # [100,200,300,400,1000] #ATTRIBUTE ERROR I KNOW
             for tier in sorted_tiers:
-                for day in range (0,30): 
-                    household_monthly_demand=sum(daily_demand)
-                    for hour in range(0,24):
-                        daily_demand=sum(grid_energy.values())
-                if household_monthly_demand<=grid_tier.upper_bound_consumption: #ATTRIBUTE ERROR I KNOW
+                for day in range(0, 30):
+                    household_monthly_demand = sum(daily_demand)
+                    for hour in range(0, 24):
+                        daily_demand = sum(grid_energy.values())
+                if (
+                    household_monthly_demand <= grid_tier.upper_bound_consumption
+                ):  # ATTRIBUTE ERROR I KNOW
                     return tier
         else:
             raise Exception(
@@ -311,16 +329,17 @@ def _get_grid_pricing_tier(
                 )
             )
 
+
 # do i need to return something here or can I simply keep it at the ifs
 
 
 def _simulation_financial_appraisal(  # pylint: disable=too-many-locals
-    exchange_rate: float,
     buffer_tank_addition: int,
     clean_water_tank_addition: int,
     converter_addition: Dict[str, int],
     diesel_addition: float,
     finance_inputs: Dict[str, Any],
+    grids: List[Grid],
     heat_exchanger_addition: int,
     hot_water_tank_addition: int,
     location: Location,
@@ -331,7 +350,6 @@ def _simulation_financial_appraisal(  # pylint: disable=too-many-locals
     storage_addition: float,
     system_details: SystemDetails,
     yearly_load_statistics: pd.DataFrame,
-    grids: List[Grid],
 ) -> FinancialAppraisal:
     """
     Appraises the financial performance of a minigrid system.
@@ -450,24 +468,31 @@ def _simulation_financial_appraisal(  # pylint: disable=too-many-locals
     # APPRAISAL TO CHANGE:
 
     grid_costs: float = 0
-    for grid_name in Scenario.grid_types: #ATTRIBUTE ERROR I KNOW
-        grid_energy = simulation_results[f"{grid_name} {ColumnHeader.GRID_ENERGY.value}"]
-        grid = [grid for grid in grids if grid.name == grid_name][0]
-        tiers = grid.tiers #ATTRIBUTE ERROR I KNOW
-        tier = _get_grid_pricing_tier(grid_energy, tiers)
-        grid_costs += finance.grid_expenditure(
-            tier,
-            simulation_results[f"{grid_name.capitalize()} {ColumnHeader.GRID_ENERGY.value}"],
-            logger,
-            start_year=system_details.start_year,
-            end_year=system_details.end_year,
-        )
-        subscription_cost = tier.costs[SUBSCRIPTION_COST] / exchange_rate
-        # get the function _get_grid_pricing_tier for it to read the grid_energy and the tiers as inputs
-        # and the output is the tier we are working in.
-        # costs = (tier.costs) / exchange_rate
-        # costs_of_this_grid: float = 0  # once you know what tier we are talking about then,the cost of the grid is based on the tier (for EDL)
-        # grid_costs += costs_of_this_grid
+    subscription_cost: float = 0
+    # @paulharfouche
+    # FIXME - This function does not work, commented out to get optimisation running.
+    # for grid_name in scenario.grid_types:  # ATTRIBUTE ERROR I KNOW
+    #     grid_energy = simulation_results[
+    #         f"{grid_name} {ColumnHeader.GRID_ENERGY.value}"
+    #     ]
+    #     grid = [grid for grid in grids if grid.name == grid_name][0]
+    #     tiers = grid.tiers  # ATTRIBUTE ERROR I KNOW
+    #     tier = _get_grid_pricing_tier(grid_energy, tiers)
+    #     grid_costs += finance.grid_expenditure(
+    #         tier,
+    #         simulation_results[
+    #             f"{grid_name.capitalize()} {ColumnHeader.GRID_ENERGY.value}"
+    #         ],
+    #         logger,
+    #         start_year=system_details.start_year,
+    #         end_year=system_details.end_year,
+    #     )
+    #     subscription_cost = tier.costs[SUBSCRIPTION_COST] / exchange_rate
+    #     # get the function _get_grid_pricing_tier for it to read the grid_energy and the tiers as inputs
+    #     # and the output is the tier we are working in.
+    #     # costs = (tier.costs) / exchange_rate
+    #     # costs_of_this_grid: float = 0  # once you know what tier we are talking about then,the cost of the grid is based on the tier (for EDL)
+    #     # grid_costs += costs_of_this_grid
 
     # add the subscription costs
     kerosene_costs = finance.expenditure(
@@ -588,13 +613,25 @@ def _simulation_technical_appraisal(  # pylint: disable=too-many-locals
     total_storage_used = np.sum(
         simulation_results[ColumnHeader.ELECTRICITY_FROM_STORAGE.value]  # type: ignore
     )
-    # @paulharfouche
-    # FIXME - You will need to compute whatever you want to here for your grid energy
-    # consumption.
-    #
-    total_grid_used = np.sum(
-        simulation_results[ColumnHeader.GRID_ENERGY.value]  # type: ignore
-    )
+
+    grid_energy_column_headers = [
+        GRID_REGEX.match(entry)
+        for entry in simulation_results.columns
+        if GRID_REGEX.match(entry) is not None
+    ]
+    if len(grid_energy_column_headers) > 0:
+        total_grid_used: float = float(np.sum(pd.DataFrame(
+            pd.concat(
+                [
+                    pd.DataFrame(simulation_results[header.group(0)].values)
+                    for header in grid_energy_column_headers
+                ],
+                axis=1,
+            ).sum(axis=1)
+        )))
+    else:
+        total_grid_used = 0
+
     total_diesel_used = np.sum(
         simulation_results[ColumnHeader.DIESEL_ENERGY_SUPPLIED.value]  # type: ignore
     )
@@ -665,6 +702,7 @@ def appraise_system(  # pylint: disable=too-many-locals
     end_year: int,
     finance_inputs: Dict[str, Any],
     ghg_inputs: Dict[str, Any],
+    grids: List[Grid],
     location: Location,
     logger: Logger,
     previous_system: Optional[SystemAppraisal],
@@ -786,6 +824,7 @@ def appraise_system(  # pylint: disable=too-many-locals
         converter_addition,
         diesel_addition,
         finance_inputs,
+        grids,
         heat_exchanger_addition,
         hot_water_tank_addition,
         location,

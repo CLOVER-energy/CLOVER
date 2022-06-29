@@ -1212,11 +1212,6 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
         ", ".join([str(entry) for entry in available_converters]),
     )
 
-    # grid_profiles = (
-    #     grid_profiles
-    #     if grid_profiles is not None
-    #     else {grid_name: pd.DataFrame([0] * simulation_hours)}
-    # )
     total_cw_load: Optional[pd.DataFrame] = total_loads[ResourceType.CLEAN_WATER]
     total_electric_load: Optional[pd.DataFrame] = total_loads[ResourceType.ELECTRIC]
     total_hw_load: Optional[pd.DataFrame] = total_loads[ResourceType.HOT_CLEAN_WATER]
@@ -1418,8 +1413,9 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
     }
     renewables_energy_used_directly: pd.DataFrame
 
+    trimmed_grid_profiles: Dict[str, pd.DataFrame] = {}
     for name, profile in grid_profiles.items():  # to check that
-        grid_profiles[name] = profile.iloc[start_hour:end_hour, 0]
+        trimmed_grid_profiles[name] = profile.iloc[start_hour:end_hour, 0]
 
     (
         battery_storage_profile,
@@ -1431,7 +1427,7 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
         renewables_energy_used_directly,
     ) = get_electric_battery_storage_profile(
         clean_water_pvt_size=clean_water_pvt_size,
-        grid_profiles=grid_profiles,  # type: ignore # to check that
+        grid_profiles=trimmed_grid_profiles,  # type: ignore # to check that
         hot_water_pvt_size=hot_water_pvt_size,
         kerosene_usage=kerosene_usage.iloc[start_hour:end_hour, 0],
         location=location,
@@ -1693,7 +1689,15 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
         water_surplus_frame: pd.DataFrame = dict_to_dataframe(water_surplus, logger)
 
     # Compute the total energy supplied by the various grids
-    total_grid_energy: pd.DataFrame = pd.DataFrame(pd.concat([pd.DataFrame(energies.values) for energies in grid_energies.values()], axis=1).sum(axis=1))
+    if scenario.grid:
+        total_grid_energy: pd.DataFrame = pd.DataFrame(
+            pd.concat(
+                [pd.DataFrame(energies.values) for energies in grid_energies.values()],
+                axis=1,
+            ).sum(axis=1)
+        )
+    else:
+        total_grid_energy = pd.DataFrame([0] * (end_hour - start_hour))
 
     # Find unmet energy
     unmet_energy = pd.DataFrame(
@@ -2084,8 +2088,7 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
     ]
 
     # Append grid energies
-    system_performance_outputs_list.extend(list(grid_energies.values())
-    )
+    system_performance_outputs_list.extend(list(grid_energies.values()))
 
     if (
         scenario.desalination_scenario is not None

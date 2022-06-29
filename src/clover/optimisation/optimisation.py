@@ -48,6 +48,7 @@ from ..__utils__ import (
     BColours,
     # ColumnHeader,
     DONE,
+    Grid,
     InternalError,
     Location,
     RenewableEnergySource,
@@ -118,6 +119,7 @@ def _find_optimum_system(  # pylint: disable=too-many-locals
     finance_inputs: Dict[str, Any],
     ghg_inputs: Dict[str, Any],
     grid_profiles: Optional[Dict[str, pd.DataFrame]],  # to check that
+    grids: List[Grid],
     irradiance_data: pd.Series,
     kerosene_usage: pd.DataFrame,
     largest_converter_sizes: Dict[Converter, ConverterSize],
@@ -272,6 +274,7 @@ def _find_optimum_system(  # pylint: disable=too-many-locals
                 finance_inputs,
                 ghg_inputs,
                 grid_profiles,
+                grids,
                 largest_hw_pvt_system_size,
                 largest_hw_tank_size,
                 irradiance_data,
@@ -334,6 +337,7 @@ def _simulation_iteration(  # pylint: disable=too-many-locals, too-many-statemen
     finance_inputs: Dict[str, Any],
     ghg_inputs: Dict[str, Any],
     grid_profiles: Optional[Dict[str, pd.DataFrame]],
+    grids: List[Grid],
     hw_pvt_system_size: SolarSystemSize,
     hw_tanks: TankSize,
     irradiance_data: pd.Series,
@@ -386,6 +390,8 @@ def _simulation_iteration(  # pylint: disable=too-many-locals, too-many-statemen
             The green-house-gas input information.
         - grid_profiles:
             The grid-availability profile.
+        - grids:
+            The grids associated with the system.
         - irradiance_data:
             The irradaince data series.
         - kerosene_usage:
@@ -510,6 +516,7 @@ def _simulation_iteration(  # pylint: disable=too-many-locals, too-many-statemen
         end_year,
         finance_inputs,
         ghg_inputs,
+        grids,
         location,
         logger,
         previous_system,
@@ -615,6 +622,7 @@ def _simulation_iteration(  # pylint: disable=too-many-locals, too-many-statemen
             end_year,
             finance_inputs,
             ghg_inputs,
+            grids,
             location,
             logger,
             previous_system,
@@ -892,6 +900,7 @@ def _simulation_iteration(  # pylint: disable=too-many-locals, too-many-statemen
         finance_inputs,
         ghg_inputs,
         grid_profiles,
+        grids,
         irradiance_data,
         kerosene_usage,
         location,
@@ -948,6 +957,7 @@ def _optimisation_step(  # pylint: disable=too-many-locals
     finance_inputs: Dict[str, Any],
     ghg_inputs: Dict[str, Any],
     grid_profiles: Optional[Dict[str, pd.DataFrame]],
+    grids: List[Grid],
     hw_pvt_system_size: SolarSystemSize,
     hw_tanks: TankSize,
     irradiance_data: pd.Series,
@@ -989,6 +999,8 @@ def _optimisation_step(  # pylint: disable=too-many-locals
             The finance input information.
         - grid_profiles:
             The grid-availability profile.
+        - grids:
+            The :class:`Grid` instances associated with the system.
         - irradiance_data:
             The total irradiance throughout the period of the simulation.
         - hw_pvt_system_size:
@@ -1057,6 +1069,7 @@ def _optimisation_step(  # pylint: disable=too-many-locals
         finance_inputs,
         ghg_inputs,
         grid_profiles,
+        grids,
         hw_pvt_system_size,
         hw_tanks,
         irradiance_data,
@@ -1087,6 +1100,7 @@ def _optimisation_step(  # pylint: disable=too-many-locals
         finance_inputs,
         ghg_inputs,
         grid_profiles,
+        grids,
         irradiance_data,
         kerosene_usage,
         converter_sizes,
@@ -1123,6 +1137,7 @@ def multiple_optimisation_step(  # pylint: disable=too-many-locals, too-many-sta
     finance_inputs: Dict[str, Any],
     ghg_inputs: Dict[str, Any],
     grid_profiles: Optional[Dict[str, pd.DataFrame]],
+    grids: List[Grid],
     irradiance_data: pd.Series,
     kerosene_usage: pd.DataFrame,
     location: Location,
@@ -1387,6 +1402,7 @@ def multiple_optimisation_step(  # pylint: disable=too-many-locals, too-many-sta
             finance_inputs,
             ghg_inputs,
             grid_profiles,
+            grids,
             SolarSystemSize(
                 input_hw_pvt_system_size.max,
                 input_hw_pvt_system_size.min,
