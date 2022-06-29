@@ -20,6 +20,7 @@ corresponding to the suggetsed analysis within the user guide.
 import collections
 from optparse import Option
 import os
+from random import random
 
 from typing import Dict, Optional
 
@@ -104,7 +105,7 @@ def get_key_results(
     key_results.average_pv_generation = float(
         round(total_solar_generation / (20 * 365))
     )
-
+    grid_names: List[grid_name]=[]
     # Compute the grid results.
     key_results.grid_daily_hours = collections.defaultdict(float)
     for grid_name, grid_profile in grid_profiles.items():
@@ -112,6 +113,7 @@ def get_key_results(
             key_results.grid_daily_hours[grid_name] = np.sum(
                 grid_profile[: num_years * HOURS_PER_YEAR], axis=0
             ) / (365 * num_years)
+        grid_names.append(grid_name)
 
     # Compute the simulation related averages and sums.
     key_results.average_daily_diesel_energy_supplied = simulation_results[
@@ -135,7 +137,7 @@ def get_key_results(
     key_results.average_daily_renewables_energy_supplied = simulation_results[
         ColumnHeader.RENEWABLE_ELECTRICITY_SUPPLIED.value
     ].sum() / (365 * num_years)
-
+    
     key_results.average_daily_renewables_energy_used = simulation_results[
         ColumnHeader.RENEWABLE_ELECTRICITY_USED_DIRECTLY.value
     ].sum() / (365 * num_years)
@@ -351,15 +353,15 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
         )
         plt.close()
         pbar.update(1)
+        reshaped_data_list: List[reshaped_data]=[]
+        grid_names: List[grid_name]=[]
 
         for grid_name, grid_profile in grid_profiles.items():
-            if grid_profile is not None:
-                # for grid_profile in grid_profiles:
-                #     # Plot the grid availablity profile.
-                #     if grid_profile is not None:
+            if grid_profile is not None:   #LOOP
                 reshaped_data = np.reshape(
                     grid_profile.iloc[0:HOURS_PER_YEAR].values, (365, 24)
                 )
+                reshaped_data_list.append(reshaped_data)
                 heatmap = sns.heatmap(
                     reshaped_data, vmin=0, vmax=1, cmap="Greys_r", cbar=False
                 )
@@ -372,34 +374,36 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
                     ylabel="Day of year",
                     title="Grid availability of the selected profile.",
                 )
-                plt.xticks(rotation=0)
-                plt.tight_layout()
-                plt.savefig(
-                    os.path.join(figures_directory, "grid_availability_heatmap.png"),
-                    transparent=True,
-                )
-                plt.close()
-                pbar.update(1)
+                grid_names.append(grid_name)
+        plt.xticks(rotation=0)
+        plt.tight_layout()
+        plt.savefig(
+            os.path.join(figures_directory, "grid_availability_heatmap.png"),
+            transparent=True,
+        )
+        plt.close()
+        pbar.update(1)
 
-            # Plot the input vs. randomised grid avialability profiles.
-            plt.plot(range(24), grid_input_profile, color="k", label="Input")
-            plt.plot(
-                range(24), np.mean(reshaped_data, axis=0), color="r", label="Output"
-            )
-            plt.legend()
-            plt.xticks(range(0, 24, 2))
-            plt.yticks(np.arange(0, 1.1, 0.2))
-            plt.xlabel("Hour of day")
-            plt.ylabel("Probability")
-            plt.title("Probability of grid electricity being available")
-            plt.savefig(
-                os.path.join(
-                    figures_directory, "grid_availability_randomisation_comparison.png"
-                ),
-                transparent=True,
-            )
-            plt.close()
-            pbar.update(1)
+        # Plot the input vs. randomised grid avialability profiles
+        plt.plot(range(24), grid_input_profile, label=grid_name)
+        total_reshape_data=np.sum(reshaped_data_list, axis=0)
+        plt.plot(
+            range(24), np.mean(total_reshape_data, axis=0), label="Output"
+        )
+        plt.legend()
+        plt.xticks(range(0, 24, 2))
+        plt.yticks(np.arange(0, 1.1, 0.2))
+        plt.xlabel("Hour of day")
+        plt.ylabel("Probability")
+        plt.title("Probability of grid electricity being available")
+        plt.savefig(
+            os.path.join(
+                figures_directory, "grid_availability_randomisation_comparison.png"
+            ),
+            transparent=True,
+        )
+        plt.close()
+        pbar.update(1)
 
         # Plot the initial electric load of each device.
         for device, load in initial_electric_hourly_loads.items():
@@ -638,7 +642,7 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
         # @paulharfouche
         # FIXME
         # This plotting needs fixing still.
-        #
+        grid_energies: List[grid_energy]=[]
         for grid_name, grid_profile in grid_profiles.items():
             if grid_profile is not None:
                 grid_energy = np.mean(
@@ -650,6 +654,7 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
                     ),
                     axis=0,
                 )
+                grid_energies.append(grid_energy)
         renewable_energy = np.mean(
             np.reshape(
                 simulation_output[0:HOURS_PER_YEAR][
@@ -715,9 +720,10 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
 
         plt.plot(total_used, "--", label="Total used", zorder=1)
         plt.plot(unmet_energy, label="Unmet", zorder=2)
-        plt.plot(diesel_energy, label="Diesel", zorder=3)
+        # plt.plot(diesel_energy, label="Diesel", zorder=3)
         plt.plot(dumped, label="Dumped", zorder=4)
-        plt.plot(grid_energy, label="Grid", zorder=5)
+        for grid_energy in grid_energies:
+            plt.plot(grid_energy,label=grid_name, zorder=5)
         plt.plot(storage_energy, label="Storage", zorder=6)
         plt.plot(renewable_energy, label="Renewables used directly", zorder=7)
         plt.plot(pv_supplied, label="PV electricity generated", zorder=8)
@@ -844,8 +850,10 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
         plt.plot(blackouts, label=ColumnHeader.BLACKOUTS.value)
         plt.plot(solar_usage, label="Renewables")
         plt.plot(storage_energy, label="Storage")
-        plt.plot(grid_energy, label="Grid")
-        plt.plot(diesel_times, label="Diesel")
+        #LOOP
+        for grid_energy in grid_energies:
+            plt.plot(grid_energy, label=grid_name)
+        # plt.plot(diesel_times, label="Diesel")
         plt.legend()
         plt.xlim(0, 23)
         plt.xticks(range(0, 24, 1))
@@ -875,9 +883,7 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
                         ].values,
                         (365, 24),
                 )
-            # grid_energy = np.reshape(
-            # simulation_output[0:HOURS_PER_YEAR][ColumnHeader.GRID_ENERGY.value].values,
-            # (365, 24),)
+
         storage_energy = np.reshape(
             simulation_output[0:HOURS_PER_YEAR][
                 ColumnHeader.ELECTRICITY_FROM_STORAGE.value
@@ -922,6 +928,7 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
             ylabel="Day of year",
             title="Storage",
         )
+        #for grid_energy in grid_energies:
         sns.heatmap(grid_energy, vmin=0.0, vmax=4.0, cmap="Blues", cbar=True, ax=ax3)
         ax3.set(
             xticks=range(0, 25, 6),
@@ -967,7 +974,7 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
         # @paulharfouche
         # FIXME - You will need to iterate here.
         #
-        
+
         for grid_name, grid_profile in grid_profiles.items():
             if grid_profile is not None:
                 grid_energy = simulation_output.iloc[0:24][
@@ -1001,7 +1008,8 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
         plt.plot(unmet_energy, label="Unmet", zorder=2)
         plt.plot(diesel_energy, label="Diesel", zorder=3)
         plt.plot(dumped_energy, label="Dumped", zorder=4)
-        plt.plot(grid_energy, label="Grid", zorder=5)
+        for grid_energy in grid_energies:
+            plt.plot(grid_energy, label=grid_name, zorder=5)
         plt.plot(storage_energy, label="Storage", zorder=6)
         plt.plot(renewable_energy, label="Solar used directly", zorder=7)
         plt.plot(pv_supplied, label="PV generated", zorder=8)
@@ -1047,7 +1055,7 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
         plt.xticks(range(0, 24, 1))
         plt.xlabel("Hour of day")
         plt.ylabel("Average energy / kWh/hour")
-        plt.title("Energy supply and demand on the frist day")
+        plt.title("Energy supply and demand on the first day")
         plt.savefig(
             os.path.join(figures_directory, "electricity_use_on_first_day.png"),
             transparent=True,
