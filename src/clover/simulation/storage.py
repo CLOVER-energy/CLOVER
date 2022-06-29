@@ -380,7 +380,7 @@ def get_electric_battery_storage_profile(  # pylint: disable=too-many-locals, to
     start_hour: int = 0,
 ) -> Tuple[
     pd.DataFrame,
-    pd.DataFrame,
+    Dict[str, pd.DataFrame],
     pd.Series,
     pd.DataFrame,
     pd.DataFrame,
@@ -421,8 +421,8 @@ def get_electric_battery_storage_profile(  # pylint: disable=too-many-locals, to
     Outputs:
         - battery_storage_profile:
             Amount of energy (kWh) into (+ve) and out of (-ve) the battery.
-        - grid_energy:
-            Amount of energy (kWh) supplied by the grid.
+        - grid_energies:
+            Amount of energy (kWh) supplied by the various grid(s).
         - kerosene_usage:
             Number of kerosene lamps in use (if no power available).
         - load_energy:
@@ -675,9 +675,6 @@ def get_electric_battery_storage_profile(  # pylint: disable=too-many-locals, to
 
     battery_storage_profile.columns = pd.Index([ColumnHeader.STORAGE_PROFILE.value])
 
-    # @paulharfouche
-    # Will need multiple grid energies
-    # I didn't get here what do I need to do? kindly advise
     for name, grid_energy in grid_energies.items():
         grid_energy.columns = pd.Index(
             [f"{name.capitalize()} {ColumnHeader.GRID_ENERGY.value}"]
@@ -704,7 +701,7 @@ def get_electric_battery_storage_profile(  # pylint: disable=too-many-locals, to
 
     return (
         battery_storage_profile,
-        grid_energy,
+        grid_energies,
         kerosene_usage,
         load_energy,
         renewables_energy,

@@ -126,15 +126,10 @@ def get_key_results(
         ColumnHeader.TOTAL_ELECTRICITY_CONSUMED.value
     ].sum() / (365 * num_years)
 
-    import pdb
-
-    pdb.set_trace()
-
-    # was commented before! why?
     for grid_name, grid_profile in grid_profiles.items():
         if grid_profile is not None:
             key_results.average_daily_grid_energy_supplied = simulation_results[
-                ColumnHeader.GRID_ENERGY.value
+                f"{grid_name.capitalize()} {ColumnHeader.GRID_ENERGY.value}"
             ].sum() / (365 * num_years)
 
     key_results.average_daily_renewables_energy_supplied = simulation_results[
@@ -640,12 +635,16 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
             ),
             axis=0,
         )
+        # @paulharfouche
+        # FIXME
+        # This plotting needs fixing still.
+        #
         for grid_name, grid_profile in grid_profiles.items():
             if grid_profile is not None:
                 grid_energy = np.mean(
                     np.reshape(
                         simulation_output[0:HOURS_PER_YEAR][
-                            f"{grid_name} {ColumnHeader.GRID_ENERGY.value}"
+                            f"{grid_name.capitalize()} {ColumnHeader.GRID_ENERGY.value}"
                         ],
                         (365, 24),
                     ),
@@ -865,6 +864,9 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
         pbar.update(1)
 
         # Plot the seasonal variation in electricity supply sources.
+        # @paulharfouche
+        # FIXME - You will need to iterate here or compute the total grid energy.
+        #
         grid_energy = np.reshape(
             simulation_output[0:HOURS_PER_YEAR][ColumnHeader.GRID_ENERGY.value].values,
             (365, 24),
@@ -955,7 +957,9 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
         storage_energy = simulation_output.iloc[0:24][
             ColumnHeader.ELECTRICITY_FROM_STORAGE.value
         ]
-        # for loop
+        # @paulharfouche
+        # FIXME - You will need to iterate here.
+        #
         grid_energy = simulation_output.iloc[0:24][ColumnHeader.GRID_ENERGY.value]
         diesel_energy = simulation_output.iloc[0:24][
             ColumnHeader.DIESEL_ENERGY_SUPPLIED.value

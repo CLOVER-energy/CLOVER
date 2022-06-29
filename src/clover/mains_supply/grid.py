@@ -16,7 +16,7 @@ grid.py - The grid-generation module for CLOVER.
 This module generates grid-availability profiles for CLOVER.
 
 """
-import enum
+
 import os
 
 from logging import Logger

@@ -194,6 +194,11 @@ def _simulation_environmental_appraisal(  # pylint: disable=too-many-locals
         logger.error("Missing diesel-fuel GHG input information: %s", str(e))
         raise
 
+    # @paulharfouche
+    # FIXME - You will need to iterate here if you want to compute the GHGs from the
+    # grid as well.
+    #
+
     try:
         grid_ghgs = ghgs.calculate_grid_ghgs(
             ghg_inputs,
@@ -452,7 +457,7 @@ def _simulation_financial_appraisal(  # pylint: disable=too-many-locals
         tier = _get_grid_pricing_tier(grid_energy, tiers)
         grid_costs += finance.grid_expenditure(
             tier,
-            simulation_results[ColumnHeader.GRID_ENERGY.value],
+            simulation_results[f"{grid_name.capitalize()} {ColumnHeader.GRID_ENERGY.value}"],
             logger,
             start_year=system_details.start_year,
             end_year=system_details.end_year,
@@ -583,6 +588,10 @@ def _simulation_technical_appraisal(  # pylint: disable=too-many-locals
     total_storage_used = np.sum(
         simulation_results[ColumnHeader.ELECTRICITY_FROM_STORAGE.value]  # type: ignore
     )
+    # @paulharfouche
+    # FIXME - You will need to compute whatever you want to here for your grid energy
+    # consumption.
+    #
     total_grid_used = np.sum(
         simulation_results[ColumnHeader.GRID_ENERGY.value]  # type: ignore
     )

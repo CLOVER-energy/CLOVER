@@ -1141,8 +1141,8 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
                 (kWh)
             - storage_power_supplied:
                 Amount of energy (kWh) supplied by battery storage
-            - grid_energy:
-                Amount of energy (kWh) supplied by the grid
+            - grid_energies:
+                Amount of energy (kWh) supplied by the grid(s)
             - diesel_energy:
                 Amount of energy (kWh) supplied from diesel generator
             - diesel_times:
@@ -1405,7 +1405,7 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
 
     # Compute the electric input profiles.
     battery_storage_profile: pd.DataFrame
-    grid_energy: pd.DataFrame
+    grid_energies: Dict[str, pd.DataFrame]
     kerosene_profile: pd.Series
     load_energy: pd.DataFrame
     renewables_energy: pd.DataFrame
@@ -1423,7 +1423,7 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
 
     (
         battery_storage_profile,
-        grid_energy,
+        grid_energies,
         kerosene_profile,
         load_energy,
         renewables_energy,
@@ -1692,6 +1692,9 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
         )
         water_surplus_frame: pd.DataFrame = dict_to_dataframe(water_surplus, logger)
 
+    # Compute the total energy supplied by the various grids
+    total_grid_energy: pd.DataFrame = pd.DataFrame(pd.concat([pd.DataFrame(energies.values) for energies in grid_energies.values()], axis=1).sum(axis=1))
+
     # Find unmet energy
     unmet_energy = pd.DataFrame(
         (
@@ -1699,7 +1702,7 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
             + thermal_desalination_electric_power_consumed.values
             + clean_water_power_consumed.values
             - renewables_energy_used_directly.values
-            - grid_energy.values
+            - total_grid_energy.values
             - storage_power_supplied_frame.values
         )
     )
@@ -1780,7 +1783,7 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
         total_energy_used = pd.DataFrame(
             renewables_energy_used_directly.values
             + storage_power_supplied_frame.values
-            + grid_energy.values
+            + total_grid_energy.values
             + diesel_energy.values
             + excess_energy_used_desalinating_frame.values
         )
@@ -1918,7 +1921,7 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
         total_energy_used = pd.DataFrame(
             renewables_energy_used_directly.values
             + storage_power_supplied_frame.values
-            + grid_energy.values
+            + total_grid_energy.values
             + diesel_energy.values
         )
 
@@ -2066,7 +2069,6 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
         blackout_times,
         renewables_energy_used_directly,
         storage_power_supplied_frame,
-        grid_energy,
         diesel_energy,
         diesel_times,
         diesel_fuel_usage,
@@ -2080,6 +2082,10 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
         kerosene_usage,
         kerosene_mitigation,
     ]
+
+    # Append grid energies
+    system_performance_outputs_list.extend(list(grid_energies.values())
+    )
 
     if (
         scenario.desalination_scenario is not None
