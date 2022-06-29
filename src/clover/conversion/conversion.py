@@ -28,8 +28,8 @@ from ..__utils__ import (
     NAME,
     RESOURCE_NAME_TO_RESOURCE_TYPE_MAPPING,
     ResourceType,
+    WasteProduct,
 )
-from ..impact.__utils__ import WasteProduct
 
 __all__ = (
     "Converter",

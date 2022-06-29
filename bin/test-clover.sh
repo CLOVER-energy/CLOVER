@@ -4,6 +4,9 @@
 #                                                                                      #
 # Author: Ben Winchester                                                               #
 # Copyright: Ben Winchester, 2021                                                      #
+#                                                                                      #
+# For more information, please email:                                                  #
+#   benedict.winchester@gmail.com                                                      #
 ########################################################################################
 
 echo "Running test suite: black, mypy, pylint and pytest."

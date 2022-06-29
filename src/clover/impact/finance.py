@@ -19,21 +19,28 @@ information and system-sizing information provided.
 
 """
 
+import collections
+
 from logging import Logger
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import numpy as np  # pylint: disable=import-error
 import pandas as pd  # pylint: disable=import-error
 
-from .__utils__ import ImpactingComponent, LIFETIME, SIZE_INCREMENT
+from .__utils__ import ImpactingComponent, LIFETIME, SIZE_INCREMENT, update_diesel_costs
 from ..__utils__ import (
     BColours,
     ColumnHeader,
     InputFileError,
     InternalError,
     Location,
+    ProgrammerJudgementFault,
+    ResourceType,
+    Scenario,
+    TechnicalAppraisal,
     hourly_profile_to_daily_sum,
 )
+from ..conversion.conversion import Converter
 
 __all_ = (
     "connections_expenditure",
@@ -42,7 +49,7 @@ __all_ = (
     "discounted_energy_total",
     "discounted_equipment_cost",
     "expenditure",
-    "get_total_equipment_cost",
+    "get_total_equipment_costs",
     "ImpactingComponent",
     "independent_expenditure",
     "total_om",
@@ -365,10 +372,10 @@ def _misc_costs(diesel_size: float, misc_costs: float, pv_array_size: float) -> 
 ###############################
 
 
-def get_total_equipment_cost(  # pylint: disable=too-many-locals, too-many-statements
+def get_total_equipment_costs(  # pylint: disable=too-many-locals, too-many-statements
     buffer_tanks: float,
     clean_water_tanks: float,
-    converters: Dict[str, int],
+    converters: Dict[Converter, int],
     diesel_size: float,
     finance_inputs: Dict[str, Any],
     heat_exchangers: float,
@@ -376,9 +383,11 @@ def get_total_equipment_cost(  # pylint: disable=too-many-locals, too-many-state
     logger: Logger,
     pv_array_size: float,
     pvt_array_size: float,
+    scenario: Scenario,
     storage_size: float,
+    technical_appraisal: TechnicalAppraisal,
     installation_year: int = 0,
-) -> float:
+) -> Tuple[float, Dict[ResourceType, float]]:
     """
     Calculates all equipment costs.
 
@@ -391,7 +400,7 @@ def get_total_equipment_cost(  # pylint: disable=too-many-locals, too-many-state
             A mapping between converter names and the size of each that was added to the
             system this iteration.
         - diesel_size:
-            Capacity of diesel generator being installed
+            Capacity of diesel generator being installed.
         - finance_inputs:
             The finance-input information, parsed from the finance-inputs file.
         - heat_exchangers:
@@ -400,19 +409,40 @@ def get_total_equipment_cost(  # pylint: disable=too-many-locals, too-many-state
             The number of hot-water tanks being installed.
         - logger:
             The logger to use for the run.
+        - scenario:
+            The scenario for the run(s) being carried out.
         - pv_array_size:
-            Capacity of PV being installed
+            Capacity of PV being installed.
         - pvt_array_size:
-            Capacity of PV-T being installed
+            Capacity of PV-T being installed.
         - storage_size:
-            Capacity of battery storage being installed
+            Capacity of battery storage being installed.
+        - technical_appraisal:
+            The technical appraisal for the system.
         - installation_year:
             ColumnHeader.INSTALLATION_YEAR.value
 
     Outputs:
-        The combined undiscounted cost of the system equipment.
+        - Additional installation costs.
+        - The total costs of each component of the system as a `dict` mapping
+          :class:`ResourceType` to the cost for the subsystem associated with that
+          resource type.
 
     """
+
+    if technical_appraisal.power_consumed_fraction is None:
+        logger.error(
+            "%sNo power consumed fraction was calculated. This is needed.%s",
+            BColours.fail,
+            BColours.endc,
+        )
+        raise ProgrammerJudgementFault(
+            "impact.finance",
+            "No power consumed fraction on technical appraisal despite being needed.",
+        )
+
+    # Instantiate a mapping for storing total cost information.
+    subsystem_costs: Dict[ResourceType, float] = collections.defaultdict(float)
 
     # Calculate the various system costs.
     bos_cost = _component_cost(
@@ -485,40 +515,49 @@ def get_total_equipment_cost(  # pylint: disable=too-many-locals, too-many-state
             installation_year,
         )
 
-    converter_costs = sum(
-        _component_cost(
-            finance_inputs[
-                FINANCE_IMPACT.format(
-                    type=ImpactingComponent.CONVERTER.value, name=converter
-                )
-            ][COST],
-            finance_inputs[
-                FINANCE_IMPACT.format(
-                    type=ImpactingComponent.CONVERTER.value, name=converter
-                )
-            ][COST_DECREASE],
-            size,
-            installation_year,
+    # Sum up the converter costs for each of the relevant subsystems.
+    for resource_type in [ResourceType.CLEAN_WATER, ResourceType.HOT_CLEAN_WATER]:
+        converter_costs = sum(
+            _component_cost(
+                finance_inputs[
+                    FINANCE_IMPACT.format(
+                        type=ImpactingComponent.CONVERTER.value, name=converter
+                    )
+                ][COST],
+                finance_inputs[
+                    FINANCE_IMPACT.format(
+                        type=ImpactingComponent.CONVERTER.value, name=converter
+                    )
+                ][COST_DECREASE],
+                size,
+                installation_year,
+            )
+            for converter, size in converters.items()
+            if converter.output_resource_type == resource_type
         )
-        for converter, size in converters.items()
-    )
-    converter_installation_costs = sum(
-        _component_installation_cost(
-            size,
-            finance_inputs[
-                FINANCE_IMPACT.format(
-                    type=ImpactingComponent.CONVERTER.value, name=converter
-                )
-            ][INSTALLATION_COST],
-            finance_inputs[
-                FINANCE_IMPACT.format(
-                    type=ImpactingComponent.CONVERTER.value, name=converter
-                )
-            ][INSTALLATION_COST_DECREASE],
-            installation_year,
+        converter_installation_costs = sum(
+            _component_installation_cost(
+                size,
+                finance_inputs[
+                    FINANCE_IMPACT.format(
+                        type=ImpactingComponent.CONVERTER.value, name=converter
+                    )
+                ][INSTALLATION_COST],
+                finance_inputs[
+                    FINANCE_IMPACT.format(
+                        type=ImpactingComponent.CONVERTER.value, name=converter
+                    )
+                ][INSTALLATION_COST_DECREASE],
+                installation_year,
+            )
+            for converter, size in converters.items()
         )
-        for converter, size in converters.items()
-    )
+        subsystem_costs[resource_type] += converter_costs + converter_installation_costs
+        logger.debug(
+            "Converter costs determined for resource %s: %s",
+            resource_type.value,
+            converter_costs + converter_installation_costs,
+        )
 
     diesel_cost = _component_cost(
         finance_inputs[ImpactingComponent.DIESEL.value][COST],
@@ -627,7 +666,7 @@ def get_total_equipment_cost(  # pylint: disable=too-many-locals, too-many-state
         pvt_cost = _component_cost(
             finance_inputs[ImpactingComponent.PV_T.value][COST],
             finance_inputs[ImpactingComponent.PV_T.value][COST_DECREASE],
-            pv_array_size,
+            pvt_array_size,
             installation_year,
         )
         pvt_installation_cost = _component_installation_cost(
@@ -637,6 +676,11 @@ def get_total_equipment_cost(  # pylint: disable=too-many-locals, too-many-state
             installation_year,
         )
 
+    # Compute any misc. costs.
+    misc_costs = _misc_costs(
+        diesel_size, finance_inputs[ImpactingComponent.MISC.value][COST], pv_array_size
+    )
+
     storage_cost = _component_cost(
         finance_inputs[ImpactingComponent.STORAGE.value][COST],
         finance_inputs[ImpactingComponent.STORAGE.value][COST_DECREASE],
@@ -644,34 +688,42 @@ def get_total_equipment_cost(  # pylint: disable=too-many-locals, too-many-state
         installation_year,
     )
 
-    total_installation_cost = (
-        buffer_tank_installation_cost
-        + clean_water_tank_installation_cost
-        + converter_installation_costs
-        + diesel_installation_cost
-        + heat_exchanger_installation_cost
+    # Compute the various subsystem costs.
+    if scenario.desalination_scenario is not None:
+        # Compute the clean-water subsystem costs.
+        subsystem_costs[ResourceType.CLEAN_WATER] += (
+            buffer_tank_cost
+            + buffer_tank_installation_cost
+            + clean_water_tank_cost
+            + clean_water_tank_installation_cost
+            + heat_exchanger_cost
+            + heat_exchanger_installation_cost
+            + (bos_cost + misc_costs + pv_cost + pv_installation_cost + storage_cost)
+            * technical_appraisal.power_consumed_fraction[ResourceType.CLEAN_WATER]
+        )
+
+    # Compute the electric subsystem costs.
+    subsystem_costs[ResourceType.ELECTRIC] += (
+        bos_cost + misc_costs + pv_cost + pv_installation_cost + storage_cost
+    ) * technical_appraisal.power_consumed_fraction[ResourceType.ELECTRIC]
+
+    # Compute the hot-water subsystem costs.
+    subsystem_costs[ResourceType.HOT_CLEAN_WATER] += (
+        hot_water_tank_cost
         + hot_water_tank_installation_cost
-        + pv_installation_cost
-        + pvt_installation_cost
+        + (bos_cost + misc_costs + pv_cost + pv_installation_cost + storage_cost)
+        * technical_appraisal.power_consumed_fraction[ResourceType.HOT_CLEAN_WATER]
     )
 
-    misc_costs = _misc_costs(
-        diesel_size, finance_inputs[ImpactingComponent.MISC.value][COST], pv_array_size
+    # Compute the costs associated when carrying out prioritisation desalination.
+    update_diesel_costs(
+        diesel_cost + diesel_installation_cost,
+        scenario,
+        subsystem_costs,
+        technical_appraisal,
     )
-    return (
-        bos_cost
-        + buffer_tank_cost
-        + clean_water_tank_cost
-        + converter_costs
-        + diesel_cost
-        + heat_exchanger_cost
-        + hot_water_tank_cost
-        + misc_costs
-        + pv_cost
-        + pvt_cost
-        + storage_cost
-        + total_installation_cost
-    )
+
+    return pvt_cost + pvt_installation_cost, subsystem_costs
 
 
 def connections_expenditure(
@@ -832,10 +884,10 @@ def discounted_energy_total(
     return float(np.sum(discounted_energy))  # type: ignore
 
 
-def discounted_equipment_cost(
+def discounted_equipment_cost(  # pylint: disable=too-many-locals
     buffer_tanks: int,
     clean_water_tanks: int,
-    converters: Dict[str, int],
+    converters: Dict[Converter, int],
     diesel_size: float,
     finance_inputs: Dict[str, Any],
     heat_exchangers: int,
@@ -843,9 +895,11 @@ def discounted_equipment_cost(
     logger: Logger,
     pv_array_size: float,
     pvt_array_size: float,
+    scenario: Scenario,
     storage_size: float,
+    technical_appraisal: TechnicalAppraisal,
     installation_year: int = 0,
-) -> float:
+) -> Tuple[float, Dict[ResourceType, float]]:
     """
     Calculates cost of all equipment costs
 
@@ -867,19 +921,26 @@ def discounted_equipment_cost(
             The number of hot-water tanks being installed.
         - logger:
             The logger to use for the run.
+        - scenario:
+            The scenario currently being considered.
         - pv_array_size:
             Capacity of PV being installed
         - pvt_array_size:
             Capacity of PV-T being installed
         - storage_size:
             Capacity of battery storage being installed
+        - technical_appraisal:
+            The :class:`TechnicalAppraisal` for the system being considered.
         - installation_year:
             ColumnHeader.INSTALLATION_YEAR.value
     Outputs:
-        Discounted cost
+        - Any additional equipment costs not associated with a specific subsystem.
+        - A mapping between :class:`ResourceType` entries and the discounted costs
+          associated with that subsystem.
+
     """
 
-    undiscounted_cost = get_total_equipment_cost(
+    additional_costs, undiscounted_costs = get_total_equipment_costs(
         buffer_tanks,
         clean_water_tanks,
         converters,
@@ -890,14 +951,19 @@ def discounted_equipment_cost(
         logger,
         pv_array_size,
         pvt_array_size,
+        scenario,
         storage_size,
+        technical_appraisal,
         installation_year,
     )
     discount_fraction = (
         1.0 - float(finance_inputs[DISCOUNT_RATE])
     ) ** installation_year
 
-    return undiscounted_cost * discount_fraction
+    return (
+        additional_costs * discount_fraction,
+        {key: value * discount_fraction for key, value in undiscounted_costs.items()},
+    )
 
 
 def expenditure(
@@ -983,7 +1049,7 @@ def independent_expenditure(
 def total_om(  # pylint: disable=too-many-locals
     buffer_tanks: int,
     clean_water_tanks: int,
-    converters: Optional[Dict[str, int]],
+    converters: Optional[Dict[Converter, int]],
     diesel_size: float,
     finance_inputs: Dict[str, Any],
     heat_exchangers: int,
@@ -991,11 +1057,13 @@ def total_om(  # pylint: disable=too-many-locals
     logger: Logger,
     pv_array_size: float,
     pvt_array_size: float,
+    scenario: Scenario,
     storage_size: float,
+    technical_appraisal: TechnicalAppraisal,
     *,
     start_year: int = 0,
     end_year: int = 20
-) -> float:
+) -> Tuple[float, Dict[ResourceType, float]]:
     """
     Calculates total O&M cost over the simulation period
 
@@ -1005,8 +1073,8 @@ def total_om(  # pylint: disable=too-many-locals
         - clean_water_tanks:
             The number of clean-water tanks installed.
         - converters:
-            A mapping between converter names and the size of each that was added to the
-            system this iteration.
+            A mapping between converter instances and the size of each that was added to
+            the system this iteration.
         - diesel_size:
             Capacity of diesel generator installed.
         - finance_inputs:
@@ -1021,17 +1089,35 @@ def total_om(  # pylint: disable=too-many-locals
             Capacity of PV installed.
         - pvt_array_size:
             Capacity of PV-T installed.
+        - scenario:
+            The scenario for the run(s) being carried out.
         - storage_size:
             Capacity of battery storage installed.
+        - technical_appraisal:
+            The technical appraisal for the system.
         - start_year:
             Start year of simulation period.
         - end_year:
             End year of simulation period.
 
     Outputs:
-        Discounted cost
+        - A mapping between :class:`ResourceType` and the O&M costs of this.
 
     """
+
+    if technical_appraisal.power_consumed_fraction is None:
+        logger.error(
+            "%sNo power consumed fraction was calculated. This is needed.%s",
+            BColours.fail,
+            BColours.endc,
+        )
+        raise ProgrammerJudgementFault(
+            "impact.finance",
+            "No power consumed fraction on technical appraisal despite being needed.",
+        )
+
+    # Instantiate a mapping for storing total cost information.
+    subsystem_costs: Dict[ResourceType, float] = collections.defaultdict(float)
 
     if ImpactingComponent.BUFFER_TANK.value not in finance_inputs and buffer_tanks > 0:
         logger.error(
@@ -1080,23 +1166,31 @@ def total_om(  # pylint: disable=too-many-locals
             end_year=end_year,
         )
 
-    converters_om: float
     if converters is not None:
-        converters_om = sum(
-            _component_om(
-                finance_inputs[
-                    FINANCE_IMPACT.format(
-                        type=ImpactingComponent.CONVERTER.value, name=converter
-                    )
-                ][OM],
-                size,
-                finance_inputs,
-                logger,
-                start_year=start_year,
-                end_year=end_year,
+        for resource_type in [ResourceType.CLEAN_WATER, ResourceType.HOT_CLEAN_WATER]:
+            converter_om = sum(
+                _component_om(
+                    finance_inputs[
+                        FINANCE_IMPACT.format(
+                            type=ImpactingComponent.CONVERTER.value, name=converter
+                        )
+                    ][OM],
+                    size,
+                    finance_inputs,
+                    logger,
+                    start_year=start_year,
+                    end_year=end_year,
+                )
+                for converter, size in converters.items()
+                if resource_type == converter.output_resource_type
             )
-            for converter, size in converters.items()
-        )
+            subsystem_costs[resource_type] += converter_om
+            logger.debug(
+                "Converter OM costs determined for resource %s: %s",
+                resource_type.value,
+                converter_om,
+            )
+
     else:
         logger.debug(
             "No converters were installed in the system, hence no OM costs to compute."
@@ -1210,18 +1304,39 @@ def total_om(  # pylint: disable=too-many-locals
         end_year=end_year,
     )
 
-    return (
-        buffer_tank_om
-        + clean_water_tank_om
-        + converters_om
-        + diesel_om
-        + general_om
-        + heat_exchanger_om
-        + hot_water_tank_om
-        + pv_om
-        + pvt_om
-        + storage_om
+    # Compute the clean-water subsystem costs.
+    if scenario.desalination_scenario is not None:
+        subsystem_costs[ResourceType.CLEAN_WATER] += (
+            buffer_tank_om
+            + clean_water_tank_om
+            + heat_exchanger_om
+            + (
+                (general_om + pv_om + storage_om)
+                * technical_appraisal.power_consumed_fraction[ResourceType.CLEAN_WATER]
+            )
+        )
+
+    # Compute the electric subsystem costs.
+    subsystem_costs[ResourceType.ELECTRIC] += (
+        general_om + pv_om + storage_om
+    ) * technical_appraisal.power_consumed_fraction[ResourceType.ELECTRIC]
+
+    # Compute the hot-water subsystem costs.
+    subsystem_costs[ResourceType.HOT_CLEAN_WATER] += (
+        hot_water_tank_om
+        + (general_om + pv_om + storage_om)
+        * technical_appraisal.power_consumed_fraction[ResourceType.HOT_CLEAN_WATER]
     )
+
+    # Compute the costs associated when carrying out prioritisation desalination.
+    update_diesel_costs(
+        diesel_om,
+        scenario,
+        subsystem_costs,
+        technical_appraisal,
+    )
+
+    return (pvt_om, subsystem_costs)
 
 
 # #%%

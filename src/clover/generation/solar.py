@@ -25,7 +25,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import pandas as pd  # pylint: disable=import-error
 
-# from sklearn.linear_model._coordinate_descent import Lasso
+from sklearn.linear_model._coordinate_descent import Lasso
 
 from ..__utils__ import (
     BColours,
@@ -33,6 +33,7 @@ from ..__utils__ import (
     Location,
     NAME,
     ProgrammerJudgementFault,
+    RegressorType,
 )
 from .__utils__ import BaseRenewablesNinjaThread, SolarDataType, total_profile_output
 
@@ -51,6 +52,16 @@ __all__ = (
 # Default PV unit:
 #   The default PV unit size to use, measured in kWp.
 DEFAULT_PV_UNIT: float = 1  # [kWp]
+
+# Low irradiance threshold:
+#   The threshold at which to switch between a low-irradiance model and a standard-
+#   irradiance model.
+LOW_IRRADIANCE_THRESHOLD: float = 25  # [W/m^2]
+
+# Low temperature threshold:
+#   The threshold at which to switch between a low-temperature model and a standard-
+#   temperature model.
+LOW_TEMPERATURE_THRESHOLD: float = 50  # [degC]
 
 # Reference solar irradiance:
 #   The reference solar irradiance, used to compute fractional PV-T electric
@@ -248,7 +259,8 @@ class HybridPVTPanel(SolarPanel, panel_type=SolarPanelType.PV_T):
     Represents a PV-T panel.
 
     .. attribute:: electric_model
-        The model of the electric performance of the collector.
+        The model(s) of the electric performance of the collector, stored as a mapping
+        between :class:`RegressorType` instances and :class:`Lasso` models.
 
     .. attribute:: max_mass_flow_rate
         The maximum mass-flow rate of heat-transfer fluid through the PV-T collector,
@@ -258,8 +270,9 @@ class HybridPVTPanel(SolarPanel, panel_type=SolarPanelType.PV_T):
         The minimum mass-flow rate of heat-transfer fluid through the PV-T collector,
         measured in litres per hour.
 
-    .. attribute:: thermal_model
-        The model of the thermal performance of the collector.
+    .. attribute:: thermal_models
+        The model(s) of the thermal performance of the collector, stored as a mapping
+        between :class:`RegressorType` instances and :class:`Lasso` models.
 
     .. attribute:: thermal_unit
         The unit of thermal panel that the panel can output which is being considered,
@@ -269,18 +282,18 @@ class HybridPVTPanel(SolarPanel, panel_type=SolarPanelType.PV_T):
 
     def __init__(
         self,
-        electric_model: Optional[Any],
+        electric_models: Optional[Dict[RegressorType, Lasso]],
         logger: Logger,
         solar_inputs: Dict[str, Any],
         solar_panels: List[SolarPanel],
-        thermal_model: Optional[Any],
+        thermal_models: Optional[Dict[RegressorType, Lasso]],
     ) -> None:
         """
         Instantiate a :class:`HybridPVTPanel` instance based on the input data.
 
         Inputs:
             - electric_model:
-                The reduced electrical-efficiency model to use when generating the
+                The reduced electrical-efficiency model(s) to use when generating the
                 electric properties of the collector.
             - logger:
                 The logger to use for the run.
@@ -289,8 +302,8 @@ class HybridPVTPanel(SolarPanel, panel_type=SolarPanelType.PV_T):
             - solar_panels:
                 The full set of solar generation data.
             - thermal_model:
-                The reduced thermal model to use when generating the thermal properties
-                of the collector.
+                The reduced thermal model (s)to use when generating the thermal
+                properties of the collector.
 
         """
 
@@ -349,10 +362,10 @@ class HybridPVTPanel(SolarPanel, panel_type=SolarPanelType.PV_T):
             solar_inputs["tilt"],
         )
 
-        self.electric_model = electric_model
+        self.electric_models = electric_models
         self.max_mass_flow_rate = solar_inputs["max_mass_flow_rate"]
         self.min_mass_flow_rate = solar_inputs["min_mass_flow_rate"]
-        self.thermal_model = thermal_model
+        self.thermal_models = thermal_models
         self.thermal_unit = solar_inputs.get("thermal_unit", None)
 
     def __repr__(self) -> str:
@@ -367,7 +380,7 @@ class HybridPVTPanel(SolarPanel, panel_type=SolarPanelType.PV_T):
         return (
             "HybridPVTPanel("
             + f"azimuthal_orientation={self.azimuthal_orientation}"
-            + f", electric_model={self.electric_model}"
+            + f", electric_models defined={self.electric_models is not None}"
             + f", lifetime={self.lifetime}"
             + f", max_mass_flow_rate={self.max_mass_flow_rate}"
             + f", min_mass_flow_rate={self.min_mass_flow_rate}"
@@ -376,7 +389,7 @@ class HybridPVTPanel(SolarPanel, panel_type=SolarPanelType.PV_T):
             + f", reference_efficiency={self.reference_efficiency}"
             + f", reference_temperature={self.reference_temperature}"
             + f", thermal_coefficient={self.thermal_coefficient}"
-            + f", thermal_model={self.thermal_model}"
+            + f", thermal_models defined={self.thermal_models is not None}"
             + f", thermal_unit={self.thermal_unit}"
             + f", tilt={self.tilt}"
             + ")"
@@ -425,7 +438,7 @@ class HybridPVTPanel(SolarPanel, panel_type=SolarPanelType.PV_T):
 
         """
 
-        if self.electric_model is None or self.thermal_model is None:
+        if self.electric_models is None or self.thermal_models is None:
             logger.error(
                 "%sThe PV-T instance does not have well-defined and loaded models.%s",
                 BColours.fail,
@@ -461,8 +474,26 @@ class HybridPVTPanel(SolarPanel, panel_type=SolarPanelType.PV_T):
             ]
         )
 
+        # Determine which models to use.
+        if solar_irradiance < LOW_IRRADIANCE_THRESHOLD:
+            if input_temperature < LOW_TEMPERATURE_THRESHOLD:
+                regressor_type: RegressorType = (
+                    RegressorType.LOW_IRRADIANCE_LOW_TEMPERATURE
+                )
+            else:
+                regressor_type = RegressorType.LOW_IRRADIANCE_HIGH_TEMPERATURE
+        else:
+            if input_temperature < LOW_TEMPERATURE_THRESHOLD:
+                regressor_type = RegressorType.STANDARD_IRRADIANCE_LOW_TEMPERATURE
+            else:
+                regressor_type = RegressorType.STANDARD_IRRADIANCE_HIGH_TEMPERATURE
+
+        electric_model = self.electric_models[regressor_type]
+        thermal_model = self.thermal_models[regressor_type]
+
+        # Use the model selected to predict the collector performance.
         try:
-            electric_efficiency = float(self.electric_model.predict(input_data_frame))
+            electric_efficiency = float(electric_model.predict(input_data_frame))
         except Exception as e:  # pylint: disable=broad-except
             logger.error(
                 "Error attempting to predict electric efficiency of the PV-T collector: %s",
@@ -476,7 +507,7 @@ class HybridPVTPanel(SolarPanel, panel_type=SolarPanelType.PV_T):
         ) * (solar_irradiance / REFERENCE_SOLAR_IRRADIANCE)
 
         try:
-            output_temperature = float(self.thermal_model.predict(input_data_frame))
+            output_temperature = float(thermal_model.predict(input_data_frame))
         except Exception as e:  # pylint: disable=broad-except
             logger.error(
                 "Error attempting to predict electric efficiency of the PV-T collector: %s",
