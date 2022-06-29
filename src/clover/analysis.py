@@ -645,7 +645,7 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
                     np.reshape(
                         simulation_output[0:HOURS_PER_YEAR][
                             f"{grid_name.capitalize()} {ColumnHeader.GRID_ENERGY.value}"
-                        ],
+                        ].values,
                         (365, 24),
                     ),
                     axis=0,
@@ -866,11 +866,18 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
         # Plot the seasonal variation in electricity supply sources.
         # @paulharfouche
         # FIXME - You will need to iterate here or compute the total grid energy.
-        #
-        grid_energy = np.reshape(
-            simulation_output[0:HOURS_PER_YEAR][ColumnHeader.GRID_ENERGY.value].values,
-            (365, 24),
-        )
+        
+        for grid_name, grid_profile in grid_profiles.items():
+            if grid_profile is not None:
+                grid_energy = np.reshape(
+                    simulation_output[0:HOURS_PER_YEAR][
+                        f"{grid_name.capitalize()} {ColumnHeader.GRID_ENERGY.value}"
+                        ].values,
+                        (365, 24),
+                )
+            # grid_energy = np.reshape(
+            # simulation_output[0:HOURS_PER_YEAR][ColumnHeader.GRID_ENERGY.value].values,
+            # (365, 24),)
         storage_energy = np.reshape(
             simulation_output[0:HOURS_PER_YEAR][
                 ColumnHeader.ELECTRICITY_FROM_STORAGE.value
@@ -960,7 +967,13 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
         # @paulharfouche
         # FIXME - You will need to iterate here.
         #
-        grid_energy = simulation_output.iloc[0:24][ColumnHeader.GRID_ENERGY.value]
+        
+        for grid_name, grid_profile in grid_profiles.items():
+            if grid_profile is not None:
+                grid_energy = simulation_output.iloc[0:24][
+                    f"{grid_name.capitalize()} {ColumnHeader.GRID_ENERGY.value}"]
+                # grid_energy = simulation_output.iloc[0:24][ColumnHeader.GRID_ENERGY.value]
+        
         diesel_energy = simulation_output.iloc[0:24][
             ColumnHeader.DIESEL_ENERGY_SUPPLIED.value
         ]
