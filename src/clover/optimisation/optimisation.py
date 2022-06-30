@@ -118,7 +118,7 @@ def _find_optimum_system(  # pylint: disable=too-many-locals
     end_year: int,
     finance_inputs: Dict[str, Any],
     ghg_inputs: Dict[str, Any],
-    grid_profiles: Optional[Dict[str, pd.DataFrame]], 
+    grid_profiles: Optional[Dict[str, pd.DataFrame]],
     grids: List[Grid],
     irradiance_data: pd.Series,
     kerosene_usage: pd.DataFrame,

@@ -481,6 +481,12 @@ def _simulation_financial_appraisal(  # pylint: disable=too-many-locals
             ]
             grid = [grid for grid in grids if grid.name == grid_name][0]
             tier = _get_grid_pricing_tier(grid, logger, monthly_grid_energy)
+            logger.info(
+                "Grid tier upperbound for grid %s for month %s determined: %s",
+                grid_name,
+                month_number + 1,
+                str(tier.upper_bound_consumption),
+            )
 
             # Compute the subscription cost
             grid_costs += finance.grid_expenditure(
