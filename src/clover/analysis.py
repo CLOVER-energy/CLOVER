@@ -137,7 +137,7 @@ def get_key_results(
     key_results.average_daily_renewables_energy_supplied = simulation_results[
         ColumnHeader.RENEWABLE_ELECTRICITY_SUPPLIED.value
     ].sum() / (365 * num_years)
-    
+
     key_results.average_daily_renewables_energy_used = simulation_results[
         ColumnHeader.RENEWABLE_ELECTRICITY_USED_DIRECTLY.value
     ].sum() / (365 * num_years)
@@ -354,7 +354,8 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
         plt.close()
         pbar.update(1)
         reshaped_data_list: List[reshaped_data]=[]
-        grid_names: List[grid_name]=[]
+        #grid_profiles: Dict[str, Any] = {} #FIXME
+        # grid_names: List[grid_name]=[]
 
         for grid_name, grid_profile in grid_profiles.items():
             if grid_profile is not None:   #LOOP
@@ -374,7 +375,9 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
                     ylabel="Day of year",
                     title="Grid availability of the selected profile.",
                 )
-                grid_names.append(grid_name)
+                #APPEND THE DICTIONARY
+                #grid_profiles.append(grid_name,grid_profile)
+
         plt.xticks(rotation=0)
         plt.tight_layout()
         plt.savefig(
@@ -384,7 +387,7 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
         plt.close()
         pbar.update(1)
         # Plot the input vs. randomised grid avialability profiles
-        plt.plot(range(24), grid_input_profile, label="grid_name") #becomes grid_name for iteration
+        plt.plot(range(24), grid_input_profile, label=grid_name) # FIXME (Iterate the grid_name)
         total_reshaped_data=np.sum(reshaped_data_list, axis=0)
         plt.plot(range(24), np.mean(total_reshaped_data, axis=0), label="Output" #reshaped_data for iteration
         )
@@ -637,10 +640,8 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
             ),
             axis=0,
         )
-        # @paulharfouche
-        # FIXME
-        # This plotting needs fixing still.
-        grid_energies: List[grid_energy]=[]
+        
+        grid_energies: Dict[str, Any]= {}
         for grid_name, grid_profile in grid_profiles.items():
             if grid_profile is not None:
                 grid_energy = np.mean(
@@ -652,7 +653,7 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
                     ),
                     axis=0,
                 )
-                grid_energies.append(grid_energy)
+                grid_energies[grid_name].append(grid_energy) #FIXME 
         renewable_energy = np.mean(
             np.reshape(
                 simulation_output[0:HOURS_PER_YEAR][
@@ -868,10 +869,6 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
         )
         plt.close()
         pbar.update(1)
-
-        # Plot the seasonal variation in electricity supply sources.
-        # @paulharfouche
-        # FIXME - You will need to iterate here or compute the total grid energy.
         
         for grid_name, grid_profile in grid_profiles.items():
             if grid_profile is not None:
@@ -969,9 +966,6 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
         storage_energy = simulation_output.iloc[0:24][
             ColumnHeader.ELECTRICITY_FROM_STORAGE.value
         ]
-        # @paulharfouche
-        # FIXME - You will need to iterate here.
-        #
 
         for grid_name, grid_profile in grid_profiles.items():
             if grid_profile is not None:

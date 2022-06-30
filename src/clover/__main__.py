@@ -1061,7 +1061,7 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
                 # Generate and save the various plots.
                 analysis.plot_outputs(  # type: ignore
                     grid_times[scenario.grid_types],
-                    grid_profiles,  # to check that
+                    grid_profiles,
                     initial_cw_hourly_loads,
                     initial_electric_hourly_loads,
                     initial_hw_hourly_loads,

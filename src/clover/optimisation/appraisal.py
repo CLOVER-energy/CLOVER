@@ -413,7 +413,6 @@ def _simulation_financial_appraisal(  # pylint: disable=too-many-locals
         yearly_load_statistics,
         start_year=system_details.start_year,
         end_year=system_details.end_year,
-        # not going to add here the grid
     )
 
     # Calculate costs of connecting new households (discounted)
@@ -421,7 +420,6 @@ def _simulation_financial_appraisal(  # pylint: disable=too-many-locals
         finance_inputs,
         simulation_results[ColumnHeader.HOUSEHOLDS.value],
         system_details.start_year,
-        # not going to add here the grid
     )
 
     # Calculate operating costs of the system during this simulation (discounted)
@@ -451,7 +449,6 @@ def _simulation_financial_appraisal(  # pylint: disable=too-many-locals
         system_details.initial_storage_size,
         start_year=system_details.start_year,
         end_year=system_details.end_year,
-        # not going to add here the grid
     )
 
     # Calculate running costs of the system (discounted)

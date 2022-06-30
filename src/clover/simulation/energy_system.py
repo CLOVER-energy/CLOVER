@@ -1414,7 +1414,7 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
     renewables_energy_used_directly: pd.DataFrame
 
     trimmed_grid_profiles: Dict[str, pd.DataFrame] = {}
-    for name, profile in grid_profiles.items():  # to check that
+    for name, profile in grid_profiles.items(): 
         trimmed_grid_profiles[name] = profile.iloc[start_hour:end_hour, 0]
 
     (
@@ -1427,7 +1427,7 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
         renewables_energy_used_directly,
     ) = get_electric_battery_storage_profile(
         clean_water_pvt_size=clean_water_pvt_size,
-        grid_profiles=trimmed_grid_profiles,  # type: ignore # to check that
+        grid_profiles=trimmed_grid_profiles,  # type: ignore
         hot_water_pvt_size=hot_water_pvt_size,
         kerosene_usage=kerosene_usage.iloc[start_hour:end_hour, 0],
         location=location,
