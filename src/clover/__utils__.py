@@ -181,7 +181,21 @@ MONTH_MID_DAY: List[int] = [
 
 # Month start day:
 #   The "day" in the year that falls at the start of each month.
-MONTH_START_DAY: List[int] = [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334]
+MONTH_START_DAY: List[int] = [
+    0,
+    31,
+    59,
+    90,
+    120,
+    151,
+    181,
+    212,
+    243,
+    273,
+    304,
+    334,
+    365,
+]
 
 # Name:
 #   Keyword used for parsing converter name information.
@@ -599,7 +613,7 @@ def daily_sum_to_monthly_sum(daily_profile: pd.DataFrame) -> pd.DataFrame:
     """
 
     years = int(daily_profile.shape[0] / 365)
-    month_start = pd.DataFrame(MONTH_START_DAY)
+    month_start = pd.DataFrame(MONTH_START_DAY[:-1])
     month_days = pd.DataFrame([])
     for year in range(0, years):
         month_days = month_days.append(month_start + (year * 365))
@@ -1938,6 +1952,28 @@ class GridTier:
 
     upper_bound_consumption: float
     costs: Dict[str, float]
+
+    def __eq__(self, other: Any) -> bool:
+        """
+        Check whether two tiers are equal.
+
+        Outputs:
+            True if equal, otherwise false.
+
+        """
+
+        return self.upper_bound_consumption == other.upper_bound_consumption
+
+    def __lt__(self, other: Any) -> bool:
+        """
+        Check whether two tiers are equal.
+
+        Outputs:
+            True if equal, otherwise false.
+
+        """
+
+        return self.upper_bound_consumption < other.upper_bound_consumption
 
 
 @dataclasses.dataclass

@@ -30,6 +30,7 @@ from ..__utils__ import (
     BColours,
     ColumnHeader,
     Grid,
+    GridTier,
     InputFileError,
     InternalError,
     Location,
@@ -68,6 +69,10 @@ COST_DECREASE: str = "cost_decrease"
 # Discount rate:
 #   Keyword used to denote the discount rate.
 DISCOUNT_RATE = "discount_rate"
+
+# Exchange rate:
+#   Keyword used to denote the exchange rate to USD.
+EXCHANGE_RATE: str = "exchange_rate"
 
 # Finance impact:
 #   Default `str` used as the format for specifying unique financial impacts.
@@ -933,6 +938,7 @@ def expenditure(
         Discounted cost
 
     """
+
     hourly_cost = hourly_usage * finance_inputs[component.value][COST]
     total_daily_cost = hourly_profile_to_daily_sum(hourly_cost)
     total_discounted_cost = discounted_energy_total(
@@ -946,10 +952,10 @@ def expenditure(
 
 
 def grid_expenditure(
-    tier: Dict[str, Any],
     finance_inputs: Dict[str, Any],
     hourly_usage: pd.Series,
     logger: Logger,
+    tier: GridTier,
     *,
     start_year: int = 0,
     end_year: int = 20
@@ -958,12 +964,12 @@ def grid_expenditure(
     Calculates cost of the usage of a component.
 
     Inputs:
+        - hourly_usage:
+            Output from Energy_System().simulation(...) for the month.
+        - logger:
+            The :class:`Logger` to use for the run.
         - tier:
             The Grid Tier the household is in where we can find the costs.
-        - finance_inputs:
-            The financial input information.
-        - hourly_usage:
-            Output from Energy_System().simulation(...)
         - start_year:
             Start year of simulation period
         - end_year:
@@ -973,16 +979,16 @@ def grid_expenditure(
         Discounted cost
 
     """
-    hourly_cost = hourly_usage * tier.costs
-    total_daily_cost = hourly_profile_to_daily_sum(hourly_cost)
-    total_grid_discounted_cost = discounted_energy_total(
-        finance_inputs,
-        logger,
-        total_daily_cost,
-        start_year=start_year,
-        end_year=end_year,
+
+    undiscounted_cost = float(
+        np.sum(hourly_usage * tier.costs[COST]) / finance_inputs[EXCHANGE_RATE]
     )
-    return total_grid_discounted_cost
+
+    # Compute the subscription cost
+    subscription_cost = tier.costs[SUBSCRIPTION_COST] / finance_inputs[EXCHANGE_RATE]
+    logger.debug("Subscription cost determined: %s", subscription_cost)
+
+    return undiscounted_cost + subscription_cost
 
 
 def independent_expenditure(

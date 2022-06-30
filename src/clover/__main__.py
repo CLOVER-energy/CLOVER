@@ -1089,6 +1089,7 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
                     location,
                     logger,
                     None,
+                    scenario,
                     system_performance_outputs,
                     simulation.start_year,
                     system_details,

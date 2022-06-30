@@ -1067,6 +1067,7 @@ def recursive_iteration(  # pylint: disable=too-many-locals
             location,
             logger,
             previous_system,
+            optimisation.scenario,
             simulation_results,
             start_year,
             system_details,

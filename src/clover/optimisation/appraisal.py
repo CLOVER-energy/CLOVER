@@ -40,12 +40,15 @@ from ..__utils__ import (
     Grid,
     InternalError,
     hourly_profile_to_daily_sum,
+    MONTH_START_DAY,
     Location,
+    Scenario,
     SystemAppraisal,
     SystemDetails,
     TechnicalAppraisal,
 )
 from ..impact.__utils__ import ImpactingComponent
+from ..impact.finance import EXCHANGE_RATE
 
 __all__ = ("appraise_system",)
 
@@ -267,67 +270,58 @@ VOLTAGE: int = 220
 
 # move to finance
 def _get_grid_pricing_tier(
-    grid: pd.DataFrame,
-    grid_energy: pd.Series,
-    grid_tier: GridTier,
-    household_monthly_demand=pd.Series,
-    #  """
-    # for years in lifetime (20 years)
-    #   for months in year (12 months)
-    #       for days in months (30 days)
-    #           monthly_demand=sum(grid_energy.values())
-    #  """
-):
+    grid: Grid,
+    logger: Logger,
+    monthly_grid_energy: pd.Series,
+) -> GridTier:
     """
     Gets the grid pricing tier.
 
         Inputs:
             - grid:
                 Needed to identify the grid criteria and data.
-            - grid energy:
+            - grid tier:
                 Energy that was supplied by the grid.
-            - Daily household hourly consumption:
-                Needed to identify the peak consumption per day.
             - Monthly household consumption:
-                Needed to identify the consumption tier of a household on a monthly basis.
+                Needed to identify the consumption tier of a household on a monthly
+                basis.
         Outputs:
             - tier:
-                The tier corresponding to the household consumption based on the grid in use.
+                The tier corresponding to the household consumption based on the grid in
+                use.
+
     """
 
-    for (
-        grid_type
-    ) in (
-        grid
-    ):  # run over the list of tiers where we have the different upper bound consumption
-        if grid_type == GridType.CURRENT_DRAW:  # DIESEL GENERATOR
-            sorted_tiers = grid.tiers[
-                "upper_bound_consumption"
-            ].sort()  # [5A, 10A] #ATTRIBUTE ERROR I KNOW
-            for tier in sorted_tiers:
-                if max(grid_energy) / VOLTAGE <= grid_tier.upper_bound_consumption:
-                    return tier
-        elif grid_type == GridType.DAILY_POWER:  # EDL
-            sorted_tiers = grid.tiers[
-                "upper_bound_consumption"
-            ].sort()  # [100,200,300,400,1000] #ATTRIBUTE ERROR I KNOW
-            for tier in sorted_tiers:
-                for day in range(0, 30):
-                    household_monthly_demand = sum(daily_demand)
-                    for hour in range(0, 24):
-                        daily_demand = sum(grid_energy.values())
-                if (
-                    household_monthly_demand <= grid_tier.upper_bound_consumption
-                ):  # ATTRIBUTE ERROR I KNOW
-                    return tier
-        else:
-            raise Exception(
-                "Grid type must be one of {}".format(
-                    ", ".join(
-                        {e.value for e in GridType}
-                    )  # This will print all the allowed values
-                )
-            )
+    if grid.upper_bound_type == GridType.CURRENT_DRAW:  # DIESEL GENERATOR
+        for tier in sorted(grid.tiers):
+            if np.max(monthly_grid_energy) / VOLTAGE <= tier.upper_bound_consumption:
+                return tier
+        logger.warning(
+            "Maximum grid tier value %s for %s exceeded. Using max tier %s.",
+            np.max(monthly_grid_energy) / VOLTAGE,
+            grid.name,
+            str(sorted(grid.tiers)[-1]),
+        )
+        return sorted(grid.tiers)[-1]
+
+    if grid.upper_bound_type == GridType.DAILY_POWER:  # EDL
+        for tier in sorted(grid.tiers):
+            if (
+                np.sum(monthly_grid_energy) <= tier.upper_bound_consumption
+            ):  # ATTRIBUTE ERROR I KNOW
+                return tier
+        logger.warning(
+            "Maximum grid tier value %s for %s exceeded. Using max tier %s.",
+            np.max(monthly_grid_energy) / VOLTAGE,
+            grid.name,
+            str(sorted(grid.tiers)[-1]),
+        )
+        return sorted(grid.tiers)[-1]
+
+    raise Exception(
+        "Grid type must be one of "
+        ", ".join({e.value for e in GridType})  # This will print all the allowed values
+    )
 
 
 # do i need to return something here or can I simply keep it at the ifs
@@ -346,6 +340,7 @@ def _simulation_financial_appraisal(  # pylint: disable=too-many-locals
     logger: Logger,
     pv_addition: float,
     pvt_addition: float,
+    scenario: Scenario,
     simulation_results: pd.DataFrame,
     storage_addition: float,
     system_details: SystemDetails,
@@ -465,31 +460,37 @@ def _simulation_financial_appraisal(  # pylint: disable=too-many-locals
     # APPRAISAL TO CHANGE:
 
     grid_costs: float = 0
-    subscription_cost: float = 0
-    # @paulharfouche
-    # FIXME - This function does not work, commented out to get optimisation running.
-    # for grid_name in scenario.grid_types:  # ATTRIBUTE ERROR I KNOW
-    #     grid_energy = simulation_results[
-    #         f"{grid_name} {ColumnHeader.GRID_ENERGY.value}"
-    #     ]
-    #     grid = [grid for grid in grids if grid.name == grid_name][0]
-    #     tiers = grid.tiers  # ATTRIBUTE ERROR I KNOW
-    #     tier = _get_grid_pricing_tier(grid_energy, tiers)
-    #     grid_costs += finance.grid_expenditure(
-    #         tier,
-    #         simulation_results[
-    #             f"{grid_name.capitalize()} {ColumnHeader.GRID_ENERGY.value}"
-    #         ],
-    #         logger,
-    #         start_year=system_details.start_year,
-    #         end_year=system_details.end_year,
-    #     )
-    #     subscription_cost = tier.costs[SUBSCRIPTION_COST] / exchange_rate
-    #     # get the function _get_grid_pricing_tier for it to read the grid_energy and the tiers as inputs
-    #     # and the output is the tier we are working in.
-    #     # costs = (tier.costs) / exchange_rate
-    #     # costs_of_this_grid: float = 0  # once you know what tier we are talking about then,the cost of the grid is based on the tier (for EDL)
-    #     # grid_costs += costs_of_this_grid
+
+    # Loop over months
+    # Go through the grids
+    # Compute monthly energy consumed
+    # Determine the tier
+    # Determine the costs
+    # Add these up
+
+    # Iterate over the grids
+    for grid_name in scenario.grid_types:  # ATTRIBUTE ERROR I KNOW
+        grid_energy = simulation_results[
+            f"{grid_name.capitalize()} {ColumnHeader.GRID_ENERGY.value}"
+        ]
+
+        # Determine monthly costs for the specific grid.
+        for month_number, start_day in enumerate(MONTH_START_DAY[:-1]):
+            monthly_grid_energy = grid_energy[
+                start_day * 24 : MONTH_START_DAY[month_number + 1] * 24
+            ]
+            grid = [grid for grid in grids if grid.name == grid_name][0]
+            tier = _get_grid_pricing_tier(grid, logger, monthly_grid_energy)
+
+            # Compute the subscription cost
+            grid_costs += finance.grid_expenditure(
+                finance_inputs,
+                monthly_grid_energy,
+                logger,
+                tier,
+                start_year=system_details.start_year,
+                end_year=system_details.end_year,
+            )
 
     # add the subscription costs
     kerosene_costs = finance.expenditure(
@@ -517,7 +518,6 @@ def _simulation_financial_appraisal(  # pylint: disable=too-many-locals
         + diesel_costs
         + grid_costs
         + kerosene_costs
-        + subscription_cost  # IMPORTANT
     )
     total_system_cost = (
         equipment_costs + connections_cost + om_costs + diesel_costs + grid_costs
@@ -707,6 +707,7 @@ def appraise_system(  # pylint: disable=too-many-locals
     location: Location,
     logger: Logger,
     previous_system: Optional[SystemAppraisal],
+    scenario: Scenario,
     simulation_results: pd.DataFrame,
     start_year: int,
     system_details: SystemDetails,
@@ -832,6 +833,7 @@ def appraise_system(  # pylint: disable=too-many-locals
         logger,
         pv_addition,
         pvt_addition,
+        scenario,
         simulation_results,
         storage_addition,
         system_details,

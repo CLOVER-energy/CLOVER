@@ -621,7 +621,6 @@ def get_electric_battery_storage_profile(  # pylint: disable=too-many-locals, to
         )
 
         # Then take energy from grid if available
-
         if scenario.grid:
             for grid_type in scenario.grid_types:
                 grid_profile = grid_profiles[
@@ -647,8 +646,6 @@ def get_electric_battery_storage_profile(  # pylint: disable=too-many-locals, to
         )
 
     else:
-        # Take energy from grid first if available
-        # @paulharfouche: Need to do the same here.
         if scenario.grid:
             for grid_type in scenario.grid_types:
                 grid_profile = grid_profile[grid_type]
