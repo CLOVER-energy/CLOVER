@@ -723,8 +723,8 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
         plt.plot(unmet_energy, label="Unmet", zorder=2)
         # plt.plot(diesel_energy, label="Diesel", zorder=3)
         plt.plot(dumped, label="Dumped", zorder=4)
-        for grid_energy in grid_energies.values():
-            plt.plot(grid_energy, label=grid_name, zorder=5)
+        for grid_name, grid_energy in grid_energies.items():
+            plt.plot(grid_energy, label=grid_name.capitalize(), zorder=5)
         plt.plot(storage_energy, label="Storage", zorder=6)
         plt.plot(renewable_energy, label="Renewables used directly", zorder=7)
         plt.plot(pv_supplied, label="PV electricity generated", zorder=8)
