@@ -81,8 +81,8 @@ def get_key_results(
     Computes the key results of the simulation.
 
         Inputs:
-        - grid_input_profile:
-            The relevant grid input profile for the simulation that was run.
+        - grid_profiles:
+            The relevant grid input profile(s) for the simulation that was run.
         - num_years:
             The number of years for which the simulation was run.
         - simulation_results:
@@ -236,8 +236,7 @@ def get_key_results(
 
 
 def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
-    grid_input_profile: pd.DataFrame,
-    grid_profiles: Optional[Dict[str, pd.DataFrame]],  # to check that
+    grid_times: Optional[Dict[str, pd.DataFrame]],  # to check that
     initial_cw_hourly_loads: Optional[
         Dict[str, pd.DataFrame]
     ],  # pylint: disable=unused-argument
@@ -259,10 +258,9 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
     Inputs:
         - disable_tqdm:
             Whether to disable the tqdm progress bars (True) or display them (False).
-        - grid_input_profile:
-            The relevant grid input profile for the simulation that was run.
-        - grid_profiles:
-            The relevant list of grid profile for the simulation that was run.
+        - grid_times:
+            The relevant list of grid availability profiles for the simulation that was
+            run.
         - initial_cw_hourly_loads:
             The initial clean water hourly load for each device for the initial period
             of the simulation run.
@@ -305,7 +303,7 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
     hw_pvt: bool = ColumnHeader.HW_PVT_ELECTRICITY_SUPPLIED.value in simulation_output
 
     with tqdm(
-        total=(9 + (len(grid_profiles) if grid_profiles is not None else 0)),
+        total=(9 + (len(grid_times) if grid_times is not None else 0)),
         desc="plots",
         leave=False,
         unit="plot",
@@ -355,7 +353,7 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
         pbar.update(1)
 
         reshaped_profiles: Dict[str, np.ndarray] = {}
-        for grid_name, grid_profile in grid_profiles.items():
+        for grid_name, grid_profile in grid_times.items():
             if grid_profile is not None:
                 reshaped_data = np.reshape(
                     grid_profile.iloc[0:HOURS_PER_YEAR].values, (365, 24)
@@ -646,7 +644,7 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
         )
 
         grid_energies: Dict[str, np.ndarray] = {}
-        for grid_name, grid_profile in grid_profiles.items():
+        for grid_name, grid_profile in grid_times.items():
             if grid_profile is not None:
                 grid_energy = np.mean(
                     np.reshape(
@@ -874,7 +872,7 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
         plt.close()
         pbar.update(1)
 
-        for grid_name, grid_profile in grid_profiles.items():
+        for grid_name, grid_profile in grid_times.items():
             if grid_profile is not None:
                 grid_energy = np.reshape(
                     simulation_output[0:HOURS_PER_YEAR][
@@ -971,7 +969,7 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
             ColumnHeader.ELECTRICITY_FROM_STORAGE.value
         ]
 
-        for grid_name, grid_profile in grid_profiles.items():
+        for grid_name, grid_profile in grid_times.items():
             if grid_profile is not None:
                 grid_energy = simulation_output.iloc[0:24][
                     f"{grid_name.capitalize()} {ColumnHeader.GRID_ENERGY.value}"
