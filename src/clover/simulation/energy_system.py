@@ -1414,7 +1414,7 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
     renewables_energy_used_directly: pd.DataFrame
 
     trimmed_grid_profiles: Dict[str, pd.DataFrame] = {}
-    for name, profile in grid_profiles.items(): 
+    for name, profile in grid_profiles.items():
         trimmed_grid_profiles[name] = profile.iloc[start_hour:end_hour, 0]
 
     (

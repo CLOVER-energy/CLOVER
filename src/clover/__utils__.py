@@ -2155,9 +2155,7 @@ class Scenario:
             diesel_scenario,
             distribution_network,
             scenario_inputs["grid"],
-            scenario_inputs[
-                "grid_types"
-            ],
+            scenario_inputs["grid_types"],
             hot_water_scenario,
             scenario_inputs[NAME],
             resource_types,

@@ -105,7 +105,7 @@ def get_key_results(
     key_results.average_pv_generation = float(
         round(total_solar_generation / (20 * 365))
     )
-    grid_names: List[grid_name]=[]
+    grid_names: List[grid_name] = []
     # Compute the grid results.
     key_results.grid_daily_hours = collections.defaultdict(float)
     for grid_name, grid_profile in grid_profiles.items():
@@ -353,44 +353,48 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
         )
         plt.close()
         pbar.update(1)
-        reshaped_data_list: List[reshaped_data]=[]
-        #grid_profiles: Dict[str, Any] = {} #FIXME
-        # grid_names: List[grid_name]=[]
 
+        reshaped_profiles: Dict[str, np.ndarray] = {}
         for grid_name, grid_profile in grid_profiles.items():
-            if grid_profile is not None:   #LOOP
+            if grid_profile is not None:
                 reshaped_data = np.reshape(
                     grid_profile.iloc[0:HOURS_PER_YEAR].values, (365, 24)
                 )
-                reshaped_data_list.append(reshaped_data)
-                heatmap = sns.heatmap(
-                    reshaped_data, vmin=0, vmax=1, cmap="Greys_r", cbar=False
-                )
-                heatmap.set(
-                    xticks=range(0, 24, 2),
-                    xticklabels=range(0, 24, 2),
-                    yticks=range(0, 365, 30),
-                    yticklabels=range(0, 365, 30),
-                    xlabel="Hour of day",
-                    ylabel="Day of year",
-                    title="Grid availability of the selected profile.",
-                )
-                #APPEND THE DICTIONARY
-                #grid_profiles.append(grid_name,grid_profile)
+                reshaped_profiles[grid_name] = reshaped_data
 
-        plt.xticks(rotation=0)
-        plt.tight_layout()
-        plt.savefig(
-            os.path.join(figures_directory, "grid_availability_heatmap.png"),
-            transparent=True,
-        )
-        plt.close()
-        pbar.update(1)
-        # Plot the input vs. randomised grid avialability profiles
-        plt.plot(range(24), grid_input_profile, label=grid_name) # FIXME (Iterate the grid_name)
-        total_reshaped_data=np.sum(reshaped_data_list, axis=0)
-        plt.plot(range(24), np.mean(total_reshaped_data, axis=0), label="Output" #reshaped_data for iteration
-        )
+                # heatmap = sns.heatmap(
+                #     reshaped_data, vmin=0, vmax=1, cmap="Greys_r", cbar=False
+                # )
+                # heatmap.set(
+                #     xticks=range(0, 24, 2),
+                #     xticklabels=range(0, 24, 2),
+                #     yticks=range(0, 365, 30),
+                #     yticklabels=range(0, 365, 30),
+                #     xlabel="Hour of day",
+                #     ylabel="Day of year",
+                #     title="Grid availability of the selected profile.",
+                # )
+                # plt.plot(range(24), grid_profile, label=grid_name)
+
+                # plt.xticks(rotation=0)
+                # plt.tight_layout()
+                # plt.savefig(
+                #     os.path.join(
+                #         figures_directory,
+                #         f"{grid_name.lower()}_grid_availability_heatmap.png",
+                #     ),
+                #     transparent=True,
+                # )
+                # plt.close()
+                # pbar.update(1)
+
+        for grid_name, reshaped_profile in reshaped_profiles.items():
+            plt.plot(
+                range(24),
+                np.mean(reshaped_profile, axis=0),
+                label=grid_name.capitalize(),  # reshaped_data for iteration
+            )
+
         plt.legend()
         plt.xticks(range(0, 24, 2))
         plt.yticks(np.arange(0, 1.1, 0.2))
@@ -640,8 +644,8 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
             ),
             axis=0,
         )
-        
-        grid_energies: Dict[str, Any]= {}
+
+        grid_energies: Dict[str, np.ndarray] = {}
         for grid_name, grid_profile in grid_profiles.items():
             if grid_profile is not None:
                 grid_energy = np.mean(
@@ -653,7 +657,7 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
                     ),
                     axis=0,
                 )
-                grid_energies[grid_name].append(grid_energy) #FIXME 
+                grid_energies[grid_name] = grid_energy
         renewable_energy = np.mean(
             np.reshape(
                 simulation_output[0:HOURS_PER_YEAR][
@@ -721,8 +725,8 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
         plt.plot(unmet_energy, label="Unmet", zorder=2)
         # plt.plot(diesel_energy, label="Diesel", zorder=3)
         plt.plot(dumped, label="Dumped", zorder=4)
-        for grid_energy in grid_energies:
-            plt.plot(grid_energy,label=grid_name, zorder=5)
+        for grid_energy in grid_energies.values():
+            plt.plot(grid_energy, label=grid_name, zorder=5)
         plt.plot(storage_energy, label="Storage", zorder=6)
         plt.plot(renewable_energy, label="Renewables used directly", zorder=7)
         plt.plot(pv_supplied, label="PV electricity generated", zorder=8)
@@ -849,7 +853,7 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
         plt.plot(blackouts, label=ColumnHeader.BLACKOUTS.value)
         plt.plot(solar_usage, label="Renewables")
         plt.plot(storage_energy, label="Storage")
-        #LOOP
+        # LOOP
         for grid_energy in grid_energies:
             plt.plot(grid_energy, label=grid_name)
         # plt.plot(diesel_times, label="Diesel")
@@ -869,14 +873,14 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
         )
         plt.close()
         pbar.update(1)
-        
+
         for grid_name, grid_profile in grid_profiles.items():
             if grid_profile is not None:
                 grid_energy = np.reshape(
                     simulation_output[0:HOURS_PER_YEAR][
                         f"{grid_name.capitalize()} {ColumnHeader.GRID_ENERGY.value}"
-                        ].values,
-                        (365, 24),
+                    ].values,
+                    (365, 24),
                 )
 
         storage_energy = np.reshape(
@@ -923,7 +927,7 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
             ylabel="Day of year",
             title="Storage",
         )
-        #for grid_energy in grid_energies:
+        # for grid_energy in grid_energies:
         sns.heatmap(grid_energy, vmin=0.0, vmax=4.0, cmap="Blues", cbar=True, ax=ax3)
         ax3.set(
             xticks=range(0, 25, 6),
@@ -970,9 +974,10 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
         for grid_name, grid_profile in grid_profiles.items():
             if grid_profile is not None:
                 grid_energy = simulation_output.iloc[0:24][
-                    f"{grid_name.capitalize()} {ColumnHeader.GRID_ENERGY.value}"]
+                    f"{grid_name.capitalize()} {ColumnHeader.GRID_ENERGY.value}"
+                ]
                 # grid_energy = simulation_output.iloc[0:24][ColumnHeader.GRID_ENERGY.value]
-        
+
         diesel_energy = simulation_output.iloc[0:24][
             ColumnHeader.DIESEL_ENERGY_SUPPLIED.value
         ]
