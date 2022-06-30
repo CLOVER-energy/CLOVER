@@ -267,6 +267,8 @@ def _simulation_environmental_appraisal(  # pylint: disable=too-many-locals
 # Voltage:
 #   The voltage rate of the location being considered.
 VOLTAGE: int = 220
+#w to kw conversion
+kw_conversion: int=1000
 
 # move to finance
 def _get_grid_pricing_tier(
@@ -294,7 +296,7 @@ def _get_grid_pricing_tier(
 
     if grid.upper_bound_type == GridType.CURRENT_DRAW:  # DIESEL GENERATOR
         for tier in sorted(grid.tiers):
-            if np.max(monthly_grid_energy) / VOLTAGE <= tier.upper_bound_consumption:
+            if ((np.max(monthly_grid_energy))*kw_conversion) / VOLTAGE <= tier.upper_bound_consumption:
                 return tier
         logger.warning(
             "Maximum grid tier value %s for %s exceeded. Using max tier %s.",
@@ -312,7 +314,7 @@ def _get_grid_pricing_tier(
                 return tier
         logger.warning(
             "Maximum grid tier value %s for %s exceeded. Using max tier %s.",
-            np.max(monthly_grid_energy) / VOLTAGE,
+            np.sum(monthly_grid_energy),
             grid.name,
             str(sorted(grid.tiers)[-1]),
         )
@@ -473,7 +475,6 @@ def _simulation_financial_appraisal(  # pylint: disable=too-many-locals
         grid_energy = simulation_results[
             f"{grid_name.capitalize()} {ColumnHeader.GRID_ENERGY.value}"
         ]
-
         # Determine monthly costs for the specific grid.
         for month_number, start_day in enumerate(MONTH_START_DAY[:-1]):
             monthly_grid_energy = grid_energy[
