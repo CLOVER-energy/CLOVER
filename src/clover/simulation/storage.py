@@ -660,17 +660,19 @@ def get_electric_battery_storage_profile(  # pylint: disable=too-many-locals, to
 
         renewables_energy_used_directly = pd.DataFrame(
             ((renewables_energy[0] > 0) * (remaining_profile > 0))  # type: ignore [call-overload]
-            * pd.concat([renewables_energy[0], remaining_profile], axis=1).min(axis=1)  # type: ignore [call-overload]
+            * pd.concat(  # type: ignore [call-overload]
+                [renewables_energy[0], remaining_profile], axis=1  # type: ignore [call-overload]
+            ).min(axis=1)
         )
 
         logger.debug(
             "Grid energy: %s kWh",
             f"{round(float(np.sum(grid_energy)), 2)}",  # type: ignore [arg-type]
         )
-        logger.debug(
-            "Renewables direct: %s kWh",
-            f"{round(float(np.sum(renewables_energy_used_directly)), 2)}",  # type: ignore [arg-type]
+        renewables_direct_rounded: float = round(
+            float(np.sum(renewables_energy_used_directly)), 2  # type: ignore [arg-type]
         )
+        logger.debug("Renewables direct: %s kWh", renewables_direct_rounded)
 
     battery_storage_profile.columns = pd.Index([ColumnHeader.STORAGE_PROFILE.value])
     grid_energy.columns = pd.Index([ColumnHeader.GRID_ENERGY.value])
