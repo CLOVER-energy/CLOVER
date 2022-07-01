@@ -869,21 +869,9 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
             (365, 24),
         )
 
-        max_heatmap: float = np.max(
-            np.max(
-                array
-                for array in [
-                    grid_energy,
-                    storage_energy,
-                    renewable_energy,
-                    diesel_energy,
-                ]
-            )
-        )
-
         fig, ([ax1, ax2], [ax3, ax4]) = plt.subplots(2, 2)  # ,sharex=True, sharey=True)
         sns.heatmap(
-            renewable_energy, vmin=0.0, vmax=max_heatmap, cmap="Reds", cbar=True, ax=ax1
+            renewable_energy, vmin=0.0, vmax=4.0, cmap="Reds", cbar=True, ax=ax1
         )
         ax1.set(
             xticks=range(0, 25, 6),
@@ -895,7 +883,7 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
             title="Renewables",
         )
         sns.heatmap(
-            storage_energy, vmin=0.0, vmax=max_heatmap, cmap="Greens", cbar=True, ax=ax2
+            storage_energy, vmin=0.0, vmax=4.0, cmap="Greens", cbar=True, ax=ax2
         )
         ax2.set(
             xticks=range(0, 25, 6),
@@ -906,9 +894,7 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
             ylabel="Day of year",
             title="Storage",
         )
-        sns.heatmap(
-            grid_energy, vmin=0.0, vmax=max_heatmap, cmap="Blues", cbar=True, ax=ax3
-        )
+        sns.heatmap(grid_energy, vmin=0.0, vmax=4.0, cmap="Blues", cbar=True, ax=ax3)
         ax3.set(
             xticks=range(0, 25, 6),
             xticklabels=range(0, 25, 6),
@@ -918,9 +904,7 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
             ylabel="Day of year",
             title="Grid",
         )
-        sns.heatmap(
-            diesel_energy, vmin=0.0, vmax=max_heatmap, cmap="Greys", cbar=True, ax=ax4
-        )
+        sns.heatmap(diesel_energy, vmin=0.0, vmax=4.0, cmap="Greys", cbar=True, ax=ax4)
         ax4.set(
             xticks=range(0, 25, 6),
             xticklabels=range(0, 25, 6),
