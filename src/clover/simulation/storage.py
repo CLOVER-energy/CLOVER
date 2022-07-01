@@ -613,6 +613,7 @@ def get_electric_battery_storage_profile(  # pylint: disable=too-many-locals, to
     # Check for self-generation prioritisation
     if scenario.prioritise_self_generation:
         # Take energy from PV first
+        # 'Remaining profile' gives +ve for renewables, negative for load
         remaining_profile = pd.DataFrame(renewables_energy.values - load_energy.values)
         renewables_energy_used_directly: pd.DataFrame = pd.DataFrame(
             (remaining_profile > 0) * load_energy.values
@@ -639,7 +640,9 @@ def get_electric_battery_storage_profile(  # pylint: disable=too-many-locals, to
         else:
             grid_energy = pd.DataFrame([0] * (end_hour - start_hour))
         # as needed for load
+        # 'Remaining profile' gives positive for load, zero for met by grid
         remaining_profile = (grid_energy[0] <= 0).mul(load_energy[0])  # type: ignore
+        logger.debug("Remainig profile: %s", round(float(np.sum(remaining_profile)), 2))
 
         # Then take energy from PV if generated
         battery_storage_profile = pd.DataFrame(
@@ -649,6 +652,23 @@ def get_electric_battery_storage_profile(  # pylint: disable=too-many-locals, to
             (battery_storage_profile > 0)  # type: ignore
             .mul(remaining_profile[0])  # type: ignore
             .add((battery_storage_profile < 0).mul(renewables_energy))  # type: ignore
+        )
+
+        logger.debug(
+            "Grid energy: %s",
+            f"{round(float(np.sum(grid_energy)), 2)}",
+        )
+        logger.debug(
+            "Renewables direct: %s",
+            f"{round(float(np.sum(renewables_energy_used_directly)), 2)}",
+        )
+        logger.debug(
+            "Storage profile: %s",
+            f"{round(float(np.sum(battery_storage_profile)), 2)}",
+        )
+        logger.debug(
+            "Renewables gross: %s",
+            f"{round(float(np.sum(renewables_energy)), 2)}",
         )
 
     battery_storage_profile.columns = pd.Index([ColumnHeader.STORAGE_PROFILE.value])
