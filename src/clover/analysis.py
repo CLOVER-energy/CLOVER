@@ -926,16 +926,16 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
             title="Storage",
         )
         # for grid_energy in grid_energies:
-        sns.heatmap(grid_energy, vmin=0.0, vmax=4.0, cmap="Blues", cbar=True, ax=ax3)
-        ax3.set(
-            xticks=range(0, 25, 6),
-            xticklabels=range(0, 25, 6),
-            yticks=range(0, 365, 60),
-            yticklabels=range(0, 365, 60),
-            xlabel="Hour of day",
-            ylabel="Day of year",
-            title="Grid",
-        )
+        # sns.heatmap(grid_energy, vmin=0.0, vmax=4.0, cmap="Blues", cbar=True, ax=ax3)
+        # ax3.set(
+        #     xticks=range(0, 25, 6),
+        #     xticklabels=range(0, 25, 6),
+        #     yticks=range(0, 365, 60),
+        #     yticklabels=range(0, 365, 60),
+        #     xlabel="Hour of day",
+        #     ylabel="Day of year",
+        #     title="Grid",
+        # )
         sns.heatmap(diesel_energy, vmin=0.0, vmax=4.0, cmap="Greys", cbar=True, ax=ax4)
         ax4.set(
             xticks=range(0, 25, 6),

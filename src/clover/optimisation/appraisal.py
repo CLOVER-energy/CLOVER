@@ -325,10 +325,6 @@ def _get_grid_pricing_tier(
         ", ".join({e.value for e in GridType})  # This will print all the allowed values
     )
 
-
-# do i need to return something here or can I simply keep it at the ifs
-
-
 def _simulation_financial_appraisal(  # pylint: disable=too-many-locals
     buffer_tank_addition: int,
     clean_water_tank_addition: int,
@@ -472,32 +468,35 @@ def _simulation_financial_appraisal(  # pylint: disable=too-many-locals
 
     # Iterate over the grids
     for grid_name in scenario.grid_types:  # ATTRIBUTE ERROR I KNOW
-        grid_energy = simulation_results[
-            f"{grid_name.capitalize()} {ColumnHeader.GRID_ENERGY.value}"
-        ]
-        # Determine monthly costs for the specific grid.
-        for month_number, start_day in enumerate(MONTH_START_DAY[:-1]):
-            monthly_grid_energy = grid_energy[
-                start_day * 24 : MONTH_START_DAY[month_number + 1] * 24
+        if scenario.grid == True:
+            grid_energy = simulation_results[
+                f"{grid_name.capitalize()} {ColumnHeader.GRID_ENERGY.value}"
             ]
-            grid = [grid for grid in grids if grid.name == grid_name][0]
-            tier = _get_grid_pricing_tier(grid, logger, monthly_grid_energy)
-            logger.info(
-                "Grid tier upperbound for grid %s for month %s determined: %s",
-                grid_name,
-                month_number + 1,
-                str(tier.upper_bound_consumption),
-            )
+            # Determine monthly costs for the specific grid.
+            for month_number, start_day in enumerate(MONTH_START_DAY[:-1]):
+                monthly_grid_energy = grid_energy[
+                    start_day * 24 : MONTH_START_DAY[month_number + 1] * 24
+                ]
+                grid = [grid for grid in grids if grid.name == grid_name][0]
+                tier = _get_grid_pricing_tier(grid, logger, monthly_grid_energy)
+                logger.info(
+                    "Grid tier upperbound for grid %s for month %s determined: %s",
+                    grid_name,
+                    month_number + 1,
+                    str(tier.upper_bound_consumption),
+                )
 
-            # Compute the subscription cost
-            grid_costs += finance.grid_expenditure(
-                finance_inputs,
-                monthly_grid_energy,
-                logger,
-                tier,
-                start_year=system_details.start_year,
-                end_year=system_details.end_year,
-            )
+                # Compute the subscription cost
+                grid_costs += finance.grid_expenditure(
+                    finance_inputs,
+                    monthly_grid_energy,
+                    logger,
+                    tier,
+                    start_year=system_details.start_year,
+                    end_year=system_details.end_year,
+                )
+        else:
+            grid_costs=0
 
     # add the subscription costs
     kerosene_costs = finance.expenditure(
