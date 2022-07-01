@@ -812,7 +812,7 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
     }
 
     # Generate the grid-availability profiles if relevant.
-    if any(scenario.grid for scenario in scenarios):
+    if any(scenario.grid for scenario in scenarios): #FIXME
         logger.info("Generating grid-availability profiles.")
         try:
             grid.get_lifetime_grid_status(
