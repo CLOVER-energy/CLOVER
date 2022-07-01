@@ -37,6 +37,9 @@ from .__utils__ import (
     DesalinationScenario,
     DieselMode,
     EXCHANGER,
+    Grid,
+    GridTier,
+    GridType,
     HotWaterScenario,
     HTFMode,
     InputFileError,
@@ -72,7 +75,6 @@ __all__ = (
     "parse_input_files",
     "parse_scenario_inputs",
 )
-
 
 # Battery:
 #   Keyword used for parsing battery-related information.
@@ -178,6 +180,10 @@ GENERATION_INPUTS_FILE: str = os.path.join("generation", "generation_inputs.yaml
 GHG_INPUTS_FILE: str = os.path.join("impact", "ghg_inputs.yaml")
 
 # Grid inputs file:
+# The relative path to the grid inputs file.
+GRID_INPUTS_FILE: str = os.path.join("generation", "grid_inputs.yaml")
+
+# Grid inputs file:
 #   The relative path to the grid-inputs file.
 GRID_TIMES_FILE: str = os.path.join("generation", "grid_times.csv")
 
@@ -266,6 +272,13 @@ WATER_SOURCE_AVAILABILTY_TEMPLATE_FILENAME: str = "{water_source}_times.csv"
 # Water source inputs file:
 #   The relative path to the water-source inputs file.
 WATER_SOURCE_INPUTS_FILE: str = os.path.join("generation", "water_source_inputs.yaml")
+
+# Grid inputs:
+# Keyword used for parsing diesel-generator information.
+GRID: str = "grid"
+GRID_EMISSIONS: str = "emissions"
+GRID_TIER: str = "tier"
+GRID_TYPE: str = "type"
 
 
 def _parse_battery_inputs(
@@ -791,7 +804,6 @@ def _parse_diesel_inputs(  # pylint: disable=too-many-statements
         diesel_water_heater = None
         diesel_water_heater_costs = None
         diesel_water_heater_emissions = None
-
     return (
         diesel_costs,
         diesel_emissions,
@@ -2177,6 +2189,56 @@ def _parse_transmission_inputs(
     )
 
 
+def _parse_grid_inputs(
+    inputs_directory_relative_path: str,
+    logger: Logger,
+) -> List[Grid]:
+    """
+    Parses the grid inputs file.
+
+    Inputs:
+        - inputs_directory_relative_path:
+            The relative path to the inputs folder directory.
+        - logger:
+            The :class:`logging.Logger` to use for the run.
+        - scenarios:
+            The list of scenarios.
+
+    Outputs:
+        - The grid types (CURRENT.DRAW AND DAILY POWER).
+        - The grid tiers for each types.
+        - The grid costs for each tiers.
+        - The overall grid emissions (similar for all types and tiers).
+
+    """
+    # Parse the grid input information.
+    grid_inputs_filepath = os.path.join(
+        inputs_directory_relative_path, GRID_INPUTS_FILE
+    )
+    grid_inputs = read_yaml(
+        grid_inputs_filepath,
+        logger,
+    )
+    if not isinstance(grid_inputs, dict):
+        raise InputFileError("Grid inputs", "Grid input file is not of type `list`.")
+    logger.info("Grid inputs successfully parsed.")
+
+    grids: List[Grid] = []
+    for entry in grid_inputs["grids"]:
+        tiers: List[GridTier] = []
+        for tier_entry in entry["tiers"]:
+            tiers.append(
+                GridTier(
+                    tier_entry["upper_bound"]["consumption"],
+                    tier_entry["costs"],
+                )
+            )
+        type = GridType(entry["type"])
+        grids.append(Grid(entry["name"], type, tiers))
+    # grid_emissions = grid_inputs["emissions"]  # the same for all the grids (EDL,Diesel)
+    return grids  # grid_emissions can be added here
+
+
 def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
     debug: bool,
     electric_load_profile: Optional[str],
@@ -2198,6 +2260,7 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
     Optional[pd.DataFrame],
     Dict[WaterSource, pd.DataFrame],
     Dict[str, str],
+    List[Dict[str, Any]],  # grid output
 ]:
     """
     Parse the various input files and return content-related information.
@@ -2233,6 +2296,7 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
             - a `dict` mapping the :class:`WaterSource`s available to provide
               conventional water to the system and the seasonal availabilities,
             - a `dict` containing information about the input files used.
+            - a 'list' of 'dict' containing information about the grid input file.
 
     """
 
@@ -2253,6 +2317,13 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
         logger,
     )
     logger.info("Conversion inputs successfully parsed.")
+
+    # Parse the grids inputs file.
+    grids = _parse_grid_inputs(
+        inputs_directory_relative_path,
+        logger,
+    )
+    logger.info("Grid inputs successfully parsed.")
 
     # Parse the device inputs file.
     device_inputs_filepath, devices = _parse_device_inputs(
@@ -2845,6 +2916,7 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
         ", ".join([f"{key}: {value}" for key, value in transmitters.items()]),
     )
     logger.debug("Input file information: %s", input_file_info)
+    logger.debug("Grid information: %s", ", ".join(str(grid) for grid in grids))
 
     return (
         converters,
@@ -2854,6 +2926,7 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
         generation_inputs,
         ghg_inputs,
         grid_times,
+        grids,
         location,
         optimisation_parameters,
         optimisations,

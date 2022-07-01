@@ -365,7 +365,7 @@ def cw_tank_iteration_step(  # pylint: disable=too-many-locals
 
 def get_electric_battery_storage_profile(  # pylint: disable=too-many-locals, too-many-statements
     *,
-    grid_profile: pd.Series,
+    grid_profiles: Optional[Dict[str, pd.DataFrame]],
     kerosene_usage: pd.Series,
     location: Location,
     logger: Logger,
@@ -380,7 +380,7 @@ def get_electric_battery_storage_profile(  # pylint: disable=too-many-locals, to
     start_hour: int = 0,
 ) -> Tuple[
     pd.DataFrame,
-    pd.DataFrame,
+    Dict[str, pd.DataFrame],
     pd.Series,
     pd.DataFrame,
     pd.DataFrame,
@@ -391,8 +391,8 @@ def get_electric_battery_storage_profile(  # pylint: disable=too-many-locals, to
     Gets the storage profile (energy in/out the battery) and other system energies.
 
     Inputs:
-        - grid_profile:
-            The relevant grid profile, based on the scenario, for the simulation.
+        - grid_profiles:
+            The relevant multiple grid profile based on scenario covering different grids.
         - kerosene_usage:
             The kerosene usage.
         - logger:
@@ -421,8 +421,8 @@ def get_electric_battery_storage_profile(  # pylint: disable=too-many-locals, to
     Outputs:
         - battery_storage_profile:
             Amount of energy (kWh) into (+ve) and out of (-ve) the battery.
-        - grid_energy:
-            Amount of energy (kWh) supplied by the grid.
+        - grid_energies:
+            Amount of energy (kWh) supplied by the various grid(s).
         - kerosene_usage:
             Number of kerosene lamps in use (if no power available).
         - load_energy:
@@ -609,7 +609,8 @@ def get_electric_battery_storage_profile(  # pylint: disable=too-many-locals, to
     renewables_energy: pd.DataFrame = pd.DataFrame(
         sum(renewables_energy_map.values())  # type: ignore
     )
-
+    grid_profile: pd.Series
+    grid_energies: Dict[str, pd.DataFrame] = {}
     # Check for self-generation prioritisation
     if scenario.prioritise_self_generation:
         # Take energy from PV first
@@ -621,27 +622,45 @@ def get_electric_battery_storage_profile(  # pylint: disable=too-many-locals, to
 
         # Then take energy from grid if available
         if scenario.grid:
-            grid_energy: pd.DataFrame = pd.DataFrame(
-                ((remaining_profile < 0) * remaining_profile).iloc[:, 0]  # type: ignore
-                * -1.0
-                * grid_profile.values
-            )
+            for grid_type in scenario.grid_types:
+                grid_profile = grid_profiles[
+                    grid_type
+                ]  # {"edl": [0, 1, 2, 3, 4]} <---- [0, 1, 2, 3, 4]
+                grid_energies[
+                    grid_type
+                ] = pd.DataFrame(  # {"edl": [usage, 1, 2, 3, 4, 5]} <--- [0, 1, 2, 3, 4, 5, 6, 7]
+                    ((remaining_profile < 0) * remaining_profile).iloc[:, 0]  # type: ignore
+                    * -1.0
+                    * grid_profile.values
+                )
+
         else:
             grid_energy = pd.DataFrame([0] * (end_hour - start_hour))
+
+        total_grid_energy = sum(
+            grid_energies.values()
+        )  # sum over the grid energies here
+
         battery_storage_profile: pd.DataFrame = pd.DataFrame(
-            remaining_profile.values + grid_energy.values
+            remaining_profile.values + total_grid_energy  #  Now a dictionary
         )
 
     else:
-        # Take energy from grid first if available
         if scenario.grid:
-            grid_energy = pd.DataFrame(grid_profile.mul(load_energy[0]))  # type: ignore
+            for grid_type in scenario.grid_types:
+                grid_profile = grid_profile[grid_type]
+                grid_energies[grid_type] = pd.DataFrame(
+                    grid_profile.mul(load_energy[0])
+                )
+
         else:
             grid_energy = pd.DataFrame([0] * (end_hour - start_hour))
-        # as needed for load
-        remaining_profile = (grid_energy[0] <= 0).mul(load_energy[0])  # type: ignore
 
-        # Then take energy from PV if generated
+        total_grid_energy = sum(
+            grid_energies.values()
+        )  # sum over the grid energies here
+        remaining_profile = (total_grid_energy <= 0).mul(load_energy)  # type ignore
+
         battery_storage_profile = pd.DataFrame(
             renewables_energy[0].values - remaining_profile.values  # type: ignore
         )
@@ -652,8 +671,15 @@ def get_electric_battery_storage_profile(  # pylint: disable=too-many-locals, to
         )
 
     battery_storage_profile.columns = pd.Index([ColumnHeader.STORAGE_PROFILE.value])
-    grid_energy.columns = pd.Index([ColumnHeader.GRID_ENERGY.value])
+
+    for name, grid_energy in grid_energies.items():
+        grid_energy.columns = pd.Index(
+            [f"{name.capitalize()} {ColumnHeader.GRID_ENERGY.value}"]
+        )
     load_energy.columns = pd.Index([ColumnHeader.LOAD_ENERGY.value])
+
+    # renewables_energy.columns = pd.Index(
+    #     [ColumnHeader.TOTAL_GRID_ENERGY.value]
     renewables_energy.columns = pd.Index(
         [ColumnHeader.RENEWABLE_ELECTRICITY_SUPPLIED.value]
     )
@@ -672,7 +698,7 @@ def get_electric_battery_storage_profile(  # pylint: disable=too-many-locals, to
 
     return (
         battery_storage_profile,
-        grid_energy,
+        grid_energies,
         kerosene_usage,
         load_energy,
         renewables_energy,

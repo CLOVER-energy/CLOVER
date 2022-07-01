@@ -18,6 +18,7 @@ issues and increase the ease of code alterations.
 
 """
 
+import collections
 import dataclasses
 import enum
 import logging
@@ -180,7 +181,21 @@ MONTH_MID_DAY: List[int] = [
 
 # Month start day:
 #   The "day" in the year that falls at the start of each month.
-MONTH_START_DAY: List[int] = [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334]
+MONTH_START_DAY: List[int] = [
+    0,
+    31,
+    59,
+    90,
+    120,
+    151,
+    181,
+    212,
+    243,
+    273,
+    304,
+    334,
+    365,
+]
 
 # Name:
 #   Keyword used for parsing converter name information.
@@ -569,6 +584,7 @@ class ColumnHeader(enum.Enum):
     PV_ELECTRICITY_SUPPLIED = "PV energy supplied (kWh)"
     RENEWABLE_CW_USED_DIRECTLY = "Renewable clean water used directly (l)"
     RENEWABLE_ELECTRICITY_SUPPLIED = "Renewables energy supplied (kWh)"
+    TOTAL_GRID_ENERGY = " Total grid energy (kWh)"
     RENEWABLE_ELECTRICITY_USED_DIRECTLY = "Renewables energy used (kWh)"
     STORAGE_PROFILE = "Storage profile (kWh)"
     TOTAL_CW_CONSUMED = "Total clean water consumed (l)"
@@ -597,7 +613,7 @@ def daily_sum_to_monthly_sum(daily_profile: pd.DataFrame) -> pd.DataFrame:
     """
 
     years = int(daily_profile.shape[0] / 365)
-    month_start = pd.DataFrame(MONTH_START_DAY)
+    month_start = pd.DataFrame(MONTH_START_DAY[:-1])
     month_days = pd.DataFrame([])
     for year in range(0, years):
         month_days = month_days.append(month_start + (year * 365))
@@ -928,7 +944,7 @@ class KeyResults:
     cumulative_hw_supplied: Optional[float] = None
     cumulative_pv_generation: Optional[float] = None
     diesel_times: Optional[float] = None
-    grid_daily_hours: Optional[float] = None
+    grid_daily_hours: Optional[Dict[str, float]] = None
     max_buffer_tank_temperature: Optional[float] = None
     max_cw_pvt_output_temperature: Optional[float] = None
     mean_buffer_tank_temperature: Optional[float] = None
@@ -1045,9 +1061,10 @@ class KeyResults:
                 self.diesel_times, 3
             )
         if self.grid_daily_hours is not None:
-            data_dict["Average grid availability / hours/day"] = round(
-                self.grid_daily_hours, 3
-            )
+            for name, hours in self.grid_daily_hours.items():
+                data_dict[
+                    f"Average {name.capitalize()} grid availability / hours/day"
+                ] = round(hours, 3)
         if self.max_buffer_tank_temperature is not None:
             data_dict["Maximum buffer-tank temperature / degC"] = round(
                 self.max_buffer_tank_temperature, 3
@@ -1906,6 +1923,80 @@ class HotWaterScenario:
         )
 
 
+class GridType(enum.Enum):
+    """
+    Specifies the type of grid being considered.
+
+    - Current draw:
+        Denotes that the grid is based on the current draw so Diesel Generator.
+    - Daily power:
+        Denotes that the grid is based on the daily power so EDL.
+
+    """
+
+    CURRENT_DRAW = "current_draw"
+    DAILY_POWER = "daily_power"
+
+
+@dataclasses.dataclass
+class GridTier:
+    """
+    Specifies the grid tier following an upper bound threshold.
+
+    - Upper Bound value:
+        Denotes the value of the upper bound tier.
+    - costs:
+        Denotes the costs associated with every tier.
+
+    """
+
+    upper_bound_consumption: float
+    costs: Dict[str, float]
+
+    def __eq__(self, other: Any) -> bool:
+        """
+        Check whether two tiers are equal.
+
+        Outputs:
+            True if equal, otherwise false.
+
+        """
+
+        return self.upper_bound_consumption == other.upper_bound_consumption
+
+    def __lt__(self, other: Any) -> bool:
+        """
+        Check whether two tiers are equal.
+
+        Outputs:
+            True if equal, otherwise false.
+
+        """
+
+        return self.upper_bound_consumption < other.upper_bound_consumption
+
+
+@dataclasses.dataclass
+class Grid:
+    """
+    Specifies the grid class being run.
+
+    - name:
+        Denotes the name of the grid used.
+    - tiers:
+        Denotes the list of different grid tiers for the different types of grids.
+    - grid emissions:
+        Denotes the general emissions for any type of grid (considering similar emissions for all types.)
+    - Upper Bound type:
+        Denotes the type of the upper bound tier.
+    """
+
+    name: str
+    upper_bound_type: GridType
+    tiers: List[GridTier]
+    # emissions: Dict[str, float]
+
+
 @dataclasses.dataclass
 class Scenario:
     """
@@ -1920,6 +2011,9 @@ class Scenario:
     .. attribute:: desalination_scenario
         The :class:`DesalinationScenario` for the run.
 
+    .. attribute:: grid_types
+        The type of grid being modelled, i.e., whether the grid is full, etc. These options are written in the grid inputs file as headers.
+
     .. attribute:: diesel_scenario
         The diesel scenario being modelled.
 
@@ -1928,10 +2022,6 @@ class Scenario:
 
     .. attribute:: grid
         Whether the grid is being included in the scenario.
-
-    .. attribute:: grid_type
-        The type of grid being modelled, i.e., whether the grid is full, etc. These
-        options are written in the grid inputs file as headers.
 
     .. attribute:: hot_water_scneario
         The :class:`HotWaterScenario` for the run.
@@ -1962,7 +2052,7 @@ class Scenario:
     diesel_scenario: DieselScenario
     distribution_network: DistributionNetwork
     grid: bool
-    grid_type: str
+    grid_types: List[Grid]
     hot_water_scenario: Optional[HotWaterScenario]
     name: str
     resource_types: Set[ResourceType]
@@ -2101,7 +2191,7 @@ class Scenario:
             diesel_scenario,
             distribution_network,
             scenario_inputs["grid"],
-            scenario_inputs["grid_type"],
+            scenario_inputs["grid_types"],
             hot_water_scenario,
             scenario_inputs[NAME],
             resource_types,
@@ -2131,7 +2221,7 @@ class Scenario:
             "diesel_scenario": self.diesel_scenario.to_dict(),
             "distribution_network": str(self.distribution_network.value),
             "grid": self.grid,
-            "grid_type": self.grid_type,
+            "grid_types": self.grid_types,
             "name": self.name,
             "resource_types": [str(e.value) for e in self.resource_types],
             "prioritise_self_generation": self.prioritise_self_generation,

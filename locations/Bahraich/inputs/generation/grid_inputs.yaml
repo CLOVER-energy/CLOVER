@@ -1,0 +1,74 @@
+---
+################################################################################
+# grid_inputs.yaml - Grid parameters.                                          #
+#                                                                              #
+# Author: Paul Harfouche                                                       #
+# Copyright: Phil Sandwell, Ben Winchester & Paul Harfouche 2022               #
+# Date created: 01/06/2022                                                     #
+# License: Open source                                                         #
+################################################################################
+
+exchange_rate: 25000 #[LBP/$]
+
+grids: # Diesel Generator (split into 5A and 10A subcriptions)
+  - name: dieselg
+    type: current_draw
+    tiers:
+      - upper_bound:
+          consumption: 5 # DIESEL GENERATOR GRID
+        costs:
+          cost: 10457 # [LBP/kWh]
+          extension cost: 0 # [$/km]
+          infrastructure_cost: 0 # [$]
+          subscription_cost: 50000 #[LBP/month] #division by exchange rate in main files
+      - upper_bound:
+          consumption: 10 # [A] # DIESEL GENERATOR GRID
+        costs:
+          cost: 10457 # [LBP/kWh]
+          extension cost: 0 # [$/km]
+          infrastructure_cost: 0 # [$]
+          subscription_cost: 150000 #[LBP/month] #division by exchange rate in main files
+  - name: edl
+    type: daily_power
+    tiers:
+      - upper_bound:
+          consumption: 100 # [kWh/monthly]
+        costs:
+          cost: 35  # [LBP/kWh]
+          extension cost: 0 # [$/km]
+          infrastructure_cost: 0 # [$]
+          subscription_cost: 0
+      - upper_bound:
+          consumption: 200 # [kWh/monthly]
+        costs:
+          cost: 55  # [LBP/kWh]
+          extension cost: 0 # [$/km]
+          infrastructure_cost: 0 # [$]
+          subscription_cost: 0
+      - upper_bound:
+          consumption: 300 # [kWh/monthly]
+        costs:
+          cost: 80  # [LBP/kWh]
+          extension cost: 0 # [$/km]
+          infrastructure_cost: 0 # [$]
+          subscription_cost: 0
+      - upper_bound:
+          consumption: 400 # [kWh/monthly]
+        costs:
+          cost: 120  # [LBP/kWh]
+          extension cost: 0 # [$/km]
+          infrastructure_cost: 0 # [$]
+          subscription_cost: 0
+      - upper_bound:
+          consumption: 1000 # [kWh/monthly]
+        costs:
+          cost: 200  # [LBP/kWh]
+          extension cost: 0 # [$/km]
+          infrastructure_cost: 0 # [$]
+          subscription_cost: 0
+emissions:
+  ghgs: 2560 # [kgCO2/kWp]
+  ghg_decrease: 0 # [% p.a.]
+  installation_ghgs: 50 # [kgCO2/kW]
+  installation_ghg_decrease: 0 # [% p.a.]
+  o&m: 5 #[kgCO2/kWp p.a.]
