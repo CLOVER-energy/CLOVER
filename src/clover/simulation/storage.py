@@ -641,33 +641,35 @@ def get_electric_battery_storage_profile(  # pylint: disable=too-many-locals, to
         # as needed for load
         remaining_profile = (grid_energy[0] <= 0).mul(load_energy[0])  # type: ignore
         logger.debug(
-            "Remainig profile: %s kWh", round(float(np.sum(remaining_profile)), 2)
+            "Remainig profile: %s kWh",
+            round(float(np.sum(remaining_profile)), 2),  # type: ignore [arg-type]
         )
 
         # Then take energy from PV if generated
         logger.debug(
             "Renewables profile: %s kWh",
-            f"{round(float(np.sum(renewables_energy)), 2)}",
+            f"{round(float(np.sum(renewables_energy)), 2)}",  # type: ignore [arg-type]
         )
         battery_storage_profile = pd.DataFrame(
             renewables_energy[0].values - remaining_profile.values  # type: ignore
         )
         logger.debug(
             "Storage profile: %s kWh",
-            f"{round(float(np.sum(battery_storage_profile)), 2)}",
+            f"{round(float(np.sum(battery_storage_profile)), 2)}",  # type: ignore [arg-type]
         )
 
-        renewables_energy_used_directly = pd.DataFrame((
-            (renewables_energy[0] > 0) * (remaining_profile > 0)
-        ) * pd.concat([renewables_energy[0], remaining_profile], axis=1).min(axis=1))
+        renewables_energy_used_directly = pd.DataFrame(
+            ((renewables_energy[0] > 0) * (remaining_profile > 0))  # type: ignore [call-overload]
+            * pd.concat([renewables_energy[0], remaining_profile], axis=1).min(axis=1)  # type: ignore [call-overload]
+        )
 
         logger.debug(
             "Grid energy: %s kWh",
-            f"{round(float(np.sum(grid_energy)), 2)}",
+            f"{round(float(np.sum(grid_energy)), 2)}",  # type: ignore [arg-type]
         )
         logger.debug(
             "Renewables direct: %s kWh",
-            f"{round(float(np.sum(renewables_energy_used_directly)), 2)}",
+            f"{round(float(np.sum(renewables_energy_used_directly)), 2)}",  # type: ignore [arg-type]
         )
 
     battery_storage_profile.columns = pd.Index([ColumnHeader.STORAGE_PROFILE.value])
