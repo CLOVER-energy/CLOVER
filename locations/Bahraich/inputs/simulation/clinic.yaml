@@ -42,7 +42,3 @@ clinics:
     changes: 40 # number of volume changes per day - door opening
     volume_cold_store: 162.69 # [m^3]
     energy_new_air: 2.2 # [kJ/°C] energy per cubic meter per degree Celsius
-    
-    
-    
-    
