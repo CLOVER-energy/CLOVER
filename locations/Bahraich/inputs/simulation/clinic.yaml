@@ -16,8 +16,8 @@ clinics:
     u_value_windows_doors: 5 # [W/m^2*K]
     u_value_floor: 1 # [W/m^2*K]
     u_value_roof: 0.7 # [W/m^2*K]
-    temperature_inside: 23 # [°C]
-    temperature_outside: 28 #[°C]
+    inside_ideal_temperature: 23 # [°C]
+    outside_temperature: 28 #[°C]
     
     # Internal heat Load - People
     people_1: 1.5 #number of nurses present per day
@@ -42,3 +42,6 @@ clinics:
     changes: 40 # number of volume changes per day - door opening
     volume_cold_store: 162.69 # [m^3]
     energy_new_air: 2.2 # [kJ/°C] energy per cubic meter per degree Celsius
+    
+    # estimating the clinic to run 6 hours per day (opening times from 12 to 17)
+    run_hours = 6 [h]
