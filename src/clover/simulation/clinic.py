@@ -262,4 +262,3 @@ def refrigeration_cooling_capacity_sizing(
     * run_hours
     
  )
-
