@@ -6,6 +6,43 @@
 
 clinics:
   # A dash here means one entry, i.e., clinic.
-  - name: uganda_1
-    area: 500 # [m^2]
-    heat_loss_coeffieint: 20 # [W/m^2*K]
+  - name: kabakedi
+    # Transmission Load
+    floor_area: 56.49 # [m^2]
+    roof_area: 56.49 # [m^2]
+    surface_area_walls: 86.8 # [m^2]
+    surface_area_doors_windows: 15.13 # [m^2] - assumption of 2 the open windows covered with glass 
+    u_value_walls: 2.5 # [W/m^2*K] Thermal transmittance of wall 
+    u_value_windows_doors: 5 # [W/m^2*K]
+    u_value_floor: 1 # [W/m^2*K]
+    u_value_roof: 0.7 # [W/m^2*K]
+    temperature_inside: 23 # [°C]
+    temperature_outside: 28 #[°C]
+    
+    # Internal heat Load - People
+    people_1: 1.5 #number of nurses present per day
+    time_people_1: 6.5 # hours per day
+    people_2: 2.5 #average number of patients and accompaniers
+    time_people_2: 0.22 #average time in hours clients spend inside
+    heat_loss_people_1: 82 # [W] From Drug Store ASHRAE value
+    heat_loss_people_2: 67.4 # [W] From Apartments ASHRAE value
+    
+    # Internal heat load - Lighting
+    lamps_internal: 9 # number of lamps within the clinic
+    lamps_external: 4 # number of lamps outside the clinic
+    time_lamps_internal: 3 # hours per day
+    time_lamps_internal: 12 # hours per day (night)
+    wattage_lamps: 7 # [W] LED Bulb light A-8901
+    
+    # Equipment heat load
+    fridge_wattage: 120 # [W]
+    time_fridge: 24 # [h/day]
+    
+    # Infiltration loads - Assumption of closed windows and doors when people are not entering the facility
+    changes: 50 # number of volume changes per day - door opening
+    volume_cold_store: 162.69 # [m^3]
+    energy_new_air: 2.2 # [kJ/°C] energy per cubic meter per degree Celsius
+    
+    
+    
+    
