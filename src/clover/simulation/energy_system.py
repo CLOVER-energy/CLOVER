@@ -60,7 +60,7 @@ from .diesel import (
     get_diesel_energy_and_times,
     get_diesel_fuel_usage,
 )
-from .solar import calculate_pvt_output
+from .solar import calculate_solar_thermal_output
 from .storage import (
     battery_iteration_step,
     cw_tank_iteration_step,
@@ -501,7 +501,7 @@ def _calculate_renewable_cw_profiles(  # pylint: disable=too-many-locals, too-ma
             clean_water_pvt_pump_times,
             buffer_tank_temperature,
             buffer_tank_volume_supplied,
-        ) = calculate_pvt_output(
+        ) = calculate_solar_thermal_output(
             disable_tqdm,
             end_hour,
             irradiance_data[start_hour:end_hour],
@@ -851,7 +851,7 @@ def _calculate_renewable_hw_profiles(  # pylint: disable=too-many-locals, too-ma
         hot_water_pvt_pump_times,
         hot_water_tank_temperature,
         hot_water_tank_volume_supplied,
-    ) = calculate_pvt_output(
+    ) = calculate_solar_thermal_output(
         disable_tqdm,
         end_hour,
         irradiance_data[start_hour:end_hour],
@@ -1211,12 +1211,14 @@ def _update_battery_health(
 
 def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
     clean_water_pvt_size: int,
+    # clean_water_solar_thermal_size: int,
     conventional_cw_source_profiles: Optional[Dict[WaterSource, pd.DataFrame]],
     converters: Union[Dict[str, Converter], List[Converter]],
     disable_tqdm: bool,
     electric_storage_size: float,
     grid_profile: Optional[pd.DataFrame],
     hot_water_pvt_size: int,
+    # hot_water_solar_thermal_size: int,
     irradiance_data: pd.Series,
     kerosene_usage: pd.DataFrame,
     location: Location,
@@ -1241,6 +1243,9 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
     Inputs:
         - clean_water_pvt_size:
             Amount of PV-T in PV-T units associated with the clean-water system.
+        - clean_water_solar_thermal_size:
+            Amount of solar-thermal in solar-thermla units associated with the
+            clean-water system.
         - conventional_cw_source_profiles:
             A mapping between :class:`WaterSource` instances and the associated water
             that can be drawn from the source throughout the duration of the simulation.
@@ -1254,6 +1259,9 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
             The grid-availability profile.
         - hot_water_pvt_size:
             Amount of PV-T in PV-T units associated with the hot-water system.
+        - hot_water_solar_thermal_size:
+            Amount of solar-thermal in solar-thermla units associated with the
+            hot-water system.
         - irradiance_data:
             The total solar irradiance data.
         - kerosene_usage:
@@ -2065,7 +2073,7 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
             raise InternalError("Minigrid has no PV-T panel present.")
         clean_water_pvt_electric_power_per_kwh: pd.DataFrame = (
             clean_water_pvt_electric_power_per_unit  # type: ignore
-            / minigrid.pvt_panel.pv_unit
+            / minigrid.pvt_panel.pv_layer.pv_unit
         )
 
         # Find the new clean-water blackout times, according to when there is unmet
@@ -2179,7 +2187,7 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
         # Convert the PV-T units to kWh.
         hot_water_pvt_electric_power_per_kwh: pd.DataFrame = pd.DataFrame(
             hot_water_pvt_electric_power_per_unit  # type: ignore
-            / minigrid.pvt_panel.pv_unit
+            / minigrid.pvt_panel.pv_layer.pv_unit
         )
         hot_water_power_consumed.columns = pd.Index(
             [ColumnHeader.POWER_CONSUMED_BY_HOT_WATER.value]

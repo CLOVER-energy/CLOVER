@@ -109,6 +109,9 @@ class ImpactingComponent(enum.Enum):
     - PV_T:
         Denotes the PV-T component of the system.
 
+    - SOLAR_THERMAL:
+        Denotes the solar-thermal component of the system.
+
     - STORAGE:
         Denotes the storage component of the system.
 
@@ -137,6 +140,7 @@ class ImpactingComponent(enum.Enum):
     MISC = "misc"
     PV = "pv"
     PV_T = "pv_t"
+    SOLAR_THERMAL = "solar_thermal"
     STORAGE = "storage"
     TRANSMITTER = "transmitter"
 

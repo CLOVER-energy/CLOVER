@@ -42,7 +42,7 @@ from ..__utils__ import (
 )
 
 from ..conversion.conversion import Converter
-from ..generation.solar import HybridPVTPanel, PVPanel
+from ..generation.solar import HybridPVTPanel, PVPanel, SolarThermalPanel
 from .diesel import DieselGenerator, DieselWaterHeater
 from .exchanger import Exchanger
 from .storage_utils import Battery, CleanWaterTank, HotWaterTank
@@ -134,6 +134,9 @@ class Minigrid:
     .. attribute:: pvt_panel
         The PV-T panel being considered, if applicable.
 
+    .. attribute:: solar_thermal_panel
+        The solar-thermal panel being considered, if applicable.
+
     .. attribute:: water_pump
         The water pump associated with the energy system, as a :class:`Transmitter`
         instance.
@@ -156,6 +159,7 @@ class Minigrid:
     hot_water_tank: Optional[HotWaterTank]
     pv_panel: PVPanel
     pvt_panel: Optional[HybridPVTPanel]
+    solar_thermal_panel: Optional[SolarThermalPanel]
     water_pump: Optional[Transmitter]
 
     @classmethod
@@ -167,6 +171,7 @@ class Minigrid:
         minigrid_inputs: Dict[str, Any],
         pv_panel: PVPanel,
         pvt_panel: Optional[HybridPVTPanel],
+        solar_thermal_panel: Optional[SolarThermalPanel],
         battery_inputs: Optional[List[Dict[str, Any]]] = None,
         exchanger_inputs: Optional[List[Dict[str, Any]]] = None,
         tank_inputs: Optional[List[Dict[str, Any]]] = None,
@@ -191,6 +196,9 @@ class Minigrid:
                 The :class:`PVPanel` instance to use for the run.
             - pvt_panel:
                 The :class:`HybridPVTPanel` instance to use for the run, if appropriate.
+            - solar_thermal_panel:
+                The :class:`SolarThermalPanel` instance to use for the run, if
+                appropriate.
             - battery_inputs:
                 The battery input information.
             - exchanger_inputs:
@@ -315,6 +323,7 @@ class Minigrid:
             hot_water_tank,  # type: ignore
             pv_panel,
             pvt_panel,
+            solar_thermal_panel,
             water_pump,
         )
 

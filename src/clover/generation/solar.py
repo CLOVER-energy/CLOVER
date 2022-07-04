@@ -18,12 +18,14 @@ for use locally within CLOVER.
 
 """
 
+from abc import ABC, abstractmethod
 import enum
 
+from dataclasses import dataclass
 from logging import Logger
 from typing import Any, Dict, List, Optional, Tuple
 
-import pandas as pd  # pylint: disable=import-error
+import pandas as pd
 
 from sklearn.linear_model._coordinate_descent import Lasso
 
@@ -34,15 +36,17 @@ from ..__utils__ import (
     NAME,
     ProgrammerJudgementFault,
     RegressorType,
+    SolarPanelType,
 )
 from .__utils__ import BaseRenewablesNinjaThread, SolarDataType, total_profile_output
 
 __all__ = (
     "HybridPVTPanel",
+    "PerformanceCurve",
     "PVPanel",
     "SolarDataThread",
     "SolarDataType",
-    "SolarPanelType",
+    "SolarThermalPanel",
     "solar_degradation",
     "SOLAR_LOGGER_NAME",
     "total_solar_output",
@@ -73,22 +77,77 @@ REFERENCE_SOLAR_IRRADIANCE: float = 1000  # [W/m^2]
 SOLAR_LOGGER_NAME = "solar_generation"
 
 
-class SolarPanelType(enum.Enum):
+@dataclass
+class PerformanceCurve:
     """
-    Specifies the type of solar panel being considered.
+    Represents a performance curve for a solar-thermal collector.
 
-    - PV:
-        Denotes that a PV panel is being considered.
-    - PV_T:
-        Denotes that a PV-T panel is being considered.
+    Solar-thermal collectors can be characterised by a performance curve,
+
+        eta = eta_0 + c_1 * (T_c - T_a) / G + c_2 * (T_c - T_a)^2 / G,
+
+    where `eta_0`, `c_1` and `c_2` give the zeroth-, first- and second-order
+    coefficients which characterise the performance of the collector, `T_c` is the
+    average temperature of the collector and `T_a` the ambient temperature, both
+    measured in either degrees Kelvin or Celcius, but the same unit for each, and `G` is
+    the solar irradiance, measured in Watts per meter squared.
+
+    The attributes, `eta_0`, `c_1` and `c_2` are inherent properties of the collector
+    and are contained within this class.
+
+    .. attribute:: zeroth_order_cefficient
+        The zeroth-order term for the performance curve.
+
+    .. attribute:: first_order_cefficient
+        The zeroth-order term for the performance curve.
+
+    .. attribute:: second_order_cefficient
+        The zeroth-order term for the performance curve.
 
     """
 
-    PV = "pv"
-    PV_T = "pv_t"
+    zeroth_order_coefficient: float
+    first_order_coefficient: float
+    second_order_coefficient: float
+
+    @property
+    def eta_0(self) -> float:
+        """
+        Wrapper around the zeroth-order coefficient.
+
+        Outputs:
+            - The zeroth-order coefficient.
+
+        """
+
+        return self.zeroth_order_coefficient
+
+    @property
+    def c_1(self) -> float:
+        """
+        Wrapper around the first-order coefficient.
+
+        Outputs:
+            - The first-order coefficient.
+
+        """
+
+        return self.first_order_coefficient
+
+    @property
+    def c_2(self) -> float:
+        """
+        Wrapper around the second-order coefficient.
+
+        Outputs:
+            - The second-order coefficient.
+
+        """
+
+        return self.second_order_coefficient
 
 
-class SolarPanel:  # pylint: disable=too-few-public-methods
+class SolarPanel(ABC):  # pylint: disable=too-few-public-methods
     """
     Represents a solar panel being considered.
 
@@ -103,6 +162,106 @@ class SolarPanel:  # pylint: disable=too-few-public-methods
 
     .. attribite:: panel_type
         The type of panel being considered.
+
+    .. attribute:: tilt
+        The angle between the panel and the horizontal.
+
+    """
+
+    panel_type: SolarPanelType
+
+    def __init__(
+        self,
+        azimuthal_orientation: float,
+        lifetime: int,
+        name: str,
+        tilt: float,
+    ) -> None:
+        """
+        Instantiate a :class:`SolarPanel` instance.
+
+        Inputs:
+            - azimuthal_orientation:
+                The azimuthal orientation of the :class:`SolarPanel`.
+            - lifetime:
+                The lifetime of the :class:`SolarPanel` in years.
+            - name:
+                The name to assign to the :class:`SolarPanel` in order to uniquely
+                identify it.
+            - tilt:
+                The tilt of the panel in degrees above the horizontal.
+
+        """
+
+        self.azimuthal_orientation: float = azimuthal_orientation
+        self.lifetime: int = lifetime
+        self.name: str = name
+        self.tilt: float = tilt
+
+    def __init_subclass__(cls, panel_type: SolarPanelType) -> None:
+        """
+        The init_subclass hook, run on instantiation of the :class:`SolarPanel`.
+
+        Inputs:
+            - panel_type:
+                The type of panel being considered.
+
+        Outputs:
+            An instantiated :class:`SolarPanel` instance.
+
+        """
+
+        cls.panel_type = panel_type
+
+        return super().__init_subclass__()
+
+    @abstractmethod
+    def calculate_performance(
+        self,
+        ambient_temperature: float,
+        input_temperature: float,
+        logger: Logger,
+        mass_flow_rate: float,
+        solar_irradiance: float,
+        wind_speed: float,
+    ) -> Tuple[Optional[float], Optional[float]]:
+        """
+        Abstract method for calculation of collector performance.
+
+        Inputs:
+            - ambient_temperature:
+                The ambient temperature, measured in degrees Celcius.
+            - input_temperature:
+                The input temperature of the HTF entering the collector, measured in
+                in degrees Celcius.
+            - logger:
+                The :class:`logging.Logger` to use for the run.
+            - mass_flow_rate:
+                The mass-flow rate of HTF passing through the collector, measured in
+                kilograms per second.
+            - solar_irradiance:
+                The solar irradiance incident on the surface of the collector, measured
+                in Watts per meter squared.
+            - wind_speed:
+                The wind speed at the collector, measured in meters per second.
+
+        Outputs:
+            - fractional_electric_performance:
+                The fractional electric performance defined between 0 (panel is not
+                operating, i.e., no output) and 1 (panel is operating at full test
+                potential of reference efficiency under reference irradiance).
+            - output_temperature:
+                The temperature of the HTF leaving the collector, measured in degrees
+                Celcius.
+
+        """
+
+
+class PVPanel(
+    SolarPanel, panel_type=SolarPanelType.PV
+):  # pylint: disable=too-few-public-methods
+    """
+    Represents a photovoltaic panel.
 
     .. attribute:: pv_unit
         The unit of PV power being considered, defaulting to 1 kWp.
@@ -121,19 +280,14 @@ class SolarPanel:  # pylint: disable=too-few-public-methods
         The thermal coefficient of performance of the PV layer of the panel, measured in
         kelvin^(-1).
 
-    .. attribute:: tilt
-        The angle between the panel and the horizontal.
-
     """
-
-    panel_type: SolarPanelType
 
     def __init__(
         self,
         azimuthal_orientation: float,
         lifetime: int,
         name: str,
-        pv_unit: float,
+        pv_unit: Optional[float],
         pv_unit_overrided: bool,
         reference_efficiency: Optional[float],
         reference_temperature: Optional[float],
@@ -141,7 +295,7 @@ class SolarPanel:  # pylint: disable=too-few-public-methods
         tilt: float,
     ) -> None:
         """
-        Instantiate a :class:`SolarPanel` instance.
+        Instantiate a :class:`PVPanel` instance.
 
         Inputs:
             - azimuthal_orientation:
@@ -170,41 +324,18 @@ class SolarPanel:  # pylint: disable=too-few-public-methods
 
         """
 
-        self.azimuthal_orientation: float = azimuthal_orientation
-        self.lifetime: int = lifetime
-        self.name: str = name
-        self.pv_unit: float = pv_unit
+        super().__init__(
+            azimuthal_orientation,
+            lifetime,
+            name,
+            tilt,
+        )
+
+        self.pv_unit: float = pv_unit if pv_unit is not None else DEFAULT_PV_UNIT
         self.pv_unit_overrided: bool = pv_unit_overrided
         self.reference_efficiency: Optional[float] = reference_efficiency
         self.reference_temperature: Optional[float] = reference_temperature
         self.thermal_coefficient: Optional[float] = thermal_coefficient
-        self.tilt: float = tilt
-
-    def __init_subclass__(cls, panel_type: SolarPanelType) -> None:
-        """
-        The init_subclass hook, run on instantiation of the :class:`SolarPanel`.
-
-        Inputs:
-            - panel_type:
-                The type of panel being considered.
-
-        Outputs:
-            An instantiated :class:`SolarPanel` instance.
-
-        """
-
-        cls.panel_type = panel_type
-
-        return super().__init_subclass__()
-
-
-class PVPanel(
-    SolarPanel, panel_type=SolarPanelType.PV
-):  # pylint: disable=too-few-public-methods
-    """
-    Represents a photovoltaic panel.
-
-    """
 
     @classmethod
     def from_dict(cls, logger: Logger, solar_inputs: Dict[str, Any]) -> Any:
@@ -253,6 +384,29 @@ class PVPanel(
             solar_inputs["tilt"],
         )
 
+    def calculate_performance(
+        self,
+        ambient_temperature: float,
+        input_temperature: float,
+        logger: Logger,
+        mass_flow_rate: float,
+        solar_irradiance: float,
+        wind_speed: float,
+    ) -> Tuple[Optional[float], Optional[float]]:
+        """
+        Not yet developed.
+
+        Once developed, this function will calculate the performance of the PV panel.
+        This issue is being tracked: https://github.com/CLOVER-energy/CLOVER/issues/93
+
+        """
+
+        raise ProgrammerJudgementFault(
+            ":class:`PVPanel`::calculate_performance",
+            "The calculation of the performance of electrical PV collectors is not yet "
+            "supported.",
+        )
+
 
 class HybridPVTPanel(SolarPanel, panel_type=SolarPanelType.PV_T):
     """
@@ -269,6 +423,9 @@ class HybridPVTPanel(SolarPanel, panel_type=SolarPanelType.PV_T):
     .. attribute:: min_mass_flow_rate
         The minimum mass-flow rate of heat-transfer fluid through the PV-T collector,
         measured in litres per hour.
+
+    .. attribute:: pv_layer
+        The PV layer associated with the collector.
 
     .. attribute:: thermal_models
         The model(s) of the thermal performance of the collector, stored as a mapping
@@ -324,6 +481,18 @@ class HybridPVTPanel(SolarPanel, panel_type=SolarPanelType.PV_T):
                 + f"whilst processing PV-T panel {solar_inputs[NAME]}.",
             ) from None
 
+        if not isinstance(pv_layer, PVPanel):
+            logger.error(
+                "%sThe PV layer defined, %s, is not a PVPanel instance.%s",
+                BColours.fail,
+                solar_inputs["pv"],
+                BColours.endc,
+            )
+            raise InputFileError(
+                "solar generation inputs",
+                f"PV-layer data for layer {solar_inputs['pv']} is not a valid PV panel.",
+            ) from None
+
         if pv_layer.reference_efficiency is None:
             logger.error("PV reference efficiency must be defined if using PV-T.")
             raise InputFileError(
@@ -350,21 +519,21 @@ class HybridPVTPanel(SolarPanel, panel_type=SolarPanelType.PV_T):
                 "PV unit size must be specified when considering PV-T panels.",
             )
 
+        # Override any PV-layer params as appropriate
+        pv_layer.pv_unit = solar_inputs["pv_unit"]
+        pv_layer.pv_unit_overrided = True
+
         super().__init__(
             solar_inputs["azimuthal_orientation"],
             solar_inputs["lifetime"],
             solar_inputs[NAME],
-            solar_inputs["pv_unit"],
-            True,
-            pv_layer.reference_efficiency,
-            pv_layer.reference_temperature,
-            pv_layer.thermal_coefficient,
             solar_inputs["tilt"],
         )
 
         self.electric_models = electric_models
         self.max_mass_flow_rate = solar_inputs["max_mass_flow_rate"]
         self.min_mass_flow_rate = solar_inputs["min_mass_flow_rate"]
+        self.pv_layer = pv_layer
         self.thermal_models = thermal_models
         self.thermal_unit = solar_inputs.get("thermal_unit", None)
 
@@ -385,10 +554,10 @@ class HybridPVTPanel(SolarPanel, panel_type=SolarPanelType.PV_T):
             + f", max_mass_flow_rate={self.max_mass_flow_rate}"
             + f", min_mass_flow_rate={self.min_mass_flow_rate}"
             + f", name={self.name}"
-            + f", pv_unit={self.pv_unit}"
-            + f", reference_efficiency={self.reference_efficiency}"
-            + f", reference_temperature={self.reference_temperature}"
-            + f", thermal_coefficient={self.thermal_coefficient}"
+            + f", pv_unit={self.pv_layer.pv_unit}"
+            + f", reference_efficiency={self.pv_layer.reference_efficiency}"
+            + f", reference_temperature={self.pv_layer.reference_temperature}"
+            + f", thermal_coefficient={self.pv_layer.thermal_coefficient}"
             + f", thermal_models defined={self.thermal_models is not None}"
             + f", thermal_unit={self.thermal_unit}"
             + f", tilt={self.tilt}"
@@ -403,7 +572,7 @@ class HybridPVTPanel(SolarPanel, panel_type=SolarPanelType.PV_T):
         mass_flow_rate: float,
         solar_irradiance: float,
         wind_speed: float,
-    ) -> Tuple[float, float]:
+    ) -> Tuple[Optional[float], Optional[float]]:
         """
         Calculates the performance characteristics of the hybrid PV-T collector.
 
@@ -450,7 +619,7 @@ class HybridPVTPanel(SolarPanel, panel_type=SolarPanelType.PV_T):
                 "could be due to the files being incorrectly parsed, mishandled, or "
                 "dropped inadvertently due to internal code flow.",
             )
-        if self.reference_efficiency is None:
+        if self.pv_layer.reference_efficiency is None:
             logger.error(
                 "%sThe PV-T output function was called without a reference efficiency "
                 "being defined for the PV-T panel being considered.%s",
@@ -503,7 +672,7 @@ class HybridPVTPanel(SolarPanel, panel_type=SolarPanelType.PV_T):
 
         # Convert the efficiency to a fractional performance.
         fractional_electric_performance: float = (
-            electric_efficiency / self.reference_efficiency
+            electric_efficiency / self.pv_layer.reference_efficiency
         ) * (solar_irradiance / REFERENCE_SOLAR_IRRADIANCE)
 
         try:
@@ -516,6 +685,221 @@ class HybridPVTPanel(SolarPanel, panel_type=SolarPanelType.PV_T):
             raise
 
         return fractional_electric_performance, output_temperature
+
+
+class SolarThermalPanel(SolarPanel, panel_type=SolarPanelType.SOLAR_THERMAL):
+    """
+    Represents a solar-thermal panel.
+
+    .. attribute:: area
+        The area of the collector in meters squared, used to calculate the input power
+        to the collector.
+
+    .. attribute:: max_mass_flow_rate
+        The maximum mass-flow rate of heat-transfer fluid through the PV-T collector,
+        measured in litres per hour.
+
+    .. attribute:: min_mass_flow_rate
+        The minimum mass-flow rate of heat-transfer fluid through the PV-T collector,
+        measured in litres per hour.
+
+    .. attribute:: nominal_mass_flow_rate
+        The nominal mass-flow rate of heat-transfer fluid through the PV-T collector,
+        measured in litres per hour.
+
+    .. attribute:: performance_curve
+        The performance curve for the collector.
+
+    """
+
+    def __init__(
+        self,
+        performance_curve: PerformanceCurve,
+        solar_inputs: Dict[str, Any],
+    ) -> None:
+        """
+        Instantiate a :class:`SolarThermalPanel` instance based on the input data.
+
+        Inputs:
+            - performance_curve:
+                The :class:`PeformanceCurve` associated with this panel.
+            - solar_inputs:
+                The solar input data specific to this panel.
+
+        """
+
+        super().__init__(
+            solar_inputs["azimuthal_orientation"],
+            solar_inputs["lifetime"],
+            solar_inputs[NAME],
+            solar_inputs["tilt"],
+        )
+
+        self.area = solar_inputs["area"]
+        self.max_mass_flow_rate = solar_inputs["max_mass_flow_rate"]
+        self.min_mass_flow_rate = solar_inputs["min_mass_flow_rate"]
+        self.nominal_mass_flow_rate = solar_inputs["nominal_mass_flow_rate"]
+        self.performance_curve = performance_curve
+
+    def __repr__(self) -> str:
+        """
+        Return a nice-looking representation of the panel.
+
+        Outputs:
+            - A nice-looking representation of the panel.
+
+        """
+
+        return (
+            "SolarThermalPanel("
+            + f"area={self.area}"
+            + f", azimuthal_orientation={self.azimuthal_orientation}"
+            + f", lifetime={self.lifetime}"
+            + f", max_mass_flow_rate={self.max_mass_flow_rate}"
+            + f", min_mass_flow_rate={self.min_mass_flow_rate}"
+            + f", name={self.name}"
+            + f", nominal_mass_flow_rate={self.nominal_mass_flow_rate}"
+            + f", performance_curve={str(self.performance_curve)}"
+            + f", tilt={self.tilt}"
+            + ")"
+        )
+
+    def calculate_performance(
+        self,
+        ambient_temperature: float,
+        input_temperature: float,
+        logger: Logger,
+        mass_flow_rate: float,
+        solar_irradiance: float,
+        wind_speed: float,
+    ) -> Tuple[Optional[float], Optional[float]]:
+        """
+        Calculates the performance characteristics of the solar-thermal collector.
+
+        Each collector has a characteristic performance curve, which is related to the
+        efficiency of the collector by a simple equation:
+
+            eta = eta_0 + c_1 * (T_c - T_a) / G + c_2 * (T_c - T_a)^2 / G,
+
+        where `eta_0`, `c_1` and `c_2` give the zeroth-, first- and second-order
+        coefficients which characterise the performance of the collector, `T_c` is the
+        average temperature of the collector and `T_a` the ambient temperature, both
+        measured in either degrees Kelvin or Celcius, but the same unit for each, and
+        `G` is the solar irradiance, measured in Watts per meter squared. The attributes
+        `eta_0`, `c_1` and `c_2` are inherent properties of the collector and are
+        contained within the `performance_curve` attribute.
+
+        This equation can be rearranged by expressing the efficiency as the energy
+        gained by the heat-transfer fluid within the collector as a fraction of the
+        total energy incident on the collector:
+
+            0 = (c_2 / 4G) * T_out^2
+              + (1 / G) * [
+                  (m_htf * c_htf / A)
+                  + c_1 / 2
+                  + (c_2 / 2) * (T_in - 2T_a)
+                ] * T_out
+              + (1 / G) * [
+                  (c_2 / 4) * (T_in^2 + 4T_a^2)
+                  + (
+                      (c_1 / 2)
+                      - c_2 * T_a
+                      - (m_htf * c_htf / A)
+                    ) * T_in
+                  - c_1 * T_a
+                ]
+              - eta_0
+
+        This equation can then be solved quadratically to determine the output
+        temperature of HTF leaving the collector.
+
+        Inputs:
+            - ambient_temperature:
+                The ambient temperature, measured in degrees Celcius.
+            - input_temperature:
+                The input temperature of the HTF entering the PV-T collector, measured
+                in degrees Celcius.
+            - logger:
+                The :class:`logging.Logger` to use for the run.
+            - mass_flow_rate:
+                The mass-flow rate of HTF passing through the collector, measured in
+                kilograms per second.
+            - solar_irradiance:
+                The solar irradiance incident on the surface of the collector, measured
+                in Watts per meter squared.
+            - wind_speed:
+                The wind speed passing over the collector, measured in meters per
+                second. This parameter is not used, but is defined in the base function.
+
+        Outputs:
+            - fractional_electric_performance:
+                The fractional electric performance defined between 0 (panel is not
+                operating, i.e., no output) and 1 (panel is operating at full test
+                potential of reference efficiency under reference irradiance).
+            - output_temperature:
+                The temperature of the HTF leaving the collector, measured in degrees
+                Celcius.
+
+        """
+
+        # * Compute the various terms of the equation
+
+        # * Use numpy or Pandas to solve the quadratic to determine the performance of
+        # * the collector.
+
+        output_temperature: float = 0.0
+
+        return None, output_temperature
+
+    @classmethod
+    def from_dict(
+        cls,
+        logger: Logger,
+        solar_inputs: Dict[str, Any],
+    ) -> Any:
+        """
+        Instantiate a :class:`SolarThermalPanel` instance based on the input data.
+
+        Inputs:
+            - logger:
+                The :class:`logging.Logger` to use for the run.
+            - solar_inputs:
+                The solar input data specific to this panel.
+
+        """
+
+        logger.info("Attempting to create SolarThermalPanel from solar input data.")
+
+        try:
+            performance_curve_inputs = solar_inputs["performance_curve"]
+        except KeyError:
+            logger.error(
+                "%sNo performance curve defined for solar-thermal panel '%s'.%s",
+                BColours.fail,
+                solar_inputs["name"],
+                BColours.endc,
+            )
+            raise InputFileError(
+                "solar generation inputs",
+                f"Solar thermal panel {solar_inputs['name']} is missing a performance curve.",
+            ) from None
+
+        try:
+            performance_curve = PerformanceCurve(
+                performance_curve_inputs["zeroth_order"],
+                performance_curve_inputs["first_order"],
+                performance_curve_inputs["second_order"],
+            )
+        except KeyError as e:
+            logger.error(
+                "%sMissing performance curve input(s): %s%s",
+                BColours.fail,
+                str(e),
+                BColours.endc,
+            )
+            raise
+
+        return cls(performance_curve, solar_inputs)
 
 
 def solar_degradation(lifetime: int, num_years: int) -> pd.DataFrame:
