@@ -458,8 +458,7 @@ def _simulation_iteration(  # pylint: disable=too-many-locals, too-many-statemen
     # Check if largest system is sufficient
     logger.info("Checking whether the largest system is sufficient.")
     tqdm.write(
-        f"Determining largest suitable system {'.' * 27}    ",
-        end="\n",
+        f"Determining largest suitable system {'.' * 27}    ", end="\n",
     )
 
     # Determine the maximum sizes of each converter defined.
@@ -664,8 +663,7 @@ def _simulation_iteration(  # pylint: disable=too-many-locals, too-many-statemen
 
     # Output that the search for the largest suitable system was successful.
     tqdm.write(
-        f"Determining largest suitable system {'.' * 27}    {DONE}",
-        end="\n",
+        f"Determining largest suitable system {'.' * 27}    {DONE}", end="\n",
     )
     if largest_system_appraisal.criteria is None:
         logger.error(
@@ -743,12 +741,7 @@ def _simulation_iteration(  # pylint: disable=too-many-locals, too-many-statemen
         reverse=True,
     )
     simulation_cw_tanks: List[int] = sorted(
-        range(
-            cw_tanks.min,
-            cw_tanks_max + cw_tanks.step,
-            cw_tanks.step,
-        ),
-        reverse=True,
+        range(cw_tanks.min, cw_tanks_max + cw_tanks.step, cw_tanks.step,), reverse=True,
     )
     simulation_hw_pvt_system_size: List[int] = sorted(
         range(
@@ -759,12 +752,7 @@ def _simulation_iteration(  # pylint: disable=too-many-locals, too-many-statemen
         reverse=True,
     )
     simulation_hw_tanks: List[int] = sorted(
-        range(
-            hw_tanks.min,
-            hw_tanks_max + hw_tanks.step,
-            hw_tanks.step,
-        ),
-        reverse=True,
+        range(hw_tanks.min, hw_tanks_max + hw_tanks.step, hw_tanks.step,), reverse=True,
     )
     simulation_pv_sizes: List[int] = sorted(
         range(int(pv_sizes.min), int(pv_size_max + pv_sizes.step), int(pv_sizes.step)),
@@ -783,11 +771,7 @@ def _simulation_iteration(  # pylint: disable=too-many-locals, too-many-statemen
     # Add the iterable clean-water tank sizes if appropriate.
     if len(simulation_cw_tanks) > 1:
         parameter_space.append(
-            (
-                ImpactingComponent.CLEAN_WATER_TANK,
-                "simulation",
-                simulation_cw_tanks,
-            )
+            (ImpactingComponent.CLEAN_WATER_TANK, "simulation", simulation_cw_tanks,)
         )
     else:
         component_sizes[ImpactingComponent.CLEAN_WATER_TANK] = simulation_cw_tanks[0]
@@ -1379,11 +1363,7 @@ def multiple_optimisation_step(  # pylint: disable=too-many-locals, too-many-sta
                 input_cw_pvt_system_size.min,
                 input_cw_pvt_system_size.step,
             ),
-            TankSize(
-                input_cw_tanks.max,
-                input_cw_tanks.min,
-                input_cw_tanks.step,
-            ),
+            TankSize(input_cw_tanks.max, input_cw_tanks.min, input_cw_tanks.step,),
             converters,
             disable_tqdm,
             finance_inputs,
@@ -1394,11 +1374,7 @@ def multiple_optimisation_step(  # pylint: disable=too-many-locals, too-many-sta
                 input_hw_pvt_system_size.min,
                 input_hw_pvt_system_size.step,
             ),
-            TankSize(
-                input_hw_tanks.max,
-                input_hw_tanks.min,
-                input_hw_tanks.step,
-            ),
+            TankSize(input_hw_tanks.max, input_hw_tanks.min, input_hw_tanks.step,),
             irradiance_data,
             kerosene_usage,
             location,

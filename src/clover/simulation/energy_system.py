@@ -122,9 +122,7 @@ def _calculate_backup_diesel_generator_usage(
             "the diesel mode `backup` being selected.",
         )
     diesel_energy, diesel_times = get_diesel_energy_and_times(
-        unmet_energy,
-        blackout_times,
-        float(scenario.diesel_scenario.backup_threshold),
+        unmet_energy, blackout_times, float(scenario.diesel_scenario.backup_threshold),
     )
     diesel_capacity: float = float(math.ceil(np.max(diesel_energy, axis=0)))
     diesel_fuel_usage = pd.DataFrame(
@@ -437,11 +435,9 @@ def _calculate_renewable_cw_profiles(  # pylint: disable=too-many-locals, too-ma
                 "supported.",
             )
 
-        thermal_desalination_plant_input_flow_rate = (
-            thermal_desalination_plant.input_resource_consumption[
-                thermal_desalination_plant_input_type
-            ]
-        )
+        thermal_desalination_plant_input_flow_rate = thermal_desalination_plant.input_resource_consumption[
+            thermal_desalination_plant_input_type
+        ]
 
         if (
             sum(
@@ -561,21 +557,21 @@ def _calculate_renewable_cw_profiles(  # pylint: disable=too-many-locals, too-ma
         )
 
         buffer_tank_temperature = buffer_tank_temperature.reset_index(drop=True)
-        clean_water_pvt_collector_input_temperature = (
-            clean_water_pvt_collector_input_temperature.reset_index(drop=True)
+        clean_water_pvt_collector_input_temperature = clean_water_pvt_collector_input_temperature.reset_index(
+            drop=True
         )
-        clean_water_pvt_collector_output_temperature = (
-            clean_water_pvt_collector_output_temperature.reset_index(drop=True)
+        clean_water_pvt_collector_output_temperature = clean_water_pvt_collector_output_temperature.reset_index(
+            drop=True
         )
-        clean_water_pvt_electric_power_per_unit = (
-            clean_water_pvt_electric_power_per_unit.reset_index(drop=True)
+        clean_water_pvt_electric_power_per_unit = clean_water_pvt_electric_power_per_unit.reset_index(
+            drop=True
         )
         renewable_thermal_cw_produced = renewable_thermal_cw_produced.reset_index(
             drop=True
         )
         buffer_tank_volume_supplied = buffer_tank_volume_supplied.reset_index(drop=True)
-        thermal_desalination_electric_power_consumed = (
-            thermal_desalination_electric_power_consumed.reset_index(drop=True)
+        thermal_desalination_electric_power_consumed = thermal_desalination_electric_power_consumed.reset_index(
+            drop=True
         )
         logger.debug("Clean-water PV-T performance profiles determined.")
 
@@ -977,14 +973,14 @@ def _calculate_renewable_hw_profiles(  # pylint: disable=too-many-locals, too-ma
     )
 
     hot_water_power_consumed = hot_water_power_consumed.reset_index(drop=True)
-    hot_water_pvt_collector_input_temperature = (
-        hot_water_pvt_collector_input_temperature.reset_index(drop=True)
+    hot_water_pvt_collector_input_temperature = hot_water_pvt_collector_input_temperature.reset_index(
+        drop=True
     )
-    hot_water_pvt_collector_output_temperature = (
-        hot_water_pvt_collector_output_temperature.reset_index(drop=True)
+    hot_water_pvt_collector_output_temperature = hot_water_pvt_collector_output_temperature.reset_index(
+        drop=True
     )
-    hot_water_pvt_electric_power_per_unit = (
-        hot_water_pvt_electric_power_per_unit.reset_index(drop=True)
+    hot_water_pvt_electric_power_per_unit = hot_water_pvt_electric_power_per_unit.reset_index(
+        drop=True
     )
     hot_water_tank_temperature = hot_water_tank_temperature.reset_index(drop=True)
     hot_water_tank_volume_supplied = hot_water_tank_volume_supplied.reset_index(
@@ -1489,8 +1485,7 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
             renewable_cw_used_directly,
             tank_storage_profile,
         ) = get_water_storage_profile(
-            processed_total_cw_load,
-            renewable_thermal_cw_produced,
+            processed_total_cw_load, renewable_thermal_cw_produced,
         )
         number_of_buffer_tanks: int = 1
     else:
@@ -2001,10 +1996,8 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
     clean_water_power_consumed = clean_water_power_consumed.mul(  # type: ignore
         1 - blackout_times
     )
-    thermal_desalination_electric_power_consumed = (
-        thermal_desalination_electric_power_consumed.mul(  # type: ignore
-            1 - blackout_times
-        )
+    thermal_desalination_electric_power_consumed = thermal_desalination_electric_power_consumed.mul(  # type: ignore
+        1 - blackout_times
     )
 
     # Find how many kerosene lamps are in use
@@ -2467,10 +2460,7 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
     if brine_produced is not None:
         system_performance_outputs_list.append(brine_produced)
 
-    system_performance_outputs = pd.concat(
-        system_performance_outputs_list,
-        axis=1,
-    )
+    system_performance_outputs = pd.concat(system_performance_outputs_list, axis=1,)
 
     return time_delta, system_performance_outputs, system_details
 

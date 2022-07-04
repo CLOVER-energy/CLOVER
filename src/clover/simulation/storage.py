@@ -260,8 +260,7 @@ def cw_tank_iteration_step(  # pylint: disable=too-many-locals
         ):
             # Compute the maximum amount of water that can be desalinated.
             maximum_desalinated_water = min(
-                excess_energy / energy_per_desalinated_litre,
-                maximum_water_throughput,
+                excess_energy / energy_per_desalinated_litre, maximum_water_throughput,
             )
 
             # Add this to the tank and fulfil the demand if relevant.
@@ -351,12 +350,10 @@ def cw_tank_iteration_step(  # pylint: disable=too-many-locals
             conventional_water_supplied[time_index] = 0
 
         current_hourly_cw_tank_storage = min(
-            current_hourly_cw_tank_storage,
-            maximum_cw_tank_storage,
+            current_hourly_cw_tank_storage, maximum_cw_tank_storage,
         )
         current_hourly_cw_tank_storage = max(
-            current_hourly_cw_tank_storage,
-            minimum_cw_tank_storage,
+            current_hourly_cw_tank_storage, minimum_cw_tank_storage,
         )
 
         hourly_cw_tank_storage[time_index] = current_hourly_cw_tank_storage
@@ -693,8 +690,7 @@ def get_electric_battery_storage_profile(  # pylint: disable=too-many-locals, to
 
 
 def get_water_storage_profile(
-    processed_total_cw_load: pd.DataFrame,
-    renewable_cw_produced: pd.DataFrame,
+    processed_total_cw_load: pd.DataFrame, renewable_cw_produced: pd.DataFrame,
 ) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """
     Gets the storage profile for the clean-water system.

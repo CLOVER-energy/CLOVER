@@ -189,10 +189,7 @@ def _parse_args(args: List[Any]) -> argparse.Namespace:
 
 
 def create_new_location(
-    from_existing: Optional[str],
-    location: str,
-    logger: logging.Logger,
-    update: bool,
+    from_existing: Optional[str], location: str, logger: logging.Logger, update: bool,
 ) -> None:
     """
     Creates a new location based on the specified inputs.
@@ -257,8 +254,7 @@ def create_new_location(
     # Generate files as per the hard-coded directory structure.
     if update:
         logger.info(
-            "Updating location folder with new and updated files %s.",
-            location,
+            "Updating location folder with new and updated files %s.", location,
         )
     else:
         logger.info("Creating new-location folder for location %s.", location)
@@ -274,8 +270,7 @@ def create_new_location(
         # Determine the existing location to copy files from and report an error if it
         # does not exist.
         existing_location_directory = new_location_data[0][DIRECTORY].format(
-            location=from_existing,
-            locations_folder_name=LOCATIONS_FOLDER_NAME,
+            location=from_existing, locations_folder_name=LOCATIONS_FOLDER_NAME,
         )
         if not os.path.isdir(existing_location_directory):
             logger.error(
@@ -294,10 +289,7 @@ def create_new_location(
             for filename in filenames:
                 try:
                     shutil.copy2(
-                        os.path.join(
-                            directory,
-                            filename,
-                        ),
+                        os.path.join(directory, filename,),
                         os.path.join(
                             new_location_directory,
                             os.path.relpath(directory, existing_location_directory),

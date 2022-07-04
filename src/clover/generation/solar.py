@@ -171,11 +171,7 @@ class SolarPanel(ABC):  # pylint: disable=too-few-public-methods
     panel_type: SolarPanelType
 
     def __init__(
-        self,
-        azimuthal_orientation: float,
-        lifetime: int,
-        name: str,
-        tilt: float,
+        self, azimuthal_orientation: float, lifetime: int, name: str, tilt: float,
     ) -> None:
         """
         Instantiate a :class:`SolarPanel` instance.
@@ -325,10 +321,7 @@ class PVPanel(
         """
 
         super().__init__(
-            azimuthal_orientation,
-            lifetime,
-            name,
-            tilt,
+            azimuthal_orientation, lifetime, name, tilt,
         )
 
         self.pv_unit: float = pv_unit if pv_unit is not None else DEFAULT_PV_UNIT
@@ -713,9 +706,7 @@ class SolarThermalPanel(SolarPanel, panel_type=SolarPanelType.SOLAR_THERMAL):
     """
 
     def __init__(
-        self,
-        performance_curve: PerformanceCurve,
-        solar_inputs: Dict[str, Any],
+        self, performance_curve: PerformanceCurve, solar_inputs: Dict[str, Any],
     ) -> None:
         """
         Instantiate a :class:`SolarThermalPanel` instance based on the input data.
@@ -852,11 +843,7 @@ class SolarThermalPanel(SolarPanel, panel_type=SolarPanelType.SOLAR_THERMAL):
         return None, output_temperature
 
     @classmethod
-    def from_dict(
-        cls,
-        logger: Logger,
-        solar_inputs: Dict[str, Any],
-    ) -> Any:
+    def from_dict(cls, logger: Logger, solar_inputs: Dict[str, Any],) -> Any:
         """
         Instantiate a :class:`SolarThermalPanel` instance based on the input data.
 

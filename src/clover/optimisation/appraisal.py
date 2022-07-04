@@ -55,8 +55,7 @@ __all__ = ("appraise_system",)
 
 
 def _calculate_power_consumed_fraction(
-    simulation_results: pd.DataFrame,
-    total_electricity_consumed: float,
+    simulation_results: pd.DataFrame, total_electricity_consumed: float,
 ) -> Dict[ResourceType, float]:
     """
     Calculates the electric power consumed by each resource type.
@@ -1260,8 +1259,11 @@ def _simulation_technical_appraisal(  # pylint: disable=too-many-locals
         energy_consumed += (
             scenario.reference_thermal_efficiency * heating_consumed  # type: ignore
         )
-        total_energy_consumed += scenario.reference_thermal_efficiency * (  # type: ignore
-            total_heating_consumed
+        total_energy_consumed += (
+            scenario.reference_thermal_efficiency
+            * (  # type: ignore
+                total_heating_consumed
+            )
         )
 
         # Calculate discounted heating information.
