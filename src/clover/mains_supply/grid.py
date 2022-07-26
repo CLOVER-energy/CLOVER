@@ -112,7 +112,10 @@ def load_grid_profile(
                 ),
                 "r",
             ) as f:
-                grid_profile = pd.read_csv(f, index_col=0,)
+                grid_profile = pd.read_csv(
+                    f,
+                    index_col=0,
+                )
         except FileNotFoundError as e:
             logger.error(
                 "%sGrid profile file for profile '%s' could not be found: %s%s",

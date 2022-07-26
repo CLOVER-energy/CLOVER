@@ -133,7 +133,9 @@ def parse_args(args: List[Any]) -> argparse.Namespace:
     )
 
     # Clean-water-specific arguments.
-    clean_water_parser = parser.add_argument_group("clean-water-only arguments",)
+    clean_water_parser = parser.add_argument_group(
+        "clean-water-only arguments",
+    )
     clean_water_parser.add_argument(
         "--num-clean-water-tanks",
         "-ncwt",
@@ -157,7 +159,9 @@ def parse_args(args: List[Any]) -> argparse.Namespace:
     )
 
     # Hot-water-specific arguments.
-    hot_water_parser = parser.add_argument_group("hot-water-only arguments",)
+    hot_water_parser = parser.add_argument_group(
+        "hot-water-only arguments",
+    )
     hot_water_parser.add_argument(
         "--num-hot-water-tanks",
         "-nhwt",
@@ -181,7 +185,9 @@ def parse_args(args: List[Any]) -> argparse.Namespace:
     )
 
     # Simulation-specific arguments.
-    simulation_parser = parser.add_argument_group("simulation-only arguments",)
+    simulation_parser = parser.add_argument_group(
+        "simulation-only arguments",
+    )
     simulation_parser.add_argument(
         "--simulation",
         "-sim",
@@ -208,7 +214,9 @@ def parse_args(args: List[Any]) -> argparse.Namespace:
     )
 
     # Optimisation arguments
-    optimisation_parser = parser.add_argument_group("optimisation-only arguments",)
+    optimisation_parser = parser.add_argument_group(
+        "optimisation-only arguments",
+    )
     optimisation_parser.add_argument(
         "--optimisation",
         "-opt",
