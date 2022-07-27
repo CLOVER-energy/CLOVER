@@ -1260,9 +1260,9 @@ def _simulation_technical_appraisal(  # pylint: disable=too-many-locals
         energy_consumed += (
             scenario.reference_thermal_efficiency * heating_consumed  # type: ignore
         )
-        total_energy_consumed += scenario.reference_thermal_efficiency * (
+        total_energy_consumed += scenario.reference_thermal_efficiency * (  # type: ignore
             total_heating_consumed
-        )  # type: ignore
+        )
 
         # Calculate discounted heating information.
         total_heating_consumed_daily: pd.Series = hourly_profile_to_daily_sum(

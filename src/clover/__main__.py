@@ -862,8 +862,8 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
 
     if any(scenario.desalination_scenario is not None for scenario in scenarios):
         logger.info("Generating and saving total weather output file.")
-        total_weather_data = (
-            weather.total_weather_output(  # pylint: disable=unused-variable
+        total_weather_data = (  # pylint: disable=unused-variable
+            weather.total_weather_output(
                 os.path.join(auto_generated_files_directory, "weather"),
                 parsed_args.regenerate,
                 generation_inputs["start_year"],

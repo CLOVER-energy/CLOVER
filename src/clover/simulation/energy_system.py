@@ -2001,8 +2001,10 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
     clean_water_power_consumed = clean_water_power_consumed.mul(  # type: ignore
         1 - blackout_times
     )
-    thermal_desalination_electric_power_consumed = thermal_desalination_electric_power_consumed.mul(  # type: ignore
-        1 - blackout_times
+    thermal_desalination_electric_power_consumed = (
+        thermal_desalination_electric_power_consumed.mul(  # type: ignore
+            1 - blackout_times
+        )
     )
 
     # Find how many kerosene lamps are in use
