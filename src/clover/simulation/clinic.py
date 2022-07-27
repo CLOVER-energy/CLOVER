@@ -13,12 +13,14 @@
 
 """
 clinic.py - Works out the health centre load.
- 
+
 """
 
 import dataclasses
 
 from typing import List
+
+import yaml
 
 import numpy as np
 import pandas as pd
@@ -29,9 +31,14 @@ import matplotlib.pyplot as plt
 class Clinic:
     """
     Represents a clinic.
+
+    .. attribute:: name
+        The name of the clinic.
+
     """
 
     name: str
+
     # Transmission Load
     floor_area: float  # Tells python that a clinic has an area, and it's a number
     roof_area: float
@@ -75,8 +82,6 @@ class Clinic:
 
     run_hours: float
 
-
-import yaml
 
 MY_PATH = "C:/Users/Ilaria/CLOVER/locations/Bahraich/inputs/simulation/"
 with open(MY_PATH + "clinic.yaml") as f:
