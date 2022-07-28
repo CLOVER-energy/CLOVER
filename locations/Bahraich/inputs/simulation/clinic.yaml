@@ -15,16 +15,14 @@ clinics:
     floor_area: 56.49 # [m^2]
     roof_area: 56.49 # [m^2]
     surface_area_walls: 86.8 # [m^2]
-
-    # Assumption of 2 the open windows covered with glass
-    surface_area_doors_windows: 15.13 # [m^2]
-    u_value_walls: 2.5 # [W/m^2*K] Thermal transmittance of wall
+    surface_area_doors_windows: 15.13 # [m^2] - assumption of 2 the open windows covered with glass 
+    u_value_walls: 2.5 # [W/m^2*K] Thermal transmittance of wall 
     u_value_windows_doors: 5 # [W/m^2*K]
     u_value_floor: 1 # [W/m^2*K]
     u_value_roof: 0.7 # [W/m^2*K]
-    inside_ideal_temperature: 23 # [ °C]
-    # outside_temperature: 28 #[ °C]
-
+    inside_ideal_temperature: 23 # [degC]
+    # outside_temperature: 28 #[degC]
+    
     # Internal heat Load - People
     people_1: 1.5 #number of nurses present per day
     people_2: 2.5 #average number of patients and accompaniers
@@ -33,8 +31,8 @@ clinics:
     start_time_people_1: [11, 11, 11, 11, 11, 11, 0]
     end_time_people_1: [18, 18, 18, 18, 18, 18, 0]
     start_time_people_2: [12, 12, 12, 12, 12, 12, 0]
-    end_time_people_2: [17, 17, 17, 17, 17, 17, 0]
-
+    end_time_people_2: [17, 17, 17, 17, 17, 17, 0] 
+    
     # Internal heat load - Lighting
     lamps_internal: 9 # number of lamps within the clinic
     lamps_external: 4 # number of lamps outside the clinic
@@ -42,18 +40,17 @@ clinics:
     end_time_lamps: [18, 18, 18, 18, 18, 18, 0]
     time_lamps_external: 12 # hours per day (night)
     wattage_lamps: 7 # [W] LED Bulb light A-8901
-
+    
     # Equipment heat load
     fridge_wattage: 120 # [W]
     time_fridge: 24 # [h/day]
-
-    # Infiltration loads
-    # Assumption of closed windows and doors when people are not entering the facility
-    changes: 6.6 # number of volume changes per hour - door opening
-    volume_cold_store: 6.69 # [m^3]
-    energy_new_air: 2.2 # [kJ/ °C] energy per cubic meter per degree Celsius
+    
+    # Infiltration loads - Assumption of closed windows and doors when people are not entering the facility
+    changes: 5 # number of volume changes per hour - door opening
+    volume_cold_store: 162.7 # [m^3]
+    energy_new_air: 2.1 # [kJ/degC] energy per cubic meter per degree Celsius
     start_time_infiltration: [11, 11, 11, 11, 11, 11, 0]
     end_time_infiltration: [18, 18, 18, 18, 18, 18, 0]
-
-    # Estimating the clinic to run 6 hours per day (opening times from 12 to 17)
+    
+    # estimating the clinic to run 6 hours per day (opening times from 12 to 17)
     run_hours: 7 # [h]
