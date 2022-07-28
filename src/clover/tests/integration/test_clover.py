@@ -170,7 +170,7 @@ class _BaseTest(unittest.TestCase):
             shutil.rmtree(self.temp_location_path)
 
 
-class SimulationTests(_BaseTest):
+class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
     """
     Tests of CLOVER's simulation functionality.
 
@@ -224,6 +224,7 @@ class SimulationTests(_BaseTest):
         pv: bool,
         storage: bool,
         *,
+        prioritise_self_generation: bool = True,
         pv_size: Optional[float] = None,
         storage_size: Optional[float] = None,
     ) -> Dict[str, Any]:
@@ -239,6 +240,9 @@ class SimulationTests(_BaseTest):
             ["diesel", "mode"], "backup" if diesel else "disabled"
         )
         self._update_scenario_file("grid", grid)
+        self._update_scenario_file(
+            "prioritise_self_generation", prioritise_self_generation
+        )
         self._update_scenario_file("pv", pv)
         # self._update_scenario_file("storage", storage) # < Will be enabled under #70.
 
@@ -455,7 +459,7 @@ class SimulationTests(_BaseTest):
         )
 
     @pytest.mark.integrest
-    def test_diesel_grid_pv_and_storage(self):
+    def test_grid_prioritise_diesel_grid_pv_and_storage(self):
         """
         Tests the case with diesel, grid, PV and storage.
 
@@ -466,7 +470,13 @@ class SimulationTests(_BaseTest):
         """
 
         info_file_data = self._run_clover_simulation(
-            True, True, True, True, pv_size=20, storage_size=25
+            True,
+            True,
+            True,
+            True,
+            prioritise_self_generation=False,
+            pv_size=20,
+            storage_size=25,
         )
         self._check_output(
             info_file_data,
@@ -491,7 +501,7 @@ class SimulationTests(_BaseTest):
         )
 
     @pytest.mark.integrest
-    def test_diesel_grid_and_pv(self):
+    def test_grid_prioritise_diesel_grid_and_pv(self):
         """
         Tests the case with diesel, grid and PV.
 
@@ -501,7 +511,7 @@ class SimulationTests(_BaseTest):
         """
 
         info_file_data = self._run_clover_simulation(
-            True, True, True, False, pv_size=20
+            True, True, True, False, prioritise_self_generation=False, pv_size=20
         )
         self._check_output(
             info_file_data,
@@ -526,7 +536,7 @@ class SimulationTests(_BaseTest):
         )
 
     @pytest.mark.integrest
-    def test_diesel_grid_and_storage(self):
+    def test_grid_prioritise_diesel_grid_and_storage(self):
         """
         Tests the case with diesel, grid and storage.
 
@@ -536,7 +546,7 @@ class SimulationTests(_BaseTest):
         """
 
         info_file_data = self._run_clover_simulation(
-            True, True, False, True, storage_size=25
+            True, True, False, True, prioritise_self_generation=False, storage_size=25
         )
         self._check_output(
             info_file_data,
@@ -561,7 +571,7 @@ class SimulationTests(_BaseTest):
         )
 
     @pytest.mark.integrest
-    def test_diesel_and_grid(self):
+    def test_grid_prioritise_diesel_and_grid(self):
         """
         Tests the case with diesel and grid.
 
@@ -569,7 +579,9 @@ class SimulationTests(_BaseTest):
 
         """
 
-        info_file_data = self._run_clover_simulation(True, True, False, False)
+        info_file_data = self._run_clover_simulation(
+            True, True, False, False, prioritise_self_generation=False
+        )
         self._check_output(
             info_file_data,
             average_daily_diesel=11.153,
@@ -593,7 +605,7 @@ class SimulationTests(_BaseTest):
         )
 
     @pytest.mark.integrest
-    def test_diesel_pv_and_storage(self):
+    def test_grid_prioritise_diesel_pv_and_storage(self):
         """
         Tests the case with diesel, PV and storage.
 
@@ -604,7 +616,13 @@ class SimulationTests(_BaseTest):
         """
 
         info_file_data = self._run_clover_simulation(
-            True, False, True, True, pv_size=20, storage_size=25
+            True,
+            False,
+            True,
+            True,
+            prioritise_self_generation=False,
+            pv_size=20,
+            storage_size=25,
         )
         self._check_output(
             info_file_data,
@@ -629,7 +647,7 @@ class SimulationTests(_BaseTest):
         )
 
     @pytest.mark.integrest
-    def test_diesel_and_pv(self):
+    def test_grid_prioritise_diesel_and_pv(self):
         """
         Tests the case with diesel and PV.
 
@@ -639,7 +657,7 @@ class SimulationTests(_BaseTest):
         """
 
         info_file_data = self._run_clover_simulation(
-            True, False, True, False, pv_size=20
+            True, False, True, False, prioritise_self_generation=False, pv_size=20
         )
         self._check_output(
             info_file_data,
@@ -664,7 +682,7 @@ class SimulationTests(_BaseTest):
         )
 
     @pytest.mark.integrest
-    def test_diesel_and_storage(self):
+    def test_grid_prioritise_diesel_and_storage(self):
         """
         Tests the case with diesel and storage.
 
@@ -674,7 +692,7 @@ class SimulationTests(_BaseTest):
         """
 
         info_file_data = self._run_clover_simulation(
-            True, False, False, True, storage_size=25
+            True, False, False, True, prioritise_self_generation=False, storage_size=25
         )
         self._check_output(
             info_file_data,
@@ -699,7 +717,7 @@ class SimulationTests(_BaseTest):
         )
 
     @pytest.mark.integrest
-    def test_diesel_only(self):
+    def test_grid_prioritise_diesel_only(self):
         """
         Tests the case with diesel only.
 
@@ -707,7 +725,9 @@ class SimulationTests(_BaseTest):
 
         """
 
-        info_file_data = self._run_clover_simulation(True, False, False, False)
+        info_file_data = self._run_clover_simulation(
+            True, False, False, False, prioritise_self_generation=False
+        )
         self._check_output(
             info_file_data,
             average_daily_diesel=18.435,
@@ -731,7 +751,7 @@ class SimulationTests(_BaseTest):
         )
 
     @pytest.mark.integrest
-    def test_grid_pv_and_storage(self):
+    def test_grid_prioritise_grid_pv_and_storage(self):
         """
         Tests the case with grid, PV and storage.
 
@@ -742,7 +762,13 @@ class SimulationTests(_BaseTest):
         """
 
         info_file_data = self._run_clover_simulation(
-            False, True, True, True, pv_size=20, storage_size=25
+            False,
+            True,
+            True,
+            True,
+            prioritise_self_generation=False,
+            pv_size=20,
+            storage_size=25,
         )
         self._check_output(
             info_file_data,
@@ -767,7 +793,7 @@ class SimulationTests(_BaseTest):
         )
 
     @pytest.mark.integrest
-    def test_grid_and_pv(self):
+    def test_grid_prioritise_grid_and_pv(self):
         """
         Tests the case with grid and PV.
 
@@ -777,7 +803,7 @@ class SimulationTests(_BaseTest):
         """
 
         info_file_data = self._run_clover_simulation(
-            False, True, True, False, pv_size=20
+            False, True, True, False, prioritise_self_generation=False, pv_size=20
         )
         self._check_output(
             info_file_data,
@@ -802,7 +828,7 @@ class SimulationTests(_BaseTest):
         )
 
     @pytest.mark.integrest
-    def test_grid_and_storage(self):
+    def test_grid_prioritise_grid_and_storage(self):
         """
         Tests the case with grid and storage.
 
@@ -812,7 +838,7 @@ class SimulationTests(_BaseTest):
         """
 
         info_file_data = self._run_clover_simulation(
-            False, True, False, True, storage_size=25
+            False, True, False, True, prioritise_self_generation=False, storage_size=25
         )
         self._check_output(
             info_file_data,
@@ -837,7 +863,7 @@ class SimulationTests(_BaseTest):
         )
 
     @pytest.mark.integrest
-    def test_grid_only(self):
+    def test_grid_prioritise_grid_only(self):
         """
         Tests the case with only grid.
 
@@ -845,7 +871,9 @@ class SimulationTests(_BaseTest):
 
         """
 
-        info_file_data = self._run_clover_simulation(False, True, False, False)
+        info_file_data = self._run_clover_simulation(
+            False, True, False, False, prioritise_self_generation=False
+        )
         self._check_output(
             info_file_data,
             average_daily_diesel=0.0,
@@ -869,7 +897,7 @@ class SimulationTests(_BaseTest):
         )
 
     @pytest.mark.integrest
-    def test_pv_and_storage(self):
+    def test_grid_prioritise_pv_and_storage(self):
         """
         Tests the case with PV and storage.
 
@@ -880,7 +908,13 @@ class SimulationTests(_BaseTest):
         """
 
         info_file_data = self._run_clover_simulation(
-            False, False, True, True, pv_size=20, storage_size=25
+            False,
+            False,
+            True,
+            True,
+            prioritise_self_generation=False,
+            pv_size=20,
+            storage_size=25,
         )
 
         self._check_output(
@@ -906,7 +940,7 @@ class SimulationTests(_BaseTest):
         )
 
     @pytest.mark.integrest
-    def test_pv_only(self):
+    def test_grid_prioritise_pv_only(self):
         """
         Tests the case with only PV.
 
@@ -916,7 +950,7 @@ class SimulationTests(_BaseTest):
         """
 
         info_file_data = self._run_clover_simulation(
-            False, False, True, False, pv_size=20
+            False, False, True, False, prioritise_self_generation=False, pv_size=20
         )
         self._check_output(
             info_file_data,
@@ -941,7 +975,7 @@ class SimulationTests(_BaseTest):
         )
 
     @pytest.mark.integtest
-    def test_storage_only(self):
+    def test_grid_prioritise_storage_only(self):
         """
         Tests the case with only storage.
 
@@ -951,7 +985,7 @@ class SimulationTests(_BaseTest):
         """
 
         info_file_data = self._run_clover_simulation(
-            False, False, False, True, storage_size=25
+            False, False, False, True, prioritise_self_generation=False, storage_size=25
         )
         self._check_output(
             info_file_data,
@@ -977,7 +1011,7 @@ class SimulationTests(_BaseTest):
 
     @unittest.skip("No need to test scenario with no power generation sources.")
     # @pytest.mark.integrest
-    def test_no_diesel_no_grid_no_pv_no_storage(self):
+    def test_grid_prioritise_no_diesel_no_grid_no_pv_no_storage(self):
         """
         Tests the case with diesel, grid, PV and storage.
 
@@ -985,4 +1019,571 @@ class SimulationTests(_BaseTest):
 
         """
 
-        _ = self._run_clover_simulation(False, False, False, False)
+        _ = self._run_clover_simulation(
+            False, False, False, False, prioritise_self_generation=False
+        )
+
+    @pytest.mark.integrest
+    def test_self_prioritise_diesel_grid_pv_and_storage(self):
+        """
+        Tests the case with diesel, grid, PV and storage.
+
+        The test simulation uses:
+            - a PV system size of 20 kWP;
+            - a storage system size of 25 kWh.
+
+        """
+
+        info_file_data = self._run_clover_simulation(
+            True,
+            True,
+            True,
+            True,
+            prioritise_self_generation=False,
+            pv_size=20,
+            storage_size=25,
+        )
+        self._check_output(
+            info_file_data,
+            average_daily_diesel=1.65,
+            average_daily_grid_energy=7.196,
+            average_daily_grid_times=9.338,
+            average_daily_renewables_energy=4.262,
+            average_daily_storage_energy=7.52,
+            blackouts=0.029,
+            cumulative_cost=31641.481,
+            cumulative_ghgs=91620.383,
+            cumulative_pv_generation=36685.0,
+            diesel_capacity=3.0,
+            diesel_times=0.12,
+            final_pv_size=19.0,
+            final_storage_size=21.34,
+            initial_pv_size=20.0,
+            initial_storage_size=25.0,
+            lcue=1.124,
+            renewables_fraction=0.571,
+            unmet_energy_fraction=0.018,
+        )
+
+    @pytest.mark.integrest
+    def test_self_prioritise_diesel_grid_and_pv(self):
+        """
+        Tests the case with diesel, grid and PV.
+
+        The test simulation uses:
+            - a PV system size of 20 kWP.
+
+        """
+
+        info_file_data = self._run_clover_simulation(
+            True, True, True, False, prioritise_self_generation=False, pv_size=20
+        )
+        self._check_output(
+            info_file_data,
+            average_daily_diesel=8.821,
+            average_daily_grid_energy=7.196,
+            average_daily_grid_times=9.338,
+            average_daily_renewables_energy=4.262,
+            average_daily_storage_energy=0.0,
+            blackouts=0.1,
+            cumulative_cost=25059.446,
+            cumulative_ghgs=109974.46,
+            cumulative_pv_generation=36685.0,
+            diesel_capacity=3.0,
+            diesel_times=0.394,
+            final_pv_size=19.0,
+            final_storage_size=0.0,
+            initial_pv_size=20.0,
+            initial_storage_size=0.0,
+            lcue=0.934,
+            renewables_fraction=0.21,
+            unmet_energy_fraction=0.016,
+        )
+
+    @pytest.mark.integrest
+    def test_self_prioritise_diesel_grid_and_storage(self):
+        """
+        Tests the case with diesel, grid and storage.
+
+        The test simulation uses:
+            - a storage system size of 25 kWh.
+
+        """
+
+        info_file_data = self._run_clover_simulation(
+            True, True, False, True, prioritise_self_generation=False, storage_size=25
+        )
+        self._check_output(
+            info_file_data,
+            average_daily_diesel=11.149,
+            average_daily_grid_energy=7.196,
+            average_daily_grid_times=9.338,
+            average_daily_renewables_energy=0.0,
+            average_daily_storage_energy=0.005,
+            blackouts=0.099,
+            cumulative_cost=15841.411,
+            cumulative_ghgs=42714.989,
+            cumulative_pv_generation=0.0,
+            diesel_capacity=3.0,
+            diesel_times=0.511,
+            final_pv_size=0.0,
+            final_storage_size=24.997,
+            initial_pv_size=0.0,
+            initial_storage_size=25.0,
+            lcue=0.628,
+            renewables_fraction=0.0,
+            unmet_energy_fraction=0.026,
+        )
+
+    @pytest.mark.integrest
+    def test_self_prioritise_diesel_and_grid(self):
+        """
+        Tests the case with diesel and grid.
+
+        The test simulation uses no PV or storage.
+
+        """
+
+        info_file_data = self._run_clover_simulation(
+            True, True, False, False, prioritise_self_generation=False
+        )
+        self._check_output(
+            info_file_data,
+            average_daily_diesel=11.153,
+            average_daily_grid_energy=7.196,
+            average_daily_grid_times=9.338,
+            average_daily_renewables_energy=0.0,
+            average_daily_storage_energy=0.0,
+            blackouts=0.1,
+            cumulative_cost=9916.962,
+            cumulative_ghgs=39335.849,
+            cumulative_pv_generation=0.0,
+            diesel_capacity=3.0,
+            diesel_times=0.511,
+            final_pv_size=0.0,
+            final_storage_size=0.0,
+            initial_pv_size=0.0,
+            initial_storage_size=0.0,
+            lcue=0.393,
+            renewables_fraction=0.0,
+            unmet_energy_fraction=0.026,
+        )
+
+    @pytest.mark.integrest
+    def test_self_prioritise_diesel_pv_and_storage(self):
+        """
+        Tests the case with diesel, PV and storage.
+
+        The test simulation uses:
+            - a PV system size of 20 kWP;
+            - a storage system size of 25 kWh.
+
+        """
+
+        info_file_data = self._run_clover_simulation(
+            True,
+            False,
+            True,
+            True,
+            prioritise_self_generation=False,
+            pv_size=20,
+            storage_size=25,
+        )
+        self._check_output(
+            info_file_data,
+            average_daily_diesel=5.548,
+            average_daily_grid_energy=0.0,
+            average_daily_grid_times=0.0,
+            average_daily_renewables_energy=4.271,
+            average_daily_storage_energy=9.807,
+            blackouts=0.1,
+            cumulative_cost=33821.539,
+            cumulative_ghgs=91493.592,
+            cumulative_pv_generation=36685.0,
+            diesel_capacity=3.0,
+            diesel_times=0.356,
+            final_pv_size=19.0,
+            final_storage_size=20.227,
+            initial_pv_size=20.0,
+            initial_storage_size=25.0,
+            lcue=1.179,
+            renewables_fraction=0.717,
+            unmet_energy_fraction=0.011,
+        )
+
+    @pytest.mark.integrest
+    def test_self_prioritise_diesel_and_pv(self):
+        """
+        Tests the case with diesel and PV.
+
+        The test simulation uses:
+            - a PV system size of 20.
+
+        """
+
+        info_file_data = self._run_clover_simulation(
+            True, False, True, False, prioritise_self_generation=False, pv_size=20
+        )
+        self._check_output(
+            info_file_data,
+            average_daily_diesel=14.879,
+            average_daily_grid_energy=0.0,
+            average_daily_grid_times=0.0,
+            average_daily_renewables_energy=4.271,
+            average_daily_storage_energy=0.0,
+            blackouts=0.1,
+            cumulative_cost=26548.761,
+            cumulative_ghgs=108666.131,
+            cumulative_pv_generation=36685.0,
+            diesel_capacity=3.0,
+            diesel_times=0.726,
+            final_pv_size=19.0,
+            final_storage_size=0.0,
+            initial_pv_size=20.0,
+            initial_storage_size=0.0,
+            lcue=1.092,
+            renewables_fraction=0.223,
+            unmet_energy_fraction=0.011,
+        )
+
+    @pytest.mark.integrest
+    def test_self_prioritise_diesel_and_storage(self):
+        """
+        Tests the case with diesel and storage.
+
+        The test simulation uses:
+            - a storage system size of 25 kWh.
+
+        """
+
+        info_file_data = self._run_clover_simulation(
+            True, False, False, True, prioritise_self_generation=False, storage_size=25
+        )
+        self._check_output(
+            info_file_data,
+            average_daily_diesel=18.43,
+            average_daily_grid_energy=0.0,
+            average_daily_grid_times=0.0,
+            average_daily_renewables_energy=0.0,
+            average_daily_storage_energy=0.006,
+            blackouts=0.098,
+            cumulative_cost=15694.76,
+            cumulative_ghgs=48238.701,
+            cumulative_pv_generation=0.0,
+            diesel_capacity=3.0,
+            diesel_times=0.901,
+            final_pv_size=0.0,
+            final_storage_size=24.997,
+            initial_pv_size=0.0,
+            initial_storage_size=25.0,
+            lcue=0.621,
+            renewables_fraction=0.0,
+            unmet_energy_fraction=0.021,
+        )
+
+    @pytest.mark.integrest
+    def test_self_prioritise_diesel_only(self):
+        """
+        Tests the case with diesel only.
+
+        The test simulation uses no PV or storage.
+
+        """
+
+        info_file_data = self._run_clover_simulation(
+            True, False, False, False, prioritise_self_generation=False
+        )
+        self._check_output(
+            info_file_data,
+            average_daily_diesel=18.435,
+            average_daily_grid_energy=0.0,
+            average_daily_grid_times=0.0,
+            average_daily_renewables_energy=0.0,
+            average_daily_storage_energy=0.0,
+            blackouts=0.098,
+            cumulative_cost=12580.977,
+            cumulative_ghgs=44878.006,
+            cumulative_pv_generation=0.0,
+            diesel_capacity=3.0,
+            diesel_times=0.902,
+            final_pv_size=0.0,
+            final_storage_size=0.0,
+            initial_pv_size=0.0,
+            initial_storage_size=0.0,
+            lcue=0.498,
+            renewables_fraction=0.0,
+            unmet_energy_fraction=0.021,
+        )
+
+    @pytest.mark.integrest
+    def test_self_prioritise_grid_pv_and_storage(self):
+        """
+        Tests the case with grid, PV and storage.
+
+        The test simulation uses:
+            - a PV system size of 20 kWP;
+            - a storage system size of 25 kWh.
+
+        """
+
+        info_file_data = self._run_clover_simulation(
+            False,
+            True,
+            True,
+            True,
+            prioritise_self_generation=False,
+            pv_size=20,
+            storage_size=25,
+        )
+        self._check_output(
+            info_file_data,
+            average_daily_diesel=0.0,
+            average_daily_grid_energy=7.196,
+            average_daily_grid_times=9.338,
+            average_daily_renewables_energy=4.262,
+            average_daily_storage_energy=7.52,
+            blackouts=0.029,
+            cumulative_cost=31728.191,
+            cumulative_ghgs=85650.33,
+            cumulative_pv_generation=36685.0,
+            diesel_capacity=0.0,
+            diesel_times=0.0,
+            final_pv_size=19.0,
+            final_storage_size=21.34,
+            initial_pv_size=20.0,
+            initial_storage_size=25.0,
+            lcue=1.172,
+            renewables_fraction=0.621,
+            unmet_energy_fraction=0.105,
+        )
+
+    @pytest.mark.integrest
+    def test_self_prioritise_grid_and_pv(self):
+        """
+        Tests the case with grid and PV.
+
+        The test simulation uses:
+            - a PV system size of 20 kWP.
+
+        """
+
+        info_file_data = self._run_clover_simulation(
+            False, True, True, False, prioritise_self_generation=False, pv_size=20
+        )
+        self._check_output(
+            info_file_data,
+            average_daily_diesel=0.0,
+            average_daily_grid_energy=7.196,
+            average_daily_grid_times=9.338,
+            average_daily_renewables_energy=4.262,
+            average_daily_storage_energy=0.0,
+            blackouts=0.302,
+            cumulative_cost=33894.013,
+            cumulative_ghgs=196112.02,
+            cumulative_pv_generation=36685.0,
+            diesel_capacity=0.0,
+            diesel_times=0.0,
+            final_pv_size=19.0,
+            final_storage_size=0.0,
+            initial_pv_size=20.0,
+            initial_storage_size=0.0,
+            lcue=1.256,
+            renewables_fraction=0.372,
+            unmet_energy_fraction=0.485,
+        )
+
+    @pytest.mark.integrest
+    def test_self_prioritise_grid_and_storage(self):
+        """
+        Tests the case with grid and storage.
+
+        The test simulation uses:
+            - a storage system size of 25 kWh.
+
+        """
+
+        info_file_data = self._run_clover_simulation(
+            False, True, False, True, prioritise_self_generation=False, storage_size=25
+        )
+        self._check_output(
+            info_file_data,
+            average_daily_diesel=0.0,
+            average_daily_grid_energy=7.196,
+            average_daily_grid_times=9.338,
+            average_daily_renewables_energy=0.0,
+            average_daily_storage_energy=0.005,
+            blackouts=0.61,
+            cumulative_cost=28565.669,
+            cumulative_ghgs=133907.16,
+            cumulative_pv_generation=0.0,
+            diesel_capacity=0.0,
+            diesel_times=0.0,
+            final_pv_size=0.0,
+            final_storage_size=24.997,
+            initial_pv_size=0.0,
+            initial_storage_size=25.0,
+            lcue=1.492,
+            renewables_fraction=0.001,
+            unmet_energy_fraction=0.618,
+        )
+
+    @pytest.mark.integrest
+    def test_self_prioritise_grid_only(self):
+        """
+        Tests the case with only grid.
+
+        The test simulation uses no PV or storage.
+
+        """
+
+        info_file_data = self._run_clover_simulation(
+            False, True, False, False, prioritise_self_generation=False
+        )
+        self._check_output(
+            info_file_data,
+            average_daily_diesel=0.0,
+            average_daily_grid_energy=7.196,
+            average_daily_grid_times=9.338,
+            average_daily_renewables_energy=0.0,
+            average_daily_storage_energy=0.0,
+            blackouts=0.611,
+            cumulative_cost=17585.402,
+            cumulative_ghgs=130629.73,
+            cumulative_pv_generation=0.0,
+            diesel_capacity=0.0,
+            diesel_times=0.0,
+            final_pv_size=0.0,
+            final_storage_size=0.0,
+            initial_pv_size=0.0,
+            initial_storage_size=0.0,
+            lcue=0.383,
+            renewables_fraction=0.0,
+            unmet_energy_fraction=0.618,
+        )
+
+    @pytest.mark.integrest
+    def test_self_prioritise_pv_and_storage(self):
+        """
+        Tests the case with PV and storage.
+
+        The test simulation uses:
+            - a PV system size of 20 kWP;
+            - a storage system size of 25 kWh.
+
+        """
+
+        info_file_data = self._run_clover_simulation(
+            False,
+            False,
+            True,
+            True,
+            prioritise_self_generation=False,
+            pv_size=20,
+            storage_size=25,
+        )
+
+        self._check_output(
+            info_file_data,
+            average_daily_diesel=0.0,
+            average_daily_grid_energy=0.0,
+            average_daily_grid_times=0.0,
+            average_daily_renewables_energy=4.271,
+            average_daily_storage_energy=9.807,
+            blackouts=0.171,
+            cumulative_cost=34260.245,
+            cumulative_ghgs=102913.66,
+            cumulative_pv_generation=36685.0,
+            diesel_capacity=0.0,
+            diesel_times=0.0,
+            final_pv_size=19.0,
+            final_storage_size=20.227,
+            initial_pv_size=20.0,
+            initial_storage_size=25.0,
+            lcue=1.534,
+            renewables_fraction=1.0,
+            unmet_energy_fraction=0.306,
+        )
+
+    @pytest.mark.integrest
+    def test_self_prioritise_pv_only(self):
+        """
+        Tests the case with only PV.
+
+        The test simulation uses:
+            - a PV system size of 20 kWP.
+
+        """
+
+        info_file_data = self._run_clover_simulation(
+            False, False, True, False, prioritise_self_generation=False, pv_size=20
+        )
+        self._check_output(
+            info_file_data,
+            average_daily_diesel=0.0,
+            average_daily_grid_energy=0.0,
+            average_daily_grid_times=0.0,
+            average_daily_renewables_energy=4.271,
+            average_daily_storage_energy=0.0,
+            blackouts=0.543,
+            cumulative_cost=41805.298,
+            cumulative_ghgs=256032.195,
+            cumulative_pv_generation=36685.0,
+            diesel_capacity=0.0,
+            diesel_times=0.0,
+            final_pv_size=19.0,
+            final_storage_size=0.0,
+            initial_pv_size=20.0,
+            initial_storage_size=0.0,
+            lcue=3.249,
+            renewables_fraction=1.0,
+            unmet_energy_fraction=0.801,
+        )
+
+    @pytest.mark.integtest
+    def test_self_prioritise_storage_only(self):
+        """
+        Tests the case with only storage.
+
+        The test simulation uses:
+            - a storage system size of 25 kWh.
+
+        """
+
+        info_file_data = self._run_clover_simulation(
+            False, False, False, True, prioritise_self_generation=False, storage_size=25
+        )
+        self._check_output(
+            info_file_data,
+            average_daily_diesel=0.0,
+            average_daily_grid_energy=0.0,
+            average_daily_grid_times=0.0,
+            average_daily_renewables_energy=0.0,
+            average_daily_storage_energy=0.006,
+            blackouts=0.999,
+            cumulative_cost=36512.623,
+            cumulative_ghgs=193802.42,
+            cumulative_pv_generation=0.0,
+            diesel_capacity=0.0,
+            diesel_times=0.0,
+            final_pv_size=0.0,
+            final_storage_size=24.997,
+            initial_pv_size=0.0,
+            initial_storage_size=25.0,
+            lcue=1377.525,
+            renewables_fraction=1.0,
+            unmet_energy_fraction=1.0,
+        )
+
+    @unittest.skip("No need to test scenario with no power generation sources.")
+    # @pytest.mark.integrest
+    def test_self_prioritise_no_diesel_no_grid_no_pv_no_storage(self):
+        """
+        Tests the case with diesel, grid, PV and storage.
+
+        The test simulation uses no PV or storage.
+
+        """
+
+        _ = self._run_clover_simulation(
+            False, False, False, False, prioritise_self_generation=False
+        )
