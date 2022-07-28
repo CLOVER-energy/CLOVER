@@ -672,6 +672,10 @@ def get_electric_battery_storage_profile(  # pylint: disable=too-many-locals, to
         renewables_direct_rounded: float = round(
             float(np.sum(renewables_energy_used_directly)), 2  # type: ignore [arg-type]
         )
+        logger.debug(
+            "Renewables direct: %s kWh",
+            round(float(np.sum(renewables_energy_used_directly)), 2),  # type: ignore [arg-type]
+        )
         logger.debug("Renewables direct: %s kWh", renewables_direct_rounded)
 
     battery_storage_profile.columns = pd.Index([ColumnHeader.STORAGE_PROFILE.value])
