@@ -1039,7 +1039,6 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
             True,
             True,
             True,
-            prioritise_self_generation=False,
             pv_size=20,
             storage_size=25,
         )
@@ -1076,7 +1075,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
         """
 
         info_file_data = self._run_clover_simulation(
-            True, True, True, False, prioritise_self_generation=False, pv_size=20
+            True, True, True, False, pv_size=20
         )
         self._check_output(
             info_file_data,
@@ -1086,7 +1085,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
             average_daily_renewables_energy=4.262,
             average_daily_storage_energy=0.0,
             blackouts=0.1,
-            cumulative_cost=26343.181,
+            cumulative_cost=25033.509,
             cumulative_ghgs=100650.761,
             cumulative_pv_generation=36685.0,
             diesel_capacity=3.0,
@@ -1111,7 +1110,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
         """
 
         info_file_data = self._run_clover_simulation(
-            True, True, False, True, prioritise_self_generation=False, storage_size=25
+            True, True, False, True, storage_size=25
         )
         self._check_output(
             info_file_data,
@@ -1144,9 +1143,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
 
         """
 
-        info_file_data = self._run_clover_simulation(
-            True, True, False, False, prioritise_self_generation=False
-        )
+        info_file_data = self._run_clover_simulation(True, True, False, False)
         self._check_output(
             info_file_data,
             average_daily_diesel=11.153,
@@ -1185,7 +1182,6 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
             False,
             True,
             True,
-            prioritise_self_generation=False,
             pv_size=20,
             storage_size=25,
         )
@@ -1222,7 +1218,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
         """
 
         info_file_data = self._run_clover_simulation(
-            True, False, True, False, prioritise_self_generation=False, pv_size=20
+            True, False, True, False, pv_size=20
         )
         self._check_output(
             info_file_data,
@@ -1257,7 +1253,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
         """
 
         info_file_data = self._run_clover_simulation(
-            True, False, False, True, prioritise_self_generation=False, storage_size=25
+            True, False, False, True, storage_size=25
         )
         self._check_output(
             info_file_data,
@@ -1290,9 +1286,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
 
         """
 
-        info_file_data = self._run_clover_simulation(
-            True, False, False, False, prioritise_self_generation=False
-        )
+        info_file_data = self._run_clover_simulation(True, False, False, False)
         self._check_output(
             info_file_data,
             average_daily_diesel=18.435,
@@ -1331,7 +1325,6 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
             True,
             True,
             True,
-            prioritise_self_generation=False,
             pv_size=20,
             storage_size=25,
         )
@@ -1368,7 +1361,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
         """
 
         info_file_data = self._run_clover_simulation(
-            False, True, True, False, prioritise_self_generation=False, pv_size=20
+            False, True, True, False, pv_size=20
         )
         self._check_output(
             info_file_data,
@@ -1403,7 +1396,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
         """
 
         info_file_data = self._run_clover_simulation(
-            False, True, False, True, prioritise_self_generation=False, storage_size=25
+            False, True, False, True, storage_size=25
         )
         self._check_output(
             info_file_data,
@@ -1436,9 +1429,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
 
         """
 
-        info_file_data = self._run_clover_simulation(
-            False, True, False, False, prioritise_self_generation=False
-        )
+        info_file_data = self._run_clover_simulation(False, True, False, False)
         self._check_output(
             info_file_data,
             average_daily_diesel=0.0,
@@ -1477,7 +1468,6 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
             False,
             True,
             True,
-            prioritise_self_generation=False,
             pv_size=20,
             storage_size=25,
         )
@@ -1515,7 +1505,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
         """
 
         info_file_data = self._run_clover_simulation(
-            False, False, True, False, prioritise_self_generation=False, pv_size=20
+            False, False, True, False, pv_size=20
         )
         self._check_output(
             info_file_data,
@@ -1550,7 +1540,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
         """
 
         info_file_data = self._run_clover_simulation(
-            False, False, False, True, prioritise_self_generation=False, storage_size=25
+            False, False, False, True, storage_size=25
         )
         self._check_output(
             info_file_data,
@@ -1584,6 +1574,4 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
 
         """
 
-        _ = self._run_clover_simulation(
-            False, False, False, False, prioritise_self_generation=False
-        )
+        _ = self._run_clover_simulation(False, False, False, False)
