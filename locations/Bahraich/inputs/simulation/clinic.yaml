@@ -24,14 +24,14 @@ clinics:
     # outside_temperature: 28 #[degC]
     
     # Internal heat Load - People
-    people_1: 1.5 #number of nurses present per day
-    people_2: 2.5 #average number of patients and accompaniers
-    heat_loss_people_1: 82 # [W] From Drug Store ASHRAE value
-    heat_loss_people_2: 67.4 # [W] From Apartments ASHRAE value
-    start_time_people_1: [11, 11, 11, 11, 11, 11, 0]
-    end_time_people_1: [18, 18, 18, 18, 18, 18, 0]
-    start_time_people_2: [12, 12, 12, 12, 12, 12, 0]
-    end_time_people_2: [17, 17, 17, 17, 17, 17, 0] 
+    staff: 1.5 #number of nurses present per day
+    patients: 2.5 #average number of patients and accompaniers
+    heat_loss_staff: 82 # [W] From Drug Store ASHRAE value
+    heat_loss_patients: 67.4 # [W] From Apartments ASHRAE value
+    start_time_staff: [11, 11, 11, 11, 11, 11, 0]
+    end_time_staff: [18, 18, 18, 18, 18, 18, 0]
+    start_time_patients: [12, 12, 12, 12, 12, 12, 0]
+    end_time_patients: [17, 17, 17, 17, 17, 17, 0] 
     
     # Internal heat load - Lighting
     lamps_internal: 9 # number of lamps within the clinic
@@ -41,7 +41,7 @@ clinics:
     time_lamps_external: 12 # hours per day (night)
     wattage_lamps: 7 # [W] LED Bulb light A-8901
     
-    # Equipment heat load
+    # Fridge heat load
     fridge_wattage: 120 # [W]
     time_fridge: 24 # [h/day]
     
