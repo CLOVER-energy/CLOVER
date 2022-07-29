@@ -33,7 +33,16 @@ class Clinic:
     Represents a clinic.
 
     .. attribute:: name
-        The name of the clinic.
+        The name of the clinic
+    .. attribute:: floor_area
+        The name of the clinic
+    .. attribute:: name
+        The name of the clinic
+    .. attribute:: name
+        The name of the clinic    
+    .. attribute:: name
+        The name of the clinic
+
 
     """
 
@@ -52,14 +61,14 @@ class Clinic:
     # outside_temperature: float
 
     # Internal heat load - people
-    people_1: float
-    people_2: float
-    heat_loss_people_1: float
-    heat_loss_people_2: float
-    start_time_people_1: List[int]
-    end_time_people_1: List[int]
-    start_time_people_2: List[int]
-    end_time_people_2: List[int]
+    saff: float
+    patients: float
+    heat_loss_staff: float
+    heat_loss_patients: float
+    start_time_staff: List[int]
+    end_time_staff: List[int]
+    start_time_patients: List[int]
+    end_time_patients: List[int]
 
     # Internal heat load - Lighting
     lamps_internal: float
@@ -69,7 +78,7 @@ class Clinic:
     time_lamps_external: float
     wattage_lamps: float
 
-    # Equipment heat load
+    # Fridge heat load
     fridge_wattage: float
     time_fridge: float
 
@@ -110,7 +119,7 @@ temperatura = import_weather_data(building=Clinic)
 
 def transmission_load_walls(building: Clinic, temperature):
     """
-    Computes the transmission load of the walls in kWh for a building.
+    Computes the transmission load of the walls in kW for a building.
 
     """
 
@@ -124,7 +133,7 @@ def transmission_load_walls(building: Clinic, temperature):
 
 def transmission_load_doors_windows(building: Clinic, temperature):
     """
-    Computes the transmission load of the doors and windows in kWh for a building.
+    Computes the transmission load of the doors and windows in kW for a building.
 
     """
 
@@ -138,7 +147,7 @@ def transmission_load_doors_windows(building: Clinic, temperature):
 
 def transmission_load_floor(building: Clinic, temperature):
     """
-    Computes the transmission load of the floor in kWh for a building.
+    Computes the transmission load of the floor in kW for a building.
 
     """
 
@@ -152,7 +161,7 @@ def transmission_load_floor(building: Clinic, temperature):
 
 def transmission_load_roof(building: Clinic, temperature):
     """
-    Computes the transmission load of the roof in kWh for a building.
+    Computes the transmission load of the roof in kW for a building.
 
     """
 
@@ -166,7 +175,7 @@ def transmission_load_roof(building: Clinic, temperature):
 
 def calculate_transmission_load(building: Clinic, temperature):
     """
-    Computes the total transmission heat load in kWh for a building.
+    Computes the total transmission heat load in kW for a building.
 
     """
     t1 = transmission_load_walls(MY_CLINIC, temperature)
@@ -177,59 +186,59 @@ def calculate_transmission_load(building: Clinic, temperature):
     return t1 + t2 + t3 + t4
 
 
-def internal_load_people_1(building: Clinic):
+def internal_load_staff(building: Clinic):
     """
-    Computes the internal heat load of the nurses in kWh for a building.
+    Computes the internal heat load of the nurses in kW for a building.
 
     """
-    # load_p = np.where((time_people>=11)&(time_people<18), building.people_1 * 1 * building.heat_loss_people_1 / 1000., 0.)
     people_at_times = [
         [
-            [0, building.people_1 * building.heat_loss_people_1][t > start and t < end]
+            [0, building.staff * building.heat_loss_staff][t > start and t < end]
             for t in range(24)
         ]
-        for start, end in zip(building.start_time_people_1, building.end_time_people_1)
+        for start, end in zip(building.start_time_staff, building.end_time_staff)
     ]
     return people_at_times
 
 
-def internal_load_people_2(building: Clinic):
+def internal_load_patients(building: Clinic):
     """
-    Computes the internal heat load of the patients and accompainers in kWh for a building.
+    Computes the internal heat load of the patients and accompainers in kW for a building.
 
     """
     people_at_times = [
         [
-            [0, building.people_2 * building.heat_loss_people_2][t > start and t < end]
+            [0, building.patients * building.heat_loss_patients][t > start and t < end]
             for t in range(24)
         ]
-        for start, end in zip(building.start_time_people_2, building.end_time_people_2)
+        for start, end in zip(building.start_time_patients, building.end_time_patients)
     ]
     return people_at_times
 
 
 def calculate_internal_load_people(building: Clinic):
     """
-    Computes the internal heat load of the total people in kWh for a building.
+    Computes the internal heat load of the total people in kW for a building.
 
     """
-    p1 = internal_load_people_1(MY_CLINIC)
-    p2 = internal_load_people_2(MY_CLINIC)
+    p1 = internal_load_staff(MY_CLINIC)
+    p2 = internal_load_patients(MY_CLINIC)
 
     print(p1[i] + p2[i] for i in range(len(p1[0])))
 
 
-calculate_internal_load_people(MY_CLINIC)
+# calculate_internal_load_people(MY_CLINIC)
 
 
 def internal_load_lighting(building: Clinic):
     """
-    Computes the internal heat load of the lamps in kWh for a building.
+    Computes the internal heat load of the lamps in kW for a building, 
+    the wattage is halved as the dissipation of energy only corresponds to 50% in LEDs.
 
     """
     lamps_at_times = [
         [
-            [0, building.lamps_internal * building.wattage_lamps][t > start and t < end]
+            [0, building.lamps_internal * building.wattage_lamps/2][t > start and t < end]
             for t in range(24)
         ]
         for start, end in zip(building.start_time_lamps, building.end_time_lamps)
@@ -237,9 +246,9 @@ def internal_load_lighting(building: Clinic):
     return lamps_at_times
 
 
-def equipment_load(building: Clinic):
+def fridge_load(building: Clinic):
     """
-    Computes the internal heat load of the fridge in kWh for a building.
+    Computes the internal heat load of the fridge in kW for a building.
 
     """
 
@@ -248,7 +257,7 @@ def equipment_load(building: Clinic):
 
 def infiltration_load(building: Clinic, temperature):
     """
-    Computes the infiltration load in kWh for a building.
+    Computes the infiltration load in kW for a building.
 
     """
     infiltration_at_times = [
@@ -274,7 +283,7 @@ def infiltration_load(building: Clinic, temperature):
 
 def calculate_cooling_load(building: Clinic, temperature):
     """
-    Computes the total cooling load in kWh for a building.
+    Computes the total cooling load in kW for a building.
 
     """
 
@@ -283,7 +292,7 @@ def calculate_cooling_load(building: Clinic, temperature):
         MY_CLINIC,
     )
     q3 = internal_load_lighting(MY_CLINIC)
-    q4 = equipment_load(MY_CLINIC)
+    q4 = fridge_load(MY_CLINIC)
     q5 = infiltration_load(MY_CLINIC, temperature)
 
     print(q1, type(q1))
