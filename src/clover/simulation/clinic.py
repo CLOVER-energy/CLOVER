@@ -39,7 +39,7 @@ class Clinic:
     .. attribute:: name
         The name of the clinic
     .. attribute:: name
-        The name of the clinic    
+        The name of the clinic
     .. attribute:: name
         The name of the clinic
 
@@ -232,13 +232,15 @@ def calculate_internal_load_people(building: Clinic):
 
 def internal_load_lighting(building: Clinic):
     """
-    Computes the internal heat load of the lamps in kW for a building, 
+    Computes the internal heat load of the lamps in kW for a building,
     the wattage is halved as the dissipation of energy only corresponds to 50% in LEDs.
 
     """
     lamps_at_times = [
         [
-            [0, building.lamps_internal * building.wattage_lamps/2][t > start and t < end]
+            [0, building.lamps_internal * building.wattage_lamps / 2][
+                t > start and t < end
+            ]
             for t in range(24)
         ]
         for start, end in zip(building.start_time_lamps, building.end_time_lamps)
