@@ -9,9 +9,9 @@
 ################################################################################
 
 converters:
-  - name: bore_hole
+  - name: air_conditioner
     electric_power: 600 # [W]
-    output: feedwater
+    output: cooling
     maximum_output: 830 # [litres/hour]
     costs:
       cost: 0 # [$/unit]
@@ -20,10 +20,8 @@ converters:
       installation_cost_decrease: 0 # [% p.a.]
       o&m: 8.5 # [$/unit p.a.]
     emissions:
-      # ghgs: 614000 # [kgCO2/unit]
       ghgs: 0
       ghg_decrease: 5 # [% p.a.]
-      # installation_ghgs: 78000 # [kgCO2/unit]
       installation_ghgs: 0
       installation_ghg_decrease: 0 # [% p.a.]
       o&m: 0 #[kgCO2/litre p.a.]

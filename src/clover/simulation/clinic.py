@@ -61,7 +61,7 @@ class Clinic:
     # outside_temperature: float
 
     # Internal heat load - people
-    saff: float
+    staff: float
     patients: float
     heat_loss_staff: float
     heat_loss_patients: float
@@ -92,144 +92,155 @@ class Clinic:
     run_hours: float
 
 
-MY_PATH = "C:/Users/Ilaria/CLOVER/locations/Bahraich/inputs/simulation/"
-with open(MY_PATH + "clinic.yaml") as f:
-    data_clinic = yaml.load(f, Loader=yaml.FullLoader)
+# MY_PATH = "C:/Users/Ilaria/CLOVER/locations/Bahraich/inputs/simulation/"
+# with open(MY_PATH + "clinic.yaml") as f:
+# data_clinic = yaml.load(f, Loader=yaml.FullLoader)
 #  print(data_clinic)
 
 
-MY_CLINIC: Clinic = Clinic(**data_clinic["clinics"][0])
+# MY_CLINIC: Clinic = Clinic(**data_clinic["clinics"][0])
 
 
-def import_weather_data(building: Clinic):
+# def import_weather_data(building: Clinic):
 
-    data = pd.read_csv("C:/Users/Ilaria/Desktop/weatherdata.csv")
-    temperature = data["temperature"]
-    # print(temperature)
-    return temperature.to_numpy()
-
-
-def import_weather_dataframe():
-    data = pd.read_csv("C:/Users/Ilaria/Desktop/weatherdata.csv", dtype={"local_time"})
-    return data
+#     data = pd.read_csv("C:/Users/Ilaria/Desktop/weatherdata.csv")
+#     temperature = data["temperature"]
+#     # print(temperature)
+#     return temperature.to_numpy()
 
 
-temperatura = import_weather_data(building=Clinic)
+# def import_weather_dataframe():
+#     data = pd.read_csv("C:/Users/Ilaria/Desktop/weatherdata.csv", dtype={"local_time"})
+#     return data
 
 
-def transmission_load_walls(building: Clinic, temperature):
+# temperatura = import_weather_data(building=Clinic)
+
+
+# TESTED - WORKING
+def transmission_load_walls(building: Clinic, temperature: float) -> float:
     """
     Computes the transmission load of the walls in kW for a building.
 
     """
 
     return (
-        building.surface_area_walls
-        * building.u_value_walls
-        * (temperature - building.inside_ideal_temperature)
-        / 1000
-    )
+        building.surface_area_walls  # [m^2]
+        * building.u_value_walls  # [W/m^2*K]
+        * (temperature - building.inside_ideal_temperature)  # [K]
+        / 1000  # [W/kW]
+    )  # [kW]
 
 
-def transmission_load_doors_windows(building: Clinic, temperature):
+# TESTED - WORKING
+def transmission_load_doors_windows(building: Clinic, temperature) -> float:
     """
     Computes the transmission load of the doors and windows in kW for a building.
 
     """
 
     return (
-        building.surface_area_doors_windows
-        * building.u_value_windows_doors
-        * (temperature - building.inside_ideal_temperature)
-        / 1000
-    )
+        building.surface_area_doors_windows  # [m^2]
+        * building.u_value_windows_doors  # [W/m^2*K]
+        * (temperature - building.inside_ideal_temperature)  # [K]
+        / 1000  # [W/kW]
+    )  # [kW]
 
 
-def transmission_load_floor(building: Clinic, temperature):
+# TESTED - WORKING
+def transmission_load_floor(building: Clinic, temperature) -> float:
     """
     Computes the transmission load of the floor in kW for a building.
 
     """
 
     return (
-        building.floor_area
-        * building.u_value_floor
-        * (temperature - building.inside_ideal_temperature)
-        / 1000
+        building.floor_area  # [m^2]
+        * building.u_value_floor  # [W/m^2*K]
+        * (temperature - building.inside_ideal_temperature)  # [K]
+        / 1000  # [W/kW]
     )
 
 
-def transmission_load_roof(building: Clinic, temperature):
+# TESTED - WORKING
+def transmission_load_roof(building: Clinic, temperature) -> float:
     """
     Computes the transmission load of the roof in kW for a building.
 
     """
 
     return (
-        building.roof_area
-        * building.u_value_roof
-        * (temperature - building.inside_ideal_temperature)
-        / 1000
-    )
+        building.roof_area  # [m^2]
+        * building.u_value_roof  # [W/m^2*K]
+        * (temperature - building.inside_ideal_temperature)  # [K]
+        / 1000  # [W/kW]
+    )  # [kW]
 
 
-def calculate_transmission_load(building: Clinic, temperature):
+# TESTED - WORKING
+def calculate_transmission_load(building: Clinic, temperature) -> float:
     """
     Computes the total transmission heat load in kW for a building.
 
     """
-    t1 = transmission_load_walls(MY_CLINIC, temperature)
-    t2 = transmission_load_doors_windows(MY_CLINIC, temperature)
-    t3 = transmission_load_floor(MY_CLINIC, temperature)
-    t4 = transmission_load_roof(MY_CLINIC, temperature)
+
+    t1 = transmission_load_walls(building, temperature)
+    t2 = transmission_load_doors_windows(building, temperature)
+    t3 = transmission_load_floor(building, temperature)
+    t4 = transmission_load_roof(building, temperature)
 
     return t1 + t2 + t3 + t4
 
 
-def internal_load_staff(building: Clinic):
+# TESTED - WORKING
+def internal_load_staff(building: Clinic, current_hour: int) -> float:
     """
-    Computes the internal heat load of the nurses in kW for a building.
+    Computes the internal heat load of the nurses in kW for a building at time t.
 
     """
-    people_at_times = [
-        [
-            [0, building.staff * building.heat_loss_staff][t > start and t < end]
-            for t in range(24)
-        ]
-        for start, end in zip(building.start_time_staff, building.end_time_staff)
-    ]
-    return people_at_times
+
+    weekday: int = (current_hour // 24) % 7
+    start_time: int = building.start_time_staff[weekday]
+    end_time: int = building.end_time_staff[weekday]
+
+    if start_time <= (current_hour % 24) < end_time:
+        return building.staff * building.heat_loss_staff / 1000
+    return 0
 
 
-def internal_load_patients(building: Clinic):
+# TESTED - WORKING
+def internal_load_patients(building: Clinic, current_hour: float) -> float:
     """
     Computes the internal heat load of the patients and accompainers in kW for a building.
 
     """
-    people_at_times = [
-        [
-            [0, building.patients * building.heat_loss_patients][t > start and t < end]
-            for t in range(24)
-        ]
-        for start, end in zip(building.start_time_patients, building.end_time_patients)
-    ]
-    return people_at_times
+
+    weekday: int = (current_hour // 24) % 7
+    start_time: int = building.start_time_patients[weekday]
+    end_time: int = building.end_time_patients[weekday]
+
+    if start_time <= (current_hour % 24) < end_time:
+        return building.patients * building.heat_loss_patients / 1000
+    return 0
 
 
-def calculate_internal_load_people(building: Clinic):
+# TESTED - WORKING
+def calculate_internal_load_people(buliding: Clinic, current_hour: int) -> float:
     """
     Computes the internal heat load of the total people in kW for a building.
 
     """
-    p1 = internal_load_staff(MY_CLINIC)
-    p2 = internal_load_patients(MY_CLINIC)
 
-    print(p1[i] + p2[i] for i in range(len(p1[0])))
+    staff_load = internal_load_staff(buliding, current_hour)
+    patient_load = internal_load_patients(buliding, current_hour)
+
+    return staff_load + patient_load
 
 
 # calculate_internal_load_people(MY_CLINIC)
 
 
+# COME BACK TO THIS
 def internal_load_lighting(building: Clinic):
     """
     Computes the internal heat load of the lamps in kW for a building,
@@ -248,6 +259,7 @@ def internal_load_lighting(building: Clinic):
     return lamps_at_times
 
 
+# COME BACK TO THIS
 def fridge_load(building: Clinic):
     """
     Computes the internal heat load of the fridge in kW for a building.
@@ -257,77 +269,84 @@ def fridge_load(building: Clinic):
     return building.fridge_wattage * building.time_fridge / 1000
 
 
-def infiltration_load(building: Clinic, temperature):
+# TESTED - WORKING
+def infiltration_load(building: Clinic, current_hour: int, temperature: float) -> float:
     """
     Computes the infiltration load in kW for a building.
 
     """
-    infiltration_at_times = [
-        [
-            [
-                0,
-                building.changes
-                * building.volume_cold_store
-                * building.energy_new_air
-                * (temperature - building.inside_ideal_temperature),
-            ][t > start and t < end]
-            for t in range(24)
-        ]
-        for start, end in zip(
-            building.start_time_infiltration, building.end_time_infiltration
-        )
-    ]
-    return infiltration_at_times
+
+    weekday: int = (current_hour // 24) % 7
+    start_time: int = building.start_time_infiltration[weekday]
+    end_time: int = building.end_time_infiltration[weekday]
+
+    if start_time <= (current_hour % 24) < end_time:
+        return (
+            building.changes # [/hour]
+            * building.volume_cold_store  # [m^3]
+            * building.energy_new_air  # [kJ/m^3*degC]
+            * (temperature - building.inside_ideal_temperature)  # [degC]
+            / 3600 # [s/hour]
+        )  # [kW]
+    return 0
 
 
 # infiltration_load(MY_CLINIC)
 
 
-def calculate_cooling_load(building: Clinic, temperature):
+# TESTED - WORKING
+def calculate_cooling_load(building: Clinic, current_hour: float, temperature: float):
     """
     Computes the total cooling load in kW for a building.
 
     """
 
-    q1 = calculate_transmission_load(MY_CLINIC, temperature)
+    # TODO:
+    # A poential error bar calculation will go here, whereby different maximum and
+    # minimum points may be tested in order to check the sensitivity of the calculation.
+    #
+    # building.patients += 0
+    # 
+
+    q1 = calculate_transmission_load(building, temperature)
     q2 = calculate_internal_load_people(
-        MY_CLINIC,
+        building, current_hour
     )
-    q3 = internal_load_lighting(MY_CLINIC)
-    q4 = fridge_load(MY_CLINIC)
-    q5 = infiltration_load(MY_CLINIC, temperature)
+    # q3 = internal_load_lighting(building)
+    # q4 = fridge_load(building)
+    q5 = infiltration_load(building, current_hour, temperature)
 
     print(q1, type(q1))
     print(q2, type(q2))
-    print(q3, type(q3))
-    print(q4, type(q4))
+    # print(q3, type(q3))
+    # print(q4, type(q4))
     print(q5, type(q5))
-    return (q1 + q2[i] + q3[i] + q4 + q5[i] for i in range(len(q2[0])))
+    # return (q1 + q2[i] + q3[i] + q4 + q5[i] for i in range(len(q2[0])))
+    return (q1 + q2 + q5)
 
 
-def safety_factor_load(building: Clinic, temperature):
-    """
-    Adds a 20% safety factor to the calculation to account for errors and variations from design.
+# def refrigeration_cooling_capacity_sizing(building: Clinic, temperature):
+#     """
+#     calculating the cooling capacity in kW from the cooling load and the run hours in a day
 
-    """
+#     """
 
-    cooling_load = calculate_cooling_load(MY_CLINIC, temperature)
-
-    return cooling_load * 0.2 + cooling_load
-
-
-def refrigeration_cooling_capacity_sizing(building: Clinic, temperature):
-    """
-    calculating the cooling capacity in kW from the cooling load and the run hours in a day
-
-    """
-
-    system_load_factor = safety_factor_load(building, temperature)
-    system_load_factor = safety_factor_load(building, temperature)
-    return system_load_factor / building.run_hours
+#     system_load_factor = safety_factor_load(building, temperature)
+#     system_load_factor = safety_factor_load(building, temperature)
+#     return system_load_factor / building.run_hours
+#
 
 
 if __name__ == "__main__":
+    import pdb
+
+    pdb.set_trace(header="Start clinic module")
+
+    load: float = 0
+
+    for hour in HOURS:
+        load += calculate_load_now(hour)
+
     # Hours for testing
     hours = list(range(24))
     temperatures = import_weather_data(
