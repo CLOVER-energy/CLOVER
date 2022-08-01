@@ -9,10 +9,10 @@
 ################################################################################
 
 converters:
-  - name: air_conditioner
-    electric_power: 600 # [W]
+  - name: diakin
+    electric_power: 5000 # [W] (3.24 EER)
     output: cooling
-    maximum_output: 830 # [litres/hour]
+    maximum_output: 5200 # [W] (9000 BTU)
     costs:
       cost: 0 # [$/unit]
       cost_decrease: 5 # [% p.a.]
@@ -20,8 +20,10 @@ converters:
       installation_cost_decrease: 0 # [% p.a.]
       o&m: 8.5 # [$/unit p.a.]
     emissions:
+      # ghgs: 614000 # [kgCO2/unit]
       ghgs: 0
       ghg_decrease: 5 # [% p.a.]
+      # installation_ghgs: 78000 # [kgCO2/unit]
       installation_ghgs: 0
       installation_ghg_decrease: 0 # [% p.a.]
       o&m: 0 #[kgCO2/litre p.a.]
