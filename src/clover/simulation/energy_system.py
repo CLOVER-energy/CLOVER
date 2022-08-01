@@ -1610,6 +1610,8 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
                 f"{round(sum(unmet_cooling_load[0]) / sum(electric_cooling_load[0]), 2)}",
                 f"{round(sum(unmet_cooling_load[0]) / sum(cooling_load[0]), 2)}",
             )
+    else:
+        electric_cooling_load = pd.DataFrame([0] * (end_hour - start_hour))
 
     # Calculate electricity-related profiles.
     if total_electric_load is None:
