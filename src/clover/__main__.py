@@ -561,7 +561,6 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
 
     try:
         (
-            clinics,
             converters,
             device_utilisations,
             minigrid,
@@ -881,7 +880,7 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
     else:
         total_wind_data = None
 
-    if len(clinics) > 0:
+    if len(minigrid.buildings) > 0:
         total_cooling_load: pd.DataFrame = pd.DataFrame(
             [[0, 0, 0]] * HOURS_PER_YEAR * location.max_years
         )
@@ -893,7 +892,7 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
             ]
         )
 
-        for clinic in clinics:
+        for clinic in minigrid.buildings:
             # Determine the device utilisations for the devices in the clinic.
             clinic_device_utilisations = {
                 device: {
@@ -1029,7 +1028,6 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
                     parsed_args.clean_water_pvt_system_size
                     if parsed_args.clean_water_pvt_system_size is not None
                     else 0,
-                    clinics,
                     conventional_cw_source_profiles,
                     converters,
                     disable_tqdm,

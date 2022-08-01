@@ -1330,6 +1330,11 @@ def _parse_clinic_inputs(
         "clinics.yaml",
     )
 
+    # If there is no clinic inputs file, return no clinics.
+    if not os.path.isfile(clinic_inputs_filepath):
+        logger.info("No clinics input file found, skipping clinic information. Expected file at %s", clinic_inputs_filepath)
+        return []
+
     # Turn it into a Python dictionary by opening the file
     clinic_inputs = read_yaml(
         clinic_inputs_filepath,
@@ -1339,8 +1344,11 @@ def _parse_clinic_inputs(
     # Turn it into "Clinics"
     clinics: List[clinic.Clinic] = []
     for clinic_information in clinic_inputs["clinics"]:
-        # {"name": "uganda_1", "area": 500}
-        clinics.append(clinic.Clinic.from_dict(clinic_information))
+        try:
+            clinics.append(clinic.Clinic.from_dict(clinic_information))
+        except Exception as e:
+            logger.error("%sError parsing clinic '%s': %s%s", BColours.fail, clinic_information["name"] if "name" in clinic_information else "N/A", str(e), BColours.endc)
+            raise InputFileError("Error parsing clinic information.")
 
     logger.info("Clinic information is parsed!")
 
@@ -2159,6 +2167,7 @@ def _parse_minigrid_inputs(  # pylint: disable=too-many-locals, too-many-stateme
         buffer_tank_emissions = None
         clean_water_tank_costs = None
         clean_water_tank_emissions = None
+        clinics = None
         hot_water_tank_costs = None
         hot_water_tank_emissions = None
         exchanger_costs = None
@@ -2195,7 +2204,12 @@ def _parse_minigrid_inputs(  # pylint: disable=too-many-locals, too-many-stateme
     else:
         electric_water_heater = None
 
+    # Parse the clinic information
+    clinics: Optional[List[clinic.Clinic]] = _parse_clinic_inputs(inputs_directory_relative_path, logger)
+    logger.info("Clinic information successfully parsed.")
+
     minigrid: Minigrid = Minigrid.from_dict(
+        clinics,
         diesel_generator,
         diesel_water_heater,
         electric_water_heater,
@@ -2407,7 +2421,6 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
     location_name: str,
     logger: Logger,
 ) -> Tuple[
-    List[clinic.Clinic],
     Dict[str, Converter],
     Dict[load.load.Device, pd.DataFrame],
     Minigrid,
@@ -2441,7 +2454,6 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
 
     Outputs:
         - A tuple containing:
-            - the `list` of :class:`Clinic` instances associated with the minigrid,
             - converters,
             - device_utilisations, optional if carrying out load-profile generation,
             - diesel_inputs,
@@ -2745,9 +2757,6 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
             "Location was not returned when calling `Location.from_dict`."
         )
     logger.info("Location inputs successfully parsed.")
-
-    # Parse the clinic information
-    clinics = _parse_clinic_inputs(inputs_directory_relative_path, logger)
 
     # Parse and collate the impact information.
     finance_inputs_filepath = os.path.join(
@@ -3112,7 +3121,6 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
     logger.debug("Input file information: %s", input_file_info)
 
     return (
-        clinics,
         converters,
         device_utilisations,
         minigrid,

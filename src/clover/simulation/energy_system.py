@@ -1213,7 +1213,6 @@ def _update_battery_health(
 def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
     clean_water_pvt_size: int,
     # clean_water_solar_thermal_size: int,
-    clinics: List[Clinic],
     conventional_cw_source_profiles: Optional[Dict[WaterSource, pd.DataFrame]],
     converters: Union[Dict[str, Converter], List[Converter]],
     disable_tqdm: bool,
@@ -1576,7 +1575,7 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
 
     # Calculate cooling-related profiles.
     if ResourceType.COOLING in scenario.resource_types:
-        for clinic in clinics:
+        for clinic in minigrid.buildings:
             # Determine the available cooling converter.
             cooling_converter = [
                 converter
