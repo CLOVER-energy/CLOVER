@@ -916,7 +916,9 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
                 total_solar_data[solar.SolarDataType.TEMPERATURE.value],
             )
             clinic_load.columns = pd.Index([clinic.demand_type.value])
-            total_cooling_load[clinic.demand_type.value] = pd.DataFrame(total_cooling_load[clinic.demand_type.value]) + clinic_load
+            total_cooling_load[clinic.demand_type.value] = (
+                pd.DataFrame(total_cooling_load[clinic.demand_type.value]) + clinic_load
+            )
 
     # Assemble a means of storing the relevant loads.
     total_loads: Dict[ResourceType, Optional[pd.DataFrame]] = {
@@ -1027,6 +1029,7 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
                     parsed_args.clean_water_pvt_system_size
                     if parsed_args.clean_water_pvt_system_size is not None
                     else 0,
+                    clinics,
                     conventional_cw_source_profiles,
                     converters,
                     disable_tqdm,

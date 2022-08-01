@@ -112,6 +112,8 @@ class Clinic:
 
     # run_hours: float
 
+    cooling_device: str
+
     devices: List[Device]
 
     @classmethod
@@ -160,6 +162,7 @@ class Clinic:
             inputs["energy_new_air"],
             inputs["start_time_infiltration"],
             inputs["end_time_infiltration"],
+            inputs["cooling_device"],
             devices,
         )
 
@@ -443,7 +446,7 @@ def calculate_clinic_cooling_load(
             temperatures[hour],
         )
         for hour in range(0, clinic_location.max_years * HOURS_PER_YEAR)
-    ]
+    ]  # [kW]
 
     try:
         (_, waste_heat_produced, _,) = process_load_profiles(
@@ -484,7 +487,9 @@ def calculate_clinic_cooling_load(
         )
         raise
 
-    return pd.DataFrame(clinic_cooling_load) + pd.DataFrame(waste_heat_produced.sum(axis=1))
+    return pd.DataFrame(clinic_cooling_load) + pd.DataFrame(
+        waste_heat_produced.sum(axis=1)
+    )
 
 
 # def refrigeration_cooling_capacity_sizing(building: Clinic, temperature):
