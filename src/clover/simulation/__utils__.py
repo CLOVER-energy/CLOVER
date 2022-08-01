@@ -470,10 +470,34 @@ def determine_available_converters(
 
     available_converters: List[Converter] = []
 
-    if not any([scenario.cooling_scenario, scenario.desalination_scenario, scenario.hot_water_scenario]):
+    if not any(
+        [
+            scenario.cooling_scenario,
+            scenario.desalination_scenario,
+            scenario.hot_water_scenario,
+        ]
+    ):
         return available_converters
 
     # Determine the available converters from the scenarios file.
+    if scenario.cooling_scenario is not None:
+        # Process the cooling converters.
+        for entry in scenario.cooling_scenario.sources:
+            try:
+                available_converters.append(converters[entry])
+            except KeyError:
+                logger.error(
+                    "%sUnknown cooling source specified in the scenario file: %s%s",
+                    BColours.fail,
+                    entry,
+                    BColours.endc,
+                )
+                raise InputFileError(
+                    "cooling scenario",
+                    f"{BColours.fail}Unknown cooling source(s) in the scenario "
+                    + f"file: {entry}{BColours.endc}",
+                ) from None
+
     if scenario.desalination_scenario is not None:
         # Process the clean-water converters.
         for entry in scenario.desalination_scenario.clean_water_scenario.sources:

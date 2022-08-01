@@ -519,6 +519,12 @@ class ColumnHeader(enum.Enum):
     - STORAGE_PROFILE:
         The profile for the electric storage system.
 
+    - TOTAL_COOLING_CONSUMED:
+        The total cooling load consumed by the system.
+
+    - TOTAL_COOLING_LOAD:
+        The total cooling load placed on the system.
+
     - TOTAL_CW_CONSUMED:
         The total clean water that was consumed.
 
@@ -613,6 +619,7 @@ class ColumnHeader(enum.Enum):
     KEROSENE_MITIGATION = "Kerosene mitigation"
     LOAD_ENERGY = "Load energy (kWh)"
     MAXIMUM = "Maximum"
+    POWER_CONSUMED_BY_COOLING = "Power consumed providing cooling (kWh)"
     POWER_CONSUMED_BY_DESALINATION = "Power consumed providing clean water (kWh)"
     POWER_CONSUMED_BY_ELECTRIC_DEVICES = "Power consumed providing electricity (kWh)"
     POWER_CONSUMED_BY_HOT_WATER = "Power consumed providing hot water (kWh)"
@@ -624,6 +631,8 @@ class ColumnHeader(enum.Enum):
     RENEWABLE_ELECTRICITY_SUPPLIED = "Renewables energy supplied (kWh)"
     RENEWABLE_ELECTRICITY_USED_DIRECTLY = "Renewables energy used (kWh)"
     STORAGE_PROFILE = "Storage profile (kWh)"
+    TOTAL_COOLING_CONSUMED = "Total cooling load (kWh_th)"
+    TOTAL_COOLING_LOAD = "Total cooling load (kWh_th)"
     TOTAL_CW_CONSUMED = "Total clean water consumed (l)"
     TOTAL_CW_LOAD = "Total clean water demand (l)"
     TOTAL_CW_SUPPLIED = "Total clean water supplied (l)"
@@ -632,6 +641,7 @@ class ColumnHeader(enum.Enum):
     TOTAL_HW_LOAD = "Total hot-water demand (l)"
     TOTAL_PVT_ELECTRICITY_SUPPLIED = "Total PV-T electric energy supplied (kWh)"
     UNMET_CLEAN_WATER = "Unmet clean water demand (l)"
+    UNMET_COOLING = "Unmet cooling demand (kWh_th)"
     UNMET_ELECTRICITY = "Unmet energy (kWh)"
     WATER_SURPLUS = "Water surplus (l)"
 
@@ -659,7 +669,6 @@ class CoolingMode(enum.Enum):
     THERMAL_ONLY = "thermal_only"
 
 
-
 @dataclasses.dataclass
 class CoolingScenario:
     """
@@ -681,9 +690,7 @@ class CoolingScenario:
     sources: List[str]
 
     @classmethod
-    def from_dict(
-        cls, cooling_inputs: Dict[str, Any], logger: logging.Logger
-    ) -> Any:
+    def from_dict(cls, cooling_inputs: Dict[str, Any], logger: logging.Logger) -> Any:
         """
         Returns a :class:`CoolingScenario` instance based on the input data.
 
@@ -699,9 +706,7 @@ class CoolingScenario:
         """
 
         try:
-            cooling_mode = CoolingMode(
-                cooling_inputs[ResourceType.COOLING.value][MODE]
-            )
+            cooling_mode = CoolingMode(cooling_inputs[ResourceType.COOLING.value][MODE])
         except ValueError:
             logger.error(
                 "%sInvalid cooling mode specified: %s%s",
@@ -747,11 +752,7 @@ class CoolingScenario:
                 "cooling scenario", "Missing cooling scenario cooling sources."
             ) from None
 
-        return cls(
-            cooling_mode,
-            name,
-            sources
-        )
+        return cls(cooling_mode, name, sources)
 
 
 def daily_sum_to_monthly_sum(daily_profile: pd.DataFrame) -> pd.DataFrame:
@@ -1894,6 +1895,7 @@ class RenewablesNinjaError(Exception):
             "your API key and that you have not exceeded the hourly quota of 50 "
             "profiles."
         )
+
 
 @dataclasses.dataclass
 class DesalinationScenario:

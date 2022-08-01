@@ -1300,7 +1300,11 @@ def parse_scenario_inputs(
     try:
         scenarios: List[Scenario] = [
             Scenario.from_dict(
-                cooling_scenarios, desalination_scenarios, hot_water_scenarios, logger, entry
+                cooling_scenarios,
+                desalination_scenarios,
+                hot_water_scenarios,
+                logger,
+                entry,
             )
             for entry in scenario_inputs[SCENARIOS]
         ]
@@ -1374,7 +1378,10 @@ def _parse_clinic_inputs(
 
     # If there is no clinic inputs file, return no clinics.
     if not os.path.isfile(clinic_inputs_filepath):
-        logger.info("No clinics input file found, skipping clinic information. Expected file at %s", clinic_inputs_filepath)
+        logger.info(
+            "No clinics input file found, skipping clinic information. Expected file at %s",
+            clinic_inputs_filepath,
+        )
         return []
 
     # Turn it into a Python dictionary by opening the file
@@ -1389,7 +1396,13 @@ def _parse_clinic_inputs(
         try:
             clinics.append(clinic.Clinic.from_dict(clinic_information))
         except Exception as e:
-            logger.error("%sError parsing clinic '%s': %s%s", BColours.fail, clinic_information["name"] if "name" in clinic_information else "N/A", str(e), BColours.endc)
+            logger.error(
+                "%sError parsing clinic '%s': %s%s",
+                BColours.fail,
+                clinic_information["name"] if "name" in clinic_information else "N/A",
+                str(e),
+                BColours.endc,
+            )
             raise InputFileError("Error parsing clinic information.")
 
     logger.info("Clinic information is parsed!")
@@ -2247,7 +2260,9 @@ def _parse_minigrid_inputs(  # pylint: disable=too-many-locals, too-many-stateme
         electric_water_heater = None
 
     # Parse the clinic information
-    clinics: Optional[List[clinic.Clinic]] = _parse_clinic_inputs(inputs_directory_relative_path, logger)
+    clinics: Optional[List[clinic.Clinic]] = _parse_clinic_inputs(
+        inputs_directory_relative_path, logger
+    )
     logger.info("Clinic information successfully parsed.")
 
     minigrid: Minigrid = Minigrid.from_dict(

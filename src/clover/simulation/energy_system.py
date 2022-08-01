@@ -1574,10 +1574,16 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
     processed_total_hw_load = processed_total_hw_load.reset_index(drop=True)
 
     # Calculate cooling-related profiles.
+    total_cooling_load: pd.DataFrame = pd.DataFrame([0] * (end_hour - start_hour))
+    electric_cooling_power_consumption: pd.DataFrame = pd.DataFrame(
+        [0] * (end_hour - start_hour)
+    )
+    total_met_cooling_load: pd.DataFrame = pd.DataFrame([0] * (end_hour - start_hour))
+    unmet_cooling_load: pd.DataFrame = pd.DataFrame([0] * (end_hour - start_hour))
     if ResourceType.COOLING in scenario.resource_types:
         for clinic in minigrid.buildings:
-            # Determine the available cooling converter.
-            cooling_converter = [
+            # Determine the available cooling converters.
+            cooling_converters = [
                 converter
                 for converter in available_converters
                 if converter.output_resource_type == ResourceType.COOLING
@@ -1588,27 +1594,41 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
                 scenario, total_loads[ResourceType.COOLING]
             )
             cooling_load *= cooling_load > 0
+            remaining_cooling_load = cooling_load.copy()
 
-            # Use the efficiency of this air conditioner to work out its electrical
-            # load
-            converted_cooling_load = cooling_load * cooling_converter.consumption
+            # Work through the available converters.
+            for cooling_converter in cooling_converters:
+                # Use the efficiency of this air conditioner to work out its electrical
+                # load
+                electric_cooling_load = (
+                    remaining_cooling_load * cooling_converter.consumption
+                )
 
-            # The air conditioner can only operate provided that the cooling load is
-            # less than the maximum capacity of the conditioner.
-            electric_cooling_load = pd.DataFrame(
-                [
-                    min(entry, cooling_converter.maximum_output_capacity / 1000)
-                    for entry in converted_cooling_load[0].values
-                ]
-            )
+                # The air conditioner can only operate provided that the cooling load is
+                # less than the maximum capacity of the conditioner.
+                met_electric_cooling_load = pd.DataFrame(
+                    [
+                        min(entry, cooling_converter.maximum_output_capacity / 1000)
+                        for entry in electric_cooling_load[0].values
+                    ]
+                )
+                electric_cooling_power_consumption += met_electric_cooling_load
+                remaining_cooling_load -= (
+                    met_electric_cooling_load / cooling_converter.consumption
+                )
 
-            unmet_cooling_load = converted_cooling_load - electric_cooling_load
+            total_cooling_load += cooling_load
+            total_met_cooling_load += cooling_load - remaining_cooling_load
+            unmet_cooling_load += remaining_cooling_load
             logger.info("Total electric cooling load computed.")
-            logger.debug(
-                "Cooling load was unmet %s of the time, met %s of the time.",
-                f"{round(sum(unmet_cooling_load[0]) / sum(electric_cooling_load[0]), 2)}",
-                f"{round(sum(unmet_cooling_load[0]) / sum(cooling_load[0]), 2)}",
-            )
+            if len(cooling_converters) > 0:
+                logger.debug(
+                    "Cooling load was unmet %s of the time, met %s of the time.",
+                    f"{round(sum(unmet_cooling_load[0]) / sum(cooling_load[0]), 2)}",
+                    f"{round(sum(cooling_load[0]) - round(sum(remaining_cooling_load[0])) / sum(cooling_load[0]), 2)}",
+                )
+            else:
+                logger.debug("No cooling converters defined. Load of %s was unmet ")
     else:
         electric_cooling_load = pd.DataFrame([0] * (end_hour - start_hour))
 
@@ -1628,7 +1648,7 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
             start_hour:end_hour
         ].values
         + clean_water_power_consumed.values
-        + electric_cooling_load.values
+        + electric_cooling_power_consumption.values
         + hot_water_power_consumed.values
         + thermal_desalination_electric_power_consumed.values
     )
@@ -1979,11 +1999,11 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
     unmet_energy = pd.DataFrame(
         (
             load_energy.values
-            + thermal_desalination_electric_power_consumed.values
             + clean_water_power_consumed.values
             + hot_water_power_consumed.values
-            - renewables_energy_used_directly.values
+            + thermal_desalination_electric_power_consumed.values
             - grid_energy.values
+            - renewables_energy_used_directly.values
             - storage_power_supplied_frame.values
         )
     )
@@ -2069,8 +2089,9 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
         total_energy_used
         - excess_energy_used_desalinating_frame  # type: ignore
         - clean_water_power_consumed  # type: ignore
-        - thermal_desalination_electric_power_consumed  # type: ignore
+        - electric_cooling_power_consumption
         - hot_water_power_consumed  # type: ignore
+        - thermal_desalination_electric_power_consumed  # type: ignore
     )
     power_used_on_electricity.columns = pd.Index(
         [ColumnHeader.POWER_CONSUMED_BY_ELECTRIC_DEVICES.value]
@@ -2509,11 +2530,19 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
         system_performance_outputs_list.append(brine_produced)
 
     if ResourceType.COOLING in scenario.resource_types:
-        cooling_load.columns = pd.Index(["Net cooling load / kW"])
-        electric_cooling_load.columns = pd.Index(["Net electric cooling load / kW"])
-        unmet_cooling_load.columns = pd.Index(["Unmet cooling demand / kW"])
+        electric_cooling_power_consumption.columns = pd.Index(
+            [ColumnHeader.POWER_CONSUMED_BY_COOLING]
+        )
+        total_cooling_load.columns = pd.Index([ColumnHeader.TOTAL_COOLING_LOAD])
+        total_met_cooling_load.columns = pd.Index([ColumnHeader.TOTAL_COOLING_CONSUMED])
+        unmet_cooling_load.columns = pd.Index([ColumnHeader.UNMET_COOLING])
         system_performance_outputs_list.extend(
-            [cooling_load, electric_cooling_load, unmet_cooling_load]
+            [
+                total_cooling_load,
+                electric_cooling_power_consumption,
+                total_met_cooling_load,
+                unmet_cooling_load,
+            ]
         )
 
     system_performance_outputs = pd.concat(
