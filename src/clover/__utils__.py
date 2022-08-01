@@ -1212,6 +1212,9 @@ class ResourceType(enum.Enum):
     - UNCLEAN_WATER:
         Represents feedwater which has not yet been warmed or heated by the minigrid.
 
+    - WASTE_HEAT:
+        Waste heat produced by the system.
+
     """
 
     CLEAN_WATER = "clean_water"
@@ -1224,6 +1227,7 @@ class ResourceType(enum.Enum):
     HOT_UNCLEAN_WATER = "hot_feedwater"
     MISC = "misc"
     UNCLEAN_WATER = "feedwater"
+    WASTE_HEAT = "waste_heat"
 
 
 # Resource name to resource type mapping:
@@ -1239,6 +1243,7 @@ RESOURCE_NAME_TO_RESOURCE_TYPE_MAPPING = {
     "hot_water": ResourceType.HOT_CLEAN_WATER,
     "hot_untreated_water": ResourceType.HOT_UNCLEAN_WATER,
     "water": ResourceType.GENERIC_WATER,
+    "waste_heat": ResourceType.WASTE_HEAT,
 }
 
 

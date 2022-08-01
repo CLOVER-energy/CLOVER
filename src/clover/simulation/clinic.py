@@ -17,14 +17,34 @@ clinic.py - Works out the health centre load.
 """
 
 import dataclasses
+import os
 
-from typing import List
+from logging import Logger
 
-import yaml
+from typing import Any, Dict, List
 
 import numpy as np
 import pandas as pd
+
 import matplotlib.pyplot as plt
+
+
+from ..__utils__ import (
+    HOURS_PER_YEAR,
+    BColours,
+    DemandType,
+    FAILED,
+    InputFileError,
+    Location,
+    LOGGER_DIRECTORY,
+)
+from ..load.load import Device, process_load_profiles, ResourceType
+
+
+__all__ = (
+    "calculate_clinic_cooling_load",
+    "Clinic",
+)
 
 
 @dataclasses.dataclass
@@ -47,6 +67,7 @@ class Clinic:
     """
 
     name: str
+    demand_type: DemandType
 
     # Transmission Load
     floor_area: float  # Tells python that a clinic has an area, and it's a number
@@ -89,7 +110,58 @@ class Clinic:
     start_time_infiltration: List[int]
     end_time_infiltration: List[int]
 
-    run_hours: float
+    # run_hours: float
+
+    devices: List[Device]
+
+    @classmethod
+    def from_dict(cls, inputs: Dict[str, Any]) -> Any:
+        """
+        Instantiate a clinic based on the inputs.
+
+        """
+
+        # Create a list of devices.
+        devices = [
+            Device.from_dict(device_inputs) for device_inputs in inputs["devices"]
+        ]
+
+        # Create a clinic
+        return cls(
+            inputs["name"],
+            DemandType(inputs["demand_type"]),
+            inputs["floor_area"],
+            inputs["roof_area"],
+            inputs["surface_area_walls"],
+            inputs["surface_area_doors_windows"],
+            inputs["u_value_walls"],
+            inputs["u_value_windows_doors"],
+            inputs["u_value_floor"],
+            inputs["u_value_roof"],
+            inputs["inside_ideal_temperature"],
+            inputs["staff"],
+            inputs["patients"],
+            inputs["heat_loss_staff"],
+            inputs["heat_loss_patients"],
+            inputs["start_time_staff"],
+            inputs["end_time_staff"],
+            inputs["start_time_patients"],
+            inputs["end_time_patients"],
+            inputs["lamps_internal"],
+            inputs["lamps_external"],
+            inputs["start_time_lamps"],
+            inputs["end_time_lamps"],
+            inputs["time_lamps_external"],
+            inputs["wattage_lamps"],
+            inputs["fridge_wattage"],
+            inputs["time_fridge"],
+            inputs["changes"],
+            inputs["volume_cold_store"],
+            inputs["energy_new_air"],
+            inputs["start_time_infiltration"],
+            inputs["end_time_infiltration"],
+            devices,
+        )
 
 
 # MY_PATH = "C:/Users/Ilaria/CLOVER/locations/Bahraich/inputs/simulation/"
@@ -282,11 +354,11 @@ def infiltration_load(building: Clinic, current_hour: int, temperature: float) -
 
     if start_time <= (current_hour % 24) < end_time:
         return (
-            building.changes # [/hour]
+            building.changes  # [/hour]
             * building.volume_cold_store  # [m^3]
             * building.energy_new_air  # [kJ/m^3*degC]
             * (temperature - building.inside_ideal_temperature)  # [degC]
-            / 3600 # [s/hour]
+            / 3600  # [s/hour]
         )  # [kW]
     return 0
 
@@ -294,35 +366,125 @@ def infiltration_load(building: Clinic, current_hour: int, temperature: float) -
 # infiltration_load(MY_CLINIC)
 
 
-# TESTED - WORKING
-def calculate_cooling_load(building: Clinic, current_hour: float, temperature: float):
-    """
-    Computes the total cooling load in kW for a building.
-
-    """
-
+def _calculate_cooling_load(
+    building: Clinic, current_hour: int, temperature: float
+) -> float:
     # TODO:
     # A poential error bar calculation will go here, whereby different maximum and
     # minimum points may be tested in order to check the sensitivity of the calculation.
     #
     # building.patients += 0
-    # 
+    #
 
     q1 = calculate_transmission_load(building, temperature)
-    q2 = calculate_internal_load_people(
-        building, current_hour
-    )
+    q2 = calculate_internal_load_people(building, current_hour)
     # q3 = internal_load_lighting(building)
     # q4 = fridge_load(building)
     q5 = infiltration_load(building, current_hour, temperature)
 
-    print(q1, type(q1))
-    print(q2, type(q2))
-    # print(q3, type(q3))
-    # print(q4, type(q4))
-    print(q5, type(q5))
-    # return (q1 + q2[i] + q3[i] + q4 + q5[i] for i in range(len(q2[0])))
-    return (q1 + q2 + q5)
+    return q1 + q2 + q5
+
+
+# TESTED - WORKING
+def calculate_clinic_cooling_load(
+    auto_generated_files_directory: str,
+    building: Clinic,
+    device_utilisations: Dict[Device, pd.DataFrame],
+    disable_tqdm: bool,
+    location: Location,
+    logger: Logger,
+    logger_name: str,
+    regenerate: bool,
+    temperatures: pd.Series,
+) -> pd.DataFrame:
+    """
+    Computes the total cooling load in kW for a building.
+
+    Inputs:
+        - auto_generated_files_directory:
+            Directory containing auto-generated device utilisation profiles.
+        - building:
+            Clinic being considered.
+        - current_hour:
+            Current hour of simulation.
+        - device_utilisations:
+            The processed device utilisation information.
+        - disable_tqdm:
+            Whether to disable the tqdm progress bars (True) or display them (False).
+        - location:
+            The location currently being considered.
+        - logger:
+            The logger to use for the run.
+        - logger_name:
+            The name of the current logger.
+        - regenerate:
+            Whether to force-regenerate the various profiles.
+        - temperatures:
+
+    """
+
+    # Calculate the waste heat generated by the devices within the clinic.
+    clinic_location = Location(
+        0,
+        1,
+        location.country,
+        location.latitude,
+        location.longitude,
+        location.max_years,
+        location.name,
+        location.time_difference,
+    )
+
+    # Calculate the general load of the building excluding waste heat
+    clinic_cooling_load = [
+        _calculate_cooling_load(
+            building,
+            hour,
+            temperatures[hour],
+        )
+        for hour in range(0, clinic_location.max_years * HOURS_PER_YEAR)
+    ]
+
+    try:
+        (_, waste_heat_produced, _,) = process_load_profiles(
+            auto_generated_files_directory,
+            device_utilisations,
+            disable_tqdm,
+            clinic_location,
+            logger,
+            regenerate,
+            ResourceType.WASTE_HEAT,
+        )
+    except InputFileError:
+        logger.error(
+            "Error determining heat production from clinic devices for clinic %s.",
+            building.name,
+        )
+        print(
+            "Generating necessary profiles .................................    "
+            + f"{FAILED}"
+        )
+        raise
+    except Exception as e:
+        logger.error(
+            "Error determining heat production from clinic devices for clinic %s.",
+            building.name,
+        )
+        print(
+            "Generating necessary profiles .................................    "
+            + f"{FAILED}"
+        )
+        logger.error(
+            "%sAn unexpected error occurred generating the load profiles. See %s for "
+            "details: %s%s",
+            BColours.fail,
+            f"{os.path.join(LOGGER_DIRECTORY, logger_name)}.log",
+            str(e),
+            BColours.endc,
+        )
+        raise
+
+    return pd.DataFrame(clinic_cooling_load) + pd.DataFrame(waste_heat_produced.sum(axis=1))
 
 
 # def refrigeration_cooling_capacity_sizing(building: Clinic, temperature):

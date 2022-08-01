@@ -46,13 +46,16 @@ from .mains_supply import grid, water_source
 from .scripts import new_location
 from .simulation import energy_system
 
+from .simulation.clinic import calculate_clinic_cooling_load
 from .optimisation.__utils__ import save_optimisation
 from .optimisation.appraisal import appraise_system
 from .optimisation.optimisation import multiple_optimisation_step
 from .printer import generate_optimisation_string, generate_simulation_string
 
 from .__utils__ import (
+    HOURS_PER_YEAR,
     BColours,
+    DemandType,
     DONE,
     FAILED,
     InternalError,
@@ -558,6 +561,7 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
 
     try:
         (
+            clinics,
             converters,
             device_utilisations,
             minigrid,
@@ -798,13 +802,6 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
             water_source_times,
         )
 
-    # Assemble a means of storing the relevant loads.
-    total_loads: Dict[ResourceType, Optional[pd.DataFrame]] = {
-        ResourceType.CLEAN_WATER: total_cw_load,
-        ResourceType.ELECTRIC: 0.001 * total_electric_load,  # type: ignore
-        ResourceType.HOT_CLEAN_WATER: total_hw_load,
-    }
-
     # Generate the grid-availability profiles if relevant.
     if any(scenario.grid for scenario in scenarios):
         logger.info("Generating grid-availability profiles.")
@@ -883,6 +880,51 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
         logger.info("Total wind output successfully computed and saved.")
     else:
         total_wind_data = None
+
+    if len(clinics) > 0:
+        total_cooling_load: pd.DataFrame = pd.DataFrame(
+            [[0, 0, 0]] * HOURS_PER_YEAR * location.max_years
+        )
+        total_cooling_load.columns = pd.Index(
+            [
+                DemandType.DOMESTIC.value,
+                DemandType.COMMERCIAL.value,
+                DemandType.PUBLIC.value,
+            ]
+        )
+
+        for clinic in clinics:
+            # Determine the device utilisations for the devices in the clinic.
+            clinic_device_utilisations = {
+                device: {
+                    device.name: utilisation
+                    for device, utilisation in device_utilisations.items()
+                }[device.name]
+                for device in clinic.devices
+            }
+
+            # Compute the cooling load for the clinic.
+            clinic_load = calculate_clinic_cooling_load(
+                auto_generated_files_directory,
+                clinic,
+                clinic_device_utilisations,
+                disable_tqdm,
+                location,
+                logger,
+                LOGGER_NAME,
+                parsed_args.regenerate,
+                total_solar_data[solar.SolarDataType.TEMPERATURE.value],
+            )
+            clinic_load.columns = pd.Index([clinic.demand_type.value])
+            total_cooling_load[clinic.demand_type.value] = pd.DataFrame(total_cooling_load[clinic.demand_type.value]) + clinic_load
+
+    # Assemble a means of storing the relevant loads.
+    total_loads: Dict[ResourceType, Optional[pd.DataFrame]] = {
+        ResourceType.CLEAN_WATER: total_cw_load,
+        ResourceType.COOLING: total_cooling_load,
+        ResourceType.ELECTRIC: 0.001 * total_electric_load,  # type: ignore
+        ResourceType.HOT_CLEAN_WATER: total_hw_load,
+    }
 
     logger.info(
         "Setup complete, continuing to CLOVER %s.",

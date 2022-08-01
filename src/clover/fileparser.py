@@ -27,6 +27,8 @@ from sklearn.linear_model._coordinate_descent import Lasso
 
 from . import load
 from .generation import solar
+from .simulation import clinic
+
 from .impact.finance import COSTS, FINANCE_IMPACT, ImpactingComponent
 from .impact.ghgs import EMISSIONS, GHG_IMPACT
 from .simulation.diesel import DIESEL_CONSUMPTION, MINIMUM_LOAD, DieselWaterHeater
@@ -1317,32 +1319,32 @@ def parse_scenario_inputs(
 
 
 def _parse_clinic_inputs(
-    args,
-):
+    inputs_directory_relative_path: str,
+    logger: Logger,
+) -> List[clinic.Clinic]:
 
     # Work out where the file is
     clinic_inputs_filepath = os.path.join(
         inputs_directory_relative_path,
-        "simulation/clinics.yaml",
+        "simulation",
+        "clinics.yaml",
     )
 
-    # Turn it into a Python dictionary
+    # Turn it into a Python dictionary by opening the file
     clinic_inputs = read_yaml(
         clinic_inputs_filepath,
         logger,
     )
 
-    # {"clinics": [{"name": "uganda_1", "area": 500}]}
-
     # Turn it into "Clinics"
     clinics: List[clinic.Clinic] = []
     for clinic_information in clinic_inputs["clinics"]:
         # {"name": "uganda_1", "area": 500}
-        clinics.append(clinic.Clinic.from_dict(logger, clinics))
+        clinics.append(clinic.Clinic.from_dict(clinic_information))
 
     logger.info("Clinic information is parsed!")
 
-    return clincs
+    return clinics
 
 
 def _parse_solar_inputs(  # pylint: disable=too-many-locals, too-many-statements
@@ -2405,6 +2407,7 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
     location_name: str,
     logger: Logger,
 ) -> Tuple[
+    List[clinic.Clinic],
     Dict[str, Converter],
     Dict[load.load.Device, pd.DataFrame],
     Minigrid,
@@ -2438,6 +2441,7 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
 
     Outputs:
         - A tuple containing:
+            - the `list` of :class:`Clinic` instances associated with the minigrid,
             - converters,
             - device_utilisations, optional if carrying out load-profile generation,
             - diesel_inputs,
@@ -2741,6 +2745,9 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
             "Location was not returned when calling `Location.from_dict`."
         )
     logger.info("Location inputs successfully parsed.")
+
+    # Parse the clinic information
+    clinics = _parse_clinic_inputs(inputs_directory_relative_path, logger)
 
     # Parse and collate the impact information.
     finance_inputs_filepath = os.path.join(
@@ -3105,6 +3112,7 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
     logger.debug("Input file information: %s", input_file_info)
 
     return (
+        clinics,
         converters,
         device_utilisations,
         minigrid,
