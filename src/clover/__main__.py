@@ -903,7 +903,7 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
             }
 
             # Compute the cooling load for the clinic.
-            clinic_load = calculate_clinic_cooling_load(
+            clinic_cooling_load, clinic_electric_load = calculate_clinic_cooling_load(
                 auto_generated_files_directory,
                 clinic,
                 clinic_device_utilisations,
@@ -914,10 +914,14 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
                 parsed_args.regenerate,
                 total_solar_data[solar.SolarDataType.TEMPERATURE.value],
             )
-            clinic_load.columns = pd.Index([clinic.demand_type.value])
+            clinic_cooling_load.columns = pd.Index([clinic.demand_type.value])
+
+            # Update the total load variables.
             total_cooling_load[clinic.demand_type.value] = (
-                pd.DataFrame(total_cooling_load[clinic.demand_type.value]) + clinic_load
+                pd.DataFrame(total_cooling_load[clinic.demand_type.value])
+                + clinic_cooling_load
             )
+            total_electric_load = total_electric_load + clinic_electric_load
 
     # Assemble a means of storing the relevant loads.
     total_loads: Dict[ResourceType, Optional[pd.DataFrame]] = {

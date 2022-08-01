@@ -21,7 +21,7 @@ import os
 
 from logging import Logger
 
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Tuple
 
 import numpy as np
 import pandas as pd
@@ -399,7 +399,7 @@ def calculate_clinic_cooling_load(
     logger_name: str,
     regenerate: bool,
     temperatures: pd.Series,
-) -> pd.DataFrame:
+) -> Tuple[pd.DataFrame, pd.DataFrame]:
     """
     Computes the total cooling load in kW for a building.
 
@@ -423,6 +423,10 @@ def calculate_clinic_cooling_load(
         - regenerate:
             Whether to force-regenerate the various profiles.
         - temperatures:
+
+    Outputs:
+        - The cooling load of the clinic,
+        - The electric load of the clinic.
 
     """
 
@@ -487,8 +491,51 @@ def calculate_clinic_cooling_load(
         )
         raise
 
-    return pd.DataFrame(clinic_cooling_load) + pd.DataFrame(
-        waste_heat_produced.sum(axis=1)
+    try:
+        (_, electricity_consumption, _,) = process_load_profiles(
+            auto_generated_files_directory,
+            device_utilisations,
+            disable_tqdm,
+            clinic_location,
+            logger,
+            regenerate,
+            ResourceType.ELECTRIC,
+        )
+    except InputFileError:
+        logger.error(
+            "Error determining electricity consumption from clinic devices for clinic "
+            "%s.",
+            building.name,
+        )
+        print(
+            "Generating necessary profiles .................................    "
+            + f"{FAILED}"
+        )
+        raise
+    except Exception as e:
+        logger.error(
+            "Error determining electricity consumption from clinic devices for clinic "
+            "%s.",
+            building.name,
+        )
+        print(
+            "Generating necessary profiles .................................    "
+            + f"{FAILED}"
+        )
+        logger.error(
+            "%sAn unexpected error occurred generating the load profiles. See %s for "
+            "details: %s%s",
+            BColours.fail,
+            f"{os.path.join(LOGGER_DIRECTORY, logger_name)}.log",
+            str(e),
+            BColours.endc,
+        )
+        raise
+
+    return (
+        pd.DataFrame(clinic_cooling_load)
+        + pd.DataFrame(waste_heat_produced.sum(axis=1)),
+        electricity_consumption,
     )
 
 
