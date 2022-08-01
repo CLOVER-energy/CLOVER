@@ -470,7 +470,7 @@ def determine_available_converters(
 
     available_converters: List[Converter] = []
 
-    if scenario.desalination_scenario is None and scenario.hot_water_scenario is None:
+    if not any([scenario.cooling_scenario, scenario.desalination_scenario, scenario.hot_water_scenario]):
         return available_converters
 
     # Determine the available converters from the scenarios file.

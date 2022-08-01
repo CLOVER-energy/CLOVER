@@ -1579,10 +1579,10 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
             # Determine the available cooling converter.
             cooling_converter = [
                 converter
-                for converter in converters.values()
+                for converter in available_converters
                 if converter.output_resource_type == ResourceType.COOLING
                 if converter.name == clinic.cooling_device
-            ][0]
+            ]
 
             cooling_load = compute_processed_load_profile(
                 scenario, total_loads[ResourceType.COOLING]

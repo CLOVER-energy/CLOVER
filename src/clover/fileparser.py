@@ -36,6 +36,7 @@ from .simulation.diesel import DIESEL_CONSUMPTION, MINIMUM_LOAD, DieselWaterHeat
 from .__utils__ import (
     AuxiliaryHeaterType,
     BColours,
+    CoolingScenario,
     DesalinationScenario,
     DieselMode,
     EXCHANGER,
@@ -99,6 +100,14 @@ CONVERTERS: str = "converters"
 # Conversion inputs file:
 #   The relative path to the conversion-inputs file.
 CONVERSION_INPUTS_FILE: str = os.path.join("generation", "conversion_inputs.yaml")
+
+# Cooling scenarios inputs file:
+#   The relative path to the cooling-scenarios inputs file.
+COOLING_SCENARIO_INPUTS_FILE: str = os.path.join("scenario", "cooling_scenarios.yaml")
+
+# Cooling scenarios:
+#   Keyword used for parsing cooling scenarios.
+COOLING_SCENARIOS: str = "cooling_scenarios"
 
 # Desalination scenarios:
 #   Keyword used for parsing desalination scenarios.
@@ -1175,6 +1184,10 @@ def parse_scenario_inputs(
 
     """
 
+    cooling_scenario_inputs_filepath: str = os.path.join(
+        inputs_directory_relative_path,
+        COOLING_SCENARIO_INPUTS_FILE,
+    )
     desalination_scenario_inputs_filepath: str = os.path.join(
         inputs_directory_relative_path,
         DESALINATION_SCENARIO_INPUTS_FILE,
@@ -1182,6 +1195,35 @@ def parse_scenario_inputs(
     hot_water_scenario_inputs_filepath: str = os.path.join(
         inputs_directory_relative_path, HOT_WATER_SCENARIO_INPUTS_FILE
     )
+
+    # Parse the cooling scenario inputs information if relevant.
+    if os.path.isfile(cooling_scenario_inputs_filepath):
+        logger.info("Parsing cooling inputs file.")
+        cooling_scenario_inputs = read_yaml(
+            cooling_scenario_inputs_filepath,
+            logger,
+        )
+        if not isinstance(cooling_scenario_inputs, dict):
+            raise InputFileError(
+                "scenario inputs", "Cooling scenario inputs is not of type `dict`."
+            )
+        try:
+            cooling_scenarios: Optional[List[DesalinationScenario]] = [
+                CoolingScenario.from_dict(entry, logger)
+                for entry in cooling_scenario_inputs[COOLING_SCENARIOS]
+            ]
+        except Exception as e:
+            logger.error(
+                "%sError generating cooling scenarios from inputs file: %s%s",
+                BColours.fail,
+                str(e),
+                BColours.endc,
+            )
+            raise
+        logger.info("Cooling scenarios successfully parsed.")
+    else:
+        cooling_scenarios = None
+        logger.info("No cooling scenarios files provided, skipping.")
 
     # Parse the desalination scenario inputs information if relevant.
     if os.path.isfile(desalination_scenario_inputs_filepath):
@@ -1258,7 +1300,7 @@ def parse_scenario_inputs(
     try:
         scenarios: List[Scenario] = [
             Scenario.from_dict(
-                desalination_scenarios, hot_water_scenarios, logger, entry
+                cooling_scenarios, desalination_scenarios, hot_water_scenarios, logger, entry
             )
             for entry in scenario_inputs[SCENARIOS]
         ]
