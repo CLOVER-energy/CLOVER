@@ -18,9 +18,9 @@ for use locally within CLOVER.
 
 """
 
-from abc import ABC, abstractmethod
-import enum
+import math
 
+from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from logging import Logger
 from typing import Any, Dict, List, Optional, Tuple
@@ -219,6 +219,7 @@ class SolarPanel(ABC):  # pylint: disable=too-few-public-methods
     def calculate_performance(
         self,
         ambient_temperature: float,
+        htf_heat_capacity: float,
         input_temperature: float,
         logger: Logger,
         mass_flow_rate: float,
@@ -231,6 +232,9 @@ class SolarPanel(ABC):  # pylint: disable=too-few-public-methods
         Inputs:
             - ambient_temperature:
                 The ambient temperature, measured in degrees Celcius.
+            - htf_heat_capacity:
+                The heat capacity of the HTF entering the collector, measured in Joules
+                per kilogram Kelvin (J/kgK).
             - input_temperature:
                 The input temperature of the HTF entering the collector, measured in
                 in degrees Celcius.
@@ -387,6 +391,7 @@ class PVPanel(
     def calculate_performance(
         self,
         ambient_temperature: float,
+        htf_heat_capacity: float,
         input_temperature: float,
         logger: Logger,
         mass_flow_rate: float,
@@ -567,6 +572,7 @@ class HybridPVTPanel(SolarPanel, panel_type=SolarPanelType.PV_T):
     def calculate_performance(
         self,
         ambient_temperature: float,
+        htf_heat_capacity: float,
         input_temperature: float,
         logger: Logger,
         mass_flow_rate: float,
@@ -582,6 +588,9 @@ class HybridPVTPanel(SolarPanel, panel_type=SolarPanelType.PV_T):
         Inputs:
             - ambient_temperature:
                 The ambient temperature, measured in degrees Celcius.
+            - htf_heat_capacity:
+                The heat capacity of the HTF entering the collector, measured in Joules
+                per kilogram Kelvin (J/kgK).
             - input_temperature:
                 The input temperature of the HTF entering the PV-T collector, measured
                 in degrees Celcius.
@@ -767,6 +776,7 @@ class SolarThermalPanel(SolarPanel, panel_type=SolarPanelType.SOLAR_THERMAL):
     def calculate_performance(
         self,
         ambient_temperature: float,
+        htf_heat_capacity: float,
         input_temperature: float,
         logger: Logger,
         mass_flow_rate: float,
@@ -816,6 +826,9 @@ class SolarThermalPanel(SolarPanel, panel_type=SolarPanelType.SOLAR_THERMAL):
         Inputs:
             - ambient_temperature:
                 The ambient temperature, measured in degrees Celcius.
+            - htf_heat_capacity:
+                The heat capacity of the HTF entering the collector, measured in Joules
+                per kilogram Kelvin (J/kgK).
             - input_temperature:
                 The input temperature of the HTF entering the PV-T collector, measured
                 in degrees Celcius.
@@ -842,12 +855,52 @@ class SolarThermalPanel(SolarPanel, panel_type=SolarPanelType.SOLAR_THERMAL):
 
         """
 
-        # * Compute the various terms of the equation
+        # Compute the various terms of the equation
+        second_order_coefficient: float = self.performance_curve.c_2 / (
+            4 * solar_irradiance
+        )
 
-        # * Use numpy or Pandas to solve the quadratic to determine the performance of
-        # * the collector.
+        first_order_coefficient: float = (1 / solar_irradiance) * (
+            (mass_flow_rate * htf_heat_capacity / self.area)
+            + self.performance_curve.c1 / 2
+            + (self.performance_curve.c2 / 2)
+            * (input_temperature - 2 * ambient_temperature)
+        )
 
-        output_temperature: float = 0.0
+        zeroth_order_coefficient: float = (1 / solar_irradiance) * (
+            (self.performance_curve.c_2 / 4)
+            * (input_temperature**2 + 4 * ambient_temperature**2)
+            + (
+                (self.performance_curve.c_1 / 2)
+                - self.performance_curve.c_2 * ambient_temperature
+                - (mass_flow_rate * htf_heat_capacity / self.area)
+            )
+            * input_temperature
+            - self.performance_curve.c_1 * ambient_temperature
+        ) - self.performance_curve.eta_0
+
+        # Use numpy or Pandas to solve the quadratic to determine the performance of
+        # the collector
+        output_temperature: float = (
+            -first_order_coefficient
+            + math.sqrt(
+                first_order_coefficient**2
+                - 4 * zeroth_order_coefficient * second_order_coefficient
+            )
+        ) / (2 * zeroth_order_coefficient)
+        negative_root: float = (
+            -first_order_coefficient
+            - math.sqrt(
+                first_order_coefficient**2
+                - 4 * zeroth_order_coefficient * second_order_coefficient
+            )
+        ) / (2 * zeroth_order_coefficient)
+
+        import pdb
+
+        pdb.set_trace(
+            header=f"Roots: positive={round(output_temperature, 2)}, negative={round(negative_root, 2)}"
+        )
 
         return None, output_temperature
 
