@@ -13,7 +13,7 @@ authors:
   - family-names: Nelson
     given-names: Jenny
     orcid: https://orcid.org/0000-0003-1048-1330
-title: CLOVER-energy/CLOVER, CLOVER v5.0.4, Grid prioritisation functionality bugfix
+title: CLOVER-energy/CLOVER, CLOVER v5.0.4.post1, Grid prioritisation functionality bugfix
 version: v5.0.4
 doi: 10.5281/zenodo.6925535
 date-released: 2022-08-03
