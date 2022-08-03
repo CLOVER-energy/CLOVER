@@ -742,6 +742,25 @@ def _simulation_iteration(  # pylint: disable=too-many-locals, too-many-statemen
         ]
     ] = []
 
+    # Check that a valid set of sizes were passed in and warn the user if not.
+    if not isinstance(pv_sizes.step, int) and minigrid.pv_panel.pv_unit_overrided:
+        logger.warning(
+            "The pv-panel unit size of %s is not an integer, and a non-integer pv step "
+            "size of %s has also been selected.",
+            round(minigrid.pv_panel.pv_unit, 2),
+            round(pv_sizes.step, 2),
+        )
+    if minigrid.battery is not None:
+        if not isinstance(storage_sizes.step, int) and not isinstance(
+            minigrid.battery.capacity, int
+        ):
+            logger.warning(
+                "The battery capacity of %s is not an integer capacity, and a non-integer "
+                "storage step size of %s has also been selected.",
+                round(minigrid.battery.capacity, 2),
+                round(storage_sizes.step, 2),
+            )
+
     simulation_cw_pvt_system_size: List[int] = sorted(
         range(
             int(cw_pvt_system_size.min),
@@ -775,14 +794,14 @@ def _simulation_iteration(  # pylint: disable=too-many-locals, too-many-statemen
         reverse=True,
     )
     simulation_pv_sizes: List[int] = sorted(
-        range(int(pv_sizes.min), int(pv_size_max + pv_sizes.step), int(pv_sizes.step)),
+        np.arange(pv_sizes.min, pv_size_max + pv_sizes.step, pv_sizes.step),
         reverse=True,
     )
     simulation_storage_sizes: List[int] = sorted(
-        range(
-            int(storage_sizes.min),
-            int(storage_size_max + storage_sizes.step),
-            int(storage_sizes.step),
+        np.arange(
+            storage_sizes.min,
+            storage_size_max + storage_sizes.step,
+            storage_sizes.step,
         ),
         reverse=True,
     )
