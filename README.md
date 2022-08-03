@@ -1,6 +1,7 @@
 # CLOVER
 
 CLOVER minigrid simulation and optimisation for supporting rural electrification in developing countries.
+[![DOI](https://zenodo.org/badge/476703736.svg)](https://zenodo.org/badge/latestdoi/476703736)
 
 #### Table Of Contents
 

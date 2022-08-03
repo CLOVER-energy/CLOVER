@@ -1692,8 +1692,7 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
         (
             load_energy.values
             + thermal_desalination_electric_power_consumed.values
-            + clean_water_power_consumed.values
-            - renewables_energy_used_directly.values
+            + -renewables_energy_used_directly.values
             - grid_energy.values
             - storage_power_supplied_frame.values
         )
