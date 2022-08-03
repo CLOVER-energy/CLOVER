@@ -1039,30 +1039,29 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
             True,
             True,
             True,
-            prioritise_self_generation=False,
             pv_size=20,
             storage_size=25,
         )
         self._check_output(
             info_file_data,
-            average_daily_diesel=1.65,
-            average_daily_grid_energy=7.196,
+            average_daily_diesel=0.0,
+            average_daily_grid_energy=5.288,
             average_daily_grid_times=9.338,
-            average_daily_renewables_energy=4.262,
-            average_daily_storage_energy=7.52,
-            blackouts=0.1,
-            cumulative_cost=32249.869,
-            cumulative_ghgs=91620.383,
+            average_daily_renewables_energy=5.801,
+            average_daily_storage_energy=7.516,
+            blackouts=0.029,
+            cumulative_cost=31618.403,
+            cumulative_ghgs=82405.975,
             cumulative_pv_generation=36685.0,
-            diesel_capacity=3.0,
-            diesel_times=0.12,
+            diesel_capacity=0.0,
+            diesel_times=0.0,
             final_pv_size=19.0,
-            final_storage_size=21.34,
+            final_storage_size=21.342,
             initial_pv_size=20.0,
             initial_storage_size=25.0,
-            lcue=1.124,
-            renewables_fraction=0.571,
-            unmet_energy_fraction=0.018,
+            lcue=1.212,
+            renewables_fraction=0.716,
+            unmet_energy_fraction=0.032,
         )
 
     @pytest.mark.integrest
@@ -1076,28 +1075,28 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
         """
 
         info_file_data = self._run_clover_simulation(
-            True, True, True, False, prioritise_self_generation=False, pv_size=20
+            True, True, True, False, pv_size=20
         )
         self._check_output(
             info_file_data,
-            average_daily_diesel=8.821,
-            average_daily_grid_energy=7.196,
+            average_daily_diesel=6.568,
+            average_daily_grid_energy=5.288,
             average_daily_grid_times=9.338,
-            average_daily_renewables_energy=4.262,
+            average_daily_renewables_energy=5.801,
             average_daily_storage_energy=0.0,
             blackouts=0.1,
-            cumulative_cost=26343.181,
-            cumulative_ghgs=100650.761,
+            cumulative_cost=25033.509,
+            cumulative_ghgs=107409.74,
             cumulative_pv_generation=36685.0,
             diesel_capacity=3.0,
-            diesel_times=0.394,
+            diesel_times=0.202,
             final_pv_size=19.0,
             final_storage_size=0.0,
             initial_pv_size=20.0,
             initial_storage_size=0.0,
-            lcue=0.934,
-            renewables_fraction=0.21,
-            unmet_energy_fraction=0.016,
+            lcue=0.948,
+            renewables_fraction=0.329,
+            unmet_energy_fraction=0.062,
         )
 
     @pytest.mark.integrest
@@ -1111,7 +1110,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
         """
 
         info_file_data = self._run_clover_simulation(
-            True, True, False, True, prioritise_self_generation=False, storage_size=25
+            True, True, False, True, storage_size=25
         )
         self._check_output(
             info_file_data,
@@ -1144,9 +1143,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
 
         """
 
-        info_file_data = self._run_clover_simulation(
-            True, True, False, False, prioritise_self_generation=False
-        )
+        info_file_data = self._run_clover_simulation(True, True, False, False)
         self._check_output(
             info_file_data,
             average_daily_diesel=11.153,
@@ -1185,30 +1182,29 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
             False,
             True,
             True,
-            prioritise_self_generation=False,
             pv_size=20,
             storage_size=25,
         )
         self._check_output(
             info_file_data,
-            average_daily_diesel=5.548,
+            average_daily_diesel=2.116,
             average_daily_grid_energy=0.0,
             average_daily_grid_times=0.0,
-            average_daily_renewables_energy=4.271,
+            average_daily_renewables_energy=5.801,
             average_daily_storage_energy=9.807,
-            blackouts=0.099,
-            cumulative_cost=32209.939,
-            cumulative_ghgs=91493.592,
+            blackouts=0.1,
+            cumulative_cost=33821.539,
+            cumulative_ghgs=96230.431,
             cumulative_pv_generation=36685.0,
             diesel_capacity=3.0,
-            diesel_times=0.356,
+            diesel_times=0.071,
             final_pv_size=19.0,
             final_storage_size=20.227,
             initial_pv_size=20.0,
             initial_storage_size=25.0,
-            lcue=1.179,
-            renewables_fraction=0.717,
-            unmet_energy_fraction=0.011,
+            lcue=1.309,
+            renewables_fraction=0.881,
+            unmet_energy_fraction=0.084,
         )
 
     @pytest.mark.integrest
@@ -1222,28 +1218,28 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
         """
 
         info_file_data = self._run_clover_simulation(
-            True, False, True, False, prioritise_self_generation=False, pv_size=20
+            True, False, True, False, pv_size=20
         )
         self._check_output(
             info_file_data,
-            average_daily_diesel=14.879,
+            average_daily_diesel=12.193,
             average_daily_grid_energy=0.0,
             average_daily_grid_times=0.0,
-            average_daily_renewables_energy=4.271,
+            average_daily_renewables_energy=5.801,
             average_daily_storage_energy=0.0,
             blackouts=0.1,
-            cumulative_cost=29025.727,
-            cumulative_ghgs=104115.842,
+            cumulative_cost=26548.761,
+            cumulative_ghgs=108666.131,
             cumulative_pv_generation=36685.0,
             diesel_capacity=3.0,
-            diesel_times=0.726,
+            diesel_times=0.443,
             final_pv_size=19.0,
             final_storage_size=0.0,
             initial_pv_size=20.0,
             initial_storage_size=0.0,
-            lcue=1.092,
-            renewables_fraction=0.223,
-            unmet_energy_fraction=0.011,
+            lcue=0.997,
+            renewables_fraction=0.322,
+            unmet_energy_fraction=0.045,
         )
 
     @pytest.mark.integrest
@@ -1257,7 +1253,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
         """
 
         info_file_data = self._run_clover_simulation(
-            True, False, False, True, prioritise_self_generation=False, storage_size=25
+            True, False, False, True, storage_size=25
         )
         self._check_output(
             info_file_data,
@@ -1290,9 +1286,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
 
         """
 
-        info_file_data = self._run_clover_simulation(
-            True, False, False, False, prioritise_self_generation=False
-        )
+        info_file_data = self._run_clover_simulation(True, False, False, False)
         self._check_output(
             info_file_data,
             average_daily_diesel=18.435,
@@ -1331,30 +1325,29 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
             True,
             True,
             True,
-            prioritise_self_generation=False,
             pv_size=20,
             storage_size=25,
         )
         self._check_output(
             info_file_data,
             average_daily_diesel=0.0,
-            average_daily_grid_energy=7.196,
+            average_daily_grid_energy=5.288,
             average_daily_grid_times=9.338,
-            average_daily_renewables_energy=4.262,
-            average_daily_storage_energy=7.52,
-            blackouts=0.22,
-            cumulative_cost=31728.191,
-            cumulative_ghgs=85650.33,
+            average_daily_renewables_energy=5.801,
+            average_daily_storage_energy=7.516,
+            blackouts=0.029,
+            cumulative_cost=31618.403,
+            cumulative_ghgs=82405.975,
             cumulative_pv_generation=36685.0,
             diesel_capacity=0.0,
             diesel_times=0.0,
             final_pv_size=19.0,
-            final_storage_size=21.34,
+            final_storage_size=21.342,
             initial_pv_size=20.0,
             initial_storage_size=25.0,
-            lcue=1.172,
-            renewables_fraction=0.621,
-            unmet_energy_fraction=0.105,
+            lcue=1.212,
+            renewables_fraction=0.716,
+            unmet_energy_fraction=0.032,
         )
 
     @pytest.mark.integrest
@@ -1368,18 +1361,18 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
         """
 
         info_file_data = self._run_clover_simulation(
-            False, True, True, False, prioritise_self_generation=False, pv_size=20
+            False, True, True, False, pv_size=20
         )
         self._check_output(
             info_file_data,
             average_daily_diesel=0.0,
-            average_daily_grid_energy=7.196,
+            average_daily_grid_energy=5.288,
             average_daily_grid_times=9.338,
-            average_daily_renewables_energy=4.262,
+            average_daily_renewables_energy=5.801,
             average_daily_storage_energy=0.0,
-            blackouts=0.493,
-            cumulative_cost=33980.723,
-            cumulative_ghgs=196112.02,
+            blackouts=0.302,
+            cumulative_cost=33868.076,
+            cumulative_ghgs=192838.735,
             cumulative_pv_generation=36685.0,
             diesel_capacity=0.0,
             diesel_times=0.0,
@@ -1387,9 +1380,9 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
             final_storage_size=0.0,
             initial_pv_size=20.0,
             initial_storage_size=0.0,
-            lcue=1.256,
-            renewables_fraction=0.372,
-            unmet_energy_fraction=0.485,
+            lcue=1.327,
+            renewables_fraction=0.523,
+            unmet_energy_fraction=0.411,
         )
 
     @pytest.mark.integrest
@@ -1403,7 +1396,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
         """
 
         info_file_data = self._run_clover_simulation(
-            False, True, False, True, prioritise_self_generation=False, storage_size=25
+            False, True, False, True, storage_size=25
         )
         self._check_output(
             info_file_data,
@@ -1436,9 +1429,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
 
         """
 
-        info_file_data = self._run_clover_simulation(
-            False, True, False, False, prioritise_self_generation=False
-        )
+        info_file_data = self._run_clover_simulation(False, True, False, False)
         self._check_output(
             info_file_data,
             average_daily_diesel=0.0,
@@ -1477,7 +1468,6 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
             False,
             True,
             True,
-            prioritise_self_generation=False,
             pv_size=20,
             storage_size=25,
         )
@@ -1487,11 +1477,11 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
             average_daily_diesel=0.0,
             average_daily_grid_energy=0.0,
             average_daily_grid_times=0.0,
-            average_daily_renewables_energy=4.271,
+            average_daily_renewables_energy=5.801,
             average_daily_storage_energy=9.807,
-            blackouts=0.454,
-            cumulative_cost=34386.293,
-            cumulative_ghgs=102913.66,
+            blackouts=0.171,
+            cumulative_cost=34260.245,
+            cumulative_ghgs=101882.52,
             cumulative_pv_generation=36685.0,
             diesel_capacity=0.0,
             diesel_times=0.0,
@@ -1499,9 +1489,9 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
             final_storage_size=20.227,
             initial_pv_size=20.0,
             initial_storage_size=25.0,
-            lcue=1.534,
+            lcue=1.415,
             renewables_fraction=1.0,
-            unmet_energy_fraction=0.306,
+            unmet_energy_fraction=0.196,
         )
 
     @pytest.mark.integrest
@@ -1515,18 +1505,18 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
         """
 
         info_file_data = self._run_clover_simulation(
-            False, False, True, False, prioritise_self_generation=False, pv_size=20
+            False, False, True, False, pv_size=20
         )
         self._check_output(
             info_file_data,
             average_daily_diesel=0.0,
             average_daily_grid_energy=0.0,
             average_daily_grid_times=0.0,
-            average_daily_renewables_energy=4.271,
+            average_daily_renewables_energy=5.801,
             average_daily_storage_energy=0.0,
-            blackouts=0.826,
-            cumulative_cost=41931.345,
-            cumulative_ghgs=256032.195,
+            blackouts=0.543,
+            cumulative_cost=41805.298,
+            cumulative_ghgs=255001.055,
             cumulative_pv_generation=36685.0,
             diesel_capacity=0.0,
             diesel_times=0.0,
@@ -1534,9 +1524,9 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
             final_storage_size=0.0,
             initial_pv_size=20.0,
             initial_storage_size=0.0,
-            lcue=3.249,
+            lcue=2.548,
             renewables_fraction=1.0,
-            unmet_energy_fraction=0.801,
+            unmet_energy_fraction=0.692,
         )
 
     @pytest.mark.integtest
@@ -1550,7 +1540,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
         """
 
         info_file_data = self._run_clover_simulation(
-            False, False, False, True, prioritise_self_generation=False, storage_size=25
+            False, False, False, True, storage_size=25
         )
         self._check_output(
             info_file_data,
@@ -1584,6 +1574,4 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
 
         """
 
-        _ = self._run_clover_simulation(
-            False, False, False, False, prioritise_self_generation=False
-        )
+        _ = self._run_clover_simulation(False, False, False, False)
