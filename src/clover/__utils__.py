@@ -1989,7 +1989,7 @@ class HotWaterScenario:
     solar_thermal_scenario: Optional[ThermalCollectorScenario]
 
     @classmethod
-    def from_dict(cls, hot_water_inputs: Dict[str, Any], logger: logging.Logger) -> Any:
+    def from_dict(cls, hot_water_inputs: Dict[str, Any], logger: logging.Logger) -> Any:  # pylint: disable=too-many-statements
         """
         Returns a :class:`DesalinationScenario` instance based on the input data.
 

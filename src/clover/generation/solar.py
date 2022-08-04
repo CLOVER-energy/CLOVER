@@ -862,8 +862,8 @@ class SolarThermalPanel(SolarPanel, panel_type=SolarPanelType.SOLAR_THERMAL):
 
         first_order_coefficient: float = (1 / solar_irradiance) * (
             (mass_flow_rate * htf_heat_capacity / self.area)
-            + self.performance_curve.c1 / 2
-            + (self.performance_curve.c2 / 2)
+            + self.performance_curve.c_1 / 2
+            + (self.performance_curve.c_2 / 2)
             * (input_temperature - 2 * ambient_temperature)
         )
 

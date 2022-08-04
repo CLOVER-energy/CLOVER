@@ -33,6 +33,7 @@ from tqdm import tqdm
 
 from ..__utils__ import (
     BColours,
+    dict_to_dataframe,
     HTFMode,
     InputFileError,
     InternalError,
@@ -41,7 +42,7 @@ from ..__utils__ import (
     Scenario,
     ZERO_CELCIUS_OFFSET,
     SolarPanelType,
-    dict_to_dataframe,
+    ThermalCollectorScenario,
 )
 from ..conversion.conversion import ThermalDesalinationPlant
 from ..generation.solar import HybridPVTPanel, SolarThermalPanel
@@ -423,8 +424,34 @@ def calculate_solar_thermal_output(  # pylint: disable=too-many-locals, too-many
 
         # Determine the collector scenario being considered.
         if solar_thermal_collector.panel_type == SolarPanelType.PV_T:
-            collector_scenario = scenario.desalination_scenario.pvt_scenario
+            if scenario.desalination_scenario.pvt_scenario is None:
+                logger.error(
+                    "%sExpected to calculate PV-T performance outputs but no PV-T "
+                    "scenario was defined for desalination.%s",
+                    BColours.fail,
+                    BColours.endc,
+                )
+                raise InputFileError(
+                    "desalination scenario",
+                    "No pv-t desalination scenario defined despite PV-T output "
+                    "requested.",
+                )
+            collector_scenario: ThermalCollectorScenario = (
+                scenario.desalination_scenario.pvt_scenario
+            )
         elif solar_thermal_collector.panel_type == SolarPanelType.SOLAR_THERMAL:
+            if scenario.desalination_scenario.solar_thermal_scenario is None:
+                logger.error(
+                    "%sExpected to calculate solar-thermal performance outputs but no "
+                    "solar-thermal scenario was defined for desalination.%s",
+                    BColours.fail,
+                    BColours.endc,
+                )
+                raise InputFileError(
+                    "desalination scenario",
+                    "No solar-thermal desalination scenario defined despite "
+                    "solar-thermal output requested.",
+                )
             collector_scenario = scenario.desalination_scenario.solar_thermal_scenario
         else:
             logger.error(
@@ -485,8 +512,32 @@ def calculate_solar_thermal_output(  # pylint: disable=too-many-locals, too-many
 
         # Determine the collector scenario being considered.
         if solar_thermal_collector.panel_type == SolarPanelType.PV_T:
+            if scenario.hot_water_scenario.pvt_scenario is None:
+                logger.error(
+                    "%sExpected to calculate PV-T performance outputs but no PV-T "
+                    "scenario was defined for hot-water.%s",
+                    BColours.fail,
+                    BColours.endc,
+                )
+                raise InputFileError(
+                    "hot-water scenario",
+                    "No pv-t hot-water scenario defined despite PV-T output "
+                    "requested.",
+                )
             collector_scenario = scenario.hot_water_scenario.pvt_scenario
         elif solar_thermal_collector.panel_type == SolarPanelType.SOLAR_THERMAL:
+            if scenario.hot_water_scenario.solar_thermal_scenario is None:
+                logger.error(
+                    "%sExpected to calculate solar-thermal performance outputs but no "
+                    "solar-thermal scenario was defined for hot-water.%s",
+                    BColours.fail,
+                    BColours.endc,
+                )
+                raise InputFileError(
+                    "hot-water scenario",
+                    "No solar-thermal hot-water scenario defined despite solar-thermal "
+                    "output requested.",
+                )
             collector_scenario = scenario.hot_water_scenario.solar_thermal_scenario
         else:
             logger.error(
@@ -605,6 +656,7 @@ def calculate_solar_thermal_output(  # pylint: disable=too-many-locals, too-many
                     collector_output_temperature,
                 ) = solar_thermal_collector.calculate_performance(  # type: ignore [assignment]
                     temperatures[index],
+                    collector_scenario.htf_heat_capacity,
                     best_guess_collector_input_temperature,
                     logger,
                     collector_scenario.mass_flow_rate,
