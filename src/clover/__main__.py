@@ -17,7 +17,7 @@ the clover module from the command-line interface.
 
 """
 
-__version__ = "5.0.4"
+__version__ = "5.1.0b1"
 
 import datetime
 import logging
@@ -58,7 +58,6 @@ from .__utils__ import (
     InternalError,
     Location,
     ResourceType,
-    SystemAppraisal,
     get_logger,
     InputFileError,
     LOCATIONS_FOLDER_NAME,
@@ -741,7 +740,6 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
 
     if any(scenario.desalination_scenario is not None for scenario in scenarios):
         # Create a set of all the conventional clean-water sources available.
-        # @ BenWinchester - Repair conventional sources logic.
         conventional_sources: Set[str] = {
             source
             for scenario in scenarios
@@ -776,7 +774,6 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
 
     if any(scenario.hot_water_scenario is not None for scenario in scenarios):
         # Create a set of all the conventional hot-water sources available.
-        # @ BenWinchester - Repair conventional sources logic.
         conventional_sources = {
             source
             for scenario in scenarios
@@ -863,9 +860,7 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
     )
     logger.info("Total solar output successfully computed and saved.")
 
-    if any(scenario.desalination_scenario is not None for scenario in scenarios) or any(
-        scenario.hot_water_scenario is not None for scenario in scenarios
-    ):
+    if any(scenario.desalination_scenario is not None for scenario in scenarios):
         logger.info("Generating and saving total weather output file.")
         total_weather_data = (  # pylint: disable=unused-variable
             weather.total_weather_output(
@@ -1077,7 +1072,7 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
                         "No electric yearly load statistics were computed for the "
                         "system despite these being needed to appraise the system."
                     )
-                system_appraisal: Optional[SystemAppraisal] = appraise_system(
+                system_appraisal = appraise_system(
                     electric_yearly_load_statistics,
                     simulation.end_year,
                     finance_inputs,
@@ -1085,6 +1080,7 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
                     location,
                     logger,
                     None,
+                    scenario,
                     system_performance_outputs,
                     simulation.start_year,
                     system_details,

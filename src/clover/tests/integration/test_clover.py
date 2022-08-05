@@ -385,7 +385,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
         )
         self.assertEqual(
             info_file_data["simulation_1"]["system_appraisal"]["criteria"][
-                "unmet_energy_fraction"
+                "unmet_electricity_fraction"
             ],
             unmet_energy_fraction,
         )

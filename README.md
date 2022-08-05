@@ -11,7 +11,7 @@ CLOVER minigrid simulation and optimisation for supporting rural electrification
  * [Stable installation](#stable-installation)
    * [Upgrading](#upgrading)
  * [Downloading as a developer](#downloading-as-a-developer)
- 
+   * [Downloading PV-T modelling files](#downloading-pv-t-modelling-files)
  
 🐍[Setting up your Python environment](#setting-up-your-python-environment)
   * [Anaconda method](#anaconda-method)
@@ -66,13 +66,21 @@ To update the version of CLOVER that you have installed, from anywhere on your s
 python -m pip install clover-energy --upragde
 ```
 This will fetch the latest stable version of CLOVER and install it into your current virtual environment.
-
 ### Downloading as a developer
 
 To download the CLOVER source, with a view to editing and helping to develop the code, simply click the green `Code` button near the top of this page, copy the URL, and, in your local terminal, run `git clone <URL>` to get your local copy of CLOVER. From there, check out a new branch for any of your edits:
 ```
 git checkout -b <new_branch_name>
 ```
+#### Downloading PV-T modelling files
+
+For modelling certain renewable technologies, CLOVER utilises external file-hosting platforms. If you don't intend to consider any thermal technologies, you can skip this section for now and jump straight to [Setting up your Python environment](#setting-up-your-python-environment). Otherwise, you should follow the steps below.
+
+[Zenodo](https://about.zenodo.org/) is a library for storing, sharing, and accessing open source data, files, and modelling tools. Large modelling files for CLOVER are hosted on Zenodo and should be downloaded should these be required in the development version of CLOVER.
+
+These files can be downlaoded using the latest DOI link below. Once downloaded, extract the archive into the `src/clover/src` directory within your repository:
+
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.6647054.svg)](https://doi.org/10.5281/zenodo.6647054)  
 
 ### ⚠️ One-time download from Github
 
