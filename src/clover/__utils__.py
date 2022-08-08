@@ -1845,19 +1845,23 @@ class DesalinationScenario:
         )
 
         try:
-            thermal_collector_scenarios: Optional[List[ThermalCollectorScenario]] = [
-                ThermalCollectorScenario(
-                    SolarPanelType(collector_scenario_inputs["type"]),
-                    HTFMode(collector_scenario_inputs["heats"]),
-                    collector_scenario_inputs["htf_heat_capacity"]
-                    if "htf_heat_capacity" in collector_scenario_inputs
-                    else HEAT_CAPACITY_OF_WATER,
-                    collector_scenario_inputs["mass_flow_rate"],
-                )
-                for collector_scenario_inputs in desalination_inputs[
-                    SOLAR_THERMAL_COLLECTOR_SCENARIOS
+            thermal_collector_scenarios: Optional[List[ThermalCollectorScenario]] = (
+                [
+                    ThermalCollectorScenario(
+                        SolarPanelType(collector_scenario_inputs["type"]),
+                        HTFMode(collector_scenario_inputs["heats"]),
+                        collector_scenario_inputs["htf_heat_capacity"]
+                        if "htf_heat_capacity" in collector_scenario_inputs
+                        else HEAT_CAPACITY_OF_WATER,
+                        collector_scenario_inputs["mass_flow_rate"],
+                    )
+                    for collector_scenario_inputs in desalination_inputs[
+                        SOLAR_THERMAL_COLLECTOR_SCENARIOS
+                    ]
                 ]
-            ] if SOLAR_THERMAL_COLLECTOR_SCENARIOS in desalination_inputs else None
+                if SOLAR_THERMAL_COLLECTOR_SCENARIOS in desalination_inputs
+                else None
+            )
         except ValueError as e:
             logger.error(
                 "%sInvalid thermal-collector scenario information: %s\tCheck HTF "
@@ -1880,7 +1884,8 @@ class DesalinationScenario:
                 BColours.endc,
             )
             raise InputFileError(
-                "desalination scenario", "Missing thermal-collector scenario information."
+                "desalination scenario",
+                "Missing thermal-collector scenario information.",
             ) from None
 
         try:
@@ -1923,7 +1928,8 @@ class DesalinationScenario:
                 BColours.endc,
             )
             raise InputFileError(
-                "desalination scenario", "Missing feedwater supply temperature in desalination scenario."
+                "desalination scenario",
+                "Missing feedwater supply temperature in desalination scenario.",
             ) from None
 
         try:
@@ -2013,30 +2019,31 @@ class HotWaterScenario:
             auxiliary_heater = AUXILIARY_HEATER_NAME_TO_TYPE_MAPPING[
                 hot_water_inputs[ResourceType.HOT_CLEAN_WATER.value]["auxiliary_heater"]
             ]
-        except ValueError:
-            logger.error(
-                "%sInvalid auxiliary heater mode specified: %s. Valid options are %s."
-                "%s",
-                BColours.fail,
-                hot_water_inputs[ResourceType.HOT_CLEAN_WATER.value][
-                    "auxiliary_heater"
-                ],
-                ", ".join(f"'{e.value}'" for e in AuxiliaryHeaterType),
-                BColours.endc,
-            )
-            raise InputFileError(
-                "hot-water scenario",
-                "Invalid auxiliary heater mode specified in hot-water scenario.",
-            ) from None
         except KeyError:
-            logger.error(
-                "%sMissing auxiliary-heater mode in hot-water scenario file.%s",
-                BColours.fail,
-                BColours.endc,
-            )
-            raise InputFileError(
-                "hot-water scenario", "Missing auxiliary-heater mode information."
-            ) from None
+            try:
+                logger.error(
+                    "%sInvalid auxiliary heater mode specified: %s. Valid options are %s."
+                    "%s",
+                    BColours.fail,
+                    hot_water_inputs[ResourceType.HOT_CLEAN_WATER.value][
+                        "auxiliary_heater"
+                    ],
+                    ", ".join(f"'{e.value}'" for e in AuxiliaryHeaterType),
+                    BColours.endc,
+                )
+                raise InputFileError(
+                    "hot-water scenario",
+                    "Invalid auxiliary heater mode specified in hot-water scenario.",
+                ) from None
+            except KeyError:
+                logger.error(
+                    "%sMissing auxiliary-heater mode in hot-water scenario file.%s",
+                    BColours.fail,
+                    BColours.endc,
+                )
+                raise InputFileError(
+                    "hot-water scenario", "Missing auxiliary-heater mode information."
+                ) from None
 
         try:
             cold_water_supply = ColdWaterSupply(hot_water_inputs[COLD_WATER]["supply"])
@@ -2072,6 +2079,11 @@ class HotWaterScenario:
                 BColours.fail,
                 BColours.endc,
             )
+            raise InputFileError(
+                "hot water scenario",
+                "No cold-water supply temperature data was supplied. This is required "
+                "until location-specific profiles can be utilised.",
+            ) from None
 
         try:
             conventional_sources: List[str] = hot_water_inputs[
@@ -2089,19 +2101,6 @@ class HotWaterScenario:
             demand_temperature = hot_water_inputs[ResourceType.HOT_CLEAN_WATER.value][
                 "demand_temperature"
             ]
-        except ValueError:
-            logger.error(
-                "%sInvalid hot-water demand temperature specified: %s%s",
-                BColours.fail,
-                hot_water_inputs[ResourceType.HOT_CLEAN_WATER.value][
-                    "demand_temperature"
-                ],
-                BColours.endc,
-            )
-            raise InputFileError(
-                "hot-water scenario",
-                "Invalid hot-water demand temperature specified in hot-water scenario.",
-            ) from None
         except KeyError:
             logger.error(
                 "%sMissing hot-water demand temperature in hot-water scenario file.%s",

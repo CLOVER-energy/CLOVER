@@ -18,15 +18,21 @@ import unittest
 from typing import Any, Dict
 from unittest import mock  # pylint: disable=unused-import
 
+import json
 import pytest  # pylint: disable=import-error
 
 from ...__utils__ import (
-    SUPPLY_TEMPERATURE,
+    CONVENTIONAL_SOURCES,
+    AuxiliaryHeaterType,
+    BColours,
+    COLD_WATER,
     DesalinationScenario,
     HTFMode,
+    HotWaterScenario,
     InputFileError,
     ResourceType,
     SolarPanelType,
+    SUPPLY_TEMPERATURE,
     ThermalCollectorScenario,
 )
 
@@ -141,6 +147,52 @@ class TestDesalinationScenario(unittest.TestCase):
         }
 
     @pytest.mark.unit
+    def test_missing_clean_water_data(self) -> None:
+        """Tests the case where input clean-water data is missing."""
+
+        # Test missing clean-water scenario
+        test_logger = mock.MagicMock()
+        self.input_data.pop(ResourceType.CLEAN_WATER.value)
+        with self.assertRaises(InputFileError), mock.MagicMock() as test_logger:
+            DesalinationScenario.from_dict(self.input_data, test_logger)
+        test_logger.error.assert_called_once_with(
+            "%sMissing clean-water information in deslination scenario file.%s",
+            BColours.fail,
+            BColours.endc,
+        )
+
+    @pytest.mark.unit
+    def test_missing_feedwater_sources(self) -> None:
+        """Tests the case where feedwater sources input data is missing."""
+
+        # Test missing feedwater sources
+        test_logger = mock.MagicMock()
+        self.input_data[ResourceType.UNCLEAN_WATER.value].pop("sources")
+        with self.assertRaises(InputFileError):
+            DesalinationScenario.from_dict(self.input_data, test_logger)
+        test_logger.error.assert_called_once_with(
+            "%sFeedwater sources not specified in desalinaiton inputs file.%s",
+            "\x1b[91m",
+            "\x1b[0m",
+        )
+
+    @pytest.mark.unit
+    def test_missing_feedwater_supply_temperature(self) -> None:
+        """Tests the case where input feedwater supply data is missing."""
+
+        # Test missing feedwater supply temperature
+        test_logger = mock.MagicMock()
+        self.input_data[ResourceType.UNCLEAN_WATER.value].pop(SUPPLY_TEMPERATURE)
+        with self.assertRaises(InputFileError):
+            DesalinationScenario.from_dict(self.input_data, test_logger)
+        test_logger.error.assert_called_once_with(
+            "%sMissing feedwater supply temperature information in desalination inputs."
+            "%s",
+            "\x1b[91m",
+            "\x1b[0m",
+        )
+
+    @pytest.mark.unit
     def test_valid_inputs(self) -> None:
         """Tests the case where all the inputs are valid."""
 
@@ -150,51 +202,135 @@ class TestDesalinationScenario(unittest.TestCase):
             DesalinationScenario.from_dict(self.input_data, mock_logger)
             mock_logger.assert_not_called()
 
+
+class TestHotWaterScenario(unittest.TestCase):
+    """
+    Tests the :class:`HotWaterScenario` class.
+
+    The hot-water scenario class has a `from_dict` method which takes in input data and
+    transforms it into an instance of the class. These test cases test the flow through
+    this instantiation process.
+
+    """
+
+    def setUp(self) -> None:
+        """Sets up functionality in common across the tests."""
+
+        super().setUp()
+        self.input_data: Dict[str, Any] = {
+            "name": "default",
+            "hot_water": {
+                "auxiliary_heater": "none",
+                "conventional_sources": ["natural_gas"],
+                "demand_temperature": 60,
+            },
+            "cold_water": {"supply": "unlimited", "supply_temperature": 10},
+            "solar_thermal_collector_scenarios": [
+                {
+                    "type": "solar_thermal",
+                    "heats": "htf",
+                    "mass_flow_rate": 72,
+                },
+                {
+                    "type": "pv_t",
+                    "heats": "cold_water",
+                    "mass_flow_rate": 72,
+                },
+            ],
+        }
+
     @pytest.mark.unit
-    def test_missing_data(self) -> None:
-        """Tests the cases where input data is missing."""
+    def test_invalid_auxiliary_heater(self) -> None:
+        """Tests the case where auxiliary heater data is invalid."""
 
         # Test missing clean-water scenario
         test_logger = mock.MagicMock()
-        missing_info_data = self.input_data.copy()
-        missing_info_data.pop(ResourceType.CLEAN_WATER.value)
+        self.input_data[ResourceType.HOT_CLEAN_WATER.value][
+            "auxiliary_heater"
+        ] = "INVALID"
         with self.assertRaises(InputFileError), mock.MagicMock() as test_logger:
-            DesalinationScenario.from_dict(missing_info_data, test_logger)
+            HotWaterScenario.from_dict(self.input_data, test_logger)
         test_logger.error.assert_called_once_with(
-            "%sMissing clean-water information in deslination scenario file.%s",
-            "\x1b[91m",
-            "\x1b[0m",
-        )
-
-        # Test missing feedwater supply temperature
-        test_logger = mock.MagicMock()
-        missing_info_data = self.input_data.copy()
-        missing_info_data[ResourceType.UNCLEAN_WATER.value].pop(SUPPLY_TEMPERATURE)
-        with self.assertRaises(InputFileError):
-            DesalinationScenario.from_dict(missing_info_data, test_logger)
-        test_logger.error.assert_called_once_with(
-            "%sMissing feedwater supply temperature information in desalination inputs."
-            "%s",
-            "\x1b[91m",
-            "\x1b[0m",
-        )
-
-        # Test missing feedwater sources
-        test_logger = mock.MagicMock()
-        missing_info_data = self.input_data.copy()
-        missing_info_data[ResourceType.UNCLEAN_WATER.value].pop("sources")
-        with self.assertRaises(InputFileError):
-            DesalinationScenario.from_dict(missing_info_data, test_logger)
-        test_logger.error.assert_called_once_with(
-            "%sFeedwater sources not specified in desalinaiton inputs.%s",
-            "\x1b[91m",
-            "\x1b[0m",
+            "%sInvalid auxiliary heater mode specified: %s. Valid options are %s." "%s",
+            BColours.fail,
+            self.input_data[ResourceType.HOT_CLEAN_WATER.value]["auxiliary_heater"],
+            ", ".join(f"'{e.value}'" for e in AuxiliaryHeaterType),
+            BColours.endc,
         )
 
     @pytest.mark.unit
-    def test_invalid_clean_water_mode(self) -> None:
-        """Tests the cases where input data is missing."""
+    def test_invalid_cold_water_supply(self) -> None:
+        """Tests the case where cold-water-supply data is invalid."""
+
+        # Test missing clean-water scenario
+        test_logger = mock.MagicMock()
+        self.input_data[COLD_WATER]["supply"] = "INVALID"
+        with self.assertRaises(InputFileError), mock.MagicMock() as test_logger:
+            HotWaterScenario.from_dict(self.input_data, test_logger)
+        test_logger.error.assert_called_once_with(
+            "%sInvalid cold-water supply specified: %s%s",
+            BColours.fail,
+            self.input_data[COLD_WATER]["supply"],
+            BColours.endc,
+        )
 
     @pytest.mark.unit
-    def test_invalid_thermal_collector_scenarios(self) -> None:
-        """Tests the cases where input data is missing."""
+    def test_missing_cold_water_supply_temperature(self) -> None:
+        """Tests the case where the cold-water-supply temperature is missing."""
+
+        # Test missing clean-water scenario
+        test_logger = mock.MagicMock()
+        self.input_data[COLD_WATER].pop(SUPPLY_TEMPERATURE)
+        with self.assertRaises(InputFileError), mock.MagicMock() as test_logger:
+            HotWaterScenario.from_dict(self.input_data, test_logger)
+        test_logger.error.assert_called_once_with(
+            "%sMissing cold-water supply temperature information in hot-water "
+            "inputs.%s",
+            BColours.fail,
+            BColours.endc,
+        )
+
+    @pytest.mark.unit
+    def test_missing_conventional_sources(self) -> None:
+        """Tests the case where the cold-water-supply temperature is missing."""
+
+        # Test missing clean-water scenario
+        test_logger = mock.MagicMock()
+        self.input_data[ResourceType.HOT_CLEAN_WATER.value].pop(CONVENTIONAL_SOURCES)
+        HotWaterScenario.from_dict(self.input_data, test_logger)
+        test_logger.info.assert_has_calls(
+            [
+                mock.call(
+                    "Missing hot-water conventional sources in hot-water inputs."
+                ),
+                mock.call("Continuing with no conventional hot-water sources."),
+            ]
+        )
+        test_logger.debug.assert_called_with(
+            "Hot-water input information: %s", json.dumps(self.input_data)
+        )
+
+    @pytest.mark.unit
+    def test_missing_demand_temperature(self) -> None:
+        """Tests the case where the cold-water-supply temperature is missing."""
+
+        # Test missing clean-water scenario
+        test_logger = mock.MagicMock()
+        self.input_data[ResourceType.HOT_CLEAN_WATER.value].pop("demand_temperature")
+        with self.assertRaises(InputFileError), mock.MagicMock() as test_logger:
+            HotWaterScenario.from_dict(self.input_data, test_logger)
+        test_logger.error.assert_called_with(
+            "%sMissing hot-water demand temperature in hot-water scenario file.%s",
+            BColours.fail,
+            BColours.endc,
+        )
+
+    @pytest.mark.unit
+    def test_valid_inputs(self) -> None:
+        """Tests the case where all the inputs are valid."""
+
+        logger = logging.getLogger("src.clover.__utils__")
+
+        with mock.patch.object(logger, "debug") as mock_logger:
+            HotWaterScenario.from_dict(self.input_data, mock_logger)
+            mock_logger.assert_not_called()
