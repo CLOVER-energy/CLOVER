@@ -1832,7 +1832,7 @@ class DesalinationScenario:
                 BColours.endc,
             )
             raise InputFileError(
-                "desalination scenario", "Missing clean-water scenario information."
+                "desalination scenario", "Missing clean-water mode information."
             ) from None
 
         clean_water_scenario: CleanWaterScenario = CleanWaterScenario(
@@ -1845,7 +1845,7 @@ class DesalinationScenario:
         )
 
         try:
-            thermal_collector_scenarios = [
+            thermal_collector_scenarios: Optional[List[ThermalCollectorScenario]] = [
                 ThermalCollectorScenario(
                     SolarPanelType(collector_scenario_inputs["type"]),
                     HTFMode(collector_scenario_inputs["heats"]),
@@ -1857,7 +1857,7 @@ class DesalinationScenario:
                 for collector_scenario_inputs in desalination_inputs[
                     SOLAR_THERMAL_COLLECTOR_SCENARIOS
                 ]
-            ]
+            ] if SOLAR_THERMAL_COLLECTOR_SCENARIOS in desalination_inputs else None
         except ValueError as e:
             logger.error(
                 "%sInvalid thermal-collector scenario information: %s\tCheck HTF "
@@ -1880,7 +1880,7 @@ class DesalinationScenario:
                 BColours.endc,
             )
             raise InputFileError(
-                "desalination scenario", "Invalid HTF mode in solar-thermal scenarios."
+                "desalination scenario", "Missing thermal-collector scenario information."
             ) from None
 
         try:
@@ -1922,6 +1922,9 @@ class DesalinationScenario:
                 BColours.fail,
                 BColours.endc,
             )
+            raise InputFileError(
+                "desalination scenario", "Missing feedwater supply temperature in desalination scenario."
+            ) from None
 
         try:
             unclean_water_sources = list(
@@ -1989,7 +1992,9 @@ class HotWaterScenario:
     solar_thermal_scenario: Optional[ThermalCollectorScenario]
 
     @classmethod
-    def from_dict(cls, hot_water_inputs: Dict[str, Any], logger: logging.Logger) -> Any:  # pylint: disable=too-many-statements
+    def from_dict(
+        cls, hot_water_inputs: Dict[str, Any], logger: logging.Logger
+    ) -> Any:  # pylint: disable=too-many-statements
         """
         Returns a :class:`DesalinationScenario` instance based on the input data.
 
