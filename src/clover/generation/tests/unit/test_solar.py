@@ -12,6 +12,34 @@ test_solar.py - Tests for the solar generation module of CLOVER.
 
 """
 
-import unittest  # pylint: disable=unused-import
+import unittest
 
 from unittest import mock  # pylint: disable=unused-import
+
+import pytest
+
+from ...solar import PerformanceCurve
+
+
+class TestPerformanceCurve(unittest.TestCase):
+    """
+    Tests the :class:`PerformanceCurve` class.
+
+    The :class:`PerformanceCurve` instances expose three property methods which are
+    tested here.
+
+    """
+
+    @pytest.mark.unit
+    def test_properties(self) -> None:
+        """Tests that a :class:`PerformanceCurve` can be instantiated as expected."""
+
+        zeroth: float = 0.0
+        first: float = 1.0
+        second: float = 2.0
+
+        performance_curve = PerformanceCurve(zeroth, first, second)
+
+        self.assertEqual(zeroth, performance_curve.eta_0)
+        self.assertEqual(first, performance_curve.c_1)
+        self.assertEqual(second, performance_curve.c_2)
