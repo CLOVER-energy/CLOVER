@@ -486,7 +486,7 @@ class HybridPVTPanel(SolarPanel, panel_type=SolarPanelType.PV_T):
                 + f"whilst processing PV-T panel {solar_inputs[NAME]}.",
             ) from None
 
-        if not isinstance(pv_layer, PVPanel):
+        if pv_layer.panel_type != SolarPanelType.PV:
             logger.error(
                 "%sThe PV layer defined, %s, is not a PVPanel instance.%s",
                 BColours.fail,
