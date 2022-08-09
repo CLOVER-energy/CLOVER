@@ -30,6 +30,7 @@ import pandas as pd
 from sklearn.linear_model._coordinate_descent import Lasso
 
 from ..__utils__ import (
+    ZERO_CELCIUS_OFFSET,
     BColours,
     InputFileError,
     Location,
@@ -855,6 +856,8 @@ class SolarThermalPanel(SolarPanel, panel_type=SolarPanelType.SOLAR_THERMAL):
 
         """
 
+        # FIXME: Check units on temperatures here.
+
         # Compute the various terms of the equation
         second_order_coefficient: float = self.performance_curve.c_2 / (
             4 * solar_irradiance
@@ -864,19 +867,26 @@ class SolarThermalPanel(SolarPanel, panel_type=SolarPanelType.SOLAR_THERMAL):
             (mass_flow_rate * htf_heat_capacity / self.area)
             + self.performance_curve.c_1 / 2
             + (self.performance_curve.c_2 / 2)
-            * (input_temperature - 2 * ambient_temperature)
+            * (
+                (input_temperature + ZERO_CELCIUS_OFFSET)
+                - 2 * (ambient_temperature + ZERO_CELCIUS_OFFSET)
+            )
         )
 
         zeroth_order_coefficient: float = (1 / solar_irradiance) * (
             (self.performance_curve.c_2 / 4)
-            * (input_temperature**2 + 4 * ambient_temperature**2)
+            * (
+                (input_temperature + ZERO_CELCIUS_OFFSET) ** 2
+                + 4 * (ambient_temperature + ZERO_CELCIUS_OFFSET) ** 2
+            )
             + (
                 (self.performance_curve.c_1 / 2)
-                - self.performance_curve.c_2 * ambient_temperature
+                - self.performance_curve.c_2
+                * (ambient_temperature + ZERO_CELCIUS_OFFSET)
                 - (mass_flow_rate * htf_heat_capacity / self.area)
             )
-            * input_temperature
-            - self.performance_curve.c_1 * ambient_temperature
+            * (input_temperature + ZERO_CELCIUS_OFFSET)
+            - self.performance_curve.c_1 * (ambient_temperature + ZERO_CELCIUS_OFFSET)
         ) - self.performance_curve.eta_0
 
         # Use numpy or Pandas to solve the quadratic to determine the performance of
@@ -895,12 +905,6 @@ class SolarThermalPanel(SolarPanel, panel_type=SolarPanelType.SOLAR_THERMAL):
                 - 4 * zeroth_order_coefficient * second_order_coefficient
             )
         ) / (2 * zeroth_order_coefficient)
-
-        import pdb
-
-        pdb.set_trace(
-            header=f"Roots: positive={round(output_temperature, 2)}, negative={round(negative_root, 2)}"
-        )
 
         return None, output_temperature
 

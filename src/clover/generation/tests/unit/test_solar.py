@@ -33,6 +33,7 @@ from ...solar import (
     HybridPVTPanel,
     PVPanel,
     PerformanceCurve,
+    SolarThermalPanel,
 )
 
 
@@ -461,4 +462,75 @@ class TestHybridPVTPanelPerformance(unittest.TestCase):
         self.test_logger.error.assert_called_once_with(
             "Error attempting to predict electric efficiency of the PV-T collector: %s",
             str(e.exception),
+        )
+
+
+class TestSolarThermalPanelPerformance(unittest.TestCase):
+    """Tests the `calculate_performance` function of the solar-thermal collector."""
+
+    def setUp(self) -> None:
+        """Sets up functionality in common across test cases."""
+
+        self.input_data = {
+            "name": "default_solar_thermal",
+            "area": 2.106,
+            "azimuthal_orientation": 180,
+            "lifetime": 20,
+            "max_mass_flow_rate": 250,
+            "min_mass_flow_rate": 60,
+            "nominal_mass_flow_rate": 125,
+            "tilt": 29,
+            "type": "solar_thermal",
+            "costs": {
+                "cost": 500,
+                "cost_decrease": 5,
+                "installation_cost": 100,
+                "installation_cost_decrease": 0,
+                "o&m": 5,
+            },
+            "emissions": {
+                "ghgs": 3000,
+                "ghg_decrease": 5,
+                "installation_ghgs": 50,
+                "installation_ghg_decrease": 0,
+                "o&m": 5,
+            },
+            "performance_curve": {
+                "zeroth_order": 0.694,
+                "first_order": 3.53,
+                "second_order": 0.0047,
+            },
+        }
+
+        # Set up required mocks for instantiation.
+        self.ambient_temperature = 40
+        self.input_temperature = 30
+        self.irradiance = 1000
+        self.mass_flow_rate = 15
+        self.test_logger = mock.Mock()
+        self.wind_speed = 10
+
+        # Create the solar-thermal
+        self.solar_thermal_panel: SolarThermalPanel = SolarThermalPanel.from_dict(
+            self.test_logger, self.input_data
+        )
+
+        super().setUp()
+
+    @pytest.mark.unit
+    def test_mainline(self) -> None:
+        """Tests the mainline case."""
+
+        import pdb
+
+        pdb.set_trace()
+
+        self.solar_thermal_panel.calculate_performance(
+            self.ambient_temperature,
+            HEAT_CAPACITY_OF_WATER,
+            self.input_temperature,
+            self.test_logger,
+            self.solar_thermal_panel.nominal_mass_flow_rate,
+            self.irradiance,
+            self.wind_speed,
         )
