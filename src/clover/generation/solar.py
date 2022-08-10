@@ -872,12 +872,12 @@ class SolarThermalPanel(SolarPanel, panel_type=SolarPanelType.SOLAR_THERMAL):
         a: float = self.performance_curve.c_2 * self.area
 
         b: float = (
-            -4 * mass_flow_rate * htf_heat_capacity
-            + 2 * self.performance_curve.c_1 * self.area
+            +2 * self.performance_curve.c_1 * self.area
             + 2
             * self.performance_curve.c_2
             * self.area
-            * (input_temperature - ambient_temperature)
+            * (input_temperature - 2 * ambient_temperature)
+            - 4 * mass_flow_rate * htf_heat_capacity
         )
 
         c: float = (
@@ -886,10 +886,10 @@ class SolarThermalPanel(SolarPanel, panel_type=SolarPanelType.SOLAR_THERMAL):
             + 2
             * self.performance_curve.c_1
             * self.area
-            * (input_temperature - ambient_temperature)
+            * (input_temperature - 2 * ambient_temperature)
             + self.performance_curve.c_2
             * self.area
-            * (input_temperature - ambient_temperature) ** 2
+            * (input_temperature - 2 * ambient_temperature) ** 2
         )
 
         # Use numpy or Pandas to solve the quadratic to determine the performance of
