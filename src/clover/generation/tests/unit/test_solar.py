@@ -533,10 +533,6 @@ class TestSolarThermalPanelPerformance(unittest.TestCase):
 
         """
 
-        import pdb
-
-        pdb.set_trace()
-
         _, output_temperature = self.solar_thermal_panel.calculate_performance(
             self.ambient_temperature,
             HEAT_CAPACITY_OF_WATER,
@@ -564,4 +560,6 @@ class TestSolarThermalPanelPerformance(unittest.TestCase):
             * (output_temperature - self.input_temperature)
         ) / (self.solar_thermal_panel.area * self.irradiance)
 
-        self.assertEqual(efficiency_by_equation, efficiency_by_output)
+        self.assertEqual(
+            round(efficiency_by_equation, 8), round(efficiency_by_output, 8)
+        )
