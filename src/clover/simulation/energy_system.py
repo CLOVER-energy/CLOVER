@@ -502,6 +502,7 @@ def _calculate_renewable_cw_profiles(  # pylint: disable=too-many-locals, too-ma
             buffer_tank_temperature,
             buffer_tank_volume_supplied,
         ) = calculate_solar_thermal_output(
+            pvt_size,
             disable_tqdm,
             end_hour,
             irradiance_data[start_hour:end_hour],
@@ -509,9 +510,9 @@ def _calculate_renewable_cw_profiles(  # pylint: disable=too-many-locals, too-ma
             minigrid,
             number_of_cw_tanks,
             None,
-            pvt_size,
             ResourceType.CLEAN_WATER,
             scenario,
+            minigrid.pvt_panel,
             start_hour,
             temperature_data[start_hour:end_hour],
             thermal_desalination_plant,
@@ -852,6 +853,7 @@ def _calculate_renewable_hw_profiles(  # pylint: disable=too-many-locals, too-ma
         hot_water_tank_temperature,
         hot_water_tank_volume_supplied,
     ) = calculate_solar_thermal_output(
+        pvt_size,
         disable_tqdm,
         end_hour,
         irradiance_data[start_hour:end_hour],
@@ -859,9 +861,9 @@ def _calculate_renewable_hw_profiles(  # pylint: disable=too-many-locals, too-ma
         minigrid,
         number_of_hw_tanks,
         processed_total_hw_load.iloc[:, 0],
-        pvt_size,
         ResourceType.HOT_CLEAN_WATER,
         scenario,
+        minigrid.pvt_panel,
         start_hour,
         temperature_data[start_hour:end_hour],
         None,
@@ -2128,7 +2130,7 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
         unmet_clean_water.columns = pd.Index([ColumnHeader.UNMET_CLEAN_WATER.value])
         water_surplus_frame.columns = pd.Index([ColumnHeader.WATER_SURPLUS.value])
 
-    if scenario.pv_t:
+    if scenario.desalination_scenario is not None:
         if buffer_tank_temperature is None:
             logger.error(
                 "%sInternal error: buffer tank temperature was None despite buffer "

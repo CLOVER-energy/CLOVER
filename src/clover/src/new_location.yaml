@@ -1121,6 +1121,7 @@
                       domestic: true # "true" or "false"
                       commercial: true # "true" or "false"
                       public: true # "true" or "false"
+                    # desalination_scenario: default
                     diesel:
                       mode: backup # "backup" or "disabled" currently supported
                       backup:
@@ -1128,6 +1129,7 @@
                     distribution_network: dc # DC ("dc") or AC ("ac") distribution network
                     grid: true # "true" or "false"
                     grid_type: default # The grid profile to use
+                    # hot_water_scenario: default
                     prioritise_self_generation: true # "true" or "false"
                     pv: true # "true" or "false"
                     # pv_t: false # "true" or "false"
