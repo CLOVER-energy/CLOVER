@@ -519,13 +519,25 @@ class TestSolarThermalPanelPerformance(unittest.TestCase):
 
     @pytest.mark.unit
     def test_mainline(self) -> None:
-        """Tests the mainline case."""
+        """
+        Tests the mainline case.
+
+        The output temperature of the solar-thermal collector is calculated and then
+        used to compute the efficiency of the collector two ways:
+
+            eta = eta_0
+                + c_1 * (T_c - T_amb) / G
+                + c_2 * (T_c - T_amb) ** 2 / G ,                        (1)
+
+            eta = m_htf * c_htf * (T_out - T_in) / (A * G) .            (2)
+
+        """
 
         import pdb
 
         pdb.set_trace()
 
-        self.solar_thermal_panel.calculate_performance(
+        _, output_temperature = self.solar_thermal_panel.calculate_performance(
             self.ambient_temperature,
             HEAT_CAPACITY_OF_WATER,
             self.input_temperature,
@@ -534,3 +546,22 @@ class TestSolarThermalPanelPerformance(unittest.TestCase):
             self.irradiance,
             self.wind_speed,
         )
+
+        # Compute the efficiency two ways and check that these are equal.
+        collector_temperature = 0.5 * (self.input_temperature + output_temperature)
+        efficiency_by_equation = (
+            self.solar_thermal_panel.performance_curve.eta_0
+            + self.solar_thermal_panel.performance_curve.c_1
+            * (collector_temperature - self.ambient_temperature)
+            / self.irradiance
+            + self.solar_thermal_panel.performance_curve.c_2
+            * (collector_temperature - self.ambient_temperature) ** 2
+            / self.irradiance
+        )
+        efficiency_by_output = (
+            (self.solar_thermal_panel.nominal_mass_flow_rate / 3600)
+            * HEAT_CAPACITY_OF_WATER
+            * (output_temperature - self.input_temperature)
+        ) / (self.solar_thermal_panel.area * self.irradiance)
+
+        self.assertEqual(efficiency_by_equation, efficiency_by_output)

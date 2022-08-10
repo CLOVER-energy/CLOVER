@@ -1661,7 +1661,7 @@ class ThermalCollectorScenario:
         The capacity of the HTF being used.
 
     .. attribute:: mass_flow_rate
-        The mass-flow rate through the collectors.
+        The mass-flow rate through the collectors, measured in kg/hour.
 
     """
 

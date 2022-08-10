@@ -651,6 +651,7 @@ def calculate_solar_thermal_output(  # pylint: disable=too-many-locals, too-many
             if (1000 * irradiances[index]) > MINIMUM_IRRADIANCE_THRESHOLD:
                 # If there is enough irradiance to trigger reliable modelling, use the
                 # in-built modelling tools.
+                # FIXME: Check units on mass-flow rate here.
                 (
                     fractional_electric_performance,
                     collector_output_temperature,

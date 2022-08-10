@@ -790,7 +790,9 @@ class SolarThermalPanel(SolarPanel, panel_type=SolarPanelType.SOLAR_THERMAL):
         Each collector has a characteristic performance curve, which is related to the
         efficiency of the collector by a simple equation:
 
-            eta = eta_0 + c_1 * (T_c - T_a) / G + c_2 * (T_c - T_a)^2 / G,
+            eta = eta_0
+                + c_1 * (T_c - T_amb) / G
+                + c_2 * (T_c - T_amb) ** 2 / G
 
         where `eta_0`, `c_1` and `c_2` give the zeroth-, first- and second-order
         coefficients which characterise the performance of the collector, `T_c` is the
@@ -804,25 +806,30 @@ class SolarThermalPanel(SolarPanel, panel_type=SolarPanelType.SOLAR_THERMAL):
         gained by the heat-transfer fluid within the collector as a fraction of the
         total energy incident on the collector:
 
-            0 = (c_2 / 4G) * T_out^2
-              + (1 / G) * [
-                  (m_htf * c_htf / A)
-                  + c_1 / 2
-                  + (c_2 / 2) * (T_in - 2T_a)
-                ] * T_out
-              + (1 / G) * [
-                  (c_2 / 4) * (T_in^2 + 4T_a^2)
-                  + (
-                      (c_1 / 2)
-                      - c_2 * T_a
-                      - (m_htf * c_htf / A)
-                    ) * T_in
-                  - c_1 * T_a
-                ]
-              - eta_0
+            eta = m_htf * c_htf * (T_out - T_in)
 
-        This equation can then be solved quadratically to determine the output
-        temperature of HTF leaving the collector.
+        where `T_out` and `T_in` give the output and input HTF temperatures
+        respectively, and `m_htf` and `c_htf` give the mass-flow rate and specific heat
+        capacityof the HTF through the collector. Combining these two yields
+
+            0 = 4 * eta_0 * A * G                   \\ = c = zeroth_order_coefficient
+              + 4 * m_htf * c_htf * T_in            |
+              + 2 * c_1 * A * (T_in - T_amb)        |
+              + c_2 * A * (T_in - T_amb) ** 2       /
+              + (                                   \\ = b = first_order_coefficient
+                - 4 * m_htf * c_htf                 |
+                + 2 * c_1 * A                       |
+                + 2 * c_2 * A * (T_in - T_amb)      /
+              ) * T_out
+              + (                                   \\ = a = second_order_coefficient
+                4 * eta_0 * A * G                   |
+                + 4 * m_htf * c_htf * T_in          |
+                + 2 * c_1 * A * (T_in - T_amb)      |
+                + c_2 * A * (T_in - T_amb) ** 2     /
+              ) * T_out ** 2
+
+        which can then be solved quadratically to determine the output temperature of
+        HTF leaving the collector.
 
         Inputs:
             - ambient_temperature:
@@ -837,7 +844,7 @@ class SolarThermalPanel(SolarPanel, panel_type=SolarPanelType.SOLAR_THERMAL):
                 The :class:`logging.Logger` to use for the run.
             - mass_flow_rate:
                 The mass-flow rate of HTF passing through the collector, measured in
-                kilograms per second.
+                kilograms per hour.
             - solar_irradiance:
                 The solar irradiance incident on the surface of the collector, measured
                 in Watts per meter squared.
@@ -857,56 +864,44 @@ class SolarThermalPanel(SolarPanel, panel_type=SolarPanelType.SOLAR_THERMAL):
         """
 
         # FIXME: Check units on temperatures here.
+        ambient_temperature += ZERO_CELCIUS_OFFSET
+        input_temperature += ZERO_CELCIUS_OFFSET
+        mass_flow_rate /= 3600  # [s/hour]
 
         # Compute the various terms of the equation
-        second_order_coefficient: float = self.performance_curve.c_2 / (
-            4 * solar_irradiance
+        a: float = self.performance_curve.c_2 * self.area
+
+        b: float = (
+            -4 * mass_flow_rate * htf_heat_capacity
+            + 2 * self.performance_curve.c_1 * self.area
+            + 2
+            * self.performance_curve.c_2
+            * self.area
+            * (input_temperature - ambient_temperature)
         )
 
-        first_order_coefficient: float = (1 / solar_irradiance) * (
-            (mass_flow_rate * htf_heat_capacity / self.area)
-            + self.performance_curve.c_1 / 2
-            + (self.performance_curve.c_2 / 2)
-            * (
-                (input_temperature + ZERO_CELCIUS_OFFSET)
-                - 2 * (ambient_temperature + ZERO_CELCIUS_OFFSET)
-            )
+        c: float = (
+            4 * self.performance_curve.eta_0 * self.area * solar_irradiance
+            + 4 * mass_flow_rate * htf_heat_capacity * input_temperature
+            + 2
+            * self.performance_curve.c_1
+            * self.area
+            * (input_temperature - ambient_temperature)
+            + self.performance_curve.c_2
+            * self.area
+            * (input_temperature - ambient_temperature) ** 2
         )
-
-        zeroth_order_coefficient: float = (1 / solar_irradiance) * (
-            (self.performance_curve.c_2 / 4)
-            * (
-                (input_temperature + ZERO_CELCIUS_OFFSET) ** 2
-                + 4 * (ambient_temperature + ZERO_CELCIUS_OFFSET) ** 2
-            )
-            + (
-                (self.performance_curve.c_1 / 2)
-                - self.performance_curve.c_2
-                * (ambient_temperature + ZERO_CELCIUS_OFFSET)
-                - (mass_flow_rate * htf_heat_capacity / self.area)
-            )
-            * (input_temperature + ZERO_CELCIUS_OFFSET)
-            - self.performance_curve.c_1 * (ambient_temperature + ZERO_CELCIUS_OFFSET)
-        ) - self.performance_curve.eta_0
 
         # Use numpy or Pandas to solve the quadratic to determine the performance of
         # the collector
-        output_temperature: float = (
-            -first_order_coefficient
-            + math.sqrt(
-                first_order_coefficient**2
-                - 4 * zeroth_order_coefficient * second_order_coefficient
-            )
-        ) / (2 * zeroth_order_coefficient)
-        negative_root: float = (
-            -first_order_coefficient
-            - math.sqrt(
-                first_order_coefficient**2
-                - 4 * zeroth_order_coefficient * second_order_coefficient
-            )
-        ) / (2 * zeroth_order_coefficient)
+        positive_root: float = (-b + math.sqrt(b**2 - 4 * a * c)) / (
+            2 * a
+        ) - ZERO_CELCIUS_OFFSET
+        negative_root: float = (-b - math.sqrt(b**2 - 4 * a * c)) / (
+            2 * a
+        ) - ZERO_CELCIUS_OFFSET
 
-        return None, output_temperature
+        return None, negative_root
 
     @classmethod
     def from_dict(
