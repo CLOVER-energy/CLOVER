@@ -1,4 +1,13 @@
 ---
+################################################################################
+# diesel_scenario.yaml - Parameters for specifying a diesel scenario           #
+#                                                                              #
+# Author: Hamish Beath, Ben Winchester                                         #
+# Copyright: Hamish Beath, Phil Sandwell & Ben Winchester, 2021                #
+# Date created: 15/08/2022                                                     #
+# License: Open source                                                         #
+################################################################################
+
 diesel_scenarios:
   - name: default
     mode: backup # "backup" or "disabled" currently supported
