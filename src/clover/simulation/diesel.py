@@ -69,6 +69,16 @@ class DieselGenerator:
     minimum_load: float
     name: str
 
+    _setting_map: Dict[int, Setting]
+
+    def get_setting():
+        if self._setting_map is not None:
+            return self._setting_map[hour // 24]
+
+        # Compute the map
+        # Save the map
+        # Return the current value from the map
+
 
 @dataclasses.dataclass
 class DieselWaterHeater(Converter):
@@ -207,6 +217,53 @@ def _find_deficit_threshold(
         energy_threshold = np.max(unmet_energy)[0] + 1.0
 
     return energy_threshold
+
+
+def get_cycle_charging_energy() -> Tuple[float, float, float]:
+    """
+    Calculate cycle-charging storage parameters.
+
+    This function takes the empty capacity and the battery in-and-out C-rates, and it
+    uses the diesel minimum capacity factor, and it uses a variable which determines the
+    maximum energy that the diesel generators can put into the batteries.
+
+    Inputs:
+        - ...
+
+    Outputs:
+        - diesel_supplied:
+            The total power supplied by the diesel generator.
+        - diesel_used:
+            The total power used by the diesel generator.
+        - remaining_empty_capacity:
+            The amount of remaining empty capcity within the batteries.
+        - surplus:
+            Remaining energy that *could* have come from the diesel generator in this
+            time step. I.E., if the diesel generator was not running at the maximum
+            capacity, but it could have been, then this power is returned in case it can
+            be utilised elsewhere in the system.
+
+    """
+
+    """  # pylint: disable=pointless-string-statement
+    1.  Based on the empty capacity:
+        SWITCH:
+        - empty_capacity < diesel_minimum:
+            Fill to the empty
+            WHERE you check for the input c-rate etc.
+            and, as a result, we waste some diesel
+        - diesel_minimum < empty_capacity < diesel_maximum:
+            Fill to the empty, where no diesel is wasted and you *may* have surplus
+            diesel to meet demand
+        - diesel_maximum < empty_capacity:
+            Fill to the diesel maximum
+    2.  Return the variables required:
+        - surplus = maximum_output of the diesel generator
+          WHICH *might* be different from the maximum ammount of power that can go from
+          the diesel generator into the batteries
+          SUBTRACTING what was used
+
+    """
 
 
 def get_diesel_energy_and_times(

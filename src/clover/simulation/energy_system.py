@@ -2,7 +2,7 @@
 ########################################################################################
 # minigrid.py - Energy-system main module for CLOVER.                                  #
 #                                                                                      #
-# Authors: Phil Sandwell, Ben Winchester                                               #
+# Authors: Phil Sandwell, Ben Winchester and Hamish Beath                              #
 # Copyright: Phil Sandwell, 2018                                                       #
 # Date created: 13/07/2021                                                             #
 # License: Open source                                                                 #
@@ -18,6 +18,7 @@ and profile files that have been parsed/generated.
 
 """
 
+from collections import defaultdict
 import datetime
 import math
 
@@ -1535,6 +1536,8 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
     # water_deficit: List[float] = []
 
     # Initialise energy accounting parameters
+    battery_state_of_charge: Optional[Dict[int, float]] = defaultdict(float)
+    diesel_generator_running: Optional[Dict[int, float]] = defaultdict(float)
     energy_surplus: Optional[Dict[int, float]] = {}
     energy_deficit: Optional[Dict[int, float]] = {}
     storage_power_supplied: Dict[int, float] = {}
@@ -1544,7 +1547,7 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
         energy_surplus = None
         energy_deficit = None
     # Carry out the itteration if there is some storage involved in the system.
-    elif scenario.diesel_scenario.mode in {DieselMode.BACKUP, DieselMode.DISABLED}:
+    elif scenario.diesel_scenario.mode in (DieselMode.BACKUP, DieselMode.DISABLED):
         # Begin simulation, iterating over timesteps
         for t in tqdm(
             range(int(battery_storage_profile.size)),
@@ -1633,13 +1636,21 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
     elif scenario.diesel_scenario.mode == DieselMode.CYCLE_CHARGING:
         pass
         """
-        
-        
-        
+        FOR: Loop through all the times
+            1.  Work out the current state of charge and the empty capacity based on:
+                - The previous state of charge,
+                - The hourly storage profile.
+            2.  Work out the threshold based on:
+                - The state of charge,
+                - Current time, (this will determine the time setting)
+                - and whether the diesel generator was running at the previous hour.
+            3.  IF: State of charge less than threshold:
+                ELSE: Normal calculation from storage - i.e., normal iteration step fn.
+                DO: Diesel stuff -> Diesel module
+                3.  IF: There is any remaining empty capcaity in the batteries, we fill
+                    it with solar IF there is surplus solar.
+
         """
-
-
-
 
     # Process the various outputs into dataframes.
     # energy_deficit_frame: pd.DataFrame = dict_to_dataframe(energy_deficit)
@@ -1731,14 +1742,16 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
             blackout_times, minigrid, scenario, unmet_energy
         )
     elif scenario.diesel_scenario.mode == DieselMode.CYCLE_CHARGING:
-        logger.error(
-            "%sCycle charing is not currently supported.%s",
-            BColours.fail,
-            BColours.endc,
-        )
-        raise InputFileError(
-            "scenario inputs", "Cycle charing is not currently supported."
-        )
+        """  # pylint: disable=pointless-string-statement
+        Take the diesel surplus profile generated from the massive for loop
+        Factoring in the c-rates, along with the maximum diesel output, calculate the
+        amount of unmet demand that we *could* have met if we'd rn the diesel at full.
+
+        NOTE: The energy that went from the diesel to the batteries, and that which is
+        now being used to meet unmet demand, should *both* be saved to the
+        `simulation_outputs.csv` file.
+
+        """
     elif scenario.diesel_scenario.mode == DieselMode.DISABLED:
         diesel_energy = pd.DataFrame([0.0] * int(battery_storage_profile.size))
         diesel_times = pd.DataFrame([0.0] * int(battery_storage_profile.size))
