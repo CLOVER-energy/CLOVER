@@ -1544,7 +1544,7 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
         energy_surplus = None
         energy_deficit = None
     # Carry out the itteration if there is some storage involved in the system.
-    else:
+    elif scenario.diesel_scenario.mode in {DieselMode.BACKUP, DieselMode.DISABLED}:
         # Begin simulation, iterating over timesteps
         for t in tqdm(
             range(int(battery_storage_profile.size)),
@@ -1630,6 +1630,17 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
                 storage_power_supplied,
                 time_index=t,
             )
+    elif scenario.diesel_scenario.mode == DieselMode.CYCLE_CHARGING:
+        pass
+        """
+        
+        
+        
+        """
+
+
+
+
     # Process the various outputs into dataframes.
     # energy_deficit_frame: pd.DataFrame = dict_to_dataframe(energy_deficit)
     if energy_surplus is not None:

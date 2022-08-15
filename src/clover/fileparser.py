@@ -37,6 +37,7 @@ from .__utils__ import (
     DesalinationScenario,
     DieselMode,
     EXCHANGER,
+    DieselScenario,
     HotWaterScenario,
     HTFMode,
     InputFileError,
@@ -132,6 +133,14 @@ DIESEL_GENERATORS: str = "diesel_generators"
 # Diesel inputs file:
 #   The relative path to the diesel-inputs file.
 DIESEL_INPUTS_FILE: str = os.path.join("generation", "diesel_inputs.yaml")
+
+# Diesel scenarios:
+#   Keyword used for parsing diesel scenarios.
+DIESEL_SCENARIOS: str = "diesel_scenarios"
+
+# Diesel scenario inputs file:
+#   The relative path to the diesel-scenario inputs file.
+DIESEL_SCENARIO_INPUTS_FILE: str = os.path.join("scenario", "diesel_scenario.yaml")
 
 # Diesel water heater:
 #   Keyword used for parsing diesel-water-heater information.
@@ -1146,6 +1155,37 @@ def parse_scenario_inputs(
         desalination_scenarios = None
         logger.info("No desalination scenarios files provided, skipping.")
 
+    diesel_scenario_inputs_filepath: str = os.path.join(
+        inputs_directory_relative_path,
+        DIESEL_SCENARIO_INPUTS_FILE,
+    )
+
+    # Parse the diesel scenario inputs information if relevant.
+
+    logger.info("Parsing diesel inputs file.")
+    diesel_scenario_inputs = read_yaml(
+        diesel_scenario_inputs_filepath,
+        logger,
+    )
+    if not isinstance(diesel_scenario_inputs, dict):
+        raise InputFileError(
+            "scenario inputs", "Diesel scenario inputs is not of type `dict`."
+        )
+    try:
+        diesel_scenarios: List[DieselScenario] = [
+            DieselScenario.from_dict(entry, logger)
+            for entry in diesel_scenario_inputs[DIESEL_SCENARIOS]
+        ]
+    except Exception as e:
+        logger.error(
+            "%sError generating diesel scenario from inputs file: %s%s",
+            BColours.fail,
+            str(e),
+            BColours.endc,
+        )
+        raise
+    logger.info("diesel scenarios successfully parsed.")
+
     # Parse the hot-water scenario inputs information if relevant.
     if os.path.isfile(hot_water_scenario_inputs_filepath):
         logger.info("Parsing hot-water inputs file.")
@@ -1192,7 +1232,11 @@ def parse_scenario_inputs(
     try:
         scenarios: List[Scenario] = [
             Scenario.from_dict(
-                desalination_scenarios, hot_water_scenarios, logger, entry
+                desalination_scenarios,
+                diesel_scenarios,
+                hot_water_scenarios,
+                logger,
+                entry,
             )
             for entry in scenario_inputs[SCENARIOS]
         ]

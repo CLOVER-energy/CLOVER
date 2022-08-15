@@ -717,9 +717,10 @@ class DieselMode(enum.Enum):
     CYCLE_CHARGING = "cycle_charging"
     DISABLED = "disabled"
 
+
 @dataclasses.dataclass
 class DieselSetting:
-     """
+    """
     Contains information about the diesel setting being used.
 
     .. attribute:: name
@@ -729,14 +730,21 @@ class DieselSetting:
         The state of charge at which the generator should switch off
 
     .. attribute:: min_soc
-    The state of charge at which the generator should switch on
+        The state of charge at which the generator should switch on
 
      .. attribute:: start_hour
-    The start hour for the setting      
+        The start hour for the setting
 
      .. attribute:: end_hour
-    The end hour for the setting    
-    """   
+        The end hour for the setting
+
+    """
+
+    end_hour: int
+    max_soc: float
+    min_soc: float
+    name: str
+    start_hour: int
 
 
 @dataclasses.dataclass
@@ -754,6 +762,7 @@ class DieselScenario:
 
     backup_threshold: Optional[float]
     mode: DieselMode
+    name: str
     settings: Optional[List[DieselSetting]]
 
     def to_dict(self) -> Dict[str, Any]:

@@ -18,6 +18,11 @@ diesel_scenarios:
     settings:
       - name: universal
         max_soc: 0.9 # The state of charge the diesel generator charges to
-        min_soc: 0.2 # The state of charge the diesel generator switches on
+        min_soc: 0.4 # The state of charge the diesel generator switches on
         start_hour: 8 # The start hour for these settings (24hr clock)
         end_hour: 19 # The end hour for these settings (24hr clock)
+      - name: quiet
+        max_soc: 0.7 # The state of charge the diesel generator charges to
+        min_soc: 0.2 # The state of charge the diesel generator switches on
+        start_hour: 19 # The start hour for these settings (24hr clock)
+        end_hour: 8 # The end hour for these settings (24hr clock)
