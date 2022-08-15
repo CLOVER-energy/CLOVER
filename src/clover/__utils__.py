@@ -631,7 +631,7 @@ class ColumnHeader(enum.Enum):
     RENEWABLE_ELECTRICITY_SUPPLIED = "Renewables energy supplied (kWh)"
     RENEWABLE_ELECTRICITY_USED_DIRECTLY = "Renewables energy used (kWh)"
     STORAGE_PROFILE = "Storage profile (kWh)"
-    TOTAL_COOLING_CONSUMED = "Total cooling load (kWh_th)"
+    TOTAL_COOLING_CONSUMED = "Total cooling consumption (kWh_th)"
     TOTAL_COOLING_LOAD = "Total cooling load (kWh_th)"
     TOTAL_CW_CONSUMED = "Total clean water consumed (l)"
     TOTAL_CW_LOAD = "Total clean water demand (l)"
