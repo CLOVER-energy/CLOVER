@@ -539,7 +539,7 @@ class HybridPVTPanel(SolarPanel, panel_type=SolarPanelType.PV_T):
         self.electric_models = electric_models
         self.max_mass_flow_rate = solar_inputs["max_mass_flow_rate"]
         self.min_mass_flow_rate = solar_inputs["min_mass_flow_rate"]
-        self.pv_layer = pv_layer
+        self.pv_layer: PVPanel = pv_layer
         self.thermal_models = thermal_models
         self.thermal_unit = solar_inputs.get("thermal_unit", None)
 

@@ -93,8 +93,8 @@ def single_line_simulation(  # pylint: disable=too-many-locals, too-many-stateme
     SolarSystemSize,
     TankSize,
     SolarSystemSize,
-    TankSize,
     SolarSystemSize,
+    TankSize,
     SolarSystemSize,
     StorageSystemSize,
     List[SystemAppraisal],
@@ -555,7 +555,7 @@ def single_line_simulation(  # pylint: disable=too-many-locals, too-many-stateme
         if len(increased_cw_st_system_sizes) <= 1:
             component_sizes[
                 RenewableEnergySource.CLEAN_WATER_SOLAR_THERMAL
-            ] = potential_system.system_details.initial_cw_st_size
+            ] = potential_cw_st_size
         else:
             parameter_space.append(
                 (
@@ -707,7 +707,7 @@ def single_line_simulation(  # pylint: disable=too-many-locals, too-many-stateme
         if len(increased_hw_st_system_sizes) <= 1:
             component_sizes[
                 RenewableEnergySource.HOT_WATER_SOLAR_THERMAL
-            ] = potential_system.system_details.initial_hw_st_size
+            ] = potential_hw_st_size
         else:
             parameter_space.append(
                 (

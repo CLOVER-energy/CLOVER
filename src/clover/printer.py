@@ -80,6 +80,14 @@ def generate_optimisation_string(
                 + f"{minigrid.pvt_panel.thermal_unit} kWth per unit)"
             )
         if (
+            optimisation_inputs.cw_st_size is not None
+            and minigrid.solar_thermal_panel is not None
+        ):
+            optimisation_string_list.append(
+                "- Clean-water solar-thermal resolution of "
+                + f"{optimisation_inputs.cw_st_size.step} collectors "
+            )
+        if (
             optimisation_inputs.clean_water_tanks is not None
             and minigrid.clean_water_tank is not None
         ):
@@ -100,6 +108,14 @@ def generate_optimisation_string(
                 f"{optimisation_inputs.hw_pvt_size.step} units "
                 + f"({minigrid.pvt_panel.pv_layer.pv_unit} kWp and "
                 + f"{minigrid.pvt_panel.thermal_unit} kWth per unit)"
+            )
+        if (
+            optimisation_inputs.hw_st_size is not None
+            and minigrid.solar_thermal_panel is not None
+        ):
+            optimisation_string_list.append(
+                "- Hot-water solar-thermal resolution of "
+                + f"{optimisation_inputs.cw_st_size.step} collectors "
             )
         if (
             optimisation_inputs.hot_water_tanks is not None

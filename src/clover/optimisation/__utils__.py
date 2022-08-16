@@ -362,11 +362,19 @@ class OptimisationComponent(enum.Enum):
     - CLEAN_WATER_PVT_SIZE:
         Denotes the size of the clean-water PV-T system, measured in PV-T units.
 
+    - CLEAN_WATER_SOLAR_THERMAL_SIZE:
+        Denotes the size of the clean-water solar-thermal system, measured in collector
+        units.
+
     - CLEAN_WATER_TANKS:
         Denotes the number of clean-water tanks in the system.
 
     - HOT_WATER_PVT_SIZE:
         Denotes the size of the hot-water PV-T system, measured in PV-T units.
+
+    - HOT_WATER_SOLAR_THERMAL_SIZE:
+        Denotes the size of the hot-water solar-thermal system, measured in collector
+        units.
 
     - HOT_WATER_TANKS:
         Denotes the number of hot-water tanks in the system.
@@ -381,8 +389,10 @@ class OptimisationComponent(enum.Enum):
     """
 
     CLEAN_WATER_PVT_SIZE = "cw_pvt_size"
+    CLEAN_WATER_SOLAR_THERMAL_SIZE = "cw_st_size"
     CLEAN_WATER_TANKS = "cw_tanks"
     HOT_WATER_PVT_SIZE = "hw_pvt_size"
+    HOT_WATER_SOLAR_THERMAL_SIZE = "hw_st_size"
     HOT_WATER_TANKS = "hw_tanks"
     PV_SIZE = "pv_size"
     STORAGE_SIZE = "storage_size"
@@ -567,7 +577,10 @@ class OptimisationParameters:
             cw_pvt_size = SolarSystemSize()
 
         # Parse the clean-water solar-thermal system size.
-        if OptimisationComponent.CLEAN_WATER_SOLAR_THERMAL_SIZE.value in optimisation_inputs:
+        if (
+            OptimisationComponent.CLEAN_WATER_SOLAR_THERMAL_SIZE.value
+            in optimisation_inputs
+        ):
             try:
                 cw_pvt_size = SolarSystemSize(
                     optimisation_inputs[
@@ -582,26 +595,26 @@ class OptimisationParameters:
                 )
             except KeyError:
                 logger.error(
-                    "%sNot all clean-water PV-T size information specified in the "
-                    "optimisation inputs file.%s",
+                    "%sNot all clean-water solar-thermal size information specified in "
+                    "the optimisation inputs file.%s",
                     BColours.fail,
                     BColours.endc,
                 )
                 raise
             if cw_pvt_size.min == 0 or cw_pvt_size.max == 0:
                 logger.error(
-                    "%sCannot have zero clean-water PV-T collectors when modelling the "
-                    "clean-water system.%s",
+                    "%sCannot have zero clean-water solar-thermal collectors when "
+                    "modelling the clean-water system.%s",
                     BColours.fail,
                     BColours.endc,
                 )
                 raise InputFileError(
                     "optimisation inputs",
-                    "If modelling a clean-water system, none of the clean-water PV-T "
-                    "size options can be set to zero.",
+                    "If modelling a clean-water system, none of the clean-water "
+                    "solar-thermal size options can be set to zero.",
                 )
         else:
-            cw_pvt_size = SolarSystemSize()
+            cw_st_size = SolarSystemSize()
 
         # Parse the clean-water tank information.
         if OptimisationComponent.CLEAN_WATER_TANKS.value in optimisation_inputs:
@@ -726,6 +739,46 @@ class OptimisationParameters:
         else:
             hw_pvt_size = SolarSystemSize()
 
+        # Parse the hot-water solar-thermal system size.
+        if (
+            OptimisationComponent.HOT_WATER_SOLAR_THERMAL_SIZE.value
+            in optimisation_inputs
+        ):
+            try:
+                hw_pvt_size = SolarSystemSize(
+                    optimisation_inputs[
+                        OptimisationComponent.HOT_WATER_SOLAR_THERMAL_SIZE.value
+                    ][MAX],
+                    optimisation_inputs[
+                        OptimisationComponent.HOT_WATER_SOLAR_THERMAL_SIZE.value
+                    ][MIN],
+                    optimisation_inputs[
+                        OptimisationComponent.HOT_WATER_SOLAR_THERMAL_SIZE.value
+                    ][STEP],
+                )
+            except KeyError:
+                logger.error(
+                    "%sNot all hot-water solar-thermal size information specified in "
+                    "the optimisation inputs file.%s",
+                    BColours.fail,
+                    BColours.endc,
+                )
+                raise
+            if cw_pvt_size.min == 0 or cw_pvt_size.max == 0:
+                logger.error(
+                    "%sCannot have zero hot-water solar-thermal collectors when "
+                    "modelling the hot-water system.%s",
+                    BColours.fail,
+                    BColours.endc,
+                )
+                raise InputFileError(
+                    "optimisation inputs",
+                    "If modelling a hot-water system, none of the hot-water "
+                    "solar-thermal size options can be set to zero.",
+                )
+        else:
+            hw_st_size = SolarSystemSize()
+
         # Parse the hot-water tank information.
         if OptimisationComponent.HOT_WATER_TANKS.value in optimisation_inputs:
             try:
@@ -809,8 +862,10 @@ class OptimisationParameters:
             clean_water_tanks,
             converter_sizes,
             cw_pvt_size,
+            cw_st_size,
             hot_water_tanks,
             hw_pvt_size,
+            hw_st_size,
             optimisation_inputs[ITERATION_LENGTH],
             optimisation_inputs[NUMBER_OF_ITERATIONS],
             pv_size,
@@ -848,6 +903,15 @@ class OptimisationParameters:
             "clean_water_pvt_size_step": int(self.cw_pvt_size.step)
             if self.cw_pvt_size is not None
             else None,
+            "clean_water_solar_thermal_size_max": int(self.cw_st_size.max)
+            if self.cw_st_size is not None
+            else None,
+            "clean_water_solar_thermal_size_min": int(self.cw_st_size.min)
+            if self.cw_st_size is not None
+            else None,
+            "clean_water_solar_thermal_size_step": int(self.cw_st_size.step)
+            if self.cw_st_size is not None
+            else None,
             "clean_water_tanks_max": int(self.clean_water_tanks.max)
             if self.clean_water_tanks is not None
             else None,
@@ -865,6 +929,15 @@ class OptimisationParameters:
             else None,
             "hot_water_pvt_size_step": int(self.hw_pvt_size.step)
             if self.hw_pvt_size is not None
+            else None,
+            "hot_water_solar_thermal_size_max": int(self.hw_st_size.max)
+            if self.hw_st_size is not None
+            else None,
+            "hot_water_solar_thermal_size_min": int(self.hw_st_size.min)
+            if self.hw_st_size is not None
+            else None,
+            "hot_water_solar_thermal_size_step": int(self.hw_st_size.step)
+            if self.hw_st_size is not None
             else None,
             "hot_water_tanks_max": int(self.hot_water_tanks.max)
             if self.hot_water_tanks is not None

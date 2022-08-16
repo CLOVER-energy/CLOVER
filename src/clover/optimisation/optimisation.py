@@ -1344,7 +1344,7 @@ def multiple_optimisation_step(  # pylint: disable=too-many-locals, too-many-sta
     if (
         input_cw_st_system_size is None
         and optimisation.scenario.desalination_scenario is not None
-        and minigrid.solar_thermal is not None
+        and minigrid.solar_thermal_panel is not None
     ):
         if optimisation_parameters.cw_st_size is None:
             raise InternalError(
@@ -1362,7 +1362,7 @@ def multiple_optimisation_step(  # pylint: disable=too-many-locals, too-many-sta
             optimisation_parameters.cw_st_size.step,
         )
     else:
-        input_cw_pvt_system_size = SolarSystemSize()
+        input_cw_st_system_size = SolarSystemSize()
 
     # Set up the clean-water tank sizes for the first loop.
     if (
@@ -1409,6 +1409,30 @@ def multiple_optimisation_step(  # pylint: disable=too-many-locals, too-many-sta
         )
     else:
         input_hw_pvt_system_size = SolarSystemSize()
+
+    # Set up the hot-water solar-thermal sizes for the first loop.
+    if (
+        input_hw_st_system_size is None
+        and optimisation.scenario.hot_water_scenario is not None
+        and minigrid.solar_thermal_panel is not None
+    ):
+        if optimisation_parameters.hw_st_size is None:
+            raise InternalError(
+                f"{BColours.fail}Optimisation parameters do not have hot-water "
+                + "solar-thermal params despite hot-water being specified in the "
+                + f"scenario.{BColours.endc}"
+            )
+        logger.info(
+            "No hot-water solar-thermal sizes passed in, using default optimisation "
+            "parameters."
+        )
+        input_hw_st_system_size = SolarSystemSize(
+            optimisation_parameters.hw_st_size.max,
+            optimisation_parameters.hw_st_size.min,
+            optimisation_parameters.hw_st_size.step,
+        )
+    else:
+        input_hw_st_system_size = SolarSystemSize()
 
     # Set up the hot-water tank sizes for the first loop
     if (
@@ -1488,6 +1512,11 @@ def multiple_optimisation_step(  # pylint: disable=too-many-locals, too-many-sta
                 input_cw_pvt_system_size.min,
                 input_cw_pvt_system_size.step,
             ),
+            SolarSystemSize(
+                input_cw_st_system_size.max,
+                input_cw_st_system_size.min,
+                input_cw_st_system_size.step,
+            ),
             TankSize(
                 input_cw_tanks.max,
                 input_cw_tanks.min,
@@ -1502,6 +1531,11 @@ def multiple_optimisation_step(  # pylint: disable=too-many-locals, too-many-sta
                 input_hw_pvt_system_size.max,
                 input_hw_pvt_system_size.min,
                 input_hw_pvt_system_size.step,
+            ),
+            SolarSystemSize(
+                input_hw_st_system_size.max,
+                input_hw_st_system_size.min,
+                input_hw_st_system_size.step,
             ),
             TankSize(
                 input_hw_tanks.max,
