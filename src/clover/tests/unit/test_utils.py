@@ -43,7 +43,6 @@ class TestHTFMode(unittest.TestCase):
 
     """
 
-    @pytest.mark.unit
     def test_instantiate(self) -> None:
         """Tests that a :class:`HTFMode` can be instantiated as expected."""
 
@@ -61,7 +60,6 @@ class TestHTFMode(unittest.TestCase):
 class TestSolarPanelType(unittest.TestCase):
     """Tests the :class:`SolarPanelType` class."""
 
-    @pytest.mark.unit
     def test_panel_types(self) -> None:
         """Tests that the expected panel types are present."""
 
@@ -76,7 +74,6 @@ class TestThermalCollectorScenario(unittest.TestCase):
 
     """
 
-    @pytest.mark.unit
     def test_instantiate(self) -> None:
         """
         Tests that a :class:`ThermalCollectorScenario` can be instantiated as expected.
@@ -146,7 +143,6 @@ class TestDesalinationScenario(unittest.TestCase):
             ],
         }
 
-    @pytest.mark.unit
     def test_missing_clean_water_data(self) -> None:
         """Tests the case where input clean-water data is missing."""
 
@@ -161,7 +157,6 @@ class TestDesalinationScenario(unittest.TestCase):
             BColours.endc,
         )
 
-    @pytest.mark.unit
     def test_missing_feedwater_sources(self) -> None:
         """Tests the case where feedwater sources input data is missing."""
 
@@ -176,7 +171,6 @@ class TestDesalinationScenario(unittest.TestCase):
             "\x1b[0m",
         )
 
-    @pytest.mark.unit
     def test_missing_feedwater_supply_temperature(self) -> None:
         """Tests the case where input feedwater supply data is missing."""
 
@@ -192,7 +186,6 @@ class TestDesalinationScenario(unittest.TestCase):
             "\x1b[0m",
         )
 
-    @pytest.mark.unit
     def test_valid_inputs(self) -> None:
         """Tests the case where all the inputs are valid."""
 
@@ -239,7 +232,6 @@ class TestHotWaterScenario(unittest.TestCase):
             ],
         }
 
-    @pytest.mark.unit
     def test_invalid_auxiliary_heater(self) -> None:
         """Tests the case where auxiliary heater data is invalid."""
 
@@ -258,7 +250,6 @@ class TestHotWaterScenario(unittest.TestCase):
             BColours.endc,
         )
 
-    @pytest.mark.unit
     def test_invalid_cold_water_supply(self) -> None:
         """Tests the case where cold-water-supply data is invalid."""
 
@@ -274,7 +265,6 @@ class TestHotWaterScenario(unittest.TestCase):
             BColours.endc,
         )
 
-    @pytest.mark.unit
     def test_missing_cold_water_supply_temperature(self) -> None:
         """Tests the case where the cold-water-supply temperature is missing."""
 
@@ -290,7 +280,6 @@ class TestHotWaterScenario(unittest.TestCase):
             BColours.endc,
         )
 
-    @pytest.mark.unit
     def test_missing_conventional_sources(self) -> None:
         """Tests the case where the cold-water-supply temperature is missing."""
 
@@ -310,7 +299,6 @@ class TestHotWaterScenario(unittest.TestCase):
             "Hot-water input information: %s", json.dumps(self.input_data)
         )
 
-    @pytest.mark.unit
     def test_missing_demand_temperature(self) -> None:
         """Tests the case where the cold-water-supply temperature is missing."""
 
@@ -325,7 +313,6 @@ class TestHotWaterScenario(unittest.TestCase):
             BColours.endc,
         )
 
-    @pytest.mark.unit
     def test_valid_inputs(self) -> None:
         """Tests the case where all the inputs are valid."""
 

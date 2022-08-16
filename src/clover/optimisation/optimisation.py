@@ -121,10 +121,12 @@ def _find_optimum_system(  # pylint: disable=too-many-locals
     irradiance_data: pd.Series,
     kerosene_usage: pd.DataFrame,
     largest_converter_sizes: Dict[Converter, ConverterSize],
-    largest_cw_tank_size: TankSize,
     largest_cw_pvt_system_size: SolarSystemSize,
-    largest_hw_tank_size: TankSize,
+    largest_cw_st_system_size: SolarSystemSize,
+    largest_cw_tank_size: TankSize,
     largest_hw_pvt_system_size: SolarSystemSize,
+    largest_hw_st_system_size: SolarSystemSize,
+    largest_hw_tank_size: TankSize,
     largest_pv_system_size: SolarSystemSize,
     largest_storage_system_size: StorageSystemSize,
     location: Location,
@@ -156,10 +158,14 @@ def _find_optimum_system(  # pylint: disable=too-many-locals
             The maximum size of each converter that was installed.
         - largest_cw_pvt_system_size:
             The maximum size of clean-water PV-T system installed.
+        - largest_cw_st_system_size:
+            The maximum size of clean-water solar-thermal system installed.
         - largest_cw_tank_size:
             The maximum size of clean-water tanks installed.
         - largest_hw_pvt_system_size:
             The maximum size of hot-water PV-T system installed.
+        - largest_hw_st_system_size:
+            The maximum size of hot-water solar-thermal system installed.
         - largest_hw_tank_size:
             The maximum size of hot-water tanks installed.
         - largest_pv_system_size:
@@ -174,7 +180,8 @@ def _find_optimum_system(  # pylint: disable=too-many-locals
             A `list` of :class:`SystemAppraisals` of sufficient systems.
 
     Outputs:
-        optimum_system      Optimum system for the simulation period
+        - A mapping between optimisation criteria and the optimum system corresponding
+          to each criterion.
 
     """
 
@@ -225,6 +232,12 @@ def _find_optimum_system(  # pylint: disable=too-many-locals
                 and optimisation.scenario.pv_t
             )
             or (
+                optimum_system.system_details.initial_cw_st_size
+                == largest_cw_st_system_size.max
+                and optimisation.scenario.desalination_scenario is not None
+                and optimisation.scenario.solar_thermal
+            )
+            or (
                 optimum_system.system_details.initial_num_clean_water_tanks
                 == largest_cw_tank_size.max
                 and optimisation.scenario.desalination_scenario is not None
@@ -234,6 +247,12 @@ def _find_optimum_system(  # pylint: disable=too-many-locals
                 == largest_hw_pvt_system_size.max
                 and optimisation.scenario.hot_water_scenario is not None
                 and optimisation.scenario.pv_t
+            )
+            or (
+                optimum_system.system_details.initial_hw_st_size
+                == largest_hw_st_system_size.max
+                and optimisation.scenario.hot_water_scenario is not None
+                and optimisation.scenario.solar_thermal
             )
             or (
                 optimum_system.system_details.initial_num_hot_water_tanks
@@ -255,8 +274,10 @@ def _find_optimum_system(  # pylint: disable=too-many-locals
             (
                 largest_converter_sizes,
                 largest_cw_pvt_system_size,
+                largest_cw_st_system_size,
                 largest_cw_tank_size,
                 largest_hw_pvt_system_size,
+                largest_hw_st_system_size,
                 largest_hw_tank_size,
                 largest_pv_system_size,
                 largest_storage_system_size,
@@ -265,6 +286,7 @@ def _find_optimum_system(  # pylint: disable=too-many-locals
                 conventional_cw_source_profiles,
                 largest_converter_sizes,
                 largest_cw_pvt_system_size,
+                largest_cw_st_system_size,
                 largest_cw_tank_size,
                 converters,
                 disable_tqdm,
@@ -273,6 +295,7 @@ def _find_optimum_system(  # pylint: disable=too-many-locals
                 ghg_inputs,
                 grid_profile,
                 largest_hw_pvt_system_size,
+                largest_hw_st_system_size,
                 largest_hw_tank_size,
                 irradiance_data,
                 kerosene_usage,
@@ -328,6 +351,7 @@ def _simulation_iteration(  # pylint: disable=too-many-locals, too-many-statemen
     conventional_cw_source_profiles: Optional[Dict[WaterSource, pd.DataFrame]],
     converter_sizes: Dict[Converter, ConverterSize],
     cw_pvt_system_size: SolarSystemSize,
+    cw_st_system_size: SolarSystemSize,
     cw_tanks: TankSize,
     converters: Dict[str, Converter],
     disable_tqdm: bool,
@@ -335,6 +359,7 @@ def _simulation_iteration(  # pylint: disable=too-many-locals, too-many-statemen
     ghg_inputs: Dict[str, Any],
     grid_profile: Optional[pd.DataFrame],
     hw_pvt_system_size: SolarSystemSize,
+    hw_st_system_size: SolarSystemSize,
     hw_tanks: TankSize,
     irradiance_data: pd.Series,
     kerosene_usage: pd.DataFrame,
@@ -376,6 +401,10 @@ def _simulation_iteration(  # pylint: disable=too-many-locals, too-many-statemen
         - conventional_cw_source_profiles:
             A mapping between conventional water sources and their availability
             profiles.
+        - cw_pvt_system_size:
+            The range of clean-water PV-T sizes.
+        - cw_st_system_size:
+            The range of clean-water solar-thermal sizes.
         - cw_tanks:
             Range of clean-water tanks.
         - disable_tqdm:
@@ -386,6 +415,12 @@ def _simulation_iteration(  # pylint: disable=too-many-locals, too-many-statemen
             The green-house-gas input information.
         - grid_profile:
             The grid-availability profile.
+        - hw_pvt_system_size:
+            The range of hot-water PV-T sizes.
+        - hw_st_system_size:
+            The range of hot-water solar-thermal sizes.
+        - hw_tanks:
+            Range of hot-water tanks.
         - irradiance_data:
             The irradaince data series.
         - kerosene_usage:
@@ -483,12 +518,14 @@ def _simulation_iteration(  # pylint: disable=too-many-locals, too-many-statemen
 
     _, simulation_results, system_details = energy_system.run_simulation(
         int(cw_pvt_system_size.max),
+        int(cw_st_system_size.max),
         conventional_cw_source_profiles,
         converters_from_sizing(simulation_converter_sizes),
         disable_tqdm,
         storage_sizes.max,
         grid_profile,
         int(hw_pvt_system_size.max),
+        int(hw_st_system_size.max),
         irradiance_data,
         kerosene_usage,
         location,
@@ -521,8 +558,10 @@ def _simulation_iteration(  # pylint: disable=too-many-locals, too-many-statemen
 
     # Instantiate in preparation of the while loop.
     cw_pvt_size_max = cw_pvt_system_size.max
+    cw_st_size_max = cw_st_system_size.max
     cw_tanks_max = cw_tanks.max
     hw_pvt_size_max = hw_pvt_system_size.max
+    hw_st_size_max = hw_st_system_size.max
     hw_tanks_max = hw_tanks.max
     pv_size_max = pv_sizes.max
     storage_size_max = storage_sizes.max
@@ -552,8 +591,14 @@ def _simulation_iteration(  # pylint: disable=too-many-locals, too-many-statemen
         cw_pvt_size_max = float(
             np.ceil(cw_pvt_size_max / cw_pvt_system_size.step) * cw_pvt_system_size.step
         )
+        cw_st_size_max = float(
+            np.ceil(cw_st_size_max / cw_st_system_size.step) * cw_st_system_size.step
+        )
         hw_pvt_size_max = float(
             np.ceil(hw_pvt_size_max / hw_pvt_system_size.step) * hw_pvt_system_size.step
+        )
+        hw_st_size_max = float(
+            np.ceil(hw_st_size_max / hw_st_system_size.step) * hw_st_system_size.step
         )
         pv_size_max = float(np.ceil(pv_size_max / pv_sizes.step) * pv_sizes.step)
         storage_size_max = float(
@@ -589,12 +634,14 @@ def _simulation_iteration(  # pylint: disable=too-many-locals, too-many-statemen
         # Run a simulation and appraise it.
         _, simulation_results, system_details = energy_system.run_simulation(
             int(cw_pvt_size_max),
+            int(hw_st_size_max),
             conventional_cw_source_profiles,
             converters_from_sizing(simulation_converter_sizes),
             disable_tqdm,
             storage_size_max,
             grid_profile,
             int(hw_pvt_size_max),
+            int(hw_st_size_max),
             irradiance_data,
             kerosene_usage,
             location,
@@ -963,6 +1010,7 @@ def _optimisation_step(  # pylint: disable=too-many-locals
     conventional_cw_source_profiles: Optional[Dict[WaterSource, pd.DataFrame]],
     converter_sizes: Dict[Converter, ConverterSize],
     cw_pvt_system_size: SolarSystemSize,
+    cw_st_system_size: SolarSystemSize,
     cw_tanks: TankSize,
     converters: Dict[str, Converter],
     disable_tqdm: bool,
@@ -970,6 +1018,7 @@ def _optimisation_step(  # pylint: disable=too-many-locals
     ghg_inputs: Dict[str, Any],
     grid_profile: Optional[pd.DataFrame],
     hw_pvt_system_size: SolarSystemSize,
+    hw_st_system_size: SolarSystemSize,
     hw_tanks: TankSize,
     irradiance_data: pd.Series,
     kerosene_usage: pd.DataFrame,
@@ -1000,6 +1049,8 @@ def _optimisation_step(  # pylint: disable=too-many-locals
             sizes.
         - cw_pvt_system_size:
             Range of clean-water PV-T sizes.
+        - cw_st_system_size:
+            Range of clean-water solar-thermal sizes.
         - cw_tanks:
             Range of clean-water tank sizes.
         - converters:
@@ -1014,6 +1065,8 @@ def _optimisation_step(  # pylint: disable=too-many-locals
             The total irradiance throughout the period of the simulation.
         - hw_pvt_system_size:
             Range of hot-water PV-T sizes.
+        - hw_st_system_size:
+            Range of hot-water solar-thermal sizes.
         - hw_tanks:
             Range of hot-water tank sizes.
         - kerosene_usage:
@@ -1072,6 +1125,7 @@ def _optimisation_step(  # pylint: disable=too-many-locals
         conventional_cw_source_profiles,
         converter_sizes,
         cw_pvt_system_size,
+        cw_st_system_size,
         cw_tanks,
         converters,
         disable_tqdm,
@@ -1079,6 +1133,7 @@ def _optimisation_step(  # pylint: disable=too-many-locals
         ghg_inputs,
         grid_profile,
         hw_pvt_system_size,
+        hw_st_system_size,
         hw_tanks,
         irradiance_data,
         kerosene_usage,
@@ -1111,10 +1166,12 @@ def _optimisation_step(  # pylint: disable=too-many-locals
         irradiance_data,
         kerosene_usage,
         converter_sizes,
-        cw_tanks,
         cw_pvt_system_size,
-        hw_tanks,
+        cw_st_system_size,
+        cw_tanks,
         hw_pvt_system_size,
+        hw_st_system_size,
+        hw_tanks,
         pv_system_size,
         storage_system_size,
         location,
@@ -1159,8 +1216,10 @@ def multiple_optimisation_step(  # pylint: disable=too-many-locals, too-many-sta
     *,
     input_converter_sizes: Optional[Dict[Converter, ConverterSize]] = None,
     input_cw_pvt_system_size: Optional[SolarSystemSize] = None,
+    input_cw_st_system_size: Optional[SolarSystemSize] = None,
     input_cw_tanks: Optional[TankSize] = None,
     input_hw_pvt_system_size: Optional[SolarSystemSize] = None,
+    input_hw_st_system_size: Optional[SolarSystemSize] = None,
     input_hw_tanks: Optional[TankSize] = None,
     input_pv_sizes: Optional[SolarSystemSize] = None,
     input_storage_sizes: Optional[StorageSystemSize] = None,
@@ -1210,10 +1269,16 @@ def multiple_optimisation_step(  # pylint: disable=too-many-locals, too-many-sta
             Range of clean-water tank sizes as a :class:`TankSize` instance;
         - input_cw_pvt_system_size:
             Range of clean-water PV-T sizes as a :class:`SolarSystemSize` instance;
+        - input_cw_st_system_size:
+            Range of clean-water solar-thermal sizes as a :class:`SolarSystemSize`
+            instance;
         - input_hw_tanks:
             Range of hot-water tank sizes as a :class:`TankSize` instance;
         - input_hw_pvt_system_size:
             Range of hot-water PV-T sizes as a :class:`SolarSystemSize` instance;
+        - input_hw_st_system_size:
+            Range of hot-water solar-thermal sizes as a :class:`SolarSystemSize`
+            instance;
         - input_pv_sizes:
             Range of PV sizes as a :class:`SolarSystemSize` instance;
         - input_storage_sizes:
@@ -1259,17 +1324,42 @@ def multiple_optimisation_step(  # pylint: disable=too-many-locals, too-many-sta
     ):
         if optimisation_parameters.cw_pvt_size is None:
             raise InternalError(
-                f"{BColours.fail}Optimisation parameters do not have hot-water PV-T "
-                + "params despite hot-water being specified in the scenario."
+                f"{BColours.fail}Optimisation parameters do not have clean-water PV-T "
+                + "params despite clean-water being specified in the scenario."
                 + f"{BColours.endc}"
             )
         logger.info(
-            "No clean-water PV-T sizes passed in, using default optimisation parameters."
+            "No clean-water PV-T sizes passed in, using default optimisation "
+            "parameters."
         )
         input_cw_pvt_system_size = SolarSystemSize(
             optimisation_parameters.cw_pvt_size.max,
             optimisation_parameters.cw_pvt_size.min,
             optimisation_parameters.cw_pvt_size.step,
+        )
+    else:
+        input_cw_pvt_system_size = SolarSystemSize()
+
+    # Set up the clean-water solar-thermal sizes for the first loop.
+    if (
+        input_cw_st_system_size is None
+        and optimisation.scenario.desalination_scenario is not None
+        and minigrid.solar_thermal is not None
+    ):
+        if optimisation_parameters.cw_st_size is None:
+            raise InternalError(
+                f"{BColours.fail}Optimisation parameters do not have clean-water "
+                + "solar-thermal params despite hot-water being specified in the "
+                + f"scenario.{BColours.endc}"
+            )
+        logger.info(
+            "No clean-water solar-thermal sizes passed in, using default optimisation "
+            "parameters."
+        )
+        input_cw_st_system_size = SolarSystemSize(
+            optimisation_parameters.cw_st_size.max,
+            optimisation_parameters.cw_st_size.min,
+            optimisation_parameters.cw_st_size.step,
         )
     else:
         input_cw_pvt_system_size = SolarSystemSize()

@@ -466,11 +466,17 @@ class OptimisationParameters:
     .. attribute:: cw_pvt_size
         The sizing bounds for the clean-water PV-T collectors.
 
+    .. attribute:: cw_st_size
+        The sizing bounds for the clean-water solar-thermal collectors.
+
     .. attribute:: hot_water_tanks
         The sizing bounds for the hot-water tanks.
 
     .. attribute:: hw_pvt_size
         The sizing bounds for the hot-water PV-T collectors.
+
+    .. attribute:: hw_st_size
+        The sizing bounds for the hot-water solar-thermal collectors.
 
     .. attribute:: iteration_length
         The length of the iterations to be carried out.
@@ -489,8 +495,10 @@ class OptimisationParameters:
     clean_water_tanks: TankSize
     converter_sizes: Dict[Converter, ConverterSize]
     cw_pvt_size: SolarSystemSize
+    cw_st_size: SolarSystemSize
     hot_water_tanks: TankSize
     hw_pvt_size: SolarSystemSize
+    hw_st_size: SolarSystemSize
     iteration_length: int
     number_of_iterations: int
     pv_size: SolarSystemSize
@@ -533,6 +541,43 @@ class OptimisationParameters:
                     ][MIN],
                     optimisation_inputs[
                         OptimisationComponent.CLEAN_WATER_PVT_SIZE.value
+                    ][STEP],
+                )
+            except KeyError:
+                logger.error(
+                    "%sNot all clean-water PV-T size information specified in the "
+                    "optimisation inputs file.%s",
+                    BColours.fail,
+                    BColours.endc,
+                )
+                raise
+            if cw_pvt_size.min == 0 or cw_pvt_size.max == 0:
+                logger.error(
+                    "%sCannot have zero clean-water PV-T collectors when modelling the "
+                    "clean-water system.%s",
+                    BColours.fail,
+                    BColours.endc,
+                )
+                raise InputFileError(
+                    "optimisation inputs",
+                    "If modelling a clean-water system, none of the clean-water PV-T "
+                    "size options can be set to zero.",
+                )
+        else:
+            cw_pvt_size = SolarSystemSize()
+
+        # Parse the clean-water solar-thermal system size.
+        if OptimisationComponent.CLEAN_WATER_SOLAR_THERMAL_SIZE.value in optimisation_inputs:
+            try:
+                cw_pvt_size = SolarSystemSize(
+                    optimisation_inputs[
+                        OptimisationComponent.CLEAN_WATER_SOLAR_THERMAL_SIZE.value
+                    ][MAX],
+                    optimisation_inputs[
+                        OptimisationComponent.CLEAN_WATER_SOLAR_THERMAL_SIZE.value
+                    ][MIN],
+                    optimisation_inputs[
+                        OptimisationComponent.CLEAN_WATER_SOLAR_THERMAL_SIZE.value
                     ][STEP],
                 )
             except KeyError:
@@ -1046,12 +1091,14 @@ def recursive_iteration(  # pylint: disable=too-many-locals
         # Run the simulation
         (_, simulation_results, system_details,) = energy_system.run_simulation(
             int(component_sizes[RenewableEnergySource.CLEAN_WATER_PVT]),
+            int(component_sizes[RenewableEnergySource.CLEAN_WATER_SOLAR_THERMAL]),
             conventional_cw_source_profiles,
             converters,
             disable_tqdm,
             component_sizes[ImpactingComponent.STORAGE],
             grid_profile,
             int(component_sizes[RenewableEnergySource.HOT_WATER_PVT]),
+            int(component_sizes[RenewableEnergySource.HOT_WATER_SOLAR_THERMAL]),
             irradiance_data,
             kerosene_usage,
             location,

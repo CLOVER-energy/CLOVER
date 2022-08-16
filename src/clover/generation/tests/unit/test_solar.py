@@ -46,7 +46,6 @@ class TestPerformanceCurve(unittest.TestCase):
 
     """
 
-    @pytest.mark.unit
     def test_properties(self) -> None:
         """Tests that a :class:`PerformanceCurve` can be instantiated as expected."""
 
@@ -93,13 +92,11 @@ class TestPVPanel(unittest.TestCase):
         }
         super().setUp()
 
-    @pytest.mark.unit
     def test_instantiate_no_override(self) -> None:
         """Tests instantiation with the default PV unit."""
 
         PVPanel.from_dict(mock.MagicMock(), self.input_data)
 
-    @pytest.mark.unit
     def test_instantiate_override_unit(self) -> None:
         """
         Tests instantiation with an overriden PV unit."""
@@ -111,7 +108,6 @@ class TestPVPanel(unittest.TestCase):
         self.assertEqual(overriden_unit, pv_panel.pv_unit)
         self.assertTrue(pv_panel.pv_unit_overrided)
 
-    @pytest.mark.unit
     def test_calculate_performance(self) -> None:
         """Tests the calculate performance method."""
 
@@ -185,7 +181,6 @@ class TestHybridPVTPanelPerformance(unittest.TestCase):
 
         super().setUp()
 
-    @pytest.mark.unit
     def test_electrical_model_error(self) -> None:
         """Tests the case where there is an error in the electric calculation."""
 
@@ -217,7 +212,6 @@ class TestHybridPVTPanelPerformance(unittest.TestCase):
             str(e.exception),
         )
 
-    @pytest.mark.unit
     def test_low_irradiance_low_temperature(self) -> None:
         """Tests the case with low irradiance and low temperature."""
 
@@ -259,7 +253,6 @@ class TestHybridPVTPanelPerformance(unittest.TestCase):
         )
         self.assertEqual(output_temperature, calculated_output_temperature)
 
-    @pytest.mark.unit
     def test_low_irradiance_high_temperature(self) -> None:
         """Tests the case with low irradiance and high temperature."""
 
@@ -301,7 +294,6 @@ class TestHybridPVTPanelPerformance(unittest.TestCase):
         )
         self.assertEqual(output_temperature, calculated_output_temperature)
 
-    @pytest.mark.unit
     def test_high_irradiance_low_temperature(self) -> None:
         """Tests the case with high irradiance and low temperature."""
 
@@ -343,7 +335,6 @@ class TestHybridPVTPanelPerformance(unittest.TestCase):
         )
         self.assertEqual(output_temperature, calculated_output_temperature)
 
-    @pytest.mark.unit
     def test_high_irradiance_high_temperature(self) -> None:
         """Tests the case with high irradiance and high temperature."""
 
@@ -385,7 +376,6 @@ class TestHybridPVTPanelPerformance(unittest.TestCase):
         )
         self.assertEqual(output_temperature, calculated_output_temperature)
 
-    @pytest.mark.unit
     def test_no_electric_models(self) -> None:
         """Tests the case where there are no electric models on the instance."""
 
@@ -407,7 +397,6 @@ class TestHybridPVTPanelPerformance(unittest.TestCase):
             BColours.endc,
         )
 
-    @pytest.mark.unit
     def test_no_thermal_models(self) -> None:
         """Tests the case where there are no thermal models on the instance."""
 
@@ -429,7 +418,6 @@ class TestHybridPVTPanelPerformance(unittest.TestCase):
             BColours.endc,
         )
 
-    @pytest.mark.unit
     def test_thermal_model_error(self) -> None:
         """Tests the case where the thermal model throws and error."""
 
@@ -517,7 +505,6 @@ class TestSolarThermalPanelPerformance(unittest.TestCase):
 
         super().setUp()
 
-    @pytest.mark.unit
     def test_mainline(self) -> None:
         """
         Tests the mainline case.

@@ -259,6 +259,7 @@ def _calculate_renewable_cw_profiles(  # pylint: disable=too-many-locals, too-ma
     number_of_cw_tanks: int,
     pvt_size: int,
     scenario: Scenario,
+    solar_thermal_size: int,
     start_hour: int,
     temperature_data: pd.Series,
     total_waste_produced: Dict[WasteProduct, DefaultDict[int, float]],
@@ -323,11 +324,15 @@ def _calculate_renewable_cw_profiles(  # pylint: disable=too-many-locals, too-ma
             Celcius.
         - clean_water_pvt_electric_power_per_unit:
             The electric power produced by the PV-T, in kWh, per unit of PV-T installed.
+        - pvt_size:
+            The size of the PV-T system installed.
         - renewable_thermal_cw_produced:
             The amount of clean water produced renewably, measured in litres.
         - required_feedwater_sources:
             The `list` of feedwater sources required to supply the needs of the
             desalination system.
+        - solar_thermal_size:
+            The size of the solar-thermal system installed.
         - thermal_desalination_electric_power_consumed:
             The electric power consumed in operating the thermal desalination plant,
             measured in kWh.
@@ -337,8 +342,8 @@ def _calculate_renewable_cw_profiles(  # pylint: disable=too-many-locals, too-ma
 
     """
 
+    # Determine the list of available feedwater sources if relevant.
     if scenario.desalination_scenario is not None:
-        # Determine the list of available feedwater sources.
         logger.info("Determining available feedwater sources.")
         feedwater_sources: List[Converter] = sorted(
             [
@@ -357,243 +362,278 @@ def _calculate_renewable_cw_profiles(  # pylint: disable=too-many-locals, too-ma
     else:
         feedwater_sources = []
 
-    if scenario.pv_t and scenario.desalination_scenario is not None:
-        logger.info("Calculating clean-water PV-T performance profiles.")
-        if wind_speed_data is None:
-            raise InternalError(
-                "Wind speed data required in PV-T computation and not passed to the "
-                "energy system module."
-            )
-        if minigrid.water_pump is None:
-            logger.error(
-                "%sNo water pump defined on the minigrid despite PV-T modelling being "
-                "requested via the scenario files.%s",
-                BColours.fail,
-                BColours.endc,
-            )
-            raise InternalError(
-                "No water pump defined as part of the energy system despite the PV-T "
-                "modelling being requested."
-            )
-
-        # Determine the thermal desalination plant being used.
-        logger.info("Determining desalination plant.")
-        try:
-            thermal_desalination_plant: ThermalDesalinationPlant = [
-                converter
-                for converter in converters
-                if isinstance(converter, ThermalDesalinationPlant)
-            ][0]
-        except IndexError:
-            logger.error(
-                "%sNo valid thermal desalination plants specified despite PV-T being "
-                "specified.%s",
-                BColours.fail,
-                BColours.endc,
-            )
-            raise InputFileError(
-                "conversion inputs", "No valid thermal desalination plants specified."
-            ) from None
-        logger.info(
-            "Desalination plant determined: %s", thermal_desalination_plant.name
-        )
-
-        # Determine whether the water pump is capable for supplying the PV-T panels with
-        # enough throughput.
-        if (
-            scenario.desalination_scenario.pvt_scenario.mass_flow_rate * pvt_size
-            > minigrid.water_pump.throughput
-        ):
-            logger.error(
-                "%sThe water pump supplied, %s, is incapable of meeting the required "
-                "PV-T flow rate of %s litres/hour. Max pump throughput: %s litres/hour."
-                "%s",
-                BColours.fail,
-                minigrid.water_pump.name,
-                scenario.desalination_scenario.pvt_scenario.mass_flow_rate * pvt_size,
-                minigrid.water_pump.throughput,
-                BColours.endc,
-            )
-            raise InputFileError(
-                "transmission inputs",
-                "The water pump defined is unable to meet PV-T flow requirements.",
-            )
-
-        if thermal_desalination_plant.htf_mode == HTFMode.CLOSED_HTF:
-            thermal_desalination_plant_input_type: ResourceType = (
-                ResourceType.UNCLEAN_WATER
-            )
-        if thermal_desalination_plant.htf_mode == HTFMode.FEEDWATER_HEATING:
-            thermal_desalination_plant_input_type = ResourceType.HOT_UNCLEAN_WATER
-        if thermal_desalination_plant.htf_mode == HTFMode.COLD_WATER_HEATING:
-            logger.error(
-                "%sCold-water heating thermal desalination plants are not supported.%s",
-                BColours.fail,
-                BColours.endc,
-            )
-            InputFileError(
-                "converter inputs OR desalination scenario",
-                f"The htf mode '{HTFMode.COLD_WATER_HEATING.value}' is not currently "
-                "supported.",
-            )
-
-        thermal_desalination_plant_input_flow_rate = (
-            thermal_desalination_plant.input_resource_consumption[
-                thermal_desalination_plant_input_type
-            ]
-        )
-
-        if (
-            sum(
-                feedwater_source.maximum_output_capacity
-                for feedwater_source in feedwater_sources
-            )
-            < thermal_desalination_plant_input_flow_rate
-        ):
-            logger.error(
-                "%sThe feedwater sources are unable to supply enough throughput to "
-                "facilitate the thermal desalination plant. If you are running a "
-                "simulation, consider using a smaller desalination plant or a larger "
-                "number of feedwater sources. If you are running an optimisation, "
-                "consider using a greater number of feedwater sources as your initial "
-                "maximum point. Or, it is possible that no feedwater sources have been "
-                "defined within your optimisation inputs file.%s",
-                BColours.fail,
-                BColours.endc,
-            )
-            logger.info(
-                "Feedwater sources: %s",
-                ", ".join([str(source) for source in feedwater_sources]),
-            )
-            logger.info("Desalination plant: %s", thermal_desalination_plant)
-            raise InputFileError(
-                "desalination scenario",
-                "The feedwater sources cannot meet the thermal desalination plant "
-                "input demand.",
-            )
-
-        logger.info("Determining required feedwater sources.")
-        feedwater_capacity: float = 0
-        required_feedwater_sources: List[Converter] = []
-        while (
-            feedwater_capacity
-            < thermal_desalination_plant.input_resource_consumption[
-                thermal_desalination_plant_input_type
-            ]
-        ):
-            required_feedwater_sources.append(feedwater_sources.pop(0))
-            feedwater_capacity += required_feedwater_sources[-1].maximum_output_capacity
-
-        feedwater_sources.extend(required_feedwater_sources)
-        logger.info("Required feedwater sources determined.")
-        logger.debug(
-            "Required feedwater sources: %s",
-            ", ".join([str(source) for source in required_feedwater_sources]),
-        )
-
-        # Compute the output of the PV-T system.
-        clean_water_pvt_collector_output_temperature: Optional[pd.DataFrame]
-        buffer_tank_temperature: Optional[pd.DataFrame]
-        (
-            clean_water_pvt_collector_input_temperature,
-            clean_water_pvt_collector_output_temperature,
-            clean_water_pvt_electric_power_per_unit,
-            clean_water_pvt_pump_times,
-            buffer_tank_temperature,
-            buffer_tank_volume_supplied,
-        ) = calculate_solar_thermal_output(
-            pvt_size,
-            disable_tqdm,
-            end_hour,
-            irradiance_data[start_hour:end_hour],
-            logger,
-            minigrid,
-            number_of_cw_tanks,
-            None,
-            ResourceType.CLEAN_WATER,
-            scenario,
-            minigrid.pvt_panel,
-            start_hour,
-            temperature_data[start_hour:end_hour],
-            thermal_desalination_plant,
-            wind_speed_data[start_hour:end_hour],
-        )
-        logger.debug("PV-T performance successfully computed.")
-
-        # Compute the clean water supplied by the desalination unit.
-        renewable_thermal_cw_produced: pd.DataFrame = (
-            buffer_tank_volume_supplied > 0
-        ) * thermal_desalination_plant.maximum_output_capacity
-
-        # Compute the power consumed by the thermal desalination plant.
-        thermal_desalination_electric_power_consumed: pd.DataFrame = pd.DataFrame(
-            (
-                (renewable_thermal_cw_produced > 0)
-                * (
-                    0.001
-                    * thermal_desalination_plant.input_resource_consumption[
-                        ResourceType.ELECTRIC
-                    ]
-                    + 0.001
-                    * sum(
-                        source.input_resource_consumption[ResourceType.ELECTRIC]
-                        for source in required_feedwater_sources
-                    )
-                )
-            ).values
-            + (clean_water_pvt_pump_times > 0) * 0.001 * minigrid.water_pump.consumption
-        )
-        total_waste_produced.update(
-            {
-                waste_product: defaultdict(
-                    float,
-                    (
-                        pd.DataFrame(  # type: ignore [arg-type,call-overload]
-                            (renewable_thermal_cw_produced > 0).values
-                        )
-                        * amount_produced
-                    )[0].to_dict(),
-                )
-                for (
-                    waste_product,
-                    amount_produced,
-                ) in thermal_desalination_plant.waste_production.items()
-            }
-        )
-
-        buffer_tank_temperature = buffer_tank_temperature.reset_index(drop=True)
-        clean_water_pvt_collector_input_temperature = (
-            clean_water_pvt_collector_input_temperature.reset_index(drop=True)
-        )
-        clean_water_pvt_collector_output_temperature = (
-            clean_water_pvt_collector_output_temperature.reset_index(drop=True)
-        )
-        clean_water_pvt_electric_power_per_unit = (
-            clean_water_pvt_electric_power_per_unit.reset_index(drop=True)
-        )
-        renewable_thermal_cw_produced = renewable_thermal_cw_produced.reset_index(
-            drop=True
-        )
-        buffer_tank_volume_supplied = buffer_tank_volume_supplied.reset_index(drop=True)
-        thermal_desalination_electric_power_consumed = (
-            thermal_desalination_electric_power_consumed.reset_index(drop=True)
-        )
-        logger.debug("Clean-water PV-T performance profiles determined.")
-
-    else:
+    # If no renewable hot-water sources were specified, skip the calculation.
+    if scenario.desalination_scenario is None or (
+        scenario.desalination_scenario.pvt_scenario is None
+        and scenario.desalination_scenario.solar_thermal_scenario is None
+    ):
         logger.debug("Skipping clean-water PV-T performance-profile calculation.")
-        buffer_tank_temperature = None
-        buffer_tank_volume_supplied = pd.DataFrame([0] * (end_hour - start_hour))
-        clean_water_pvt_collector_input_temperature = None
-        clean_water_pvt_collector_output_temperature = None
-        clean_water_pvt_electric_power_per_unit = pd.DataFrame(
-            [0] * (end_hour - start_hour)
+        return (
+            None,
+            pd.DataFrame([0] * (end_hour - start_hour)),
+            [],
+            None,
+            None,
+            pd.DataFrame([0] * (end_hour - start_hour)),
+            pd.DataFrame([0] * (end_hour - start_hour)),
+            [],
+            None,
+            total_waste_produced,
         )
-        renewable_thermal_cw_produced = pd.DataFrame([0] * (end_hour - start_hour))
-        required_feedwater_sources = []
-        thermal_desalination_electric_power_consumed = pd.DataFrame(
-            [0] * (end_hour - start_hour)
+
+    # Determine whether the water pump is capable for supplying the PV-T panels with
+    # enough throughput.
+    if scenario.pv_t and (
+        scenario.desalination_scenario.pvt_scenario.mass_flow_rate * pvt_size
+        > minigrid.water_pump.throughput
+    ):
+        logger.error(
+            "%sThe water pump supplied, %s, is incapable of meeting the required "
+            "PV-T flow rate of %s litres/hour. Max pump throughput: %s litres/hour."
+            "%s",
+            BColours.fail,
+            minigrid.water_pump.name,
+            scenario.desalination_scenario.pvt_scenario.mass_flow_rate * pvt_size,
+            minigrid.water_pump.throughput,
+            BColours.endc,
         )
+        raise InputFileError(
+            "transmission inputs",
+            "The water pump defined is unable to meet PV-T flow requirements.",
+        )
+
+    elif scenario.solar_thermal and (
+        scenario.hot_water_scenario.solar_thermal_scenario.mass_flow_rate
+        * solar_thermal_size
+        > minigrid.water_pump.throughput
+    ):
+        logger.error(
+            "%sThe water pump supplied, %s, is incapable of meeting the required "
+            "solar-thermal flow rate of %s litres/hour. Max pump throughput: %s "
+            "litres/hour.%s",
+            BColours.fail,
+            minigrid.water_pump.name,
+            scenario.desalination_scenario.solar_thermal_scenario.mass_flow_rate
+            * pvt_size,
+            minigrid.water_pump.throughput,
+            BColours.endc,
+        )
+        raise InputFileError(
+            "transmission inputs",
+            "The water pump defined is unable to meet solar-thermal flow "
+            "requirements.",
+        )
+
+    logger.info("Calculating clean-water PV-T/solar-thermal performance profiles.")
+    if wind_speed_data is None:
+        raise InternalError(
+            "Wind speed data required in PV-T computation and not passed to the "
+            "energy system module."
+        )
+    if minigrid.water_pump is None:
+        logger.error(
+            "%sNo water pump defined on the minigrid despite PV-T modelling being "
+            "requested via the scenario files.%s",
+            BColours.fail,
+            BColours.endc,
+        )
+        raise InternalError(
+            "No water pump defined as part of the energy system despite the PV-T "
+            "modelling being requested."
+        )
+
+    # Determine the thermal desalination plant being used.
+    logger.info("Determining desalination plant.")
+    try:
+        thermal_desalination_plant: ThermalDesalinationPlant = [
+            converter
+            for converter in converters
+            if isinstance(converter, ThermalDesalinationPlant)
+        ][0]
+    except IndexError:
+        logger.error(
+            "%sNo valid thermal desalination plants specified despite PV-T being "
+            "specified.%s",
+            BColours.fail,
+            BColours.endc,
+        )
+        raise InputFileError(
+            "conversion inputs", "No valid thermal desalination plants specified."
+        ) from None
+    logger.info("Desalination plant determined: %s", thermal_desalination_plant.name)
+
+    # The code based on the arrangement of PV-T and solar-thermal collectors goes here.
+
+    # IF CLOSED LOOP HTF
+    #   IF JUST PV-T or ST
+    #       Call the calculate profile method for the appropriate collector with the
+    #       appropriate system sizing
+    #   IF BOTH
+    #       Call, either, the same method, or a different method, where the matrix
+    #       equation is able to cope with both solar-thermal and PV-T collectors being
+    #       present in the system.
+    # ELIF DIRECT HEATING
+    #   Simply call the calculation for PV-T, if relevant,
+    #   Then, if applicable, call the solar-thermal calculation, using the PV-T output
+    #   temperature profile,
+    #   Then return this as the output temperature generated by the system.
+
+    if thermal_desalination_plant.htf_mode == HTFMode.CLOSED_HTF:
+        thermal_desalination_plant_input_type: ResourceType = ResourceType.UNCLEAN_WATER
+    if thermal_desalination_plant.htf_mode == HTFMode.FEEDWATER_HEATING:
+        thermal_desalination_plant_input_type = ResourceType.HOT_UNCLEAN_WATER
+    if thermal_desalination_plant.htf_mode == HTFMode.COLD_WATER_HEATING:
+        logger.error(
+            "%sCold-water heating thermal desalination plants are not supported.%s",
+            BColours.fail,
+            BColours.endc,
+        )
+        InputFileError(
+            "converter inputs OR desalination scenario",
+            f"The htf mode '{HTFMode.COLD_WATER_HEATING.value}' is not currently "
+            "supported.",
+        )
+
+    thermal_desalination_plant_input_flow_rate = (
+        thermal_desalination_plant.input_resource_consumption[
+            thermal_desalination_plant_input_type
+        ]
+    )
+
+    if (
+        sum(
+            feedwater_source.maximum_output_capacity
+            for feedwater_source in feedwater_sources
+        )
+        < thermal_desalination_plant_input_flow_rate
+    ):
+        logger.error(
+            "%sThe feedwater sources are unable to supply enough throughput to "
+            "facilitate the thermal desalination plant. If you are running a "
+            "simulation, consider using a smaller desalination plant or a larger "
+            "number of feedwater sources. If you are running an optimisation, "
+            "consider using a greater number of feedwater sources as your initial "
+            "maximum point. Or, it is possible that no feedwater sources have been "
+            "defined within your optimisation inputs file.%s",
+            BColours.fail,
+            BColours.endc,
+        )
+        logger.info(
+            "Feedwater sources: %s",
+            ", ".join([str(source) for source in feedwater_sources]),
+        )
+        logger.info("Desalination plant: %s", thermal_desalination_plant)
+        raise InputFileError(
+            "desalination scenario",
+            "The feedwater sources cannot meet the thermal desalination plant "
+            "input demand.",
+        )
+
+    logger.info("Determining required feedwater sources.")
+    feedwater_capacity: float = 0
+    required_feedwater_sources: List[Converter] = []
+    while (
+        feedwater_capacity
+        < thermal_desalination_plant.input_resource_consumption[
+            thermal_desalination_plant_input_type
+        ]
+    ):
+        required_feedwater_sources.append(feedwater_sources.pop(0))
+        feedwater_capacity += required_feedwater_sources[-1].maximum_output_capacity
+
+    feedwater_sources.extend(required_feedwater_sources)
+    logger.info("Required feedwater sources determined.")
+    logger.debug(
+        "Required feedwater sources: %s",
+        ", ".join([str(source) for source in required_feedwater_sources]),
+    )
+
+    # Compute the output of the PV-T system.
+    clean_water_pvt_collector_output_temperature: Optional[pd.DataFrame]
+    buffer_tank_temperature: Optional[pd.DataFrame]
+    (
+        clean_water_pvt_collector_input_temperature,
+        clean_water_pvt_collector_output_temperature,
+        clean_water_pvt_electric_power_per_unit,
+        clean_water_pvt_pump_times,
+        buffer_tank_temperature,
+        buffer_tank_volume_supplied,
+    ) = calculate_solar_thermal_output(
+        pvt_size,
+        disable_tqdm,
+        end_hour,
+        irradiance_data[start_hour:end_hour],
+        logger,
+        minigrid,
+        number_of_cw_tanks,
+        None,
+        ResourceType.CLEAN_WATER,
+        scenario,
+        minigrid.pvt_panel,
+        start_hour,
+        temperature_data[start_hour:end_hour],
+        thermal_desalination_plant,
+        wind_speed_data[start_hour:end_hour],
+    )
+    logger.debug("PV-T performance successfully computed.")
+
+    # Compute the clean water supplied by the desalination unit.
+    renewable_thermal_cw_produced: pd.DataFrame = (
+        buffer_tank_volume_supplied > 0
+    ) * thermal_desalination_plant.maximum_output_capacity
+
+    # Compute the power consumed by the thermal desalination plant.
+    thermal_desalination_electric_power_consumed: pd.DataFrame = pd.DataFrame(
+        (
+            (renewable_thermal_cw_produced > 0)
+            * (
+                0.001
+                * thermal_desalination_plant.input_resource_consumption[
+                    ResourceType.ELECTRIC
+                ]
+                + 0.001
+                * sum(
+                    source.input_resource_consumption[ResourceType.ELECTRIC]
+                    for source in required_feedwater_sources
+                )
+            )
+        ).values
+        + (clean_water_pvt_pump_times > 0) * 0.001 * minigrid.water_pump.consumption
+    )
+    total_waste_produced.update(
+        {
+            waste_product: defaultdict(
+                float,
+                (
+                    pd.DataFrame(  # type: ignore [arg-type,call-overload]
+                        (renewable_thermal_cw_produced > 0).values
+                    )
+                    * amount_produced
+                )[0].to_dict(),
+            )
+            for (
+                waste_product,
+                amount_produced,
+            ) in thermal_desalination_plant.waste_production.items()
+        }
+    )
+
+    buffer_tank_temperature = buffer_tank_temperature.reset_index(drop=True)
+    clean_water_pvt_collector_input_temperature = (
+        clean_water_pvt_collector_input_temperature.reset_index(drop=True)
+    )
+    clean_water_pvt_collector_output_temperature = (
+        clean_water_pvt_collector_output_temperature.reset_index(drop=True)
+    )
+    clean_water_pvt_electric_power_per_unit = (
+        clean_water_pvt_electric_power_per_unit.reset_index(drop=True)
+    )
+    renewable_thermal_cw_produced = renewable_thermal_cw_produced.reset_index(drop=True)
+    buffer_tank_volume_supplied = buffer_tank_volume_supplied.reset_index(drop=True)
+    thermal_desalination_electric_power_consumed = (
+        thermal_desalination_electric_power_consumed.reset_index(drop=True)
+    )
+    logger.debug("Clean-water PV-T performance profiles determined.")
 
     return (
         buffer_tank_temperature,
@@ -620,6 +660,7 @@ def _calculate_renewable_hw_profiles(  # pylint: disable=too-many-locals, too-ma
     processed_total_hw_load: pd.DataFrame,
     pvt_size: int,
     scenario: Scenario,
+    solar_thermal_size: int,
     start_hour: int,
     temperature_data: pd.Series,
     total_waste_produced: Dict[WasteProduct, DefaultDict[int, float]],
@@ -638,7 +679,7 @@ def _calculate_renewable_hw_profiles(  # pylint: disable=too-many-locals, too-ma
     Optional[pd.DataFrame],
 ]:
     """
-    Calculates PV-T related profiles for the hot-water system.
+    Calculates renewable hot-water related profiles for the system.
 
     Inputs:
         - converters:
@@ -705,8 +746,11 @@ def _calculate_renewable_hw_profiles(  # pylint: disable=too-many-locals, too-ma
 
     """
 
-    if not scenario.pv_t or scenario.hot_water_scenario is None:
-        logger.debug("Skipping hot-water PV-T performance-profile calculation.")
+    if (
+        not (scenario.pv_t or scenario.solar_thermal)
+        or scenario.hot_water_scenario is None
+    ):
+        logger.debug("Skipping hot-water profile calculation.")
         return (
             None,
             pd.DataFrame([0] * (end_hour - start_hour)),
@@ -721,7 +765,7 @@ def _calculate_renewable_hw_profiles(  # pylint: disable=too-many-locals, too-ma
             None,
         )
 
-    logger.info("Calculating hot-water PV-T performance profiles.")
+    logger.info("Calculating hot-water performance profiles.")
     if wind_speed_data is None:
         raise InternalError(
             "Wind speed data required in PV-T computation and not passed to the "
@@ -761,25 +805,59 @@ def _calculate_renewable_hw_profiles(  # pylint: disable=too-many-locals, too-ma
             "modelling being requested."
         )
 
-    # Determine whether the water pump is capable for supplying the PV-T panels with
-    # enough throughput.
-    if (
-        scenario.hot_water_scenario.pvt_scenario.mass_flow_rate * pvt_size
-        > minigrid.water_pump.throughput
-    ):
+    # Determine whether the water pump is capable for supplying the PV-T or
+    # solar-thermalpanels with enough throughput.
+    if scenario.pv_t:
+        if (
+            scenario.hot_water_scenario.pvt_scenario.mass_flow_rate * pvt_size
+            > minigrid.water_pump.throughput
+        ):
+            logger.error(
+                "%sThe water pump supplied, %s, is incapable of meeting the required "
+                "PV-T flow rate of %s litres/hour. Max pump throughput: %s litres/hour."
+                "%s",
+                BColours.fail,
+                minigrid.water_pump.name,
+                scenario.hot_water_scenario.pvt_scenario.mass_flow_rate * pvt_size,
+                minigrid.water_pump.throughput,
+                BColours.endc,
+            )
+            raise InputFileError(
+                "transmission inputs",
+                "The water pump defined is unable to meet PV-T flow requirements.",
+            )
+
+    elif scenario.solar_thermal:
+        if (
+            scenario.hot_water_scenario.pvt_scenario.mass_flow_rate * solar_thermal_size
+            > minigrid.water_pump.throughput
+        ):
+            logger.error(
+                "%sThe water pump supplied, %s, is incapable of meeting the required "
+                "solar-thermal flow rate of %s litres/hour. Max pump throughput: %s "
+                "litres/hour.%s",
+                BColours.fail,
+                minigrid.water_pump.name,
+                scenario.hot_water_scenario.solar_thermal_scenario.mass_flow_rate
+                * pvt_size,
+                minigrid.water_pump.throughput,
+                BColours.endc,
+            )
+            raise InputFileError(
+                "transmission inputs",
+                "The water pump defined is unable to meet PV-T flow requirements.",
+            )
+
+    else:
         logger.error(
-            "%sThe water pump supplied, %s, is incapable of meeting the required "
-            "PV-T flow rate of %s litres/hour. Max pump throughput: %s litres/hour."
-            "%s",
+            "%sA renewable HW profile calculation was called despite neither PV-T nor "
+            "solar-thermal panels being present.%s",
             BColours.fail,
-            minigrid.water_pump.name,
-            scenario.hot_water_scenario.pvt_scenario.mass_flow_rate * pvt_size,
-            minigrid.water_pump.throughput,
             BColours.endc,
         )
-        raise InputFileError(
-            "transmission inputs",
-            "The water pump defined is unable to meet PV-T flow requirements.",
+        raise ProgrammerJudgementFault(
+            "energy_system::calculate_renewable_hw_profiles",
+            "Cannot calculate renewable HW profiles if no renewables sources of HW.",
         )
 
     # Determine the auxiliary heater associated with the system and its energy
@@ -837,6 +915,22 @@ def _calculate_renewable_hw_profiles(  # pylint: disable=too-many-locals, too-ma
 
     logger.debug("Auxiliary heater successfully determined.")
     logger.debug("Auxiliary heater: %s", str(auxiliary_heater))
+
+    # The code based on the arrangement of PV-T and solar-thermal collectors goes here.
+
+    # IF CLOSED LOOP HTF
+    #   IF JUST PV-T or ST
+    #       Call the calculate profile method for the appropriate collector with the
+    #       appropriate system sizing
+    #   IF BOTH
+    #       Call, either, the same method, or a different method, where the matrix
+    #       equation is able to cope with both solar-thermal and PV-T collectors being
+    #       present in the system.
+    # ELIF DIRECT HEATING
+    #   Simply call the calculation for PV-T, if relevant,
+    #   Then, if applicable, call the solar-thermal calculation, using the PV-T output
+    #   temperature profile,
+    #   Then return this as the output temperature generated by the system.
 
     # Compute the output of the PV-T system.
     hot_water_pvt_collector_input_temperature: pd.DataFrame
@@ -1213,14 +1307,14 @@ def _update_battery_health(
 
 def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
     clean_water_pvt_size: int,
-    # clean_water_solar_thermal_size: int,
+    clean_water_solar_thermal_size: int,
     conventional_cw_source_profiles: Optional[Dict[WaterSource, pd.DataFrame]],
     converters: Union[Dict[str, Converter], List[Converter]],
     disable_tqdm: bool,
     electric_storage_size: float,
     grid_profile: Optional[pd.DataFrame],
     hot_water_pvt_size: int,
-    # hot_water_solar_thermal_size: int,
+    hot_water_solar_thermal_size: int,
     irradiance_data: pd.Series,
     kerosene_usage: pd.DataFrame,
     location: Location,
@@ -1426,6 +1520,7 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
         number_of_cw_tanks,
         clean_water_pvt_size,
         scenario,
+        clean_water_solar_thermal_size,
         start_hour,
         temperature_data,
         total_waste_produced,
@@ -1555,6 +1650,7 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
         processed_total_hw_load,
         hot_water_pvt_size,
         scenario,
+        hot_water_solar_thermal_size,
         start_hour,
         temperature_data,
         total_waste_produced,

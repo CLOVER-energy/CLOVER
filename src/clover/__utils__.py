@@ -1158,10 +1158,16 @@ class RenewableEnergySource(enum.Enum):
     Specfiies the renewable energy sources that can be included in the system.
 
     - CLEAN_WATER_PVT:
-        Denotes PV-T associated with clean-water production.
+        Denotes PV-T collectors associated with clean-water production.
+
+    - CLEAN_WATER_SOLAR_THERMAL:
+        Denotes solar-thermal collectors associated with clean-water production.
 
     - HOT_WATER_PVT:
-        Denotes PV-T associated with hot-water production.
+        Denotes PV-T collectors associated with hot-water production.
+
+    - HOT_WATER_SOLAR_THERMAL:
+        Denotes solar-thermal collectors associated with hot-water production.
 
     - PV:
         Denotes purely electric PV-T panels.
@@ -1169,7 +1175,9 @@ class RenewableEnergySource(enum.Enum):
     """
 
     CLEAN_WATER_PVT = "clean_water_pv_t"
+    CLEAN_WATER_SOLAR_THERMAL = "clean_water_solar_thermal"
     HOT_WATER_PVT = "hot_water_pv_t"
+    HOT_WATER_SOLAR_THERMAL = "hot_water_solar_thermal"
     PV = "pv"
 
 
@@ -2507,8 +2515,14 @@ class SystemDetails:
     .. attribute:: final_cw_pvt_size
         The final clean-water pv-t size of the system.
 
+    .. attribute:: final_cw_st_size
+        The final clean-water solar-thermal size of the system.
+
     .. attribute:: final_hw_pvt_size
         The final hot-water pv-t size of the system.
+
+    .. attribute:: final_hw_st_size
+        The final hot-water solar-thermal size of the system.
 
     .. attribute:: final_num_buffer_tanks
         The final number of buffer tanks installed in the system.
@@ -2532,8 +2546,14 @@ class SystemDetails:
     .. attribute:: initial_cw_pvt_size
         The initial clean-water pv-t size of the system.
 
+    .. attribute:: initial_cw_st_size
+        The initial clean-water solar-thermal size of the system.
+
     .. attribute:: initial_hw_pvt_size
         The initial hot-water pv-t size of the system.
+
+    .. attribute:: initial_hw_st_size
+        The initial hot-water solar-thermal size of the system.
 
     .. attribute:: initial_num_buffer_tanks
         The initial number of buffer tanks installed in the system.
@@ -2566,7 +2586,9 @@ class SystemDetails:
     end_year: int = 0
     final_converter_sizes: Optional[Dict[Any, int]] = None
     final_cw_pvt_size: Optional[float] = 0
+    final_cw_st_size: Optional[float] = 0
     final_hw_pvt_size: Optional[float] = 0
+    final_hw_st_size: Optional[float] = 0
     final_num_buffer_tanks: Optional[int] = 0
     final_num_clean_water_tanks: Optional[int] = 0
     final_num_hot_water_tanks: Optional[int] = 0
@@ -2574,7 +2596,9 @@ class SystemDetails:
     final_storage_size: float = 0
     initial_converter_sizes: Optional[Dict[Any, int]] = None
     initial_cw_pvt_size: Optional[float] = 0
+    initial_cw_st_size: Optional[float] = 0
     initial_hw_pvt_size: Optional[float] = 0
+    initial_hw_st_size: Optional[float] = 0
     initial_num_buffer_tanks: Optional[int] = 0
     initial_num_clean_water_tanks: Optional[int] = 0
     initial_num_hot_water_tanks: Optional[int] = 0
@@ -2657,6 +2681,14 @@ class SystemDetails:
             system_details_as_dict["final_cw_pvt_size"] = round(
                 self.final_cw_pvt_size, 3
             )
+        if self.initial_cw_st_size is not None:
+            system_details_as_dict["initial_cw_st_size"] = round(
+                self.initial_cw_st_size, 3
+            )
+        if self.final_cw_st_size is not None:
+            system_details_as_dict["final_cw_st_size"] = round(
+                self.final_sw_pvt_size, 3
+            )
         if self.initial_hw_pvt_size is not None:
             system_details_as_dict["initial_hw_pvt_size"] = round(
                 self.initial_hw_pvt_size, 3
@@ -2665,6 +2697,12 @@ class SystemDetails:
             system_details_as_dict["final_hw_pvt_size"] = round(
                 self.final_hw_pvt_size, 3
             )
+        if self.initial_hw_st_size is not None:
+            system_details_as_dict["initial_hw_st_size"] = round(
+                self.initial_hw_st_size, 3
+            )
+        if self.final_hw_st_size is not None:
+            system_details_as_dict["final_hw_st_size"] = round(self.final_hw_st_size, 3)
         if self.required_feedwater_sources is not None:
             system_details_as_dict["required_feedwater_sources"] = ", ".join(
                 self.required_feedwater_sources

@@ -806,7 +806,7 @@ class SolarThermalPanel(SolarPanel, panel_type=SolarPanelType.SOLAR_THERMAL):
         gained by the heat-transfer fluid within the collector as a fraction of the
         total energy incident on the collector:
 
-            eta = m_htf * c_htf * (T_out - T_in)
+            eta = m_htf * c_htf * (T_out - T_in) / (A * G)
 
         where `T_out` and `T_in` give the output and input HTF temperatures
         respectively, and `m_htf` and `c_htf` give the mass-flow rate and specific heat
