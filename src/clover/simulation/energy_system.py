@@ -2378,6 +2378,15 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
         )
         if minigrid.pvt_panel is not None and scenario.desalination_scenario is not None
         else None,
+        clean_water_solar_thermal_size
+        * float(
+            solar_degradation(
+                minigrid.solar_thermal_panel.lifetime, location.max_years
+            ).iloc[HOURS_PER_YEAR * (simulation.end_year - simulation.start_year), 0]
+        )
+        if minigrid.solar_thermal_panel is not None
+        and scenario.desalination_scenario is not None
+        else None,
         hot_water_pvt_size
         * float(
             solar_degradation(minigrid.pvt_panel.lifetime, location.max_years).iloc[
@@ -2385,6 +2394,15 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
             ]
         )
         if minigrid.pvt_panel is not None and scenario.hot_water_scenario is not None
+        else None,
+        hot_water_solar_thermal_size
+        * float(
+            solar_degradation(
+                minigrid.solar_thermal_panel.lifetime, location.max_years
+            ).iloc[HOURS_PER_YEAR * (simulation.end_year - simulation.start_year), 0]
+        )
+        if minigrid.solar_thermal_panel is not None
+        and scenario.hot_water_scenario is not None
         else None,
         number_of_buffer_tanks if scenario.desalination_scenario is not None else None,
         number_of_cw_tanks if scenario.desalination_scenario is not None else None,
@@ -2403,8 +2421,16 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
         clean_water_pvt_size
         if minigrid.pvt_panel is not None and scenario.desalination_scenario is not None
         else None,
+        clean_water_solar_thermal_size
+        if minigrid.solar_thermal_panel is not None
+        and scenario.desalination_scenario is not None
+        else None,
         hot_water_pvt_size
         if minigrid.pvt_panel is not None and scenario.hot_water_scenario is not None
+        else None,
+        hot_water_solar_thermal_size
+        if minigrid.solar_thermal_panel is not None
+        and scenario.hot_water_scenario is not None
         else None,
         number_of_buffer_tanks if scenario.desalination_scenario is not None else None,
         number_of_cw_tanks if scenario.desalination_scenario is not None else None,

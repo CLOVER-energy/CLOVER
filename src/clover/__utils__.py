@@ -1853,7 +1853,7 @@ class DesalinationScenario:
         )
 
         try:
-            thermal_collector_scenarios: Optional[List[ThermalCollectorScenario]] = (
+            thermal_collector_scenarios: List[ThermalCollectorScenario] = (
                 [
                     ThermalCollectorScenario(
                         SolarPanelType(collector_scenario_inputs["type"]),
@@ -1868,7 +1868,7 @@ class DesalinationScenario:
                     ]
                 ]
                 if SOLAR_THERMAL_COLLECTOR_SCENARIOS in desalination_inputs
-                else None
+                else []
             )
         except ValueError as e:
             logger.error(
@@ -2120,7 +2120,7 @@ class HotWaterScenario:
             ) from None
 
         try:
-            thermal_collector_scenarios = [
+            thermal_collector_scenarios = ([
                 ThermalCollectorScenario(
                     SolarPanelType(collector_scenario_inputs["type"]),
                     HTFMode(collector_scenario_inputs["heats"]),
@@ -2133,6 +2133,8 @@ class HotWaterScenario:
                     SOLAR_THERMAL_COLLECTOR_SCENARIOS
                 ]
             ]
+            if SOLAR_THERMAL_COLLECTOR_SCENARIOS in hot_water_inputs
+            else [])
         except IndexError as e:
             logger.error(
                 "%sInvalid thermal-collector scenario information: %s\tCheck HTF "
@@ -2687,7 +2689,7 @@ class SystemDetails:
             )
         if self.final_cw_st_size is not None:
             system_details_as_dict["final_cw_st_size"] = round(
-                self.final_sw_pvt_size, 3
+                self.final_cw_st_size, 3
             )
         if self.initial_hw_pvt_size is not None:
             system_details_as_dict["initial_hw_pvt_size"] = round(
