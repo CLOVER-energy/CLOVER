@@ -1,4 +1,24 @@
-# /usr/bin/python3
+#!/usr/bin/python3
+########################################################################################
+# outbox_assembly_script.py - CLOVER optimisation outbox assembly script.              #
+#                                                                                      #
+# Authors: Ben Winchester                                                              #
+# Copyright: Ben Winchester, 2022                                                      #
+# Date created: 13/07/2021                                                             #
+# License: Open source                                                                 #
+#                                                                                      #
+# For more information, please email:                                                  #
+#   benedict.winchester@gmail.com                                                      #
+########################################################################################
+"""
+outbox_assembly_script.py - CLOVER optimisation outbox assembly script.
+
+This script assembles output files from optimisations that were carried out on Imperial
+College London's High-Performance Computer(s) (HPC) into a single "outbox directory",
+from where they can be easily copied from the HPC for futher analysis.
+
+"""
+
 import os
 import shutil
 import subprocess
