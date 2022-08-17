@@ -1197,7 +1197,7 @@
                 # hot_water_tank: hot_water_tank
                 pv_panel: default_pv
                 # pvt_panel: default_pvt
-                # solar_thermal_panel: default_thermal_panel
+                # solar_thermal: default_thermal_panel
                 # water_pump: default_water_pump
             - file: "heat_exchangers.yaml"
               contents: |+
