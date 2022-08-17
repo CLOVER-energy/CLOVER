@@ -175,7 +175,7 @@ class TestHybridPVTPanelPerformance(unittest.TestCase):
             self.electric_models,
             self.test_logger,
             self.input_data,
-            self.solar_panels,
+            self.solar_panels,  # type: ignore [arg-type]
             self.thermal_models,
         )
 
@@ -190,7 +190,7 @@ class TestHybridPVTPanelPerformance(unittest.TestCase):
         test_exception = Exception("TEST EXCEPTION")
 
         # Set up electrical and thermal model return values.
-        self.pvt_panel.electric_models[
+        self.pvt_panel.electric_models[  # type: ignore [index]
             RegressorType.LOW_IRRADIANCE_LOW_TEMPERATURE
         ].predict.side_effect = test_exception
 
@@ -222,10 +222,10 @@ class TestHybridPVTPanelPerformance(unittest.TestCase):
         output_temperature = 80
 
         # Set up electrical and thermal model return values.
-        self.pvt_panel.electric_models[
+        self.pvt_panel.electric_models[  # type: ignore [index]
             RegressorType.LOW_IRRADIANCE_LOW_TEMPERATURE
         ].predict.return_value = electrical_efficiency
-        self.pvt_panel.thermal_models[
+        self.pvt_panel.thermal_models[  # type: ignore [index]
             RegressorType.LOW_IRRADIANCE_LOW_TEMPERATURE
         ].predict.return_value = output_temperature
 
@@ -243,9 +243,12 @@ class TestHybridPVTPanelPerformance(unittest.TestCase):
             self.wind_speed,
         )
 
+        # Type-check the results
+        self.assertIsInstance(electrical_efficiency, float)
+
         # Assert the calculation was correct.
         expected_fractional_electrical_performance = (
-            electrical_efficiency / self.pvt_panel.pv_layer.reference_efficiency
+            electrical_efficiency / self.pvt_panel.pv_layer.reference_efficiency  # type: ignore [operator]
         ) * (irradiance / REFERENCE_SOLAR_IRRADIANCE)
         self.assertEqual(
             expected_fractional_electrical_performance,
@@ -263,10 +266,10 @@ class TestHybridPVTPanelPerformance(unittest.TestCase):
         output_temperature = 80
 
         # Set up electrical and thermal model return values.
-        self.pvt_panel.electric_models[
+        self.pvt_panel.electric_models[  # type: ignore [index]
             RegressorType.LOW_IRRADIANCE_HIGH_TEMPERATURE
         ].predict.return_value = electrical_efficiency
-        self.pvt_panel.thermal_models[
+        self.pvt_panel.thermal_models[  # type: ignore [index]
             RegressorType.LOW_IRRADIANCE_HIGH_TEMPERATURE
         ].predict.return_value = output_temperature
 
@@ -284,9 +287,13 @@ class TestHybridPVTPanelPerformance(unittest.TestCase):
             self.wind_speed,
         )
 
+        # Type-check the returned variables
+        self.assertIsInstance(calculated_fractional_electrical_performance, float)
+        self.assertIsInstance(calculated_output_temperature, float)
+
         # Assert the calculation was correct.
         expected_fractional_electrical_performance = (
-            electrical_efficiency / self.pvt_panel.pv_layer.reference_efficiency
+            electrical_efficiency / self.pvt_panel.pv_layer.reference_efficiency  # type: ignore [operator]
         ) * (irradiance / REFERENCE_SOLAR_IRRADIANCE)
         self.assertEqual(
             expected_fractional_electrical_performance,
@@ -304,10 +311,10 @@ class TestHybridPVTPanelPerformance(unittest.TestCase):
         output_temperature = 80
 
         # Set up electrical and thermal model return values.
-        self.pvt_panel.electric_models[
+        self.pvt_panel.electric_models[  # type: ignore [index]
             RegressorType.STANDARD_IRRADIANCE_LOW_TEMPERATURE
         ].predict.return_value = electrical_efficiency
-        self.pvt_panel.thermal_models[
+        self.pvt_panel.thermal_models[  # type: ignore [index]
             RegressorType.STANDARD_IRRADIANCE_LOW_TEMPERATURE
         ].predict.return_value = output_temperature
 
@@ -325,9 +332,13 @@ class TestHybridPVTPanelPerformance(unittest.TestCase):
             self.wind_speed,
         )
 
+        # Type-check the returned variables
+        self.assertIsInstance(calculated_fractional_electrical_performance, float)
+        self.assertIsInstance(calculated_output_temperature, float)
+
         # Assert the calculation was correct.
         expected_fractional_electrical_performance = (
-            electrical_efficiency / self.pvt_panel.pv_layer.reference_efficiency
+            electrical_efficiency / self.pvt_panel.pv_layer.reference_efficiency  # type: ignore [operator]
         ) * (irradiance / REFERENCE_SOLAR_IRRADIANCE)
         self.assertEqual(
             expected_fractional_electrical_performance,
@@ -345,10 +356,10 @@ class TestHybridPVTPanelPerformance(unittest.TestCase):
         output_temperature = 80
 
         # Set up electrical and thermal model return values.
-        self.pvt_panel.electric_models[
+        self.pvt_panel.electric_models[  # type: ignore [index]
             RegressorType.STANDARD_IRRADIANCE_HIGH_TEMPERATURE
         ].predict.return_value = electrical_efficiency
-        self.pvt_panel.thermal_models[
+        self.pvt_panel.thermal_models[  # type: ignore [index]
             RegressorType.STANDARD_IRRADIANCE_HIGH_TEMPERATURE
         ].predict.return_value = output_temperature
 
@@ -366,9 +377,13 @@ class TestHybridPVTPanelPerformance(unittest.TestCase):
             self.wind_speed,
         )
 
+        # Type-check the outputs
+        self.assertIsInstance(calculated_fractional_electrical_performance, float)
+        self.assertIsInstance(calculated_output_temperature, float)
+
         # Assert the calculation was correct.
         expected_fractional_electrical_performance = (
-            electrical_efficiency / self.pvt_panel.pv_layer.reference_efficiency
+            electrical_efficiency / self.pvt_panel.pv_layer.reference_efficiency  # type: ignore [operator]
         ) * (irradiance / REFERENCE_SOLAR_IRRADIANCE)
         self.assertEqual(
             expected_fractional_electrical_performance,
@@ -384,10 +399,10 @@ class TestHybridPVTPanelPerformance(unittest.TestCase):
             self.pvt_panel.calculate_performance(
                 self.ambient_temperature,
                 HEAT_CAPACITY_OF_WATER,
-                None,
+                mock.MagicMock(),  # type: ignore [arg-type]
                 self.test_logger,
                 self.mass_flow_rate,
-                None,
+                mock.MagicMock(),  # type: ignore [arg-type]
                 self.wind_speed,
             )
 
@@ -405,10 +420,10 @@ class TestHybridPVTPanelPerformance(unittest.TestCase):
             self.pvt_panel.calculate_performance(
                 self.ambient_temperature,
                 HEAT_CAPACITY_OF_WATER,
-                None,
+                mock.MagicMock(),  # type: ignore [arg-type]
                 self.test_logger,
                 self.mass_flow_rate,
-                None,
+                mock.MagicMock(),  # type: ignore [arg-type]
                 self.wind_speed,
             )
 
@@ -427,10 +442,10 @@ class TestHybridPVTPanelPerformance(unittest.TestCase):
         test_exception = Exception("TEST EXCEPTION")
 
         # Set up electrical and thermal model return values.
-        self.pvt_panel.electric_models[
+        self.pvt_panel.electric_models[  # type: ignore [index]
             RegressorType.LOW_IRRADIANCE_LOW_TEMPERATURE
         ].predict.return_value = 0
-        self.pvt_panel.thermal_models[
+        self.pvt_panel.thermal_models[  # type: ignore [index]
             RegressorType.LOW_IRRADIANCE_LOW_TEMPERATURE
         ].predict.side_effect = test_exception
 
@@ -530,8 +545,11 @@ class TestSolarThermalPanelPerformance(unittest.TestCase):
             self.wind_speed,
         )
 
+        # Type-check the outputs
+        self.assertIsInstance(output_temperature, float)
+
         # Compute the efficiency two ways and check that these are equal.
-        collector_temperature = 0.5 * (self.input_temperature + output_temperature)
+        collector_temperature = 0.5 * (self.input_temperature + output_temperature)  # type: ignore [operator]
         efficiency_by_equation = (
             self.solar_thermal_panel.performance_curve.eta_0
             + self.solar_thermal_panel.performance_curve.c_1
@@ -541,10 +559,10 @@ class TestSolarThermalPanelPerformance(unittest.TestCase):
             * (collector_temperature - self.ambient_temperature) ** 2
             / self.irradiance
         )
-        efficiency_by_output = (
+        efficiency_by_output: float = (
             (self.solar_thermal_panel.nominal_mass_flow_rate / 3600)
             * HEAT_CAPACITY_OF_WATER
-            * (output_temperature - self.input_temperature)
+            * (output_temperature - self.input_temperature)  # type: ignore [operator]
         ) / (self.solar_thermal_panel.area * self.irradiance)
 
         self.assertEqual(

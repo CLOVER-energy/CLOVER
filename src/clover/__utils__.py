@@ -2120,21 +2120,23 @@ class HotWaterScenario:
             ) from None
 
         try:
-            thermal_collector_scenarios = ([
-                ThermalCollectorScenario(
-                    SolarPanelType(collector_scenario_inputs["type"]),
-                    HTFMode(collector_scenario_inputs["heats"]),
-                    collector_scenario_inputs["htf_heat_capacity"]
-                    if "htf_heat_capacity" in collector_scenario_inputs
-                    else HEAT_CAPACITY_OF_WATER,
-                    collector_scenario_inputs["mass_flow_rate"],
-                )
-                for collector_scenario_inputs in hot_water_inputs[
-                    SOLAR_THERMAL_COLLECTOR_SCENARIOS
+            thermal_collector_scenarios = (
+                [
+                    ThermalCollectorScenario(
+                        SolarPanelType(collector_scenario_inputs["type"]),
+                        HTFMode(collector_scenario_inputs["heats"]),
+                        collector_scenario_inputs["htf_heat_capacity"]
+                        if "htf_heat_capacity" in collector_scenario_inputs
+                        else HEAT_CAPACITY_OF_WATER,
+                        collector_scenario_inputs["mass_flow_rate"],
+                    )
+                    for collector_scenario_inputs in hot_water_inputs[
+                        SOLAR_THERMAL_COLLECTOR_SCENARIOS
+                    ]
                 ]
-            ]
-            if SOLAR_THERMAL_COLLECTOR_SCENARIOS in hot_water_inputs
-            else [])
+                if SOLAR_THERMAL_COLLECTOR_SCENARIOS in hot_water_inputs
+                else []
+            )
         except IndexError as e:
             logger.error(
                 "%sInvalid thermal-collector scenario information: %s\tCheck HTF "
@@ -2688,9 +2690,7 @@ class SystemDetails:
                 self.initial_cw_st_size, 3
             )
         if self.final_cw_st_size is not None:
-            system_details_as_dict["final_cw_st_size"] = round(
-                self.final_cw_st_size, 3
-            )
+            system_details_as_dict["final_cw_st_size"] = round(self.final_cw_st_size, 3)
         if self.initial_hw_pvt_size is not None:
             system_details_as_dict["initial_hw_pvt_size"] = round(
                 self.initial_hw_pvt_size, 3
