@@ -377,7 +377,7 @@ def _calculate_renewable_cw_profiles(  # pylint: disable=too-many-locals, too-ma
             pd.DataFrame([0] * (end_hour - start_hour)),
             pd.DataFrame([0] * (end_hour - start_hour)),
             [],
-            None,
+            pd.DataFrame([0] * (end_hour - start_hour)),
             total_waste_produced,
         )
 
@@ -957,7 +957,7 @@ def _calculate_renewable_hw_profiles(  # pylint: disable=too-many-locals, too-ma
         processed_total_hw_load.iloc[:, 0],
         ResourceType.HOT_CLEAN_WATER,
         scenario,
-        minigrid.pvt_panel,
+        [minigrid.pvt_panel, minigrid.solar_thermal_panel],
         start_hour,
         temperature_data[start_hour:end_hour],
         None,
