@@ -499,19 +499,19 @@ class HybridPVTPanel(SolarPanel, panel_type=SolarPanelType.PV_T):
                 f"PV-layer data for layer {solar_inputs['pv']} is not a valid PV panel.",
             ) from None
 
-        if pv_layer.reference_efficiency is None:
+        if pv_layer.reference_efficiency is None:  # type: ignore [attr-defined]
             logger.error("PV reference efficiency must be defined if using PV-T.")
             raise InputFileError(
                 "solar generation inputs",
                 "PV reference efficiency must be defined if using PV-T",
             )
-        if pv_layer.reference_temperature is None:
+        if pv_layer.reference_temperature is None:  # type: ignore [attr-defined]
             logger.error("PV reference temperature must be defined if using PV-T.")
             raise InputFileError(
                 "solar generation inputs",
                 "PV reference temperature must be defined if using PV-T",
             )
-        if pv_layer.thermal_coefficient is None:
+        if pv_layer.thermal_coefficient is None:  # type: ignore [attr-defined]
             logger.error("PV thermal coefficient must be defined if using PV-T.")
             raise InputFileError(
                 "solar generation inputs",
@@ -526,8 +526,8 @@ class HybridPVTPanel(SolarPanel, panel_type=SolarPanelType.PV_T):
             )
 
         # Override any PV-layer params as appropriate
-        pv_layer.pv_unit = solar_inputs["pv_unit"]
-        pv_layer.pv_unit_overrided = True
+        pv_layer.pv_unit = solar_inputs["pv_unit"]  # type: ignore [attr-defined]
+        pv_layer.pv_unit_overrided = True  # type: ignore [attr-defined]
 
         super().__init__(
             solar_inputs["azimuthal_orientation"],
@@ -539,7 +539,7 @@ class HybridPVTPanel(SolarPanel, panel_type=SolarPanelType.PV_T):
         self.electric_models = electric_models
         self.max_mass_flow_rate = solar_inputs["max_mass_flow_rate"]
         self.min_mass_flow_rate = solar_inputs["min_mass_flow_rate"]
-        self.pv_layer: PVPanel = pv_layer
+        self.pv_layer: PVPanel = pv_layer  # type: ignore [assignment]
         self.thermal_models = thermal_models
         self.thermal_unit = solar_inputs.get("thermal_unit", None)
 
