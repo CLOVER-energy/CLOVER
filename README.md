@@ -21,7 +21,7 @@ CLOVER minigrid simulation and optimisation for supporting rural electrification
    * [Upgrading](#upgrading)
  * [Downloading as a developer](#downloading-as-a-developer)
    * [Downloading PV-T modelling files](#downloading-pv-t-modelling-files)
- 
+
 🐍 [Setting up your Python environment](#setting-up-your-python-environment)
   * [Anaconda method](#anaconda-method)
   * [Pip install](#pip-install)
