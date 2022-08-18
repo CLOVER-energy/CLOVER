@@ -3,17 +3,17 @@
   "@type": "Code",
   "author": [
     {
-      "@id": "https://orcid.org/0000-0002-2880-1243",
-      "@type": "Person",
-      "email": "benedict.winchester@gmail.com",
-      "name": "Benedict Winchester",
-      "affiliation": "Imperial College London"
-    },
-    {
       "@id": "https://orcid.org/0000-0003-1117-5095",
       "@type": "Person",
       "email": "philip.sandwell@gmail.com",
       "name": "Philip Sandwell",
+      "affiliation": "Imperial College London"
+    },
+    {
+      "@id": "https://orcid.org/0000-0002-2880-1243",
+      "@type": "Person",
+      "email": "benedict.winchester@gmail.com",
+      "name": "Benedict Winchester",
       "affiliation": "Imperial College London"
     },
     {
