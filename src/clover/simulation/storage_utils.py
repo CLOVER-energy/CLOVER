@@ -177,6 +177,9 @@ class Battery(_BaseStorage, label="battery", resource_type=ResourceType.ELECTRIC
     """
     Represents a battery within CLOVER.
 
+    .. attribute:: capacity
+        The capacity of the battery in kWh.
+
     .. attribute:: charge_rate
         The rate of charge of the :class:`Battery`.
 
@@ -199,6 +202,7 @@ class Battery(_BaseStorage, label="battery", resource_type=ResourceType.ELECTRIC
 
     def __init__(
         self,
+        capacity: float,
         cycle_lifetime: int,
         leakage: float,
         maximum_charge: float,
@@ -216,6 +220,8 @@ class Battery(_BaseStorage, label="battery", resource_type=ResourceType.ELECTRIC
         Instantiate a :class:`Battery` instance.
 
         Inputs:
+            - capacity:
+                The capacity of the battery in kWh.
             - cycle_lifetime:
                 The number of cycles for which the :class:`Battery` instance can
                 perform.
@@ -247,6 +253,7 @@ class Battery(_BaseStorage, label="battery", resource_type=ResourceType.ELECTRIC
         """
 
         super().__init__(cycle_lifetime, leakage, maximum_charge, minimum_charge, name)
+        self.capacity: float = capacity
         self.charge_rate: float = charge_rate
         self.conversion_in: float = conversion_in
         self.conversion_out: float = conversion_out
@@ -268,6 +275,7 @@ class Battery(_BaseStorage, label="battery", resource_type=ResourceType.ELECTRIC
             "Battery("
             + f"{self.label} storing {self.resource_type.value} loads, "
             + f"name={self.name}, "
+            + f"capacity={self.capacity}, "
             + f"cycle_lifetime={self.cycle_lifetime} cycles, "
             + f"leakage={self.leakage}, "
             + f"maximum_charge={self.maximum_charge}, "
@@ -294,7 +302,7 @@ class Battery(_BaseStorage, label="battery", resource_type=ResourceType.ELECTRIC
         return (
             "Battery("
             + f"{self.label} storing {self.resource_type.value} loads, "
-            + f"name={self.name}"
+            + f"name={self.name}, capacity={self.capacity}"
             + ")"
         )
 
@@ -313,6 +321,7 @@ class Battery(_BaseStorage, label="battery", resource_type=ResourceType.ELECTRIC
         """
 
         return cls(
+            storage_data["capacity"] if "capacity" in storage_data else 1,
             storage_data["cycle_lifetime"],
             storage_data["leakage"],
             storage_data["maximum_charge"],

@@ -218,12 +218,10 @@ def _calculate_electric_desalination_parameters(
         # Compute the maximum throughput
         maximum_water_throughput: float = min(
             sum(
-                [
-                    desalinator.maximum_output_capacity
-                    for desalinator in electric_desalinators
-                ]
+                desalinator.maximum_output_capacity
+                for desalinator in electric_desalinators
             ),
-            sum([source.maximum_output_capacity for source in feedwater_sources]),
+            sum(source.maximum_output_capacity for source in feedwater_sources),
         )
     else:
         electric_desalinators = []
@@ -417,10 +415,8 @@ def _calculate_renewable_cw_profiles(  # pylint: disable=too-many-locals, too-ma
 
         if (
             sum(
-                [
-                    feedwater_source.maximum_output_capacity
-                    for feedwater_source in feedwater_sources
-                ]
+                feedwater_source.maximum_output_capacity
+                for feedwater_source in feedwater_sources
             )
             < thermal_desalination_plant_input_flow_rate
         ):
@@ -508,10 +504,8 @@ def _calculate_renewable_cw_profiles(  # pylint: disable=too-many-locals, too-ma
                     ]
                     + 0.001
                     * sum(
-                        [
-                            source.input_resource_consumption[ResourceType.ELECTRIC]
-                            for source in required_feedwater_sources
-                        ]
+                        source.input_resource_consumption[ResourceType.ELECTRIC]
+                        for source in required_feedwater_sources
                     )
                 )
             ).values
@@ -1698,8 +1692,7 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
         (
             load_energy.values
             + thermal_desalination_electric_power_consumed.values
-            + clean_water_power_consumed.values
-            - renewables_energy_used_directly.values
+            + -renewables_energy_used_directly.values
             - grid_energy.values
             - storage_power_supplied_frame.values
         )
