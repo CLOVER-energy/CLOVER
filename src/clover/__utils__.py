@@ -706,7 +706,7 @@ class DieselMode(enum.Enum):
         The diesel generator is used as a 'load-following' backup generator.
 
     - BACKUP_UNMET:
-        The diesel generator is used as a 'load-following' backup generator, 
+        The diesel generator is used as a 'load-following' backup generator,
         with unmet energy as the threshold criterion.
 
     - CYCLE_CHARGING:
@@ -2010,8 +2010,8 @@ class Scenario:
 
         diesel_scenario = DieselScenario(
             scenario_inputs["diesel"]["backup"]["threshold"]
-            if scenario_inputs["diesel"][MODE] in (DieselMode.BACKUP.value, 
-            DieselMode.BACKUP_UNMET.value)
+            if scenario_inputs["diesel"][MODE]
+            in (DieselMode.BACKUP.value, DieselMode.BACKUP_UNMET.value)
             else None,
             DieselMode(scenario_inputs["diesel"][MODE]),
         )

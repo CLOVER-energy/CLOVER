@@ -125,7 +125,7 @@ def _calculate_backup_diesel_generator_usage(
         blackout_times,
         float(scenario.diesel_scenario.backup_threshold),
         total_electric_load,
-        scenario.diesel_scenario.mode
+        scenario.diesel_scenario.mode,
     )
     diesel_capacity: float = float(math.ceil(np.max(diesel_energy, axis=0)))
     diesel_fuel_usage = pd.DataFrame(
@@ -1721,7 +1721,11 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
             diesel_times,
             unmet_energy,
         ) = _calculate_backup_diesel_generator_usage(
-            blackout_times, minigrid, scenario, float(np.sum(processed_total_electric_load)), unmet_energy
+            blackout_times,
+            minigrid,
+            scenario,
+            float(np.sum(processed_total_electric_load)),
+            unmet_energy,
         )
     elif scenario.diesel_scenario.mode == DieselMode.CYCLE_CHARGING:
         logger.error(
