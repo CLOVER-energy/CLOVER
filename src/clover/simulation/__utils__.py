@@ -43,6 +43,7 @@ from ..__utils__ import (
 
 from ..conversion.conversion import Converter
 from ..generation.solar import HybridPVTPanel, PVPanel, SolarThermalPanel
+from .clinic import Clinic
 from .diesel import DieselGenerator, DieselWaterHeater
 from .exchanger import Exchanger
 from .storage_utils import Battery, CleanWaterTank, HotWaterTank
@@ -101,6 +102,9 @@ class Minigrid:
         solution, be it HTF or feedwater, which is heated by PV-T before being fed into
         the desalination plant.
 
+    .. attribute:: buildings
+        The `list` of buildings associated with the minigrid system.
+
     .. attribute:: clean_water_tank
         The clean-water tank being modelled, if applicable.
 
@@ -148,6 +152,7 @@ class Minigrid:
     ac_transmission_efficiency: Optional[float]
     battery: Optional[Battery]
     buffer_tank: Optional[HotWaterTank]
+    buildings: Optional[List[Clinic]]
     clean_water_tank: Optional[CleanWaterTank]
     dc_to_ac_conversion_efficiency: Optional[float]
     dc_to_dc_conversion_efficiency: Optional[float]
@@ -165,6 +170,7 @@ class Minigrid:
     @classmethod
     def from_dict(  # pylint: disable=too-many-locals
         cls,
+        buildings: List[Clinic],
         diesel_generator: DieselGenerator,
         diesel_water_heater: Optional[DieselWaterHeater],
         electric_water_heater: Optional[Converter],
@@ -181,6 +187,8 @@ class Minigrid:
         Returns a :class:`Minigrid` instance based on the inputs provided.
 
         Inputs:
+            - buildings:
+                The `list` of :class:`Clinic` instances associated with the system.
             - diesel_generator:
                 The diesel backup generator to use for the run.
             - diesel_water_heater:
@@ -306,6 +314,7 @@ class Minigrid:
             if "battery" in minigrid_inputs
             else None,
             buffer_tank,  # type: ignore
+            buildings,
             clean_water_tank,
             minigrid_inputs[CONVERSION][DC_TO_AC]
             if DC_TO_AC in minigrid_inputs[CONVERSION]
@@ -461,10 +470,34 @@ def determine_available_converters(
 
     available_converters: List[Converter] = []
 
-    if scenario.desalination_scenario is None and scenario.hot_water_scenario is None:
+    if not any(
+        [
+            scenario.cooling_scenario,
+            scenario.desalination_scenario,
+            scenario.hot_water_scenario,
+        ]
+    ):
         return available_converters
 
     # Determine the available converters from the scenarios file.
+    if scenario.cooling_scenario is not None:
+        # Process the cooling converters.
+        for entry in scenario.cooling_scenario.sources:
+            try:
+                available_converters.append(converters[entry])
+            except KeyError:
+                logger.error(
+                    "%sUnknown cooling source specified in the scenario file: %s%s",
+                    BColours.fail,
+                    entry,
+                    BColours.endc,
+                )
+                raise InputFileError(
+                    "cooling scenario",
+                    f"{BColours.fail}Unknown cooling source(s) in the scenario "
+                    + f"file: {entry}{BColours.endc}",
+                ) from None
+
     if scenario.desalination_scenario is not None:
         # Process the clean-water converters.
         for entry in scenario.desalination_scenario.clean_water_scenario.sources:

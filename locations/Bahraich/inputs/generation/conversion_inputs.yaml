@@ -9,10 +9,10 @@
 ################################################################################
 
 converters:
-  - name: bore_hole
-    electric_power: 600 # [W]
-    output: feedwater
-    maximum_output: 830 # [litres/hour]
+  - name: diakin
+    electric_power: 5000 # [W] (3.24 EER)
+    output: cooling
+    maximum_output: 5200 # [W] (9000 BTU)
     costs:
       cost: 0 # [$/unit]
       cost_decrease: 5 # [% p.a.]

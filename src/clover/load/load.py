@@ -105,6 +105,10 @@ MEAN: str = "Mean"
 #   The name to use for the "median" column in the yearly-load statistics.
 MEDIAN: str = "Median"
 
+# Waste heat:
+#   The name to use for the waste heat.
+WASTE_HEAT: str = "waste_heat"
+
 
 @dataclasses.dataclass
 class Device:
@@ -156,6 +160,7 @@ class Device:
     name: str
     clean_water_usage: Optional[float]
     hot_water_usage: Optional[float]
+    waste_heat: Optional[float]
 
     def __hash__(self) -> int:
         """
@@ -187,7 +192,8 @@ class Device:
             + f"innovation={self.innovation}, "
             + f"imitation={self.imitation}, "
             + f"clean_water_usage={self.clean_water_usage} litres/hour, "
-            + f"hot_water_usage={self.hot_water_usage} litres/hour"
+            + f"hot_water_usage={self.hot_water_usage} litres/hour, "
+            + f"waste_heat={self.waste_heat} W"
             + ")"
         )
 
@@ -230,6 +236,7 @@ class Device:
             if CLEAN_WATER_USAGE in device_input
             else None,
             device_input[HOT_WATER_USAGE] if HOT_WATER_USAGE in device_input else None,
+            device_input[WASTE_HEAT] if WASTE_HEAT in device_input else None,
         )
 
 
@@ -237,7 +244,7 @@ class Device:
 #   The default kerosene device to use in the event that no kerosene information is
 #   provided.
 DEFAULT_KEROSENE_DEVICE = Device(
-    False, DemandType.DOMESTIC, 1, 0, 0, 0, 0, KEROSENE_DEVICE_NAME, 0, 0
+    False, DemandType.DOMESTIC, 1, 0, 0, 0, 0, KEROSENE_DEVICE_NAME, 0, 0, 0
 )
 
 
@@ -676,6 +683,15 @@ def process_device_hourly_power(
                 )
 
             device_load = hourly_device_usage * device.hot_water_usage
+        elif resource_type == ResourceType.WASTE_HEAT:
+            if device.waste_heat is None:
+                raise InternalError(
+                    f"{BColours.fail}Internal error processing device "
+                    + f"'{device.name}', waste-heat unexpectedly `None`."
+                    + f"{BColours.endc}",
+                )
+            device_load = hourly_device_usage * device.waste_heat
+            logger.info("Waste heat for %s successfully computed.", device.name)
         else:
             logger.error(
                 "%sUnsuported load type used: %s%s",
@@ -683,6 +699,7 @@ def process_device_hourly_power(
                 resource_type.value,
                 BColours.endc,
             )
+            raise InputFileError(f"Unsupported load type used: {resource_type.value}")
 
         # Reset the index on the device load.
         try:
@@ -1040,6 +1057,14 @@ def process_load_profiles(  # pylint: disable=too-many-locals
             device: device_utilisation
             for device, device_utilisation in device_utilisations.items()
             if device.hot_water_usage is not None
+        }
+    # NOTE: "HEAT" is used for waste heat, rather than heat demand.
+    elif resource_type == ResourceType.WASTE_HEAT:
+        resource_name = "waste_heat"
+        relevant_device_utilisations = {
+            device: device_utilisation
+            for device, device_utilisation in device_utilisations.items()
+            if device.waste_heat is not None
         }
 
     else:

@@ -27,6 +27,8 @@ from sklearn.linear_model._coordinate_descent import Lasso
 
 from . import load
 from .generation import solar
+from .simulation import clinic
+
 from .impact.finance import COSTS, FINANCE_IMPACT, ImpactingComponent
 from .impact.ghgs import EMISSIONS, GHG_IMPACT
 from .simulation.diesel import DIESEL_CONSUMPTION, MINIMUM_LOAD, DieselWaterHeater
@@ -34,6 +36,7 @@ from .simulation.diesel import DIESEL_CONSUMPTION, MINIMUM_LOAD, DieselWaterHeat
 from .__utils__ import (
     AuxiliaryHeaterType,
     BColours,
+    CoolingScenario,
     DesalinationScenario,
     DieselMode,
     EXCHANGER,
@@ -97,6 +100,14 @@ CONVERTERS: str = "converters"
 # Conversion inputs file:
 #   The relative path to the conversion-inputs file.
 CONVERSION_INPUTS_FILE: str = os.path.join("generation", "conversion_inputs.yaml")
+
+# Cooling scenarios inputs file:
+#   The relative path to the cooling-scenarios inputs file.
+COOLING_SCENARIO_INPUTS_FILE: str = os.path.join("scenario", "cooling_scenarios.yaml")
+
+# Cooling scenarios:
+#   Keyword used for parsing cooling scenarios.
+COOLING_SCENARIOS: str = "cooling_scenarios"
 
 # Desalination scenarios:
 #   Keyword used for parsing desalination scenarios.
@@ -1173,6 +1184,10 @@ def parse_scenario_inputs(
 
     """
 
+    cooling_scenario_inputs_filepath: str = os.path.join(
+        inputs_directory_relative_path,
+        COOLING_SCENARIO_INPUTS_FILE,
+    )
     desalination_scenario_inputs_filepath: str = os.path.join(
         inputs_directory_relative_path,
         DESALINATION_SCENARIO_INPUTS_FILE,
@@ -1180,6 +1195,35 @@ def parse_scenario_inputs(
     hot_water_scenario_inputs_filepath: str = os.path.join(
         inputs_directory_relative_path, HOT_WATER_SCENARIO_INPUTS_FILE
     )
+
+    # Parse the cooling scenario inputs information if relevant.
+    if os.path.isfile(cooling_scenario_inputs_filepath):
+        logger.info("Parsing cooling inputs file.")
+        cooling_scenario_inputs = read_yaml(
+            cooling_scenario_inputs_filepath,
+            logger,
+        )
+        if not isinstance(cooling_scenario_inputs, dict):
+            raise InputFileError(
+                "scenario inputs", "Cooling scenario inputs is not of type `dict`."
+            )
+        try:
+            cooling_scenarios: Optional[List[DesalinationScenario]] = [
+                CoolingScenario.from_dict(entry, logger)
+                for entry in cooling_scenario_inputs[COOLING_SCENARIOS]
+            ]
+        except Exception as e:
+            logger.error(
+                "%sError generating cooling scenarios from inputs file: %s%s",
+                BColours.fail,
+                str(e),
+                BColours.endc,
+            )
+            raise
+        logger.info("Cooling scenarios successfully parsed.")
+    else:
+        cooling_scenarios = None
+        logger.info("No cooling scenarios files provided, skipping.")
 
     # Parse the desalination scenario inputs information if relevant.
     if os.path.isfile(desalination_scenario_inputs_filepath):
@@ -1256,7 +1300,11 @@ def parse_scenario_inputs(
     try:
         scenarios: List[Scenario] = [
             Scenario.from_dict(
-                desalination_scenarios, hot_water_scenarios, logger, entry
+                cooling_scenarios,
+                desalination_scenarios,
+                hot_water_scenarios,
+                logger,
+                entry,
             )
             for entry in scenario_inputs[SCENARIOS]
         ]
@@ -1314,6 +1362,52 @@ def parse_scenario_inputs(
         scenarios,
         scenario_inputs_filepath,
     )
+
+
+def _parse_clinic_inputs(
+    inputs_directory_relative_path: str,
+    logger: Logger,
+) -> List[clinic.Clinic]:
+
+    # Work out where the file is
+    clinic_inputs_filepath = os.path.join(
+        inputs_directory_relative_path,
+        "simulation",
+        "clinics.yaml",
+    )
+
+    # If there is no clinic inputs file, return no clinics.
+    if not os.path.isfile(clinic_inputs_filepath):
+        logger.info(
+            "No clinics input file found, skipping clinic information. Expected file at %s",
+            clinic_inputs_filepath,
+        )
+        return []
+
+    # Turn it into a Python dictionary by opening the file
+    clinic_inputs = read_yaml(
+        clinic_inputs_filepath,
+        logger,
+    )
+
+    # Turn it into "Clinics"
+    clinics: List[clinic.Clinic] = []
+    for clinic_information in clinic_inputs["clinics"]:
+        try:
+            clinics.append(clinic.Clinic.from_dict(clinic_information))
+        except Exception as e:
+            logger.error(
+                "%sError parsing clinic '%s': %s%s",
+                BColours.fail,
+                clinic_information["name"] if "name" in clinic_information else "N/A",
+                str(e),
+                BColours.endc,
+            )
+            raise InputFileError("Error parsing clinic information.")
+
+    logger.info("Clinic information is parsed!")
+
+    return clinics
 
 
 def _parse_solar_inputs(  # pylint: disable=too-many-locals, too-many-statements
@@ -2128,6 +2222,7 @@ def _parse_minigrid_inputs(  # pylint: disable=too-many-locals, too-many-stateme
         buffer_tank_emissions = None
         clean_water_tank_costs = None
         clean_water_tank_emissions = None
+        clinics = None
         hot_water_tank_costs = None
         hot_water_tank_emissions = None
         exchanger_costs = None
@@ -2164,7 +2259,14 @@ def _parse_minigrid_inputs(  # pylint: disable=too-many-locals, too-many-stateme
     else:
         electric_water_heater = None
 
+    # Parse the clinic information
+    clinics: Optional[List[clinic.Clinic]] = _parse_clinic_inputs(
+        inputs_directory_relative_path, logger
+    )
+    logger.info("Clinic information successfully parsed.")
+
     minigrid: Minigrid = Minigrid.from_dict(
+        clinics,
         diesel_generator,
         diesel_water_heater,
         electric_water_heater,
