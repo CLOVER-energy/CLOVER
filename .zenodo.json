@@ -10,13 +10,6 @@
     "license": {"id": "MIT"},
     "notes": "If you use this software, please cite it as below.",
     "publication_date": "2022-08-19",
-    "related_identifiers": [
-        {
-            "scheme": "doi",
-            "identifier": "10.5281/zenodo.6925534",
-            "relation": "isVersionOf"
-        }
-    ],
     "title": "CLOVER",
     "upload_type": "software",
     "version": "v5.0.5"
