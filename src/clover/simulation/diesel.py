@@ -253,7 +253,7 @@ def _find_deficit_threshold_unmet(unmet_energy: pd.DataFrame, backup_threshold: 
 
 
 def _find_deficit_threshold(
-    unmet_energy: pd.DataFrame, blackouts: pd.DataFrame, backup_threshold: float
+    unmet_energy: pd.DataFrame, blackouts: pd.DataFrame, backup_threshold: float, total_electric_load: float, diesel_mode: DieselMode
 ) -> float:
     """
     Identifies the threshold energy level at which the diesel backup generator turns on.
@@ -279,13 +279,13 @@ def _find_deficit_threshold(
     
     # Find the blackout percentage is mode using unmet energy criterion
     if diesel_mode == DieselMode.BACKUP_UNMET:
-        blackout_percentage = float(unmet_energy.mean(axis=0)) 
-
+        return _find_deficit_threshold_unmet(unmet_energy, backup_threshold, 
+        total_electric_load)
 
 
 
 def get_diesel_energy_and_times(
-    unmet_energy: pd.DataFrame, blackouts: pd.DataFrame, backup_threshold: float
+    unmet_energy: pd.DataFrame, blackouts: pd.DataFrame, backup_threshold: float, total_electric_load: float, diesel_mode: DieselMode
 ) -> Tuple[pd.DataFrame, pd.DataFrame]:
     """
     Finds times when the load is greater than the energy threshold.
@@ -310,7 +310,7 @@ def get_diesel_energy_and_times(
     """
 
     energy_threshold = _find_deficit_threshold(
-        unmet_energy, blackouts, backup_threshold
+        unmet_energy, blackouts, backup_threshold, total_electric_load, diesel_mode
     )
 
     diesel_energy = pd.DataFrame(
