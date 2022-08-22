@@ -105,10 +105,12 @@ def main(args: List[Any]) -> None:
             )
 
         logger.info("Run %s is an optimisation.", hpc_job_number)
-        clover_arguments.append(
-            "--optimisation",
-            "--optimisation-inputs-file",
-            crate_temporary_optimisations_file(hpc_run, hpc_job_number - 1),
+        clover_arguments.extend(
+            [
+                "--optimisation",
+                "--optimisation-inputs-file",
+                crate_temporary_optimisations_file(hpc_run, hpc_job_number - 1),
+            ]
         )
 
     elif hpc_run.type == HpcRunType.SIMULATION:
