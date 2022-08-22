@@ -79,6 +79,7 @@ def _calculate_backup_diesel_generator_usage(
     blackout_times: pd.DataFrame,
     minigrid: Minigrid,
     scenario: Scenario,
+    total_electric_load: float,
     unmet_energy: pd.DataFrame,
 ) -> Tuple[float, pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """
@@ -92,7 +93,9 @@ def _calculate_backup_diesel_generator_usage(
         - scenario:
             The :class:`Scenario` being used for the run.
         - unmet_energy:
-            The energy demand which went unmet through renewables.
+            Load profile of currently unment energy
+        - total_electric_load:
+            The total electric load placed on the system (kWh).
 
     Outputs:
         - diesel_capacity:
@@ -125,6 +128,8 @@ def _calculate_backup_diesel_generator_usage(
         unmet_energy,
         blackout_times,
         float(scenario.diesel_scenario.backup_threshold),
+        total_electric_load,
+        scenario.diesel_scenario.mode,
     )
     diesel_capacity: float = float(math.ceil(np.max(diesel_energy, axis=0)))
     diesel_fuel_usage = pd.DataFrame(
@@ -1950,7 +1955,8 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
     diesel_energy: pd.DataFrame
     diesel_fuel_usage: pd.DataFrame
     diesel_times: pd.DataFrame
-    if scenario.diesel_scenario.mode == DieselMode.BACKUP:
+    if scenario.diesel_scenario.mode in (DieselMode.BACKUP, DieselMode.BACKUP_UNMET):
+
         (
             diesel_capacity,
             diesel_energy,
@@ -1958,7 +1964,11 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
             diesel_times,
             unmet_energy,
         ) = _calculate_backup_diesel_generator_usage(
-            blackout_times, minigrid, scenario, unmet_energy
+            blackout_times,
+            minigrid,
+            scenario,
+            float(np.sum(processed_total_electric_load)),
+            unmet_energy,
         )
     elif scenario.diesel_scenario.mode == DieselMode.CYCLE_CHARGING:
         logger.error(
