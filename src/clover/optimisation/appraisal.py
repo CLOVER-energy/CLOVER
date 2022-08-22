@@ -55,6 +55,7 @@ __all__ = ("appraise_system",)
 
 
 def _calculate_power_consumed_fraction(
+    logger: Logger,
     simulation_results: pd.DataFrame,
     total_electricity_consumed: float,
 ) -> Dict[ResourceType, float]:
@@ -62,6 +63,8 @@ def _calculate_power_consumed_fraction(
     Calculates the electric power consumed by each resource type.
 
     Inputs:
+        - logger:
+            The :class:`logging.Logger` for the run.
         - simulation_results:
             Outputs of Energy_System().simulation(...)
         - total_electricity_consumed:
@@ -110,6 +113,20 @@ def _calculate_power_consumed_fraction(
         and ColumnHeader.POWER_CONSUMED_BY_HOT_WATER.value not in simulation_results
     ):
         power_consumed_fraction[ResourceType.ELECTRIC] = 1
+
+    # Check that the power consumed fractions add up to one. If not, normalise.
+    if sum(power_consumed_fraction.values()) != 1:
+        logger.warning(
+            "%sPower consumption fraction did not total 1. Total was %s.%s%s",
+            BColours.warning,
+            round(float(sum(power_consumed_fraction.values())), 2),
+            f"{BColours.bolc}NOTE: This can be ignored if expected.{BColours.endc}",
+            BColours.endc
+        )
+        power_consumed_fraction = {
+            key: value / sum(power_consumed_fraction.values())
+            for key, value in power_consumed_fraction.items()
+        }
 
     return power_consumed_fraction
 
@@ -486,6 +503,7 @@ def _simulation_environmental_appraisal(  # pylint: disable=too-many-locals
         + subsystem_om_emissions[resource_type]
         + (grid_ghgs * technical_appraisal.power_consumed_fraction[resource_type])
         for resource_type, value in subsystem_equipment_emissions.items()
+        if resource_type in technical_appraisal.power_consumed_fraction
     }
 
     # Apportion the diesel emissions by the resource types.
@@ -708,6 +726,7 @@ def _simulation_financial_appraisal(  # pylint: disable=too-many-locals
             * technical_appraisal.power_consumed_fraction[resource_type]
         )
         for resource_type, value in subsystem_equipment_costs.items()
+        if resource_type in technical_appraisal.power_consumed_fraction
     }
 
     # Apportion the diesel running costs by the resource types to the subsystems.
@@ -717,10 +736,7 @@ def _simulation_financial_appraisal(  # pylint: disable=too-many-locals
 
     # Add the connections cost for the electric subsystem and any costs that haven't yet
     # been counted for.
-    total_subsystem_costs[ResourceType.ELECTRIC] += connections_cost
-    total_subsystem_costs[ResourceType.HOT_CLEAN_WATER] += (
-        additional_equipment_costs + additional_om_costs
-    )
+    total_subsystem_costs[ResourceType.ELECTRIC] += connections_cost + additional_equipment_costs + additional_om_costs
 
     # Total cost incurred during simulation period (discounted)
     total_equipment_costs = sum(subsystem_equipment_costs.values())
@@ -1237,7 +1253,7 @@ def _simulation_technical_appraisal(  # pylint: disable=too-many-locals
 
     # Calculate the fraction of power used providing each resource.
     power_consumed_fraction = _calculate_power_consumed_fraction(
-        simulation_results, total_electricity_consumed
+        logger, simulation_results, total_electricity_consumed
     )
 
     # Calculate the total energy consumed by the system using the conversion factors
