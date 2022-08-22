@@ -21,7 +21,7 @@ functionality to model diesel generators.
 import dataclasses
 import logging
 
-from typing import Any, Dict, Tuple
+from typing import Any, Dict, Optional, Tuple
 
 import numpy as np  # pylint: disable=import-error
 import pandas as pd
@@ -32,6 +32,7 @@ from ..__utils__ import (
     DieselMode,
     InputFileError,
     NAME,
+    ProgrammerJudgementFault,
     ResourceType,
 )
 from ..conversion.conversion import MAXIMUM_OUTPUT, Converter
@@ -183,7 +184,7 @@ class DieselWaterHeater(Converter):
 
 def _find_deficit_threshold_blackout(
     unmet_energy: pd.DataFrame, blackouts: pd.DataFrame, backup_threshold: float
-) -> float:
+) -> Optional[float]:
     """
     Identifies the threshold energy level at which the diesel backup generator turns on
     when the threshold criterion is blackouts.
@@ -212,12 +213,12 @@ def _find_deficit_threshold_blackout(
     if reliability_difference <= 0.0:
         return None
 
-    return np.percentile(unmet_energy, percentile_threshold)
+    return float(np.percentile(unmet_energy, percentile_threshold))
 
 
 def _find_deficit_threshold_unmet(
     unmet_energy: pd.DataFrame, backup_threshold: float, total_electric_load: float
-) -> float:
+) -> Optional[float]:
     """
     Identifies the threshold energy level at which the diesel backup generator turns on
     when the threshold criterion is unmet energy.
@@ -265,7 +266,7 @@ def _find_deficit_threshold(
     backup_threshold: float,
     total_electric_load: float,
     diesel_mode: DieselMode,
-) -> float:
+) -> Optional[float]:
     """
     Identifies the threshold energy level at which the diesel backup generator turns on.
 
@@ -283,7 +284,8 @@ def _find_deficit_threshold(
 
     Outputs:
         - energy_threshold:
-            The energy threshold (kWh) at which the diesel backup switches on.
+            The energy threshold (kWh) at which the diesel backup switches on, `None` if
+            the diesel generator should not turn on.
 
     """
 
@@ -298,6 +300,11 @@ def _find_deficit_threshold(
         return _find_deficit_threshold_unmet(
             unmet_energy, backup_threshold, total_electric_load
         )
+
+    raise ProgrammerJudgementFault(
+        "src.clover.simulation.diesel::_find_deficit_threshold",
+        "Cannot find deficit threshold for non-backup scenarios.",
+    )
 
 
 def get_diesel_energy_and_times(
