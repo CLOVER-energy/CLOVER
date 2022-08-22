@@ -121,7 +121,7 @@ def _calculate_power_consumed_fraction(
             BColours.warning,
             round(float(sum(power_consumed_fraction.values())), 2),
             f"{BColours.bolc}NOTE: This can be ignored if expected.{BColours.endc}",
-            BColours.endc
+            BColours.endc,
         )
         power_consumed_fraction = {
             key: value / sum(power_consumed_fraction.values())
@@ -736,7 +736,9 @@ def _simulation_financial_appraisal(  # pylint: disable=too-many-locals
 
     # Add the connections cost for the electric subsystem and any costs that haven't yet
     # been counted for.
-    total_subsystem_costs[ResourceType.ELECTRIC] += connections_cost + additional_equipment_costs + additional_om_costs
+    total_subsystem_costs[ResourceType.ELECTRIC] += (
+        connections_cost + additional_equipment_costs + additional_om_costs
+    )
 
     # Total cost incurred during simulation period (discounted)
     total_equipment_costs = sum(subsystem_equipment_costs.values())
