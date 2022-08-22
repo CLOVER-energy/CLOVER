@@ -579,6 +579,7 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
             parsed_args.electric_load_profile,
             parsed_args.location,
             logger,
+            parsed_args.optimisation_inputs_file,
         )
     except FileNotFoundError as e:
         print(FAILED)

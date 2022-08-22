@@ -24,6 +24,8 @@ import os
 from logging import Logger
 from typing import Any, Dict, List, Optional, Tuple, Union
 
+import yaml
+
 from ..__utils__ import (
     BColours,
     DEFAULT_SCENARIO,
@@ -243,6 +245,22 @@ class HpcOptimisation(
             total_load,
             total_load_file,
         )
+
+    @property
+    def optimisation_inputs(self) -> Dict[str, Any]:
+        """
+        Assembly optimisation input data for writing to file.
+
+        Outputs:
+            - Data ready to be written to a temporary optimisation outputs file.
+
+        """
+
+        if OPTIMISATIONS in self.optimisation_inputs_data:
+            return self.optimisation_inputs_data
+
+        self.optimisation_inputs_data[OPTIMISATIONS] = self.optimisation
+        return self.optimisation_inputs_data
 
 
 class HpcSimulation(
@@ -576,6 +594,34 @@ def _process_hpc_input_file(
 
     # Return this list of HPC optimisations and simulations.
     return runs
+
+
+def crate_temporary_optimisations_file(run: HpcOptimisation, run_number: int) -> str:
+    """
+    Creates a temporary optimisations file.
+
+    Inputs:
+        - run:
+            The run being carried out.
+        - run_number:
+            The number of the run being carried out.
+
+    Outputs:
+        - filename:
+            The name of the file.
+
+    """
+
+    with open(
+        os.path.join(
+            LOCATIONS_FOLDER_NAME,
+            run.location,
+            INPUTS_DIRECTORY,
+            f"temp_hpc_{run_number}_{OPTIMISATION_INPUTS_FILE}",
+        ),
+        "w",
+    ) as f:
+        yaml.dump(run.optimisation_inputs, f)
 
 
 def parse_args_and_hpc_input_file(

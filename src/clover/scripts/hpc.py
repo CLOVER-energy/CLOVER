@@ -27,6 +27,7 @@ from typing import Any, List
 from ..__main__ import main as clover_main
 from ..__utils__ import BColours, InternalError, get_logger
 from .hpc_utils import (
+    crate_temporary_optimisations_file,
     HpcOptimisation,
     HpcRunType,
     HpcSimulation,
@@ -104,7 +105,11 @@ def main(args: List[Any]) -> None:
             )
 
         logger.info("Run %s is an optimisation.", hpc_job_number)
-        clover_arguments.append("--optimisation")
+        clover_arguments.append(
+            "--optimisation",
+            "--optimisation-inputs-file",
+            crate_temporary_optimisations_file(hpc_run, hpc_job_number - 1),
+        )
 
     elif hpc_run.type == HpcRunType.SIMULATION:
         if not isinstance(hpc_run, HpcSimulation):
