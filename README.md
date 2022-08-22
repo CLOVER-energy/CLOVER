@@ -1,38 +1,47 @@
 # CLOVER
 
 CLOVER minigrid simulation and optimisation for supporting rural electrification in developing countries.
+
 [![DOI](https://zenodo.org/badge/476703736.svg)](https://zenodo.org/badge/latestdoi/476703736)
+
+[![made-with-python](https://img.shields.io/badge/Made%20with-Python-1f425f.svg)](https://www.python.org/) 
+[![PyPI pyversions](https://img.shields.io/pypi/pyversions/clover-energy.svg)](https://pypi.python.org/pypi/clover-energy/)
+[![GitHub release](https://img.shields.io/github/release/CLOVER-energy/clover)](https://GitHub.com/CLOVER-energy/clover/releases/)
+[![PyPI version fury.io](https://badge.fury.io/py/clover-energy.svg)](https://pypi.python.org/pypi/clover-energy/)
+![example branch parameter](https://github.com/CLOVER-energy/CLOVER/actions/workflows/pytest.yml/badge.svg?branch=master)
+[![PyPI download month](https://img.shields.io/pypi/dm/clover-energy.svg)](https://pypi.python.org/pypi/clover-energy/)
+[![PyPI download week](https://img.shields.io/pypi/dw/clover-energy.svg)](https://pypi.python.org/pypi/clover-energy/)
 
 #### Table Of Contents
 
 [Quick start guide](#quick-start-guide)
 
-⏬[Downloading CLOVER](#downloading-clover)
+⏬ [Downloading CLOVER](#downloading-clover)
  * [Stable installation](#stable-installation)
    * [Upgrading](#upgrading)
  * [Downloading as a developer](#downloading-as-a-developer)
    * [Downloading PV-T modelling files](#downloading-pv-t-modelling-files)
- 
-🐍[Setting up your Python environment](#setting-up-your-python-environment)
+
+🐍 [Setting up your Python environment](#setting-up-your-python-environment)
   * [Anaconda method](#anaconda-method)
   * [Pip install](#pip-install)
 
-⛅[Setting up a new location](#setting-up-a-new-location)
+⛅ [Setting up a new location](#setting-up-a-new-location)
   * [Updating an existing location](#updating-an-existing-location)
 
-🌦️[Renewables ninja](#renewables-ninja)
+🌦️ [Renewables ninja](#renewables-ninja)
 
-:memo:[Completing input files](#completing-input-files)
+:memo: [Completing input files](#completing-input-files)
 * [Simulation and optimisation files](#simulation-and-optimisation-files)
 * [Optimisation only files](#optimisation-only-files)
 
-🍀[Running CLOVER](#running-clover)
+🍀 [Running CLOVER](#running-clover)
 * [Profile generation](#profile-generation)
 * [Running a simulation](#running-a-simulation)
 * [Running an optimisation](#running-an-optimisation)
 * [Analysis](#analysis)
 
-🎓[Running CLOVER on Imperial College London's high-performance computers](#running-clover-on-imperial-college-londons-high-performance-computers)
+🎓 [Running CLOVER on Imperial College London's high-performance computers](#running-clover-on-imperial-college-londons-high-performance-computers)
 
 # 🚤 Quick start guide
 
@@ -80,7 +89,7 @@ For modelling certain renewable technologies, CLOVER utilises external file-host
 
 These files can be downlaoded using the latest DOI link below. Once downloaded, extract the archive into the `src/clover/src` directory within your repository:
 
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.6647054.svg)](https://doi.org/10.5281/zenodo.6647054)  
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.6647054.svg)](https://doi.org/10.5281/zenodo.6647054).
 
 ### ⚠️ One-time download from Github
 

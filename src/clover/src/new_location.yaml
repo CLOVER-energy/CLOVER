@@ -1146,6 +1146,7 @@
                       domestic: true # "true" or "false"
                       commercial: true # "true" or "false"
                       public: true # "true" or "false"
+                    # desalination_scenario: default
                     diesel:
                       mode: backup # "backup" or "disabled" currently supported
                       backup:
@@ -1153,6 +1154,7 @@
                     distribution_network: dc # DC ("dc") or AC ("ac") distribution network
                     grid: true # "true" or "false"
                     grid_type: default # The grid profile to use
+                    # hot_water_scenario: default
                     prioritise_self_generation: true # "true" or "false"
                     pv: true # "true" or "false"
                     # pv_t: false # "true" or "false"
@@ -1220,7 +1222,7 @@
                 # hot_water_tank: hot_water_tank
                 pv_panel: default_pv
                 # pvt_panel: default_pvt
-                # solar_thermal_panel: default_thermal_panel
+                # solar_thermal: default_thermal_panel
                 # water_pump: default_water_pump
             - file: "heat_exchangers.yaml"
               contents: |+

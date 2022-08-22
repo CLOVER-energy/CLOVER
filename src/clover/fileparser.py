@@ -2902,7 +2902,23 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
         logger.info("No battery present, skipping impact data.")
 
     if minigrid.pvt_panel is not None and any(scenario.pv_t for scenario in scenarios):
-        if pvt_panel_costs is None or pvt_panel_emissions is None:
+        if pvt_panel_costs is None:
+            logger.error(
+                "%sPV-T panel costs are `None` despite a PV-T collector being requested"
+                ".%s",
+                BColours.fail,
+                BColours.endc,
+            )
+            raise InternalError(
+                "Error processing solar-thermal panel cost and emissions."
+            )
+        if pvt_panel_emissions is None:
+            logger.error(
+                "%sPV-T panel emissions are `None` despite a PV-T collector being "
+                "requested.%s",
+                BColours.fail,
+                BColours.endc,
+            )
             raise InternalError("Error processing PV-T panel cost and emissions.")
         finance_inputs[ImpactingComponent.PV_T.value] = defaultdict(
             float, pvt_panel_costs
@@ -2916,7 +2932,23 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
     if minigrid.solar_thermal_panel is not None and any(
         scenario.solar_thermal for scenario in scenarios
     ):
-        if solar_thermal_panel_costs is None or solar_thermal_panel_emissions is None:
+        if solar_thermal_panel_costs is None:
+            logger.error(
+                "%sSolar-thermal panel costs are `None` despite a solar-thermal "
+                "collector being requested.%s",
+                BColours.fail,
+                BColours.endc,
+            )
+            raise InternalError(
+                "Error processing solar-thermal panel cost and emissions."
+            )
+        if solar_thermal_panel_emissions is None:
+            logger.error(
+                "%sSolar-thermal panel emissions are `None` despite a solar-thermal "
+                "collector being requested.%s",
+                BColours.fail,
+                BColours.endc,
+            )
             raise InternalError(
                 "Error processing solar-thermal panel cost and emissions."
             )
@@ -2975,7 +3007,16 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
     # Add desalination-specific impacts.
     if any(
         scenario.desalination_scenario is not None
-        and scenario.desalination_scenario.pvt_scenario.heats == HTFMode.CLOSED_HTF
+        and (
+            scenario.desalination_scenario.pvt_scenario.heats == HTFMode.CLOSED_HTF
+            if scenario.desalination_scenario.pvt_scenario is not None
+            else (
+                scenario.desalination_scenario.solar_thermal_scenario.heats
+                == HTFMode.CLOSED_HTF
+                if scenario.desalination_scenario.solar_thermal_scenario is not None
+                else False
+            )
+        )
         for scenario in scenarios
     ):
         # Update the clean-water tank impacts.
@@ -3140,7 +3181,16 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
 
     if any(
         scenario.desalination_scenario is not None
-        and scenario.desalination_scenario.pvt_scenario.heats == HTFMode.CLOSED_HTF
+        and (
+            scenario.desalination_scenario.pvt_scenario.heats == HTFMode.CLOSED_HTF
+            if scenario.desalination_scenario.pvt_scenario is not None
+            else (
+                scenario.desalination_scenario.solar_thermal_scenario.heats
+                == HTFMode.CLOSED_HTF
+                if scenario.desalination_scenario.solar_thermal_scenario is not None
+                else False
+            )
+        )
         for scenario in scenarios
     ):
         input_file_info["desalination_scenario"] = desalination_scenario_inputs_filepath
