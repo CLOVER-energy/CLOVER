@@ -1651,7 +1651,6 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
                     it with solar IF there is surplus solar.
 
         """
-
     # Process the various outputs into dataframes.
     # energy_deficit_frame: pd.DataFrame = dict_to_dataframe(energy_deficit)
     if energy_surplus is not None:
