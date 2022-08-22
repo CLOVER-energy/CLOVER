@@ -202,12 +202,10 @@ def _find_deficit_threshold_blackout(
     reliability_difference = blackout_percentage - backup_threshold
     percentile_threshold = 100.0 * (1.0 - reliability_difference)
 
-    if reliability_difference > 0.0:
-        energy_threshold: float = np.percentile(unmet_energy, percentile_threshold)
-    else:
-        energy_threshold = np.max(unmet_energy)[0] + 1.0
-
-    return energy_threshold
+    if reliability_difference <= 0.0:
+        return None
+    
+    return np.percentile(unmet_energy, percentile_threshold)
 
 
 def _find_deficit_threshold_unmet(unmet_energy: pd.DataFrame, backup_threshold: float, total_electric_load: float) -> float:
@@ -312,6 +310,8 @@ def get_diesel_energy_and_times(
     energy_threshold = _find_deficit_threshold(
         unmet_energy, blackouts, backup_threshold, total_electric_load, diesel_mode
     )
+    if energy_threshold is None:
+        return pd.DataFrame([0]*len(unmet_energy)), pd.DataFrame([0]*len(unmet_energy))
 
     diesel_energy = pd.DataFrame(
         unmet_energy.values * (unmet_energy >= energy_threshold).values
