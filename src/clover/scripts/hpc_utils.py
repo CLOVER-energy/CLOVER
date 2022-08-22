@@ -4,7 +4,7 @@
 #                                                                                      #
 # Author: Phil Sandwell, Ben Winchester                                                #
 # Copyright: Phil Sandwell, 2018                                                       #
-# Date created: 249/03/2022                                                             #
+# Date created: 24/03/2022                                                             #
 #                                                                                      #
 # For more information, please email:                                                  #
 #   philip.sandwell@gmail.com                                                          #
@@ -617,7 +617,8 @@ def crate_temporary_optimisations_file(run: HpcOptimisation, run_number: int) ->
             LOCATIONS_FOLDER_NAME,
             run.location,
             INPUTS_DIRECTORY,
-            f"temp_hpc_{run_number}_{OPTIMISATION_INPUTS_FILE}",
+            os.path.dirname(OPTIMISATION_INPUTS_FILE),
+            f"temp_hpc_{run_number}_{os.path.basename(OPTIMISATION_INPUTS_FILE)}",
         ),
         "w",
     ) as f:
