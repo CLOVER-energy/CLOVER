@@ -19,11 +19,19 @@ CLOVER designed to improve ease of use.
 
 import argparse
 import enum
+import os
 
 from logging import Logger
 from typing import Any, Dict, List, Optional, Tuple, Union
 
-from ..__utils__ import DEFAULT_SCENARIO, BColours, InputFileError, read_yaml
+from ..__utils__ import (
+    BColours,
+    DEFAULT_SCENARIO,
+    InputFileError,
+    LOCATIONS_FOLDER_NAME,
+    read_yaml,
+)
+from ..fileparser import INPUTS_DIRECTORY, OPTIMISATION_INPUTS_FILE, OPTIMISATIONS
 
 
 __all__ = (
@@ -156,8 +164,43 @@ class HpcOptimisation(
 
     """
 
+    def __init__(
+        self,
+        location: str,
+        optimisation: Dict[str, Any],
+        optimisation_inputs_data: Dict[str, Any],
+        total_load: bool,
+        total_load_file: Optional[str] = None,
+    ) -> None:
+        """
+        Instantiate a :class:`HpcOptimisation` instance.
+
+        Inputs:
+            - location:
+                The name of the location to use.
+            - optimisation:
+                The optimisation parameters for this particular optimisation
+            - optimisation_inputs_data:
+                The input data for optimisations in general.
+            - total_load:
+                Whether a total-load file should be used.
+            - total_load_file:
+                If being used, the name of the total-load file.
+
+        """
+
+        super().__init__(location, total_load, total_load_file)
+        self.optimisation: Dict[str, Any] = optimisation
+        self.optimisation_inputs_data: Dict[str, Any] = optimisation_inputs_data
+
     @classmethod
-    def from_dict(cls, input_data: Dict[str, Any], logger: Logger) -> Any:
+    def from_dict(
+        cls,
+        input_data: Dict[str, Any],
+        logger: Logger,
+        optimisation: Dict[str, Any],
+        optimisation_inputs_data: Dict[str, Any],
+    ) -> Any:
         """
         Creates a :class:`HpcOptimisation` instance based on the inputs provided.
 
@@ -166,6 +209,10 @@ class HpcOptimisation(
                 The input information, extracted from the HPC inputs file.
             - logger:
                 The logger being used for the run.
+            - optimisation:
+                The optimisation parameters for this particular optimisation
+            - optimisation_inputs_data:
+                The input data for optimisations in general.
 
         Outputs:
             - A :class:`HpcOptimisation` instance based on the input information provided.
@@ -189,7 +236,13 @@ class HpcOptimisation(
             total_load = True
             total_load_file = total_load_input
 
-        return cls(input_data["location"], total_load, total_load_file)
+        return cls(
+            input_data["location"],
+            optimisation,
+            optimisation_inputs_data,
+            total_load,
+            total_load_file,
+        )
 
 
 class HpcSimulation(
@@ -448,6 +501,42 @@ def _parse_hpc_input_file(input_filename: str, logger: Logger) -> List[Dict[str,
     return filedata
 
 
+def _parse_optimisations_to_runs(
+    entry: Dict[str, Any], logger: Logger
+) -> List[HpcOptimisation]:
+    """
+    Parses, from a single HPC entry, a series of optimisation runs to carry out.
+
+    Each optimisation entry triggers this script to generate a series of optimisation
+    run entries for which a single optimisation will be run, with a dummy input file,
+    based on the optimisation parameters within the optimisation_inputs.yaml file.
+
+    Inputs:
+        - entry:
+            The parsed entry from the file.
+        - logger:
+            The :class:`logging.Logger` to use for the run.
+
+    """
+
+    # Read the optimisation inputs file.
+    optimisation_inputs_file = os.path.join(
+        LOCATIONS_FOLDER_NAME,
+        entry["location"],
+        INPUTS_DIRECTORY,
+        OPTIMISATION_INPUTS_FILE,
+    )
+    optimisation_inputs_data = read_yaml(optimisation_inputs_file, logger)
+
+    # Based on the input optimisations, generate a list of optimisations to carry out.
+    optimisations_list = optimisation_inputs_data.pop(OPTIMISATIONS)
+
+    return [
+        HpcOptimisation.from_dict(entry, logger, optimisation, optimisation_inputs_data)
+        for optimisation in optimisations_list
+    ]
+
+
 def _process_hpc_input_file(
     input_filename: str, logger: Logger
 ) -> List[Union[HpcOptimisation, HpcSimulation]]:
@@ -472,7 +561,7 @@ def _process_hpc_input_file(
     runs: List[Union[HpcOptimisation, HpcSimulation]] = []
     for entry in filedata:
         if entry[TYPE] == HpcRunType.OPTIMISATION.value:
-            runs.append(HpcOptimisation.from_dict(entry, logger))
+            runs.extend(_parse_optimisations_to_runs(entry, logger))
         elif entry[TYPE] == HpcRunType.SIMULATION.value:
             runs.append(HpcSimulation.from_dict(entry, logger))
         else:
