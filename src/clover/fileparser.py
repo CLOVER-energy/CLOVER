@@ -23,7 +23,7 @@ from typing import Any, DefaultDict, Dict, List, Optional, Set, Tuple, Union
 import json
 import pandas as pd  # pylint: disable=import-error
 
-# from sklearn.linear_model._coordinate_descent import Lasso
+from sklearn.linear_model._coordinate_descent import Lasso
 
 from . import load
 from .generation import solar
@@ -42,6 +42,7 @@ from .__utils__ import (
     InputFileError,
     InternalError,
     KEROSENE_DEVICE_NAME,
+    RegressorType,
     ResourceType,
     Location,
     LOCATIONS_FOLDER_NAME,
@@ -51,6 +52,7 @@ from .__utils__ import (
     read_yaml,
     Scenario,
     Simulation,
+    SolarPanelType,
 )
 from .conversion.conversion import (
     Converter,
@@ -87,6 +89,10 @@ BATTERY_INPUTS_FILE: str = os.path.join("simulation", "battery_inputs.yaml")
 CONVENTIONAL_WATER_SOURCE_AVAILABILITY_DIRECTORY: str = os.path.join(
     "generation", "conventional_water_sources"
 )
+
+# Converters:
+#   Keyword used for parsing converter information.
+CONVERTERS: str = "converters"
 
 # Conversion inputs file:
 #   The relative path to the conversion-inputs file.
@@ -143,11 +149,11 @@ DIESEL_WATER_HEATERS: str = "diesel_water_heaters"
 
 # Fast electric model file:
 #   The relative path to the electric model file to use when running .
-ELECTRIC_MODEL_FAST_FILE: str = os.path.join("src", "electric_tree.sav")
+ELECTRIC_MODEL_FAST_FILE: str = os.path.join("src", "{}_electric_tree.sav")
 
 # Electric model file:
 #   The relative path to the electric model file.
-ELECTRIC_MODEL_FILE: str = os.path.join("src", "electric_forest.sav")
+ELECTRIC_MODEL_FILE: str = os.path.join("src", "{}_electric_forest.sav")
 
 # Electric water heater:
 #   Keyword used for parsing electric water-heater information.
@@ -163,7 +169,7 @@ EXCHANGERS: str = "exchangers"
 
 # Exchanger inputs file:
 #   The relative path to the heat-exchanger-inputs file.
-EXCHANGER_INPUTS_FILE: str = os.path.join("simulation", "heat_exchanger_inputs.yaml")
+EXCHANGER_INPUTS_FILE: str = os.path.join("simulation", "heat_exchangers.yaml")
 
 # Finance inputs file:
 #   The relative path to the finance-inputs file.
@@ -219,6 +225,14 @@ OPTIMISATION_INPUTS_FILE: str = os.path.join("optimisation", "optimisation_input
 #   Key used to extract the list of optimisations from the input file.
 OPTIMISATIONS: str = "optimisations"
 
+# PV Panel:
+#   Keyword used for parsing pv panel information.
+PV_PANEL: str = "pv_panel"
+
+# PV-T Panel:
+#   Keyword used for parsing pv-t panel information.
+PV_T_PANEL: str = "pvt_panel"
+
 # Scenarios:
 #   Keyword used for parsing scenario information.
 SCENARIOS: str = "scenarios"
@@ -235,17 +249,21 @@ SIMULATIONS_INPUTS_FILE: str = os.path.join("simulation", "simulations.yaml")
 #   The relative path to the solar inputs file.
 SOLAR_INPUTS_FILE: str = os.path.join("generation", "solar_generation_inputs.yaml")
 
+# Solar thermal panel:
+#   Keyword used for parsing solar-thermal panel information.
+SOLAR_THERMAL_PANEL: str = "solar_thermal"
+
 # Tank inputs file:
 #   The relative path to the tank inputs file.
 TANK_INPUTS_FILE: str = os.path.join("simulation", "tank_inputs.yaml")
 
 # Fast thermal model file:
 #   The relative path to the thermal model file.
-THERMAL_MODEL_FAST_FILE: str = os.path.join("src", "thermal_tree.sav")
+THERMAL_MODEL_FAST_FILE: str = os.path.join("src", "{}_thermal_tree.sav")
 
 # Thermal model file:
 #   The relative path to the thermal model file.
-THERMAL_MODEL_FILE: str = os.path.join("src", "thermal_forest.sav")
+THERMAL_MODEL_FILE: str = os.path.join("src", "{}_thermal_forest.sav")
 
 # Transmission inputs file:
 #   The relative path to the transmission inputs file.
@@ -434,18 +452,22 @@ def _parse_conversion_inputs(
     # If the file exists, parse the converters contained.
     if os.path.isfile(conversion_file_relative_path):
         parsed_converters: List[Converter] = []
-        conversion_inputs: List[Dict[str, Any]] = read_yaml(  # type: ignore
+        conversion_inputs: Dict[str, List[Dict[str, Any]]] = read_yaml(  # type: ignore
             conversion_file_relative_path, logger
         )
         if conversion_inputs is not None:
-            if not isinstance(conversion_inputs, list):
+            # Attempt to parse the converter information.
+            if not isinstance(conversion_inputs, dict):
                 logger.error(
-                    "%sThe conversion inputs file must be a `list` of valid converters.%s",
+                    "%sThe conversion inputs file must be a `dict` of valid converters "
+                    "with converters listed under the heading '%s'.%s",
                     BColours.fail,
+                    CONVERTERS,
                     BColours.endc,
                 )
-            if len(conversion_inputs) > 0:
-                for entry in conversion_inputs:
+
+            if len(conversion_inputs[CONVERTERS]) > 0:
+                for entry in conversion_inputs[CONVERTERS]:
                     if not isinstance(entry, dict):
                         logger.error(
                             "%sConverter not of correct format `dict`: %s%s",
@@ -499,7 +521,7 @@ def _parse_conversion_inputs(
                     try:
                         converter_costs[converter] = [
                             entry[COSTS]
-                            for entry in conversion_inputs
+                            for entry in conversion_inputs[CONVERTERS]
                             if entry[NAME] == converter.name
                         ][0]
                     except (KeyError, IndexError):
@@ -516,7 +538,7 @@ def _parse_conversion_inputs(
                     try:
                         converter_emissions[converter] = [
                             entry[EMISSIONS]
-                            for entry in conversion_inputs
+                            for entry in conversion_inputs[CONVERTERS]
                             if entry[NAME] == converter.name
                         ][0]
                     except (KeyError, IndexError):
@@ -534,9 +556,11 @@ def _parse_conversion_inputs(
             else:
                 converters = {}
                 logger.info(
-                    "Conversion file empty, continuing with no defined converters."
+                    "No conversion inputs in file, continuing with no defined converters."
                 )
-
+        else:
+            converters = {}
+            logger.info("Conversion file empty, continuing with no defined converters.")
     else:
         converters = {}
         logger.info("No conversion file, skipping converter parsing.")
@@ -955,11 +979,18 @@ def _parse_exchanger_inputs(
 
 def _parse_pvt_reduced_models(  # pylint: disable=too-many-statements
     debug: bool, logger: Logger, scenarios: List[Scenario]
-) -> Tuple[Any, Any]:
+) -> Tuple[Dict[RegressorType, Lasso], Dict[RegressorType, Lasso]]:
     """
     Parses the PV-T models from the installed package or raw files.
 
+    To improve accuracy, CLOVER uses a series of PV-T models depending on the weather
+    conditions being modelled. Each of these files is parsed and stored on the PV-T
+    panel instance.
+
     Inputs:
+        - debug:
+            Whether CLOVER is being run in debug (a single decision tree regressor) or
+            standard (a random forest regressor) mode.
         - logger:
             The :class:`logging.Logger` to use for the run.
         - scenario:
@@ -971,121 +1002,154 @@ def _parse_pvt_reduced_models(  # pylint: disable=too-many-statements
 
     """
 
+    # Instantiate variables
+    electric_models: Dict[RegressorType, Lasso] = {}
+    thermal_models: Dict[RegressorType, Lasso] = {}
+
     # If any of the scenarios defined specify that PV-T should be used.
     if any(scenario.pv_t for scenario in scenarios):
         # Attempt to read the thermal model file as per CLOVER being an installed
         # package.
         logger.info(
-            "Attempting to read PV-T reduced thermal model from installed package info."
+            "Attempting to read PV-T reduced thermal model(s) from installed package "
+            "info."
         )
-        try:
-            thermal_model: Optional[Any] = pickle.load(
-                pkgutil.get_data(PACKAGE_NAME, THERMAL_MODEL_FILE)  # type: ignore
-            )
-        except (AttributeError, FileNotFoundError, TypeError):
-            logger.info("Failed to read data as if package was installed.")
-
-            # Attempt to read the thermal model file from raw source information.
-            logger.info(
-                "Attempting to read PV-T reduced thermal model from raw source file."
-            )
-            if debug:
-                try:
-                    with open(
-                        os.path.join(RAW_CLOVER_PATH, THERMAL_MODEL_FAST_FILE), "rb"
-                    ) as f:
-                        thermal_model = pickle.load(f)
-                except Exception:
-                    logger.error(
-                        "Failed to read fast PV-T reduced thermal model from raw source."
+        for model_type in RegressorType:
+            try:
+                thermal_model: Optional[Lasso] = pickle.load(
+                    pkgutil.get_data(  # type: ignore
+                        PACKAGE_NAME, THERMAL_MODEL_FILE.format(model_type.value)
                     )
-                    logger.critical("Failed to determine PV-T reduced thermal model.")
-                    raise
+                )
+            except (AttributeError, FileNotFoundError, TypeError):
+                logger.info("Failed to read data as if package was installed.")
+
+                # Attempt to read the thermal model file from raw source information.
+                logger.info(
+                    "Attempting to read PV-T reduced thermal model from raw source file."
+                )
+                if debug:
+                    try:
+                        with open(
+                            os.path.join(
+                                RAW_CLOVER_PATH,
+                                THERMAL_MODEL_FAST_FILE.format(model_type.value),
+                            ),
+                            "rb",
+                        ) as f:
+                            thermal_model = pickle.load(f)
+                    except Exception:
+                        logger.error(
+                            "Failed to read fast PV-T reduced thermal model from raw source."
+                        )
+                        logger.critical(
+                            "Failed to determine PV-T reduced thermal model."
+                        )
+                        raise
+                else:
+                    try:
+                        with open(
+                            os.path.join(
+                                RAW_CLOVER_PATH,
+                                THERMAL_MODEL_FILE.format(model_type.value),
+                            ),
+                            "rb",
+                        ) as f:
+                            thermal_model = pickle.load(f)
+                    except Exception:
+                        logger.error(
+                            "Failed to read PV-T reduced thermal model from raw source."
+                        )
+                        logger.critical(
+                            "Failed to determine PV-T reduced thermal model."
+                        )
+                        raise
+                logger.info(
+                    "Successfully read PV-T reduced thermal model from local source."
+                )
 
             else:
-                try:
-                    with open(
-                        os.path.join(RAW_CLOVER_PATH, THERMAL_MODEL_FILE), "rb"
-                    ) as f:
-                        thermal_model = pickle.load(f)
-                except Exception:
-                    logger.error(
-                        "Failed to read PV-T reduced thermal model from raw source."
+                logger.info(
+                    "Successfully read PV-T reduced thermal model from installed package "
+                    "file."
+                )
+
+            logger.info("PV-T reduced thermal model file successfully read.")
+
+            # Read the electric model.
+            logger.info(
+                "Attempting to read PV-T reduced electric model from installed package info."
+            )
+            try:
+                # Attempt to read the electric model file as per CLOVER being an installed
+                # package.
+                electric_model: Optional[Lasso] = pickle.load(
+                    pkgutil.get_data(  # type: ignore
+                        PACKAGE_NAME, ELECTRIC_MODEL_FILE.format(model_type.value)
                     )
-                    logger.critical("Failed to determine PV-T reduced thermal model.")
-                    raise
-            logger.info(
-                "Successfully read PV-T reduced thermal model from local source."
-            )
+                )
+            except (AttributeError, FileNotFoundError, TypeError):
+                logger.info("Failed to read data as if package was installed.")
 
-        else:
-            logger.info(
-                "Successfully read PV-T reduced thermal model from installed package "
-                "file."
-            )
+                # Attempt to read the electric model from raw source information.
+                logger.info(
+                    "Attempting to read PV-T reduced electric model from raw source file."
+                )
+                if debug:
+                    try:
+                        with open(
+                            os.path.join(
+                                RAW_CLOVER_PATH,
+                                ELECTRIC_MODEL_FAST_FILE.format(model_type.value),
+                            ),
+                            "rb",
+                        ) as f:
+                            electric_model = pickle.load(f)
+                    except Exception:
+                        logger.error(
+                            "Failed to read fast PV-T reduced electric model from raw "
+                            "source."
+                        )
+                        logger.critical(
+                            "Failed to determine PV-T reduced electric model."
+                        )
+                        raise
+                else:
+                    try:
+                        with open(
+                            os.path.join(
+                                RAW_CLOVER_PATH,
+                                ELECTRIC_MODEL_FILE.format(model_type.value),
+                            ),
+                            "rb",
+                        ) as f:
+                            electric_model = pickle.load(f)
+                    except Exception:
+                        logger.error(
+                            "Failed to read PV-T reduced electric model from raw source."
+                        )
+                        logger.critical(
+                            "Failed to determine PV-T reduced electric model."
+                        )
+                        raise
 
-        logger.info("PV-T reduced thermal model file successfully read.")
+                logger.info(
+                    "Successfully read %s PV-T reduced electric model from local "
+                    "source.",
+                    model_type.value,
+                )
 
-        # Read the electric model.
-        logger.info(
-            "Attempting to read PV-T reduced electric model from installed package info."
-        )
-        try:
-            # Attempt to read the electric model file as per CLOVER being an installed
-            # package.
-            electric_model: Optional[Any] = pickle.load(
-                pkgutil.get_data(PACKAGE_NAME, ELECTRIC_MODEL_FILE)  # type: ignore
-            )
-        except (AttributeError, FileNotFoundError, TypeError):
-            logger.info("Failed to read data as if package was installed.")
+                thermal_models[model_type] = thermal_model
+                electric_models[model_type] = electric_model
 
-            # Attempt to read the electric model from raw source information.
-            logger.info(
-                "Attempting to read PV-T reduced electric model from raw source file."
-            )
-            if debug:
-                try:
-                    with open(
-                        os.path.join(RAW_CLOVER_PATH, ELECTRIC_MODEL_FAST_FILE), "rb"
-                    ) as f:
-                        electric_model = pickle.load(f)
-                except Exception:
-                    logger.error(
-                        "Failed to read fast PV-T reduced electric model from raw "
-                        "source."
-                    )
-                    logger.critical("Failed to determine PV-T reduced electric model.")
-                    raise
             else:
-                try:
-                    with open(
-                        os.path.join(RAW_CLOVER_PATH, ELECTRIC_MODEL_FILE), "rb"
-                    ) as f:
-                        electric_model = pickle.load(f)
-                except Exception:
-                    logger.error(
-                        "Failed to read PV-T reduced electric model from raw source."
-                    )
-                    logger.critical("Failed to determine PV-T reduced electric model.")
-                    raise
+                logger.info(
+                    "Successfully read PV-T reduced electric model from installed package file."
+                )
 
-            logger.info(
-                "Successfully read PV-T reduced electric model from local source."
-            )
+            logger.info("PV-T reduced electric model file successfully read.")
 
-        else:
-            logger.info(
-                "Successfully read PV-T reduced electric model from installed package file."
-            )
-
-        logger.info("PV-T reduced electric model file successfully read.")
-
-    # If there is no PV-T being used in the system, do not attempt to read the files.
-    else:
-        thermal_model = None
-        electric_model = None
-
-    return electric_model, thermal_model
+    return electric_models, thermal_models
 
 
 def parse_scenario_inputs(
@@ -1266,6 +1330,9 @@ def _parse_solar_inputs(  # pylint: disable=too-many-locals, too-many-statements
     Optional[Dict[str, float]],
     Optional[Dict[str, float]],
     str,
+    Optional[solar.SolarThermalPanel],
+    Optional[Dict[str, float]],
+    Optional[Dict[str, float]],
 ]:
     """
     Parses the solar inputs file.
@@ -1292,6 +1359,9 @@ def _parse_solar_inputs(  # pylint: disable=too-many-locals, too-many-statements
         - The pv-t-panel cost information, if relevant;
         - The pv-t-panel emissions information, if relevant;
         - The relative path to the solar generation inputs filepath.
+        - The :class:`SolarThermalPanel` being used for the run, if relevant;
+        - The solar-thermal-panel cost information, if relevant;
+        - The solar-thermal-panel emissions information, if relevant;
 
     """
 
@@ -1313,22 +1383,34 @@ def _parse_solar_inputs(  # pylint: disable=too-many-locals, too-many-statements
     # Parse the PV-panel information.
     solar_panels: List[solar.SolarPanel] = []
     for panel_input in solar_generation_inputs["panels"]:
-        if panel_input["type"] == solar.SolarPanelType.PV.value:
+        if panel_input["type"] == SolarPanelType.PV.value:
             solar_panels.append(solar.PVPanel.from_dict(logger, panel_input))
 
     # Parse the PV-T models if relevant for the code flow.
-    electric_model, thermal_model = _parse_pvt_reduced_models(debug, logger, scenarios)
+    electric_models, thermal_models = _parse_pvt_reduced_models(
+        debug, logger, scenarios
+    )
 
     # Parse the PV-T panel information
     for panel_input in solar_generation_inputs["panels"]:
-        if panel_input["type"] == solar.SolarPanelType.PV_T.value:
+        if panel_input["type"] == SolarPanelType.PV_T.value:
             solar_panels.append(
                 solar.HybridPVTPanel(
-                    electric_model,
+                    electric_models,
                     logger,
                     panel_input,
                     solar_panels,
-                    thermal_model,
+                    thermal_models,
+                )
+            )
+
+    # Parse the solar-thermal panel information
+    for panel_input in solar_generation_inputs["panels"]:
+        if panel_input["type"] == SolarPanelType.SOLAR_THERMAL.value:
+            solar_panels.append(
+                solar.SolarThermalPanel.from_dict(
+                    logger,
+                    panel_input,
                 )
             )
 
@@ -1337,14 +1419,14 @@ def _parse_solar_inputs(  # pylint: disable=too-many-locals, too-many-statements
         pv_panel: Union[solar.PVPanel, solar.SolarPanel] = [
             panel
             for panel in solar_panels
-            if panel.panel_type == solar.SolarPanelType.PV  # type: ignore
-            and panel.name == energy_system_inputs["pv_panel"]
+            if panel.panel_type == SolarPanelType.PV  # type: ignore
+            and panel.name == energy_system_inputs[PV_PANEL]
         ][0]
     except IndexError:
         logger.error(
             "%sPV panel %s not found in pv panel inputs.%s",
             BColours.fail,
-            energy_system_inputs["pv_panel"],
+            energy_system_inputs[PV_PANEL],
             BColours.endc,
         )
         raise
@@ -1371,7 +1453,7 @@ def _parse_solar_inputs(  # pylint: disable=too-many-locals, too-many-statements
         logger.error(
             "%sFailed to determine costs for PV panel %s.%s",
             BColours.fail,
-            energy_system_inputs["pv_panel"],
+            energy_system_inputs[PV_PANEL],
             BColours.endc,
         )
         raise
@@ -1389,7 +1471,7 @@ def _parse_solar_inputs(  # pylint: disable=too-many-locals, too-many-statements
         logger.error(
             "%sFailed to determine emissions for PV panel %s.%s",
             BColours.fail,
-            energy_system_inputs["pv_panel"],
+            energy_system_inputs[PV_PANEL],
             BColours.endc,
         )
         raise
@@ -1397,20 +1479,20 @@ def _parse_solar_inputs(  # pylint: disable=too-many-locals, too-many-statements
         logger.info("PV panel emissions successfully determined.")
 
     # Determine the PVT panel being modelled, if appropriate.
-    if "pvt_panel" in energy_system_inputs:
+    if PV_T_PANEL in energy_system_inputs:
         try:
             pvt_panel: Optional[Union[solar.HybridPVTPanel, solar.SolarPanel]] = [
                 panel
                 for panel in solar_panels
-                if panel.panel_type == solar.SolarPanelType.PV_T  # type: ignore
-                and panel.name == energy_system_inputs["pvt_panel"]
+                if panel.panel_type == SolarPanelType.PV_T  # type: ignore
+                and panel.name == energy_system_inputs[PV_T_PANEL]
             ][0]
             logger.info("PV-T panel successfully determined.")
         except IndexError:
             logger.error(
                 "%sPV-T panel %s not found in pv panel inputs.%s",
                 BColours.fail,
-                energy_system_inputs["pvt_panel"],
+                energy_system_inputs[PV_T_PANEL],
                 BColours.endc,
             )
             raise
@@ -1430,7 +1512,7 @@ def _parse_solar_inputs(  # pylint: disable=too-many-locals, too-many-statements
             logger.error(
                 "%sThe PV-T panel selected %s is not a valid PV-T panel.%s",
                 BColours.fail,
-                energy_system_inputs["pv_panel"],
+                energy_system_inputs[PV_PANEL],
                 BColours.endc,
             )
             raise InputFileError(
@@ -1450,7 +1532,7 @@ def _parse_solar_inputs(  # pylint: disable=too-many-locals, too-many-statements
             logger.error(
                 "%sFailed to determine costs for PV-T panel %s.%s",
                 BColours.fail,
-                energy_system_inputs["pvt_panel"],
+                energy_system_inputs[PV_T_PANEL],
                 BColours.endc,
             )
             raise
@@ -1466,7 +1548,7 @@ def _parse_solar_inputs(  # pylint: disable=too-many-locals, too-many-statements
             logger.error(
                 "%sFailed to determine emissions for PV-T panel %s.%s",
                 BColours.fail,
-                energy_system_inputs["pvt_panel"],
+                energy_system_inputs[PV_T_PANEL],
                 BColours.endc,
             )
             raise
@@ -1477,6 +1559,94 @@ def _parse_solar_inputs(  # pylint: disable=too-many-locals, too-many-statements
         pvt_panel_costs = None
         pvt_panel_emissions = None
 
+    # Determine the solar-thermal panel being modelled, if appropriate.
+    if SOLAR_THERMAL_PANEL in energy_system_inputs:
+        try:
+            solar_thermal_panel: Optional[
+                Union[solar.SolarThermalPanel, solar.SolarPanel]
+            ] = [
+                panel
+                for panel in solar_panels
+                if panel.panel_type == SolarPanelType.SOLAR_THERMAL  # type: ignore
+                and panel.name == energy_system_inputs[SOLAR_THERMAL_PANEL]
+            ][
+                0
+            ]
+            logger.info("Solar-thermal panel successfully determined.")
+        except IndexError:
+            logger.error(
+                "%sSolar-thermal panel %s not found in pv panel inputs.%s",
+                BColours.fail,
+                energy_system_inputs[PV_T_PANEL],
+                BColours.endc,
+            )
+            raise
+
+        if solar_thermal_panel is None:
+            logger.error(
+                "%sThe solar-thermal panel selected caused an internal error when "
+                "determining the relevant panel data.%s",
+                BColours.fail,
+                BColours.endc,
+            )
+            raise InternalError(
+                "The solar-thermal panel selected was found but the information "
+                "concerning it was not successfully parsed."
+            )
+        if not isinstance(solar_thermal_panel, solar.SolarThermalPanel):
+            logger.error(
+                "%sThe solar-thermal panel selected %s is not a valid solar-thermal "
+                "panel.%s",
+                BColours.fail,
+                energy_system_inputs[SOLAR_THERMAL_PANEL],
+                BColours.endc,
+            )
+            raise InputFileError(
+                "solar inputs OR energy system inputs",
+                "The solar-thermal panel selected is not a valid SolarThermalPanel.",
+            )
+
+        logger.info(
+            "Solar-thermal panel successfully parsed: %s.", solar_thermal_panel.name
+        )
+
+        try:
+            solar_thermal_panel_costs: Optional[Dict[str, float]] = [
+                panel_data[COSTS]
+                for panel_data in solar_generation_inputs["panels"]
+                if panel_data[NAME] == solar_thermal_panel.name
+            ][0]
+        except (KeyError, IndexError):
+            logger.error(
+                "%sFailed to determine costs for solar-thermal panel %s.%s",
+                BColours.fail,
+                energy_system_inputs[SOLAR_THERMAL_PANEL],
+                BColours.endc,
+            )
+            raise
+        else:
+            logger.info("Solar-thermal panel costs successfully determined.")
+        try:
+            solar_thermal_panel_emissions: Optional[Dict[str, float]] = [
+                panel_data[EMISSIONS]
+                for panel_data in solar_generation_inputs["panels"]
+                if panel_data[NAME] == solar_thermal_panel.name
+            ][0]
+        except (KeyError, IndexError):
+            logger.error(
+                "%sFailed to determine emissions for solar-thermal panel %s.%s",
+                BColours.fail,
+                energy_system_inputs[SOLAR_THERMAL_PANEL],
+                BColours.endc,
+            )
+            raise
+        else:
+            logger.info("Solar-thermal panel emissions successfully determined.")
+    else:
+        solar_thermal_panel = None
+        solar_thermal_panel_costs = None
+        solar_thermal_panel_emissions = None
+
     return (
         pv_panel,
         pv_panel_costs,
@@ -1485,6 +1655,9 @@ def _parse_solar_inputs(  # pylint: disable=too-many-locals, too-many-statements
         pvt_panel_costs,
         pvt_panel_emissions,
         solar_generation_inputs_filepath,
+        solar_thermal_panel,
+        solar_thermal_panel_costs,
+        solar_thermal_panel_emissions,
     )
 
 
@@ -1500,8 +1673,8 @@ def _parse_tank_inputs(  # pylint: disable=too-many-statements
     Optional[Dict[str, float]],
     Optional[Dict[str, float]],
     Optional[Dict[str, float]],
-    List[Dict[str, Any]],
-    str,
+    Optional[List[Dict[str, Any]]],
+    Optional[str],
 ]:
     """
     Parses the tank inputs file.
@@ -1528,6 +1701,11 @@ def _parse_tank_inputs(  # pylint: disable=too-many-statements
         - The tank inputs filepath.
 
     """
+
+    if all(scenario.desalination_scenario is None for scenario in scenarios) and all(
+        scenario.hot_water_scenario is None for scenario in scenarios
+    ):
+        return None, None, None, None, None, None, None, None
 
     # Parse the tank input information.
     tank_inputs_filepath = os.path.join(
@@ -1658,8 +1836,10 @@ def _parse_tank_inputs(  # pylint: disable=too-many-statements
             raise
         except KeyError:
             logger.error(
-                "Failed to determine hot-water tank from the energy-system inputs "
-                "file."
+                "%sFailed to determine hot-water tank from the energy-system inputs "
+                "file OR failed to determine cost information for the tank.%s",
+                BColours.fail,
+                BColours.endc,
             )
             raise
         else:
@@ -1735,6 +1915,8 @@ def _parse_minigrid_inputs(  # pylint: disable=too-many-locals, too-many-stateme
     Optional[Dict[str, float]],
     Optional[Dict[str, float]],
     str,
+    Optional[Dict[str, float]],
+    Optional[Dict[str, float]],
     Optional[str],
     Dict[str, Dict[str, float]],
     Dict[str, Dict[str, float]],
@@ -1779,6 +1961,8 @@ def _parse_minigrid_inputs(  # pylint: disable=too-many-locals, too-many-stateme
         - PV-T costs,
         - PV-T emissions,
         - Solar inputs filepath,
+        - Solar-thermal panel costs,
+        - Solar-thermal panel emissions,
         - Tank inputs filepath,
         - Transmission costs,
         - Transmission emissions,
@@ -1832,6 +2016,9 @@ def _parse_minigrid_inputs(  # pylint: disable=too-many-locals, too-many-stateme
     pvt_panel_costs: Optional[Dict[str, float]]
     pvt_panel_emissions: Optional[Dict[str, float]]
     solar_generation_inputs_filepath: str
+    solar_thermal_panel: Optional[solar.SolarThermalPanel]
+    solar_thermal_panel_costs: Optional[Dict[str, float]]
+    solar_thermal_panel_emissions: Optional[Dict[str, float]]
     (
         pv_panel,
         pv_panel_costs,
@@ -1840,6 +2027,9 @@ def _parse_minigrid_inputs(  # pylint: disable=too-many-locals, too-many-stateme
         pvt_panel_costs,
         pvt_panel_emissions,
         solar_generation_inputs_filepath,
+        solar_thermal_panel,
+        solar_thermal_panel_costs,
+        solar_thermal_panel_emissions,
     ) = _parse_solar_inputs(
         debug,
         energy_system_inputs,
@@ -1981,6 +2171,7 @@ def _parse_minigrid_inputs(  # pylint: disable=too-many-locals, too-many-stateme
         energy_system_inputs,
         pv_panel,
         pvt_panel,
+        solar_thermal_panel,
         battery_inputs,
         exchanger_inputs,
         tank_inputs,
@@ -2043,6 +2234,8 @@ def _parse_minigrid_inputs(  # pylint: disable=too-many-locals, too-many-stateme
         pvt_panel_costs,
         pvt_panel_emissions,
         solar_generation_inputs_filepath,
+        solar_thermal_panel_costs,
+        solar_thermal_panel_emissions,
         tank_inputs_filepath,
         transmission_costs,
         transmission_emissions,
@@ -2401,6 +2594,8 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
         pvt_panel_costs,
         pvt_panel_emissions,
         solar_generation_inputs_filepath,
+        solar_thermal_panel_costs,
+        solar_thermal_panel_emissions,
         tank_inputs_filepath,
         transmission_costs,
         transmission_emissions,
@@ -2605,7 +2800,23 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
         logger.info("No battery present, skipping impact data.")
 
     if minigrid.pvt_panel is not None and any(scenario.pv_t for scenario in scenarios):
-        if pvt_panel_costs is None or pvt_panel_emissions is None:
+        if pvt_panel_costs is None:
+            logger.error(
+                "%sPV-T panel costs are `None` despite a PV-T collector being requested"
+                ".%s",
+                BColours.fail,
+                BColours.endc,
+            )
+            raise InternalError(
+                "Error processing solar-thermal panel cost and emissions."
+            )
+        if pvt_panel_emissions is None:
+            logger.error(
+                "%sPV-T panel emissions are `None` despite a PV-T collector being "
+                "requested.%s",
+                BColours.fail,
+                BColours.endc,
+            )
             raise InternalError("Error processing PV-T panel cost and emissions.")
         finance_inputs[ImpactingComponent.PV_T.value] = defaultdict(
             float, pvt_panel_costs
@@ -2616,6 +2827,41 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
     else:
         logger.info("PV-T disblaed in scenario file, skipping PV-T impact parsing.")
 
+    if minigrid.solar_thermal_panel is not None and any(
+        scenario.solar_thermal for scenario in scenarios
+    ):
+        if solar_thermal_panel_costs is None:
+            logger.error(
+                "%sSolar-thermal panel costs are `None` despite a solar-thermal "
+                "collector being requested.%s",
+                BColours.fail,
+                BColours.endc,
+            )
+            raise InternalError(
+                "Error processing solar-thermal panel cost and emissions."
+            )
+        if solar_thermal_panel_emissions is None:
+            logger.error(
+                "%sSolar-thermal panel emissions are `None` despite a solar-thermal "
+                "collector being requested.%s",
+                BColours.fail,
+                BColours.endc,
+            )
+            raise InternalError(
+                "Error processing solar-thermal panel cost and emissions."
+            )
+        finance_inputs[ImpactingComponent.SOLAR_THERMAL.value] = defaultdict(
+            float, solar_thermal_panel_costs
+        )
+        ghg_inputs[ImpactingComponent.SOLAR_THERMAL.value] = defaultdict(
+            float, solar_thermal_panel_emissions
+        )
+    else:
+        logger.info(
+            "Solar-thermal disblaed in scenario file, skipping solar-thermal impact "
+            "parsing."
+        )
+
     # Add transmitter impacts.
     for converter in converters.values():
         logger.info("Updating with %s impact data.", converter.name)
@@ -2623,12 +2869,22 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
             FINANCE_IMPACT.format(
                 type=ImpactingComponent.CONVERTER.value, name=converter.name
             )
-        ] = defaultdict(float, converter_costs[converter])
+        ] = defaultdict(
+            float,
+            converter_costs[converter]
+            if converter_costs[converter] is not None
+            else {},
+        )
         ghg_inputs[
             GHG_IMPACT.format(
                 type=ImpactingComponent.CONVERTER.value, name=converter.name
             )
-        ] = defaultdict(float, converter_emissions[converter])
+        ] = defaultdict(
+            float,
+            converter_emissions[converter]
+            if converter_emissions[converter] is not None
+            else {},
+        )
         logger.info("Converter %s impact data successfully updated.", converter.name)
 
     # Add transmitter impacts.
@@ -2649,7 +2905,16 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
     # Add desalination-specific impacts.
     if any(
         scenario.desalination_scenario is not None
-        and scenario.desalination_scenario.pvt_scenario.heats == HTFMode.CLOSED_HTF
+        and (
+            scenario.desalination_scenario.pvt_scenario.heats == HTFMode.CLOSED_HTF
+            if scenario.desalination_scenario.pvt_scenario is not None
+            else (
+                scenario.desalination_scenario.solar_thermal_scenario.heats
+                == HTFMode.CLOSED_HTF
+                if scenario.desalination_scenario.solar_thermal_scenario is not None
+                else False
+            )
+        )
         for scenario in scenarios
     ):
         # Update the clean-water tank impacts.
@@ -2763,20 +3028,25 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
         # Update the hot-water tank impacts.
         logger.info("Updating with hot-water tank impact data.")
         finance_inputs[ImpactingComponent.HOT_WATER_TANK.value] = defaultdict(
-            float, hot_water_tank_costs  # type: ignore
+            float, hot_water_tank_costs if hot_water_tank_costs is not None else {}
         )
         ghg_inputs[ImpactingComponent.HOT_WATER_TANK.value] = defaultdict(
-            float, hot_water_tank_emissions  # type: ignore
+            float,
+            hot_water_tank_emissions if hot_water_tank_emissions is not None else {},
         )
         logger.info("Hot-water tank impact data successfully updated.")
 
         # Update the diesel water-heater impacts.
         logger.info("Updating with diesel water-heater impact data.")
         finance_inputs[ImpactingComponent.DIESEL_WATER_HEATER.value] = defaultdict(
-            float, diesel_water_heater_costs  # type: ignore
+            float,
+            diesel_water_heater_costs if diesel_water_heater_costs is not None else {},
         )
         ghg_inputs[ImpactingComponent.DIESEL_WATER_HEATER.value] = defaultdict(
-            float, diesel_water_heater_emissions  # type: ignore
+            float,
+            diesel_water_heater_emissions
+            if diesel_water_heater_emissions is not None
+            else {},
         )
         logger.info("Diesel water-heater impact data successfully updated.")
 
@@ -2809,7 +3079,16 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
 
     if any(
         scenario.desalination_scenario is not None
-        and scenario.desalination_scenario.pvt_scenario.heats == HTFMode.CLOSED_HTF
+        and (
+            scenario.desalination_scenario.pvt_scenario.heats == HTFMode.CLOSED_HTF
+            if scenario.desalination_scenario.pvt_scenario is not None
+            else (
+                scenario.desalination_scenario.solar_thermal_scenario.heats
+                == HTFMode.CLOSED_HTF
+                if scenario.desalination_scenario.solar_thermal_scenario is not None
+                else False
+            )
+        )
         for scenario in scenarios
     ):
         input_file_info["desalination_scenario"] = desalination_scenario_inputs_filepath

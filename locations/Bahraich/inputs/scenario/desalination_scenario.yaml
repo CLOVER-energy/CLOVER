@@ -1,0 +1,33 @@
+---
+################################################################################
+# desalination_scenario.yaml - Desalination and PV-T specific scenario params. #
+#                                                                              #
+# Author: Phil Sandwell, Ben Winchester                                        #
+# Copyright: Phil Sandwell & Ben Winchester, 2021                              #
+# Date created: 11/11/2021                                                     #
+# License: Open source                                                         #
+################################################################################
+
+desalination_scenarios:
+  - name: default
+    clean_water:
+      mode: backup # "backup", "prioritise" or "thermal_only"
+      conventional_sources:
+        - river
+      sources: # defined within the 'conversion_inputs.yaml' file
+        - reverse_osmosis
+    feedwater:
+      sources:
+        - bore_hole # defined within the 'conversion_inputs.yaml' file
+        - bore_hole
+        - bore_hole
+        - bore_hole
+        - bore_hole
+      supply_temperature: 10 # [degC]
+    solar_thermal_collector_scenarios:
+      - type: solar_thermal
+        heats: htf
+        mass_flow_rate: 72 # [litres/hour]
+      - type: pv_t
+        heats: cold_water
+        mass_flow_rate: 72 # [litres/hour]

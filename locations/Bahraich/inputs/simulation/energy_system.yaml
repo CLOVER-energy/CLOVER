@@ -22,3 +22,5 @@ diesel_generator: default_diesel
 # hot_water_tank: hot_water_tank
 pv_panel: default_pv
 # pvt_panel: default_pvt
+# solar_thermal: default_solar_thermal
+# water_pump: default_water_pump

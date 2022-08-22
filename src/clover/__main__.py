@@ -17,7 +17,7 @@ the clover module from the command-line interface.
 
 """
 
-__version__ = "5.0.5"
+__version__ = "5.1.1a1"
 
 import datetime
 import logging
@@ -58,7 +58,6 @@ from .__utils__ import (
     InternalError,
     Location,
     ResourceType,
-    SystemAppraisal,
     get_logger,
     InputFileError,
     LOCATIONS_FOLDER_NAME,
@@ -617,7 +616,13 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
         + (1 if any(scenario.pv_t for scenario in scenarios) else 0)
         + (
             1
-            if any(scenario.desalination_scenario for scenario in scenarios) is not None
+            if (
+                any(scenario.desalination_scenario for scenario in scenarios)
+                is not None
+                or any(
+                    scenario.hot_water_scenario is not None for scenario in scenarios
+                )
+            )
             else 0
         )
     )
@@ -645,7 +650,9 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
         wind_data_thread = None
 
     # Generate and save the weather data for each year as a background task.
-    if any(scenario.desalination_scenario is not None for scenario in scenarios):
+    if any(scenario.desalination_scenario is not None for scenario in scenarios) or any(
+        scenario.hot_water_scenario is not None for scenario in scenarios
+    ):
         # Set up the system to call renewables.ninja at a slower rate.
         logger.info("Begining weather-data fetching.")
         weather_data_thread: Optional[
@@ -741,7 +748,6 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
 
     if any(scenario.desalination_scenario is not None for scenario in scenarios):
         # Create a set of all the conventional clean-water sources available.
-        # @ BenWinchester - Repair conventional sources logic.
         conventional_sources: Set[str] = {
             source
             for scenario in scenarios
@@ -776,7 +782,6 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
 
     if any(scenario.hot_water_scenario is not None for scenario in scenarios):
         # Create a set of all the conventional hot-water sources available.
-        # @ BenWinchester - Repair conventional sources logic.
         conventional_sources = {
             source
             for scenario in scenarios
@@ -990,6 +995,9 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
                     parsed_args.clean_water_pvt_system_size
                     if parsed_args.clean_water_pvt_system_size is not None
                     else 0,
+                    parsed_args.clean_water_solar_thermal_system_size
+                    if parsed_args.clean_water_solar_thermal_system_size is not None
+                    else 0,
                     conventional_cw_source_profiles,
                     converters,
                     disable_tqdm,
@@ -997,6 +1005,9 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
                     grid_profile,
                     parsed_args.hot_water_pvt_system_size
                     if parsed_args.hot_water_pvt_system_size is not None
+                    else 0,
+                    parsed_args.hot_water_solar_thermal_system_size
+                    if parsed_args.hot_water_solar_thermal_system_size is not None
                     else 0,
                     total_solar_data[solar.SolarDataType.TOTAL_IRRADIANCE.value],
                     kerosene_usage,
@@ -1077,7 +1088,7 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
                         "No electric yearly load statistics were computed for the "
                         "system despite these being needed to appraise the system."
                     )
-                system_appraisal: Optional[SystemAppraisal] = appraise_system(
+                system_appraisal = appraise_system(
                     electric_yearly_load_statistics,
                     simulation.end_year,
                     finance_inputs,
@@ -1085,6 +1096,7 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
                     location,
                     logger,
                     None,
+                    scenario,
                     system_performance_outputs,
                     simulation.start_year,
                     system_details,

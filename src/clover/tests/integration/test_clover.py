@@ -385,7 +385,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
         )
         self.assertEqual(
             info_file_data["simulation_1"]["system_appraisal"]["criteria"][
-                "unmet_energy_fraction"
+                "unmet_electricity_fraction"
             ],
             unmet_energy_fraction,
         )
@@ -458,7 +458,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
             info_file_data["simulation_1"]["initial_storage_size"], initial_storage_size
         )
 
-    @pytest.mark.integrest
+    @pytest.mark.integtest
     def test_grid_prioritise_diesel_grid_pv_and_storage(self):
         """
         Tests the case with diesel, grid, PV and storage.
@@ -500,7 +500,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
             unmet_energy_fraction=0.031,
         )
 
-    @pytest.mark.integrest
+    @pytest.mark.integtest
     def test_grid_prioritise_diesel_grid_and_pv(self):
         """
         Tests the case with diesel, grid and PV.
@@ -535,7 +535,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
             unmet_energy_fraction=0.062,
         )
 
-    @pytest.mark.integrest
+    @pytest.mark.integtest
     def test_grid_prioritise_diesel_grid_and_storage(self):
         """
         Tests the case with diesel, grid and storage.
@@ -570,7 +570,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
             unmet_energy_fraction=0.026,
         )
 
-    @pytest.mark.integrest
+    @pytest.mark.integtest
     def test_grid_prioritise_diesel_and_grid(self):
         """
         Tests the case with diesel and grid.
@@ -604,7 +604,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
             unmet_energy_fraction=0.026,
         )
 
-    @pytest.mark.integrest
+    @pytest.mark.integtest
     def test_grid_prioritise_diesel_pv_and_storage(self):
         """
         Tests the case with diesel, PV and storage.
@@ -646,7 +646,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
             unmet_energy_fraction=0.084,
         )
 
-    @pytest.mark.integrest
+    @pytest.mark.integtest
     def test_grid_prioritise_diesel_and_pv(self):
         """
         Tests the case with diesel and PV.
@@ -681,7 +681,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
             unmet_energy_fraction=0.045,
         )
 
-    @pytest.mark.integrest
+    @pytest.mark.integtest
     def test_grid_prioritise_diesel_and_storage(self):
         """
         Tests the case with diesel and storage.
@@ -716,7 +716,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
             unmet_energy_fraction=0.021,
         )
 
-    @pytest.mark.integrest
+    @pytest.mark.integtest
     def test_grid_prioritise_diesel_only(self):
         """
         Tests the case with diesel only.
@@ -750,7 +750,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
             unmet_energy_fraction=0.021,
         )
 
-    @pytest.mark.integrest
+    @pytest.mark.integtest
     def test_grid_prioritise_grid_pv_and_storage(self):
         """
         Tests the case with grid, PV and storage.
@@ -792,7 +792,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
             unmet_energy_fraction=0.031,
         )
 
-    @pytest.mark.integrest
+    @pytest.mark.integtest
     def test_grid_prioritise_grid_and_pv(self):
         """
         Tests the case with grid and PV.
@@ -827,7 +827,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
             unmet_energy_fraction=0.411,
         )
 
-    @pytest.mark.integrest
+    @pytest.mark.integtest
     def test_grid_prioritise_grid_and_storage(self):
         """
         Tests the case with grid and storage.
@@ -862,7 +862,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
             unmet_energy_fraction=0.618,
         )
 
-    @pytest.mark.integrest
+    @pytest.mark.integtest
     def test_grid_prioritise_grid_only(self):
         """
         Tests the case with only grid.
@@ -896,7 +896,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
             unmet_energy_fraction=0.618,
         )
 
-    @pytest.mark.integrest
+    @pytest.mark.integtest
     def test_grid_prioritise_pv_and_storage(self):
         """
         Tests the case with PV and storage.
@@ -939,7 +939,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
             unmet_energy_fraction=0.196,
         )
 
-    @pytest.mark.integrest
+    @pytest.mark.integtest
     def test_grid_prioritise_pv_only(self):
         """
         Tests the case with only PV.
@@ -1010,7 +1010,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
         )
 
     @unittest.skip("No need to test scenario with no power generation sources.")
-    # @pytest.mark.integrest
+    # @pytest.mark.integtest
     def test_grid_prioritise_no_diesel_no_grid_no_pv_no_storage(self):
         """
         Tests the case with diesel, grid, PV and storage.
@@ -1023,7 +1023,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
             False, False, False, False, prioritise_self_generation=False
         )
 
-    @pytest.mark.integrest
+    @pytest.mark.integtest
     def test_self_prioritise_diesel_grid_pv_and_storage(self):
         """
         Tests the case with diesel, grid, PV and storage.
@@ -1064,7 +1064,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
             unmet_energy_fraction=0.032,
         )
 
-    @pytest.mark.integrest
+    @pytest.mark.integtest
     def test_self_prioritise_diesel_grid_and_pv(self):
         """
         Tests the case with diesel, grid and PV.
@@ -1099,7 +1099,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
             unmet_energy_fraction=0.062,
         )
 
-    @pytest.mark.integrest
+    @pytest.mark.integtest
     def test_self_prioritise_diesel_grid_and_storage(self):
         """
         Tests the case with diesel, grid and storage.
@@ -1134,7 +1134,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
             unmet_energy_fraction=0.026,
         )
 
-    @pytest.mark.integrest
+    @pytest.mark.integtest
     def test_self_prioritise_diesel_and_grid(self):
         """
         Tests the case with diesel and grid.
@@ -1166,7 +1166,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
             unmet_energy_fraction=0.026,
         )
 
-    @pytest.mark.integrest
+    @pytest.mark.integtest
     def test_self_prioritise_diesel_pv_and_storage(self):
         """
         Tests the case with diesel, PV and storage.
@@ -1207,7 +1207,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
             unmet_energy_fraction=0.084,
         )
 
-    @pytest.mark.integrest
+    @pytest.mark.integtest
     def test_self_prioritise_diesel_and_pv(self):
         """
         Tests the case with diesel and PV.
@@ -1242,7 +1242,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
             unmet_energy_fraction=0.045,
         )
 
-    @pytest.mark.integrest
+    @pytest.mark.integtest
     def test_self_prioritise_diesel_and_storage(self):
         """
         Tests the case with diesel and storage.
@@ -1277,7 +1277,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
             unmet_energy_fraction=0.021,
         )
 
-    @pytest.mark.integrest
+    @pytest.mark.integtest
     def test_self_prioritise_diesel_only(self):
         """
         Tests the case with diesel only.
@@ -1309,7 +1309,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
             unmet_energy_fraction=0.021,
         )
 
-    @pytest.mark.integrest
+    @pytest.mark.integtest
     def test_self_prioritise_grid_pv_and_storage(self):
         """
         Tests the case with grid, PV and storage.
@@ -1350,7 +1350,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
             unmet_energy_fraction=0.032,
         )
 
-    @pytest.mark.integrest
+    @pytest.mark.integtest
     def test_self_prioritise_grid_and_pv(self):
         """
         Tests the case with grid and PV.
@@ -1385,7 +1385,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
             unmet_energy_fraction=0.411,
         )
 
-    @pytest.mark.integrest
+    @pytest.mark.integtest
     def test_self_prioritise_grid_and_storage(self):
         """
         Tests the case with grid and storage.
@@ -1420,7 +1420,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
             unmet_energy_fraction=0.618,
         )
 
-    @pytest.mark.integrest
+    @pytest.mark.integtest
     def test_self_prioritise_grid_only(self):
         """
         Tests the case with only grid.
@@ -1452,7 +1452,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
             unmet_energy_fraction=0.618,
         )
 
-    @pytest.mark.integrest
+    @pytest.mark.integtest
     def test_self_prioritise_pv_and_storage(self):
         """
         Tests the case with PV and storage.
@@ -1494,7 +1494,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
             unmet_energy_fraction=0.196,
         )
 
-    @pytest.mark.integrest
+    @pytest.mark.integtest
     def test_self_prioritise_pv_only(self):
         """
         Tests the case with only PV.
@@ -1565,7 +1565,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
         )
 
     @unittest.skip("No need to test scenario with no power generation sources.")
-    # @pytest.mark.integrest
+    # @pytest.mark.integtest
     def test_self_prioritise_no_diesel_no_grid_no_pv_no_storage(self):
         """
         Tests the case with diesel, grid, PV and storage.
