@@ -274,8 +274,12 @@ def _find_deficit_threshold(
             Desired level of reliability after diesel backup
         - blackouts:
             Current blackout profile before diesel backup
+        - diesel_mode:
+            The diesel mode used in the scenario inputs file
         - unmet_energy:
             Load profile of currently unment energy
+        - total_electric_load:
+            The total electric load placed on the system (kWh).
 
     Outputs:
         - energy_threshold:
@@ -314,8 +318,12 @@ def get_diesel_energy_and_times(
             Desired level of reliability after diesel backup
         - blackouts:
             Current blackout profile before diesel backup
+        - diesel_mode:
+            The diesel mode used in the scenario inputs file
         - unmet_energy:
             Load profile of currently unment energy
+        - total_electric_load:
+            The total electric load placed on the system (kWh).
 
     Outputs:
         - diesel_energy:

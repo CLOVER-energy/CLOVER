@@ -90,8 +90,12 @@ def _calculate_backup_diesel_generator_usage(
             The :class:`Minigrid` being considered.
         - scenario:
             The :class:`Scenario` being used for the run.
+        - diesel_mode:
+            The diesel mode used in the scenario inputs file
         - unmet_energy:
-            The energy demand which went unmet through renewables.
+            Load profile of currently unment energy
+        - total_electric_load:
+            The total electric load placed on the system (kWh).
 
     Outputs:
         - diesel_capacity:
