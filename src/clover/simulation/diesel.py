@@ -26,7 +26,7 @@ from typing import Any, Dict, Tuple
 import numpy as np  # pylint: disable=import-error
 import pandas as pd
 
-from ..__utils__ import BColours, ELECTRIC_POWER, InputFileError, NAME, ResourceType
+from ..__utils__ import BColours, ELECTRIC_POWER, DieselMode, InputFileError, NAME, ResourceType
 from ..conversion.conversion import MAXIMUM_OUTPUT, Converter
 
 
@@ -174,11 +174,12 @@ class DieselWaterHeater(Converter):
         return self.input_resource_consumption[ResourceType.DIESEL]
 
 
-def _find_deficit_threshold(
-    unmet_energy: pd.DataFrame, blackouts: pd.DataFrame, backup_threshold: float
+def _find_deficit_threshold_blackout(
+     unmet_energy: pd.DataFrame, blackouts: pd.DataFrame, backup_threshold: float
 ) -> float:
     """
-    Identifies the threshold energy level at which the diesel backup generator turns on.
+    Identifies the threshold energy level at which the diesel backup generator turns on
+    when the threshold criterion is blackouts.
 
     Inputs:
         - backup_threshold:
@@ -207,6 +208,80 @@ def _find_deficit_threshold(
         energy_threshold = np.max(unmet_energy)[0] + 1.0
 
     return energy_threshold
+
+
+def _find_deficit_threshold_unmet(unmet_energy: pd.DataFrame, backup_threshold: float, total_electric_load: float) -> float:
+    """
+    Identifies the threshold energy level at which the diesel backup generator turns on
+    when the threshold criterion is unmet energy.
+
+    Inputs:
+        - backup_threshold:
+            Desired level of reliability after diesel backup
+        - unmet_energy:
+            Load profile of currently unment energy
+        - total_electric_load:
+            The total electric load placed on the system (kWh).
+
+    Outputs:
+        - energy_threshold:
+            The energy threshold (kWh) at which the diesel backup switches on.
+
+    """
+
+    # Find the blackout percentage
+    unmet_energy_percentage = float(np.sum(unmet_energy) / total_electric_load)  # type: ignore
+
+    # Find the difference in reliability
+    reliability_difference = unmet_energy_percentage - backup_threshold
+
+    if reliability_difference <= 0:
+        return None
+
+    # Sort unmet energy by smallest first
+    sorted_unmet_energy = sorted(unmet_energy.values)
+
+    # Loop through hours attributing unmet energy to diesel generator (largest first)
+    attributed_unmet_energy:float = 0
+    energy_threshold:float 
+    
+    while attributed_unmet_energy < total_electric_load * reliability_difference:
+        energy_threshold = sorted_unmet_energy.pop()
+        attributed_unmet_energy += energy_threshold
+
+    return energy_threshold
+
+
+def _find_deficit_threshold(
+    unmet_energy: pd.DataFrame, blackouts: pd.DataFrame, backup_threshold: float
+) -> float:
+    """
+    Identifies the threshold energy level at which the diesel backup generator turns on.
+
+    Inputs:
+        - backup_threshold:
+            Desired level of reliability after diesel backup
+        - blackouts:
+            Current blackout profile before diesel backup
+        - unmet_energy:
+            Load profile of currently unment energy
+
+    Outputs:
+        - energy_threshold:
+            The energy threshold (kWh) at which the diesel backup switches on.
+
+    """
+
+    # Find the blackout percentage is mode using blackout criterion
+    if diesel_mode == DieselMode.BACKUP:
+        return _find_deficit_threshold_blackout(unmet_energy, blackouts, 
+        backup_threshold)
+    
+    # Find the blackout percentage is mode using unmet energy criterion
+    if diesel_mode == DieselMode.BACKUP_UNMET:
+        blackout_percentage = float(unmet_energy.mean(axis=0)) 
+
+
 
 
 def get_diesel_energy_and_times(

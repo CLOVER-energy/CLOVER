@@ -705,6 +705,10 @@ class DieselMode(enum.Enum):
     - BACKUP:
         The diesel generator is used as a 'load-following' backup generator.
 
+    - BACKUP_UNMET:
+        The diesel generator is used as a 'load-following' backup generator, 
+        with unmet energy as the threshold criterion.
+
     - CYCLE_CHARGING:
         The diesel generator is operated as a dynamic 'cycle-charging' generator.
 
@@ -714,6 +718,7 @@ class DieselMode(enum.Enum):
     """
 
     BACKUP = "backup"
+    BACKUP_UNMET = "backup_unmet"
     CYCLE_CHARGING = "cycle_charging"
     DISABLED = "disabled"
 
