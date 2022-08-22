@@ -417,14 +417,14 @@ def single_line_simulation(  # pylint: disable=too-many-locals, too-many-stateme
         ):
             _, simulation_results, system_details = energy_system.run_simulation(
                 int(potential_cw_pvt_size),
-                int(potential_cw_st_size),
+                0,
                 conventional_cw_source_profiles,
                 converters,
                 disable_tqdm,
                 test_storage_size,
                 grid_profile,
                 int(potential_hw_pvt_size),
-                int(potential_hw_st_size),
+                0,
                 irradiance_data,
                 kerosene_usage,
                 location,

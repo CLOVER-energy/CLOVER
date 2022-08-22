@@ -518,14 +518,14 @@ def _simulation_iteration(  # pylint: disable=too-many-locals, too-many-statemen
 
     _, simulation_results, system_details = energy_system.run_simulation(
         int(cw_pvt_system_size.max),
-        int(cw_st_system_size.max),
+        0,
         conventional_cw_source_profiles,
         converters_from_sizing(simulation_converter_sizes),
         disable_tqdm,
         storage_sizes.max,
         grid_profile,
         int(hw_pvt_system_size.max),
-        int(hw_st_system_size.max),
+        0,
         irradiance_data,
         kerosene_usage,
         location,
@@ -634,14 +634,14 @@ def _simulation_iteration(  # pylint: disable=too-many-locals, too-many-statemen
         # Run a simulation and appraise it.
         _, simulation_results, system_details = energy_system.run_simulation(
             int(cw_pvt_size_max),
-            int(hw_st_size_max),
+            0,
             conventional_cw_source_profiles,
             converters_from_sizing(simulation_converter_sizes),
             disable_tqdm,
             storage_size_max,
             grid_profile,
             int(hw_pvt_size_max),
-            int(hw_st_size_max),
+            0,
             irradiance_data,
             kerosene_usage,
             location,
