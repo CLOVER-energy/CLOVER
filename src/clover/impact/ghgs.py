@@ -1066,11 +1066,12 @@ def calculate_total_om(  # pylint: disable=too-many-locals
     ) * technical_appraisal.power_consumed_fraction[ResourceType.ELECTRIC]
 
     # Compute the hot-water subsystem costs.
-    subsystem_emissions[ResourceType.HOT_CLEAN_WATER] += (
-        hot_water_tank_om_ghgs
-        + (general_om_ghgs + pv_om_ghgs + storage_om_ghgs)
-        * technical_appraisal.power_consumed_fraction[ResourceType.HOT_CLEAN_WATER]
-    )
+    if scenario.hot_water_scenario is not None:
+        subsystem_emissions[ResourceType.HOT_CLEAN_WATER] += (
+            hot_water_tank_om_ghgs
+            + (general_om_ghgs + pv_om_ghgs + storage_om_ghgs)
+            * technical_appraisal.power_consumed_fraction[ResourceType.HOT_CLEAN_WATER]
+        )
 
     # Compute the costs associated when carrying out prioritisation desalination.
     update_diesel_costs(

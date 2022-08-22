@@ -177,12 +177,16 @@ def update_diesel_costs(
             "No power consumed fraction on technical appraisal despite being needed.",
         )
 
-    if (
+    # If there is not hot-water or clean water, then all costs are electrical.
+    if scenario.desalination_scenario is None and scenario.hot_water_scenario is None:
+        subsystem_impacts[ResourceType.ELECTRIC] += diesel_impact
+
+    # Diesel costs to be split equally among all resource types.
+    elif (
         scenario.desalination_scenario is not None
         and scenario.desalination_scenario.clean_water_scenario.mode
         == CleanWaterMode.PRIORITISE
     ):
-        # Diesel costs to be split equally among all resource types.
         subsystem_impacts[ResourceType.CLEAN_WATER] += (
             diesel_impact
         ) * technical_appraisal.power_consumed_fraction[ResourceType.CLEAN_WATER]
@@ -193,9 +197,10 @@ def update_diesel_costs(
             diesel_impact
             * technical_appraisal.power_consumed_fraction[ResourceType.HOT_CLEAN_WATER]
         )
+
+    # Diesel costs to only be split amongst electric and hot-water resource
+    # types.
     else:
-        # Diesel costs to only be split amongst electric and hot-water resource
-        # types.
         total_diesel_frac: float = (
             technical_appraisal.power_consumed_fraction[ResourceType.ELECTRIC]
             + technical_appraisal.power_consumed_fraction[ResourceType.HOT_CLEAN_WATER]

@@ -1076,10 +1076,6 @@ def calculate_solar_thermal_output(  # pylint: disable=too-many-locals, too-many
 
     """
 
-    import pdb
-
-    pdb.set_trace()
-
     # Determine the relevant scenario for each collector.
     relevant_scenarios: List[ThermalCollectorScenario] = [
         _get_relevant_scenario(resource_type, scenario, collector)
