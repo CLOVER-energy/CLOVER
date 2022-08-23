@@ -552,7 +552,7 @@ def _parse_optimisations_to_runs(
     optimisations_list = optimisation_inputs_data.pop(OPTIMISATIONS)
 
     return [
-        HpcOptimisation.from_dict(entry, logger, optimisation, optimisation_inputs_data)
+        HpcOptimisation.from_dict(entry, logger, [optimisation], optimisation_inputs_data)
         for optimisation in optimisations_list
     ]
 

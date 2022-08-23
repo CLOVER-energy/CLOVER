@@ -127,7 +127,7 @@ def main(args: List[Any]) -> None:
 
         # Run the optimisation with the temporary optimisations file.
         with temporary_optimisations_file(
-            hpc_run, run_number
+            logger, hpc_run, run_number
         ) as optimisation_inputs_filename:
             clover_arguments.extend(
                 [

@@ -257,8 +257,6 @@ class Optimisation:
 
         """
 
-        logger.debug("Optimisation data: %s", optimisation_data)
-
         try:
             optimisation_criteria = {
                 Criterion(key): CriterionMode(value)
