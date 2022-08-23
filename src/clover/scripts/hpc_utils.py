@@ -647,13 +647,16 @@ def temporary_optimisations_file(run: HpcOptimisation, run_number: int) -> str:
 
     """
 
-    temp_filename: str = os.path.join(
+    temp_dirpath: str = os.path.join(
         LOCATIONS_FOLDER_NAME,
         run.location,
         INPUTS_DIRECTORY,
+    )
+    temp_basepath: str = os.path.join(
         os.path.dirname(OPTIMISATION_INPUTS_FILE),
         f"temp_hpc_{run_number}_{os.path.basename(OPTIMISATION_INPUTS_FILE)}",
     )
+    temp_filename: str = os.path.join(temp_dirpath, temp_basepath)
 
     # Attempt to create the temporary file and yield its name.
     try:
@@ -666,7 +669,7 @@ def temporary_optimisations_file(run: HpcOptimisation, run_number: int) -> str:
         print(f"Failed to create temporary optimisations file: {str(e)}")
         raise
 
-    yield temp_filename
+    yield temp_basepath
 
     # Attempt to remove the temporary file on exit, exit regardless.
     try:
