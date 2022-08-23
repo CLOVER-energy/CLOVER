@@ -55,13 +55,71 @@ class Clinic:
     .. attribute:: name
         The name of the clinic
     .. attribute:: floor_area
-        The name of the clinic
-    .. attribute:: name
-        The name of the clinic
-    .. attribute:: name
-        The name of the clinic
-    .. attribute:: name
-        The name of the clinic
+        The floor area of the clinic in m^2
+    .. attribute:: roof_area
+        The ceiling area of the clinic in m^2
+    .. attribute:: surface_area_walls
+        The internal surface area of the external walls of the clinic in m^2
+    .. attribute:: surface_area_doors_windows
+        The sum of the surface areas of the windows and doors of the clinic in m^2
+        (only valid if they are made with the same materials,
+        otherwise they need to be divided in a different function)
+    .. attribute:: u_value_walls
+        The thermal transmittance value of the walls of the clinic in W/m^2*K
+    .. attribute:: u_value_windows_doors
+        The thermal transmittance value of the windows and doors of the clinic in W/m^2*K
+        (only valid if they are made with the same materials,
+        otherwise they need to be divided)
+     .. attribute:: u_value_floor
+        The thermal transmittance value of the floor of the clinic in W/m^2*K
+     .. attribute:: u_value_roof
+        The thermal transmittance value of the roof of the clinic in W/m^2*K
+     .. attribute:: inside_ideal_temperature
+        The ideal temperature to set inside the clinc             
+    .. attribute:: staff
+        The number of nurses, cleaners, and guardians averagely present in the clinic at any time
+     .. attribute:: patients
+        The number of patients and accompaniers averagely present in the clinic at any time
+     .. attribute:: heat_loss_staff
+        The heat loss of the staff, depending on their activity levels
+     .. attribute:: heat_loss_patients
+        The heat loss of the patients and accompaniers, depending on their activity levels
+     .. attribute:: start_time_staff
+        The time at which the staff starts working
+     .. attribute:: end_time_staff
+        The time at which the staff stops working
+     .. attribute:: start_time_patients
+        The time at which the clinic is open to the clients   
+     .. attribute:: end_time_patients
+        The time at which the clinic closes
+     .. attribute:: lamps_internal
+        The number of lights in the clinic
+     .. attribute:: start_time_lamps
+        The hour when the lights are turned on
+     .. attribute:: end_time_lamps
+        The hour when the lights are turned off
+     .. attribute:: wattage_lamps
+        The power consume of the lights in the clinic
+     .. attribute:: fridge_wattage
+        The power consume of the fridge of the clinic     
+     .. attribute:: x_ray
+        The number of x-ray machines in the clinic
+     .. attribute:: x_ray_heat_loss
+        The nheat loss of the x-ray machines installed
+     .. attribute:: start_time_x_ray
+        The hour when the x-ray machine starts being used
+     .. attribute:: end_time_x_ray
+        The time when the x-ray machine stops being used
+     .. attribute:: changes
+        The number of total volume changes per hour
+     .. attribute:: volume_cold_store
+        The total volume of the clinic
+     .. attribute:: energy_new_air
+        The energy per cubic meter per degree Celsius of the outside air 
+     .. attribute:: start_time_infiltration
+        The hour when the infiltration starts, when people start entering the clinic
+     .. attribute:: end_time_infiltration
+        The hour when the infiltration ends, when the last person left the clinic
 
 
     """
@@ -102,6 +160,12 @@ class Clinic:
     # Fridge heat load
     fridge_wattage: float
     time_fridge: float
+
+    #x-ray load
+    x_ray: float
+    x_ray_heat_loss: float
+    start_time_x_ray: List[int]
+    end_time_x_ray: List[int]
 
     # Infiltration loads
     changes: float
@@ -157,6 +221,10 @@ class Clinic:
             inputs["wattage_lamps"],
             inputs["fridge_wattage"],
             inputs["time_fridge"],
+            inputs["x_ray"],
+            inputs["x_ray_heat_loss"],
+            inputs["start_time_x_ray"],
+            inputs["end_time_x_ray"],
             inputs["changes"],
             inputs["volume_cold_store"],
             inputs["energy_new_air"],
@@ -171,25 +239,6 @@ class Clinic:
 # with open(MY_PATH + "clinic.yaml") as f:
 # data_clinic = yaml.load(f, Loader=yaml.FullLoader)
 #  print(data_clinic)
-
-
-# MY_CLINIC: Clinic = Clinic(**data_clinic["clinics"][0])
-
-
-# def import_weather_data(building: Clinic):
-
-#     data = pd.read_csv("C:/Users/Ilaria/Desktop/weatherdata.csv")
-#     temperature = data["temperature"]
-#     # print(temperature)
-#     return temperature.to_numpy()
-
-
-# def import_weather_dataframe():
-#     data = pd.read_csv("C:/Users/Ilaria/Desktop/weatherdata.csv", dtype={"local_time"})
-#     return data
-
-
-# temperatura = import_weather_data(building=Clinic)
 
 
 # TESTED - WORKING
@@ -315,24 +364,20 @@ def calculate_internal_load_people(buliding: Clinic, current_hour: int) -> float
 # calculate_internal_load_people(MY_CLINIC)
 
 
-# COME BACK TO THIS
-def internal_load_lighting(building: Clinic):
+# TESTED WORKING
+def internal_load_lighting(building: Clinic, current_hour: int) -> float:
     """
     Computes the internal heat load of the lamps in kW for a building,
     the wattage is halved as the dissipation of energy only corresponds to 50% in LEDs.
 
     """
-    lamps_at_times = [
-        [
-            [0, building.lamps_internal * building.wattage_lamps / 2][
-                t > start and t < end
-            ]
-            for t in range(24)
-        ]
-        for start, end in zip(building.start_time_lamps, building.end_time_lamps)
-    ]
-    return lamps_at_times
+    weekday: int = (current_hour // 24) % 7
+    start_time: int = building.start_time_lamps[weekday]
+    end_time: int = building.end_time_lamps[weekday]
 
+    if start_time <= (current_hour % 24) < end_time:
+        return building.lamps_internal * building.wattage_lamps / 2000
+    return 0
 
 # COME BACK TO THIS
 def fridge_load(building: Clinic):
@@ -340,9 +385,21 @@ def fridge_load(building: Clinic):
     Computes the internal heat load of the fridge in kW for a building.
 
     """
+    return building.fridge_wattage * building.time_fridge *0.8/ 1000
 
-    return building.fridge_wattage * building.time_fridge / 1000
+# TESTED WORKING
+def x_ray_load(building: Clinic, current_hour: int) -> float:
+    """
+    Computes the internal heat load of the x-ray in kW.
 
+    """
+    weekday: int = (current_hour // 24) % 7
+    start_time: int = building.start_time_x_ray[weekday]
+    end_time: int = building.end_time_x_ray[weekday]
+
+    if start_time <= (current_hour % 24) < end_time:
+        return building.x_ray * building.x_ray_heat_loss / 1000
+    return 0
 
 # TESTED - WORKING
 def infiltration_load(building: Clinic, current_hour: int, temperature: float) -> float:
@@ -381,11 +438,12 @@ def _calculate_cooling_load(
 
     q1 = calculate_transmission_load(building, temperature)
     q2 = calculate_internal_load_people(building, current_hour)
-    # q3 = internal_load_lighting(building)
-    # q4 = fridge_load(building)
-    q5 = infiltration_load(building, current_hour, temperature)
+    q3 = internal_load_lighting(building, current_hour)
+    q4 = fridge_load(building)
+    q5 = x_ray_load(building, current_hour)
+    q6 = infiltration_load(building, current_hour, temperature)
 
-    return q1 + q2 + q5
+    return q1 + q2 + q3 + q4 + q5 + q6
 
 
 # TESTED - WORKING
