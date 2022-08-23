@@ -1559,8 +1559,8 @@ def multiple_optimisation_step(  # pylint: disable=too-many-locals, too-many-sta
             else 0
         )
         input_pv_sizes = SolarSystemSize(
-            pv_size_max,
-            pv_size_min,
+            int(pv_size_max),
+            int(pv_size_min),
             optimisation_parameters.pv_size.step,
         )
 
@@ -1581,8 +1581,8 @@ def multiple_optimisation_step(  # pylint: disable=too-many-locals, too-many-sta
             else 0
         )
         input_storage_sizes = StorageSystemSize(
-            storage_size_max,
-            storage_size_min,
+            int(storage_size_max),
+            int(storage_size_min),
             optimisation_parameters.storage_size.step,
         )
 
