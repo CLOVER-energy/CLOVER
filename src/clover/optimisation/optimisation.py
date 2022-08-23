@@ -540,7 +540,7 @@ def _simulation_iteration(  # pylint: disable=too-many-locals, too-many-statemen
             "The largest system was found to be insufficient. Threshold criteria: %s",
             json.dumps(
                 {
-                    str(key): value
+                    str(key.value): value
                     for key, value in largest_system_appraisal.criteria.items()
                 },
                 indent=4,
@@ -677,7 +677,7 @@ def _simulation_iteration(  # pylint: disable=too-many-locals, too-many-statemen
         "System was found to be sufficient. Threshold criteria: %s",
         json.dumps(
             {
-                str(key): value
+                str(key.value): value
                 for key, value in largest_system_appraisal.criteria.items()
             },
             indent=4,
@@ -1130,7 +1130,7 @@ def _optimisation_step(  # pylint: disable=too-many-locals
     )
     logger.info("Optimum systems determined.")
 
-    # @@@ For now, the optimum system for a single threshold criterion will be returned.
+    # For now, the optimum system for a single threshold criterion will be returned.
     optimum_system_appraisal: SystemAppraisal = list(optimum_systems.values())[0]
     return optimum_system_appraisal
 
@@ -1559,9 +1559,9 @@ def multiple_optimisation_step(  # pylint: disable=too-many-locals, too-many-sta
             else 0
         )
         input_pv_sizes = SolarSystemSize(
-            int(pv_size_max),
-            int(pv_size_min),
-            int(optimisation_parameters.pv_size.step),
+            pv_size_max,
+            pv_size_min,
+            optimisation_parameters.pv_size.step,
         )
 
         # Prepare the storage-size parameters
@@ -1581,9 +1581,9 @@ def multiple_optimisation_step(  # pylint: disable=too-many-locals, too-many-sta
             else 0
         )
         input_storage_sizes = StorageSystemSize(
-            int(storage_size_max),
-            int(storage_size_min),
-            int(optimisation_parameters.storage_size.step),
+            storage_size_max,
+            storage_size_min,
+            optimisation_parameters.storage_size.step,
         )
 
     # End simulation timer
