@@ -552,7 +552,9 @@ def _parse_optimisations_to_runs(
     optimisations_list = optimisation_inputs_data.pop(OPTIMISATIONS)
 
     return [
-        HpcOptimisation.from_dict(entry, logger, [optimisation], optimisation_inputs_data)
+        HpcOptimisation.from_dict(
+            entry, logger, [optimisation], optimisation_inputs_data
+        )
         for optimisation in optimisations_list
     ]
 
@@ -631,7 +633,9 @@ def parse_args_and_hpc_input_file(
 
 
 @contextmanager
-def temporary_optimisations_file(logger: Logger, run: HpcOptimisation, run_number: int) -> str:
+def temporary_optimisations_file(
+    logger: Logger, run: HpcOptimisation, run_number: int
+) -> str:
     """
     Creates a temporary optimisations file.
 
@@ -682,4 +686,4 @@ def temporary_optimisations_file(logger: Logger, run: HpcOptimisation, run_numbe
         os.remove(temp_filename)
     except FileNotFoundError as e:
         logger.error("Could not remove temporary optimisations file: %s", str(e))
-        print(f"Could not delete temporary optimisations file: {str(e)}")    
+        print(f"Could not delete temporary optimisations file: {str(e)}")
