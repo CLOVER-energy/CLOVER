@@ -1736,9 +1736,16 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
             logger.info("Total electric cooling load computed.")
             if len(cooling_converters) > 0:
                 logger.debug(
-                    "Cooling load was unmet %s of the time, met %s of the time.",
-                    f"{round(sum(unmet_cooling_load[0]) / sum(cooling_load[0]), 2)}",
-                    f"{round(sum(cooling_load[0]) - round(sum(remaining_cooling_load[0])) / sum(cooling_load[0]), 2)}",
+                    "Cooling load was unmet %s%% of the time, met %s%% of the time.",
+                    round(100 * (sum(unmet_cooling_load[0]) / sum(cooling_load[0])), 2),
+                    round(
+                        100
+                        * (
+                            (sum(cooling_load[0]) - round(sum(unmet_cooling_load[0])))
+                            / sum(cooling_load[0])
+                        ),
+                        2,
+                    ),
                 )
             else:
                 logger.debug("No cooling converters defined. Load of %s was unmet ")

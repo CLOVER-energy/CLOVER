@@ -161,9 +161,6 @@ def single_line_simulation(  # pylint: disable=too-many-locals, too-many-stateme
     sufficient_appraisals: List[SystemAppraisal] = []
     system_appraisals: List[SystemAppraisal] = []
 
-    _converter_name_to_converter_mapping = {
-        converter.name: converter for converter in converter_sizes
-    }
     if potential_system.system_details.initial_converter_sizes is None:
         logger.error(
             "%sInitial converter sizes undefined when calling single-line simulation. "
@@ -177,8 +174,8 @@ def single_line_simulation(  # pylint: disable=too-many-locals, too-many-stateme
             "be defined.",
         )
     potential_converter_sizes = {
-        _converter_name_to_converter_mapping[name]: value
-        for name, value in potential_system.system_details.initial_converter_sizes.items()
+        converter: size
+        for converter, size in potential_system.system_details.initial_converter_sizes.items()
     }
     potential_cw_pvt_size = (
         potential_system.system_details.initial_cw_pvt_size
