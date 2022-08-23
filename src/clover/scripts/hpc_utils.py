@@ -21,6 +21,7 @@ import argparse
 import enum
 import os
 
+from contextlib import contextmanager
 from logging import Logger
 from typing import Any, Dict, List, Optional, Tuple, Union
 
@@ -41,6 +42,7 @@ __all__ = (
     "HpcOptimisation",
     "HpcSimulation",
     "parse_args_and_hpc_input_file",
+    "temporary_optimisations_file",
 )
 
 # False:
@@ -596,35 +598,6 @@ def _process_hpc_input_file(
     return runs
 
 
-def crate_temporary_optimisations_file(run: HpcOptimisation, run_number: int) -> str:
-    """
-    Creates a temporary optimisations file.
-
-    Inputs:
-        - run:
-            The run being carried out.
-        - run_number:
-            The number of the run being carried out.
-
-    Outputs:
-        - filename:
-            The name of the file.
-
-    """
-
-    with open(
-        os.path.join(
-            LOCATIONS_FOLDER_NAME,
-            run.location,
-            INPUTS_DIRECTORY,
-            os.path.dirname(OPTIMISATION_INPUTS_FILE),
-            f"temp_hpc_{run_number}_{os.path.basename(OPTIMISATION_INPUTS_FILE)}",
-        ),
-        "w",
-    ) as f:
-        yaml.dump(run.optimisation_inputs, f)
-
-
 def parse_args_and_hpc_input_file(
     args: List[Any], logger: Logger
 ) -> Tuple[str, List[Union[HpcOptimisation, HpcSimulation]], bool, float]:
@@ -655,3 +628,48 @@ def parse_args_and_hpc_input_file(
 
     # Return these runs along with the filename.
     return parsed_args.runs, runs, parsed_args.verbose, walltime
+
+
+@contextmanager
+def temporary_optimisations_file(run: HpcOptimisation, run_number: int) -> str:
+    """
+    Creates a temporary optimisations file.
+
+    Inputs:
+        - run:
+            The run being carried out.
+        - run_number:
+            The number of the run being carried out.
+
+    Yields:
+        - filename:
+            The name of the file.
+
+    """
+
+    temp_filename: str = os.path.join(
+        LOCATIONS_FOLDER_NAME,
+        run.location,
+        INPUTS_DIRECTORY,
+        os.path.dirname(OPTIMISATION_INPUTS_FILE),
+        f"temp_hpc_{run_number}_{os.path.basename(OPTIMISATION_INPUTS_FILE)}",
+    )
+
+    # Attempt to create the temporary file and yield its name.
+    try:
+        with open(
+            temp_filename,
+            "w",
+        ) as temp_file:
+            yaml.dump(run.optimisation_inputs, temp_file)
+    except FileNotFoundError as e:
+        print(f"Failed to create temporary optimisations file: {str(e)}")
+        raise
+
+    yield temp_filename
+
+    # Attempt to remove the temporary file on exit, exit regardless.
+    try:
+        os.remove(temp_filename)
+    except FileNotFoundError as e:
+        print(f"Could not delete temporary optimisations file: {str(e)}")
