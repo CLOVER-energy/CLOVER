@@ -631,11 +631,13 @@ def parse_args_and_hpc_input_file(
 
 
 @contextmanager
-def temporary_optimisations_file(run: HpcOptimisation, run_number: int) -> str:
+def temporary_optimisations_file(logger: Logger, run: HpcOptimisation, run_number: int) -> str:
     """
     Creates a temporary optimisations file.
 
     Inputs:
+        - logger:
+            The logger being used for the HPC run.
         - run:
             The run being carried out.
         - run_number:
@@ -659,6 +661,7 @@ def temporary_optimisations_file(run: HpcOptimisation, run_number: int) -> str:
     temp_filename: str = os.path.join(temp_dirpath, temp_basepath)
 
     # Attempt to create the temporary file and yield its name.
+    logger.info("Attempting to create temporary file %s", temp_filename)
     try:
         with open(
             temp_filename,
@@ -666,13 +669,17 @@ def temporary_optimisations_file(run: HpcOptimisation, run_number: int) -> str:
         ) as temp_file:
             yaml.dump(run.optimisation_inputs, temp_file)
     except FileNotFoundError as e:
+        logger.error("Failed to create temporary optimisations file.")
         print(f"Failed to create temporary optimisations file: {str(e)}")
         raise
 
+    logger.info("Temporary optimisations file successfully created.")
     yield temp_basepath
 
     # Attempt to remove the temporary file on exit, exit regardless.
+    logger.info("Attempting to remove temporary optimsiations file.")
     try:
         os.remove(temp_filename)
     except FileNotFoundError as e:
-        print(f"Could not delete temporary optimisations file: {str(e)}")
+        logger.error("Could not remove temporary optimisations file: %s", str(e))
+        print(f"Could not delete temporary optimisations file: {str(e)}")    
