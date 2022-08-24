@@ -23,7 +23,7 @@ import os
 
 from contextlib import contextmanager
 from logging import Logger
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, Iterator, List, Optional, Tuple, Union
 
 import yaml
 
@@ -171,7 +171,7 @@ class HpcOptimisation(
     def __init__(
         self,
         location: str,
-        optimisation: Dict[str, Any],
+        optimisation: List[Dict[str, Any]],
         optimisation_inputs_data: Dict[str, Any],
         total_load: bool,
         total_load_file: Optional[str] = None,
@@ -183,7 +183,8 @@ class HpcOptimisation(
             - location:
                 The name of the location to use.
             - optimisation:
-                The optimisation parameters for this particular optimisation
+                The optimisation parameters for this particular optimisation, passed in
+                as a single entry in a `list` for easy temporary file generation.
             - optimisation_inputs_data:
                 The input data for optimisations in general.
             - total_load:
@@ -194,7 +195,7 @@ class HpcOptimisation(
         """
 
         super().__init__(location, total_load, total_load_file)
-        self.optimisation: Dict[str, Any] = optimisation
+        self.optimisation: List[Dict[str, Any]] = optimisation
         self.optimisation_inputs_data: Dict[str, Any] = optimisation_inputs_data
 
     @classmethod
@@ -202,7 +203,7 @@ class HpcOptimisation(
         cls,
         input_data: Dict[str, Any],
         logger: Logger,
-        optimisation: Dict[str, Any],
+        optimisation: List[Dict[str, Any]],
         optimisation_inputs_data: Dict[str, Any],
     ) -> Any:
         """
@@ -548,6 +549,14 @@ def _parse_optimisations_to_runs(
     )
     optimisation_inputs_data = read_yaml(optimisation_inputs_file, logger)
 
+    # Raise an error if the file was not of type `dict`.
+    if not isinstance(optimisation_inputs_data, dict):
+        logger.error(
+            "Optimisation inputs file data for %s was not of type `dict`. Exiting",
+            optimisation_inputs_file,
+        )
+        raise InputFileError("optimisation inputs", "Optimisation inputs was not of type `dict`.")
+
     # Based on the input optimisations, generate a list of optimisations to carry out.
     optimisations_list = optimisation_inputs_data.pop(OPTIMISATIONS)
 
@@ -635,7 +644,7 @@ def parse_args_and_hpc_input_file(
 @contextmanager
 def temporary_optimisations_file(
     logger: Logger, run: HpcOptimisation, run_number: int
-) -> str:
+) -> Iterator[str]:
     """
     Creates a temporary optimisations file.
 
