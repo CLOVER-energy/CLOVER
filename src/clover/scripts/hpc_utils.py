@@ -555,7 +555,9 @@ def _parse_optimisations_to_runs(
             "Optimisation inputs file data for %s was not of type `dict`. Exiting",
             optimisation_inputs_file,
         )
-        raise InputFileError("optimisation inputs", "Optimisation inputs was not of type `dict`.")
+        raise InputFileError(
+            "optimisation inputs", "Optimisation inputs was not of type `dict`."
+        )
 
     # Based on the input optimisations, generate a list of optimisations to carry out.
     optimisations_list = optimisation_inputs_data.pop(OPTIMISATIONS)
