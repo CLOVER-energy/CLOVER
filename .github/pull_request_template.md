@@ -3,7 +3,7 @@ Describe the pull request:
 * Why are you opening this pull request?
   * Does the pull reuqest resolve an outstanding bug? If so, mark the pull request with the **bug tag**.
   * Does the pull request introduce new features to CLOVER? If so, mark the pull reuqest with the **feature tag**.
-* What version of CLOVER will this be merged into, and what version will it be updated to?
+* What version of CLOVER will this be merged into, and what version will it be updated to? **NOTE:** if you are updating the version of CLOVER, please update the various metadata files to reflect this.
 
 ### Linked Issues
 This pull request:
@@ -26,4 +26,12 @@ All pull requests must be approved by an administrator of the CLOVER-energy orga
 CLOVER runs a series of automated tests. Run the `./bin/test-clover.sh` helper script to run these prior to opening the pull request. You will not be able to merge your pull request unless all of these automated checks are passing on your code base.
 **NOTE:** If you are modifying the automated tests, be sure that you justify this.
 
-**Make sure that you have updated the setup.cfg and** `__version__` **attributes with the new version of CLOVER you are proposing.**
+### Metadata files
+If you are opening a pull request that will update the version of CLOVER, i.e., bring in a new release, then you will need to update the various metadata files as part of your pull request:
+* `.zenodo.json` - Update the version number, author list, and date of your proposed release. Add any papers which have been released relevant to CLOVER since the last release if relevant;
+* `CITATION.cff` - Update the version number, author list, and date of your proposed release. **NOTE:** the date will need to reflect the date on which your pull request is approved;
+* `setup.cfg` - Update the version number of CLOVER and include any new files or endpoints required in the `clover-energy` package:
+  * The version is updated under the `version` variable,
+  * New packages should be added under the `install_requires` list,
+  * New endpoints should be added under the `console_scripts` list;
+* `src/clover/__main__.py` - Update the `__version__` variable name to reflect these changes internally within CLOVER.
