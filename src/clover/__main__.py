@@ -17,7 +17,7 @@ the clover module from the command-line interface.
 
 """
 
-__version__ = "5.0.4"
+__version__ = "5.0.5"
 
 import datetime
 import logging
@@ -579,6 +579,7 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
             parsed_args.electric_load_profile,
             parsed_args.location,
             logger,
+            parsed_args.optimisation_inputs_file,
         )
     except FileNotFoundError as e:
         print(FAILED)
