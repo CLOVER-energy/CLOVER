@@ -1,25 +1,25 @@
 ---
 title: 'CLOVER: Community-scale sustainable energy system modelling'
 tags:
- - Python
- - energy access
- - minigrid
- - renewable energy
- - sustainable development
+  - energy access
+  - minigrid
+  - Python
+  - renewable energy
+  - sustainable development
 authors:
- - name: Philip Sandwell
-  orcid: 0000-0003-1117-5095
-  affiliation: "1, 2"
-  corresponding: true
-- name: Benedict Winchester
-  orcid: 0000-0002-2880-1243
-  affiliation: "2, 3"
-- name: Hamish Beath
-  orcid: 0000-0002-5124-9143
-  affiliation: "1, 2"
-- name: Jenny Nelson
-  orcid: 0000-0003-1048-1330
-  affiliation: "1, 2"
+  - name: Philip Sandwell
+    orcid: 0000-0003-1117-5095
+    affiliation: "1, 2"
+    corresponding: true
+  - name: Benedict Winchester
+    orcid: 0000-0002-2880-1243
+    affiliation: "2, 3"
+  - name: Hamish Beath
+    orcid: 0000-0002-5124-9143
+    affiliation: "1, 2"
+  - name: Jenny Nelson
+    orcid: 0000-0003-1048-1330
+    affiliation: "1, 2"
 affiliations:
  - name: Department of Physics, Blackett Laboratory, Imperial College London, SW7 2AZ, United Kingdom
    index: 1
