@@ -33,7 +33,7 @@ bibliography: paper.bib
 
 # Summary
 
-Sustainable Development Goal 7 aims to provide sustainable, affordable, reliable and modern energy access to all by 2030. In order for this goal to be achieved, sustainable energy interventions in developing countries must be supported with design tools which can evaluate the technical performance of energy systems as well as their economic and climate impacts.
+Sustainable Development Goal 7 aims to provide sustainable, affordable, reliable and modern energy access to all by 2030 `[@UN:2015]`. In order for this goal to be achieved, sustainable energy interventions in developing countries must be supported with design tools which can evaluate the technical performance of energy systems as well as their economic and climate impacts.
 
 CLOVER (Continuous Lifetime Optimisation of Variable Electricity Resources) is a software tool for simulating and optimising community-scale energy systems, typically minigrids, to support energy access in developing countries. CLOVER can be used to model electricity demand and supply at an hourly resolution, for example allowing users to investigate how an electricity system might perform at a given location. CLOVER can also identify an optimally-sized energy system to meet the needs of the community under specified constraints. For example, a user could define an optimum system as one which provides a desired level of reliability at the lowest cost of electricity. CLOVER can provide an insight into the technical performance, costs, and climate change impact of a system, and allow the user to evaluate many different scenarios to decide on the best way to provide sustainable, affordable and reliable electricity to a community.
 
