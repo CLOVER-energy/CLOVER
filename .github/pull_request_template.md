@@ -26,8 +26,6 @@ All pull requests must be approved by an administrator of the CLOVER-energy orga
 CLOVER runs a series of automated tests. Run the `./bin/test-clover.sh` helper script to run these prior to opening the pull request. You will not be able to merge your pull request unless all of these automated checks are passing on your code base.
 **NOTE:** If you are modifying the automated tests, be sure that you justify this.
 
-**Make sure that you have updated the setup.cfg and** `__version__` **attributes with the new version of CLOVER you are proposing.**
-
 ### Metadata files
 If you are opening a pull request that will update the version of CLOVER, i.e., bring in a new release, then you will need to update the various metadata files as part of your pull request:
 * `.zenodo.json` - Update the version number, author list, and date of your proposed release. Add any papers which have been released relevant to CLOVER since the last release if relevant;
