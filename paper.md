@@ -73,7 +73,7 @@ CLOVER is being used as part of several ongoing research projects. These include
 - An assessment of the cost and climate impacts of optimally-sized grid-connected solar-battery systems in India under different levels of grid availability;
 - A comparison of solar-battery minigrid sizing strategies for energy access in rural India;
 - An evaluation of the costs and climate impacts of achieving energy access at the global scale.
-CLOVER has previously been used for studies focusing on the impact of rurality and climate on minigrid design [Few:2022] and as part of interdisciplinary frameworks for designing energy access interventions in displacement situations [MattheyJunod:2022]. To date, CLOVER has been used as part of five PhD projects and by more than 10 MSc students. 
+CLOVER has previously been used for studies focusing on the impact of rurality and climate on minigrid design [@Few:2022] and as part of interdisciplinary frameworks for designing energy access interventions in displacement situations [@MattheyJunod:2022]. To date, CLOVER has been used as part of five PhD projects and by more than 10 MSc students. 
 
 CLOVER remains under continuous development to increase its functionality and to address new and emerging research questions. Future releases are planned to include the ability to model thermal energy for heating and cooling, variable grid pricing, advanced diesel generator modelling, and more.
 
