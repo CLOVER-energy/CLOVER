@@ -225,6 +225,13 @@ def parse_args(args: List[Any]) -> argparse.Namespace:
         help="If specified, CLOVER will carry out optimisations in accordance with "
         "the `optimisation_inputs` file.",
     )
+    action_arguments.add_argument(
+        "--optimisation-inputs-file",
+        "-opt-file",
+        type=str,
+        help="The name of the optimisation inputs file to use for the run. This "
+        "overrides CLOVER's in-built optimisation inputs filename.",
+    )
 
     return parser.parse_args(args)
 
