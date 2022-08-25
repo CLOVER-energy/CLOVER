@@ -1,5 +1,5 @@
 ---
-title: 'CLOVER: Community-scale sustainable energy system modelling'
+title: 'CLOVER: A modelling framework for sustainable community-scale energy systems'
 tags:
   - energy access
   - minigrid
