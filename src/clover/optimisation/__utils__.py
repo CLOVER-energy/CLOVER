@@ -1031,7 +1031,7 @@ def recursive_iteration(  # pylint: disable=too-many-locals
         # Determine the converter sizes.
         if not all(isinstance(value, int) for value in component_sizes.values()):
             logger.info(
-                "%sNon-integer component sizes were specified, exiting.%s",
+                "%sNon-integer component sizes were specified.%s",
                 BColours.fail,
                 BColours.endc,
             )

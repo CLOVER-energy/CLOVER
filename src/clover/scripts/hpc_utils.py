@@ -4,7 +4,7 @@
 #                                                                                      #
 # Author: Phil Sandwell, Ben Winchester                                                #
 # Copyright: Phil Sandwell, 2018                                                       #
-# Date created: 249/03/2022                                                             #
+# Date created: 24/03/2022                                                             #
 #                                                                                      #
 # For more information, please email:                                                  #
 #   philip.sandwell@gmail.com                                                          #
@@ -19,11 +19,22 @@ CLOVER designed to improve ease of use.
 
 import argparse
 import enum
+import os
 
+from contextlib import contextmanager
 from logging import Logger
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, Iterator, List, Optional, Tuple, Union
 
-from ..__utils__ import DEFAULT_SCENARIO, BColours, InputFileError, read_yaml
+import yaml
+
+from ..__utils__ import (
+    BColours,
+    DEFAULT_SCENARIO,
+    InputFileError,
+    LOCATIONS_FOLDER_NAME,
+    read_yaml,
+)
+from ..fileparser import INPUTS_DIRECTORY, OPTIMISATION_INPUTS_FILE, OPTIMISATIONS
 
 
 __all__ = (
@@ -31,6 +42,7 @@ __all__ = (
     "HpcOptimisation",
     "HpcSimulation",
     "parse_args_and_hpc_input_file",
+    "temporary_optimisations_file",
 )
 
 # False:
@@ -156,8 +168,44 @@ class HpcOptimisation(
 
     """
 
+    def __init__(
+        self,
+        location: str,
+        optimisation: List[Dict[str, Any]],
+        optimisation_inputs_data: Dict[str, Any],
+        total_load: bool,
+        total_load_file: Optional[str] = None,
+    ) -> None:
+        """
+        Instantiate a :class:`HpcOptimisation` instance.
+
+        Inputs:
+            - location:
+                The name of the location to use.
+            - optimisation:
+                The optimisation parameters for this particular optimisation, passed in
+                as a single entry in a `list` for easy temporary file generation.
+            - optimisation_inputs_data:
+                The input data for optimisations in general.
+            - total_load:
+                Whether a total-load file should be used.
+            - total_load_file:
+                If being used, the name of the total-load file.
+
+        """
+
+        super().__init__(location, total_load, total_load_file)
+        self.optimisation: List[Dict[str, Any]] = optimisation
+        self.optimisation_inputs_data: Dict[str, Any] = optimisation_inputs_data
+
     @classmethod
-    def from_dict(cls, input_data: Dict[str, Any], logger: Logger) -> Any:
+    def from_dict(
+        cls,
+        input_data: Dict[str, Any],
+        logger: Logger,
+        optimisation: List[Dict[str, Any]],
+        optimisation_inputs_data: Dict[str, Any],
+    ) -> Any:
         """
         Creates a :class:`HpcOptimisation` instance based on the inputs provided.
 
@@ -166,6 +214,10 @@ class HpcOptimisation(
                 The input information, extracted from the HPC inputs file.
             - logger:
                 The logger being used for the run.
+            - optimisation:
+                The optimisation parameters for this particular optimisation
+            - optimisation_inputs_data:
+                The input data for optimisations in general.
 
         Outputs:
             - A :class:`HpcOptimisation` instance based on the input information provided.
@@ -189,7 +241,29 @@ class HpcOptimisation(
             total_load = True
             total_load_file = total_load_input
 
-        return cls(input_data["location"], total_load, total_load_file)
+        return cls(
+            input_data["location"],
+            optimisation,
+            optimisation_inputs_data,
+            total_load,
+            total_load_file,
+        )
+
+    @property
+    def optimisation_inputs(self) -> Dict[str, Any]:
+        """
+        Assembly optimisation input data for writing to file.
+
+        Outputs:
+            - Data ready to be written to a temporary optimisation outputs file.
+
+        """
+
+        if OPTIMISATIONS in self.optimisation_inputs_data:
+            return self.optimisation_inputs_data
+
+        self.optimisation_inputs_data[OPTIMISATIONS] = self.optimisation
+        return self.optimisation_inputs_data
 
 
 class HpcSimulation(
@@ -448,6 +522,54 @@ def _parse_hpc_input_file(input_filename: str, logger: Logger) -> List[Dict[str,
     return filedata
 
 
+def _parse_optimisations_to_runs(
+    entry: Dict[str, Any], logger: Logger
+) -> List[HpcOptimisation]:
+    """
+    Parses, from a single HPC entry, a series of optimisation runs to carry out.
+
+    Each optimisation entry triggers this script to generate a series of optimisation
+    run entries for which a single optimisation will be run, with a dummy input file,
+    based on the optimisation parameters within the optimisation_inputs.yaml file.
+
+    Inputs:
+        - entry:
+            The parsed entry from the file.
+        - logger:
+            The :class:`logging.Logger` to use for the run.
+
+    """
+
+    # Read the optimisation inputs file.
+    optimisation_inputs_file = os.path.join(
+        LOCATIONS_FOLDER_NAME,
+        entry["location"],
+        INPUTS_DIRECTORY,
+        OPTIMISATION_INPUTS_FILE,
+    )
+    optimisation_inputs_data = read_yaml(optimisation_inputs_file, logger)
+
+    # Raise an error if the file was not of type `dict`.
+    if not isinstance(optimisation_inputs_data, dict):
+        logger.error(
+            "Optimisation inputs file data for %s was not of type `dict`. Exiting",
+            optimisation_inputs_file,
+        )
+        raise InputFileError(
+            "optimisation inputs", "Optimisation inputs was not of type `dict`."
+        )
+
+    # Based on the input optimisations, generate a list of optimisations to carry out.
+    optimisations_list = optimisation_inputs_data.pop(OPTIMISATIONS)
+
+    return [
+        HpcOptimisation.from_dict(
+            entry, logger, [optimisation], optimisation_inputs_data
+        )
+        for optimisation in optimisations_list
+    ]
+
+
 def _process_hpc_input_file(
     input_filename: str, logger: Logger
 ) -> List[Union[HpcOptimisation, HpcSimulation]]:
@@ -472,7 +594,7 @@ def _process_hpc_input_file(
     runs: List[Union[HpcOptimisation, HpcSimulation]] = []
     for entry in filedata:
         if entry[TYPE] == HpcRunType.OPTIMISATION.value:
-            runs.append(HpcOptimisation.from_dict(entry, logger))
+            runs.extend(_parse_optimisations_to_runs(entry, logger))
         elif entry[TYPE] == HpcRunType.SIMULATION.value:
             runs.append(HpcSimulation.from_dict(entry, logger))
         else:
@@ -519,3 +641,60 @@ def parse_args_and_hpc_input_file(
 
     # Return these runs along with the filename.
     return parsed_args.runs, runs, parsed_args.verbose, walltime
+
+
+@contextmanager
+def temporary_optimisations_file(
+    logger: Logger, run: HpcOptimisation, run_number: int
+) -> Iterator[str]:
+    """
+    Creates a temporary optimisations file.
+
+    Inputs:
+        - logger:
+            The logger being used for the HPC run.
+        - run:
+            The run being carried out.
+        - run_number:
+            The number of the run being carried out.
+
+    Yields:
+        - filename:
+            The name of the file.
+
+    """
+
+    temp_dirpath: str = os.path.join(
+        LOCATIONS_FOLDER_NAME,
+        run.location,
+        INPUTS_DIRECTORY,
+    )
+    temp_basepath: str = os.path.join(
+        os.path.dirname(OPTIMISATION_INPUTS_FILE),
+        f"temp_hpc_{run_number}_{os.path.basename(OPTIMISATION_INPUTS_FILE)}",
+    )
+    temp_filename: str = os.path.join(temp_dirpath, temp_basepath)
+
+    # Attempt to create the temporary file and yield its name.
+    logger.info("Attempting to create temporary file %s", temp_filename)
+    try:
+        with open(
+            temp_filename,
+            "w",
+        ) as temp_file:
+            yaml.dump(run.optimisation_inputs, temp_file)
+    except FileNotFoundError as e:
+        logger.error("Failed to create temporary optimisations file.")
+        print(f"Failed to create temporary optimisations file: {str(e)}")
+        raise
+
+    logger.info("Temporary optimisations file successfully created.")
+    yield temp_basepath
+
+    # Attempt to remove the temporary file on exit, exit regardless.
+    logger.info("Attempting to remove temporary optimsiations file.")
+    try:
+        os.remove(temp_filename)
+    except FileNotFoundError as e:
+        logger.error("Could not remove temporary optimisations file: %s", str(e))
+        print(f"Could not delete temporary optimisations file: {str(e)}")
