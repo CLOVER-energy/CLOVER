@@ -2226,6 +2226,7 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
     electric_load_profile: Optional[str],
     location_name: str,
     logger: Logger,
+    optimisation_inputs_file: Optional[str],
 ) -> Tuple[
     Dict[str, Converter],
     Dict[load.load.Device, pd.DataFrame],
@@ -2257,6 +2258,9 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
             The name of the location_name being considered.
         - logger:
             The logger to use for the run.
+        - optimisation_inputs_file:
+            If specified, the name of the overriding optimisation inputs file to use for
+            the run.
 
     Outputs:
         - A tuple containing:
@@ -2366,7 +2370,10 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
 
     # Parse the optimisation input information.
     optimisation_inputs_filepath = os.path.join(
-        inputs_directory_relative_path, OPTIMISATION_INPUTS_FILE
+        inputs_directory_relative_path,
+        optimisation_inputs_file
+        if optimisation_inputs_file is not None
+        else OPTIMISATION_INPUTS_FILE,
     )
     optimisation_inputs = read_yaml(optimisation_inputs_filepath, logger)
     if not isinstance(optimisation_inputs, dict):
