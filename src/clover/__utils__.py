@@ -219,6 +219,10 @@ STEP: str = "step"
 #   Used to parse supply-temperature information.
 SUPPLY_TEMPERATURE: str = "supply_temperature"
 
+# Throughput mass flow rate:
+#   Used to parse the gloabl (throughput) mass flow rate.
+THROUGHPUT_MASS_FLOW_RATE: str = "throughput_mass_flow_rate"
+
 # Zero celcius offset:
 #   Used for offsetting zero degrees celcius in Kelvin.
 ZERO_CELCIUS_OFFSET: float = 273.15
@@ -1793,6 +1797,9 @@ class DesalinationScenario:
     .. attribute:: solar_thermal_scenario
         The solar-thermal scenario
 
+    .. attribute:: throughput_mass_flow_rate
+        The mass-flow rate through all of the collectors.
+
     .. attribute:: unclean_water_sources
         A `set` of `str` giving the unclean water sources.
 
@@ -1803,6 +1810,7 @@ class DesalinationScenario:
     name: str
     pvt_scenario: Optional[ThermalCollectorScenario]
     solar_thermal_scenario: Optional[ThermalCollectorScenario]
+    throughput_mass_flow_rate: Optional[float]
     unclean_water_sources: List[str]
 
     @classmethod
@@ -1945,6 +1953,10 @@ class DesalinationScenario:
                 "Missing feedwater supply temperature in desalination scenario.",
             ) from None
 
+        throughput_mass_flow_rate = desalination_inputs.get(
+            THROUGHPUT_MASS_FLOW_RATE, None
+        )
+
         try:
             unclean_water_sources = list(
                 desalination_inputs[ResourceType.UNCLEAN_WATER.value]["sources"]
@@ -1965,8 +1977,15 @@ class DesalinationScenario:
             desalination_inputs[NAME],
             pvt_scenario,
             solar_thermal_scenario,
+            throughput_mass_flow_rate,
             unclean_water_sources,
         )
+
+    @property
+    def htf_supply_temperature(self) -> float:
+        """The supply temperature of HTF for the scenario in degrees Celsius."""
+
+        return self.feedwater_supply_temperature
 
 
 @dataclasses.dataclass
@@ -1999,6 +2018,9 @@ class HotWaterScenario:
     .. attribute:: solar_thermal_scenario
         The PV-T scenario.
 
+    .. attribute:: throughput_mass_flow_rate
+        The mass-flow rate through all of the collectors.
+
     """
 
     auxiliary_heater: Optional[AuxiliaryHeaterType]
@@ -2009,6 +2031,7 @@ class HotWaterScenario:
     name: str
     pvt_scenario: Optional[ThermalCollectorScenario]
     solar_thermal_scenario: Optional[ThermalCollectorScenario]
+    throughput_mass_flow_rate: Optional[float]
 
     @classmethod
     def from_dict(
@@ -2194,6 +2217,10 @@ class HotWaterScenario:
             )
             solar_thermal_scenario = None
 
+        throughput_mass_flow_rate = hot_water_inputs.get(
+            THROUGHPUT_MASS_FLOW_RATE, None
+        )
+
         return cls(
             auxiliary_heater,
             cold_water_supply,
@@ -2203,7 +2230,14 @@ class HotWaterScenario:
             hot_water_inputs[NAME],
             pvt_scenario,
             solar_thermal_scenario,
+            throughput_mass_flow_rate,
         )
+
+    @property
+    def htf_supply_temperature(self) -> float:
+        """The supply temperature of HTF for the scenario in degrees Celsius."""
+
+        return self.cold_water_supply_temperature
 
 
 @dataclasses.dataclass

@@ -1073,6 +1073,7 @@
                       - type: pv_t
                         heats: cold_water
                         mass_flow_rate: 72 # [litres/hour]
+                    # throughput_mass_flow_rate: 1000 # [litres/hour]
             - file: hot_water_scenario.yaml
               contents: |+
                 ---
@@ -1102,6 +1103,7 @@
                       - type: pv_t
                         heats: cold_water
                         mass_flow_rate: 72 # [litres/hour]
+                    # throughput_mass_flow_rate: 1000 # [litres/hour]
             - file: scenario_inputs.yaml
               contents: |+
                 ---

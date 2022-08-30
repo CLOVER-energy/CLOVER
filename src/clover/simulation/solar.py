@@ -33,7 +33,9 @@ from tqdm import tqdm
 
 from ..__utils__ import (
     BColours,
+    CleanWaterScenario,
     DesalinationScenario,
+    HotWaterScenario,
     dict_to_dataframe,
     HTFMode,
     InputFileError,
@@ -116,6 +118,7 @@ def _calculate_closed_loop_solar_thermal_output(  # pylint: disable=too-many-loc
     minigrid: Minigrid,
     num_tanks: int,
     processed_total_hw_load: Optional[pd.Series],
+    relevant_scenarios: Dict[SolarPanelType, ThermalCollectorScenario],
     resource_type: ResourceType,
     scenario: Scenario,
     solar_thermal_collectors: Union[HybridPVTPanel, SolarThermalPanel],
@@ -667,7 +670,7 @@ def _calculate_closed_loop_solar_thermal_output(  # pylint: disable=too-many-loc
 
 
 def _calculate_direct_heating_solar_thermal_output(
-    collector_system_size: int,
+    collector_system_sizes: Dict[SolarPanelType, int],
     disable_tqdm: bool,
     end_hour: int,
     irradiances: pd.Series,
@@ -675,12 +678,15 @@ def _calculate_direct_heating_solar_thermal_output(
     minigrid: Minigrid,
     num_tanks: int,
     processed_total_hw_load: Optional[pd.Series],
+    relevant_scenarios: Dict[SolarPanelType, ThermalCollectorScenario],
     resource_type: ResourceType,
-    scenario: Scenario,
-    solar_thermal_collectors: Union[HybridPVTPanel, SolarThermalPanel],
+    solar_thermal_collectors: Dict[
+        SolarPanelType, Union[HybridPVTPanel, SolarThermalPanel]
+    ],
     start_hour: int,
     temperatures: pd.Series,
     thermal_desalination_plant: Optional[ThermalDesalinationPlant],
+    thermal_scenario: Union[DesalinationScenario, HotWaterScenario],
     wind_speeds: pd.Series,
 ) -> Tuple[
     pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame
@@ -714,8 +720,6 @@ def _calculate_direct_heating_solar_thermal_output(
             The total hot-water load placed on the system, measured in litres per hour.
         - resource_type:
             The resource type for which the PV-T output is being determined.
-        - scenario:
-            The :class:`Scenario` being considered.
         - solar_thermal_collectors:
             The solar-thermal collector(s) to model, either a solar-thermal collector as
             a `list` of :class:`SolarThermalPanel` or :class:`HybridPVTPanel` instances.
@@ -726,6 +730,8 @@ def _calculate_direct_heating_solar_thermal_output(
             period being modelled.
         - thermal_desalination_plant:
             The thermal desalination plant being considered.
+        - thermal_scenario:
+            The :class:`DeslinationScenario` or :class:`HotWaterScenario` being considered.
         - wind_speeds:
             The :class:`pd.Series` containing wind-speed information for the time period
             being modelled.
@@ -750,8 +756,128 @@ def _calculate_direct_heating_solar_thermal_output(
 
     """
 
+    import pdb
 
-def _get_relevant_scenario(
+    pdb.set_trace()
+
+    # Determine the PV-T output if present.
+    if SolarPanelType.PV_T in solar_thermal_collectors:
+        # Determine the mass flow rate.
+        collector_mass_flow_rate: float = (
+            (
+                thermal_scenario.throughput_mass_flow_rate
+                / collector_system_sizes[SolarPanelType.PV_T]
+            )
+            if thermal_scenario.throughput_mass_flow_rate is not None
+            else thermal_scenario.pvt_scenario.mass_flow_rate
+        )
+
+        # Calculate the output temperature map from the collector.
+        pvt_output_performance: List[Tuple[float, float]] = [
+            solar_thermal_collectors[SolarPanelType.PV_T].calculate_performance(
+                temperatures[index],
+                relevant_scenarios[SolarPanelType.PV_T].htf_heat_capacity,
+                thermal_scenario.htf_supply_temperature,
+                logger,
+                collector_mass_flow_rate,
+                irradiances[index],
+                wind_speeds[index],
+            )
+            for index in tqdm(
+                range(start_hour, end_hour),
+                desc=f"{resource_type.value.replace('_', ' ')} "
+                + f"{SolarPanelType.PV_T.value.replace('_', '-')} performance",
+                disable=disable_tqdm,
+                leave=False,
+                unit="hour",
+            )
+        ]
+
+        fractional_electrical_performance: Optional[Dict[int, float]] = {
+            index: performance_output[0]
+            for index, performance_output in enumerate(pvt_output_performance)
+        }
+        pvt_output_temperature = Optional[Dict[int, float]] = {
+            index: performance_output[1]
+            for index, performance_output in enumerate(pvt_output_performance)
+        }
+
+    else:
+        fractional_electrical_performance = None
+        pvt_output_temperature = None
+
+    # Determine the solar-thermal output if present
+    if SolarPanelType.SOLAR_THERMAL in solar_thermal_collectors:
+        # Determine the mass flow rate.
+        collector_mass_flow_rate: float = (
+            (
+                thermal_scenario.throughput_mass_flow_rate
+                / collector_system_sizes[SolarPanelType.SOLAR_THERMAL]
+            )
+            if thermal_scenario.throughput_mass_flow_rate is not None
+            else thermal_scenario.solar_thermal_scenario.mass_flow_rate
+        )
+
+        # FIXME:
+        # Check calculations here.
+
+        # Calculate the output temperature map from the collector.
+        solar_thermal_output_performance: List[Tuple[Optional[float], float]] = [
+            solar_thermal_collectors[
+                SolarPanelType.SOLAR_THERMAL
+            ].calculate_performance(
+                temperatures[index],
+                relevant_scenarios[SolarPanelType.SOLAR_THERMAL].htf_heat_capacity,
+                pvt_output_temperature[index]
+                if pvt_output_temperature is not None
+                else thermal_scenario.htf_supply_temperature,
+                logger,
+                collector_mass_flow_rate,
+                irradiances[index],
+                wind_speeds[index],
+            )
+            for index in tqdm(
+                range(start_hour, end_hour),
+                desc=f"{resource_type.value.replace('_', ' ')} "
+                + f"{SolarPanelType.SOLAR_THERMAL.value.replace('_', '-')} performance",
+                disable=disable_tqdm,
+                leave=False,
+                unit="hour",
+            )
+        ]
+
+
+def _get_relevant_thermal_scenario(
+    resource_type: ResourceType,
+    scenario: Scenario,
+) -> Union[DesalinationScenario, HotWaterScenario]:
+    """
+    Determines the relevant thermal scenario based on other information.
+
+    Inputs:
+        - resource_type:
+            The :class:`ResourceType` for the run.
+        - scenario:
+            The :class:`Scenario` being used for the run.
+        - solar_thermal_collector:
+            The relevant solar-thermal collector being used for the run.
+
+    """
+
+    if resource_type == ResourceType.CLEAN_WATER:
+        return scenario.desalination_scenario
+
+    if resource_type in {ResourceType.HOT_CLEAN_WATER, ResourceType.HOT_UNCLEAN_WATER}:
+        return scenario.hot_water_scenario
+
+    raise ProgrammerJudgementFault(
+        "simularion.solar::_get_relevant_thermal_scenario",
+        "Could not determine relevant scenario for resource type "
+        f"{ResourceType.value}",
+    )
+
+
+def _get_relevant_collector_scenario(
     resource_type: ResourceType,
     scenario: Scenario,
     solar_thermal_collector: Union[HybridPVTPanel, SolarThermalPanel],
@@ -769,26 +895,12 @@ def _get_relevant_scenario(
 
     """
 
-    if (
-        resource_type == ResourceType.CLEAN_WATER
-        and solar_thermal_collector.panel_type == SolarPanelType.PV_T
-    ):
-        return scenario.desalination_scenario.pvt_scenario
-    if (
-        resource_type == ResourceType.CLEAN_WATER
-        and solar_thermal_collector.panel_type == SolarPanelType.SOLAR_THERMAL
-    ):
-        return scenario.desalination_scenario.solar_thermal_scenario
-    if (
-        resource_type == ResourceType.HOT_CLEAN_WATER
-        and solar_thermal_collector.panel_type == SolarPanelType.PV_T
-    ):
-        return scenario.hot_water_scenario.pvt_scenario
-    if (
-        resource_type == ResourceType.HOT_CLEAN_WATER
-        and solar_thermal_collector.panel_type == SolarPanelType.SOLAR_THERMAL
-    ):
-        return scenario.hot_water_scenario.solar_thermal_scenario
+    thermal_scenario = _get_relevant_thermal_scenario(resource_type, scenario)
+
+    if solar_thermal_collector.panel_type == SolarPanelType.PV_T:
+        return thermal_scenario.pvt_scenario
+    if solar_thermal_collector.panel_type == SolarPanelType.SOLAR_THERMAL:
+        return thermal_scenario.solar_thermal_scenario
 
     raise ProgrammerJudgementFault(
         "simulation.solar::_get_relevant_scenario",
@@ -988,7 +1100,7 @@ def _volume_withdrawn_from_tank(
 
 
 def calculate_solar_thermal_output(  # pylint: disable=too-many-locals, too-many-statements
-    collector_system_size: int,
+    collector_system_sizes: Dict[SolarPanelType, int],
     disable_tqdm: bool,
     end_hour: int,
     irradiances: pd.Series,
@@ -998,7 +1110,9 @@ def calculate_solar_thermal_output(  # pylint: disable=too-many-locals, too-many
     processed_total_hw_load: Optional[pd.Series],
     resource_type: ResourceType,
     scenario: Scenario,
-    solar_thermal_collectors: List[Union[HybridPVTPanel, SolarThermalPanel]],
+    solar_thermal_collectors: Dict[
+        SolarPanelType, Union[HybridPVTPanel, SolarThermalPanel]
+    ],
     start_hour: int,
     temperatures: pd.Series,
     thermal_desalination_plant: Optional[ThermalDesalinationPlant],
@@ -1017,7 +1131,7 @@ def calculate_solar_thermal_output(  # pylint: disable=too-many-locals, too-many
     the appropriate calculation function.
 
     Inputs:
-        - collector_system_size:
+        - collector_system_sizes:
             The size of the PV-T or solar-thermal system being modelled.
         - disable_tqdm:
             Whether to disable the tqdm progress bars (True) or display them (False).
@@ -1076,18 +1190,29 @@ def calculate_solar_thermal_output(  # pylint: disable=too-many-locals, too-many
 
     """
 
-    import pdb
-
-    pdb.set_trace()
-
     # Determine the relevant scenario for each collector.
-    relevant_scenarios: List[ThermalCollectorScenario] = [
-        _get_relevant_scenario(resource_type, scenario, collector)
-        for collector in solar_thermal_collectors
-    ]
+    relevant_collector_scenarios: Dict[SolarPanelType, ThermalCollectorScenario] = {
+        panel_type: _get_relevant_collector_scenario(resource_type, scenario, collector)
+        for panel_type, collector in solar_thermal_collectors.items()
+    }
+    thermal_scenario = _get_relevant_thermal_scenario(resource_type, scenario)
+
+    # Remove unneeded collector information.
+    if not scenario.pv_t:
+        solar_thermal_collectors.pop(SolarPanelType.PV_T)
+    if not scenario.solar_thermal:
+        solar_thermal_collectors.pop(SolarPanelType.SOLAR_THERMAL)
 
     # Check that all collectors have the same HTF mode.
-    if len({collector_scenario.heats for collector_scenario in relevant_scenarios}) > 1:
+    if (
+        len(
+            {
+                collector_scenario.heats
+                for collector_scenario in relevant_collector_scenarios.values()
+            }
+        )
+        > 1
+    ):
         logger.error(
             "%sMultiple-collector-type flow was requested, but different collectors "
             "had different HTF modes within the same scenario. Ensure that each "
@@ -1104,10 +1229,10 @@ def calculate_solar_thermal_output(  # pylint: disable=too-many-locals, too-many
     # If a matrix-based equation is required, call the matrix-solving code.
     if all(
         collector_scenario.heats == HTFMode.CLOSED_HTF
-        for collector_scenario in relevant_scenarios
+        for collector_scenario in relevant_collector_scenarios.values()
     ):
         return _calculate_closed_loop_solar_thermal_output(
-            collector_system_size,
+            collector_system_sizes,
             disable_tqdm,
             end_hour,
             irradiances,
@@ -1115,6 +1240,7 @@ def calculate_solar_thermal_output(  # pylint: disable=too-many-locals, too-many
             minigrid,
             num_tanks,
             processed_total_hw_load,
+            relevant_collector_scenarios,
             resource_type,
             scenario,
             solar_thermal_collectors,
@@ -1127,10 +1253,10 @@ def calculate_solar_thermal_output(  # pylint: disable=too-many-locals, too-many
     # If a direct-heating calculation is required, simply call the direct-heating code.
     if all(
         collector_scenario.heats == HTFMode.FEEDWATER_HEATING
-        for collector_scenario in relevant_scenarios
+        for collector_scenario in relevant_collector_scenarios.values()
     ):
         return _calculate_direct_heating_solar_thermal_output(
-            collector_system_size,
+            collector_system_sizes,
             disable_tqdm,
             end_hour,
             irradiances,
@@ -1138,12 +1264,13 @@ def calculate_solar_thermal_output(  # pylint: disable=too-many-locals, too-many
             minigrid,
             num_tanks,
             processed_total_hw_load,
+            relevant_collector_scenarios,
             resource_type,
-            scenario,
             solar_thermal_collectors,
             start_hour,
             temperatures,
             thermal_desalination_plant,
+            thermal_scenario,
             wind_speeds,
         )
 

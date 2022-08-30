@@ -614,7 +614,7 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
     # Determine the number of background tasks to carry out.
     num_ninjas: int = (
         1
-        + (1 if any(scenario.pv_t for scenario in scenarios) else 0)
+        + (1 if any(scenario.pv_t or scenario.solar_thermal for scenario in scenarios) else 0)
         + (
             1
             if (
@@ -629,7 +629,7 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
     )
 
     # Generate and save the wind data for each year as a background task.
-    if any(scenario.pv_t for scenario in scenarios):
+    if any(scenario.pv_t or scenario.solar_thermal for scenario in scenarios):
         logger.info("Beginning wind-data fetching.")
         wind_data_thread: Optional[wind.WindDataThread] = wind.WindDataThread(
             os.path.join(auto_generated_files_directory, "wind"),
@@ -883,7 +883,7 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
         )
         logger.info("Total weather output successfully computed and saved.")
 
-    if any(scenario.pv_t for scenario in scenarios):
+    if any(scenario.pv_t or scenario.solar_thermal for scenario in scenarios):
         logger.info("Generating and saving total wind data output file.")
         total_wind_data: Optional[pd.DataFrame] = wind.total_wind_output(
             os.path.join(auto_generated_files_directory, "wind"),

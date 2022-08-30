@@ -48,6 +48,7 @@ from ..__utils__ import (
     Location,
     Scenario,
     Simulation,
+    SolarPanelType,
     SystemDetails,
     WasteProduct,
 )
@@ -564,7 +565,7 @@ def _calculate_renewable_cw_profiles(  # pylint: disable=too-many-locals, too-ma
         buffer_tank_temperature,
         buffer_tank_volume_supplied,
     ) = calculate_solar_thermal_output(
-        pvt_size,
+        {SolarPanelType.PV_T: pvt_size},
         disable_tqdm,
         end_hour,
         irradiance_data[start_hour:end_hour],
@@ -574,7 +575,7 @@ def _calculate_renewable_cw_profiles(  # pylint: disable=too-many-locals, too-ma
         None,
         ResourceType.CLEAN_WATER,
         scenario,
-        minigrid.pvt_panel,
+        {SolarPanelType.PV_T: minigrid.pvt_panel},
         start_hour,
         temperature_data[start_hour:end_hour],
         thermal_desalination_plant,
@@ -952,7 +953,10 @@ def _calculate_renewable_hw_profiles(  # pylint: disable=too-many-locals, too-ma
         hot_water_tank_temperature,
         hot_water_tank_volume_supplied,
     ) = calculate_solar_thermal_output(
-        pvt_size,
+        {
+            SolarPanelType.PV_T: pvt_size,
+            SolarPanelType.SOLAR_THERMAL: solar_thermal_size,
+        },
         disable_tqdm,
         end_hour,
         irradiance_data[start_hour:end_hour],
@@ -962,7 +966,10 @@ def _calculate_renewable_hw_profiles(  # pylint: disable=too-many-locals, too-ma
         processed_total_hw_load.iloc[:, 0],
         ResourceType.HOT_CLEAN_WATER,
         scenario,
-        [minigrid.pvt_panel, minigrid.solar_thermal_panel],
+        {
+            SolarPanelType.PV_T: minigrid.pvt_panel,
+            SolarPanelType.SOLAR_THERMAL: minigrid.solar_thermal_panel,
+        },
         start_hour,
         temperature_data[start_hour:end_hour],
         None,
