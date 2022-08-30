@@ -708,12 +708,13 @@ def get_total_equipment_costs(  # pylint: disable=too-many-locals, too-many-stat
     ) * technical_appraisal.power_consumed_fraction[ResourceType.ELECTRIC]
 
     # Compute the hot-water subsystem costs.
-    subsystem_costs[ResourceType.HOT_CLEAN_WATER] += (
-        hot_water_tank_cost
-        + hot_water_tank_installation_cost
-        + (bos_cost + misc_costs + pv_cost + pv_installation_cost + storage_cost)
-        * technical_appraisal.power_consumed_fraction[ResourceType.HOT_CLEAN_WATER]
-    )
+    if scenario.hot_water_scenario is not None:
+        subsystem_costs[ResourceType.HOT_CLEAN_WATER] += (
+            hot_water_tank_cost
+            + hot_water_tank_installation_cost
+            + (bos_cost + misc_costs + pv_cost + pv_installation_cost + storage_cost)
+            * technical_appraisal.power_consumed_fraction[ResourceType.HOT_CLEAN_WATER]
+        )
 
     # Compute the costs associated when carrying out prioritisation desalination.
     update_diesel_costs(
@@ -1322,11 +1323,12 @@ def total_om(  # pylint: disable=too-many-locals
     ) * technical_appraisal.power_consumed_fraction[ResourceType.ELECTRIC]
 
     # Compute the hot-water subsystem costs.
-    subsystem_costs[ResourceType.HOT_CLEAN_WATER] += (
-        hot_water_tank_om
-        + (general_om + pv_om + storage_om)
-        * technical_appraisal.power_consumed_fraction[ResourceType.HOT_CLEAN_WATER]
-    )
+    if scenario.hot_water_scenario is not None:
+        subsystem_costs[ResourceType.HOT_CLEAN_WATER] += (
+            hot_water_tank_om
+            + (general_om + pv_om + storage_om)
+            * technical_appraisal.power_consumed_fraction[ResourceType.HOT_CLEAN_WATER]
+        )
 
     # Compute the costs associated when carrying out prioritisation desalination.
     update_diesel_costs(

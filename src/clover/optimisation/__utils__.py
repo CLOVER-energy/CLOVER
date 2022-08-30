@@ -1164,14 +1164,14 @@ def recursive_iteration(  # pylint: disable=too-many-locals
         # Run the simulation
         (_, simulation_results, system_details,) = energy_system.run_simulation(
             int(component_sizes[RenewableEnergySource.CLEAN_WATER_PVT]),
-            int(component_sizes[RenewableEnergySource.CLEAN_WATER_SOLAR_THERMAL]),
+            0,
             conventional_cw_source_profiles,
             converters,
             disable_tqdm,
             component_sizes[ImpactingComponent.STORAGE],
             grid_profile,
             int(component_sizes[RenewableEnergySource.HOT_WATER_PVT]),
-            int(component_sizes[RenewableEnergySource.HOT_WATER_SOLAR_THERMAL]),
+            0,
             irradiance_data,
             kerosene_usage,
             location,

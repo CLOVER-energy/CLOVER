@@ -36,6 +36,8 @@ from tqdm import tqdm  # pylint: disable=import-error
 __all__ = (
     "BColours",
     "CleanWaterMode",
+    "CoolingMode",
+    "CoolingScenario",
     "Criterion",
     "CUT_OFF_TIME",
     "daily_sum_to_monthly_sum",
@@ -91,6 +93,10 @@ COLD_WATER: str = "cold_water"
 # Conventional sources:
 #   Keyword used for parsing conventional-source information.
 CONVENTIONAL_SOURCES: str = "conventional_sources"
+
+# Cooling scenario:
+#   Keyword for parsing the cooling scenario from the scenario inputs.
+COOLING_SCENARIO: str = "cooling_scenario"
 
 # Cut off time:
 #   The time up and to which information about the load of each device will be returned.
@@ -210,6 +216,10 @@ SKIPPING: str = "[ SKIPPING ]"
 #   Keyword used for parsing PV-T and solar-thermal scenario information.
 SOLAR_THERMAL_COLLECTOR_SCENARIOS: str = "solar_thermal_collector_scenarios"
 
+# Sources:
+#   Keyword used for parsing source information.
+SOURCES: str = "sources"
+
 # Step:
 #   Keyword used when parsing information about the system size step to consider in
 #   optimisations.
@@ -281,13 +291,16 @@ class CleanWaterMode(enum.Enum):
     Used to specify the clean-water mode for the system.
 
     - BACKUP:
-        The clean-water demand will only be fulfiled using minigrid power as backup to
+        The clean-water demand will only be fulfilled using minigrid power as backup to
         carry out electric desalination if there are any electric desalination
         converters present.
 
     - PRIORITISE:
         The clean-water demand will be fulfiled always, utilising diesel generators if
         necessary to carry out electric desalination during clean-water blackouts..
+
+    - THERMAL_ONLY:
+        The clean-water demand will only be fulfilled using solar-thermal power.
 
     """
 
@@ -506,6 +519,12 @@ class ColumnHeader(enum.Enum):
     - STORAGE_PROFILE:
         The profile for the electric storage system.
 
+    - TOTAL_COOLING_CONSUMED:
+        The total cooling load consumed by the system.
+
+    - TOTAL_COOLING_LOAD:
+        The total cooling load placed on the system.
+
     - TOTAL_CW_CONSUMED:
         The total clean water that was consumed.
 
@@ -600,6 +619,7 @@ class ColumnHeader(enum.Enum):
     KEROSENE_MITIGATION = "Kerosene mitigation"
     LOAD_ENERGY = "Load energy (kWh)"
     MAXIMUM = "Maximum"
+    POWER_CONSUMED_BY_COOLING = "Power consumed providing cooling (kWh)"
     POWER_CONSUMED_BY_DESALINATION = "Power consumed providing clean water (kWh)"
     POWER_CONSUMED_BY_ELECTRIC_DEVICES = "Power consumed providing electricity (kWh)"
     POWER_CONSUMED_BY_HOT_WATER = "Power consumed providing hot water (kWh)"
@@ -611,6 +631,8 @@ class ColumnHeader(enum.Enum):
     RENEWABLE_ELECTRICITY_SUPPLIED = "Renewables energy supplied (kWh)"
     RENEWABLE_ELECTRICITY_USED_DIRECTLY = "Renewables energy used (kWh)"
     STORAGE_PROFILE = "Storage profile (kWh)"
+    TOTAL_COOLING_CONSUMED = "Total cooling consumption (kWh_th)"
+    TOTAL_COOLING_LOAD = "Total cooling load (kWh_th)"
     TOTAL_CW_CONSUMED = "Total clean water consumed (l)"
     TOTAL_CW_LOAD = "Total clean water demand (l)"
     TOTAL_CW_SUPPLIED = "Total clean water supplied (l)"
@@ -619,8 +641,118 @@ class ColumnHeader(enum.Enum):
     TOTAL_HW_LOAD = "Total hot-water demand (l)"
     TOTAL_PVT_ELECTRICITY_SUPPLIED = "Total PV-T electric energy supplied (kWh)"
     UNMET_CLEAN_WATER = "Unmet clean water demand (l)"
+    UNMET_COOLING = "Unmet cooling demand (kWh_th)"
     UNMET_ELECTRICITY = "Unmet energy (kWh)"
     WATER_SURPLUS = "Water surplus (l)"
+
+
+class CoolingMode(enum.Enum):
+    """
+    Denotes the cooling mode of the system.
+
+    - BACKUP:
+        The clean-water demand will only be fulfilled using minigrid power as backup to
+        carry out electric desalination if there are any electric desalination
+        converters present.
+
+    - PRIORITISE:
+        The clean-water demand will be fulfiled always, utilising diesel generators if
+        necessary to carry out electric desalination during clean-water blackouts..
+
+    - THERMAL_ONLY:
+        The clean-water demand will only be fulfilled using solar-thermal power.
+
+    """
+
+    BACKUP = "backup"
+    PRIORITISE = "prioritise"
+    THERMAL_ONLY = "thermal_only"
+
+
+@dataclasses.dataclass
+class CoolingScenario:
+    """
+    Represents the cooling-related scenario being run.
+
+    .. attribute:: cooling_mode
+        The mode of cooling taking place.
+
+    .. attribute:: name
+        The name of the scenario.
+
+    .. attribute:: sources
+        The sources of cooling.
+
+    """
+
+    cooling_mode: CoolingMode
+    name: str
+    sources: List[str]
+
+    @classmethod
+    def from_dict(cls, cooling_inputs: Dict[str, Any], logger: logging.Logger) -> Any:
+        """
+        Returns a :class:`CoolingScenario` instance based on the input data.
+
+        Inputs:
+            - cooling_inputs:
+                The input data extracted from the scenario file.
+            - logger:
+                The :class:`logging.Logger` to use for the run.
+
+        Outputs:
+            - A :class:`CoolingScenario` instance based on the input data provided.
+
+        """
+
+        try:
+            cooling_mode = CoolingMode(cooling_inputs[ResourceType.COOLING.value][MODE])
+        except ValueError:
+            logger.error(
+                "%sInvalid cooling mode specified: %s%s",
+                BColours.fail,
+                cooling_inputs[ResourceType.COOLING.value][MODE],
+                BColours.endc,
+            )
+            raise InputFileError(
+                "cooling scenario",
+                "Invalid cooling mode specified in cooling scenario.",
+            ) from None
+        except KeyError:
+            logger.error(
+                "%sMissing cooling-mode information in cooling scenario file.%s",
+                BColours.fail,
+                BColours.endc,
+            )
+            raise InputFileError(
+                "cooling scenario", "Missing cooling scenario cooling mode information."
+            ) from None
+
+        try:
+            name = cooling_inputs[NAME]
+        except KeyError:
+            logger.error(
+                "%sMissing name in cooling scenario file.%s",
+                BColours.fail,
+                BColours.endc,
+            )
+            raise InputFileError(
+                "cooling scenario", "Missing cooling scenario name."
+            ) from None
+
+        try:
+            sources = cooling_inputs[ResourceType.COOLING.value][SOURCES]
+        except KeyError:
+            logger.error(
+                "%sMissing cooling sources in cooling scenario file.%s",
+                BColours.fail,
+                BColours.endc,
+            )
+            raise InputFileError(
+                "cooling scenario", "Missing cooling scenario cooling sources."
+            ) from None
+
+        return cls(cooling_mode, name, sources)
 
 
 def daily_sum_to_monthly_sum(daily_profile: pd.DataFrame) -> pd.DataFrame:
@@ -1225,6 +1357,9 @@ class ResourceType(enum.Enum):
     - UNCLEAN_WATER:
         Represents feedwater which has not yet been warmed or heated by the minigrid.
 
+    - WASTE_HEAT:
+        Waste heat produced by the system.
+
     """
 
     CLEAN_WATER = "clean_water"
@@ -1237,6 +1372,7 @@ class ResourceType(enum.Enum):
     HOT_UNCLEAN_WATER = "hot_feedwater"
     MISC = "misc"
     UNCLEAN_WATER = "feedwater"
+    WASTE_HEAT = "waste_heat"
 
 
 # Resource name to resource type mapping:
@@ -1252,6 +1388,7 @@ RESOURCE_NAME_TO_RESOURCE_TYPE_MAPPING = {
     "hot_water": ResourceType.HOT_CLEAN_WATER,
     "hot_untreated_water": ResourceType.HOT_UNCLEAN_WATER,
     "water": ResourceType.GENERIC_WATER,
+    "waste_heat": ResourceType.WASTE_HEAT,
 }
 
 
@@ -2214,6 +2351,9 @@ class Scenario:
     .. attribute:: battery
         Whether battery storage is being included in the scenario.
 
+    .. attribute:: cooling_scenario
+        The :class:`CoolingScenario` for the run.
+
     .. attribute:: demands
         The demands being modelled.
 
@@ -2263,6 +2403,7 @@ class Scenario:
     """
 
     battery: bool
+    cooling_scenario: Optional[CoolingScenario]
     demands: Demands
     desalination_scenario: Optional[DesalinationScenario]
     diesel_scenario: DieselScenario
@@ -2282,6 +2423,7 @@ class Scenario:
     @classmethod
     def from_dict(
         cls,
+        cooling_scenarios: Optional[List[CoolingScenario]],
         desalination_scenarios: Optional[List[DesalinationScenario]],
         hot_water_scenarios: Optional[List[HotWaterScenario]],
         logger: logging.Logger,
@@ -2291,6 +2433,8 @@ class Scenario:
         Returns a :class:`Scenario` instance based on the input data.
 
         Inputs:
+            - cooling_scenarios:
+                The list of :class:`CoolingScenario` instances to use for the run.
             - desalination_scenarios:
                 The list of :class:`DesalinationScenario` to use for the run.
             - hot_water_scenarios:
@@ -2329,6 +2473,42 @@ class Scenario:
         }
 
         # Determine the desalination and hot-water scenarios to use for the run.
+        if cooling_scenarios is not None:
+            if COOLING_SCENARIO in scenario_inputs:
+                try:
+                    cooling_scenario: Optional[CoolingScenario] = [
+                        entry
+                        for entry in cooling_scenarios
+                        if entry.name == scenario_inputs[COOLING_SCENARIO]
+                    ][0]
+                except IndexError:
+                    logger.error(
+                        "%sError creating scenario from inputs. Cooling scenario '%s' "
+                        "could not be found in scenario '%s'.%s",
+                        BColours.fail,
+                        scenario_inputs[COOLING_SCENARIO],
+                        scenario_inputs[NAME],
+                        BColours.endc,
+                    )
+            else:
+                try:
+                    cooling_scenario = [
+                        entry
+                        for entry in cooling_scenarios
+                        if entry.name == DEFAULT_SCENARIO
+                    ][0]
+                except IndexError:
+                    logger.error(
+                        "%sError creating scenario from inputs. Cooling scenario '%s' "
+                        "could not be found in scenario '%s'.%s",
+                        BColours.fail,
+                        scenario_inputs[DESALINATION_SCENARIO],
+                        scenario_inputs[NAME],
+                        BColours.endc,
+                    )
+        else:
+            cooling_scenario = None
+
         if desalination_scenarios is not None:
             if DESALINATION_SCENARIO in scenario_inputs:
                 try:
@@ -2405,6 +2585,7 @@ class Scenario:
 
         return cls(
             scenario_inputs["battery"],
+            cooling_scenario,
             demands,
             desalination_scenario,
             diesel_scenario,

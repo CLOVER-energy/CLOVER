@@ -1,0 +1,23 @@
+---
+################################################################################
+# cooling_scenarios.yaml - Cooling scenario parameters.                        #
+#                                                                              #
+# Author: Ben Winchester                                                       #
+# Copyright: Ben Winchester, 2022                                              #
+# Date created: 11/11/2021                                                     #
+# License: Open source                                                         #
+################################################################################
+
+cooling_scenarios:
+  - name: default
+    cooling:
+      mode: prioritise # "backup", "prioritise" or "thermal_only"
+      sources: # defined within the 'conversion_inputs.yaml' file
+        - diakin
+    # solar_thermal_collector_scenarios:
+    #   - type: solar_thermal
+    #     heats: htf
+    #     mass_flow_rate: 72 # [litres/hour]
+    #   - type: pv_t
+    #     heats: htf
+    #     mass_flow_rate: 72 # [litres/hour]

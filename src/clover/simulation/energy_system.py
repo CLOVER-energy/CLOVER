@@ -55,6 +55,7 @@ from ..conversion.conversion import Converter, ThermalDesalinationPlant, WaterSo
 from ..generation.solar import solar_degradation
 from ..load.load import compute_processed_load_profile, population_hourly
 from .__utils__ import determine_available_converters, Minigrid
+from .clinic import Clinic
 from .diesel import (
     DieselWaterHeater,
     get_diesel_energy_and_times,
@@ -1675,6 +1676,82 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
     # Post-process dataframes.
     processed_total_hw_load = processed_total_hw_load.reset_index(drop=True)
 
+    # Calculate cooling-related profiles.
+    total_cooling_load: pd.DataFrame = pd.DataFrame([0] * (end_hour - start_hour))
+    electric_cooling_power_consumption: pd.DataFrame = pd.DataFrame(
+        [0] * (end_hour - start_hour)
+    )
+    total_met_cooling_load: pd.DataFrame = pd.DataFrame([0] * (end_hour - start_hour))
+    unmet_cooling_load: pd.DataFrame = pd.DataFrame([0] * (end_hour - start_hour))
+    if ResourceType.COOLING in scenario.resource_types:
+        for clinic in minigrid.buildings:
+            # Determine the available cooling converters.
+            cooling_converters = [
+                converter
+                for converter in available_converters
+                if converter.output_resource_type == ResourceType.COOLING
+                if converter.name == clinic.cooling_device
+            ]
+
+            cooling_load = compute_processed_load_profile(
+                scenario, total_loads[ResourceType.COOLING]
+            )
+            cooling_load *= cooling_load > 0
+            remaining_cooling_load = cooling_load.copy()
+
+            # Work through the available converters.
+            for cooling_converter in cooling_converters:
+                # Use the efficiency of this air conditioner to work out its electrical
+                # load
+                electric_cooling_load = (
+                    remaining_cooling_load
+                    * cooling_converter.input_resource_consumption[
+                        ResourceType.ELECTRIC
+                    ]
+                )
+
+                # The air conditioner can only operate provided that the cooling load is
+                # less than the maximum capacity of the conditioner.
+                met_electric_cooling_load = pd.DataFrame(
+                    [
+                        min(
+                            entry,
+                            cooling_converter.maximum_output_capacity
+                            * cooling_converter.input_resource_consumption[
+                                ResourceType.ELECTRIC
+                            ]
+                            / 1000,
+                        )
+                        for entry in electric_cooling_load[0].values
+                    ]
+                )
+                electric_cooling_power_consumption += met_electric_cooling_load
+                remaining_cooling_load -= (
+                    met_electric_cooling_load / cooling_converter.consumption
+                )
+
+            total_cooling_load += cooling_load
+            total_met_cooling_load += cooling_load - remaining_cooling_load
+            unmet_cooling_load += remaining_cooling_load
+            logger.info("Total electric cooling load computed.")
+            if len(cooling_converters) > 0:
+                logger.debug(
+                    "Cooling load was unmet %s%% of the time, met %s%% of the time.",
+                    round(100 * (sum(unmet_cooling_load[0]) / sum(cooling_load[0])), 2),
+                    round(
+                        100
+                        * (
+                            (sum(cooling_load[0]) - round(sum(unmet_cooling_load[0])))
+                            / sum(cooling_load[0])
+                        ),
+                        2,
+                    ),
+                )
+            else:
+                logger.debug("No cooling converters defined. Load of %s was unmet ")
+    else:
+        electric_cooling_load = pd.DataFrame([0] * (end_hour - start_hour))
+
     # Calculate electricity-related profiles.
     if total_electric_load is None:
         logger.error(
@@ -1691,6 +1768,7 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
             start_hour:end_hour
         ].values
         + clean_water_power_consumed.values
+        + electric_cooling_power_consumption.values
         + hot_water_power_consumed.values
         + thermal_desalination_electric_power_consumed.values
     )
@@ -2041,11 +2119,11 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
     unmet_energy = pd.DataFrame(
         (
             load_energy.values
-            + thermal_desalination_electric_power_consumed.values
             + clean_water_power_consumed.values
             + hot_water_power_consumed.values
-            - renewables_energy_used_directly.values
+            + thermal_desalination_electric_power_consumed.values
             - grid_energy.values
+            - renewables_energy_used_directly.values
             - storage_power_supplied_frame.values
         )
     )
@@ -2106,14 +2184,16 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
     # Ensure all unmet energy is calculated correctly, removing any negative values
     unmet_energy = ((unmet_energy > 0) * unmet_energy).abs()  # type: ignore
     # Ensure all unmet clean-water energy is considered.
-    clean_water_power_consumed = clean_water_power_consumed.mul(  # type: ignore
-        1 - blackout_times
-    )
-    thermal_desalination_electric_power_consumed = (
-        thermal_desalination_electric_power_consumed.mul(  # type: ignore
-            1 - blackout_times
-        )
-    )
+    # clean_water_power_consumed = clean_water_power_consumed.mul(  # type: ignore
+    #     1 - blackout_times
+    # )
+    # electric_cooling_power_consumption = electric_cooling_power_consumption.mul(1 - blackout_times)
+    # hot_water_power_consumed = hot_water_power_consumed.mul(1 - blackout_times)
+    # thermal_desalination_electric_power_consumed = (
+    #     thermal_desalination_electric_power_consumed.mul(  # type: ignore
+    #         1 - blackout_times
+    #     )
+    # )
 
     # Find how many kerosene lamps are in use
     kerosene_usage = pd.DataFrame(
@@ -2136,9 +2216,10 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
         total_energy_used
         - excess_energy_used_desalinating_frame  # type: ignore
         - clean_water_power_consumed  # type: ignore
-        - thermal_desalination_electric_power_consumed  # type: ignore
+        - electric_cooling_power_consumption
         - hot_water_power_consumed  # type: ignore
-    )
+        - thermal_desalination_electric_power_consumed  # type: ignore
+    ) * (1 - blackout_times)
     power_used_on_electricity.columns = pd.Index(
         [ColumnHeader.POWER_CONSUMED_BY_ELECTRIC_DEVICES.value]
     )
@@ -2600,6 +2681,24 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
 
     if brine_produced is not None:
         system_performance_outputs_list.append(brine_produced)
+
+    if ResourceType.COOLING in scenario.resource_types:
+        electric_cooling_power_consumption.columns = pd.Index(
+            [ColumnHeader.POWER_CONSUMED_BY_COOLING.value]
+        )
+        total_cooling_load.columns = pd.Index([ColumnHeader.TOTAL_COOLING_LOAD.value])
+        total_met_cooling_load.columns = pd.Index(
+            [ColumnHeader.TOTAL_COOLING_CONSUMED.value]
+        )
+        unmet_cooling_load.columns = pd.Index([ColumnHeader.UNMET_COOLING.value])
+        system_performance_outputs_list.extend(
+            [
+                total_cooling_load,
+                electric_cooling_power_consumption,
+                total_met_cooling_load,
+                unmet_cooling_load,
+            ]
+        )
 
     system_performance_outputs = pd.concat(
         system_performance_outputs_list,

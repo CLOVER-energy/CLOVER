@@ -1,0 +1,76 @@
+---
+################################################################################
+# clinic.yaml - Parameters for specifying a health centre clinic within CLOVER #
+#                                                                              #
+# Author: Ilaria Del Frate                                                     #
+# Copyright: laria Del Frate, 2022                                             #
+# Date created: 27/07/2022                                                     #
+# License: Open source                                                         #
+################################################################################
+
+clinics:
+  # A dash here means one entry, i.e., clinic.
+  - name: kabakedi
+    # Transmission Load
+    floor_area: 56.49 # [m^2]
+    roof_area: 56.49 # [m^2]
+    surface_area_walls: 86.8 # [m^2]
+    surface_area_doors_windows: 15.13 # [m^2] - assumption of 2 the open windows covered with glass
+    u_value_walls: 2.5 # [W/m^2*K] Thermal transmittance of wall
+    u_value_windows_doors: 5 # [W/m^2*K]
+    u_value_floor: 1 # [W/m^2*K]
+    u_value_roof: 0.7 # [W/m^2*K]
+    inside_ideal_temperature: 23 # [degC]
+    # outside_temperature: 28 #[degC]
+
+    # Internal heat Load - People
+    staff: 1.5 #number of nurses present per day
+    patients: 2.5 #average number of patients and accompaniers
+    heat_loss_staff: 82 # [W] From Drug Store ASHRAE value
+    heat_loss_patients: 67.4 # [W] From Apartments ASHRAE value
+    start_time_staff: [11, 11, 11, 11, 11, 11, 0]
+    end_time_staff: [18, 18, 18, 18, 18, 18, 0]
+    start_time_patients: [12, 12, 12, 12, 12, 12, 0]
+    end_time_patients: [17, 17, 17, 17, 17, 17, 0]
+
+    # Internal heat load - Lighting
+    lamps_internal: 9 # number of lamps within the clinic
+    lamps_external: 4 # number of lamps outside the clinic
+    start_time_lamps: [15, 15, 15, 15, 15, 15, 0] # At 15:00 lights are turned on
+    end_time_lamps: [18, 18, 18, 18, 18, 18, 0]
+    time_lamps_external: 12 # hours per day (night)
+    wattage_lamps: 7 # [W] LED Bulb light A-8901
+    # Fridge heat load
+    fridge_wattage: 120 # [W]
+    time_fridge: 24 # [h/day]
+
+    # Infiltration loads - Assumption of closed windows and doors when people are not entering the facility
+    changes: 5 # number of volume changes per hour - door opening
+    volume_cold_store: 162.7 # [m^3]
+    energy_new_air: 2.1 # [kJ/m^3*degC] energy per cubic meter per degree Celsius
+    start_time_infiltration: [11, 11, 11, 11, 11, 11, 0]
+    end_time_infiltration: [18, 18, 18, 18, 18, 18, 0]
+
+    # estimating the clinic to run 6 hours per day (opening times from 12 to 17)
+    clinic_opening_times: [12, 12, 12, 12, 12, 12, 0]
+    clinic_closing_times: [17, 17, 17, 17, 17, 17, 0]
+    devices:
+      - device: light
+        available: true
+        electric_power: 7  # [W]
+        heat: 3.5  # [W]
+        initial_ownership: 7
+        final_ownership: 7
+        innovation: 0.04
+        imitation: 0.5
+        type: domestic
+      - device: fridge
+        available: true
+        electric_power: 120
+        heat: 120  # [W]
+        initial_ownership: 0
+        final_ownership: 0.5
+        innovation: 0.02
+        imitation: 0.2
+        type: domestic
+        waste_products:
