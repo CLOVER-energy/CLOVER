@@ -13,8 +13,8 @@ panels:
     azimuthal_orientation: 180 # [degrees from North]
     lifetime: 20 # [years] - Lifetime of the PV system.
     # reference_efficiency: 0.125 # [%] defined between 0 and 1
-    # reference_temperature: 25 # [degrees Celcius]
-    # thermal_coefficient: 0.0053 # [1 / degrees Celcius]
+    # reference_temperature: 25 # [degrees Celsius]
+    # thermal_coefficient: 0.0053 # [1 / degrees Celsius]
     tilt: 29 # [degrees above horizontal]
     type: pv # Panel type, either 'pv' or 'pv_t'
     costs:

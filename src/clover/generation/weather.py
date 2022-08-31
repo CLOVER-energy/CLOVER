@@ -56,7 +56,7 @@ class WeatherCondition(enum.Enum):
         Denotes the surface precipitation.
 
     - TEMPERATURE:
-        Denotes the surface temperature in degrees Celcius.
+        Denotes the surface temperature in degrees Celsius.
 
     """
 
@@ -89,7 +89,7 @@ class WeatherDataThread(
 
         The weather variables that can be fetched are:
             - var_t2m:
-                Surface temperature in degrees Celcius.
+                Surface temperature in degrees Celsius.
             - var_prectotland:
                 Precipitation in mm/hour.
             - var_precsnoland

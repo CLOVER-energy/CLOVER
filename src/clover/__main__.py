@@ -614,7 +614,11 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
     # Determine the number of background tasks to carry out.
     num_ninjas: int = (
         1
-        + (1 if any(scenario.pv_t or scenario.solar_thermal for scenario in scenarios) else 0)
+        + (
+            1
+            if any(scenario.pv_t or scenario.solar_thermal for scenario in scenarios)
+            else 0
+        )
         + (
             1
             if (

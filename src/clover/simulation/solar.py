@@ -109,6 +109,258 @@ class MassFlowRateTooSmallError(Exception):
         )
 
 
+def _volume_withdrawn_from_tank(
+    ambient_temperature: float,
+    best_guess_tank_temperature: float,
+    hot_water_load: Optional[float],
+    logger: Logger,
+    minigrid: Minigrid,
+    num_tanks: int,
+    previous_tank_temperature: Optional[float],
+    resource_type: ResourceType,
+    thermal_desalination_plant: Optional[ThermalDesalinationPlant],
+) -> Tuple[bool, float]:
+    """
+    Computes whether the tank is supplying an output, and what this output is.
+
+    Inputs:
+
+    Outputs:
+        A `tuple` containing:
+        - tank_supply_on:
+            Whether liquid was withdrawn from the tank (True) or not (False).
+        - volume_supplied:
+            The volume supplied, measured in kg/hour, by all of the tanks combined.
+
+    """
+
+    if resource_type == ResourceType.CLEAN_WATER:
+        if previous_tank_temperature is None or thermal_desalination_plant is None:
+            logger.error(
+                "%sNot enough parameters specified to determine buffer-tank mass-flow "
+                "rate.%s",
+                BColours.fail,
+                BColours.endc,
+            )
+            raise InternalError(
+                "Not enough desalination-specific parameters specified to determine "
+                "the buffer-tank mass-flow rate."
+            )
+        if minigrid.buffer_tank is None:
+            logger.error(
+                "%sNo buffer tank specified when attempting to determine the volume "
+                "withdrawn from the tank.%s",
+                BColours.fail,
+                BColours.endc,
+            )
+            raise InternalError(
+                "No buffer tank was found defined for the minigrid specified despite "
+                "clean-water loads being requested."
+            )
+
+        # If the plant is heated by HTF.
+        if thermal_desalination_plant.htf_mode == HTFMode.CLOSED_HTF:
+            if thermal_desalination_plant.minimum_htf_temperature is None:
+                logger.error(
+                    "%sNo minimum htf temperature defined despite '%s' being the HTF "
+                    "mode.%s",
+                    BColours.fail,
+                    thermal_desalination_plant.htf_mode.value,
+                    BColours.endc,
+                )
+                raise InternalError(
+                    "Minimum HTF temperature unexpectly undefined when computing plant "
+                    "supply volume."
+                )
+
+            tank_supply_on: bool = (
+                previous_tank_temperature
+                > thermal_desalination_plant.minimum_htf_temperature
+            )
+            volume_supplied: float = (
+                _htf_fed_buffer_tank_mass_flow_rate(
+                    ambient_temperature,
+                    best_guess_tank_temperature,
+                    minigrid.buffer_tank,
+                    thermal_desalination_plant,
+                )
+                * tank_supply_on
+            )
+        if thermal_desalination_plant.htf_mode == HTFMode.FEEDWATER_HEATING:
+            if thermal_desalination_plant.minimum_feedwater_temperature is None:
+                logger.error(
+                    "%sNo minimum feedwater temperature defined despite '%s' being the "
+                    "HTF mode.%s",
+                    BColours.fail,
+                    thermal_desalination_plant.htf_mode.value,
+                    BColours.endc,
+                )
+                raise InternalError(
+                    "Minimum feedwater temperature unexpectly undefined when computing "
+                    "plant supply volume."
+                )
+
+            tank_supply_on = (
+                previous_tank_temperature
+                > thermal_desalination_plant.minimum_feedwater_temperature
+            )
+            volume_supplied = (
+                thermal_desalination_plant.input_resource_consumption[
+                    ResourceType.HOT_UNCLEAN_WATER
+                ]
+                * tank_supply_on
+            )
+
+    elif resource_type == ResourceType.HOT_CLEAN_WATER:
+        if hot_water_load is None:
+            logger.error(
+                "%sNo hot-water load defined despite a hot-water system being "
+                "specified.%s",
+                BColours.fail,
+                BColours.endc,
+            )
+            raise InternalError(
+                "No hot-water load was provided to the 'tank volume supplied' "
+                "calculation method despite hot water being defined in the scenario "
+                "file."
+            )
+        if minigrid.hot_water_tank is None:
+            logger.error(
+                "%sNo hot-water tank defined despite a hot-water system being "
+                "specified.%s",
+                BColours.fail,
+                BColours.endc,
+            )
+            raise InternalError(
+                "No hot-water tank was defined on the minigrid when calling the 'tank "
+                "volume supplied' calculation method despite hot water being defined "
+                "in the scenario file."
+            )
+
+        # The tank should only supply water if the load is less than the capacity of the
+        # tanks.
+        if hot_water_load <= num_tanks * minigrid.hot_water_tank.mass:
+            tank_supply_on = hot_water_load > 0
+            volume_supplied = hot_water_load
+        # Otherwise, no water should be supplied.
+        else:
+            tank_supply_on = hot_water_load > 0
+            volume_supplied = num_tanks * minigrid.hot_water_tank.mass
+
+    return tank_supply_on, volume_supplied
+
+
+def _get_relevant_thermal_scenario(
+    resource_type: ResourceType,
+    scenario: Scenario,
+) -> Union[DesalinationScenario, HotWaterScenario]:
+    """
+    Determines the relevant thermal scenario based on other information.
+
+    Inputs:
+        - resource_type:
+            The :class:`ResourceType` for the run.
+        - scenario:
+            The :class:`Scenario` being used for the run.
+        - solar_thermal_collector:
+            The relevant solar-thermal collector being used for the run.
+
+    """
+
+    if resource_type == ResourceType.CLEAN_WATER:
+        return scenario.desalination_scenario
+
+    if resource_type in {ResourceType.HOT_CLEAN_WATER, ResourceType.HOT_UNCLEAN_WATER}:
+        return scenario.hot_water_scenario
+
+    raise ProgrammerJudgementFault(
+        "simularion.solar::_get_relevant_thermal_scenario",
+        "Could not determine relevant scenario for resource type "
+        f"{ResourceType.value}",
+    )
+
+
+def _get_relevant_collector_scenario(
+    resource_type: ResourceType,
+    scenario: Scenario,
+    solar_thermal_collector: Union[HybridPVTPanel, SolarThermalPanel],
+) -> ThermalCollectorScenario:
+    """
+    Determines the relevant collector scenario based on other information.
+
+    Inputs:
+        - resource_type:
+            The :class:`ResourceType` for the run.
+        - scenario:
+            The :class:`Scenario` being used for the run.
+        - solar_thermal_collector:
+            The relevant solar-thermal collector being used for the run.
+
+    """
+
+    thermal_scenario = _get_relevant_thermal_scenario(resource_type, scenario)
+
+    if solar_thermal_collector.panel_type == SolarPanelType.PV_T:
+        return thermal_scenario.pvt_scenario
+    if solar_thermal_collector.panel_type == SolarPanelType.SOLAR_THERMAL:
+        return thermal_scenario.solar_thermal_scenario
+
+    raise ProgrammerJudgementFault(
+        "simulation.solar::_get_relevant_scenario",
+        "Did not know how to process panel and resource-type information to determine "
+        "the relevant scenario.",
+    )
+
+
+def _htf_fed_buffer_tank_mass_flow_rate(
+    ambient_temperature: float,
+    best_guess_tank_temperature: float,
+    buffer_tank: HotWaterTank,
+    thermal_desalination_plant: ThermalDesalinationPlant,
+) -> float:
+    """
+    Computes the mass-flow rate of HTF from the buffer tanks to the desalination plant.
+
+    Inputs:
+        - ambient_temperature:
+            The ambient temperature, used as the base against which heat is being
+            supplied. This is realistic as the final stage of desalination plants can be
+            no less than the ambient temprature. This is measured in degrees Celsius.
+        - best_guess_tank_temperature:
+            The best guess at the tank temperature at the current time step, measured in
+            degrees Celsius. This is the temperature at which HTF is removed from the
+            tank to supply the desalination plant.
+        - buffer_tank:
+            The HTF hot-water tank.
+        - thermal_desalination_plant:
+            The thermal desalination plant being modelled.
+
+    Outputs:
+        - The mass-flow rate of HTF from the bugger tanks to the desalination plant,
+          measured in litres per hour.
+
+    Raises:
+        - InputFileError:
+            Raised if the thermal desalination plant does not use heat from the HTF.
+
+    """
+
+    if ResourceType.HEAT not in thermal_desalination_plant.input_resource_consumption:
+        raise InputFileError(
+            "converter inputs",
+            "The thermal desalination plant selected does define its heat consumption.",
+        )
+
+    return (
+        thermal_desalination_plant.input_resource_consumption[ResourceType.HEAT]
+        * 3600  # [s/h]
+        / (  # [Wth]
+            buffer_tank.heat_capacity  # [J/kg*K]
+            * (best_guess_tank_temperature - ambient_temperature)  # [K]
+        )
+    )  # [kg/hour]
+
+
 def _calculate_closed_loop_solar_thermal_output(  # pylint: disable=too-many-locals, too-many-statements
     collector_system_size: int,
     disable_tqdm: bool,
@@ -187,13 +439,16 @@ def _calculate_closed_loop_solar_thermal_output(  # pylint: disable=too-many-loc
         - electric_power_per_unit:
             The electric power, per unit PV-T or solar-thermal collector, delivered by
             the PV-T/solar-thermal system.
+        - output_temperature:
+            The output temperatures throughout the simulation, measured in degrees
+            Celsius.
         - pump_times_frame:
             The times for which the PV-T/solar-thermal HTF pump was switched on.
         - tank_temperature:
-            The tank temperatures throughout the simulation, measured in degrees C.
-        - tank_volume_supplied:
-            The amount of hot water supplied by the hot-water tanks to the desalination
-            system.
+            The tank temperatures throughout the simulation, measured in degrees
+            Celsius.
+        - volume_supplied:
+            The amount of hot water supplied by the system, measured in litres.
 
     """
 
@@ -210,6 +465,18 @@ def _calculate_closed_loop_solar_thermal_output(  # pylint: disable=too-many-loc
             "The energy system specified does not contain a heat exchanger but "
             f"{solar_thermal_collector.panel_type.value} modelling was requested for "
             "which this is required.",
+        )
+
+    if minigrid.hot_water_tank is None:
+        logger.error(
+            "%sNo hot-water tank was defined for the minigrid despite hot-water"
+            "modelling being requested.%s",
+            BColours.fail,
+            BColours.endc,
+        )
+        raise InternalError(
+            "No water pump defined as part of the energy system despite PV-T or "
+            "solar-thermal modelling being requested."
         )
 
     # Instantiate debugging variables
@@ -581,7 +848,7 @@ def _calculate_closed_loop_solar_thermal_output(  # pylint: disable=too-many-loc
                 a=matrix, b=resultant_vector
             )
 
-            # Convert into Celcius.
+            # Convert into Celsius.
             collector_input_temperature -= ZERO_CELCIUS_OFFSET
             tank_temperature -= ZERO_CELCIUS_OFFSET
 
@@ -629,35 +896,27 @@ def _calculate_closed_loop_solar_thermal_output(  # pylint: disable=too-many-loc
     # Convert these outputs to dataframes and return.
     collector_input_temperature_frame: pd.DataFrame = dict_to_dataframe(
         collector_input_temperature_map, logger
-    )
-    collector_input_temperature_frame = collector_input_temperature_frame.reset_index(
-        drop=True
-    )
+    ).reset_index(drop=True)
 
     collector_output_temperature_frame: pd.DataFrame = dict_to_dataframe(
         collector_output_temperature_map, logger
-    )
-    collector_output_temperature_frame = collector_output_temperature_frame.reset_index(
-        drop=True
-    )
+    ).reset_index(drop=True)
 
     electric_power_per_unit: pd.DataFrame = dict_to_dataframe(
         electric_power_per_unit_map, logger
-    )
-    electric_power_per_unit = electric_power_per_unit.reset_index(drop=True)
+    ).reset_index(drop=True)
 
-    pump_times_frame: pd.DataFrame = dict_to_dataframe(pump_times_map, logger)
-    pump_times_frame = pump_times_frame.reset_index(drop=True)
+    pump_times_frame: pd.DataFrame = dict_to_dataframe(
+        pump_times_map, logger
+    ).reset_index(drop=True)
 
     tank_temperature_frame: pd.DataFrame = dict_to_dataframe(
         tank_temperature_map, logger
-    )
-    tank_temperature_frame = tank_temperature_frame.reset_index(drop=True)
+    ).reset_index(drop=True)
 
     tank_volume_output_supplied: pd.DataFrame = dict_to_dataframe(
         tank_volume_supplied_map, logger
-    )
-    tank_volume_output_supplied = tank_volume_output_supplied.reset_index(drop=True)
+    ).reset_index(drop=True)
 
     return (
         collector_input_temperature_frame,
@@ -675,8 +934,6 @@ def _calculate_direct_heating_solar_thermal_output(
     end_hour: int,
     irradiances: pd.Series,
     logger: Logger,
-    minigrid: Minigrid,
-    num_tanks: int,
     processed_total_hw_load: Optional[pd.Series],
     relevant_scenarios: Dict[SolarPanelType, ThermalCollectorScenario],
     resource_type: ResourceType,
@@ -685,11 +942,16 @@ def _calculate_direct_heating_solar_thermal_output(
     ],
     start_hour: int,
     temperatures: pd.Series,
-    thermal_desalination_plant: Optional[ThermalDesalinationPlant],
     thermal_scenario: Union[DesalinationScenario, HotWaterScenario],
     wind_speeds: pd.Series,
 ) -> Tuple[
-    pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame
+    Dict[SolarPanelType, pd.DataFrame],
+    Dict[SolarPanelType, pd.DataFrame],
+    pd.DataFrame,
+    pd.DataFrame,
+    pd.DataFrame,
+    None,
+    pd.DataFrame,
 ]:
     """
     Computes the output of a direct-heating solar-thermal system.
@@ -710,12 +972,6 @@ def _calculate_direct_heating_solar_thermal_output(
             period being modelled.
         - logger:
             The logger to use for the run.
-        - minigrid:
-            The minigrid being modelled currently.
-        - num_tanks:
-            The number of hot-water tanks being modelled currently, which can either be
-            buffer tanks (for desalination systems), or hot-water tanks (for hot-water
-            systems).
         - processed_total_hw_load:
             The total hot-water load placed on the system, measured in litres per hour.
         - resource_type:
@@ -728,8 +984,6 @@ def _calculate_direct_heating_solar_thermal_output(
         - temperatures:
             The :class:`pd.Series` containing temperature information for the time
             period being modelled.
-        - thermal_desalination_plant:
-            The thermal desalination plant being considered.
         - thermal_scenario:
             The :class:`DeslinationScenario` or :class:`HotWaterScenario` being considered.
         - wind_speeds:
@@ -746,30 +1000,56 @@ def _calculate_direct_heating_solar_thermal_output(
         - electric_power_per_unit:
             The electric power, per unit PV-T or solar-thermal collector, delivered by
             the PV-T/solar-thermal system.
+        - output_temperature:
+            The output temperatures throughout the simulation, measured in degrees
+            Celsius.
         - pump_times_frame:
             The times for which the PV-T/solar-thermal HTF pump was switched on.
         - tank_temperature:
-            The tank temperatures throughout the simulation, measured in degrees C.
-        - tank_volume_supplied:
-            The amount of hot water supplied by the hot-water tanks to the desalination
-            system.
+            The tank temperatures throughout the simulation, measured in degrees
+            Celsius.
+        - volume_supplied:
+            The amount of hot water supplied by the system, measured in litres.
+
 
     """
 
-    import pdb
+    # Raise an error if both are present and a throughput is not specified.
+    if (
+        len(solar_thermal_collectors) > 1
+        and thermal_scenario.throughput_mass_flow_rate is None
+    ):
+        logger.error(
+            "%sThroughput mass flow rate not specified despite multiple collector "
+            "types being requested.%s",
+            BColours.fail,
+            BColours.endc,
+        )
+        raise InputFileError(
+            f"{resource_type.value.replace('_', ' ')} scenario",
+            "Throughput mass flow rate not specified despite multiple collector types "
+            "requested.",
+        )
 
-    pdb.set_trace()
+    collector_input_temperature: Dict[SolarPanelType, Dict[int, float]] = {}
+    collector_output_temperature: Dict[SolarPanelType, Dict[int, float]] = {}
 
     # Determine the PV-T output if present.
     if SolarPanelType.PV_T in solar_thermal_collectors:
+        logger.info("Carrying out direct-heating PV-T calculation.")
+
         # Determine the mass flow rate.
-        collector_mass_flow_rate: float = (
+        pvt_collector_mass_flow_rate: Optional[float] = (
             (
                 thermal_scenario.throughput_mass_flow_rate
                 / collector_system_sizes[SolarPanelType.PV_T]
             )
             if thermal_scenario.throughput_mass_flow_rate is not None
             else thermal_scenario.pvt_scenario.mass_flow_rate
+        )
+        logger.debug(
+            "Mass flow rate through PV-T collectors: %s",
+            round(pvt_collector_mass_flow_rate, 2),
         )
 
         # Calculate the output temperature map from the collector.
@@ -779,7 +1059,7 @@ def _calculate_direct_heating_solar_thermal_output(
                 relevant_scenarios[SolarPanelType.PV_T].htf_heat_capacity,
                 thermal_scenario.htf_supply_temperature,
                 logger,
-                collector_mass_flow_rate,
+                pvt_collector_mass_flow_rate,
                 irradiances[index],
                 wind_speeds[index],
             )
@@ -794,22 +1074,33 @@ def _calculate_direct_heating_solar_thermal_output(
         ]
 
         fractional_electrical_performance: Optional[Dict[int, float]] = {
-            index: performance_output[0]
+            (start_hour + index): float(performance_output[0])
             for index, performance_output in enumerate(pvt_output_performance)
         }
-        pvt_output_temperature = Optional[Dict[int, float]] = {
-            index: performance_output[1]
+        pvt_output_temperature: Optional[Dict[int, float]] = {
+            (start_hour + index): float(performance_output[1])
             for index, performance_output in enumerate(pvt_output_performance)
         }
 
+        collector_input_temperature[SolarPanelType.PV_T] = {
+            time: thermal_scenario.htf_supply_temperature
+            for time in range(start_hour, end_hour)
+        }
+        collector_output_temperature[SolarPanelType.PV_T] = pvt_output_temperature
+        logger.info("Direct-heating PV-T calculation completed.")
+
     else:
+        logger.info("No PV-T collector provided, skipping calcultion.")
         fractional_electrical_performance = None
+        pvt_collector_mass_flow_rate = None
         pvt_output_temperature = None
 
     # Determine the solar-thermal output if present
     if SolarPanelType.SOLAR_THERMAL in solar_thermal_collectors:
+        logger.info("Carrying out direct-heating PV-T calculation.")
+
         # Determine the mass flow rate.
-        collector_mass_flow_rate: float = (
+        st_collector_mass_flow_rate: Optional[float] = (
             (
                 thermal_scenario.throughput_mass_flow_rate
                 / collector_system_sizes[SolarPanelType.SOLAR_THERMAL]
@@ -817,9 +1108,20 @@ def _calculate_direct_heating_solar_thermal_output(
             if thermal_scenario.throughput_mass_flow_rate is not None
             else thermal_scenario.solar_thermal_scenario.mass_flow_rate
         )
+        logger.debug(
+            "Mass flow rate through solar-thermal collectors: %s",
+            round(st_collector_mass_flow_rate, 2),
+        )
 
-        # FIXME:
-        # Check calculations here.
+        # Determine the supply temperature
+        solar_thermal_input_temperature: Dict[int, float] = (
+            pvt_output_temperature
+            if pvt_output_temperature is not None
+            else {
+                time: thermal_scenario.htf_supply_temperature
+                for time in range(start_hour, end_hour)
+            }
+        )
 
         # Calculate the output temperature map from the collector.
         solar_thermal_output_performance: List[Tuple[Optional[float], float]] = [
@@ -828,11 +1130,9 @@ def _calculate_direct_heating_solar_thermal_output(
             ].calculate_performance(
                 temperatures[index],
                 relevant_scenarios[SolarPanelType.SOLAR_THERMAL].htf_heat_capacity,
-                pvt_output_temperature[index]
-                if pvt_output_temperature is not None
-                else thermal_scenario.htf_supply_temperature,
+                solar_thermal_input_temperature[index],
                 logger,
-                collector_mass_flow_rate,
+                st_collector_mass_flow_rate,
                 irradiances[index],
                 wind_speeds[index],
             )
@@ -845,258 +1145,98 @@ def _calculate_direct_heating_solar_thermal_output(
                 unit="hour",
             )
         ]
+        solar_thermal_output_temperature: Optional[Dict[int, float]] = {
+            (start_hour + index): performance_output[1]
+            for index, performance_output in enumerate(solar_thermal_output_performance)
+        }
+        logger.info("Direct-heating solar-thermal calculation completed.")
 
+        collector_input_temperature[
+            SolarPanelType.SOLAR_THERMAL
+        ] = solar_thermal_input_temperature
+        collector_output_temperature[
+            SolarPanelType.SOLAR_THERMAL
+        ] = solar_thermal_output_temperature
 
-def _get_relevant_thermal_scenario(
-    resource_type: ResourceType,
-    scenario: Scenario,
-) -> Union[DesalinationScenario, HotWaterScenario]:
-    """
-    Determines the relevant thermal scenario based on other information.
+    else:
+        logger.info("No solar-thermal collector provided, skipping calcultion.")
+        solar_thermal_output_temperature = None
+        st_collector_mass_flow_rate = None
 
-    Inputs:
-        - resource_type:
-            The :class:`ResourceType` for the run.
-        - scenario:
-            The :class:`Scenario` being used for the run.
-        - solar_thermal_collector:
-            The relevant solar-thermal collector being used for the run.
-
-    """
-
-    if resource_type == ResourceType.CLEAN_WATER:
-        return scenario.desalination_scenario
-
-    if resource_type in {ResourceType.HOT_CLEAN_WATER, ResourceType.HOT_UNCLEAN_WATER}:
-        return scenario.hot_water_scenario
-
-    raise ProgrammerJudgementFault(
-        "simularion.solar::_get_relevant_thermal_scenario",
-        "Could not determine relevant scenario for resource type "
-        f"{ResourceType.value}",
-    )
-
-
-def _get_relevant_collector_scenario(
-    resource_type: ResourceType,
-    scenario: Scenario,
-    solar_thermal_collector: Union[HybridPVTPanel, SolarThermalPanel],
-) -> ThermalCollectorScenario:
-    """
-    Determines the relevant collector scenario based on other information.
-
-    Inputs:
-        - resource_type:
-            The :class:`ResourceType` for the run.
-        - scenario:
-            The :class:`Scenario` being used for the run.
-        - solar_thermal_collector:
-            The relevant solar-thermal collector being used for the run.
-
-    """
-
-    thermal_scenario = _get_relevant_thermal_scenario(resource_type, scenario)
-
-    if solar_thermal_collector.panel_type == SolarPanelType.PV_T:
-        return thermal_scenario.pvt_scenario
-    if solar_thermal_collector.panel_type == SolarPanelType.SOLAR_THERMAL:
-        return thermal_scenario.solar_thermal_scenario
-
-    raise ProgrammerJudgementFault(
-        "simulation.solar::_get_relevant_scenario",
-        "Did not know how to process panel and resource-type information to determine "
-        "the relevant scenario.",
-    )
-
-
-def _htf_fed_buffer_tank_mass_flow_rate(
-    ambient_temperature: float,
-    best_guess_tank_temperature: float,
-    buffer_tank: HotWaterTank,
-    thermal_desalination_plant: ThermalDesalinationPlant,
-) -> float:
-    """
-    Computes the mass-flow rate of HTF from the buffer tanks to the desalination plant.
-
-    Inputs:
-        - ambient_temperature:
-            The ambient temperature, used as the base against which heat is being
-            supplied. This is realistic as the final stage of desalination plants can be
-            no less than the ambient temprature. This is measured in degrees Celcius.
-        - best_guess_tank_temperature:
-            The best guess at the tank temperature at the current time step, measured in
-            degrees Celcius. This is the temperature at which HTF is removed from the
-            tank to supply the desalination plant.
-        - buffer_tank:
-            The HTF hot-water tank.
-        - thermal_desalination_plant:
-            The thermal desalination plant being modelled.
-
-    Outputs:
-        - The mass-flow rate of HTF from the bugger tanks to the desalination plant,
-          measured in litres per hour.
-
-    Raises:
-        - InputFileError:
-            Raised if the thermal desalination plant does not use heat from the HTF.
-
-    """
-
-    if ResourceType.HEAT not in thermal_desalination_plant.input_resource_consumption:
-        raise InputFileError(
-            "converter inputs",
-            "The thermal desalination plant selected does define its heat consumption.",
+    # Determine the flow rate of fluid supplied.
+    supply_flow_rate: float = (
+        # Use the throughput flow rate if provided.
+        thermal_scenario.throughput_mass_flow_rate
+        if thermal_scenario.throughput_mass_flow_rate is not None
+        else (
+            # Otherwise, as only one collector type is being used, use the appropriate
+            # flow rate.
+            st_collector_mass_flow_rate
+            * collector_system_sizes[SolarPanelType.SOLAR_THERMAL]
+            if SolarThermalPanel.SOLAR_THERMAL
+            else pvt_collector_mass_flow_rate
+            * collector_system_sizes[SolarPanelType.PV_T]
         )
+    )
+
+    # Determine the output temperature of fluid supplied.
+    if SolarPanelType.SOLAR_THERMAL in collector_output_temperature:
+        output_temperature: Dict[int, float] = collector_output_temperature[
+            SolarPanelType.SOLAR_THERMAL
+        ]
+    else:
+        output_temperature = collector_output_temperature[SolarPanelType.PV_T]
+
+    # Sanitise the output temperature frame
+    output_temperature = {
+        key: max(value, thermal_scenario.htf_supply_temperature)
+        for key, value in output_temperature.items()
+    }
+
+    # Determine the pump times: the pump should run if supply is needed or heat is
+    # gained.
+    pump_times = {
+        time: processed_total_hw_load[time] > 0 for time in range(start_hour, end_hour)
+    }
+
+    volume_supplied: Dict[int, float] = {
+        time: min(processed_total_hw_load[time], supply_flow_rate)
+        for time in range(start_hour, end_hour)
+    }
+
+    # Cast everything to expected type outputs
+    collector_input_temperature_frame_map = {
+        key: dict_to_dataframe(value, logger).reset_index(drop=True)
+        for key, value in collector_input_temperature.items()
+    }
+    collector_output_temperature_frame_map = {
+        key: dict_to_dataframe(value, logger).reset_index(drop=True)
+        for key, value in collector_output_temperature.items()
+    }
+    electric_power_per_unit = (
+        dict_to_dataframe(fractional_electrical_performance, logger).reset_index(
+            drop=True
+        )
+        if fractional_electrical_performance is not None
+        else None
+    )
+    output_temperature_frame = dict_to_dataframe(
+        output_temperature, logger
+    ).reset_index(drop=True)
+    pump_times_frame = dict_to_dataframe(pump_times, logger).reset_index(drop=True)
+    volume_supplied_frame = dict_to_dataframe(volume_supplied, logger).reset_index(
+        drop=True
+    )
 
     return (
-        thermal_desalination_plant.input_resource_consumption[ResourceType.HEAT]
-        * 3600  # [s/h]
-        / (  # [Wth]
-            buffer_tank.heat_capacity  # [J/kg*K]
-            * (best_guess_tank_temperature - ambient_temperature)  # [K]
-        )
-    )  # [kg/hour]
-
-
-def _volume_withdrawn_from_tank(
-    ambient_temperature: float,
-    best_guess_tank_temperature: float,
-    hot_water_load: Optional[float],
-    logger: Logger,
-    minigrid: Minigrid,
-    num_tanks: int,
-    previous_tank_temperature: Optional[float],
-    resource_type: ResourceType,
-    thermal_desalination_plant: Optional[ThermalDesalinationPlant],
-) -> Tuple[bool, float]:
-    """
-    Computes whether the tank is supplying an output, and what this output is.
-
-    Inputs:
-
-    Outputs:
-        A `tuple` containing:
-        - tank_supply_on:
-            Whether liquid was withdrawn from the tank (True) or not (False).
-        - volume_supplied:
-            The volume supplied, measured in kg/hour.
-
-    """
-
-    if resource_type == ResourceType.CLEAN_WATER:
-        if previous_tank_temperature is None or thermal_desalination_plant is None:
-            logger.error(
-                "%sNot enough parameters specified to determine buffer-tank mass-flow "
-                "rate.%s",
-                BColours.fail,
-                BColours.endc,
-            )
-            raise InternalError(
-                "Not enough desalination-specific parameters specified to determine "
-                "the buffer-tank mass-flow rate."
-            )
-        if minigrid.buffer_tank is None:
-            logger.error(
-                "%sNo buffer tank specified when attempting to determine the volume "
-                "withdrawn from the tank.%s",
-                BColours.fail,
-                BColours.endc,
-            )
-            raise InternalError(
-                "No buffer tank was found defined for the minigrid specified despite "
-                "clean-water loads being requested."
-            )
-
-        # If the plant is heated by HTF.
-        if thermal_desalination_plant.htf_mode == HTFMode.CLOSED_HTF:
-            if thermal_desalination_plant.minimum_htf_temperature is None:
-                logger.error(
-                    "%sNo minimum htf temperature defined despite '%s' being the HTF "
-                    "mode.%s",
-                    BColours.fail,
-                    thermal_desalination_plant.htf_mode.value,
-                    BColours.endc,
-                )
-                raise InternalError(
-                    "Minimum HTF temperature unexpectly undefined when computing plant "
-                    "supply volume."
-                )
-
-            tank_supply_on: bool = (
-                previous_tank_temperature
-                > thermal_desalination_plant.minimum_htf_temperature
-            )
-            volume_supplied: float = (
-                _htf_fed_buffer_tank_mass_flow_rate(
-                    ambient_temperature,
-                    best_guess_tank_temperature,
-                    minigrid.buffer_tank,
-                    thermal_desalination_plant,
-                )
-                * tank_supply_on
-            )
-        if thermal_desalination_plant.htf_mode == HTFMode.FEEDWATER_HEATING:
-            if thermal_desalination_plant.minimum_feedwater_temperature is None:
-                logger.error(
-                    "%sNo minimum feedwater temperature defined despite '%s' being the "
-                    "HTF mode.%s",
-                    BColours.fail,
-                    thermal_desalination_plant.htf_mode.value,
-                    BColours.endc,
-                )
-                raise InternalError(
-                    "Minimum feedwater temperature unexpectly undefined when computing "
-                    "plant supply volume."
-                )
-
-            tank_supply_on = (
-                previous_tank_temperature
-                > thermal_desalination_plant.minimum_feedwater_temperature
-            )
-            volume_supplied = (
-                thermal_desalination_plant.input_resource_consumption[
-                    ResourceType.HOT_UNCLEAN_WATER
-                ]
-                * tank_supply_on
-            )
-
-    elif resource_type == ResourceType.HOT_CLEAN_WATER:
-        if hot_water_load is None:
-            logger.error(
-                "%sNo hot-water load defined despite a hot-water system being "
-                "specified.%s",
-                BColours.fail,
-                BColours.endc,
-            )
-            raise InternalError(
-                "No hot-water load was provided to the 'tank volume supplied' "
-                "calculation method despite hot water being defined in the scenario "
-                "file."
-            )
-        if minigrid.hot_water_tank is None:
-            logger.error(
-                "%sNo hot-water tank defined despite a hot-water system being "
-                "specified.%s",
-                BColours.fail,
-                BColours.endc,
-            )
-            raise InternalError(
-                "No hot-water tank was defined on the minigrid when calling the 'tank "
-                "volume supplied' calculation method despite hot water being defined "
-                "in the scenario file."
-            )
-
-        # The tank should only supply water if the load is less than the capacity of the
-        # tanks.
-        if hot_water_load <= num_tanks * minigrid.hot_water_tank.mass:
-            tank_supply_on = hot_water_load > 0
-            volume_supplied = hot_water_load
-        # Otherwise, no water should be supplied.
-        else:
-            tank_supply_on = hot_water_load > 0
-            volume_supplied = num_tanks * minigrid.hot_water_tank.mass
-
-    return tank_supply_on, volume_supplied
+        collector_input_temperature_frame_map,
+        collector_output_temperature_frame_map,
+        electric_power_per_unit,
+        output_temperature_frame,
+        pump_times_frame,
+        None,
+        volume_supplied_frame,
+    )
 
 
 def calculate_solar_thermal_output(  # pylint: disable=too-many-locals, too-many-statements
@@ -1118,7 +1258,13 @@ def calculate_solar_thermal_output(  # pylint: disable=too-many-locals, too-many
     thermal_desalination_plant: Optional[ThermalDesalinationPlant],
     wind_speeds: pd.Series,
 ) -> Tuple[
-    pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame
+    Dict[SolarPanelType, pd.DataFrame],
+    Dict[SolarPanelType, pd.DataFrame],
+    pd.DataFrame,
+    pd.DataFrame,
+    pd.DataFrame,
+    Optional[pd.DataFrame],
+    pd.DataFrame,
 ]:
     """
     Computes the output of a solar-thermal system, either PV-T or solar-thermal.
@@ -1180,13 +1326,16 @@ def calculate_solar_thermal_output(  # pylint: disable=too-many-locals, too-many
         - electric_power_per_unit:
             The electric power, per unit PV-T or solar-thermal collector, delivered by
             the PV-T/solar-thermal system.
+        - output_temperature:
+            The output temperatures throughout the simulation, measured in degrees
+            Celsius.
         - pump_times_frame:
             The times for which the PV-T/solar-thermal HTF pump was switched on.
         - tank_temperature:
-            The tank temperatures throughout the simulation, measured in degrees C.
-        - tank_volume_supplied:
-            The amount of hot water supplied by the hot-water tanks to the desalination
-            system.
+            The tank temperatures throughout the simulation, measured in degrees
+            Celsius.
+        - volume_supplied:
+            The amount of hot water supplied by the system, measured in litres.
 
     """
 
@@ -1261,15 +1410,12 @@ def calculate_solar_thermal_output(  # pylint: disable=too-many-locals, too-many
             end_hour,
             irradiances,
             logger,
-            minigrid,
-            num_tanks,
             processed_total_hw_load,
             relevant_collector_scenarios,
             resource_type,
             solar_thermal_collectors,
             start_hour,
             temperatures,
-            thermal_desalination_plant,
             thermal_scenario,
             wind_speeds,
         )

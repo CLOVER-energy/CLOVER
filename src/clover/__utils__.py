@@ -815,6 +815,24 @@ class DistributionNetwork(enum.Enum):
     DC = "dc"
 
 
+class FlowRateError(Exception):
+    """Raised when there is a mismatch in flow-rate requirements."""
+
+    def __init__(self, mismatched_object: str, msg: str) -> None:
+        """
+        Instantiate a :class:`FlowRateError` instance.
+
+        Inputs:
+            - mismatched_object:
+                The name of the object for which the flow rates are mismatched.
+            - msg:
+                The error message to append.
+
+        """
+
+        super().__init__(f"Error in flow rate of '{mismatched_object}': {msg}")
+
+
 def get_logger(logger_name: str, verbose: bool = False) -> logging.Logger:
     """
     Set-up and return a logger.
@@ -2007,7 +2025,7 @@ class HotWaterScenario:
         A `list` of conventional sources.
 
     .. attribute:: demand_temperature
-        The temperature, in degrees Celcius, at which hot water should be supplied to the end user.
+        The temperature, in degrees Celsius, at which hot water should be supplied to the end user.
 
     .. attribute:: name
         The name of the hot-water scenario.

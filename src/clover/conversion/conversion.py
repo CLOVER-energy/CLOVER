@@ -456,19 +456,19 @@ class ThermalDesalinationPlant(MultiInputConverter):
 
     .. attribute:: maximum_feedwater_temperature
         The maximum temperature of feedwater allowed by the plant, measured in degrees
-        Celcius.
+        Celsius.
 
     .. attribute:: maximum_htf_temperature
         The maximum temperature of HTF allowed by the plant, measured in degrees
-        Celcius.
+        Celsius.
 
     .. attribute:: minimum_feedwater_temperature
         The minimum temperature of feedwater allowed by the plant, measured in degrees
-        Celcius.
+        Celsius.
 
     .. attribute:: minimum_htf_temperature
         The minumum temperature of HTF allowed by the plant, measured in degrees
-        Celcius.
+        Celsius.
 
     .. attribute:: minimum_output_capacity
         The minimum output flow rate of the plant.
@@ -499,18 +499,18 @@ class ThermalDesalinationPlant(MultiInputConverter):
                 The types of load inputted to the plant.
             - maximum_feedwater_temperature:
                 The maximum temperature of feedwater allowed into the plant, measured in
-                degrees Celcius.
+                degrees Celsius.
             - maximum_htf_temperature:
                 The maximum temperature of water allowed into the plant, measured in
-                degrees Celcius.
+                degrees Celsius.
             - maximum_output_capcity:
                 The maximum output capacity of the plant.
             - minimum_feedwater_temperature:
                 The minimum temperature of feedwater allowed into the plant, measured in
-                degrees Celcius.
+                degrees Celsius.
             - minimum_htf_temperature:
                 The mibimum temperature of water allowed into the plant, measured in
-                degrees Celcius.
+                degrees Celsius.
             - minimum_output_capcity:
                 The minimum output capacity of the plant.
             - name:

@@ -541,7 +541,7 @@ class TestSolarThermalPanelPerformance(unittest.TestCase):
             self.input_temperature,
             self.test_logger,
             self.solar_thermal_panel.nominal_mass_flow_rate,
-            self.irradiance,
+            self.irradiance / 1000,
             self.wind_speed,
         )
 

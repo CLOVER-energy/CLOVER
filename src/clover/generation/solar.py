@@ -32,6 +32,7 @@ from sklearn.linear_model._coordinate_descent import Lasso
 from ..__utils__ import (
     ZERO_CELCIUS_OFFSET,
     BColours,
+    FlowRateError,
     InputFileError,
     Location,
     NAME,
@@ -90,7 +91,7 @@ class PerformanceCurve:
     where `eta_0`, `c_1` and `c_2` give the zeroth-, first- and second-order
     coefficients which characterise the performance of the collector, `T_c` is the
     average temperature of the collector and `T_a` the ambient temperature, both
-    measured in either degrees Kelvin or Celcius, but the same unit for each, and `G` is
+    measured in either degrees Kelvin or Celsius, but the same unit for each, and `G` is
     the solar irradiance, measured in Watts per meter squared.
 
     The attributes, `eta_0`, `c_1` and `c_2` are inherent properties of the collector
@@ -232,13 +233,13 @@ class SolarPanel(ABC):  # pylint: disable=too-few-public-methods
 
         Inputs:
             - ambient_temperature:
-                The ambient temperature, measured in degrees Celcius.
+                The ambient temperature, measured in degrees Celsius.
             - htf_heat_capacity:
                 The heat capacity of the HTF entering the collector, measured in Joules
                 per kilogram Kelvin (J/kgK).
             - input_temperature:
                 The input temperature of the HTF entering the collector, measured in
-                in degrees Celcius.
+                in degrees Celsius.
             - logger:
                 The :class:`logging.Logger` to use for the run.
             - mass_flow_rate:
@@ -257,7 +258,7 @@ class SolarPanel(ABC):  # pylint: disable=too-few-public-methods
                 potential of reference efficiency under reference irradiance).
             - output_temperature:
                 The temperature of the HTF leaving the collector, measured in degrees
-                Celcius.
+                Celsius.
 
         """
 
@@ -279,7 +280,7 @@ class PVPanel(
 
     .. attribute:: reference_temperature
         The reference temperature of the PV layer of the panel, measured in degrees
-        Celcius.
+        Celsius.
 
     .. attribute:: thermal_coefficient
         The thermal coefficient of performance of the PV layer of the panel, measured in
@@ -319,7 +320,7 @@ class PVPanel(
             - reference_efficiency:
                 The reference efficiency of the panel, if required, otherwise `None`.
             - reference_temperature:
-                The temperature, in degrees Celcius, at which the reference efficiency
+                The temperature, in degrees Celsius, at which the reference efficiency
                 is defined, if required, otherwise `None`.
             - thermal_coefficient:
                 The thermal coefficient of the PV layer of the panel, if required,
@@ -588,13 +589,13 @@ class HybridPVTPanel(SolarPanel, panel_type=SolarPanelType.PV_T):
 
         Inputs:
             - ambient_temperature:
-                The ambient temperature, measured in degrees Celcius.
+                The ambient temperature, measured in degrees Celsius.
             - htf_heat_capacity:
                 The heat capacity of the HTF entering the collector, measured in Joules
                 per kilogram Kelvin (J/kgK).
             - input_temperature:
                 The input temperature of the HTF entering the PV-T collector, measured
-                in degrees Celcius.
+                in degrees Celsius.
             - logger:
                 The :class:`logging.Logger` to use for the run.
             - mass_flow_rate:
@@ -613,7 +614,7 @@ class HybridPVTPanel(SolarPanel, panel_type=SolarPanelType.PV_T):
                 potential of reference efficiency under reference irradiance).
             - output_temperature:
                 The temperature of the HTF leaving the collector, measured in degrees
-                Celcius.
+                Celsius.
 
         """
 
@@ -797,7 +798,7 @@ class SolarThermalPanel(SolarPanel, panel_type=SolarPanelType.SOLAR_THERMAL):
         where `eta_0`, `c_1` and `c_2` give the zeroth-, first- and second-order
         coefficients which characterise the performance of the collector, `T_c` is the
         average temperature of the collector and `T_a` the ambient temperature, both
-        measured in either degrees Kelvin or Celcius, but the same unit for each, and
+        measured in either degrees Kelvin or Celsius, but the same unit for each, and
         `G` is the solar irradiance, measured in Watts per meter squared. The attributes
         `eta_0`, `c_1` and `c_2` are inherent properties of the collector and are
         contained within the `performance_curve` attribute.
@@ -833,13 +834,13 @@ class SolarThermalPanel(SolarPanel, panel_type=SolarPanelType.SOLAR_THERMAL):
 
         Inputs:
             - ambient_temperature:
-                The ambient temperature, measured in degrees Celcius.
+                The ambient temperature, measured in degrees Celsius.
             - htf_heat_capacity:
                 The heat capacity of the HTF entering the collector, measured in Joules
                 per kilogram Kelvin (J/kgK).
             - input_temperature:
                 The input temperature of the HTF entering the PV-T collector, measured
-                in degrees Celcius.
+                in degrees Celsius.
             - logger:
                 The :class:`logging.Logger` to use for the run.
             - mass_flow_rate:
@@ -847,7 +848,7 @@ class SolarThermalPanel(SolarPanel, panel_type=SolarPanelType.SOLAR_THERMAL):
                 kilograms per hour.
             - solar_irradiance:
                 The solar irradiance incident on the surface of the collector, measured
-                in Watts per meter squared.
+                in kilo Watts per meter squared.
             - wind_speed:
                 The wind speed passing over the collector, measured in meters per
                 second. This parameter is not used, but is defined in the base function.
@@ -859,14 +860,30 @@ class SolarThermalPanel(SolarPanel, panel_type=SolarPanelType.SOLAR_THERMAL):
                 potential of reference efficiency under reference irradiance).
             - output_temperature:
                 The temperature of the HTF leaving the collector, measured in degrees
-                Celcius.
+                Celsius.
+
+        Raises:
+            - FlowRateError:
+                Raised if the flow rates are mismatched.
 
         """
+
+        # Raise a flow-rate error if the flow rate is insufficient.
+        if (
+            mass_flow_rate < self.min_mass_flow_rate
+            or mass_flow_rate > self.max_mass_flow_rate
+        ):
+            raise FlowRateError(
+                self.name,
+                f"Flow rate of {mass_flow_rate:.2f} is out of bounds, range is "
+                + f"{self.min_mass_flow_rate:.2f} to {self.max_mass_flow_rate:.2f} litres/hour.",
+            )
 
         # FIXME: Check units on temperatures here.
         ambient_temperature += ZERO_CELCIUS_OFFSET
         input_temperature += ZERO_CELCIUS_OFFSET
         mass_flow_rate /= 3600  # [s/hour]
+        solar_irradiance *= 1000
 
         # Compute the various terms of the equation
         a: float = self.performance_curve.c_2 * self.area
