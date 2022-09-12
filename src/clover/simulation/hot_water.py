@@ -294,10 +294,10 @@ def calculate_renewable_hw_profiles(  # pylint: disable=too-many-locals, too-man
         - hot_water_power_consumed:
             The electric power consumed by the hot-water system, including any water
             pumps and electricity that was used meeting unmet hot-water demand.
-        - hot_water_collector_input_temperatures:
+        - hot_water_collectors_input_temperatures:
             The input temperature of HTF entering the solar-thermal collectors
             associated with the system, keyed by collector.
-        - hot_water_collector_output_temperatures:
+        - hot_water_collectors_output_temperatures:
             The output temperature of HTF entering the solar-thermal collectors
             associated with the system, keyed by collector.
         - hot_water_pvt_electric_power_per_unit:
@@ -366,16 +366,16 @@ def calculate_renewable_hw_profiles(  # pylint: disable=too-many-locals, too-man
     logger.debug("Auxiliary heater: %s", str(auxiliary_heater))
 
     # Compute the output of the renewable solar hot-water system.
-    hot_water_collector_input_temperatures: Dict[SolarPanelType, pd.DataFrame]
-    hot_water_collector_output_temperatures: Dict[SolarPanelType, pd.DataFrame]
+    hot_water_collectors_input_temperatures: Dict[SolarPanelType, pd.DataFrame]
+    hot_water_collectors_output_temperatures: Dict[SolarPanelType, pd.DataFrame]
     hot_water_pvt_electric_power_per_unit: pd.DataFrame
     hot_water_system_output_temperature: pd.DataFrame
     hot_water_collector_pump_times: pd.DataFrame
     hot_water_tank_temperature: Optional[pd.DataFrame]
     hot_water_volume_supplied: Optional[pd.DataFrame]
     (
-        hot_water_collector_input_temperatures,
-        hot_water_collector_output_temperatures,
+        hot_water_collectors_input_temperatures,
+        hot_water_collectors_output_temperatures,
         hot_water_pvt_electric_power_per_unit,
         hot_water_system_output_temperature,
         hot_water_collector_pump_times,
@@ -523,8 +523,8 @@ def calculate_renewable_hw_profiles(  # pylint: disable=too-many-locals, too-man
     return (
         auxiliary_heater,
         hot_water_power_consumed,
-        hot_water_collector_input_temperatures,
-        hot_water_collector_output_temperatures,
+        hot_water_collectors_input_temperatures,
+        hot_water_collectors_output_temperatures,
         hot_water_pvt_electric_power_per_unit,
         hot_water_system_output_temperature,
         hot_water_tank_temperature,

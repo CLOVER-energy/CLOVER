@@ -389,6 +389,12 @@ class ColumnHeader(enum.Enum):
     - CW_PVT_OUTPUT_TEMPERATURE:
         The output temperature of the clean-water PV-T installed.
 
+    - CW_ST_INPUT_TEMPERATURE:
+        The input temperature of the clean-water solar-thermal installed.
+
+    - CW_ST_OUTPUT_TEMPERATURE:
+        The output temperature of the clean-water solar-thermal installed.
+
     - CW_TANK_STORAGE_PROFILE:
         The storage profile of the clean-water tanks.
 
@@ -449,6 +455,12 @@ class ColumnHeader(enum.Enum):
 
     - HW_SOLAR_THERMAL_FRACTION:
         The fraction of hot-water demand that was met through renewables.
+
+    - HW_ST_INPUT_TEMPERATURE:
+        The input temperature of the hot-water solar-thermal installed.
+
+    - HW_ST_OUTPUT_TEMPERATURE:
+        The output temperature of the hot-water solar-thermal installed.
 
     - HW_TANK_OUTPUT:
         The output volume from the hot-water tank(s) installed.
@@ -565,6 +577,8 @@ class ColumnHeader(enum.Enum):
     )
     CW_PVT_INPUT_TEMPERATURE = "Clean-water PV-T input temperature (degC)"
     CW_PVT_OUTPUT_TEMPERATURE = "Clean-water PV-T output temperature (degC)"
+    CW_ST_INPUT_TEMPERATURE = "Clean-water solar-thermal input temperature (degC)"
+    CW_ST_OUTPUT_TEMPERATURE = "Clean-water solar-thermal output temperature (degC)"
     CW_TANK_STORAGE_PROFILE = "Water held in clean-water storage tanks (l)"
     DESALINATION_PLANT_RENEWABLE_FRACTION = (
         "Thermal desalination plant(s) renewable fraction"
@@ -593,6 +607,8 @@ class ColumnHeader(enum.Enum):
         "Hot-water PV-T electric energy supplied per unit panel"
     )
     HW_SOLAR_THERMAL_FRACTION = "Renewable hot-water fraction"
+    HW_ST_INPUT_TEMPERATURE = "Hot-water solar-thermal input temperature (degC)"
+    HW_ST_OUTPUT_TEMPERATURE = "Hot-water solar-thermal output temperature (degC)"
     HW_TANK_OUTPUT = "Hot-water tank volume supplied (l)"
     HW_TANK_TEMPERATURE = "Hot-water tank temperature (degC)"
     HW_TEMPERATURE_GAIN = "Hot water temperature gain (degC)"
