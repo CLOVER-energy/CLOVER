@@ -360,7 +360,9 @@ def calculate_renewable_hw_profiles(  # pylint: disable=too-many-locals, too-man
         )
 
     _check_water_pump(logger, minigrid, scenario, solar_thermal_size, pvt_size)
-    auxiliary_heater = _determine_auxiliary_heater(converters, logger, minigrid, scenario)
+    auxiliary_heater = _determine_auxiliary_heater(
+        converters, logger, minigrid, scenario
+    )
 
     logger.debug("Auxiliary heater successfully determined.")
     logger.debug("Auxiliary heater: %s", str(auxiliary_heater))
