@@ -2090,8 +2090,7 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
 
     # Return all outputs
     if (
-        scenario.desalination_scenario is not None
-        or scenario.hot_water_scenario is not None
+        scenario.pv_t
     ):
         system_performance_outputs_list.append(total_pvt_energy)
     if scenario.desalination_scenario is not None:

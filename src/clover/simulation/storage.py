@@ -526,7 +526,7 @@ def get_electric_battery_storage_profile(  # pylint: disable=too-many-locals, to
             )
 
         # Compute the clean-water source.
-        if RenewableEnergySource.HOT_WATER_PVT in renewables_power_produced:
+        if RenewableEnergySource.HOT_WATER_PVT in renewables_power_produced and scenario.pv_t:
             try:
                 hot_water_pvt_electric_power_produced = renewables_power_produced[
                     RenewableEnergySource.HOT_WATER_PVT
