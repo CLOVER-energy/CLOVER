@@ -665,6 +665,27 @@ def _calculate_closed_loop_solar_thermal_output(  # pylint: disable=too-many-loc
 
     # The collector heat transfer depends only on the parameters of the final
     # collector in any series configuration.
+    if SolarPanelType.PV_T in relevant_scenarios:
+        collector_heat_transfer = (
+            collector_system_sizes[SolarPanelType.PV_T]
+            * relevant_scenarios[SolarPanelType.PV_T].mass_flow_rate  # [kg/hour]
+            * relevant_scenarios[SolarPanelType.PV_T].htf_heat_capacity  # [J/kg*K]
+            * minigrid.heat_exchanger.efficiency
+            / 3600  # [s/hour]
+        )  # [W/K]
+        pvt_collector_mass_flow_rate = (
+            (
+                thermal_scenario.throughput_mass_flow_rate
+                / collector_system_sizes[SolarPanelType.PV_T]
+            )
+            if thermal_scenario.throughput_mass_flow_rate is not None
+            else thermal_scenario.pvt_scenario.mass_flow_rate
+        )
+        logger.debug(
+            "Mass flow rate through PV-T collectors: %s",
+            round(pvt_collector_mass_flow_rate, 2),
+        )
+
     if SolarPanelType.SOLAR_THERMAL in relevant_scenarios:
         collector_heat_transfer: float = (
             collector_system_sizes[SolarPanelType.SOLAR_THERMAL]
@@ -690,28 +711,7 @@ def _calculate_closed_loop_solar_thermal_output(  # pylint: disable=too-many-loc
             round(st_collector_mass_flow_rate, 2),
         )
 
-    elif SolarPanelType.PV_T in relevant_scenarios:
-        collector_heat_transfer = (
-            collector_system_sizes[SolarPanelType.PV_T]
-            * relevant_scenarios[SolarPanelType.PV_T].mass_flow_rate  # [kg/hour]
-            * relevant_scenarios[SolarPanelType.PV_T].htf_heat_capacity  # [J/kg*K]
-            * minigrid.heat_exchanger.efficiency
-            / 3600  # [s/hour]
-        )  # [W/K]
-        pvt_collector_mass_flow_rate = (
-            (
-                thermal_scenario.throughput_mass_flow_rate
-                / collector_system_sizes[SolarPanelType.PV_T]
-            )
-            if thermal_scenario.throughput_mass_flow_rate is not None
-            else thermal_scenario.pvt_scenario.mass_flow_rate
-        )
-        logger.debug(
-            "Mass flow rate through PV-T collectors: %s",
-            round(pvt_collector_mass_flow_rate, 2),
-        )
-
-    else:
+    if SolarPanelType.PV_T not in relevant_scenarios and SolarPanelType.SOLAR_THERMAL not in relevant_scenarios:
         raise ProgrammerJudgementFault(
             "simulation.solar::_calculate_closed_loop_solar_thermal_output",
             "Either solar-thermal or PV-T collectors, or both, are required if "
