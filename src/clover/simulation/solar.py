@@ -1039,6 +1039,8 @@ def _calculate_closed_loop_solar_thermal_output(  # pylint: disable=too-many-loc
                 * solar_thermal_collectors[SolarPanelType.PV_T].pv_layer.pv_unit
             )
 
+    #@@@ Fractional electrical performance map is not saving entries for non times.
+
     logger.info(
         "Hourly %s %s%s%s performance calculation complete.",
         resource_type.value,
