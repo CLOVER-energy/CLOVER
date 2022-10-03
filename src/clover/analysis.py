@@ -223,14 +223,14 @@ def get_key_results(
         )
         key_results.max_buffer_tank_temperature = round(
             max(simulation_results[ColumnHeader.BUFFER_TANK_TEMPERATURE.value]), 3
-        )
+        ) if ColumnHeader.BUFFER_TANK_TEMPERATURE.value in simulation_results else None
         key_results.max_cw_pvt_output_temperature = round(
             max(simulation_results[ColumnHeader.CW_PVT_OUTPUT_TEMPERATURE.value]), 3
         )
         key_results.mean_buffer_tank_temperature = round(
             np.nanmean(simulation_results[ColumnHeader.BUFFER_TANK_TEMPERATURE.value]),
             3,
-        )
+        ) if ColumnHeader.BUFFER_TANK_TEMPERATURE.value in simulation_results else None
         key_results.mean_cw_pvt_output_temperature = round(
             np.nanmean(
                 simulation_results[ColumnHeader.CW_PVT_OUTPUT_TEMPERATURE.value]
@@ -239,7 +239,7 @@ def get_key_results(
         )
         key_results.min_buffer_tank_temperature = round(
             min(simulation_results[ColumnHeader.BUFFER_TANK_TEMPERATURE.value]), 3
-        )
+        ) if ColumnHeader.BUFFER_TANK_TEMPERATURE.value in simulation_results else None
         key_results.min_cw_pvt_output_temperature = round(
             min(simulation_results[ColumnHeader.CW_PVT_OUTPUT_TEMPERATURE.value]), 3
         )
@@ -259,12 +259,12 @@ def get_key_results(
                 ]
             ),
             3,
-        )
+        ) if ColumnHeader.HW_PVT_ELECTRICITY_SUPPLIED_PER_KWP.value in simulation_results else None
         key_results.average_daily_hw_supplied = round(
             simulation_results[ColumnHeader.HW_TANK_OUTPUT.value].sum()
             / (365 * num_years),
             3,
-        )
+        ) if ColumnHeader.HW_TANK_OUTPUT.value in simulation_results else None
         key_results.average_daily_hw_demand_covered = round(
             np.nanmean(simulation_results[ColumnHeader.HW_VOL_DEMAND_COVERED.value]),
             3,

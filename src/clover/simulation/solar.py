@@ -912,7 +912,7 @@ def _calculate_closed_loop_solar_thermal_output(  # pylint: disable=too-many-loc
             else:
                 # Otherwise, assume that the collector is in steady state with the
                 # environment, a reasonable assumption given the one-hour resolution.
-                fractional_electric_performance = None
+                fractional_electric_performance = 0 if scenario.pv_t else None
                 st_collector_output_temperature = 0 if scenario.solar_thermal else None
                 pvt_collector_output_temperature = 0 if scenario.pv_t else None
                 collector_system_output_temperature = max(
@@ -1176,6 +1176,10 @@ def _calculate_direct_heating_solar_thermal_output(
 
     """
 
+    import pdb
+
+    pdb.set_trace()
+
     # Raise an error if both are present and a throughput is not specified.
     if (
         len(solar_thermal_collectors) > 1
@@ -1222,7 +1226,7 @@ def _calculate_direct_heating_solar_thermal_output(
                 thermal_scenario.htf_supply_temperature,
                 logger,
                 pvt_collector_mass_flow_rate,
-                irradiances[index],
+                1000 * irradiances[index],
                 wind_speeds[index],
             )
             for index in tqdm(
