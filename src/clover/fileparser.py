@@ -83,6 +83,10 @@ BATTERY: str = "battery"
 #   The relative path to the battery inputs file.
 BATTERY_INPUTS_FILE: str = os.path.join("simulation", "battery_inputs.yaml")
 
+# Capacity:
+#   Used for parsing cycle-charing capacity.
+CAPACITY: str = "capacity"
+
 # Conventional water-source-availability directory:
 #   The directory containing availability profiles for conventional water sources.
 CONVENTIONAL_WATER_SOURCE_AVAILABILITY_DIRECTORY: str = os.path.join(
@@ -613,7 +617,12 @@ def _parse_diesel_inputs(  # pylint: disable=too-many-statements
     # Instantiate DieselGenerators for every entry in the input file.
     try:
         diesel_generators: List[DieselGenerator] = [
-            DieselGenerator(entry[DIESEL_CONSUMPTION], entry[MINIMUM_LOAD], entry[NAME])
+            DieselGenerator(
+                entry[DIESEL_CONSUMPTION],
+                entry[MINIMUM_LOAD],
+                entry[NAME],
+                entry[CAPACITY] if CAPACITY in entry else None,
+            )
             for entry in diesel_inputs[DIESEL_GENERATORS]
         ]
     except KeyError as e:

@@ -112,7 +112,7 @@ def battery_iteration_step(
                 1.0 - minigrid.battery.leakage
             ) + minigrid.battery.conversion_in * min(
                 battery_energy_flow,
-                minigrid.battery.charge_rate
+                minigrid.battery.c_rate_charging
                 * (maximum_battery_storage - minimum_battery_storage),
             )
         # Battery discharging
@@ -122,7 +122,7 @@ def battery_iteration_step(
             ) + (1.0 / minigrid.battery.conversion_out) * max(
                 battery_energy_flow,
                 (-1.0)
-                * minigrid.battery.discharge_rate
+                * minigrid.battery.c_rate_discharging
                 * (maximum_battery_storage - minimum_battery_storage),
             )
 

@@ -56,6 +56,8 @@ from ..load.load import compute_processed_load_profile, population_hourly
 from .__utils__ import determine_available_converters, Minigrid
 from .diesel import (
     DieselWaterHeater,
+    find_cycle_charging_threshold,
+    get_cycle_charging_energy,
     get_diesel_energy_and_times,
     get_diesel_fuel_usage,
 )
@@ -143,6 +145,28 @@ def _calculate_backup_diesel_generator_usage(
     diesel_energy = diesel_energy.abs()  # type: ignore
 
     return diesel_capacity, diesel_energy, diesel_fuel_usage, diesel_times, unmet_energy
+
+
+def _calculate_battery_state_of_charge(
+    energy_stored: float, max_storage: float, min_storage: float
+) -> float:
+    """
+    Calculates the state of charge of the batteries based on capacities.
+
+    Inputs:
+        - energy_stored:
+            The energy stored in the batteries.
+        - max_storage:
+            The maximum energy that can be held in the batteries.
+        - min_storage:
+            The minimum energy that can be held in the batteries.
+
+    Outputs:
+        The fractional state of charge of the batteries.
+
+    """
+
+    return (energy_stored - min_storage) / (max_storage - min_storage)
 
 
 def _calculate_electric_desalination_parameters(
@@ -235,6 +259,139 @@ def _calculate_electric_desalination_parameters(
         maximum_water_throughput = 0
 
     return electric_desalinators, energy_per_desalinated_litre, maximum_water_throughput
+
+
+def _electric_iteration_step(
+    backup_desalinator_water_supplied,
+    battery_health,
+    battery_state_of_charge,
+    battery_storage_profile,
+    clean_water_power_consumed_mapping,
+    clean_water_demand_met_by_excess_energy,
+    clean_water_supplied_by_excess_energy,
+    conventional_cw_source_profiles,
+    conventional_water_supplied,
+    cumulative_battery_storage_power,
+    electric_storage_size,
+    energy_deficit,
+    energy_per_desalinated_litre,
+    energy_surplus,
+    excess_energy_used_desalinating,
+    hourly_battery_storage,
+    hourly_cw_tank_storage,
+    initial_cw_tank_storage,
+    initial_battery_storage,
+    logger,
+    maximum_battery_energy_throughput,
+    maximum_battery_storage,
+    maximum_cw_tank_storage,
+    maximum_water_throughput,
+    minigrid,
+    minimum_battery_storage,
+    minimum_cw_tank_storage,
+    scenario,
+    storage_power_supplied,
+    storage_water_supplied,
+    tank_storage_profile,
+    *,
+    time_index,
+):
+    """
+    Carry out the electric iteration.
+
+    """
+
+    (
+        battery_energy_flow,
+        excess_energy,
+        new_hourly_battery_storage,
+    ) = battery_iteration_step(
+        battery_storage_profile,
+        hourly_battery_storage,
+        initial_battery_storage,
+        logger,
+        maximum_battery_storage,
+        minigrid,
+        minimum_battery_storage,
+        time_index=time_index,
+    )
+
+    # Calculate the hot-water iteration.
+
+    # Calculate the clean-water iteration.
+    excess_energy = cw_tank_iteration_step(
+        backup_desalinator_water_supplied,
+        clean_water_power_consumed_mapping,
+        clean_water_demand_met_by_excess_energy,
+        clean_water_supplied_by_excess_energy,
+        conventional_cw_source_profiles,
+        conventional_water_supplied,
+        energy_per_desalinated_litre,
+        excess_energy,
+        excess_energy_used_desalinating,
+        hourly_cw_tank_storage,
+        initial_cw_tank_storage,
+        logger,
+        maximum_battery_storage,
+        maximum_cw_tank_storage,
+        maximum_water_throughput,
+        minigrid,
+        minimum_cw_tank_storage,
+        new_hourly_battery_storage,
+        scenario,
+        storage_water_supplied,
+        tank_storage_profile,
+        time_index=time_index,
+    )
+
+    # Dumped energy and unmet demand
+    energy_surplus[time_index] = excess_energy  # type: ignore
+    energy_deficit[time_index] = max(  # type: ignore
+        minimum_battery_storage - new_hourly_battery_storage, 0.0
+    )  # Battery too empty
+
+    # Battery capacities and blackouts (if battery is too full or empty)
+    new_hourly_battery_storage = min(
+        new_hourly_battery_storage, maximum_battery_storage
+    )
+    new_hourly_battery_storage = max(
+        new_hourly_battery_storage, minimum_battery_storage
+    )
+
+    # Update battery health
+    (
+        cumulative_battery_storage_power,
+        maximum_battery_storage,
+        minimum_battery_storage,
+    ) = _update_battery_health(
+        battery_energy_flow,
+        battery_health,
+        cumulative_battery_storage_power,
+        electric_storage_size,
+        hourly_battery_storage,
+        maximum_battery_energy_throughput,
+        minigrid,
+        storage_power_supplied,
+        time_index=time_index,
+    )
+
+    # Update hourly_battery_storage
+    hourly_battery_storage[time_index] = new_hourly_battery_storage
+    battery_state_of_charge[time_index] = _calculate_battery_state_of_charge(
+        hourly_battery_storage[time_index],
+        maximum_battery_storage,
+        minimum_battery_storage,
+    )
+
+    return (
+        battery_energy_flow,
+        battery_state_of_charge,
+        cumulative_battery_storage_power,
+        excess_energy,
+        hourly_battery_storage,
+        maximum_battery_storage,
+        minimum_battery_storage,
+    )
 
 
 def _calculate_renewable_cw_profiles(  # pylint: disable=too-many-locals, too-many-statements
@@ -1485,6 +1642,7 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
         * minigrid.battery.storage_unit
     )
     cumulative_battery_storage_power: float = 0.0
+    empty_capacity: Dict[int, float] = {}
     hourly_battery_storage: Dict[int, float] = {}
     new_hourly_battery_storage: float = 0.0
     battery_health: Dict[int, float] = {}
@@ -1542,7 +1700,10 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
 
     # Initialise energy accounting parameters
     battery_state_of_charge: Optional[Dict[int, float]] = defaultdict(float)
-    diesel_generator_running: Optional[Dict[int, float]] = defaultdict(float)
+    diesel_generator_running: Optional[Dict[int, bool]] = defaultdict(float)
+    diesel_power_to_battery_map: Optional[Dict[int, float]] = defaultdict(float)
+    diesel_total_output_map: Optional[Dict[int, float]] = defaultdict(float)
+    diesel_surplus_map: Optional[Dict[int, float]] = defaultdict(float)
     energy_surplus: Optional[Dict[int, float]] = {}
     energy_deficit: Optional[Dict[int, float]] = {}
     storage_power_supplied: Dict[int, float] = {}
@@ -1561,101 +1722,217 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
             leave=False,
             unit="hour",
         ):
-            # Calculate the electric iteration.
-            (
-                battery_energy_flow,
-                excess_energy,
-                new_hourly_battery_storage,
-            ) = battery_iteration_step(
-                battery_storage_profile,
-                hourly_battery_storage,
-                initial_battery_storage,
-                logger,
-                maximum_battery_storage,
-                minigrid,
-                minimum_battery_storage,
-                time_index=t,
-            )
-
-            # Calculate the hot-water iteration.
-
-            # Calculate the clean-water iteration.
-            excess_energy = cw_tank_iteration_step(
+            _electric_iteration_step(
                 backup_desalinator_water_supplied,
+                battery_health,
+                battery_state_of_charge,
+                battery_storage_profile,
                 clean_water_power_consumed_mapping,
                 clean_water_demand_met_by_excess_energy,
                 clean_water_supplied_by_excess_energy,
                 conventional_cw_source_profiles,
                 conventional_water_supplied,
+                cumulative_battery_storage_power,
+                electric_storage_size,
+                energy_deficit,
                 energy_per_desalinated_litre,
-                excess_energy,
+                energy_surplus,
                 excess_energy_used_desalinating,
+                hourly_battery_storage,
                 hourly_cw_tank_storage,
                 initial_cw_tank_storage,
+                initial_battery_storage,
                 logger,
+                maximum_battery_energy_throughput,
                 maximum_battery_storage,
                 maximum_cw_tank_storage,
                 maximum_water_throughput,
                 minigrid,
+                minimum_battery_storage,
                 minimum_cw_tank_storage,
-                new_hourly_battery_storage,
                 scenario,
+                storage_power_supplied,
                 storage_water_supplied,
                 tank_storage_profile,
                 time_index=t,
             )
 
-            # Dumped energy and unmet demand
-            energy_surplus[t] = excess_energy  # type: ignore
-            energy_deficit[t] = max(  # type: ignore
-                minimum_battery_storage - new_hourly_battery_storage, 0.0
-            )  # Battery too empty
-
-            # Battery capacities and blackouts (if battery is too full or empty)
-            new_hourly_battery_storage = min(
-                new_hourly_battery_storage, maximum_battery_storage
+    elif scenario.diesel_scenario.mode == DieselMode.CYCLE_CHARGING:
+        # Raise an error if the diesel capcity is not defined.
+        if minigrid.diesel_generator.capacity is None:
+            logger.error(
+                "%sDiesel capacity is needed for cycle charging within the diesel "
+                "generation inputs.%s",
+                BColours.fail,
+                BColours.endc,
             )
-            new_hourly_battery_storage = max(
-                new_hourly_battery_storage, minimum_battery_storage
+            raise InputFileError(
+                "diesel generation inputs",
+                "Diesel capacity is needed for cycle charging operation.",
             )
 
-            # Update hourly_battery_storage
-            hourly_battery_storage[t] = new_hourly_battery_storage
+        # Initialise diesel variables
+        max_diesel_energy_into_battery: float = min(
+            minigrid.diesel_generator.capacity,  # [kWh]
+            electric_storage_size * minigrid.battery.c_rate_charging,  # [kWh]
+        )
+        min_diesel_energy_into_battery: float = min(
+            minigrid.diesel_generator.minimum_load
+            * minigrid.diesel_generator.capacity,  # [kWh]
+            electric_storage_size * minigrid.battery.c_rate_charging,  # [kWh]
+        )
 
-            # Update battery health
-            (
-                cumulative_battery_storage_power,
+        # Begin simulation, iterating over timesteps
+        for t in tqdm(
+            range(int(battery_storage_profile.size)),
+            desc="hourly computation",
+            disable=disable_tqdm,
+            leave=False,
+            unit="hour",
+        ):
+            # Cycle charging doesn't operate at time 0.
+            if t == 0:
+                continue
+
+            # 1.  Work out the threshold based on:
+            #     - The state of charge,
+            #     - Current time, (this will determine the time setting)
+            #     - and whether the diesel generator was running at the previous hour.
+            previous_soc = _calculate_battery_state_of_charge(
+                hourly_battery_storage[t - 1],
                 maximum_battery_storage,
                 minimum_battery_storage,
-            ) = _update_battery_health(
-                battery_energy_flow,
-                battery_health,
-                cumulative_battery_storage_power,
-                electric_storage_size,
-                hourly_battery_storage,
-                maximum_battery_energy_throughput,
-                minigrid,
-                storage_power_supplied,
-                time_index=t,
             )
-    elif scenario.diesel_scenario.mode == DieselMode.CYCLE_CHARGING:
-        pass
-        """
-        FOR: Loop through all the times
-            1.  Work out the current state of charge and the empty capacity based on:
-                - The previous state of charge,
-                - The hourly storage profile.
-            2.  Work out the threshold based on:
-                - The state of charge,
-                - Current time, (this will determine the time setting)
-                - and whether the diesel generator was running at the previous hour.
-            3.  IF: State of charge less than threshold:
-                ELSE: Normal calculation from storage - i.e., normal iteration step fn.
-                DO: Diesel stuff -> Diesel module
-                3.  IF: There is any remaining empty capcaity in the batteries, we fill
-                    it with solar IF there is surplus solar.
+            current_setting = minigrid.diesel_generator.get_setting(
+                t, scenario.diesel_scenario.settings
+            )
+            threshold = find_cycle_charging_threshold(
+                diesel_generator_running[t - 1], current_setting
+            )
+            diesel_generator_running[t] = previous_soc < threshold
 
-        """
+            # 2.  IF: State of charge less than threshold:
+            #         DO: Diesel stuff -> Diesel module
+            #         IF: There is any remaining empty capcaity in the batteries,
+            #           AND the c rates allow,
+            #             We fill it with solar IF there is surplus solar.
+            empty_capacity[t] = (
+                minigrid.battery.maximum_charge - previous_soc
+            ) * maximum_battery_storage
+            if diesel_generator_running[t]:
+                # Determine diesel charging characteristics.
+                (
+                    diesel_to_battery,
+                    diesel_total_output,
+                    diesel_surplus,
+                ) = get_cycle_charging_energy(
+                    empty_capacity[t],
+                    max_diesel_energy_into_battery,
+                    minigrid.diesel_generator.capacity,
+                    min_diesel_energy_into_battery,
+                )
+                diesel_power_to_battery_map[t] = diesel_to_battery
+                diesel_total_output_map[t] = diesel_total_output
+                diesel_surplus_map[t] = diesel_surplus_map
+
+                # Add the diesel power to the batteries.
+                hourly_battery_storage[t] = (
+                    hourly_battery_storage[t - 1] * (1.0 - minigrid.battery.leakage)
+                    + minigrid.battery.conversion_in * diesel_to_battery
+                )
+                empty_capacity[t] = (
+                    minigrid.battery.maximum_charge
+                ) * maximum_battery_storage - hourly_battery_storage[t]
+
+                # If we are charging the batteries and the c-rate allows, add in solar.
+                remaining_chargable_capacity = min(
+                    (maximum_battery_storage - minimum_battery_storage)
+                    * minigrid.battery.c_rate_charging
+                    - diesel_to_battery,
+                    empty_capacity[t],
+                )
+                if all(
+                    entry > 0
+                    for entry in {
+                        remaining_chargable_capacity,
+                        battery_storage_profile[t],
+                    }
+                ):
+                    solar_charge_in = (
+                        min(battery_storage_profile[t], remaining_chargable_capacity)
+                        * minigrid.battery.conversion_in
+                    )
+                    hourly_battery_storage[t] += solar_charge_in
+                    empty_capacity[t] -= solar_charge_in
+                    energy_surplus[t] = battery_storage_profile[t] - solar_charge_in
+                else:
+                    energy_surplus[t] = max(battery_storage_profile[t], 0)
+
+                # Update battery health
+                (
+                    cumulative_battery_storage_power,
+                    maximum_battery_storage,
+                    minimum_battery_storage,
+                ) = _update_battery_health(
+                    battery_energy_flow,
+                    battery_health,
+                    cumulative_battery_storage_power,
+                    electric_storage_size,
+                    hourly_battery_storage,
+                    maximum_battery_energy_throughput,
+                    minigrid,
+                    storage_power_supplied,
+                    time_index=t,
+                )
+
+            else:
+                (
+                    battery_energy_flow,
+                    battery_state_of_charge,
+                    cumulative_battery_storage_power,
+                    excess_energy,
+                    hourly_battery_storage,
+                    maximum_battery_storage,
+                    minimum_battery_storage,
+                ) = _electric_iteration_step(
+                    backup_desalinator_water_supplied,
+                    battery_health,
+                    battery_state_of_charge,
+                    battery_storage_profile,
+                    clean_water_power_consumed_mapping,
+                    clean_water_demand_met_by_excess_energy,
+                    clean_water_supplied_by_excess_energy,
+                    conventional_cw_source_profiles,
+                    conventional_water_supplied,
+                    cumulative_battery_storage_power,
+                    electric_storage_size,
+                    energy_deficit,
+                    energy_per_desalinated_litre,
+                    energy_surplus,
+                    excess_energy_used_desalinating,
+                    hourly_battery_storage,
+                    hourly_cw_tank_storage,
+                    initial_cw_tank_storage,
+                    initial_battery_storage,
+                    logger,
+                    maximum_battery_energy_throughput,
+                    maximum_battery_storage,
+                    maximum_cw_tank_storage,
+                    maximum_water_throughput,
+                    minigrid,
+                    minimum_battery_storage,
+                    minimum_cw_tank_storage,
+                    scenario,
+                    storage_power_supplied,
+                    storage_water_supplied,
+                    tank_storage_profile,
+                    time_index=t,
+                )
+                energy_surplus[t] = excess_energy
+            #     ELSE: Normal calculation from storage - i.e., normal iteration step fn
+            #     WHERE the unmet load is met by discharging the batteries within this
+            #     function.
+            #
 
     # Process the various outputs into dataframes.
     # energy_deficit_frame: pd.DataFrame = dict_to_dataframe(energy_deficit)
@@ -1752,7 +2029,7 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
             unmet_energy,
         )
     elif scenario.diesel_scenario.mode == DieselMode.CYCLE_CHARGING:
-        """  # pylint: disable=pointless-string-statement
+        """# pylint: disable=pointless-string-statement
         Take the diesel surplus profile generated from the massive for loop
         Factoring in the c-rates, along with the maximum diesel output, calculate the
         amount of unmet demand that we *could* have met if we'd rn the diesel at full.
