@@ -44,6 +44,7 @@ __all__ = (
     "DesalinationScenario",
     "dict_to_dataframe",
     "DieselMode",
+    "DieselSetting",
     "DONE",
     "ELECTRIC_POWER",
     "EXCHANGER",

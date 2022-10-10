@@ -18,18 +18,20 @@ functionality to model diesel generators.
 
 """
 
+from collections import defaultdict
 import dataclasses
 import logging
 
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np  # pylint: disable=import-error
 import pandas as pd
 
 from ..__utils__ import (
     BColours,
-    ELECTRIC_POWER,
     DieselMode,
+    DieselSetting,
+    ELECTRIC_POWER,
     InputFileError,
     NAME,
     ProgrammerJudgementFault,
@@ -77,15 +79,64 @@ class DieselGenerator:
     minimum_load: float
     name: str
 
-    _setting_map: Dict[int, Setting]
+    _setting_map: Optional[Dict[int, DieselSetting]] = None
 
-    def get_setting():
+    def get_setting(self, hour: int, diesel_settings: List[DieselSetting]) -> DieselSetting:
+        """
+        Gets the diesel setting for the current hour and computes the mapping first time
+
+        Inputs:
+            - hour:
+                The hour of the simulation.
+            - diesel_settings:
+                The `list` of valid diesel settings.
+
+        Outputs:
+            The diesel setting for this hour.
+
+        Raises:
+            InputFileError:
+                If there are any invalid inputs in the diesel scenario file.
+
+        """
+
+        # If the diesel setting map has been computed, use the value from the map.
         if self._setting_map is not None:
-            return self._setting_map[hour // 24]
+            return self._setting_map[hour % 24]
+
+        # If there are no diesel settings, raise an error.
+        if len(diesel_settings) == 0:
+            raise InputFileError(
+                "diesel scenario",
+                "No diesel settings were specified despite cycle charging being "
+                "requested."
+            )
 
         # Compute the map
+        valid_settings: Dict[int, List[DieselSetting]] = defaultdict(list)
+
+        for hour in range(24):
+            for diesel_setting in diesel_settings:
+                # If the diesel settings don't run overnight.
+                if diesel_setting.start_hour < diesel_setting.end_hour:
+                    if diesel_setting.start_hour <= hour < diesel_setting.end_hour:
+                        valid_settings[hour].append(diesel_setting)
+                # If the diesel settings run across the day boundary.
+                else:
+                    if hour < diesel_setting.end_hour or hour >= diesel_setting.start_hour:
+                        valid_settings[hour].append(diesel_setting)
+
+        # Raise an error if there are overlapping settings.
+        if any(len(settings) > 1 for settings in valid_settings.values()):
+            raise InputFileError(
+                "diesel scenario", "Diesel settings should not be overlapping."
+            )
+
         # Save the map
+        self._setting_map = {key: value[0] for key, value in valid_settings.items()}
+
         # Return the current value from the map
+        return self._setting_map[hour % 24]
 
 
 @dataclasses.dataclass
