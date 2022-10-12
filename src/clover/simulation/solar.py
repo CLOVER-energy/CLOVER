@@ -711,7 +711,10 @@ def _calculate_closed_loop_solar_thermal_output(  # pylint: disable=too-many-loc
             round(st_collector_mass_flow_rate, 2),
         )
 
-    if SolarPanelType.PV_T not in relevant_scenarios and SolarPanelType.SOLAR_THERMAL not in relevant_scenarios:
+    if (
+        SolarPanelType.PV_T not in relevant_scenarios
+        and SolarPanelType.SOLAR_THERMAL not in relevant_scenarios
+    ):
         raise ProgrammerJudgementFault(
             "simulation.solar::_calculate_closed_loop_solar_thermal_output",
             "Either solar-thermal or PV-T collectors, or both, are required if "
@@ -906,7 +909,7 @@ def _calculate_closed_loop_solar_thermal_output(  # pylint: disable=too-many-loc
                     raise ProgrammerJudgementFault(
                         "simularion.solar::_calcualte_closed_loop_solar_thermal_output",
                         "Function returned `None` for thermal performance of a "
-                        f"closed-loop {resource_type.value.capitalize()} system."
+                        f"closed-loop {resource_type.value.capitalize()} system.",
                     )
 
             else:
@@ -1039,7 +1042,7 @@ def _calculate_closed_loop_solar_thermal_output(  # pylint: disable=too-many-loc
                 * solar_thermal_collectors[SolarPanelType.PV_T].pv_layer.pv_unit
             )
 
-    #@@@ Fractional electrical performance map is not saving entries for non times.
+    # @@@ Fractional electrical performance map is not saving entries for non times.
 
     logger.info(
         "Hourly %s %s%s%s performance calculation complete.",

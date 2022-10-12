@@ -1900,7 +1900,6 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
             [ColumnHeader.POWER_CONSUMED_BY_THERMAL_DESALINATION.value]
         )
 
-
     # Hot-water scenario system performance outputs.
     if scenario.hot_water_scenario is not None:
         # Process any errors.
