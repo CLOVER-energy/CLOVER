@@ -575,6 +575,9 @@ class ColumnHeader(enum.Enum):
     CW_PVT_ELECTRICITY_SUPPLIED_PER_KWP = (
         "Clean-water PV-T electric energy supplied per kWp"
     )
+    CW_PVT_ELECTRICITY_SUPPLIED_PER_UNIT = (
+        "Clean-water PV-T electric energy supplied per unit"
+    )
     CW_PVT_INPUT_TEMPERATURE = "Clean-water PV-T input temperature (degC)"
     CW_PVT_OUTPUT_TEMPERATURE = "Clean-water PV-T output temperature (degC)"
     CW_ST_INPUT_TEMPERATURE = "Clean-water solar-thermal input temperature (degC)"
