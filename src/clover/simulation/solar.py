@@ -1176,10 +1176,6 @@ def _calculate_direct_heating_solar_thermal_output(
 
     """
 
-    import pdb
-
-    pdb.set_trace()
-
     # Raise an error if both are present and a throughput is not specified.
     if (
         len(solar_thermal_collectors) > 1
