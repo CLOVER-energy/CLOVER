@@ -483,8 +483,7 @@ def calculate_renewable_hw_profiles(  # pylint: disable=too-many-locals, too-man
     # Compute the power consumed by the thermal desalination plant.
     hot_water_power_consumed: pd.DataFrame = pd.DataFrame(
         auxiliary_heater_power_consumption
-        + 0.001
-        * (hot_water_collector_pump_times > 0)  # type: ignore
+        + (hot_water_collector_pump_times > 0)  # type: ignore
         * minigrid.water_pump.consumption
     )
     if auxiliary_heater_power_consumption is not None:

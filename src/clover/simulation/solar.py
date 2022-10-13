@@ -322,7 +322,7 @@ def _get_collector_output_temperatures(
             collector_input_temperature,
             logger,
             pvt_collector_mass_flow_rate,
-            irradiance,
+            1000 * irradiance,
             wind_speed,
         )
     else:
@@ -893,7 +893,7 @@ def _calculate_closed_loop_solar_thermal_output(  # pylint: disable=too-many-loc
         + " and ".join(
             panel_type.value.replace("_", "-") for panel_type in collector_system_sizes
         )
-        + "performance",
+        + " performance",
         disable=disable_tqdm,
         leave=False,
         unit="hour",
@@ -946,8 +946,8 @@ def _calculate_closed_loop_solar_thermal_output(  # pylint: disable=too-many-loc
                 (
                     collector_system_output_temperature,
                     fractional_electric_performance,
-                    st_collector_output_temperature,
                     pvt_collector_output_temperature,
+                    st_collector_output_temperature,
                 ) = _get_collector_output_temperatures(
                     best_guess_collector_input_temperature,
                     irradiances[index],
@@ -992,8 +992,8 @@ def _calculate_closed_loop_solar_thermal_output(  # pylint: disable=too-many-loc
                 # Otherwise, assume that the collector is in steady state with the
                 # environment, a reasonable assumption given the one-hour resolution.
                 fractional_electric_performance = 0 if scenario.pv_t else None
-                st_collector_output_temperature = 0 if scenario.solar_thermal else None
-                pvt_collector_output_temperature = 0 if scenario.pv_t else None
+                st_collector_output_temperature = default_supply_temperature if scenario.solar_thermal else None
+                pvt_collector_output_temperature = default_supply_temperature if scenario.pv_t else None
                 collector_system_output_temperature = max(
                     tank_replacement_temperature, temperatures[index]
                 )

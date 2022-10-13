@@ -1234,6 +1234,10 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
         else "N/A",
     )
 
+    import pdb
+
+    pdb.set_trace()
+
     # Post-process dataframes.
     processed_total_hw_load = processed_total_hw_load.reset_index(drop=True)
 
