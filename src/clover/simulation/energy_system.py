@@ -568,10 +568,7 @@ def _calculate_renewable_cw_profiles(  # pylint: disable=too-many-locals, too-ma
         ", ".join([str(source) for source in required_feedwater_sources]),
     )
 
-    # Compute the output of the PV-T system.
-    clean_water_pvt_collector_output_temperature: Optional[pd.DataFrame]
-    buffer_tank_temperature: Optional[pd.DataFrame]
-    tank_volume_supplied: pd.DataFrame
+    # Compute the output of the PV-T and solar-thermal clean-water systems.
     (
         clean_water_collectors_input_temperatures,
         clean_water_collectors_output_temperatures,
@@ -1060,15 +1057,7 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
         lambda: defaultdict(float)
     )
 
-    # Calculate PV-T related performance profiles.
-    buffer_tank_temperature: Optional[pd.DataFrame]
-    buffer_tank_volume_supplied: Optional[pd.DataFrame]
-    clean_water_pvt_collector_output_temperature: Optional[pd.DataFrame]
-    clean_water_pvt_electric_power_per_unit: pd.DataFrame
-    feedwater_sources: List[Converter]
-    renewable_thermal_cw_produced: pd.DataFrame
-    thermal_desalination_electric_power_consumed: pd.DataFrame
-
+    # Calculate PV-T and solar-thermal clean-water related performance profiles.
     (
         buffer_tank_temperature,
         feedwater_sources,

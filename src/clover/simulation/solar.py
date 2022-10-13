@@ -33,7 +33,6 @@ from tqdm import tqdm
 
 from ..__utils__ import (
     BColours,
-    CleanWaterScenario,
     DesalinationScenario,
     HotWaterScenario,
     dict_to_dataframe,
@@ -1173,7 +1172,7 @@ def _calculate_closed_loop_solar_thermal_output(  # pylint: disable=too-many-loc
     )
 
 
-def _calculate_direct_heating_solar_thermal_output(
+def _calculate_direct_heating_solar_thermal_output(  # pylint: disable=too-many-locals
     collector_system_sizes: Dict[SolarPanelType, int],
     disable_tqdm: bool,
     end_hour: int,

@@ -571,7 +571,7 @@ class HybridPVTPanel(SolarPanel, panel_type=SolarPanelType.PV_T):
             + ")"
         )
 
-    def calculate_performance(
+    def calculate_performance(  # pylint: disable=too-many-locals
         self,
         ambient_temperature: float,
         htf_heat_capacity: float,
@@ -911,7 +911,9 @@ class SolarThermalPanel(SolarPanel, panel_type=SolarPanelType.SOLAR_THERMAL):
 
         # Use numpy or Pandas to solve the quadratic to determine the performance of
         # the collector
-        positive_root: float = (-b + math.sqrt(b**2 - 4 * a * c)) / (
+        positive_root: float = (  # pylint: disable=unused-variable
+            -b + math.sqrt(b**2 - 4 * a * c)
+        ) / (
             2 * a
         ) - ZERO_CELCIUS_OFFSET
         negative_root: float = (-b - math.sqrt(b**2 - 4 * a * c)) / (

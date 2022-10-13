@@ -12,7 +12,6 @@ test_solar.py - Tests for the solar generation module of CLOVER.
 
 """
 
-from tkinter import N
 import unittest
 
 from unittest import mock
@@ -22,9 +21,7 @@ from clover.__utils__ import (
     ProgrammerJudgementFault,
     RegressorType,
     SolarPanelType,
-)  # pylint: disable=unused-import
-
-import pytest  # pylint: disable=import-error
+)
 
 from ...solar import (
     LOW_IRRADIANCE_THRESHOLD,

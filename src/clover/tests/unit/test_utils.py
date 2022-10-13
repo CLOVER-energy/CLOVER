@@ -19,7 +19,7 @@ from typing import Any, Dict
 from unittest import mock  # pylint: disable=unused-import
 
 import json
-import pytest  # pylint: disable=import-error
+import pytest  # pylint: disable=unused-import
 
 from ...__utils__ import (
     CONVENTIONAL_SOURCES,
@@ -149,7 +149,8 @@ class TestDesalinationScenario(unittest.TestCase):
         # Test missing clean-water scenario
         test_logger = mock.MagicMock()
         self.input_data.pop(ResourceType.CLEAN_WATER.value)
-        with self.assertRaises(InputFileError), mock.MagicMock() as test_logger:
+        test_logger = mock.MagicMock()
+        with self.assertRaises(InputFileError):
             DesalinationScenario.from_dict(self.input_data, test_logger)
         test_logger.error.assert_called_once_with(
             "%sMissing clean-water information in deslination scenario file.%s",
@@ -240,10 +241,11 @@ class TestHotWaterScenario(unittest.TestCase):
         self.input_data[ResourceType.HOT_CLEAN_WATER.value][
             "auxiliary_heater"
         ] = "INVALID"
-        with self.assertRaises(InputFileError), mock.MagicMock() as test_logger:
+        test_logger = mock.MagicMock()
+        with self.assertRaises(InputFileError):
             HotWaterScenario.from_dict(self.input_data, test_logger)
         test_logger.error.assert_called_once_with(
-            "%sInvalid auxiliary heater mode specified: %s. Valid options are %s." "%s",
+            "%sInvalid auxiliary heater mode specified: %s. Valid options are %s.%s",
             BColours.fail,
             self.input_data[ResourceType.HOT_CLEAN_WATER.value]["auxiliary_heater"],
             ", ".join(f"'{e.value}'" for e in AuxiliaryHeaterType),
@@ -256,7 +258,8 @@ class TestHotWaterScenario(unittest.TestCase):
         # Test missing clean-water scenario
         test_logger = mock.MagicMock()
         self.input_data[COLD_WATER]["supply"] = "INVALID"
-        with self.assertRaises(InputFileError), mock.MagicMock() as test_logger:
+        test_logger = mock.MagicMock()
+        with self.assertRaises(InputFileError):
             HotWaterScenario.from_dict(self.input_data, test_logger)
         test_logger.error.assert_called_once_with(
             "%sInvalid cold-water supply specified: %s%s",
@@ -271,7 +274,8 @@ class TestHotWaterScenario(unittest.TestCase):
         # Test missing clean-water scenario
         test_logger = mock.MagicMock()
         self.input_data[COLD_WATER].pop(SUPPLY_TEMPERATURE)
-        with self.assertRaises(InputFileError), mock.MagicMock() as test_logger:
+        test_logger = mock.MagicMock()
+        with self.assertRaises(InputFileError):
             HotWaterScenario.from_dict(self.input_data, test_logger)
         test_logger.error.assert_called_once_with(
             "%sMissing cold-water supply temperature information in hot-water "
@@ -305,7 +309,8 @@ class TestHotWaterScenario(unittest.TestCase):
         # Test missing clean-water scenario
         test_logger = mock.MagicMock()
         self.input_data[ResourceType.HOT_CLEAN_WATER.value].pop("demand_temperature")
-        with self.assertRaises(InputFileError), mock.MagicMock() as test_logger:
+        test_logger = mock.MagicMock()
+        with self.assertRaises(InputFileError):
             HotWaterScenario.from_dict(self.input_data, test_logger)
         test_logger.error.assert_called_with(
             "%sMissing hot-water demand temperature in hot-water scenario file.%s",

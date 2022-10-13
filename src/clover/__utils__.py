@@ -2071,9 +2071,9 @@ class HotWaterScenario:
     throughput_mass_flow_rate: Optional[float]
 
     @classmethod
-    def from_dict(
+    def from_dict(  # pylint: disable=too-many-statements
         cls, hot_water_inputs: Dict[str, Any], logger: logging.Logger
-    ) -> Any:  # pylint: disable=too-many-statements
+    ) -> Any:
         """
         Returns a :class:`DesalinationScenario` instance based on the input data.
 
