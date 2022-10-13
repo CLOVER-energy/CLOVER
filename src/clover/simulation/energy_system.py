@@ -381,63 +381,68 @@ def _calculate_renewable_cw_profiles(  # pylint: disable=too-many-locals, too-ma
         scenario.desalination_scenario.pvt_scenario is None
         and scenario.desalination_scenario.solar_thermal_scenario is None
     ):
-        logger.debug("Skipping clean-water PV-T performance-profile calculation.")
+        logger.debug(
+            "Skipping clean-water PV-T and solar-thermal performance-profile "
+            "calculation."
+        )
         return (
             None,
+            [],
+            {},
+            {},
+            pd.DataFrame([0] * (end_hour - start_hour)),
             pd.DataFrame([0] * (end_hour - start_hour)),
             [],
-            None,
-            None,
             pd.DataFrame([0] * (end_hour - start_hour)),
-            pd.DataFrame([0] * (end_hour - start_hour)),
-            [],
             pd.DataFrame([0] * (end_hour - start_hour)),
             total_waste_produced,
         )
 
     # Determine whether the water pump is capable for supplying the PV-T panels with
     # enough throughput.
-    if scenario.pv_t and (
-        scenario.desalination_scenario.pvt_scenario.mass_flow_rate * pvt_size
-        > minigrid.water_pump.throughput
-    ):
-        logger.error(
-            "%sThe water pump supplied, %s, is incapable of meeting the required "
-            "PV-T flow rate of %s litres/hour. Max pump throughput: %s litres/hour."
-            "%s",
-            BColours.fail,
-            minigrid.water_pump.name,
-            scenario.desalination_scenario.pvt_scenario.mass_flow_rate * pvt_size,
-            minigrid.water_pump.throughput,
-            BColours.endc,
-        )
-        raise FlowRateError(
-            "water pump",
-            f"The water pump defined, {minigrid.water_pump.name}, is unable to meet PV-T "
-            "flow requirements.",
-        )
+    if scenario.pv_t:
+        if scenario.desalination_scenario.pvt_scenario is not None and (
+            scenario.desalination_scenario.pvt_scenario.mass_flow_rate * pvt_size
+            > minigrid.water_pump.throughput
+        ):
+            logger.error(
+                "%sThe water pump supplied, %s, is incapable of meeting the required "
+                "PV-T flow rate of %s litres/hour. Max pump throughput: %s litres/hour."
+                "%s",
+                BColours.fail,
+                minigrid.water_pump.name,
+                scenario.desalination_scenario.pvt_scenario.mass_flow_rate * pvt_size,
+                minigrid.water_pump.throughput,
+                BColours.endc,
+            )
+            raise FlowRateError(
+                "water pump",
+                f"The water pump defined, {minigrid.water_pump.name}, is unable to meet PV-T "
+                "flow requirements.",
+            )
 
-    elif scenario.solar_thermal and (
-        scenario.hot_water_scenario.solar_thermal_scenario.mass_flow_rate
-        * solar_thermal_size
-        > minigrid.water_pump.throughput
-    ):
-        logger.error(
-            "%sThe water pump supplied, %s, is incapable of meeting the required "
-            "solar-thermal flow rate of %s litres/hour. Max pump throughput: %s "
-            "litres/hour.%s",
-            BColours.fail,
-            minigrid.water_pump.name,
+    if scenario.solar_thermal:
+        if scenario.desalination_scenario.solar_thermal_scenario is not None and (
             scenario.desalination_scenario.solar_thermal_scenario.mass_flow_rate
-            * pvt_size,
-            minigrid.water_pump.throughput,
-            BColours.endc,
-        )
-        raise FlowRateError(
-            "water pump",
-            f"The water pump defined, {minigrid.water_pump.name}, is unable to meet PV-T "
-            "flow requirements.",
-        )
+            * solar_thermal_size
+            > minigrid.water_pump.throughput
+        ):
+            logger.error(
+                "%sThe water pump supplied, %s, is incapable of meeting the required "
+                "solar-thermal flow rate of %s litres/hour. Max pump throughput: %s "
+                "litres/hour.%s",
+                BColours.fail,
+                minigrid.water_pump.name,
+                scenario.desalination_scenario.solar_thermal_scenario.mass_flow_rate
+                * pvt_size,
+                minigrid.water_pump.throughput,
+                BColours.endc,
+            )
+            raise FlowRateError(
+                "water pump",
+                f"The water pump defined, {minigrid.water_pump.name}, is unable to meet PV-T "
+                "flow requirements.",
+            )
 
     logger.info("Calculating clean-water PV-T/solar-thermal performance profiles.")
     if wind_speed_data is None:

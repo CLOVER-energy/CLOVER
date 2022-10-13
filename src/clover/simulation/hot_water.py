@@ -28,13 +28,16 @@ from ..__utils__ import (
     AuxiliaryHeaterType,
     BColours,
     ColdWaterSupply,
+    DesalinationScenario,
     FlowRateError,
+    HotWaterScenario,
     InputFileError,
     InternalError,
     ProgrammerJudgementFault,
     ResourceType,
     Scenario,
     SolarPanelType,
+    ThermalCollectorScenario,
     WasteProduct,
 )
 from ..conversion.conversion import Converter
@@ -46,26 +49,27 @@ __all__ = ("calculate_renewable_hw_profiles",)
 
 
 def _check_water_pump(
+    collector_scenario: Optional[ThermalCollectorScenario],
+    collector_system_size: float,
     logger: Logger,
     minigrid: Minigrid,
-    scenario: Scenario,
-    solar_thermal_size: float,
-    pvt_size: float,
 ) -> None:
     """
     Checks that the water pump is correctly sized to meet flow-rate requirements.
 
     Inputs:
+        - collector_scenario:
+            The scenario for the relevant collector being considered.
+        - collector_system_size:
+            The size of the solar-thermal or PV-T system installed, measured in
+            solar-thermal units.
         - logger:
             The logger to use for the run.
         - minigrid:
             The minigrid being simulated.
-        - scenario:
-            The current :class:`Scenario`.
-        - solar_thermal_size:
-            The size of the solar-thermal system, measured in solar-thermal units.
-        - pvt_size:
-            The size of the PV-T system, measured in PV-T units.
+
+    Outputs:
+        - Returns `None` if the water pump is sufficient to meet requirements.
 
     Raises:
         - FlowRateError:
@@ -88,66 +92,39 @@ def _check_water_pump(
             "or PV-T modelling being requested."
         )
 
-    # Determine whether the water pump is capable for supplying the PV-T or
-    # solar-thermal collectors with enough throughput.
-    if scenario.pv_t:
-        if (
-            scenario.hot_water_scenario.pvt_scenario.mass_flow_rate * pvt_size
-            > minigrid.water_pump.throughput
-        ):
-            logger.error(
-                "%sThe water pump supplied, %s, is incapable of meeting the required "
-                "PV-T flow rate of %s litres/hour. Max pump throughput: %s litres/hour."
-                "%s",
-                BColours.fail,
-                minigrid.water_pump.name,
-                scenario.hot_water_scenario.pvt_scenario.mass_flow_rate * pvt_size,
-                minigrid.water_pump.throughput,
-                BColours.endc,
-            )
-            raise FlowRateError(
-                "water pump",
-                f"The water pump defined, {minigrid.water_pump.name}, is unable to "
-                "meet PV-T flow requirements.",
-            )
+    if collector_scenario is None:
+        logger.info(
+            "No collector scenario defined so cannot check water pump flow-rate "
+            "requirements."
+        )
+        return
 
-    elif scenario.solar_thermal:
-        if (
-            scenario.hot_water_scenario.pvt_scenario.mass_flow_rate * solar_thermal_size
-            > minigrid.water_pump.throughput
-        ):
-            logger.error(
-                "%sThe water pump supplied, %s, is incapable of meeting the required "
-                "solar-thermal flow rate of %s litres/hour. Max pump throughput: %s "
-                "litres/hour.%s",
-                BColours.fail,
-                minigrid.water_pump.name,
-                scenario.hot_water_scenario.solar_thermal_scenario.mass_flow_rate
-                * pvt_size,
-                minigrid.water_pump.throughput,
-                BColours.endc,
-            )
-            raise FlowRateError(
-                "water pump",
-                f"The water pump defined, {minigrid.water_pump.name}, is unable to "
-                "meet solar-thermal flow requirements.",
-            )
-
-    else:
+    if (
+        collector_scenario.mass_flow_rate * collector_system_size
+        > minigrid.water_pump.throughput
+    ):
         logger.error(
-            "%sA renewable HW profile calculation was called despite neither PV-T nor "
-            "solar-thermal panels being present.%s",
+            "%sThe water pump supplied, %s, is incapable of meeting the required %s"
+            "flow rate of %s litres/hour. Max pump throughput: %s litres/hour.%s",
             BColours.fail,
+            minigrid.water_pump.name,
+            collector_scenario.collector_type.value,
+            collector_scenario.mass_flow_rate * collector_system_size,
+            minigrid.water_pump.throughput,
             BColours.endc,
         )
-        raise ProgrammerJudgementFault(
-            "energy_system::calculate_renewable_hw_profiles",
-            "Cannot calculate renewable HW profiles if no renewables sources of HW.",
+        raise FlowRateError(
+            "water pump",
+            f"The water pump defined, {minigrid.water_pump.name}, is unable to "
+            + f"meet {collector_scenario.collector_type.value} flow requirements.",
         )
 
 
 def _determine_auxiliary_heater(
-    converters: List[Converter], logger: Logger, minigrid: Minigrid, scenario: Scenario
+    converters: List[Converter],
+    hot_water_scenario: HotWaterScenario,
+    logger: Logger,
+    minigrid: Minigrid,
 ) -> Optional[Converter]:
     """
     Determine the auxiliary heater associated with the system based on the scenario.
@@ -155,19 +132,19 @@ def _determine_auxiliary_heater(
     Inputs:
         - converters:
             The `list` of :class:`Converter` instances available to be used.
+        - hot_water_scenario:
+            The current :class:`HotWaterScenario`.
         - logger:
             The logger to use for the run.
         - minigrid:
             The minigrid being simulated.
-        - scenario:
-            The current :class:`Scenario`.
 
     Outputs:
         The auxiliary heater associated with the system.
 
     """
 
-    if scenario.hot_water_scenario.auxiliary_heater == AuxiliaryHeaterType.DIESEL:
+    if hot_water_scenario.auxiliary_heater == AuxiliaryHeaterType.DIESEL:
         auxiliary_heater: Optional[
             Union[Converter, DieselWaterHeater]
         ] = minigrid.diesel_water_heater
@@ -184,7 +161,7 @@ def _determine_auxiliary_heater(
                 "scenario specifying that this is needed.",
             )
 
-    elif scenario.hot_water_scenario.auxiliary_heater == AuxiliaryHeaterType.ELECTRIC:
+    elif hot_water_scenario.auxiliary_heater == AuxiliaryHeaterType.ELECTRIC:
         try:
             auxiliary_heater = [
                 converter
@@ -205,7 +182,7 @@ def _determine_auxiliary_heater(
                 "No electric water heater defined despite the hot-water scenario "
                 "specifying that this is needed.",
             ) from None
-    elif scenario.hot_water_scenario.auxiliary_heater is None:
+    elif hot_water_scenario.auxiliary_heater is None:
         auxiliary_heater = None
     else:
         logger.error(
@@ -331,8 +308,8 @@ def calculate_renewable_hw_profiles(  # pylint: disable=too-many-locals, too-man
         return (
             None,
             pd.DataFrame([0] * (end_hour - start_hour)),
-            None,
-            None,
+            {},
+            {},
             pd.DataFrame([0] * (end_hour - start_hour)),
             None,
             None,
@@ -344,6 +321,20 @@ def calculate_renewable_hw_profiles(  # pylint: disable=too-many-locals, too-man
         )
 
     logger.info("Calculating hot-water performance profiles.")
+
+    # Check that all necessary attributes are defined.
+    if minigrid.hot_water_tank is None:
+        raise InputFileError(
+            "energy system inputs",
+            "No hot-water tank was defined despite hot-water modelling being requested.",
+        )
+
+    if minigrid.water_pump is None:
+        raise InputFileError(
+            "energy system inputs",
+            "No water pump was defined despite hot-water modelling requested.",
+        )
+
     if wind_speed_data is None:
         raise InternalError(
             "Wind speed data required in solar-thermal or PV-T computation and not "
@@ -358,10 +349,27 @@ def calculate_renewable_hw_profiles(  # pylint: disable=too-many-locals, too-man
             ColdWaterSupply.UNLIMITED.value,
             BColours.endc,
         )
+        raise InputFileError(
+            "hot water scenario",
+            "Only cold-water heating scenarios are available for hot-water production.",
+        )
 
-    _check_water_pump(logger, minigrid, scenario, solar_thermal_size, pvt_size)
+    # Check that the water pump is able to meet flow requirements.
+    if scenario.pv_t:
+        _check_water_pump(
+            scenario.hot_water_scenario.pvt_scenario, pvt_size, logger, minigrid
+        )
+    if scenario.solar_thermal:
+        _check_water_pump(
+            scenario.hot_water_scenario.solar_thermal_scenario,
+            pvt_size,
+            logger,
+            minigrid,
+        )
+
+    # Determine the auxiliary heater being considered.
     auxiliary_heater = _determine_auxiliary_heater(
-        converters, logger, minigrid, scenario
+        converters, scenario.hot_water_scenario, logger, minigrid
     )
 
     logger.debug("Auxiliary heater successfully determined.")
@@ -421,7 +429,7 @@ def calculate_renewable_hw_profiles(  # pylint: disable=too-many-locals, too-man
                 / auxiliary_heater.input_resource_consumption[ResourceType.CLEAN_WATER]
             )  # [operating fraction]
             * (hot_water_volume_supplied > 0)  # type: ignore [operator]
-            * (  # type: ignore [arg-type]
+            * (  # type: ignore [arg-type,operator]
                 scenario.hot_water_scenario.demand_temperature  # type: ignore [operator]
                 - hot_water_tank_temperature
             )  # [degC]
@@ -432,8 +440,8 @@ def calculate_renewable_hw_profiles(  # pylint: disable=too-many-locals, too-man
             auxiliary_heater_heat_consumption: pd.DataFrame = pd.DataFrame(  # pylint: disable=unused-variable
                 (hot_water_volume_supplied > 0)
                 * hot_water_volume_supplied  # type: ignore [operator]
-                * minigrid.hot_water_tank.heat_capacity
-                * (
+                * minigrid.hot_water_tank.heat_capacity  # type: ignore [attr-defined]
+                * (  # type: ignore [operator]
                     scenario.hot_water_scenario.demand_temperature  # type: ignore [operator]
                     - hot_water_tank_temperature
                 )
@@ -459,7 +467,7 @@ def calculate_renewable_hw_profiles(  # pylint: disable=too-many-locals, too-man
                                 ]
                             )
                             * (hot_water_volume_supplied > 0)  # type: ignore [operator]
-                            * (  # type: ignore [attr-defined]
+                            * (  # type: ignore [attr-defined,operator]
                                 scenario.hot_water_scenario.demand_temperature  # type: ignore [operator]  # pylint: disable=line-too-long
                                 - hot_water_tank_temperature
                             )

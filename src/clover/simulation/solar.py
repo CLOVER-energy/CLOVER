@@ -1408,7 +1408,7 @@ def calculate_solar_thermal_output(  # pylint: disable=too-many-locals, too-many
     resource_type: ResourceType,
     scenario: Scenario,
     solar_thermal_collectors: Dict[
-        SolarPanelType, Union[HybridPVTPanel, SolarThermalPanel]
+        SolarPanelType, Union[Optional[HybridPVTPanel], Optional[SolarThermalPanel]]
     ],
     start_hour: int,
     temperatures: pd.Series,
