@@ -256,7 +256,9 @@ def _get_collector_output_temperatures(
     logger: Logger,
     pvt_collector_mass_flow_rate: Optional[float],
     relevant_scenarios: Dict[SolarPanelType, ThermalCollectorScenario],
-    solar_thermal_collectors: List[Union[HybridPVTPanel, SolarThermalPanel]],
+    solar_thermal_collectors: Dict[
+        SolarPanelType, Union[HybridPVTPanel, SolarThermalPanel]
+    ],
     st_collector_mass_flow_rate: Optional[float],
     temperature: float,
     wind_speed: float,
@@ -299,6 +301,18 @@ def _get_collector_output_temperatures(
 
     # Determine the PV-T output if present.
     if SolarPanelType.PV_T in solar_thermal_collectors:
+        if pvt_collector_mass_flow_rate is None:
+            logger.error(
+                "%sNo PV-T mass-flow rate provided despite modelling requested.%s",
+                BColours.fail,
+                BColours.endc,
+            )
+            raise ProgrammerJudgementFault(
+                "simulation.solar::_get_collector_output_temperatures",
+                "No PV-T collector mass-flow rate when modelling PV-T collector "
+                "performance.",
+            )
+
         # Calculate the output temperature map from the collector.
         (
             fractional_electrical_performance,
@@ -326,6 +340,18 @@ def _get_collector_output_temperatures(
             else collector_input_temperature
         )
 
+        if st_collector_mass_flow_rate is None:
+            logger.error(
+                "%sNo solar-thermal mass-flow rate provided despite modelling requested.%s",
+                BColours.fail,
+                BColours.endc,
+            )
+            raise ProgrammerJudgementFault(
+                "simulation.solar::_get_collector_output_temperatures",
+                "No solar-thermal collector mass flow rate when modelling "
+                "solar-thermal collector performance.",
+            )
+
         # Calculate the output temperature map from the collector.
         _, solar_thermal_output_temperature = solar_thermal_collectors[
             SolarPanelType.SOLAR_THERMAL
@@ -341,8 +367,19 @@ def _get_collector_output_temperatures(
     else:
         solar_thermal_output_temperature = None
 
+    if solar_thermal_output_temperature is None and pvt_output_temperature is None:
+        logger.error(
+            "%sFailed to calculate either solar-thermal or PV-T output temperatures.%s",
+            BColours.fail,
+            BColours.endc,
+        )
+        raise ProgrammerJudgementFault(
+            "simulation.solar::_get_collector_output_temperatures",
+            "No output temperatures were determined as a result of the function call.",
+        )
+
     return (
-        solar_thermal_output_temperature
+        solar_thermal_output_temperature  # type: ignore [return-value]
         if solar_thermal_output_temperature is not None
         else pvt_output_temperature,
         fractional_electrical_performance,
@@ -366,12 +403,29 @@ def _get_relevant_thermal_scenario(
         - solar_thermal_collector:
             The relevant solar-thermal collector being used for the run.
 
+    Outputs:
+        The relevant thermal scenario.
+
+    Raises:
+        - ProgrammerJudgementFault:
+            Raised if the scenario could not be returned as it would have been `None`.
+
     """
 
     if resource_type == ResourceType.CLEAN_WATER:
+        if scenario.desalination_scenario is None:
+            raise ProgrammerJudgementFault(
+                "simulation.solar::_get_relevant_thermal_scenario",
+                "Could not return desalination scenario as no desalination scenario to return.",
+            )
         return scenario.desalination_scenario
 
     if resource_type in {ResourceType.HOT_CLEAN_WATER, ResourceType.HOT_UNCLEAN_WATER}:
+        if scenario.hot_water_scenario is None:
+            raise ProgrammerJudgementFault(
+                "simulation.solar::_get_relevant_thermal_scenario",
+                "Could not return hot-water scenario as no hot-water scenario to return.",
+            )
         return scenario.hot_water_scenario
 
     raise ProgrammerJudgementFault(
@@ -397,13 +451,31 @@ def _get_relevant_collector_scenario(
         - solar_thermal_collector:
             The relevant solar-thermal collector being used for the run.
 
+    Outputs:
+        The relevant thermal collector scenario.
+
+    Raises:
+        - ProgrammerJudgementFault:
+            Raised if the scenario could not be returned as it would have been `None`.
+
     """
 
     thermal_scenario = _get_relevant_thermal_scenario(resource_type, scenario)
 
     if solar_thermal_collector.panel_type == SolarPanelType.PV_T:
+        if thermal_scenario.pvt_scenario is None:
+            raise ProgrammerJudgementFault(
+                "simulation.solar::_get_relevant_collector_scenario",
+                "Requested to get PV-T scenario but no PV-T scenario defined.",
+            )
         return thermal_scenario.pvt_scenario
     if solar_thermal_collector.panel_type == SolarPanelType.SOLAR_THERMAL:
+        if thermal_scenario.solar_thermal_scenario is None:
+            raise ProgrammerJudgementFault(
+                "simulation.solar::_get_relevant_collector_scenario",
+                "Requested to get solar-thermal scenario but no solar-thermal scenario "
+                "defined.",
+            )
         return thermal_scenario.solar_thermal_scenario
 
     raise ProgrammerJudgementFault(
@@ -541,7 +613,9 @@ def _calculate_closed_loop_solar_thermal_output(  # pylint: disable=too-many-loc
     relevant_scenarios: Dict[SolarPanelType, ThermalCollectorScenario],
     resource_type: ResourceType,
     scenario: Scenario,
-    solar_thermal_collectors: List[Union[HybridPVTPanel, SolarThermalPanel]],
+    solar_thermal_collectors: Dict[
+        SolarPanelType, Union[HybridPVTPanel, SolarThermalPanel]
+    ],
     start_hour: int,
     temperatures: pd.Series,
     thermal_desalination_plant: Optional[ThermalDesalinationPlant],
@@ -552,7 +626,7 @@ def _calculate_closed_loop_solar_thermal_output(  # pylint: disable=too-many-loc
     pd.DataFrame,
     pd.DataFrame,
     pd.DataFrame,
-    None,
+    pd.DataFrame,
     pd.DataFrame,
 ]:
     """
@@ -666,7 +740,7 @@ def _calculate_closed_loop_solar_thermal_output(  # pylint: disable=too-many-loc
     # The collector heat transfer depends only on the parameters of the final
     # collector in any series configuration.
     if SolarPanelType.PV_T in relevant_scenarios:
-        collector_heat_transfer = (
+        collector_heat_transfer: float = (
             collector_system_sizes[SolarPanelType.PV_T]
             * relevant_scenarios[SolarPanelType.PV_T].mass_flow_rate  # [kg/hour]
             * relevant_scenarios[SolarPanelType.PV_T].htf_heat_capacity  # [J/kg*K]
@@ -679,7 +753,7 @@ def _calculate_closed_loop_solar_thermal_output(  # pylint: disable=too-many-loc
                 / collector_system_sizes[SolarPanelType.PV_T]
             )
             if thermal_scenario.throughput_mass_flow_rate is not None
-            else thermal_scenario.pvt_scenario.mass_flow_rate
+            else relevant_scenarios[SolarPanelType.PV_T].mass_flow_rate
         )
         logger.debug(
             "Mass flow rate through PV-T collectors: %s",
@@ -687,7 +761,7 @@ def _calculate_closed_loop_solar_thermal_output(  # pylint: disable=too-many-loc
         )
 
     if SolarPanelType.SOLAR_THERMAL in relevant_scenarios:
-        collector_heat_transfer: float = (
+        collector_heat_transfer = (
             collector_system_sizes[SolarPanelType.SOLAR_THERMAL]
             * relevant_scenarios[
                 SolarPanelType.SOLAR_THERMAL
@@ -698,17 +772,17 @@ def _calculate_closed_loop_solar_thermal_output(  # pylint: disable=too-many-loc
             * minigrid.heat_exchanger.efficiency
             / 3600  # [s/hour]
         )  # [W/K]
-        st_collector_mass_flow_rate: Optional[float] = (
+        st_collector_mass_flow_rate = (
             (
                 thermal_scenario.throughput_mass_flow_rate
                 / collector_system_sizes[SolarPanelType.SOLAR_THERMAL]
             )
             if thermal_scenario.throughput_mass_flow_rate is not None
-            else thermal_scenario.solar_thermal_scenario.mass_flow_rate
+            else relevant_scenarios[SolarPanelType.SOLAR_THERMAL].mass_flow_rate
         )
         logger.debug(
             "Mass flow rate through solar-thermal collectors: %s",
-            round(st_collector_mass_flow_rate, 2),
+            round(st_collector_mass_flow_rate, 2),  # type: ignore [arg-type]
         )
 
     if (
@@ -857,8 +931,11 @@ def _calculate_closed_loop_solar_thermal_output(  # pylint: disable=too-many-loc
 
         # Only compute outputs if there is input irradiance.
         collector_system_output_temperature: float
-        fractional_electric_performance: float
+        fractional_electric_performance: Optional[float]
         solution_found: bool = False
+        pvt_collector_output_temperature: Optional[float]
+        st_collector_output_temperature: Optional[float]
+
         # Keep processing until the temperatures are consistent.
         while not solution_found:
             # Use the AI to determine the output temperature of the collector, based on
@@ -1023,12 +1100,14 @@ def _calculate_closed_loop_solar_thermal_output(  # pylint: disable=too-many-loc
             if scenario.pv_t
             else collector_input_temperature
         )
-        collector_output_temperature_map[SolarPanelType.PV_T][
-            index
-        ] = pvt_collector_output_temperature
-        collector_output_temperature_map[SolarPanelType.SOLAR_THERMAL][
-            index
-        ] = st_collector_output_temperature
+        if scenario.pv_t:
+            collector_output_temperature_map[SolarPanelType.PV_T][
+                index
+            ] = pvt_collector_output_temperature  # type: ignore [assignment]
+        if scenario.solar_thermal:
+            collector_output_temperature_map[SolarPanelType.SOLAR_THERMAL][
+                index
+            ] = st_collector_output_temperature  # type: ignore [assignment]
         collector_system_output_temperature_map[
             index
         ] = collector_system_output_temperature
@@ -1039,7 +1118,7 @@ def _calculate_closed_loop_solar_thermal_output(  # pylint: disable=too-many-loc
         if fractional_electric_performance is not None:
             electric_power_per_unit_map[index] = (
                 fractional_electric_performance  # type: ignore [operator]
-                * solar_thermal_collectors[SolarPanelType.PV_T].pv_layer.pv_unit
+                * solar_thermal_collectors[SolarPanelType.PV_T].pv_layer.pv_unit  # type: ignore [union-attr]
             )
 
     # @@@ Fractional electrical performance map is not saving entries for non times.
@@ -1063,7 +1142,7 @@ def _calculate_closed_loop_solar_thermal_output(  # pylint: disable=too-many-loc
         for key, output_map in collector_output_temperature_map.items()
     }
 
-    collector_system_output_temperature_frame: pd.DataFarme = dict_to_dataframe(
+    collector_system_output_temperature_frame = dict_to_dataframe(
         collector_system_output_temperature_map, logger
     ).reset_index(drop=True)
 
@@ -1494,19 +1573,27 @@ def calculate_solar_thermal_output(  # pylint: disable=too-many-locals, too-many
         - volume_supplied:
             The amount of hot water supplied by the system, measured in litres.
 
+    Raises:
+        - InputFileError:
+            Raised if there are issues in the input files.
+
     """
 
     # Determine the relevant scenario for each collector.
     relevant_collector_scenarios: Dict[SolarPanelType, ThermalCollectorScenario] = {
         panel_type: _get_relevant_collector_scenario(resource_type, scenario, collector)
         for panel_type, collector in solar_thermal_collectors.items()
+        if collector is not None
     }
     thermal_scenario = _get_relevant_thermal_scenario(resource_type, scenario)
 
     # Remove unneeded collector information.
-    if not scenario.pv_t:
+    if not scenario.pv_t and SolarPanelType.PV_T in solar_thermal_collectors:
         solar_thermal_collectors.pop(SolarPanelType.PV_T)
-    if not scenario.solar_thermal:
+    if (
+        not scenario.solar_thermal
+        and SolarPanelType.SOLAR_THERMAL in solar_thermal_collectors
+    ):
         solar_thermal_collectors.pop(SolarPanelType.SOLAR_THERMAL)
 
     # Check that all collectors have the same HTF mode.
@@ -1549,7 +1636,7 @@ def calculate_solar_thermal_output(  # pylint: disable=too-many-locals, too-many
             relevant_collector_scenarios,
             resource_type,
             scenario,
-            solar_thermal_collectors,
+            solar_thermal_collectors,  # type: ignore [arg-type]
             start_hour,
             temperatures,
             thermal_desalination_plant,
@@ -1561,7 +1648,7 @@ def calculate_solar_thermal_output(  # pylint: disable=too-many-locals, too-many
         collector_scenario.heats == HTFMode.FEEDWATER_HEATING
         for collector_scenario in relevant_collector_scenarios.values()
     ):
-        return _calculate_direct_heating_solar_thermal_output(
+        return _calculate_direct_heating_solar_thermal_output(  # type: ignore [no-any-return]
             collector_system_sizes,
             disable_tqdm,
             end_hour,
@@ -1570,7 +1657,7 @@ def calculate_solar_thermal_output(  # pylint: disable=too-many-locals, too-many
             processed_total_hw_load,
             relevant_collector_scenarios,
             resource_type,
-            solar_thermal_collectors,
+            solar_thermal_collectors,  # type: ignore [arg-type]
             start_hour,
             temperatures,
             thermal_scenario,
@@ -1585,4 +1672,10 @@ def calculate_solar_thermal_output(  # pylint: disable=too-many-locals, too-many
             f"{e.value}" for e in (HTFMode.CLOSED_HTF, HTFMode.FEEDWATER_HEATING)
         ),
         BColours.endc,
+    )
+    raise InputFileError(
+        "scenario inputs",
+        f"Unsuported heating mode requested. Only {HTFMode.CLOSED_HTF.value} and "
+        + f"{HTFMode.FEEDWATER_HEATING} heating modes are supported and all "
+        + f"collectors {BColours.bolc}must{BColours.endc} have the same heating mode.",
     )
