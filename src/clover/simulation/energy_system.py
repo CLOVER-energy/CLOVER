@@ -1052,7 +1052,7 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
     converters: Union[Dict[str, Converter], List[Converter]],
     disable_tqdm: bool,
     electric_storage_size: float,
-    grid_profile: Optional[pd.DataFrame],
+    grid_profiles: Optional[Dict[str, pd.DataFrame]],
     hot_water_pvt_size: int,
     irradiance_data: pd.Series,
     kerosene_usage: pd.DataFrame,
@@ -1087,8 +1087,8 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
             Whether to disable the tqdm progress bars (True) or display them (False).
         - electric_storage_size:
             Amount of storage in terms of the number of batteries included.
-        - grid_profile:
-            The grid-availability profile.
+        - grid_profiles:
+            The Multiple grid-availability profile.
         - hot_water_pvt_size:
             Amount of PV-T in PV-T units associated with the hot-water system.
         - irradiance_data:
@@ -1141,8 +1141,8 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
                 (kWh)
             - storage_power_supplied:
                 Amount of energy (kWh) supplied by battery storage
-            - grid_energy:
-                Amount of energy (kWh) supplied by the grid
+            - grid_energies:
+                Amount of energy (kWh) supplied by the grid(s)
             - diesel_energy:
                 Amount of energy (kWh) supplied from diesel generator
             - diesel_times:
@@ -1211,11 +1211,7 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
         "Available converters: %s",
         ", ".join([str(entry) for entry in available_converters]),
     )
-    grid_profile = (
-        grid_profile
-        if grid_profile is not None
-        else pd.DataFrame([0] * simulation_hours)
-    )
+
     total_cw_load: Optional[pd.DataFrame] = total_loads[ResourceType.CLEAN_WATER]
     total_electric_load: Optional[pd.DataFrame] = total_loads[ResourceType.ELECTRIC]
     total_hw_load: Optional[pd.DataFrame] = total_loads[ResourceType.HOT_CLEAN_WATER]
@@ -1404,7 +1400,7 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
 
     # Compute the electric input profiles.
     battery_storage_profile: pd.DataFrame
-    grid_energy: pd.DataFrame
+    grid_energies: Dict[str, pd.DataFrame]
     kerosene_profile: pd.Series
     load_energy: pd.DataFrame
     renewables_energy: pd.DataFrame
@@ -1416,9 +1412,14 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
         RenewableEnergySource.HOT_WATER_PVT: hot_water_pvt_electric_power_per_unit,
     }
     renewables_energy_used_directly: pd.DataFrame
+
+    trimmed_grid_profiles: Dict[str, pd.DataFrame] = {}
+    for name, profile in grid_profiles.items():
+        trimmed_grid_profiles[name] = profile.iloc[start_hour:end_hour, 0]
+
     (
         battery_storage_profile,
-        grid_energy,
+        grid_energies,
         kerosene_profile,
         load_energy,
         renewables_energy,
@@ -1426,7 +1427,7 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
         renewables_energy_used_directly,
     ) = get_electric_battery_storage_profile(
         clean_water_pvt_size=clean_water_pvt_size,
-        grid_profile=grid_profile.iloc[start_hour:end_hour, 0],  # type: ignore
+        grid_profiles=trimmed_grid_profiles,  # type: ignore
         hot_water_pvt_size=hot_water_pvt_size,
         kerosene_usage=kerosene_usage.iloc[start_hour:end_hour, 0],
         location=location,
@@ -1687,13 +1688,25 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
         )
         water_surplus_frame: pd.DataFrame = dict_to_dataframe(water_surplus, logger)
 
+    # Compute the total energy supplied by the various grids
+    if scenario.grid:
+        total_grid_energy: pd.DataFrame = pd.DataFrame(
+            pd.concat(
+                [pd.DataFrame(energies.values) for energies in grid_energies.values()],
+                axis=1,
+            ).sum(axis=1)
+        )
+    else:
+        total_grid_energy = pd.DataFrame([0] * (end_hour - start_hour))
+
     # Find unmet energy
     unmet_energy = pd.DataFrame(
         (
             load_energy.values
             + thermal_desalination_electric_power_consumed.values
-            + -renewables_energy_used_directly.values
-            - grid_energy.values
+            + clean_water_power_consumed.values
+            - renewables_energy_used_directly.values
+            - total_grid_energy.values
             - storage_power_supplied_frame.values
         )
     )
@@ -1752,10 +1765,8 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
     clean_water_power_consumed = clean_water_power_consumed.mul(  # type: ignore
         1 - blackout_times
     )
-    thermal_desalination_electric_power_consumed = (
-        thermal_desalination_electric_power_consumed.mul(  # type: ignore
-            1 - blackout_times
-        )
+    thermal_desalination_electric_power_consumed = thermal_desalination_electric_power_consumed.mul(  # type: ignore
+        1 - blackout_times
     )
 
     # Find how many kerosene lamps are in use
@@ -1776,7 +1787,7 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
         total_energy_used = pd.DataFrame(
             renewables_energy_used_directly.values
             + storage_power_supplied_frame.values
-            + grid_energy.values
+            + total_grid_energy.values
             + diesel_energy.values
             + excess_energy_used_desalinating_frame.values
         )
@@ -1914,7 +1925,7 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
         total_energy_used = pd.DataFrame(
             renewables_energy_used_directly.values
             + storage_power_supplied_frame.values
-            + grid_energy.values
+            + total_grid_energy.values
             + diesel_energy.values
         )
 
@@ -2062,7 +2073,6 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
         blackout_times,
         renewables_energy_used_directly,
         storage_power_supplied_frame,
-        grid_energy,
         diesel_energy,
         diesel_times,
         diesel_fuel_usage,
@@ -2076,6 +2086,9 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
         kerosene_usage,
         kerosene_mitigation,
     ]
+
+    # Append grid energies
+    system_performance_outputs_list.extend(list(grid_energies.values()))
 
     if (
         scenario.desalination_scenario is not None

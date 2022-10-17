@@ -823,7 +823,8 @@
                         threshold: 0.1 # Maximum acceptible blackouts (0.0-1.0)
                     distribution_network: dc # DC ("dc") or AC ("ac") distribution network
                     grid: true # "true" or "false"
-                    grid_type: default # The grid profile to use
+                    grid_types:
+                      - default
                     prioritise_self_generation: true # "true" or "false"
                     pv: true # "true" or "false"
                     resource_types:

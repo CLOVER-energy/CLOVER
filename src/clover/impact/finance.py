@@ -29,6 +29,8 @@ from .__utils__ import ImpactingComponent, LIFETIME, SIZE_INCREMENT
 from ..__utils__ import (
     BColours,
     ColumnHeader,
+    Grid,
+    GridTier,
     InputFileError,
     InternalError,
     Location,
@@ -68,6 +70,10 @@ COST_DECREASE: str = "cost_decrease"
 #   Keyword used to denote the discount rate.
 DISCOUNT_RATE = "discount_rate"
 
+# Exchange rate:
+#   Keyword used to denote the exchange rate to USD.
+EXCHANGE_RATE: str = "exchange_rate"
+
 # Finance impact:
 #   Default `str` used as the format for specifying unique financial impacts.
 FINANCE_IMPACT: str = "{type}_{name}"
@@ -83,6 +89,10 @@ INSTALLATION_COST: str = "installation_cost"
 # Installation cost decrease:
 #   Keyword used to denote the installation cost decrease of a component.
 INSTALLATION_COST_DECREASE: str = "installation_cost_decrease"
+
+# Subscription cost:
+# Keyword used to denote the subscription cost of the diesel generator.
+SUBSCRIPTION_COST: str = "subscription_cost"
 
 # OM:
 #   Keyword used to denote O&M costs.
@@ -939,6 +949,46 @@ def expenditure(
         end_year=end_year,
     )
     return total_discounted_cost
+
+
+def grid_expenditure(
+    finance_inputs: Dict[str, Any],
+    hourly_usage: pd.Series,
+    logger: Logger,
+    tier: GridTier,
+    *,
+    start_year: int = 0,
+    end_year: int = 20
+) -> float:
+    """
+    Calculates cost of the usage of a component.
+
+    Inputs:
+        - hourly_usage:
+            Output from Energy_System().simulation(...) for the month.
+        - logger:
+            The :class:`Logger` to use for the run.
+        - tier:
+            The Grid Tier the household is in where we can find the costs.
+        - start_year:
+            Start year of simulation period
+        - end_year:
+            End year of simulation period
+
+    Outputs:
+        Discounted cost
+
+    """
+
+    undiscounted_cost = float(
+        np.sum(hourly_usage * tier.costs[COST]) / finance_inputs[EXCHANGE_RATE]
+    )
+
+    # Compute the subscription cost
+    subscription_cost = tier.costs[SUBSCRIPTION_COST] / finance_inputs[EXCHANGE_RATE]
+    logger.debug("Subscription cost determined: %s", subscription_cost)
+
+    return undiscounted_cost + subscription_cost
 
 
 def independent_expenditure(
