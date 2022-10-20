@@ -771,6 +771,25 @@ class DieselScenario:
     name: str
     settings: Optional[List[DieselSetting]]
 
+    @classmethod
+    def from_dict(cls, input_dict: Dict[str, Any]) -> None:
+        """
+        Create a :class:`DieselScenario` from the input data.
+
+        Inputs:
+            - input_dict:
+                The diesel input information.
+
+        """
+
+        mode: DieselMode = input_dict[MODE]
+        name: str = input_dict[NAME]
+
+        # Backup-only parameters
+        backup_threshold: float = (
+            input_dict["backup"]["threshold"] if "backup" in input_dict else None
+        )
+
     def to_dict(self) -> Dict[str, Any]:
         """
         Returns a `dict` summarising the :class:`DieselScenario` instance.

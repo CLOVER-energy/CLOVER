@@ -1644,7 +1644,6 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
     cumulative_battery_storage_power: float = 0.0
     empty_capacity: Dict[int, float] = {}
     hourly_battery_storage: Dict[int, float] = {}
-    new_hourly_battery_storage: float = 0.0
     battery_health: Dict[int, float] = {}
 
     # @BenWinchester - Re-order this calculation to use CW and HW power consumed.
@@ -1792,6 +1791,10 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
         ):
             # Cycle charging doesn't operate at time 0.
             if t == 0:
+                battery_state_of_charge[t] = minigrid.battery.maximum_charge
+                diesel_generator_running[t] = 0
+                empty_capacity[t] = 0
+                hourly_battery_storage[t] = maximum_battery_storage
                 continue
 
             # 1.  Work out the threshold based on:
@@ -1803,6 +1806,7 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
                 maximum_battery_storage,
                 minimum_battery_storage,
             )
+            battery_state_of_charge[t] = previous_soc
             current_setting = minigrid.diesel_generator.get_setting(
                 t, scenario.diesel_scenario.settings
             )
@@ -1833,7 +1837,7 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
                 )
                 diesel_power_to_battery_map[t] = diesel_to_battery
                 diesel_total_output_map[t] = diesel_total_output
-                diesel_surplus_map[t] = diesel_surplus_map
+                diesel_surplus_map[t] = diesel_surplus
 
                 # Add the diesel power to the batteries.
                 hourly_battery_storage[t] = (
@@ -1853,10 +1857,10 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
                 )
                 if all(
                     entry > 0
-                    for entry in {
+                    for entry in (
                         remaining_chargable_capacity,
                         battery_storage_profile[t],
-                    }
+                    )
                 ):
                     solar_charge_in = (
                         min(battery_storage_profile[t], remaining_chargable_capacity)
@@ -1885,7 +1889,13 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
                     time_index=t,
                 )
 
+            #     ELSE: Normal calculation from storage - i.e., normal iteration step fn
+            #     WHERE the unmet load is met by discharging the batteries within this
+            #     function.
+            #
+
             else:
+                # Carry out regular computation with no diesel.
                 (
                     battery_energy_flow,
                     battery_state_of_charge,
@@ -1928,11 +1938,13 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
                     tank_storage_profile,
                     time_index=t,
                 )
+                diesel_power_to_battery_map[t] = 0
+                diesel_total_output_map[t] = 0
+                diesel_surplus_map[t] = 0
+                empty_capacity[t] = (
+                    minigrid.battery.maximum_charge
+                ) * maximum_battery_storage - hourly_battery_storage[t]
                 energy_surplus[t] = excess_energy
-            #     ELSE: Normal calculation from storage - i.e., normal iteration step fn
-            #     WHERE the unmet load is met by discharging the batteries within this
-            #     function.
-            #
 
     # Process the various outputs into dataframes.
     # energy_deficit_frame: pd.DataFrame = dict_to_dataframe(energy_deficit)
@@ -1996,7 +2008,7 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
         (
             load_energy.values
             + thermal_desalination_electric_power_consumed.values
-            + -renewables_energy_used_directly.values
+            - renewables_energy_used_directly.values
             - grid_energy.values
             - storage_power_supplied_frame.values
         )
@@ -2032,13 +2044,51 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
         """# pylint: disable=pointless-string-statement
         Take the diesel surplus profile generated from the massive for loop
         Factoring in the c-rates, along with the maximum diesel output, calculate the
-        amount of unmet demand that we *could* have met if we'd rn the diesel at full.
+        amount of unmet demand that we *could* have met if we'd run the diesel at full.
 
         NOTE: The energy that went from the diesel to the batteries, and that which is
         now being used to meet unmet demand, should *both* be saved to the
         `simulation_outputs.csv` file.
 
         """
+
+        # Take the diesel surplus profile containing available diesel capacity which was
+        # not utilised in charging the batteries and use it to meet unmet load.
+        diesel_used_meeting_unmet_demand = {
+            index: min(value, unmet_energy[0][index])
+            for index, value in diesel_surplus.items()
+        }
+        diesel_surplus = {
+            index: max(value - unmet_energy[0][index], 0)
+            for index, value in diesel_surplus.items()
+        }
+        diesel_total_output_map = {
+            index: max(
+                minigrid.diesel_generator.minimum_load,
+                (diesel_used_meeting_unmet_demand[index] + diesel_to_battery[index]),
+            )
+            for index in diesel_used_meeting_unmet_demand
+        }
+        unmet_energy = pd.DataFrame(
+            [
+                max(unmet_energy[0][index] - diesel_surplus[index], 0)
+                for index in range(len(unmet_energy))
+            ]
+        )
+
+        # Compute the diesel time, energy and fuel usage.
+        diesel_times = dict_to_dataframe(
+            {key: int(value > 0) for key, value in diesel_total_output_map.items()},
+            logger,
+        )
+        diesel_energy = dict_to_dataframe(diesel_total_output_map, logger)
+        diesel_fuel_usage = dict_to_dataframe(
+            {
+                key: value * minigrid.diesel_generator.diesel_consumption
+                for key, value in diesel_energy.items()
+            },
+            logger,
+        )
     elif scenario.diesel_scenario.mode == DieselMode.DISABLED:
         diesel_energy = pd.DataFrame([0.0] * int(battery_storage_profile.size))
         diesel_times = pd.DataFrame([0.0] * int(battery_storage_profile.size))

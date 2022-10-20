@@ -123,6 +123,7 @@
 
                 diesel_generators:
                   - name: default_diesel
+                    # capacity: 5 # Cycle-charging diesel generator capacity, optional [kW]
                     diesel_consumption: 0.4 # [litres per kW capacity per hour]
                     minimum_load: 0.35 # Minimum capacity factor (0.0 - 1.0)
                     costs:
@@ -787,7 +788,7 @@
 
                 diesel_scenarios:
                   - name: default
-                    mode: backup # "backup" or "disabled" currently supported
+                    mode: backup # "backup", "disabled" or "cycle_charging" currently supported
                     backup:
                       threshold: 0.1 # Maximum acceptible blackouts (0.0-1.0)
                   - name: cycle_charging_default

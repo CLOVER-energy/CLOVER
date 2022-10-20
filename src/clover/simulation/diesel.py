@@ -66,7 +66,7 @@ class DieselGenerator:
     Represents a diesel backup generator.
 
     .. attribute:: diesel_consumption
-        The diesel consumption of the generator, measured in litres per kW produced.
+        The diesel consumption of the generator, measured in litres per kWh produced.
 
     .. attribute:: minimum_load
         The minimum capacity of the generator, defined between 0 (able to operate with
