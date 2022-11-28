@@ -41,9 +41,11 @@ CLOVER can be used on both personal computers and high-performance computing fac
 
 # Statement of need
 
-CLOVER was developed to provide a robust techno-economic and climate impact analysis tool to support academics, practitioners and policymakers in evaluating sustainable energy interventions in developing countries. By providing an open-source alternative to proprietary minigrid design tools such as HOMER [@HOMER], CLOVER offers a more comprehensive analysis tool than common spreadsheet-based alternatives. CLOVER was designed to provide a fast, flexible and user-friendly software to assess energy systems at both short-term (hourly) and multi-year timescales under a wide variety of user-defined scenarios, constraints and optimisation conditions.
+CLOVER was developed to provide a robust techno-economic and climate impact analysis tool to support users in evaluating sustainable energy interventions in developing countries. By providing an open-source alternative to proprietary minigrid design tools such as HOMER [@HOMER], CLOVER offers a more comprehensive analysis tool than common spreadsheet-based alternatives. CLOVER was designed to provide a fast, flexible and user-friendly software to assess energy systems at both short-term (hourly) and multi-year timescales under a wide variety of user-defined scenarios, constraints and optimisation conditions.
 
 CLOVER can provide an insight into the technical performance, costs, and greenhouse gas emissions of a system, and allow the user to evaluate many different options to decide on the best way to provide sustainable, affordable and reliable electricity to the community. Its simulation functionality offers the user an insight into the hourly, daily, seasonal and multi-year technical performance of a system in response to changing electricity demands and varying renewable resources. Its optimisation process replicates the design process common in sustainable development settings by identifying optimum system design over short-term time horizons, but allowing the system to increase in capacity over its lifetime as the demand of the community grows in response to its economic development [@Sandwell:2017a].
+
+The primary target user group of CLOVER is academic researchers who investigate electricity access in developing countries and the design of community-scale electricity systems, with examples of research outputs given in [Research and future development](#Research and future development). Secondary target groups include development practitioners and energy service providers, such as non-governmental organisations or businesses, which could use CLOVER to inform their strategies and operations. These two main target groups have collaborated to deliver academic research with a focus on the practical implementation of sustainable electricity systems in developing countries [@Beath:2021,@Few:2022,@MattheyJunod:2022].
 
 # Main features
 
@@ -68,7 +70,7 @@ CLOVER can identify the optimum energy system, defined by a selected optimisatio
 
 Users can specify the types of technologies available to include in the system and CLOVER uses an iterative heuristic search algorithm to identify the optimum combination and capacities to meet the needs of the community over its lifetime. A diagrammatic overview of this process is shown in @Beath:2021. The optimisation process has been used to explore the economic and greenhouse gas emissions impact of off-grid and grid-connected minigrids in India [@Sandwell:2017a] and the potential to offset diesel generation using solar energy in refugee camps in Rwanda [@BarandaAlonso:2021].
 
-# Ongoing research and future development
+# Research and future development
 CLOVER is being used as part of several ongoing research projects. These include:
 - An assessment of the cost and climate impacts of optimally-sized grid-connected solar-battery systems in India under different levels of grid availability;
 - A comparison of solar-battery minigrid sizing strategies for energy access in rural India;
