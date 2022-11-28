@@ -73,14 +73,15 @@ The simulation functionality of CLOVER can be used to explore the technical perf
 ## Optimisation
 CLOVER can identify the optimum energy system, defined by a selected optimisation criterion, subject to any number of user-specified constraints (threshold criteria). Potential optimisation criteria include lowest cost, lowest greenhouse gas emissions, or others depending on the goals of the system; potential threshold criteria could set minimum allowable levels for the reliability of electricity supply, energy demand satisfaction, renewable energy penetration, or many more.
 
-Users can specify the types of technologies available to include in the system and CLOVER uses an iterative heuristic search algorithm to identify the optimum combination and capacities to meet the needs of the community over its lifetime. A diagrammatic overview of this process is shown in @Beath:2021. The optimisation process has been used to explore the economic and greenhouse gas emissions impact of off-grid and grid-connected minigrids in India [@Sandwell:2017a] and the potential to offset diesel generation using solar energy in refugee camps in Rwanda [@BarandaAlonso:2021].
+Users can specify the types of technologies available to include in the system and CLOVER uses an iterative heuristic search algorithm to identify the optimum combination and capacities to meet the needs of the community over its lifetime. A diagrammatic overview of this process is shown in @Beath:2021. 
 
 # Research and future development
+CLOVER has been used to evaluate the design and techno-economic impacts of sustainable electricity systems across a wide range of development contexts. These include the costs and greenhouse gas emissions of solar minigrids in India [@Sandwell:2017a;@Sandwell:2017b], including for healthcare applications [@Beath:2021] and as electricity demand grows over time [@OrtegaArriaga:2022]. CLOVER has been applied to community-scale electricity access in displacement settings, such as refugee camps in Rwanda [BarandaAlonso:2020;@BarandaAlonso:2021] and Djibouti [@MattheyJunod:2022], and for comparisons of the impacts of rurality and climate [@Few:2022] and existing energy infrastructure [@Sandwell:2017c] on minigrid design in different countries. To date, CLOVER has been used as part of six PhD projects and by more than 10 MSc students. 
+
 CLOVER is being used as part of several ongoing research projects. These include:
 - An assessment of the cost and climate impacts of optimally-sized grid-connected solar-battery systems in India under different levels of grid availability;
-- A comparison of solar-battery minigrid sizing strategies for energy access in rural India;
+- The opportunities for solar minigrid systems to support social development in rural Pakistan;
 - An evaluation of the costs and climate impacts of achieving energy access at the global scale.
-CLOVER has previously been used for studies focusing on the impact of rurality and climate on minigrid design [@Few:2022] and as part of interdisciplinary frameworks for designing energy access interventions in displacement situations [@MattheyJunod:2022]. To date, CLOVER has been used as part of five PhD projects and by more than 10 MSc students. 
 
 CLOVER remains under continuous development to increase its functionality and to address new and emerging research questions. Future releases are planned to include the ability to model thermal energy for heating and cooling, variable grid pricing, advanced diesel generator modelling, and more.
 
