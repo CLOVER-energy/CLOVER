@@ -94,7 +94,7 @@ class _BaseHpcRun:  # pylint: disable=too-few-public-methods
         The name of the location.
 
     .. attribute:: output
-        The name of the ouptut file to use.
+        The name of the output file to use.
 
     .. attribute:: total_load
         Whether a total-load file is being used (True) or not (False).
@@ -359,7 +359,7 @@ class HpcSimulation(
             total_load = True
             total_load_file = total_load_input
 
-        output: str = input_data.get("ouptut", "simulation_outputs")
+        output: str = input_data.get("output", "simulation_outputs")
 
         try:
             pv_system_size: float = float(input_data["pv_system_size"])
