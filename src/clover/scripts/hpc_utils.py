@@ -93,6 +93,9 @@ class _BaseHpcRun:  # pylint: disable=too-few-public-methods
     .. attribute:: location
         The name of the location.
 
+    .. attribute:: output
+        The name of the ouptut file to use.
+
     .. attribute:: total_load
         Whether a total-load file is being used (True) or not (False).
 
@@ -107,7 +110,7 @@ class _BaseHpcRun:  # pylint: disable=too-few-public-methods
     type: HpcRunType
 
     def __init__(
-        self, location: str, total_load: bool, total_load_file: Optional[str] = None
+        self, location: str, output: str, total_load: bool, total_load_file: Optional[str] = None
     ) -> None:
         """
         Instantiate a :class:`_BaseHpcRun` instance.
@@ -115,6 +118,8 @@ class _BaseHpcRun:  # pylint: disable=too-few-public-methods
         Inputs:
             - location:
                 The name of the location to use.
+            - output:
+                The name of the output file to use.
             - total_load:
                 Whether a total-load file should be used.
             - total_load_file:
@@ -123,6 +128,7 @@ class _BaseHpcRun:  # pylint: disable=too-few-public-methods
         """
 
         self.location = location
+        self.output = output
         self.total_load = total_load
         self.total_load_file = total_load_file
 
@@ -150,6 +156,7 @@ class _BaseHpcRun:  # pylint: disable=too-few-public-methods
 
         return (
             f"HpcRun(type={self.type}, location={self.location}"
+            + f", output={self.output}"
             + f", total_load={self.total_load}"
             + (
                 f", total_load_file={self.total_load_file}"
@@ -173,6 +180,7 @@ class HpcOptimisation(
         location: str,
         optimisation: List[Dict[str, Any]],
         optimisation_inputs_data: Dict[str, Any],
+        output: str,
         total_load: bool,
         total_load_file: Optional[str] = None,
     ) -> None:
@@ -187,6 +195,8 @@ class HpcOptimisation(
                 as a single entry in a `list` for easy temporary file generation.
             - optimisation_inputs_data:
                 The input data for optimisations in general.
+            - output:
+                The name of the output file to use.
             - total_load:
                 Whether a total-load file should be used.
             - total_load_file:
@@ -194,7 +204,7 @@ class HpcOptimisation(
 
         """
 
-        super().__init__(location, total_load, total_load_file)
+        super().__init__(location, output, total_load, total_load_file)
         self.optimisation: List[Dict[str, Any]] = optimisation
         self.optimisation_inputs_data: Dict[str, Any] = optimisation_inputs_data
 
@@ -245,6 +255,7 @@ class HpcOptimisation(
             input_data["location"],
             optimisation,
             optimisation_inputs_data,
+            input_data.get("output", "optimisation_output"),
             total_load,
             total_load_file,
         )
@@ -287,6 +298,7 @@ class HpcSimulation(
         self,
         location: str,
         pv_system_size: float,
+        output: str,
         scenario: str,
         storage_size: float,
         total_load: bool,
@@ -298,6 +310,8 @@ class HpcSimulation(
         Inputs:
             - location:
                 The name of the location to use for the simulation(s).
+            - output:
+                The name of the output file to use.
             - pv_system_size:
                 The size of the PV system installed.
             - scenario:
@@ -311,7 +325,7 @@ class HpcSimulation(
 
         """
 
-        super().__init__(location, total_load, total_load_file)
+        super().__init__(location, output, total_load, total_load_file)
         self.pv_system_size = pv_system_size
         self.scenario = scenario
         self.storage_size = storage_size
@@ -340,6 +354,8 @@ class HpcSimulation(
         else:
             total_load = True
             total_load_file = total_load_input
+
+        output: str = input_data.get("ouptut", "simulation_outputs")
 
         try:
             pv_system_size: float = float(input_data["pv_system_size"])
@@ -385,6 +401,7 @@ class HpcSimulation(
 
         return cls(
             input_data["location"],
+            output,
             pv_system_size,
             scenario,
             storage_size,
