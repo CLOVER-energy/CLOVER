@@ -110,7 +110,11 @@ class _BaseHpcRun:  # pylint: disable=too-few-public-methods
     type: HpcRunType
 
     def __init__(
-        self, location: str, output: str, total_load: bool, total_load_file: Optional[str] = None
+        self,
+        location: str,
+        output: str,
+        total_load: bool,
+        total_load_file: Optional[str] = None,
     ) -> None:
         """
         Instantiate a :class:`_BaseHpcRun` instance.
@@ -297,8 +301,8 @@ class HpcSimulation(
     def __init__(
         self,
         location: str,
-        pv_system_size: float,
         output: str,
+        pv_system_size: float,
         scenario: str,
         storage_size: float,
         total_load: bool,
