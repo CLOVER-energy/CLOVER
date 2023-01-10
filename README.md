@@ -108,33 +108,46 @@ python -m pip install -r requirements.txt
 ## Setting up a new location
 
 New locations can be set up in one of two ways:
-* By creating a new location from scratch and inputting all necessary information. To do this, call the `new_location` helper script with just the name of your new location:
+* By creating a new location from scratch and inputting all necessary information. To do this, call the `new_location` helper script with just the name of your new location.
+  If you have installed CLOVER via a `git clone` command:
   ```bash
   python -m src.clover.scripts.new_location <new_location_name>
   ```
 
-  or, if on a Linux machine,
+  if you are on a Linux machine, you can use the launch scripts provided:
   ```bash
   ./bin/new_location.sh <new_location_name>
   ```
 
-  or, if you have installed the `clover-energy` package:
+  or, if you have installed the `clover-energy` package, either
   ```bash
   new-clover-location <new_location_name>
   ```
+  or
+  ```bash
+  python -m new-clover-location <new_location_name>
+  ```
 
-* By basing the location on an existing location. To do this, call the `new_location` helper script with the `--from-existing` flag:
+* By basing the location on an existing location. To do this, call the `new_location` helper script with the `--from-existing` flag.
+  If you have installed CLOVER via a `git clone` command:
   ```bash
   python -m src.clover.scripts.new_location <new_location_name> --from-existing <existing_location>
   ```
-  or, if on a Linux machine,
+  
+  if you are on a Linux machine, you can use the launch scripts provided with the additional `from-existing` flag:
   ```bash
   ./bin/new_location.sh <new_location_name> --from-existing <existing_location>
-  ```bash
-  or, if you have installed the `clover-energy` package:
+  ```
+
+  or, if you have installed the `clover-energy` package, either
   ```bash
   new-clover-location <new_location_name> --from-existing <existing_location>
   ```
+  or
+  ```bash
+  python -m new-clover-location <new_location_name> --from-existing <existing_location>
+  ```
+
 
 ### Updating an existing location
 
@@ -142,9 +155,13 @@ As part of the ongoing development of CLOVER, new features will be introduced. I
 ```
 python -m src.clover.scripts.new_location <location_name> --update
 ```
-or, if you have installed the `clover-energy` package:
+or, if you have installed the `clover-energy` package, either
 ```
 new-clover-location <location_name> --update
+```
+or
+```bash
+python -m new-clover-location <location_name> --update
 ```
 
 CLOVER will search through your location and attempt to replace missing files and include new files that have been brought in by an update. Note, CLOVER will not correct missing or invalid fields within files, these must be corrected manually and the User Guide should be consulted for more information.
@@ -153,13 +170,20 @@ CLOVER will search through your location and attempt to replace missing files an
 
 Go to https://www.renewables.ninja/register to register a free account to gain your API token. This will be needed in order for CLOVER to correctly fetch and utilise solar profiles.
 
-Once you have created a new location, you can input your API token using a CLOVER helper script:
-```
+Once you have created a new location, you can input your API token using a CLOVER helper script.
+If you have downloaded CLOVER using the `git clone` command:
+```bash
 python -m src.clover.scripts.update_api_token --location <location_name> --token <renewables_ninja_api_token>
 ```
-or, if you have installed the `clover-energy` package:
-```
+
+or, if you have installed the `clover-energy` package, either
+```bash
 update-api-token --location <location_name> --token <renewables_ninja_api_token>
+```
+
+or
+```bash
+python -m update-api-token --location <location_name> --token <renewables_ninja_api_token>
 ```
 
 ## Completing input files
@@ -199,17 +223,21 @@ When running a CLOVER simulation or optimisation, profiles will be generated if 
 
 ### Profile generation
 
-To generate the profiles on their own, run CLOVER with the name of the location only:
+To generate the profiles on their own, run CLOVER with the name of the location only. If you have downloaded CLOVER from GitHub using the `git clone` command:
 ```bash
 python -m src.clover --location <location_name>
 ```
-or, on a Linux machine:
+or, if you are on a Linux machine,
 ```bash
 ./bin/clover.sh --location <location_name>
 ```
-or, if you have installed the `clover-energy` package
+If you have installed the `clover-energy` package, run either
 ```bash
 clover --location <location_name>
+```
+or
+```bash
+python -m clover --location <location_name>
 ```
 
 ### Running a simulation
@@ -218,13 +246,17 @@ When running a CLOVER simulation, the size of the PV and storage systems needs t
 ```bash
 python -m src.clover --location <location_name> --simulation --pv-system-size <float> --storage-size <float>
 ```
-or, on a Linux machine:
+or, if you are on a Linux machine,
 ```bash
 ./bin/clover.sh --location <location_name> --simulation --pv-system-size <float> --storage-size <float>
 ```
-or, if you have installed the `clover-energy` package
+If you have installed the `clover-energy` package, either
 ```bash
 clover --location <location_name> --simulation --pv-system-size <float> --storage-size <float>
+```
+or
+```bash
+python -m clover --location <location_name> --simulation --pv-system-size <float> --storage-size <float>
 ```
 where `<float>` indicates that a floating point object, i.e., a number, is an acceptable input. The number should not have quotation marks around it.
 
@@ -234,13 +266,17 @@ When running a CLOVER optimisation, the size of the PV and storage systems are o
 ```bash
 python -m src.clover --location <location_name> --optimisation
 ```
-or, on a Linux machine:
+or, if you are on a Linux machine:
 ```bash
 ./bin/clover.sh --location <location_name> --optimisation
 ```
-or, if you have installed the `clover-energy` package
+If you have installed the `clover-energy` package, either
 ```bash
 clover --location <location_name> --optimisation
+```
+or
+```bash
+python -m clover --location <location_name> --optimisation
 ```
 
 ### Analysis
@@ -254,13 +290,18 @@ The operation of CLOVER can be broken down into the same steps as per running CL
 ### Launching jobs
 
 Once you have completed your input runs file, jobs are launched to the HPC by calling CLOVER's launch script from the command-line:
-```
+```bash
 python -m src.clover.scripts.clover_hpc --runs <jobs_file>
 ```
-or, if you have installed the `clover-energy` package
-```
+or, if you have installed the `clover-energy` package, either
+```bash
 clover-hpc --runs <jobs_file>
 ```
+or
+```bash
+python -m clover-hpc --runs <jobs_file>
+```
+
 
 ***
 
