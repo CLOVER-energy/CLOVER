@@ -91,6 +91,8 @@ def main(args: List[Any]) -> None:
     clover_arguments = [
         "--location",
         hpc_run.location,
+        "--output",
+        hpc_run.output,
     ]
 
     if hpc_run.total_load:
