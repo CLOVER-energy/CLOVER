@@ -1,40 +1,40 @@
 # CLOVER
 
 CLOVER minigrid simulation and optimisation for supporting rural electrification in developing countries.
+
 [![DOI](https://zenodo.org/badge/476703736.svg)](https://zenodo.org/badge/latestdoi/476703736)
 
-The quick start guide below provides step-by-step introductions for downloading, setting up, and using CLOVER. For further information about CLOVER and more detailed descriptions of its functionality, please [visit the Wiki](https://github.com/CLOVER-energy/CLOVER/wiki).
+The quick start guide below provides step-by-step introductions for downloading, setting up, and using CLOVER. For full documentation containing further information about CLOVER and more detailed descriptions of its functionality, please [visit the Wiki](https://github.com/CLOVER-energy/CLOVER/wiki).
 
 #### Table Of Contents
 
 [Quick start guide](#quick-start-guide)
 
-⏬[Downloading CLOVER](#downloading-clover)
+⏬ [Downloading CLOVER](#downloading-clover)
  * [Stable installation](#stable-installation)
    * [Upgrading](#upgrading)
  * [Downloading as a developer](#downloading-as-a-developer)
- 
- 
-🐍[Setting up your Python environment](#setting-up-your-python-environment)
+
+🐍 [Setting up your Python environment](#setting-up-your-python-environment)
   * [Anaconda method](#anaconda-method)
   * [Pip install](#pip-install)
 
-⛅[Setting up a new location](#setting-up-a-new-location)
+⛅ [Setting up a new location](#setting-up-a-new-location)
   * [Updating an existing location](#updating-an-existing-location)
 
-🌦️[Renewables ninja](#renewables-ninja)
+🌦️ [Renewables ninja](#renewables-ninja)
 
-:memo:[Completing input files](#completing-input-files)
+:memo: [Completing input files](#completing-input-files)
 * [Simulation and optimisation files](#simulation-and-optimisation-files)
 * [Optimisation only files](#optimisation-only-files)
 
-🍀[Running CLOVER](#running-clover)
+🍀 [Running CLOVER](#running-clover)
 * [Profile generation](#profile-generation)
 * [Running a simulation](#running-a-simulation)
 * [Running an optimisation](#running-an-optimisation)
 * [Analysis](#analysis)
 
-🎓[Running CLOVER on Imperial College London's high-performance computers](#running-clover-on-imperial-college-londons-high-performance-computers)
+🎓 [Running CLOVER on Imperial College London's high-performance computers](#running-clover-on-imperial-college-londons-high-performance-computers)
 
 # 🚤 Quick start guide
 
@@ -133,7 +133,7 @@ New locations can be set up in one of two ways:
   ```bash
   python -m src.clover.scripts.new_location <new_location_name> --from-existing <existing_location>
   ```
-  
+
   if you are on a Linux machine, you can use the launch scripts provided with the additional `from-existing` flag:
   ```bash
   ./bin/new_location.sh <new_location_name> --from-existing <existing_location>

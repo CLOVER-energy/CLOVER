@@ -678,7 +678,7 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
         os.path.join(auto_generated_files_directory, "solar"),
         generation_inputs,
         location,
-        f"{parsed_args.location}_{solar.SOLAR_LOGGER_NAME}",
+        f"{parsed_args.location}_{solar.SOLAR_LOGGER_NAME}{run_number_string}",
         parsed_args.refetch,
         minigrid.pv_panel,
         num_ninjas,
