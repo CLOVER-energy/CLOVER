@@ -46,6 +46,7 @@ CLOVER was developed to provide a robust techno-economic and climate impact anal
 CLOVER can provide an insight into the technical performance, costs, and greenhouse gas emissions of a system, and allow the user to evaluate many different options to decide on the best way to provide sustainable, affordable and reliable electricity to the community. Its simulation functionality offers the user an insight into the hourly, daily, seasonal and multi-year technical performance of a system in response to changing electricity demands and varying renewable resources. Its optimisation process replicates the design process common in sustainable development settings by identifying optimum system design over short-term time horizons, but allowing the system to increase in capacity over its lifetime as the demand of the community grows in response to its economic development [@Sandwell:2017a].
 
 Other Python libraries exist which can be used to investigate solar and/or off-grid electricity systems, however CLOVER offers alternative or additional functionalities relevant and beneficial to the design and assess community-scale electricity systems. These alternatives include:
+
 * `pvlib` is an established open-source package for estimating the generation output of solar technologies [@pvlib]. It focuses on the technical performance of the PV system (modules, inverters, trackers etc.) in detail, whereas CLOVER also models and optimises other parts of the electricity system (battery storage, distribution, demand, other generation technologies) and the economic/environmental impacts.
 * `Offgridders` is an open-source Python tool for simulating and optimising minigrids [@Offgridders]. It has many of the same functions as CLOVER, however CLOVER can simulate and optimise over multiple years and resize system capacities and re-evaluate impacts as load demand grows over time, as is the aspiration in many development settings. Furthermore CLOVER can automatically generate or acquire user inputs for energy generation and demand, rather than requiring these inputs as `.csv` files.
 * `OSeMOSYS` [@OSeMOSYS] and `pypsa-earth` (developed from the established `PyPSA` framework [@PyPSA]) are both energy system models for long-term energy planning. Both have focused on applications in developing countries, similarly to CLOVER, but do so at the national or international scale for large-scale electricity networks, rather than the relatively small community-scale applications for which CLOVER is designed.
@@ -56,10 +57,12 @@ The primary target user group of CLOVER is academic researchers who investigate 
 
 ## Electricity supply
 CLOVER can simulate a variety of electricity supply technologies:
-- Solar generation is sourced from the Renewables.ninja API [@Renewables_Ninja] with the synthesis of the data described in @Pfenninger:2016;
-- Battery storage, charged from solar, with user-defined characteristics for battery performance and lifetime to emulate many kinds of technologies;
-- Diesel generation can be included as a source of power when no other source is available;
-- Grid power can be treated as a primary or backup source of electricity with a user-defined availability profile.
+
+* Solar generation is sourced from the Renewables.ninja API [@Renewables_Ninja] with the synthesis of the data described in @Pfenninger:2016;
+* Battery storage, charged from solar, with user-defined characteristics for battery performance and lifetime to emulate many kinds of technologies;
+* Diesel generation can be included as a source of power when no other source is available;
+* Grid power can be treated as a primary or backup source of electricity with a user-defined availability profile.
+
 These electricity sources can be included as the single source of electricity or in any combination as part of a hybrid system.
 
 ## Electricity demand
@@ -79,9 +82,10 @@ Users can specify the types of technologies available to include in the system a
 CLOVER has been used to evaluate the design and techno-economic impacts of sustainable electricity systems across a wide range of development contexts. These include the costs and greenhouse gas emissions of solar minigrids in India [@Sandwell:2017a;@Sandwell:2017b], including for healthcare applications [@Beath:2021] and as electricity demand grows over time [@OrtegaArriaga:2022]. CLOVER has been applied to community-scale electricity access in displacement settings, such as refugee camps in Rwanda [@BarandaAlonso:2020;@BarandaAlonso:2021] and Djibouti [@MattheyJunod:2022], and for comparisons of the impacts of rurality and climate [@Few:2022] and existing energy infrastructure [@Sandwell:2017c] on minigrid design in different countries. To date, CLOVER has been used as part of six PhD projects and by more than 10 MSc students. 
 
 CLOVER is being used as part of several ongoing research projects. These include:
-- An assessment of the cost and climate impacts of optimally-sized grid-connected solar-battery systems in India under different levels of grid availability;
-- The opportunities for solar minigrid systems to support social development in rural Pakistan;
-- An evaluation of the costs and climate impacts of achieving energy access at the global scale.
+
+* An assessment of the cost and climate impacts of optimally-sized grid-connected solar-battery systems in India under different levels of grid availability;
+* The opportunities for solar minigrid systems to support social development in rural Pakistan;
+* An evaluation of the costs and climate impacts of achieving energy access at the global scale.
 
 CLOVER remains under continuous development to increase its functionality and to address new and emerging research questions. Future releases are planned to include the ability to model thermal energy for heating and cooling, variable grid pricing, advanced diesel generator modelling, and more.
 
