@@ -1715,7 +1715,6 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
     diesel_fuel_usage: pd.DataFrame
     diesel_times: pd.DataFrame
     if scenario.diesel_scenario.mode in (DieselMode.BACKUP, DieselMode.BACKUP_UNMET):
-
         (
             diesel_capacity,
             diesel_energy,
