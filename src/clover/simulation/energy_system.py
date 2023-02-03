@@ -406,7 +406,7 @@ def _calculate_renewable_cw_profiles(  # pylint: disable=too-many-locals, too-ma
                 BColours.fail,
                 BColours.endc,
             )
-            InputFileError(
+            raise InputFileError(
                 "converter inputs OR desalination scenario",
                 f"The htf mode '{HTFMode.COLD_WATER_HEATING.value}' is not currently "
                 "supported.",

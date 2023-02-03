@@ -1541,8 +1541,7 @@ def _parse_tank_inputs(  # pylint: disable=too-many-statements
                 "determine clean-water tank from the energy-system inputs file."
             )
             raise
-        else:
-            logger.info("Clean-water tank cost information successfully parsed.")
+        logger.info("Clean-water tank cost information successfully parsed.")
 
         # Parse the clean-water tank emissions information.
         try:
