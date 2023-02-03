@@ -606,9 +606,9 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
             BColours.endc,
         )
         raise
-    else:
-        logger.info("All input files successfully parsed.")
-        print(DONE)
+
+    logger.info("All input files successfully parsed.")
+    print(DONE)
 
     print("Generating necessary profiles", end="\n")
 

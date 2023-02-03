@@ -25,7 +25,7 @@ import unittest
 import json
 import shutil
 
-from distutils.dir_util import copy_tree
+from distutils.dir_util import copy_tree  # pylint: disable=deprecated-module
 from typing import Any, Dict, List, Optional, Union
 
 import pytest
