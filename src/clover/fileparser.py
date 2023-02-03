@@ -953,7 +953,7 @@ def _parse_pvt_reduced_models(  # pylint: disable=too-many-statements
     Inputs:
         - logger:
             The :class:`logging.Logger` to use for the run.
-        - scenario:
+        - scenarios:
             The `list` of :class:`Scenario` instances available for the run.
 
     Outputs:

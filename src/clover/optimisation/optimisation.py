@@ -46,13 +46,11 @@ from ..simulation import energy_system
 
 from ..__utils__ import (
     BColours,
-    # ColumnHeader,
     DONE,
     InternalError,
     Location,
     RenewableEnergySource,
     ResourceType,
-    # Scenario,
     Simulation,
 )
 from ..conversion.conversion import Converter, WaterSource
@@ -513,6 +511,7 @@ def _simulation_iteration(  # pylint: disable=too-many-locals, too-many-statemen
         location,
         logger,
         previous_system,
+        optimisation.scenario,
         simulation_results,
         start_year,
         system_details,
@@ -618,6 +617,7 @@ def _simulation_iteration(  # pylint: disable=too-many-locals, too-many-statemen
             location,
             logger,
             previous_system,
+            optimisation.scenario,
             simulation_results,
             start_year,
             system_details,

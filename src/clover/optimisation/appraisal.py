@@ -37,6 +37,7 @@ from ..__utils__ import (
     InternalError,
     hourly_profile_to_daily_sum,
     Location,
+    Scenario,
     SystemAppraisal,
     SystemDetails,
     TechnicalAppraisal,
@@ -60,6 +61,7 @@ def _simulation_environmental_appraisal(  # pylint: disable=too-many-locals
     logger: Logger,
     pv_addition: float,
     pvt_addition: float,
+    scenario: Scenario,
     simulation_results: pd.DataFrame,
     start_year: int,
     storage_addition: float,
@@ -96,6 +98,8 @@ def _simulation_environmental_appraisal(  # pylint: disable=too-many-locals
             The additional number of PV panels added this iteration.
         - pvt_addition:
             The additional number of PV-T panels added this iteration.
+        - scenario:
+            The :class:`Scenario` currently being considered.
         - simulation_results:
             The system that was just simulated.
         - start_year:
@@ -126,7 +130,13 @@ def _simulation_environmental_appraisal(  # pylint: disable=too-many-locals
             pvt_addition,
             storage_addition,
         ) + ghgs.calculate_independent_ghgs(
-            electric_yearly_load_statistics, end_year, ghg_inputs, location, start_year
+            electric_yearly_load_statistics,
+            end_year,
+            ghg_inputs,
+            location,
+            logger,
+            scenario,
+            start_year,
         )
     except KeyError as e:
         logger.error("Missing system equipment GHG input information: %s", str(e))
@@ -249,6 +259,7 @@ def _simulation_financial_appraisal(  # pylint: disable=too-many-locals
     logger: Logger,
     pv_addition: float,
     pvt_addition: float,
+    scenario: Scenario,
     simulation_results: pd.DataFrame,
     storage_addition: float,
     system_details: SystemDetails,
@@ -281,6 +292,8 @@ def _simulation_financial_appraisal(  # pylint: disable=too-many-locals
             The additional number of PV panels added this iteration.
         - pvt_addition:
             The additional number of PV-T panels added this iteration.
+        - scenario:
+            The :class:`Scenario` currently being considered.
         - simulation_results:
             Outputs of Energy_System().simulation(...)
         - storage_addition:
@@ -313,6 +326,8 @@ def _simulation_financial_appraisal(  # pylint: disable=too-many-locals
     ) + finance.independent_expenditure(
         finance_inputs,
         location,
+        logger,
+        scenario,
         yearly_load_statistics,
         start_year=system_details.start_year,
         end_year=system_details.end_year,
@@ -563,6 +578,7 @@ def appraise_system(  # pylint: disable=too-many-locals
     location: Location,
     logger: Logger,
     previous_system: Optional[SystemAppraisal],
+    scenario: Scenario,
     simulation_results: pd.DataFrame,
     start_year: int,
     system_details: SystemDetails,
@@ -584,6 +600,8 @@ def appraise_system(  # pylint: disable=too-many-locals
         - previous_system:
             Report from previously installed system (not required if no system was
             previously deployed)
+        - scenario:
+            The :class:`Scenario` currently being considered.
         - simulation_results
             Outputs of Energy_System().simulation(...)
         - start_year:
@@ -687,6 +705,7 @@ def appraise_system(  # pylint: disable=too-many-locals
         logger,
         pv_addition,
         pvt_addition,
+        scenario,
         simulation_results,
         storage_addition,
         system_details,
@@ -706,6 +725,7 @@ def appraise_system(  # pylint: disable=too-many-locals
         logger,
         pv_addition,
         pvt_addition,
+        scenario,
         simulation_results,
         start_year,
         storage_addition,
