@@ -171,7 +171,6 @@ class TestInverterExpenditure(_BaseFinanceTest):
             ),
         )
 
-
     def test_static_inverter_size(self) -> None:
         """Tests the case with dynamically-sized inverters."""
 
