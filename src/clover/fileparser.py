@@ -322,8 +322,8 @@ def _parse_battery_inputs(
         except (KeyError, IndexError):
             logger.error("Failed to determine battery cost information.")
             raise
-        else:
-            logger.info("Battery cost information successfully parsed.")
+        logger.info("Battery cost information successfully parsed.")
+
         try:
             battery_emissions: Optional[Dict[str, float]] = [
                 entry[EMISSIONS]
@@ -333,8 +333,7 @@ def _parse_battery_inputs(
         except (KeyError, IndexError):
             logger.error("Failed to determine battery emission information.")
             raise
-        else:
-            logger.info("Battery emission information successfully parsed.")
+        logger.info("Battery emission information successfully parsed.")
     else:
         battery_costs = None
         battery_emissions = None
@@ -508,11 +507,10 @@ def _parse_conversion_inputs(
                             converter.name,
                         )
                         raise
-                    else:
-                        logger.info(
-                            "Converter cost information for %s successfully parsed.",
-                            converter.name,
-                        )
+                    logger.info(
+                        "Converter cost information for %s successfully parsed.",
+                        converter.name,
+                    )
                     try:
                         converter_emissions[converter] = [
                             entry[EMISSIONS]
@@ -525,11 +523,10 @@ def _parse_conversion_inputs(
                             converter.name,
                         )
                         raise
-                    else:
-                        logger.info(
-                            "Converter emission information for %s successfully parsed.",
-                            converter.name,
-                        )
+                    logger.info(
+                        "Converter emission information for %s successfully parsed.",
+                        converter.name,
+                    )
 
             else:
                 converters = {}
@@ -660,8 +657,7 @@ def _parse_diesel_inputs(  # pylint: disable=too-many-statements
     except (KeyError, IndexError):
         logger.error("Failed to determine diesel cost information.")
         raise
-    else:
-        logger.info("Diesel cost information successfully parsed.")
+    logger.info("Diesel cost information successfully parsed.")
 
     # Determine the diesel emissions.
     try:
@@ -673,8 +669,7 @@ def _parse_diesel_inputs(  # pylint: disable=too-many-statements
     except (KeyError, IndexError):
         logger.error("Failed to determine diesel emission information.")
         raise
-    else:
-        logger.info("Diesel emission information successfully parsed.")
+    logger.info("Diesel emission information successfully parsed.")
 
     # Instantiate diesel water heaters for every entry in the input file.
     if DIESEL_WATER_HEATERS in diesel_inputs:
@@ -745,8 +740,7 @@ def _parse_diesel_inputs(  # pylint: disable=too-many-statements
                 BColours.endc,
             )
             raise
-        else:
-            logger.info("Diesel water-heater cost information successfully parsed.")
+        logger.info("Diesel water-heater cost information successfully parsed.")
 
         # Determine the diesel emissions.
         try:
@@ -762,8 +756,7 @@ def _parse_diesel_inputs(  # pylint: disable=too-many-statements
                 BColours.endc,
             )
             raise
-        else:
-            logger.info("Diesel water-heater emission information successfully parsed.")
+        logger.info("Diesel water-heater emission information successfully parsed.")
 
     elif any(scenario.hot_water_scenario is not None for scenario in scenarios) and any(
         scenario.hot_water_scenario.auxiliary_heater == AuxiliaryHeaterType.DIESEL  # type: ignore
@@ -925,8 +918,7 @@ def _parse_exchanger_inputs(
         except (KeyError, IndexError):
             logger.error("Failed to determine exchanger cost information.")
             raise
-        else:
-            logger.info("Exchanger cost information successfully parsed.")
+        logger.info("Exchanger cost information successfully parsed.")
         try:
             exchanger_emissions = [
                 entry[EMISSIONS]
@@ -936,8 +928,7 @@ def _parse_exchanger_inputs(
         except (KeyError, IndexError):
             logger.error("Failed to determine exchanger emission information.")
             raise
-        else:
-            logger.info("Exchanger emission information successfully parsed.")
+        logger.info("Exchanger emission information successfully parsed.")
     else:
         logger.info(
             "Exchanger disblaed in scenario file, skipping battery impact parsing."
@@ -1375,8 +1366,7 @@ def _parse_solar_inputs(  # pylint: disable=too-many-locals, too-many-statements
             BColours.endc,
         )
         raise
-    else:
-        logger.info("PV panel costs successfully determined.")
+    logger.info("PV panel costs successfully determined.")
 
     # Determine the PV panel emissions.
     try:
@@ -1393,8 +1383,7 @@ def _parse_solar_inputs(  # pylint: disable=too-many-locals, too-many-statements
             BColours.endc,
         )
         raise
-    else:
-        logger.info("PV panel emissions successfully determined.")
+    logger.info("PV panel emissions successfully determined.")
 
     # Determine the PVT panel being modelled, if appropriate.
     if "pvt_panel" in energy_system_inputs:
@@ -1454,8 +1443,7 @@ def _parse_solar_inputs(  # pylint: disable=too-many-locals, too-many-statements
                 BColours.endc,
             )
             raise
-        else:
-            logger.info("PV-T panel costs successfully determined.")
+        logger.info("PV-T panel costs successfully determined.")
         try:
             pvt_panel_emissions: Optional[Dict[str, float]] = [
                 panel_data[EMISSIONS]
@@ -1470,8 +1458,7 @@ def _parse_solar_inputs(  # pylint: disable=too-many-locals, too-many-statements
                 BColours.endc,
             )
             raise
-        else:
-            logger.info("PV-T panel emissions successfully determined.")
+        logger.info("PV-T panel emissions successfully determined.")
     else:
         pvt_panel = None
         pvt_panel_costs = None
@@ -1554,8 +1541,7 @@ def _parse_tank_inputs(  # pylint: disable=too-many-statements
                 "determine clean-water tank from the energy-system inputs file."
             )
             raise
-        else:
-            logger.info("Clean-water tank cost information successfully parsed.")
+        logger.info("Clean-water tank cost information successfully parsed.")
 
         # Parse the clean-water tank emissions information.
         try:
@@ -1574,8 +1560,7 @@ def _parse_tank_inputs(  # pylint: disable=too-many-statements
                 "file."
             )
             raise
-        else:
-            logger.info("Clean-water tank emission information successfully parsed.")
+        logger.info("Clean-water tank emission information successfully parsed.")
 
     else:
         clean_water_tank_costs = None
@@ -1613,8 +1598,7 @@ def _parse_tank_inputs(  # pylint: disable=too-many-statements
                 "Failed to determine buffer-water tank from the energy-system inputs file."
             )
             raise
-        else:
-            logger.info("HOt-water tank cost information successfully parsed.")
+        logger.info("HOt-water tank cost information successfully parsed.")
 
         # Parse the buffer-water tank emissions information.
         try:
@@ -1633,8 +1617,7 @@ def _parse_tank_inputs(  # pylint: disable=too-many-statements
                 "file."
             )
             raise
-        else:
-            logger.info("Buffer-water tank emission information successfully parsed.")
+        logger.info("Buffer-water tank emission information successfully parsed.")
 
     else:
         buffer_tank_costs = None
@@ -1662,8 +1645,7 @@ def _parse_tank_inputs(  # pylint: disable=too-many-statements
                 "file."
             )
             raise
-        else:
-            logger.info("Hot-water tank cost information successfully parsed.")
+        logger.info("Hot-water tank cost information successfully parsed.")
 
         # Parse the hot-water tank emissions information.
         try:
@@ -1682,8 +1664,7 @@ def _parse_tank_inputs(  # pylint: disable=too-many-statements
                 "file."
             )
             raise
-        else:
-            logger.info("Hot-water tank emission information successfully parsed.")
+        logger.info("Hot-water tank emission information successfully parsed.")
 
     else:
         hot_water_tank_costs = None
@@ -2142,11 +2123,10 @@ def _parse_transmission_inputs(
                     transmitter.name,
                 )
                 raise
-            else:
-                logger.info(
-                    "Transmitter cost information for %s successfully parsed.",
-                    transmitter.name,
-                )
+            logger.info(
+                "Transmitter cost information for %s successfully parsed.",
+                transmitter.name,
+            )
             try:
                 transmission_emissions[transmitter.name] = [
                     entry[EMISSIONS]
@@ -2159,11 +2139,10 @@ def _parse_transmission_inputs(
                     transmitter.name,
                 )
                 raise
-            else:
-                logger.info(
-                    "Transmitter emission information for %s successfully parsed.",
-                    transmitter.name,
-                )
+            logger.info(
+                "Transmitter emission information for %s successfully parsed.",
+                transmitter.name,
+            )
 
     else:
         transmitters = {}

@@ -406,7 +406,7 @@ def _calculate_renewable_cw_profiles(  # pylint: disable=too-many-locals, too-ma
                 BColours.fail,
                 BColours.endc,
             )
-            InputFileError(
+            raise InputFileError(
                 "converter inputs OR desalination scenario",
                 f"The htf mode '{HTFMode.COLD_WATER_HEATING.value}' is not currently "
                 "supported.",
@@ -1715,7 +1715,6 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
     diesel_fuel_usage: pd.DataFrame
     diesel_times: pd.DataFrame
     if scenario.diesel_scenario.mode in (DieselMode.BACKUP, DieselMode.BACKUP_UNMET):
-
         (
             diesel_capacity,
             diesel_energy,
