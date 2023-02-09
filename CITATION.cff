@@ -32,7 +32,7 @@ preferred-citation:
   - family-names: Nelson
     given-names: Jenny
     orcid: https://orcid.org/0000-0003-1048-1330
-  doi: "10.21105/joss.04799
+  doi: "10.21105/joss.04799"
   journal: "Journal of Open Source Software"
   month: 2
   start: 4799 # First page number
