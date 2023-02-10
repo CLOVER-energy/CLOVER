@@ -11,6 +11,8 @@ CLOVER minigrid simulation and optimisation for supporting rural electrification
 [![PyPI download month](https://img.shields.io/pypi/dm/clover-energy.svg)](https://pypi.python.org/pypi/clover-energy/)
 [![PyPI download week](https://img.shields.io/pypi/dw/clover-energy.svg)](https://pypi.python.org/pypi/clover-energy/)
 
+If you cite this repository, please cite both the repository [[1]](#1) and the Journal of Open Source Software publication [[2]](#2)
+
 #### Table Of Contents
 
 [Quick start guide](#quick-start-guide)
@@ -41,6 +43,8 @@ CLOVER minigrid simulation and optimisation for supporting rural electrification
 * [Analysis](#analysis)
 
 🎓 [Running CLOVER on Imperial College London's high-performance computers](#running-clover-on-imperial-college-londons-high-performance-computers)
+
+[References](#references)
 
 # 🚤 Quick start guide
 
@@ -275,6 +279,14 @@ or, if you have installed the `clover-energy` package
 ```
 clover-hpc --runs <jobs_file>
 ```
+
+# References
+
+<a id="1">[1]</a> 
+Winchester, B., Beath, H., Nelson, J., & Sandwell, P. (2022). CLOVER (Version v5.0.6) [Computer software]. [https://doi.org/10.5281/zenodo.6925535](https://doi.org/10.5281/zenodo.6925535)
+
+<a id="2">[2]</a>
+Sandwell P., Winchester B., Beath H., & Nelson J., (2023). CLOVER: A modelling framework for sustainable community-scale energy systems. Journal of Open Source Software, 8(82), 4799, [https://doi.org/10.21105/joss.04799](https://doi.org/10.21105/joss.04799)
 
 ***
 
