@@ -1966,6 +1966,7 @@ class Scenario:
     desalination_scenario: Optional[DesalinationScenario]
     diesel_scenario: DieselScenario
     distribution_network: DistributionNetwork
+    fixed_inverter_size: Union[float, bool]
     grid: bool
     grid_type: str
     hot_water_scenario: Optional[HotWaterScenario]
@@ -2106,6 +2107,7 @@ class Scenario:
             desalination_scenario,
             diesel_scenario,
             distribution_network,
+            scenario_inputs.get("fixed_inverter_size", False),
             scenario_inputs["grid"],
             scenario_inputs["grid_type"],
             hot_water_scenario,
@@ -2113,8 +2115,8 @@ class Scenario:
             resource_types,
             scenario_inputs["prioritise_self_generation"],
             scenario_inputs["pv"],
-            scenario_inputs["pv_d"] if "pv_d" in scenario_inputs else False,
-            scenario_inputs["pv_t"] if "pv_t" in scenario_inputs else False,
+            scenario_inputs.get("pv_d", False),
+            scenario_inputs.get("pv_t", False),
         )
 
     def to_dict(self) -> Dict[str, Any]:

@@ -29,10 +29,11 @@ from .__utils__ import ImpactingComponent, LIFETIME, SIZE_INCREMENT
 from ..__utils__ import (
     BColours,
     ColumnHeader,
+    hourly_profile_to_daily_sum,
     InputFileError,
     InternalError,
     Location,
-    hourly_profile_to_daily_sum,
+    Scenario,
 )
 
 __all_ = (
@@ -173,7 +174,7 @@ def _component_om(
     logger: Logger,
     *,
     start_year: int,
-    end_year: int
+    end_year: int,
 ) -> float:
     """
     Computes the O&M cost of a component.
@@ -247,10 +248,12 @@ def _discounted_fraction(
 def _inverter_expenditure(  # pylint: disable=too-many-locals
     finance_inputs: Dict[str, Any],
     location: Location,
+    logger: Logger,
+    scenario: Scenario,
     yearly_load_statistics: pd.DataFrame,
     *,
     start_year: int,
-    end_year: int
+    end_year: int,
 ) -> float:
     """
     Calculates cost of inverters based on load calculations
@@ -260,8 +263,12 @@ def _inverter_expenditure(  # pylint: disable=too-many-locals
             The finance-input information for the system.
         - location:
             The location being considered.
+        - logger:
+            The :class:`logging.Logger` to use for the run.
         - yearly_load_statistics:
             The yearly-load statistics for the system.
+        - scenario:
+            The :class:`Scenario` currently being considered.
         - start_year:
             Start year of simulation period
         - end_year:
@@ -320,9 +327,34 @@ def _inverter_expenditure(  # pylint: disable=too-many-locals
         ** inverter_info[ColumnHeader.INSTALLATION_YEAR.value].iloc[i]
         for i in range(len(inverter_info))
     ]
+
+    # If a static inverter size has been used, use this, otherwise, use the dynamically
+    # calculated values.
+    if scenario.fixed_inverter_size and any(
+        inverter_info[ColumnHeader.INVERTER_SIZE.value] > scenario.fixed_inverter_size
+    ):
+        logger.info(
+            "The static inverter size specified, %s, was below that calculated "
+            "within CLOVER. Calculated inverter sizes:\n%s",
+            scenario.fixed_inverter_size,
+            "\n".join(
+                [
+                    f"Size for year {year}: {size} kW"
+                    for year, size in zip(
+                        replacement_intervals[ColumnHeader.INSTALLATION_YEAR.value],
+                        inverter_info[ColumnHeader.INVERTER_SIZE.value],
+                    )
+                ]
+            ),
+        )
+
     inverter_info[ColumnHeader.DISCOUNTED_EXPENDITURE.value] = [
         inverter_info[ColumnHeader.DISCOUNT_RATE.value].iloc[i]
-        * inverter_info["Inverter size (kW)"].iloc[i]
+        * (
+            inverter_info[ColumnHeader.INVERTER_SIZE.value].iloc[i]
+            if not scenario.fixed_inverter_size
+            else scenario.fixed_inverter_size
+        )
         * inverter_info["Inverter cost ($/kW)"].iloc[i]
         for i in range(len(inverter_info))
     ]
@@ -723,7 +755,7 @@ def diesel_fuel_expenditure(
     logger: Logger,
     *,
     start_year: int = 0,
-    end_year: int = 20
+    end_year: int = 20,
 ) -> float:
     """
     Calculates cost of diesel fuel used by the system
@@ -778,7 +810,7 @@ def discounted_energy_total(
     total_daily: Union[pd.DataFrame, pd.Series],
     *,
     start_year: int = 0,
-    end_year: int = 20
+    end_year: int = 20,
 ) -> float:
     """
     Calculates the total discounted cost of some parameter.
@@ -907,7 +939,7 @@ def expenditure(
     logger: Logger,
     *,
     start_year: int = 0,
-    end_year: int = 20
+    end_year: int = 20,
 ) -> float:
     """
     Calculates cost of the usage of a component.
@@ -944,10 +976,12 @@ def expenditure(
 def independent_expenditure(
     finance_inputs: Dict[str, Any],
     location: Location,
+    logger: Logger,
+    scenario: Scenario,
     yearly_load_statistics: pd.DataFrame,
     *,
     start_year: int,
-    end_year: int
+    end_year: int,
 ) -> float:
     """
     Calculates cost of equipment which is independent of simulation periods
@@ -957,8 +991,12 @@ def independent_expenditure(
             The financial input information.
         - location:
             The location currently being considered.
+        - logger:
+            The :class:`logging.Logger` to use for the run.
         - yearly_load_statistics:
             The yearly load statistics information.
+        - scenario:
+            The :class:`Scenario` currently being considered.
         - start_year:
             Start year of simulation period
         - end_year:
@@ -972,6 +1010,8 @@ def independent_expenditure(
     inverter_expenditure = _inverter_expenditure(
         finance_inputs,
         location,
+        logger,
+        scenario,
         yearly_load_statistics,
         start_year=start_year,
         end_year=end_year,
@@ -994,7 +1034,7 @@ def total_om(  # pylint: disable=too-many-locals
     storage_size: float,
     *,
     start_year: int = 0,
-    end_year: int = 20
+    end_year: int = 20,
 ) -> float:
     """
     Calculates total O&M cost over the simulation period
