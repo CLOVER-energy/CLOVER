@@ -17,28 +17,3 @@ title: CLOVER
 version: v5.0.5
 doi: 10.5281/zenodo.6925535
 date-released: 2022-08-22
-preferred-citation:
-  type: article
-  authors:
-  - family-names: Sandwell
-    given-names: Philip
-    orcid: https://orcid.org/0000-0003-1117-5095
-  - family-names: Winchester
-    given-names: Benedict
-    orcid: https://orcid.org/0000-0002-2880-1243
-  - family-names: Beath
-    given-names: Hamish
-    orcid: https://orcid.org/0000-0002-5124-9143
-  - family-names: Nelson
-    given-names: Jenny
-    orcid: https://orcid.org/0000-0003-1048-1330
-  doi: "10.21105/joss.04799"
-  journal: "Journal of Open Source Software"
-  month: 2
-  start: 4799 # First page number
-  title: "CLOVER: A modelling framework for sustainable community-scale energy systems"
-  issue: 82
-  url: https://doi.org/10.21105/joss.04799
-  publisher: "The Open Journal"
-  volume: 8
-  year: 2023
