@@ -802,7 +802,7 @@ def get_logger(logger_name: str, verbose: bool = False) -> logging.Logger:
 
     # Create a console handler.
     console_handler = logging.StreamHandler()
-    console_handler.setLevel(logging.ERROR)
+    console_handler.setLevel(logging.WARNING)
     console_handler.setFormatter(formatter)
 
     # Delete the existing log if there is one already.
