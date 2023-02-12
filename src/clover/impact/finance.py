@@ -49,6 +49,10 @@ __all_ = (
     "total_om",
 )
 
+# Capacity cost:
+#   Keyword used to denote the capacity-based costs of a component.
+CAPACITY_COST: str = "capacity_cost"
+
 # Connection cost:
 #   Keyword used to denote the connection cost for a household within the community.
 CONNECTION_COST = "connection_cost"
@@ -72,6 +76,10 @@ DISCOUNT_RATE = "discount_rate"
 # Finance impact:
 #   Default `str` used as the format for specifying unique financial impacts.
 FINANCE_IMPACT: str = "{type}_{name}"
+
+# Fixed cost:
+#   Keyword used to denote the fixed misc. costs of a componnet of the system.
+FIXED_COST: str = "fixed_cost"
 
 # General OM:
 #   Keyword used to denote general O&M costs of the system.
@@ -371,15 +379,23 @@ def _inverter_expenditure(  # pylint: disable=too-many-locals
     return inverter_discounted_cost
 
 
-def _misc_costs(diesel_size: float, misc_costs: float, pv_array_size: float) -> float:
+def _misc_costs(
+    diesel_size: float,
+    misc_capacity_cost: float,
+    misc_fixed_cost: float,
+    pv_array_size: float,
+) -> float:
     """
     Calculates cost of miscellaneous capacity-related costs
 
     Inputs:
         - diesel_size:
             Capacity of diesel generator being installed
-        - misc_costs:
-            The misc. costs of the system.
+        - misc_capacity_cost:
+            The misc. costs of the system which scale with the capacity of the system.
+        - misc_fixed_cost:
+            The misc. costs of the system which do not scale with the capacity of the
+            system and which are fixed.
         - pv_array_size:
             Capacity of PV being installed
 
@@ -388,8 +404,9 @@ def _misc_costs(diesel_size: float, misc_costs: float, pv_array_size: float) -> 
 
     """
 
-    misc_costs = (pv_array_size + diesel_size) * misc_costs
-    return misc_costs
+    total_misc_capacity_cost = (pv_array_size + diesel_size) * misc_capacity_cost
+
+    return total_misc_capacity_cost + misc_fixed_cost
 
 
 ###############################
@@ -687,9 +704,44 @@ def get_total_equipment_cost(  # pylint: disable=too-many-locals, too-many-state
         + pvt_installation_cost
     )
 
-    misc_costs = _misc_costs(
-        diesel_size, finance_inputs[ImpactingComponent.MISC.value][COST], pv_array_size
+    # Determine the capacity-based misc. costs associated with the system.
+    try:
+        misc_capacity_cost: float = finance_inputs[ImpactingComponent.MISC.value][
+            CAPACITY_COST
+        ]
+    except KeyError:
+        logger.warning(
+            "Using %s for misc. capacity costs is depreceated. Consider using %s.",
+            COST,
+            CAPACITY_COST,
+        )
+        try:
+            misc_capacity_cost = finance_inputs[ImpactingComponent.MISC.value][COST]
+        except KeyError:
+            logger.error(
+                "Neither %s nor the depreceated keyword %s used for misc. system costs.",
+                CAPACITY_COST,
+                COST,
+            )
+            raise
+
+    try:
+        misc_fixed_cost: float = finance_inputs[ImpactingComponent.MISC.value][
+            FIXED_COST
+        ]
+    except KeyError:
+        logger.warning(
+            "Missing fixed capacity costs in finance inputs file, assuming zero."
+        )
+        misc_fixed_cost = 0
+
+    misc_costs: float = _misc_costs(
+        diesel_size,
+        misc_capacity_cost,
+        misc_fixed_cost,
+        pv_array_size,
     )
+
     return (
         bos_cost
         + buffer_tank_cost

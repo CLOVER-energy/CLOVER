@@ -209,15 +209,19 @@ def _calculate_electric_desalination_parameters(
         )
 
         # Compute the amount of energy required per litre desalinated.
-        energy_per_desalinated_litre: float = 0.001 * np.mean(
-            [
-                desalinator.input_resource_consumption[ResourceType.ELECTRIC]
-                / desalinator.maximum_output_capacity
-                + desalinator.input_resource_consumption[ResourceType.UNCLEAN_WATER]
-                * feedwater_sources[0].input_resource_consumption[ResourceType.ELECTRIC]
-                / desalinator.maximum_output_capacity
-                for desalinator in electric_desalinators
-            ]
+        energy_per_desalinated_litre: float = 0.001 * float(
+            np.mean(
+                [
+                    desalinator.input_resource_consumption[ResourceType.ELECTRIC]
+                    / desalinator.maximum_output_capacity
+                    + desalinator.input_resource_consumption[ResourceType.UNCLEAN_WATER]
+                    * feedwater_sources[0].input_resource_consumption[
+                        ResourceType.ELECTRIC
+                    ]
+                    / desalinator.maximum_output_capacity
+                    for desalinator in electric_desalinators
+                ]
+            )
         )
 
         # Compute the maximum throughput
