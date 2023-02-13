@@ -374,7 +374,7 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
         # Plot the input vs. randomised grid avialability profiles.
         plt.plot(range(24), grid_input_profile, color="k", label="Input")
         plt.plot(range(24), np.mean(reshaped_data, axis=0), color="r", label="Output")
-        plt.legend()
+        plt.legend(bbox_to_anchor=(1.0,1.0))
         plt.xticks(range(0, 24, 2))
         plt.yticks(np.arange(0, 1.1, 0.2))
         plt.xlabel("Hour of day")
@@ -397,7 +397,7 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
         plt.ylabel("Device load / W")
         plt.title("Electric load demand of each device")
         plt.tight_layout()
-        plt.legend()
+        plt.legend(bbox_to_anchor=(1.0,1.0))
         plt.savefig(
             os.path.join(figures_directory, "electric_device_loads.png"),
             transparent=True,
@@ -427,7 +427,7 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
             "--",
             label="total",
         )
-        plt.legend(loc="upper right")
+        plt.legend(bbox_to_anchor=(1.0, 1.0))
         plt.xticks(list(range(0, CUT_OFF_TIME - 1, min(4, CUT_OFF_TIME - 1))))
         plt.xlabel("Hour of simulation")
         plt.ylabel("Electric power demand / kW")
@@ -492,7 +492,7 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
         axis[0].plot(range(365), domestic_demand, alpha=0.5, color="blue")
         axis[0].plot(range(365), commercial_demand, alpha=0.5, color="orange")
         axis[0].plot(range(365), public_demand, alpha=0.5, color="green")
-        axis[0].legend(loc="best")
+        axis[0].legend(bbox_to_anchor=(1.0,1.0))
         axis[0].set(
             xticks=(range(0, 366, 60)),
             yticks=range(0, 26, 5),
@@ -508,7 +508,7 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
             color="red",
         )
         axis[1].plot(range(365), total_demand, "--", alpha=0.5, color="red")
-        axis[1].legend(loc="best")
+        axis[1].legend(bbox_to_anchor=(0.5, -0.15), ncol=2)
         axis[1].set(
             xticks=(range(0, 366, 60)),
             yticks=range(15, 41, 5),
@@ -584,7 +584,7 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
             color="green",
         )
         plt.plot(range(num_years), total_demand, "--", label="total", color="red")
-        plt.legend(loc="upper left")
+        plt.legend(bbox_to_anchor=(1.0, 1.0))
         plt.xticks(range(0, num_years, 2 if num_years > 2 else 1))
         plt.xlabel("Year of investigation period")
         plt.ylabel("Energy demand / MWh/year")
@@ -772,7 +772,7 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
                 label="HW PV-T electricity generated",
                 zorder=(10 + (2 if cw_pvt else 0)),
             )
-        plt.legend()
+        plt.legend(bbox_to_anchor=(1.0,1.0))
         plt.xlim(0, 23)
         plt.xticks(range(0, 24, 1))
         plt.xlabel("Hour of day")
@@ -828,7 +828,7 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
         plt.plot(storage_energy, label="Storage")
         plt.plot(grid_energy, label="Grid")
         plt.plot(diesel_times, label="Diesel")
-        plt.legend()
+        plt.legend(bbox_to_anchor=(1.0,1.0))
         plt.xlim(0, 23)
         plt.xticks(range(0, 24, 1))
         plt.ylim(0, 1)
@@ -1005,7 +1005,7 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
         #         label="Backup -> clean water",
         #         zorder=11 + (2 if cw_pvt else 0) + (1 if hw_pvt else 0),
         #     )
-        plt.legend()
+        plt.legend(bbox_to_anchor=(1.0,1.0))
         plt.xlim(0, 23)
         plt.xticks(range(0, 24, 1))
         plt.xlabel("Hour of day")
