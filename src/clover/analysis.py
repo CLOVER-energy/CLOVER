@@ -508,7 +508,7 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
             color="red",
         )
         axis[1].plot(range(365), total_demand, "--", alpha=0.5, color="red")
-        axis[1].legend(bbox_to_anchor=(0.5, -0.15), ncol=2)
+        axis[1].legend(bbox_to_anchor=(0.5, -0.15), loc="upper center", ncol=2)
         axis[1].set(
             xticks=(range(0, 366, 60)),
             yticks=range(15, 41, 5),
