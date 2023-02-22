@@ -67,6 +67,7 @@ __all__ = (
     "SolarSystemSize",
     "StorageSystemSize",
     "TankSize",
+    "THRESHOLD_CRITERIA",
     "ThresholdMode",
 )
 
@@ -82,10 +83,17 @@ CONVERTER_NAME_STRING: str = "name"
 # above string and needs to be udpated separately.
 CONVERTER_SIZE_REGEX: Pattern[str] = re.compile(r"(?P<name>.*)_size")
 
+# Optimisation criteria:
+#   Keyword used for parsing the optimisation criteria.
+OPTIMISATION_CRITERIA: str = "optimisation_criteria"
+
 # Scenario:
 #   Keyword used for parsing the scenario to use for a given optimisation.
 SCENARIO: str = "scenario"
 
+# Threshold criteria:
+#   Keyword used for parsing the threshold criteria.
+THRESHOLD_CRITERIA:str = "threshold_criteria"
 
 def converters_from_sizing(converter_sizes: Dict[Converter, int]) -> List[Converter]:
     """
@@ -260,7 +268,7 @@ class Optimisation:
         try:
             optimisation_criteria = {
                 Criterion(key): CriterionMode(value)
-                for entry in optimisation_data["optimisation_criteria"]
+                for entry in optimisation_data[OPTIMISATION_CRITERIA]
                 for key, value in entry.items()
             }
         except KeyError as e:
@@ -275,7 +283,7 @@ class Optimisation:
         try:
             threshold_criteria = {
                 Criterion(key): value
-                for entry in optimisation_data["threshold_criteria"]
+                for entry in optimisation_data[THRESHOLD_CRITERIA]
                 for key, value in entry.items()
             }
         except KeyError as e:
@@ -348,9 +356,9 @@ class Optimisation:
         }
 
         return {
-            "optimisation_criteria": optimisation_criteria,
+            OPTIMISATION_CRITERIA: optimisation_criteria,
             "scenario": self.scenario.to_dict(),
-            "threshold_criteria": threshold_criteria,
+            THRESHOLD_CRITERIA: threshold_criteria,
         }
 
 
