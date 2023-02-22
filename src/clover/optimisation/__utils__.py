@@ -1158,6 +1158,7 @@ def recursive_iteration(  # pylint: disable=too-many-locals
 def save_optimisation(
     disable_tqdm: bool,
     logger: Logger,
+    optimisation: Optimisation,
     optimisation_inputs: OptimisationParameters,
     optimisation_number: int,
     output: str,
@@ -1207,6 +1208,8 @@ def save_optimisation(
     # Add the optimisation parameter information.
     output_dict = {
         "optimisation_inputs": optimisation_inputs.to_dict(),
+        "optimisation_criteria": {key.value: value.value for key, value in optimisation.optimisation_criteria.items()},
+        "threshold_criteria": {key.value: value for key, value in optimisation.threshold_criteria.items()},
         "scenario": scenario.to_dict(),
         "system_appraisals": system_appraisals_dict,
     }
