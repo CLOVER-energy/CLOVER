@@ -1231,6 +1231,7 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
             save_optimisation(
                 disable_tqdm,
                 logger,
+                optimisation,
                 optimisation_inputs,
                 optimisation_number,
                 output,
