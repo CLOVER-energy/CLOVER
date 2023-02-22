@@ -35,7 +35,7 @@ from ..__utils__ import (
     read_yaml,
 )
 from ..fileparser import INPUTS_DIRECTORY, OPTIMISATION_INPUTS_FILE, OPTIMISATIONS
-from ..optimisation.__utils__ import     OPTIMISATION_CRITERIA, THRESHOLD_CRITERIA
+from ..optimisation.__utils__ import OPTIMISATION_CRITERIA, THRESHOLD_CRITERIA
 
 __all__ = (
     "HpcRunType",
@@ -292,7 +292,6 @@ class HpcOptimisation(
         self.optimisation_inputs_data[OPTIMISATIONS] = self.optimisation
         return self.optimisation_inputs_data
 
-
     @property
     def output(self) -> str:
         """
@@ -314,6 +313,7 @@ class HpcOptimisation(
             output_name += "_".join([f"{key}_{value}" for key, value in entry.items()])
 
         return output_name
+
 
 class HpcSimulation(
     _BaseHpcRun, run_type=HpcRunType.SIMULATION
