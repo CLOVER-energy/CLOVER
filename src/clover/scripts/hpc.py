@@ -92,7 +92,7 @@ def main(args: List[Any]) -> None:
         "--location",
         hpc_run.location,
         "--output",
-        hpc_run.output,
+        f"{hpc_run.output}_hpc_run_{run_number}",
     ]
 
     if hpc_run.total_load:
