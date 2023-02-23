@@ -302,11 +302,13 @@ class HpcOptimisation(
 
         """
 
-        output_name: str = self._output
+        output_name: str = f"{self._output}_"
 
         # Add the optimisation criteria information
         for entry in self.optimisation[0][OPTIMISATION_CRITERIA]:
             output_name += "_".join([f"{key.value}_{value.value}" for key, value in entry.items()])
+
+        output_name += "_"
 
         # Add the threshold-criteria information
         for entry in self.optimisation[0][THRESHOLD_CRITERIA]:
