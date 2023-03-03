@@ -988,6 +988,8 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
                     system_performance_outputs,
                     system_details,
                 ) = energy_system.run_simulation(
+                    generation_inputs["start_year"],
+                    device_utilisations,
                     parsed_args.clean_water_pvt_system_size
                     if parsed_args.clean_water_pvt_system_size is not None
                     else 0,

@@ -2270,7 +2270,8 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
                 BColours.endc,
             )
             raise
-
+    
+    
     # Parse the override electric profile file if specified.
     if electric_load_profile is not None:
         try:
