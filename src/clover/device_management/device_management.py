@@ -1,6 +1,6 @@
 import copy
 import pandas as pd
-import load
+from .. import load
 from typing import Dict
 from datetime import date
 
@@ -83,7 +83,7 @@ def knapsack2d_for_given_unit(prob_devices: pd.DataFrame, cons_devices: pd.Serie
 
       black_list_bag = [] 
       load = [0 for i in range(nr_bag)]
-      partial_pv = [0 for i in range(nr_bag)] #(device_id, quantity_pv)
+      rest = [0 for i in range(nr_bag)] 
 
       for bag in range(nr_bag):
             curr = []
@@ -96,16 +96,27 @@ def knapsack2d_for_given_unit(prob_devices: pd.DataFrame, cons_devices: pd.Serie
             devices = max_bag[0][2]
             load_used = max_bag[0][1]
             update_prob(devices, prob_devices, nr_units_devices)
-            partial_pv[idx] = prod_pv[idx] - load_used
+            rest[idx] = prod_pv[idx] - load_used
             black_list_bag.append(idx)
             load[idx] = load_used
 
       #todo : partial_pv
+
+      
+      ratios = (prob_devices.transpose()/cons_devices)
+      ratios = ratios.transpose()*pd.Series(rest)
+      last_ratio = ratios.max().max()
+      while(last_ratio > 0):
+            idx_0 = ratios.idxmax()
+            idx_1 = ratios.max().idxmax()
+            ratios[idx_1][idx_0] = 0
+            load[idx_1] = load[idx_1] + cons_devices[idx_0]
+            last_ratio = ratios.max().max()
       
       return load
 
 
-def device_management(start_year, device_utilisations: Dict[load.Device, pd.DataFrame], renewables_energy: pd.DataFrame) -> pd.DataFrame:
+def device_management(start_year, device_utilisations: Dict[load.load.Device, pd.DataFrame], renewables_energy: pd.DataFrame) -> pd.DataFrame:
       '''
       device input : CLOVER/locations/Bahraich/inputs/load/device_utilisation/fridge_times.csv
 
@@ -160,7 +171,8 @@ def device_management(start_year, device_utilisations: Dict[load.Device, pd.Data
 
       
       return pd.DataFrame(load_profile)
-      
+
+
       
           
       

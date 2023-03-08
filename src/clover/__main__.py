@@ -1179,6 +1179,7 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
 
             try:
                 time_delta, optimisation_results = multiple_optimisation_step(
+                    device_utilisations,
                     conventional_cw_source_profiles,
                     converters,
                     disable_tqdm,
@@ -1200,6 +1201,7 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
                     if total_wind_data is not None
                     else None,
                     electric_yearly_load_statistics,
+                    start_year=generation_inputs["start_year"]
                 )
             except Exception as e:
                 print(f"Beginning CLOVER optimisation runs {'.' * 28}    {FAILED}")

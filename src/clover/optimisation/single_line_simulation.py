@@ -57,6 +57,7 @@ __all__ = ("single_line_simulation",)
 
 
 def single_line_simulation(  # pylint: disable=too-many-locals, too-many-statements
+    device_utilisations,
     conventional_cw_source_profiles: Optional[Dict[WaterSource, pd.DataFrame]],
     converter_sizes: Dict[Converter, ConverterSize],
     cw_pvt_size: SolarSystemSize,
@@ -320,6 +321,7 @@ def single_line_simulation(  # pylint: disable=too-many-locals, too-many-stateme
 
         system_appraisals.extend(
             recursive_iteration(
+                device_utilisations,
                 conventional_cw_source_profiles,
                 disable_tqdm,
                 end_year,
@@ -505,6 +507,7 @@ def single_line_simulation(  # pylint: disable=too-many-locals, too-many-stateme
 
         system_appraisals.extend(
             recursive_iteration(
+                device_utilisations,
                 conventional_cw_source_profiles,
                 disable_tqdm,
                 end_year,
@@ -637,6 +640,7 @@ def single_line_simulation(  # pylint: disable=too-many-locals, too-many-stateme
 
         system_appraisals.extend(
             recursive_iteration(
+                device_utilisations,
                 conventional_cw_source_profiles,
                 disable_tqdm,
                 end_year,
@@ -815,6 +819,7 @@ def single_line_simulation(  # pylint: disable=too-many-locals, too-many-stateme
 
         system_appraisals.extend(
             recursive_iteration(
+                device_utilisations,
                 conventional_cw_source_profiles,
                 disable_tqdm,
                 end_year,
@@ -1001,6 +1006,7 @@ def single_line_simulation(  # pylint: disable=too-many-locals, too-many-stateme
 
         system_appraisals.extend(
             recursive_iteration(
+                device_utilisations,
                 conventional_cw_source_profiles,
                 disable_tqdm,
                 end_year,
@@ -1189,6 +1195,7 @@ def single_line_simulation(  # pylint: disable=too-many-locals, too-many-stateme
 
         system_appraisals.extend(
             recursive_iteration(
+                device_utilisations,
                 conventional_cw_source_profiles,
                 disable_tqdm,
                 end_year,

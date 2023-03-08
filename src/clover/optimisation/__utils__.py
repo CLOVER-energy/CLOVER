@@ -938,6 +938,7 @@ def get_sufficient_appraisals(
 
 
 def recursive_iteration(  # pylint: disable=too-many-locals
+    device_utilisations,
     conventional_cw_source_profiles: Optional[Dict[WaterSource, pd.DataFrame]],
     disable_tqdm: bool,
     end_year: int,
@@ -1042,6 +1043,8 @@ def recursive_iteration(  # pylint: disable=too-many-locals
             simulation_results,
             system_details,
         ) = energy_system.run_simulation(
+            start_year,
+            device_utilisations,
             int(component_sizes[RenewableEnergySource.CLEAN_WATER_PVT]),
             conventional_cw_source_profiles,
             converters,

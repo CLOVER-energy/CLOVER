@@ -109,6 +109,7 @@ def _fetch_optimum_system(
 
 
 def _find_optimum_system(  # pylint: disable=too-many-locals
+    device_utilisations,
     conventional_cw_source_profiles: Optional[Dict[WaterSource, pd.DataFrame]],
     converters: Dict[str, Converter],
     disable_tqdm: bool,
@@ -260,6 +261,7 @@ def _find_optimum_system(  # pylint: disable=too-many-locals
                 largest_storage_system_size,
                 new_system_appraisals,
             ) = single_line_simulation(
+                device_utilisations,
                 conventional_cw_source_profiles,
                 largest_converter_sizes,
                 largest_cw_pvt_system_size,
@@ -958,6 +960,7 @@ def _simulation_iteration(  # pylint: disable=too-many-locals, too-many-statemen
 
 
 def _optimisation_step(  # pylint: disable=too-many-locals
+    device_utilisations,
     conventional_cw_source_profiles: Optional[Dict[WaterSource, pd.DataFrame]],
     converter_sizes: Dict[Converter, ConverterSize],
     cw_pvt_system_size: SolarSystemSize,
@@ -1067,6 +1070,7 @@ def _optimisation_step(  # pylint: disable=too-many-locals
         start_year,
         sufficient_systems,
     ) = _simulation_iteration(
+        device_utilisations,
         conventional_cw_source_profiles,
         converter_sizes,
         cw_pvt_system_size,
@@ -1099,6 +1103,7 @@ def _optimisation_step(  # pylint: disable=too-many-locals
 
     # Determine the optimum systems that fulfil each of the optimisation criteria.
     optimum_systems = _find_optimum_system(
+        device_utilisations,
         conventional_cw_source_profiles,
         converters,
         disable_tqdm,
@@ -1136,6 +1141,7 @@ def _optimisation_step(  # pylint: disable=too-many-locals
 
 
 def multiple_optimisation_step(  # pylint: disable=too-many-locals, too-many-statements
+    device_utilisations,
     conventional_cw_source_profiles: Optional[Dict[WaterSource, pd.DataFrame]],
     converters: Dict[str, Converter],
     disable_tqdm: bool,
@@ -1389,6 +1395,7 @@ def multiple_optimisation_step(  # pylint: disable=too-many-locals, too-many-sta
 
         # Fetch the optimum systems for this step.
         optimum_system = _optimisation_step(
+            device_utilisations,
             conventional_cw_source_profiles,
             input_converter_sizes.copy() if input_converter_sizes is not None else None,
             SolarSystemSize(

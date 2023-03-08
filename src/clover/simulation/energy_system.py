@@ -1437,6 +1437,7 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
         renewables_energy_map,
         renewables_energy_used_directly,
     ) = get_electric_battery_storage_profile(
+        start_year,
         device_utilisations,
         clean_water_pvt_size=clean_water_pvt_size,
         grid_profile=grid_profile.iloc[start_hour:end_hour, 0],  # type: ignore
@@ -1450,7 +1451,7 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
         scenario=scenario,
         end_hour=end_hour,
         pv_size=pv_size,
-        start_hour=start_hour,
+        start_hour=start_hour
     )
 
     if all(renewables_energy.values == 0):
