@@ -35,7 +35,7 @@ from ..__utils__ import (
     read_yaml,
 )
 from ..fileparser import INPUTS_DIRECTORY, OPTIMISATION_INPUTS_FILE, OPTIMISATIONS
-
+from ..optimisation.__utils__ import OPTIMISATION_CRITERIA, THRESHOLD_CRITERIA
 
 __all__ = (
     "HpcRunType",
@@ -132,7 +132,7 @@ class _BaseHpcRun:  # pylint: disable=too-few-public-methods
         """
 
         self.location = location
-        self.output = output
+        self._output = output
         self.total_load = total_load
         self.total_load_file = total_load_file
 
@@ -169,6 +169,18 @@ class _BaseHpcRun:  # pylint: disable=too-few-public-methods
             )
             + ")"
         )
+
+    @property
+    def output(self) -> str:
+        """
+        Return an output name for the class.
+
+        Outputs:
+            An output name for the run.
+
+        """
+
+        return self._output
 
 
 class HpcOptimisation(
@@ -279,6 +291,35 @@ class HpcOptimisation(
 
         self.optimisation_inputs_data[OPTIMISATIONS] = self.optimisation
         return self.optimisation_inputs_data
+
+    @property
+    def output(self) -> str:
+        """
+        Return an output name for the class based on the optimisation criterion etc.
+
+        Outputs:
+            An output name for the run.
+
+        """
+
+        output_name: str = f"{self._output}_"
+
+        # Add the optimisation criteria information
+        for entry in self.optimisation[0][OPTIMISATION_CRITERIA]:
+            output_name += "_".join([f"{key}_{value}" for key, value in entry.items()])
+
+        output_name += "_"
+
+        # Add the threshold-criteria information
+        for entry in self.optimisation[0][THRESHOLD_CRITERIA]:
+            output_name += "_".join(
+                [
+                    f"{key}_{str(value).replace('.', '_')}"
+                    for key, value in entry.items()
+                ]
+            )
+
+        return output_name
 
 
 class HpcSimulation(
