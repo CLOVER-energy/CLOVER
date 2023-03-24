@@ -26,7 +26,7 @@ from typing import Dict, List, Optional, Tuple, Union
 
 import numpy as np  # pylint: disable=import-error
 import pandas as pd  # pylint: disable=import-error
-from .. import load
+from ..load.load import Device
 
 from tqdm import tqdm
 
@@ -1057,8 +1057,8 @@ def _update_battery_health(
 
 
 def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
-    start_year,
-    device_utilisations: Dict[load.load.Device, pd.DataFrame],
+    start_year_device: int,
+    device_utilisations: Dict[Device, pd.DataFrame],
     clean_water_pvt_size: int,
     conventional_cw_source_profiles: Optional[Dict[WaterSource, pd.DataFrame]],
     converters: Union[Dict[str, Converter], List[Converter]],
@@ -1437,8 +1437,8 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
         renewables_energy_map,
         renewables_energy_used_directly,
     ) = get_electric_battery_storage_profile(
-        start_year,
-        device_utilisations,
+        start_year_device=start_year_device,
+        device_utilisations=device_utilisations,
         clean_water_pvt_size=clean_water_pvt_size,
         grid_profile=grid_profile.iloc[start_hour:end_hour, 0],  # type: ignore
         hot_water_pvt_size=hot_water_pvt_size,

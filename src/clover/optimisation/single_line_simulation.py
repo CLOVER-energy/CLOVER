@@ -26,7 +26,7 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 
 import numpy as np  # pylint: disable=import-error
 import pandas as pd
-
+from ..load.load import Device
 from ..simulation import energy_system
 
 from ..__utils__ import (
@@ -57,7 +57,8 @@ __all__ = ("single_line_simulation",)
 
 
 def single_line_simulation(  # pylint: disable=too-many-locals, too-many-statements
-    device_utilisations,
+    start_year_device: int,
+    device_utilisations: Dict[Device , pd.DataFrame],
     conventional_cw_source_profiles: Optional[Dict[WaterSource, pd.DataFrame]],
     converter_sizes: Dict[Converter, ConverterSize],
     cw_pvt_size: SolarSystemSize,
@@ -321,6 +322,7 @@ def single_line_simulation(  # pylint: disable=too-many-locals, too-many-stateme
 
         system_appraisals.extend(
             recursive_iteration(
+                start_year_device,
                 device_utilisations,
                 conventional_cw_source_profiles,
                 disable_tqdm,
@@ -354,6 +356,8 @@ def single_line_simulation(  # pylint: disable=too-many-locals, too-many-stateme
             != pv_system_size.max
         ):
             _, simulation_results, system_details = energy_system.run_simulation(
+                start_year_device,
+                device_utilisations,
                 int(potential_cw_pvt_size),
                 conventional_cw_source_profiles,
                 converters,
@@ -507,6 +511,7 @@ def single_line_simulation(  # pylint: disable=too-many-locals, too-many-stateme
 
         system_appraisals.extend(
             recursive_iteration(
+                start_year_device,
                 device_utilisations,
                 conventional_cw_source_profiles,
                 disable_tqdm,
@@ -640,6 +645,7 @@ def single_line_simulation(  # pylint: disable=too-many-locals, too-many-stateme
 
         system_appraisals.extend(
             recursive_iteration(
+                start_year_device,
                 device_utilisations,
                 conventional_cw_source_profiles,
                 disable_tqdm,
@@ -819,6 +825,7 @@ def single_line_simulation(  # pylint: disable=too-many-locals, too-many-stateme
 
         system_appraisals.extend(
             recursive_iteration(
+                start_year_device,
                 device_utilisations,
                 conventional_cw_source_profiles,
                 disable_tqdm,
@@ -1006,6 +1013,7 @@ def single_line_simulation(  # pylint: disable=too-many-locals, too-many-stateme
 
         system_appraisals.extend(
             recursive_iteration(
+                start_year_device,
                 device_utilisations,
                 conventional_cw_source_profiles,
                 disable_tqdm,
@@ -1195,6 +1203,7 @@ def single_line_simulation(  # pylint: disable=too-many-locals, too-many-stateme
 
         system_appraisals.extend(
             recursive_iteration(
+                start_year_device,
                 device_utilisations,
                 conventional_cw_source_profiles,
                 disable_tqdm,

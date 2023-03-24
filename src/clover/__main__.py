@@ -199,7 +199,6 @@ def _prepare_location(location: str, logger: logging.Logger) -> None:
         new_location.create_new_location(None, location, logger, True)
         logger.info("%s succesfully updated with missing files.", location)
 
-
 def _prepare_water_system(
     available_conventional_sources: Set[str],
     auto_generated_files_directory: str,
@@ -1178,7 +1177,11 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
             print(f"Running an optimisation with:\n{optimisation_string}")
 
             try:
+                print("----------")
+                print(type(generation_inputs["start_year"]))
+                print(generation_inputs["start_year"])
                 time_delta, optimisation_results = multiple_optimisation_step(
+                    generation_inputs["start_year"],
                     device_utilisations,
                     conventional_cw_source_profiles,
                     converters,
@@ -1201,7 +1204,6 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
                     if total_wind_data is not None
                     else None,
                     electric_yearly_load_statistics,
-                    start_year=generation_inputs["start_year"]
                 )
             except Exception as e:
                 print(f"Beginning CLOVER optimisation runs {'.' * 28}    {FAILED}")

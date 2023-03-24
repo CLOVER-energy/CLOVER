@@ -26,7 +26,7 @@ from typing import Any, Dict, List, Optional, Pattern, Tuple, Union
 
 import json
 import re
-
+from ..load.load import Device
 import pandas as pd  # pylint: disable=import-error
 from tqdm import tqdm
 
@@ -938,7 +938,8 @@ def get_sufficient_appraisals(
 
 
 def recursive_iteration(  # pylint: disable=too-many-locals
-    device_utilisations,
+    start_year_device: int,
+    device_utilisations: Dict[Device, pd.DataFrame],
     conventional_cw_source_profiles: Optional[Dict[WaterSource, pd.DataFrame]],
     disable_tqdm: bool,
     end_year: int,
@@ -1043,7 +1044,7 @@ def recursive_iteration(  # pylint: disable=too-many-locals
             simulation_results,
             system_details,
         ) = energy_system.run_simulation(
-            start_year,
+            start_year_device,
             device_utilisations,
             int(component_sizes[RenewableEnergySource.CLEAN_WATER_PVT]),
             conventional_cw_source_profiles,
@@ -1104,6 +1105,8 @@ def recursive_iteration(  # pylint: disable=too-many-locals
 
         # Call the function recursively.
         sufficient_appraisals = recursive_iteration(
+            start_year_device,
+            device_utilisations,
             conventional_cw_source_profiles,
             disable_tqdm,
             end_year,

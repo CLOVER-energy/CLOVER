@@ -41,6 +41,7 @@ import pandas as pd  # pylint: disable=import-error
 
 from tqdm import tqdm
 
+from ..load.load import Device
 from ..simulation.__utils__ import determine_available_converters
 from ..simulation import energy_system
 
@@ -109,7 +110,8 @@ def _fetch_optimum_system(
 
 
 def _find_optimum_system(  # pylint: disable=too-many-locals
-    device_utilisations,
+    start_year_device: int,
+    device_utilisations: Dict[Device , pd.DataFrame],
     conventional_cw_source_profiles: Optional[Dict[WaterSource, pd.DataFrame]],
     converters: Dict[str, Converter],
     disable_tqdm: bool,
@@ -261,6 +263,7 @@ def _find_optimum_system(  # pylint: disable=too-many-locals
                 largest_storage_system_size,
                 new_system_appraisals,
             ) = single_line_simulation(
+                start_year_device,
                 device_utilisations,
                 conventional_cw_source_profiles,
                 largest_converter_sizes,
@@ -325,6 +328,8 @@ def _find_optimum_system(  # pylint: disable=too-many-locals
 
 
 def _simulation_iteration(  # pylint: disable=too-many-locals, too-many-statements
+    start_year_device: int,
+    device_utilisations: Dict[Device , pd.DataFrame],
     conventional_cw_source_profiles: Optional[Dict[WaterSource, pd.DataFrame]],
     converter_sizes: Dict[Converter, ConverterSize],
     cw_pvt_system_size: SolarSystemSize,
@@ -482,6 +487,8 @@ def _simulation_iteration(  # pylint: disable=too-many-locals, too-many-statemen
     }
 
     _, simulation_results, system_details = energy_system.run_simulation(
+        start_year_device,
+        device_utilisations,
         int(cw_pvt_system_size.max),
         conventional_cw_source_profiles,
         converters_from_sizing(simulation_converter_sizes),
@@ -588,6 +595,8 @@ def _simulation_iteration(  # pylint: disable=too-many-locals, too-many-statemen
 
         # Run a simulation and appraise it.
         _, simulation_results, system_details = energy_system.run_simulation(
+            start_year_device,
+            device_utilisations,
             int(cw_pvt_size_max),
             conventional_cw_source_profiles,
             converters_from_sizing(simulation_converter_sizes),
@@ -907,6 +916,8 @@ def _simulation_iteration(  # pylint: disable=too-many-locals, too-many-statemen
     # Call the recursive simulation with these parameter and component sets of
     # information.
     _ = recursive_iteration(
+        start_year_device,
+        device_utilisations,
         conventional_cw_source_profiles,
         disable_tqdm,
         end_year,
@@ -960,7 +971,8 @@ def _simulation_iteration(  # pylint: disable=too-many-locals, too-many-statemen
 
 
 def _optimisation_step(  # pylint: disable=too-many-locals
-    device_utilisations,
+    start_year_device: int,
+    device_utilisations: Dict[Device , pd.DataFrame],
     conventional_cw_source_profiles: Optional[Dict[WaterSource, pd.DataFrame]],
     converter_sizes: Dict[Converter, ConverterSize],
     cw_pvt_system_size: SolarSystemSize,
@@ -1070,6 +1082,7 @@ def _optimisation_step(  # pylint: disable=too-many-locals
         start_year,
         sufficient_systems,
     ) = _simulation_iteration(
+        start_year_device,
         device_utilisations,
         conventional_cw_source_profiles,
         converter_sizes,
@@ -1103,6 +1116,7 @@ def _optimisation_step(  # pylint: disable=too-many-locals
 
     # Determine the optimum systems that fulfil each of the optimisation criteria.
     optimum_systems = _find_optimum_system(
+        start_year_device,
         device_utilisations,
         conventional_cw_source_profiles,
         converters,
@@ -1141,7 +1155,8 @@ def _optimisation_step(  # pylint: disable=too-many-locals
 
 
 def multiple_optimisation_step(  # pylint: disable=too-many-locals, too-many-statements
-    device_utilisations,
+    start_year_device: int,
+    device_utilisations: Dict[Device , pd.DataFrame],
     conventional_cw_source_profiles: Optional[Dict[WaterSource, pd.DataFrame]],
     converters: Dict[str, Converter],
     disable_tqdm: bool,
@@ -1395,6 +1410,7 @@ def multiple_optimisation_step(  # pylint: disable=too-many-locals, too-many-sta
 
         # Fetch the optimum systems for this step.
         optimum_system = _optimisation_step(
+            start_year_device,
             device_utilisations,
             conventional_cw_source_profiles,
             input_converter_sizes.copy() if input_converter_sizes is not None else None,

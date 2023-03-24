@@ -36,6 +36,7 @@ from ..__utils__ import (
 from .__utils__ import Minigrid
 from ..conversion.conversion import WaterSource
 from ..generation.solar import solar_degradation
+from ..device_management import device_management
 
 __all__ = (
     "battery_iteration_step",
@@ -365,8 +366,8 @@ def cw_tank_iteration_step(  # pylint: disable=too-many-locals
 
 def get_electric_battery_storage_profile(  # pylint: disable=too-many-locals, too-many-statements
     *,
-    start_year,
-    device_utilisations: Dict[float, pd.DataFrame],
+    start_year_device,
+    device_utilisations: list,
     grid_profile: pd.Series,
     kerosene_usage: pd.Series,
     location: Location,
@@ -615,7 +616,7 @@ def get_electric_battery_storage_profile(  # pylint: disable=too-many-locals, to
     # Check for self-generation prioritisation
     if scenario.prioritise_self_generation:
         # Take energy from PV first
-        remaining_profile = pd.DataFrame(renewables_energy.values - load_energy.values)
+        remaining_profile =  device_management.device_management(start_year_device, device_utilisations, renewables_energy) #pd.DataFrame(renewables_energy.values - load_energy.values)
         renewables_energy_used_directly: pd.DataFrame = pd.DataFrame(
             (remaining_profile > 0) * load_energy.values
             + (remaining_profile < 0) * renewables_energy.values

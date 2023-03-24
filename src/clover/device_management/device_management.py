@@ -2,25 +2,33 @@ import copy
 import pandas as pd
 from typing import Dict
 from datetime import date
+from ..load.load import Device
+import time
 
 '''
 Per day
 We use a greedy algorithm : we compute first knapsack problem for all the bags, and we take the bag with the highest probability, 
 then we blacklist this bag and continue until there is no bag anymore. 
 
-prob_devices (n x nr_bag) : the probability for each device for a each bag 
+prob_devices (nr_bag x n) : the probability for each device for a each bag 
 cons_devices (n x 1) : the consumption for each device for a given bag, n is the number of devices, it is constant (not dependent of the bag)
 prod_pv (nr_bag x 1) : the quantity for each bag 
+
 '''
-def greedy_management(prob_devices: pd.DataFrame, cons_devices: pd.Series, prod_pv: pd.Series, nr_units_devices):
-      nr_bag = prod_pv.size
-      load = [0 for i in range(nr_bag)]
-      while(prob_devices.max().max() == 0):
+def greedy_management(prob_devices: pd.DataFrame, cons_devices: pd.Series, prod_pv: pd.Series, nr_units_devices: list[float]) -> list[float]:
+      load = prod_pv[0].to_list()
+      
+      while(prob_devices.max().max() > 0):
             bag_idx = prob_devices.idxmax() #which bag 
             device_idx = prob_devices.max().idxmax() #which device
+            bag_idx = bag_idx[device_idx]
             if(nr_units_devices[device_idx] > 0):
-                  nr_units_devices[device_idx] = nr_units_devices[device_idx] - 1
-                  load[bag_idx] = load[bag_idx] + cons_devices[bag_idx]
+                  if(nr_units_devices[device_idx] < 1):
+                        load[bag_idx] = load[bag_idx] - cons_devices[device_idx]*nr_units_devices[device_idx]
+                        nr_units_devices[device_idx] = 0
+                  else:
+                        nr_units_devices[device_idx] = nr_units_devices[device_idx] - 1
+                        load[bag_idx] = load[bag_idx] - cons_devices[device_idx]
                   
             prob_devices[device_idx][bag_idx] = 0
 
@@ -43,7 +51,7 @@ prod_pv : the quantity of the bag (production of pv for this given bag)
 
 => Complexity is O(n*prod_pv)
 '''
-def knapsack1d_for_given_unit(prob_devices: pd.Series, cons_devices: pd.Series, prod_pv):
+def knapsack1d_for_given_unit(prob_devices: pd.Series, cons_devices: pd.Series, prod_pv: int) -> tuple[list[float], list[float], list[int]]:
       assert (prob_devices.size == cons_devices.size)
 
       #we clean inputs for the algorithm
@@ -83,7 +91,7 @@ def knapsack1d_for_given_unit(prob_devices: pd.Series, cons_devices: pd.Series, 
 We update the probability given the nr_units_devices, in fact if a device does not need energy anymore, we just remove it from 
 the list of probabilities.
 '''
-def update_prob(devices, prob_devices: pd.DataFrame, nr_units_devices):
+def update_prob(devices: list[int], prob_devices: pd.DataFrame, nr_units_devices: list[int]) -> None:
       for device in devices:
             nr_units_devices[device] = nr_units_devices[device] - 1
             if(nr_units_devices[device] == 0):
@@ -100,11 +108,18 @@ prod_pv (nr_bag x 1) : the quantity for each bag
 
 => Complexity is O(n * max(prod_pv) * nr_bag^2)
 '''
-def knapsack2d_for_given_unit(prob_devices: pd.DataFrame, cons_devices: pd.Series, prod_pv: pd.Series, nr_units_devices):
-      assert (prob_devices[0].size == cons_devices.size and prob_devices.iloc[0].size == prod_pv.size and cons_devices.size == len(nr_units_devices))
+def knapsack2d_for_given_unit(prob_devices: pd.DataFrame, cons_devices: pd.Series, prod_pv: pd.Series, nr_units_devices: list[int]) -> list[float]:
+      assert (prob_devices.iloc[0].size == cons_devices.size)
+      assert(prob_devices[0].size == prod_pv.size)
+      assert(cons_devices.size == len(nr_units_devices))
       
-      nr_bag = prod_pv.size
+      prob_devices_original = copy.copy(prob_devices)
+      prod_pv_original = copy.copy(prod_pv)
+      nr_units_devices_original = copy.copy(nr_units_devices)
+      return greedy_management(prob_devices_original, cons_devices, prod_pv_original, nr_units_devices_original)
+      prod_pv.astype(int)
 
+      nr_bag = prod_pv.size
       black_list_bag = [] 
       load = [0 for i in range(nr_bag)]
       rest = [0 for i in range(nr_bag)] 
@@ -113,7 +128,7 @@ def knapsack2d_for_given_unit(prob_devices: pd.DataFrame, cons_devices: pd.Serie
             curr = []
             for i in range(nr_bag):
                   if(i not in black_list_bag):
-                        curr.append((knapsack1d_for_given_unit(prob_devices.iloc[i], cons_devices, prod_pv[i]), i))
+                        curr.append((knapsack1d_for_given_unit(prob_devices.iloc[i], cons_devices, prod_pv.iloc[i]), i))
                         
             max_bag = max(curr)
             idx = max_bag[1]
@@ -126,12 +141,12 @@ def knapsack2d_for_given_unit(prob_devices: pd.DataFrame, cons_devices: pd.Serie
 
       
       if(prob_devices.max().max() > 0):
-            return greedy_management(prob_devices, cons_devices, prod_pv, nr_units_devices)
+            return greedy_management(prob_devices_original, cons_devices, prod_pv_original, nr_units_devices_original)
       
       return load
 
 
-def device_management(start_year, device_utilisations: Dict[float, pd.DataFrame], renewables_energy: pd.DataFrame) -> pd.DataFrame:
+def device_management(start_year: int, device_utilisations: Dict[Device, pd.DataFrame], renewables_energy: pd.DataFrame) -> pd.DataFrame:
       '''
       device input : CLOVER/locations/Bahraich/inputs/load/device_utilisation/fridge_times.csv
 
@@ -146,18 +161,20 @@ def device_management(start_year, device_utilisations: Dict[float, pd.DataFrame]
       return load profile in a form of a dataframe (of one column)
 
       '''
+
+      print("loading")
       load_profile = []
-      nr_month = device_utilisations[list(device_utilisations.keys())[0]].iloc[0].size
-      nr_bags = device_utilisations[list(device_utilisations.keys())[0]][0].size
+      nr_month = device_utilisations[list(device_utilisations.keys())[0]].iloc[0].size 
+      nr_bags = device_utilisations[list(device_utilisations.keys())[0]][0].size 
       prob_devices_all_months = [[[] for i in range(nr_bags)] for j in range(nr_month)]
       cons_devices = []
       nr_units_devices_all_months = [[] for j in range(nr_month)]
       
-      for cons_device, matrix in device_utilisations.items():
-            cons_devices.append(cons_device)
+      for cons_device, matrix in device_utilisations.items(): 
+            cons_devices.append(cons_device.electric_power)
 
             for j in range(nr_month):
-                  nr_units_devices_all_months.append(matrix[j].sum())
+                  nr_units_devices_all_months[j].append(matrix[j].sum())
                   for i in range(nr_bags):
                         prob_devices_all_months[j][i].append(matrix[j][i])
       
@@ -165,25 +182,25 @@ def device_management(start_year, device_utilisations: Dict[float, pd.DataFrame]
       curr_year = start_year
       curr_month = 1
       curr_day = 1
-      
+
       for i in range(0, renewables_energy.size, nr_bags):
-            load_profile = load_profile + (knapsack2d_for_given_unit(pd.DataFrame(prob_devices_all_months[j]),
+            load_profile = load_profile + (knapsack2d_for_given_unit(pd.DataFrame(prob_devices_all_months[curr_month-1]),
                                                           cons_devices,
                                                           renewables_energy[i:i+nr_bags],
-                                                          copy.copy(nr_units_devices_all_months[j])))
+                                                          copy.copy(nr_units_devices_all_months[curr_month-1])))
             
 
             if(curr_month == 12 and curr_day == (date(curr_year + 1, 1, 1) - date(curr_year, 12, 1)).days):
+                  
                   curr_year = curr_year + 1
                   curr_month = 1
                   curr_day = 1
-            elif(curr_day == (date(curr_year, curr_month + 1, 1) - date(curr_year, curr_month, 1)).days):
+            elif(curr_month < 12 and curr_day == (date(curr_year, curr_month + 1, 1) - date(curr_year, curr_month, 1)).days):
                   curr_day = 1
                   curr_month = curr_month + 1
             else:
                   curr_day = curr_day + 1
             
-
       
       return pd.DataFrame(load_profile)
 
