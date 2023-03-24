@@ -1,9 +1,8 @@
 import copy
-import pandas as pd
 from typing import Dict
 from datetime import date
+import pandas as pd
 from ..load.load import Device
-import time
 
 '''
 Per day

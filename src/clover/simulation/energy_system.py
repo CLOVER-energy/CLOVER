@@ -26,9 +26,9 @@ from typing import Dict, List, Optional, Tuple, Union
 
 import numpy as np  # pylint: disable=import-error
 import pandas as pd  # pylint: disable=import-error
-from ..load.load import Device
-
 from tqdm import tqdm
+
+from ..load.load import Device
 
 from ..__utils__ import (
     AuxiliaryHeaterType,

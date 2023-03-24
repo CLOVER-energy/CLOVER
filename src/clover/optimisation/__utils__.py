@@ -26,10 +26,10 @@ from typing import Any, Dict, List, Optional, Pattern, Tuple, Union
 
 import json
 import re
-from ..load.load import Device
 import pandas as pd  # pylint: disable=import-error
 from tqdm import tqdm
 
+from ..load.load import Device
 from ..simulation import energy_system
 
 from ..__utils__ import (
