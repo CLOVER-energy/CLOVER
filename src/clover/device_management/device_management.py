@@ -16,7 +16,7 @@ prod_pv (nr_bag x 1) : the quantity for each bag
 
 '''
 def greedy_management(prob_devices: pd.DataFrame, cons_devices: pd.Series, prod_pv: pd.Series, nr_units_devices: list[float]) -> list[float]:
-      load = prod_pv[0].to_list()
+      load = prod_pv.to_list()
       
       while(prob_devices.max().max() > 0):
             bag_idx = prob_devices.idxmax() #which bag 
@@ -29,6 +29,8 @@ def greedy_management(prob_devices: pd.DataFrame, cons_devices: pd.Series, prod_
                   else:
                         nr_units_devices[device_idx] = nr_units_devices[device_idx] - 1
                         load[bag_idx] = load[bag_idx] - cons_devices[device_idx]
+                  if(nr_units_devices[device_idx] == 0):
+                        prob_devices[device_idx] = 0
                   
             prob_devices[device_idx][bag_idx] = 0
 
@@ -94,7 +96,7 @@ the list of probabilities.
 def update_prob(devices: list[int], prob_devices: pd.DataFrame, nr_units_devices: list[int]) -> None:
       for device in devices:
             nr_units_devices[device] = nr_units_devices[device] - 1
-            if(nr_units_devices[device] == 0):
+            if(nr_units_devices[device] <= 0):
                   prob_devices[device] = 0
 
 '''
@@ -102,7 +104,7 @@ Per day
 We use a greedy algorithm : we compute first knapsack problem for all the bags, and we take the bag with the highest probability, 
 then we blacklist this bag and continue until there is no bag anymore. 
 
-prob_devices (n x nr_bag) : the probability for each device for a each bag 
+prob_devices (nr_bag x n) : the probability for each device for a each bag 
 cons_devices (n x 1) : the consumption for each device for a given bag, n is the number of devices, it is constant (not dependent of the bag)
 prod_pv (nr_bag x 1) : the quantity for each bag 
 
@@ -116,13 +118,12 @@ def knapsack2d_for_given_unit(prob_devices: pd.DataFrame, cons_devices: pd.Serie
       prob_devices_original = copy.copy(prob_devices)
       prod_pv_original = copy.copy(prod_pv)
       nr_units_devices_original = copy.copy(nr_units_devices)
-      return greedy_management(prob_devices_original, cons_devices, prod_pv_original, nr_units_devices_original)
-      prod_pv.astype(int)
+
+      prod_pv = prod_pv.astype(int)
 
       nr_bag = prod_pv.size
       black_list_bag = [] 
       load = [0 for i in range(nr_bag)]
-      rest = [0 for i in range(nr_bag)] 
 
       for bag in range(nr_bag):
             curr = []
@@ -135,9 +136,8 @@ def knapsack2d_for_given_unit(prob_devices: pd.DataFrame, cons_devices: pd.Serie
             devices = max_bag[0][2]
             load_used = max_bag[0][1]
             update_prob(devices, prob_devices, nr_units_devices)
-            rest[idx] = prod_pv[idx] - load_used
+            load[idx] = prod_pv.iloc[idx] - load_used
             black_list_bag.append(idx)
-            load[idx] = load_used
 
       
       if(prob_devices.max().max() > 0):
@@ -162,7 +162,6 @@ def device_management(start_year: int, device_utilisations: Dict[Device, pd.Data
 
       '''
 
-      print("loading")
       load_profile = []
       nr_month = device_utilisations[list(device_utilisations.keys())[0]].iloc[0].size 
       nr_bags = device_utilisations[list(device_utilisations.keys())[0]][0].size 
@@ -171,7 +170,7 @@ def device_management(start_year: int, device_utilisations: Dict[Device, pd.Data
       nr_units_devices_all_months = [[] for j in range(nr_month)]
       
       for cons_device, matrix in device_utilisations.items(): 
-            cons_devices.append(cons_device.electric_power)
+            cons_devices.append(cons_device.electric_power) #Device power consumption in Watts
 
             for j in range(nr_month):
                   nr_units_devices_all_months[j].append(matrix[j].sum())
@@ -184,14 +183,14 @@ def device_management(start_year: int, device_utilisations: Dict[Device, pd.Data
       curr_day = 1
 
       for i in range(0, renewables_energy.size, nr_bags):
+
             load_profile = load_profile + (knapsack2d_for_given_unit(pd.DataFrame(prob_devices_all_months[curr_month-1]),
                                                           cons_devices,
-                                                          renewables_energy[i:i+nr_bags],
+                                                          3600*renewables_energy[i:i+nr_bags][0],
                                                           copy.copy(nr_units_devices_all_months[curr_month-1])))
             
-
+            
             if(curr_month == 12 and curr_day == (date(curr_year + 1, 1, 1) - date(curr_year, 12, 1)).days):
-                  
                   curr_year = curr_year + 1
                   curr_month = 1
                   curr_day = 1
@@ -204,3 +203,8 @@ def device_management(start_year: int, device_utilisations: Dict[Device, pd.Data
       
       return pd.DataFrame(load_profile)
 
+'''
+just wanna be sure :
+-cons_device.electric_power is in kws?
+-renewables_energy is in kwh?
+'''
