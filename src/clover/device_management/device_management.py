@@ -1,8 +1,32 @@
 import copy
 import pandas as pd
-from .. import load
 from typing import Dict
 from datetime import date
+
+'''
+Per day
+We use a greedy algorithm : we compute first knapsack problem for all the bags, and we take the bag with the highest probability, 
+then we blacklist this bag and continue until there is no bag anymore. 
+
+prob_devices (n x nr_bag) : the probability for each device for a each bag 
+cons_devices (n x 1) : the consumption for each device for a given bag, n is the number of devices, it is constant (not dependent of the bag)
+prod_pv (nr_bag x 1) : the quantity for each bag 
+'''
+def greedy_management(prob_devices: pd.DataFrame, cons_devices: pd.Series, prod_pv: pd.Series, nr_units_devices):
+      nr_bag = prod_pv.size
+      load = [0 for i in range(nr_bag)]
+      while(prob_devices.max().max() == 0):
+            bag_idx = prob_devices.idxmax() #which bag 
+            device_idx = prob_devices.max().idxmax() #which device
+            if(nr_units_devices[device_idx] > 0):
+                  nr_units_devices[device_idx] = nr_units_devices[device_idx] - 1
+                  load[bag_idx] = load[bag_idx] + cons_devices[bag_idx]
+                  
+            prob_devices[device_idx][bag_idx] = 0
+
+      return load
+                  
+
 
 '''
 Per Bag
@@ -37,8 +61,8 @@ def knapsack1d_for_given_unit(prob_devices: pd.Series, cons_devices: pd.Series, 
       for i in range(1, n):
             for c in range(prod_pv):
                   if(c >= cons_devices_copy[i] and prob_devices_copy[i] > 0):
-                        if(T[i-1][c-cons_devices_copy[i]] + prob_devices_copy[i] >= T[i-1][c]):
-                              T[i][c] = T[i][c-cons_devices_copy[i]] + prob_devices_copy[i]
+                        if(T[i-1][c-cons_devices_copy[i]] + prob_devices_copy[i]*cons_devices_copy[i] >= T[i-1][c]):
+                              T[i][c] = T[i][c-cons_devices_copy[i]] + prob_devices_copy[i]*cons_devices_copy[i]
                               l[i][c] = copy.copy(l[i-1][c-cons_devices_copy[i]])
                               r[i][c] = r[i-1][c-cons_devices_copy[i]] + cons_devices_copy[i]
                               l[i][c].append(i - 1)
@@ -63,7 +87,7 @@ def update_prob(devices, prob_devices: pd.DataFrame, nr_units_devices):
       for device in devices:
             nr_units_devices[device] = nr_units_devices[device] - 1
             if(nr_units_devices[device] == 0):
-                  prob_devices.iloc[device] = 0
+                  prob_devices[device] = 0
 
 '''
 Per day
@@ -89,7 +113,7 @@ def knapsack2d_for_given_unit(prob_devices: pd.DataFrame, cons_devices: pd.Serie
             curr = []
             for i in range(nr_bag):
                   if(i not in black_list_bag):
-                        curr.append((knapsack1d_for_given_unit(prob_devices[i], cons_devices, prod_pv[i]), i))
+                        curr.append((knapsack1d_for_given_unit(prob_devices.iloc[i], cons_devices, prod_pv[i]), i))
                         
             max_bag = max(curr)
             idx = max_bag[1]
@@ -100,23 +124,14 @@ def knapsack2d_for_given_unit(prob_devices: pd.DataFrame, cons_devices: pd.Serie
             black_list_bag.append(idx)
             load[idx] = load_used
 
-      #todo : partial_pv
-
       
-      ratios = (prob_devices.transpose()/cons_devices)
-      ratios = ratios.transpose()*pd.Series(rest)
-      last_ratio = ratios.max().max()
-      while(last_ratio > 0):
-            idx_0 = ratios.idxmax()
-            idx_1 = ratios.max().idxmax()
-            ratios[idx_1][idx_0] = 0
-            load[idx_1] = load[idx_1] + cons_devices[idx_0]
-            last_ratio = ratios.max().max()
+      if(prob_devices.max().max() > 0):
+            return greedy_management(prob_devices, cons_devices, prod_pv, nr_units_devices)
       
       return load
 
 
-def device_management(start_year, device_utilisations: Dict[load.load.Device, pd.DataFrame], renewables_energy: pd.DataFrame) -> pd.DataFrame:
+def device_management(start_year, device_utilisations: Dict[float, pd.DataFrame], renewables_energy: pd.DataFrame) -> pd.DataFrame:
       '''
       device input : CLOVER/locations/Bahraich/inputs/load/device_utilisation/fridge_times.csv
 
@@ -138,8 +153,8 @@ def device_management(start_year, device_utilisations: Dict[load.load.Device, pd
       cons_devices = []
       nr_units_devices_all_months = [[] for j in range(nr_month)]
       
-      for device, matrix in device_utilisations.items():
-            cons_devices.append(device.electric_power)
+      for cons_device, matrix in device_utilisations.items():
+            cons_devices.append(cons_device)
 
             for j in range(nr_month):
                   nr_units_devices_all_months.append(matrix[j].sum())
@@ -172,7 +187,3 @@ def device_management(start_year, device_utilisations: Dict[load.load.Device, pd
       
       return pd.DataFrame(load_profile)
 
-
-      
-          
-      

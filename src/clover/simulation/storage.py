@@ -19,7 +19,6 @@ calculations associated with these storage media are carried out in this module.
 from logging import Logger
 from typing import Dict, Optional, Tuple
 
-from .. import load
 import pandas as pd
 import numpy as np
 
@@ -367,7 +366,7 @@ def cw_tank_iteration_step(  # pylint: disable=too-many-locals
 def get_electric_battery_storage_profile(  # pylint: disable=too-many-locals, too-many-statements
     *,
     start_year,
-    device_utilisations: Dict[load.load.Device, pd.DataFrame],
+    device_utilisations: Dict[float, pd.DataFrame],
     grid_profile: pd.Series,
     kerosene_usage: pd.Series,
     location: Location,
