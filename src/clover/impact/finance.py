@@ -290,7 +290,7 @@ def _inverter_expenditure(  # pylint: disable=too-many-locals
     # Initialise inverter replacement periods
     replacement_period = finance_inputs[ImpactingComponent.INVERTER.value][LIFETIME]
     replacement_intervals = pd.DataFrame(
-        np.arange(0, location.max_years, replacement_period)
+        np.arange(start_year, end_year, replacement_period)
     )
     replacement_intervals.columns = pd.Index([ColumnHeader.INSTALLATION_YEAR.value])
 
