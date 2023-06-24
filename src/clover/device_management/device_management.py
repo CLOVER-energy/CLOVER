@@ -3,7 +3,7 @@ from typing import Dict
 from datetime import date
 import pandas as pd
 from ..load.load import Device
-
+import time
 '''
 Per day
 We use a greedy algorithm : we compute first knapsack problem for all the bags, and we take the bag with the highest probability, 
@@ -15,6 +15,7 @@ prod_pv (nr_bag x 1) : the quantity for each bag
 
 '''
 def greedy_management(prob_devices: pd.DataFrame, cons_devices: pd.Series, prod_pv: pd.Series, nr_units_devices: list[float]) -> list[float]:
+      start_greedy = time.time()
       load = prod_pv.to_list()
       
       while(prob_devices.max().max() > 0):
@@ -32,7 +33,8 @@ def greedy_management(prob_devices: pd.DataFrame, cons_devices: pd.Series, prod_
                         prob_devices[device_idx] = 0
                   
             prob_devices[device_idx][bag_idx] = 0
-
+      end_greedy = time.time()
+      #print("greedy time: ", end_greedy - start_greedy)
       return load
                   
 
@@ -160,6 +162,7 @@ def device_management(start_year: int, device_utilisations: Dict[Device, pd.Data
       return load profile in a form of a dataframe (of one column)
 
       '''
+      start_func_time = time.time()
 
       load_profile = []
       nr_month = device_utilisations[list(device_utilisations.keys())[0]].iloc[0].size 
@@ -180,15 +183,15 @@ def device_management(start_year: int, device_utilisations: Dict[Device, pd.Data
       curr_year = start_year
       curr_month = 1
       curr_day = 1
-
+      
       for i in range(0, renewables_energy.size, nr_bags):
-
+            before_call = time.time()
             load_profile = load_profile + (knapsack2d_for_given_unit(pd.DataFrame(prob_devices_all_months[curr_month-1]),
                                                           cons_devices,
-                                                          3600*renewables_energy[i:i+nr_bags][0],
+                                                          3600000*renewables_energy[i:i+nr_bags][0],
                                                           copy.copy(nr_units_devices_all_months[curr_month-1])))
-            
-            
+            after_call = time.time()
+            print("call time : ", after_call - before_call)
             if(curr_month == 12 and curr_day == (date(curr_year + 1, 1, 1) - date(curr_year, 12, 1)).days):
                   curr_year = curr_year + 1
                   curr_month = 1
@@ -198,12 +201,16 @@ def device_management(start_year: int, device_utilisations: Dict[Device, pd.Data
                   curr_month = curr_month + 1
             else:
                   curr_day = curr_day + 1
-            
       
-      return pd.DataFrame(load_profile)
+      end_func_time = time.time()
+      print("function time : ", end_func_time - start_func_time)
+      return pd.DataFrame(load_profile)/3600000
 
 '''
-just wanna be sure :
--cons_device.electric_power is in kws?
--renewables_energy is in kwh?
+-cons_device.electric_power is in ws => J
+-renewables_energy is in kwh
+-load is in kwh
+
+call greedy function : 54.87266802787781 seconds for one year
+call knapsack :  365 * nr_years * 3600 * 6.049499750137329 seconds = 92 days of computation for one year
 '''
