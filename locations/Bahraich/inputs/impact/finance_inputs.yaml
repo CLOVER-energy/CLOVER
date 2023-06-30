@@ -1,0 +1,37 @@
+---
+################################################################################
+# finance_inputs.yaml - Finance input information.                             #
+#                                                                              #
+# Author: Phil Sandwell, Ben Winchester                                        #
+# Copyright: Phil Sandwell & Ben Winchester, 2021                              #
+# Date created: 14/07/2021                                                     #
+# License: Open source                                                         #
+################################################################################
+
+# NOTE: Missing finance input data values default to 0.
+#
+
+discount_rate: 0.1 # Fraction between 0 and 1.
+general_o&m: 500 # [$ p.a.]
+misc:
+  capacity_cost: 0  # [$/kWp]
+  fixed_cost: 0  # [$]
+bos:
+  cost: 200 # [$/kW]
+  cost_decrease: 2 # [% p.a.]
+diesel_fuel:
+  cost: 0.9 # [$/litre]
+  cost_decrease: -1 # [% p.a.]
+grid:
+  cost: 0.01 # [$/kWh]
+  extension cost: 5000 # [$/km]
+  infrastructure_cost: 2000 # [$]
+households:
+  connection_cost: 100 # [$/household]
+inverter:
+  cost: 200 # [$/kW]
+  cost_decrease: 2 # [% p.a.]
+  lifetime: 4 # [years]
+  size_increment: 1 # [kW]
+kerosene:
+  cost: 0.008 # [$/hour]

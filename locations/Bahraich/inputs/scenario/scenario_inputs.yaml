@@ -1,0 +1,29 @@
+---
+################################################################################
+# scenario_inputs.yaml - Parameters for specifying a scenario.                 #
+#                                                                              #
+# Author: Phil Sandwell, Ben Winchester                                        #
+# Copyright: Phil Sandwell & Ben Winchester, 2021                              #
+# Date created: 14/07/2021                                                     #
+# License: Open source                                                         #
+################################################################################
+
+scenarios:
+  - name: default
+    pv: true # "true" or "false"
+    battery: true # "true" or "false"
+    diesel:
+      mode: backup # "backup" or "disabled" currently supported
+      backup:
+        threshold: 0.1 # Maximum acceptible blackouts (0.0-1.0)
+    # fixed_inverter_size: false # [kW] A fixed inverter size in kW if specified
+    grid: true # "true" or "false"
+    grid_type: bahraich # The grid profile to use
+    prioritise_self_generation: true # "true" or "false"
+    demands:
+      domestic: true # "true" or "false"
+      commercial: true # "true" or "false"
+      public: true # "true" or "false"
+    distribution_network: dc # DC ("dc") or AC ("ac") distribution network
+    resource_types:
+      - electric_power
