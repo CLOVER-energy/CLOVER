@@ -2434,20 +2434,6 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
         )
     logger.info("Grid times successfully parsed.")
 
-<<<<<<< HEAD
-    grid_attributes_filepath = os.path.join(
-        inputs_directory_relative_path,
-        GRID_ATTRIBUTES_FILE,
-    )
-    with open(
-        grid_attributes_filepath,
-        "r",
-    ) as grid_attributes_file:
-        grid_attributes: pd.DataFrame = pd.read_csv(
-            grid_attributes_file,
-            index_col=0,
-        )
-=======
     for grid_profile_name in grid_times.columns:
         grid_attributes_filepath = os.path.join(
             inputs_directory_relative_path,
@@ -2461,7 +2447,7 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
                 grid_attributes_file,
                 index_col=0,
             )
->>>>>>> grid-time-of-use
+
     logger.info("Grid attributes successfully parsed.")
 
     if any(scenario.desalination_scenario is not None for scenario in scenarios):
