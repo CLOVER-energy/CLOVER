@@ -35,6 +35,7 @@ __all__ = ("get_intermittent_supply_status",)
 def get_intermittent_supply_status(  # pylint: disable=too-many-locals
     disable_tqdm: bool,
     generation_directory: str,
+    grid_attributes,
     keyword: str,
     logger: Logger,
     max_years: int,
@@ -105,13 +106,10 @@ def get_intermittent_supply_status(  # pylint: disable=too-many-locals
                     status.append(0)
         times = pd.DataFrame(status)
 
-        times1 = times % 24
+        timesdaily = times % 24
 
-        excel_file = 'C:/Users/Harry/Documents/Clover/CLOVER-master/locations/Nairobi/inputs/generation/grid_attributes.csv'
-        excel_data = pd.read_csv(excel_file)
-
-        zero_indices = times1.index[times1.iloc[:, 0] == 0]
-        n_values = excel_data.iloc[times1.iloc[zero_indices, 0], 1]
+        zero_indices = timesdaily.index[timesdaily.iloc[:, 0] == 0]
+        n_values = grid_attributes.iloc[timesdaily.iloc[zero_indices, 0], 1]
 
         print(zero_indices)
         print(n_values)

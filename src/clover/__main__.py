@@ -817,6 +817,7 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
             grid.get_lifetime_grid_status(
                 disable_tqdm,
                 os.path.join(auto_generated_files_directory, "grid"),
+                grid_attributes,
                 grid_times,
                 logger,
                 location.max_years,
