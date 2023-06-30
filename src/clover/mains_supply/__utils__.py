@@ -104,6 +104,23 @@ def get_intermittent_supply_status(  # pylint: disable=too-many-locals
                 else:
                     status.append(0)
         times = pd.DataFrame(status)
+
+        times1 = times % 24
+
+        excel_file = 'C:/Users/Harry/Documents/Clover/CLOVER-master/locations/Nairobi/inputs/generation/grid_attributes.csv'
+        excel_data = pd.read_csv(excel_file)
+
+        zero_indices = times1.index[times1.iloc[:, 0] == 0]
+        n_values = excel_data.iloc[times1.iloc[zero_indices, 0], 1]
+
+        print(zero_indices)
+        print(n_values)
+
+# Append additional rows with a value of 0 to df1
+
+        for i, n in zip(zero_indices, n_values):
+            times.iloc[i + 1: i + n + 1, 0] = 0
+
         profiles[name] = times
         logger.info(
             "Availability profile for %s::%s successfully generated.", keyword, name

@@ -984,6 +984,42 @@ def discounted_equipment_cost(
     return undiscounted_cost * discount_fraction
 
 
+def grid_expenditure(
+    finance_inputs: Dict[str, Any],
+    hourly_usage: pd.Series,
+    grid_attributes: pd.DataFrame,
+    logger: Logger,
+    *,
+    start_year: int = 0,
+    end_year: int = 20,
+    )-> float:
+
+    dailytime =[]
+    for i in range(len(hourly_usage)):
+            hour = i % 24
+            dailytime.append((hour, hourly_usage[i]))
+
+    grid_hourly_cost = []
+    for row in dailytime:
+        hour = row[0]
+        usage = row[1]
+        cost = usage * grid_attributes.loc[hour, 'price']
+        grid_hourly_cost.append(cost)
+
+    grid_hourly_cost = pd.Series(grid_hourly_cost)
+
+    grid_daily_cost = hourly_profile_to_daily_sum(grid_hourly_cost)
+    
+    grid_discounted_cost = discounted_energy_total(
+        finance_inputs,
+        logger,
+        grid_daily_cost,
+        start_year=start_year,
+        end_year=end_year,
+    )
+    return grid_discounted_cost
+
+
 def expenditure(
     component: ImpactingComponent,
     finance_inputs: Dict[str, Any],
@@ -1013,6 +1049,7 @@ def expenditure(
 
     """
 
+
     hourly_cost = hourly_usage * finance_inputs[component.value][COST]
     total_daily_cost = hourly_profile_to_daily_sum(hourly_cost)
     total_discounted_cost = discounted_energy_total(
@@ -1023,6 +1060,8 @@ def expenditure(
         end_year=end_year,
     )
     return total_discounted_cost
+
+
 
 
 def independent_expenditure(
