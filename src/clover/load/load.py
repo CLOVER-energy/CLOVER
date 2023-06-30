@@ -809,12 +809,12 @@ def process_device_hourly_usage(
 
         logger.info("Hourly usage profile for %s successfully calculated.", device.name)
 
-        hourly_device_usage.to_csv('C:/Users/Harry/Documents/MATLAB/Arrivals.csv', index = False)
+        # hourly_device_usage.to_csv('C:/Users/Harry/Documents/MATLAB/Arrivals.csv', index = False)
 
         new_df = pd.DataFrame(index = hourly_device_usage.index, columns = hourly_device_usage.columns)
         n = device.load_time
 
-        for i in range(len(hourly_device_usage)):
+        for i in tqdm(range(len(hourly_device_usage))):
             
             if i < int(n):
                 new_df.iloc[i, 0] = hourly_device_usage.iloc[:i+1, 0].sum()
@@ -829,7 +829,12 @@ def process_device_hourly_usage(
                     upper = lower + 1
                     fraction = i - n - lower +1
                     new_df.iloc[i,0] = hourly_device_usage.iloc[lower ,0] * (1-fraction) + hourly_device_usage.iloc[upper:i +1,0].sum()
-           
+
+
+        import pdb
+
+        pdb.set_trace()
+
         hourly_device_usage = new_df
         hourly_device_usage = hourly_device_usage.apply(pd.to_numeric, errors='coerce')
         
