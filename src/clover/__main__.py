@@ -566,6 +566,7 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
             generation_inputs,
             ghg_inputs,
             grid_times,
+            grid_attributes,
             location,
             optimisation_inputs,
             optimisations,
@@ -816,6 +817,7 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
             grid.get_lifetime_grid_status(
                 disable_tqdm,
                 os.path.join(auto_generated_files_directory, "grid"),
+                grid_attributes,
                 grid_times,
                 logger,
                 location.max_years,
@@ -1082,6 +1084,7 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
                     electric_yearly_load_statistics,
                     simulation.end_year,
                     finance_inputs,
+                    grid_attributes,
                     ghg_inputs,
                     location,
                     logger,

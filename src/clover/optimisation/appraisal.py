@@ -253,6 +253,7 @@ def _simulation_financial_appraisal(  # pylint: disable=too-many-locals
     converter_addition: Dict[str, int],
     diesel_addition: float,
     finance_inputs: Dict[str, Any],
+    grid_attributes: pd.Series,
     heat_exchanger_addition: int,
     hot_water_tank_addition: int,
     location: Location,
@@ -280,6 +281,8 @@ def _simulation_financial_appraisal(  # pylint: disable=too-many-locals
             The additional diesel capacity added this iteration.
         - finance_inputs:
             The finance input information.
+        - grid_atrributes:
+            Features of the grid system.
         - heat_exchanger_addition:
             The additional number of heat exchangers added this iteration.
         - hot_water_tank_addition:
@@ -377,14 +380,15 @@ def _simulation_financial_appraisal(  # pylint: disable=too-many-locals
         start_year=system_details.start_year,
         end_year=system_details.end_year,
     )
-    grid_costs = finance.expenditure(
-        ImpactingComponent.GRID,
+    grid_costs = finance.grid_expenditure(
         finance_inputs,
         simulation_results[ColumnHeader.GRID_ENERGY.value],
+        grid_attributes,
         logger,
         start_year=system_details.start_year,
         end_year=system_details.end_year,
     )
+
     kerosene_costs = finance.expenditure(
         ImpactingComponent.KEROSENE,
         finance_inputs,
@@ -574,6 +578,7 @@ def appraise_system(  # pylint: disable=too-many-locals
     electric_yearly_load_statistics: pd.DataFrame,
     end_year: int,
     finance_inputs: Dict[str, Any],
+    grid_attributes,
     ghg_inputs: Dict[str, Any],
     location: Location,
     logger: Logger,
@@ -699,6 +704,7 @@ def appraise_system(  # pylint: disable=too-many-locals
         converter_addition,
         diesel_addition,
         finance_inputs,
+        grid_attributes,
         heat_exchanger_addition,
         hot_water_tank_addition,
         location,

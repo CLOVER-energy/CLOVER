@@ -35,6 +35,7 @@ __all__ = ("get_intermittent_supply_status",)
 def get_intermittent_supply_status(  # pylint: disable=too-many-locals
     disable_tqdm: bool,
     generation_directory: str,
+    grid_attributes,
     keyword: str,
     logger: Logger,
     max_years: int,
@@ -104,6 +105,20 @@ def get_intermittent_supply_status(  # pylint: disable=too-many-locals
                 else:
                     status.append(0)
         times = pd.DataFrame(status)
+
+        timesdaily = times % 24
+
+        zero_indices = timesdaily.index[timesdaily.iloc[:, 0] == 0]
+        n_values = grid_attributes.iloc[timesdaily.iloc[zero_indices, 0], 1]
+
+        print(zero_indices)
+        print(n_values)
+
+# Append additional rows with a value of 0 to df1
+
+        for i, n in zip(zero_indices, n_values):
+            times.iloc[i + 1: i + n + 1, 0] = 0
+
         profiles[name] = times
         logger.info(
             "Availability profile for %s::%s successfully generated.", keyword, name

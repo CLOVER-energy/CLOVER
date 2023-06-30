@@ -93,6 +93,10 @@ INNOVATION: str = "innovation"
 #   Keyword used for parsing the imitation of a device.
 IMITATION: str = "imitation"
 
+#Load_time
+#   Keyword for parsing the device load time.
+LOAD_TIME: str = "load_time"
+
 # Load logger name:
 #   The name to use for the load module logger.
 LOAD_LOGGER_NAME: str = "load"
@@ -135,6 +139,9 @@ class Device:
         The rate of imitation for the device: the rate at which households copy others
         and acquire the device.
 
+    .. attribute:: load_time
+        The amount of time the device remains on once activated.
+
     .. attribute:: name
         The name of the device.
 
@@ -143,6 +150,7 @@ class Device:
 
     .. attribute:: hot_water_usage
         The hot-water usage of the device, measured in litres per hour.
+
 
     """
 
@@ -153,6 +161,7 @@ class Device:
     initial_ownership: float
     innovation: float
     imitation: float
+    load_time: float
     name: str
     clean_water_usage: Optional[float]
     hot_water_usage: Optional[float]
@@ -186,6 +195,7 @@ class Device:
             + f"initial_ownership={self.initial_ownership}, "
             + f"innovation={self.innovation}, "
             + f"imitation={self.imitation}, "
+            + f"load_time = {self.load_time} hours,"
             + f"clean_water_usage={self.clean_water_usage} litres/hour, "
             + f"hot_water_usage={self.hot_water_usage} litres/hour"
             + ")"
@@ -225,6 +235,7 @@ class Device:
             device_input[INITIAL_OWNERSHIP],
             device_input[INNOVATION],
             device_input[IMITATION],
+            device_input[LOAD_TIME],
             device_input[DEVICE],
             device_input[CLEAN_WATER_USAGE]
             if CLEAN_WATER_USAGE in device_input
@@ -237,7 +248,7 @@ class Device:
 #   The default kerosene device to use in the event that no kerosene information is
 #   provided.
 DEFAULT_KEROSENE_DEVICE = Device(
-    False, DemandType.DOMESTIC, 1, 0, 0, 0, 0, KEROSENE_DEVICE_NAME, 0, 0
+    False, DemandType.DOMESTIC, 1, 0, 0, 0, 0, KEROSENE_DEVICE_NAME, 0, 0, 0
 )
 
 
@@ -798,6 +809,31 @@ def process_device_hourly_usage(
 
         logger.info("Hourly usage profile for %s successfully calculated.", device.name)
 
+        hourly_device_usage.to_csv('C:/Users/Harry/Documents/MATLAB/Arrivals.csv', index = False)
+
+        new_df = pd.DataFrame(index = hourly_device_usage.index, columns = hourly_device_usage.columns)
+        n = device.load_time
+
+        for i in range(len(hourly_device_usage)):
+            
+            if i < int(n):
+                new_df.iloc[i, 0] = hourly_device_usage.iloc[:i+1, 0].sum()
+
+            else:
+            
+                if isinstance(n, int):
+                    new_df.iloc[i,0] = hourly_device_usage.iloc[i-n+1:i+1,0].sum()
+        
+                else:
+                    lower = int(i - n +1)
+                    upper = lower + 1
+                    fraction = i - n - lower +1
+                    new_df.iloc[i,0] = hourly_device_usage.iloc[lower ,0] * (1-fraction) + hourly_device_usage.iloc[upper:i +1,0].sum()
+           
+        hourly_device_usage = new_df
+        hourly_device_usage = hourly_device_usage.apply(pd.to_numeric, errors='coerce')
+        
+
         # Save the hourly-usage profile.
         logger.info("Saving hourly usage profile for %s.", device.name)
 
@@ -814,6 +850,8 @@ def process_device_hourly_usage(
             device.name,
             filename,
         )
+
+
 
     return hourly_device_usage
 

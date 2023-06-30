@@ -181,6 +181,10 @@ GHG_INPUTS_FILE: str = os.path.join("impact", "ghg_inputs.yaml")
 #   The relative path to the grid-inputs file.
 GRID_TIMES_FILE: str = os.path.join("generation", "grid_times.csv")
 
+#Grid Attributes file
+# The relative file bath to the grid-attributes file
+GRID_ATTRIBUTES_FILE: str = os.path.join("generation", "grid_attributes.csv")
+
 # Hot-water scenarios:
 #   Keyword used for parsing hot-water scenarios.
 HOT_WATER_SCENARIOS: str = "hot_water_scenarios"
@@ -2206,6 +2210,7 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
             - finance_inputs,
             - ghg_inputs,
             - grid_times,
+            -grid_attributes,
             - optimisation_inputs,
             - optimisations, the `set` of optimisations to run,
             - scenarios,
@@ -2428,6 +2433,20 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
             index_col=0,
         )
     logger.info("Grid times successfully parsed.")
+
+    grid_attributes_filepath = os.path.join(
+        inputs_directory_relative_path,
+        GRID_ATTRIBUTES_FILE,
+    )
+    with open(
+        grid_attributes_filepath,
+        "r",
+    ) as grid_attributes_file:
+        grid_attributes: pd.DataFrame = pd.read_csv(
+            grid_attributes_file,
+            index_col=0,
+        )
+    logger.info("Grid attributes successfully parsed.")
 
     if any(scenario.desalination_scenario is not None for scenario in scenarios):
         # Parse the water-source inputs file.
@@ -2777,6 +2796,7 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
         "generation_inputs": generation_inputs_filepath,
         "ghg_inputs": ghg_inputs_filepath,
         "grid_times": grid_times_filepath,
+        "grid_attributes": grid_attributes_filepath,
         "location_inputs": location_inputs_filepath,
         "optimisation_inputs": optimisation_inputs_filepath,
         "scenarios": scenario_inputs_filepath,
@@ -2840,6 +2860,7 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
         generation_inputs,
         ghg_inputs,
         grid_times,
+        grid_attributes,
         location,
         optimisation_parameters,
         optimisations,
