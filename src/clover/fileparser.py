@@ -183,7 +183,7 @@ GRID_TIMES_FILE: str = os.path.join("generation", "grid_times.csv")
 
 #Grid Attributes file
 # The relative file bath to the grid-attributes file
-GRID_ATTRIBUTES_FILE: str = os.path.join("generation", "grid_attributes.csv")
+GRID_ATTRIBUTES_FILE: str = os.path.join("generation", "{grid_name}_grid_attributes.csv")
 
 # Hot-water scenarios:
 #   Keyword used for parsing hot-water scenarios.
@@ -2434,18 +2434,19 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
         )
     logger.info("Grid times successfully parsed.")
 
-    grid_attributes_filepath = os.path.join(
-        inputs_directory_relative_path,
-        GRID_ATTRIBUTES_FILE,
-    )
-    with open(
-        grid_attributes_filepath,
-        "r",
-    ) as grid_attributes_file:
-        grid_attributes: pd.DataFrame = pd.read_csv(
-            grid_attributes_file,
-            index_col=0,
+    for grid_profile_name in grid_times.columns:
+        grid_attributes_filepath = os.path.join(
+            inputs_directory_relative_path,
+            GRID_ATTRIBUTES_FILE.format(grid_name=grid_profile_name),
         )
+        with open(
+            grid_attributes_filepath,
+            "r",
+        ) as grid_attributes_file:
+            grid_attributes: pd.DataFrame = pd.read_csv(
+                grid_attributes_file,
+                index_col=0,
+            )
     logger.info("Grid attributes successfully parsed.")
 
     if any(scenario.desalination_scenario is not None for scenario in scenarios):
