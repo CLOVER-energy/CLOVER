@@ -7,3 +7,10 @@
 # Date created: 05/07/2021
 # License: Open source
 ########################################################################################
+
+from .conversion import (
+    Converter,
+    MultiInputConverter,
+    ThermalDesalinationPlant,
+    WaterSource,
+)
