@@ -444,11 +444,6 @@ class BaseRenewablesNinjaThread(threading.Thread):
             self.profile_name,
         )
 
-        # To avoid a high burst of calls, a random sleep up to the sleep time is made.
-        time.sleep(
-            random.randint(0, RENEWABLES_NINJA_SLEEP_TIME * self.sleep_multiplier)
-        )
-
         # A counter is used to keep track of calls to renewables.ninja to prevent
         # overloading.
         try:
@@ -472,6 +467,10 @@ class BaseRenewablesNinjaThread(threading.Thread):
                         "Data file for year %s already exists, skipping.", year
                     )
                     continue
+
+                # To avoid a high burst of calls, a random sleep up to the sleep time is made.
+                if year == self.generation_inputs["start_year"]:
+                    time.sleep(random.randint(0, self.sleep_multiplier * 10) / 10)
 
                 self.logger.info(
                     "Fetching %s data for year %s.",
