@@ -1257,6 +1257,7 @@ def _parse_solar_inputs(  # pylint: disable=too-many-locals, too-many-statements
     Optional[Dict[str, float]],
     Optional[Dict[str, float]],
     str,
+    List[solar.SolarPanel],
 ]:
     """
     Parses the solar inputs file.
@@ -1282,7 +1283,8 @@ def _parse_solar_inputs(  # pylint: disable=too-many-locals, too-many-statements
         - The :class:`HybridPVTPanel` being used for the run, if relevant;
         - The pv-t-panel cost information, if relevant;
         - The pv-t-panel emissions information, if relevant;
-        - The relative path to the solar generation inputs filepath.
+        - The relative path to the solar generation inputs filepath;
+        - The `list` of all :class:`solar.SolarPanel` instances parsed.
 
     """
 
@@ -1472,6 +1474,7 @@ def _parse_solar_inputs(  # pylint: disable=too-many-locals, too-many-statements
         pvt_panel_costs,
         pvt_panel_emissions,
         solar_generation_inputs_filepath,
+        solar_panels,
     )
 
 
@@ -1716,6 +1719,7 @@ def _parse_minigrid_inputs(  # pylint: disable=too-many-locals, too-many-stateme
     Optional[Dict[str, float]],
     Optional[Dict[str, float]],
     str,
+    List[solar.SolarPanel],
     Optional[str],
     Dict[str, Dict[str, float]],
     Dict[str, Dict[str, float]],
@@ -1760,6 +1764,7 @@ def _parse_minigrid_inputs(  # pylint: disable=too-many-locals, too-many-stateme
         - PV-T costs,
         - PV-T emissions,
         - Solar inputs filepath,
+        - Solar panels,
         - Tank inputs filepath,
         - Transmission costs,
         - Transmission emissions,
@@ -1821,6 +1826,7 @@ def _parse_minigrid_inputs(  # pylint: disable=too-many-locals, too-many-stateme
         pvt_panel_costs,
         pvt_panel_emissions,
         solar_generation_inputs_filepath,
+        solar_panels,
     ) = _parse_solar_inputs(
         debug,
         energy_system_inputs,
@@ -2024,6 +2030,7 @@ def _parse_minigrid_inputs(  # pylint: disable=too-many-locals, too-many-stateme
         pvt_panel_costs,
         pvt_panel_emissions,
         solar_generation_inputs_filepath,
+        solar_panels,
         tank_inputs_filepath,
         transmission_costs,
         transmission_emissions,
@@ -2175,6 +2182,7 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
     List[Optimisation],
     List[Scenario],
     List[Simulation],
+    List[solar.SolarPanel],
     Optional[pd.DataFrame],
     Dict[WaterSource, pd.DataFrame],
     Dict[str, str],
@@ -2387,6 +2395,7 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
         pvt_panel_costs,
         pvt_panel_emissions,
         solar_generation_inputs_filepath,
+        solar_panels,
         tank_inputs_filepath,
         transmission_costs,
         transmission_emissions,
@@ -2845,6 +2854,7 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
         optimisations,
         scenarios,
         simulations,
+        solar_panels,
         total_load_profile,
         water_source_times,
         input_file_info,

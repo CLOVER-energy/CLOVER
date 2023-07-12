@@ -571,6 +571,7 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
             optimisations,
             scenarios,
             simulations,
+            solar_panels,
             electric_load_profile,
             water_source_times,
             input_file_info,
@@ -613,8 +614,11 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
     print("Generating necessary profiles", end="\n")
 
     # Determine the number of background tasks to carry out.
+    panels_to_fetch: Set[solar.PVPanel] = {
+        panel for panel in solar_panels if isinstance(panel, solar.PVPanel)
+    }
     num_ninjas: int = (
-        1
+        len(panels_to_fetch)
         + (1 if any(scenario.pv_t for scenario in scenarios) else 0)
         + (
             1
@@ -674,17 +678,20 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
 
     # Generate and save the solar data for each year as a background task.
     logger.info("Beginning solar-data fetching.")
-    solar_data_thread = solar.SolarDataThread(
-        os.path.join(auto_generated_files_directory, "solar"),
-        generation_inputs,
-        location,
-        f"{parsed_args.location}_{solar.SOLAR_LOGGER_NAME}{run_number_string}",
-        parsed_args.refetch,
-        minigrid.pv_panel,
-        num_ninjas,
-        parsed_args.verbose,
-    )
-    solar_data_thread.start()
+    solar_data_threads: Dict[solar.PVPanel, solar.SolarDataThread] = {}
+    for pv_panel in panels_to_fetch:
+        solar_data_threads[pv_panel] = solar.SolarDataThread(
+            os.path.join(auto_generated_files_directory, "solar"),
+            generation_inputs,
+            location,
+            f"{parsed_args.location}_{solar.SOLAR_LOGGER_NAME}_"
+            f"{solar.get_profile_prefix(pv_panel)}_{run_number_string}",
+            parsed_args.refetch,
+            pv_panel,
+            num_ninjas,
+            parsed_args.verbose,
+        )
+        solar_data_threads[pv_panel].start()
     logger.info(
         "Solar-data thread successfully instantiated. See %s for details.",
         f"{os.path.join(LOGGER_DIRECTORY, solar.SOLAR_LOGGER_NAME)}.log",
@@ -848,7 +855,8 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
 
     # Wait for all threads to finish before proceeding.
     logger.info("Waiting for all setup threads to finish before proceeding.")
-    solar_data_thread.join()
+    for thread in solar_data_threads.values():
+        thread.join()
     if weather_data_thread is not None:
         weather_data_thread.join()
     if wind_data_thread is not None:
@@ -861,6 +869,7 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
         parsed_args.regenerate,
         generation_inputs["start_year"],
         location.max_years,
+        pv_panel=minigrid.pv_panel,
     )
     logger.info("Total solar output successfully computed and saved.")
 
