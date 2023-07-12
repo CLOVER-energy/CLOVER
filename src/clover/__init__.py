@@ -57,21 +57,13 @@ from .__utils__ import (
     SystemDetails,
     ZERO_CELCIUS_OFFSET,
 )
-from .analysis import get_key_results, plot_outputs
+from .analysis import *
 from .argparser import parse_args, validate_args
 from .fileparser import (
     GENERATION_INPUTS_FILE,
     INPUTS_DIRECTORY,
     KEROSENE_TIMES_FILE,
     KEROSENE_USAGE_FILE,
-    LOCATIONS_FOLDER_NAME,
-    parse_input_files,
-    parse_scenario_inputs,
-    GENERATION_INPUTS_FILE,
-    INPUTS_DIRECTORY,
-    KEROSENE_TIMES_FILE,
-    KEROSENE_USAGE_FILE,
-    LOCATIONS_FOLDER_NAME,
     parse_input_files,
     parse_scenario_inputs,
 )

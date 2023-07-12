@@ -7,8 +7,15 @@
 # Date created: 05/07/2021
 # License: Open source
 ########################################################################################
+"""
+simulation.__init__.py - Init module for the simulation component.
 
-from .__utils__ import check_scenario, determine_available_converters, Minigrid
+The `__init__` module ensures that all of the packages are correctly exposed so that
+they can be imported when CLOVER is installed as a package.
+
+"""
+
+from .__utils__ import check_scenario, determine_available_converters
 from .diesel import (
     DIESEL_CONSUMPTION,
     DieselGenerator,
