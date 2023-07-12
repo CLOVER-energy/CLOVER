@@ -106,18 +106,16 @@ def get_intermittent_supply_status(  # pylint: disable=too-many-locals
                     status.append(0)
         times = pd.DataFrame(status)
 
-        timesdaily = times % 24
+        # Identify indices where there is no power
+        zero_indices = times.index[times.iloc[:, 0] == 0]
 
-        zero_indices = timesdaily.index[timesdaily.iloc[:, 0] == 0]
-        n_values = grid_attributes.iloc[timesdaily.iloc[zero_indices, 0], 1]
+        # Extract the corresponding outage time
+        outage_time = grid_attributes.iloc[zero_indices % 24, 1]
+        outage_time.index = zero_indices
 
-        print(zero_indices)
-        print(n_values)
-
-# Append additional rows with a value of 0 to df1
-
-        for i, n in zip(zero_indices, n_values):
-            times.iloc[i + 1: i + n + 1, 0] = 0
+        # Append additional zeros to the grid availability data frame
+        for i, n in zip(zero_indices, outage_time):
+            times.iloc[i + 1 : i + n + 1, 0] = 0
 
         profiles[name] = times
         logger.info(

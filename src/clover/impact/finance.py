@@ -994,19 +994,11 @@ def grid_expenditure(
     end_year: int = 20,
     )-> float:
 
-    dailytime =[]
-    for i in range(len(hourly_usage)):
-            hour = i % 24
-            dailytime.append((hour, hourly_usage[i]))
-
-    grid_hourly_cost = []
-    for row in dailytime:
-        hour = row[0]
-        usage = row[1]
-        cost = usage * grid_attributes.loc[hour, 'price']
-        grid_hourly_cost.append(cost)
-
-    grid_hourly_cost = pd.Series(grid_hourly_cost)
+    #Calculate the grid price in each consecutive hour
+    grid_hourly_cost = pd.Series({
+    i: hourly_usage[i] * grid_attributes.loc[i % 24, 'price']
+    for i in range(len(hourly_usage))
+    })
 
     grid_daily_cost = hourly_profile_to_daily_sum(grid_hourly_cost)
     
@@ -1048,7 +1040,6 @@ def expenditure(
         Discounted cost
 
     """
-
 
     hourly_cost = hourly_usage * finance_inputs[component.value][COST]
     total_daily_cost = hourly_profile_to_daily_sum(hourly_cost)

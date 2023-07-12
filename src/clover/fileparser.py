@@ -181,7 +181,7 @@ GHG_INPUTS_FILE: str = os.path.join("impact", "ghg_inputs.yaml")
 #   The relative path to the grid-inputs file.
 GRID_TIMES_FILE: str = os.path.join("generation", "grid_times.csv")
 
-#Grid Attributes file
+# Grid Attributes file
 # The relative file bath to the grid-attributes file
 GRID_ATTRIBUTES_FILE: str = os.path.join("generation", "grid_attributes.csv")
 
@@ -2210,7 +2210,7 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
             - finance_inputs,
             - ghg_inputs,
             - grid_times,
-            -grid_attributes,
+            - grid_attributes,
             - optimisation_inputs,
             - optimisations, the `set` of optimisations to run,
             - scenarios,
@@ -2859,8 +2859,8 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
         finance_inputs,
         generation_inputs,
         ghg_inputs,
-        grid_times,
         grid_attributes,
+        grid_times,
         location,
         optimisation_parameters,
         optimisations,

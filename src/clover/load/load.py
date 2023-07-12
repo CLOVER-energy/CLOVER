@@ -93,7 +93,7 @@ INNOVATION: str = "innovation"
 #   Keyword used for parsing the imitation of a device.
 IMITATION: str = "imitation"
 
-#Load_time
+# Load_time:
 #   Keyword for parsing the device load time.
 LOAD_TIME: str = "load_time"
 
@@ -235,7 +235,7 @@ class Device:
             device_input[INITIAL_OWNERSHIP],
             device_input[INNOVATION],
             device_input[IMITATION],
-            device_input[LOAD_TIME],
+            device_input.get(LOAD_TIME, 1),
             device_input[DEVICE],
             device_input[CLEAN_WATER_USAGE]
             if CLEAN_WATER_USAGE in device_input
@@ -248,7 +248,7 @@ class Device:
 #   The default kerosene device to use in the event that no kerosene information is
 #   provided.
 DEFAULT_KEROSENE_DEVICE = Device(
-    False, DemandType.DOMESTIC, 1, 0, 0, 0, 0, KEROSENE_DEVICE_NAME, 0, 0, 0
+    False, DemandType.DOMESTIC, 1, 0, 0, 0, 0, 0, KEROSENE_DEVICE_NAME, 0, 0
 )
 
 
@@ -809,29 +809,25 @@ def process_device_hourly_usage(
 
         logger.info("Hourly usage profile for %s successfully calculated.", device.name)
 
-        hourly_device_usage.to_csv('C:/Users/Harry/Documents/MATLAB/Arrivals.csv', index = False)
-
-        new_df = pd.DataFrame(index = hourly_device_usage.index, columns = hourly_device_usage.columns)
+        #Retrieve device laod time
         n = device.load_time
-
-        for i in range(len(hourly_device_usage)):
-            
-            if i < int(n):
-                new_df.iloc[i, 0] = hourly_device_usage.iloc[:i+1, 0].sum()
-
-            else:
-            
-                if isinstance(n, int):
-                    new_df.iloc[i,0] = hourly_device_usage.iloc[i-n+1:i+1,0].sum()
         
-                else:
-                    lower = int(i - n +1)
-                    upper = lower + 1
-                    fraction = i - n - lower +1
-                    new_df.iloc[i,0] = hourly_device_usage.iloc[lower ,0] * (1-fraction) + hourly_device_usage.iloc[upper:i +1,0].sum()
-           
-        hourly_device_usage = new_df
-        hourly_device_usage = hourly_device_usage.apply(pd.to_numeric, errors='coerce')
+        #Calculate cumulative load profile
+        extended_device_usage = {
+            column: [
+                hourly_device_usage[column].iloc[:i+1].sum() if i < int(n) else (
+                    hourly_device_usage[column].iloc[i-n+1:i+1].sum() if isinstance(n, int) else (
+                        hourly_device_usage[column].iloc[int(i-n+1)] * (1 - (i - n - int(i - n + 1) + 1)) + hourly_device_usage[column].iloc[int(i - n + 1) + 1:i + 1].sum()
+                    )
+            )
+            for i in range(len(hourly_device_usage))
+        ]
+        for column in hourly_device_usage.columns
+        }
+
+        #Concert to numeric so that analysis.py van use it
+        extended_device_usage = pd.DataFrame(extended_device_usage, index=hourly_device_usage.index)
+        extended_device_usage = extended_device_usage.apply(pd.to_numeric, errors='coerce')
         
 
         # Save the hourly-usage profile.
@@ -841,7 +837,7 @@ def process_device_hourly_usage(
             filepath,
             "w",
         ) as f:
-            hourly_device_usage.to_csv(
+            extended_device_usage.to_csv(
                 f, header=None, index=False, line_terminator=""  # type: ignore
             )
 
@@ -852,8 +848,7 @@ def process_device_hourly_usage(
         )
 
 
-
-    return hourly_device_usage
+return extended_device_usage
 
 
 def process_device_ownership(
