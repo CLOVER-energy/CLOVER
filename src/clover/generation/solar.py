@@ -125,7 +125,7 @@ class Tracking(enum.Enum):
 
         try:
             return cls(_TRACKING_MAP[text])
-        except KeyError:
+        except KeyError as err:
             logger.error(
                 "Input value of %s for tracking type is not valid. Valid tracking modes: %s",
                 text,
@@ -133,7 +133,7 @@ class Tracking(enum.Enum):
             )
             raise InputFileError(
                 "solar_generation_inputs", f"Tracking mode '{text}' is not valid."
-            )
+            ) from err
 
 
 class SolarPanel:  # pylint: disable=too-few-public-methods
@@ -415,7 +415,7 @@ def get_profile_prefix(pv_panel: PVPanel) -> str:
     if pv_panel.tracking == Tracking.SINGLE_AXIS:
         return f"single_axis_tilt_{pv_panel.tilt}_"
     if pv_panel.tracking == Tracking.DUAL_AXIS:
-        return f"dual_axis_"
+        return "dual_axis_"
     if pv_panel.tracking == Tracking.FIXED:
         return f"fixed_tilt_{pv_panel.tilt}_azim_{pv_panel.azimuthal_orientation}_"
 
