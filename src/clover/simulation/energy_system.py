@@ -1063,18 +1063,18 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
     electric_storage_size: float,
     grid_profile: Optional[pd.DataFrame],
     hot_water_pvt_size: int,
-    irradiance_data: pd.Series,
+    irradiance_data: Dict[str, pd.Series],
     kerosene_usage: pd.DataFrame,
     location: Location,
     logger: Logger,
     minigrid: Minigrid,
     number_of_cw_tanks: int,
     number_of_hw_tanks: int,
-    pv_power_produced: pd.Series,
-    pv_size: float,
+    pv_power_produced: Dict[str, pd.Series],
+    pv_size: Optional[Dict[str, float]],
     scenario: Scenario,
     simulation: Simulation,
-    temperature_data: pd.Series,
+    temperature_data: Dict[str, pd.Series],
     total_loads: Dict[ResourceType, Optional[pd.DataFrame]],
     wind_speed_data: Optional[pd.Series],
 ) -> Tuple[datetime.timedelta, pd.DataFrame, SystemDetails]:
@@ -1101,7 +1101,7 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
         - hot_water_pvt_size:
             Amount of PV-T in PV-T units associated with the hot-water system.
         - irradiance_data:
-            The total solar irradiance data.
+            The total solar irradiance data incident on each panel.
         - kerosene_usage:
             The kerosene-usage profile.
         - location:
@@ -1115,9 +1115,10 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
         - number_of_hw_tanks:
             The number of hot-water tanks installed in the system.
         - pv_size:
-            Amount of PV in PV units.
+            Amount of PV in PV units for each of the pv panels being considered.
         - pv_power_produced:
-            The total energy outputted by the solar system per PV unit.
+            The total energy outputted by the solar system per PV unit for each of the
+            pv panels being considered
         - renewable_cw_produced:
             The amount of clean-water produced renewably, mesaured in litres.
         - scenario:
@@ -1125,7 +1126,7 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
         - simulation:
             The simulation to run.
         - temperature_data:
-            The temperature data series.
+            The temperature data series for each of the pv panels being considered
         - total_loads:
             A mapping between :class:`ResourceType`s and their associated total loads
             placed on the system.

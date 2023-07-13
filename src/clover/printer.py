@@ -17,7 +17,7 @@ strings to the end user.
 """
 
 import argparse
-from typing import List
+from typing import Dict, List
 
 from .__utils__ import Scenario
 from .optimisation.__utils__ import OptimisationParameters
@@ -131,6 +131,7 @@ def generate_simulation_string(
     minigrid: Minigrid,
     overrided_default_sizes: bool,
     parsed_args: argparse.Namespace,
+    pv_system_sizes: Dict[str, float],
     scenario: Scenario,
 ) -> str:
     """
@@ -143,6 +144,8 @@ def generate_simulation_string(
             Whether the default sizes of various components have been overriden or not.
         - parsed_args:
             The parsed command-line arguments.
+        - pv_system_sizes:
+            The capacities of the PV panels to consider.
         - scenario:
             The :class:`__utils__.Scenario` currently being considered.
 
@@ -155,17 +158,19 @@ def generate_simulation_string(
 
     # Append the PV panel information if relevant.
     if scenario.pv and parsed_args.pv_system_size is not None:
-        simulation_string_list.append(
-            f"- {parsed_args.pv_system_size * minigrid.pv_panel.pv_unit} kWp of PV"
-            + (
-                (
-                    f" ({parsed_args.pv_system_size}x "
-                    + f"{minigrid.pv_panel.pv_unit} kWp panels)"
+        for pv_panel in minigrid.pv_panels:
+            simulation_string_list.append(
+                f"- {pv_system_sizes[pv_panel.name] * pv_panel.pv_unit} kWp of "
+                + f"'{pv_panel.name}' PV"
+                + (
+                    (
+                        f" ({pv_system_sizes[pv_panel.name]}x "
+                        + f"{pv_panel.pv_unit} kWp panels)"
+                    )
+                    if overrided_default_sizes
+                    else ""
                 )
-                if overrided_default_sizes
-                else ""
             )
-        )
 
     # Append the battery storage information if relevant.
     if scenario.battery and minigrid.battery is not None:
@@ -184,14 +189,14 @@ def generate_simulation_string(
 
     # Append the clean-water information if relevant.
     if scenario.desalination_scenario is not None:
-        if (
-            parsed_args.clean_water_pvt_system_size is not None
-            and minigrid.pvt_panel is not None
+        if parsed_args.clean_water_pvt_system_size is not None and len(
+            minigrid.pvt_panels >= 1
         ):
-            simulation_string_list.append(
-                f"- {parsed_args.clean_water_pvt_system_size} Clean-water PV-T panel "
-                + f"units ({minigrid.pvt_panel.pv_unit} kWp PV per unit)\n"
-            )
+            for pvt_panel in minigrid.pvt_panels:
+                simulation_string_list.append(
+                    f"- {parsed_args.clean_water_pvt_system_size} Clean-water PV-T panel "
+                    + f"units ({pvt_panel.pv_unit} kWp PV per unit)\n"
+                )
         if minigrid.clean_water_tank is not None:
             simulation_string_list.append(
                 f"- {parsed_args.num_clean_water_tanks}x "
@@ -203,14 +208,14 @@ def generate_simulation_string(
 
     # Append the hot-water information if relevant.
     if scenario.hot_water_scenario is not None:
-        if (
-            parsed_args.hot_water_pvt_system_size is not None
-            and minigrid.pvt_panel is not None
+        if parsed_args.hot_water_pvt_system_size is not None and len(
+            minigrid.pvt_panels >= 1
         ):
-            simulation_string_list.append(
-                f"- {parsed_args.hot_water_pvt_system_size} Hot-water PV-T panel units "
-                + f"({minigrid.pvt_panel.pv_unit} kWp PV per unit)\n"
-            )
+            for pvt_panel in minigrid.pvt_panels:
+                simulation_string_list.append(
+                    f"- {parsed_args.hot_water_pvt_system_size} Hot-water PV-T panel units "
+                    + f"({pvt_panel.pv_unit} kWp PV per unit)\n"
+                )
         simulation_string_list.append(
             f"- {parsed_args.num_hot_water_tanks}x {minigrid.hot_water_tank.mass} "
             + "litres hot-water storage"

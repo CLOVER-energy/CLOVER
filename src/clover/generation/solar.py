@@ -382,8 +382,20 @@ class PVPanel(
             logger, solar_inputs.get("tracking", _DEFAULT_TRACKING)
         )
 
+        if tracking == Tracking.FIXED:
+            azimuthal_orientation: Optional[float] = solar_inputs[
+                "azimuthal_orientation"
+            ]
+        else:
+            azimuthal_orientation = None
+
+        if tracking != Tracking.DUAL_AXIS:
+            tilt: Optional[float] = solar_inputs["tilt"]
+        else:
+            tilt = None
+
         return cls(
-            solar_inputs["azimuthal_orientation"],
+            azimuthal_orientation,
             solar_inputs["lifetime"],
             solar_inputs[NAME],
             pv_unit,
@@ -397,7 +409,7 @@ class PVPanel(
             solar_inputs["thermal_coefficient"]
             if "thermal_coefficient" in solar_inputs
             else None,
-            solar_inputs["tilt"],
+            tilt,
             tracking,
         )
 
@@ -719,6 +731,7 @@ class SolarDataThread(
         location: Location,
         logger_name: str,
         regenerate: bool,
+        pause_time: int,
         pv_panel: PVPanel,
         sleep_multiplier: int = 1,
         verbose: bool = False,
@@ -740,10 +753,14 @@ class SolarDataThread(
             "raw": "true",
         }
 
-        if pv_panel.azimuthal_orientation is not None:
-            renewables_ninja_params["azim"] = pv_panel.azimuthal_orientation
-        if pv_panel.tilt is not None:
-            renewables_ninja_params["tilt"] = pv_panel.tilt
+        renewables_ninja_params["azim"] = (
+            pv_panel.azimuthal_orientation
+            if pv_panel.azimuthal_orientation is not None
+            else "false"
+        )
+        renewables_ninja_params["tilt"] = (
+            pv_panel.tilt if pv_panel.tilt is not None else "false"
+        )
 
         # Determine the prefix to use for the solar profiles dependent on tracking.
         profile_prefix = get_profile_prefix(pv_panel)
@@ -754,6 +771,7 @@ class SolarDataThread(
             location,
             logger_name,
             regenerate,
+            pause_time,
             sleep_multiplier,
             verbose,
             renewables_ninja_params=renewables_ninja_params,
