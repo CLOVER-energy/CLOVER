@@ -27,7 +27,7 @@ import os
 import sys
 
 from argparse import Namespace
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any, DefaultDict, Dict, List, Optional, Set, Tuple
 
 import pandas as pd  # pylint: disable=import-error
 
@@ -616,20 +616,23 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
     print("Generating necessary profiles", end="\n")
 
     # Determine the capacities of the various PV panels that are to be considered.
+    pv_system_sizes: DefaultDict[str, float] = collections.defaultdict(float)
     if parsed_args.pv_system_size is not None:
         try:
-            pv_system_sizes: Dict[str, float] = {
-                minigrid.pv_panel.name: float(parsed_args.pv_system_size)
-            }
+            pv_system_sizes.update(
+                {minigrid.pv_panel.name: float(parsed_args.pv_system_size)}
+            )
         except ProgrammerJudgementFault:
             # Multiple panels are specified in the file, process as a mapping.
             try:
-                pv_system_sizes = {
-                    panel_size_entry.split("=")[0]: float(
-                        panel_size_entry.split("=")[1]
-                    )
-                    for panel_size_entry in parsed_args.pv_system_size.split(",")
-                }
+                pv_system_sizes.update(
+                    {
+                        panel_size_entry.split("=")[0]: float(
+                            panel_size_entry.split("=")[1]
+                        )
+                        for panel_size_entry in parsed_args.pv_system_size.split(",")
+                    }
+                )
             except IndexError:
                 logger.error(
                     "If using multiple panels, ensure that their capacities are entered "
@@ -666,8 +669,6 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
                 "The panels provided in the minigrid inputs file do not match those "
                 "entered on the command-line interface.",
             )
-    else:
-        pv_system_sizes = {}
 
     # Determine the number of background tasks to carry out.
     panels_to_fetch: Set[solar.PVPanel] = set(minigrid.pv_panels + minigrid.pvt_panels)  # type: ignore [operator]

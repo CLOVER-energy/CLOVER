@@ -2355,6 +2355,7 @@ class SystemDetails:
             "initial_pv_sizes": {
                 key: round(value, 3) for key, value in self.initial_pv_sizes.items()
             },
+            "final_storage_size": round(self.final_storage_size, 3),
             "initial_storage_size": round(self.initial_storage_size, 3),
             "input_files": self.file_information,
             "start_year": round(self.start_year, 3),
