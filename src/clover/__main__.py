@@ -940,7 +940,7 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
             location.max_years,
             pv_panel=pv_panel,
         )
-        for pv_panel in (minigrid.pv_panels + minigrid.pvt_panels)
+        for pv_panel in (minigrid.pv_panels + minigrid.pvt_panels)  # type: ignore
     }
     logger.info("Total solar output successfully computed and saved.")
 
@@ -1094,7 +1094,7 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
                             solar.SolarDataType.ELECTRICITY.value
                         ]
                         * panel.pv_unit
-                        for panel in (minigrid.pv_panels + minigrid.pvt_panels)
+                        for panel in (minigrid.pv_panels + minigrid.pvt_panels)  # type: ignore
                     },
                     pv_system_sizes
                     if pv_system_sizes is not None
@@ -1145,7 +1145,7 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
                     ]
                     * pv_panel.pv_unit
                     * scenario.pv
-                    for pv_panel in (minigrid.pv_panels + minigrid.pvt_panels)
+                    for pv_panel in (minigrid.pv_panels + minigrid.pvt_panels)  # type: ignore
                 },
             )
 
@@ -1311,7 +1311,7 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
                             solar.SolarDataType.ELECTRICITY.value
                         ]
                         * minigrid.pv_panel.pv_unit
-                        for pv_panel in (minigrid.pv_panels + minigrid.pvt_panels)
+                        for pv_panel in (minigrid.pv_panels + minigrid.pvt_panels)  # type: ignore
                     },
                     total_wind_data[wind.WindDataType.WIND_SPEED.value]
                     if total_wind_data is not None
