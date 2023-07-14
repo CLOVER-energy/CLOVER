@@ -191,7 +191,7 @@ def calculate_total_equipment_ghgs(  # pylint: disable=too-many-locals
     heat_exchangers: int,
     hot_water_tanks: int,
     logger: Logger,
-    pv_array_size: float,
+    pv_array_size: Dict[str, float],
     pvt_array_size: float,
     storage_size: float,
     year: int = 0,
@@ -230,8 +230,9 @@ def calculate_total_equipment_ghgs(  # pylint: disable=too-many-locals
     """
 
     # Calculate system ghgs.
+    # FIXME: Need to decide on BOS ghgs for multiple PV arrays.
     bos_ghgs = calculate_ghgs(
-        pv_array_size, ghg_inputs, ImpactingComponent.BOS.value, year
+        sum(pv_array_size.values()), ghg_inputs, ImpactingComponent.BOS.value, year
     )
 
     if ImpactingComponent.BUFFER_TANK.value not in ghg_inputs and buffer_tanks > 0:
@@ -368,11 +369,17 @@ def calculate_total_equipment_ghgs(  # pylint: disable=too-many-locals
             hot_water_tanks, ghg_inputs, ImpactingComponent.HOT_WATER_TANK.value, year
         )
 
-    pv_ghgs = calculate_ghgs(
-        pv_array_size, ghg_inputs, ImpactingComponent.PV.value, year
+    pv_ghgs = sum(
+        calculate_ghgs(
+            array_size, ghg_inputs[ImpactingComponent.PV.value], panel_name, year
+        )
+        for panel_name, array_size in pv_array_size.items()
     )
-    pv_installation_ghgs = calculate_installation_ghgs(
-        pv_array_size, ghg_inputs, ImpactingComponent.PV.value, year
+    pv_installation_ghgs = sum(
+        calculate_installation_ghgs(
+            array_size, ghg_inputs[ImpactingComponent.PV.value], panel_name, year
+        )
+        for panel_name, array_size in pv_array_size.items()
     )
 
     if ImpactingComponent.PV_T.value not in ghg_inputs and pvt_array_size > 0:
@@ -402,7 +409,11 @@ def calculate_total_equipment_ghgs(  # pylint: disable=too-many-locals
     )
 
     # Calculate misc GHGs.
-    misc_ghgs = calculate_misc_ghgs(diesel_size + pv_array_size, ghg_inputs)
+    # FIXME: The GHGs which are misc. and scale with the capacity need to be
+    # investigated.
+    misc_ghgs = calculate_misc_ghgs(
+        diesel_size + sum(pv_array_size.values()), ghg_inputs
+    )
 
     return (
         bos_ghgs
@@ -818,7 +829,7 @@ def calculate_total_om(  # pylint: disable=too-many-locals
     heat_exchangers: int,
     hot_water_tanks: int,
     logger: Logger,
-    pv_array_size: float,
+    pv_array_size: Dict[str, float],
     pvt_array_size: float,
     storage_size: float,
     start_year: int = 0,
@@ -979,8 +990,15 @@ def calculate_total_om(  # pylint: disable=too-many-locals
             end_year,
         )
 
-    pv_om_ghgs = calculate_om_ghgs(
-        pv_array_size, ghg_inputs, ImpactingComponent.PV.value, start_year, end_year
+    pv_om_ghgs = sum(
+        calculate_om_ghgs(
+            array_size,
+            ghg_inputs[ImpactingComponent.PV.value],
+            panel_name,
+            start_year,
+            end_year,
+        )
+        for panel_name, array_size in pv_array_size.items()
     )
 
     if ImpactingComponent.PV_T.value not in ghg_inputs and pvt_array_size > 0:

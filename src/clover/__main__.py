@@ -19,6 +19,7 @@ the clover module from the command-line interface.
 
 __version__ = "5.0.7"
 
+import collections
 import datetime
 import logging
 import math
@@ -624,7 +625,9 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
             # Multiple panels are specified in the file, process as a mapping.
             try:
                 pv_system_sizes = {
-                    panel_size_entry.split("=")[0]: float(panel_size_entry.split("=")[1])
+                    panel_size_entry.split("=")[0]: float(
+                        panel_size_entry.split("=")[1]
+                    )
                     for panel_size_entry in parsed_args.pv_system_size.split(",")
                 }
             except IndexError:
@@ -1084,13 +1087,15 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
                     parsed_args.num_clean_water_tanks,
                     parsed_args.num_hot_water_tanks,
                     {
-                        panel: total_solar_data[panel.name][
+                        panel.name: total_solar_data[panel.name][
                             solar.SolarDataType.ELECTRICITY.value
                         ]
                         * panel.pv_unit
                         for panel in (minigrid.pv_panels + minigrid.pvt_panels)
                     },
-                    pv_system_sizes if pv_system_sizes is not None else 0,
+                    pv_system_sizes
+                    if pv_system_sizes is not None
+                    else collections.defaultdict(float),
                     scenario,
                     simulation,
                     {
@@ -1131,9 +1136,14 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
                 grid_profile,
                 simulation.end_year - simulation.start_year,
                 system_performance_outputs,
-                total_solar_data[solar.SolarDataType.ELECTRICITY.value]
-                * minigrid.pv_panel.pv_unit
-                * scenario.pv,
+                {
+                    pv_panel.name: total_solar_data[pv_panel.name][
+                        solar.SolarDataType.ELECTRICITY.value
+                    ]
+                    * pv_panel.pv_unit
+                    * scenario.pv
+                    for pv_panel in minigrid.pv_panels
+                },
             )
 
             if parsed_args.analyse:

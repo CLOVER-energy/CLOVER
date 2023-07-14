@@ -404,7 +404,10 @@ def _misc_costs(
 
     """
 
-    total_misc_capacity_cost = (pv_array_size + diesel_size) * misc_capacity_cost
+    # FIXME: The misc. capacity costs need to be considered for multiple PV arrays.
+    total_misc_capacity_cost = (
+        sum(pv_array_size.values()) + diesel_size
+    ) * misc_capacity_cost
 
     return total_misc_capacity_cost + misc_fixed_cost
 
@@ -423,7 +426,7 @@ def get_total_equipment_cost(  # pylint: disable=too-many-locals, too-many-state
     heat_exchangers: float,
     hot_water_tanks: float,
     logger: Logger,
-    pv_array_size: float,
+    pv_array_size: Dict[str, float],
     pvt_array_size: float,
     storage_size: float,
     installation_year: int = 0,
@@ -464,10 +467,12 @@ def get_total_equipment_cost(  # pylint: disable=too-many-locals, too-many-state
     """
 
     # Calculate the various system costs.
+    # FIXME: The BOS costs need to scale sensibly with the capcaity of installed
+    # compoennts.
     bos_cost = _component_cost(
         finance_inputs[ImpactingComponent.BOS.value][COST],
         finance_inputs[ImpactingComponent.BOS.value][COST_DECREASE],
-        pv_array_size,
+        sum(pv_array_size.values()),
         installation_year,
     )
 
@@ -646,17 +651,25 @@ def get_total_equipment_cost(  # pylint: disable=too-many-locals, too-many-state
             installation_year,
         )
 
-    pv_cost = _component_cost(
-        finance_inputs[ImpactingComponent.PV.value][COST],
-        finance_inputs[ImpactingComponent.PV.value][COST_DECREASE],
-        pv_array_size,
-        installation_year,
+    pv_cost = sum(
+        _component_cost(
+            finance_inputs[ImpactingComponent.PV.value][panel_name][COST],
+            finance_inputs[ImpactingComponent.PV.value][panel_name][COST_DECREASE],
+            array_size,
+            installation_year,
+        )
+        for panel_name, array_size in pv_array_size.items()
     )
-    pv_installation_cost = _component_installation_cost(
-        pv_array_size,
-        finance_inputs[ImpactingComponent.PV.value][INSTALLATION_COST],
-        finance_inputs[ImpactingComponent.PV.value][INSTALLATION_COST_DECREASE],
-        installation_year,
+    pv_installation_cost = sum(
+        _component_installation_cost(
+            array_size,
+            finance_inputs[ImpactingComponent.PV.value][panel_name][INSTALLATION_COST],
+            finance_inputs[ImpactingComponent.PV.value][panel_name][
+                INSTALLATION_COST_DECREASE
+            ],
+            installation_year,
+        )
+        for panel_name, array_size in pv_array_size.items()
     )
 
     if ImpactingComponent.PV_T.value not in finance_inputs and pvt_array_size > 0:
@@ -925,7 +938,7 @@ def discounted_equipment_cost(
     heat_exchangers: int,
     hot_water_tanks: int,
     logger: Logger,
-    pv_array_size: float,
+    pv_array_size: Dict[str, float],
     pvt_array_size: float,
     storage_size: float,
     installation_year: int = 0,
@@ -1081,7 +1094,7 @@ def total_om(  # pylint: disable=too-many-locals
     heat_exchangers: int,
     hot_water_tanks: int,
     logger: Logger,
-    pv_array_size: float,
+    pv_array_size: Dict[str, float],
     pvt_array_size: float,
     storage_size: float,
     *,
@@ -1262,13 +1275,16 @@ def total_om(  # pylint: disable=too-many-locals
             end_year=end_year,
         )
 
-    pv_om = _component_om(
-        finance_inputs[ImpactingComponent.PV.value][OM],
-        pv_array_size,
-        finance_inputs,
-        logger,
-        start_year=start_year,
-        end_year=end_year,
+    pv_om = sum(
+        _component_om(
+            finance_inputs[ImpactingComponent.PV.value][panel_name][OM],
+            array_size,
+            finance_inputs,
+            logger,
+            start_year=start_year,
+            end_year=end_year,
+        )
+        for panel_name, array_size in pv_array_size.items()
     )
 
     if ImpactingComponent.PV_T.value not in finance_inputs and pvt_array_size > 0:
