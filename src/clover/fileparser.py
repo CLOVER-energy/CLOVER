@@ -1257,7 +1257,6 @@ def _parse_solar_inputs(  # pylint: disable=too-many-locals, too-many-statements
     Optional[Dict[str, DefaultDict[str, float]]],
     Optional[Dict[str, DefaultDict[str, float]]],
     str,
-    List[solar.SolarPanel],
 ]:
     """
     Parses the solar inputs file.
@@ -1284,8 +1283,7 @@ def _parse_solar_inputs(  # pylint: disable=too-many-locals, too-many-statements
         - The pv-t-panel cost information for each panel being considered, if relevant;
         - The pv-t-panel emissions informatio for each panel being considered, if
           relevant;
-        - The relative path to the solar generation inputs filepath;
-        - The `list` of all :class:`solar.SolarPanel` instances parsed.
+        - The relative path to the solar generation inputs filepath.
 
     """
 
@@ -1479,7 +1477,10 @@ def _parse_solar_inputs(  # pylint: disable=too-many-locals, too-many-statements
                     "The PV-T panel selected is not a valid HybridPVTPanel.",
                 )
 
-        logger.info("PV-T panel successfully parsed: %s.", pvt_panel.name)
+        logger.info(
+            "PV-T panel(s) successfully parsed: %s.",
+            ", ".join({entry.name for entry in pvt_panels}),
+        )
 
         try:
             pvt_panel_costs: Optional[Dict[str, DefaultDict[str, float]]] = {
@@ -1536,7 +1537,6 @@ def _parse_solar_inputs(  # pylint: disable=too-many-locals, too-many-statements
         pvt_panel_costs,
         pvt_panel_emissions,
         solar_generation_inputs_filepath,
-        solar_panels,
     )
 
 
@@ -1781,7 +1781,6 @@ def _parse_minigrid_inputs(  # pylint: disable=too-many-locals, too-many-stateme
     Optional[Dict[str, DefaultDict[str, float]]],
     Optional[Dict[str, DefaultDict[str, float]]],
     str,
-    List[solar.SolarPanel],
     Optional[str],
     Dict[str, Dict[str, float]],
     Dict[str, Dict[str, float]],
@@ -1873,10 +1872,8 @@ def _parse_minigrid_inputs(  # pylint: disable=too-many-locals, too-many-stateme
         "and water heater " if diesel_water_heater is not None else "",
     )
 
-    pv_panel: solar.PVPanel
     pv_panel_costs: Dict[str, DefaultDict[str, float]]
     pv_panel_emissions: Dict[str, DefaultDict[str, float]]
-    pvt_panel: Optional[solar.HybridPVTPanel]
     pvt_panel_costs: Optional[Dict[str, DefaultDict[str, float]]]
     pvt_panel_emissions: Optional[Dict[str, DefaultDict[str, float]]]
     solar_generation_inputs_filepath: str
@@ -1888,7 +1885,6 @@ def _parse_minigrid_inputs(  # pylint: disable=too-many-locals, too-many-stateme
         pvt_panel_costs,
         pvt_panel_emissions,
         solar_generation_inputs_filepath,
-        solar_panels,
     ) = _parse_solar_inputs(
         debug,
         energy_system_inputs,
@@ -2092,7 +2088,6 @@ def _parse_minigrid_inputs(  # pylint: disable=too-many-locals, too-many-stateme
         pvt_panel_costs,
         pvt_panel_emissions,
         solar_generation_inputs_filepath,
-        solar_panels,
         tank_inputs_filepath,
         transmission_costs,
         transmission_emissions,
@@ -2244,7 +2239,6 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
     List[Optimisation],
     List[Scenario],
     List[Simulation],
-    List[solar.SolarPanel],
     Optional[pd.DataFrame],
     Dict[WaterSource, pd.DataFrame],
     Dict[str, str],
@@ -2457,7 +2451,6 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
         pvt_panel_costs,
         pvt_panel_emissions,
         solar_generation_inputs_filepath,
-        solar_panels,
         tank_inputs_filepath,
         transmission_costs,
         transmission_emissions,
@@ -2608,10 +2601,10 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
     # Update the finance and GHG inputs accordingly with the PV data.
     logger.info("Updating with PV impact data.")
     finance_inputs[ImpactingComponent.PV.value] = defaultdict(
-        lambda: defaultdict(float), pv_panel_costs
+        lambda: defaultdict(float), pv_panel_costs  # type: ignore [arg-type, return-value]
     )
     ghg_inputs[ImpactingComponent.PV.value] = defaultdict(
-        lambda: defaultdict(float), pv_panel_emissions
+        lambda: defaultdict(float), pv_panel_emissions  # type: ignore [arg-type, return-value]
     )
     logger.info("PV impact data successfully updated.")
 
@@ -2669,10 +2662,10 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
         if pvt_panel_costs is None or pvt_panel_emissions is None:
             raise InternalError("Error processing PV-T panel cost and emissions.")
         finance_inputs[ImpactingComponent.PV_T.value] = defaultdict(
-            float, pvt_panel_costs
+            float, pvt_panel_costs  # type: ignore [arg-type]
         )
         ghg_inputs[ImpactingComponent.PV_T.value] = defaultdict(
-            float, pvt_panel_emissions
+            float, pvt_panel_emissions  # type: ignore [arg-type]
         )
     else:
         logger.info("PV-T disblaed in scenario file, skipping PV-T impact parsing.")
@@ -2920,7 +2913,6 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
         optimisations,
         scenarios,
         simulations,
-        solar_panels,
         total_load_profile,
         water_source_times,
         input_file_info,

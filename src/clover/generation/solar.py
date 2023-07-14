@@ -813,7 +813,9 @@ class SolarDataThread(
         )
 
 
-def total_solar_output(*args, pv_panel: Union[PVPanel, HybridPVTPanel]) -> pd.DataFrame:  # type: ignore
+def total_solar_output(
+    *args, pv_panel: Union[PVPanel, HybridPVTPanel]
+) -> pd.DataFrame:  # type: ignore
     """
     Wrapper function to wrap the total solar output.
 

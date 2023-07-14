@@ -2312,7 +2312,9 @@ class SystemDetails:
     final_num_buffer_tanks: Optional[int] = 0
     final_num_clean_water_tanks: Optional[int] = 0
     final_num_hot_water_tanks: Optional[int] = 0
-    final_pv_sizes: Union[Dict[str, float], DefaultDict[str, float]] = dataclasses.field(  # type: ignore [assignment]
+    final_pv_sizes: Union[
+        Dict[str, float], DefaultDict[str, float]
+    ] = dataclasses.field(  # type: ignore [assignment]
         default_factory=lambda: collections.defaultdict(float)
     )
     final_storage_size: float = 0
@@ -2322,7 +2324,9 @@ class SystemDetails:
     initial_num_buffer_tanks: Optional[int] = 0
     initial_num_clean_water_tanks: Optional[int] = 0
     initial_num_hot_water_tanks: Optional[int] = 0
-    initial_pv_sizes: Union[Dict[str, float], DefaultDict[str, float]] = dataclasses.field(  # type: ignore [assignment]
+    initial_pv_sizes: Union[
+        Dict[str, float], DefaultDict[str, float]
+    ] = dataclasses.field(  # type: ignore [assignment]
         default_factory=lambda: collections.defaultdict(float)
     )
     initial_storage_size: float = 0

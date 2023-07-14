@@ -573,7 +573,6 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
             optimisations,
             scenarios,
             simulations,
-            solar_panels,
             electric_load_profile,
             water_source_times,
             input_file_info,
@@ -671,7 +670,9 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
             )
 
     # Determine the number of background tasks to carry out.
-    panels_to_fetch: Set[solar.PVPanel] = set(minigrid.pv_panels + minigrid.pvt_panels)  # type: ignore [operator]
+    panels_to_fetch: Set[solar.PVPanel] = set(
+        minigrid.pv_panels + minigrid.pvt_panels  # type: ignore [operator]
+    )
     num_ninjas: int = (
         len(panels_to_fetch)
         + (1 if any(scenario.pv_t for scenario in scenarios) else 0)
