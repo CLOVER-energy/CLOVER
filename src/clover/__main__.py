@@ -618,7 +618,7 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
     # Determine the capacities of the various PV panels that are to be considered.
     if parsed_args.pv_system_size is not None:
         try:
-            pv_system_sizes: Optional[Dict[str, float]] = {
+            pv_system_sizes: Dict[str, float] = {
                 minigrid.pv_panel.name: float(parsed_args.pv_system_size)
             }
         except ProgrammerJudgementFault:
@@ -667,10 +667,10 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
                 "entered on the command-line interface.",
             )
     else:
-        pv_system_sizes = None
+        pv_system_sizes = {}
 
     # Determine the number of background tasks to carry out.
-    panels_to_fetch: Set[solar.PVPanel] = set(minigrid.pv_panels + minigrid.pvt_panels)
+    panels_to_fetch: Set[solar.PVPanel] = set(minigrid.pv_panels + minigrid.pvt_panels)  # type: ignore [operator]
     num_ninjas: int = (
         len(panels_to_fetch)
         + (1 if any(scenario.pv_t for scenario in scenarios) else 0)
@@ -1001,12 +1001,9 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
     kerosene_usage.reset_index(drop=True)
 
     # Determine whether any default sizes have been overrided.
-    overrided_default_sizes: bool = (
-        any(pv_panel.pv_unit_overrided for pv_panel in minigrid.pv_panels)
-        or minigrid.battery.storage_unit
-        if minigrid.battery is not None
-        else False
-    )
+    overrided_default_sizes: bool = any(
+        pv_panel.pv_unit_overrided for pv_panel in minigrid.pv_panels
+    ) or (minigrid.battery.storage_unit if minigrid.battery is not None else False)
 
     # Run a simulation or optimisation as appropriate.
     if operating_mode == OperatingMode.SIMULATION:

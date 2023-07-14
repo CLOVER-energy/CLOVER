@@ -21,7 +21,7 @@ for use locally within CLOVER.
 import enum
 
 from logging import Logger
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import pandas as pd  # pylint: disable=import-error
 
@@ -414,29 +414,6 @@ class PVPanel(
         )
 
 
-def get_profile_prefix(pv_panel: PVPanel) -> str:
-    """
-    Determine the prefix to use for profile names based on the tracking and angles.
-
-    Inputs:
-        - pv_panel:
-            The :class:`PVPanel` to determine the profile prefix for.
-
-    """
-
-    if pv_panel.tracking == Tracking.SINGLE_AXIS:
-        return f"single_axis_tilt_{pv_panel.tilt}_"
-    if pv_panel.tracking == Tracking.DUAL_AXIS:
-        return "dual_axis_"
-    if pv_panel.tracking == Tracking.FIXED:
-        return f"fixed_tilt_{pv_panel.tilt}_azim_{pv_panel.azimuthal_orientation}_"
-
-    raise ProgrammerJudgementFault(
-        "generation.solar::get_profile_prefix",
-        f"Code not written for switch for tracking value {pv_panel.tracking.value}",
-    )
-
-
 class HybridPVTPanel(SolarPanel, panel_type=SolarPanelType.PV_T):
     """
     Represents a PV-T panel.
@@ -576,6 +553,35 @@ class HybridPVTPanel(SolarPanel, panel_type=SolarPanelType.PV_T):
             + ")"
         )
 
+    def __hash__(self) -> int:
+        """
+        Return a unique identifier for the panel.
+
+        Because the solar panel instances are used for fetching weather data, panels
+        with unique tilt, azimuthal orientation, and tracking, need to be kept separate.
+
+        These parameters are hence used to determine the "unique" hash for the panel.
+
+        """
+
+        return hash(
+            3
+            * (
+                self.azimuthal_orientation
+                if self.azimuthal_orientation is not None
+                else 0
+            )
+            + 540 * (self.tilt if self.tilt is not None else 0)
+        )
+
+    def __eq__(self, other: Any) -> bool:
+        """Used to determine whether to instances are identical for creating a set."""
+
+        return (  # type: ignore[no-any-return]
+            self.azimuthal_orientation == other.azimuthal_orientation
+            and self.tilt == other.tilt
+        )
+
     def calculate_performance(
         self,
         ambient_temperature: float,
@@ -681,6 +687,34 @@ class HybridPVTPanel(SolarPanel, panel_type=SolarPanelType.PV_T):
         return fractional_electric_performance, output_temperature
 
 
+def get_profile_prefix(panel: Union[PVPanel, HybridPVTPanel]) -> str:
+    """
+    Determine the prefix to use for profile names based on the tracking and angles.
+
+    Inputs:
+        - panel:
+            The :class:`PVPanel` to determine the profile prefix for.
+
+    """
+
+    if isinstance(panel, HybridPVTPanel):
+        tracking = Tracking.DUAL_AXIS
+    else:
+        tracking = panel.tracking
+
+    if tracking == Tracking.SINGLE_AXIS:
+        return f"single_axis_tilt_{panel.tilt}_"
+    if tracking == Tracking.DUAL_AXIS:
+        return "dual_axis_"
+    if tracking == Tracking.FIXED:
+        return f"fixed_tilt_{panel.tilt}_azim_{panel.azimuthal_orientation}_"
+
+    raise ProgrammerJudgementFault(
+        "generation.solar::get_profile_prefix",
+        f"Code not written for switch for tracking value {tracking.value}",
+    )
+
+
 def solar_degradation(lifetime: int, num_years: int) -> pd.DataFrame:
     """
     Calculates the solar degredation.
@@ -730,8 +764,8 @@ class SolarDataThread(
         generation_inputs: Dict[str, Any],
         location: Location,
         logger_name: str,
-        regenerate: bool,
         pause_time: int,
+        regenerate: bool,
         pv_panel: PVPanel,
         sleep_multiplier: int = 1,
         verbose: bool = False,
@@ -770,8 +804,8 @@ class SolarDataThread(
             generation_inputs,
             location,
             logger_name,
-            regenerate,
             pause_time,
+            regenerate,
             sleep_multiplier,
             verbose,
             renewables_ninja_params=renewables_ninja_params,
@@ -779,7 +813,7 @@ class SolarDataThread(
         )
 
 
-def total_solar_output(*args, pv_panel: PVPanel) -> pd.DataFrame:  # type: ignore
+def total_solar_output(*args, pv_panel: Union[PVPanel, HybridPVTPanel]) -> pd.DataFrame:  # type: ignore
     """
     Wrapper function to wrap the total solar output.
 

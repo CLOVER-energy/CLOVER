@@ -933,7 +933,7 @@ class KeyResults:
     cumulative_hw_load: Optional[float] = None
     cumulative_hw_pvt_generation: Optional[float] = None
     cumulative_hw_supplied: Optional[float] = None
-    cumulative_pv_generation: Optional[float] = None
+    cumulative_pv_generation: Optional[Dict[str, float]] = None
     diesel_times: Optional[float] = None
     grid_daily_hours: Optional[float] = None
     max_buffer_tank_temperature: Optional[float] = None
@@ -945,7 +945,7 @@ class KeyResults:
 
     def to_dict(  # pylint: disable=too-many-branches, too-many-statements
         self,
-    ) -> Dict[str, float]:
+    ) -> Dict[str, Union[float, Dict[str, float]]]:
         """
         Returns the :class:`KeyResults` information as a `dict` ready for saving.
 
@@ -955,7 +955,7 @@ class KeyResults:
 
         """
 
-        data_dict: Dict[str, float] = {}
+        data_dict: Dict[str, Union[float, Dict[str, float]]] = {}
 
         if self.average_daily_cw_demand_covered is not None:
             data_dict["Average daily clean-water demand covered"] = round(
@@ -2312,7 +2312,7 @@ class SystemDetails:
     final_num_buffer_tanks: Optional[int] = 0
     final_num_clean_water_tanks: Optional[int] = 0
     final_num_hot_water_tanks: Optional[int] = 0
-    final_pv_sizes: DefaultDict[str, float] = dataclasses.field(
+    final_pv_sizes: Union[Dict[str, float], DefaultDict[str, float]] = dataclasses.field(  # type: ignore [assignment]
         default_factory=lambda: collections.defaultdict(float)
     )
     final_storage_size: float = 0
@@ -2322,7 +2322,7 @@ class SystemDetails:
     initial_num_buffer_tanks: Optional[int] = 0
     initial_num_clean_water_tanks: Optional[int] = 0
     initial_num_hot_water_tanks: Optional[int] = 0
-    initial_pv_sizes: DefaultDict[str, float] = dataclasses.field(
+    initial_pv_sizes: Union[Dict[str, float], DefaultDict[str, float]] = dataclasses.field(  # type: ignore [assignment]
         default_factory=lambda: collections.defaultdict(float)
     )
     initial_storage_size: float = 0
@@ -2333,7 +2333,7 @@ class SystemDetails:
     def to_dict(
         self,
     ) -> Dict[
-        str, Optional[Union[int, float, str, Dict[str, str]]]
+        str, Optional[Union[int, float, str, Dict[str, str], Dict[str, float]]]
     ]:  # pylint: disable=too-many-branches
         """
         Returns a `dict` containing information the :class:`SystemDetails`' information.
@@ -2345,7 +2345,7 @@ class SystemDetails:
         """
 
         system_details_as_dict: Dict[
-            str, Optional[Union[int, float, str, Dict[str, str]]]
+            str, Optional[Union[int, float, str, Dict[str, str], Dict[str, float]]]
         ] = {
             "diesel_capacity": round(self.diesel_capacity, 3),
             "end_year": round(self.end_year, 3),

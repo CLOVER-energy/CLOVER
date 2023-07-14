@@ -156,7 +156,7 @@ class Minigrid:
     heat_exchanger: Optional[Exchanger]
     hot_water_tank: Optional[HotWaterTank]
     pv_panels: List[PVPanel]
-    _pvt_panels: Optional[List[HybridPVTPanel]]
+    pvt_panels: List[HybridPVTPanel]
     water_pump: Optional[Transmitter]
 
     @classmethod
@@ -167,7 +167,7 @@ class Minigrid:
         electric_water_heater: Optional[Converter],
         minigrid_inputs: Dict[str, Any],
         pv_panels: List[PVPanel],
-        pvt_panels: Optional[List[HybridPVTPanel]],
+        pvt_panels: List[HybridPVTPanel],
         battery_inputs: Optional[List[Dict[str, Any]]] = None,
         exchanger_inputs: Optional[List[Dict[str, Any]]] = None,
         tank_inputs: Optional[List[Dict[str, Any]]] = None,
@@ -357,22 +357,6 @@ class Minigrid:
         return self.pv_panels[0]
 
     @property
-    def pvt_panels(self) -> List[HybridPVTPanel]:
-        """
-        Returns a `list` of PV-T panels present.
-
-        Outputs:
-            - pvt_panels:
-                The `list` of :class:`PVTPanel` instances being modelled.
-
-        """
-
-        if self._pvt_panels is None:
-            return []
-
-        return self._pvt_panels
-
-    @property
     def pvt_panel(self) -> Optional[HybridPVTPanel]:
         """
         Returns a PV-T panel if there is only one panel modelled, otherwise errors.
@@ -388,7 +372,7 @@ class Minigrid:
 
         """
 
-        if self._pvt_panels is None:
+        if self.pvt_panels is None:
             return None
 
         if len(self.pvt_panels) > 1:

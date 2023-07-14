@@ -482,7 +482,7 @@ def _calculate_renewable_cw_profiles(  # pylint: disable=too-many-locals, too-ma
         ) = calculate_pvt_output(
             disable_tqdm,
             end_hour,
-            irradiance_data[minigrid.pvt_panel.name][start_hour:end_hour],
+            irradiance_data[minigrid.pvt_panel.name][start_hour:end_hour],  # type: ignore
             logger,
             minigrid,
             number_of_cw_tanks,
@@ -491,7 +491,7 @@ def _calculate_renewable_cw_profiles(  # pylint: disable=too-many-locals, too-ma
             ResourceType.CLEAN_WATER,
             scenario,
             start_hour,
-            temperature_data[minigrid.pvt_panel.name][start_hour:end_hour],
+            temperature_data[minigrid.pvt_panel.name][start_hour:end_hour],  # type: ignore
             thermal_desalination_plant,
             wind_speed_data[start_hour:end_hour],
         )
@@ -758,7 +758,7 @@ def _calculate_renewable_hw_profiles(  # pylint: disable=too-many-locals, too-ma
         ) = calculate_pvt_output(
             disable_tqdm,
             end_hour,
-            irradiance_data[minigrid.pvt_panel.name][start_hour:end_hour],
+            irradiance_data[minigrid.pvt_panel.name][start_hour:end_hour],  # type: ignore
             logger,
             minigrid,
             number_of_hw_tanks,
@@ -767,7 +767,7 @@ def _calculate_renewable_hw_profiles(  # pylint: disable=too-many-locals, too-ma
             ResourceType.HOT_CLEAN_WATER,
             scenario,
             start_hour,
-            temperature_data[minigrid.pvt_panel.name][start_hour:end_hour],
+            temperature_data[minigrid.pvt_panel.name][start_hour:end_hour],  # type: ignore
             None,
             wind_speed_data[start_hour:end_hour],
         )
@@ -1418,10 +1418,11 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
     kerosene_profile: pd.Series
     load_energy: pd.DataFrame
     renewables_energy: pd.DataFrame
+    renewables_energy_by_source: Dict[RenewableEnergySource, pd.DataFrame]
     renewables_energy_map: Dict[
         RenewableEnergySource, Union[pd.DataFrame, Dict[str, pd.Series]]
     ] = {
-        RenewableEnergySource.PV: pv_power_produced,  # type: ignore
+        RenewableEnergySource.PV: pv_power_produced,
         RenewableEnergySource.CLEAN_WATER_PVT: (
             clean_water_pvt_electric_power_per_unit
         ),
@@ -1434,7 +1435,7 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
         kerosene_profile,
         load_energy,
         renewables_energy,
-        renewables_energy_map,
+        renewables_energy_by_source,
         renewables_energy_used_directly,
     ) = get_electric_battery_storage_profile(
         clean_water_pvt_size=clean_water_pvt_size,
@@ -2022,7 +2023,7 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
         number_of_cw_tanks if scenario.desalination_scenario is not None else None,
         number_of_hw_tanks if scenario.hot_water_scenario is not None else None,
         {
-            pv_panel.name: pv_sizes[pv_panel.name]
+            pv_panel.name: (pv_sizes[pv_panel.name] if pv_sizes is not None else 0)
             * float(
                 solar_degradation(pv_panel.lifetime, location.max_years).iloc[
                     HOURS_PER_YEAR * (simulation.end_year - simulation.start_year), 0
@@ -2048,7 +2049,9 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
         number_of_buffer_tanks if scenario.desalination_scenario is not None else None,
         number_of_cw_tanks if scenario.desalination_scenario is not None else None,
         number_of_hw_tanks if scenario.hot_water_scenario is not None else None,
-        pv_sizes,
+        pv_sizes
+        if pv_sizes is not None
+        else {pv_panel.name: 0 for pv_panel in minigrid.pv_panels},
         float(electric_storage_size * minigrid.battery.storage_unit),
         [source.name for source in required_cw_feedwater_sources]
         if len(required_cw_feedwater_sources) > 0
@@ -2057,11 +2060,13 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
     )
 
     # Separate out the various renewable inputs.
-    pv_energy = renewables_energy_map[RenewableEnergySource.PV]
-    clean_water_pvt_energy = renewables_energy_map[
+    pv_energy = renewables_energy_by_source[RenewableEnergySource.PV]
+    clean_water_pvt_energy = renewables_energy_by_source[
         RenewableEnergySource.CLEAN_WATER_PVT
     ]
-    hot_water_pvt_energy = renewables_energy_map[RenewableEnergySource.HOT_WATER_PVT]
+    hot_water_pvt_energy = renewables_energy_by_source[
+        RenewableEnergySource.HOT_WATER_PVT
+    ]
     total_pvt_energy = pd.DataFrame(
         clean_water_pvt_energy.values + hot_water_pvt_energy.values
     )

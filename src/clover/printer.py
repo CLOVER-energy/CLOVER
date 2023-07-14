@@ -189,8 +189,9 @@ def generate_simulation_string(
 
     # Append the clean-water information if relevant.
     if scenario.desalination_scenario is not None:
-        if parsed_args.clean_water_pvt_system_size is not None and len(
-            minigrid.pvt_panels >= 1
+        if (
+            parsed_args.clean_water_pvt_system_size is not None
+            and len(minigrid.pvt_panels) >= 1
         ):
             for pvt_panel in minigrid.pvt_panels:
                 simulation_string_list.append(
@@ -208,8 +209,9 @@ def generate_simulation_string(
 
     # Append the hot-water information if relevant.
     if scenario.hot_water_scenario is not None:
-        if parsed_args.hot_water_pvt_system_size is not None and len(
-            minigrid.pvt_panels >= 1
+        if (
+            parsed_args.hot_water_pvt_system_size is not None
+            and len(minigrid.pvt_panels) >= 1
         ):
             for pvt_panel in minigrid.pvt_panels:
                 simulation_string_list.append(

@@ -383,7 +383,7 @@ def _misc_costs(
     diesel_size: float,
     misc_capacity_cost: float,
     misc_fixed_cost: float,
-    pv_array_size: float,
+    pv_array_size: Dict[str, float],
 ) -> float:
     """
     Calculates cost of miscellaneous capacity-related costs
@@ -689,7 +689,7 @@ def get_total_equipment_cost(  # pylint: disable=too-many-locals, too-many-state
         pvt_cost = _component_cost(
             finance_inputs[ImpactingComponent.PV_T.value][COST],
             finance_inputs[ImpactingComponent.PV_T.value][COST_DECREASE],
-            pv_array_size,
+            pvt_array_size,
             installation_year,
         )
         pvt_installation_cost = _component_installation_cost(
