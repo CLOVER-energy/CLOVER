@@ -82,7 +82,7 @@ def single_line_simulation(  # pylint: disable=too-many-locals, too-many-stateme
     storage_size: StorageSystemSize,
     temperature_data: Dict[str, pd.Series],
     total_loads: Dict[ResourceType, Optional[pd.DataFrame]],
-    total_solar_pv_power_produced: pd.Series,
+    total_solar_pv_power_produced: Dict[str, pd.Series],
     wind_speed_data: Optional[pd.Series],
     yearly_electric_load_statistics: pd.DataFrame,
 ) -> Tuple[
@@ -366,7 +366,7 @@ def single_line_simulation(  # pylint: disable=too-many-locals, too-many-stateme
                 minigrid,
                 potential_num_clean_water_tanks,
                 potential_num_hot_water_tanks,
-                {minigrid.pv_panel.name: total_solar_pv_power_produced},
+                total_solar_pv_power_produced,
                 {minigrid.pv_panel.name: pv_system_size.max},
                 optimisation.scenario,
                 Simulation(end_year, start_year),

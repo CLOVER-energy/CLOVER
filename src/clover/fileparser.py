@@ -1251,11 +1251,11 @@ def _parse_solar_inputs(  # pylint: disable=too-many-locals, too-many-statements
     scenarios: List[Scenario],
 ) -> Tuple[
     List[solar.PVPanel],
-    Dict[str, Dict[str, float]],
-    Dict[str, Dict[str, float]],
+    Dict[str, DefaultDict[str, float]],
+    Dict[str, DefaultDict[str, float]],
     List[solar.HybridPVTPanel],
-    Optional[Dict[str, Dict[str, float]]],
-    Optional[Dict[str, Dict[str, float]]],
+    Optional[Dict[str, DefaultDict[str, float]]],
+    Optional[Dict[str, DefaultDict[str, float]]],
     str,
     List[solar.SolarPanel],
 ]:
@@ -1375,9 +1375,9 @@ def _parse_solar_inputs(  # pylint: disable=too-many-locals, too-many-statements
 
     # Determine the PV panel costs.
     try:
-        pv_panel_costs: Dict[str, Dict[str, float]] = {
+        pv_panel_costs: Dict[str, DefaultDict[str, float]] = {
             pv_panel.name: [
-                panel_data[COSTS]
+                defaultdict(float, panel_data[COSTS])
                 for panel_data in solar_generation_inputs["panels"]
                 if panel_data[NAME] == pv_panel.name
             ][0]
@@ -1400,7 +1400,7 @@ def _parse_solar_inputs(  # pylint: disable=too-many-locals, too-many-statements
     try:
         pv_panel_emissions: Dict[str, Dict[str, float]] = {
             pv_panel.name: [
-                panel_data[EMISSIONS]
+                defaultdict(float, panel_data[EMISSIONS])
                 for panel_data in solar_generation_inputs["panels"]
                 if panel_data[NAME] == pv_panel.name
             ][0]
@@ -1482,9 +1482,9 @@ def _parse_solar_inputs(  # pylint: disable=too-many-locals, too-many-statements
         logger.info("PV-T panel successfully parsed: %s.", pvt_panel.name)
 
         try:
-            pvt_panel_costs: Optional[Dict[str, Dict[str, float]]] = {
+            pvt_panel_costs: Optional[Dict[str, DefaultDict[str, float]]] = {
                 pvt_panel.name: [
-                    panel_data[COSTS]
+                    defaultdict(float, panel_data[COSTS])
                     for panel_data in solar_generation_inputs["panels"]
                     if panel_data[NAME] == pvt_panel.name
                 ][0]
@@ -1503,9 +1503,9 @@ def _parse_solar_inputs(  # pylint: disable=too-many-locals, too-many-statements
             raise
         logger.info("PV-T panel costs successfully determined.")
         try:
-            pvt_panel_emissions: Optional[Dict[str, Dict[str, float]]] = {
+            pvt_panel_emissions: Optional[Dict[str, DefaultDict[str, float]]] = {
                 pvt_panel.name: [
-                    panel_data[EMISSIONS]
+                    defaultdict(float, panel_data[EMISSIONS])
                     for panel_data in solar_generation_inputs["panels"]
                     if panel_data[NAME] == pvt_panel.name
                 ][0]
@@ -1776,10 +1776,10 @@ def _parse_minigrid_inputs(  # pylint: disable=too-many-locals, too-many-stateme
     Optional[Dict[str, float]],
     Optional[Dict[str, float]],
     Minigrid,
-    Dict[str, Dict[str, float]],
-    Dict[str, Dict[str, float]],
-    Optional[Dict[str, Dict[str, float]]],
-    Optional[Dict[str, Dict[str, float]]],
+    Dict[str, DefaultDict[str, float]],
+    Dict[str, DefaultDict[str, float]],
+    Optional[Dict[str, DefaultDict[str, float]]],
+    Optional[Dict[str, DefaultDict[str, float]]],
     str,
     List[solar.SolarPanel],
     Optional[str],
@@ -1874,11 +1874,11 @@ def _parse_minigrid_inputs(  # pylint: disable=too-many-locals, too-many-stateme
     )
 
     pv_panel: solar.PVPanel
-    pv_panel_costs: Dict[str, Dict[str, float]]
-    pv_panel_emissions: Dict[str, Dict[str, float]]
+    pv_panel_costs: Dict[str, DefaultDict[str, float]]
+    pv_panel_emissions: Dict[str, DefaultDict[str, float]]
     pvt_panel: Optional[solar.HybridPVTPanel]
-    pvt_panel_costs: Optional[Dict[str, Dict[str, float]]]
-    pvt_panel_emissions: Optional[Dict[str, Dict[str, float]]]
+    pvt_panel_costs: Optional[Dict[str, DefaultDict[str, float]]]
+    pvt_panel_emissions: Optional[Dict[str, DefaultDict[str, float]]]
     solar_generation_inputs_filepath: str
     (
         pv_panels,
@@ -2607,8 +2607,12 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
 
     # Update the finance and GHG inputs accordingly with the PV data.
     logger.info("Updating with PV impact data.")
-    finance_inputs[ImpactingComponent.PV.value] = defaultdict(dict, pv_panel_costs)
-    ghg_inputs[ImpactingComponent.PV.value] = defaultdict(dict, pv_panel_emissions)
+    finance_inputs[ImpactingComponent.PV.value] = defaultdict(
+        lambda: defaultdict(float), pv_panel_costs
+    )
+    ghg_inputs[ImpactingComponent.PV.value] = defaultdict(
+        lambda: defaultdict(float), pv_panel_emissions
+    )
     logger.info("PV impact data successfully updated.")
 
     # Update the impact inputs with the diesel data.

@@ -372,7 +372,7 @@ class Minigrid:
 
         """
 
-        if self.pvt_panels is None:
+        if self.pvt_panels is None or len(self.pvt_panels) == 0:
             return None
 
         if len(self.pvt_panels) > 1:

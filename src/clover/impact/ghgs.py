@@ -935,7 +935,7 @@ def calculate_total_om(  # pylint: disable=too-many-locals
         logger.debug("No converters installed so no converter OM GHGs to calcualte.")
 
     diesel_om_ghgs = calculate_om_ghgs(
-        diesel_size, ghg_inputs, ImpactingComponent.PV.value, start_year, end_year
+        diesel_size, ghg_inputs, ImpactingComponent.DIESEL.value, start_year, end_year
     )
 
     general_om_ghgs = calculate_om_ghgs(

@@ -1003,7 +1003,11 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
     # Determine whether any default sizes have been overrided.
     overrided_default_sizes: bool = any(
         pv_panel.pv_unit_overrided for pv_panel in minigrid.pv_panels
-    ) or (minigrid.battery.storage_unit if minigrid.battery is not None else False)
+    ) or (
+        minigrid.battery.storage_unit_overrided
+        if minigrid.battery is not None
+        else False
+    )
 
     # Run a simulation or optimisation as appropriate.
     if operating_mode == OperatingMode.SIMULATION:
@@ -1139,7 +1143,7 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
                     ]
                     * pv_panel.pv_unit
                     * scenario.pv
-                    for pv_panel in minigrid.pv_panels
+                    for pv_panel in (minigrid.pv_panels + minigrid.pvt_panels)
                 },
             )
 
@@ -1211,7 +1215,6 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
 
         # Enforce that the optimisation inputs are set correctly before attempting an
         # optimisation.
-
         if optimisation_inputs is None:
             raise InputFileError(
                 "optimisation inputs",
@@ -1233,6 +1236,17 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
                 "optimisation inputs",
                 "An optimisation was requested that runs over the maximum lifetime of "
                 "the system.",
+            )
+
+        if len(minigrid.pv_panels) > 1:
+            raise InputFileError(
+                "energy-system inputs",
+                "Optimisations can only be run with a single PV panel.",
+            )
+        if len(minigrid.pvt_panels) > 1:
+            raise InputFileError(
+                "energy-system inputs",
+                "Optimisations can only be run with a single PV-T panel.",
             )
 
         for optimisation_number, optimisation in enumerate(
@@ -1273,17 +1287,30 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
                     finance_inputs,
                     ghg_inputs,
                     grid_profile,
-                    total_solar_data[solar.SolarDataType.TOTAL_IRRADIANCE.value],
+                    {
+                        panel_name: solar_data[
+                            solar.SolarDataType.TOTAL_IRRADIANCE.value
+                        ]
+                        for panel_name, solar_data in total_solar_data.items()
+                    },
                     kerosene_usage,
                     location,
                     logger,
                     minigrid,
                     optimisation,
                     optimisation_inputs,
-                    total_solar_data[solar.SolarDataType.TEMPERATURE.value],
+                    {
+                        panel_name: solar_data[solar.SolarDataType.TEMPERATURE.value]
+                        for panel_name, solar_data in total_solar_data.items()
+                    },
                     total_loads,
-                    total_solar_data[solar.SolarDataType.ELECTRICITY.value]
-                    * minigrid.pv_panel.pv_unit,
+                    {
+                        pv_panel.name: total_solar_data[pv_panel.name][
+                            solar.SolarDataType.ELECTRICITY.value
+                        ]
+                        * minigrid.pv_panel.pv_unit
+                        for pv_panel in (minigrid.pv_panels + minigrid.pvt_panels)
+                    },
                     total_wind_data[wind.WindDataType.WIND_SPEED.value]
                     if total_wind_data is not None
                     else None,
