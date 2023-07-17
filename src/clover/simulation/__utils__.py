@@ -37,6 +37,7 @@ from ..__utils__ import (
     NAME,
     RESOURCE_NAME_TO_RESOURCE_TYPE_MAPPING,
     OperatingMode,
+    ProgrammerJudgementFault,
     ResourceType,
     Scenario,
 )
@@ -128,11 +129,11 @@ class Minigrid:
     .. attribute:: hot_water_tank
         The hot-water tank being modelled, if applicable.
 
-    .. attribute:: pv_panel
-        The PV panel being considered.
+    .. attribute:: pv_panels
+        The PV panel(s) being considered.
 
-    .. attribute:: pvt_panel
-        The PV-T panel being considered, if applicable.
+    .. attribute:: pvt_panels
+        The PV-T panel(s) being considered, if applicable.
 
     .. attribute:: water_pump
         The water pump associated with the energy system, as a :class:`Transmitter`
@@ -154,8 +155,8 @@ class Minigrid:
     electric_water_heater: Optional[Converter]
     heat_exchanger: Optional[Exchanger]
     hot_water_tank: Optional[HotWaterTank]
-    pv_panel: PVPanel
-    pvt_panel: Optional[HybridPVTPanel]
+    pv_panels: List[PVPanel]
+    pvt_panels: List[HybridPVTPanel]
     water_pump: Optional[Transmitter]
 
     @classmethod
@@ -165,8 +166,8 @@ class Minigrid:
         diesel_water_heater: Optional[DieselWaterHeater],
         electric_water_heater: Optional[Converter],
         minigrid_inputs: Dict[str, Any],
-        pv_panel: PVPanel,
-        pvt_panel: Optional[HybridPVTPanel],
+        pv_panels: List[PVPanel],
+        pvt_panels: List[HybridPVTPanel],
         battery_inputs: Optional[List[Dict[str, Any]]] = None,
         exchanger_inputs: Optional[List[Dict[str, Any]]] = None,
         tank_inputs: Optional[List[Dict[str, Any]]] = None,
@@ -187,10 +188,11 @@ class Minigrid:
             - minigrid_inputs:
                 The inputs for the minigrid/energy system, extracted from the input
                 file.
-            - pv_panel:
-                The :class:`PVPanel` instance to use for the run.
-            - pvt_panel:
-                The :class:`HybridPVTPanel` instance to use for the run, if appropriate.
+            - pv_panels:
+                The `list` of :class:`PVPanel` instances to use for the run.
+            - pvt_panels:
+                The `list` of :class:`HybridPVTPanel` instances to use for the run,
+                if appropriate.
             - battery_inputs:
                 The battery input information.
             - exchanger_inputs:
@@ -326,10 +328,60 @@ class Minigrid:
             if EXCHANGER in minigrid_inputs
             else None,
             hot_water_tank,
-            pv_panel,
-            pvt_panel,
+            pv_panels,
+            pvt_panels,
             water_pump,
         )
+
+    @property
+    def pv_panel(self) -> PVPanel:
+        """
+        Returns a PV panel if there is only one panel being modelled, otherwise errors.
+
+        Outputs:
+            - pv_panel:
+                The :class:`PVPanel` being modelled, if only one is present.
+
+        Raises:
+            - ProgrammerJudgementFault
+                Raised if this is called when multiple panels are present.
+
+        """
+
+        if len(self.pv_panels) > 1:
+            raise ProgrammerJudgementFault(
+                "Minigrid.pv_panel",
+                "Cannot use `pv_panel` when multiple panels present.",
+            )
+
+        return self.pv_panels[0]
+
+    @property
+    def pvt_panel(self) -> Optional[HybridPVTPanel]:
+        """
+        Returns a PV-T panel if there is only one panel modelled, otherwise errors.
+
+        Outputs:
+            - pvt_panel:
+                The :class:`PVTPanel` being modelled, if only one is present. If PV-T
+                panels are not present in the system, `None` is returned.
+
+        Raises:
+            - ProgrammerJudgementFault
+                Raised if this is called when multiple panels are present.
+
+        """
+
+        if self.pvt_panels is None or len(self.pvt_panels) == 0:
+            return None
+
+        if len(self.pvt_panels) > 1:
+            raise ProgrammerJudgementFault(
+                "Minigrid.pvt_panel",
+                "Cannot use `pvt_panel` when multiple panels present.",
+            )
+
+        return self.pvt_panels[0]
 
 
 def check_scenario(
