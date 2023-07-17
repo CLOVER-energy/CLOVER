@@ -230,7 +230,6 @@ def calculate_total_equipment_ghgs(  # pylint: disable=too-many-locals
     """
 
     # Calculate system ghgs.
-    # FIXME: Need to decide on BOS ghgs for multiple PV arrays.
     bos_ghgs = calculate_ghgs(
         sum(pv_array_size.values()), ghg_inputs, ImpactingComponent.BOS.value, year
     )
@@ -409,8 +408,6 @@ def calculate_total_equipment_ghgs(  # pylint: disable=too-many-locals
     )
 
     # Calculate misc GHGs.
-    # FIXME: The GHGs which are misc. and scale with the capacity need to be
-    # investigated.
     misc_ghgs = calculate_misc_ghgs(
         diesel_size + sum(pv_array_size.values()), ghg_inputs
     )

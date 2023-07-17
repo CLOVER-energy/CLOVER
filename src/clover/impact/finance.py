@@ -404,7 +404,6 @@ def _misc_costs(
 
     """
 
-    # FIXME: The misc. capacity costs need to be considered for multiple PV arrays.
     total_misc_capacity_cost = (
         sum(pv_array_size.values()) + diesel_size
     ) * misc_capacity_cost
@@ -467,7 +466,6 @@ def get_total_equipment_cost(  # pylint: disable=too-many-locals, too-many-state
     """
 
     # Calculate the various system costs.
-    # FIXME: The BOS costs need to scale sensibly with the capcaity of installed
     # compoennts.
     bos_cost = _component_cost(
         finance_inputs[ImpactingComponent.BOS.value][COST],

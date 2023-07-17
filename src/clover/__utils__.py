@@ -2353,17 +2353,29 @@ class SystemDetails:
         ] = {
             "diesel_capacity": round(self.diesel_capacity, 3),
             "end_year": round(self.end_year, 3),
-            "final_pv_sizes": {
-                key: round(value, 3) for key, value in self.final_pv_sizes.items()
-            },
-            "initial_pv_sizes": {
-                key: round(value, 3) for key, value in self.initial_pv_sizes.items()
-            },
             "final_storage_size": round(self.final_storage_size, 3),
             "initial_storage_size": round(self.initial_storage_size, 3),
             "input_files": self.file_information,
             "start_year": round(self.start_year, 3),
         }
+
+        # Add the PV sizes
+        if len(self.final_pv_sizes) > 1:
+            system_details_as_dict["final_pv_sizes"] = {
+                key: round(value, 3) for key, value in self.final_pv_sizes.items()
+            }
+        else:
+            system_details_as_dict["final_pv_size"] = round(
+                list(self.final_pv_sizes.values())[0], 3
+            )
+        if len(self.initial_pv_sizes) > 1:
+            system_details_as_dict["initial_pv_sizes"] = {
+                key: round(value, 3) for key, value in self.initial_pv_sizes.items()
+            }
+        else:
+            system_details_as_dict["initial_pv_size"] = round(
+                list(self.initial_pv_sizes.values())[0], 3
+            )
 
         if self.initial_converter_sizes is not None:
             system_details_as_dict.update(
