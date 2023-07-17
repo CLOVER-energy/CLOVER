@@ -17,7 +17,7 @@ the clover module from the command-line interface.
 
 """
 
-__version__ = "5.0.9"
+__version__ = "5.1.0"
 
 import collections
 import datetime
