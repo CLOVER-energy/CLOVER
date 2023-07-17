@@ -221,15 +221,19 @@ def _calculate_electric_desalination_parameters(
         )
 
         # Compute the amount of energy required per litre desalinated.
-        energy_per_desalinated_litre: float = 0.001 * np.mean(
-            [
-                desalinator.input_resource_consumption[ResourceType.ELECTRIC]
-                / desalinator.maximum_output_capacity
-                + desalinator.input_resource_consumption[ResourceType.UNCLEAN_WATER]
-                * feedwater_sources[0].input_resource_consumption[ResourceType.ELECTRIC]
-                / desalinator.maximum_output_capacity
-                for desalinator in electric_desalinators
-            ]
+        energy_per_desalinated_litre: float = 0.001 * float(
+            np.mean(
+                [
+                    desalinator.input_resource_consumption[ResourceType.ELECTRIC]
+                    / desalinator.maximum_output_capacity
+                    + desalinator.input_resource_consumption[ResourceType.UNCLEAN_WATER]
+                    * feedwater_sources[0].input_resource_consumption[
+                        ResourceType.ELECTRIC
+                    ]
+                    / desalinator.maximum_output_capacity
+                    for desalinator in electric_desalinators
+                ]
+            )
         )
 
         # Compute the maximum throughput
@@ -436,7 +440,7 @@ def _calculate_renewable_cw_profiles(  # pylint: disable=too-many-locals, too-ma
                 BColours.fail,
                 BColours.endc,
             )
-            InputFileError(
+            raise InputFileError(
                 "converter inputs OR desalination scenario",
                 f"The htf mode '{HTFMode.COLD_WATER_HEATING.value}' is not currently "
                 "supported.",
@@ -1956,7 +1960,6 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
     diesel_fuel_usage: pd.DataFrame
     diesel_times: pd.DataFrame
     if scenario.diesel_scenario.mode in (DieselMode.BACKUP, DieselMode.BACKUP_UNMET):
-
         (
             diesel_capacity,
             diesel_energy,

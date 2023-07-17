@@ -28,6 +28,7 @@ import pandas as pd  # pylint: disable=import-error
 from ..__utils__ import (
     BColours,
     ColumnHeader,
+    hourly_profile_to_daily_sum,
     InputFileError,
     Location,
     ProgrammerJudgementFault,
@@ -540,46 +541,13 @@ def calculate_grid_extension_ghgs(
     ) + float(ghg_inputs[ImpactingComponent.GRID.value][INFRASTRUCTURE_GHGS])
 
 
-def calculate_independent_ghgs(
+def _calculate_inverter_ghgs(  # pylint: disable=too-many-locals
     electric_yearly_load_statistics: pd.DataFrame,
     end_year: int,
     ghg_inputs: Dict[str, Any],
     location: Location,
-    start_year: int,
-) -> float:
-    """
-    Calculates ghgs of equipment which is independent of simulation periods
-
-    Inputs:
-        - electric_yearly_load_statistics:
-            The electric yearly load statistics for the simulation period.
-        - end_year:
-            End year of simulation period
-        - ghg_inputs:
-            The GHG input informaiton.
-        - location:
-            The location being considered.
-        - start_year:
-            Start year of simulation period
-
-    Outputs:
-        GHGs
-
-    """
-
-    inverter_ghgs = calculate_inverter_ghgs(
-        electric_yearly_load_statistics, end_year, ghg_inputs, location, start_year
-    )
-    total_ghgs = inverter_ghgs  # ... + other components as required
-
-    return total_ghgs
-
-
-def calculate_inverter_ghgs(  # pylint: disable=too-many-locals
-    electric_yearly_load_statistics: pd.DataFrame,
-    end_year: int,
-    ghg_inputs: Dict[str, Any],
-    location: Location,
+    logger: Logger,
+    scenario: Scenario,
     start_year: int,
 ) -> float:
     """
@@ -594,6 +562,10 @@ def calculate_inverter_ghgs(  # pylint: disable=too-many-locals
             GHG input information.
         - location:
             The location being considered.
+        - logger:
+            The :class:`logging.Logger` to use for the run.
+        - scenario:
+            The :class:`Scenario` currently being considered.
         - start_year:
             Start year of simulation period
 
@@ -649,8 +621,33 @@ def calculate_inverter_ghgs(  # pylint: disable=too-many-locals
         ** inverter_info[ColumnHeader.INSTALLATION_YEAR.value].iloc[i]
         for i in range(len(inverter_info))
     ]
+
+    # If a static inverter size has been used, use this, otherwise, use the dynamically
+    # calculated values.
+    if scenario.fixed_inverter_size and any(
+        inverter_info[ColumnHeader.INVERTER_SIZE.value] > scenario.fixed_inverter_size
+    ):
+        logger.info(
+            "The static inverter size specified, %s, was below that calculated "
+            "within CLOVER. Calculated inverter sizes:\n%s",
+            scenario.fixed_inverter_size,
+            "\n".join(
+                [
+                    f"Size for year {year}: {size} kW"
+                    for year, size in zip(
+                        replacement_intervals[ColumnHeader.INSTALLATION_YEAR.value],
+                        inverter_info[ColumnHeader.INVERTER_SIZE.value],
+                    )
+                ]
+            ),
+        )
+
     inverter_info[ColumnHeader.TOTAL_GHGS.value] = [
-        inverter_info[ColumnHeader.INVERTER_SIZE.value].iloc[i]
+        (
+            inverter_info[ColumnHeader.INVERTER_SIZE.value].iloc[i]
+            if not scenario.fixed_inverter_size
+            else scenario.fixed_inverter_size
+        )
         * inverter_info["Inverter ghgs (kgCO2/kW)"].iloc[i]
         for i in range(len(inverter_info))
     ]
@@ -665,6 +662,53 @@ def calculate_inverter_ghgs(  # pylint: disable=too-many-locals
     ).round(2)
 
     return inverter_ghgs
+
+
+def calculate_independent_ghgs(
+    electric_yearly_load_statistics: pd.DataFrame,
+    end_year: int,
+    ghg_inputs: Dict[str, Any],
+    location: Location,
+    logger: Logger,
+    scenario: Scenario,
+    start_year: int,
+) -> float:
+    """
+    Calculates ghgs of equipment which is independent of simulation periods
+
+    Inputs:
+        - electric_yearly_load_statistics:
+            The electric yearly load statistics for the simulation period.
+        - end_year:
+            End year of simulation period
+        - ghg_inputs:
+            The GHG input informaiton.
+        - location:
+            The location being considered.
+        - logger:
+            The :class:`logging.Logger` to use for the run.
+        - scenario:
+            The :class:`Scenario` currently being considered.
+        - start_year:
+            Start year of simulation period
+
+    Outputs:
+        GHGs
+
+    """
+
+    inverter_ghgs = _calculate_inverter_ghgs(
+        electric_yearly_load_statistics,
+        end_year,
+        ghg_inputs,
+        location,
+        logger,
+        scenario,
+        start_year,
+    )
+    total_ghgs = inverter_ghgs  # ... + other components as required
+
+    return total_ghgs
 
 
 def calculate_kerosene_ghgs(
@@ -966,7 +1010,7 @@ def calculate_total_om(  # pylint: disable=too-many-locals
         )
 
     diesel_om_ghgs = calculate_om_ghgs(
-        diesel_size, ghg_inputs, ImpactingComponent.PV.value, start_year, end_year
+        diesel_size, ghg_inputs, ImpactingComponent.DIESEL.value, start_year, end_year
     )
 
     general_om_ghgs = calculate_om_ghgs(

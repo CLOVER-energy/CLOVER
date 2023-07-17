@@ -605,9 +605,9 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
             BColours.endc,
         )
         raise
-    else:
-        logger.info("All input files successfully parsed.")
-        print(DONE)
+
+    logger.info("All input files successfully parsed.")
+    print(DONE)
 
     print("Generating necessary profiles", end="\n")
 
@@ -677,7 +677,7 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
         os.path.join(auto_generated_files_directory, "solar"),
         generation_inputs,
         location,
-        f"{parsed_args.location}_{solar.SOLAR_LOGGER_NAME}",
+        f"{parsed_args.location}_{solar.SOLAR_LOGGER_NAME}{run_number_string}",
         parsed_args.refetch,
         minigrid.pv_panel,
         num_ninjas,
@@ -1226,6 +1226,7 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
             save_optimisation(
                 disable_tqdm,
                 logger,
+                optimisation,
                 optimisation_inputs,
                 optimisation_number,
                 output,

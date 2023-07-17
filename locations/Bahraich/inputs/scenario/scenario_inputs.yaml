@@ -16,6 +16,7 @@ scenarios:
       mode: backup # "backup" or "disabled" currently supported
       backup:
         threshold: 0.1 # Maximum acceptible blackouts (0.0-1.0)
+    # fixed_inverter_size: false # [kW] A fixed inverter size in kW if specified
     grid: true # "true" or "false"
     grid_type: bahraich # The grid profile to use
     prioritise_self_generation: true # "true" or "false"

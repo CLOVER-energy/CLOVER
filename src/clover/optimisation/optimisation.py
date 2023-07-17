@@ -46,13 +46,11 @@ from ..simulation import energy_system
 
 from ..__utils__ import (
     BColours,
-    # ColumnHeader,
     DONE,
     InternalError,
     Location,
     RenewableEnergySource,
     ResourceType,
-    # Scenario,
     Simulation,
 )
 from ..conversion.conversion import Converter, WaterSource
@@ -97,7 +95,7 @@ def _fetch_optimum_system(
     optimum_systems: Dict[Criterion, SystemAppraisal] = {}
 
     # Run through the various optimisation criteria.
-    for (criterion, criterion_mode) in optimisation.optimisation_criteria.items():
+    for criterion, criterion_mode in optimisation.optimisation_criteria.items():
         # Sort by the optimisation criterion.
         sufficient_systems.sort(
             key=lambda appraisal, crit=criterion: appraisal.criteria[crit],  # type: ignore

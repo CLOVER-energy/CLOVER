@@ -295,7 +295,8 @@
                 discount_rate: 0.1 # Fraction between 0 and 1.
                 general_o&m: 500 # [$ p.a.]
                 misc:
-                  cost: 0 # [$/kW]
+                  capacity_cost: 0  # [$/kWp]
+                  fixed_cost: 0  # [$]
                 bos:
                   cost: 200 # [$/kW]
                   cost_decrease: 2 # [% p.a.]
@@ -1096,6 +1097,7 @@
                     distribution_network: dc # DC ("dc") or AC ("ac") distribution network
                     grid: true # "true" or "false"
                     grid_type: default # The grid profile to use
+                    # fixed_inverter_size: false # [kW] A fixed inverter size in kW if specified
                     prioritise_self_generation: true # "true" or "false"
                     pv: true # "true" or "false"
                     pv_t: false # "true" or "false"

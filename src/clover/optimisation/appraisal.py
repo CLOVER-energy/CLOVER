@@ -43,6 +43,7 @@ from ..__utils__ import (
     Scenario,
     hourly_profile_to_daily_sum,
     Location,
+    Scenario,
     SystemAppraisal,
     SystemDetails,
     TechnicalAppraisal,
@@ -333,7 +334,7 @@ def _simulation_environmental_appraisal(  # pylint: disable=too-many-locals
         - pvt_addition:
             The additional number of PV-T panels added this iteration.
         - scenario:
-            The scenario for the run(s) being carried out.
+            The :class:`Scenario` currently being considered.
         - simulation_results:
             The system that was just simulated.
         - start_year:
@@ -390,6 +391,14 @@ def _simulation_environmental_appraisal(  # pylint: disable=too-many-locals
             scenario,
             storage_addition,
             technical_appraisal,
+        ) + ghgs.calculate_independent_ghgs(
+            electric_yearly_load_statistics,
+            end_year,
+            ghg_inputs,
+            location,
+            logger,
+            scenario,
+            start_year,
         )
     except KeyError as e:
         logger.error("Missing system equipment GHG input information: %s", str(e))
@@ -567,7 +576,7 @@ def _simulation_financial_appraisal(  # pylint: disable=too-many-locals
         - pvt_addition:
             The additional number of PV-T panels added this iteration.
         - scenario:
-            The scenario currently being considered.
+            The :class:`Scenario` currently being considered.
         - simulation_results:
             Outputs of Energy_System().simulation(...)
         - storage_addition:
@@ -622,6 +631,8 @@ def _simulation_financial_appraisal(  # pylint: disable=too-many-locals
     independent_expenditure = finance.independent_expenditure(
         finance_inputs,
         location,
+        logger,
+        scenario,
         yearly_load_statistics,
         start_year=system_details.start_year,
         end_year=system_details.end_year,
@@ -1398,7 +1409,7 @@ def appraise_system(  # pylint: disable=too-many-locals
             Report from previously installed system (not required if no system was
             previously deployed)
         - scenario:
-            The scenario currently being considered.
+            The :class:`Scenario` currently being considered.
         - simulation_results
             Outputs of Energy_System().simulation(...)
         - start_year:
