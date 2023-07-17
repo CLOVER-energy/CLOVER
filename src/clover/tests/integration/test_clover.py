@@ -37,6 +37,10 @@ from ...__main__ import main as clover_main
 from ...__utils__ import LOCATIONS_FOLDER_NAME, RAW_CLOVER_PATH
 
 
+# Default PV panel name:
+#    Name to use for the default PV panel.
+DEFAULT_PV_PANEL_NAME: str = "default_pv"
+
 # Integration folder name:
 #   The name of the integration tests folder.
 INTEGRATION_FOLDER_NAME: str = "integration"
@@ -339,9 +343,9 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
                 The capacity of the backup diesel generator installed, in kW.
             - diesel_times:
                 The fraction of the time for which the diesel generator was running.
-            - initial_storage_size:
+            - final_pv_size:
                 The final size, in PV units, of the PV system installed.
-            - finalal_storage_size:
+            - final_storage_size:
                 The final size, in kWh, of the storage system installed.
             - initial_pv_size:
                 The initial size, in PV units, of the PV system installed.
