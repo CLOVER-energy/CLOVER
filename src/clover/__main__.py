@@ -28,7 +28,7 @@ import re
 import sys
 
 from argparse import Namespace
-from typing import Any, DefaultDict, Dict, List, Optional, Pattern, Set, Tuple
+from typing import Any, DefaultDict, Dict, List, Match, Optional, Pattern, Set, Tuple
 
 import pandas as pd  # pylint: disable=import-error
 
@@ -431,7 +431,11 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
 
     logger.info("Command-line arguments successfully validated.")
 
-    version_string = f"Version {VERSION_REGEX.match(__version__).group('number')}"
+    version_match: Optional[Match[str]] = VERSION_REGEX.match(__version__)
+    version_number: str = (
+        version_match.group("number") if version_match is not None else __version__
+    )
+    version_string = f"Version {version_number}"
     print(
         CLOVER_HEADER_STRING.format(
             version_line=(
