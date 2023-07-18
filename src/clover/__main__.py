@@ -17,17 +17,18 @@ the clover module from the command-line interface.
 
 """
 
-__version__ = "5.1.0"
+__version__ = "5.1.0.post1"
 
 import collections
 import datetime
 import logging
 import math
 import os
+import re
 import sys
 
 from argparse import Namespace
-from typing import Any, DefaultDict, Dict, List, Optional, Set, Tuple
+from typing import Any, DefaultDict, Dict, List, Match, Optional, Pattern, Set, Tuple
 
 import pandas as pd  # pylint: disable=import-error
 
@@ -138,6 +139,10 @@ OPTIMISATION_OUTPUTS_FOLDER = os.path.join(OUTPUTS_FOLDER, "optimisation_outputs
 # Simulation outputs folder:
 #   The folder into which outputs should be saved.
 SIMULATION_OUTPUTS_FOLDER = os.path.join(OUTPUTS_FOLDER, "simulation_outputs")
+
+# Version regex:
+#   Regex used to extract the main version number.
+VERSION_REGEX: Pattern[str] = re.compile(r"(?P<number>\d\.\d\.\d)([\.](?P<post>.*))?")
 
 
 def _get_operating_mode(parsed_args: Namespace) -> OperatingMode:
@@ -426,7 +431,11 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
 
     logger.info("Command-line arguments successfully validated.")
 
-    version_string = f"Version {__version__}"
+    version_match: Optional[Match[str]] = VERSION_REGEX.match(__version__)
+    version_number: str = (
+        version_match.group("number") if version_match is not None else __version__
+    )
+    version_string = f"Version {version_number}"
     print(
         CLOVER_HEADER_STRING.format(
             version_line=(
@@ -1164,8 +1173,13 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
                         simulation_number,
                         system_performance_outputs,
                         total_loads,
-                        total_solar_data[solar.SolarDataType.ELECTRICITY.value]
-                        * minigrid.pv_panel.pv_unit,
+                        sum(
+                            total_solar_data[pv_panel.name][
+                                solar.SolarDataType.ELECTRICITY.value
+                            ]
+                            * pv_panel.pv_unit
+                            for pv_panel in minigrid.pv_panels
+                        ),
                     )
 
                 # Carry out an appraisal of the system.
