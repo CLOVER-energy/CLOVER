@@ -1164,8 +1164,8 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
                         simulation_number,
                         system_performance_outputs,
                         total_loads,
-                        total_solar_data[solar.SolarDataType.ELECTRICITY.value]
-                        * minigrid.pv_panel.pv_unit,
+                        sum(total_solar_data[pv_panel.name][solar.SolarDataType.ELECTRICITY.value]
+                        * pv_panel.pv_unit for pv_panel in minigrid.pv_panels),
                     )
 
                 # Carry out an appraisal of the system.
