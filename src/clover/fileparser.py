@@ -2848,7 +2848,7 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
         "location_inputs": location_inputs_filepath,
         "optimisation_inputs": optimisation_inputs_filepath,
         "scenarios": scenario_inputs_filepath,
-        "simularion": simulations_inputs_filepath,
+        "simulation": simulations_inputs_filepath,
         "solar_inputs": solar_generation_inputs_filepath,
         "transmission_inputs": transmission_inputs_filepath,
     }
