@@ -8,10 +8,5 @@
 # License: Open source                                                         #
 ################################################################################
 
-# NOTE: The renewables.ninja API token must be entered under the `token` field.
-# For more information, consult the User Guide, available within the repository
-# and online.
-#
-
 end_year: 2016 # The absolute end year for gathering solar data.
 start_year: 2007 # The absolute start year for gathering solar data.
