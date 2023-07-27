@@ -32,6 +32,7 @@ from .impact.ghgs import EMISSIONS, GHG_IMPACT
 from .simulation.diesel import DIESEL_CONSUMPTION, MINIMUM_LOAD, DieselWaterHeater
 
 from .__utils__ import (
+    API_TOKEN_PLACEHOLDER_TEXT,
     AuxiliaryHeaterType,
     BColours,
     DesalinationScenario,
@@ -51,6 +52,7 @@ from .__utils__ import (
     read_yaml,
     Scenario,
     Simulation,
+    TOKEN,
 )
 from .conversion.conversion import (
     Converter,
@@ -65,6 +67,7 @@ from .simulation.transmission import Transmitter
 
 __all__ = (
     "GENERATION_INPUTS_FILE",
+    "GLOBAL_SETTINGS_FILE",
     "INPUTS_DIRECTORY",
     "KEROSENE_TIMES_FILE",
     "KEROSENE_USAGE_FILE",
@@ -176,6 +179,10 @@ GENERATION_INPUTS_FILE: str = os.path.join("generation", "generation_inputs.yaml
 # GHG inputs file:
 #   The relative path to the GHG inputs file.
 GHG_INPUTS_FILE: str = os.path.join("impact", "ghg_inputs.yaml")
+
+# Global settings file:
+#   The relative path to the global-settings file.
+GLOBAL_SETTINGS_FILE: str = "global_settings.yaml"
 
 # Grid inputs file:
 #   The relative path to the grid-inputs file.
@@ -942,6 +949,45 @@ def _parse_exchanger_inputs(
         exchanger_inputs[EXCHANGERS],
         exchanger_inputs_filepath,
     )
+
+
+def _parse_global_settings(logger: Logger) -> Dict[str, Any]:
+    """Parses the global-settings file."""
+
+    def _create_global_setings_file() -> None:
+        """Create a default global-settings file if missing."""
+
+        with open(GLOBAL_SETTINGS_FILE, "w", encoding="UTF-8") as global_settings_file:
+            global_settings_file.write(f"token: {API_TOKEN_PLACEHOLDER_TEXT}")
+
+    # Parse global settings.
+    if not os.path.isfile(GLOBAL_SETTINGS_FILE):
+        _create_global_setings_file()
+
+    try:
+        global_settings_inputs: Optional[
+            Union[Dict[str, Any], List[Dict[str, Any]]]
+        ] = read_yaml(GLOBAL_SETTINGS_FILE, logger)
+    except FileNotFoundError:
+        logger.error(
+            "No global-settings file found, check that this file was correctly created "
+            "and exists in your current CLOVER directory."
+        )
+        raise InternalError("Error parsing global-settings file.")
+    else:
+        logger.info("Global settings inputs successfully read.")
+
+    # Ensure that the global-settings inputs are the correct format.
+    if not isinstance(global_settings_inputs, dict):
+        if global_settings_inputs is None:
+            global_settings_inputs = {}
+        else:
+            logger.error("Global settings inputs are not of type `dict`.")
+            raise InputFileError(
+                "global_settings.yaml", "Global-settings must be of type `dict`."
+            )
+
+    return global_settings_inputs
 
 
 def _parse_pvt_reduced_models(  # pylint: disable=too-many-statements
@@ -2233,6 +2279,7 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
     DefaultDict[str, DefaultDict[str, float]],
     Dict[str, Union[int, str]],
     DefaultDict[str, DefaultDict[str, float]],
+    Dict[str, str],
     pd.DataFrame,
     Location,
     Optional[OptimisationParameters],
@@ -2269,6 +2316,7 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
             - minigrid,
             - finance_inputs,
             - ghg_inputs,
+            - global_settings_inputs,
             - grid_times,
             - optimisation_inputs,
             - optimisations, the `set` of optimisations to run,
@@ -2283,6 +2331,10 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
 
     """
 
+    # Parse global-settings files
+    global_settings_inputs = _parse_global_settings(logger)
+
+    # Parse location-specific files.
     inputs_directory_relative_path = os.path.join(
         LOCATIONS_FOLDER_NAME,
         location_name,
@@ -2907,6 +2959,7 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
         finance_inputs,
         generation_inputs,
         ghg_inputs,
+        global_settings_inputs,
         grid_times,
         location,
         optimisation_parameters,

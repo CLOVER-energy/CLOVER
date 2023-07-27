@@ -33,6 +33,7 @@ from ..__utils__ import (
     Location,
     NAME,
     ProgrammerJudgementFault,
+    RenewablesNinjaError,
 )
 from .__utils__ import BaseRenewablesNinjaThread, SolarDataType, total_profile_output
 
@@ -150,6 +151,7 @@ class Tracking(enum.Enum):
         if self.value == 1:
             return "single_axis"
         return "dual_axis"
+
 
 class SolarPanel:  # pylint: disable=too-few-public-methods
     """
@@ -385,6 +387,7 @@ class PVPanel(
             "thermal_coefficient": self.thermal_coefficient,
             "tilt": self.tilt,
             "tracking": self.tracking.as_string,
+            "type": self.panel_type.value
         }
 
     @classmethod
@@ -800,6 +803,7 @@ class SolarDataThread(
         self,
         auto_generated_files_directory: str,
         generation_inputs: Dict[str, Any],
+        global_settings_inputs: Dict[str, str],
         location: Location,
         logger_name: str,
         pause_time: int,
@@ -840,6 +844,7 @@ class SolarDataThread(
         super().__init__(
             auto_generated_files_directory,
             generation_inputs,
+            global_settings_inputs,
             location,
             logger_name,
             pause_time,
@@ -859,8 +864,11 @@ def total_solar_output(
 
     """
 
-    return total_profile_output(
-        *args,
-        profile_name="solar",
-        profile_prefix=get_profile_prefix(pv_panel),
-    )
+    try:
+        return total_profile_output(
+            *args,
+            profile_name="solar",
+            profile_prefix=get_profile_prefix(pv_panel),
+        )
+    except FileNotFoundError:
+        raise RenewablesNinjaError()

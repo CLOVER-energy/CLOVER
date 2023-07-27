@@ -45,11 +45,11 @@ from ..__utils__ import (
     get_logger,
     Location,
     RenewablesNinjaError,
+    TOKEN,
 )
 
 __all__ = (
     "BaseRenewablesNinjaThread",
-    "TOKEN",
     "total_profile_output",
 )
 
@@ -66,10 +66,6 @@ FEB_29: int = (31 + 28) * 24
 #   To avoid being locked out of the renewables.ninja API, it is necessary for CLOVER to
 #   sleep between requests. The time taken for this, in seconds, is set below.
 RENEWABLES_NINJA_SLEEP_TIME = 12
-
-# Token:
-#   Keyword used when parsing the generation token.
-TOKEN = "token"
 
 
 class SolarDataType(enum.Enum):
@@ -360,6 +356,7 @@ class BaseRenewablesNinjaThread(threading.Thread):
         self,
         auto_generated_files_directory: str,
         generation_inputs: Dict[str, Any],
+        global_settings_inputs: Dict[str, str],
         location: Location,
         logger_name: str,
         pause_time: int,
@@ -378,6 +375,8 @@ class BaseRenewablesNinjaThread(threading.Thread):
                 The directory in which CLOVER-generated files should be saved.
             - generation_inputs:
                 The generation inputs.
+            - global_settings_inputs:
+                The global-settings inputs.
             - location:
                 The location currently being considerted.
             - logger_name:
@@ -403,6 +402,7 @@ class BaseRenewablesNinjaThread(threading.Thread):
         self.generation_inputs: Dict[
             str, Union[bool, int, str, float]
         ] = generation_inputs
+        self.global_settings_inputs: Dict[str, str] = global_settings_inputs
         self.location: Location = location
         self.logger: Logger = get_logger(logger_name, verbose)
         self.logger_name: str = logger_name
@@ -487,7 +487,7 @@ class BaseRenewablesNinjaThread(threading.Thread):
                 )
                 try:
                     data = _get_profile_output(
-                        str(self.generation_inputs[TOKEN]),
+                        str(self.global_settings_inputs[TOKEN]),
                         self.location,
                         self.logger,
                         self.profile_key,
