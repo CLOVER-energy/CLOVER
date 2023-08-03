@@ -287,8 +287,6 @@
                 inverter:
                   cost: 200 # [$/kW]
                   cost_decrease: 2 # [% p.a.]
-                  lifetime: 4 # [years]
-                  size_increment: 1 # [kW]
                 kerosene:
                   cost: 0.008 # [$/hour]
             - file: ghg_inputs.yaml
@@ -326,8 +324,6 @@
                 inverter:
                   ghgs: 75 # [kgCO2/kW]
                   ghg_decrease: 2 # [2,% p.a.]
-                  lifetime: 4 # [years]
-                  size_increment: 1 # [kW]
                 kerosene:
                   ghgs: 0.055 # [kgCO2/hour]
         - directory: load
@@ -877,6 +873,9 @@
                   ac_to_dc: 0.8 # Conversion efficiency (0.0-1.0)
                   ac_to_ac: 0.98 # Conversion efficiency (0.0-1.0)
                 diesel_generator: default_diesel
+                inverter:
+                  lifetime: 4 # [years]
+                  size_increment: 1 # [kW]
                 pv_panel: default_pv
             # - file: "energy_system.yaml"
             #   contents: |+
