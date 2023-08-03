@@ -17,7 +17,7 @@ calculations associated with these storage media are carried out in this module.
 """
 
 from logging import Logger
-from typing import Dict, Optional, Tuple
+from typing import Dict, Optional, Tuple, Union
 
 import pandas as pd
 import numpy as np
@@ -371,12 +371,14 @@ def get_electric_battery_storage_profile(  # pylint: disable=too-many-locals, to
     logger: Logger,
     minigrid: Minigrid,
     processed_total_electric_load: pd.DataFrame,
-    renewables_power_produced: Dict[RenewableEnergySource, pd.DataFrame],
+    pv_sizes: Optional[Dict[str, float]] = None,
+    renewables_power_produced: Dict[
+        RenewableEnergySource, Union[pd.DataFrame, Dict[str, pd.Series]]
+    ],
     scenario: Scenario,
     clean_water_pvt_size: int = 0,
     end_hour: int = 4,
     hot_water_pvt_size: int = 0,
-    pv_size: float = 10,
     start_hour: int = 0,
 ) -> Tuple[
     pd.DataFrame,
@@ -413,7 +415,7 @@ def get_electric_battery_storage_profile(  # pylint: disable=too-many-locals, to
             End year of this simulation period.
         - hot_water_pvt_size:
             Amount of PV-T in units of PV-T associated with the hot-water system.
-        - pv_size:
+        - pv_sizes:
             Amount of PV in units of PV.
         - start_year:
             Start year of this simulation period.
@@ -441,26 +443,41 @@ def get_electric_battery_storage_profile(  # pylint: disable=too-many-locals, to
 
     """
 
-    # Initialise power generation, including degradation of PV
-    try:
-        pv_power_produced = renewables_power_produced[RenewableEnergySource.PV]
-    except KeyError:
-        logger.critical(
-            "%sCould not determine PV power produced from renewables production.%s",
-            BColours.fail,
-            BColours.endc,
-        )
-        raise InternalError(
-            "No PV power in renewables_power_produced mapping, fatal."
-        ) from None
-    pv_generation_array = pv_power_produced * pv_size
-    solar_degradation_array = solar_degradation(
-        minigrid.pv_panel.lifetime, location.max_years
-    ).iloc[start_hour:end_hour, 0]
-    pv_generation = pd.DataFrame(
-        np.asarray(pv_generation_array.iloc[start_hour:end_hour])
-        * np.asarray(solar_degradation_array)
-    )
+    # Determine the PV power from the panels installed.
+    pv_generation: pd.DataFrame = pd.DataFrame([0] * (end_hour - start_hour))
+
+    if pv_sizes is not None:
+        # Attempt to determine the power produced by PV panels installed.
+        try:
+            pv_power_produced = renewables_power_produced[RenewableEnergySource.PV]
+        except KeyError:
+            logger.critical(
+                "%sCould not determine PV power produced from renewables production.%s",
+                BColours.fail,
+                BColours.endc,
+            )
+            raise InternalError(
+                "No PV power in renewables_power_produced mapping, fatal."
+            ) from None
+
+        # Cycle through the panels and append their performances.
+        for pv_panel in minigrid.pv_panels:
+            # Initialise power generation, including degradation of PV, for each PV panel being
+            # considered.
+            pv_generation_array = (
+                pv_power_produced[pv_panel.name] * pv_sizes[pv_panel.name]
+            )
+            solar_degradation_array = solar_degradation(
+                pv_panel.lifetime, location.max_years
+            ).iloc[start_hour:end_hour, 0]
+            pv_generation_frame = pd.DataFrame(
+                np.asarray(pv_generation_array.iloc[start_hour:end_hour])
+                * np.asarray(solar_degradation_array)
+            )
+            if pv_generation is None:
+                pv_generation = pv_generation_frame
+            else:
+                pv_generation += pv_generation_frame
 
     # Initialise PV-T power generation, including degradation of PV
     if minigrid.pvt_panel is not None:
@@ -487,9 +504,9 @@ def get_electric_battery_storage_profile(  # pylint: disable=too-many-locals, to
         # Compute the clean-water PV-T electricity generated.
         if RenewableEnergySource.CLEAN_WATER_PVT in renewables_power_produced:
             try:
-                clean_water_pvt_electric_power_produced = renewables_power_produced[
-                    RenewableEnergySource.CLEAN_WATER_PVT
-                ]
+                clean_water_pvt_electric_power_produced: pd.DataFrame = pd.DataFrame(
+                    renewables_power_produced[RenewableEnergySource.CLEAN_WATER_PVT]
+                )
             except KeyError:
                 logger.error(
                     "%sCould not determine clean-water PV-T power produced from "
@@ -517,9 +534,9 @@ def get_electric_battery_storage_profile(  # pylint: disable=too-many-locals, to
         # Compute the clean-water source.
         if RenewableEnergySource.HOT_WATER_PVT in renewables_power_produced:
             try:
-                hot_water_pvt_electric_power_produced = renewables_power_produced[
-                    RenewableEnergySource.HOT_WATER_PVT
-                ]
+                hot_water_pvt_electric_power_produced: pd.DataFrame = pd.DataFrame(
+                    renewables_power_produced[RenewableEnergySource.HOT_WATER_PVT]
+                )
             except KeyError:
                 logger.error(
                     "%sCould not determine PV-T power produced from renewables "
@@ -551,18 +568,22 @@ def get_electric_battery_storage_profile(  # pylint: disable=too-many-locals, to
 
     # Consider power distribution network
     if scenario.distribution_network == DistributionNetwork.DC:
-        pv_generation = pv_generation.mul(  # type: ignore
-            minigrid.dc_to_dc_conversion_efficiency
-        )
+        generation_efficiency = minigrid.dc_to_dc_conversion_efficiency
         transmission_efficiency = minigrid.dc_transmission_efficiency
         # grid_conversion_eff = minigrid.ac_to_dc_conversion
 
     else:
-        pv_generation = pv_generation.mul(  # type: ignore
-            minigrid.dc_to_ac_conversion_efficiency
-        )
+        generation_efficiency = minigrid.dc_to_ac_conversion_efficiency
         transmission_efficiency = minigrid.ac_transmission_efficiency
         # grid_conversion_efficiency = minigrid.ac_to_ac_conversion
+
+    pv_generation = pv_generation.mul(generation_efficiency)  # type: ignore
+    clean_water_pvt_electric_generation = clean_water_pvt_electric_generation.mul(  # type: ignore
+        generation_efficiency
+    )
+    hot_water_pvt_electric_generation = clean_water_pvt_electric_generation.mul(  # type: ignore
+        generation_efficiency
+    )
 
     if transmission_efficiency is None:
         logger.error(

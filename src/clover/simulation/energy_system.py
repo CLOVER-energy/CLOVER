@@ -244,14 +244,14 @@ def _calculate_renewable_cw_profiles(  # pylint: disable=too-many-locals, too-ma
     converters: List[Converter],
     disable_tqdm: bool,
     end_hour: int,
-    irradiance_data: pd.Series,
+    irradiance_data: Dict[str, pd.Series],
     logger: Logger,
     minigrid: Minigrid,
     number_of_cw_tanks: int,
     pvt_size: int,
     scenario: Scenario,
     start_hour: int,
-    temperature_data: pd.Series,
+    temperature_data: Dict[str, pd.Series],
     wind_speed_data: Optional[pd.Series],
 ) -> Tuple[
     Optional[pd.DataFrame],
@@ -482,7 +482,7 @@ def _calculate_renewable_cw_profiles(  # pylint: disable=too-many-locals, too-ma
         ) = calculate_pvt_output(
             disable_tqdm,
             end_hour,
-            irradiance_data[start_hour:end_hour],
+            irradiance_data[minigrid.pvt_panel.name][start_hour:end_hour],  # type: ignore
             logger,
             minigrid,
             number_of_cw_tanks,
@@ -491,7 +491,7 @@ def _calculate_renewable_cw_profiles(  # pylint: disable=too-many-locals, too-ma
             ResourceType.CLEAN_WATER,
             scenario,
             start_hour,
-            temperature_data[start_hour:end_hour],
+            temperature_data[minigrid.pvt_panel.name][start_hour:end_hour],  # type: ignore
             thermal_desalination_plant,
             wind_speed_data[start_hour:end_hour],
         )
@@ -565,7 +565,7 @@ def _calculate_renewable_hw_profiles(  # pylint: disable=too-many-locals, too-ma
     converters: List[Converter],
     disable_tqdm: bool,
     end_hour: int,
-    irradiance_data: pd.Series,
+    irradiance_data: Dict[str, pd.Series],
     logger: Logger,
     minigrid: Minigrid,
     number_of_hw_tanks: int,
@@ -573,7 +573,7 @@ def _calculate_renewable_hw_profiles(  # pylint: disable=too-many-locals, too-ma
     pvt_size: int,
     scenario: Scenario,
     start_hour: int,
-    temperature_data: pd.Series,
+    temperature_data: Dict[str, pd.Series],
     wind_speed_data: Optional[pd.Series],
 ) -> Tuple[
     Optional[Union[Converter, DieselWaterHeater]],
@@ -758,7 +758,7 @@ def _calculate_renewable_hw_profiles(  # pylint: disable=too-many-locals, too-ma
         ) = calculate_pvt_output(
             disable_tqdm,
             end_hour,
-            irradiance_data[start_hour:end_hour],
+            irradiance_data[minigrid.pvt_panel.name][start_hour:end_hour],  # type: ignore
             logger,
             minigrid,
             number_of_hw_tanks,
@@ -767,7 +767,7 @@ def _calculate_renewable_hw_profiles(  # pylint: disable=too-many-locals, too-ma
             ResourceType.HOT_CLEAN_WATER,
             scenario,
             start_hour,
-            temperature_data[start_hour:end_hour],
+            temperature_data[minigrid.pvt_panel.name][start_hour:end_hour],  # type: ignore
             None,
             wind_speed_data[start_hour:end_hour],
         )
@@ -1063,18 +1063,18 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
     electric_storage_size: float,
     grid_profile: Optional[pd.DataFrame],
     hot_water_pvt_size: int,
-    irradiance_data: pd.Series,
+    irradiance_data: Dict[str, pd.Series],
     kerosene_usage: pd.DataFrame,
     location: Location,
     logger: Logger,
     minigrid: Minigrid,
     number_of_cw_tanks: int,
     number_of_hw_tanks: int,
-    pv_power_produced: pd.Series,
-    pv_size: float,
+    pv_power_produced: Dict[str, pd.Series],
+    pv_sizes: Optional[Dict[str, float]],
     scenario: Scenario,
     simulation: Simulation,
-    temperature_data: pd.Series,
+    temperature_data: Dict[str, pd.Series],
     total_loads: Dict[ResourceType, Optional[pd.DataFrame]],
     wind_speed_data: Optional[pd.Series],
 ) -> Tuple[datetime.timedelta, pd.DataFrame, SystemDetails]:
@@ -1101,7 +1101,7 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
         - hot_water_pvt_size:
             Amount of PV-T in PV-T units associated with the hot-water system.
         - irradiance_data:
-            The total solar irradiance data.
+            The total solar irradiance data incident on each panel.
         - kerosene_usage:
             The kerosene-usage profile.
         - location:
@@ -1114,10 +1114,11 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
             The number of clean-water tanks installed in the system.
         - number_of_hw_tanks:
             The number of hot-water tanks installed in the system.
-        - pv_size:
-            Amount of PV in PV units.
+        - pv_sizes:
+            Amount of PV in PV units for each of the pv panels being considered.
         - pv_power_produced:
-            The total energy outputted by the solar system per PV unit.
+            The total energy outputted by the solar system per PV unit for each of the
+            pv panels being considered
         - renewable_cw_produced:
             The amount of clean-water produced renewably, mesaured in litres.
         - scenario:
@@ -1125,7 +1126,7 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
         - simulation:
             The simulation to run.
         - temperature_data:
-            The temperature data series.
+            The temperature data series for each of the pv panels being considered
         - total_loads:
             A mapping between :class:`ResourceType`s and their associated total loads
             placed on the system.
@@ -1417,8 +1418,11 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
     kerosene_profile: pd.Series
     load_energy: pd.DataFrame
     renewables_energy: pd.DataFrame
-    renewables_energy_map: Dict[RenewableEnergySource, pd.DataFrame] = {
-        RenewableEnergySource.PV: pv_power_produced,  # type: ignore
+    renewables_energy_by_source: Dict[RenewableEnergySource, pd.DataFrame]
+    renewables_energy_map: Dict[
+        RenewableEnergySource, Union[pd.DataFrame, Dict[str, pd.Series]]
+    ] = {
+        RenewableEnergySource.PV: pv_power_produced,
         RenewableEnergySource.CLEAN_WATER_PVT: (
             clean_water_pvt_electric_power_per_unit
         ),
@@ -1431,7 +1435,7 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
         kerosene_profile,
         load_energy,
         renewables_energy,
-        renewables_energy_map,
+        renewables_energy_by_source,
         renewables_energy_used_directly,
     ) = get_electric_battery_storage_profile(
         clean_water_pvt_size=clean_water_pvt_size,
@@ -1445,7 +1449,7 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
         renewables_power_produced=renewables_energy_map,
         scenario=scenario,
         end_hour=end_hour,
-        pv_size=pv_size,
+        pv_sizes=pv_sizes,
         start_hour=start_hour,
     )
 
@@ -2018,12 +2022,15 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
         number_of_buffer_tanks if scenario.desalination_scenario is not None else None,
         number_of_cw_tanks if scenario.desalination_scenario is not None else None,
         number_of_hw_tanks if scenario.hot_water_scenario is not None else None,
-        pv_size
-        * float(
-            solar_degradation(minigrid.pv_panel.lifetime, location.max_years).iloc[
-                HOURS_PER_YEAR * (simulation.end_year - simulation.start_year), 0
-            ]
-        ),
+        {
+            pv_panel.name: (pv_sizes[pv_panel.name] if pv_sizes is not None else 0)
+            * float(
+                solar_degradation(pv_panel.lifetime, location.max_years).iloc[
+                    HOURS_PER_YEAR * (simulation.end_year - simulation.start_year), 0
+                ]
+            )
+            for pv_panel in minigrid.pv_panels
+        },
         float(
             electric_storage_size
             * minigrid.battery.storage_unit
@@ -2042,7 +2049,9 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
         number_of_buffer_tanks if scenario.desalination_scenario is not None else None,
         number_of_cw_tanks if scenario.desalination_scenario is not None else None,
         number_of_hw_tanks if scenario.hot_water_scenario is not None else None,
-        pv_size,
+        pv_sizes
+        if pv_sizes is not None
+        else {pv_panel.name: 0 for pv_panel in minigrid.pv_panels},
         float(electric_storage_size * minigrid.battery.storage_unit),
         [source.name for source in required_cw_feedwater_sources]
         if len(required_cw_feedwater_sources) > 0
@@ -2051,11 +2060,13 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
     )
 
     # Separate out the various renewable inputs.
-    pv_energy = renewables_energy_map[RenewableEnergySource.PV]
-    clean_water_pvt_energy = renewables_energy_map[
+    pv_energy = renewables_energy_by_source[RenewableEnergySource.PV]
+    clean_water_pvt_energy = renewables_energy_by_source[
         RenewableEnergySource.CLEAN_WATER_PVT
     ]
-    hot_water_pvt_energy = renewables_energy_map[RenewableEnergySource.HOT_WATER_PVT]
+    hot_water_pvt_energy = renewables_energy_by_source[
+        RenewableEnergySource.HOT_WATER_PVT
+    ]
     total_pvt_energy = pd.DataFrame(
         clean_water_pvt_energy.values + hot_water_pvt_energy.values
     )
@@ -2222,7 +2233,7 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
 #             system_performance_outputs = self.simulation(
 #                 start_year=int(optimisation_report["Start year"][sim]),
 #                 end_year=int(optimisation_report["End year"][sim]),
-#                 pv_size=float(optimisation_report["Initial PV size"][sim]),
+#                 pv_sizes=float(optimisation_report["Initial PV size"][sim]),
 #                 electric_storage_size=float(
 #                     optimisation_report["Initial storage size"][sim]
 #                 ),

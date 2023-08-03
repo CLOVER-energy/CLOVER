@@ -1256,12 +1256,12 @@ def _parse_solar_inputs(  # pylint: disable=too-many-locals, too-many-statements
     logger: Logger,
     scenarios: List[Scenario],
 ) -> Tuple[
-    solar.PVPanel,
-    Dict[str, float],
-    Dict[str, float],
-    Optional[solar.HybridPVTPanel],
-    Optional[Dict[str, float]],
-    Optional[Dict[str, float]],
+    List[solar.PVPanel],
+    Dict[str, DefaultDict[str, float]],
+    Dict[str, DefaultDict[str, float]],
+    List[solar.HybridPVTPanel],
+    Optional[Dict[str, DefaultDict[str, float]]],
+    Optional[Dict[str, DefaultDict[str, float]]],
     str,
 ]:
     """
@@ -1282,15 +1282,27 @@ def _parse_solar_inputs(  # pylint: disable=too-many-locals, too-many-statements
 
     Outputs:
         A `tuple` containing:
-        - The :class:`solar.PVPanel` being used for the run;
-        - The pv-panel cost information;
-        - The pv-panel emissions information;
-        - The :class:`HybridPVTPanel` being used for the run, if relevant;
-        - The pv-t-panel cost information, if relevant;
-        - The pv-t-panel emissions information, if relevant;
+        - A `list` of the :class:`solar.PVPanel` instances being used for the run;
+        - The pv-panel cost information for each panel being considered;
+        - The pv-panel emissions information for each panel being considered;
+        - A `list` of the :class:`HybridPVTPanel` being used for the run, if relevant;
+        - The pv-t-panel cost information for each panel being considered, if relevant;
+        - The pv-t-panel emissions informatio for each panel being considered, if
+          relevant;
         - The relative path to the solar generation inputs filepath.
 
     """
+
+    # Raise an error if both `pv_panel` and `pv_panels` etc. have been used.
+    if "pv_panel" in energy_system_inputs and "pv_panels" in energy_system_inputs:
+        logger.error(
+            "Cannot use both 'pv_panel' and 'pv_panels' in energy-system inputs. Only "
+            "one is acceptable use."
+        )
+        raise InputFileError(
+            "energy-system inputs",
+            "Both 'pv_panel' and 'pv_panels' keywords were used.",
+        )
 
     # Parse the solar input information.
     solar_generation_inputs_filepath = os.path.join(
@@ -1331,44 +1343,58 @@ def _parse_solar_inputs(  # pylint: disable=too-many-locals, too-many-statements
 
     # Determine the PV panel being modelled.
     try:
-        pv_panel: Union[solar.PVPanel, solar.SolarPanel] = [
+        pv_panels: List[Union[solar.PVPanel, solar.SolarPanel]] = [
             panel
             for panel in solar_panels
             if panel.panel_type == solar.SolarPanelType.PV  # type: ignore
-            and panel.name == energy_system_inputs["pv_panel"]
-        ][0]
+            and (
+                panel.name == energy_system_inputs.get("pv_panel", "")
+                or panel.name in energy_system_inputs.get("pv_panels", [])
+            )
+        ]
     except IndexError:
         logger.error(
-            "%sPV panel %s not found in pv panel inputs.%s",
+            "%sPV panel%s %s not found in pv panel inputs.%s",
             BColours.fail,
-            energy_system_inputs["pv_panel"],
+            "(s)" if "pv_panels" in energy_system_inputs else "",
+            energy_system_inputs.get(
+                "pv_panel", ", ".join(energy_system_inputs.get("pv_panels", []))
+            ),
             BColours.endc,
         )
         raise
 
-    if not isinstance(pv_panel, solar.PVPanel):
-        logger.error(
-            "%sThe PV panel selected is not a valid PV panel.%s",
-            BColours.fail,
-            BColours.endc,
-        )
-        raise InputFileError(
-            "solar inputs OR energy system inputs",
-            "The PV panel selected is not a valid PV panel.",
-        )
+    for pv_panel in pv_panels:
+        if not isinstance(pv_panel, solar.PVPanel):
+            logger.error(
+                "%sThe PV panel, %s, selected is not a valid PV panel.%s",
+                BColours.fail,
+                pv_panel.name,
+                BColours.endc,
+            )
+            raise InputFileError(
+                "solar inputs OR energy system inputs",
+                "The PV panel selected is not a valid PV panel.",
+            )
 
     # Determine the PV panel costs.
     try:
-        pv_panel_costs: Dict[str, float] = [
-            panel_data[COSTS]
-            for panel_data in solar_generation_inputs["panels"]
-            if panel_data[NAME] == pv_panel.name
-        ][0]
+        pv_panel_costs: Dict[str, DefaultDict[str, float]] = {
+            pv_panel.name: [
+                defaultdict(float, panel_data[COSTS])
+                for panel_data in solar_generation_inputs["panels"]
+                if panel_data[NAME] == pv_panel.name
+            ][0]
+            for pv_panel in pv_panels
+        }
     except (KeyError, IndexError):
         logger.error(
-            "%sFailed to determine costs for PV panel %s.%s",
+            "%sFailed to determine costs for PV panel%s %s.%s",
             BColours.fail,
-            energy_system_inputs["pv_panel"],
+            "(s)" if "pv_panels" in energy_system_inputs else "",
+            energy_system_inputs.get(
+                "pv_panel", ", ".join(energy_system_inputs.get("pv_panels", []))
+            ),
             BColours.endc,
         )
         raise
@@ -1376,41 +1402,64 @@ def _parse_solar_inputs(  # pylint: disable=too-many-locals, too-many-statements
 
     # Determine the PV panel emissions.
     try:
-        pv_panel_emissions: Dict[str, float] = [
-            panel_data[EMISSIONS]
-            for panel_data in solar_generation_inputs["panels"]
-            if panel_data[NAME] == pv_panel.name
-        ][0]
+        pv_panel_emissions: Dict[str, Dict[str, float]] = {
+            pv_panel.name: [
+                defaultdict(float, panel_data[EMISSIONS])
+                for panel_data in solar_generation_inputs["panels"]
+                if panel_data[NAME] == pv_panel.name
+            ][0]
+            for pv_panel in pv_panels
+        }
     except (KeyError, IndexError):
         logger.error(
-            "%sFailed to determine emissions for PV panel %s.%s",
+            "%sFailed to determine emissions for PV panel%s %s.%s",
             BColours.fail,
-            energy_system_inputs["pv_panel"],
+            "(s)" if "pv_panels" in energy_system_inputs else "",
+            energy_system_inputs.get(
+                "pv_panel", ", ".join(energy_system_inputs.get("pv_panels", []))
+            ),
             BColours.endc,
         )
         raise
     logger.info("PV panel emissions successfully determined.")
 
     # Determine the PVT panel being modelled, if appropriate.
-    if "pvt_panel" in energy_system_inputs:
+    if "pvt_panel" in energy_system_inputs or "pvt_panels" in energy_system_inputs:
+        # Raise an error if both `pvt_panel` and `pvt_panels` etc. have been used.
+        if "pvt_panel" in energy_system_inputs and "pvt_panels" in energy_system_inputs:
+            logger.error(
+                "Cannot use both 'pvt_panel' and 'pvt_panels' in energy-system inputs. "
+                "Only one is acceptable use."
+            )
+            raise InputFileError(
+                "energy-system inputs",
+                "Both 'pvt_panel' and 'pvt_panels' keywords were used.",
+            )
+
         try:
-            pvt_panel: Optional[Union[solar.HybridPVTPanel, solar.SolarPanel]] = [
+            pvt_panels: List[Union[solar.HybridPVTPanel, solar.SolarPanel]] = [
                 panel
                 for panel in solar_panels
                 if panel.panel_type == solar.SolarPanelType.PV_T  # type: ignore
-                and panel.name == energy_system_inputs["pvt_panel"]
-            ][0]
+                and (
+                    panel.name == energy_system_inputs.get("pvt_panel", "")
+                    or panel.name in energy_system_inputs.get("pvt_panels", [])
+                )
+            ]
             logger.info("PV-T panel successfully determined.")
         except IndexError:
             logger.error(
-                "%sPV-T panel %s not found in pv panel inputs.%s",
+                "%sPV-T panel%s %s not found in pv panel inputs.%s",
                 BColours.fail,
-                energy_system_inputs["pvt_panel"],
+                "(s)" if "pvt_panels" in energy_system_inputs else "",
+                energy_system_inputs.get(
+                    "pvt_panel", ", ".join(energy_system_inputs.get("pvt_panels", []))
+                ),
                 BColours.endc,
             )
             raise
 
-        if pvt_panel is None:
+        if len(pvt_panels) == 0:
             logger.error(
                 "%sThe PV-T panel selected caused an internal error when determining "
                 "the relevant panel data.%s",
@@ -1421,60 +1470,76 @@ def _parse_solar_inputs(  # pylint: disable=too-many-locals, too-many-statements
                 "The PV-T panel selected was found but the information concerning it "
                 "was not successfully parsed."
             )
-        if not isinstance(pvt_panel, solar.HybridPVTPanel):
-            logger.error(
-                "%sThe PV-T panel selected %s is not a valid PV-T panel.%s",
-                BColours.fail,
-                energy_system_inputs["pv_panel"],
-                BColours.endc,
-            )
-            raise InputFileError(
-                "solar inputs OR energy system inputs",
-                "The PV-T panel selected is not a valid HybridPVTPanel.",
-            )
+        for pvt_panel in pvt_panels:
+            if not isinstance(pvt_panel, solar.HybridPVTPanel):
+                logger.error(
+                    "%sThe PV-T panel selected %s is not a valid PV-T panel.%s",
+                    BColours.fail,
+                    pvt_panel.name,
+                    BColours.endc,
+                )
+                raise InputFileError(
+                    "solar inputs OR energy system inputs",
+                    "The PV-T panel selected is not a valid HybridPVTPanel.",
+                )
 
-        logger.info("PV-T panel successfully parsed: %s.", pvt_panel.name)
+        logger.info(
+            "PV-T panel(s) successfully parsed: %s.",
+            ", ".join({entry.name for entry in pvt_panels}),
+        )
 
         try:
-            pvt_panel_costs: Optional[Dict[str, float]] = [
-                panel_data[COSTS]
-                for panel_data in solar_generation_inputs["panels"]
-                if panel_data[NAME] == pvt_panel.name
-            ][0]
+            pvt_panel_costs: Optional[Dict[str, DefaultDict[str, float]]] = {
+                pvt_panel.name: [
+                    defaultdict(float, panel_data[COSTS])
+                    for panel_data in solar_generation_inputs["panels"]
+                    if panel_data[NAME] == pvt_panel.name
+                ][0]
+                for pvt_panel in pvt_panels
+            }
         except (KeyError, IndexError):
             logger.error(
-                "%sFailed to determine costs for PV-T panel %s.%s",
+                "%sFailed to determine costs for PV-T panel%s %s.%s",
                 BColours.fail,
-                energy_system_inputs["pvt_panel"],
+                "(s)" if "pvt_panels" in energy_system_inputs else "",
+                energy_system_inputs.get(
+                    "pvt_panel", ", ".join(energy_system_inputs.get("pvt_panels", []))
+                ),
                 BColours.endc,
             )
             raise
         logger.info("PV-T panel costs successfully determined.")
         try:
-            pvt_panel_emissions: Optional[Dict[str, float]] = [
-                panel_data[EMISSIONS]
-                for panel_data in solar_generation_inputs["panels"]
-                if panel_data[NAME] == pvt_panel.name
-            ][0]
+            pvt_panel_emissions: Optional[Dict[str, DefaultDict[str, float]]] = {
+                pvt_panel.name: [
+                    defaultdict(float, panel_data[EMISSIONS])
+                    for panel_data in solar_generation_inputs["panels"]
+                    if panel_data[NAME] == pvt_panel.name
+                ][0]
+                for pvt_panel in pvt_panels
+            }
         except (KeyError, IndexError):
             logger.error(
-                "%sFailed to determine emissions for PV-T panel %s.%s",
+                "%sFailed to determine emissions for PV-T panel%s %s.%s",
                 BColours.fail,
-                energy_system_inputs["pvt_panel"],
+                "(s)" if "pvt_panels" in energy_system_inputs else "",
+                energy_system_inputs.get(
+                    "pvt_panel", ", ".join(energy_system_inputs.get("pvt_panels", []))
+                ),
                 BColours.endc,
             )
             raise
         logger.info("PV-T panel emissions successfully determined.")
     else:
-        pvt_panel = None
+        pvt_panels = []
         pvt_panel_costs = None
         pvt_panel_emissions = None
 
     return (
-        pv_panel,
+        pv_panels,  # type: ignore
         pv_panel_costs,
         pv_panel_emissions,
-        pvt_panel,
+        pvt_panels,  # type: ignore
         pvt_panel_costs,
         pvt_panel_emissions,
         solar_generation_inputs_filepath,
@@ -1717,10 +1782,10 @@ def _parse_minigrid_inputs(  # pylint: disable=too-many-locals, too-many-stateme
     Optional[Dict[str, float]],
     Optional[Dict[str, float]],
     Minigrid,
-    Dict[str, float],
-    Dict[str, float],
-    Optional[Dict[str, float]],
-    Optional[Dict[str, float]],
+    Dict[str, DefaultDict[str, float]],
+    Dict[str, DefaultDict[str, float]],
+    Optional[Dict[str, DefaultDict[str, float]]],
+    Optional[Dict[str, DefaultDict[str, float]]],
     str,
     Optional[str],
     Dict[str, Dict[str, float]],
@@ -1766,6 +1831,7 @@ def _parse_minigrid_inputs(  # pylint: disable=too-many-locals, too-many-stateme
         - PV-T costs,
         - PV-T emissions,
         - Solar inputs filepath,
+        - Solar panels,
         - Tank inputs filepath,
         - Transmission costs,
         - Transmission emissions,
@@ -1812,18 +1878,16 @@ def _parse_minigrid_inputs(  # pylint: disable=too-many-locals, too-many-stateme
         "and water heater " if diesel_water_heater is not None else "",
     )
 
-    pv_panel: solar.PVPanel
-    pv_panel_costs: Dict[str, float]
-    pv_panel_emissions: Dict[str, float]
-    pvt_panel: Optional[solar.HybridPVTPanel]
-    pvt_panel_costs: Optional[Dict[str, float]]
-    pvt_panel_emissions: Optional[Dict[str, float]]
+    pv_panel_costs: Dict[str, DefaultDict[str, float]]
+    pv_panel_emissions: Dict[str, DefaultDict[str, float]]
+    pvt_panel_costs: Optional[Dict[str, DefaultDict[str, float]]]
+    pvt_panel_emissions: Optional[Dict[str, DefaultDict[str, float]]]
     solar_generation_inputs_filepath: str
     (
-        pv_panel,
+        pv_panels,
         pv_panel_costs,
         pv_panel_emissions,
-        pvt_panel,
+        pvt_panels,
         pvt_panel_costs,
         pvt_panel_emissions,
         solar_generation_inputs_filepath,
@@ -1966,8 +2030,8 @@ def _parse_minigrid_inputs(  # pylint: disable=too-many-locals, too-many-stateme
         diesel_water_heater,
         electric_water_heater,
         energy_system_inputs,
-        pv_panel,
-        pvt_panel,
+        pv_panels,
+        pvt_panels,
         battery_inputs,
         exchanger_inputs,
         tank_inputs,
@@ -2559,8 +2623,12 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
 
     # Update the finance and GHG inputs accordingly with the PV data.
     logger.info("Updating with PV impact data.")
-    finance_inputs[ImpactingComponent.PV.value] = defaultdict(float, pv_panel_costs)
-    ghg_inputs[ImpactingComponent.PV.value] = defaultdict(float, pv_panel_emissions)
+    finance_inputs[ImpactingComponent.PV.value] = defaultdict(
+        lambda: defaultdict(float), pv_panel_costs  # type: ignore [arg-type, return-value]
+    )
+    ghg_inputs[ImpactingComponent.PV.value] = defaultdict(
+        lambda: defaultdict(float), pv_panel_emissions  # type: ignore [arg-type, return-value]
+    )
     logger.info("PV impact data successfully updated.")
 
     # Update the impact inputs with the diesel data.
@@ -2617,10 +2685,10 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
         if pvt_panel_costs is None or pvt_panel_emissions is None:
             raise InternalError("Error processing PV-T panel cost and emissions.")
         finance_inputs[ImpactingComponent.PV_T.value] = defaultdict(
-            float, pvt_panel_costs
+            float, pvt_panel_costs  # type: ignore [arg-type]
         )
         ghg_inputs[ImpactingComponent.PV_T.value] = defaultdict(
-            float, pvt_panel_emissions
+            float, pvt_panel_emissions  # type: ignore [arg-type]
         )
     else:
         logger.info("PV-T disblaed in scenario file, skipping PV-T impact parsing.")

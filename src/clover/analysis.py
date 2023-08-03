@@ -72,7 +72,7 @@ def get_key_results(
     grid_input_profile: pd.DataFrame,
     num_years: int,
     simulation_results: pd.DataFrame,
-    total_solar_output: pd.DataFrame,
+    total_solar_output: Dict[str, pd.DataFrame],
 ) -> KeyResults:
     """
     Computes the key results of the simulation.
@@ -85,7 +85,8 @@ def get_key_results(
         - simulation_results:
             The results of the simulation.
         - total_solar_output:
-            The total solar power produced by the PV installation.
+            The total solar power produced by the PV installation for each of the solar
+            PV panels installed.
 
     Outputs:
         - key_results:
@@ -97,11 +98,18 @@ def get_key_results(
     key_results = KeyResults()
 
     # Compute the solar-generation results.
-    total_solar_generation: float = np.round(np.sum(total_solar_output))
-    key_results.cumulative_pv_generation = float(total_solar_generation)
-    key_results.average_pv_generation = float(
-        round(total_solar_generation / (20 * 365))
-    )
+    total_solar_generation: Dict[str, float] = {
+        panel_name: np.round(np.sum(solar_output))
+        for panel_name, solar_output in total_solar_output.items()
+    }
+    key_results.cumulative_pv_generation: Dict[str, float] = {
+        panel_name: float(solar_generation)
+        for panel_name, solar_generation in total_solar_generation.items()
+    }
+    key_results.average_pv_generation: Dict[str, float] = {
+        panel_name: float(round(solar_generation / (20 * 365)))
+        for panel_name, solar_generation in total_solar_generation.items()
+    }
 
     # Compute the grid results.
     if grid_input_profile is not None:

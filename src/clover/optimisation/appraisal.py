@@ -59,7 +59,7 @@ def _simulation_environmental_appraisal(  # pylint: disable=too-many-locals
     hot_water_tank_addition: int,
     location: Location,
     logger: Logger,
-    pv_addition: float,
+    pv_addition: Dict[str, float],
     pvt_addition: float,
     scenario: Scenario,
     simulation_results: pd.DataFrame,
@@ -172,7 +172,7 @@ def _simulation_environmental_appraisal(  # pylint: disable=too-many-locals
             if system_details.initial_num_hot_water_tanks is not None
             else 0,
             logger,
-            system_details.initial_pv_size,
+            system_details.initial_pv_sizes,
             system_details.initial_pvt_size
             if system_details.initial_pvt_size is not None
             else 0,
@@ -258,7 +258,7 @@ def _simulation_financial_appraisal(  # pylint: disable=too-many-locals
     hot_water_tank_addition: int,
     location: Location,
     logger: Logger,
-    pv_addition: float,
+    pv_addition: Dict[str, float],
     pvt_addition: float,
     scenario: Scenario,
     simulation_results: pd.DataFrame,
@@ -363,7 +363,7 @@ def _simulation_financial_appraisal(  # pylint: disable=too-many-locals
         if system_details.initial_num_hot_water_tanks is not None
         else 0,
         logger,
-        system_details.initial_pv_size,
+        system_details.initial_pv_sizes,
         system_details.initial_pvt_size
         if system_details.initial_pvt_size is not None
         else 0,
@@ -678,9 +678,11 @@ def appraise_system(  # pylint: disable=too-many-locals
         and previous_system.system_details.final_num_hot_water_tanks is not None
         else 0
     )
-    pv_addition = (
-        system_details.initial_pv_size - previous_system.system_details.final_pv_size
-    )
+    pv_addition: Dict[str, float] = {
+        panel_name: initial_pv_size
+        - previous_system.system_details.final_pv_sizes[panel_name]
+        for panel_name, initial_pv_size in system_details.initial_pv_sizes.items()
+    }
     pvt_addition: float = (
         system_details.initial_pvt_size - previous_system.system_details.final_pvt_size
         if system_details.initial_pvt_size is not None
