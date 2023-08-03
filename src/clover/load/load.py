@@ -93,6 +93,10 @@ INNOVATION: str = "innovation"
 #   Keyword used for parsing the imitation of a device.
 IMITATION: str = "imitation"
 
+# Load_time:
+#   Keyword for parsing the device load time.
+LOAD_TIME: str = "load_time"
+
 # Load logger name:
 #   The name to use for the load module logger.
 LOAD_LOGGER_NAME: str = "load"
@@ -135,6 +139,9 @@ class Device:
         The rate of imitation for the device: the rate at which households copy others
         and acquire the device.
 
+    .. attribute:: load_time
+        The amount of time the device remains on once activated.
+
     .. attribute:: name
         The name of the device.
 
@@ -143,6 +150,7 @@ class Device:
 
     .. attribute:: hot_water_usage
         The hot-water usage of the device, measured in litres per hour.
+
 
     """
 
@@ -153,6 +161,7 @@ class Device:
     initial_ownership: float
     innovation: float
     imitation: float
+    load_time: float
     name: str
     clean_water_usage: Optional[float]
     hot_water_usage: Optional[float]
@@ -186,6 +195,7 @@ class Device:
             + f"initial_ownership={self.initial_ownership}, "
             + f"innovation={self.innovation}, "
             + f"imitation={self.imitation}, "
+            + f"load_time = {self.load_time} hours,"
             + f"clean_water_usage={self.clean_water_usage} litres/hour, "
             + f"hot_water_usage={self.hot_water_usage} litres/hour"
             + ")"
@@ -225,6 +235,7 @@ class Device:
             device_input[INITIAL_OWNERSHIP],
             device_input[INNOVATION],
             device_input[IMITATION],
+            device_input.get(LOAD_TIME, 1),
             device_input[DEVICE],
             device_input[CLEAN_WATER_USAGE]
             if CLEAN_WATER_USAGE in device_input
@@ -237,7 +248,7 @@ class Device:
 #   The default kerosene device to use in the event that no kerosene information is
 #   provided.
 DEFAULT_KEROSENE_DEVICE = Device(
-    False, DemandType.DOMESTIC, 1, 0, 0, 0, 0, KEROSENE_DEVICE_NAME, 0, 0
+    False, DemandType.DOMESTIC, 1, 0, 0, 0, 0, 1, KEROSENE_DEVICE_NAME, 0, 0
 )
 
 
@@ -748,17 +759,28 @@ def process_device_hourly_usage(
 
     """
 
-    filename = f"{device.name}_in_use.csv"
-    filepath = os.path.join(generated_device_usage_filepath, filename)
+    filename_usage = f"{device.name}_in_use.csv"
+    filepath_usage = os.path.join(generated_device_usage_filepath, filename_usage)
+    filename_switched_on = f"{device.name}_switched_on.csv"
+    filepath_switched_on = os.path.join(generated_device_usage_filepath, filename_switched_on)
 
     # If the device hourly usage already exists, then read the data in from the file.
-    if os.path.isfile(filepath) and not regenerate:
-        with open(filepath, "r") as f:
-            hourly_device_usage = pd.read_csv(f, header=None)
+    if os.path.isfile(filepath_usage) and not regenerate:
+        with open(filepath_usage, "r") as f:
+            extended_device_usage = pd.read_csv(f, header=None)
         logger.info(
             "Hourly device usage for %s successfully read from file: %s",
             device.name,
-            filepath,
+            filepath_usage,
+        )
+
+        #Read the arrivals rate from file aswell
+        with open(filepath_switched_on, "r") as f:
+            extended_device_usage = pd.read_csv(f, header=None)
+        logger.info(
+            "Hourly device usage for %s successfully read from file: %s",
+            device.name,
+            filepath_switched_on,
         )
 
     else:
@@ -798,11 +820,62 @@ def process_device_hourly_usage(
 
         logger.info("Hourly usage profile for %s successfully calculated.", device.name)
 
-        # Save the hourly-usage profile.
-        logger.info("Saving hourly usage profile for %s.", device.name)
+        # Retrieve device laod time
+        load_time = device.load_time
+
+        # Calculate cumulative usage profile
+        extended_device_usage = {
+            column: [
+                # Find cumulative sum of components in use, from load_time hours before the current step
+                # If load_time is greater than elapsed time, simply find cumulative sum at each time step
+                hourly_device_usage[column].iloc[: i + 1].sum()
+                if i < int(load_time)
+                else (
+                    # Else sum the arrivals from all time steps within load_time from current
+                    hourly_device_usage[column].iloc[i - load_time + 1 : i + 1].sum()
+                    if isinstance(load_time, int)
+                    else (
+                        # If load time is fraction
+                        hourly_device_usage[column].iloc[int(i - load_time + 1)]
+                        * (1 - (i - load_time - int(i - load_time + 1) + 1))
+                        + hourly_device_usage[column]
+                        .iloc[int(i - load_time + 1) + 1 : i + 1]
+                        .sum()
+                    )
+                )
+                for i in range(len(hourly_device_usage))
+            ]
+            for column in hourly_device_usage.columns
+        }
+
+        #I'm not sure why I did this bit
+        # Concert to numeric so that analysis.py can use it
+        extended_device_usage = pd.DataFrame(
+            extended_device_usage, index=hourly_device_usage.index
+        )
+        extended_device_usage = extended_device_usage.apply(pd.to_numeric)
+
+        # Save the extended-usage profile.
+        logger.info("Saving extended usage profile for %s.", device.name)
 
         with open(
-            filepath,
+            filepath_usage,
+            "w",
+        ) as f:
+            extended_device_usage.to_csv(
+                f, header=None, index=False, line_terminator=""  # type: ignore
+            )
+
+        logger.info(
+            "Extended usage proifle for %s successfully saved to %s.",
+            device.name,
+            filename_usage,
+        )
+
+        # Save the switch on profile.
+        logger.info("Saving switch on profile for %s.", device.name)
+        with open(
+            filepath_switched_on,
             "w",
         ) as f:
             hourly_device_usage.to_csv(
@@ -810,12 +883,12 @@ def process_device_hourly_usage(
             )
 
         logger.info(
-            "Hourly usage proifle for %s successfully saved to %s.",
+            "Switch on proifle for %s successfully saved to %s.",
             device.name,
-            filename,
+            filename_switched_on,
         )
 
-    return hourly_device_usage
+    return extended_device_usage
 
 
 def process_device_ownership(
@@ -1098,7 +1171,7 @@ def process_load_profiles(  # pylint: disable=too-many-locals
         )
 
         # Compute the device usage.
-        hourly_device_usage = process_device_hourly_usage(
+        extended_device_usage = process_device_hourly_usage(
             device,
             daily_device_ownership=daily_device_ownership,
             daily_device_utilisation=daily_device_utilisaion,
@@ -1120,7 +1193,7 @@ def process_load_profiles(  # pylint: disable=too-many-locals
             generated_device_load_filepath=os.path.join(
                 auto_generated_files_directory, "load", resource_name, "device_load"
             ),
-            hourly_device_usage=hourly_device_usage,
+            hourly_device_usage=extended_device_usage,
             resource_type=resource_type,
             logger=logger,
             regenerate=regenerate,

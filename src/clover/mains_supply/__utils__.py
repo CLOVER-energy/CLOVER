@@ -35,6 +35,7 @@ __all__ = ("get_intermittent_supply_status",)
 def get_intermittent_supply_status(  # pylint: disable=too-many-locals
     disable_tqdm: bool,
     generation_directory: str,
+    inputs_directory_relative_path: str,
     keyword: str,
     logger: Logger,
     max_years: int,
@@ -104,6 +105,42 @@ def get_intermittent_supply_status(  # pylint: disable=too-many-locals
                 else:
                     status.append(0)
         times = pd.DataFrame(status)
+
+        attributes_filename = os.path.join(
+            inputs_directory_relative_path, f"{name}_grid_attributes.csv"
+        )
+        grid_attributes: pd.DataFrame = pd.read_csv(attributes_filename)
+
+        # Blackout times, the list of hours for which the times occur (z_indicies)
+        zero_indices = times.index[times.iloc[:, 0] == 0]
+        blackout_times: List[int] = zero_indices.tolist()
+        blackout_hours: List[int] = grid_attributes.iloc[zero_indices % 24, 1].tolist()
+
+        # Create a mapping between the hour and the times
+        time_to_length_mapping: dict[int, int] = {
+            hour: blackout_hours[index] for index, hour in enumerate(blackout_times)
+        }
+
+        # Create a blank mappnig to include the hours and times that need including.
+        blackout_times_to_include: dict[int, int] = {}
+
+        # Loop through and determine which hours should be included.
+        for blackout_time in blackout_times:
+            for hour, length in {
+                hour: length
+                for hour, length in blackout_times_to_include.items()
+                if hour < blackout_time
+            }.items():
+                if blackout_time < hour + length:
+                    break
+            else:
+                blackout_times_to_include[blackout_time] = time_to_length_mapping[
+                    blackout_time
+                ]
+
+        for blackout_time, length in blackout_times_to_include.items():
+            times.iloc[blackout_time : blackout_time + length, :] = 0
+
         profiles[name] = times
         logger.info(
             "Availability profile for %s::%s successfully generated.", keyword, name

@@ -2980,3 +2980,52 @@ def save_simulation(
             )
         logger.info("Simulation successfully saved to %s.", simulation_output_folder)
         pbar.update(1)
+
+
+def save_hourly_fuel_cost_information(
+    logger: logging.Logger,
+    output: str,
+    output_directory: str,
+    simulation_number: int,
+    grid_cost,
+    diesel_cost,
+) -> None:
+    """
+    Saves hourly fuel cost to a .csv file
+
+    Inputs:
+        - disable_tqdm:
+            Whether to disable the tqdm progress bars (True) or display them (False).
+        - logger:
+            The logger to use for the run.
+        - output:
+            The output name to use when labelling the simulation: this is the name given
+            to the output folder in which the system files are saved.
+        - output_directory:
+            The directory into which the files should be saved.
+        - simulation_number:
+            The number of the simulation being run.
+
+    """
+
+    if diesel_cost is None:
+        return
+
+    else:
+        # Remove the file extension if appropriate.
+        if output.endswith(".csv"):
+            output = output.rsplit(".csv", 1)[0]
+
+        # Create the output directory.
+        simulation_output_folder = os.path.join(output_directory, output)
+        fuel_cost_dataframe = pd.DataFrame(
+            {"Grid_Cost": grid_cost, "Diesel_Cost": diesel_cost}
+        )
+
+        file_location = os.path.join(
+            simulation_output_folder, f"fuel_costs_{simulation_number}.csv"
+        )
+        fuel_cost_dataframe.to_csv(file_location, index=False)
+        logger.info(
+            "Hourly fuel costs successfully saved to %s.", simulation_output_folder
+        )

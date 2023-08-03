@@ -235,7 +235,10 @@ def get_key_results(
     return key_results
 
 
-def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
+def plot_outputs(
+    cost_of_diesel,
+    cost_of_electricity,
+    grid_attributes,  # pylint: disable=too-many-locals, too-many-statements
     grid_input_profile: pd.DataFrame,
     grid_profile: Optional[pd.DataFrame],
     initial_cw_hourly_loads: Optional[  # pylint: disable=unused-argument
@@ -376,6 +379,166 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
                 os.path.join(figures_directory, "grid_availability_heatmap.png"),
                 transparent=True,
             )
+            plt.close()
+            pbar.update(1)
+
+            # Plot grid availability profile over two days - grid outage validation
+            grid_outage_validation_data = grid_profile.iloc[0:72]
+            scatter_plot = sns.scatterplot(
+                x=grid_outage_validation_data.index,
+                y=grid_outage_validation_data.columns[0],
+                data=grid_outage_validation_data,
+            )
+
+            scatter_plot.set(
+                xticks=range(0, 72, 2),
+                xticklabels=range(0, 72, 2),
+                yticks=range(0, 1, 1),
+                yticklabels=range(0, 1, 1),
+                xlabel="Hours Since Start",
+                ylabel="Logical Availability",
+                title="Grid Availability profile in the first 5 days",
+            )
+            plt.xticks(rotation=0)
+            plt.tight_layout()
+            plt.savefig(
+                os.path.join(figures_directory, "grid_availability_linegraph.png"),
+                transparent=True,
+            )
+            plt.close()
+            pbar.update(1)
+
+            # Plot electricity usage over first three days
+            grid_energy_three_days = simulation_output[0:72][
+                ColumnHeader.GRID_ENERGY.value
+            ]
+            scatter_plot = sns.scatterplot(
+                x=grid_energy_three_days.index,
+                y=grid_energy_three_days.values,
+                data=grid_energy_three_days,
+            )
+
+            scatter_plot.set(
+                xticks=range(0, 72, 2),
+                xticklabels=range(0, 72, 2),
+                xlabel="Hours Since Start",
+                ylabel="Grid Electricity Usage",
+                title="Grid electricity Usage over three days",
+            )
+
+            plt.xticks(rotation=0)
+            plt.tight_layout()
+            plt.savefig(
+                os.path.join(figures_directory, "grid_usage_scattergraph.png"),
+                transparent=True,
+            )
+            plt.close()
+            pbar.update(1)
+
+            # Plot electricity price over first three days
+            grid_hourly_price = pd.Series(
+                {i: grid_attributes.iloc[i % 24, 1] for i in range(1, 72)}
+            )
+            scatter_plot = sns.scatterplot(
+                x=grid_hourly_price.index,
+                y=grid_hourly_price.values,
+                data=grid_hourly_price,
+            )
+
+            scatter_plot.set(
+                xticks=range(0, 72, 2),
+                xticklabels=range(0, 72, 2),
+                xlabel="Hours Since Start",
+                ylabel="Grid price",
+                title="Grid price over three days",
+            )
+
+            plt.xticks(rotation=0)
+            plt.tight_layout()
+            plt.savefig(
+                os.path.join(figures_directory, "grid_price_scattergraph.png"),
+                transparent=True,
+            )
+            plt.close()
+            pbar.update(1)
+
+            # Plot electricity cost over 3 days - validation of TOU pricing
+            cost_of_electricity_data_to_be_plotted = cost_of_electricity[0:72]
+            scatter_plot = sns.scatterplot(
+                x=cost_of_electricity_data_to_be_plotted.index,
+                y=cost_of_electricity_data_to_be_plotted.values,
+                data=cost_of_electricity_data_to_be_plotted,
+            )
+
+            scatter_plot.set(
+                xticks=range(0, 72, 2),
+                xticklabels=range(0, 72, 2),
+                xlabel="Hours Since Start",
+                ylabel="Grid Electricity Cost",
+                title="Cost of Grid Electricity over first three days",
+            )
+
+            plt.xticks(rotation=0)
+            plt.tight_layout()
+            plt.savefig(
+                os.path.join(figures_directory, "grid_cost_scattergraph.png"),
+                transparent=True,
+            )
+            plt.close()
+            pbar.update(1)
+
+            # Plot yearly fuel and electricity costs
+            grid_yearly_cost = cost_of_electricity.groupby(
+                cost_of_electricity.index // HOURS_PER_YEAR
+            ).sum()
+            diesel_yearly_cost = cost_of_diesel.groupby(
+                cost_of_diesel.index // 365
+            ).sum()
+            total_yearly_cost = grid_yearly_cost.add(diesel_yearly_cost, fill_value=0)
+
+            sns.scatterplot(
+                x=grid_yearly_cost.index,
+                y=grid_yearly_cost.values,
+                data=grid_yearly_cost,
+            )
+            plt.xticks(rotation=0)
+            plt.tight_layout()
+            plt.savefig(
+                os.path.join(figures_directory, "grid_yearly_cost_scattergraph.png"),
+                transparent=True,
+            )
+            plt.close()
+            pbar.update(1)
+
+            sns.scatterplot(
+                x=diesel_yearly_cost.index,
+                y=diesel_yearly_cost.values,
+                data=diesel_yearly_cost,
+            )
+            plt.xticks(rotation=0)
+            plt.tight_layout()
+            plt.savefig(
+                os.path.join(figures_directory, "diesel_yearly_cost_scattergraph.png"),
+                transparent=True,
+            )
+
+            plt.close()
+            pbar.update(1)
+
+            sns.scatterplot(
+                x=total_yearly_cost.index,
+                y=total_yearly_cost.values,
+                data=total_yearly_cost,
+            )
+            plt.xticks(rotation=0)
+            plt.tight_layout()
+            plt.savefig(
+                os.path.join(
+                    figures_directory, "total_fuel_yearly_cost_scattergraph.png"
+                ),
+                transparent=True,
+            )
+
             plt.close()
             pbar.update(1)
 

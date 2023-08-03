@@ -43,6 +43,7 @@ from .fileparser import (
     parse_input_files,
 )
 from .generation import solar, weather, wind
+from .impact import finance
 from .load import load
 from .mains_supply import grid, water_source
 from .scripts import new_location
@@ -55,6 +56,7 @@ from .printer import generate_optimisation_string, generate_simulation_string
 
 from .__utils__ import (
     BColours,
+    ColumnHeader,
     DONE,
     FAILED,
     InternalError,
@@ -66,7 +68,7 @@ from .__utils__ import (
     LOCATIONS_FOLDER_NAME,
     LOGGER_DIRECTORY,
     OperatingMode,
-    ProgrammerJudgementFault,
+    save_hourly_fuel_cost_information,
     save_simulation,
 )
 from .simulation.__utils__ import check_scenario
@@ -456,6 +458,12 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
         AUTO_GENERATED_FILES_DIRECTORY,
     )
 
+    # Create filepath for location
+    location_input_directory = os.path.join(
+        LOCATIONS_FOLDER_NAME,
+        parsed_args.location,
+    )
+
     # If the output filename is not provided, then generate it.
     simulation_output_directory = os.path.join(
         LOCATIONS_FOLDER_NAME,
@@ -576,6 +584,7 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
             finance_inputs,
             generation_inputs,
             ghg_inputs,
+            grid_attributes,
             grid_times,
             location,
             optimisation_inputs,
@@ -900,6 +909,7 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
             grid.get_lifetime_grid_status(
                 disable_tqdm,
                 os.path.join(auto_generated_files_directory, "grid"),
+                os.path.join(location_input_directory, "inputs", "generation"),
                 grid_times,
                 logger,
                 location.max_years,
@@ -1159,9 +1169,36 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
             )
 
             if parsed_args.analyse:
+
+                # Generate the electricity cost profile
+                logger.info("Generating electricity cost profile")
+                cost_of_electricity = finance.grid_expenditure(
+                    finance_inputs,
+                    system_performance_outputs[ColumnHeader.GRID_ENERGY.value],
+                    grid_attributes,
+                    logger,
+                    start_year=system_details.start_year,
+                    end_year=system_details.end_year,
+                )[1]
+                logger.info("Electricity Cost Profile Generated")
+
+                # Genererate diesel cost profile
+                logger.info("Generating diesel cost profiles")
+                cost_of_diesel = finance.diesel_fuel_expenditure(
+                    system_performance_outputs[ColumnHeader.DIESEL_FUEL_USAGE.value],
+                    finance_inputs,
+                    logger,
+                    start_year=system_details.start_year,
+                    end_year=system_details.end_year,
+                )[1]
+                logger.info("Diesel Cost profile Generated")
+
                 if not parsed_args.skip_plots:
                     # Generate and save the various plots.
-                    analysis.plot_outputs(  # type: ignore
+                    analysis.plot_outputs(
+                        cost_of_diesel,
+                        cost_of_electricity,  # type: ignore
+                        grid_attributes,
                         grid_times[scenario.grid_type],
                         grid_profile,
                         initial_cw_hourly_loads,
@@ -1193,6 +1230,7 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
                     simulation.end_year,
                     finance_inputs,
                     ghg_inputs,
+                    grid_attributes,
                     location,
                     logger,
                     None,
@@ -1203,6 +1241,8 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
                 )
             else:
                 system_appraisal = None
+                cost_of_electricity = None
+                cost_of_diesel = None
                 logger.info("No analysis to be carried out.")
 
             # Save the simulation output.
@@ -1216,6 +1256,16 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
                 simulation_number,
                 system_appraisal,
                 system_details,
+            )
+
+            # Save Fuel Cost Output
+            save_hourly_fuel_cost_information(
+                logger,
+                output,
+                simulation_output_directory,
+                simulation_number,
+                cost_of_electricity,
+                cost_of_diesel,
             )
 
         print(f"Beginning CLOVER simulation runs {'.' * 30}    {DONE}")
@@ -1302,6 +1352,7 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
                     disable_tqdm,
                     finance_inputs,
                     ghg_inputs,
+                    grid_attributes,
                     grid_profile,
                     {
                         panel_name: solar_data[

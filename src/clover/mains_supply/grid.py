@@ -33,6 +33,7 @@ __all__ = ("get_lifetime_grid_status", "load_grid_profile")
 def get_lifetime_grid_status(
     disable_tqdm: bool,
     generation_directory: str,
+    inputs_directory_relative_path: str,
     grid_times: pd.DataFrame,
     logger: Logger,
     max_years: int,
@@ -59,7 +60,13 @@ def get_lifetime_grid_status(
     """
 
     return get_intermittent_supply_status(
-        disable_tqdm, generation_directory, "grid", logger, max_years, grid_times
+        disable_tqdm,
+        generation_directory,
+        inputs_directory_relative_path,
+        "grid",
+        logger,
+        max_years,
+        grid_times,
     )
 
 

@@ -943,6 +943,7 @@ def recursive_iteration(  # pylint: disable=too-many-locals
     end_year: int,
     finance_inputs: Dict[str, Any],
     ghg_inputs: Dict[str, Any],
+    grid_attributes: pd.DataFrame,
     grid_profile: Optional[pd.DataFrame],
     irradiance_data: Dict[str, pd.Series],
     kerosene_usage: pd.DataFrame,
@@ -1037,11 +1038,7 @@ def recursive_iteration(  # pylint: disable=too-many-locals
         )
 
         # Run the simulation
-        (
-            _,
-            simulation_results,
-            system_details,
-        ) = energy_system.run_simulation(
+        (_, simulation_results, system_details,) = energy_system.run_simulation(
             int(component_sizes[RenewableEnergySource.CLEAN_WATER_PVT]),
             conventional_cw_source_profiles,
             converters,
@@ -1070,6 +1067,7 @@ def recursive_iteration(  # pylint: disable=too-many-locals
             end_year,
             finance_inputs,
             ghg_inputs,
+            grid_attributes,
             location,
             logger,
             previous_system,
@@ -1106,6 +1104,7 @@ def recursive_iteration(  # pylint: disable=too-many-locals
             end_year,
             finance_inputs,
             ghg_inputs,
+            grid_attributes,
             grid_profile,
             irradiance_data,
             kerosene_usage,
