@@ -33,6 +33,7 @@ from .__utils__ import (
     HTFMode,
     InputFileError,
     InternalError,
+    Inverter,
     KEROSENE_DEVICE_NAME,
     KeyResults,
     Location,

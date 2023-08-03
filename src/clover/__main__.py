@@ -1197,6 +1197,7 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
                     simulation.end_year,
                     finance_inputs,
                     ghg_inputs,
+                    minigrid.inverter,
                     location,
                     logger,
                     None,

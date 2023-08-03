@@ -387,7 +387,7 @@ class PVPanel(
             "thermal_coefficient": self.thermal_coefficient,
             "tilt": self.tilt,
             "tracking": self.tracking.as_string,
-            "type": self.panel_type.value
+            "type": self.panel_type.value,
         }
 
     @classmethod

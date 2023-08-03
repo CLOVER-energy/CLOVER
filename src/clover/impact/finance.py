@@ -25,13 +25,14 @@ from typing import Any, Dict, List, Optional, Union
 import numpy as np  # pylint: disable=import-error
 import pandas as pd  # pylint: disable=import-error
 
-from .__utils__ import ImpactingComponent, LIFETIME, SIZE_INCREMENT
+from .__utils__ import ImpactingComponent
 from ..__utils__ import (
     BColours,
     ColumnHeader,
     hourly_profile_to_daily_sum,
     InputFileError,
     InternalError,
+    Inverter,
     Location,
     Scenario,
 )
@@ -255,6 +256,7 @@ def _discounted_fraction(
 
 def _inverter_expenditure(  # pylint: disable=too-many-locals
     finance_inputs: Dict[str, Any],
+    inverter: Inverter,
     location: Location,
     logger: Logger,
     scenario: Scenario,
@@ -269,6 +271,8 @@ def _inverter_expenditure(  # pylint: disable=too-many-locals
     Inputs:
         - finance_inputs:
             The finance-input information for the system.
+        - inverter:
+            The inverter being modelled.
         - location:
             The location being considered.
         - logger:
@@ -288,9 +292,8 @@ def _inverter_expenditure(  # pylint: disable=too-many-locals
     """
 
     # Initialise inverter replacement periods
-    replacement_period = finance_inputs[ImpactingComponent.INVERTER.value][LIFETIME]
     replacement_intervals = pd.DataFrame(
-        np.arange(0, location.max_years, replacement_period)
+        np.arange(0, location.max_years, inverter.lifetime)
     )
     replacement_intervals.columns = pd.Index([ColumnHeader.INSTALLATION_YEAR.value])
 
@@ -305,19 +308,19 @@ def _inverter_expenditure(  # pylint: disable=too-many-locals
 
     # Initialise inverter sizing calculation
     max_power = []
-    inverter_step = finance_inputs[ImpactingComponent.INVERTER.value][SIZE_INCREMENT]
     inverter_size: List[float] = []
     for i in range(len(replacement_intervals)):
         # Calculate maximum power in interval years
         start = replacement_intervals[ColumnHeader.INSTALLATION_YEAR.value].iloc[i]
-        end = start + replacement_period
+        end = start + inverter.lifetime
         max_power_interval = (
             yearly_load_statistics[ColumnHeader.MAXIMUM.value].iloc[start:end].max()
         )
         max_power.append(max_power_interval)
         # Calculate resulting inverter size
         inverter_size_interval: float = (
-            np.ceil(0.001 * max_power_interval / inverter_step) * inverter_step
+            np.ceil(0.001 * max_power_interval / inverter.size_increment)
+            * inverter.size_increment
         )
         inverter_size.append(inverter_size_interval)
     inverter_size_data_frame: pd.DataFrame = pd.DataFrame(inverter_size)
@@ -1038,6 +1041,7 @@ def expenditure(
 
 def independent_expenditure(
     finance_inputs: Dict[str, Any],
+    inverter: Inverter,
     location: Location,
     logger: Logger,
     scenario: Scenario,
@@ -1052,6 +1056,8 @@ def independent_expenditure(
     Inputs:
         - finance_inputs:
             The financial input information.
+        - inverter:
+            The inverter being modelled.
         - location:
             The location currently being considered.
         - logger:
@@ -1072,6 +1078,7 @@ def independent_expenditure(
 
     inverter_expenditure = _inverter_expenditure(
         finance_inputs,
+        inverter,
         location,
         logger,
         scenario,

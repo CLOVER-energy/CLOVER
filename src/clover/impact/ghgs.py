@@ -24,15 +24,16 @@ from typing import Any, Dict, List, Optional
 import numpy as np  # pylint: disable=import-error
 import pandas as pd  # pylint: disable=import-error
 
+from .__utils__ import ImpactingComponent, LIFETIME, SIZE_INCREMENT
 from ..__utils__ import (
     BColours,
     ColumnHeader,
     hourly_profile_to_daily_sum,
     InputFileError,
+    Inverter,
     Location,
     Scenario,
 )
-from .__utils__ import ImpactingComponent, LIFETIME, SIZE_INCREMENT
 
 __all__ = (
     "calculate_connections_ghgs",
@@ -495,6 +496,7 @@ def _calculate_inverter_ghgs(  # pylint: disable=too-many-locals
     electric_yearly_load_statistics: pd.DataFrame,
     end_year: int,
     ghg_inputs: Dict[str, Any],
+    inverter: Inverter,
     location: Location,
     logger: Logger,
     scenario: Scenario,
@@ -510,6 +512,8 @@ def _calculate_inverter_ghgs(  # pylint: disable=too-many-locals
             End year of simulation period
         - ghg_inputs:
             GHG input information.
+        - inverter:
+            The :class:`Inverter` to use for the run.
         - location:
             The location being considered.
         - logger:
@@ -525,9 +529,8 @@ def _calculate_inverter_ghgs(  # pylint: disable=too-many-locals
     """
 
     # Calcualte inverter replacement periods
-    replacement_period = int(ghg_inputs[ImpactingComponent.INVERTER.value][LIFETIME])
     replacement_intervals = pd.DataFrame(
-        np.arange(0, location.max_years, replacement_period)
+        np.arange(0, location.max_years, inverter.lifetime)
     )
     replacement_intervals.columns = pd.Index([ColumnHeader.INSTALLATION_YEAR.value])
 
@@ -541,12 +544,11 @@ def _calculate_inverter_ghgs(  # pylint: disable=too-many-locals
 
     # Initialise inverter sizing calculation
     max_power = []
-    inverter_step = float(ghg_inputs[ImpactingComponent.INVERTER.value][SIZE_INCREMENT])
     inverter_size: List[float] = []
     for i in range(len(replacement_intervals)):
         # Calculate maximum power in interval years
         start = replacement_intervals[ColumnHeader.INSTALLATION_YEAR.value].iloc[i]
-        end = start + replacement_period
+        end = start + inverter.lifetime
         max_power_interval = (
             electric_yearly_load_statistics[ColumnHeader.MAXIMUM.value]
             .iloc[start:end]
@@ -556,7 +558,8 @@ def _calculate_inverter_ghgs(  # pylint: disable=too-many-locals
 
         # Calculate resulting inverter size
         inverter_size_interval: float = (
-            np.ceil(0.001 * max_power_interval / inverter_step) * inverter_step
+            np.ceil(0.001 * max_power_interval / inverter.size_increment)
+            * inverter.size_increment
         )
         inverter_size.append(inverter_size_interval)
 
@@ -618,6 +621,7 @@ def calculate_independent_ghgs(
     electric_yearly_load_statistics: pd.DataFrame,
     end_year: int,
     ghg_inputs: Dict[str, Any],
+    inverter: Inverter,
     location: Location,
     logger: Logger,
     scenario: Scenario,
@@ -633,6 +637,8 @@ def calculate_independent_ghgs(
             End year of simulation period
         - ghg_inputs:
             The GHG input informaiton.
+        - inverter:
+            The :class:`Inverter` to use for the run.
         - location:
             The location being considered.
         - logger:
@@ -651,6 +657,7 @@ def calculate_independent_ghgs(
         electric_yearly_load_statistics,
         end_year,
         ghg_inputs,
+        inverter,
         location,
         logger,
         scenario,

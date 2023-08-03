@@ -34,6 +34,7 @@ from ..__utils__ import (
     CleanWaterMode,
     EXCHANGER,
     InputFileError,
+    Inverter,
     NAME,
     RESOURCE_NAME_TO_RESOURCE_TYPE_MAPPING,
     OperatingMode,
@@ -44,6 +45,7 @@ from ..__utils__ import (
 
 from ..conversion.conversion import Converter
 from ..generation.solar import HybridPVTPanel, PVPanel
+from ..impact.__utils__ import ImpactingComponent, LIFETIME, SIZE_INCREMENT
 from .diesel import DieselGenerator, DieselWaterHeater
 from .exchanger import Exchanger
 from .storage_utils import Battery, CleanWaterTank, HotWaterTank
@@ -129,6 +131,9 @@ class Minigrid:
     .. attribute:: hot_water_tank
         The hot-water tank being modelled, if applicable.
 
+    .. attribute:: inverter
+        The inverter being modelled.
+
     .. attribute:: pv_panels
         The PV panel(s) being considered.
 
@@ -155,6 +160,7 @@ class Minigrid:
     electric_water_heater: Optional[Converter]
     heat_exchanger: Optional[Exchanger]
     hot_water_tank: Optional[HotWaterTank]
+    inverter: Inverter
     pv_panels: List[PVPanel]
     pvt_panels: List[HybridPVTPanel]
     water_pump: Optional[Transmitter]
@@ -296,6 +302,11 @@ class Minigrid:
         else:
             hot_water_tank = None
 
+        inverter = Inverter(
+            minigrid_inputs[ImpactingComponent.INVERTER.value][LIFETIME],
+            minigrid_inputs[ImpactingComponent.INVERTER.value][SIZE_INCREMENT],
+        )
+
         # Return the minigrid instance.
         return cls(
             minigrid_inputs[CONVERSION][AC_TO_AC]
@@ -328,6 +339,7 @@ class Minigrid:
             if EXCHANGER in minigrid_inputs
             else None,
             hot_water_tank,
+            inverter,
             pv_panels,
             pvt_panels,
             water_pump,

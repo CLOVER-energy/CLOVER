@@ -35,6 +35,7 @@ from ..__utils__ import (
     EnvironmentalAppraisal,
     FinancialAppraisal,
     InternalError,
+    Inverter,
     hourly_profile_to_daily_sum,
     Location,
     Scenario,
@@ -57,6 +58,7 @@ def _simulation_environmental_appraisal(  # pylint: disable=too-many-locals
     ghg_inputs: Dict[str, Any],
     heat_exchanger_addition: int,
     hot_water_tank_addition: int,
+    inverter: Inverter,
     location: Location,
     logger: Logger,
     pv_addition: Dict[str, float],
@@ -90,6 +92,8 @@ def _simulation_environmental_appraisal(  # pylint: disable=too-many-locals
             The additional number of heat exchangers added this iteration.
         - hot_water_tank_addition:
             The additional number of hot-water tanks added this iteration.
+        - inverter:
+            The :class:`Inverter` being used for the run.
         - location:
             The location being considered.
         - logger:
@@ -133,6 +137,7 @@ def _simulation_environmental_appraisal(  # pylint: disable=too-many-locals
             electric_yearly_load_statistics,
             end_year,
             ghg_inputs,
+            inverter,
             location,
             logger,
             scenario,
@@ -255,6 +260,7 @@ def _simulation_financial_appraisal(  # pylint: disable=too-many-locals
     finance_inputs: Dict[str, Any],
     heat_exchanger_addition: int,
     hot_water_tank_addition: int,
+    inverter: Inverter,
     location: Location,
     logger: Logger,
     pv_addition: Dict[str, float],
@@ -284,6 +290,8 @@ def _simulation_financial_appraisal(  # pylint: disable=too-many-locals
             The additional number of heat exchangers added this iteration.
         - hot_water_tank_addition:
             The additional number of hot-water tanks added this iteration.
+        - inverter:
+            The inverter being modelled.
         - location:
             The :class:`Location` being considered.
         - logger:
@@ -325,6 +333,7 @@ def _simulation_financial_appraisal(  # pylint: disable=too-many-locals
         system_details.start_year,
     ) + finance.independent_expenditure(
         finance_inputs,
+        inverter,
         location,
         logger,
         scenario,
@@ -575,6 +584,7 @@ def appraise_system(  # pylint: disable=too-many-locals
     end_year: int,
     finance_inputs: Dict[str, Any],
     ghg_inputs: Dict[str, Any],
+    inverter: Inverter,
     location: Location,
     logger: Logger,
     previous_system: Optional[SystemAppraisal],
@@ -593,6 +603,10 @@ def appraise_system(  # pylint: disable=too-many-locals
             The end year for the simulation that was just run.
         - finance_inputs:
             The finance input information.
+        - ghg_inputs:
+            The GHG input information.
+        - inverter:
+            The :class:`Inverter` being modelled.
         - location:
             The location currently being considered.
         - logger:
@@ -703,6 +717,7 @@ def appraise_system(  # pylint: disable=too-many-locals
         finance_inputs,
         heat_exchanger_addition,
         hot_water_tank_addition,
+        inverter,
         location,
         logger,
         pv_addition,
@@ -723,6 +738,7 @@ def appraise_system(  # pylint: disable=too-many-locals
         ghg_inputs,
         heat_exchanger_addition,
         hot_water_tank_addition,
+        inverter,
         location,
         logger,
         pv_addition,
