@@ -21,6 +21,9 @@ conversion:
 diesel_generator: default_diesel
 # heat_exchanger: default_heat_exchanger
 # hot_water_tank: hot_water_tank
+inverter:
+  lifetime: 4
+  size_increment: 1
 pv_panel: default_pv
 # pvt_panel: default_pvt
 # water_pump: default_water_pump
