@@ -379,7 +379,7 @@ def _simulation_financial_appraisal(  # pylint: disable=too-many-locals
         logger,
         start_year=system_details.start_year,
         end_year=system_details.end_year,
-    )
+    )[0]
     grid_costs = finance.grid_expenditure(
         finance_inputs,
         simulation_results[ColumnHeader.GRID_ENERGY.value],
@@ -387,8 +387,7 @@ def _simulation_financial_appraisal(  # pylint: disable=too-many-locals
         logger,
         start_year=system_details.start_year,
         end_year=system_details.end_year,
-    )
-
+    )[0]
     kerosene_costs = finance.expenditure(
         ImpactingComponent.KEROSENE,
         finance_inputs,
@@ -578,8 +577,8 @@ def appraise_system(  # pylint: disable=too-many-locals
     electric_yearly_load_statistics: pd.DataFrame,
     end_year: int,
     finance_inputs: Dict[str, Any],
-    grid_attributes: pd.DataFrame,
     ghg_inputs: Dict[str, Any],
+    grid_attributes: pd.DataFrame,
     location: Location,
     logger: Logger,
     previous_system: Optional[SystemAppraisal],

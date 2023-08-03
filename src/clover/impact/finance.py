@@ -842,9 +842,8 @@ def diesel_fuel_expenditure(
         ]
     )
 
-    total_daily_cost = pd.DataFrame(
-        diesel_fuel_usage_daily.values * diesel_price_daily.values
-    )
+    diesel_price_daily_series = diesel_price_daily[0].squeeze()
+    total_daily_cost = pd.DataFrame(diesel_fuel_usage_daily * diesel_price_daily_series)
     total_discounted_cost = discounted_energy_total(
         finance_inputs,
         logger,
@@ -853,7 +852,7 @@ def diesel_fuel_expenditure(
         end_year=end_year,
     )
 
-    return total_discounted_cost
+    return total_discounted_cost, total_daily_cost.iloc[0, :]
 
 
 def discounted_energy_total(
@@ -992,16 +991,37 @@ def grid_expenditure(
     *,
     start_year: int = 0,
     end_year: int = 20,
-    )-> float:
+) -> float:
+    """
+    Calculates cost of the usage of grid electricity.
 
-    #Calculate the grid price in each consecutive hour
-    grid_hourly_cost = pd.Series({
-    i: hourly_usage[i] * grid_attributes.loc[i % 24, 'price']
-    for i in range(len(hourly_usage))
-    })
+    Inputs:
+        - finance_inputs:
+            The financial input information.
+        - hourly_usage:
+            Output from Energy_System().simulation(...)
+        - grid_attributes:
+            Grid attributes information, including price and outage time
+        - start_year:
+            Start year of simulation period
+        - end_year:
+            End year of simulation period
+
+    Outputs:
+        Grid Discounted cost
+
+    """
+
+    # Calculate the grid price in each consecutive hour
+    grid_hourly_cost = pd.Series(
+        {
+            i: hourly_usage[i] * grid_attributes.iloc[i % 24, 1]
+            for i in range(len(hourly_usage))
+        }
+    )
 
     grid_daily_cost = hourly_profile_to_daily_sum(grid_hourly_cost)
-    
+
     grid_discounted_cost = discounted_energy_total(
         finance_inputs,
         logger,
@@ -1009,7 +1029,7 @@ def grid_expenditure(
         start_year=start_year,
         end_year=end_year,
     )
-    return grid_discounted_cost
+    return grid_discounted_cost, grid_hourly_cost
 
 
 def expenditure(
@@ -1051,8 +1071,6 @@ def expenditure(
         end_year=end_year,
     )
     return total_discounted_cost
-
-
 
 
 def independent_expenditure(

@@ -183,7 +183,9 @@ GRID_TIMES_FILE: str = os.path.join("generation", "grid_times.csv")
 
 # Grid Attributes file
 # The relative file bath to the grid-attributes file
-GRID_ATTRIBUTES_FILE: str = os.path.join("generation", "{grid_name}_grid_attributes.csv")
+GRID_ATTRIBUTES_FILE: str = os.path.join(
+    "generation", "{grid_name}_grid_attributes.csv"
+)
 
 # Hot-water scenarios:
 #   Keyword used for parsing hot-water scenarios.
@@ -2209,8 +2211,8 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
             - minigrid,
             - finance_inputs,
             - ghg_inputs,
-            - grid_times,
             - grid_attributes,
+            - grid_times,
             - optimisation_inputs,
             - optimisations, the `set` of optimisations to run,
             - scenarios,
