@@ -871,4 +871,4 @@ def total_solar_output(
             profile_prefix=get_profile_prefix(pv_panel),
         )
     except FileNotFoundError:
-        raise RenewablesNinjaError()
+        raise RenewablesNinjaError() from None

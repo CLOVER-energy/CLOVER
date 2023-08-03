@@ -22,6 +22,7 @@ from typing import Any, DefaultDict, Dict, List, Optional, Set, Tuple, Union
 
 import json
 import pandas as pd  # pylint: disable=import-error
+import yaml
 
 # from sklearn.linear_model._coordinate_descent import Lasso
 
@@ -958,7 +959,7 @@ def _parse_global_settings(logger: Logger) -> Dict[str, Any]:
         """Create a default global-settings file if missing."""
 
         with open(GLOBAL_SETTINGS_FILE, "w", encoding="UTF-8") as global_settings_file:
-            global_settings_file.write(f"token: {API_TOKEN_PLACEHOLDER_TEXT}")
+            yaml.dump({TOKEN: API_TOKEN_PLACEHOLDER_TEXT}, global_settings_file)
 
     # Parse global settings.
     if not os.path.isfile(GLOBAL_SETTINGS_FILE):
@@ -973,9 +974,8 @@ def _parse_global_settings(logger: Logger) -> Dict[str, Any]:
             "No global-settings file found, check that this file was correctly created "
             "and exists in your current CLOVER directory."
         )
-        raise InternalError("Error parsing global-settings file.")
-    else:
-        logger.info("Global settings inputs successfully read.")
+        raise InternalError("Error parsing global-settings file.") from None
+    logger.info("Global settings inputs successfully read.")
 
     # Ensure that the global-settings inputs are the correct format.
     if not isinstance(global_settings_inputs, dict):
