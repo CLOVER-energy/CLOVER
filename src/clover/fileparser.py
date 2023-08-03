@@ -1799,6 +1799,7 @@ def _parse_tank_inputs(  # pylint: disable=too-many-statements
 def _parse_minigrid_inputs(  # pylint: disable=too-many-locals, too-many-statements
     converters: Dict[str, Converter],
     debug: bool,
+    finance_inputs: DefaultDict[str, DefaultDict[str, float]],
     inputs_directory_relative_path: str,
     logger: Logger,
     scenarios: List[Scenario],
@@ -1842,6 +1843,8 @@ def _parse_minigrid_inputs(  # pylint: disable=too-many-locals, too-many-stateme
         - debug:
             Whether to use the PV-T reduced models (False) or invented data for
             debugging purposes (True).
+        - finance_inputs:
+            The financial input information.
         - inputs_directory_relative_path:
             The relative path to the inputs folder directory.
         - logger:
@@ -2477,6 +2480,36 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
         Simulation.from_dict(entry) for entry in simulations_file_contents
     ]
 
+    # Parse and collate the impact information.
+    finance_inputs_filepath = os.path.join(
+        inputs_directory_relative_path, FINANCE_INPUTS_FILE
+    )
+    # Finance input type: Dict[str, Union[float, Dict[str, float]]]
+    finance_data = read_yaml(finance_inputs_filepath, logger)
+    if not isinstance(finance_data, dict):
+        raise InputFileError(
+            "finance inputs", "Finance inputs must be of type `dict` not `list`."
+        )
+    finance_inputs: DefaultDict[str, DefaultDict[str, float]] = defaultdict(
+        lambda: defaultdict(float)
+    )
+    finance_inputs.update(finance_data)
+    logger.info("Finance inputs successfully parsed.")
+
+    ghg_inputs_filepath = os.path.join(inputs_directory_relative_path, GHG_INPUTS_FILE)
+    # Ghg data type: Dict[str, Union[float, Dict[str, float]]]
+    ghg_data = read_yaml(ghg_inputs_filepath, logger)
+    if not isinstance(finance_data, dict):
+        raise InputFileError(
+            "ghg inputs", "GHG inputs must be of type `dict` not `list`."
+        )
+    # Generate a default dict to take care of missing data.
+    ghg_inputs: DefaultDict[str, DefaultDict[str, float]] = defaultdict(
+        lambda: defaultdict(float)
+    )
+    ghg_inputs.update(ghg_data)  # type: ignore
+    logger.info("GHG inputs successfully parsed.")
+
     # Parse the energy-system input information.
     (
         battery_costs,
@@ -2509,7 +2542,12 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
         transmission_inputs_filepath,
         transmitters,
     ) = _parse_minigrid_inputs(
-        converters, debug, inputs_directory_relative_path, logger, scenarios
+        converters,
+        debug,
+        finance_inputs,
+        inputs_directory_relative_path,
+        logger,
+        scenarios,
     )
     logger.info("Energy-system inputs successfully parsed.")
 
@@ -2619,36 +2657,6 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
             "Location was not returned when calling `Location.from_dict`."
         )
     logger.info("Location inputs successfully parsed.")
-
-    # Parse and collate the impact information.
-    finance_inputs_filepath = os.path.join(
-        inputs_directory_relative_path, FINANCE_INPUTS_FILE
-    )
-    # Finance input type: Dict[str, Union[float, Dict[str, float]]]
-    finance_data = read_yaml(finance_inputs_filepath, logger)
-    if not isinstance(finance_data, dict):
-        raise InputFileError(
-            "finance inputs", "Finance inputs must be of type `dict` not `list`."
-        )
-    finance_inputs: DefaultDict[str, DefaultDict[str, float]] = defaultdict(
-        lambda: defaultdict(float)
-    )
-    finance_inputs.update(finance_data)
-    logger.info("Finance inputs successfully parsed.")
-
-    ghg_inputs_filepath = os.path.join(inputs_directory_relative_path, GHG_INPUTS_FILE)
-    # Ghg data type: Dict[str, Union[float, Dict[str, float]]]
-    ghg_data = read_yaml(ghg_inputs_filepath, logger)
-    if not isinstance(finance_data, dict):
-        raise InputFileError(
-            "ghg inputs", "GHG inputs must be of type `dict` not `list`."
-        )
-    # Generate a default dict to take care of missing data.
-    ghg_inputs: DefaultDict[str, DefaultDict[str, float]] = defaultdict(
-        lambda: defaultdict(float)
-    )
-    ghg_inputs.update(ghg_data)  # type: ignore
-    logger.info("GHG inputs successfully parsed.")
 
     # Update the finance and GHG inputs accordingly with the PV data.
     logger.info("Updating with PV impact data.")

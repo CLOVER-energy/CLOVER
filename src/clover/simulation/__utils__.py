@@ -26,7 +26,7 @@ from argparse import Namespace
 import dataclasses
 from logging import Logger
 
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, DefaultDict, Dict, List, Optional, Union
 
 from ..__utils__ import (
     AuxiliaryHeaterType,
@@ -171,6 +171,8 @@ class Minigrid:
         diesel_generator: DieselGenerator,
         diesel_water_heater: Optional[DieselWaterHeater],
         electric_water_heater: Optional[Converter],
+        finance_inputs: DefaultDict[str, DefaultDict[str, float]],
+        logger: Logger,
         minigrid_inputs: Dict[str, Any],
         pv_panels: List[PVPanel],
         pvt_panels: List[HybridPVTPanel],
@@ -191,6 +193,8 @@ class Minigrid:
             - electric_water_heater:
                 The electric water heater associated with the minigrid system, if
                 appropriate.
+            - finance_inputs:
+                The financial input information.
             - minigrid_inputs:
                 The inputs for the minigrid/energy system, extracted from the input
                 file.
@@ -302,10 +306,27 @@ class Minigrid:
         else:
             hot_water_tank = None
 
-        inverter = Inverter(
-            minigrid_inputs[ImpactingComponent.INVERTER.value][LIFETIME],
-            minigrid_inputs[ImpactingComponent.INVERTER.value][SIZE_INCREMENT],
-        )
+        # Attempt to fetch inverter information from the energy-system inputs.
+        try:
+            inverter = Inverter(
+                minigrid_inputs[ImpactingComponent.INVERTER.value][LIFETIME],
+                minigrid_inputs[ImpactingComponent.INVERTER.value][SIZE_INCREMENT],
+            )
+        except KeyError:
+            try:
+                inverter = Inverter(
+                    finance_inputs[ImpactingComponent.INVERTER.value][LIFETIME],
+                    finance_inputs[ImpactingComponent.INVERTER.value][SIZE_INCREMENT],
+                )
+            except KeyError:
+                raise InputFileError(
+                    "energy system inputs",
+                    "Inverter information should be in energy system inputs.",
+                )
+            logger.warning(
+                "Specifying inverter information in the finance inputs is deprecated. "
+                "Use the energy-system inputs."
+            )
 
         # Return the minigrid instance.
         return cls(
