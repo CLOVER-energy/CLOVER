@@ -2073,6 +2073,8 @@ def _parse_minigrid_inputs(  # pylint: disable=too-many-locals, too-many-stateme
         diesel_water_heater,
         electric_water_heater,
         energy_system_inputs,
+        finance_inputs,
+        logger,
         pv_panels,
         pvt_panels,
         battery_inputs,
