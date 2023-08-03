@@ -315,7 +315,7 @@ class Minigrid:
         except KeyError:
             try:
                 inverter = Inverter(
-                    finance_inputs[ImpactingComponent.INVERTER.value][LIFETIME],
+                    int(finance_inputs[ImpactingComponent.INVERTER.value][LIFETIME]),
                     finance_inputs[ImpactingComponent.INVERTER.value][SIZE_INCREMENT],
                 )
             except KeyError:
