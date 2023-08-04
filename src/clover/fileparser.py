@@ -2571,6 +2571,10 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
         )
     logger.info("Generation inputs successfully parsed.")
 
+    # Temporary workaround whilst generation inputs phased out.
+    if generation_inputs.get("token", None) is not None:
+        global_settings_inputs[TOKEN] = generation_inputs.get("token", None)
+
     grid_times_filepath = os.path.join(
         inputs_directory_relative_path,
         GRID_TIMES_FILE,
