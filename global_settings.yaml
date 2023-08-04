@@ -13,4 +13,6 @@
 # and online.
 #
 
+end_year: 2019
+start_year: 2010
 token: "YOUR API TOKEN HERE" # renewables.ninja API token
