@@ -322,7 +322,7 @@ class Minigrid:
                 raise InputFileError(
                     "energy system inputs",
                     "Inverter information should be in energy system inputs.",
-                )
+                ) from None
             logger.warning(
                 "Specifying inverter information in the finance inputs is deprecated. "
                 "Use the energy-system inputs."

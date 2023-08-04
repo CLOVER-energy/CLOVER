@@ -31,7 +31,6 @@ from ..__utils__ import (
     ColumnHeader,
     hourly_profile_to_daily_sum,
     InputFileError,
-    InternalError,
     Inverter,
     Location,
     Scenario,
