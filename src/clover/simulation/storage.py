@@ -643,7 +643,7 @@ def get_electric_battery_storage_profile(  # pylint: disable=too-many-locals, to
         # Then take energy from grid if available
         if scenario.grid:
             grid_energy: pd.DataFrame = pd.DataFrame(
-                ((remaining_profile < 0) * remaining_profile).iloc[:, 0]  # type: ignore
+                ((remaining_profile < 0) * remaining_profile)[0]  # type: ignore
                 * -1.0
                 * grid_profile.values
             )

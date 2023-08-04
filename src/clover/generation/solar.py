@@ -33,6 +33,7 @@ from ..__utils__ import (
     Location,
     NAME,
     ProgrammerJudgementFault,
+    RenewablesNinjaError,
 )
 from .__utils__ import BaseRenewablesNinjaThread, SolarDataType, total_profile_output
 
@@ -134,6 +135,22 @@ class Tracking(enum.Enum):
             raise InputFileError(
                 "solar_generation_inputs", f"Tracking mode '{text}' is not valid."
             ) from err
+
+    @property
+    def as_string(self) -> str:
+        """
+        Return a string representing the class.
+
+        :return:
+            A `str` containing the tracking information.
+
+        """
+
+        if self.value == 0:
+            return "fixed"
+        if self.value == 1:
+            return "single_axis"
+        return "dual_axis"
 
 
 class SolarPanel:  # pylint: disable=too-few-public-methods
@@ -348,6 +365,30 @@ class PVPanel(
             and self.azimuthal_orientation == other.azimuthal_orientation
             and self.tilt == other.tilt
         )
+
+    @property
+    def as_dict(self) -> Dict[str, Any]:
+        """
+        Return a dictionary based on the panel information.
+
+        Outputs:
+            - A mapping containing the input information based on the panel.
+
+        """
+
+        return {
+            "azimuthal_orientation": self.azimuthal_orientation,
+            "lifetime": self.lifetime,
+            "name": self.name,
+            "pv_unit": self.pv_unit,
+            "pv_unit_overrided": self.pv_unit_overrided,
+            "reference_efficiency": self.reference_efficiency,
+            "reference_temperature": self.reference_temperature,
+            "thermal_coefficient": self.thermal_coefficient,
+            "tilt": self.tilt,
+            "tracking": self.tracking.as_string,
+            "type": self.panel_type.value,
+        }
 
     @classmethod
     def from_dict(cls, logger: Logger, solar_inputs: Dict[str, Any]) -> Any:
@@ -762,6 +803,7 @@ class SolarDataThread(
         self,
         auto_generated_files_directory: str,
         generation_inputs: Dict[str, Any],
+        global_settings_inputs: Dict[str, str],
         location: Location,
         logger_name: str,
         pause_time: int,
@@ -802,6 +844,7 @@ class SolarDataThread(
         super().__init__(
             auto_generated_files_directory,
             generation_inputs,
+            global_settings_inputs,
             location,
             logger_name,
             pause_time,
@@ -821,8 +864,11 @@ def total_solar_output(
 
     """
 
-    return total_profile_output(
-        *args,
-        profile_name="solar",
-        profile_prefix=get_profile_prefix(pv_panel),
-    )
+    try:
+        return total_profile_output(
+            *args,
+            profile_name="solar",
+            profile_prefix=get_profile_prefix(pv_panel),
+        )
+    except FileNotFoundError:
+        raise RenewablesNinjaError() from None

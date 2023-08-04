@@ -26,7 +26,7 @@ from argparse import Namespace
 import dataclasses
 from logging import Logger
 
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, DefaultDict, Dict, List, Optional, Union
 
 from ..__utils__ import (
     AuxiliaryHeaterType,
@@ -34,6 +34,7 @@ from ..__utils__ import (
     CleanWaterMode,
     EXCHANGER,
     InputFileError,
+    Inverter,
     NAME,
     RESOURCE_NAME_TO_RESOURCE_TYPE_MAPPING,
     OperatingMode,
@@ -44,6 +45,7 @@ from ..__utils__ import (
 
 from ..conversion.conversion import Converter
 from ..generation.solar import HybridPVTPanel, PVPanel
+from ..impact.__utils__ import ImpactingComponent, LIFETIME, SIZE_INCREMENT
 from .diesel import DieselGenerator, DieselWaterHeater
 from .exchanger import Exchanger
 from .storage_utils import Battery, CleanWaterTank, HotWaterTank
@@ -129,6 +131,9 @@ class Minigrid:
     .. attribute:: hot_water_tank
         The hot-water tank being modelled, if applicable.
 
+    .. attribute:: inverter
+        The inverter being modelled.
+
     .. attribute:: pv_panels
         The PV panel(s) being considered.
 
@@ -155,6 +160,7 @@ class Minigrid:
     electric_water_heater: Optional[Converter]
     heat_exchanger: Optional[Exchanger]
     hot_water_tank: Optional[HotWaterTank]
+    inverter: Inverter
     pv_panels: List[PVPanel]
     pvt_panels: List[HybridPVTPanel]
     water_pump: Optional[Transmitter]
@@ -165,6 +171,8 @@ class Minigrid:
         diesel_generator: DieselGenerator,
         diesel_water_heater: Optional[DieselWaterHeater],
         electric_water_heater: Optional[Converter],
+        finance_inputs: DefaultDict[str, DefaultDict[str, float]],
+        logger: Logger,
         minigrid_inputs: Dict[str, Any],
         pv_panels: List[PVPanel],
         pvt_panels: List[HybridPVTPanel],
@@ -185,6 +193,8 @@ class Minigrid:
             - electric_water_heater:
                 The electric water heater associated with the minigrid system, if
                 appropriate.
+            - finance_inputs:
+                The financial input information.
             - minigrid_inputs:
                 The inputs for the minigrid/energy system, extracted from the input
                 file.
@@ -296,6 +306,28 @@ class Minigrid:
         else:
             hot_water_tank = None
 
+        # Attempt to fetch inverter information from the energy-system inputs.
+        try:
+            inverter = Inverter(
+                minigrid_inputs[ImpactingComponent.INVERTER.value][LIFETIME],
+                minigrid_inputs[ImpactingComponent.INVERTER.value][SIZE_INCREMENT],
+            )
+        except KeyError:
+            try:
+                inverter = Inverter(
+                    int(finance_inputs[ImpactingComponent.INVERTER.value][LIFETIME]),
+                    finance_inputs[ImpactingComponent.INVERTER.value][SIZE_INCREMENT],
+                )
+            except KeyError:
+                raise InputFileError(
+                    "energy system inputs",
+                    "Inverter information should be in energy system inputs.",
+                ) from None
+            logger.warning(
+                "Specifying inverter information in the finance inputs is deprecated. "
+                "Use the energy-system inputs."
+            )
+
         # Return the minigrid instance.
         return cls(
             minigrid_inputs[CONVERSION][AC_TO_AC]
@@ -328,6 +360,7 @@ class Minigrid:
             if EXCHANGER in minigrid_inputs
             else None,
             hot_water_tank,
+            inverter,
             pv_panels,
             pvt_panels,
             water_pump,

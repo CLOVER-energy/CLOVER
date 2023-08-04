@@ -17,7 +17,7 @@ the clover module from the command-line interface.
 
 """
 
-__version__ = "5.1.1"
+__version__ = "5.1.2b3"
 
 import collections
 import datetime
@@ -576,6 +576,7 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
             finance_inputs,
             generation_inputs,
             ghg_inputs,
+            global_settings_inputs,
             grid_times,
             location,
             optimisation_inputs,
@@ -703,6 +704,7 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
         wind_data_thread: Optional[wind.WindDataThread] = wind.WindDataThread(
             os.path.join(auto_generated_files_directory, "wind"),
             generation_inputs,
+            global_settings_inputs,
             location,
             f"{parsed_args.location}_{wind.WIND_LOGGER_NAME}",
             ninja_pause_index,
@@ -730,6 +732,7 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
         ] = weather.WeatherDataThread(
             os.path.join(auto_generated_files_directory, "weather"),
             generation_inputs,
+            global_settings_inputs,
             location,
             f"{parsed_args.location}_{weather.WEATHER_LOGGER_NAME}",
             ninja_pause_index,
@@ -757,6 +760,7 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
         solar_data_threads[pv_panel] = solar.SolarDataThread(
             os.path.join(auto_generated_files_directory, "solar"),
             generation_inputs,
+            global_settings_inputs,
             location,
             f"{parsed_args.location}_{solar.SOLAR_LOGGER_NAME}_"
             f"{solar.get_profile_prefix(pv_panel)}_{run_number_string}",
@@ -1193,6 +1197,7 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
                     simulation.end_year,
                     finance_inputs,
                     ghg_inputs,
+                    minigrid.inverter,
                     location,
                     logger,
                     None,

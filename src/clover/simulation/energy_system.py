@@ -762,7 +762,7 @@ def _calculate_renewable_hw_profiles(  # pylint: disable=too-many-locals, too-ma
             logger,
             minigrid,
             number_of_hw_tanks,
-            processed_total_hw_load.iloc[:, 0],
+            processed_total_hw_load[0],
             pvt_size,
             ResourceType.HOT_CLEAN_WATER,
             scenario,

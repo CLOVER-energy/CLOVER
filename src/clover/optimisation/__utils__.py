@@ -1070,6 +1070,7 @@ def recursive_iteration(  # pylint: disable=too-many-locals
             end_year,
             finance_inputs,
             ghg_inputs,
+            minigrid.inverter,
             location,
             logger,
             previous_system,

@@ -35,6 +35,7 @@ import yaml  # pylint: disable=import-error
 from tqdm import tqdm  # pylint: disable=import-error
 
 __all__ = (
+    "API_TOKEN_PLACEHOLDER_TEXT",
     "BColours",
     "CleanWaterMode",
     "Criterion",
@@ -56,6 +57,7 @@ __all__ = (
     "HTFMode",
     "InputFileError",
     "InternalError",
+    "Inverter",
     "KEROSENE_DEVICE_NAME",
     "KeyResults",
     "Location",
@@ -81,6 +83,10 @@ __all__ = (
     "ZERO_CELCIUS_OFFSET",
 )
 
+
+# API token placeholder text:
+#   Placeholder text to use when the renewables.ninja API token has not been specified.
+API_TOKEN_PLACEHOLDER_TEXT: str = "YOUR API TOKEN HERE"
 
 # Cold water:
 #   Used for parsing cold-water related information.
@@ -216,6 +222,10 @@ STEP: str = "step"
 # Supply temperature:
 #   Used to parse supply-temperature information.
 SUPPLY_TEMPERATURE: str = "supply_temperature"
+
+# Token:
+#   Keyword used when parsing the generation token.
+TOKEN: str = "renewables_ninja_token"
 
 # Zero celcius offset:
 #   Used for offsetting zero degrees celcius in Kelvin.
@@ -879,6 +889,23 @@ class InternalError(Exception):
         """
 
         super().__init__(f"An error occured internally within CLOVER: {msg}")
+
+
+@dataclasses.dataclass
+class Inverter:
+    """
+    Represents an inverter within the system.
+
+    .. attribute:: lifetime
+        The lifetime, in years, of the inverter.
+
+    .. attribute:: size_increment
+        The size increment of the inverter in kW.
+
+    """
+
+    lifetime: int
+    size_increment: float
 
 
 @dataclasses.dataclass

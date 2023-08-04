@@ -31,7 +31,5 @@ households:
 inverter:
   cost: 200 # [$/kW]
   cost_decrease: 2 # [% p.a.]
-  lifetime: 4 # [years]
-  size_increment: 1 # [kW]
 kerosene:
   cost: 0.008 # [$/hour]

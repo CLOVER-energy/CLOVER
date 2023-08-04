@@ -22,6 +22,7 @@ from typing import Any, DefaultDict, Dict, List, Optional, Set, Tuple, Union
 
 import json
 import pandas as pd  # pylint: disable=import-error
+import yaml
 
 # from sklearn.linear_model._coordinate_descent import Lasso
 
@@ -32,6 +33,7 @@ from .impact.ghgs import EMISSIONS, GHG_IMPACT
 from .simulation.diesel import DIESEL_CONSUMPTION, MINIMUM_LOAD, DieselWaterHeater
 
 from .__utils__ import (
+    API_TOKEN_PLACEHOLDER_TEXT,
     AuxiliaryHeaterType,
     BColours,
     DesalinationScenario,
@@ -51,6 +53,7 @@ from .__utils__ import (
     read_yaml,
     Scenario,
     Simulation,
+    TOKEN,
 )
 from .conversion.conversion import (
     Converter,
@@ -65,6 +68,7 @@ from .simulation.transmission import Transmitter
 
 __all__ = (
     "GENERATION_INPUTS_FILE",
+    "GLOBAL_SETTINGS_FILE",
     "INPUTS_DIRECTORY",
     "KEROSENE_TIMES_FILE",
     "KEROSENE_USAGE_FILE",
@@ -176,6 +180,10 @@ GENERATION_INPUTS_FILE: str = os.path.join("generation", "generation_inputs.yaml
 # GHG inputs file:
 #   The relative path to the GHG inputs file.
 GHG_INPUTS_FILE: str = os.path.join("impact", "ghg_inputs.yaml")
+
+# Global settings file:
+#   The relative path to the global-settings file.
+GLOBAL_SETTINGS_FILE: str = "global_settings.yaml"
 
 # Grid inputs file:
 #   The relative path to the grid-inputs file.
@@ -942,6 +950,44 @@ def _parse_exchanger_inputs(
         exchanger_inputs[EXCHANGERS],
         exchanger_inputs_filepath,
     )
+
+
+def _parse_global_settings(logger: Logger) -> Dict[str, Any]:
+    """Parses the global-settings file."""
+
+    def _create_global_setings_file() -> None:
+        """Create a default global-settings file if missing."""
+
+        with open(GLOBAL_SETTINGS_FILE, "w", encoding="UTF-8") as global_settings_file:
+            yaml.dump({TOKEN: API_TOKEN_PLACEHOLDER_TEXT}, global_settings_file)
+
+    # Parse global settings.
+    if not os.path.isfile(GLOBAL_SETTINGS_FILE):
+        _create_global_setings_file()
+
+    try:
+        global_settings_inputs: Optional[
+            Union[Dict[str, Any], List[Dict[str, Any]]]
+        ] = read_yaml(GLOBAL_SETTINGS_FILE, logger)
+    except FileNotFoundError:
+        logger.error(
+            "No global-settings file found, check that this file was correctly created "
+            "and exists in your current CLOVER directory."
+        )
+        raise InternalError("Error parsing global-settings file.") from None
+    logger.info("Global settings inputs successfully read.")
+
+    # Ensure that the global-settings inputs are the correct format.
+    if not isinstance(global_settings_inputs, dict):
+        if global_settings_inputs is None:
+            global_settings_inputs = {}
+        else:
+            logger.error("Global settings inputs are not of type `dict`.")
+            raise InputFileError(
+                "global_settings.yaml", "Global-settings must be of type `dict`."
+            )
+
+    return global_settings_inputs
 
 
 def _parse_pvt_reduced_models(  # pylint: disable=too-many-statements
@@ -1753,6 +1799,7 @@ def _parse_tank_inputs(  # pylint: disable=too-many-statements
 def _parse_minigrid_inputs(  # pylint: disable=too-many-locals, too-many-statements
     converters: Dict[str, Converter],
     debug: bool,
+    finance_inputs: DefaultDict[str, DefaultDict[str, float]],
     inputs_directory_relative_path: str,
     logger: Logger,
     scenarios: List[Scenario],
@@ -1796,6 +1843,8 @@ def _parse_minigrid_inputs(  # pylint: disable=too-many-locals, too-many-stateme
         - debug:
             Whether to use the PV-T reduced models (False) or invented data for
             debugging purposes (True).
+        - finance_inputs:
+            The financial input information.
         - inputs_directory_relative_path:
             The relative path to the inputs folder directory.
         - logger:
@@ -2023,6 +2072,8 @@ def _parse_minigrid_inputs(  # pylint: disable=too-many-locals, too-many-stateme
         diesel_generator,
         diesel_water_heater,
         electric_water_heater,
+        finance_inputs,
+        logger,
         energy_system_inputs,
         pv_panels,
         pvt_panels,
@@ -2233,6 +2284,7 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
     DefaultDict[str, DefaultDict[str, float]],
     Dict[str, Union[int, str]],
     DefaultDict[str, DefaultDict[str, float]],
+    Dict[str, str],
     pd.DataFrame,
     Location,
     Optional[OptimisationParameters],
@@ -2269,6 +2321,7 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
             - minigrid,
             - finance_inputs,
             - ghg_inputs,
+            - global_settings_inputs,
             - grid_times,
             - optimisation_inputs,
             - optimisations, the `set` of optimisations to run,
@@ -2283,6 +2336,10 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
 
     """
 
+    # Parse global-settings files
+    global_settings_inputs = _parse_global_settings(logger)
+
+    # Parse location-specific files.
     inputs_directory_relative_path = os.path.join(
         LOCATIONS_FOLDER_NAME,
         location_name,
@@ -2425,6 +2482,36 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
         Simulation.from_dict(entry) for entry in simulations_file_contents
     ]
 
+    # Parse and collate the impact information.
+    finance_inputs_filepath = os.path.join(
+        inputs_directory_relative_path, FINANCE_INPUTS_FILE
+    )
+    # Finance input type: Dict[str, Union[float, Dict[str, float]]]
+    finance_data = read_yaml(finance_inputs_filepath, logger)
+    if not isinstance(finance_data, dict):
+        raise InputFileError(
+            "finance inputs", "Finance inputs must be of type `dict` not `list`."
+        )
+    finance_inputs: DefaultDict[str, DefaultDict[str, float]] = defaultdict(
+        lambda: defaultdict(float)
+    )
+    finance_inputs.update(finance_data)
+    logger.info("Finance inputs successfully parsed.")
+
+    ghg_inputs_filepath = os.path.join(inputs_directory_relative_path, GHG_INPUTS_FILE)
+    # Ghg data type: Dict[str, Union[float, Dict[str, float]]]
+    ghg_data = read_yaml(ghg_inputs_filepath, logger)
+    if not isinstance(finance_data, dict):
+        raise InputFileError(
+            "ghg inputs", "GHG inputs must be of type `dict` not `list`."
+        )
+    # Generate a default dict to take care of missing data.
+    ghg_inputs: DefaultDict[str, DefaultDict[str, float]] = defaultdict(
+        lambda: defaultdict(float)
+    )
+    ghg_inputs.update(ghg_data)  # type: ignore
+    logger.info("GHG inputs successfully parsed.")
+
     # Parse the energy-system input information.
     (
         battery_costs,
@@ -2457,7 +2544,12 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
         transmission_inputs_filepath,
         transmitters,
     ) = _parse_minigrid_inputs(
-        converters, debug, inputs_directory_relative_path, logger, scenarios
+        converters,
+        debug,
+        finance_inputs,
+        inputs_directory_relative_path,
+        logger,
+        scenarios,
     )
     logger.info("Energy-system inputs successfully parsed.")
 
@@ -2478,6 +2570,10 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
             "dictionary.",
         )
     logger.info("Generation inputs successfully parsed.")
+
+    # Temporary workaround for generation inputs being phased out.
+    if generation_inputs.get("token", None) is not None:
+        global_settings_inputs[TOKEN] = generation_inputs.get("token", None)
 
     grid_times_filepath = os.path.join(
         inputs_directory_relative_path,
@@ -2567,36 +2663,6 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
             "Location was not returned when calling `Location.from_dict`."
         )
     logger.info("Location inputs successfully parsed.")
-
-    # Parse and collate the impact information.
-    finance_inputs_filepath = os.path.join(
-        inputs_directory_relative_path, FINANCE_INPUTS_FILE
-    )
-    # Finance input type: Dict[str, Union[float, Dict[str, float]]]
-    finance_data = read_yaml(finance_inputs_filepath, logger)
-    if not isinstance(finance_data, dict):
-        raise InputFileError(
-            "finance inputs", "Finance inputs must be of type `dict` not `list`."
-        )
-    finance_inputs: DefaultDict[str, DefaultDict[str, float]] = defaultdict(
-        lambda: defaultdict(float)
-    )
-    finance_inputs.update(finance_data)
-    logger.info("Finance inputs successfully parsed.")
-
-    ghg_inputs_filepath = os.path.join(inputs_directory_relative_path, GHG_INPUTS_FILE)
-    # Ghg data type: Dict[str, Union[float, Dict[str, float]]]
-    ghg_data = read_yaml(ghg_inputs_filepath, logger)
-    if not isinstance(finance_data, dict):
-        raise InputFileError(
-            "ghg inputs", "GHG inputs must be of type `dict` not `list`."
-        )
-    # Generate a default dict to take care of missing data.
-    ghg_inputs: DefaultDict[str, DefaultDict[str, float]] = defaultdict(
-        lambda: defaultdict(float)
-    )
-    ghg_inputs.update(ghg_data)  # type: ignore
-    logger.info("GHG inputs successfully parsed.")
 
     # Update the finance and GHG inputs accordingly with the PV data.
     logger.info("Updating with PV impact data.")
@@ -2848,7 +2914,7 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
         "location_inputs": location_inputs_filepath,
         "optimisation_inputs": optimisation_inputs_filepath,
         "scenarios": scenario_inputs_filepath,
-        "simularion": simulations_inputs_filepath,
+        "simulation": simulations_inputs_filepath,
         "solar_inputs": solar_generation_inputs_filepath,
         "transmission_inputs": transmission_inputs_filepath,
     }
@@ -2907,6 +2973,7 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
         finance_inputs,
         generation_inputs,
         ghg_inputs,
+        global_settings_inputs,
         grid_times,
         location,
         optimisation_parameters,
