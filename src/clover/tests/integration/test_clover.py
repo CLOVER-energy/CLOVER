@@ -749,7 +749,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
             final_storage_size=0.0,
             initial_pv_size=0.0,
             initial_storage_size=0.0,
-            lcue=0.707,#0.498,
+            lcue=0.707,  # 0.498,
             renewables_fraction=0.0,
             unmet_energy_fraction=0.021,
         )

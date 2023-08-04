@@ -856,9 +856,7 @@ def diesel_fuel_expenditure(
         ]
     )
 
-    total_daily_cost = pd.DataFrame(
-        diesel_fuel_usage_daily * diesel_price_daily[0]
-    )
+    total_daily_cost = pd.DataFrame(diesel_fuel_usage_daily * diesel_price_daily[0])
     total_discounted_cost = discounted_energy_total(
         finance_inputs,
         logger,
