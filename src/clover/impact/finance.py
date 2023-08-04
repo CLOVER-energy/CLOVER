@@ -31,7 +31,6 @@ from ..__utils__ import (
     ColumnHeader,
     hourly_profile_to_daily_sum,
     InputFileError,
-    InternalError,
     Inverter,
     Location,
     Scenario,
@@ -856,9 +855,7 @@ def diesel_fuel_expenditure(
         ]
     )
 
-    total_daily_cost = pd.DataFrame(
-        diesel_fuel_usage_daily.values * diesel_price_daily.values
-    )
+    total_daily_cost = pd.DataFrame(diesel_fuel_usage_daily * diesel_price_daily[0])
     total_discounted_cost = discounted_energy_total(
         finance_inputs,
         logger,
@@ -909,24 +906,13 @@ def discounted_energy_total(
         )
         raise
 
+    if isinstance(total_daily, pd.DataFrame):
+        total_daily = total_daily[0]
+
     discounted_fraction = _discounted_fraction(
         discount_rate, start_year=start_year, end_year=end_year
     )
-    if not isinstance(total_daily, pd.Series):
-        try:
-            total_daily = total_daily.iloc[:, 0]
-        except pd.core.indexing.IndexingError as e:  # type: ignore
-            logger.error(
-                "%sAn unexpected internal error occured in the financial inputs file "
-                "when casting `pd.Series` to `pd.DataFrame`: %s%s",
-                str(e),
-                BColours.fail,
-                BColours.endc,
-            )
-            raise InternalError(
-                "An error occured casting between pandas types."
-            ) from None
-    discounted_energy = pd.DataFrame(discounted_fraction.iloc[:, 0] * total_daily)
+    discounted_energy = pd.DataFrame(discounted_fraction[0] * total_daily)
     return float(np.sum(discounted_energy))  # type: ignore
 
 
