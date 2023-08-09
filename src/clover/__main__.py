@@ -574,7 +574,6 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
             device_utilisations,
             minigrid,
             finance_inputs,
-            generation_inputs,
             ghg_inputs,
             global_settings_inputs,
             grid_times,
@@ -703,7 +702,6 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
         logger.info("Beginning wind-data fetching.")
         wind_data_thread: Optional[wind.WindDataThread] = wind.WindDataThread(
             os.path.join(auto_generated_files_directory, "wind"),
-            generation_inputs,
             global_settings_inputs,
             location,
             f"{parsed_args.location}_{wind.WIND_LOGGER_NAME}",
@@ -731,7 +729,6 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
             weather.WeatherDataThread
         ] = weather.WeatherDataThread(
             os.path.join(auto_generated_files_directory, "weather"),
-            generation_inputs,
             global_settings_inputs,
             location,
             f"{parsed_args.location}_{weather.WEATHER_LOGGER_NAME}",
@@ -759,7 +756,6 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
     for pv_panel in panels_to_fetch:
         solar_data_threads[pv_panel] = solar.SolarDataThread(
             os.path.join(auto_generated_files_directory, "solar"),
-            generation_inputs,
             global_settings_inputs,
             location,
             f"{parsed_args.location}_{solar.SOLAR_LOGGER_NAME}_"
@@ -949,7 +945,7 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
         pv_panel.name: solar.total_solar_output(
             os.path.join(auto_generated_files_directory, "solar"),
             parsed_args.regenerate,
-            generation_inputs["start_year"],
+            global_settings_inputs["start_year"],
             location.max_years,
             pv_panel=pv_panel,
         )
@@ -965,7 +961,7 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
             weather.total_weather_output(
                 os.path.join(auto_generated_files_directory, "weather"),
                 parsed_args.regenerate,
-                generation_inputs["start_year"],
+                global_settings_inputs["start_year"],
                 location.max_years,
             )
         )
@@ -976,7 +972,7 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
         total_wind_data: Optional[pd.DataFrame] = wind.total_wind_output(
             os.path.join(auto_generated_files_directory, "wind"),
             parsed_args.regenerate,
-            generation_inputs["start_year"],
+            global_settings_inputs["start_year"],
             location.max_years,
         )
         logger.info("Total wind output successfully computed and saved.")

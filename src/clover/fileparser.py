@@ -554,7 +554,7 @@ def _parse_conversion_inputs(
     )
 
 
-def _parse_diesel_inputs(  # pylint: disable=too-many-statements
+def _parse_diesel_inputs(  # pylint: disable=too-many-locals,too-many-statements
     energy_system_inputs: Dict[str, Any],
     inputs_directory_relative_path: str,
     logger: Logger,
@@ -796,7 +796,9 @@ def _parse_diesel_inputs(  # pylint: disable=too-many-statements
         diesel_water_heater_emissions = None
 
     # Determine the diesel fuel costs and emissions
-    diesel_fuel_impact: Optional[dict[str, float]] = diesel_inputs.get(ImpactingComponent.DIESEL_FUEL.value, None)
+    diesel_fuel_impact: Optional[Dict[str, float]] = diesel_inputs.get(
+        ImpactingComponent.DIESEL_FUEL.value, None
+    )
 
     return (
         diesel_costs,
@@ -2564,28 +2566,6 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
     )
     logger.info("Energy-system inputs successfully parsed.")
 
-    generation_inputs_filepath = os.path.join(
-        inputs_directory_relative_path, GENERATION_INPUTS_FILE
-    )
-    generation_inputs = read_yaml(generation_inputs_filepath, logger)
-    if not isinstance(generation_inputs, dict):
-        logger.error(
-            "%sThe generation inputs file was invalid: information must be contained "
-            "within a `dict`. See the user-guide.%s",
-            BColours.fail,
-            BColours.endc,
-        )
-        raise InputFileError(
-            "generation inputs",
-            "The contents of the generation inputs file must be a key-value "
-            "dictionary.",
-        )
-    logger.info("Generation inputs successfully parsed.")
-
-    # Temporary workaround whilst generation inputs phased out.
-    if generation_inputs.get("token", None) is not None:
-        global_settings_inputs[TOKEN] = generation_inputs.get("token", None)
-
     grid_times_filepath = os.path.join(
         inputs_directory_relative_path,
         GRID_TIMES_FILE,
@@ -2687,9 +2667,15 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
 
     # Update the impact inputs with the diesel fuel data.
     if diesel_fuel_impact is not None:
-        finance_inputs[ImpactingComponent.DIESEL_FUEL.value] = defaultdict(float, diesel_fuel_impact)
-        ghg_inputs[ImpactingComponent.DIESEL_FUEL.value] = defaultdict(float, diesel_fuel_impact)
-        logger.info("Diesel impact data successfully updated from the diesel inputs file.")
+        finance_inputs[ImpactingComponent.DIESEL_FUEL.value] = defaultdict(
+            float, diesel_fuel_impact
+        )
+        ghg_inputs[ImpactingComponent.DIESEL_FUEL.value] = defaultdict(
+            float, diesel_fuel_impact
+        )
+        logger.info(
+            "Diesel impact data successfully updated from the diesel inputs file."
+        )
     else:
         logger.info("Diesel impact information taken from finance and GHG inputs.")
 
@@ -2927,7 +2913,6 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
         "diesel_inputs": diesel_inputs_filepath,
         "energy_system": energy_system_inputs_filepath,
         "finance_inputs": finance_inputs_filepath,
-        "generation_inputs": generation_inputs_filepath,
         "ghg_inputs": ghg_inputs_filepath,
         "grid_times": grid_times_filepath,
         "location_inputs": location_inputs_filepath,
@@ -2990,7 +2975,6 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
         device_utilisations,
         minigrid,
         finance_inputs,
-        generation_inputs,
         ghg_inputs,
         global_settings_inputs,
         grid_times,

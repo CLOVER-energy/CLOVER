@@ -562,9 +562,7 @@ def compute_total_hourly_load(  # pylint: disable=too-many-locals
 
     logger.info("Saving yearly load statistics.")
     with open(yearly_load_statistics_filepath, "w") as f:
-        yearly_load_statistics.to_csv(
-            f, index=False, lineterminator=""  # type: ignore
-        )
+        yearly_load_statistics.to_csv(f, index=False, lineterminator="")  # type: ignore
     logger.info("Yearly load statistics successfully saved.")
 
     return total_load, yearly_load_statistics
@@ -888,7 +886,7 @@ def process_device_ownership(
             "w",
         ) as f:
             daily_ownership.to_csv(
-                f, header=None, index=False, lineterminator=""  # type: ignore
+                f, header=None, index=False, lineterminator="\n"  # type: ignore
             )
         logger.info(
             "Monthly deivice-ownership profile for %s successfully saved to %s.",
