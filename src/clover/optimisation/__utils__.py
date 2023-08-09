@@ -61,6 +61,7 @@ __all__ = (
     "CriterionMode",
     "get_sufficient_appraisals",
     "Optimisation",
+    "OptimisationComponent",
     "OptimisationParameters",
     "recursive_iteration",
     "save_optimisation",

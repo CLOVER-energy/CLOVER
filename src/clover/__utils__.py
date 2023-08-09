@@ -3003,7 +3003,7 @@ def save_simulation(
         ) as f:
             simulation.to_csv(
                 f,  # type: ignore
-                line_terminator="\n",
+                lineterminator="\n",
             )
         logger.info("Simulation successfully saved to %s.", simulation_output_folder)
         pbar.update(1)

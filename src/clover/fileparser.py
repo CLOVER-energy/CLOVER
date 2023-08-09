@@ -562,6 +562,7 @@ def _parse_diesel_inputs(  # pylint: disable=too-many-statements
 ) -> Tuple[
     Dict[str, float],
     Dict[str, float],
+    Optional[Dict[str, float]],
     DieselGenerator,
     str,
     Optional[DieselWaterHeater],
@@ -586,6 +587,7 @@ def _parse_diesel_inputs(  # pylint: disable=too-many-statements
         - The path to the diesel inputs file;
         - The diesel-generator cost information;
         - The diesel-generator emissions information;
+        - The diesel fuel costs and emissions information, if provided;
         - The diesel generator to use for the run;
         - The diesel water heater to use for the run, if applicable;
         - The diesel water heater emissions information, if applicable;
@@ -793,9 +795,13 @@ def _parse_diesel_inputs(  # pylint: disable=too-many-statements
         diesel_water_heater_costs = None
         diesel_water_heater_emissions = None
 
+    # Determine the diesel fuel costs and emissions
+    diesel_fuel_impact: Optional[dict[str, float]] = diesel_inputs.get(ImpactingComponent.DIESEL_FUEL.value, None)
+
     return (
         diesel_costs,
         diesel_emissions,
+        diesel_fuel_impact,
         diesel_generator,
         diesel_inputs_filepath,
         diesel_water_heater,
@@ -1813,6 +1819,7 @@ def _parse_minigrid_inputs(  # pylint: disable=too-many-locals, too-many-stateme
     Optional[Dict[str, float]],
     Dict[str, float],
     Dict[str, float],
+    Optional[Dict[str, float]],
     str,
     Optional[Dict[str, float]],
     Optional[Dict[str, float]],
@@ -1862,6 +1869,7 @@ def _parse_minigrid_inputs(  # pylint: disable=too-many-locals, too-many-stateme
         - Clean-water tank tank emissions,
         - Diesel costs,
         - Diesel emissions,
+        - Diesel fuel costs and emissions information,
         - Diesel input filepath,
         - Diesel water heater costs,
         - Diesel water heater emissions,
@@ -1905,6 +1913,7 @@ def _parse_minigrid_inputs(  # pylint: disable=too-many-locals, too-many-stateme
     (
         diesel_costs,
         diesel_emissions,
+        diesel_fuel_impact,
         diesel_generator,
         diesel_inputs_filepath,
         diesel_water_heater,
@@ -2124,6 +2133,7 @@ def _parse_minigrid_inputs(  # pylint: disable=too-many-locals, too-many-stateme
         clean_water_tank_emissions,
         diesel_costs,
         diesel_emissions,
+        diesel_fuel_impact,
         diesel_inputs_filepath,
         diesel_water_heater_costs,
         diesel_water_heater_emissions,
@@ -2523,6 +2533,7 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
         clean_water_tank_emissions,
         diesel_costs,
         diesel_emissions,
+        diesel_fuel_impact,
         diesel_inputs_filepath,
         diesel_water_heater_costs,
         diesel_water_heater_emissions,
@@ -2673,6 +2684,14 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
         lambda: defaultdict(float), pv_panel_emissions  # type: ignore [arg-type, return-value]
     )
     logger.info("PV impact data successfully updated.")
+
+    # Update the impact inputs with the diesel fuel data.
+    if diesel_fuel_impact is not None:
+        finance_inputs[ImpactingComponent.DIESEL_FUEL.value] = defaultdict(float, diesel_fuel_impact)
+        ghg_inputs[ImpactingComponent.DIESEL_FUEL.value] = defaultdict(float, diesel_fuel_impact)
+        logger.info("Diesel impact data successfully updated from the diesel inputs file.")
+    else:
+        logger.info("Diesel impact information taken from finance and GHG inputs.")
 
     # Update the impact inputs with the diesel data.
     if any(

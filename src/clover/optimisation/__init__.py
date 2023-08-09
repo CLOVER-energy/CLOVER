@@ -21,6 +21,7 @@ from .__utils__ import (
     CriterionMode,
     get_sufficient_appraisals,
     Optimisation,
+    OptimisationComponent,
     OptimisationParameters,
     recursive_iteration,
     save_optimisation,
