@@ -10,7 +10,12 @@
 """
 The internals module"""
 
-from .__main__ import main
+from .__main__ import (
+    main,
+    OPTIMISATION_OUTPUTS_FOLDER,
+    OUTPUTS_FOLDER,
+    SIMULATION_OUTPUTS_FOLDER,
+)
 from .__utils__ import (
     BColours,
     CleanWaterMode,

@@ -21,13 +21,14 @@ from logging import Logger
 from typing import Any, DefaultDict, Dict, List, Optional, Set, Tuple, Union
 
 import json
-import pandas as pd  # pylint: disable=import-error
+import pandas as pd  # pyli`nt: disable=import-error
 import yaml
 
 # from sklearn.linear_model._coordinate_descent import Lasso
 
 from . import load
 from .generation import solar
+from .impact.__utils__ import LIFETIME
 from .impact.finance import COSTS, FINANCE_IMPACT, ImpactingComponent
 from .impact.ghgs import EMISSIONS, GHG_IMPACT
 from .simulation.diesel import DIESEL_CONSUMPTION, MINIMUM_LOAD, DieselWaterHeater
@@ -36,6 +37,9 @@ from .__utils__ import (
     API_TOKEN_PLACEHOLDER_TEXT,
     AuxiliaryHeaterType,
     BColours,
+    DEFAULT_END_YEAR,
+    DEFAULT_START_YEAR,
+    DEFAULT_SYSTEM_LIFETIME,
     DesalinationScenario,
     DieselMode,
     EXCHANGER,
@@ -157,6 +161,10 @@ ELECTRIC_MODEL_FILE: str = os.path.join("src", "electric_forest.sav")
 #   Keyword used for parsing electric water-heater information.
 ELECTRIC_WATER_HEATER: str = "electric_water_heater"
 
+# End year:
+#   Keyword used for parsing the end-year information.
+END_YEAR: str = "end_year"
+
 # Energy-system inputs file:
 #   The relative path to the energy-system-inputs file.
 ENERGY_SYSTEM_INPUTS_FILE: str = os.path.join("simulation", "energy_system.yaml")
@@ -242,6 +250,10 @@ SIMULATIONS_INPUTS_FILE: str = os.path.join("simulation", "simulations.yaml")
 # Solar inputs file:
 #   The relative path to the solar inputs file.
 SOLAR_INPUTS_FILE: str = os.path.join("generation", "solar_generation_inputs.yaml")
+
+# Start year:
+#   Keyword used for parsing the start-year information.
+START_YEAR: str = "start_year"
 
 # Tank inputs file:
 #   The relative path to the tank inputs file.
@@ -967,7 +979,15 @@ def _parse_global_settings(logger: Logger) -> Dict[str, Any]:
         """Create a default global-settings file if missing."""
 
         with open(GLOBAL_SETTINGS_FILE, "w", encoding="UTF-8") as global_settings_file:
-            yaml.dump({TOKEN: API_TOKEN_PLACEHOLDER_TEXT}, global_settings_file)
+            yaml.dump(
+                {
+                    TOKEN: API_TOKEN_PLACEHOLDER_TEXT,
+                    END_YEAR: DEFAULT_END_YEAR,
+                    START_YEAR: DEFAULT_START_YEAR,
+                    LIFETIME: DEFAULT_SYSTEM_LIFETIME,
+                },
+                global_settings_file,
+            )
 
     # Parse global settings.
     if not os.path.isfile(GLOBAL_SETTINGS_FILE):
@@ -2294,9 +2314,8 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
     Dict[load.load.Device, pd.DataFrame],
     Minigrid,
     DefaultDict[str, DefaultDict[str, float]],
-    Dict[str, Union[int, str]],
     DefaultDict[str, DefaultDict[str, float]],
-    Dict[str, str],
+    Dict[str, Union[int, str]],
     pd.DataFrame,
     Location,
     Optional[OptimisationParameters],

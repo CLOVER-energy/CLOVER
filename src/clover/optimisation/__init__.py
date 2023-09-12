@@ -29,6 +29,7 @@ from .__utils__ import (
     StorageSystemSize,
     TankSize,
     THRESHOLD_CRITERIA,
+    THRESHOLD_CRITERION_TO_MODE,
     ThresholdMode,
 )
 from .appraisal import appraise_system

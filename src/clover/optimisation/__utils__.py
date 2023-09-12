@@ -69,6 +69,7 @@ __all__ = (
     "StorageSystemSize",
     "TankSize",
     "THRESHOLD_CRITERIA",
+    "THRESHOLD_CRITERION_TO_MODE",
     "ThresholdMode",
 )
 

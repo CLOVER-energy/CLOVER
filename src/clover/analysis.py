@@ -846,7 +846,7 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
         plt.title("Energy availability on an average day")
         plt.savefig(
             os.path.join(
-                figures_directory, "electricity_avilability_on_average_day.png"
+                figures_directory, "electricity_availability_on_average_day.png"
             ),
             transparent=True,
         )

@@ -41,7 +41,10 @@ __all__ = (
     "Criterion",
     "CUT_OFF_TIME",
     "daily_sum_to_monthly_sum",
+    "DEFAULT_END_YEAR",
     "DEFAULT_SCENARIO",
+    "DEFAULT_START_YEAR",
+    "DEFAULT_SYSTEM_LIFETIME",
     "DemandType",
     "DesalinationScenario",
     "dict_to_dataframe",
@@ -100,9 +103,21 @@ CONVENTIONAL_SOURCES: str = "conventional_sources"
 #   The time up and to which information about the load of each device will be returned.
 CUT_OFF_TIME: int = 72  # [hours]
 
+# Default end year:
+#   The default end year to use in CLOVER for fetching renewables.ninja data.
+DEFAULT_END_YEAR: int = 2016
+
 # Default scenario:
 #   The name of the default scenario to be used in CLOVER.
 DEFAULT_SCENARIO: str = "default"
+
+# Default start year:
+#   The default start year to use in CLOVER for fetching renewables.ninja data.
+DEFAULT_START_YEAR: int = 2007
+
+# Default system lifetime:
+#   The default lifetime to use for solar components when computing degradation.
+DEFAULT_SYSTEM_LIFETIME: int = 30
 
 # Desalination scenario:
 #   Keyword for parsing the desalination scenario from the scenario inputs.
