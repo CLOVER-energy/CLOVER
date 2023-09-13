@@ -332,7 +332,7 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
     hw_pvt: bool = ColumnHeader.HW_PVT_ELECTRICITY_SUPPLIED.value in simulation_output
 
     with tqdm(
-        total=(9 + (1 if grid_profile is not None else 0)),
+        total=(10 + (2 if grid_profile is not None else 0)),
         desc="plots",
         leave=False,
         unit="plot",
@@ -729,14 +729,20 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
             axis=0,
         )
 
-        plt.plot(total_used, "--", label="Total used", zorder=1)
-        plt.plot(unmet_energy, label="Unmet", zorder=2)
-        plt.plot(diesel_energy, label="Diesel", zorder=3)
-        plt.plot(dumped, label="Dumped", zorder=4)
-        plt.plot(grid_energy, label="Grid", zorder=5)
-        plt.plot(storage_energy, label="Storage", zorder=6)
-        plt.plot(renewable_energy, label="Renewables used directly", zorder=7)
-        plt.plot(pv_supplied, label="PV electricity generated", zorder=8)
+        plt.plot(total_used, "--", label="Total used", zorder=1, color="C0")
+        plt.plot(unmet_energy, "--", label="Unmet", zorder=2, color="C7")
+        plt.plot(diesel_energy, label="Diesel", zorder=3, color="C0")
+        plt.plot(dumped, label="Dumped", zorder=4, color="C4")
+        plt.plot(grid_energy, label="Grid", zorder=5, color="C1")
+        plt.plot(storage_energy, label="Storage", zorder=6, color="C2")
+        plt.plot(
+            renewable_energy,
+            "--",
+            label="Renewables used directly",
+            zorder=7,
+            color="C3",
+        )
+        plt.plot(pv_supplied, label="PV electricity generated", zorder=8, color="C3")
         if cw_pvt:
             clean_water_energy_via_excess = (
                 np.mean(
@@ -784,27 +790,32 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
                 clean_water_energy_via_excess,
                 label="Excess -> clean water",
                 zorder=int(10 + (2 if cw_pvt else 0) + (1 if hw_pvt else 0)),
+                color="C6",
             )
             plt.plot(
                 clean_water_energy_via_backup,
                 label="Backup -> clean water",
                 zorder=11 + (2 if cw_pvt else 0) + (1 if hw_pvt else 0),
+                color="57",
             )
             plt.plot(
                 clean_water_pvt_supplied,
                 label="CW PV-T electricity generated",
                 zorder=9,
+                color="C8",
             )
             plt.plot(
                 thermal_desalination_energy,
                 label="Thermal desal electric power",
                 zorder=10,
+                color="C9",
             )
         if hw_pvt:
             plt.plot(
                 hot_water_pvt_supplied,
                 label="HW PV-T electricity generated",
                 zorder=(10 + (2 if cw_pvt else 0)),
+                color="C10",
             )
         plt.legend()
         plt.xlim(0, 23)
@@ -1077,19 +1088,26 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
             else None
         )
 
-        plt.plot(total_used, "--", label="Total used", zorder=1)
-        plt.plot(unmet_energy, label="Unmet", zorder=2)
-        plt.plot(diesel_energy, label="Diesel", zorder=3)
-        plt.plot(dumped_energy, label="Dumped", zorder=4)
-        plt.plot(grid_energy, label="Grid", zorder=5)
-        plt.plot(storage_energy, label="Storage", zorder=6)
-        plt.plot(renewable_energy, label="Solar used directly", zorder=7)
-        plt.plot(pv_supplied, label="PV generated", zorder=8)
+        plt.plot(total_used, "--", label="Total used", zorder=1, color="C0")
+        plt.plot(unmet_energy, "--", label="Unmet", zorder=2, color="C7")
+        plt.plot(diesel_energy, label="Diesel", zorder=3, color="C0")
+        plt.plot(dumped_energy, label="Dumped", zorder=4, color="C4")
+        plt.plot(grid_energy, label="Grid", zorder=5, color="C1")
+        plt.plot(storage_energy, label="Storage", zorder=6, color="C2")
+        plt.plot(
+            renewable_energy,
+            "--",
+            label="Renewables used directly",
+            zorder=7,
+            color="C3",
+        )
+        plt.plot(pv_supplied, label="PV electricity generated", zorder=8, color="C3")
         if cw_pvt:
             plt.plot(
                 clean_water_pvt_supplied,
                 label="CW PV-T electricity generated",
                 zorder=9,
+                color="C5",
             )
             thermal_desalination_energy = simulation_output.iloc[0:24][
                 ColumnHeader.POWER_CONSUMED_BY_THERMAL_DESALINATION.value
@@ -1098,12 +1116,14 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
                 thermal_desalination_energy,
                 label="Thermal desal electric power",
                 zorder=10,
+                color="C6",
             )
         if hw_pvt:
             plt.plot(
                 hot_water_pvt_supplied,
                 label="HW PV-T electricity generated",
                 zorder=9 + (2 if cw_pvt else 0),
+                color="C8",
             )
         # if initial_cw_hourly_loads is not None:
         #     clean_water_energy_via_excess = simulation_output.iloc[0:24][
