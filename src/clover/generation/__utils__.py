@@ -310,7 +310,7 @@ def _save_profile_output(
         profile.to_csv(
             f,  # type: ignore
             index=False,
-            line_terminator="\n",
+            lineterminator="\n",
         )
 
     logger.info(
@@ -325,8 +325,9 @@ class BaseRenewablesNinjaThread(threading.Thread):
     .. attribute:: auto_generated_files_directory
         The directory in which CLOVER-generated files should be saved.
 
-    .. attribute:: generation_inputs:
-        The generation inputs information, extracted from the generation-inputs file.
+    .. attribute:: global_settings_inputs:
+        The global-settings inputs information, extracted from the generation-inputs
+        file.
 
     .. attribute:: location
         The location currently being considered.
@@ -355,7 +356,6 @@ class BaseRenewablesNinjaThread(threading.Thread):
     def __init__(
         self,
         auto_generated_files_directory: str,
-        generation_inputs: Dict[str, Any],
         global_settings_inputs: Dict[str, str],
         location: Location,
         logger_name: str,
@@ -373,8 +373,6 @@ class BaseRenewablesNinjaThread(threading.Thread):
         Inputs:
             - auto_generated_files_directory:
                 The directory in which CLOVER-generated files should be saved.
-            - generation_inputs:
-                The generation inputs.
             - global_settings_inputs:
                 The global-settings inputs.
             - location:
@@ -399,9 +397,6 @@ class BaseRenewablesNinjaThread(threading.Thread):
         """
 
         self.auto_generated_files_directory: str = auto_generated_files_directory
-        self.generation_inputs: Dict[
-            str, Union[bool, int, str, float]
-        ] = generation_inputs
         self.global_settings_inputs: Dict[str, str] = global_settings_inputs
         self.location: Location = location
         self.logger: Logger = get_logger(logger_name, verbose)
@@ -461,8 +456,8 @@ class BaseRenewablesNinjaThread(threading.Thread):
         try:
             for year in tqdm(
                 range(
-                    int(self.generation_inputs["start_year"]),
-                    int(self.generation_inputs["end_year"]) + 1,
+                    int(self.global_settings_inputs["start_year"]),
+                    int(self.global_settings_inputs["end_year"]) + 1,
                 ),
                 desc=f"{self.profile_name} "
                 f"{self.profile_prefix[:-1].replace('_', ' ')} profiles",
@@ -528,7 +523,7 @@ class BaseRenewablesNinjaThread(threading.Thread):
 
                 # The system waits to prevent overloading the renewables.ninja API and being
                 # locked out.
-                if year != self.generation_inputs["end_year"]:
+                if year != self.global_settings_inputs["end_year"]:
                     time.sleep(RENEWABLES_NINJA_SLEEP_TIME * self.sleep_multiplier)
 
         except Exception:
@@ -609,7 +604,7 @@ def total_profile_output(
             total_output.to_csv(
                 f,  # type: ignore
                 index=False,
-                line_terminator="\n",
+                lineterminator="\n",
             )
 
     return total_output

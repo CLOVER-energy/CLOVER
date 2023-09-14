@@ -1472,22 +1472,22 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
 
     # Initialise battery storage parameters
     maximum_battery_energy_throughput: float = (
-        electric_storage_size
+        (electric_storage_size if electric_storage_size is not None else 0)
         * minigrid.battery.cycle_lifetime
         * minigrid.battery.storage_unit
     )
     initial_battery_storage: float = (
-        electric_storage_size
+        (electric_storage_size if electric_storage_size is not None else 0)
         * minigrid.battery.maximum_charge
         * minigrid.battery.storage_unit
     )
     maximum_battery_storage: float = (
-        electric_storage_size
+        (electric_storage_size if electric_storage_size is not None else 0)
         * minigrid.battery.maximum_charge
         * minigrid.battery.storage_unit
     )
     minimum_battery_storage: float = (
-        electric_storage_size
+        (electric_storage_size if electric_storage_size is not None else 0)
         * minigrid.battery.minimum_charge
         * minigrid.battery.storage_unit
     )
@@ -1553,7 +1553,7 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
     storage_power_supplied: Dict[int, float] = {}
 
     # Do not do the itteration if no storage is being used
-    if electric_storage_size == 0:
+    if electric_storage_size == 0 or electric_storage_size is None:
         energy_surplus = None
         energy_deficit = None
     # Carry out the itteration if there is some storage involved in the system.
@@ -2032,7 +2032,7 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
             for pv_panel in minigrid.pv_panels
         },
         float(
-            electric_storage_size
+            (electric_storage_size if electric_storage_size is not None else 0)
             * minigrid.battery.storage_unit
             * np.min(battery_health_frame[ColumnHeader.BATTERY_HEALTH.value])
         ),
@@ -2052,7 +2052,10 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
         pv_sizes
         if pv_sizes is not None
         else {pv_panel.name: 0 for pv_panel in minigrid.pv_panels},
-        float(electric_storage_size * minigrid.battery.storage_unit),
+        float(
+            (electric_storage_size if electric_storage_size is not None else 0)
+            * minigrid.battery.storage_unit
+        ),
         [source.name for source in required_cw_feedwater_sources]
         if len(required_cw_feedwater_sources) > 0
         else None,

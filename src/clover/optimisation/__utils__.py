@@ -61,6 +61,7 @@ __all__ = (
     "CriterionMode",
     "get_sufficient_appraisals",
     "Optimisation",
+    "OptimisationComponent",
     "OptimisationParameters",
     "recursive_iteration",
     "save_optimisation",
@@ -68,6 +69,7 @@ __all__ = (
     "StorageSystemSize",
     "TankSize",
     "THRESHOLD_CRITERIA",
+    "THRESHOLD_CRITERION_TO_MODE",
     "ThresholdMode",
 )
 
