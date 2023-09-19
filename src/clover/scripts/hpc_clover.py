@@ -105,7 +105,11 @@ HPC_SUBMISSION_SCRIPT_FILEPATH: str = os.path.join(
 LOGGER_NAME: str = "hpc_clover"
 
 
-def _check_run(locations_foldername: str, logger: Logger, hpc_run: Union[HpcOptimisation, HpcSimulation]) -> bool:
+def _check_run(
+    locations_foldername: str,
+    logger: Logger,
+    hpc_run: Union[HpcOptimisation, HpcSimulation],
+) -> bool:
     """
     Checks that the HPC run is valid.
 

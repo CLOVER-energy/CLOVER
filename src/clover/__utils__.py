@@ -809,7 +809,12 @@ def get_locations_foldername() -> str:
 
     """
 
-    if os.path.isdir(os.path.join((_old_clover_locations_dir:=os.path.expanduser("~")), LOCATIONS_FOLDER_NAME.split("_")[1])):
+    if os.path.isdir(
+        os.path.join(
+            (_old_clover_locations_dir := os.path.expanduser("~")),
+            LOCATIONS_FOLDER_NAME.split("_")[1],
+        )
+    ):
         return _old_clover_locations_dir
 
     return os.path.join(os.path.expanduser("~"), LOCATIONS_FOLDER_NAME)

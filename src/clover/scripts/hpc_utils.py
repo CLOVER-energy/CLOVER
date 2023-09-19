@@ -660,7 +660,9 @@ def _process_hpc_input_file(
     runs: List[Union[HpcOptimisation, HpcSimulation]] = []
     for entry in filedata:
         if entry[TYPE] == HpcRunType.OPTIMISATION.value:
-            runs.extend(_parse_optimisations_to_runs(entry, locations_foldername, logger))
+            runs.extend(
+                _parse_optimisations_to_runs(entry, locations_foldername, logger)
+            )
         elif entry[TYPE] == HpcRunType.SIMULATION.value:
             runs.append(HpcSimulation.from_dict(entry, logger))
         else:
@@ -731,7 +733,7 @@ def temporary_optimisations_file(
     """
 
     temp_dirpath: str = os.path.join(
-        (locations_foldername:=get_locations_foldername()),
+        (locations_foldername := get_locations_foldername()),
         run.location,
         INPUTS_DIRECTORY,
     )

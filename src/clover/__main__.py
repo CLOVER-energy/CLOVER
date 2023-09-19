@@ -166,7 +166,9 @@ def _get_operating_mode(parsed_args: Namespace) -> OperatingMode:
     return OperatingMode.PROFILE_GENERATION
 
 
-def _prepare_location(location: str, locations_foldername: str, logger: logging.Logger) -> None:
+def _prepare_location(
+    location: str, locations_foldername: str, logger: logging.Logger
+) -> None:
     """
     Prepares the location and raises an error if the location cannot be found.
 

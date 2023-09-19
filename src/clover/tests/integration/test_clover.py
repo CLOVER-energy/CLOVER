@@ -140,7 +140,8 @@ class _BaseTest(unittest.TestCase):
             + f"{time.ctime().replace(' ', '_').replace(':', '_').replace('__', '_')}"
         )
         self.temp_location_path: str = os.path.join(
-            (locations_foldername:=get_locations_foldername()), self.temp_location_name
+            (locations_foldername := get_locations_foldername()),
+            self.temp_location_name,
         )
         self.output_name: str = "test_output"
 
