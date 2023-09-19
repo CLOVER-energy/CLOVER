@@ -57,13 +57,13 @@ from .__utils__ import (
     BColours,
     DONE,
     FAILED,
+    get_locations_foldername,
     InternalError,
     Location,
     ResourceType,
     SystemAppraisal,
     get_logger,
     InputFileError,
-    LOCATIONS_FOLDER_NAME,
     LOGGER_DIRECTORY,
     OperatingMode,
     ProgrammerJudgementFault,
@@ -166,13 +166,17 @@ def _get_operating_mode(parsed_args: Namespace) -> OperatingMode:
     return OperatingMode.PROFILE_GENERATION
 
 
-def _prepare_location(location: str, logger: logging.Logger) -> None:
+def _prepare_location(location: str, locations_foldername: str, logger: logging.Logger) -> None:
     """
     Prepares the location and raises an error if the location cannot be found.
 
     Inputs:
         - location
             The name of the location to check.
+        - locations_foldername:
+            The path to the locations folder where the cloations are stored.
+        - logger:
+            The :class:`logging.Loggger` to use for the run.
 
     Raises:
         - FileNotFoundError:
@@ -180,7 +184,7 @@ def _prepare_location(location: str, logger: logging.Logger) -> None:
 
     """
 
-    if not os.path.isdir(os.path.join(LOCATIONS_FOLDER_NAME, location)):
+    if not os.path.isdir(os.path.join(locations_foldername, location)):
         logger.error(
             "%sThe specified location, '%s', does not exist. Try running the "
             "'new_location' script to ensure all necessary files and folders are "
@@ -193,7 +197,7 @@ def _prepare_location(location: str, logger: logging.Logger) -> None:
 
     if not os.path.isfile(
         os.path.join(
-            LOCATIONS_FOLDER_NAME, location, INPUTS_DIRECTORY, KEROSENE_TIMES_FILE
+            locations_foldername, location, INPUTS_DIRECTORY, KEROSENE_TIMES_FILE
         )
     ):
         logger.info(
@@ -449,21 +453,24 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
     if parsed_args.debug:
         print(DEBUG_STRING.format(okblue=BColours.okblue, endc=BColours.endc))
 
+    # Determine the CLOVER location folder.
+    locations_foldername: str = get_locations_foldername()
+
     # Define common variables.
     auto_generated_files_directory = os.path.join(
-        LOCATIONS_FOLDER_NAME,
+        locations_foldername,
         parsed_args.location,
         AUTO_GENERATED_FILES_DIRECTORY,
     )
 
     # If the output filename is not provided, then generate it.
     simulation_output_directory = os.path.join(
-        LOCATIONS_FOLDER_NAME,
+        locations_foldername,
         parsed_args.location,
         SIMULATION_OUTPUTS_FOLDER,
     )
     optimisation_output_directory = os.path.join(
-        LOCATIONS_FOLDER_NAME, parsed_args.location, OPTIMISATION_OUTPUTS_FOLDER
+        locations_foldername, parsed_args.location, OPTIMISATION_OUTPUTS_FOLDER
     )
 
     # Determine the operating mode for the run.
@@ -589,6 +596,7 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
             parsed_args.debug,
             parsed_args.electric_load_profile,
             parsed_args.location,
+            locations_foldername,
             logger,
             parsed_args.optimisation_inputs_file,
         )
@@ -1386,7 +1394,7 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
 
     print(
         "Finished. See "
-        + os.path.join(LOCATIONS_FOLDER_NAME, parsed_args.location, "outputs")
+        + os.path.join(locations_foldername, parsed_args.location, "outputs")
         + " for output files."
     )
 

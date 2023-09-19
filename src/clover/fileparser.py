@@ -50,7 +50,6 @@ from .__utils__ import (
     KEROSENE_DEVICE_NAME,
     ResourceType,
     Location,
-    LOCATIONS_FOLDER_NAME,
     NAME,
     PACKAGE_NAME,
     RAW_CLOVER_PATH,
@@ -76,7 +75,6 @@ __all__ = (
     "INPUTS_DIRECTORY",
     "KEROSENE_TIMES_FILE",
     "KEROSENE_USAGE_FILE",
-    "LOCATIONS_FOLDER_NAME",
     "parse_input_files",
     "parse_scenario_inputs",
 )
@@ -2307,6 +2305,7 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
     debug: bool,
     electric_load_profile: Optional[str],
     location_name: str,
+    locations_foldername: str,
     logger: Logger,
     optimisation_inputs_file: Optional[str],
 ) -> Tuple[
@@ -2338,6 +2337,8 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
             in for the run.
         - location_name:
             The name of the location_name being considered.
+        - locations_foldername:
+            The path to the folder containing the locations.
         - logger:
             The logger to use for the run.
         - optimisation_inputs_file:
@@ -2372,7 +2373,7 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
 
     # Parse location-specific files.
     inputs_directory_relative_path = os.path.join(
-        LOCATIONS_FOLDER_NAME,
+        locations_foldername,
         location_name,
         INPUTS_DIRECTORY,
     )

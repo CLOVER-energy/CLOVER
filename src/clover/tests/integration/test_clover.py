@@ -34,7 +34,7 @@ import yaml
 from clover.fileparser import INPUTS_DIRECTORY, SCENARIO_INPUTS_FILE
 
 from ...__main__ import main as clover_main
-from ...__utils__ import LOCATIONS_FOLDER_NAME, RAW_CLOVER_PATH
+from ...__utils__ import get_locations_foldername, RAW_CLOVER_PATH
 
 
 # Default PV panel name:
@@ -140,7 +140,7 @@ class _BaseTest(unittest.TestCase):
             + f"{time.ctime().replace(' ', '_').replace(':', '_').replace('__', '_')}"
         )
         self.temp_location_path: str = os.path.join(
-            LOCATIONS_FOLDER_NAME, self.temp_location_name
+            (locations_foldername:=get_locations_foldername()), self.temp_location_name
         )
         self.output_name: str = "test_output"
 
@@ -150,7 +150,7 @@ class _BaseTest(unittest.TestCase):
             )
 
         # Copy the temporary location to CLOVER's locations folder, saving the name.
-        os.makedirs(LOCATIONS_FOLDER_NAME, exist_ok=True)
+        os.makedirs(locations_foldername, exist_ok=True)
         os.makedirs(self.temp_location_path, exist_ok=True)
         copy_tree(TEMP_LOCATION_PATH, self.temp_location_path)
 

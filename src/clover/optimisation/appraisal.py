@@ -829,6 +829,7 @@ def appraise_system(  # pylint: disable=too-many-locals
         Criterion.UNMET_ENERGY_FRACTION: round(
             technical_appraisal.unmet_energy_fraction, 3
         ),
+        Criterion.UPTIME: round(technical_appraisal.uptime, 3)
     }
 
     if technical_appraisal.clean_water_blackouts is not None:

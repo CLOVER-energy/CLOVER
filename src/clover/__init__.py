@@ -31,6 +31,7 @@ from .__utils__ import (
     ELECTRIC_POWER,
     EXCHANGER,
     FAILED,
+    get_locations_foldername,
     get_logger,
     HEAT_CAPACITY_OF_WATER,
     HotWaterScenario,

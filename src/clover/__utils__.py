@@ -53,6 +53,7 @@ __all__ = (
     "ELECTRIC_POWER",
     "EXCHANGER",
     "FAILED",
+    "get_locations_foldername",
     "get_logger",
     "HEAT_CAPACITY_OF_WATER",
     "HotWaterScenario",
@@ -161,7 +162,7 @@ KEROSENE_DEVICE_NAME: str = "kerosene"
 
 # Locations folder name:
 #   The name of the locations folder.
-LOCATIONS_FOLDER_NAME: str = "locations"
+LOCATIONS_FOLDER_NAME: str = "clover_locations"
 
 # Logger directory:
 #   The directory in which to save logs.
@@ -797,6 +798,21 @@ class DistributionNetwork(enum.Enum):
 
     AC = "ac"
     DC = "dc"
+
+
+def get_locations_foldername() -> str:
+    """
+    Determine the path to the locations folder.
+
+    Outputs:
+        - The path to the locations folder.
+
+    """
+
+    if os.path.isdir(os.path.join((_old_clover_locations_dir:=os.path.expanduser("~")), LOCATIONS_FOLDER_NAME.split("_")[1])):
+        return _old_clover_locations_dir
+
+    return os.path.join(os.path.expanduser("~"), LOCATIONS_FOLDER_NAME)
 
 
 def get_logger(logger_name: str, verbose: bool = False) -> logging.Logger:
@@ -1533,6 +1549,10 @@ class Criterion(enum.Enum):
     - UNMET_ENERGY_FRACTION:
         The fraction of energy which went unmet.
 
+    - UPTIME:
+        The fraction of time for which power was available, defined between 0 (no power
+        was available at any time) and 1 (power was always available).
+
     """
 
     BLACKOUTS = "blackouts"
@@ -1552,6 +1572,7 @@ class Criterion(enum.Enum):
     TOTAL_SYSTEM_COST = "total_system_cost"
     TOTAL_SYSTEM_GHGS = "total_system_ghgs"
     UNMET_ENERGY_FRACTION = "unmet_energy_fraction"
+    UPTIME = "uptime"
 
     def __str__(self) -> str:
         """
@@ -2831,6 +2852,18 @@ class TechnicalAppraisal:
     total_energy: float = 0
     unmet_energy: float = 0
     unmet_energy_fraction: float = 0
+
+    @property
+    def uptime(self) -> float:
+        """
+        Return the uptime based on the blackouts.
+
+        Outputs:
+            - The uptime for the system.
+
+        """
+
+        return 1 - self.blackouts
 
     def to_dict(self) -> Dict[str, Any]:
         """

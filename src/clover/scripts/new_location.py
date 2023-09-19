@@ -32,7 +32,7 @@ import yaml  # pylint: disable=import-error
 from ..__utils__ import (
     InternalError,
     get_logger,
-    LOCATIONS_FOLDER_NAME,
+    get_locations_foldername,
     PACKAGE_NAME,
     RAW_CLOVER_PATH,
     read_yaml,
@@ -243,7 +243,7 @@ def create_new_location(
 
     # Process the new-location data into a usable format.
     new_location_directory = str(new_location_data[0][DIRECTORY]).format(
-        location=location, locations_folder_name=LOCATIONS_FOLDER_NAME
+        location=location, locations_folder_name=(locations_foldername:=get_locations_foldername())
     )
 
     # If the new location already exists and the script is not run to update, then exit.
@@ -275,7 +275,7 @@ def create_new_location(
         # does not exist.
         existing_location_directory = new_location_data[0][DIRECTORY].format(
             location=from_existing,
-            locations_folder_name=LOCATIONS_FOLDER_NAME,
+            locations_folder_name=locations_foldername,
         )
         if not os.path.isdir(existing_location_directory):
             logger.error(

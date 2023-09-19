@@ -632,6 +632,7 @@
                 #   total_ghgs                      kgCO2eq
                 #   total_system_ghgs               kgCO2eq
                 #   unmet_energy_fraction
+                #   uptime
                 # Valid optimisation criteria, usually set to "maximise":
                 #   kerosene_cost_mitigated         $
                 #   kerosene_displacement

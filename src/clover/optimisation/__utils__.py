@@ -878,6 +878,7 @@ THRESHOLD_CRITERION_TO_MODE: Dict[Criterion, ThresholdMode] = {
     Criterion.TOTAL_SYSTEM_COST: ThresholdMode.MAXIMUM,
     Criterion.TOTAL_SYSTEM_GHGS: ThresholdMode.MAXIMUM,
     Criterion.UNMET_ENERGY_FRACTION: ThresholdMode.MAXIMUM,
+    Criterion.UPTIME: ThresholdMode.MINIMUM,
 }
 
 
