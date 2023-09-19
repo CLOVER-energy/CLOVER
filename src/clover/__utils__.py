@@ -1398,8 +1398,8 @@ def monthly_profile_to_daily_profile(monthly_profile: pd.DataFrame) -> pd.DataFr
 
     day_one_profile: pd.DataFrame = pd.DataFrame(np.zeros((24, 1)))
     for hour in range(24):
-        day_one_profile.iloc[hour, 0] = 0.5 * (
-            monthly_profile.iloc[hour, 0] + monthly_profile.iloc[hour, 11]
+        day_one_profile.iloc[hour, 0] = 0.5 * float(
+            float(monthly_profile.iloc[hour, 0]) + float(monthly_profile.iloc[hour, 11])
         )
 
     extended_year_profile: pd.DataFrame = pd.DataFrame(np.zeros((24, 14)))
