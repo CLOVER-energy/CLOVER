@@ -2415,14 +2415,14 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
                     index_col=None,
                 )
         except FileNotFoundError:
-            logger.error(
+            logger.info(
                 "%sError parsing device-utilisation profile for %s, check that the "
                 "profile is present and that all device names are consistent.%s",
                 BColours.fail,
                 device.name,
                 BColours.endc,
             )
-            raise
+            device_utilisations[device] = pd.DataFrame([[0] * 12] * 24)
 
     # Parse the override electric profile file if specified.
     if electric_load_profile is not None:

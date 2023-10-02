@@ -557,7 +557,7 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
     print("Verifying location information ................................    ", end="")
     logger.info("Checking location %s.", parsed_args.location)
     try:
-        _prepare_location(parsed_args.location, logger)
+        _prepare_location(parsed_args.location, locations_foldername, logger)
     except FileNotFoundError:
         print(FAILED)
         logger.error(
