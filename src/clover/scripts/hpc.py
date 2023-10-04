@@ -169,6 +169,8 @@ def main(args: List[Any]) -> None:
                 str(hpc_run.storage_size),
                 "--scenario",
                 str(hpc_run.scenario),
+                "-a",
+                "-sp",
             ]
         )
 
