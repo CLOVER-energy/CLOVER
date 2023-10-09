@@ -1281,6 +1281,7 @@ def parse_scenario_inputs(  # pylint: disable=too-many-locals, too-many-statemen
                 desalination_scenarios,
                 diesel_scenarios,
                 hot_water_scenarios,
+                logger,
                 entry,
             )
             for entry in scenario_inputs[SCENARIOS]
