@@ -265,7 +265,7 @@ def _calculate_electric_desalination_parameters(
     return electric_desalinators, energy_per_desalinated_litre, maximum_water_throughput
 
 
-def _electric_iteration_step(
+def _electric_iteration_step(  # pylint: disable=too-many-locals
     backup_desalinator_water_supplied,
     battery_health,
     battery_state_of_charge,
@@ -2047,16 +2047,6 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
             unmet_energy,
         )
     elif scenario.diesel_scenario.mode == DieselMode.CYCLE_CHARGING:
-        """# pylint: disable=pointless-string-statement
-        Take the diesel surplus profile generated from the massive for loop
-        Factoring in the c-rates, along with the maximum diesel output, calculate the
-        amount of unmet demand that we *could* have met if we'd run the diesel at full.
-
-        NOTE: The energy that went from the diesel to the batteries, and that which is
-        now being used to meet unmet demand, should *both* be saved to the
-        `simulation_outputs.csv` file.
-
-        """
 
         # Take the diesel surplus profile containing available diesel capacity which was
         # not utilised in charging the batteries and use it to meet unmet load.
