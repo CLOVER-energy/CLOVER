@@ -365,6 +365,23 @@ def get_cycle_charging_energy(
     uses the diesel minimum capacity factor, and it uses a variable which determines the
     maximum energy that the diesel generators can put into the batteries.
 
+    1.  Based on the empty capacity:
+        SWITCH:
+        - empty_capacity < diesel_minimum:
+            Fill to the empty
+            WHERE you check for the input c-rate etc.
+            and, as a result, we waste some diesel
+        - diesel_minimum < empty_capacity < diesel_maximum:
+            Fill to the empty, where no diesel is wasted and you *may* have surplus
+            diesel to meet demand
+        - diesel_maximum < empty_capacity:
+            Fill to the diesel maximum
+    2.  Return the variables required:
+        - surplus = maximum_output of the diesel generator
+          WHICH *might* be different from the maximum ammount of power that can go from
+          the diesel generator into the batteries
+          SUBTRACTING what was used
+
     Inputs:
         - empty_capacity:
             The empty capacity remaining in the batteries (kWh).
@@ -410,26 +427,6 @@ def get_cycle_charging_energy(
     surplus = max_diesel_output - diesel_to_battery
 
     return (diesel_total_output, diesel_to_battery, surplus)
-
-    """  # pylint: disable=pointless-string-statement
-    1.  Based on the empty capacity:
-        SWITCH:
-        - empty_capacity < diesel_minimum:
-            Fill to the empty
-            WHERE you check for the input c-rate etc.
-            and, as a result, we waste some diesel
-        - diesel_minimum < empty_capacity < diesel_maximum:
-            Fill to the empty, where no diesel is wasted and you *may* have surplus
-            diesel to meet demand
-        - diesel_maximum < empty_capacity:
-            Fill to the diesel maximum
-    2.  Return the variables required:
-        - surplus = maximum_output of the diesel generator
-          WHICH *might* be different from the maximum ammount of power that can go from
-          the diesel generator into the batteries
-          SUBTRACTING what was used
-
-    """
 
 
 def _find_deficit_threshold(
