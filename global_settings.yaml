@@ -1,0 +1,18 @@
+---
+################################################################################
+# global_settings.yaml - Global CLOVER-wide parameters.                        #
+#                                                                              #
+# Author: Ben Winchester & Hamish Beath                                        #
+# Copyright: Ben Winchester, Hamish Beath 2023                                 #
+# Date created: 26/07/2023                                                     #
+# License: Open source                                                         #
+################################################################################
+
+# NOTE: The renewables.ninja API token must be entered under the `token` field.
+# For more information, consult the User Guide, available within the repository
+# and online.
+#
+
+end_year: 2019
+start_year: 2010
+token: "YOUR API TOKEN HERE" # renewables.ninja API token

@@ -1,0 +1,44 @@
+{
+  "@context": "https://raw.githubusercontent.com/codemeta/codemeta/master/codemeta.jsonld",
+  "@type": "Code",
+  "author": [
+    {
+      "@id": "https://orcid.org/0000-0003-1117-5095",
+      "@type": "Person",
+      "email": "philip.sandwell@gmail.com",
+      "name": "Philip Sandwell",
+      "affiliation": "Imperial College London"
+    },
+    {
+      "@id": "https://orcid.org/0000-0002-2880-1243",
+      "@type": "Person",
+      "email": "benedict.winchester@gmail.com",
+      "name": "Benedict Winchester",
+      "affiliation": "Imperial College London"
+    },
+    {
+      "@id": "https://orcid.org/0000-0002-5124-9143",
+      "@type": "Person",
+      "email": "hamishbeath@outlook.com",
+      "name": "Hamish Beath",
+      "affiliation": "Imperial College London"
+    },
+    {
+      "@id": "https://orcid.org/0000-0003-1048-1330",
+      "@type": "Person",
+      "email": "jenny.nelson@imperial.ac.uk",
+      "name": "Jenny Nelson",
+      "affiliation": "Imperial College London"
+    }
+  ],
+  "identifier": "https://zenodo.org/badge/latestdoi/476703736",
+  "codeRepository": "https://github.com/CLOVER-energy/CLOVER",
+  "datePublished": "2022-08-17",
+  "dateModified": "2023-08-04",
+  "dateCreated": "2022-08-17",
+  "description": "A modelling framework for sustainable community-scale energy systems",
+  "keywords": "minigrid,optimisation,pv,simulation",
+  "license": "MIT",
+  "title": "CLOVER",
+  "version": "v5.1.2b3"
+}

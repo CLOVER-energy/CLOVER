@@ -69,7 +69,7 @@ def single_line_simulation(  # pylint: disable=too-many-locals, too-many-stateme
     grid_profile: Optional[pd.DataFrame],
     hw_pvt_size: SolarSystemSize,
     hw_tanks: TankSize,
-    irradiance_data: pd.Series,
+    irradiance_data: Dict[str, pd.Series],
     kerosene_usage: pd.DataFrame,
     location: Location,
     logger: Logger,
@@ -80,9 +80,9 @@ def single_line_simulation(  # pylint: disable=too-many-locals, too-many-stateme
     pv_system_size: SolarSystemSize,
     start_year: int,
     storage_size: StorageSystemSize,
-    temperature_data: pd.Series,
+    temperature_data: Dict[str, pd.Series],
     total_loads: Dict[ResourceType, Optional[pd.DataFrame]],
-    total_solar_pv_power_produced: pd.Series,
+    total_solar_pv_power_produced: Dict[str, pd.Series],
     wind_speed_data: Optional[pd.Series],
     yearly_electric_load_statistics: pd.DataFrame,
 ) -> Tuple[
@@ -228,11 +228,11 @@ def single_line_simulation(  # pylint: disable=too-many-locals, too-many-stateme
             ),
             reverse=True,
         )
-        increased_pv_system_sizes = sorted(
-            range(
-                int(pv_system_size.min),
-                int(np.ceil(pv_system_size.max + pv_system_size.step)),
-                int(pv_system_size.step),
+        increased_pv_system_sizes: List[int] = sorted(
+            np.arange(
+                pv_system_size.min,
+                np.ceil(pv_system_size.max + pv_system_size.step),
+                pv_system_size.step,
             ),
             reverse=True,
         )
@@ -244,7 +244,7 @@ def single_line_simulation(  # pylint: disable=too-many-locals, too-many-stateme
         ] = {
             ImpactingComponent.CLEAN_WATER_TANK: potential_num_clean_water_tanks,
             ImpactingComponent.HOT_WATER_TANK: potential_num_hot_water_tanks,
-            ImpactingComponent.STORAGE: int(storage_size.max + storage_size.step),
+            ImpactingComponent.STORAGE: storage_size.max + storage_size.step,
         }
         parameter_space: List[
             Tuple[
@@ -367,7 +367,7 @@ def single_line_simulation(  # pylint: disable=too-many-locals, too-many-stateme
                 potential_num_clean_water_tanks,
                 potential_num_hot_water_tanks,
                 total_solar_pv_power_produced,
-                pv_system_size.max,
+                {minigrid.pv_panel.name: pv_system_size.max},
                 optimisation.scenario,
                 Simulation(end_year, start_year),
                 temperature_data,
@@ -381,9 +381,11 @@ def single_line_simulation(  # pylint: disable=too-many-locals, too-many-stateme
                 end_year,
                 finance_inputs,
                 ghg_inputs,
+                minigrid.inverter,
                 location,
                 logger,
                 previous_system,
+                optimisation.scenario,
                 simulation_results,
                 start_year,
                 system_details,
@@ -412,18 +414,18 @@ def single_line_simulation(  # pylint: disable=too-many-locals, too-many-stateme
             reverse=True,
         )
         increased_pv_system_sizes = sorted(
-            range(
-                int(pv_system_size.min),
-                int(np.ceil(pv_system_size.max + pv_system_size.step)),
-                int(pv_system_size.step),
+            np.arange(
+                pv_system_size.min,
+                np.ceil(pv_system_size.max + pv_system_size.step),
+                pv_system_size.step,
             ),
             reverse=True,
         )
         increased_storage_sizes = sorted(
-            range(
-                int(storage_size.min),
-                int(np.ceil(storage_size.max + storage_size.step)),
-                int(storage_size.step),
+            np.arange(
+                storage_size.min,
+                np.ceil(storage_size.max + storage_size.step),
+                storage_size.step,
             ),
             reverse=True,
         )
@@ -546,18 +548,18 @@ def single_line_simulation(  # pylint: disable=too-many-locals, too-many-stateme
             reverse=True,
         )
         increased_pv_system_sizes = sorted(
-            range(
-                int(pv_system_size.min),
-                int(np.ceil(pv_system_size.max + pv_system_size.step)),
-                int(pv_system_size.step),
+            np.arange(
+                pv_system_size.min,
+                np.ceil(pv_system_size.max + pv_system_size.step),
+                pv_system_size.step,
             ),
             reverse=True,
         )
         increased_storage_sizes = sorted(
-            range(
-                int(storage_size.min),
-                int(np.ceil(storage_size.max + storage_size.step)),
-                int(storage_size.step),
+            np.arange(
+                storage_size.min,
+                np.ceil(storage_size.max + storage_size.step),
+                storage_size.step,
             ),
             reverse=True,
         )
@@ -710,17 +712,17 @@ def single_line_simulation(  # pylint: disable=too-many-locals, too-many-stateme
             reverse=True,
         )
         increased_storage_sizes = sorted(
-            range(
-                int(storage_size.min),
-                int(np.ceil(storage_size.max + storage_size.step)),
-                int(storage_size.step),
+            np.arange(
+                storage_size.min,
+                np.ceil(storage_size.max + storage_size.step),
+                storage_size.step,
             ),
             reverse=True,
         )
 
         # Prep variables for the iteration process.
         component_sizes = {
-            RenewableEnergySource.PV: int(pv_system_size.max + pv_system_size.step),
+            RenewableEnergySource.PV: pv_system_size.max + pv_system_size.step,
         }
         parameter_space = []
 
@@ -886,18 +888,18 @@ def single_line_simulation(  # pylint: disable=too-many-locals, too-many-stateme
             reverse=True,
         )
         increased_pv_system_sizes = sorted(
-            range(
-                int(pv_system_size.min),
-                int(np.ceil(pv_system_size.max + pv_system_size.step)),
-                int(pv_system_size.step),
+            np.arange(
+                pv_system_size.min,
+                np.ceil(pv_system_size.max + pv_system_size.step),
+                pv_system_size.step,
             ),
             reverse=True,
         )
         increased_storage_sizes = sorted(
-            range(
-                int(storage_size.min),
-                int(np.ceil(storage_size.max + storage_size.step)),
-                int(storage_size.step),
+            np.arange(
+                storage_size.min,
+                np.ceil(storage_size.max + storage_size.step),
+                storage_size.step,
             ),
             reverse=True,
         )
@@ -1072,18 +1074,18 @@ def single_line_simulation(  # pylint: disable=too-many-locals, too-many-stateme
             reverse=True,
         )
         increased_pv_system_sizes = sorted(
-            range(
-                int(pv_system_size.min),
-                int(np.ceil(pv_system_size.max + pv_system_size.step)),
-                int(pv_system_size.step),
+            np.arange(
+                pv_system_size.min,
+                np.ceil(pv_system_size.max + pv_system_size.step),
+                pv_system_size.step,
             ),
             reverse=True,
         )
         increased_storage_sizes = sorted(
-            range(
-                int(storage_size.min),
-                int(np.ceil(storage_size.max + storage_size.step)),
-                int(storage_size.step),
+            np.arange(
+                storage_size.min,
+                np.ceil(storage_size.max + storage_size.step),
+                storage_size.step,
             ),
             reverse=True,
         )

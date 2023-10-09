@@ -51,6 +51,14 @@ def parse_args(args: List[Any]) -> argparse.Namespace:
     """
     Parses command-line arguments into a :class:`argparse.NameSpace`.
 
+    Inputs:
+        - args:
+            The un-parsed command-line arguments.
+
+    Outputs:
+        - parsed_args:
+            The parsed command-line arguments.
+
     """
 
     parser = argparse.ArgumentParser()
@@ -113,8 +121,9 @@ def parse_args(args: List[Any]) -> argparse.Namespace:
     action_arguments.add_argument(
         "--pv-system-size",
         "-pv",
-        type=float,
-        help="The size of the PV system being modelled in PV panel units, defaulting "
+        type=str,
+        help="The size of the PV system(s) being modelled in PV panel units, "
+        "defaulting "
         "to kWp.",
     )
     action_arguments.add_argument(
@@ -210,6 +219,13 @@ def parse_args(args: List[Any]) -> argparse.Namespace:
         default=False,
         help="If specified, CLOVER will carry out optimisations in accordance with "
         "the `optimisation_inputs` file.",
+    )
+    action_arguments.add_argument(
+        "--optimisation-inputs-file",
+        "-opt-file",
+        type=str,
+        help="The name of the optimisation inputs file to use for the run. This "
+        "overrides CLOVER's in-built optimisation inputs filename.",
     )
 
     return parser.parse_args(args)

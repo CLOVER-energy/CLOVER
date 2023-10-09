@@ -25,14 +25,15 @@ from typing import Any, Dict, List, Optional, Union
 import numpy as np  # pylint: disable=import-error
 import pandas as pd  # pylint: disable=import-error
 
-from .__utils__ import ImpactingComponent, LIFETIME, SIZE_INCREMENT
+from .__utils__ import ImpactingComponent
 from ..__utils__ import (
     BColours,
     ColumnHeader,
-    InputFileError,
-    InternalError,
-    Location,
     hourly_profile_to_daily_sum,
+    InputFileError,
+    Inverter,
+    Location,
+    Scenario,
 )
 
 __all_ = (
@@ -47,6 +48,10 @@ __all_ = (
     "independent_expenditure",
     "total_om",
 )
+
+# Capacity cost:
+#   Keyword used to denote the capacity-based costs of a component.
+CAPACITY_COST: str = "capacity_cost"
 
 # Connection cost:
 #   Keyword used to denote the connection cost for a household within the community.
@@ -71,6 +76,10 @@ DISCOUNT_RATE = "discount_rate"
 # Finance impact:
 #   Default `str` used as the format for specifying unique financial impacts.
 FINANCE_IMPACT: str = "{type}_{name}"
+
+# Fixed cost:
+#   Keyword used to denote the fixed misc. costs of a componnet of the system.
+FIXED_COST: str = "fixed_cost"
 
 # General OM:
 #   Keyword used to denote general O&M costs of the system.
@@ -173,7 +182,7 @@ def _component_om(
     logger: Logger,
     *,
     start_year: int,
-    end_year: int
+    end_year: int,
 ) -> float:
     """
     Computes the O&M cost of a component.
@@ -246,11 +255,14 @@ def _discounted_fraction(
 
 def _inverter_expenditure(  # pylint: disable=too-many-locals
     finance_inputs: Dict[str, Any],
+    inverter: Inverter,
     location: Location,
+    logger: Logger,
+    scenario: Scenario,
     yearly_load_statistics: pd.DataFrame,
     *,
     start_year: int,
-    end_year: int
+    end_year: int,
 ) -> float:
     """
     Calculates cost of inverters based on load calculations
@@ -258,10 +270,16 @@ def _inverter_expenditure(  # pylint: disable=too-many-locals
     Inputs:
         - finance_inputs:
             The finance-input information for the system.
+        - inverter:
+            The inverter being modelled.
         - location:
             The location being considered.
+        - logger:
+            The :class:`logging.Logger` to use for the run.
         - yearly_load_statistics:
             The yearly-load statistics for the system.
+        - scenario:
+            The :class:`Scenario` currently being considered.
         - start_year:
             Start year of simulation period
         - end_year:
@@ -273,9 +291,8 @@ def _inverter_expenditure(  # pylint: disable=too-many-locals
     """
 
     # Initialise inverter replacement periods
-    replacement_period = finance_inputs[ImpactingComponent.INVERTER.value][LIFETIME]
     replacement_intervals = pd.DataFrame(
-        np.arange(0, location.max_years, replacement_period)
+        np.arange(0, location.max_years, inverter.lifetime)
     )
     replacement_intervals.columns = pd.Index([ColumnHeader.INSTALLATION_YEAR.value])
 
@@ -290,19 +307,19 @@ def _inverter_expenditure(  # pylint: disable=too-many-locals
 
     # Initialise inverter sizing calculation
     max_power = []
-    inverter_step = finance_inputs[ImpactingComponent.INVERTER.value][SIZE_INCREMENT]
     inverter_size: List[float] = []
     for i in range(len(replacement_intervals)):
         # Calculate maximum power in interval years
         start = replacement_intervals[ColumnHeader.INSTALLATION_YEAR.value].iloc[i]
-        end = start + replacement_period
+        end = start + inverter.lifetime
         max_power_interval = (
             yearly_load_statistics[ColumnHeader.MAXIMUM.value].iloc[start:end].max()
         )
         max_power.append(max_power_interval)
         # Calculate resulting inverter size
         inverter_size_interval: float = (
-            np.ceil(0.001 * max_power_interval / inverter_step) * inverter_step
+            np.ceil(0.001 * max_power_interval / inverter.size_increment)
+            * inverter.size_increment
         )
         inverter_size.append(inverter_size_interval)
     inverter_size_data_frame: pd.DataFrame = pd.DataFrame(inverter_size)
@@ -320,9 +337,34 @@ def _inverter_expenditure(  # pylint: disable=too-many-locals
         ** inverter_info[ColumnHeader.INSTALLATION_YEAR.value].iloc[i]
         for i in range(len(inverter_info))
     ]
+
+    # If a static inverter size has been used, use this, otherwise, use the dynamically
+    # calculated values.
+    if scenario.fixed_inverter_size and any(
+        inverter_info[ColumnHeader.INVERTER_SIZE.value] > scenario.fixed_inverter_size
+    ):
+        logger.info(
+            "The static inverter size specified, %s, was below that calculated "
+            "within CLOVER. Calculated inverter sizes:\n%s",
+            scenario.fixed_inverter_size,
+            "\n".join(
+                [
+                    f"Size for year {year}: {size} kW"
+                    for year, size in zip(
+                        replacement_intervals[ColumnHeader.INSTALLATION_YEAR.value],
+                        inverter_info[ColumnHeader.INVERTER_SIZE.value],
+                    )
+                ]
+            ),
+        )
+
     inverter_info[ColumnHeader.DISCOUNTED_EXPENDITURE.value] = [
         inverter_info[ColumnHeader.DISCOUNT_RATE.value].iloc[i]
-        * inverter_info["Inverter size (kW)"].iloc[i]
+        * (
+            inverter_info[ColumnHeader.INVERTER_SIZE.value].iloc[i]
+            if not scenario.fixed_inverter_size
+            else scenario.fixed_inverter_size
+        )
         * inverter_info["Inverter cost ($/kW)"].iloc[i]
         for i in range(len(inverter_info))
     ]
@@ -339,15 +381,23 @@ def _inverter_expenditure(  # pylint: disable=too-many-locals
     return inverter_discounted_cost
 
 
-def _misc_costs(diesel_size: float, misc_costs: float, pv_array_size: float) -> float:
+def _misc_costs(
+    diesel_size: float,
+    misc_capacity_cost: float,
+    misc_fixed_cost: float,
+    pv_array_size: Dict[str, float],
+) -> float:
     """
     Calculates cost of miscellaneous capacity-related costs
 
     Inputs:
         - diesel_size:
             Capacity of diesel generator being installed
-        - misc_costs:
-            The misc. costs of the system.
+        - misc_capacity_cost:
+            The misc. costs of the system which scale with the capacity of the system.
+        - misc_fixed_cost:
+            The misc. costs of the system which do not scale with the capacity of the
+            system and which are fixed.
         - pv_array_size:
             Capacity of PV being installed
 
@@ -356,8 +406,11 @@ def _misc_costs(diesel_size: float, misc_costs: float, pv_array_size: float) -> 
 
     """
 
-    misc_costs = (pv_array_size + diesel_size) * misc_costs
-    return misc_costs
+    total_misc_capacity_cost = (
+        sum(pv_array_size.values()) + diesel_size
+    ) * misc_capacity_cost
+
+    return total_misc_capacity_cost + misc_fixed_cost
 
 
 ###############################
@@ -374,7 +427,7 @@ def get_total_equipment_cost(  # pylint: disable=too-many-locals, too-many-state
     heat_exchangers: float,
     hot_water_tanks: float,
     logger: Logger,
-    pv_array_size: float,
+    pv_array_size: Dict[str, float],
     pvt_array_size: float,
     storage_size: float,
     installation_year: int = 0,
@@ -415,10 +468,11 @@ def get_total_equipment_cost(  # pylint: disable=too-many-locals, too-many-state
     """
 
     # Calculate the various system costs.
+    # compoennts.
     bos_cost = _component_cost(
         finance_inputs[ImpactingComponent.BOS.value][COST],
         finance_inputs[ImpactingComponent.BOS.value][COST_DECREASE],
-        pv_array_size,
+        sum(pv_array_size.values()),
         installation_year,
     )
 
@@ -597,17 +651,25 @@ def get_total_equipment_cost(  # pylint: disable=too-many-locals, too-many-state
             installation_year,
         )
 
-    pv_cost = _component_cost(
-        finance_inputs[ImpactingComponent.PV.value][COST],
-        finance_inputs[ImpactingComponent.PV.value][COST_DECREASE],
-        pv_array_size,
-        installation_year,
+    pv_cost = sum(
+        _component_cost(
+            finance_inputs[ImpactingComponent.PV.value][panel_name][COST],
+            finance_inputs[ImpactingComponent.PV.value][panel_name][COST_DECREASE],
+            array_size,
+            installation_year,
+        )
+        for panel_name, array_size in pv_array_size.items()
     )
-    pv_installation_cost = _component_installation_cost(
-        pv_array_size,
-        finance_inputs[ImpactingComponent.PV.value][INSTALLATION_COST],
-        finance_inputs[ImpactingComponent.PV.value][INSTALLATION_COST_DECREASE],
-        installation_year,
+    pv_installation_cost = sum(
+        _component_installation_cost(
+            array_size,
+            finance_inputs[ImpactingComponent.PV.value][panel_name][INSTALLATION_COST],
+            finance_inputs[ImpactingComponent.PV.value][panel_name][
+                INSTALLATION_COST_DECREASE
+            ],
+            installation_year,
+        )
+        for panel_name, array_size in pv_array_size.items()
     )
 
     if ImpactingComponent.PV_T.value not in finance_inputs and pvt_array_size > 0:
@@ -627,7 +689,7 @@ def get_total_equipment_cost(  # pylint: disable=too-many-locals, too-many-state
         pvt_cost = _component_cost(
             finance_inputs[ImpactingComponent.PV_T.value][COST],
             finance_inputs[ImpactingComponent.PV_T.value][COST_DECREASE],
-            pv_array_size,
+            pvt_array_size,
             installation_year,
         )
         pvt_installation_cost = _component_installation_cost(
@@ -655,9 +717,44 @@ def get_total_equipment_cost(  # pylint: disable=too-many-locals, too-many-state
         + pvt_installation_cost
     )
 
-    misc_costs = _misc_costs(
-        diesel_size, finance_inputs[ImpactingComponent.MISC.value][COST], pv_array_size
+    # Determine the capacity-based misc. costs associated with the system.
+    try:
+        misc_capacity_cost: float = finance_inputs[ImpactingComponent.MISC.value][
+            CAPACITY_COST
+        ]
+    except KeyError:
+        logger.warning(
+            "Using %s for misc. capacity costs is depreceated. Consider using %s.",
+            COST,
+            CAPACITY_COST,
+        )
+        try:
+            misc_capacity_cost = finance_inputs[ImpactingComponent.MISC.value][COST]
+        except KeyError:
+            logger.error(
+                "Neither %s nor the depreceated keyword %s used for misc. system costs.",
+                CAPACITY_COST,
+                COST,
+            )
+            raise
+
+    try:
+        misc_fixed_cost: float = finance_inputs[ImpactingComponent.MISC.value][
+            FIXED_COST
+        ]
+    except KeyError:
+        logger.warning(
+            "Missing fixed capacity costs in finance inputs file, assuming zero."
+        )
+        misc_fixed_cost = 0
+
+    misc_costs: float = _misc_costs(
+        diesel_size,
+        misc_capacity_cost,
+        misc_fixed_cost,
+        pv_array_size,
     )
+
     return (
         bos_cost
         + buffer_tank_cost
@@ -723,7 +820,7 @@ def diesel_fuel_expenditure(
     logger: Logger,
     *,
     start_year: int = 0,
-    end_year: int = 20
+    end_year: int = 20,
 ) -> float:
     """
     Calculates cost of diesel fuel used by the system
@@ -758,9 +855,7 @@ def diesel_fuel_expenditure(
         ]
     )
 
-    total_daily_cost = pd.DataFrame(
-        diesel_fuel_usage_daily.values * diesel_price_daily.values
-    )
+    total_daily_cost = pd.DataFrame(diesel_fuel_usage_daily * diesel_price_daily[0])
     total_discounted_cost = discounted_energy_total(
         finance_inputs,
         logger,
@@ -778,7 +873,7 @@ def discounted_energy_total(
     total_daily: Union[pd.DataFrame, pd.Series],
     *,
     start_year: int = 0,
-    end_year: int = 20
+    end_year: int = 20,
 ) -> float:
     """
     Calculates the total discounted cost of some parameter.
@@ -811,24 +906,13 @@ def discounted_energy_total(
         )
         raise
 
+    if isinstance(total_daily, pd.DataFrame):
+        total_daily = total_daily[0]
+
     discounted_fraction = _discounted_fraction(
         discount_rate, start_year=start_year, end_year=end_year
     )
-    if not isinstance(total_daily, pd.Series):
-        try:
-            total_daily = total_daily.iloc[:, 0]
-        except pd.core.indexing.IndexingError as e:  # type: ignore
-            logger.error(
-                "%sAn unexpected internal error occured in the financial inputs file "
-                "when casting `pd.Series` to `pd.DataFrame`: %s%s",
-                str(e),
-                BColours.fail,
-                BColours.endc,
-            )
-            raise InternalError(
-                "An error occured casting between pandas types."
-            ) from None
-    discounted_energy = pd.DataFrame(discounted_fraction.iloc[:, 0] * total_daily)
+    discounted_energy = pd.DataFrame(discounted_fraction[0] * total_daily)
     return float(np.sum(discounted_energy))  # type: ignore
 
 
@@ -841,7 +925,7 @@ def discounted_equipment_cost(
     heat_exchangers: int,
     hot_water_tanks: int,
     logger: Logger,
-    pv_array_size: float,
+    pv_array_size: Dict[str, float],
     pvt_array_size: float,
     storage_size: float,
     installation_year: int = 0,
@@ -907,7 +991,7 @@ def expenditure(
     logger: Logger,
     *,
     start_year: int = 0,
-    end_year: int = 20
+    end_year: int = 20,
 ) -> float:
     """
     Calculates cost of the usage of a component.
@@ -943,11 +1027,14 @@ def expenditure(
 
 def independent_expenditure(
     finance_inputs: Dict[str, Any],
+    inverter: Inverter,
     location: Location,
+    logger: Logger,
+    scenario: Scenario,
     yearly_load_statistics: pd.DataFrame,
     *,
     start_year: int,
-    end_year: int
+    end_year: int,
 ) -> float:
     """
     Calculates cost of equipment which is independent of simulation periods
@@ -955,10 +1042,16 @@ def independent_expenditure(
     Inputs:
         - finance_inputs:
             The financial input information.
+        - inverter:
+            The inverter being modelled.
         - location:
             The location currently being considered.
+        - logger:
+            The :class:`logging.Logger` to use for the run.
         - yearly_load_statistics:
             The yearly load statistics information.
+        - scenario:
+            The :class:`Scenario` currently being considered.
         - start_year:
             Start year of simulation period
         - end_year:
@@ -971,7 +1064,10 @@ def independent_expenditure(
 
     inverter_expenditure = _inverter_expenditure(
         finance_inputs,
+        inverter,
         location,
+        logger,
+        scenario,
         yearly_load_statistics,
         start_year=start_year,
         end_year=end_year,
@@ -989,12 +1085,12 @@ def total_om(  # pylint: disable=too-many-locals
     heat_exchangers: int,
     hot_water_tanks: int,
     logger: Logger,
-    pv_array_size: float,
+    pv_array_size: Dict[str, float],
     pvt_array_size: float,
     storage_size: float,
     *,
     start_year: int = 0,
-    end_year: int = 20
+    end_year: int = 20,
 ) -> float:
     """
     Calculates total O&M cost over the simulation period
@@ -1170,13 +1266,16 @@ def total_om(  # pylint: disable=too-many-locals
             end_year=end_year,
         )
 
-    pv_om = _component_om(
-        finance_inputs[ImpactingComponent.PV.value][OM],
-        pv_array_size,
-        finance_inputs,
-        logger,
-        start_year=start_year,
-        end_year=end_year,
+    pv_om = sum(
+        _component_om(
+            finance_inputs[ImpactingComponent.PV.value][panel_name][OM],
+            array_size,
+            finance_inputs,
+            logger,
+            start_year=start_year,
+            end_year=end_year,
+        )
+        for panel_name, array_size in pv_array_size.items()
     )
 
     if ImpactingComponent.PV_T.value not in finance_inputs and pvt_array_size > 0:

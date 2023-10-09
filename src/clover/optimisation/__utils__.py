@@ -67,6 +67,7 @@ __all__ = (
     "SolarSystemSize",
     "StorageSystemSize",
     "TankSize",
+    "THRESHOLD_CRITERIA",
     "ThresholdMode",
 )
 
@@ -82,9 +83,17 @@ CONVERTER_NAME_STRING: str = "name"
 # above string and needs to be udpated separately.
 CONVERTER_SIZE_REGEX: Pattern[str] = re.compile(r"(?P<name>.*)_size")
 
+# Optimisation criteria:
+#   Keyword used for parsing the optimisation criteria.
+OPTIMISATION_CRITERIA: str = "optimisation_criteria"
+
 # Scenario:
 #   Keyword used for parsing the scenario to use for a given optimisation.
 SCENARIO: str = "scenario"
+
+# Threshold criteria:
+#   Keyword used for parsing the threshold criteria.
+THRESHOLD_CRITERIA: str = "threshold_criteria"
 
 
 def converters_from_sizing(converter_sizes: Dict[Converter, int]) -> List[Converter]:
@@ -260,7 +269,7 @@ class Optimisation:
         try:
             optimisation_criteria = {
                 Criterion(key): CriterionMode(value)
-                for entry in optimisation_data["optimisation_criteria"]
+                for entry in optimisation_data[OPTIMISATION_CRITERIA]
                 for key, value in entry.items()
             }
         except KeyError as e:
@@ -275,7 +284,7 @@ class Optimisation:
         try:
             threshold_criteria = {
                 Criterion(key): value
-                for entry in optimisation_data["threshold_criteria"]
+                for entry in optimisation_data[THRESHOLD_CRITERIA]
                 for key, value in entry.items()
             }
         except KeyError as e:
@@ -348,9 +357,9 @@ class Optimisation:
         }
 
         return {
-            "optimisation_criteria": optimisation_criteria,
+            OPTIMISATION_CRITERIA: optimisation_criteria,
             "scenario": self.scenario.to_dict(),
-            "threshold_criteria": threshold_criteria,
+            THRESHOLD_CRITERIA: threshold_criteria,
         }
 
 
@@ -935,7 +944,7 @@ def recursive_iteration(  # pylint: disable=too-many-locals
     finance_inputs: Dict[str, Any],
     ghg_inputs: Dict[str, Any],
     grid_profile: Optional[pd.DataFrame],
-    irradiance_data: pd.Series,
+    irradiance_data: Dict[str, pd.Series],
     kerosene_usage: pd.DataFrame,
     location: Location,
     logger: Logger,
@@ -943,9 +952,9 @@ def recursive_iteration(  # pylint: disable=too-many-locals
     optimisation: Optimisation,
     previous_system: Optional[SystemAppraisal],
     start_year: int,
-    temperature_data: pd.Series,
+    temperature_data: Dict[str, pd.Series],
     total_loads: Dict[ResourceType, Optional[pd.DataFrame]],
-    total_solar_pv_power_produced: pd.Series,
+    total_solar_pv_power_produced: Dict[str, pd.Series],
     wind_speed_data: Optional[pd.Series],
     yearly_electric_load_statistics: pd.DataFrame,
     *,
@@ -1015,7 +1024,7 @@ def recursive_iteration(  # pylint: disable=too-many-locals
         # Determine the converter sizes.
         if not all(isinstance(value, int) for value in component_sizes.values()):
             logger.info(
-                "%sNon-integer component sizes were specified, exiting.%s",
+                "%sNon-integer component sizes were specified.%s",
                 BColours.fail,
                 BColours.endc,
             )
@@ -1028,7 +1037,11 @@ def recursive_iteration(  # pylint: disable=too-many-locals
         )
 
         # Run the simulation
-        (_, simulation_results, system_details,) = energy_system.run_simulation(
+        (
+            _,
+            simulation_results,
+            system_details,
+        ) = energy_system.run_simulation(
             int(component_sizes[RenewableEnergySource.CLEAN_WATER_PVT]),
             conventional_cw_source_profiles,
             converters,
@@ -1044,7 +1057,7 @@ def recursive_iteration(  # pylint: disable=too-many-locals
             int(component_sizes[ImpactingComponent.CLEAN_WATER_TANK]),
             int(component_sizes[ImpactingComponent.HOT_WATER_TANK]),
             total_solar_pv_power_produced,
-            component_sizes[RenewableEnergySource.PV],
+            {minigrid.pv_panel.name: component_sizes[RenewableEnergySource.PV]},
             optimisation.scenario,
             Simulation(end_year, start_year),
             temperature_data,
@@ -1057,9 +1070,11 @@ def recursive_iteration(  # pylint: disable=too-many-locals
             end_year,
             finance_inputs,
             ghg_inputs,
+            minigrid.inverter,
             location,
             logger,
             previous_system,
+            optimisation.scenario,
             simulation_results,
             start_year,
             system_details,
@@ -1153,6 +1168,7 @@ def recursive_iteration(  # pylint: disable=too-many-locals
 def save_optimisation(
     disable_tqdm: bool,
     logger: Logger,
+    optimisation: Optimisation,
     optimisation_inputs: OptimisationParameters,
     optimisation_number: int,
     output: str,
@@ -1202,6 +1218,13 @@ def save_optimisation(
     # Add the optimisation parameter information.
     output_dict = {
         "optimisation_inputs": optimisation_inputs.to_dict(),
+        "optimisation_criteria": {
+            key.value: value.value
+            for key, value in optimisation.optimisation_criteria.items()
+        },
+        "threshold_criteria": {
+            key.value: value for key, value in optimisation.threshold_criteria.items()
+        },
         "scenario": scenario.to_dict(),
         "system_appraisals": system_appraisals_dict,
     }

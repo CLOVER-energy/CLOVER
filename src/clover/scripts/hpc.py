@@ -32,6 +32,7 @@ from .hpc_utils import (
     HpcSimulation,
     InvalidRunError,
     parse_args_and_hpc_input_file,
+    temporary_optimisations_file,
 )
 
 
@@ -72,8 +73,9 @@ def main(args: List[Any]) -> None:
     logger.info("HPC input file successfully parsed.")
 
     # Determine the run.
+    run_number: int = hpc_job_number - 1
     try:
-        hpc_run = runs[hpc_job_number - 1]
+        hpc_run = runs[run_number]
     except IndexError:
         logger.error(
             "%sRun number %s out of bounds. Only %s runs submitted.%s",
@@ -89,7 +91,27 @@ def main(args: List[Any]) -> None:
     clover_arguments = [
         "--location",
         hpc_run.location,
+        "--output",
+        f"{hpc_run.output}_hpc_run_{run_number}",
     ]
+
+    if hpc_run.total_load:
+        if hpc_run.total_load_file is None:
+            logger.error(
+                "%sRun %s was processed as having a total-load file but an internal "
+                "error occurred determining the total-load file name.%s",
+                BColours.fail,
+                hpc_job_number,
+                BColours.endc,
+            )
+            raise InternalError(
+                "Error occurred processing total-load filename for run #"
+                f"{hpc_job_number}."
+            )
+        clover_arguments.extend(["--electric-load-profile", hpc_run.total_load_file])
+
+    if verbose:
+        clover_arguments.append("--verbose")
 
     if hpc_run.type == HpcRunType.OPTIMISATION:
         if not isinstance(hpc_run, HpcOptimisation):
@@ -104,7 +126,26 @@ def main(args: List[Any]) -> None:
             )
 
         logger.info("Run %s is an optimisation.", hpc_job_number)
-        clover_arguments.append("--optimisation")
+
+        # Run the optimisation with the temporary optimisations file.
+        with temporary_optimisations_file(
+            logger, hpc_run, run_number
+        ) as optimisation_inputs_filename:
+            clover_arguments.extend(
+                [
+                    "--optimisation",
+                    "--optimisation-inputs-file",
+                    optimisation_inputs_filename,
+                ]
+            )
+            logger.info(
+                "Temporary optimisation file successfully created: %s",
+                optimisation_inputs_filename,
+            )
+
+            # Call CLOVER with this information.
+            logger.info("Calling CLOVER with arguments: %s", " ".join(clover_arguments))
+            clover_main(clover_arguments, True, hpc_job_number)
 
     elif hpc_run.type == HpcRunType.SIMULATION:
         if not isinstance(hpc_run, HpcSimulation):
@@ -126,8 +167,17 @@ def main(args: List[Any]) -> None:
                 str(hpc_run.pv_system_size),
                 "--storage-size",
                 str(hpc_run.storage_size),
+                "--scenario",
+                str(hpc_run.scenario),
+                "-a",
+                "-sp",
             ]
         )
+
+        # Call CLOVER with this information.
+        logger.info("Calling CLOVER with arguments: %s", " ".join(clover_arguments))
+        clover_main(clover_arguments, True, hpc_job_number)
+
     else:
         logger.error(
             "%sRun %s was not a supported run type. Supported run types are %s.%s",
@@ -137,28 +187,6 @@ def main(args: List[Any]) -> None:
             BColours.endc,
         )
         raise InvalidRunError(f"Run {hpc_job_number} was not of a supported run type.")
-
-    if hpc_run.total_load:
-        if hpc_run.total_load_file is None:
-            logger.error(
-                "%sRun %s was processed as having a total-load file but an internal "
-                "error occurred determining the total-load file name.%s",
-                BColours.fail,
-                hpc_job_number,
-                BColours.endc,
-            )
-            raise InternalError(
-                "Error occurred processing total-load filename for run #"
-                f"{hpc_job_number}."
-            )
-        clover_arguments.extend(["--electric-load-profile", hpc_run.total_load_file])
-
-    if verbose:
-        clover_arguments.append("--verbose")
-
-    # Call CLOVER with this information.
-    logger.info("Calling CLOVER with arguments: %s", " ".join(clover_arguments))
-    clover_main(clover_arguments, True, hpc_job_number)
 
 
 if __name__ == "__main__":

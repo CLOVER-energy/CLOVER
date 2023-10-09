@@ -123,6 +123,7 @@
 
                 diesel_generators:
                   - name: default_diesel
+                    # capacity: 5 # Cycle-charging diesel generator capacity, optional [kW]
                     diesel_consumption: 0.4 # [litres per kW capacity per hour]
                     minimum_load: 0.35 # Minimum capacity factor (0.0 - 1.0)
                     costs:
@@ -164,14 +165,8 @@
                 # License: Open source                                                         #
                 ################################################################################
 
-                # NOTE: The renewables.ninja API token must be entered under the `token` field.
-                # For more information, consult the User Guide, available within the repository
-                # and online.
-                #
-
                 end_year: 2016 # The absolute end year for gathering solar data.
                 start_year: 2007 # The absolute start year for gathering solar data.
-                token: "YOUR API TOKEN HERE" # renewables.ninja API token
             - file: "grid_times.csv"
               contents: |-
                 Name,none,all,example,eight_hours,default
@@ -276,7 +271,8 @@
                 discount_rate: 0.1 # Fraction between 0 and 1.
                 general_o&m: 500 # [$ p.a.]
                 misc:
-                  cost: 0 # [$/kW]
+                  capacity_cost: 0  # [$/kWp]
+                  fixed_cost: 0  # [$]
                 bos:
                   cost: 200 # [$/kW]
                   cost_decrease: 2 # [% p.a.]
@@ -292,8 +288,6 @@
                 inverter:
                   cost: 200 # [$/kW]
                   cost_decrease: 2 # [% p.a.]
-                  lifetime: 4 # [years]
-                  size_increment: 1 # [kW]
                 kerosene:
                   cost: 0.008 # [$/hour]
             - file: ghg_inputs.yaml
@@ -331,8 +325,6 @@
                 inverter:
                   ghgs: 75 # [kgCO2/kW]
                   ghg_decrease: 2 # [2,% p.a.]
-                  lifetime: 4 # [years]
-                  size_increment: 1 # [kW]
                 kerosene:
                   ghgs: 0.055 # [kgCO2/hour]
         - directory: load
@@ -787,7 +779,7 @@
 
                 diesel_scenarios:
                   - name: default
-                    mode: backup # "backup" or "disabled" currently supported
+                    mode: backup # "backup", "disabled" or "cycle_charging" currently supported
                     backup:
                       threshold: 0.1 # Maximum acceptible blackouts (0.0-1.0)
                   - name: cycle_charging_default
@@ -846,6 +838,7 @@
                     distribution_network: dc # DC ("dc") or AC ("ac") distribution network
                     grid: true # "true" or "false"
                     grid_type: default # The grid profile to use
+                    # fixed_inverter_size: false # [kW] A fixed inverter size in kW if specified
                     prioritise_self_generation: true # "true" or "false"
                     pv: true # "true" or "false"
                     resource_types:
@@ -903,6 +896,9 @@
                   ac_to_dc: 0.8 # Conversion efficiency (0.0-1.0)
                   ac_to_ac: 0.98 # Conversion efficiency (0.0-1.0)
                 diesel_generator: default_diesel
+                inverter:
+                  lifetime: 4 # [years]
+                  size_increment: 1 # [kW]
                 pv_panel: default_pv
             # - file: "energy_system.yaml"
             #   contents: |+
