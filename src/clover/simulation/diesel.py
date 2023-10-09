@@ -415,7 +415,7 @@ def get_cycle_charging_energy(
         < empty_capacity
         <= max_diesel_energy_into_battery
     ):
-        diesel_to_battery: float = empty_capacity  # [kW]
+        diesel_to_battery = empty_capacity  # [kW]
         diesel_total_output = diesel_to_battery
     # If empty is more than can be supplied, the diesel generator/c rate limits the
     # capability.

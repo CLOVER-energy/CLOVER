@@ -23,7 +23,7 @@ import datetime
 import math
 
 from logging import Logger
-from typing import Dict, List, Optional, Tuple, Union
+from typing import DefaultDict, Dict, List, Optional, Tuple, Union
 
 import numpy as np  # pylint: disable=import-error
 import pandas as pd  # pylint: disable=import-error
@@ -1706,11 +1706,11 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
     # water_deficit: List[float] = []
 
     # Initialise energy accounting parameters
-    battery_state_of_charge: Optional[Dict[int, float]] = defaultdict(float)
-    diesel_generator_running: Optional[Dict[int, bool]] = defaultdict(float)
-    diesel_power_to_battery_map: Optional[Dict[int, float]] = defaultdict(float)
-    diesel_total_output_map: Optional[Dict[int, float]] = defaultdict(float)
-    diesel_surplus_map: Optional[Dict[int, float]] = defaultdict(float)
+    battery_state_of_charge: DefaultDict[int, float] = defaultdict(lambda: 0)
+    diesel_generator_running: DefaultDict[int, bool] = defaultdict(lambda: 0)
+    diesel_power_to_battery_map: DefaultDict[int, float] = defaultdict(lambda: 0)
+    diesel_total_output_map: DefaultDict[int, float] = defaultdict(lambda: 0)
+    diesel_surplus_map: DefaultDict[int, float] = defaultdict(lambda: 0)
     energy_surplus: Optional[Dict[int, float]] = {}
     energy_deficit: Optional[Dict[int, float]] = {}
     storage_power_supplied: Dict[int, float] = {}

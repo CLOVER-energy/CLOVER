@@ -783,7 +783,7 @@ class DieselScenario:
     settings: Optional[List[DieselSetting]]
 
     @classmethod
-    def from_dict(cls, input_dict: Dict[str, Any]) -> None:
+    def from_dict(cls, input_dict: Dict[str, Any]) -> Any:
         """
         Create a :class:`DieselScenario` from the input data.
 
@@ -2098,6 +2098,7 @@ class Scenario:
     def from_dict(
         cls,
         desalination_scenarios: Optional[List[DesalinationScenario]],
+        diesel_scenarios: List[DieselScenario],
         hot_water_scenarios: Optional[List[HotWaterScenario]],
         logger: logging.Logger,
         scenario_inputs: Dict[str, Any],
@@ -2126,13 +2127,26 @@ class Scenario:
             scenario_inputs["demands"][DemandType.PUBLIC.value],
         )
 
-        diesel_scenario = DieselScenario(
-            scenario_inputs["diesel"]["backup"]["threshold"]
-            if scenario_inputs["diesel"][MODE]
-            in (DieselMode.BACKUP.value, DieselMode.BACKUP_UNMET.value)
-            else None,
-            DieselMode(scenario_inputs["diesel"][MODE]),
-        )
+        try:
+            diesel_scenario = [
+                entry
+                for entry in diesel_scenarios
+                if entry.name == scenario_inputs["diesel_scenario"]
+            ][0]
+        except KeyError:
+            logger.error(
+                "No diesel scenario entry in scenario inputs. See documentation."
+            )
+            raise InputFileError(
+                "scenario_inputs.yaml",
+                "No diesel-scenario input in file. See documentation.",
+            )
+        except IndexError:
+            logger.error("Could not find diesel scenario %s in diesel scenario inputs.")
+            raise InputFileError(
+                "diesel_scenarios.yaml",
+                f"Could not find diesel scenario {scenario_inputs['diesel_scenario']}.",
+            )
 
         distribution_network = DistributionNetwork(
             scenario_inputs["distribution_network"]
