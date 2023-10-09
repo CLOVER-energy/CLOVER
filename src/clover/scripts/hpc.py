@@ -91,6 +91,8 @@ def main(args: List[Any]) -> None:
     clover_arguments = [
         "--location",
         hpc_run.location,
+        "--output",
+        f"{hpc_run.output}_hpc_run_{run_number}",
     ]
 
     if hpc_run.total_load:
@@ -165,6 +167,10 @@ def main(args: List[Any]) -> None:
                 str(hpc_run.pv_system_size),
                 "--storage-size",
                 str(hpc_run.storage_size),
+                "--scenario",
+                str(hpc_run.scenario),
+                "-a",
+                "-sp",
             ]
         )
 

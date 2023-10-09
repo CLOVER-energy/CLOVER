@@ -35,8 +35,10 @@ from ..__utils__ import (
     EnvironmentalAppraisal,
     FinancialAppraisal,
     InternalError,
+    Inverter,
     hourly_profile_to_daily_sum,
     Location,
+    Scenario,
     SystemAppraisal,
     SystemDetails,
     TechnicalAppraisal,
@@ -56,10 +58,12 @@ def _simulation_environmental_appraisal(  # pylint: disable=too-many-locals
     ghg_inputs: Dict[str, Any],
     heat_exchanger_addition: int,
     hot_water_tank_addition: int,
+    inverter: Inverter,
     location: Location,
     logger: Logger,
-    pv_addition: float,
+    pv_addition: Dict[str, float],
     pvt_addition: float,
+    scenario: Scenario,
     simulation_results: pd.DataFrame,
     start_year: int,
     storage_addition: float,
@@ -88,6 +92,8 @@ def _simulation_environmental_appraisal(  # pylint: disable=too-many-locals
             The additional number of heat exchangers added this iteration.
         - hot_water_tank_addition:
             The additional number of hot-water tanks added this iteration.
+        - inverter:
+            The :class:`Inverter` being used for the run.
         - location:
             The location being considered.
         - logger:
@@ -96,6 +102,8 @@ def _simulation_environmental_appraisal(  # pylint: disable=too-many-locals
             The additional number of PV panels added this iteration.
         - pvt_addition:
             The additional number of PV-T panels added this iteration.
+        - scenario:
+            The :class:`Scenario` currently being considered.
         - simulation_results:
             The system that was just simulated.
         - start_year:
@@ -126,7 +134,14 @@ def _simulation_environmental_appraisal(  # pylint: disable=too-many-locals
             pvt_addition,
             storage_addition,
         ) + ghgs.calculate_independent_ghgs(
-            electric_yearly_load_statistics, end_year, ghg_inputs, location, start_year
+            electric_yearly_load_statistics,
+            end_year,
+            ghg_inputs,
+            inverter,
+            location,
+            logger,
+            scenario,
+            start_year,
         )
     except KeyError as e:
         logger.error("Missing system equipment GHG input information: %s", str(e))
@@ -162,7 +177,7 @@ def _simulation_environmental_appraisal(  # pylint: disable=too-many-locals
             if system_details.initial_num_hot_water_tanks is not None
             else 0,
             logger,
-            system_details.initial_pv_size,
+            system_details.initial_pv_sizes,
             system_details.initial_pvt_size
             if system_details.initial_pvt_size is not None
             else 0,
@@ -245,10 +260,12 @@ def _simulation_financial_appraisal(  # pylint: disable=too-many-locals
     finance_inputs: Dict[str, Any],
     heat_exchanger_addition: int,
     hot_water_tank_addition: int,
+    inverter: Inverter,
     location: Location,
     logger: Logger,
-    pv_addition: float,
+    pv_addition: Dict[str, float],
     pvt_addition: float,
+    scenario: Scenario,
     simulation_results: pd.DataFrame,
     storage_addition: float,
     system_details: SystemDetails,
@@ -273,6 +290,8 @@ def _simulation_financial_appraisal(  # pylint: disable=too-many-locals
             The additional number of heat exchangers added this iteration.
         - hot_water_tank_addition:
             The additional number of hot-water tanks added this iteration.
+        - inverter:
+            The inverter being modelled.
         - location:
             The :class:`Location` being considered.
         - logger:
@@ -281,6 +300,8 @@ def _simulation_financial_appraisal(  # pylint: disable=too-many-locals
             The additional number of PV panels added this iteration.
         - pvt_addition:
             The additional number of PV-T panels added this iteration.
+        - scenario:
+            The :class:`Scenario` currently being considered.
         - simulation_results:
             Outputs of Energy_System().simulation(...)
         - storage_addition:
@@ -312,7 +333,10 @@ def _simulation_financial_appraisal(  # pylint: disable=too-many-locals
         system_details.start_year,
     ) + finance.independent_expenditure(
         finance_inputs,
+        inverter,
         location,
+        logger,
+        scenario,
         yearly_load_statistics,
         start_year=system_details.start_year,
         end_year=system_details.end_year,
@@ -345,7 +369,7 @@ def _simulation_financial_appraisal(  # pylint: disable=too-many-locals
         if system_details.initial_num_hot_water_tanks is not None
         else 0,
         logger,
-        system_details.initial_pv_size,
+        system_details.initial_pv_sizes,
         system_details.initial_pvt_size
         if system_details.initial_pvt_size is not None
         else 0,
@@ -560,9 +584,11 @@ def appraise_system(  # pylint: disable=too-many-locals
     end_year: int,
     finance_inputs: Dict[str, Any],
     ghg_inputs: Dict[str, Any],
+    inverter: Inverter,
     location: Location,
     logger: Logger,
     previous_system: Optional[SystemAppraisal],
+    scenario: Scenario,
     simulation_results: pd.DataFrame,
     start_year: int,
     system_details: SystemDetails,
@@ -577,6 +603,10 @@ def appraise_system(  # pylint: disable=too-many-locals
             The end year for the simulation that was just run.
         - finance_inputs:
             The finance input information.
+        - ghg_inputs:
+            The GHG input information.
+        - inverter:
+            The :class:`Inverter` being modelled.
         - location:
             The location currently being considered.
         - logger:
@@ -584,6 +614,8 @@ def appraise_system(  # pylint: disable=too-many-locals
         - previous_system:
             Report from previously installed system (not required if no system was
             previously deployed)
+        - scenario:
+            The :class:`Scenario` currently being considered.
         - simulation_results
             Outputs of Energy_System().simulation(...)
         - start_year:
@@ -656,9 +688,11 @@ def appraise_system(  # pylint: disable=too-many-locals
         and previous_system.system_details.final_num_hot_water_tanks is not None
         else 0
     )
-    pv_addition = (
-        system_details.initial_pv_size - previous_system.system_details.final_pv_size
-    )
+    pv_addition: Dict[str, float] = {
+        panel_name: initial_pv_size
+        - previous_system.system_details.final_pv_sizes[panel_name]
+        for panel_name, initial_pv_size in system_details.initial_pv_sizes.items()
+    }
     pvt_addition: float = (
         system_details.initial_pvt_size - previous_system.system_details.final_pvt_size
         if system_details.initial_pvt_size is not None
@@ -683,10 +717,12 @@ def appraise_system(  # pylint: disable=too-many-locals
         finance_inputs,
         heat_exchanger_addition,
         hot_water_tank_addition,
+        inverter,
         location,
         logger,
         pv_addition,
         pvt_addition,
+        scenario,
         simulation_results,
         storage_addition,
         system_details,
@@ -702,10 +738,12 @@ def appraise_system(  # pylint: disable=too-many-locals
         ghg_inputs,
         heat_exchanger_addition,
         hot_water_tank_addition,
+        inverter,
         location,
         logger,
         pv_addition,
         pvt_addition,
+        scenario,
         simulation_results,
         start_year,
         storage_addition,

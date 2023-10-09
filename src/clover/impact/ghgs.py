@@ -24,14 +24,16 @@ from typing import Any, Dict, List, Optional
 import numpy as np  # pylint: disable=import-error
 import pandas as pd  # pylint: disable=import-error
 
+from .__utils__ import ImpactingComponent
 from ..__utils__ import (
     BColours,
     ColumnHeader,
-    InputFileError,
-    Location,
     hourly_profile_to_daily_sum,
+    InputFileError,
+    Inverter,
+    Location,
+    Scenario,
 )
-from .__utils__ import SIZE_INCREMENT, ImpactingComponent, LIFETIME
 
 __all__ = (
     "calculate_connections_ghgs",
@@ -190,7 +192,7 @@ def calculate_total_equipment_ghgs(  # pylint: disable=too-many-locals
     heat_exchangers: int,
     hot_water_tanks: int,
     logger: Logger,
-    pv_array_size: float,
+    pv_array_size: Dict[str, float],
     pvt_array_size: float,
     storage_size: float,
     year: int = 0,
@@ -230,7 +232,7 @@ def calculate_total_equipment_ghgs(  # pylint: disable=too-many-locals
 
     # Calculate system ghgs.
     bos_ghgs = calculate_ghgs(
-        pv_array_size, ghg_inputs, ImpactingComponent.BOS.value, year
+        sum(pv_array_size.values()), ghg_inputs, ImpactingComponent.BOS.value, year
     )
 
     if ImpactingComponent.BUFFER_TANK.value not in ghg_inputs and buffer_tanks > 0:
@@ -367,11 +369,17 @@ def calculate_total_equipment_ghgs(  # pylint: disable=too-many-locals
             hot_water_tanks, ghg_inputs, ImpactingComponent.HOT_WATER_TANK.value, year
         )
 
-    pv_ghgs = calculate_ghgs(
-        pv_array_size, ghg_inputs, ImpactingComponent.PV.value, year
+    pv_ghgs = sum(
+        calculate_ghgs(
+            array_size, ghg_inputs[ImpactingComponent.PV.value], panel_name, year
+        )
+        for panel_name, array_size in pv_array_size.items()
     )
-    pv_installation_ghgs = calculate_installation_ghgs(
-        pv_array_size, ghg_inputs, ImpactingComponent.PV.value, year
+    pv_installation_ghgs = sum(
+        calculate_installation_ghgs(
+            array_size, ghg_inputs[ImpactingComponent.PV.value], panel_name, year
+        )
+        for panel_name, array_size in pv_array_size.items()
     )
 
     if ImpactingComponent.PV_T.value not in ghg_inputs and pvt_array_size > 0:
@@ -401,7 +409,9 @@ def calculate_total_equipment_ghgs(  # pylint: disable=too-many-locals
     )
 
     # Calculate misc GHGs.
-    misc_ghgs = calculate_misc_ghgs(diesel_size + pv_array_size, ghg_inputs)
+    misc_ghgs = calculate_misc_ghgs(
+        diesel_size + sum(pv_array_size.values()), ghg_inputs
+    )
 
     return (
         bos_ghgs
@@ -482,46 +492,14 @@ def calculate_grid_extension_ghgs(
     ) + float(ghg_inputs[ImpactingComponent.GRID.value][INFRASTRUCTURE_GHGS])
 
 
-def calculate_independent_ghgs(
+def _calculate_inverter_ghgs(  # pylint: disable=too-many-locals
     electric_yearly_load_statistics: pd.DataFrame,
     end_year: int,
     ghg_inputs: Dict[str, Any],
+    inverter: Inverter,
     location: Location,
-    start_year: int,
-) -> float:
-    """
-    Calculates ghgs of equipment which is independent of simulation periods
-
-    Inputs:
-        - electric_yearly_load_statistics:
-            The electric yearly load statistics for the simulation period.
-        - end_year:
-            End year of simulation period
-        - ghg_inputs:
-            The GHG input informaiton.
-        - location:
-            The location being considered.
-        - start_year:
-            Start year of simulation period
-
-    Outputs:
-        GHGs
-
-    """
-
-    inverter_ghgs = calculate_inverter_ghgs(
-        electric_yearly_load_statistics, end_year, ghg_inputs, location, start_year
-    )
-    total_ghgs = inverter_ghgs  # ... + other components as required
-
-    return total_ghgs
-
-
-def calculate_inverter_ghgs(  # pylint: disable=too-many-locals
-    electric_yearly_load_statistics: pd.DataFrame,
-    end_year: int,
-    ghg_inputs: Dict[str, Any],
-    location: Location,
+    logger: Logger,
+    scenario: Scenario,
     start_year: int,
 ) -> float:
     """
@@ -534,8 +512,14 @@ def calculate_inverter_ghgs(  # pylint: disable=too-many-locals
             End year of simulation period
         - ghg_inputs:
             GHG input information.
+        - inverter:
+            The :class:`Inverter` to use for the run.
         - location:
             The location being considered.
+        - logger:
+            The :class:`logging.Logger` to use for the run.
+        - scenario:
+            The :class:`Scenario` currently being considered.
         - start_year:
             Start year of simulation period
 
@@ -545,9 +529,8 @@ def calculate_inverter_ghgs(  # pylint: disable=too-many-locals
     """
 
     # Calcualte inverter replacement periods
-    replacement_period = int(ghg_inputs[ImpactingComponent.INVERTER.value][LIFETIME])
     replacement_intervals = pd.DataFrame(
-        np.arange(0, location.max_years, replacement_period)
+        np.arange(0, location.max_years, inverter.lifetime)
     )
     replacement_intervals.columns = pd.Index([ColumnHeader.INSTALLATION_YEAR.value])
 
@@ -561,12 +544,11 @@ def calculate_inverter_ghgs(  # pylint: disable=too-many-locals
 
     # Initialise inverter sizing calculation
     max_power = []
-    inverter_step = float(ghg_inputs[ImpactingComponent.INVERTER.value][SIZE_INCREMENT])
     inverter_size: List[float] = []
     for i in range(len(replacement_intervals)):
         # Calculate maximum power in interval years
         start = replacement_intervals[ColumnHeader.INSTALLATION_YEAR.value].iloc[i]
-        end = start + replacement_period
+        end = start + inverter.lifetime
         max_power_interval = (
             electric_yearly_load_statistics[ColumnHeader.MAXIMUM.value]
             .iloc[start:end]
@@ -576,7 +558,8 @@ def calculate_inverter_ghgs(  # pylint: disable=too-many-locals
 
         # Calculate resulting inverter size
         inverter_size_interval: float = (
-            np.ceil(0.001 * max_power_interval / inverter_step) * inverter_step
+            np.ceil(0.001 * max_power_interval / inverter.size_increment)
+            * inverter.size_increment
         )
         inverter_size.append(inverter_size_interval)
 
@@ -591,8 +574,33 @@ def calculate_inverter_ghgs(  # pylint: disable=too-many-locals
         ** inverter_info[ColumnHeader.INSTALLATION_YEAR.value].iloc[i]
         for i in range(len(inverter_info))
     ]
+
+    # If a static inverter size has been used, use this, otherwise, use the dynamically
+    # calculated values.
+    if scenario.fixed_inverter_size and any(
+        inverter_info[ColumnHeader.INVERTER_SIZE.value] > scenario.fixed_inverter_size
+    ):
+        logger.info(
+            "The static inverter size specified, %s, was below that calculated "
+            "within CLOVER. Calculated inverter sizes:\n%s",
+            scenario.fixed_inverter_size,
+            "\n".join(
+                [
+                    f"Size for year {year}: {size} kW"
+                    for year, size in zip(
+                        replacement_intervals[ColumnHeader.INSTALLATION_YEAR.value],
+                        inverter_info[ColumnHeader.INVERTER_SIZE.value],
+                    )
+                ]
+            ),
+        )
+
     inverter_info[ColumnHeader.TOTAL_GHGS.value] = [
-        inverter_info[ColumnHeader.INVERTER_SIZE.value].iloc[i]
+        (
+            inverter_info[ColumnHeader.INVERTER_SIZE.value].iloc[i]
+            if not scenario.fixed_inverter_size
+            else scenario.fixed_inverter_size
+        )
         * inverter_info["Inverter ghgs (kgCO2/kW)"].iloc[i]
         for i in range(len(inverter_info))
     ]
@@ -607,6 +615,57 @@ def calculate_inverter_ghgs(  # pylint: disable=too-many-locals
     ).round(2)
 
     return inverter_ghgs
+
+
+def calculate_independent_ghgs(
+    electric_yearly_load_statistics: pd.DataFrame,
+    end_year: int,
+    ghg_inputs: Dict[str, Any],
+    inverter: Inverter,
+    location: Location,
+    logger: Logger,
+    scenario: Scenario,
+    start_year: int,
+) -> float:
+    """
+    Calculates ghgs of equipment which is independent of simulation periods
+
+    Inputs:
+        - electric_yearly_load_statistics:
+            The electric yearly load statistics for the simulation period.
+        - end_year:
+            End year of simulation period
+        - ghg_inputs:
+            The GHG input informaiton.
+        - inverter:
+            The :class:`Inverter` to use for the run.
+        - location:
+            The location being considered.
+        - logger:
+            The :class:`logging.Logger` to use for the run.
+        - scenario:
+            The :class:`Scenario` currently being considered.
+        - start_year:
+            Start year of simulation period
+
+    Outputs:
+        GHGs
+
+    """
+
+    inverter_ghgs = _calculate_inverter_ghgs(
+        electric_yearly_load_statistics,
+        end_year,
+        ghg_inputs,
+        inverter,
+        location,
+        logger,
+        scenario,
+        start_year,
+    )
+    total_ghgs = inverter_ghgs  # ... + other components as required
+
+    return total_ghgs
 
 
 def calculate_kerosene_ghgs(
@@ -774,7 +833,7 @@ def calculate_total_om(  # pylint: disable=too-many-locals
     heat_exchangers: int,
     hot_water_tanks: int,
     logger: Logger,
-    pv_array_size: float,
+    pv_array_size: Dict[str, float],
     pvt_array_size: float,
     storage_size: float,
     start_year: int = 0,
@@ -880,7 +939,7 @@ def calculate_total_om(  # pylint: disable=too-many-locals
         logger.debug("No converters installed so no converter OM GHGs to calcualte.")
 
     diesel_om_ghgs = calculate_om_ghgs(
-        diesel_size, ghg_inputs, ImpactingComponent.PV.value, start_year, end_year
+        diesel_size, ghg_inputs, ImpactingComponent.DIESEL.value, start_year, end_year
     )
 
     general_om_ghgs = calculate_om_ghgs(
@@ -935,8 +994,15 @@ def calculate_total_om(  # pylint: disable=too-many-locals
             end_year,
         )
 
-    pv_om_ghgs = calculate_om_ghgs(
-        pv_array_size, ghg_inputs, ImpactingComponent.PV.value, start_year, end_year
+    pv_om_ghgs = sum(
+        calculate_om_ghgs(
+            array_size,
+            ghg_inputs[ImpactingComponent.PV.value],
+            panel_name,
+            start_year,
+            end_year,
+        )
+        for panel_name, array_size in pv_array_size.items()
     )
 
     if ImpactingComponent.PV_T.value not in ghg_inputs and pvt_array_size > 0:

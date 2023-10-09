@@ -306,6 +306,31 @@ class Battery(_BaseStorage, label="battery", resource_type=ResourceType.ELECTRIC
             + ")"
         )
 
+    @property
+    def as_dict(self) -> Dict[str, Any]:
+        """
+        Return a dictionary based on the battery information.
+
+        Outputs:
+            - A mapping containing the input information based on the battery.
+
+        """
+
+        return {
+            "capacity": self.capacity,
+            "cycle_lifetime": self.cycle_lifetime,
+            "leakage": self.leakage,
+            "maximum_charge": self.maximum_charge,
+            "minimum_charge": self.minimum_charge,
+            NAME: self.name,
+            "c_rate_charging": self.charge_rate,
+            "c_rate_discharging": self.discharge_rate,
+            "conversion_in": self.conversion_in,
+            "conversion_out": self.conversion_out,
+            "lifetime_loss": self.lifetime_loss,
+            "storage_unit": self.storage_unit,
+        }
+
     @classmethod
     def from_dict(cls, storage_data: Dict[str, Any]) -> Any:
         """
