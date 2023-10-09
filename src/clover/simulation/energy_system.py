@@ -362,6 +362,14 @@ def _electric_iteration_step(  # pylint: disable=too-many-locals
         new_hourly_battery_storage, minimum_battery_storage
     )
 
+    # Update hourly_battery_storage
+    hourly_battery_storage[time_index] = new_hourly_battery_storage
+    battery_state_of_charge[time_index] = _calculate_battery_state_of_charge(
+        hourly_battery_storage[time_index],
+        maximum_battery_storage,
+        minimum_battery_storage,
+    )
+
     # Update battery health
     (
         cumulative_battery_storage_power,
@@ -377,14 +385,6 @@ def _electric_iteration_step(  # pylint: disable=too-many-locals
         minigrid,
         storage_power_supplied,
         time_index=time_index,
-    )
-
-    # Update hourly_battery_storage
-    hourly_battery_storage[time_index] = new_hourly_battery_storage
-    battery_state_of_charge[time_index] = _calculate_battery_state_of_charge(
-        hourly_battery_storage[time_index],
-        maximum_battery_storage,
-        minimum_battery_storage,
     )
 
     return (

@@ -793,7 +793,7 @@ class DieselScenario:
 
         """
 
-        mode: DieselMode = input_dict[MODE]
+        mode: DieselMode = DieselMode(input_dict[MODE])
         name: str = input_dict[NAME]
 
         # Backup-only parameters
