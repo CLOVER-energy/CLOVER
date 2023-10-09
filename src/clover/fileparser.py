@@ -1143,7 +1143,7 @@ def _parse_pvt_reduced_models(  # pylint: disable=too-many-statements
     return electric_model, thermal_model
 
 
-def parse_scenario_inputs(
+def parse_scenario_inputs(  # pylint: disable=too-many-locals, too-many-statements
     inputs_directory_relative_path: str,
     logger: Logger,
 ) -> Tuple[str, str, List[Scenario], str]:
@@ -1219,7 +1219,7 @@ def parse_scenario_inputs(
         )
     try:
         diesel_scenarios: List[DieselScenario] = [
-            DieselScenario.from_dict(entry, logger)
+            DieselScenario.from_dict(entry) 
             for entry in diesel_scenario_inputs[DIESEL_SCENARIOS]
         ]
     except Exception as e:
@@ -1281,7 +1281,6 @@ def parse_scenario_inputs(
                 desalination_scenarios,
                 diesel_scenarios,
                 hot_water_scenarios,
-                logger,
                 entry,
             )
             for entry in scenario_inputs[SCENARIOS]
