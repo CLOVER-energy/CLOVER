@@ -26,3 +26,5 @@ diesel_scenarios:
         min_soc: 0.2 # The state of charge the diesel generator switches on
         start_hour: 19 # The start hour for these settings (24hr clock)
         end_hour: 8 # The end hour for these settings (24hr clock)
+  - name: disabled
+    mode: disabled

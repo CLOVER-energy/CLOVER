@@ -2047,7 +2047,6 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
             unmet_energy,
         )
     elif scenario.diesel_scenario.mode == DieselMode.CYCLE_CHARGING:
-
         # Take the diesel surplus profile containing available diesel capacity which was
         # not utilised in charging the batteries and use it to meet unmet load.
         diesel_used_meeting_unmet_demand = {

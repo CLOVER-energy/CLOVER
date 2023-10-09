@@ -1219,7 +1219,7 @@ def parse_scenario_inputs(  # pylint: disable=too-many-locals, too-many-statemen
         )
     try:
         diesel_scenarios: List[DieselScenario] = [
-            DieselScenario.from_dict(entry) 
+            DieselScenario.from_dict(entry)
             for entry in diesel_scenario_inputs[DIESEL_SCENARIOS]
         ]
     except Exception as e:
