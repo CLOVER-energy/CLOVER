@@ -18,18 +18,20 @@ functionality to model diesel generators.
 
 """
 
+from collections import defaultdict
 import dataclasses
 import logging
 
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np  # pylint: disable=import-error
 import pandas as pd
 
 from ..__utils__ import (
     BColours,
-    ELECTRIC_POWER,
     DieselMode,
+    DieselSetting,
+    ELECTRIC_POWER,
     InputFileError,
     NAME,
     ProgrammerJudgementFault,
@@ -42,6 +44,8 @@ __all__ = (
     "DIESEL_CONSUMPTION",
     "DieselGenerator",
     "DieselWaterHeater",
+    "find_cycle_charging_threshold",
+    "get_cycle_charging_energy",
     "get_diesel_energy_and_times",
     "get_diesel_fuel_usage",
 )
@@ -62,7 +66,7 @@ class DieselGenerator:
     Represents a diesel backup generator.
 
     .. attribute:: diesel_consumption
-        The diesel consumption of the generator, measured in litres per kW produced.
+        The diesel consumption of the generator, measured in litres per kWh produced.
 
     .. attribute:: minimum_load
         The minimum capacity of the generator, defined between 0 (able to operate with
@@ -76,6 +80,71 @@ class DieselGenerator:
     diesel_consumption: float
     minimum_load: float
     name: str
+
+    capacity: Optional[float] = None
+    _setting_map: Optional[Dict[int, DieselSetting]] = None
+
+    def get_setting(
+        self, hour: int, diesel_settings: List[DieselSetting]
+    ) -> DieselSetting:
+        """
+        Gets the diesel setting for the current hour and computes the mapping first time
+
+        Inputs:
+            - hour:
+                The hour of the simulation.
+            - diesel_settings:
+                The `list` of valid diesel settings.
+
+        Outputs:
+            The diesel setting for this hour.
+
+        Raises:
+            InputFileError:
+                If there are any invalid inputs in the diesel scenario file.
+
+        """
+
+        # If the diesel setting map has been computed, use the value from the map.
+        if self._setting_map is not None:
+            return self._setting_map[hour % 24]
+
+        # If there are no diesel settings, raise an error.
+        if len(diesel_settings) == 0:
+            raise InputFileError(
+                "diesel scenario",
+                "No diesel settings were specified despite cycle charging being "
+                "requested.",
+            )
+
+        # Compute the map
+        valid_settings: Dict[int, List[DieselSetting]] = defaultdict(list)
+
+        for hour in range(24):
+            for diesel_setting in diesel_settings:
+                # If the diesel settings don't run overnight.
+                if diesel_setting.start_hour < diesel_setting.end_hour:
+                    if diesel_setting.start_hour <= hour < diesel_setting.end_hour:
+                        valid_settings[hour].append(diesel_setting)
+                # If the diesel settings run across the day boundary.
+                else:
+                    if (
+                        hour < diesel_setting.end_hour
+                        or hour >= diesel_setting.start_hour
+                    ):
+                        valid_settings[hour].append(diesel_setting)
+
+        # Raise an error if there are overlapping settings.
+        if any(len(settings) > 1 for settings in valid_settings.values()):
+            raise InputFileError(
+                "diesel scenario", "Diesel settings should not be overlapping."
+            )
+
+        # Save the map
+        self._setting_map = {key: value[0] for key, value in valid_settings.items()}
+
+        # Return the current value from the map
+        return self._setting_map[hour % 24]
 
 
 @dataclasses.dataclass
@@ -258,6 +327,106 @@ def _find_deficit_threshold_unmet(
         attributed_unmet_energy += energy_threshold
 
     return energy_threshold
+
+
+def find_cycle_charging_threshold(
+    previous_hour_operational: bool, setting: DieselSetting
+) -> float:
+    """
+    Calcualtes the threshold for the cycle charging for the respective hour.
+
+    Inputs:
+        - previous_hour_operational:
+            Whether the diesel generator was operating at the previous hour.
+        - setting:
+            The thresholds for the given hour, stored as a :class:`DieselSetting`
+            instance.
+
+    Outputs:
+        - The threshold value in fraction of battery charge (0.0 - 1.0).
+
+    """
+
+    if previous_hour_operational:
+        return setting.max_soc
+    return setting.min_soc
+
+
+def get_cycle_charging_energy(
+    empty_capacity: float,
+    max_diesel_energy_into_battery: float,
+    max_diesel_output: float,
+    min_diesel_energy_into_battery: float,
+) -> Tuple[float, float, float]:
+    """
+    Calculate cycle-charging storage parameters.
+
+    This function takes the empty capacity and the battery in-and-out C-rates, and it
+    uses the diesel minimum capacity factor, and it uses a variable which determines the
+    maximum energy that the diesel generators can put into the batteries.
+
+    1.  Based on the empty capacity:
+        SWITCH:
+        - empty_capacity < diesel_minimum:
+            Fill to the empty
+            WHERE you check for the input c-rate etc.
+            and, as a result, we waste some diesel
+        - diesel_minimum < empty_capacity < diesel_maximum:
+            Fill to the empty, where no diesel is wasted and you *may* have surplus
+            diesel to meet demand
+        - diesel_maximum < empty_capacity:
+            Fill to the diesel maximum
+    2.  Return the variables required:
+        - surplus = maximum_output of the diesel generator
+          WHICH *might* be different from the maximum ammount of power that can go from
+          the diesel generator into the batteries
+          SUBTRACTING what was used
+
+    Inputs:
+        - empty_capacity:
+            The empty capacity remaining in the batteries (kWh).
+        - max_diesel_energy_into_battery:
+            The maximum diesel energy into the battery.
+        - max_diesel_output:
+            The maximum power that the diesel generators can output.
+        - min_diesel_energy_into_battery:
+            The minimum diesel energy into the battery.
+
+    Outputs:
+        - diesel_total_output:
+            The total power supplied by the diesel generator.
+        - diesel_to_battery:
+            The total power used by the diesel generator supplying the batteries.
+        - surplus:
+            Remaining energy that *could* have come from the diesel generator in this
+            time step. I.E., if the diesel generator was not running at the maximum
+            capacity, but it could have been, then this power is returned in case it can
+            be utilised elsewhere in the system.
+
+    """
+
+    # If empty is less than minimum, the minimum limits the charging capability.
+    if empty_capacity <= min_diesel_energy_into_battery:
+        diesel_to_battery: float = empty_capacity  # [kW]
+        diesel_total_output: float = min_diesel_energy_into_battery  # [kW]
+    # If empty is in the range of diesel operation, fill to the empty.
+    elif (
+        min_diesel_energy_into_battery
+        < empty_capacity
+        <= max_diesel_energy_into_battery
+    ):
+        diesel_to_battery = empty_capacity  # [kW]
+        diesel_total_output = diesel_to_battery
+    # If empty is more than can be supplied, the diesel generator/c rate limits the
+    # capability.
+    else:
+        diesel_to_battery = max_diesel_energy_into_battery
+        diesel_total_output = diesel_to_battery
+
+    # Calculate the surplus diesel energy that could have been supplied.
+    surplus = max_diesel_output - diesel_to_battery
+
+    return (diesel_total_output, diesel_to_battery, surplus)
 
 
 def _find_deficit_threshold(

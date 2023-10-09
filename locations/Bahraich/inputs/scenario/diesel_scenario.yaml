@@ -1,0 +1,28 @@
+---
+################################################################################
+# diesel_scenario.yaml - Parameters for specifying a diesel scenario           #
+#                                                                              #
+# Author: Hamish Beath, Ben Winchester                                         #
+# Copyright: Hamish Beath, Phil Sandwell & Ben Winchester, 2021                #
+# Date created: 15/08/2022                                                     #
+# License: Open source                                                         #
+################################################################################
+
+diesel_scenarios:
+  - name: default
+    mode: backup # "backup" or "disabled" currently supported
+    backup:
+      threshold: 0.1 # Maximum acceptible blackouts (0.0-1.0)
+  - name: cycle_charging_default
+    mode: cycle_charging
+    settings:
+      - name: universal
+        max_soc: 0.9 # The state of charge the diesel generator charges to
+        min_soc: 0.4 # The state of charge the diesel generator switches on
+        start_hour: 8 # The start hour for these settings (24hr clock)
+        end_hour: 19 # The end hour for these settings (24hr clock)
+      - name: quiet
+        max_soc: 0.7 # The state of charge the diesel generator charges to
+        min_soc: 0.2 # The state of charge the diesel generator switches on
+        start_hour: 19 # The start hour for these settings (24hr clock)
+        end_hour: 8 # The end hour for these settings (24hr clock)

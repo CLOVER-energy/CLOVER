@@ -228,6 +228,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
         pv: bool,
         storage: bool,
         *,
+        cycle_charging: bool = False,
         prioritise_self_generation: bool = True,
         pv_size: Optional[float] = None,
         storage_size: Optional[float] = None,
@@ -241,7 +242,12 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
 
         # Update the scenario file accordingly.
         self._update_scenario_file(
-            ["diesel", "mode"], "backup" if diesel else "disabled"
+            ["diesel_scenario"],
+            "cycle_charging_default"
+            if (cycle_charging and diesel)
+            else "default"
+            if diesel
+            else "disabled",
         )
         self._update_scenario_file("grid", grid)
         self._update_scenario_file(
