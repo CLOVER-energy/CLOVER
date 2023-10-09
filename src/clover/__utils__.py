@@ -797,9 +797,17 @@ class DieselScenario:
         name: str = input_dict[NAME]
 
         # Backup-only parameters
-        backup_threshold: float = (
+        backup_threshold: Optional[float] = (
             input_dict["backup"]["threshold"] if "backup" in input_dict else None
         )
+
+        # Diesel settings information
+        if "settings" in input_dict:
+            settings: Optional[List[DieselSetting]] = input_dict["settings"]
+        else:
+            settings = None
+
+        return cls(backup_threshold, mode, name, settings)
 
     def to_dict(self) -> Dict[str, Any]:
         """
