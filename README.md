@@ -2,7 +2,7 @@
 
 CLOVER minigrid simulation and optimisation for supporting rural electrification in developing countries.
 
-[![DOI](https://zenodo.org/badge/476703736.svg)](https://zenodo.org/badge/latestdoi/476703736)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.7638702.svg)](https://doi.org/10.5281/zenodo.7638702)
 
 The quick start guide below provides step-by-step introductions for downloading, setting up, and using CLOVER. For full documentation containing further information about CLOVER and more detailed descriptions of its functionality, please [visit the Wiki](https://github.com/CLOVER-energy/CLOVER/wiki).
 
