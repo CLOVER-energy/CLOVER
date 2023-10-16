@@ -933,11 +933,6 @@ def process_device_utilisation(
 
     logger.info("Load utilisation process instantiated for device %s.", device.name)
 
-    if device.name == "irrigation":
-        import pdb
-
-        pdb.set_trace()
-
     daily_times_filename = f"{device.name}_daily_times.csv"
     filepath = os.path.join(
         generated_device_utilisation_directory, daily_times_filename
