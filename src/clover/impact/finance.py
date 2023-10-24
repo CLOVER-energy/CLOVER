@@ -790,7 +790,9 @@ def connections_expenditure(
 
     """
 
-    new_connections = np.max(households) - np.min(households)
+    new_connections = np.max(households) - (
+        np.min(households) if installation_year != 0 else 0
+    )
     undiscounted_cost = float(
         finance_inputs[ImpactingComponent.HOUSEHOLDS.value][CONNECTION_COST]
         * new_connections
