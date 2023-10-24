@@ -386,7 +386,7 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
                 grid_profile.iloc[0:HOURS_PER_YEAR].values, (365, 24)
             )
             heatmap = sns.heatmap(
-                reshaped_data, vmin=0, vmax=1, cmap=light_orange_blended, cbar=False
+                reshaped_data, vmin=0, vmax=1, cmap="Oranges", cbar=False
             )
             heatmap.set(
                 xticks=range(0, 24, 2),
@@ -531,8 +531,8 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
         axis[0].plot(range(365), public_demand, alpha=0.5, color="C2")
         axis[0].legend(loc="best")
         axis[0].set(
-            xticks=(range(0, 366, 60)),
-            yticks=range(0, 26, 5),
+            # xticks=(range(0, 366, 60)),
+            # yticks=range(0, 26, 5),
             xlabel="Day of simulation period",
             ylabel="Load / kWh/day",
             title="Energy demand of each load type",
@@ -547,8 +547,8 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
         axis[1].plot(range(365), total_demand, "--", alpha=0.5, color="C3")
         axis[1].legend(loc="best")
         axis[1].set(
-            xticks=(range(0, 366, 60)),
-            yticks=range(15, 41, 5),
+            # xticks=(range(0, 366, 60)),
+            # yticks=range(15, 41, 5),
             xlabel="Day of simulation period",
             ylabel="Load / kWh/day",
             title="Total community energy demand",
