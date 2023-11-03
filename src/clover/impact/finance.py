@@ -751,7 +751,7 @@ def get_total_equipment_cost(  # pylint: disable=too-many-locals, too-many-state
     misc_costs: float = _misc_costs(
         diesel_size,
         misc_capacity_cost,
-        misc_fixed_cost if installation_year == 0 else 0,
+        misc_fixed_cost,# if installation_year == 0 else 0,
         pv_array_size,
     )
 

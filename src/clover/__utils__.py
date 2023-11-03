@@ -1378,6 +1378,28 @@ class Location:
             location_inputs["time_difference"],
         )
 
+    @property
+    def as_dict(self) -> dict:
+        """
+        Return a `dict` containing the location information.
+
+        :returns:
+            A `dict` containing the :class:`Location` information.
+
+        """
+
+        return {
+            "community_growth_rate": self.community_growth_rate,
+            "community_size": self.community_size,
+            "country": self.country,
+            "latitude": self.latitude,
+            "longitude": self.longitude,
+            "max_years": self.max_years,
+            "location": self.name,
+            "time_difference": self.time_difference,
+        }
+    
+
 
 def monthly_profile_to_daily_profile(monthly_profile: pd.DataFrame) -> pd.DataFrame:
     """
