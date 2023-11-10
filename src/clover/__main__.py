@@ -216,6 +216,7 @@ def _prepare_water_system(
     logger: logging.Logger,
     parsed_args: Namespace,
     resource_type: ResourceType,
+    simulation,
     water_source_times: Dict[WaterSource, pd.DataFrame],
 ) -> Tuple[
     Dict[WaterSource, pd.DataFrame], Dict[str, pd.DataFrame], pd.DataFrame, pd.DataFrame
@@ -238,6 +239,8 @@ def _prepare_water_system(
             The parsed command-line arguments.
         - resource_type:
             The :class:`ResourceType` being considered.
+        - simulation:
+            The :class:`Simulation` to use for the run.
         - water_source_times:
             The availability profile of each :class:`WaterSource` being considered.
 
@@ -302,6 +305,7 @@ def _prepare_water_system(
             logger,
             parsed_args.regenerate,
             resource_type,
+            simulation,
         )
     except InputFileError:
         print(
@@ -800,6 +804,7 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
                 logger,
                 parsed_args.regenerate,
                 load.ResourceType.ELECTRIC,
+                simulations[0],
                 electric_load_profile,
             )
         except InputFileError:
@@ -853,6 +858,7 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
             logger,
             parsed_args,
             ResourceType.CLEAN_WATER,
+            simulation,
             water_source_times,
         )
 
@@ -887,6 +893,7 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
             logger,
             parsed_args,
             ResourceType.HOT_CLEAN_WATER,
+            simulation,
             water_source_times,
         )
 

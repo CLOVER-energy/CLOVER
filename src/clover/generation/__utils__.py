@@ -310,7 +310,7 @@ def _save_profile_output(
         profile.to_csv(
             f,  # type: ignore
             index=False,
-            line_terminator="\n",
+            lineterminator="\n",
         )
 
     logger.info(
@@ -609,7 +609,7 @@ def total_profile_output(
             total_output.to_csv(
                 f,  # type: ignore
                 index=False,
-                line_terminator="\n",
+                lineterminator="\n",
             )
 
     return total_output

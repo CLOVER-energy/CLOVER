@@ -1306,6 +1306,10 @@ class Location:
     .. attribute:: time_difference
         The time difference, in hours, at the location vs. UTC.
 
+    .. attribute:: final_community_size
+        Used in stranded-asset paper modelling to fix the final size of the
+        community.
+
     """
 
     community_growth_rate: float
@@ -1316,6 +1320,7 @@ class Location:
     max_years: int
     name: str
     time_difference: float
+    final_community_size: int
 
     @classmethod
     def from_dict(cls, location_inputs: Dict[str, Any]) -> Any:
@@ -1340,6 +1345,9 @@ class Location:
             location_inputs["max_years"],
             location_inputs["location"],
             location_inputs["time_difference"],
+            location_inputs.get(
+                "final_community_size", location_inputs["community_size"]
+            ),
         )
 
 
@@ -3003,7 +3011,7 @@ def save_simulation(
         ) as f:
             simulation.to_csv(
                 f,  # type: ignore
-                line_terminator="\n",
+                lineterminator="\n",
             )
         logger.info("Simulation successfully saved to %s.", simulation_output_folder)
         pbar.update(1)

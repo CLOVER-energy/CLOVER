@@ -1463,7 +1463,7 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
 
     # Determine the number of households in the community.
     households = pd.DataFrame(
-        population_hourly(location)[  # type: ignore
+        population_hourly(location, simulation)[  # type: ignore
             simulation.start_year
             * HOURS_PER_YEAR : simulation.end_year
             * HOURS_PER_YEAR
