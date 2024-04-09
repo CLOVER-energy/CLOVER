@@ -33,7 +33,7 @@ from ..__utils__ import (
     ColumnHeader,
     hourly_profile_to_daily_sum,
     InputFileError,
-    InternalError,
+    Inverter,
     Location,
     ProgrammerJudgementFault,
     ResourceType,
@@ -263,6 +263,7 @@ def _discounted_fraction(
 
 def _inverter_expenditure(  # pylint: disable=too-many-locals
     finance_inputs: Dict[str, Any],
+    inverter: Inverter,
     location: Location,
     logger: Logger,
     scenario: Scenario,
@@ -277,6 +278,8 @@ def _inverter_expenditure(  # pylint: disable=too-many-locals
     Inputs:
         - finance_inputs:
             The finance-input information for the system.
+        - inverter:
+            The inverter being modelled.
         - location:
             The location being considered.
         - logger:
@@ -296,9 +299,8 @@ def _inverter_expenditure(  # pylint: disable=too-many-locals
     """
 
     # Initialise inverter replacement periods
-    replacement_period = finance_inputs[ImpactingComponent.INVERTER.value][LIFETIME]
     replacement_intervals = pd.DataFrame(
-        np.arange(0, location.max_years, replacement_period)
+        np.arange(0, location.max_years, inverter.lifetime)
     )
     replacement_intervals.columns = pd.Index([ColumnHeader.INSTALLATION_YEAR.value])
 
@@ -313,19 +315,19 @@ def _inverter_expenditure(  # pylint: disable=too-many-locals
 
     # Initialise inverter sizing calculation
     max_power = []
-    inverter_step = finance_inputs[ImpactingComponent.INVERTER.value][SIZE_INCREMENT]
     inverter_size: List[float] = []
     for i in range(len(replacement_intervals)):
         # Calculate maximum power in interval years
         start = replacement_intervals[ColumnHeader.INSTALLATION_YEAR.value].iloc[i]
-        end = start + replacement_period
+        end = start + inverter.lifetime
         max_power_interval = (
             yearly_load_statistics[ColumnHeader.MAXIMUM.value].iloc[start:end].max()
         )
         max_power.append(max_power_interval)
         # Calculate resulting inverter size
         inverter_size_interval: float = (
-            np.ceil(0.001 * max_power_interval / inverter_step) * inverter_step
+            np.ceil(0.001 * max_power_interval / inverter.size_increment)
+            * inverter.size_increment
         )
         inverter_size.append(inverter_size_interval)
     inverter_size_data_frame: pd.DataFrame = pd.DataFrame(inverter_size)
@@ -391,7 +393,7 @@ def _misc_costs(
     diesel_size: float,
     misc_capacity_cost: float,
     misc_fixed_cost: float,
-    pv_array_size: float,
+    pv_array_size: Dict[str, float],
 ) -> float:
     """
     Calculates cost of miscellaneous capacity-related costs
@@ -412,7 +414,9 @@ def _misc_costs(
 
     """
 
-    total_misc_capacity_cost = (pv_array_size + diesel_size) * misc_capacity_cost
+    total_misc_capacity_cost = (
+        sum(pv_array_size.values()) + diesel_size
+    ) * misc_capacity_cost
 
     return total_misc_capacity_cost + misc_fixed_cost
 
@@ -431,7 +435,7 @@ def get_total_equipment_costs(  # pylint: disable=too-many-locals, too-many-stat
     heat_exchangers: float,
     hot_water_tanks: float,
     logger: Logger,
-    pv_array_size: float,
+    pv_array_size: Dict[str, float],
     pvt_array_size: float,
     scenario: Scenario,
     storage_size: float,
@@ -495,10 +499,11 @@ def get_total_equipment_costs(  # pylint: disable=too-many-locals, too-many-stat
     subsystem_costs: Dict[ResourceType, float] = collections.defaultdict(float)
 
     # Calculate the various system costs.
+    # compoennts.
     bos_cost = _component_cost(
         finance_inputs[ImpactingComponent.BOS.value][COST],
         finance_inputs[ImpactingComponent.BOS.value][COST_DECREASE],
-        pv_array_size,
+        sum(pv_array_size.values()),
         installation_year,
     )
 
@@ -686,17 +691,25 @@ def get_total_equipment_costs(  # pylint: disable=too-many-locals, too-many-stat
             installation_year,
         )
 
-    pv_cost = _component_cost(
-        finance_inputs[ImpactingComponent.PV.value][COST],
-        finance_inputs[ImpactingComponent.PV.value][COST_DECREASE],
-        pv_array_size,
-        installation_year,
+    pv_cost = sum(
+        _component_cost(
+            finance_inputs[ImpactingComponent.PV.value][panel_name][COST],
+            finance_inputs[ImpactingComponent.PV.value][panel_name][COST_DECREASE],
+            array_size,
+            installation_year,
+        )
+        for panel_name, array_size in pv_array_size.items()
     )
-    pv_installation_cost = _component_installation_cost(
-        pv_array_size,
-        finance_inputs[ImpactingComponent.PV.value][INSTALLATION_COST],
-        finance_inputs[ImpactingComponent.PV.value][INSTALLATION_COST_DECREASE],
-        installation_year,
+    pv_installation_cost = sum(
+        _component_installation_cost(
+            array_size,
+            finance_inputs[ImpactingComponent.PV.value][panel_name][INSTALLATION_COST],
+            finance_inputs[ImpactingComponent.PV.value][panel_name][
+                INSTALLATION_COST_DECREASE
+            ],
+            installation_year,
+        )
+        for panel_name, array_size in pv_array_size.items()
     )
 
     if ImpactingComponent.PV_T.value not in finance_inputs and pvt_array_size > 0:
@@ -911,9 +924,7 @@ def diesel_fuel_expenditure(
         ]
     )
 
-    total_daily_cost = pd.DataFrame(
-        diesel_fuel_usage_daily.values * diesel_price_daily.values
-    )
+    total_daily_cost = pd.DataFrame(diesel_fuel_usage_daily * diesel_price_daily[0])
     total_discounted_cost = discounted_energy_total(
         finance_inputs,
         logger,
@@ -964,24 +975,13 @@ def discounted_energy_total(
         )
         raise
 
+    if isinstance(total_daily, pd.DataFrame):
+        total_daily = total_daily[0]
+
     discounted_fraction = _discounted_fraction(
         discount_rate, start_year=start_year, end_year=end_year
     )
-    if not isinstance(total_daily, pd.Series):
-        try:
-            total_daily = total_daily.iloc[:, 0]
-        except pd.core.indexing.IndexingError as e:  # type: ignore
-            logger.error(
-                "%sAn unexpected internal error occured in the financial inputs file "
-                "when casting `pd.Series` to `pd.DataFrame`: %s%s",
-                str(e),
-                BColours.fail,
-                BColours.endc,
-            )
-            raise InternalError(
-                "An error occured casting between pandas types."
-            ) from None
-    discounted_energy = pd.DataFrame(discounted_fraction.iloc[:, 0] * total_daily)
+    discounted_energy = pd.DataFrame(discounted_fraction[0] * total_daily)
     return float(np.sum(discounted_energy))  # type: ignore
 
 
@@ -994,7 +994,7 @@ def discounted_equipment_cost(  # pylint: disable=too-many-locals
     heat_exchangers: int,
     hot_water_tanks: int,
     logger: Logger,
-    pv_array_size: float,
+    pv_array_size: Dict[str, float],
     pvt_array_size: float,
     scenario: Scenario,
     storage_size: float,
@@ -1110,6 +1110,7 @@ def expenditure(
 
 def independent_expenditure(
     finance_inputs: Dict[str, Any],
+    inverter: Inverter,
     location: Location,
     logger: Logger,
     scenario: Scenario,
@@ -1124,6 +1125,8 @@ def independent_expenditure(
     Inputs:
         - finance_inputs:
             The financial input information.
+        - inverter:
+            The inverter being modelled.
         - location:
             The location currently being considered.
         - logger:
@@ -1144,6 +1147,7 @@ def independent_expenditure(
 
     inverter_expenditure = _inverter_expenditure(
         finance_inputs,
+        inverter,
         location,
         logger,
         scenario,
@@ -1164,7 +1168,7 @@ def total_om(  # pylint: disable=too-many-locals
     heat_exchangers: int,
     hot_water_tanks: int,
     logger: Logger,
-    pv_array_size: float,
+    pv_array_size: Dict[str, float],
     pvt_array_size: float,
     scenario: Scenario,
     storage_size: float,
@@ -1373,13 +1377,16 @@ def total_om(  # pylint: disable=too-many-locals
             end_year=end_year,
         )
 
-    pv_om = _component_om(
-        finance_inputs[ImpactingComponent.PV.value][OM],
-        pv_array_size,
-        finance_inputs,
-        logger,
-        start_year=start_year,
-        end_year=end_year,
+    pv_om = sum(
+        _component_om(
+            finance_inputs[ImpactingComponent.PV.value][panel_name][OM],
+            array_size,
+            finance_inputs,
+            logger,
+            start_year=start_year,
+            end_year=end_year,
+        )
+        for panel_name, array_size in pv_array_size.items()
     )
 
     if ImpactingComponent.PV_T.value not in finance_inputs and pvt_array_size > 0:

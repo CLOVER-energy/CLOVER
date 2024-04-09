@@ -2,7 +2,7 @@
 
 CLOVER minigrid simulation and optimisation for supporting rural electrification in developing countries.
 
-[![DOI](https://zenodo.org/badge/476703736.svg)](https://zenodo.org/badge/latestdoi/476703736) [![DOI](https://joss.theoj.org/papers/10.21105/joss.04799/status.svg)](https://doi.org/10.21105/joss.04799)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.7638702.svg)](https://doi.org/10.5281/zenodo.7638702)
 
 [![PyPI pyversions](https://img.shields.io/pypi/pyversions/clover-energy.svg)](https://pypi.python.org/pypi/clover-energy/)
 [![GitHub release](https://img.shields.io/github/release/CLOVER-energy/clover)](https://GitHub.com/CLOVER-energy/clover/releases/)

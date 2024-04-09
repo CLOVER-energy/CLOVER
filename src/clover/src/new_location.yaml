@@ -160,14 +160,8 @@
                 # License: Open source                                                         #
                 ################################################################################
 
-                # NOTE: The renewables.ninja API token must be entered under the `token` field.
-                # For more information, consult the User Guide, available within the repository
-                # and online.
-                #
-
                 end_year: 2016 # The absolute end year for gathering solar data.
                 start_year: 2007 # The absolute start year for gathering solar data.
-                token: "YOUR API TOKEN HERE" # renewables.ninja API token
             - file: "grid_times.csv"
               contents: |-
                 Name,none,all,example,eight_hours,default
@@ -312,8 +306,6 @@
                 inverter:
                   cost: 200 # [$/kW]
                   cost_decrease: 2 # [% p.a.]
-                  lifetime: 4 # [years]
-                  size_increment: 1 # [kW]
                 kerosene:
                   cost: 0.008 # [$/hour]
             - file: ghg_inputs.yaml
@@ -351,8 +343,6 @@
                 inverter:
                   ghgs: 75 # [kgCO2/kW]
                   ghg_decrease: 2 # [2,% p.a.]
-                  lifetime: 4 # [years]
-                  size_increment: 1 # [kW]
                 kerosene:
                   ghgs: 0.055 # [kgCO2/hour]
         - directory: load
@@ -1160,6 +1150,9 @@
                 diesel_generator: default_diesel
                 # heat_exchanger: default_heat_exchanger
                 # hot_water_tank: hot_water_tank
+                inverter:
+                  lifetime: 4 # [years]
+                  size_increment: 1 # [kW]
                 pv_panel: default_pv
                 # pvt_panel: default_pvt
                 # water_pump: default_water_pump

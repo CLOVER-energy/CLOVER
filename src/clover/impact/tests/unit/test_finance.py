@@ -18,6 +18,7 @@ from unittest import mock
 
 import pandas as pd
 
+from ....__utils__ import Inverter
 from ...finance import _inverter_expenditure
 
 
@@ -40,8 +41,6 @@ class _BaseFinanceTest(unittest.TestCase):
             "inverter": {
                 "cost": 200,
                 "cost_decrease": 2,
-                "lifetime": 4,
-                "size_increment": 1,
             },
             "kerosene": {"cost": 0.008},
             "pv": {
@@ -60,6 +59,7 @@ class _BaseFinanceTest(unittest.TestCase):
             },
             "storage": {"cost": 400, "cost_decrease": 5, "o&m": 10},
         }
+        self.inverter = Inverter(lifetime=4, size_increment=1)
         self.location = mock.Mock(max_years=20)
         self.logger = mock.MagicMock()
         self.yearly_load_statistics = pd.DataFrame(
@@ -148,6 +148,7 @@ class TestInverterExpenditure(_BaseFinanceTest):
             4096.95,
             _inverter_expenditure(
                 self.finance_inputs,
+                self.inverter,
                 self.location,
                 self.logger,
                 scenario,
@@ -162,6 +163,7 @@ class TestInverterExpenditure(_BaseFinanceTest):
             0,
             _inverter_expenditure(
                 self.finance_inputs,
+                self.inverter,
                 self.location,
                 self.logger,
                 scenario,
@@ -182,6 +184,7 @@ class TestInverterExpenditure(_BaseFinanceTest):
             1200.0,
             _inverter_expenditure(
                 self.finance_inputs,
+                self.inverter,
                 self.location,
                 self.logger,
                 scenario,
@@ -194,6 +197,7 @@ class TestInverterExpenditure(_BaseFinanceTest):
             2792.57,
             _inverter_expenditure(
                 self.finance_inputs,
+                self.inverter,
                 self.location,
                 self.logger,
                 scenario,
@@ -208,6 +212,7 @@ class TestInverterExpenditure(_BaseFinanceTest):
             0,
             _inverter_expenditure(
                 self.finance_inputs,
+                self.inverter,
                 self.location,
                 self.logger,
                 scenario,

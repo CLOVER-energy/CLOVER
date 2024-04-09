@@ -31,3 +31,5 @@
 # Ignore misc. files
 *.sav
 *.zip
+# Ignore user settings
+global_settings.yaml
