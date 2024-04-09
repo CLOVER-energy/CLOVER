@@ -799,9 +799,11 @@ class DieselScenario:
         """
 
         return {
-            "backup_threshold": float(self.backup_threshold)
-            if self.backup_threshold is not None
-            else str(None),
+            "backup_threshold": (
+                float(self.backup_threshold)
+                if self.backup_threshold is not None
+                else str(None)
+            ),
             "mode": str(self.mode.value),
         }
 
@@ -1040,9 +1042,9 @@ class KeyResults:
                 self.average_daily_cw_supplied, 3
             )
         if self.average_daily_cw_pvt_generation is not None:
-            data_dict[
-                "Average daily clean-water PV-T electricity supplied / kWh"
-            ] = round(self.average_daily_cw_pvt_generation, 3)
+            data_dict["Average daily clean-water PV-T electricity supplied / kWh"] = (
+                round(self.average_daily_cw_pvt_generation, 3)
+            )
         if self.average_daily_diesel_energy_supplied is not None:
             data_dict["Average daily diesel energy supplied / kWh"] = round(
                 self.average_daily_diesel_energy_supplied, 3
@@ -1064,9 +1066,9 @@ class KeyResults:
                 self.average_daily_hw_demand_covered, 3
             )
         if self.average_daily_hw_pvt_generation is not None:
-            data_dict[
-                "Average daily hot-water PV-T electricity supplied / kWh"
-            ] = round(self.average_daily_hw_pvt_generation, 3)
+            data_dict["Average daily hot-water PV-T electricity supplied / kWh"] = (
+                round(self.average_daily_hw_pvt_generation, 3)
+            )
         if self.average_daily_hw_renewable_fraction is not None:
             data_dict["Average daily hot-water renewable fraction"] = round(
                 self.average_daily_hw_renewable_fraction, 3
@@ -1860,10 +1862,14 @@ class DesalinationScenario:
             ) from None
 
         clean_water_scenario: CleanWaterScenario = CleanWaterScenario(
-            desalination_inputs[ResourceType.CLEAN_WATER.value][CONVENTIONAL_SOURCES]
-            if CONVENTIONAL_SOURCES
-            in desalination_inputs[ResourceType.CLEAN_WATER.value]
-            else [],
+            (
+                desalination_inputs[ResourceType.CLEAN_WATER.value][
+                    CONVENTIONAL_SOURCES
+                ]
+                if CONVENTIONAL_SOURCES
+                in desalination_inputs[ResourceType.CLEAN_WATER.value]
+                else []
+            ),
             clean_water_mode,
             list(desalination_inputs[ResourceType.CLEAN_WATER.value]["sources"]),
         )
@@ -1871,9 +1877,11 @@ class DesalinationScenario:
         try:
             pvt_scenario: PVTScenario = PVTScenario(
                 HTFMode(desalination_inputs[PVT_SCENARIO]["heats"]),
-                desalination_inputs[PVT_SCENARIO]["htf_heat_capacity"]
-                if "htf_heat_capacity" in desalination_inputs[PVT_SCENARIO]
-                else HEAT_CAPACITY_OF_WATER,
+                (
+                    desalination_inputs[PVT_SCENARIO]["htf_heat_capacity"]
+                    if "htf_heat_capacity" in desalination_inputs[PVT_SCENARIO]
+                    else HEAT_CAPACITY_OF_WATER
+                ),
                 desalination_inputs[PVT_SCENARIO]["mass_flow_rate"],
             )
         except ValueError:
@@ -2090,9 +2098,11 @@ class HotWaterScenario:
         try:
             pvt_scenario: PVTScenario = PVTScenario(
                 HTFMode(hot_water_inputs[PVT_SCENARIO]["heats"]),
-                hot_water_inputs[PVT_SCENARIO]["htf_heat_capacity"]
-                if "htf_heat_capacity" in hot_water_inputs[PVT_SCENARIO]
-                else HEAT_CAPACITY_OF_WATER,
+                (
+                    hot_water_inputs[PVT_SCENARIO]["htf_heat_capacity"]
+                    if "htf_heat_capacity" in hot_water_inputs[PVT_SCENARIO]
+                    else HEAT_CAPACITY_OF_WATER
+                ),
                 hot_water_inputs[PVT_SCENARIO]["mass_flow_rate"],
             )
         except ValueError:
@@ -2229,10 +2239,12 @@ class Scenario:
         )
 
         diesel_scenario = DieselScenario(
-            scenario_inputs["diesel"]["backup"]["threshold"]
-            if scenario_inputs["diesel"][MODE]
-            in (DieselMode.BACKUP.value, DieselMode.BACKUP_UNMET.value)
-            else None,
+            (
+                scenario_inputs["diesel"]["backup"]["threshold"]
+                if scenario_inputs["diesel"][MODE]
+                in (DieselMode.BACKUP.value, DieselMode.BACKUP_UNMET.value)
+                else None
+            ),
             DieselMode(scenario_inputs["diesel"][MODE]),
         )
 
@@ -2336,9 +2348,11 @@ class Scenario:
             scenario_inputs["pv"],
             scenario_inputs["pv_d"] if "pv_d" in scenario_inputs else False,
             scenario_inputs["pv_t"] if "pv_t" in scenario_inputs else False,
-            scenario_inputs["reference_thermal_efficiency"]
-            if "reference_thermal_efficiency" in scenario_inputs
-            else 0,
+            (
+                scenario_inputs["reference_thermal_efficiency"]
+                if "reference_thermal_efficiency" in scenario_inputs
+                else 0
+            ),
         )
 
     def to_dict(self) -> Dict[str, Any]:
@@ -2503,10 +2517,10 @@ class SystemDetails:
     final_num_buffer_tanks: Optional[int] = 0
     final_num_clean_water_tanks: Optional[int] = 0
     final_num_hot_water_tanks: Optional[int] = 0
-    final_pv_sizes: Union[
-        Dict[str, float], DefaultDict[str, float]
-    ] = dataclasses.field(  # type: ignore [assignment]
-        default_factory=lambda: collections.defaultdict(float)
+    final_pv_sizes: Union[Dict[str, float], DefaultDict[str, float]] = (
+        dataclasses.field(  # type: ignore [assignment]
+            default_factory=lambda: collections.defaultdict(float)
+        )
     )
     final_storage_size: float = 0
     initial_converter_sizes: Optional[Dict[Any, int]] = None
@@ -2515,10 +2529,10 @@ class SystemDetails:
     initial_num_buffer_tanks: Optional[int] = 0
     initial_num_clean_water_tanks: Optional[int] = 0
     initial_num_hot_water_tanks: Optional[int] = 0
-    initial_pv_sizes: Union[
-        Dict[str, float], DefaultDict[str, float]
-    ] = dataclasses.field(  # type: ignore [assignment]
-        default_factory=lambda: collections.defaultdict(float)
+    initial_pv_sizes: Union[Dict[str, float], DefaultDict[str, float]] = (
+        dataclasses.field(  # type: ignore [assignment]
+            default_factory=lambda: collections.defaultdict(float)
+        )
     )
     initial_storage_size: float = 0
     required_feedwater_sources: Optional[List[str]] = None
@@ -3213,17 +3227,17 @@ class TechnicalAppraisal:
         # Add the fractions of power that were consumed providing each resource.
         if self.power_consumed_fraction is not None:
             if ResourceType.CLEAN_WATER in self.power_consumed_fraction:
-                technical_appraisal_dict[
-                    "clean_water_power_consumption_fraction"
-                ] = self.power_consumed_fraction[ResourceType.CLEAN_WATER]
+                technical_appraisal_dict["clean_water_power_consumption_fraction"] = (
+                    self.power_consumed_fraction[ResourceType.CLEAN_WATER]
+                )
             if ResourceType.ELECTRIC in self.power_consumed_fraction:
-                technical_appraisal_dict[
-                    "electricity_power_consumption_fraction"
-                ] = self.power_consumed_fraction[ResourceType.ELECTRIC]
+                technical_appraisal_dict["electricity_power_consumption_fraction"] = (
+                    self.power_consumed_fraction[ResourceType.ELECTRIC]
+                )
             if ResourceType.HOT_CLEAN_WATER in self.power_consumed_fraction:
-                technical_appraisal_dict[
-                    "hot_water_power_consumption_fraction"
-                ] = self.power_consumed_fraction[ResourceType.HOT_CLEAN_WATER]
+                technical_appraisal_dict["hot_water_power_consumption_fraction"] = (
+                    self.power_consumed_fraction[ResourceType.HOT_CLEAN_WATER]
+                )
 
         # Remove any "Nan" entries.
         technical_appraisal_dict = {
@@ -3283,9 +3297,11 @@ class SystemAppraisal:
             "financial_appraisal": self.financial_appraisal.to_dict(),
             "system_details": self.system_details.to_dict(),
             "technical_appraisal": self.technical_appraisal.to_dict(),
-            "criteria": {str(key.value): value for key, value in self.criteria.items()}
-            if self.criteria is not None
-            else "None",
+            "criteria": (
+                {str(key.value): value for key, value in self.criteria.items()}
+                if self.criteria is not None
+                else "None"
+            ),
         }
 
 
@@ -3353,9 +3369,9 @@ def save_simulation(
         existing_simulation_details = {}
 
     # Update the system info with the new simulation information.
-    existing_simulation_details[
-        f"simulation_{simulation_number}"
-    ] = simulation_details_dict
+    existing_simulation_details[f"simulation_{simulation_number}"] = (
+        simulation_details_dict
+    )
 
     with tqdm(
         total=2,

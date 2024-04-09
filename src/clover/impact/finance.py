@@ -839,7 +839,6 @@ def get_total_equipment_costs(  # pylint: disable=too-many-locals, too-many-stat
     )
 
 
-
 def connections_expenditure(
     finance_inputs: Dict[str, Any], households: pd.Series, installation_year: int = 0
 ) -> float:
@@ -1175,7 +1174,7 @@ def total_om(  # pylint: disable=too-many-locals
     technical_appraisal: TechnicalAppraisal,
     *,
     start_year: int = 0,
-    end_year: int = 20
+    end_year: int = 20,
 ) -> Tuple[float, Dict[ResourceType, float]]:
     """
     Calculates total O&M cost over the simulation period

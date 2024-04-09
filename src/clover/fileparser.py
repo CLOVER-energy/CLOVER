@@ -2487,9 +2487,11 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
     # Parse the optimisation input information.
     optimisation_inputs_filepath = os.path.join(
         inputs_directory_relative_path,
-        optimisation_inputs_file
-        if optimisation_inputs_file is not None
-        else OPTIMISATION_INPUTS_FILE,
+        (
+            optimisation_inputs_file
+            if optimisation_inputs_file is not None
+            else OPTIMISATION_INPUTS_FILE
+        ),
     )
     optimisation_inputs = read_yaml(optimisation_inputs_filepath, logger)
     if not isinstance(optimisation_inputs, dict):
@@ -2805,9 +2807,11 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
             )
         ] = defaultdict(
             float,
-            converter_costs[converter]
-            if converter_costs[converter] is not None
-            else {},
+            (
+                converter_costs[converter]
+                if converter_costs[converter] is not None
+                else {}
+            ),
         )
         ghg_inputs[
             GHG_IMPACT.format(
@@ -2815,9 +2819,11 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
             )
         ] = defaultdict(
             float,
-            converter_emissions[converter]
-            if converter_emissions[converter] is not None
-            else {},
+            (
+                converter_emissions[converter]
+                if converter_emissions[converter] is not None
+                else {}
+            ),
         )
         logger.info("Converter %s impact data successfully updated.", converter.name)
 
@@ -2969,9 +2975,11 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
         )
         ghg_inputs[ImpactingComponent.DIESEL_WATER_HEATER.value] = defaultdict(
             float,
-            diesel_water_heater_emissions
-            if diesel_water_heater_emissions is not None
-            else {},
+            (
+                diesel_water_heater_emissions
+                if diesel_water_heater_emissions is not None
+                else {}
+            ),
         )
         logger.info("Diesel water-heater impact data successfully updated.")
 
@@ -2996,9 +3004,9 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
 
     if any(scenario.desalination_scenario is not None for scenario in scenarios):
         if conventional_water_source_inputs_filepath is not None:
-            input_file_info[
-                "conventional_water_source_inputs"
-            ] = conventional_water_source_inputs_filepath
+            input_file_info["conventional_water_source_inputs"] = (
+                conventional_water_source_inputs_filepath
+            )
         if tank_inputs_filepath is not None:
             input_file_info["tank_inputs"] = tank_inputs_filepath
 

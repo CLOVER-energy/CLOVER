@@ -451,15 +451,21 @@ class PVPanel(
             solar_inputs[NAME],
             pv_unit,
             pv_unit_overrided,
-            solar_inputs["reference_efficiency"]
-            if "reference_efficiency" in solar_inputs
-            else None,
-            solar_inputs["reference_temperature"]
-            if "reference_temperature" in solar_inputs
-            else None,
-            solar_inputs["thermal_coefficient"]
-            if "thermal_coefficient" in solar_inputs
-            else None,
+            (
+                solar_inputs["reference_efficiency"]
+                if "reference_efficiency" in solar_inputs
+                else None
+            ),
+            (
+                solar_inputs["reference_temperature"]
+                if "reference_temperature" in solar_inputs
+                else None
+            ),
+            (
+                solar_inputs["thermal_coefficient"]
+                if "thermal_coefficient" in solar_inputs
+                else None
+            ),
             tilt,
             tracking,
         )

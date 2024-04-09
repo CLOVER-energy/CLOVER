@@ -803,42 +803,54 @@ class OptimisationParameters:
         """
 
         optimisation_parameters_dict = {
-            "clean_water_pvt_size_max": int(self.cw_pvt_size.max)
-            if self.cw_pvt_size is not None
-            else None,
-            "clean_water_pvt_size_min": int(self.cw_pvt_size.min)
-            if self.cw_pvt_size is not None
-            else None,
-            "clean_water_pvt_size_step": int(self.cw_pvt_size.step)
-            if self.cw_pvt_size is not None
-            else None,
-            "clean_water_tanks_max": int(self.clean_water_tanks.max)
-            if self.clean_water_tanks is not None
-            else None,
-            "clean_water_tanks_min": int(self.clean_water_tanks.min)
-            if self.clean_water_tanks is not None
-            else None,
-            "clean_water_tanks_step": int(self.clean_water_tanks.step)
-            if self.clean_water_tanks is not None
-            else None,
-            "hot_water_pvt_size_max": int(self.hw_pvt_size.max)
-            if self.hw_pvt_size is not None
-            else None,
-            "hot_water_pvt_size_min": int(self.hw_pvt_size.min)
-            if self.hw_pvt_size is not None
-            else None,
-            "hot_water_pvt_size_step": int(self.hw_pvt_size.step)
-            if self.hw_pvt_size is not None
-            else None,
-            "hot_water_tanks_max": int(self.hot_water_tanks.max)
-            if self.hot_water_tanks is not None
-            else None,
-            "hot_water_tanks_min": int(self.hot_water_tanks.min)
-            if self.hot_water_tanks is not None
-            else None,
-            "hot_water_tanks_step": int(self.hot_water_tanks.step)
-            if self.hot_water_tanks is not None
-            else None,
+            "clean_water_pvt_size_max": (
+                int(self.cw_pvt_size.max) if self.cw_pvt_size is not None else None
+            ),
+            "clean_water_pvt_size_min": (
+                int(self.cw_pvt_size.min) if self.cw_pvt_size is not None else None
+            ),
+            "clean_water_pvt_size_step": (
+                int(self.cw_pvt_size.step) if self.cw_pvt_size is not None else None
+            ),
+            "clean_water_tanks_max": (
+                int(self.clean_water_tanks.max)
+                if self.clean_water_tanks is not None
+                else None
+            ),
+            "clean_water_tanks_min": (
+                int(self.clean_water_tanks.min)
+                if self.clean_water_tanks is not None
+                else None
+            ),
+            "clean_water_tanks_step": (
+                int(self.clean_water_tanks.step)
+                if self.clean_water_tanks is not None
+                else None
+            ),
+            "hot_water_pvt_size_max": (
+                int(self.hw_pvt_size.max) if self.hw_pvt_size is not None else None
+            ),
+            "hot_water_pvt_size_min": (
+                int(self.hw_pvt_size.min) if self.hw_pvt_size is not None else None
+            ),
+            "hot_water_pvt_size_step": (
+                int(self.hw_pvt_size.step) if self.hw_pvt_size is not None else None
+            ),
+            "hot_water_tanks_max": (
+                int(self.hot_water_tanks.max)
+                if self.hot_water_tanks is not None
+                else None
+            ),
+            "hot_water_tanks_min": (
+                int(self.hot_water_tanks.min)
+                if self.hot_water_tanks is not None
+                else None
+            ),
+            "hot_water_tanks_step": (
+                int(self.hot_water_tanks.step)
+                if self.hot_water_tanks is not None
+                else None
+            ),
             ITERATION_LENGTH: round(self.iteration_length, 3),
             NUMBER_OF_ITERATIONS: round(self.number_of_iterations, 3),
             "pv_size_max": round(self.pv_size.max, 3),

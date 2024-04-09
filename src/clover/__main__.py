@@ -726,18 +726,18 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
     if any(scenario.desalination_scenario is not None for scenario in scenarios):
         # Set up the system to call renewables.ninja at a slower rate.
         logger.info("Begining weather-data fetching.")
-        weather_data_thread: Optional[
-            weather.WeatherDataThread
-        ] = weather.WeatherDataThread(
-            os.path.join(auto_generated_files_directory, "weather"),
-            generation_inputs,
-            global_settings_inputs,
-            location,
-            f"{parsed_args.location}_{weather.WEATHER_LOGGER_NAME}",
-            ninja_pause_index,
-            parsed_args.refetch,
-            num_ninjas,
-            parsed_args.verbose,
+        weather_data_thread: Optional[weather.WeatherDataThread] = (
+            weather.WeatherDataThread(
+                os.path.join(auto_generated_files_directory, "weather"),
+                generation_inputs,
+                global_settings_inputs,
+                location,
+                f"{parsed_args.location}_{weather.WEATHER_LOGGER_NAME}",
+                ninja_pause_index,
+                parsed_args.refetch,
+                num_ninjas,
+                parsed_args.verbose,
+            )
         )
         if weather_data_thread is None:
             raise InternalError(
@@ -980,9 +980,11 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
 
     logger.info(
         "Setup complete, continuing to CLOVER %s.",
-        "main flow"
-        if operating_mode == OperatingMode.PROFILE_GENERATION
-        else operating_mode.value,
+        (
+            "main flow"
+            if operating_mode == OperatingMode.PROFILE_GENERATION
+            else operating_mode.value
+        ),
     )
 
     print(
@@ -1076,17 +1078,21 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
                     system_performance_outputs,
                     system_details,
                 ) = energy_system.run_simulation(
-                    parsed_args.clean_water_pvt_system_size
-                    if parsed_args.clean_water_pvt_system_size is not None
-                    else 0,
+                    (
+                        parsed_args.clean_water_pvt_system_size
+                        if parsed_args.clean_water_pvt_system_size is not None
+                        else 0
+                    ),
                     conventional_cw_source_profiles,
                     converters,
                     disable_tqdm,
                     parsed_args.storage_size,
                     grid_profile,
-                    parsed_args.hot_water_pvt_system_size
-                    if parsed_args.hot_water_pvt_system_size is not None
-                    else 0,
+                    (
+                        parsed_args.hot_water_pvt_system_size
+                        if parsed_args.hot_water_pvt_system_size is not None
+                        else 0
+                    ),
                     {
                         key: value[solar.SolarDataType.TOTAL_IRRADIANCE.value]
                         for key, value in total_solar_data.items()
@@ -1104,9 +1110,11 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
                         * panel.pv_unit
                         for panel in (minigrid.pv_panels + minigrid.pvt_panels)  # type: ignore
                     },
-                    pv_system_sizes
-                    if pv_system_sizes is not None
-                    else collections.defaultdict(float),
+                    (
+                        pv_system_sizes
+                        if pv_system_sizes is not None
+                        else collections.defaultdict(float)
+                    ),
                     scenario,
                     simulation,
                     {
@@ -1114,9 +1122,11 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
                         for key, value in total_solar_data.items()
                     },
                     total_loads,
-                    total_wind_data[wind.WindDataType.WIND_SPEED.value]
-                    if total_wind_data is not None
-                    else None,
+                    (
+                        total_wind_data[wind.WindDataType.WIND_SPEED.value]
+                        if total_wind_data is not None
+                        else None
+                    ),
                 )
             except Exception as e:
                 print(f"Beginning CLOVER simulation runs {'.' * 30}    {FAILED}")
@@ -1327,9 +1337,11 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
                         * minigrid.pv_panel.pv_unit
                         for pv_panel in (minigrid.pv_panels + minigrid.pvt_panels)  # type: ignore
                     },
-                    total_wind_data[wind.WindDataType.WIND_SPEED.value]
-                    if total_wind_data is not None
-                    else None,
+                    (
+                        total_wind_data[wind.WindDataType.WIND_SPEED.value]
+                        if total_wind_data is not None
+                        else None
+                    ),
                     electric_yearly_load_statistics,
                 )
             except Exception as e:

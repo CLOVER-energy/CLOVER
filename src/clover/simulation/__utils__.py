@@ -319,35 +319,51 @@ class Minigrid:
 
         # Return the minigrid instance.
         return cls(
-            minigrid_inputs[CONVERSION][AC_TO_AC]
-            if AC_TO_AC in minigrid_inputs[CONVERSION]
-            else None,
-            minigrid_inputs[CONVERSION][AC_TO_DC]
-            if AC_TO_DC in minigrid_inputs[CONVERSION]
-            else None,
-            minigrid_inputs["ac_transmission_efficiency"]
-            if "ac_transmission_efficiency" in minigrid_inputs
-            else None,
-            batteries[minigrid_inputs["battery"]]
-            if "battery" in minigrid_inputs
-            else None,
+            (
+                minigrid_inputs[CONVERSION][AC_TO_AC]
+                if AC_TO_AC in minigrid_inputs[CONVERSION]
+                else None
+            ),
+            (
+                minigrid_inputs[CONVERSION][AC_TO_DC]
+                if AC_TO_DC in minigrid_inputs[CONVERSION]
+                else None
+            ),
+            (
+                minigrid_inputs["ac_transmission_efficiency"]
+                if "ac_transmission_efficiency" in minigrid_inputs
+                else None
+            ),
+            (
+                batteries[minigrid_inputs["battery"]]
+                if "battery" in minigrid_inputs
+                else None
+            ),
             buffer_tank,  # type: ignore
             clean_water_tank,
-            minigrid_inputs[CONVERSION][DC_TO_AC]
-            if DC_TO_AC in minigrid_inputs[CONVERSION]
-            else None,
-            minigrid_inputs[CONVERSION][DC_TO_DC]
-            if DC_TO_DC in minigrid_inputs[CONVERSION]
-            else None,
-            minigrid_inputs["dc_transmission_efficiency"]
-            if "dc_transmission_efficiency" in minigrid_inputs
-            else None,
+            (
+                minigrid_inputs[CONVERSION][DC_TO_AC]
+                if DC_TO_AC in minigrid_inputs[CONVERSION]
+                else None
+            ),
+            (
+                minigrid_inputs[CONVERSION][DC_TO_DC]
+                if DC_TO_DC in minigrid_inputs[CONVERSION]
+                else None
+            ),
+            (
+                minigrid_inputs["dc_transmission_efficiency"]
+                if "dc_transmission_efficiency" in minigrid_inputs
+                else None
+            ),
             diesel_generator,
             diesel_water_heater,
             electric_water_heater,
-            exchangers[minigrid_inputs[EXCHANGER]]
-            if EXCHANGER in minigrid_inputs
-            else None,
+            (
+                exchangers[minigrid_inputs[EXCHANGER]]
+                if EXCHANGER in minigrid_inputs
+                else None
+            ),
             hot_water_tank,
             inverter,
             pv_panels,

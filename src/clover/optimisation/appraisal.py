@@ -426,28 +426,40 @@ def _simulation_environmental_appraisal(  # pylint: disable=too-many-locals
     # Calculate operating GHGs of the system during this simulation
     try:
         additional_om_emissions, subsystem_om_emissions = ghgs.calculate_total_om(
-            system_details.initial_num_buffer_tanks
-            if system_details.initial_num_buffer_tanks is not None
-            else 0,
-            system_details.initial_num_clean_water_tanks
-            if system_details.initial_num_clean_water_tanks is not None
-            else 0,
-            system_details.initial_converter_sizes
-            if system_details.initial_converter_sizes is not None
-            else None,
+            (
+                system_details.initial_num_buffer_tanks
+                if system_details.initial_num_buffer_tanks is not None
+                else 0
+            ),
+            (
+                system_details.initial_num_clean_water_tanks
+                if system_details.initial_num_clean_water_tanks is not None
+                else 0
+            ),
+            (
+                system_details.initial_converter_sizes
+                if system_details.initial_converter_sizes is not None
+                else None
+            ),
             system_details.diesel_capacity,
             ghg_inputs,
-            system_details.initial_num_buffer_tanks
-            if system_details.initial_num_buffer_tanks is not None
-            else 0,
-            system_details.initial_num_hot_water_tanks
-            if system_details.initial_num_hot_water_tanks is not None
-            else 0,
+            (
+                system_details.initial_num_buffer_tanks
+                if system_details.initial_num_buffer_tanks is not None
+                else 0
+            ),
+            (
+                system_details.initial_num_hot_water_tanks
+                if system_details.initial_num_hot_water_tanks is not None
+                else 0
+            ),
             logger,
             system_details.initial_pv_sizes,
-            system_details.initial_pvt_size
-            if system_details.initial_pvt_size is not None
-            else 0,
+            (
+                system_details.initial_pvt_size
+                if system_details.initial_pvt_size is not None
+                else 0
+            ),
             scenario,
             system_details.initial_storage_size,
             technical_appraisal,
@@ -656,28 +668,40 @@ def _simulation_financial_appraisal(  # pylint: disable=too-many-locals
 
     # Calculate operating costs of the system during this simulation (discounted)
     additional_om_costs, subsystem_om_costs = finance.total_om(
-        system_details.initial_num_buffer_tanks
-        if system_details.initial_num_buffer_tanks is not None
-        else 0,
-        system_details.initial_num_clean_water_tanks
-        if system_details.initial_num_clean_water_tanks is not None
-        else 0,
-        system_details.initial_converter_sizes
-        if system_details.initial_converter_sizes is not None
-        else None,
+        (
+            system_details.initial_num_buffer_tanks
+            if system_details.initial_num_buffer_tanks is not None
+            else 0
+        ),
+        (
+            system_details.initial_num_clean_water_tanks
+            if system_details.initial_num_clean_water_tanks is not None
+            else 0
+        ),
+        (
+            system_details.initial_converter_sizes
+            if system_details.initial_converter_sizes is not None
+            else None
+        ),
         system_details.diesel_capacity,
         finance_inputs,
-        system_details.initial_num_buffer_tanks
-        if system_details.initial_num_buffer_tanks is not None
-        else 0,
-        system_details.initial_num_hot_water_tanks
-        if system_details.initial_num_hot_water_tanks is not None
-        else 0,
+        (
+            system_details.initial_num_buffer_tanks
+            if system_details.initial_num_buffer_tanks is not None
+            else 0
+        ),
+        (
+            system_details.initial_num_hot_water_tanks
+            if system_details.initial_num_hot_water_tanks is not None
+            else 0
+        ),
         logger,
         system_details.initial_pv_sizes,
-        system_details.initial_pvt_size
-        if system_details.initial_pvt_size is not None
-        else 0,
+        (
+            system_details.initial_pvt_size
+            if system_details.initial_pvt_size is not None
+            else 0
+        ),
         scenario,
         system_details.initial_storage_size,
         technical_appraisal,
@@ -1340,48 +1364,64 @@ def _simulation_technical_appraisal(  # pylint: disable=too-many-locals
     return TechnicalAppraisal(
         round(system_blackouts, 3),
         round(clean_water_blackouts, 3) if clean_water_blackouts is not None else None,
-        round(clean_water_demand_covered, 3)
-        if clean_water_demand_covered is not None
-        else None,
+        (
+            round(clean_water_demand_covered, 3)
+            if clean_water_demand_covered is not None
+            else None
+        ),
         round(total_diesel_used, 3),
         round(total_diesel_fuel, 3),
-        round(discounted_clean_water, 3)
-        if discounted_clean_water is not None
-        else None,
+        (
+            round(discounted_clean_water, 3)
+            if discounted_clean_water is not None
+            else None
+        ),
         round(discounted_electricity, 3),
         round(discounted_energy, 3),
         round(discounted_heating, 3) if discounted_heating is not None else None,
         round(discounted_hot_water, 3) if discounted_hot_water is not None else None,
         round(total_grid_used, 3),
-        round(hot_water_demand_covered, 3)
-        if hot_water_demand_covered is not None
-        else None,
+        (
+            round(hot_water_demand_covered, 3)
+            if hot_water_demand_covered is not None
+            else None
+        ),
         round(kerosene_displacement, 3),
         power_consumed_fraction,
         round(total_pv_energy, 3),
         round(total_pvt_energy, 3) if total_pvt_energy is not None else None,
-        round(renewable_clean_water_fraction, 3)
-        if renewable_clean_water_fraction is not None
-        else None,
+        (
+            round(renewable_clean_water_fraction, 3)
+            if renewable_clean_water_fraction is not None
+            else None
+        ),
         round(renewables_fraction, 3),
         round(renewable_electricity_used, 3),
-        round(renewable_hot_water_fraction, 3)
-        if renewable_hot_water_fraction is not None
-        else None,
-        round(solar_thermal_cw_fraction, 3)
-        if solar_thermal_cw_fraction is not None
-        else None,
-        round(solar_thermal_hw_fraction, 3)
-        if solar_thermal_hw_fraction is not None
-        else None,
+        (
+            round(renewable_hot_water_fraction, 3)
+            if renewable_hot_water_fraction is not None
+            else None
+        ),
+        (
+            round(solar_thermal_cw_fraction, 3)
+            if solar_thermal_cw_fraction is not None
+            else None
+        ),
+        (
+            round(solar_thermal_hw_fraction, 3)
+            if solar_thermal_hw_fraction is not None
+            else None
+        ),
         round(storage_electricity_used, 3),
         round(total_clean_water, 3) if total_clean_water is not None else None,
         round(total_hot_water, 3) if total_hot_water is not None else None,
         round(total_electricity_consumed, 3),
         round(total_energy_consumed, 3),
-        round(total_heating_consumed, 3)
-        if total_heating_consumed is not None
-        else None,
+        (
+            round(total_heating_consumed, 3)
+            if total_heating_consumed is not None
+            else None
+        ),
         round(unmet_electricity, 3),
         round(unmet_fraction, 3),
     )
@@ -1657,14 +1697,16 @@ def appraise_system(  # pylint: disable=too-many-locals
         Criterion.TOTAL_SYSTEM_COST: financial_appraisal.total_system_cost,
         Criterion.TOTAL_SYSTEM_GHGS: environmental_appraisal.total_system_ghgs,
         Criterion.UNMET_CLEAN_WATER_FRACTION: (
-            1 - technical_appraisal.cw_demand_covered
-        )
-        if technical_appraisal.cw_demand_covered is not None
-        else None,
+            (1 - technical_appraisal.cw_demand_covered)
+            if technical_appraisal.cw_demand_covered is not None
+            else None
+        ),
         Criterion.UNMET_ELECTRICITY_FRACTION: technical_appraisal.unmet_energy_fraction,
-        Criterion.UNMET_HOT_WATER_FRACTION: (1 - technical_appraisal.hw_demand_covered)
-        if technical_appraisal.hw_demand_covered is not None
-        else None,
+        Criterion.UNMET_HOT_WATER_FRACTION: (
+            (1 - technical_appraisal.hw_demand_covered)
+            if technical_appraisal.hw_demand_covered is not None
+            else None
+        ),
     }
 
     if technical_appraisal.clean_water_blackouts is not None:
