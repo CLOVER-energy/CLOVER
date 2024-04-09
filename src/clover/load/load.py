@@ -527,7 +527,7 @@ def compute_total_hourly_load(  # pylint: disable=too-many-locals
 
         logger.info("Saving total load.")
         with open(total_load_filepath, "w") as f:
-            total_load.to_csv(f, line_terminator="")  # type: ignore
+            total_load.to_csv(f, lineterminator="")  # type: ignore
         logger.info("Total device load successfully saved to %s.", total_load_filepath)
 
     else:
@@ -567,7 +567,7 @@ def compute_total_hourly_load(  # pylint: disable=too-many-locals
     logger.info("Saving yearly load statistics.")
     with open(yearly_load_statistics_filepath, "w") as f:
         yearly_load_statistics.to_csv(
-            f, index=False, line_terminator=""  # type: ignore
+            f, index=False, lineterminator=""  # type: ignore
         )
     logger.info("Yearly load statistics successfully saved.")
 
@@ -706,7 +706,7 @@ def process_device_hourly_power(
             "w",
         ) as f:
             device_load.to_csv(
-                f, header=None, index=False, line_terminator=""  # type: ignore
+                f, header=None, index=False, lineterminator=""  # type: ignore
             )
 
         logger.info(
@@ -810,7 +810,7 @@ def process_device_hourly_usage(
             "w",
         ) as f:
             hourly_device_usage.to_csv(
-                f, header=None, index=False, line_terminator=""  # type: ignore
+                f, header=None, index=False, lineterminator=""  # type: ignore
             )
 
         logger.info(
@@ -892,7 +892,7 @@ def process_device_ownership(
             "w",
         ) as f:
             daily_ownership.to_csv(
-                f, header=None, index=False, line_terminator=""  # type: ignore
+                f, header=None, index=False, lineterminator=""  # type: ignore
             )
         logger.info(
             "Monthly deivice-ownership profile for %s successfully saved to %s.",
@@ -968,7 +968,7 @@ def process_device_utilisation(
         # Save this to the output file.
         with open(filepath, "w") as f:
             interpolated_daily_profile.to_csv(
-                f, header=None, index=False, line_terminator=""  # type: ignore
+                f, header=None, index=False, lineterminator=""  # type: ignore
             )
         logger.info(
             "Daily deivice-utilisation profile for %s successfully saved to %s.",
