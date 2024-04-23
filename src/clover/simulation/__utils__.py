@@ -359,11 +359,7 @@ class Minigrid:
             diesel_generator,
             diesel_water_heater,
             electric_water_heater,
-            (
-                exchangers[minigrid_inputs[EXCHANGER]]
-                if EXCHANGER in minigrid_inputs
-                else None
-            ),
+            heat_exchanger,
             hot_water_tank,  # type: ignore [arg-type]
             inverter,
             pv_panels,
