@@ -25,7 +25,6 @@ from typing import Any
 import numpy as np  # pylint: disable=import-error
 import pandas as pd  # pylint: disable=import-error
 
-from .__utils__ import ImpactingComponent
 from ..__utils__ import (
     BColours,
     ColumnHeader,
@@ -37,10 +36,9 @@ from ..__utils__ import (
     ResourceType,
     Scenario,
     TechnicalAppraisal,
-    hourly_profile_to_daily_sum,
 )
 from ..conversion.conversion import Converter
-from .__utils__ import SIZE_INCREMENT, ImpactingComponent, LIFETIME, update_diesel_costs
+from .__utils__ import ImpactingComponent, update_diesel_costs
 
 __all__ = (
     "calculate_connections_ghgs",

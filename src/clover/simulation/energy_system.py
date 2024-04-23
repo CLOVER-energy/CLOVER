@@ -857,6 +857,7 @@ def _calculate_renewable_hw_profiles(  # pylint: disable=too-many-locals, too-ma
     hot_water_tank_temperature: pd.DataFrame | None
     hot_water_tank_volume_supplied: pd.DataFrame | None
     (
+        hot_water_pvt_collector_input_temperature,
         hot_water_pvt_collector_output_temperature,
         hot_water_pvt_electric_power_per_unit,
         hot_water_pvt_pump_times,
@@ -900,8 +901,9 @@ def _calculate_renewable_hw_profiles(  # pylint: disable=too-many-locals, too-ma
 
         if isinstance(auxiliary_heater, DieselWaterHeater):
             # Compute the heat consumed by the auxiliary heater.
+            # TODO: Write auxiliary-heater heat-consumption handling.
             auxiliary_heater_heat_consumption: pd.DataFrame = (
-                pd.DataFrame(  # pylint: disable=unused-variable
+                pd.DataFrame(  # pylint: disable=unused-variable  #  pylint: disable=unused-variable  # pylint: disable=unused-variable
                     (hot_water_tank_volume_supplied > 0)  # type: ignore [arg-type, operator]
                     * hot_water_tank_volume_supplied  # type: ignore [operator]
                     * minigrid.hot_water_tank.heat_capacity
@@ -990,10 +992,6 @@ def _calculate_renewable_hw_profiles(  # pylint: disable=too-many-locals, too-ma
 
     hot_water_power_consumed = hot_water_power_consumed.reset_index(drop=True)
 
-    # FIXME: Not sure what's going on here...
-    # !!! Temporary fix !!!
-    hot_water_pvt_collector_input_temperature = None
-    # !!! Temporary fix !!!
     if hot_water_pvt_collector_input_temperature is not None:
         hot_water_pvt_collector_input_temperature = (
             hot_water_pvt_collector_input_temperature.reset_index(drop=True)
@@ -1543,9 +1541,6 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
         processed_total_hw_load = pd.DataFrame([0] * (end_hour - start_hour))
 
     # Calculate hot-water PV-T related performance profiles.
-    hot_water_pump_electric_power_consumed: (
-        pd.DataFrame
-    )  # pylint: disable=unused-variable
     hot_water_pvt_collector_input_temperature: pd.DataFrame | None
     hot_water_pvt_collector_output_temperature: pd.DataFrame | None
     hot_water_pvt_electric_power_per_unit: pd.DataFrame
@@ -2349,11 +2344,7 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
             )
             for pv_panel in minigrid.pv_panels
         },
-        float(
-            (electric_storage_size if electric_storage_size is not None else 0)
-            * minigrid.battery.storage_unit
-            * (battery_health_frame[ColumnHeader.BATTERY_HEALTH.value]).min()
-        ),
+        final_storage_size,
         {
             converter: available_converters.count(converter)
             for converter in available_converters

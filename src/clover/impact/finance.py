@@ -27,7 +27,7 @@ from typing import Any, Union
 import numpy as np  # pylint: disable=import-error
 import pandas as pd  # pylint: disable=import-error
 
-from .__utils__ import ImpactingComponent, LIFETIME, SIZE_INCREMENT, update_diesel_costs
+from .__utils__ import ImpactingComponent, update_diesel_costs
 from ..__utils__ import (
     BColours,
     ColumnHeader,
@@ -39,8 +39,6 @@ from ..__utils__ import (
     ResourceType,
     Scenario,
     TechnicalAppraisal,
-    hourly_profile_to_daily_sum,
-    Scenario,
 )
 from ..conversion.conversion import Converter
 

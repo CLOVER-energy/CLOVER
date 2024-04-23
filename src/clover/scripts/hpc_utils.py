@@ -733,7 +733,7 @@ def temporary_optimisations_file(
     """
 
     temp_dirpath: str = os.path.join(
-        (locations_foldername := get_locations_foldername()),
+        get_locations_foldername(),
         run.location,
         INPUTS_DIRECTORY,
     )
