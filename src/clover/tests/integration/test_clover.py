@@ -19,14 +19,16 @@ not affect the overall running of the code.
 """
 
 import os
+import random
 import time
 import unittest
 
 import json
 import shutil
 
+from contextlib import contextmanager
 from distutils.dir_util import copy_tree  # pylint: disable=deprecated-module
-from typing import Any, Union
+from typing import Any, Generator, Union
 
 import pytest
 import yaml
@@ -61,6 +63,42 @@ TEMP_LOCATION_PATH: str = os.path.join(
     INTEGRATION_FOLDER_NAME,
     TEMP_LOCATION_FOLDER_NAME,
 )
+
+
+@contextmanager
+def mocked_global_settings_yaml() -> Generator[None, None, None]:
+    """
+    Allows for a mocked global-settings YAML file with alternative start and end years.
+
+    """
+
+    # Copy the file for use later
+    shutil.copy2(
+        (global_settings_yaml_filename := "global_settings.yaml"),
+        (
+            copied_global_settings_filename := f"global_settings_{str(random.random()).split('.')[1]}.yaml"
+        ),
+    )
+
+    # Replace the start and end years
+    try:
+        with open(global_settings_yaml_filename, "r", encoding="UTF-8") as f:
+            filedata = yaml.safe_load(f)
+
+        filedata["start_year"] = 2007
+        filedata["end_year"] = 2016
+
+        with open(global_settings_yaml_filename, "w", encoding="UTF-8") as f:
+            yaml.dump(filedata, f)
+
+        yield
+    # Ensure that the original file is restored so user settings are not impacted.
+    finally:
+        shutil.copy2(copied_global_settings_filename, global_settings_yaml_filename)
+        try:
+            os.remove(copied_global_settings_filename)
+        except FileNotFoundError:
+            pass
 
 
 def _recursive_updater(
@@ -272,7 +310,8 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
             clover_args.extend(["--storage-size", "0"])
 
         # Call CLOVER with these arguments.
-        clover_main(clover_args)
+        with mocked_global_settings_yaml():
+            clover_main(clover_args)
 
         # Return the parsed output info file information.
         output_file_name: str = os.path.join(

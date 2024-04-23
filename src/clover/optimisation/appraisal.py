@@ -761,7 +761,7 @@ def _simulation_financial_appraisal(  # pylint: disable=too-many-locals
     total_subsystem_costs[ResourceType.ELECTRIC] += connections_cost
     total_subsystem_costs[ResourceType.HOT_CLEAN_WATER] += (
         additional_equipment_costs + additional_om_costs
-    )
+    ) * technical_appraisal.power_consumed_fraction[ResourceType.HOT_CLEAN_WATER]
 
     # Total cost incurred during simulation period (discounted)
     total_equipment_costs = sum(subsystem_equipment_costs.values())
