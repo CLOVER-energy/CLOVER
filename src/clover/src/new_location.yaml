@@ -886,6 +886,7 @@
                 #   unmet_cw_fraction
                 #   unmet_electricity_fraction
                 #   unmet_hw_fraction
+                #   uptime
                 # Valid optimisation criteria, usually set to "maximise":
                 #   cw_renewables_fraction
                 #   hw_demand_covered

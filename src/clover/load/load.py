@@ -307,10 +307,12 @@ def _population_growth_daily(
 
     """
 
-    population = []
     growth_rate_daily = (1 + community_growth_rate) ** (1 / 365.0) - 1
-    for day in range(0, 365 * num_years):
-        population.append(math.floor(community_size * (1 + growth_rate_daily) ** day))
+    population: list[float] = [
+        math.floor(community_size * (1 + growth_rate_daily) ** day)
+        for day in range(0, 365 * num_years)
+    ]
+
     return pd.DataFrame(population)
 
 
@@ -890,7 +892,7 @@ def process_device_ownership(
             "w",
         ) as f:
             daily_ownership.to_csv(
-                f, header=None, index=False, lineterminator=""  # type: ignore
+                f, header=None, index=False, lineterminator="\n"  # type: ignore
             )
         logger.info(
             "Monthly deivice-ownership profile for %s successfully saved to %s.",

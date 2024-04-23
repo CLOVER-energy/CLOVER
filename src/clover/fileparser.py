@@ -21,13 +21,14 @@ from logging import Logger
 from typing import Any, DefaultDict, Dict, List, Optional, Set, Tuple, Union
 
 import json
-import pandas as pd  # pylint: disable=import-error
+import pandas as pd  # pyli`nt: disable=import-error
 import yaml
 
 from sklearn.linear_model._coordinate_descent import Lasso
 
 from . import load
 from .generation import solar
+from .impact.__utils__ import LIFETIME
 from .impact.finance import COSTS, FINANCE_IMPACT, ImpactingComponent
 from .impact.ghgs import EMISSIONS, GHG_IMPACT
 from .simulation.diesel import DIESEL_CONSUMPTION, MINIMUM_LOAD, DieselWaterHeater
@@ -36,6 +37,9 @@ from .__utils__ import (
     API_TOKEN_PLACEHOLDER_TEXT,
     AuxiliaryHeaterType,
     BColours,
+    DEFAULT_END_YEAR,
+    DEFAULT_START_YEAR,
+    DEFAULT_SYSTEM_LIFETIME,
     DesalinationScenario,
     DieselMode,
     EXCHANGER,
@@ -47,7 +51,6 @@ from .__utils__ import (
     RegressorType,
     ResourceType,
     Location,
-    LOCATIONS_FOLDER_NAME,
     NAME,
     PACKAGE_NAME,
     RAW_CLOVER_PATH,
@@ -73,7 +76,6 @@ __all__ = (
     "INPUTS_DIRECTORY",
     "KEROSENE_TIMES_FILE",
     "KEROSENE_USAGE_FILE",
-    "LOCATIONS_FOLDER_NAME",
     "parse_input_files",
     "parse_scenario_inputs",
 )
@@ -162,6 +164,10 @@ ELECTRIC_MODEL_FILE: str = os.path.join("src", "{}_electric_forest.sav")
 #   Keyword used for parsing electric water-heater information.
 ELECTRIC_WATER_HEATER: str = "electric_water_heater"
 
+# End year:
+#   Keyword used for parsing the end-year information.
+END_YEAR: str = "end_year"
+
 # Energy-system inputs file:
 #   The relative path to the energy-system-inputs file.
 ENERGY_SYSTEM_INPUTS_FILE: str = os.path.join("simulation", "energy_system.yaml")
@@ -247,6 +253,10 @@ SIMULATIONS_INPUTS_FILE: str = os.path.join("simulation", "simulations.yaml")
 # Solar inputs file:
 #   The relative path to the solar inputs file.
 SOLAR_INPUTS_FILE: str = os.path.join("generation", "solar_generation_inputs.yaml")
+
+# Start year:
+#   Keyword used for parsing the start-year information.
+START_YEAR: str = "start_year"
 
 # Tank inputs file:
 #   The relative path to the tank inputs file.
@@ -565,7 +575,7 @@ def _parse_conversion_inputs(
     )
 
 
-def _parse_diesel_inputs(  # pylint: disable=too-many-statements
+def _parse_diesel_inputs(  # pylint: disable=too-many-locals,too-many-statements
     energy_system_inputs: Dict[str, Any],
     inputs_directory_relative_path: str,
     logger: Logger,
@@ -573,6 +583,7 @@ def _parse_diesel_inputs(  # pylint: disable=too-many-statements
 ) -> Tuple[
     Dict[str, float],
     Dict[str, float],
+    Optional[Dict[str, float]],
     DieselGenerator,
     str,
     Optional[DieselWaterHeater],
@@ -597,6 +608,7 @@ def _parse_diesel_inputs(  # pylint: disable=too-many-statements
         - The path to the diesel inputs file;
         - The diesel-generator cost information;
         - The diesel-generator emissions information;
+        - The diesel fuel costs and emissions information, if provided;
         - The diesel generator to use for the run;
         - The diesel water heater to use for the run, if applicable;
         - The diesel water heater emissions information, if applicable;
@@ -804,9 +816,15 @@ def _parse_diesel_inputs(  # pylint: disable=too-many-statements
         diesel_water_heater_costs = None
         diesel_water_heater_emissions = None
 
+    # Determine the diesel fuel costs and emissions
+    diesel_fuel_impact: Optional[Dict[str, float]] = diesel_inputs.get(
+        ImpactingComponent.DIESEL_FUEL.value, None
+    )
+
     return (
         diesel_costs,
         diesel_emissions,
+        diesel_fuel_impact,
         diesel_generator,
         diesel_inputs_filepath,
         diesel_water_heater,
@@ -970,7 +988,15 @@ def _parse_global_settings(logger: Logger) -> Dict[str, Any]:
         """Create a default global-settings file if missing."""
 
         with open(GLOBAL_SETTINGS_FILE, "w", encoding="UTF-8") as global_settings_file:
-            yaml.dump({TOKEN: API_TOKEN_PLACEHOLDER_TEXT}, global_settings_file)
+            yaml.dump(
+                {
+                    TOKEN: API_TOKEN_PLACEHOLDER_TEXT,
+                    END_YEAR: DEFAULT_END_YEAR,
+                    START_YEAR: DEFAULT_START_YEAR,
+                    LIFETIME: DEFAULT_SYSTEM_LIFETIME,
+                },
+                global_settings_file,
+            )
 
     # Parse global settings.
     if not os.path.isfile(GLOBAL_SETTINGS_FILE):
@@ -1873,6 +1899,7 @@ def _parse_minigrid_inputs(  # pylint: disable=too-many-locals, too-many-stateme
     Optional[Dict[str, float]],
     Dict[str, float],
     Dict[str, float],
+    Optional[Dict[str, float]],
     str,
     Optional[Dict[str, float]],
     Optional[Dict[str, float]],
@@ -1922,6 +1949,7 @@ def _parse_minigrid_inputs(  # pylint: disable=too-many-locals, too-many-stateme
         - Clean-water tank tank emissions,
         - Diesel costs,
         - Diesel emissions,
+        - Diesel fuel costs and emissions information,
         - Diesel input filepath,
         - Diesel water heater costs,
         - Diesel water heater emissions,
@@ -1965,6 +1993,7 @@ def _parse_minigrid_inputs(  # pylint: disable=too-many-locals, too-many-stateme
     (
         diesel_costs,
         diesel_emissions,
+        diesel_fuel_impact,
         diesel_generator,
         diesel_inputs_filepath,
         diesel_water_heater,
@@ -2184,6 +2213,7 @@ def _parse_minigrid_inputs(  # pylint: disable=too-many-locals, too-many-stateme
         clean_water_tank_emissions,
         diesel_costs,
         diesel_emissions,
+        diesel_fuel_impact,
         diesel_inputs_filepath,
         diesel_water_heater_costs,
         diesel_water_heater_emissions,
@@ -2335,6 +2365,7 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
     debug: bool,
     electric_load_profile: Optional[str],
     location_name: str,
+    locations_foldername: str,
     logger: Logger,
     optimisation_inputs_file: Optional[str],
 ) -> Tuple[
@@ -2342,9 +2373,8 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
     Dict[load.load.Device, pd.DataFrame],
     Minigrid,
     DefaultDict[str, DefaultDict[str, float]],
-    Dict[str, Union[int, str]],
     DefaultDict[str, DefaultDict[str, float]],
-    Dict[str, str],
+    Dict[str, Union[int, str]],
     pd.DataFrame,
     Location,
     Optional[OptimisationParameters],
@@ -2367,6 +2397,8 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
             in for the run.
         - location_name:
             The name of the location_name being considered.
+        - locations_foldername:
+            The path to the folder containing the locations.
         - logger:
             The logger to use for the run.
         - optimisation_inputs_file:
@@ -2401,7 +2433,7 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
 
     # Parse location-specific files.
     inputs_directory_relative_path = os.path.join(
-        LOCATIONS_FOLDER_NAME,
+        locations_foldername,
         location_name,
         INPUTS_DIRECTORY,
     )
@@ -2443,14 +2475,14 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
                     index_col=None,
                 )
         except FileNotFoundError:
-            logger.error(
+            logger.info(
                 "%sError parsing device-utilisation profile for %s, check that the "
                 "profile is present and that all device names are consistent.%s",
                 BColours.fail,
                 device.name,
                 BColours.endc,
             )
-            raise
+            device_utilisations[device] = pd.DataFrame([[0] * 12] * 24)
 
     # Parse the override electric profile file if specified.
     if electric_load_profile is not None:
@@ -2585,6 +2617,7 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
         clean_water_tank_emissions,
         diesel_costs,
         diesel_emissions,
+        diesel_fuel_impact,
         diesel_inputs_filepath,
         diesel_water_heater_costs,
         diesel_water_heater_emissions,
@@ -2614,28 +2647,6 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
         scenarios,
     )
     logger.info("Energy-system inputs successfully parsed.")
-
-    generation_inputs_filepath = os.path.join(
-        inputs_directory_relative_path, GENERATION_INPUTS_FILE
-    )
-    generation_inputs = read_yaml(generation_inputs_filepath, logger)
-    if not isinstance(generation_inputs, dict):
-        logger.error(
-            "%sThe generation inputs file was invalid: information must be contained "
-            "within a `dict`. See the user-guide.%s",
-            BColours.fail,
-            BColours.endc,
-        )
-        raise InputFileError(
-            "generation inputs",
-            "The contents of the generation inputs file must be a key-value "
-            "dictionary.",
-        )
-    logger.info("Generation inputs successfully parsed.")
-
-    # Temporary workaround for generation inputs being phased out.
-    if generation_inputs.get("token", None) is not None:
-        global_settings_inputs[TOKEN] = generation_inputs.get("token", None)
 
     grid_times_filepath = os.path.join(
         inputs_directory_relative_path,
@@ -2735,6 +2746,20 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
         lambda: defaultdict(float), pv_panel_emissions  # type: ignore [arg-type, return-value]
     )
     logger.info("PV impact data successfully updated.")
+
+    # Update the impact inputs with the diesel fuel data.
+    if diesel_fuel_impact is not None:
+        finance_inputs[ImpactingComponent.DIESEL_FUEL.value] = defaultdict(
+            float, diesel_fuel_impact
+        )
+        ghg_inputs[ImpactingComponent.DIESEL_FUEL.value] = defaultdict(
+            float, diesel_fuel_impact
+        )
+        logger.info(
+            "Diesel impact data successfully updated from the diesel inputs file."
+        )
+    else:
+        logger.info("Diesel impact information taken from finance and GHG inputs.")
 
     # Update the impact inputs with the diesel data.
     if any(
@@ -2991,7 +3016,6 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
         "diesel_inputs": diesel_inputs_filepath,
         "energy_system": energy_system_inputs_filepath,
         "finance_inputs": finance_inputs_filepath,
-        "generation_inputs": generation_inputs_filepath,
         "ghg_inputs": ghg_inputs_filepath,
         "grid_times": grid_times_filepath,
         "location_inputs": location_inputs_filepath,
@@ -3054,7 +3078,6 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
         device_utilisations,
         minigrid,
         finance_inputs,
-        generation_inputs,
         ghg_inputs,
         global_settings_inputs,
         grid_times,

@@ -819,7 +819,7 @@ def get_total_equipment_costs(  # pylint: disable=too-many-locals, too-many-stat
     misc_costs: float = _misc_costs(
         diesel_size,
         misc_capacity_cost,
-        misc_fixed_cost,
+        misc_fixed_cost,# if installation_year == 0 else 0,
         pv_array_size,
     )
 
@@ -858,7 +858,9 @@ def connections_expenditure(
 
     """
 
-    new_connections = np.max(households) - np.min(households)
+    new_connections = np.max(households) - (
+        np.min(households) if installation_year != 0 else 0
+    )
     undiscounted_cost = float(
         finance_inputs[ImpactingComponent.HOUSEHOLDS.value][CONNECTION_COST]
         * new_connections

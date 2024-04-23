@@ -1707,6 +1707,7 @@ def appraise_system(  # pylint: disable=too-many-locals
             if technical_appraisal.hw_demand_covered is not None
             else None
         ),
+        Criterion.UPTIME: round(technical_appraisal.uptime, 3),
     }
 
     if technical_appraisal.clean_water_blackouts is not None:

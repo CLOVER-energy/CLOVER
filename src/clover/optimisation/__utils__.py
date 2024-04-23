@@ -61,6 +61,7 @@ __all__ = (
     "CriterionMode",
     "get_sufficient_appraisals",
     "Optimisation",
+    "OptimisationComponent",
     "OptimisationParameters",
     "recursive_iteration",
     "save_optimisation",
@@ -68,6 +69,7 @@ __all__ = (
     "StorageSystemSize",
     "TankSize",
     "THRESHOLD_CRITERIA",
+    "THRESHOLD_CRITERION_TO_MODE",
     "ThresholdMode",
 )
 
@@ -899,6 +901,7 @@ THRESHOLD_CRITERION_TO_MODE: Dict[Criterion, ThresholdMode] = {
     Criterion.UNMET_CLEAN_WATER_FRACTION: ThresholdMode.MAXIMUM,
     Criterion.UNMET_ELECTRICITY_FRACTION: ThresholdMode.MAXIMUM,
     Criterion.UNMET_HOT_WATER_FRACTION: ThresholdMode.MAXIMUM,
+    Criterion.UPTIME: ThresholdMode.MINIMUM,
 }
 
 

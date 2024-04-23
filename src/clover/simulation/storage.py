@@ -103,15 +103,15 @@ def battery_iteration_step(
             "Battery undefined despite an itteration step being called.",
         )
 
-    battery_energy_flow = battery_storage_profile.iloc[time_index, 0]
+    battery_energy_flow = float(battery_storage_profile.iloc[time_index, 0])
     if time_index == 0:
         new_hourly_battery_storage = initial_battery_storage + battery_energy_flow
     else:
         # Battery charging
         if battery_energy_flow >= 0.0:
-            new_hourly_battery_storage = hourly_battery_storage[time_index - 1] * (
-                1.0 - minigrid.battery.leakage
-            ) + minigrid.battery.conversion_in * min(
+            new_hourly_battery_storage = float(
+                hourly_battery_storage[time_index - 1]
+            ) * (1.0 - minigrid.battery.leakage) + minigrid.battery.conversion_in * min(
                 battery_energy_flow,
                 minigrid.battery.charge_rate
                 * (maximum_battery_storage - minimum_battery_storage),
@@ -226,7 +226,7 @@ def cw_tank_iteration_step(  # pylint: disable=too-many-locals
     """
 
     if scenario.desalination_scenario is not None:
-        tank_water_flow = tank_storage_profile.iloc[time_index, 0]
+        tank_water_flow: float = float(tank_storage_profile.iloc[time_index, 0])
 
         # Raise an error if there is no clean-water tank defined.
         if minigrid.clean_water_tank is None:

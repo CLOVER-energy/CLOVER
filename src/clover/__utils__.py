@@ -41,7 +41,10 @@ __all__ = (
     "Criterion",
     "CUT_OFF_TIME",
     "daily_sum_to_monthly_sum",
+    "DEFAULT_END_YEAR",
     "DEFAULT_SCENARIO",
+    "DEFAULT_START_YEAR",
+    "DEFAULT_SYSTEM_LIFETIME",
     "DemandType",
     "DesalinationScenario",
     "dict_to_dataframe",
@@ -50,6 +53,7 @@ __all__ = (
     "ELECTRIC_POWER",
     "EXCHANGER",
     "FAILED",
+    "get_locations_foldername",
     "get_logger",
     "HEAT_CAPACITY_OF_WATER",
     "HotWaterScenario",
@@ -103,9 +107,21 @@ CONVENTIONAL_SOURCES: str = "conventional_sources"
 #   The time up and to which information about the load of each device will be returned.
 CUT_OFF_TIME: int = 480  # [hours]
 
+# Default end year:
+#   The default end year to use in CLOVER for fetching renewables.ninja data.
+DEFAULT_END_YEAR: int = 2016
+
 # Default scenario:
 #   The name of the default scenario to be used in CLOVER.
 DEFAULT_SCENARIO: str = "default"
+
+# Default start year:
+#   The default start year to use in CLOVER for fetching renewables.ninja data.
+DEFAULT_START_YEAR: int = 2007
+
+# Default system lifetime:
+#   The default lifetime to use for solar components when computing degradation.
+DEFAULT_SYSTEM_LIFETIME: int = 30
 
 # Desalination scenario:
 #   Keyword for parsing the desalination scenario from the scenario inputs.
@@ -149,7 +165,7 @@ KEROSENE_DEVICE_NAME: str = "kerosene"
 
 # Locations folder name:
 #   The name of the locations folder.
-LOCATIONS_FOLDER_NAME: str = "locations"
+LOCATIONS_FOLDER_NAME: str = "clover_locations"
 
 # Logger directory:
 #   The directory in which to save logs.
@@ -824,6 +840,26 @@ class DistributionNetwork(enum.Enum):
     DC = "dc"
 
 
+def get_locations_foldername() -> str:
+    """
+    Determine the path to the locations folder.
+
+    Outputs:
+        - The path to the locations folder.
+
+    """
+
+    if os.path.isdir(
+        os.path.join(
+            (_old_clover_locations_dir := os.path.expanduser("~")),
+            LOCATIONS_FOLDER_NAME.split("_")[1],
+        )
+    ):
+        return _old_clover_locations_dir
+
+    return os.path.join(os.path.expanduser("~"), LOCATIONS_FOLDER_NAME)
+
+
 def get_logger(logger_name: str, verbose: bool = False) -> logging.Logger:
     """
     Set-up and return a logger.
@@ -1408,6 +1444,28 @@ class Location:
             location_inputs["time_difference"],
         )
 
+    @property
+    def as_dict(self) -> dict:
+        """
+        Return a `dict` containing the location information.
+
+        :returns:
+            A `dict` containing the :class:`Location` information.
+
+        """
+
+        return {
+            "community_growth_rate": self.community_growth_rate,
+            "community_size": self.community_size,
+            "country": self.country,
+            "latitude": self.latitude,
+            "longitude": self.longitude,
+            "max_years": self.max_years,
+            "location": self.name,
+            "time_difference": self.time_difference,
+        }
+    
+
 
 def monthly_profile_to_daily_profile(monthly_profile: pd.DataFrame) -> pd.DataFrame:
     """
@@ -1428,8 +1486,8 @@ def monthly_profile_to_daily_profile(monthly_profile: pd.DataFrame) -> pd.DataFr
 
     day_one_profile: pd.DataFrame = pd.DataFrame(np.zeros((24, 1)))
     for hour in range(24):
-        day_one_profile.iloc[hour, 0] = 0.5 * (
-            monthly_profile.iloc[hour, 0] + monthly_profile.iloc[hour, 11]
+        day_one_profile.iloc[hour, 0] = 0.5 * float(
+            float(monthly_profile.iloc[hour, 0]) + float(monthly_profile.iloc[hour, 11])
         )
 
     extended_year_profile: pd.DataFrame = pd.DataFrame(np.zeros((24, 14)))
@@ -1441,7 +1499,7 @@ def monthly_profile_to_daily_profile(monthly_profile: pd.DataFrame) -> pd.DataFr
 
     # Interpolate the value that falls in the middle of the month.
     daily_profile = {
-        hour: scipy.interp(range(365), MONTH_MID_DAY, extended_year_profile.iloc[hour])
+        hour: scipy.interpolate.interp(range(365), MONTH_MID_DAY, extended_year_profile.iloc[hour])
         for hour in range(24)
     }
 
@@ -1638,6 +1696,9 @@ class Criterion(enum.Enum):
 
     - UNMET_HOT_WATER_FRACTION:
         The fraction of hot-water demand which went unmet.
+    - UPTIME:
+        The fraction of time for which power was available, defined between 0 (no power
+        was available at any time) and 1 (power was always available).
 
     """
 
@@ -1671,6 +1732,8 @@ class Criterion(enum.Enum):
     UNMET_CLEAN_WATER_FRACTION = "unmet_cw_fraction"
     UNMET_ELECTRICITY_FRACTION = "unmet_electricity_fraction"
     UNMET_HOT_WATER_FRACTION = "unmet_hw_fraction"
+    UNMET_ENERGY_FRACTION = "unmet_energy_fraction"
+    UPTIME = "uptime"
 
     def __str__(self) -> str:
         """
@@ -3184,6 +3247,18 @@ class TechnicalAppraisal:
     total_heating_consumed: Optional[float] = 0
     unmet_energy: float = 0
     unmet_energy_fraction: float = 0
+
+    @property
+    def uptime(self) -> float:
+        """
+        Return the uptime based on the blackouts.
+
+        Outputs:
+            - The uptime for the system.
+
+        """
+
+        return 1 - self.blackouts
 
     def to_dict(self) -> Dict[str, Any]:
         """

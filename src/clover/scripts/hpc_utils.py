@@ -30,8 +30,8 @@ import yaml
 from ..__utils__ import (
     BColours,
     DEFAULT_SCENARIO,
+    get_locations_foldername,
     InputFileError,
-    LOCATIONS_FOLDER_NAME,
     read_yaml,
 )
 from ..fileparser import INPUTS_DIRECTORY, OPTIMISATION_INPUTS_FILE, OPTIMISATIONS
@@ -585,7 +585,7 @@ def _parse_hpc_input_file(input_filename: str, logger: Logger) -> List[Dict[str,
 
 
 def _parse_optimisations_to_runs(
-    entry: Dict[str, Any], logger: Logger
+    entry: Dict[str, Any], locations_foldername: str, logger: Logger
 ) -> List[HpcOptimisation]:
     """
     Parses, from a single HPC entry, a series of optimisation runs to carry out.
@@ -597,6 +597,8 @@ def _parse_optimisations_to_runs(
     Inputs:
         - entry:
             The parsed entry from the file.
+        - locations_foldername:
+            The path to the CLOVER locations folder.
         - logger:
             The :class:`logging.Logger` to use for the run.
 
@@ -604,7 +606,7 @@ def _parse_optimisations_to_runs(
 
     # Read the optimisation inputs file.
     optimisation_inputs_file = os.path.join(
-        LOCATIONS_FOLDER_NAME,
+        locations_foldername,
         entry["location"],
         INPUTS_DIRECTORY,
         OPTIMISATION_INPUTS_FILE,
@@ -633,7 +635,7 @@ def _parse_optimisations_to_runs(
 
 
 def _process_hpc_input_file(
-    input_filename: str, logger: Logger
+    input_filename: str, locations_foldername, logger: Logger
 ) -> List[Union[HpcOptimisation, HpcSimulation]]:
     """
     Parses the HPC input file into a list of runs.
@@ -641,6 +643,8 @@ def _process_hpc_input_file(
     Inputs:
         - input_filename:
             The name of the input file for the HPC runs.
+        - locations_foldername:
+            The path to the CLOVER locations directory.
         - logger:
             The :class:`logging.Logger` to use for the run.
 
@@ -656,7 +660,9 @@ def _process_hpc_input_file(
     runs: List[Union[HpcOptimisation, HpcSimulation]] = []
     for entry in filedata:
         if entry[TYPE] == HpcRunType.OPTIMISATION.value:
-            runs.extend(_parse_optimisations_to_runs(entry, logger))
+            runs.extend(
+                _parse_optimisations_to_runs(entry, locations_foldername, logger)
+            )
         elif entry[TYPE] == HpcRunType.SIMULATION.value:
             runs.append(HpcSimulation.from_dict(entry, logger))
         else:
@@ -699,7 +705,7 @@ def parse_args_and_hpc_input_file(
     walltime = _check_walltime(logger, parsed_args.walltime)
 
     # Parse the input file to determine the runs to be carried out.
-    runs = _process_hpc_input_file(parsed_args.runs, logger)
+    runs = _process_hpc_input_file(parsed_args.runs, get_locations_foldername(), logger)
 
     # Return these runs along with the filename.
     return parsed_args.runs, runs, parsed_args.verbose, walltime
@@ -727,7 +733,7 @@ def temporary_optimisations_file(
     """
 
     temp_dirpath: str = os.path.join(
-        LOCATIONS_FOLDER_NAME,
+        (locations_foldername := get_locations_foldername()),
         run.location,
         INPUTS_DIRECTORY,
     )

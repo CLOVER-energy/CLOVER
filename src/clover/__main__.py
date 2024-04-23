@@ -17,7 +17,7 @@ the clover module from the command-line interface.
 
 """
 
-__version__ = "5.2.0a1"
+__version__ = "5.2.0a7"
 
 import collections
 import datetime
@@ -57,12 +57,12 @@ from .__utils__ import (
     BColours,
     DONE,
     FAILED,
+    get_locations_foldername,
     InternalError,
     Location,
     ResourceType,
     get_logger,
     InputFileError,
-    LOCATIONS_FOLDER_NAME,
     LOGGER_DIRECTORY,
     OperatingMode,
     ProgrammerJudgementFault,
@@ -165,13 +165,19 @@ def _get_operating_mode(parsed_args: Namespace) -> OperatingMode:
     return OperatingMode.PROFILE_GENERATION
 
 
-def _prepare_location(location: str, logger: logging.Logger) -> None:
+def _prepare_location(
+    location: str, locations_foldername: str, logger: logging.Logger
+) -> None:
     """
     Prepares the location and raises an error if the location cannot be found.
 
     Inputs:
         - location
             The name of the location to check.
+        - locations_foldername:
+            The path to the locations folder where the cloations are stored.
+        - logger:
+            The :class:`logging.Loggger` to use for the run.
 
     Raises:
         - FileNotFoundError:
@@ -179,7 +185,7 @@ def _prepare_location(location: str, logger: logging.Logger) -> None:
 
     """
 
-    if not os.path.isdir(os.path.join(LOCATIONS_FOLDER_NAME, location)):
+    if not os.path.isdir(os.path.join(locations_foldername, location)):
         logger.error(
             "%sThe specified location, '%s', does not exist. Try running the "
             "'new_location' script to ensure all necessary files and folders are "
@@ -192,7 +198,7 @@ def _prepare_location(location: str, logger: logging.Logger) -> None:
 
     if not os.path.isfile(
         os.path.join(
-            LOCATIONS_FOLDER_NAME, location, INPUTS_DIRECTORY, KEROSENE_TIMES_FILE
+            locations_foldername, location, INPUTS_DIRECTORY, KEROSENE_TIMES_FILE
         )
     ):
         logger.info(
@@ -448,21 +454,24 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
     if parsed_args.debug:
         print(DEBUG_STRING.format(okblue=BColours.okblue, endc=BColours.endc))
 
+    # Determine the CLOVER location folder.
+    locations_foldername: str = get_locations_foldername()
+
     # Define common variables.
     auto_generated_files_directory = os.path.join(
-        LOCATIONS_FOLDER_NAME,
+        locations_foldername,
         parsed_args.location,
         AUTO_GENERATED_FILES_DIRECTORY,
     )
 
     # If the output filename is not provided, then generate it.
     simulation_output_directory = os.path.join(
-        LOCATIONS_FOLDER_NAME,
+        locations_foldername,
         parsed_args.location,
         SIMULATION_OUTPUTS_FOLDER,
     )
     optimisation_output_directory = os.path.join(
-        LOCATIONS_FOLDER_NAME, parsed_args.location, OPTIMISATION_OUTPUTS_FOLDER
+        locations_foldername, parsed_args.location, OPTIMISATION_OUTPUTS_FOLDER
     )
 
     # Determine the operating mode for the run.
@@ -547,7 +556,7 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
     print("Verifying location information ................................    ", end="")
     logger.info("Checking location %s.", parsed_args.location)
     try:
-        _prepare_location(parsed_args.location, logger)
+        _prepare_location(parsed_args.location, locations_foldername, logger)
     except FileNotFoundError:
         print(FAILED)
         logger.error(
@@ -573,7 +582,6 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
             device_utilisations,
             minigrid,
             finance_inputs,
-            generation_inputs,
             ghg_inputs,
             global_settings_inputs,
             grid_times,
@@ -589,6 +597,7 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
             parsed_args.debug,
             parsed_args.electric_load_profile,
             parsed_args.location,
+            locations_foldername,
             logger,
             parsed_args.optimisation_inputs_file,
         )
@@ -702,7 +711,6 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
         logger.info("Beginning wind-data fetching.")
         wind_data_thread: Optional[wind.WindDataThread] = wind.WindDataThread(
             os.path.join(auto_generated_files_directory, "wind"),
-            generation_inputs,
             global_settings_inputs,
             location,
             f"{parsed_args.location}_{wind.WIND_LOGGER_NAME}",
@@ -726,18 +734,17 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
     if any(scenario.desalination_scenario is not None for scenario in scenarios):
         # Set up the system to call renewables.ninja at a slower rate.
         logger.info("Begining weather-data fetching.")
-        weather_data_thread: Optional[weather.WeatherDataThread] = (
-            weather.WeatherDataThread(
-                os.path.join(auto_generated_files_directory, "weather"),
-                generation_inputs,
-                global_settings_inputs,
-                location,
-                f"{parsed_args.location}_{weather.WEATHER_LOGGER_NAME}",
-                ninja_pause_index,
-                parsed_args.refetch,
-                num_ninjas,
-                parsed_args.verbose,
-            )
+        weather_data_thread: Optional[
+            weather.WeatherDataThread
+        ] = weather.WeatherDataThread(
+            os.path.join(auto_generated_files_directory, "weather"),
+            global_settings_inputs,
+            location,
+            f"{parsed_args.location}_{weather.WEATHER_LOGGER_NAME}",
+            ninja_pause_index,
+            parsed_args.refetch,
+            num_ninjas,
+            parsed_args.verbose,
         )
         if weather_data_thread is None:
             raise InternalError(
@@ -758,7 +765,6 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
     for pv_panel in panels_to_fetch:
         solar_data_threads[pv_panel] = solar.SolarDataThread(
             os.path.join(auto_generated_files_directory, "solar"),
-            generation_inputs,
             global_settings_inputs,
             location,
             f"{parsed_args.location}_{solar.SOLAR_LOGGER_NAME}_"
@@ -946,7 +952,7 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
         pv_panel.name: solar.total_solar_output(
             os.path.join(auto_generated_files_directory, "solar"),
             parsed_args.regenerate,
-            generation_inputs["start_year"],
+            global_settings_inputs["start_year"],
             location.max_years,
             pv_panel=pv_panel,
         )
@@ -960,7 +966,7 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
             weather.total_weather_output(
                 os.path.join(auto_generated_files_directory, "weather"),
                 parsed_args.regenerate,
-                generation_inputs["start_year"],
+                global_settings_inputs["start_year"],
                 location.max_years,
             )
         )
@@ -971,7 +977,7 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
         total_wind_data: Optional[pd.DataFrame] = wind.total_wind_output(
             os.path.join(auto_generated_files_directory, "wind"),
             parsed_args.regenerate,
-            generation_inputs["start_year"],
+            global_settings_inputs["start_year"],
             location.max_years,
         )
         logger.info("Total wind output successfully computed and saved.")
@@ -1397,7 +1403,7 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
 
     print(
         "Finished. See "
-        + os.path.join(LOCATIONS_FOLDER_NAME, parsed_args.location, "outputs")
+        + os.path.join(locations_foldername, parsed_args.location, "outputs")
         + " for output files."
     )
 
