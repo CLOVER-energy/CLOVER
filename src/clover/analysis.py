@@ -19,8 +19,6 @@ corresponding to the sugetsed analysis within the user guide.
 
 import os
 
-from typing import Dict
-
 import numpy as np  # pylint: disable=import-error
 import pandas as pd  # pylint: disable=import-error
 import seaborn as sns  # pylint: disable=import-error
@@ -49,7 +47,7 @@ COLOUR_MAP: str = "Blues"
 
 # Hours until month:
 #   Mapping between month number and the hours until the start of the month.
-HOURS_UNTIL: Dict[int, int] = {
+HOURS_UNTIL: dict[int, int] = {
     1: 0,
     2: 744,
     3: 1416,
@@ -107,7 +105,7 @@ def get_key_results(
     grid_input_profile: pd.DataFrame,
     num_years: int,
     simulation_results: pd.DataFrame,
-    total_solar_output: Dict[str, pd.DataFrame],
+    total_solar_output: dict[str, pd.DataFrame],
 ) -> KeyResults:
     """
     Computes the key results of the simulation.
@@ -133,15 +131,15 @@ def get_key_results(
     key_results = KeyResults()
 
     # Compute the solar-generation results.
-    total_solar_generation: Dict[str, float] = {
+    total_solar_generation: dict[str, float] = {
         panel_name: np.round(np.sum(solar_output))
         for panel_name, solar_output in total_solar_output.items()
     }
-    key_results.cumulative_pv_generation: Dict[str, float] = {
+    key_results.cumulative_pv_generation: dict[str, float] = {
         panel_name: float(solar_generation)
         for panel_name, solar_generation in total_solar_generation.items()
     }
-    key_results.average_pv_generation: Dict[str, float] = {
+    key_results.average_pv_generation: dict[str, float] = {
         panel_name: float(round(solar_generation / (20 * 365)))
         for panel_name, solar_generation in total_solar_generation.items()
     }
@@ -290,15 +288,15 @@ def get_key_results(
 def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
     grid_input_profile: pd.DataFrame,
     grid_profile: pd.DataFrame | None,
-    initial_cw_hourly_loads: Dict[str, pd.DataFrame] | None,
-    initial_electric_hourly_loads: Dict[str, pd.DataFrame],
-    initial_hw_hourly_loads: Dict[str, pd.DataFrame],  # pylint: disable=unused-argument
+    initial_cw_hourly_loads: dict[str, pd.DataFrame] | None,
+    initial_electric_hourly_loads: dict[str, pd.DataFrame],
+    initial_hw_hourly_loads: dict[str, pd.DataFrame],  # pylint: disable=unused-argument
     num_years: int,
     output_directory: str,
     simulation_name: str,
     simulation_number: int,
     simulation_output: pd.DataFrame,
-    total_loads: Dict[ResourceType, pd.DataFrame],
+    total_loads: dict[ResourceType, pd.DataFrame],
     total_solar_output: pd.DataFrame,
 ) -> None:
     """
@@ -337,7 +335,7 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
 
     """
 
-    # Set plotting parameters.
+    # set plotting parameters.
     plt.rcParams["axes.labelsize"] = "11"
     # plt.rcParams["figure.figsize"] = (6.8, 5.8)
     plt.rcParams["font.family"] = "sans-serif"
@@ -346,7 +344,7 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
     plt.rcParams["xtick.labelsize"] = "11"
     plt.rcParams["ytick.labelsize"] = "11"
     plt.style.use(STYLE_SHEET)
-    # Set up the CLOVER plotting structure
+    # set up the CLOVER plotting structure
     sns.set_context("notebook")
     sns.set_style("whitegrid")
 
@@ -3714,10 +3712,10 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
             pbar.update(1)
 
             # Plot monthly renewable DHW fraction
-            dhw_renewable_fraction: Dict[int:float] = {}
-            dhw_renewable_fraction_daily: Dict[int : np.ndarray] = {}
-            dhw_dc_fraction: Dict[int:float] = {}
-            dhw_dc_fraction_daily: Dict[int : np.ndarray] = {}
+            dhw_renewable_fraction: dict[int:float] = {}
+            dhw_renewable_fraction_daily: dict[int : np.ndarray] = {}
+            dhw_dc_fraction: dict[int:float] = {}
+            dhw_dc_fraction_daily: dict[int : np.ndarray] = {}
             for month in range(1, 13):
                 dhw_renewable_fraction[month] = np.nansum(
                     (
@@ -3891,8 +3889,6 @@ corresponding to the sugetsed analysis within the user guide.
 
 import os
 
-from typing import Dict
-
 import numpy as np  # pylint: disable=import-error
 import pandas as pd  # pylint: disable=import-error
 import seaborn as sns  # pylint: disable=import-error
@@ -3921,7 +3917,7 @@ COLOUR_MAP: str = "Blues"
 
 # Hours until month:
 #   Mapping between month number and the hours until the start of the month.
-HOURS_UNTIL: Dict[int, int] = {
+HOURS_UNTIL: dict[int, int] = {
     1: 0,
     2: 744,
     3: 1416,
@@ -3979,7 +3975,7 @@ def get_key_results(
     grid_input_profile: pd.DataFrame,
     num_years: int,
     simulation_results: pd.DataFrame,
-    total_solar_output: Dict[str, pd.DataFrame],
+    total_solar_output: dict[str, pd.DataFrame],
 ) -> KeyResults:
     """
     Computes the key results of the simulation.
@@ -4005,15 +4001,15 @@ def get_key_results(
     key_results = KeyResults()
 
     # Compute the solar-generation results.
-    total_solar_generation: Dict[str, float] = {
+    total_solar_generation: dict[str, float] = {
         panel_name: np.round(np.sum(solar_output))
         for panel_name, solar_output in total_solar_output.items()
     }
-    key_results.cumulative_pv_generation: Dict[str, float] = {
+    key_results.cumulative_pv_generation: dict[str, float] = {
         panel_name: float(solar_generation)
         for panel_name, solar_generation in total_solar_generation.items()
     }
-    key_results.average_pv_generation: Dict[str, float] = {
+    key_results.average_pv_generation: dict[str, float] = {
         panel_name: float(round(solar_generation / (20 * 365)))
         for panel_name, solar_generation in total_solar_generation.items()
     }
@@ -4162,15 +4158,15 @@ def get_key_results(
 def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
     grid_input_profile: pd.DataFrame,
     grid_profile: pd.DataFrame | None,
-    initial_cw_hourly_loads: Dict[str, pd.DataFrame] | None,
-    initial_electric_hourly_loads: Dict[str, pd.DataFrame],
-    initial_hw_hourly_loads: Dict[str, pd.DataFrame],  # pylint: disable=unused-argument
+    initial_cw_hourly_loads: dict[str, pd.DataFrame] | None,
+    initial_electric_hourly_loads: dict[str, pd.DataFrame],
+    initial_hw_hourly_loads: dict[str, pd.DataFrame],  # pylint: disable=unused-argument
     num_years: int,
     output_directory: str,
     simulation_name: str,
     simulation_number: int,
     simulation_output: pd.DataFrame,
-    total_loads: Dict[ResourceType, pd.DataFrame],
+    total_loads: dict[ResourceType, pd.DataFrame],
     total_solar_output: pd.DataFrame,
 ) -> None:
     """
@@ -4209,7 +4205,7 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
 
     """
 
-    # Set plotting parameters.
+    # set plotting parameters.
     plt.rcParams["axes.labelsize"] = "11"
     # plt.rcParams["figure.figsize"] = (6.8, 5.8)
     plt.rcParams["font.family"] = "sans-serif"
@@ -4218,7 +4214,7 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
     plt.rcParams["xtick.labelsize"] = "11"
     plt.rcParams["ytick.labelsize"] = "11"
     plt.style.use(STYLE_SHEET)
-    # Set up the CLOVER plotting structure
+    # set up the CLOVER plotting structure
     sns.set_context("notebook")
     sns.set_style("whitegrid")
 
@@ -7586,10 +7582,10 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
             pbar.update(1)
 
             # Plot monthly renewable DHW fraction
-            dhw_renewable_fraction: Dict[int:float] = {}
-            dhw_renewable_fraction_daily: Dict[int : np.ndarray] = {}
-            dhw_dc_fraction: Dict[int:float] = {}
-            dhw_dc_fraction_daily: Dict[int : np.ndarray] = {}
+            dhw_renewable_fraction: dict[int:float] = {}
+            dhw_renewable_fraction_daily: dict[int : np.ndarray] = {}
+            dhw_dc_fraction: dict[int:float] = {}
+            dhw_dc_fraction_daily: dict[int : np.ndarray] = {}
             for month in range(1, 13):
                 dhw_renewable_fraction[month] = np.nansum(
                     (

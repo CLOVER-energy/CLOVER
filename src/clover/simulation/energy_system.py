@@ -23,7 +23,7 @@ import datetime
 import math
 
 from logging import Logger
-from typing import DefaultDict, Dict, List, Tuple, Union
+from typing import DefaultDict, Union
 
 import numpy as np  # pylint: disable=import-error
 import pandas as pd  # pylint: disable=import-error
@@ -81,7 +81,7 @@ def _calculate_backup_diesel_generator_usage(
     scenario: Scenario,
     total_electric_load: float,
     unmet_energy: pd.DataFrame,
-) -> Tuple[float, pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+) -> tuple[float, pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """
     Calculates the backup diesel generator usage based on the scenario.
 
@@ -131,7 +131,7 @@ def _calculate_backup_diesel_generator_usage(
         total_electric_load,
         scenario.diesel_scenario.mode,
     )
-    diesel_capacity: float = float(math.ceil(np.max(diesel_energy, axis=0)))
+    diesel_capacity: float = float(math.ceil(diesel_energy.max(axis=0)))  # type: ignore [call-arg, call-overload]
     diesel_fuel_usage = pd.DataFrame(
         get_diesel_fuel_usage(
             int(diesel_capacity),
@@ -147,11 +147,11 @@ def _calculate_backup_diesel_generator_usage(
 
 
 def _calculate_electric_desalination_parameters(
-    converters: List[Converter],
-    feedwater_sources: List[Converter],
+    converters: list[Converter],
+    feedwater_sources: list[Converter],
     logger: Logger,
     scenario: Scenario,
-) -> Tuple[float, List[Converter], float, float]:
+) -> tuple[float, list[Converter], float, float]:
     """
     Calculates parameters needed for computing electric desalination.
 
@@ -182,7 +182,7 @@ def _calculate_electric_desalination_parameters(
         in {CleanWaterMode.BACKUP, CleanWaterMode.PRIORITISE}
     ):
         # Initialise deslination converters.
-        electric_desalinators: List[Converter] = sorted(
+        electric_desalinators: list[Converter] = sorted(
             [
                 converter
                 for converter in converters
@@ -212,12 +212,14 @@ def _calculate_electric_desalination_parameters(
         )
 
         # Compute the amount of brine produced per litre desalinated.
-        brine_per_desalinated_litre: float = np.mean(
-            [
-                desalinator.waste_production[WasteProduct.BRINE]
-                / desalinator.maximum_output_capacity
-                for desalinator in electric_desalinators
-            ]
+        brine_per_desalinated_litre: float = float(
+            np.mean(
+                [
+                    desalinator.waste_production[WasteProduct.BRINE]
+                    / desalinator.maximum_output_capacity
+                    for desalinator in electric_desalinators
+                ]
+            )
         )
 
         # Compute the amount of energy required per litre desalinated.
@@ -259,30 +261,30 @@ def _calculate_electric_desalination_parameters(
 
 
 def _calculate_renewable_cw_profiles(  # pylint: disable=too-many-locals, too-many-statements
-    converters: List[Converter],
+    converters: list[Converter],
     disable_tqdm: bool,
     end_hour: int,
-    irradiance_data: Dict[str, pd.Series],
+    irradiance_data: dict[str, pd.Series],
     logger: Logger,
     minigrid: Minigrid,
     number_of_cw_tanks: int,
     pvt_size: int,
     scenario: Scenario,
     start_hour: int,
-    temperature_data: Dict[str, pd.Series],
-    total_waste_produced: Dict[WasteProduct, DefaultDict[int, float]],
+    temperature_data: dict[str, pd.Series],
+    total_waste_produced: dict[WasteProduct, DefaultDict[int, float]],
     wind_speed_data: pd.Series | None,
-) -> Tuple[
+) -> tuple[
     pd.DataFrame | None,
     pd.DataFrame,
-    List[Converter],
+    list[Converter],
     pd.DataFrame | None,
     pd.DataFrame | None,
     pd.DataFrame,
     pd.DataFrame,
-    List[Converter],
+    list[Converter],
     pd.DataFrame,
-    Dict[WasteProduct, DefaultDict[int, float]],
+    dict[WasteProduct, DefaultDict[int, float]],
 ]:
     """
     Calculates PV-T related profiles.
@@ -349,7 +351,7 @@ def _calculate_renewable_cw_profiles(  # pylint: disable=too-many-locals, too-ma
     if scenario.desalination_scenario is not None:
         # Determine the list of available feedwater sources.
         logger.info("Determining available feedwater sources.")
-        feedwater_sources: List[Converter] = sorted(
+        feedwater_sources: list[Converter] = sorted(
             [
                 converter
                 for converter in converters
@@ -485,7 +487,7 @@ def _calculate_renewable_cw_profiles(  # pylint: disable=too-many-locals, too-ma
 
         logger.info("Determining required feedwater sources.")
         feedwater_capacity: float = 0
-        required_feedwater_sources: List[Converter] = []
+        required_feedwater_sources: list[Converter] = []
         while (
             feedwater_capacity
             < thermal_desalination_plant.input_resource_consumption[
@@ -620,10 +622,10 @@ def _calculate_renewable_cw_profiles(  # pylint: disable=too-many-locals, too-ma
 
 
 def _calculate_renewable_hw_profiles(  # pylint: disable=too-many-locals, too-many-statements
-    converters: List[Converter],
+    converters: list[Converter],
     disable_tqdm: bool,
     end_hour: int,
-    irradiance_data: Dict[str, pd.Series],
+    irradiance_data: dict[str, pd.Series],
     logger: Logger,
     minigrid: Minigrid,
     number_of_hw_tanks: int,
@@ -631,10 +633,10 @@ def _calculate_renewable_hw_profiles(  # pylint: disable=too-many-locals, too-ma
     pvt_size: int,
     scenario: Scenario,
     start_hour: int,
-    temperature_data: Dict[str, pd.Series],
-    total_waste_produced: Dict[WasteProduct, DefaultDict[int, float]],
+    temperature_data: dict[str, pd.Series],
+    total_waste_produced: dict[WasteProduct, DefaultDict[int, float]],
     wind_speed_data: pd.Series | None,
-) -> Tuple[
+) -> tuple[
     Union[Converter, DieselWaterHeater] | None,
     pd.DataFrame,
     pd.DataFrame | None,
@@ -644,7 +646,7 @@ def _calculate_renewable_hw_profiles(  # pylint: disable=too-many-locals, too-ma
     pd.DataFrame | None,
     pd.DataFrame | None,
     pd.DataFrame | None,
-    Dict[WasteProduct, DefaultDict[int, float]],
+    dict[WasteProduct, DefaultDict[int, float]],
     pd.DataFrame | None,
 ]:
     """
@@ -867,7 +869,7 @@ def _calculate_renewable_hw_profiles(  # pylint: disable=too-many-locals, too-ma
         logger,
         minigrid,
         number_of_hw_tanks,
-        processed_total_hw_load[0],
+        processed_total_hw_load[0],  # type: ignore [call-overload]
         pvt_size,
         ResourceType.HOT_CLEAN_WATER,
         scenario,
@@ -881,7 +883,7 @@ def _calculate_renewable_hw_profiles(  # pylint: disable=too-many-locals, too-ma
     if auxiliary_heater is not None:
         # Determine the electric power consumed by the auxiliary heater.
         auxiliary_heater_power_consumption: pd.DataFrame = pd.DataFrame(
-            0.001
+            0.001  # type: ignore[operator]
             * auxiliary_heater.input_resource_consumption[
                 ResourceType.ELECTRIC
             ]  # [Wh/degC]
@@ -900,7 +902,7 @@ def _calculate_renewable_hw_profiles(  # pylint: disable=too-many-locals, too-ma
             # Compute the heat consumed by the auxiliary heater.
             auxiliary_heater_heat_consumption: pd.DataFrame = (
                 pd.DataFrame(  # pylint: disable=unused-variable
-                    (hot_water_tank_volume_supplied > 0)
+                    (hot_water_tank_volume_supplied > 0)  # type: ignore [arg-type, operator]
                     * hot_water_tank_volume_supplied  # type: ignore [operator]
                     * minigrid.hot_water_tank.heat_capacity
                     * (
@@ -922,7 +924,7 @@ def _calculate_renewable_hw_profiles(  # pylint: disable=too-many-locals, too-ma
                     float,
                     pd.DataFrame(  # type: ignore [arg-type]
                         (
-                            waste_produced
+                            waste_produced  # type: ignore [operator]
                             * (
                                 hot_water_tank_volume_supplied  # type: ignore [operator]
                                 / auxiliary_heater.input_resource_consumption[
@@ -960,7 +962,7 @@ def _calculate_renewable_hw_profiles(  # pylint: disable=too-many-locals, too-ma
         [
             ((supplied / load) if load is not None and load > 0 else None)
             for supplied, load in zip(
-                hot_water_tank_volume_supplied[0],  # type: ignore [call-overload]
+                hot_water_tank_volume_supplied[0],  # type: ignore [call-overload, index]
                 processed_total_hw_load[0],  # type: ignore [call-overload]
             )
         ]
@@ -968,8 +970,8 @@ def _calculate_renewable_hw_profiles(  # pylint: disable=too-many-locals, too-ma
 
     # Determine the temperature gain of the hot-water as compared with the mains
     # supply temperature.
-    hot_water_temperature_gain: pd.DataFrame | None = (
-        hot_water_tank_temperature
+    hot_water_temperature_gain: pd.DataFrame = (
+        hot_water_tank_temperature  # type: ignore [assignment,operator]
         - scenario.hot_water_scenario.cold_water_supply_temperature
     )
 
@@ -987,19 +989,31 @@ def _calculate_renewable_hw_profiles(  # pylint: disable=too-many-locals, too-ma
     )
 
     hot_water_power_consumed = hot_water_power_consumed.reset_index(drop=True)
-    hot_water_pvt_collector_input_temperature = (
-        hot_water_pvt_collector_input_temperature.reset_index(drop=True)
-    )
-    hot_water_pvt_collector_output_temperature = (
-        hot_water_pvt_collector_output_temperature.reset_index(drop=True)
-    )
-    hot_water_pvt_electric_power_per_unit = (
-        hot_water_pvt_electric_power_per_unit.reset_index(drop=True)
-    )
-    hot_water_tank_temperature = hot_water_tank_temperature.reset_index(drop=True)
-    hot_water_tank_volume_supplied = hot_water_tank_volume_supplied.reset_index(
+
+    # FIXME: Not sure what's going on here...
+    # !!! Temporary fix !!!
+    hot_water_pvt_collector_input_temperature = None
+    # !!! Temporary fix !!!
+    if hot_water_pvt_collector_input_temperature is not None:
+        hot_water_pvt_collector_input_temperature = (
+            hot_water_pvt_collector_input_temperature.reset_index(drop=True)
+        )
+
+    if hot_water_pvt_collector_output_temperature is not None:
+        hot_water_pvt_collector_output_temperature = (
+            hot_water_pvt_collector_output_temperature.reset_index(drop=True)
+        )
+
+    hot_water_tank_temperature = hot_water_pvt_electric_power_per_unit.reset_index(
         drop=True
     )
+    if hot_water_tank_temperature is not None:
+        hot_water_tank_temperature = hot_water_tank_temperature.reset_index(drop=True)
+
+    if hot_water_tank_volume_supplied is not None:
+        hot_water_tank_volume_supplied = hot_water_tank_volume_supplied.reset_index(
+            drop=True
+        )
     hot_water_temperature_gain = hot_water_temperature_gain.reset_index(  # type: ignore  [union-attr]  # pylint: disable=line-too-long
         drop=True
     )
@@ -1028,7 +1042,7 @@ def _setup_tank_storage_profiles(
     resource_type: ResourceType,
     scenario: Scenario,
     tank: CleanWaterTank | None,
-) -> Tuple[Dict[int, float], float, float, float, Dict[int, float]]:
+) -> tuple[dict[int, float], float, float, float, dict[int, float]]:
     """
     Sets up tank storage parameters.
 
@@ -1060,7 +1074,7 @@ def _setup_tank_storage_profiles(
 
     """
 
-    power_consumed_mapping: Dict[int, float] = power_consumed[  # type: ignore
+    power_consumed_mapping: dict[int, float] = power_consumed[  # type: ignore
         0
     ].to_dict()
 
@@ -1079,7 +1093,7 @@ def _setup_tank_storage_profiles(
                 f"No {resource_type.value} tank specified on the energy system despite "
                 + f"{resource_type.value} loads being requested.",
             )
-        hourly_tank_storage: Dict[int, float] = {}
+        hourly_tank_storage: dict[int, float] = {}
         initial_tank_storage: float = 0.0
 
         # Determine the maximum tank storage.
@@ -1136,16 +1150,16 @@ def _setup_tank_storage_profiles(
 
 def _update_battery_health(
     battery_energy_flow: float,
-    battery_health: Dict[int, float],
+    battery_health: dict[int, float],
     cumulative_battery_storage_power: float,
     electric_storage_size: float,
-    hourly_battery_storage: Dict[int, float],
+    hourly_battery_storage: dict[int, float],
     maximum_battery_energy_throughput: float,
     minigrid: Minigrid,
-    storage_power_supplied: Dict[int, float],
+    storage_power_supplied: dict[int, float],
     *,
     time_index: int,
-) -> Tuple[float, float, float]:
+) -> tuple[float, float, float]:
     """
     Updates the health of the batteries.
 
@@ -1221,27 +1235,27 @@ def _update_battery_health(
 
 def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
     clean_water_pvt_size: int,
-    conventional_cw_source_profiles: Dict[WaterSource, pd.DataFrame] | None,
-    converters: Union[Dict[str, Converter], List[Converter]],
+    conventional_cw_source_profiles: dict[WaterSource, pd.DataFrame] | None,
+    converters: Union[dict[str, Converter], list[Converter]],
     disable_tqdm: bool,
     electric_storage_size: float,
     grid_profile: pd.DataFrame | None,
     hot_water_pvt_size: int,
-    irradiance_data: Dict[str, pd.Series],
+    irradiance_data: dict[str, pd.Series],
     kerosene_usage: pd.DataFrame,
     location: Location,
     logger: Logger,
     minigrid: Minigrid,
     number_of_cw_tanks: int,
     number_of_hw_tanks: int,
-    pv_power_produced: Dict[str, pd.Series],
-    pv_sizes: Dict[str, float] | None,
+    pv_power_produced: dict[str, pd.Series],
+    pv_sizes: dict[str, float] | None,
     scenario: Scenario,
     simulation: Simulation,
-    temperature_data: Dict[str, pd.Series],
-    total_loads: Dict[ResourceType[pd.DataFrame]],
+    temperature_data: dict[str, pd.Series],
+    total_loads: dict[ResourceType, pd.DataFrame | None],
     wind_speed_data: pd.Series | None,
-) -> Tuple[datetime.timedelta, pd.DataFrame, SystemDetails]:
+) -> tuple[datetime.timedelta, pd.DataFrame, SystemDetails]:
     """
     Simulates a minigrid system
 
@@ -1393,7 +1407,7 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
     total_cw_load: pd.DataFrame | None = total_loads[ResourceType.CLEAN_WATER]
     total_electric_load: pd.DataFrame | None = total_loads[ResourceType.ELECTRIC]
     total_hw_load: pd.DataFrame | None = total_loads[ResourceType.HOT_CLEAN_WATER]
-    total_waste_produced: Dict[WasteProduct, DefaultDict[int, float]] = defaultdict(
+    total_waste_produced: dict[WasteProduct, DefaultDict[int, float]] = defaultdict(
         lambda: defaultdict(float)
     )
 
@@ -1402,7 +1416,7 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
     buffer_tank_volume_supplied: pd.DataFrame
     clean_water_pvt_collector_output_temperature: pd.DataFrame | None
     clean_water_pvt_electric_power_per_unit: pd.DataFrame
-    feedwater_sources: List[Converter]
+    feedwater_sources: list[Converter]
     renewable_thermal_cw_produced: pd.DataFrame
     thermal_desalination_electric_power_consumed: pd.DataFrame
 
@@ -1609,9 +1623,9 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
     kerosene_profile: pd.Series
     load_energy: pd.DataFrame
     renewables_energy: pd.DataFrame
-    renewables_energy_by_source: Dict[RenewableEnergySource, pd.DataFrame]
-    renewables_energy_map: Dict[
-        RenewableEnergySource, Union[pd.DataFrame, Dict[str, pd.Series]]
+    renewables_energy_by_source: dict[RenewableEnergySource, pd.DataFrame]
+    renewables_energy_map: dict[
+        RenewableEnergySource, Union[pd.DataFrame, dict[str, pd.Series]]
     ] = {
         RenewableEnergySource.PV: pv_power_produced,
         RenewableEnergySource.CLEAN_WATER_PVT: (
@@ -1661,6 +1675,9 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
         ].values
     )
 
+    # Remove initial households if required.
+    # TODO: Include code here to resolve this issue...
+
     # Initialise battery storage parameters
     if scenario.battery:
         maximum_battery_energy_throughput: float = (
@@ -1689,9 +1706,9 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
         maximum_battery_storage = 0
         minimum_battery_storage = 0
     cumulative_battery_storage_power: float = 0.0
-    hourly_battery_storage: Dict[int, float] = {}
+    hourly_battery_storage: dict[int, float] = {}
     new_hourly_battery_storage: float = 0.0
-    battery_health: Dict[int, float] = {}
+    battery_health: dict[int, float] = {}
 
     # @BenWinchester - Re-order this calculation to use CW and HW power consumed.
     # Initialise tank storage parameters
@@ -1736,19 +1753,19 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
     )
 
     # Intialise tank accounting parameters
-    backup_desalinator_water_supplied: Dict[int, float] = {}
-    clean_water_demand_met_by_excess_energy: Dict[int, float] = {}
-    clean_water_supplied_by_excess_energy: Dict[int, float] = {}
-    conventional_water_supplied: Dict[int, float] = {}
-    excess_energy_used_desalinating: Dict[int, float] = {}
-    storage_water_supplied: Dict[int, float] = {}
-    water_surplus: Dict[int, float] = {}
-    # water_deficit: List[float] = []
+    backup_desalinator_water_supplied: dict[int, float] = {}
+    clean_water_demand_met_by_excess_energy: dict[int, float] = {}
+    clean_water_supplied_by_excess_energy: dict[int, float] = {}
+    conventional_water_supplied: dict[int, float] = {}
+    excess_energy_used_desalinating: dict[int, float] = {}
+    storage_water_supplied: dict[int, float] = {}
+    water_surplus: dict[int, float] = {}
+    # water_deficit: list[float] = []
 
     # Initialise energy accounting parameters
-    energy_surplus: Dict[int, float] | None = {}
-    energy_deficit: Dict[int, float] | None = {}
-    storage_power_supplied: Dict[int, float] = {}
+    energy_surplus: dict[int, float] | None = {}
+    energy_deficit: dict[int, float] | None = {}
+    storage_power_supplied: dict[int, float] = {}
 
     # Do not do the itteration if no storage is being used
     if (
@@ -1882,6 +1899,10 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
         battery_health_frame = dict_to_dataframe(battery_health, logger)
         hourly_battery_storage_frame = dict_to_dataframe(hourly_battery_storage, logger)
         storage_power_supplied_frame = dict_to_dataframe(storage_power_supplied, logger)
+    else:
+        battery_health_frame = pd.DataFrame([0] * (end_hour - start_hour))
+        hourly_battery_storage_frame = pd.DataFrame([0] * (end_hour - start_hour))
+        storage_power_supplied_frame = pd.DataFrame([0] * (end_hour - start_hour))
 
     # Determine the initial and final storage sizes
     initial_storage_size = float(electric_storage_size * minigrid.battery.storage_unit)
@@ -1987,7 +2008,7 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
             blackout_times,
             minigrid,
             scenario,
-            float(np.sum(processed_total_electric_load)),
+            processed_total_electric_load.sum(axis=0),  # type: ignore [arg-type]
             unmet_energy,
         )
     elif scenario.diesel_scenario.mode == DieselMode.CYCLE_CHARGING:
@@ -2331,7 +2352,7 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
         float(
             (electric_storage_size if electric_storage_size is not None else 0)
             * minigrid.battery.storage_unit
-            * np.min(battery_health_frame[ColumnHeader.BATTERY_HEALTH.value])
+            * (battery_health_frame[ColumnHeader.BATTERY_HEALTH.value]).min()
         ),
         {
             converter: available_converters.count(converter)
@@ -2419,7 +2440,7 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
     ):
         system_performance_outputs_list.append(total_pvt_energy)
     if scenario.desalination_scenario is not None:
-        desalination_performance_outputs: List[pd.DataFrame] | None = [
+        desalination_performance_outputs: list[pd.DataFrame | None] = [
             backup_desalinator_water_frame,
             clean_water_blackout_times,
             clean_water_demand_met_by_excess_energy_frame,
@@ -2457,7 +2478,7 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
         )
 
         if scenario.pv_t:
-            clean_water_performance_outputs: List[pd.DataFrame] | None = [
+            clean_water_performance_outputs: list[pd.DataFrame | None] = [
                 buffer_tank_temperature,
                 buffer_tank_volume_supplied,
                 clean_water_pvt_collector_input_temperature,
@@ -2485,7 +2506,7 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
             )
 
     if scenario.hot_water_scenario is not None:
-        hot_water_performance_outputs: List[pd.DataFrame] | None = [
+        hot_water_performance_outputs: list[pd.DataFrame | None] = [
             hot_water_power_consumed,
             hot_water_pvt_collector_input_temperature,
             hot_water_pvt_collector_output_temperature,

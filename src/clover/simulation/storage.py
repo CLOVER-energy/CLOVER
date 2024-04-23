@@ -17,7 +17,7 @@ calculations associated with these storage media are carried out in this module.
 """
 
 from logging import Logger
-from typing import DefaultDict, Dict, Tuple, Union
+from typing import DefaultDict, Union
 
 import pandas as pd
 import numpy as np
@@ -48,7 +48,7 @@ __all__ = (
 
 def battery_iteration_step(
     battery_storage_profile: pd.DataFrame,
-    hourly_battery_storage: Dict[int, float],
+    hourly_battery_storage: dict[int, float],
     initial_battery_storage: float,
     logger: Logger,
     maximum_battery_storage: float,
@@ -56,7 +56,7 @@ def battery_iteration_step(
     minimum_battery_storage: float,
     *,
     time_index: int,
-) -> Tuple[float, float, float]:
+) -> tuple[float, float, float]:
     """
     Carries out an iteration calculation for the battery.
 
@@ -133,17 +133,17 @@ def battery_iteration_step(
 
 
 def cw_tank_iteration_step(  # pylint: disable=too-many-locals
-    backup_desalinator_water_supplied: Dict[int, float],
+    backup_desalinator_water_supplied: dict[int, float],
     brine_per_desalinated_litre: float,
-    clean_water_power_consumed_mapping: Dict[int, float],
-    clean_water_demand_met_by_excess_energy: Dict[int, float],
-    clean_water_supplied_by_excess_energy: Dict[int, float],
-    conventional_cw_source_profiles: Dict[WaterSource, pd.DataFrame] | None,
-    conventional_water_supplied: Dict[int, float],
+    clean_water_power_consumed_mapping: dict[int, float],
+    clean_water_demand_met_by_excess_energy: dict[int, float],
+    clean_water_supplied_by_excess_energy: dict[int, float],
+    conventional_cw_source_profiles: dict[WaterSource, pd.DataFrame] | None,
+    conventional_water_supplied: dict[int, float],
     energy_per_desalinated_litre: float,
     excess_energy: float,
-    excess_energy_used_desalinating: Dict[int, float],
-    hourly_cw_tank_storage: Dict[int, float],
+    excess_energy_used_desalinating: dict[int, float],
+    hourly_cw_tank_storage: dict[int, float],
     initial_cw_tank_storage: float,
     logger: Logger,
     maximum_battery_storage: float,
@@ -153,12 +153,12 @@ def cw_tank_iteration_step(  # pylint: disable=too-many-locals
     minimum_cw_tank_storage: float,
     new_hourly_battery_storage: float,
     scenario: Scenario,
-    storage_water_supplied: Dict[int, float],
+    storage_water_supplied: dict[int, float],
     tank_storage_profile: pd.DataFrame,
-    total_waste_produced: Dict[WasteProduct, DefaultDict[int, float]],
+    total_waste_produced: dict[WasteProduct, DefaultDict[int, float]],
     *,
     time_index: int,
-) -> Tuple[float, Dict[WasteProduct, DefaultDict[int, float]]]:
+) -> tuple[float, dict[WasteProduct, DefaultDict[int, float]]]:
     """
     Caries out an iteration calculation for the clean-water tanks.
 
@@ -376,28 +376,28 @@ def cw_tank_iteration_step(  # pylint: disable=too-many-locals
 
 def get_electric_battery_storage_profile(  # pylint: disable=too-many-locals, too-many-statements
     *,
-    grid_profile: pd.Series,
+    grid_profile: pd.DataFrame,
     kerosene_usage: pd.Series,
     location: Location,
     logger: Logger,
     minigrid: Minigrid,
     processed_total_electric_load: pd.DataFrame,
-    pv_sizes: Dict[str, float] | None = None,
-    renewables_power_produced: Dict[
-        RenewableEnergySource, Union[pd.DataFrame, Dict[str, pd.Series]]
+    pv_sizes: dict[str, float] | None = None,
+    renewables_power_produced: dict[
+        RenewableEnergySource, Union[pd.DataFrame, dict[str, pd.Series]]
     ],
     scenario: Scenario,
     clean_water_pvt_size: int = 0,
     end_hour: int = 4,
     hot_water_pvt_size: int = 0,
     start_hour: int = 0,
-) -> Tuple[
+) -> tuple[
     pd.DataFrame,
     pd.DataFrame,
     pd.Series,
     pd.DataFrame,
     pd.DataFrame,
-    Dict[RenewableEnergySource, pd.DataFrame],
+    dict[RenewableEnergySource, pd.DataFrame],
     pd.DataFrame,
 ]:
     """
@@ -488,7 +488,7 @@ def get_electric_battery_storage_profile(  # pylint: disable=too-many-locals, to
             if pv_generation is None:
                 pv_generation = pv_generation_frame
             else:
-                pv_generation += pv_generation_frame
+                pv_generation += pv_generation_frame  # type: ignore [operator]
 
     # Initialise PV-T power generation, including degradation of PV
     if minigrid.pvt_panel is not None:
@@ -516,7 +516,7 @@ def get_electric_battery_storage_profile(  # pylint: disable=too-many-locals, to
         if RenewableEnergySource.CLEAN_WATER_PVT in renewables_power_produced:
             try:
                 clean_water_pvt_electric_power_produced: pd.DataFrame = pd.DataFrame(
-                    renewables_power_produced[RenewableEnergySource.CLEAN_WATER_PVT]
+                    renewables_power_produced[RenewableEnergySource.CLEAN_WATER_PVT]  # type: ignore [arg-type]
                 )
             except KeyError:
                 logger.error(
@@ -546,7 +546,7 @@ def get_electric_battery_storage_profile(  # pylint: disable=too-many-locals, to
         if RenewableEnergySource.HOT_WATER_PVT in renewables_power_produced:
             try:
                 hot_water_pvt_electric_power_produced: pd.DataFrame = pd.DataFrame(
-                    renewables_power_produced[RenewableEnergySource.HOT_WATER_PVT]
+                    renewables_power_produced[RenewableEnergySource.HOT_WATER_PVT]  # type: ignore [arg-type]
                 )
             except KeyError:
                 logger.error(
@@ -630,7 +630,7 @@ def get_electric_battery_storage_profile(  # pylint: disable=too-many-locals, to
         pvt_hw_electric_energy = pd.DataFrame([0] * pv_energy.size)
 
     # Combine energy from all renewables sources
-    renewables_energy_map: Dict[RenewableEnergySource, pd.DataFrame] = {
+    renewables_energy_map: dict[RenewableEnergySource, pd.DataFrame] = {
         RenewableEnergySource.PV: pv_energy,
         RenewableEnergySource.CLEAN_WATER_PVT: pvt_cw_electric_energy,
         RenewableEnergySource.HOT_WATER_PVT: pvt_hw_electric_energy,
@@ -668,7 +668,7 @@ def get_electric_battery_storage_profile(  # pylint: disable=too-many-locals, to
         # Take energy from grid first if available
         if scenario.grid:
             grid_energy = pd.DataFrame(  # type: ignore
-                grid_profile.mul(load_energy[0].values).values
+                grid_profile.mul(load_energy[0].values).values  # type: ignore [attr-defined, call-overload, operator]
             )
         else:
             grid_energy = pd.DataFrame([0] * (end_hour - start_hour))
@@ -676,39 +676,39 @@ def get_electric_battery_storage_profile(  # pylint: disable=too-many-locals, to
         remaining_profile = (grid_energy[0] <= 0).mul(load_energy[0])  # type: ignore
         logger.debug(
             "Remainig profile: %s kWh",
-            round(float(np.sum(remaining_profile)), 2),  # type: ignore [arg-type]
+            round(float(np.sum(remaining_profile)), 2),  # type: ignore [arg-type, call-overload]
         )
 
         # Then take energy from PV if generated
         logger.debug(
             "Renewables profile: %s kWh",
-            f"{round(float(np.sum(renewables_energy)), 2)}",  # type: ignore [arg-type]
+            f"{round(float(np.sum(renewables_energy)), 2)}",  # type: ignore [arg-type, call-overload]
         )
         battery_storage_profile = pd.DataFrame(
             renewables_energy[0].values - remaining_profile.values  # type: ignore
         )
         logger.debug(
             "Storage profile: %s kWh",
-            f"{round(float(np.sum(battery_storage_profile)), 2)}",  # type: ignore [arg-type]
+            f"{round(float(np.sum(battery_storage_profile)), 2)}",  # type: ignore [arg-type, call-overload]
         )
 
         renewables_energy_used_directly = pd.DataFrame(
             ((renewables_energy[0] > 0) * (remaining_profile > 0))  # type: ignore [call-overload]
-            * pd.concat(  # type: ignore [call-overload]
+            * pd.concat(  # type: ignore [call-arg, call-overload]
                 [renewables_energy[0], remaining_profile], axis=1  # type: ignore [call-overload]
             ).min(axis=1)
         )
 
         logger.debug(
             "Grid energy: %s kWh",
-            f"{round(float(np.sum(grid_energy)), 2)}",  # type: ignore [arg-type]
+            f"{round(float(np.sum(grid_energy)), 2)}",  # type: ignore [arg-type, call-overload]
         )
         renewables_direct_rounded: float = round(
-            float(np.sum(renewables_energy_used_directly)), 2  # type: ignore [arg-type]
+            float(np.sum(renewables_energy_used_directly)), 2  # type: ignore [arg-type, call-overload]
         )
         logger.debug(
             "Renewables direct: %s kWh",
-            round(float(np.sum(renewables_energy_used_directly)), 2),  # type: ignore [arg-type]
+            round(float(np.sum(renewables_energy_used_directly)), 2),  # type: ignore [arg-type, call-overload]
         )
         logger.debug("Renewables direct: %s kWh", renewables_direct_rounded)
 
@@ -745,7 +745,7 @@ def get_electric_battery_storage_profile(  # pylint: disable=too-many-locals, to
 def get_water_storage_profile(
     processed_total_cw_load: pd.DataFrame,
     renewable_cw_produced: pd.DataFrame,
-) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """
     Gets the storage profile for the clean-water system.
 

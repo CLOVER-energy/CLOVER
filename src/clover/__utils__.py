@@ -24,7 +24,7 @@ import enum
 import logging
 import os
 
-from typing import Any, DefaultDict, Dict, List, Set, Union
+from typing import Any, DefaultDict, Union
 
 import json
 import numpy as np  # pylint: disable=import-error
@@ -187,7 +187,7 @@ MODE: str = "mode"
 
 # Month mid-day:
 #   The "day" in the year that falls in the middle of the month.
-MONTH_MID_DAY: List[int] = [
+MONTH_MID_DAY: list[int] = [
     0,
     14,
     45,
@@ -206,7 +206,7 @@ MONTH_MID_DAY: List[int] = [
 
 # Month start day:
 #   The "day" in the year that falls at the start of each month.
-MONTH_START_DAY: List[int] = [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334]
+MONTH_START_DAY: list[int] = [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334]
 
 # Name:
 #   Keyword used for parsing converter name information.
@@ -270,7 +270,7 @@ class AuxiliaryHeaterType(enum.Enum):
 # Auxiliary heater name to type mapping:
 #   Used to parse auxiliary heater types, allowing for more than are defined on the
 #   base enum class.
-AUXILIARY_HEATER_NAME_TO_TYPE_MAPPING: Dict[str[AuxiliaryHeaterType]] = {
+AUXILIARY_HEATER_NAME_TO_TYPE_MAPPING: dict[str, AuxiliaryHeaterType | None] = {
     e.value: e for e in AuxiliaryHeaterType
 }
 AUXILIARY_HEATER_NAME_TO_TYPE_MAPPING["none"] = None
@@ -339,9 +339,9 @@ class CleanWaterScenario:
 
     """
 
-    conventional_sources: Set[str]
+    conventional_sources: set[str]
     mode: CleanWaterMode
-    sources: List[str]
+    sources: list[str]
 
 
 class ColdWaterSupply(enum.Enum):
@@ -721,7 +721,7 @@ class DemandType(enum.Enum):
 
 
 def dict_to_dataframe(
-    input_dict: Union[Dict[int, float], Dict[int, int]], logger: logging.Logger
+    input_dict: Union[dict[int, float], dict[int, int]], logger: logging.Logger
 ) -> pd.DataFrame:
     """
     Converts a `dict` to a :class:`pandas.DataFrame`.
@@ -804,7 +804,7 @@ class DieselScenario:
     backup_threshold: float | None
     mode: DieselMode
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """
         Returns a `dict` summarising the :class:`DieselScenario` instance.
 
@@ -862,7 +862,7 @@ def get_locations_foldername() -> str:
 
 def get_logger(logger_name: str, verbose: bool = False) -> logging.Logger:
     """
-    Set-up and return a logger.
+    set-up and return a logger.
 
     Inputs:
         - logger_name:
@@ -1033,7 +1033,7 @@ class KeyResults:
     average_daily_renewables_energy_used: float | None = None
     average_daily_stored_energy_supplied: float | None = None
     average_daily_unmet_energy: float | None = None
-    average_pv_generation: Dict[str, float] | None = None
+    average_pv_generation: dict[str, float] | None = None
     average_pvt_electric_generation: float | None = None
     average_renewable_generation: float | None = None
     blackouts: float | None = None
@@ -1045,7 +1045,7 @@ class KeyResults:
     cumulative_hw_load: float | None = None
     cumulative_hw_pvt_generation: float | None = None
     cumulative_hw_supplied: float | None = None
-    cumulative_pv_generation: Dict[str, float] | None = None
+    cumulative_pv_generation: dict[str, float] | None = None
     diesel_times: float | None = None
     grid_daily_hours: float | None = None
     max_buffer_tank_temperature: float | None = None
@@ -1057,7 +1057,7 @@ class KeyResults:
 
     def to_dict(  # pylint: disable=too-many-branches, too-many-statements
         self,
-    ) -> Dict[str, Union[float, Dict[str, float]]]:
+    ) -> dict[str, Union[float, dict[str, float]]]:
         """
         Returns the :class:`KeyResults` information as a `dict` ready for saving.
 
@@ -1067,7 +1067,7 @@ class KeyResults:
 
         """
 
-        data_dict: Dict[str, Union[float, Dict[str, float]]] = {}
+        data_dict: dict[str, Union[float, dict[str, float]]] = {}
 
         if self.average_daily_cw_demand_covered is not None:
             data_dict["Average daily clean-water demand covered"] = round(
@@ -1420,7 +1420,7 @@ class Location:
     time_difference: float
 
     @classmethod
-    def from_dict(cls, location_inputs: Dict[str, Any]) -> Any:
+    def from_dict(cls, location_inputs: dict[str, Any]) -> Any:
         """
         Creates a :class:`Location` instance based on the inputs provided.
 
@@ -1785,7 +1785,7 @@ class PVTScenario:
 
 def read_yaml(
     filepath: str, logger: logging.Logger
-) -> Union[Dict[str, Any], List[Dict[str, Any]]]:
+) -> Union[dict[str, Any], list[dict[str, Any]]]:
     """
     Reads a YAML file and returns the contents.
 
@@ -1795,7 +1795,7 @@ def read_yaml(
     # Process the new-location data.
     try:
         with open(filepath, "r") as filedata:
-            file_contents: Union[Dict[str, Any], List[Dict[str, Any]]] = yaml.safe_load(
+            file_contents: Union[dict[str, Any], list[dict[str, Any]]] = yaml.safe_load(
                 filedata
             )
     except FileNotFoundError:
@@ -1880,11 +1880,11 @@ class DesalinationScenario:
     feedwater_supply_temperature: float
     name: str
     pvt_scenario: PVTScenario
-    unclean_water_sources: List[str]
+    unclean_water_sources: list[str]
 
     @classmethod
     def from_dict(
-        cls, desalination_inputs: Dict[str, Any], logger: logging.Logger
+        cls, desalination_inputs: dict[str, Any], logger: logging.Logger
     ) -> Any:
         """
         Returns a :class:`DesalinationScenario` instance based on the input data.
@@ -2035,13 +2035,13 @@ class HotWaterScenario:
     auxiliary_heater: AuxiliaryHeaterType | None
     cold_water_supply: ColdWaterSupply
     cold_water_supply_temperature: float
-    conventional_sources: List[str]
+    conventional_sources: list[str]
     demand_temperature: float
     name: str
     pvt_scenario: PVTScenario
 
     @classmethod
-    def from_dict(cls, hot_water_inputs: Dict[str, Any], logger: logging.Logger) -> Any:
+    def from_dict(cls, hot_water_inputs: dict[str, Any], logger: logging.Logger) -> Any:
         """
         Returns a :class:`DesalinationScenario` instance based on the input data.
 
@@ -2121,7 +2121,7 @@ class HotWaterScenario:
             )
 
         try:
-            conventional_sources: List[str] = hot_water_inputs[
+            conventional_sources: list[str] = hot_water_inputs[
                 ResourceType.HOT_CLEAN_WATER.value
             ][CONVENTIONAL_SOURCES]
         except KeyError:
@@ -2263,7 +2263,7 @@ class Scenario:
     grid_type: str
     hot_water_scenario: HotWaterScenario | None
     name: str
-    resource_types: Set[ResourceType]
+    resource_types: set[ResourceType]
     prioritise_self_generation: bool
     pv: bool
     pv_d: bool
@@ -2273,10 +2273,10 @@ class Scenario:
     @classmethod
     def from_dict(
         cls,
-        desalination_scenarios: List[DesalinationScenario] | None,
-        hot_water_scenarios: List[HotWaterScenario] | None,
+        desalination_scenarios: list[DesalinationScenario] | None,
+        hot_water_scenarios: list[HotWaterScenario] | None,
         logger: logging.Logger,
-        scenario_inputs: Dict[str, Any],
+        scenario_inputs: dict[str, Any],
     ) -> Any:
         """
         Returns a :class:`Scenario` instance based on the input data.
@@ -2419,7 +2419,7 @@ class Scenario:
             ),
         )
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """
         Returns a `dict` summarising the :class:`Scenario` instance.
 
@@ -2484,7 +2484,7 @@ class Simulation:
         )
 
     @classmethod
-    def from_dict(cls, simulation_inputs: Dict[str, Any]) -> Any:
+    def from_dict(cls, simulation_inputs: dict[str, Any]) -> Any:
         """
         Returns a :class:`Simulation` instance based on the input data.
 
@@ -2575,38 +2575,38 @@ class SystemDetails:
 
     diesel_capacity: float = 0
     end_year: int = 0
-    final_converter_sizes: Dict[Any, int] | None = None
+    final_converter_sizes: dict[Any, int] | None = None
     final_cw_pvt_size: float | None = 0
     final_hw_pvt_size: float | None = 0
     final_num_buffer_tanks: int | None = 0
     final_num_clean_water_tanks: int | None = 0
     final_num_hot_water_tanks: int | None = 0
-    final_pv_sizes: Union[Dict[str, float], DefaultDict[str, float]] = (
+    final_pv_sizes: Union[dict[str, float], DefaultDict[str, float]] = (
         dataclasses.field(  # type: ignore [assignment]
             default_factory=lambda: collections.defaultdict(float)
         )
     )
     final_storage_size: float = 0
-    initial_converter_sizes: Dict[Any, int] | None = None
+    initial_converter_sizes: dict[Any, int] | None = None
     initial_cw_pvt_size: float | None = 0
     initial_hw_pvt_size: float | None = 0
     initial_num_buffer_tanks: int | None = 0
     initial_num_clean_water_tanks: int | None = 0
     initial_num_hot_water_tanks: int | None = 0
-    initial_pv_sizes: Union[Dict[str, float], DefaultDict[str, float]] = (
+    initial_pv_sizes: Union[dict[str, float], DefaultDict[str, float]] = (
         dataclasses.field(  # type: ignore [assignment]
             default_factory=lambda: collections.defaultdict(float)
         )
     )
     initial_storage_size: float = 0
-    required_feedwater_sources: List[str] | None = None
+    required_feedwater_sources: list[str] | None = None
     start_year: int = 0
-    file_information: Dict[str, str] | None = None
+    file_information: dict[str, str] | None = None
 
     def to_dict(
         self,
-    ) -> Dict[
-        str[Union[int, float, str, Dict[str, str], Dict[str, float]]]
+    ) -> dict[
+        str, Union[int, float, str, dict[str, str], dict[str, float]] | None
     ]:  # pylint: disable=too-many-branches
         """
         Returns a `dict` containing information the :class:`SystemDetails`' information.
@@ -2617,8 +2617,8 @@ class SystemDetails:
 
         """
 
-        system_details_as_dict: Dict[
-            str[Union[int, float, str, Dict[str, str], Dict[str, float]]]
+        system_details_as_dict: dict[
+            str, Union[int, float, str, dict[str, str], dict[str, float]] | None
         ] = {
             "diesel_capacity": round(self.diesel_capacity, 3),
             "end_year": round(self.end_year, 3),
@@ -2867,13 +2867,13 @@ class CumulativeResults:
     ghgs: float = 0
     heating: float = 0
     hot_water: float = 0
-    subsystem_costs: Dict[ResourceType, float] = None  # type: ignore
-    subsystem_ghgs: Dict[ResourceType, float] = None  # type: ignore
+    subsystem_costs: dict[ResourceType, float] = None  # type: ignore
+    subsystem_ghgs: dict[ResourceType, float] = None  # type: ignore
     system_cost: float = 0
     system_ghgs: float = 0
-    waste_produced: Dict[WasteProduct, float] = None  # type: ignore
+    waste_produced: dict[WasteProduct, float] = None  # type: ignore
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """
         Returns a dictionary representation of the :class:`CumulativeResults` instance.
 
@@ -2973,12 +2973,12 @@ class EnvironmentalAppraisal:
     new_connection_ghgs: float = 0
     new_equipment_ghgs: float = 0
     om_ghgs: float = 0
-    subsystem_ghgs: Dict[ResourceType, float] = None  # type: ignore
+    subsystem_ghgs: dict[ResourceType, float] = None  # type: ignore
     total_brine: float = 0
     total_ghgs: float = 0
     total_system_ghgs: float = 0
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """
         Returns a dictionary representation of the :class:`EnvironmentalAppraisal` instance.
 
@@ -2987,7 +2987,7 @@ class EnvironmentalAppraisal:
 
         """
 
-        environmental_appraisal_dict: Dict[str, float] = {
+        environmental_appraisal_dict: dict[str, float] = {
             "diesel_ghgs": self.diesel_ghgs,
             "grid_ghgs": self.grid_ghgs,
             "kerosene_ghgs": self.kerosene_ghgs,
@@ -3062,11 +3062,11 @@ class FinancialAppraisal:
     new_connection_cost: float = 0
     new_equipment_cost: float = 0
     om_cost: float = 0
-    subsystem_costs: Dict[ResourceType, float] = None  # type: ignore
+    subsystem_costs: dict[ResourceType, float] = None  # type: ignore
     total_cost: float = 0
     total_system_cost: float = 0
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """
         Returns a dictionary representation of the :class:`FinancialAppraisal` instance.
 
@@ -3075,7 +3075,7 @@ class FinancialAppraisal:
 
         """
 
-        financial_appraisal_dict: Dict[str, float] = {
+        financial_appraisal_dict: dict[str, float] = {
             "diesel_fuel_cost": self.diesel_fuel_cost,
             "grid_cost": self.grid_cost,
             "kerosene_cost": self.kerosene_cost,
@@ -3231,7 +3231,7 @@ class TechnicalAppraisal:
     grid_energy: float = 0
     hw_demand_covered: float | None = 0
     kerosene_displacement: float = 0
-    power_consumed_fraction: Dict[ResourceType, float] = None  # type: ignore
+    power_consumed_fraction: dict[ResourceType, float] = None  # type: ignore
     pv_energy: float = 0
     pvt_energy: float | None = 0
     renewable_clean_water_fraction: float | None = 0
@@ -3261,7 +3261,7 @@ class TechnicalAppraisal:
 
         return 1 - self.blackouts
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """
         Returns a dictionary representation of the :class:`TechnicalAppraisal` instance.
 
@@ -3270,7 +3270,7 @@ class TechnicalAppraisal:
 
         """
 
-        technical_appraisal_dict: Dict[str[float]] = {
+        technical_appraisal_dict: dict[str, float | None] = {
             "blackouts": self.blackouts,
             "clean_water_blackouts": self.clean_water_blackouts,
             "cw_demand_covered": self.cw_demand_covered,
@@ -3356,9 +3356,9 @@ class SystemAppraisal:
     financial_appraisal: FinancialAppraisal
     system_details: SystemDetails
     technical_appraisal: TechnicalAppraisal
-    criteria: Dict[Criterion[float]] | None = None
+    criteria: dict[Criterion, float | None] | None = None
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """
         Returns a dictionary representation of the :class:`SystemAppraisal` instance.
 
@@ -3427,7 +3427,7 @@ def save_simulation(
     os.makedirs(simulation_output_folder, exist_ok=True)
 
     # Add the key results to the system data.
-    simulation_details_dict: Dict[str, Any] = system_details.to_dict()
+    simulation_details_dict: dict[str, Any] = system_details.to_dict()
     simulation_details_dict["analysis_results"] = key_results.to_dict()
 
     # Add the appraisal results to the system data if relevant.

@@ -20,7 +20,7 @@ emitted by the system, need to be assed.
 
 import collections
 from logging import Logger
-from typing import Any, Dict, List, Tuple
+from typing import Any
 
 import numpy as np  # pylint: disable=import-error
 import pandas as pd  # pylint: disable=import-error
@@ -106,7 +106,7 @@ OM_GHGS = "o&m"
 
 def calculate_ghgs(
     capacity: float,
-    ghg_inputs: Dict[str, Any],
+    ghg_inputs: dict[str, Any],
     system_component: str,
     year: int = 0,
 ) -> float:
@@ -137,7 +137,7 @@ def calculate_ghgs(
 # Installation ghgs
 def calculate_installation_ghgs(
     capacity: float,
-    ghg_inputs: Dict[str, Any],
+    ghg_inputs: dict[str, Any],
     system_component: str,
     year: int = 0,
 ) -> float:
@@ -171,7 +171,7 @@ def calculate_installation_ghgs(
 
 
 #   Miscellaneous ghgs
-def calculate_misc_ghgs(capacity: float, ghg_inputs: Dict[str, Any]) -> float:
+def calculate_misc_ghgs(capacity: float, ghg_inputs: dict[str, Any]) -> float:
     """
     Calculates ghgs of miscellaneous capacity-related equipment
 
@@ -193,19 +193,19 @@ def calculate_misc_ghgs(capacity: float, ghg_inputs: Dict[str, Any]) -> float:
 def calculate_total_equipment_ghgs(  # pylint: disable=too-many-locals, too-many-statements
     buffer_tanks: int,
     clean_water_tanks: int,
-    converters: Dict[Converter, int],
+    converters: dict[Converter, int],
     diesel_size: float,
-    ghg_inputs: Dict[str, Any],
+    ghg_inputs: dict[str, Any],
     heat_exchangers: int,
     hot_water_tanks: int,
     logger: Logger,
-    pv_array_size: Dict[str, float],
+    pv_array_size: dict[str, float],
     pvt_array_size: float,
     scenario: Scenario,
     storage_size: float,
     technical_appraisal: TechnicalAppraisal,
     year: int = 0,
-) -> Tuple[float, Dict[ResourceType, float]]:
+) -> tuple[float, dict[ResourceType, float]]:
     """
     Calculates ghgs of all newly installed equipment
 
@@ -256,7 +256,7 @@ def calculate_total_equipment_ghgs(  # pylint: disable=too-many-locals, too-many
         )
 
     # Instantiate a mapping for storing total ghgs information.
-    subsystem_emissions: Dict[ResourceType, float] = collections.defaultdict(float)
+    subsystem_emissions: dict[ResourceType, float] = collections.defaultdict(float)
 
     # Calculate system ghgs.
     bos_ghgs = calculate_ghgs(
@@ -496,7 +496,7 @@ def calculate_total_equipment_ghgs(  # pylint: disable=too-many-locals, too-many
 
 
 def calculate_connections_ghgs(
-    ghg_inputs: Dict[str, Any], households: pd.Series
+    ghg_inputs: dict[str, Any], households: pd.Series
 ) -> float:
     """
     Calculates ghgs of connecting households to the system
@@ -516,8 +516,10 @@ def calculate_connections_ghgs(
     households_data_frame: pd.DataFrame = pd.DataFrame(households)
 
     # Compute the number of new households that were added to the system.
-    new_connections: float = np.max(households_data_frame) - np.min(
-        households_data_frame
+    new_connections: float = np.max(
+        households_data_frame.max(axis=0)  # type: ignore [call-arg]
+    ) - np.min(  # type: ignore [call-arg, call-overload]
+        households_data_frame.min(axis=0)  # type: ignore [call-arg, call-overload]
     )
 
     # Calculate the associated ghgs.
@@ -530,7 +532,7 @@ def calculate_connections_ghgs(
 
 
 def calculate_grid_extension_ghgs(
-    ghg_inputs: Dict[str, Any], grid_extension_distance: float
+    ghg_inputs: dict[str, Any], grid_extension_distance: float
 ) -> float:
     """
     Calculates ghgs of extending the grid network to a community
@@ -554,7 +556,7 @@ def calculate_grid_extension_ghgs(
 def _calculate_inverter_ghgs(  # pylint: disable=too-many-locals
     electric_yearly_load_statistics: pd.DataFrame,
     end_year: int,
-    ghg_inputs: Dict[str, Any],
+    ghg_inputs: dict[str, Any],
     inverter: Inverter,
     location: Location,
     logger: Logger,
@@ -603,7 +605,7 @@ def _calculate_inverter_ghgs(  # pylint: disable=too-many-locals
 
     # Initialise inverter sizing calculation
     max_power = []
-    inverter_size: List[float] = []
+    inverter_size: list[float] = []
     for i in range(len(replacement_intervals)):
         # Calculate maximum power in interval years
         start = replacement_intervals[ColumnHeader.INSTALLATION_YEAR.value].iloc[i]
@@ -679,7 +681,7 @@ def _calculate_inverter_ghgs(  # pylint: disable=too-many-locals
 def calculate_independent_ghgs(
     electric_yearly_load_statistics: pd.DataFrame,
     end_year: int,
-    ghg_inputs: Dict[str, Any],
+    ghg_inputs: dict[str, Any],
     inverter: Inverter,
     location: Location,
     logger: Logger,
@@ -728,7 +730,7 @@ def calculate_independent_ghgs(
 
 
 def calculate_kerosene_ghgs(
-    ghg_inputs: Dict[str, Any], kerosene_lamps_in_use_hourly: pd.Series
+    ghg_inputs: dict[str, Any], kerosene_lamps_in_use_hourly: pd.Series
 ) -> float:
     """
     Calculates ghgs of kerosene usage.
@@ -751,7 +753,7 @@ def calculate_kerosene_ghgs(
 
 
 def calculate_kerosene_ghgs_mitigated(
-    ghg_inputs: Dict[str, Any], kerosene_lamps_mitigated_hourly: pd.Series
+    ghg_inputs: dict[str, Any], kerosene_lamps_mitigated_hourly: pd.Series
 ) -> float:
     """
     Calculates ghgs of kerosene usage that has been avoided by using the system.
@@ -774,7 +776,7 @@ def calculate_kerosene_ghgs_mitigated(
 
 
 def calculate_grid_ghgs(
-    ghg_inputs: Dict[str, Any],
+    ghg_inputs: dict[str, Any],
     grid_energy_hourly: pd.Series,
     location: Location,
     start_year: int = 0,
@@ -827,7 +829,7 @@ def calculate_grid_ghgs(
 
 
 def calculate_diesel_fuel_ghgs(
-    diesel_fuel_usage_hourly: pd.Series, ghg_inputs: Dict[str, Any]
+    diesel_fuel_usage_hourly: pd.Series, ghg_inputs: dict[str, Any]
 ) -> float:
     """
     Calculates ghgs of diesel fuel used by the system
@@ -849,7 +851,7 @@ def calculate_diesel_fuel_ghgs(
 
 def calculate_om_ghgs(
     capacity: float,
-    ghg_inputs: Dict[str, Any],
+    ghg_inputs: dict[str, Any],
     system_component: str,
     start_year: int = 0,
     end_year: int = 20,
@@ -886,20 +888,20 @@ def calculate_om_ghgs(
 def calculate_total_om(  # pylint: disable=too-many-locals
     buffer_tanks: int,
     clean_water_tanks: int,
-    converters: Dict[Converter, int] | None,
+    converters: dict[Converter, int] | None,
     diesel_size: float,
-    ghg_inputs: Dict[str, Any],
+    ghg_inputs: dict[str, Any],
     heat_exchangers: int,
     hot_water_tanks: int,
     logger: Logger,
-    pv_array_size: Dict[str, float],
+    pv_array_size: dict[str, float],
     pvt_array_size: float,
     scenario: Scenario,
     storage_size: float,
     technical_appraisal: TechnicalAppraisal,
     start_year: int = 0,
     end_year: int = 20,
-) -> Tuple[float, Dict[ResourceType, float]]:
+) -> tuple[float, dict[ResourceType, float]]:
     """
     Calculates total O&M ghgs over the simulation period
 
@@ -950,7 +952,7 @@ def calculate_total_om(  # pylint: disable=too-many-locals
         )
 
     # Instantiate a mapping for storing total ghgs information.
-    subsystem_emissions: Dict[ResourceType, float] = collections.defaultdict(float)
+    subsystem_emissions: dict[ResourceType, float] = collections.defaultdict(float)
 
     if ImpactingComponent.BUFFER_TANK.value not in ghg_inputs and buffer_tanks > 0:
         logger.error(

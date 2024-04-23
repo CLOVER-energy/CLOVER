@@ -22,7 +22,7 @@ import enum
 import os
 
 from logging import Logger
-from typing import Any, Dict, List, Pattern, Tuple, Union
+from typing import Any, Pattern, Union
 
 import json
 import re
@@ -98,7 +98,7 @@ SCENARIO: str = "scenario"
 THRESHOLD_CRITERIA: str = "threshold_criteria"
 
 
-def converters_from_sizing(converter_sizes: Dict[Converter, int]) -> List[Converter]:
+def converters_from_sizing(converter_sizes: dict[Converter, int]) -> list[Converter]:
     """
     Generates a `list` of available converters based on the number of each available.
 
@@ -117,7 +117,7 @@ def converters_from_sizing(converter_sizes: Dict[Converter, int]) -> List[Conver
 
     """
 
-    converters: List[Converter] = []
+    converters: list[Converter] = []
 
     for converter, size in converter_sizes.items():
         converters.extend([converter] * size)
@@ -209,9 +209,9 @@ class Optimisation:
 
     """
 
-    optimisation_criteria: Dict[Criterion, CriterionMode]
+    optimisation_criteria: dict[Criterion, CriterionMode]
     scenario: Scenario
-    threshold_criteria: Dict[Criterion, float]
+    threshold_criteria: dict[Criterion, float]
 
     def __str__(self) -> str:
         """
@@ -249,8 +249,8 @@ class Optimisation:
     def from_dict(
         cls,
         logger: Logger,
-        optimisation_data: Dict[str, Any],
-        scenarios: List[Scenario],
+        optimisation_data: dict[str, Any],
+        scenarios: list[Scenario],
     ) -> Any:
         """
         Creates a :class:`Optimisation` instance based on the input data.
@@ -339,7 +339,7 @@ class Optimisation:
 
         return cls(optimisation_criteria, scenario, threshold_criteria)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """
         Returns a `dict` summarising the :class:`Optimisation` instance.
 
@@ -498,7 +498,7 @@ class OptimisationParameters:
     """
 
     clean_water_tanks: TankSize
-    converter_sizes: Dict[Converter, ConverterSize]
+    converter_sizes: dict[Converter, ConverterSize]
     cw_pvt_size: SolarSystemSize
     hot_water_tanks: TankSize
     hw_pvt_size: SolarSystemSize
@@ -510,9 +510,9 @@ class OptimisationParameters:
     @classmethod
     def from_dict(  # pylint: disable=too-many-statements
         cls,
-        available_converters: List[Converter],
+        available_converters: list[Converter],
         logger: Logger,
-        optimisation_inputs: Dict[str, Any],
+        optimisation_inputs: dict[str, Any],
     ) -> Any:
         """
         Returns a :class:`OptimisationParameters` instance based on the input info.
@@ -613,7 +613,7 @@ class OptimisationParameters:
             clean_water_tanks = TankSize()
 
         # Parse the converters that are to be optimised.
-        converter_sizing_inputs: Dict[str, Dict[str, int]] = {
+        converter_sizing_inputs: dict[str, dict[str, int]] = {
             key: value  # type: ignore
             for key, value in optimisation_inputs.items()
             if CONVERTER_SIZE_REGEX.match(key) is not None
@@ -640,7 +640,7 @@ class OptimisationParameters:
             converter.name: converter for converter in available_converters
         }
         try:
-            converter_sizes: Dict[Converter, ConverterSize] = {
+            converter_sizes: dict[Converter, ConverterSize] = {
                 converter_name_to_converter[key]: ConverterSize(
                     entry[MAX], entry[MIN], entry[STEP]
                 )
@@ -795,7 +795,7 @@ class OptimisationParameters:
 
         return self.iteration_length * self.number_of_iterations
 
-    def to_dict(self) -> Dict[str, Union[int, float]]:
+    def to_dict(self) -> dict[str, Union[int, float]]:
         """
         Returns a `dict` representation of the :class:`OptimisationParameters` instance.
 
@@ -873,7 +873,7 @@ class OptimisationParameters:
 # Threshold-criterion-to-mode mapping:
 #   Maps the threshold criteria to the modes, i.e., whether they are maximisable or
 #   minimisable.
-THRESHOLD_CRITERION_TO_MODE: Dict[Criterion, ThresholdMode] = {
+THRESHOLD_CRITERION_TO_MODE: dict[Criterion, ThresholdMode] = {
     Criterion.BLACKOUTS: ThresholdMode.MAXIMUM,
     Criterion.CLEAN_WATER_BLACKOUTS: ThresholdMode.MAXIMUM,
     Criterion.CUMULATIVE_BRINE: ThresholdMode.MAXIMUM,
@@ -906,8 +906,8 @@ THRESHOLD_CRITERION_TO_MODE: Dict[Criterion, ThresholdMode] = {
 
 
 def get_sufficient_appraisals(
-    optimisation: Optimisation, system_appraisals: List[SystemAppraisal]
-) -> List[SystemAppraisal]:
+    optimisation: Optimisation, system_appraisals: list[SystemAppraisal]
+) -> list[SystemAppraisal]:
     """
     Checks whether any of the system appraisals fulfill the threshold criterion
 
@@ -923,7 +923,7 @@ def get_sufficient_appraisals(
 
     """
 
-    sufficient_appraisals: List[SystemAppraisal] = []
+    sufficient_appraisals: list[SystemAppraisal] = []
 
     # Cycle through the provided appraisals.
     for appraisal in system_appraisals:
@@ -969,13 +969,13 @@ def get_sufficient_appraisals(
 
 
 def recursive_iteration(  # pylint: disable=too-many-locals
-    conventional_cw_source_profiles: Dict[WaterSource, pd.DataFrame] | None,
+    conventional_cw_source_profiles: dict[WaterSource, pd.DataFrame] | None,
     disable_tqdm: bool,
     end_year: int,
-    finance_inputs: Dict[str, Any],
-    ghg_inputs: Dict[str, Any],
+    finance_inputs: dict[str, Any],
+    ghg_inputs: dict[str, Any],
     grid_profile: pd.DataFrame | None,
-    irradiance_data: Dict[str, pd.Series],
+    irradiance_data: dict[str, pd.Series],
     kerosene_usage: pd.DataFrame,
     location: Location,
     logger: Logger,
@@ -983,25 +983,25 @@ def recursive_iteration(  # pylint: disable=too-many-locals
     optimisation: Optimisation,
     previous_system: SystemAppraisal | None,
     start_year: int,
-    temperature_data: Dict[str, pd.Series],
-    total_loads: Dict[ResourceType[pd.DataFrame]],
-    total_solar_pv_power_produced: Dict[str, pd.Series],
+    temperature_data: dict[str, pd.Series],
+    total_loads: dict[ResourceType, pd.DataFrame | None],
+    total_solar_pv_power_produced: dict[str, pd.Series],
     wind_speed_data: pd.Series | None,
     yearly_electric_load_statistics: pd.DataFrame,
     *,
-    component_sizes: Dict[
+    component_sizes: dict[
         Union[Converter, ImpactingComponent, RenewableEnergySource],
         Union[int, float],
     ],
-    parameter_space: List[
-        Tuple[
+    parameter_space: list[
+        tuple[
             Union[Converter, ImpactingComponent, RenewableEnergySource],
             str,
-            Union[List[int], List[float]],
+            Union[list[int], list[float]],
         ]
     ],
-    system_appraisals: List[SystemAppraisal],
-) -> List[SystemAppraisal]:
+    system_appraisals: list[SystemAppraisal],
+) -> list[SystemAppraisal]:
     """
     Recursively look for sufficient systems through a series of parameter spaces.
 
@@ -1125,7 +1125,7 @@ def recursive_iteration(  # pylint: disable=too-many-locals
         unit=unit,
     ):
         # Update the set of fixed sizes accordingly.
-        updated_component_sizes: Dict[
+        updated_component_sizes: dict[
             Union[Converter, ImpactingComponent, RenewableEnergySource],
             Union[int, float],
         ] = component_sizes.copy()
@@ -1205,7 +1205,7 @@ def save_optimisation(
     output: str,
     output_directory: str,
     scenario: Scenario,
-    system_appraisals: List[SystemAppraisal],
+    system_appraisals: list[SystemAppraisal],
 ) -> None:
     """
     Saves simulation outputs to a .csv file

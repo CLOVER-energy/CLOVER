@@ -26,7 +26,7 @@ from argparse import Namespace
 import dataclasses
 from logging import Logger
 
-from typing import Any, DefaultDict, Dict, List, Union
+from typing import Any, DefaultDict, Union
 
 from ..__utils__ import (
     AuxiliaryHeaterType,
@@ -161,8 +161,8 @@ class Minigrid:
     heat_exchanger: Exchanger | None
     hot_water_tank: HotWaterTank | None
     inverter: Inverter
-    pv_panels: List[PVPanel]
-    pvt_panels: List[HybridPVTPanel]
+    pv_panels: list[PVPanel]
+    pvt_panels: list[HybridPVTPanel]
     water_pump: Transmitter | None
 
     @classmethod
@@ -173,12 +173,12 @@ class Minigrid:
         electric_water_heater: Converter | None,
         finance_inputs: DefaultDict[str, DefaultDict[str, float]],
         logger: Logger,
-        minigrid_inputs: Dict[str, Any],
-        pv_panels: List[PVPanel],
-        pvt_panels: List[HybridPVTPanel],
-        battery_inputs: List[Dict[str, Any]] | None = None,
-        exchanger_inputs: List[Dict[str, Any]] | None = None,
-        tank_inputs: List[Dict[str, Any]] | None = None,
+        minigrid_inputs: dict[str, Any],
+        pv_panels: list[PVPanel],
+        pvt_panels: list[HybridPVTPanel],
+        battery_inputs: list[dict[str, Any]] | None = None,
+        exchanger_inputs: list[dict[str, Any]] | None = None,
+        tank_inputs: list[dict[str, Any]] | None = None,
         water_pump: Transmitter | None = None,
     ) -> Any:
         """
@@ -239,7 +239,7 @@ class Minigrid:
         buffer_tank: Union[CleanWaterTank, HotWaterTank] | None = None
         clean_water_tank: Union[CleanWaterTank, HotWaterTank] | None = None
         hot_water_tank: Union[CleanWaterTank, HotWaterTank] | None = None
-        tanks: Dict[str, Union[CleanWaterTank, HotWaterTank]] = {}
+        tanks: dict[str, Union[CleanWaterTank, HotWaterTank]] = {}
         # Parse the tank information.
         if tank_inputs is not None:
             for entry in tank_inputs:
@@ -364,7 +364,7 @@ class Minigrid:
                 if EXCHANGER in minigrid_inputs
                 else None
             ),
-            hot_water_tank,
+            hot_water_tank,  # type: ignore [arg-type]
             inverter,
             pv_panels,
             pvt_panels,
@@ -529,11 +529,11 @@ def check_scenario(
 
 
 def determine_available_converters(
-    converters: Dict[str, Converter],
+    converters: dict[str, Converter],
     logger: Logger,
     minigrid: Minigrid,
     scenario: Scenario,
-) -> List[Converter]:
+) -> list[Converter]:
     """
     Determines the available :class:`Converter` instances based on the :class:`Scenario`
 
@@ -553,7 +553,7 @@ def determine_available_converters(
 
     """
 
-    available_converters: List[Converter] = []
+    available_converters: list[Converter] = []
 
     if scenario.desalination_scenario is None and scenario.hot_water_scenario is None:
         return available_converters

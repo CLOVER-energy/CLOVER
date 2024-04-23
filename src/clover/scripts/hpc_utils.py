@@ -23,7 +23,7 @@ import os
 
 from contextlib import contextmanager
 from logging import Logger
-from typing import Any, Dict, Iterator, List, Tuple, Union
+from typing import Any, Iterator, Union
 
 import yaml
 
@@ -194,8 +194,8 @@ class HpcOptimisation(
     def __init__(
         self,
         location: str,
-        optimisation: List[Dict[str, Any]],
-        optimisation_inputs_data: Dict[str, Any],
+        optimisation: list[dict[str, Any]],
+        optimisation_inputs_data: dict[str, Any],
         output: str,
         total_load: bool,
         total_load_file: str | None = None,
@@ -221,16 +221,16 @@ class HpcOptimisation(
         """
 
         super().__init__(location, output, total_load, total_load_file)
-        self.optimisation: List[Dict[str, Any]] = optimisation
-        self.optimisation_inputs_data: Dict[str, Any] = optimisation_inputs_data
+        self.optimisation: list[dict[str, Any]] = optimisation
+        self.optimisation_inputs_data: dict[str, Any] = optimisation_inputs_data
 
     @classmethod
     def from_dict(
         cls,
-        input_data: Dict[str, Any],
+        input_data: dict[str, Any],
         logger: Logger,
-        optimisation: List[Dict[str, Any]],
-        optimisation_inputs_data: Dict[str, Any],
+        optimisation: list[dict[str, Any]],
+        optimisation_inputs_data: dict[str, Any],
     ) -> Any:
         """
         Creates a :class:`HpcOptimisation` instance based on the inputs provided.
@@ -277,7 +277,7 @@ class HpcOptimisation(
         )
 
     @property
-    def optimisation_inputs(self) -> Dict[str, Any]:
+    def optimisation_inputs(self) -> dict[str, Any]:
         """
         Assembly optimisation input data for writing to file.
 
@@ -376,7 +376,7 @@ class HpcSimulation(
         self.storage_size = storage_size
 
     @classmethod
-    def from_dict(cls, input_data: Dict[str, Any], logger: Logger) -> Any:
+    def from_dict(cls, input_data: dict[str, Any], logger: Logger) -> Any:
         """
         Creates a :class:`HpcOptimisation` instance based on the inputs provided.
 
@@ -500,7 +500,7 @@ def _check_walltime(logger: Logger, walltime: int | None) -> int:
     return walltime
 
 
-def _parse_hpc_args(args: List[Any]) -> argparse.Namespace:
+def _parse_hpc_args(args: list[Any]) -> argparse.Namespace:
     """
     Parses the input arguments to the hpc script to determine the HPC input file.
 
@@ -538,7 +538,7 @@ def _parse_hpc_args(args: List[Any]) -> argparse.Namespace:
     return parser.parse_args(args)
 
 
-def _parse_hpc_input_file(input_filename: str, logger: Logger) -> List[Dict[str, Any]]:
+def _parse_hpc_input_file(input_filename: str, logger: Logger) -> list[dict[str, Any]]:
     """
     Parses the HPC input file into a dictionary.
 
@@ -585,8 +585,8 @@ def _parse_hpc_input_file(input_filename: str, logger: Logger) -> List[Dict[str,
 
 
 def _parse_optimisations_to_runs(
-    entry: Dict[str, Any], locations_foldername: str, logger: Logger
-) -> List[HpcOptimisation]:
+    entry: dict[str, Any], locations_foldername: str, logger: Logger
+) -> list[HpcOptimisation]:
     """
     Parses, from a single HPC entry, a series of optimisation runs to carry out.
 
@@ -636,7 +636,7 @@ def _parse_optimisations_to_runs(
 
 def _process_hpc_input_file(
     input_filename: str, locations_foldername, logger: Logger
-) -> List[Union[HpcOptimisation, HpcSimulation]]:
+) -> list[Union[HpcOptimisation, HpcSimulation]]:
     """
     Parses the HPC input file into a list of runs.
 
@@ -657,7 +657,7 @@ def _process_hpc_input_file(
     filedata = _parse_hpc_input_file(input_filename, logger)
 
     # Parse this into HPC Optimisations and Simulations.
-    runs: List[Union[HpcOptimisation, HpcSimulation]] = []
+    runs: list[Union[HpcOptimisation, HpcSimulation]] = []
     for entry in filedata:
         if entry[TYPE] == HpcRunType.OPTIMISATION.value:
             runs.extend(
@@ -680,8 +680,8 @@ def _process_hpc_input_file(
 
 
 def parse_args_and_hpc_input_file(
-    args: List[Any], logger: Logger
-) -> Tuple[str, List[Union[HpcOptimisation, HpcSimulation]], bool, float]:
+    args: list[Any], logger: Logger
+) -> tuple[str, list[Union[HpcOptimisation, HpcSimulation]], bool, float]:
     """
     Parses command-line arguments and returns the HPC runs to be carried out.
 

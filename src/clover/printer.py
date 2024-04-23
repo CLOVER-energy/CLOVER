@@ -17,7 +17,6 @@ strings to the end user.
 """
 
 import argparse
-from typing import Dict, List
 
 from .__utils__ import Scenario
 from .optimisation.__utils__ import OptimisationParameters
@@ -47,7 +46,7 @@ def generate_optimisation_string(
 
     """
 
-    optimisation_string_list: List[str] = []
+    optimisation_string_list: list[str] = []
 
     # Append the PV panel information if relevant.
     if scenario.pv and optimisation_inputs.pv_size is not None:
@@ -131,7 +130,7 @@ def generate_simulation_string(
     minigrid: Minigrid,
     overrided_default_sizes: bool,
     parsed_args: argparse.Namespace,
-    pv_system_sizes: Dict[str, float],
+    pv_system_sizes: dict[str, float],
     scenario: Scenario,
 ) -> str:
     """
@@ -154,7 +153,7 @@ def generate_simulation_string(
 
     """
 
-    simulation_string_list: List[str] = []
+    simulation_string_list: list[str] = []
 
     # Append the PV panel information if relevant.
     if scenario.pv and parsed_args.pv_system_size is not None:

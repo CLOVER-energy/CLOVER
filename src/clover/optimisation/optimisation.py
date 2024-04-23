@@ -33,7 +33,7 @@ functions which can be used to carry out an optimisation:
 import datetime
 
 from logging import Logger
-from typing import Any, Dict, List, Tuple, Union
+from typing import Any, Union
 
 import json
 import numpy as np  # pylint: disable=import-error
@@ -75,8 +75,8 @@ __all__ = ("multiple_optimisation_step",)
 
 
 def _fetch_optimum_system(
-    optimisation: Optimisation, sufficient_systems: List[SystemAppraisal]
-) -> Dict[Criterion, SystemAppraisal]:
+    optimisation: Optimisation, sufficient_systems: list[SystemAppraisal]
+) -> dict[Criterion, SystemAppraisal]:
     """
     Identifies the optimum system from a group of sufficient systems
 
@@ -92,7 +92,7 @@ def _fetch_optimum_system(
 
     """
 
-    optimum_systems: Dict[Criterion, SystemAppraisal] = {}
+    optimum_systems: dict[Criterion, SystemAppraisal] = {}
 
     # Run through the various optimisation criteria.
     for criterion, criterion_mode in optimisation.optimisation_criteria.items():
@@ -109,16 +109,16 @@ def _fetch_optimum_system(
 
 
 def _find_optimum_system(  # pylint: disable=too-many-locals
-    conventional_cw_source_profiles: Dict[WaterSource, pd.DataFrame] | None,
-    converters: Dict[str, Converter],
+    conventional_cw_source_profiles: dict[WaterSource, pd.DataFrame] | None,
+    converters: dict[str, Converter],
     disable_tqdm: bool,
     end_year: int,
-    finance_inputs: Dict[str, Any],
-    ghg_inputs: Dict[str, Any],
+    finance_inputs: dict[str, Any],
+    ghg_inputs: dict[str, Any],
     grid_profile: pd.DataFrame | None,
-    irradiance_data: Dict[str, pd.Series],
+    irradiance_data: dict[str, pd.Series],
     kerosene_usage: pd.DataFrame,
-    largest_converter_sizes: Dict[Converter, ConverterSize],
+    largest_converter_sizes: dict[Converter, ConverterSize],
     largest_cw_tank_size: TankSize,
     largest_cw_pvt_system_size: SolarSystemSize,
     largest_hw_tank_size: TankSize,
@@ -131,13 +131,13 @@ def _find_optimum_system(  # pylint: disable=too-many-locals
     optimisation: Optimisation,
     previous_system: SystemAppraisal | None,
     start_year: int,
-    system_appraisals: List[SystemAppraisal],
-    temperature_data: Dict[str, pd.Series],
-    total_loads: Dict[ResourceType[pd.DataFrame]],
-    total_solar_pv_power_produced: Dict[str, pd.Series],
+    system_appraisals: list[SystemAppraisal],
+    temperature_data: dict[str, pd.Series],
+    total_loads: dict[ResourceType, pd.DataFrame | None],
+    total_solar_pv_power_produced: dict[str, pd.Series],
     wind_speed_data: pd.Series | None,
     yearly_electric_load_statistics: pd.DataFrame,
-) -> Dict[Criterion, SystemAppraisal]:
+) -> dict[Criterion, SystemAppraisal]:
     """
     Finds the optimum system from a group of sufficient systems.
 
@@ -323,18 +323,18 @@ def _find_optimum_system(  # pylint: disable=too-many-locals
 
 
 def _simulation_iteration(  # pylint: disable=too-many-locals, too-many-statements
-    conventional_cw_source_profiles: Dict[WaterSource, pd.DataFrame] | None,
-    converter_sizes: Dict[Converter, ConverterSize],
+    conventional_cw_source_profiles: dict[WaterSource, pd.DataFrame] | None,
+    converter_sizes: dict[Converter, ConverterSize],
     cw_pvt_system_size: SolarSystemSize,
     cw_tanks: TankSize,
-    converters: Dict[str, Converter],
+    converters: dict[str, Converter],
     disable_tqdm: bool,
-    finance_inputs: Dict[str, Any],
-    ghg_inputs: Dict[str, Any],
+    finance_inputs: dict[str, Any],
+    ghg_inputs: dict[str, Any],
     grid_profile: pd.DataFrame | None,
     hw_pvt_system_size: SolarSystemSize,
     hw_tanks: TankSize,
-    irradiance_data: Dict[str, pd.Series],
+    irradiance_data: dict[str, pd.Series],
     kerosene_usage: pd.DataFrame,
     location: Location,
     logger: Logger,
@@ -345,14 +345,14 @@ def _simulation_iteration(  # pylint: disable=too-many-locals, too-many-statemen
     pv_sizes: SolarSystemSize,
     start_year: int,
     storage_sizes: StorageSystemSize,
-    temperature_data: Dict[str, pd.Series],
-    total_loads: Dict[ResourceType[pd.DataFrame]],
-    total_solar_pv_power_produced: Dict[str, pd.Series],
+    temperature_data: dict[str, pd.Series],
+    total_loads: dict[ResourceType, pd.DataFrame | None],
+    total_solar_pv_power_produced: dict[str, pd.Series],
     wind_speed_data: pd.Series | None,
     yearly_electric_load_statistics: pd.DataFrame,
-) -> Tuple[
+) -> tuple[
     int,
-    Dict[Converter, ConverterSize],
+    dict[Converter, ConverterSize],
     SolarSystemSize,
     TankSize,
     SolarSystemSize,
@@ -362,7 +362,7 @@ def _simulation_iteration(  # pylint: disable=too-many-locals, too-many-statemen
     SystemAppraisal,
     SystemAppraisal | None,
     int,
-    List[SystemAppraisal],
+    list[SystemAppraisal],
 ]:
     """
     Carries out a simulation iteration.
@@ -450,7 +450,7 @@ def _simulation_iteration(  # pylint: disable=too-many-locals, too-many-statemen
     """
 
     # Initialise
-    system_appraisals: List[SystemAppraisal] = []
+    system_appraisals: list[SystemAppraisal] = []
     end_year: int = start_year + int(optimisation_parameters.iteration_length)
 
     # Check if largest system is sufficient
@@ -461,20 +461,20 @@ def _simulation_iteration(  # pylint: disable=too-many-locals, too-many-statemen
     )
 
     # Determine the maximum sizes of each converter defined.
-    max_converter_sizes: Dict[Converter, int] = {
+    max_converter_sizes: dict[Converter, int] = {
         converter: size.max for converter, size in converter_sizes.items()
     }
 
     # Append converters defined elsewhere.
-    available_converters: List[Converter] = determine_available_converters(
+    available_converters: list[Converter] = determine_available_converters(
         converters, logger, minigrid, optimisation.scenario
     )
-    static_converter_sizes: Dict[Converter, int] = {
+    static_converter_sizes: dict[Converter, int] = {
         converter: available_converters.count(converter)
         for converter in available_converters
         if converter not in max_converter_sizes
     }
-    simulation_converter_sizes: Dict[Converter, int] = {
+    simulation_converter_sizes: dict[Converter, int] = {
         **max_converter_sizes,
         **static_converter_sizes,
     }
@@ -738,15 +738,15 @@ def _simulation_iteration(  # pylint: disable=too-many-locals, too-many-statemen
         storage_size_max,
     )
 
-    # Set up the various variables ready for recursive iteration.
-    component_sizes: Dict[
+    # set up the various variables ready for recursive iteration.
+    component_sizes: dict[
         Union[Converter, ImpactingComponent, RenewableEnergySource], float
     ] = {}
-    parameter_space: List[
-        Tuple[
+    parameter_space: list[
+        tuple[
             Union[Converter, ImpactingComponent, RenewableEnergySource],
             str,
-            Union[List[float], List[int]],
+            Union[list[float], list[int]],
         ]
     ] = []
 
@@ -769,7 +769,7 @@ def _simulation_iteration(  # pylint: disable=too-many-locals, too-many-statemen
                 round(storage_sizes.step, 2),
             )
 
-    simulation_cw_pvt_system_size: List[int] = sorted(
+    simulation_cw_pvt_system_size: list[int] = sorted(
         range(
             int(cw_pvt_system_size.min),
             int(cw_pvt_size_max + cw_pvt_system_size.step),
@@ -777,7 +777,7 @@ def _simulation_iteration(  # pylint: disable=too-many-locals, too-many-statemen
         ),
         reverse=True,
     )
-    simulation_cw_tanks: List[int] = sorted(
+    simulation_cw_tanks: list[int] = sorted(
         range(
             cw_tanks.min,
             cw_tanks_max + cw_tanks.step,
@@ -785,7 +785,7 @@ def _simulation_iteration(  # pylint: disable=too-many-locals, too-many-statemen
         ),
         reverse=True,
     )
-    simulation_hw_pvt_system_size: List[int] = sorted(
+    simulation_hw_pvt_system_size: list[int] = sorted(
         range(
             int(hw_pvt_system_size.min),
             int(hw_pvt_size_max + hw_pvt_system_size.step),
@@ -793,7 +793,7 @@ def _simulation_iteration(  # pylint: disable=too-many-locals, too-many-statemen
         ),
         reverse=True,
     )
-    simulation_hw_tanks: List[int] = sorted(
+    simulation_hw_tanks: list[int] = sorted(
         range(
             hw_tanks.min,
             hw_tanks_max + hw_tanks.step,
@@ -801,11 +801,11 @@ def _simulation_iteration(  # pylint: disable=too-many-locals, too-many-statemen
         ),
         reverse=True,
     )
-    simulation_pv_sizes: List[int] = sorted(
+    simulation_pv_sizes: list[int] = sorted(
         np.arange(pv_sizes.min, pv_size_max + pv_sizes.step, pv_sizes.step),
         reverse=True,
     )
-    simulation_storage_sizes: List[int] = sorted(
+    simulation_storage_sizes: list[int] = sorted(
         np.arange(
             storage_sizes.min,
             storage_size_max + storage_sizes.step,
@@ -814,7 +814,7 @@ def _simulation_iteration(  # pylint: disable=too-many-locals, too-many-statemen
         reverse=True,
     )
 
-    # Set up the various iteration variables accordingly.
+    # set up the various iteration variables accordingly.
     # Add the iterable clean-water tank sizes if appropriate.
     if len(simulation_cw_tanks) > 1:
         parameter_space.append(
@@ -844,7 +844,7 @@ def _simulation_iteration(  # pylint: disable=too-many-locals, too-many-statemen
     # Add the iterable converter sizes.
     for converter, sizes in converter_sizes.items():
         # Construct the list of available sizes for the given converter.
-        simulation_converter_size_list: List[int] = sorted(
+        simulation_converter_size_list: list[int] = sorted(
             range(
                 int(sizes.min),
                 int(max_converter_sizes[converter] + sizes.step),
@@ -978,18 +978,18 @@ def _simulation_iteration(  # pylint: disable=too-many-locals, too-many-statemen
 
 
 def _optimisation_step(  # pylint: disable=too-many-locals
-    conventional_cw_source_profiles: Dict[WaterSource, pd.DataFrame] | None,
-    converter_sizes: Dict[Converter, ConverterSize],
+    conventional_cw_source_profiles: dict[WaterSource, pd.DataFrame] | None,
+    converter_sizes: dict[Converter, ConverterSize],
     cw_pvt_system_size: SolarSystemSize,
     cw_tanks: TankSize,
-    converters: Dict[str, Converter],
+    converters: dict[str, Converter],
     disable_tqdm: bool,
-    finance_inputs: Dict[str, Any],
-    ghg_inputs: Dict[str, Any],
+    finance_inputs: dict[str, Any],
+    ghg_inputs: dict[str, Any],
     grid_profile: pd.DataFrame | None,
     hw_pvt_system_size: SolarSystemSize,
     hw_tanks: TankSize,
-    irradiance_data: Dict[str, pd.Series],
+    irradiance_data: dict[str, pd.Series],
     kerosene_usage: pd.DataFrame,
     location: Location,
     logger: Logger,
@@ -1000,9 +1000,9 @@ def _optimisation_step(  # pylint: disable=too-many-locals
     pv_sizes: SolarSystemSize,
     start_year: int,
     storage_sizes: StorageSystemSize,
-    temperature_data: Dict[str, pd.Series],
-    total_loads: Dict[ResourceType[pd.DataFrame]],
-    total_solar_pv_power_produced: Dict[str, pd.Series],
+    temperature_data: dict[str, pd.Series],
+    total_loads: dict[ResourceType, pd.DataFrame | None],
+    total_solar_pv_power_produced: dict[str, pd.Series],
     wind_speed_data: pd.Series | None,
     yearly_electric_load_statistics: pd.DataFrame,
 ) -> SystemAppraisal:
@@ -1156,26 +1156,26 @@ def _optimisation_step(  # pylint: disable=too-many-locals
 
 
 def multiple_optimisation_step(  # pylint: disable=too-many-locals, too-many-statements
-    conventional_cw_source_profiles: Dict[WaterSource, pd.DataFrame] | None,
-    converters: Dict[str, Converter],
+    conventional_cw_source_profiles: dict[WaterSource, pd.DataFrame] | None,
+    converters: dict[str, Converter],
     disable_tqdm: bool,
-    finance_inputs: Dict[str, Any],
-    ghg_inputs: Dict[str, Any],
+    finance_inputs: dict[str, Any],
+    ghg_inputs: dict[str, Any],
     grid_profile: pd.DataFrame | None,
-    irradiance_data: Dict[str, pd.Series],
+    irradiance_data: dict[str, pd.Series],
     kerosene_usage: pd.DataFrame,
     location: Location,
     logger: Logger,
     minigrid: energy_system.Minigrid,
     optimisation: Optimisation,
     optimisation_parameters: OptimisationParameters,
-    temperature_data: Dict[str, pd.Series],
-    total_loads: Dict[ResourceType[pd.DataFrame]],
-    total_solar_pv_power_produced: Dict[str, pd.Series],
+    temperature_data: dict[str, pd.Series],
+    total_loads: dict[ResourceType, pd.DataFrame | None],
+    total_solar_pv_power_produced: dict[str, pd.Series],
     wind_speed_data: pd.Series | None,
     yearly_electric_load_statistics: pd.DataFrame,
     *,
-    input_converter_sizes: Dict[Converter, ConverterSize] | None = None,
+    input_converter_sizes: dict[Converter, ConverterSize] | None = None,
     input_cw_pvt_system_size: SolarSystemSize | None = None,
     input_cw_tanks: TankSize | None = None,
     input_hw_pvt_system_size: SolarSystemSize | None = None,
@@ -1184,7 +1184,7 @@ def multiple_optimisation_step(  # pylint: disable=too-many-locals, too-many-sta
     input_storage_sizes: StorageSystemSize | None = None,
     previous_system: SystemAppraisal | None = None,
     start_year: int = 0,
-) -> Tuple[datetime.timedelta, List[SystemAppraisal]]:
+) -> tuple[datetime.timedelta, list[SystemAppraisal]]:
     """
     Carries out multiple optimisation steps of the continuous lifetime optimisation.
 
@@ -1254,9 +1254,9 @@ def multiple_optimisation_step(  # pylint: disable=too-many-locals, too-many-sta
     logger.info("Multiple optimisation step process begun.")
 
     # Initialise
-    results: List[SystemAppraisal] = []
+    results: list[SystemAppraisal] = []
 
-    # Set up the input converter sizes for the first loop.
+    # set up the input converter sizes for the first loop.
     if (
         input_converter_sizes is None
         and len(converters) > 0
@@ -1269,7 +1269,7 @@ def multiple_optimisation_step(  # pylint: disable=too-many-locals, too-many-sta
     else:
         input_converter_sizes = {}
 
-    # Set up the clean-water PV-T sizes for the first loop.
+    # set up the clean-water PV-T sizes for the first loop.
     if (
         input_cw_pvt_system_size is None
         and optimisation.scenario.desalination_scenario is not None
@@ -1292,7 +1292,7 @@ def multiple_optimisation_step(  # pylint: disable=too-many-locals, too-many-sta
     else:
         input_cw_pvt_system_size = SolarSystemSize()
 
-    # Set up the clean-water tank sizes for the first loop.
+    # set up the clean-water tank sizes for the first loop.
     if (
         input_cw_tanks is None
         and optimisation.scenario.desalination_scenario is not None
@@ -1315,7 +1315,7 @@ def multiple_optimisation_step(  # pylint: disable=too-many-locals, too-many-sta
     else:
         input_cw_tanks = TankSize()
 
-    # Set up the hot-water PV-T sizes for the first loop.
+    # set up the hot-water PV-T sizes for the first loop.
     if (
         input_hw_pvt_system_size is None
         and optimisation.scenario.hot_water_scenario is not None
@@ -1338,7 +1338,7 @@ def multiple_optimisation_step(  # pylint: disable=too-many-locals, too-many-sta
     else:
         input_hw_pvt_system_size = SolarSystemSize()
 
-    # Set up the hot-water tank sizes for the first loop
+    # set up the hot-water tank sizes for the first loop
     if (
         input_hw_tanks is None
         and optimisation.scenario.hot_water_scenario is not None

@@ -21,7 +21,7 @@ for use locally within CLOVER.
 import enum
 
 from logging import Logger
-from typing import Any, Dict, List, Tuple, Union
+from typing import Any, Union
 
 import pandas as pd  # pylint: disable=import-error
 
@@ -79,7 +79,7 @@ SOLAR_LOGGER_NAME = "solar_generation"
 
 # Tracking map:
 #   Map used for determining the tracking state of the panels.
-_TRACKING_MAP: Dict[str, int] = {
+_TRACKING_MAP: dict[str, int] = {
     _DEFAULT_TRACKING: 0,
     "single": 1,
     "single_axis": 1,
@@ -377,7 +377,7 @@ class PVPanel(
         )
 
     @property
-    def as_dict(self) -> Dict[str, Any]:
+    def as_dict(self) -> dict[str, Any]:
         """
         Return a dictionary based on the panel information.
 
@@ -401,7 +401,7 @@ class PVPanel(
         }
 
     @classmethod
-    def from_dict(cls, logger: Logger, solar_inputs: Dict[str, Any]) -> Any:
+    def from_dict(cls, logger: Logger, solar_inputs: dict[str, Any]) -> Any:
         """
         Instantiate a :class:`PVPanel` instance based on the input data.
 
@@ -497,11 +497,11 @@ class HybridPVTPanel(SolarPanel, panel_type=SolarPanelType.PV_T):
 
     def __init__(
         self,
-        electric_models: Dict[RegressorType, Lasso] | None,
+        electric_models: dict[RegressorType, Lasso] | None,
         logger: Logger,
-        solar_inputs: Dict[str, Any],
-        solar_panels: List[SolarPanel],
-        thermal_models: Dict[RegressorType, Lasso] | None,
+        solar_inputs: dict[str, Any],
+        solar_panels: list[SolarPanel],
+        thermal_models: dict[RegressorType, Lasso] | None,
     ) -> None:
         """
         Instantiate a :class:`HybridPVTPanel` instance based on the input data.
@@ -647,7 +647,7 @@ class HybridPVTPanel(SolarPanel, panel_type=SolarPanelType.PV_T):
         mass_flow_rate: float,
         solar_irradiance: float,
         wind_speed: float,
-    ) -> Tuple[float, float]:
+    ) -> tuple[float, float]:
         """
         Calculates the performance characteristics of the hybrid PV-T collector.
 
@@ -836,7 +836,7 @@ class SolarDataThread(
     def __init__(
         self,
         auto_generated_files_directory: str,
-        global_settings_inputs: Dict[str, str],
+        global_settings_inputs: dict[str, int | str],
         location: Location,
         logger_name: str,
         pause_time: int,

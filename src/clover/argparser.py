@@ -15,7 +15,7 @@ argparser.py - The argument-parsing module for CLOVER.
 import argparse
 import logging
 
-from typing import Any, List
+from typing import Any
 
 from .__utils__ import BColours, DEFAULT_SCENARIO
 
@@ -47,7 +47,7 @@ class MissingParametersError(Exception):
         )
 
 
-def parse_args(args: List[Any]) -> argparse.Namespace:
+def parse_args(args: list[Any]) -> argparse.Namespace:
     """
     Parses command-line arguments into a :class:`argparse.NameSpace`.
 

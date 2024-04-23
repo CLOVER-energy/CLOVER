@@ -23,7 +23,7 @@ import math
 import os
 
 from logging import Logger
-from typing import Any, Dict, Set, Tuple
+from typing import Any
 
 import numpy as np  # pylint: disable=import-error
 import pandas as pd  # pylint: disable=import-error
@@ -194,7 +194,7 @@ class Device:
         return representation_string
 
     @classmethod
-    def from_dict(cls, device_input: Dict[str, Any]) -> Any:
+    def from_dict(cls, device_input: dict[str, Any]) -> Any:
         """
         Processes input data to generate a :class:`Device` instance.
 
@@ -433,14 +433,14 @@ def _number_of_devices_daily(
 
 def compute_total_hourly_load(  # pylint: disable=too-many-locals
     *,
-    device_hourly_loads: Dict[str, pd.DataFrame],
-    devices: Set[Device],
+    device_hourly_loads: dict[str, pd.DataFrame],
+    devices: set[Device],
     disable_tqdm: bool,
     generated_device_load_filepath: str,
     logger: Logger,
     total_load_profile: pd.DataFrame | None,
     years: int,
-) -> Tuple[pd.DataFrame, pd.DataFrame]:
+) -> tuple[pd.DataFrame, pd.DataFrame]:
     """
     Calculates the aggregated load of all devices.
 
@@ -906,7 +906,7 @@ def process_device_ownership(
 def process_device_utilisation(
     device: Device,
     *,
-    device_utilisations: Dict[Device, pd.DataFrame],
+    device_utilisations: dict[Device, pd.DataFrame],
     generated_device_utilisation_directory: str,
     location: Location,
     logger: Logger,
@@ -981,14 +981,14 @@ def process_device_utilisation(
 
 def process_load_profiles(  # pylint: disable=too-many-locals
     auto_generated_files_directory: str,
-    device_utilisations: Dict[Device, pd.DataFrame],
+    device_utilisations: dict[Device, pd.DataFrame],
     disable_tqdm: bool,
     location: Location,
     logger: Logger,
     regenerate: bool,
     resource_type: ResourceType,
     total_load_profile: pd.DataFrame | None = None,
-) -> Tuple[Dict[str, pd.DataFrame], pd.DataFrame, pd.DataFrame]:
+) -> tuple[dict[str, pd.DataFrame], pd.DataFrame, pd.DataFrame]:
     """
     Process all the load information and profiles to generate the total load.
 
@@ -1021,10 +1021,10 @@ def process_load_profiles(  # pylint: disable=too-many-locals
 
     """
 
-    device_hourly_loads: Dict[str, pd.DataFrame] = {}
+    device_hourly_loads: dict[str, pd.DataFrame] = {}
     if resource_type == ResourceType.ELECTRIC:
         resource_name: str = "electric"
-        relevant_device_utilisations: Dict[Device, pd.DataFrame] = {
+        relevant_device_utilisations: dict[Device, pd.DataFrame] = {
             device: device_utilisation
             for device, device_utilisation in device_utilisations.items()
             if device.electric_power is not None

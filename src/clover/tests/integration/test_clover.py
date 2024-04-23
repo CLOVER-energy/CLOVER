@@ -26,7 +26,7 @@ import json
 import shutil
 
 from distutils.dir_util import copy_tree  # pylint: disable=deprecated-module
-from typing import Any, Dict, List, Union
+from typing import Any, Union
 
 import pytest
 import yaml
@@ -64,7 +64,7 @@ TEMP_LOCATION_PATH: str = os.path.join(
 
 
 def _recursive_updater(
-    dictionary: Dict[Any, Any], update_key: List[Any], value: Any
+    dictionary: dict[Any, Any], update_key: list[Any], value: Any
 ) -> None:
     """
     Helper function for recusively nested dictionaries.
@@ -126,7 +126,7 @@ class _BaseTest(unittest.TestCase):
 
     """
 
-    def setUp(self):
+    def setUp(self) -> None:
         """
         Setup function for the base test case.
 
@@ -193,7 +193,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
         self.args.extend(["--simulation", "--analyse", "--skip-plots"])
 
     def _update_scenario_file(
-        self, key: Union[str, List[str]], value: Union[bool, str]
+        self, key: Union[str, list[str]], value: Union[bool, str]
     ) -> None:
         """
         Updates the scenario file within the temporary location.
@@ -232,7 +232,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
         prioritise_self_generation: bool = True,
         pv_size: float | None = None,
         storage_size: float | None = None,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Wrapper to run a CLOVER simulation.
 
@@ -286,13 +286,13 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
             self.fail("CLOVER simulation failed to produce an output info_file.json.")
 
         with open(os.path.join(output_file_name), "r") as f:
-            info_file_data: Dict[str, Any] = json.load(f)
+            info_file_data: dict[str, Any] = json.load(f)
 
         return info_file_data
 
     def _check_output(  # pylint: disable=too-many-locals
         self,
-        info_file_data: Dict[str, Any],
+        info_file_data: dict[str, Any],
         *,
         average_daily_diesel: float,
         average_daily_grid_energy: float,

@@ -62,7 +62,7 @@ class _BaseFinanceTest(unittest.TestCase):
         self.inverter = Inverter(lifetime=4, size_increment=1)
         self.location = mock.Mock(max_years=20)
         self.logger = mock.MagicMock()
-        self.yearly_load_statistics = pd.DataFrame(
+        self.yearly_load_statistics = pd.DataFrame.from_dict(  # type: ignore [attr-defined]
             {
                 "Maximum": {
                     0: 4644.0,

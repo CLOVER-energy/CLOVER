@@ -28,7 +28,7 @@ import re
 import sys
 
 from argparse import Namespace
-from typing import Any, DefaultDict, Dict, List, Match, Pattern, Set, Tuple
+from typing import Any, DefaultDict, Match, Pattern
 
 import pandas as pd  # pylint: disable=import-error
 
@@ -213,17 +213,17 @@ def _prepare_location(
 
 
 def _prepare_water_system(
-    available_conventional_sources: Set[str],
+    available_conventional_sources: set[str],
     auto_generated_files_directory: str,
-    device_utilisations: Dict[load.Device, pd.DataFrame],
+    device_utilisations: dict[load.Device, pd.DataFrame],
     disable_tqdm: bool,
     location: Location,
     logger: logging.Logger,
     parsed_args: Namespace,
     resource_type: ResourceType,
-    water_source_times: Dict[WaterSource, pd.DataFrame],
-) -> Tuple[
-    Dict[WaterSource, pd.DataFrame], Dict[str, pd.DataFrame], pd.DataFrame, pd.DataFrame
+    water_source_times: dict[WaterSource, pd.DataFrame],
+) -> tuple[
+    dict[WaterSource, pd.DataFrame], dict[str, pd.DataFrame], pd.DataFrame, pd.DataFrame
 ]:
     """
     Prepares the conventional-water system.
@@ -393,7 +393,7 @@ def _prepare_water_system(
 
 
 def main(  # pylint: disable=too-many-locals, too-many-statements
-    args: List[Any], disable_tqdm: bool = False, run_number: int | None = None
+    args: list[Any], disable_tqdm: bool = False, run_number: int | None = None
 ) -> None:
     """
     The main module for CLOVER executing all functionality as appropriate.
@@ -688,7 +688,7 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
             )
 
     # Determine the number of background tasks to carry out.
-    panels_to_fetch: Set[solar.PVPanel] = set(
+    panels_to_fetch: set[solar.PVPanel] = set(
         minigrid.pv_panels + minigrid.pvt_panels  # type: ignore [operator]
     )
     num_ninjas: int = (
@@ -732,7 +732,7 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
 
     # Generate and save the weather data for each year as a background task.
     if any(scenario.desalination_scenario is not None for scenario in scenarios):
-        # Set up the system to call renewables.ninja at a slower rate.
+        # set up the system to call renewables.ninja at a slower rate.
         logger.info("Begining weather-data fetching.")
         weather_data_thread: weather.WeatherDataThread | None = (
             weather.WeatherDataThread(
@@ -761,7 +761,7 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
 
     # Generate and save the solar data for each year as a background task.
     logger.info("Beginning solar-data fetching.")
-    solar_data_threads: Dict[solar.PVPanel, solar.SolarDataThread] = {}
+    solar_data_threads: dict[solar.PVPanel, solar.SolarDataThread] = {}
     for pv_panel in panels_to_fetch:
         solar_data_threads[pv_panel] = solar.SolarDataThread(
             os.path.join(auto_generated_files_directory, "solar"),
@@ -787,7 +787,7 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
     logger.info("Processing device informaiton.")
     # load_logger = get_logger(load.LOAD_LOGGER_NAME)
 
-    initial_electric_hourly_loads: Dict[str, pd.DataFrame] | None = None
+    initial_electric_hourly_loads: dict[str, pd.DataFrame] | None = None
     total_electric_load: pd.DataFrame | None = None
     electric_yearly_load_statistics: pd.DataFrame | None = None
 
@@ -829,13 +829,13 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
             raise
 
     clean_water_yearly_load_statistics: pd.DataFrame  # pylint: disable=unused-variable
-    conventional_cw_source_profiles: Dict[WaterSource, pd.DataFrame] | None = None
-    initial_cw_hourly_loads: Dict[str, pd.DataFrame] | None = None
+    conventional_cw_source_profiles: dict[WaterSource, pd.DataFrame] | None = None
+    initial_cw_hourly_loads: dict[str, pd.DataFrame] | None = None
     total_cw_load: pd.DataFrame | None = None
 
     if any(scenario.desalination_scenario is not None for scenario in scenarios):
         # Create a set of all the conventional clean-water sources available.
-        conventional_sources: Set[str] = {
+        conventional_sources: set[str] = {
             source
             for scenario in scenarios
             if scenario.desalination_scenario is not None
@@ -860,11 +860,11 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
             water_source_times,
         )
 
-    conventional_hw_source_profiles: Dict[  # pylint: disable=unused-variable
+    conventional_hw_source_profiles: dict[  # pylint: disable=unused-variable
         WaterSource, pd.DataFrame
     ]
     hot_water_yearly_load_statistics: pd.DataFrame  # pylint: disable=unused-variable
-    initial_hw_hourly_loads: Dict[str, pd.DataFrame] | None = None
+    initial_hw_hourly_loads: dict[str, pd.DataFrame] | None = None
     total_hw_load: pd.DataFrame | None = None
 
     if any(scenario.hot_water_scenario is not None for scenario in scenarios):
@@ -894,7 +894,7 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
         )
 
     # Assemble a means of storing the relevant loads.
-    total_loads: Dict[ResourceType[pd.DataFrame]] = {
+    total_loads: dict[ResourceType, pd.DataFrame | None] = {
         ResourceType.CLEAN_WATER: total_cw_load,
         ResourceType.ELECTRIC: 0.001 * total_electric_load,  # type: ignore
         ResourceType.HOT_CLEAN_WATER: total_hw_load,
@@ -948,7 +948,7 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
     logger.info("All setup threads finished.")
 
     logger.info("Generating and saving total solar output file.")
-    total_solar_data: Dict[str, pd.DataFrame] = {
+    total_solar_data: dict[str, pd.DataFrame] = {
         pv_panel.name: solar.total_solar_output(
             os.path.join(auto_generated_files_directory, "solar"),
             parsed_args.regenerate,
@@ -1034,7 +1034,7 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
             end="\n",
         )
 
-        simulation_times: List[str] = []
+        simulation_times: list[str] = []
 
         # Determine the scenario to use for the simulation.
         try:
@@ -1243,7 +1243,7 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
 
     if operating_mode == OperatingMode.OPTIMISATION:
         print(f"Beginning CLOVER optimisation runs {'.' * 28}    ", end="\n")
-        optimisation_times: List[str] = []
+        optimisation_times: list[str] = []
 
         # Enforce that the optimisation inputs are set correctly before attempting an
         # optimisation.

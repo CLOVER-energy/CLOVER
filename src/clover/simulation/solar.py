@@ -21,7 +21,6 @@ performance under environmental conditions needs to be calculated.
 import collections
 
 from logging import Logger
-from typing import Dict, Tuple
 
 import pandas as pd  # pylint: disable=import-error
 
@@ -158,7 +157,7 @@ def _volume_withdrawn_from_tank(
     previous_tank_temperature: float | None,
     resource_type: ResourceType,
     thermal_desalination_plant: ThermalDesalinationPlant | None,
-) -> Tuple[bool, float]:
+) -> tuple[bool, float]:
     """
     Computes whether the tank is supplying an output, and what this output is.
 
@@ -304,7 +303,7 @@ def calculate_pvt_output(  # pylint: disable=too-many-locals, too-many-statement
     temperatures: pd.Series,
     thermal_desalination_plant: ThermalDesalinationPlant | None,
     wind_speeds: pd.Series,
-) -> Tuple[
+) -> tuple[
     pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame
 ]:
     """
@@ -393,12 +392,12 @@ def calculate_pvt_output(  # pylint: disable=too-many-locals, too-many-statement
     runs: int = 0
 
     # Instantiate maps for easy PV-T power lookups.
-    pvt_electric_power_per_unit_map: Dict[int, float] = {}
-    pvt_pump_times_map: Dict[int, int] = {}
-    tank_supply_temperature_map: Dict[int, float] = (  # pylint: disable=unused-variable
+    pvt_electric_power_per_unit_map: dict[int, float] = {}
+    pvt_pump_times_map: dict[int, int] = {}
+    tank_supply_temperature_map: dict[int, float] = (  # pylint: disable=unused-variable
         {}
     )
-    tank_volume_supplied_map: Dict[int, float] = {}
+    tank_volume_supplied_map: dict[int, float] = {}
 
     # Compute the various terms which remain common across all time steps.
     if (
@@ -493,10 +492,10 @@ def calculate_pvt_output(  # pylint: disable=too-many-locals, too-many-statement
         )
 
     best_guess_collector_input_temperature: float = default_supply_temperature
-    pvt_collector_input_temperature_map: Dict[int, float] = collections.defaultdict(
+    pvt_collector_input_temperature_map: dict[int, float] = collections.defaultdict(
         lambda: default_supply_temperature
     )
-    pvt_collector_output_temperature_map: Dict[int, float] = collections.defaultdict(
+    pvt_collector_output_temperature_map: dict[int, float] = collections.defaultdict(
         lambda: default_supply_temperature
     )
     tank_environment_heat_transfer: float = (
@@ -508,7 +507,7 @@ def calculate_pvt_output(  # pylint: disable=too-many-locals, too-many-statement
         * tank.heat_capacity
         / 3600  # [kg]  # [J/kg*K]  # [s/hour]
     )  # [W/K]
-    tank_temperature_map: Dict[int, float] = collections.defaultdict(
+    tank_temperature_map: dict[int, float] = collections.defaultdict(
         lambda: default_supply_temperature
     )
 

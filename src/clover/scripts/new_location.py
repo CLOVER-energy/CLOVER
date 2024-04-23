@@ -24,7 +24,7 @@ import pkgutil
 import shutil
 import sys
 
-from typing import Any, List, Pattern
+from typing import Any, Pattern
 
 import re
 import yaml  # pylint: disable=import-error
@@ -121,7 +121,7 @@ def _create_file(
 
 
 def _create_folder_and_contents(
-    contents: List[Any],
+    contents: list[Any],
     directory_name: str,
     logger: logging.Logger,
     parent_directory: str,
@@ -162,7 +162,7 @@ def _create_folder_and_contents(
             )
 
 
-def _parse_args(args: List[Any]) -> argparse.Namespace:
+def _parse_args(args: list[Any]) -> argparse.Namespace:
     """
     Parse the CLI arguments to determine the flow of the script.
 
@@ -327,7 +327,7 @@ def create_new_location(
             )
 
 
-def main(args: List[Any]) -> None:
+def main(args: list[Any]) -> None:
     """
     The main method for the new-location-folder generation script.
 
