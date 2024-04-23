@@ -734,17 +734,17 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
     if any(scenario.desalination_scenario is not None for scenario in scenarios):
         # Set up the system to call renewables.ninja at a slower rate.
         logger.info("Begining weather-data fetching.")
-        weather_data_thread: Optional[
-            weather.WeatherDataThread
-        ] = weather.WeatherDataThread(
-            os.path.join(auto_generated_files_directory, "weather"),
-            global_settings_inputs,
-            location,
-            f"{parsed_args.location}_{weather.WEATHER_LOGGER_NAME}",
-            ninja_pause_index,
-            parsed_args.refetch,
-            num_ninjas,
-            parsed_args.verbose,
+        weather_data_thread: Optional[weather.WeatherDataThread] = (
+            weather.WeatherDataThread(
+                os.path.join(auto_generated_files_directory, "weather"),
+                global_settings_inputs,
+                location,
+                f"{parsed_args.location}_{weather.WEATHER_LOGGER_NAME}",
+                ninja_pause_index,
+                parsed_args.refetch,
+                num_ninjas,
+                parsed_args.verbose,
+            )
         )
         if weather_data_thread is None:
             raise InternalError(

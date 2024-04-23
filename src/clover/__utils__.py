@@ -1464,7 +1464,6 @@ class Location:
             "location": self.name,
             "time_difference": self.time_difference,
         }
-    
 
 
 def monthly_profile_to_daily_profile(monthly_profile: pd.DataFrame) -> pd.DataFrame:
@@ -1499,7 +1498,9 @@ def monthly_profile_to_daily_profile(monthly_profile: pd.DataFrame) -> pd.DataFr
 
     # Interpolate the value that falls in the middle of the month.
     daily_profile = {
-        hour: scipy.interpolate.interp(range(365), MONTH_MID_DAY, extended_year_profile.iloc[hour])
+        hour: scipy.interpolate.interp(
+            range(365), MONTH_MID_DAY, extended_year_profile.iloc[hour]
+        )
         for hour in range(24)
     }
 

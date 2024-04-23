@@ -1751,7 +1751,11 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
     storage_power_supplied: Dict[int, float] = {}
 
     # Do not do the itteration if no storage is being used
-    if electric_storage_size == 0 or electric_storage_size is None or not scenario.battery:
+    if (
+        electric_storage_size == 0
+        or electric_storage_size is None
+        or not scenario.battery
+    ):
         battery_health_frame: pd.DataFrame = pd.DataFrame(
             [float(0)] * (end_hour - start_hour)
         )
@@ -2348,16 +2352,20 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
         number_of_buffer_tanks if scenario.desalination_scenario is not None else None,
         number_of_cw_tanks if scenario.desalination_scenario is not None else None,
         number_of_hw_tanks if scenario.hot_water_scenario is not None else None,
-        pv_sizes
-        if pv_sizes is not None
-        else {pv_panel.name: 0 for pv_panel in minigrid.pv_panels},
+        (
+            pv_sizes
+            if pv_sizes is not None
+            else {pv_panel.name: 0 for pv_panel in minigrid.pv_panels}
+        ),
         float(
             (electric_storage_size if electric_storage_size is not None else 0)
             * minigrid.battery.storage_unit
         ),
-        [source.name for source in required_cw_feedwater_sources]
-        if len(required_cw_feedwater_sources) > 0
-        else None,
+        (
+            [source.name for source in required_cw_feedwater_sources]
+            if len(required_cw_feedwater_sources) > 0
+            else None
+        ),
         simulation.start_year,
     )
 
