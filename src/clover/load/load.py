@@ -566,9 +566,7 @@ def compute_total_hourly_load(  # pylint: disable=too-many-locals
 
     logger.info("Saving yearly load statistics.")
     with open(yearly_load_statistics_filepath, "w") as f:
-        yearly_load_statistics.to_csv(
-            f, index=False, lineterminator=""  # type: ignore
-        )
+        yearly_load_statistics.to_csv(f, index=False, lineterminator="")  # type: ignore
     logger.info("Yearly load statistics successfully saved.")
 
     return total_load, yearly_load_statistics
