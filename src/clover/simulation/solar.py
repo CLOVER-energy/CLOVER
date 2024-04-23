@@ -21,7 +21,7 @@ performance under environmental conditions needs to be calculated.
 import collections
 
 from logging import Logger
-from typing import Dict, Optional, Tuple
+from typing import Dict, Tuple
 
 import pandas as pd  # pylint: disable=import-error
 
@@ -151,13 +151,13 @@ def _htf_fed_buffer_tank_mass_flow_rate(
 def _volume_withdrawn_from_tank(
     ambient_temperature: float,
     best_guess_tank_temperature: float,
-    hot_water_load: Optional[float],
+    hot_water_load: float | None,
     logger: Logger,
     minigrid: Minigrid,
     num_tanks: int,
-    previous_tank_temperature: Optional[float],
+    previous_tank_temperature: float | None,
     resource_type: ResourceType,
-    thermal_desalination_plant: Optional[ThermalDesalinationPlant],
+    thermal_desalination_plant: ThermalDesalinationPlant | None,
 ) -> Tuple[bool, float]:
     """
     Computes whether the tank is supplying an output, and what this output is.
@@ -296,13 +296,13 @@ def calculate_pvt_output(  # pylint: disable=too-many-locals, too-many-statement
     logger: Logger,
     minigrid: Minigrid,
     num_tanks: int,
-    processed_total_hw_load: Optional[pd.Series],
+    processed_total_hw_load: pd.Series | None,
     pvt_system_size: int,
     resource_type: ResourceType,
     scenario: Scenario,
     start_hour: int,
     temperatures: pd.Series,
-    thermal_desalination_plant: Optional[ThermalDesalinationPlant],
+    thermal_desalination_plant: ThermalDesalinationPlant | None,
     wind_speeds: pd.Series,
 ) -> Tuple[
     pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame

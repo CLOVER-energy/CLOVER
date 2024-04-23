@@ -24,7 +24,7 @@ import pkgutil
 import shutil
 import sys
 
-from typing import Any, List, Optional, Pattern
+from typing import Any, List, Pattern
 
 import re
 import yaml  # pylint: disable=import-error
@@ -189,7 +189,7 @@ def _parse_args(args: List[Any]) -> argparse.Namespace:
 
 
 def create_new_location(
-    from_existing: Optional[str],
+    from_existing: str | None,
     location: str,
     logger: logging.Logger,
     update: bool,

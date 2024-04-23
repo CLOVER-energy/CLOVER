@@ -22,7 +22,7 @@ import enum
 import os
 
 from logging import Logger
-from typing import Any, Dict, List, Optional, Pattern, Tuple, Union
+from typing import Any, Dict, List, Pattern, Tuple, Union
 
 import json
 import re
@@ -969,24 +969,24 @@ def get_sufficient_appraisals(
 
 
 def recursive_iteration(  # pylint: disable=too-many-locals
-    conventional_cw_source_profiles: Optional[Dict[WaterSource, pd.DataFrame]],
+    conventional_cw_source_profiles: Dict[WaterSource, pd.DataFrame] | None,
     disable_tqdm: bool,
     end_year: int,
     finance_inputs: Dict[str, Any],
     ghg_inputs: Dict[str, Any],
-    grid_profile: Optional[pd.DataFrame],
+    grid_profile: pd.DataFrame | None,
     irradiance_data: Dict[str, pd.Series],
     kerosene_usage: pd.DataFrame,
     location: Location,
     logger: Logger,
     minigrid: energy_system.Minigrid,
     optimisation: Optimisation,
-    previous_system: Optional[SystemAppraisal],
+    previous_system: SystemAppraisal | None,
     start_year: int,
     temperature_data: Dict[str, pd.Series],
-    total_loads: Dict[ResourceType, Optional[pd.DataFrame]],
+    total_loads: Dict[ResourceType[pd.DataFrame]],
     total_solar_pv_power_produced: Dict[str, pd.Series],
-    wind_speed_data: Optional[pd.Series],
+    wind_speed_data: pd.Series | None,
     yearly_electric_load_statistics: pd.DataFrame,
     *,
     component_sizes: Dict[

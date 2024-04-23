@@ -21,7 +21,7 @@ simulations.
 
 import collections
 from logging import Logger
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, Tuple
 
 import numpy as np  # pylint: disable=import-error
 import pandas as pd
@@ -796,12 +796,12 @@ def _appraise_clean_water_system_tech(  # pylint: disable=too-many-locals
     simulation_results: pd.DataFrame,
     system_details: SystemDetails,
 ) -> Tuple[
-    Optional[float],
-    Optional[float],
-    Optional[float],
-    Optional[float],
-    Optional[float],
-    Optional[float],
+    float | None,
+    float | None,
+    float | None,
+    float | None,
+    float | None,
+    float | None,
 ]:
     """
     Appraises the clean-water system's technical parameters.
@@ -950,7 +950,7 @@ def _appraise_electric_system_tech(  # pylint: disable=too-many-locals
     float,
     float,
     float,
-    Optional[float],
+    float | None,
     float,
     float,
 ]:
@@ -1011,7 +1011,7 @@ def _appraise_electric_system_tech(  # pylint: disable=too-many-locals
     total_pv_energy: float = np.sum(
         simulation_results[ColumnHeader.PV_ELECTRICITY_SUPPLIED.value]  # type: ignore
     )
-    total_pvt_energy: Optional[float] = (
+    total_pvt_energy: float | None = (
         np.sum(
             simulation_results[ColumnHeader.TOTAL_PVT_ELECTRICITY_SUPPLIED.value]  # type: ignore
         )
@@ -1071,12 +1071,12 @@ def _appraise_hot_water_system_tech(
     simulation_results: pd.DataFrame,
     system_details: SystemDetails,
 ) -> Tuple[
-    Optional[float],
-    Optional[pd.Series],
-    Optional[float],
-    Optional[float],
-    Optional[float],
-    Optional[float],
+    float | None,
+    pd.Series | None,
+    float | None,
+    float | None,
+    float | None,
+    float | None,
 ]:
     """
     Appraises the hot-water system's technical parameters.
@@ -1178,7 +1178,7 @@ def _appraise_hot_water_system_tech(
     total_hot_water_consumed_daily: pd.Series = hourly_profile_to_daily_sum(
         pd.DataFrame(hot_water_consumed)
     )
-    discounted_hot_water: Optional[float] = finance.discounted_energy_total(
+    discounted_hot_water: float | None = finance.discounted_energy_total(
         finance_inputs,
         logger,
         total_hot_water_consumed_daily,
@@ -1291,14 +1291,14 @@ def _simulation_technical_appraisal(  # pylint: disable=too-many-locals
 
     # Heating system.
     if hot_water_consumed is not None:
-        heating_consumed: Optional[pd.Series] = (
+        heating_consumed: pd.Series | None = (
             hot_water_consumed  # [kg]
             * HEAT_CAPACITY_OF_WATER  # [J/kg*K]
             * simulation_results[  # type: ignore
                 ColumnHeader.HW_TEMPERATURE_GAIN.value
             ]  # [K]
         ) / 1000  # + clean_water_system_heat + ...
-        total_heating_consumed: Optional[float] = np.sum(heating_consumed)  # type: ignore
+        total_heating_consumed: float | None = np.sum(heating_consumed)  # type: ignore
 
         # Append the energy consumption information.
         energy_consumed += (
@@ -1312,7 +1312,7 @@ def _simulation_technical_appraisal(  # pylint: disable=too-many-locals
         total_heating_consumed_daily: pd.Series = hourly_profile_to_daily_sum(
             pd.DataFrame(heating_consumed)
         )
-        discounted_heating: Optional[float] = finance.discounted_energy_total(
+        discounted_heating: float | None = finance.discounted_energy_total(
             finance_inputs,
             logger,
             total_heating_consumed_daily,
@@ -1435,7 +1435,7 @@ def appraise_system(  # pylint: disable=too-many-locals
     inverter: Inverter,
     location: Location,
     logger: Logger,
-    previous_system: Optional[SystemAppraisal],
+    previous_system: SystemAppraisal | None,
     scenario: Scenario,
     simulation_results: pd.DataFrame,
     start_year: int,
@@ -1633,7 +1633,7 @@ def appraise_system(  # pylint: disable=too-many-locals
     lcu_energy = float(
         cumulative_results.system_cost / cumulative_results.discounted_energy
     )
-    lcu_h: Optional[float] = (
+    lcu_h: float | None = (
         float(
             cumulative_results.subsystem_costs[ResourceType.HOT_CLEAN_WATER]
             / cumulative_results.discounted_heating
@@ -1645,7 +1645,7 @@ def appraise_system(  # pylint: disable=too-many-locals
         cumulative_results.discounted_clean_water is not None
         and cumulative_results.discounted_clean_water > 0
     ):
-        lcu_w: Optional[float] = float(
+        lcu_w: float | None = float(
             cumulative_results.subsystem_costs[ResourceType.CLEAN_WATER]
             / cumulative_results.discounted_clean_water
         )
@@ -1659,7 +1659,7 @@ def appraise_system(  # pylint: disable=too-many-locals
 
     # Compute cumulative waste products.
     if cumulative_results.waste_produced is not None:
-        cumulative_brine: Optional[float] = (
+        cumulative_brine: float | None = (
             cumulative_results.waste_produced[WasteProduct.BRINE]
             if WasteProduct.BRINE in cumulative_results.waste_produced
             else None
@@ -1668,7 +1668,7 @@ def appraise_system(  # pylint: disable=too-many-locals
         cumulative_brine = None
 
     # pylint: disable=line-too-long
-    criteria: Dict[Criterion, Optional[float]] = {
+    criteria: Dict[Criterion[float]] = {
         Criterion.BLACKOUTS: technical_appraisal.blackouts,
         Criterion.CLEAN_WATER_BLACKOUTS: technical_appraisal.clean_water_blackouts,
         Criterion.CUMULATIVE_BRINE: cumulative_brine,

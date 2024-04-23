@@ -23,7 +23,7 @@ import math
 import os
 
 from logging import Logger
-from typing import Any, Dict, Optional, Set, Tuple
+from typing import Any, Dict, Set, Tuple
 
 import numpy as np  # pylint: disable=import-error
 import pandas as pd  # pylint: disable=import-error
@@ -148,14 +148,14 @@ class Device:
 
     available: bool
     demand_type: DemandType
-    electric_power: Optional[float]
+    electric_power: float | None
     final_ownership: float
     initial_ownership: float
     innovation: float
     imitation: float
     name: str
-    clean_water_usage: Optional[float]
-    hot_water_usage: Optional[float]
+    clean_water_usage: float | None
+    hot_water_usage: float | None
 
     def __hash__(self) -> int:
         """
@@ -438,7 +438,7 @@ def compute_total_hourly_load(  # pylint: disable=too-many-locals
     disable_tqdm: bool,
     generated_device_load_filepath: str,
     logger: Logger,
-    total_load_profile: Optional[pd.DataFrame],
+    total_load_profile: pd.DataFrame | None,
     years: int,
 ) -> Tuple[pd.DataFrame, pd.DataFrame]:
     """
@@ -987,7 +987,7 @@ def process_load_profiles(  # pylint: disable=too-many-locals
     logger: Logger,
     regenerate: bool,
     resource_type: ResourceType,
-    total_load_profile: Optional[pd.DataFrame] = None,
+    total_load_profile: pd.DataFrame | None = None,
 ) -> Tuple[Dict[str, pd.DataFrame], pd.DataFrame, pd.DataFrame]:
     """
     Process all the load information and profiles to generate the total load.
@@ -1176,7 +1176,7 @@ def compute_processed_load_profile(
 
     """
 
-    processed_total_load: Optional[pd.DataFrame] = None
+    processed_total_load: pd.DataFrame | None = None
 
     if scenario.demands.domestic:
         processed_total_load = pd.DataFrame(

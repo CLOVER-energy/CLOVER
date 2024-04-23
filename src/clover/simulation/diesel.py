@@ -21,7 +21,7 @@ functionality to model diesel generators.
 import dataclasses
 import logging
 
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, Tuple
 
 import numpy as np  # pylint: disable=import-error
 import pandas as pd
@@ -184,7 +184,7 @@ class DieselWaterHeater(Converter):
 
 def _find_deficit_threshold_blackout(
     unmet_energy: pd.DataFrame, blackouts: pd.DataFrame, backup_threshold: float
-) -> Optional[float]:
+) -> float | None:
     """
     Identifies the threshold energy level at which the diesel backup generator turns on
     when the threshold criterion is blackouts.
@@ -218,7 +218,7 @@ def _find_deficit_threshold_blackout(
 
 def _find_deficit_threshold_unmet(
     unmet_energy: pd.DataFrame, backup_threshold: float, total_electric_load: float
-) -> Optional[float]:
+) -> float | None:
     """
     Identifies the threshold energy level at which the diesel backup generator turns on
     when the threshold criterion is unmet energy.
@@ -266,7 +266,7 @@ def _find_deficit_threshold(
     backup_threshold: float,
     total_electric_load: float,
     diesel_mode: DieselMode,
-) -> Optional[float]:
+) -> float | None:
     """
     Identifies the threshold energy level at which the diesel backup generator turns on.
 

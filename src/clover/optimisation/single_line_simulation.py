@@ -22,7 +22,7 @@ parameter will result in a better system.
 """
 
 from logging import Logger
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Tuple, Union
 
 import numpy as np  # pylint: disable=import-error
 import pandas as pd
@@ -57,7 +57,7 @@ __all__ = ("single_line_simulation",)
 
 
 def single_line_simulation(  # pylint: disable=too-many-locals, too-many-statements
-    conventional_cw_source_profiles: Optional[Dict[WaterSource, pd.DataFrame]],
+    conventional_cw_source_profiles: Dict[WaterSource, pd.DataFrame] | None,
     converter_sizes: Dict[Converter, ConverterSize],
     cw_pvt_size: SolarSystemSize,
     cw_tanks: TankSize,
@@ -66,7 +66,7 @@ def single_line_simulation(  # pylint: disable=too-many-locals, too-many-stateme
     end_year: int,
     finance_inputs: Dict[str, Any],
     ghg_inputs: Dict[str, Any],
-    grid_profile: Optional[pd.DataFrame],
+    grid_profile: pd.DataFrame | None,
     hw_pvt_size: SolarSystemSize,
     hw_tanks: TankSize,
     irradiance_data: Dict[str, pd.Series],
@@ -76,14 +76,14 @@ def single_line_simulation(  # pylint: disable=too-many-locals, too-many-stateme
     minigrid: energy_system.Minigrid,
     optimisation: Optimisation,
     potential_system: SystemAppraisal,
-    previous_system: Optional[SystemAppraisal],
+    previous_system: SystemAppraisal | None,
     pv_system_size: SolarSystemSize,
     start_year: int,
     storage_size: StorageSystemSize,
     temperature_data: Dict[str, pd.Series],
-    total_loads: Dict[ResourceType, Optional[pd.DataFrame]],
+    total_loads: Dict[ResourceType[pd.DataFrame]],
     total_solar_pv_power_produced: Dict[str, pd.Series],
-    wind_speed_data: Optional[pd.Series],
+    wind_speed_data: pd.Series | None,
     yearly_electric_load_statistics: pd.DataFrame,
 ) -> Tuple[
     Dict[Converter, ConverterSize],

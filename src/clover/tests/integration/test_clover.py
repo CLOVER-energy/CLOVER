@@ -26,7 +26,7 @@ import json
 import shutil
 
 from distutils.dir_util import copy_tree  # pylint: disable=deprecated-module
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Union
 
 import pytest
 import yaml
@@ -230,8 +230,8 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
         storage: bool,
         *,
         prioritise_self_generation: bool = True,
-        pv_size: Optional[float] = None,
-        storage_size: Optional[float] = None,
+        pv_size: float | None = None,
+        storage_size: float | None = None,
     ) -> Dict[str, Any]:
         """
         Wrapper to run a CLOVER simulation.

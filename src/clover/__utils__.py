@@ -24,7 +24,7 @@ import enum
 import logging
 import os
 
-from typing import Any, DefaultDict, Dict, List, Optional, Set, Union
+from typing import Any, DefaultDict, Dict, List, Set, Union
 
 import json
 import numpy as np  # pylint: disable=import-error
@@ -270,7 +270,7 @@ class AuxiliaryHeaterType(enum.Enum):
 # Auxiliary heater name to type mapping:
 #   Used to parse auxiliary heater types, allowing for more than are defined on the
 #   base enum class.
-AUXILIARY_HEATER_NAME_TO_TYPE_MAPPING: Dict[str, Optional[AuxiliaryHeaterType]] = {
+AUXILIARY_HEATER_NAME_TO_TYPE_MAPPING: Dict[str[AuxiliaryHeaterType]] = {
     e.value: e for e in AuxiliaryHeaterType
 }
 AUXILIARY_HEATER_NAME_TO_TYPE_MAPPING["none"] = None
@@ -801,7 +801,7 @@ class DieselScenario:
 
     """
 
-    backup_threshold: Optional[float]
+    backup_threshold: float | None
     mode: DieselMode
 
     def to_dict(self) -> Dict[str, Any]:
@@ -1017,43 +1017,43 @@ class KeyResults:
 
     """
 
-    average_daily_cw_demand_covered: Optional[float] = None
-    average_daily_cw_pvt_generation: Optional[float] = None
-    average_daily_cw_supplied: Optional[float] = None
-    average_daily_diesel_energy_supplied: Optional[float] = None
-    average_daily_dumped_energy: Optional[float] = None
-    average_daily_electricity_consumption: Optional[float] = None
-    average_daily_grid_energy_supplied: Optional[float] = None
-    average_daily_hw_demand_covered: Optional[float] = None
-    average_daily_hw_pvt_generation: Optional[float] = None
-    average_daily_hw_renewable_fraction: Optional[float] = None
-    average_daily_hw_supplied: Optional[float] = None
-    average_daily_pv_energy_supplied: Optional[float] = None
-    average_daily_renewables_energy_supplied: Optional[float] = None
-    average_daily_renewables_energy_used: Optional[float] = None
-    average_daily_stored_energy_supplied: Optional[float] = None
-    average_daily_unmet_energy: Optional[float] = None
-    average_pv_generation: Optional[Dict[str, float]] = None
-    average_pvt_electric_generation: Optional[float] = None
-    average_renewable_generation: Optional[float] = None
-    blackouts: Optional[float] = None
-    clean_water_blackouts: Optional[float] = None
-    cumulative_brine: Optional[float] = None
-    cumulative_cw_load: Optional[float] = None
-    cumulative_cw_pvt_generation: Optional[float] = None
-    cumulative_cw_supplied: Optional[float] = None
-    cumulative_hw_load: Optional[float] = None
-    cumulative_hw_pvt_generation: Optional[float] = None
-    cumulative_hw_supplied: Optional[float] = None
-    cumulative_pv_generation: Optional[Dict[str, float]] = None
-    diesel_times: Optional[float] = None
-    grid_daily_hours: Optional[float] = None
-    max_buffer_tank_temperature: Optional[float] = None
-    max_cw_pvt_output_temperature: Optional[float] = None
-    mean_buffer_tank_temperature: Optional[float] = None
-    mean_cw_pvt_output_temperature: Optional[float] = None
-    min_buffer_tank_temperature: Optional[float] = None
-    min_cw_pvt_output_temperature: Optional[float] = None
+    average_daily_cw_demand_covered: float | None = None
+    average_daily_cw_pvt_generation: float | None = None
+    average_daily_cw_supplied: float | None = None
+    average_daily_diesel_energy_supplied: float | None = None
+    average_daily_dumped_energy: float | None = None
+    average_daily_electricity_consumption: float | None = None
+    average_daily_grid_energy_supplied: float | None = None
+    average_daily_hw_demand_covered: float | None = None
+    average_daily_hw_pvt_generation: float | None = None
+    average_daily_hw_renewable_fraction: float | None = None
+    average_daily_hw_supplied: float | None = None
+    average_daily_pv_energy_supplied: float | None = None
+    average_daily_renewables_energy_supplied: float | None = None
+    average_daily_renewables_energy_used: float | None = None
+    average_daily_stored_energy_supplied: float | None = None
+    average_daily_unmet_energy: float | None = None
+    average_pv_generation: Dict[str, float] | None = None
+    average_pvt_electric_generation: float | None = None
+    average_renewable_generation: float | None = None
+    blackouts: float | None = None
+    clean_water_blackouts: float | None = None
+    cumulative_brine: float | None = None
+    cumulative_cw_load: float | None = None
+    cumulative_cw_pvt_generation: float | None = None
+    cumulative_cw_supplied: float | None = None
+    cumulative_hw_load: float | None = None
+    cumulative_hw_pvt_generation: float | None = None
+    cumulative_hw_supplied: float | None = None
+    cumulative_pv_generation: Dict[str, float] | None = None
+    diesel_times: float | None = None
+    grid_daily_hours: float | None = None
+    max_buffer_tank_temperature: float | None = None
+    max_cw_pvt_output_temperature: float | None = None
+    mean_buffer_tank_temperature: float | None = None
+    mean_cw_pvt_output_temperature: float | None = None
+    min_buffer_tank_temperature: float | None = None
+    min_cw_pvt_output_temperature: float | None = None
 
     def to_dict(  # pylint: disable=too-many-branches, too-many-statements
         self,
@@ -2032,7 +2032,7 @@ class HotWaterScenario:
 
     """
 
-    auxiliary_heater: Optional[AuxiliaryHeaterType]
+    auxiliary_heater: AuxiliaryHeaterType | None
     cold_water_supply: ColdWaterSupply
     cold_water_supply_temperature: float
     conventional_sources: List[str]
@@ -2255,13 +2255,13 @@ class Scenario:
 
     battery: bool
     demands: Demands
-    desalination_scenario: Optional[DesalinationScenario]
+    desalination_scenario: DesalinationScenario | None
     diesel_scenario: DieselScenario
     distribution_network: DistributionNetwork
     fixed_inverter_size: Union[float, bool]
     grid: bool
     grid_type: str
-    hot_water_scenario: Optional[HotWaterScenario]
+    hot_water_scenario: HotWaterScenario | None
     name: str
     resource_types: Set[ResourceType]
     prioritise_self_generation: bool
@@ -2273,8 +2273,8 @@ class Scenario:
     @classmethod
     def from_dict(
         cls,
-        desalination_scenarios: Optional[List[DesalinationScenario]],
-        hot_water_scenarios: Optional[List[HotWaterScenario]],
+        desalination_scenarios: List[DesalinationScenario] | None,
+        hot_water_scenarios: List[HotWaterScenario] | None,
         logger: logging.Logger,
         scenario_inputs: Dict[str, Any],
     ) -> Any:
@@ -2325,7 +2325,7 @@ class Scenario:
         if desalination_scenarios is not None:
             if DESALINATION_SCENARIO in scenario_inputs:
                 try:
-                    desalination_scenario: Optional[DesalinationScenario] = [
+                    desalination_scenario: DesalinationScenario | None = [
                         entry
                         for entry in desalination_scenarios
                         if entry.name == scenario_inputs[DESALINATION_SCENARIO]
@@ -2361,7 +2361,7 @@ class Scenario:
         if hot_water_scenarios is not None:
             if HOT_WATER_SCENARIO in scenario_inputs:
                 try:
-                    hot_water_scenario: Optional[HotWaterScenario] = [
+                    hot_water_scenario: HotWaterScenario | None = [
                         entry
                         for entry in hot_water_scenarios
                         if entry.name == scenario_inputs[HOT_WATER_SCENARIO]
@@ -2575,38 +2575,38 @@ class SystemDetails:
 
     diesel_capacity: float = 0
     end_year: int = 0
-    final_converter_sizes: Optional[Dict[Any, int]] = None
-    final_cw_pvt_size: Optional[float] = 0
-    final_hw_pvt_size: Optional[float] = 0
-    final_num_buffer_tanks: Optional[int] = 0
-    final_num_clean_water_tanks: Optional[int] = 0
-    final_num_hot_water_tanks: Optional[int] = 0
+    final_converter_sizes: Dict[Any, int] | None = None
+    final_cw_pvt_size: float | None = 0
+    final_hw_pvt_size: float | None = 0
+    final_num_buffer_tanks: int | None = 0
+    final_num_clean_water_tanks: int | None = 0
+    final_num_hot_water_tanks: int | None = 0
     final_pv_sizes: Union[Dict[str, float], DefaultDict[str, float]] = (
         dataclasses.field(  # type: ignore [assignment]
             default_factory=lambda: collections.defaultdict(float)
         )
     )
     final_storage_size: float = 0
-    initial_converter_sizes: Optional[Dict[Any, int]] = None
-    initial_cw_pvt_size: Optional[float] = 0
-    initial_hw_pvt_size: Optional[float] = 0
-    initial_num_buffer_tanks: Optional[int] = 0
-    initial_num_clean_water_tanks: Optional[int] = 0
-    initial_num_hot_water_tanks: Optional[int] = 0
+    initial_converter_sizes: Dict[Any, int] | None = None
+    initial_cw_pvt_size: float | None = 0
+    initial_hw_pvt_size: float | None = 0
+    initial_num_buffer_tanks: int | None = 0
+    initial_num_clean_water_tanks: int | None = 0
+    initial_num_hot_water_tanks: int | None = 0
     initial_pv_sizes: Union[Dict[str, float], DefaultDict[str, float]] = (
         dataclasses.field(  # type: ignore [assignment]
             default_factory=lambda: collections.defaultdict(float)
         )
     )
     initial_storage_size: float = 0
-    required_feedwater_sources: Optional[List[str]] = None
+    required_feedwater_sources: List[str] | None = None
     start_year: int = 0
-    file_information: Optional[Dict[str, str]] = None
+    file_information: Dict[str, str] | None = None
 
     def to_dict(
         self,
     ) -> Dict[
-        str, Optional[Union[int, float, str, Dict[str, str], Dict[str, float]]]
+        str[Union[int, float, str, Dict[str, str], Dict[str, float]]]
     ]:  # pylint: disable=too-many-branches
         """
         Returns a `dict` containing information the :class:`SystemDetails`' information.
@@ -2618,7 +2618,7 @@ class SystemDetails:
         """
 
         system_details_as_dict: Dict[
-            str, Optional[Union[int, float, str, Dict[str, str], Dict[str, float]]]
+            str[Union[int, float, str, Dict[str, str], Dict[str, float]]]
         ] = {
             "diesel_capacity": round(self.diesel_capacity, 3),
             "end_year": round(self.end_year, 3),
@@ -3219,33 +3219,33 @@ class TechnicalAppraisal:
     """
 
     blackouts: float = 0
-    clean_water_blackouts: Optional[float] = 0
-    cw_demand_covered: Optional[float] = 0
+    clean_water_blackouts: float | None = 0
+    cw_demand_covered: float | None = 0
     diesel_energy: float = 0
     diesel_fuel_usage: float = 0
-    discounted_clean_water: Optional[float] = 0
+    discounted_clean_water: float | None = 0
     discounted_electricity: float = 0
     discounted_energy: float = 0
-    discounted_heating: Optional[float] = 0
-    discounted_hot_water: Optional[float] = 0
+    discounted_heating: float | None = 0
+    discounted_hot_water: float | None = 0
     grid_energy: float = 0
-    hw_demand_covered: Optional[float] = 0
+    hw_demand_covered: float | None = 0
     kerosene_displacement: float = 0
     power_consumed_fraction: Dict[ResourceType, float] = None  # type: ignore
     pv_energy: float = 0
-    pvt_energy: Optional[float] = 0
-    renewable_clean_water_fraction: Optional[float] = 0
+    pvt_energy: float | None = 0
+    renewable_clean_water_fraction: float | None = 0
     renewable_electricity_fraction: float = 0
     renewable_electricity: float = 0
-    renewable_hot_water_fraction: Optional[float] = 0
-    solar_thermal_cw_fraction: Optional[float] = 0
-    solar_thermal_hw_fraction: Optional[float] = 0
+    renewable_hot_water_fraction: float | None = 0
+    solar_thermal_cw_fraction: float | None = 0
+    solar_thermal_hw_fraction: float | None = 0
     storage_energy: float = 0
-    total_clean_water: Optional[float] = 0
-    total_hot_water: Optional[float] = 0
+    total_clean_water: float | None = 0
+    total_hot_water: float | None = 0
     total_electricity_consumed: float = 0
     total_energy_consumed: float = 0
-    total_heating_consumed: Optional[float] = 0
+    total_heating_consumed: float | None = 0
     unmet_energy: float = 0
     unmet_energy_fraction: float = 0
 
@@ -3270,7 +3270,7 @@ class TechnicalAppraisal:
 
         """
 
-        technical_appraisal_dict: Dict[str, Optional[float]] = {
+        technical_appraisal_dict: Dict[str[float]] = {
             "blackouts": self.blackouts,
             "clean_water_blackouts": self.clean_water_blackouts,
             "cw_demand_covered": self.cw_demand_covered,
@@ -3356,7 +3356,7 @@ class SystemAppraisal:
     financial_appraisal: FinancialAppraisal
     system_details: SystemDetails
     technical_appraisal: TechnicalAppraisal
-    criteria: Optional[Dict[Criterion, Optional[float]]] = None
+    criteria: Dict[Criterion[float]] | None = None
 
     def to_dict(self) -> Dict[str, Any]:
         """
@@ -3389,7 +3389,7 @@ def save_simulation(
     output_directory: str,
     simulation: pd.DataFrame,
     simulation_number: int,
-    system_appraisal: Optional[SystemAppraisal],
+    system_appraisal: SystemAppraisal | None,
     system_details: SystemDetails,
 ) -> None:
     """

@@ -20,7 +20,7 @@ emitted by the system, need to be assed.
 
 import collections
 from logging import Logger
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Tuple
 
 import numpy as np  # pylint: disable=import-error
 import pandas as pd  # pylint: disable=import-error
@@ -886,7 +886,7 @@ def calculate_om_ghgs(
 def calculate_total_om(  # pylint: disable=too-many-locals
     buffer_tanks: int,
     clean_water_tanks: int,
-    converters: Optional[Dict[Converter, int]],
+    converters: Dict[Converter, int] | None,
     diesel_size: float,
     ghg_inputs: Dict[str, Any],
     heat_exchangers: int,

@@ -21,7 +21,7 @@ for use locally within CLOVER.
 import enum
 
 from logging import Logger
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Tuple, Union
 
 import pandas as pd  # pylint: disable=import-error
 
@@ -205,15 +205,15 @@ class SolarPanel:  # pylint: disable=too-few-public-methods
 
     def __init__(
         self,
-        azimuthal_orientation: Optional[float],
+        azimuthal_orientation: float | None,
         lifetime: int,
         name: str,
         pv_unit: float,
         pv_unit_overrided: bool,
-        reference_efficiency: Optional[float],
-        reference_temperature: Optional[float],
-        thermal_coefficient: Optional[float],
-        tilt: Optional[float],
+        reference_efficiency: float | None,
+        reference_temperature: float | None,
+        thermal_coefficient: float | None,
+        tilt: float | None,
     ) -> None:
         """
         Instantiate a :class:`SolarPanel` instance.
@@ -245,15 +245,15 @@ class SolarPanel:  # pylint: disable=too-few-public-methods
 
         """
 
-        self.azimuthal_orientation: Optional[float] = azimuthal_orientation
+        self.azimuthal_orientation: float | None = azimuthal_orientation
         self.lifetime: int = lifetime
         self.name: str = name
         self.pv_unit: float = pv_unit
         self.pv_unit_overrided: bool = pv_unit_overrided
-        self.reference_efficiency: Optional[float] = reference_efficiency
-        self.reference_temperature: Optional[float] = reference_temperature
-        self.thermal_coefficient: Optional[float] = thermal_coefficient
-        self.tilt: Optional[float] = tilt
+        self.reference_efficiency: float | None = reference_efficiency
+        self.reference_temperature: float | None = reference_temperature
+        self.thermal_coefficient: float | None = thermal_coefficient
+        self.tilt: float | None = tilt
 
     def __init_subclass__(cls, panel_type: SolarPanelType) -> None:
         """
@@ -286,15 +286,15 @@ class PVPanel(
 
     def __init__(
         self,
-        azimuthal_orientation: Optional[float],
+        azimuthal_orientation: float | None,
         lifetime: int,
         name: str,
         pv_unit: float,
         pv_unit_overrided: bool,
-        reference_efficiency: Optional[float],
-        reference_temperature: Optional[float],
-        thermal_coefficient: Optional[float],
-        tilt: Optional[float],
+        reference_efficiency: float | None,
+        reference_temperature: float | None,
+        thermal_coefficient: float | None,
+        tilt: float | None,
         tracking: Tracking,
     ) -> None:
         """
@@ -434,14 +434,12 @@ class PVPanel(
         )
 
         if tracking == Tracking.FIXED:
-            azimuthal_orientation: Optional[float] = solar_inputs[
-                "azimuthal_orientation"
-            ]
+            azimuthal_orientation: float | None = solar_inputs["azimuthal_orientation"]
         else:
             azimuthal_orientation = None
 
         if tracking != Tracking.DUAL_AXIS:
-            tilt: Optional[float] = solar_inputs["tilt"]
+            tilt: float | None = solar_inputs["tilt"]
         else:
             tilt = None
 
@@ -499,11 +497,11 @@ class HybridPVTPanel(SolarPanel, panel_type=SolarPanelType.PV_T):
 
     def __init__(
         self,
-        electric_models: Optional[Dict[RegressorType, Lasso]],
+        electric_models: Dict[RegressorType, Lasso] | None,
         logger: Logger,
         solar_inputs: Dict[str, Any],
         solar_panels: List[SolarPanel],
-        thermal_models: Optional[Dict[RegressorType, Lasso]],
+        thermal_models: Dict[RegressorType, Lasso] | None,
     ) -> None:
         """
         Instantiate a :class:`HybridPVTPanel` instance based on the input data.

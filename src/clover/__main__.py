@@ -28,7 +28,7 @@ import re
 import sys
 
 from argparse import Namespace
-from typing import Any, DefaultDict, Dict, List, Match, Optional, Pattern, Set, Tuple
+from typing import Any, DefaultDict, Dict, List, Match, Pattern, Set, Tuple
 
 import pandas as pd  # pylint: disable=import-error
 
@@ -393,7 +393,7 @@ def _prepare_water_system(
 
 
 def main(  # pylint: disable=too-many-locals, too-many-statements
-    args: List[Any], disable_tqdm: bool = False, run_number: Optional[int] = None
+    args: List[Any], disable_tqdm: bool = False, run_number: int | None = None
 ) -> None:
     """
     The main module for CLOVER executing all functionality as appropriate.
@@ -436,7 +436,7 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
 
     logger.info("Command-line arguments successfully validated.")
 
-    version_match: Optional[Match[str]] = VERSION_REGEX.match(__version__)
+    version_match: Match[str] | None = VERSION_REGEX.match(__version__)
     version_number: str = (
         version_match.group("number") if version_match is not None else __version__
     )
@@ -477,7 +477,7 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
     # Determine the operating mode for the run.
     operating_mode = _get_operating_mode(parsed_args)
     if operating_mode == OperatingMode.SIMULATION:
-        output_directory: Optional[str] = simulation_output_directory
+        output_directory: str | None = simulation_output_directory
         logger.info(
             "A single CLOVER simulation will be run for locatation '%s'",
             parsed_args.location,
@@ -709,7 +709,7 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
     # Generate and save the wind data for each year as a background task.
     if any(scenario.pv_t for scenario in scenarios):
         logger.info("Beginning wind-data fetching.")
-        wind_data_thread: Optional[wind.WindDataThread] = wind.WindDataThread(
+        wind_data_thread: wind.WindDataThread | None = wind.WindDataThread(
             os.path.join(auto_generated_files_directory, "wind"),
             global_settings_inputs,
             location,
@@ -734,7 +734,7 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
     if any(scenario.desalination_scenario is not None for scenario in scenarios):
         # Set up the system to call renewables.ninja at a slower rate.
         logger.info("Begining weather-data fetching.")
-        weather_data_thread: Optional[weather.WeatherDataThread] = (
+        weather_data_thread: weather.WeatherDataThread | None = (
             weather.WeatherDataThread(
                 os.path.join(auto_generated_files_directory, "weather"),
                 global_settings_inputs,
@@ -787,9 +787,9 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
     logger.info("Processing device informaiton.")
     # load_logger = get_logger(load.LOAD_LOGGER_NAME)
 
-    initial_electric_hourly_loads: Optional[Dict[str, pd.DataFrame]] = None
-    total_electric_load: Optional[pd.DataFrame] = None
-    electric_yearly_load_statistics: Optional[pd.DataFrame] = None
+    initial_electric_hourly_loads: Dict[str, pd.DataFrame] | None = None
+    total_electric_load: pd.DataFrame | None = None
+    electric_yearly_load_statistics: pd.DataFrame | None = None
 
     if any(ResourceType.ELECTRIC in scenario.resource_types for scenario in scenarios):
         try:
@@ -829,9 +829,9 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
             raise
 
     clean_water_yearly_load_statistics: pd.DataFrame  # pylint: disable=unused-variable
-    conventional_cw_source_profiles: Optional[Dict[WaterSource, pd.DataFrame]] = None
-    initial_cw_hourly_loads: Optional[Dict[str, pd.DataFrame]] = None
-    total_cw_load: Optional[pd.DataFrame] = None
+    conventional_cw_source_profiles: Dict[WaterSource, pd.DataFrame] | None = None
+    initial_cw_hourly_loads: Dict[str, pd.DataFrame] | None = None
+    total_cw_load: pd.DataFrame | None = None
 
     if any(scenario.desalination_scenario is not None for scenario in scenarios):
         # Create a set of all the conventional clean-water sources available.
@@ -864,8 +864,8 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
         WaterSource, pd.DataFrame
     ]
     hot_water_yearly_load_statistics: pd.DataFrame  # pylint: disable=unused-variable
-    initial_hw_hourly_loads: Optional[Dict[str, pd.DataFrame]] = None
-    total_hw_load: Optional[pd.DataFrame] = None
+    initial_hw_hourly_loads: Dict[str, pd.DataFrame] | None = None
+    total_hw_load: pd.DataFrame | None = None
 
     if any(scenario.hot_water_scenario is not None for scenario in scenarios):
         # Create a set of all the conventional hot-water sources available.
@@ -894,7 +894,7 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
         )
 
     # Assemble a means of storing the relevant loads.
-    total_loads: Dict[ResourceType, Optional[pd.DataFrame]] = {
+    total_loads: Dict[ResourceType[pd.DataFrame]] = {
         ResourceType.CLEAN_WATER: total_cw_load,
         ResourceType.ELECTRIC: 0.001 * total_electric_load,  # type: ignore
         ResourceType.HOT_CLEAN_WATER: total_hw_load,
@@ -974,7 +974,7 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
 
     if any(scenario.pv_t for scenario in scenarios):
         logger.info("Generating and saving total wind data output file.")
-        total_wind_data: Optional[pd.DataFrame] = wind.total_wind_output(
+        total_wind_data: pd.DataFrame | None = wind.total_wind_output(
             os.path.join(auto_generated_files_directory, "wind"),
             parsed_args.regenerate,
             global_settings_inputs["start_year"],

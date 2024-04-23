@@ -22,7 +22,7 @@ information and system-sizing information provided.
 import collections
 
 from logging import Logger
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Tuple, Union
 
 import numpy as np  # pylint: disable=import-error
 import pandas as pd  # pylint: disable=import-error
@@ -1163,7 +1163,7 @@ def independent_expenditure(
 def total_om(  # pylint: disable=too-many-locals
     buffer_tanks: int,
     clean_water_tanks: int,
-    converters: Optional[Dict[Converter, int]],
+    converters: Dict[Converter, int] | None,
     diesel_size: float,
     finance_inputs: Dict[str, Any],
     heat_exchangers: int,

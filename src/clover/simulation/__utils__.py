@@ -26,7 +26,7 @@ from argparse import Namespace
 import dataclasses
 from logging import Logger
 
-from typing import Any, DefaultDict, Dict, List, Optional, Union
+from typing import Any, DefaultDict, Dict, List, Union
 
 from ..__utils__ import (
     AuxiliaryHeaterType,
@@ -146,40 +146,40 @@ class Minigrid:
 
     """
 
-    ac_to_ac_conversion_efficiency: Optional[float]
-    ac_to_dc_conversion_efficiency: Optional[float]
-    ac_transmission_efficiency: Optional[float]
-    battery: Optional[Battery]
-    buffer_tank: Optional[HotWaterTank]
-    clean_water_tank: Optional[CleanWaterTank]
-    dc_to_ac_conversion_efficiency: Optional[float]
-    dc_to_dc_conversion_efficiency: Optional[float]
-    dc_transmission_efficiency: Optional[float]
-    diesel_generator: Optional[DieselGenerator]
-    diesel_water_heater: Optional[DieselWaterHeater]
-    electric_water_heater: Optional[Converter]
-    heat_exchanger: Optional[Exchanger]
-    hot_water_tank: Optional[HotWaterTank]
+    ac_to_ac_conversion_efficiency: float | None
+    ac_to_dc_conversion_efficiency: float | None
+    ac_transmission_efficiency: float | None
+    battery: Battery | None
+    buffer_tank: HotWaterTank | None
+    clean_water_tank: CleanWaterTank | None
+    dc_to_ac_conversion_efficiency: float | None
+    dc_to_dc_conversion_efficiency: float | None
+    dc_transmission_efficiency: float | None
+    diesel_generator: DieselGenerator | None
+    diesel_water_heater: DieselWaterHeater | None
+    electric_water_heater: Converter | None
+    heat_exchanger: Exchanger | None
+    hot_water_tank: HotWaterTank | None
     inverter: Inverter
     pv_panels: List[PVPanel]
     pvt_panels: List[HybridPVTPanel]
-    water_pump: Optional[Transmitter]
+    water_pump: Transmitter | None
 
     @classmethod
     def from_dict(  # pylint: disable=too-many-locals
         cls,
         diesel_generator: DieselGenerator,
-        diesel_water_heater: Optional[DieselWaterHeater],
-        electric_water_heater: Optional[Converter],
+        diesel_water_heater: DieselWaterHeater | None,
+        electric_water_heater: Converter | None,
         finance_inputs: DefaultDict[str, DefaultDict[str, float]],
         logger: Logger,
         minigrid_inputs: Dict[str, Any],
         pv_panels: List[PVPanel],
         pvt_panels: List[HybridPVTPanel],
-        battery_inputs: Optional[List[Dict[str, Any]]] = None,
-        exchanger_inputs: Optional[List[Dict[str, Any]]] = None,
-        tank_inputs: Optional[List[Dict[str, Any]]] = None,
-        water_pump: Optional[Transmitter] = None,
+        battery_inputs: List[Dict[str, Any]] | None = None,
+        exchanger_inputs: List[Dict[str, Any]] | None = None,
+        tank_inputs: List[Dict[str, Any]] | None = None,
+        water_pump: Transmitter | None = None,
     ) -> Any:
         """
         Returns a :class:`Minigrid` instance based on the inputs provided.
@@ -231,14 +231,14 @@ class Minigrid:
             exchangers = {
                 entry[NAME]: Exchanger.from_dict(entry) for entry in exchanger_inputs
             }
-            heat_exchanger: Optional[Exchanger] = exchangers[minigrid_inputs[EXCHANGER]]
+            heat_exchanger: Exchanger | None = exchangers[minigrid_inputs[EXCHANGER]]
         else:
             exchangers = {}
             heat_exchanger = None
 
-        buffer_tank: Optional[Union[CleanWaterTank, HotWaterTank]] = None
-        clean_water_tank: Optional[Union[CleanWaterTank, HotWaterTank]] = None
-        hot_water_tank: Optional[Union[CleanWaterTank, HotWaterTank]] = None
+        buffer_tank: Union[CleanWaterTank, HotWaterTank] | None = None
+        clean_water_tank: Union[CleanWaterTank, HotWaterTank] | None = None
+        hot_water_tank: Union[CleanWaterTank, HotWaterTank] | None = None
         tanks: Dict[str, Union[CleanWaterTank, HotWaterTank]] = {}
         # Parse the tank information.
         if tank_inputs is not None:
@@ -395,7 +395,7 @@ class Minigrid:
         return self.pv_panels[0]
 
     @property
-    def pvt_panel(self) -> Optional[HybridPVTPanel]:
+    def pvt_panel(self) -> HybridPVTPanel | None:
         """
         Returns a PV-T panel if there is only one panel modelled, otherwise errors.
 

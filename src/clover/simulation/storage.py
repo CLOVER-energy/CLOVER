@@ -17,7 +17,7 @@ calculations associated with these storage media are carried out in this module.
 """
 
 from logging import Logger
-from typing import DefaultDict, Dict, Optional, Tuple, Union
+from typing import DefaultDict, Dict, Tuple, Union
 
 import pandas as pd
 import numpy as np
@@ -138,7 +138,7 @@ def cw_tank_iteration_step(  # pylint: disable=too-many-locals
     clean_water_power_consumed_mapping: Dict[int, float],
     clean_water_demand_met_by_excess_energy: Dict[int, float],
     clean_water_supplied_by_excess_energy: Dict[int, float],
-    conventional_cw_source_profiles: Optional[Dict[WaterSource, pd.DataFrame]],
+    conventional_cw_source_profiles: Dict[WaterSource, pd.DataFrame] | None,
     conventional_water_supplied: Dict[int, float],
     energy_per_desalinated_litre: float,
     excess_energy: float,
@@ -382,7 +382,7 @@ def get_electric_battery_storage_profile(  # pylint: disable=too-many-locals, to
     logger: Logger,
     minigrid: Minigrid,
     processed_total_electric_load: pd.DataFrame,
-    pv_sizes: Optional[Dict[str, float]] = None,
+    pv_sizes: Dict[str, float] | None = None,
     renewables_power_produced: Dict[
         RenewableEnergySource, Union[pd.DataFrame, Dict[str, pd.Series]]
     ],

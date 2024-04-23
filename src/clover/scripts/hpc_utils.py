@@ -23,7 +23,7 @@ import os
 
 from contextlib import contextmanager
 from logging import Logger
-from typing import Any, Dict, Iterator, List, Optional, Tuple, Union
+from typing import Any, Dict, Iterator, List, Tuple, Union
 
 import yaml
 
@@ -114,7 +114,7 @@ class _BaseHpcRun:  # pylint: disable=too-few-public-methods
         location: str,
         output: str,
         total_load: bool,
-        total_load_file: Optional[str] = None,
+        total_load_file: str | None = None,
     ) -> None:
         """
         Instantiate a :class:`_BaseHpcRun` instance.
@@ -198,7 +198,7 @@ class HpcOptimisation(
         optimisation_inputs_data: Dict[str, Any],
         output: str,
         total_load: bool,
-        total_load_file: Optional[str] = None,
+        total_load_file: str | None = None,
     ) -> None:
         """
         Instantiate a :class:`HpcOptimisation` instance.
@@ -254,7 +254,7 @@ class HpcOptimisation(
 
         if not total_load_input:
             total_load: bool = False
-            total_load_file: Optional[str] = None
+            total_load_file: str | None = None
         elif not isinstance(total_load_input, str):
             logger.error(
                 "%sCannot set total-load to be `true`.%s", BColours.fail, BColours.endc
@@ -347,7 +347,7 @@ class HpcSimulation(
         scenario: str,
         storage_size: float,
         total_load: bool,
-        total_load_file: Optional[str] = None,
+        total_load_file: str | None = None,
     ) -> None:
         """
         Instantiate a :class:`HpcSimulation` instance.
@@ -395,7 +395,7 @@ class HpcSimulation(
 
         if not total_load_input:
             total_load: bool = False
-            total_load_file: Optional[str] = None
+            total_load_file: str | None = None
         else:
             total_load = True
             total_load_file = total_load_input
@@ -455,7 +455,7 @@ class HpcSimulation(
         )
 
 
-def _check_walltime(logger: Logger, walltime: Optional[int]) -> int:
+def _check_walltime(logger: Logger, walltime: int | None) -> int:
     """
     Checks that the walltime is a valid integer for the HPC.
 

@@ -33,7 +33,7 @@ functions which can be used to carry out an optimisation:
 import datetime
 
 from logging import Logger
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Tuple, Union
 
 import json
 import numpy as np  # pylint: disable=import-error
@@ -109,13 +109,13 @@ def _fetch_optimum_system(
 
 
 def _find_optimum_system(  # pylint: disable=too-many-locals
-    conventional_cw_source_profiles: Optional[Dict[WaterSource, pd.DataFrame]],
+    conventional_cw_source_profiles: Dict[WaterSource, pd.DataFrame] | None,
     converters: Dict[str, Converter],
     disable_tqdm: bool,
     end_year: int,
     finance_inputs: Dict[str, Any],
     ghg_inputs: Dict[str, Any],
-    grid_profile: Optional[pd.DataFrame],
+    grid_profile: pd.DataFrame | None,
     irradiance_data: Dict[str, pd.Series],
     kerosene_usage: pd.DataFrame,
     largest_converter_sizes: Dict[Converter, ConverterSize],
@@ -129,13 +129,13 @@ def _find_optimum_system(  # pylint: disable=too-many-locals
     logger: Logger,
     minigrid: energy_system.Minigrid,
     optimisation: Optimisation,
-    previous_system: Optional[SystemAppraisal],
+    previous_system: SystemAppraisal | None,
     start_year: int,
     system_appraisals: List[SystemAppraisal],
     temperature_data: Dict[str, pd.Series],
-    total_loads: Dict[ResourceType, Optional[pd.DataFrame]],
+    total_loads: Dict[ResourceType[pd.DataFrame]],
     total_solar_pv_power_produced: Dict[str, pd.Series],
-    wind_speed_data: Optional[pd.Series],
+    wind_speed_data: pd.Series | None,
     yearly_electric_load_statistics: pd.DataFrame,
 ) -> Dict[Criterion, SystemAppraisal]:
     """
@@ -323,7 +323,7 @@ def _find_optimum_system(  # pylint: disable=too-many-locals
 
 
 def _simulation_iteration(  # pylint: disable=too-many-locals, too-many-statements
-    conventional_cw_source_profiles: Optional[Dict[WaterSource, pd.DataFrame]],
+    conventional_cw_source_profiles: Dict[WaterSource, pd.DataFrame] | None,
     converter_sizes: Dict[Converter, ConverterSize],
     cw_pvt_system_size: SolarSystemSize,
     cw_tanks: TankSize,
@@ -331,7 +331,7 @@ def _simulation_iteration(  # pylint: disable=too-many-locals, too-many-statemen
     disable_tqdm: bool,
     finance_inputs: Dict[str, Any],
     ghg_inputs: Dict[str, Any],
-    grid_profile: Optional[pd.DataFrame],
+    grid_profile: pd.DataFrame | None,
     hw_pvt_system_size: SolarSystemSize,
     hw_tanks: TankSize,
     irradiance_data: Dict[str, pd.Series],
@@ -341,14 +341,14 @@ def _simulation_iteration(  # pylint: disable=too-many-locals, too-many-statemen
     minigrid: energy_system.Minigrid,
     optimisation: Optimisation,
     optimisation_parameters: OptimisationParameters,
-    previous_system: Optional[SystemAppraisal],
+    previous_system: SystemAppraisal | None,
     pv_sizes: SolarSystemSize,
     start_year: int,
     storage_sizes: StorageSystemSize,
     temperature_data: Dict[str, pd.Series],
-    total_loads: Dict[ResourceType, Optional[pd.DataFrame]],
+    total_loads: Dict[ResourceType[pd.DataFrame]],
     total_solar_pv_power_produced: Dict[str, pd.Series],
-    wind_speed_data: Optional[pd.Series],
+    wind_speed_data: pd.Series | None,
     yearly_electric_load_statistics: pd.DataFrame,
 ) -> Tuple[
     int,
@@ -360,7 +360,7 @@ def _simulation_iteration(  # pylint: disable=too-many-locals, too-many-statemen
     SolarSystemSize,
     StorageSystemSize,
     SystemAppraisal,
-    Optional[SystemAppraisal],
+    SystemAppraisal | None,
     int,
     List[SystemAppraisal],
 ]:
@@ -978,7 +978,7 @@ def _simulation_iteration(  # pylint: disable=too-many-locals, too-many-statemen
 
 
 def _optimisation_step(  # pylint: disable=too-many-locals
-    conventional_cw_source_profiles: Optional[Dict[WaterSource, pd.DataFrame]],
+    conventional_cw_source_profiles: Dict[WaterSource, pd.DataFrame] | None,
     converter_sizes: Dict[Converter, ConverterSize],
     cw_pvt_system_size: SolarSystemSize,
     cw_tanks: TankSize,
@@ -986,7 +986,7 @@ def _optimisation_step(  # pylint: disable=too-many-locals
     disable_tqdm: bool,
     finance_inputs: Dict[str, Any],
     ghg_inputs: Dict[str, Any],
-    grid_profile: Optional[pd.DataFrame],
+    grid_profile: pd.DataFrame | None,
     hw_pvt_system_size: SolarSystemSize,
     hw_tanks: TankSize,
     irradiance_data: Dict[str, pd.Series],
@@ -996,14 +996,14 @@ def _optimisation_step(  # pylint: disable=too-many-locals
     minigrid: energy_system.Minigrid,
     optimisation: Optimisation,
     optimisation_parameters: OptimisationParameters,
-    previous_system: Optional[SystemAppraisal],
+    previous_system: SystemAppraisal | None,
     pv_sizes: SolarSystemSize,
     start_year: int,
     storage_sizes: StorageSystemSize,
     temperature_data: Dict[str, pd.Series],
-    total_loads: Dict[ResourceType, Optional[pd.DataFrame]],
+    total_loads: Dict[ResourceType[pd.DataFrame]],
     total_solar_pv_power_produced: Dict[str, pd.Series],
-    wind_speed_data: Optional[pd.Series],
+    wind_speed_data: pd.Series | None,
     yearly_electric_load_statistics: pd.DataFrame,
 ) -> SystemAppraisal:
     """
@@ -1156,12 +1156,12 @@ def _optimisation_step(  # pylint: disable=too-many-locals
 
 
 def multiple_optimisation_step(  # pylint: disable=too-many-locals, too-many-statements
-    conventional_cw_source_profiles: Optional[Dict[WaterSource, pd.DataFrame]],
+    conventional_cw_source_profiles: Dict[WaterSource, pd.DataFrame] | None,
     converters: Dict[str, Converter],
     disable_tqdm: bool,
     finance_inputs: Dict[str, Any],
     ghg_inputs: Dict[str, Any],
-    grid_profile: Optional[pd.DataFrame],
+    grid_profile: pd.DataFrame | None,
     irradiance_data: Dict[str, pd.Series],
     kerosene_usage: pd.DataFrame,
     location: Location,
@@ -1170,19 +1170,19 @@ def multiple_optimisation_step(  # pylint: disable=too-many-locals, too-many-sta
     optimisation: Optimisation,
     optimisation_parameters: OptimisationParameters,
     temperature_data: Dict[str, pd.Series],
-    total_loads: Dict[ResourceType, Optional[pd.DataFrame]],
+    total_loads: Dict[ResourceType[pd.DataFrame]],
     total_solar_pv_power_produced: Dict[str, pd.Series],
-    wind_speed_data: Optional[pd.Series],
+    wind_speed_data: pd.Series | None,
     yearly_electric_load_statistics: pd.DataFrame,
     *,
-    input_converter_sizes: Optional[Dict[Converter, ConverterSize]] = None,
-    input_cw_pvt_system_size: Optional[SolarSystemSize] = None,
-    input_cw_tanks: Optional[TankSize] = None,
-    input_hw_pvt_system_size: Optional[SolarSystemSize] = None,
-    input_hw_tanks: Optional[TankSize] = None,
-    input_pv_sizes: Optional[SolarSystemSize] = None,
-    input_storage_sizes: Optional[StorageSystemSize] = None,
-    previous_system: Optional[SystemAppraisal] = None,
+    input_converter_sizes: Dict[Converter, ConverterSize] | None = None,
+    input_cw_pvt_system_size: SolarSystemSize | None = None,
+    input_cw_tanks: TankSize | None = None,
+    input_hw_pvt_system_size: SolarSystemSize | None = None,
+    input_hw_tanks: TankSize | None = None,
+    input_pv_sizes: SolarSystemSize | None = None,
+    input_storage_sizes: StorageSystemSize | None = None,
+    previous_system: SystemAppraisal | None = None,
     start_year: int = 0,
 ) -> Tuple[datetime.timedelta, List[SystemAppraisal]]:
     """

@@ -19,7 +19,7 @@ another.
 """
 
 from logging import Logger
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 from ..__utils__ import (
     BColours,
@@ -165,7 +165,7 @@ class Converter:
         maximum_output_capacity: float,
         name: str,
         output_resource_type: ResourceType,
-        waste_production: Optional[Dict[WasteProduct, float]] = None,
+        waste_production: Dict[WasteProduct, float] | None = None,
     ) -> None:
         """
         Instantiate a :class:`Converter` instance.
@@ -479,11 +479,11 @@ class ThermalDesalinationPlant(MultiInputConverter):
         self,
         htf_mode: HTFMode,
         input_resource_consumption: Dict[ResourceType, float],
-        maximum_feedwater_temperature: Optional[float],
-        maximum_htf_temperature: Optional[float],
+        maximum_feedwater_temperature: float | None,
+        maximum_htf_temperature: float | None,
         maximum_output_capacity: float,
-        minimum_feedwater_temperature: Optional[float],
-        minimum_htf_temperature: Optional[float],
+        minimum_feedwater_temperature: float | None,
+        minimum_htf_temperature: float | None,
         minimum_output_capacity: float,
         name: str,
         output_resource_type: ResourceType,
@@ -531,15 +531,11 @@ class ThermalDesalinationPlant(MultiInputConverter):
         )
 
         self.htf_mode = htf_mode
-        self.maximum_feedwater_temperature: Optional[float] = (
-            maximum_feedwater_temperature
-        )
-        self.maximum_htf_temperature: Optional[float] = maximum_htf_temperature
-        self.minimum_feedwater_temperature: Optional[float] = (
-            minimum_feedwater_temperature
-        )
-        self.minimum_htf_temperature: Optional[float] = minimum_htf_temperature
-        self.minimum_output_capacity: Optional[float] = minimum_output_capacity
+        self.maximum_feedwater_temperature: float | None = maximum_feedwater_temperature
+        self.maximum_htf_temperature: float | None = maximum_htf_temperature
+        self.minimum_feedwater_temperature: float | None = minimum_feedwater_temperature
+        self.minimum_htf_temperature: float | None = minimum_htf_temperature
+        self.minimum_output_capacity: float | None = minimum_output_capacity
 
     @classmethod
     def from_dict(cls, input_data: Dict[str, Any], logger: Logger) -> Any:
