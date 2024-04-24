@@ -900,9 +900,9 @@ def connections_expenditure(
     # NOTE: The "!= 0 else 0" fix is to ensure that installations include initial
     # hosueholds which need to be connected to new minigrids.
     new_connections = np.max(households) - (  # type: ignore [call-arg, call-overload]
-        np.min(
-            households
-        )  # if installation_year != 0 else 0  # type: ignore [call-overload]
+        np.min(households)  # type: ignore [call-overload]
+        if installation_year != 0
+        else 0
     )  # type: ignore [call-arg, call-overload]
     undiscounted_cost = float(
         finance_inputs[ImpactingComponent.HOUSEHOLDS.value][CONNECTION_COST]
