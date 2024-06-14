@@ -180,7 +180,7 @@ class Battery(_BaseStorage, label="battery", resource_type=ResourceType.ELECTRIC
     .. attribute:: capacity
         The capacity of the battery in kWh.
 
-    .. attribute:: charge_rate
+    .. attribute:: c_rate_charging
         The rate of charge of the :class:`Battery`.
 
     .. attribute:: conversion_in
@@ -189,7 +189,7 @@ class Battery(_BaseStorage, label="battery", resource_type=ResourceType.ELECTRIC
     .. attribute:: conversion_out
         The output conversion efficiency of the :class:`Battery`.
 
-    .. attribute:: discharge_rate
+    .. attribute:: c_rate_discharging
         The rate of discharge of the :class:`Battery`.
 
     .. attribute:: lifetime_loss
@@ -208,10 +208,10 @@ class Battery(_BaseStorage, label="battery", resource_type=ResourceType.ELECTRIC
         maximum_charge: float,
         minimum_charge: float,
         name: str,
-        charge_rate: float,
+        c_rate_charging: float,
         conversion_in: float,
         conversion_out: float,
-        discharge_rate: float,
+        c_rate_discharging: float,
         lifetime_loss: float,
         storage_unit: float,
         storage_unit_overrided: bool,
@@ -234,13 +234,13 @@ class Battery(_BaseStorage, label="battery", resource_type=ResourceType.ELECTRIC
                 discharge.
             - name:
                 The name to assign to the :class:`Battery` instance.
-            - charge_rate:
+            - c_rate_charging:
                 The rate of charge of the :class:`Battery`.
             - conversion_in:
                 The efficiency of conversion of energy into the :class:`Battery`.
             - conversion_out:
                 The efficiency of conversion of energy out of the :class:`Battery`.
-            - discharge_rate:
+            - c_rate_discharging:
                 The rate of discharge of the :class:`Battery`.
             - lifetime_loss:
                 The loss in capacity of the :class:`Battery` over its lifetime.
@@ -254,10 +254,10 @@ class Battery(_BaseStorage, label="battery", resource_type=ResourceType.ELECTRIC
 
         super().__init__(cycle_lifetime, leakage, maximum_charge, minimum_charge, name)
         self.capacity: float = capacity
-        self.charge_rate: float = charge_rate
+        self.c_rate_charging: float = c_rate_charging
         self.conversion_in: float = conversion_in
         self.conversion_out: float = conversion_out
-        self.discharge_rate: float = discharge_rate
+        self.c_rate_discharging: float = c_rate_discharging
         self.lifetime_loss: float = lifetime_loss
         self.storage_unit = storage_unit
         self.storage_unit_overrided = storage_unit_overrided
@@ -280,8 +280,8 @@ class Battery(_BaseStorage, label="battery", resource_type=ResourceType.ELECTRIC
             + f"leakage={self.leakage}, "
             + f"maximum_charge={self.maximum_charge}, "
             + f"minimum_charge={self.minimum_charge}, "
-            + f"charge_rate={self.charge_rate}, "
-            + f"discharge_rate={self.discharge_rate}, "
+            + f"c_rate_charging={self.c_rate_charging}, "
+            + f"c_rate_discharging={self.c_rate_discharging}, "
             + f"conversion_in={self.conversion_in}, "
             + f"conversion_out={self.conversion_out}, "
             + f"lifetime_loss={self.lifetime_loss}, "
@@ -323,8 +323,8 @@ class Battery(_BaseStorage, label="battery", resource_type=ResourceType.ELECTRIC
             "maximum_charge": self.maximum_charge,
             "minimum_charge": self.minimum_charge,
             NAME: self.name,
-            "c_rate_charging": self.charge_rate,
-            "c_rate_discharging": self.discharge_rate,
+            "c_rate_charging": self.c_rate_charging,
+            "c_rate_discharging": self.c_rate_discharging,
             "conversion_in": self.conversion_in,
             "conversion_out": self.conversion_out,
             "lifetime_loss": self.lifetime_loss,

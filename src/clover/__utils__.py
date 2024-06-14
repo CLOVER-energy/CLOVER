@@ -46,6 +46,7 @@ __all__ = (
     "DesalinationScenario",
     "dict_to_dataframe",
     "DieselMode",
+    "DieselSetting",
     "DONE",
     "ELECTRIC_POWER",
     "EXCHANGER",
@@ -735,6 +736,35 @@ class DieselMode(enum.Enum):
 
 
 @dataclasses.dataclass
+class DieselSetting:
+    """
+    Contains information about the diesel setting being used.
+
+    .. attribute:: name
+        The name of the diesel setting
+
+    .. attribute:: max_soc
+        The state of charge at which the generator should switch off
+
+    .. attribute:: min_soc
+        The state of charge at which the generator should switch on
+
+     .. attribute:: start_hour
+        The start hour for the setting
+
+     .. attribute:: end_hour
+        The end hour for the setting
+
+    """
+
+    end_hour: int
+    max_soc: float
+    min_soc: float
+    name: str
+    start_hour: int
+
+
+@dataclasses.dataclass
 class DieselScenario:
     """
     Contains information about the diesel scenario being modelled.
@@ -749,6 +779,35 @@ class DieselScenario:
 
     backup_threshold: Optional[float]
     mode: DieselMode
+    name: str
+    settings: Optional[List[DieselSetting]]
+
+    @classmethod
+    def from_dict(cls, input_dict: Dict[str, Any]) -> Any:
+        """
+        Create a :class:`DieselScenario` from the input data.
+
+        Inputs:
+            - input_dict:
+                The diesel input information.
+
+        """
+
+        mode: DieselMode = DieselMode(input_dict[MODE])
+        name: str = input_dict[NAME]
+
+        # Backup-only parameters
+        backup_threshold: Optional[float] = (
+            input_dict["backup"]["threshold"] if "backup" in input_dict else None
+        )
+
+        # Diesel settings information
+        if "settings" in input_dict:
+            settings: Optional[List[DieselSetting]] = input_dict["settings"]
+        else:
+            settings = None
+
+        return cls(backup_threshold, mode, name, settings)
 
     def to_dict(self) -> Dict[str, Any]:
         """
@@ -2039,6 +2098,7 @@ class Scenario:
     def from_dict(
         cls,
         desalination_scenarios: Optional[List[DesalinationScenario]],
+        diesel_scenarios: List[DieselScenario],
         hot_water_scenarios: Optional[List[HotWaterScenario]],
         logger: logging.Logger,
         scenario_inputs: Dict[str, Any],
@@ -2067,13 +2127,26 @@ class Scenario:
             scenario_inputs["demands"][DemandType.PUBLIC.value],
         )
 
-        diesel_scenario = DieselScenario(
-            scenario_inputs["diesel"]["backup"]["threshold"]
-            if scenario_inputs["diesel"][MODE]
-            in (DieselMode.BACKUP.value, DieselMode.BACKUP_UNMET.value)
-            else None,
-            DieselMode(scenario_inputs["diesel"][MODE]),
-        )
+        try:
+            diesel_scenario = [
+                entry
+                for entry in diesel_scenarios
+                if entry.name == scenario_inputs["diesel_scenario"]
+            ][0]
+        except KeyError:
+            logger.error(
+                "No diesel scenario entry in scenario inputs. See documentation."
+            )
+            raise InputFileError(
+                "scenario_inputs.yaml",
+                "No diesel-scenario input in file. See documentation.",
+            )
+        except IndexError:
+            logger.error("Could not find diesel scenario %s in diesel scenario inputs.")
+            raise InputFileError(
+                "diesel_scenarios.yaml",
+                f"Could not find diesel scenario {scenario_inputs['diesel_scenario']}.",
+            )
 
         distribution_network = DistributionNetwork(
             scenario_inputs["distribution_network"]

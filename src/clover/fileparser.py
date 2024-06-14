@@ -39,6 +39,7 @@ from .__utils__ import (
     DesalinationScenario,
     DieselMode,
     EXCHANGER,
+    DieselScenario,
     HotWaterScenario,
     HTFMode,
     InputFileError,
@@ -85,6 +86,10 @@ BATTERY: str = "battery"
 # Battery inputs file:
 #   The relative path to the battery inputs file.
 BATTERY_INPUTS_FILE: str = os.path.join("simulation", "battery_inputs.yaml")
+
+# Capacity:
+#   Used for parsing cycle-charing capacity.
+CAPACITY: str = "capacity"
 
 # Conventional water-source-availability directory:
 #   The directory containing availability profiles for conventional water sources.
@@ -136,6 +141,14 @@ DIESEL_GENERATORS: str = "diesel_generators"
 # Diesel inputs file:
 #   The relative path to the diesel-inputs file.
 DIESEL_INPUTS_FILE: str = os.path.join("generation", "diesel_inputs.yaml")
+
+# Diesel scenarios:
+#   Keyword used for parsing diesel scenarios.
+DIESEL_SCENARIOS: str = "diesel_scenarios"
+
+# Diesel scenario inputs file:
+#   The relative path to the diesel-scenario inputs file.
+DIESEL_SCENARIO_INPUTS_FILE: str = os.path.join("scenario", "diesel_scenario.yaml")
 
 # Diesel water heater:
 #   Keyword used for parsing diesel-water-heater information.
@@ -609,7 +622,12 @@ def _parse_diesel_inputs(  # pylint: disable=too-many-statements
     # Instantiate DieselGenerators for every entry in the input file.
     try:
         diesel_generators: List[DieselGenerator] = [
-            DieselGenerator(entry[DIESEL_CONSUMPTION], entry[MINIMUM_LOAD], entry[NAME])
+            DieselGenerator(
+                entry[DIESEL_CONSUMPTION],
+                entry[MINIMUM_LOAD],
+                entry[NAME],
+                entry[CAPACITY] if CAPACITY in entry else None,
+            )
             for entry in diesel_inputs[DIESEL_GENERATORS]
         ]
     except KeyError as e:
@@ -1125,7 +1143,7 @@ def _parse_pvt_reduced_models(  # pylint: disable=too-many-statements
     return electric_model, thermal_model
 
 
-def parse_scenario_inputs(
+def parse_scenario_inputs(  # pylint: disable=too-many-locals, too-many-statements
     inputs_directory_relative_path: str,
     logger: Logger,
 ) -> Tuple[str, str, List[Scenario], str]:
@@ -1183,6 +1201,37 @@ def parse_scenario_inputs(
         desalination_scenarios = None
         logger.info("No desalination scenarios files provided, skipping.")
 
+    diesel_scenario_inputs_filepath: str = os.path.join(
+        inputs_directory_relative_path,
+        DIESEL_SCENARIO_INPUTS_FILE,
+    )
+
+    # Parse the diesel scenario inputs information if relevant.
+
+    logger.info("Parsing diesel inputs file.")
+    diesel_scenario_inputs = read_yaml(
+        diesel_scenario_inputs_filepath,
+        logger,
+    )
+    if not isinstance(diesel_scenario_inputs, dict):
+        raise InputFileError(
+            "scenario inputs", "Diesel scenario inputs is not of type `dict`."
+        )
+    try:
+        diesel_scenarios: List[DieselScenario] = [
+            DieselScenario.from_dict(entry)
+            for entry in diesel_scenario_inputs[DIESEL_SCENARIOS]
+        ]
+    except Exception as e:
+        logger.error(
+            "%sError generating diesel scenario from inputs file: %s%s",
+            BColours.fail,
+            str(e),
+            BColours.endc,
+        )
+        raise
+    logger.info("diesel scenarios successfully parsed.")
+
     # Parse the hot-water scenario inputs information if relevant.
     if os.path.isfile(hot_water_scenario_inputs_filepath):
         logger.info("Parsing hot-water inputs file.")
@@ -1229,7 +1278,11 @@ def parse_scenario_inputs(
     try:
         scenarios: List[Scenario] = [
             Scenario.from_dict(
-                desalination_scenarios, hot_water_scenarios, logger, entry
+                desalination_scenarios,
+                diesel_scenarios,
+                hot_water_scenarios,
+                logger,
+                entry,
             )
             for entry in scenario_inputs[SCENARIOS]
         ]
