@@ -30,6 +30,7 @@ import json
 import numpy as np  # pylint: disable=import-error
 import pandas as pd  # pylint: disable=import-error
 import scipy  # pylint: disable=import-error
+import scipy.interpolate
 import yaml  # pylint: disable=import-error
 
 from tqdm import tqdm  # pylint: disable=import-error
@@ -146,7 +147,7 @@ KEROSENE_DEVICE_NAME: str = "kerosene"
 
 # Locations folder name:
 #   The name of the locations folder.
-LOCATIONS_FOLDER_NAME: str = "locations"
+LOCATIONS_FOLDER_NAME: str = os.path.join(os.path.expanduser("~"), "clover_locations")
 
 # Logger directory:
 #   The directory in which to save logs.

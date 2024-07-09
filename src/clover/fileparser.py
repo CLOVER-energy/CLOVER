@@ -962,13 +962,13 @@ def _parse_global_settings(logger: Logger) -> Dict[str, Any]:
             yaml.dump({TOKEN: API_TOKEN_PLACEHOLDER_TEXT}, global_settings_file)
 
     # Parse global settings.
-    if not os.path.isfile(GLOBAL_SETTINGS_FILE):
+    if not os.path.isfile((global_settings_filepath:=os.path.join(os.path.expanduser("~"), GLOBAL_SETTINGS_FILE))):
         _create_global_setings_file()
 
     try:
         global_settings_inputs: Optional[
             Union[Dict[str, Any], List[Dict[str, Any]]]
-        ] = read_yaml(GLOBAL_SETTINGS_FILE, logger)
+        ] = read_yaml(global_settings_filepath, logger)
     except FileNotFoundError:
         logger.error(
             "No global-settings file found, check that this file was correctly created "

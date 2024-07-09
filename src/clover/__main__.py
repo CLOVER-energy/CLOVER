@@ -180,7 +180,10 @@ def _prepare_location(location: str, logger: logging.Logger) -> None:
 
     """
 
-    if not os.path.isdir(os.path.join(LOCATIONS_FOLDER_NAME, location)):
+    # Prepare for locations that may have been created in a CLOVER 5.2 environment.
+    locations_foldername: str = os.path.join(os.path.expanduser("~"), "clover_locations")
+
+    if not os.path.isdir(os.path.join(locations_foldername, location)):
         logger.error(
             "%sThe specified location, '%s', does not exist. Try running the "
             "'new_location' script to ensure all necessary files and folders are "
@@ -193,7 +196,7 @@ def _prepare_location(location: str, logger: logging.Logger) -> None:
 
     if not os.path.isfile(
         os.path.join(
-            LOCATIONS_FOLDER_NAME, location, INPUTS_DIRECTORY, KEROSENE_TIMES_FILE
+            locations_foldername, INPUTS_DIRECTORY, KEROSENE_TIMES_FILE
         )
     ):
         logger.info(
