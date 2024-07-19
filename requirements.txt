@@ -1,7 +1,7 @@
 black>=22.3.0
 customtkinter>=5.2.0
 mypy>=0.960
-numpy>=2.0.0
+numpy==2.0.0
 pandas>=1.2.3
 pandas-stubs>=1.2.0
 pylint>=2.14.0
