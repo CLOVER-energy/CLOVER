@@ -667,8 +667,8 @@ def daily_sum_to_monthly_sum(daily_profile: pd.DataFrame) -> pd.DataFrame:
     month_start = pd.DataFrame(MONTH_START_DAY)
     month_days = pd.DataFrame([])
     for year in range(0, years):
-        month_days = month_days.append(month_start + (year * 365))
-    month_days = month_days.append(pd.DataFrame([365 * years]))
+        month_days = month_days.append(month_start + (year * 365))  # type: ignore [operator]
+    month_days = month_days.append(pd.DataFrame([365 * years]))  # type: ignore [operator]
     monthly_sum = pd.DataFrame([])
     for month in range(0, month_days.shape[0] - 1):
         start_day = month_days.iloc[month, 0]
@@ -1484,7 +1484,7 @@ def monthly_profile_to_daily_profile(monthly_profile: pd.DataFrame) -> pd.DataFr
     day_one_profile: pd.DataFrame = pd.DataFrame(np.zeros((24, 1)))
     for hour in range(24):
         day_one_profile.iloc[hour, 0] = 0.5 * float(
-            float(monthly_profile.iloc[hour, 0]) + float(monthly_profile.iloc[hour, 11])
+            float(monthly_profile.iloc[hour, 0]) + float(monthly_profile.iloc[hour, 11])  # type: ignore [arg-type]
         )
 
     extended_year_profile: pd.DataFrame = pd.DataFrame(np.zeros((24, 14)))
@@ -2622,7 +2622,7 @@ class SystemDetails:
             "end_year": round(self.end_year, 3),
             "final_storage_size": round(self.final_storage_size, 3),
             "initial_storage_size": round(self.initial_storage_size, 3),
-            "input_files": self.file_information,
+            "input_files": self.file_information,  # type: ignore [dict-item]
             "start_year": round(self.start_year, 3),
         }
 
