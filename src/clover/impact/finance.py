@@ -22,7 +22,7 @@ information and system-sizing information provided.
 import collections
 
 from logging import Logger
-from typing import Any, Union
+from typing import Any
 
 import numpy as np  # pylint: disable=import-error
 import pandas as pd  # pylint: disable=import-error
@@ -983,7 +983,7 @@ def diesel_fuel_expenditure(
 def discounted_energy_total(
     finance_inputs: dict[str, Any],
     logger: Logger,
-    total_daily: Union[pd.DataFrame, pd.Series],
+    total_daily: pd.DataFrame | pd.Series,
     *,
     start_year: int = 0,
     end_year: int = 20,

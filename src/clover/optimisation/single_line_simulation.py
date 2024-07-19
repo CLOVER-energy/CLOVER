@@ -239,8 +239,8 @@ def single_line_simulation(  # pylint: disable=too-many-locals, too-many-stateme
 
         # Prep variables for the iteration process.
         component_sizes: dict[
-            Union[Converter, ImpactingComponent, RenewableEnergySource],
-            Union[int, float],
+            Converter | ImpactingComponent | RenewableEnergySource,
+            float | int,
         ] = {
             ImpactingComponent.CLEAN_WATER_TANK: potential_num_clean_water_tanks,
             ImpactingComponent.HOT_WATER_TANK: potential_num_hot_water_tanks,
@@ -248,9 +248,9 @@ def single_line_simulation(  # pylint: disable=too-many-locals, too-many-stateme
         }
         parameter_space: list[
             tuple[
-                Union[Converter, ImpactingComponent, RenewableEnergySource],
+                Converter | ImpactingComponent | RenewableEnergySource,
                 str,
-                Union[list[int], list[float]],
+                list[float] | list[int],
             ]
         ] = []
 

@@ -236,10 +236,10 @@ class Minigrid:
             exchangers = {}
             heat_exchanger = None
 
-        buffer_tank: Union[CleanWaterTank, HotWaterTank] | None = None
-        clean_water_tank: Union[CleanWaterTank, HotWaterTank] | None = None
-        hot_water_tank: Union[CleanWaterTank, HotWaterTank] | None = None
-        tanks: dict[str, Union[CleanWaterTank, HotWaterTank]] = {}
+        buffer_tank: CleanWaterTank | HotWaterTank | None = None
+        clean_water_tank: CleanWaterTank | HotWaterTank | None = None
+        hot_water_tank: CleanWaterTank | HotWaterTank | None = None
+        tanks: dict[str, CleanWaterTank | HotWaterTank] = {}
         # Parse the tank information.
         if tank_inputs is not None:
             for entry in tank_inputs:

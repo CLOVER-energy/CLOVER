@@ -24,7 +24,7 @@ import enum
 import logging
 import os
 
-from typing import Any, DefaultDict, Union
+from typing import Any, DefaultDict
 
 import json
 import numpy as np  # pylint: disable=import-error
@@ -721,7 +721,7 @@ class DemandType(enum.Enum):
 
 
 def dict_to_dataframe(
-    input_dict: Union[dict[int, float], dict[int, int]], logger: logging.Logger
+    input_dict: dict[int, float | int], logger: logging.Logger
 ) -> pd.DataFrame:
     """
     Converts a `dict` to a :class:`pandas.DataFrame`.
@@ -910,9 +910,7 @@ def get_logger(logger_name: str, verbose: bool = False) -> logging.Logger:
     return logger
 
 
-def hourly_profile_to_daily_sum(
-    hourly_profile: Union[pd.DataFrame, pd.Series]
-) -> pd.Series:
+def hourly_profile_to_daily_sum(hourly_profile: pd.DataFrame | pd.Series) -> pd.Series:
     """
     Converts an hour-by-hour profile to a sum for each day.
 
@@ -1057,7 +1055,7 @@ class KeyResults:
 
     def to_dict(  # pylint: disable=too-many-branches, too-many-statements
         self,
-    ) -> dict[str, Union[float, dict[str, float]]]:
+    ) -> dict[str, float | dict[str, float]]:
         """
         Returns the :class:`KeyResults` information as a `dict` ready for saving.
 
@@ -1067,7 +1065,7 @@ class KeyResults:
 
         """
 
-        data_dict: dict[str, Union[float, dict[str, float]]] = {}
+        data_dict: dict[str, float | dict[str, float]] = {}
 
         if self.average_daily_cw_demand_covered is not None:
             data_dict["Average daily clean-water demand covered"] = round(
@@ -1785,7 +1783,7 @@ class PVTScenario:
 
 def read_yaml(
     filepath: str, logger: logging.Logger
-) -> Union[dict[str, Any], list[dict[str, Any]]]:
+) -> dict[str, Any] | list[dict[str, Any]]:
     """
     Reads a YAML file and returns the contents.
 
@@ -1795,7 +1793,7 @@ def read_yaml(
     # Process the new-location data.
     try:
         with open(filepath, "r") as filedata:
-            file_contents: Union[dict[str, Any], list[dict[str, Any]]] = yaml.safe_load(
+            file_contents: dict[str, Any] | list[dict[str, Any]] = yaml.safe_load(
                 filedata
             )
     except FileNotFoundError:
@@ -2258,7 +2256,7 @@ class Scenario:
     desalination_scenario: DesalinationScenario | None
     diesel_scenario: DieselScenario
     distribution_network: DistributionNetwork
-    fixed_inverter_size: Union[float, bool]
+    fixed_inverter_size: bool | float
     grid: bool
     grid_type: str
     hot_water_scenario: HotWaterScenario | None
@@ -2581,7 +2579,7 @@ class SystemDetails:
     final_num_buffer_tanks: int | None = 0
     final_num_clean_water_tanks: int | None = 0
     final_num_hot_water_tanks: int | None = 0
-    final_pv_sizes: Union[dict[str, float], DefaultDict[str, float]] = (
+    final_pv_sizes: dict[str, float] | DefaultDict[str, float] = (
         dataclasses.field(  # type: ignore [assignment]
             default_factory=lambda: collections.defaultdict(float)
         )
@@ -2593,7 +2591,7 @@ class SystemDetails:
     initial_num_buffer_tanks: int | None = 0
     initial_num_clean_water_tanks: int | None = 0
     initial_num_hot_water_tanks: int | None = 0
-    initial_pv_sizes: Union[dict[str, float], DefaultDict[str, float]] = (
+    initial_pv_sizes: dict[str, float] | DefaultDict[str, float] = (
         dataclasses.field(  # type: ignore [assignment]
             default_factory=lambda: collections.defaultdict(float)
         )
@@ -2606,7 +2604,7 @@ class SystemDetails:
     def to_dict(
         self,
     ) -> dict[
-        str, Union[int, float, str, dict[str, str], dict[str, float]] | None
+        str, float | int | str | dict[str, str | float] | None
     ]:  # pylint: disable=too-many-branches
         """
         Returns a `dict` containing information the :class:`SystemDetails`' information.
@@ -2618,7 +2616,7 @@ class SystemDetails:
         """
 
         system_details_as_dict: dict[
-            str, Union[int, float, str, dict[str, str], dict[str, float]] | None
+            str, float | int | str | dict[str, str | float] | None
         ] = {
             "diesel_capacity": round(self.diesel_capacity, 3),
             "end_year": round(self.end_year, 3),

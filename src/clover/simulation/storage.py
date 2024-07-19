@@ -384,7 +384,7 @@ def get_electric_battery_storage_profile(  # pylint: disable=too-many-locals, to
     processed_total_electric_load: pd.DataFrame,
     pv_sizes: dict[str, float] | None = None,
     renewables_power_produced: dict[
-        RenewableEnergySource, Union[pd.DataFrame, dict[str, pd.Series]]
+        RenewableEnergySource, pd.DataFrame | dict[str, pd.Series]
     ],
     scenario: Scenario,
     clean_water_pvt_size: int = 0,

@@ -740,13 +740,13 @@ def _simulation_iteration(  # pylint: disable=too-many-locals, too-many-statemen
 
     # set up the various variables ready for recursive iteration.
     component_sizes: dict[
-        Union[Converter, ImpactingComponent, RenewableEnergySource], float
+        Converter | ImpactingComponent | RenewableEnergySource, float
     ] = {}
     parameter_space: list[
         tuple[
-            Union[Converter, ImpactingComponent, RenewableEnergySource],
+            Converter | ImpactingComponent | RenewableEnergySource,
             str,
-            Union[list[float], list[int]],
+            list[float] | list[int],
         ]
     ] = []
 

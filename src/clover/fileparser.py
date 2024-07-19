@@ -18,7 +18,7 @@ import pkgutil
 
 from collections import defaultdict
 from logging import Logger
-from typing import Any, DefaultDict, Union
+from typing import Any, DefaultDict
 
 import json
 import pandas as pd  # pyli`nt: disable=import-error
@@ -1001,7 +1001,7 @@ def _parse_global_settings(logger: Logger) -> dict[str, Any]:
         _create_global_setings_file()
 
     try:
-        global_settings_inputs: Union[dict[str, Any], list[dict[str, Any]] | None] = (
+        global_settings_inputs: dict[str, Any] | list[dict[str, Any]] | None = (
             read_yaml(GLOBAL_SETTINGS_FILE, logger)
         )
     except FileNotFoundError:
@@ -1460,7 +1460,7 @@ def _parse_solar_inputs(  # pylint: disable=too-many-locals, too-many-statements
 
     # Determine the PV panel being modelled.
     try:
-        pv_panels: list[Union[solar.PVPanel, solar.SolarPanel]] = [
+        pv_panels: list[solar.PVPanel | solar.SolarPanel] = [
             panel
             for panel in solar_panels
             if panel.panel_type == solar.SolarPanelType.PV  # type: ignore
@@ -1554,7 +1554,7 @@ def _parse_solar_inputs(  # pylint: disable=too-many-locals, too-many-statements
             )
 
         try:
-            pvt_panels: list[Union[solar.HybridPVTPanel, solar.SolarPanel]] = [
+            pvt_panels: list[solar.HybridPVTPanel | solar.SolarPanel] = [
                 panel
                 for panel in solar_panels
                 if panel.panel_type == solar.SolarPanelType.PV_T  # type: ignore
@@ -2372,7 +2372,7 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
     Minigrid,
     DefaultDict[str, DefaultDict[str, float]],
     DefaultDict[str, DefaultDict[str, float]],
-    dict[str, Union[int, str]],
+    dict[str, int | str],
     pd.DataFrame,
     Location,
     OptimisationParameters | None,
@@ -2578,7 +2578,7 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
     finance_inputs_filepath = os.path.join(
         inputs_directory_relative_path, FINANCE_INPUTS_FILE
     )
-    # Finance input type: dict[str, Union[float, dict[str, float]]]
+    # Finance input type: dict[str, float | dict[str, float]]
     finance_data = read_yaml(finance_inputs_filepath, logger)
     if not isinstance(finance_data, dict):
         raise InputFileError(
@@ -2591,7 +2591,7 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
     logger.info("Finance inputs successfully parsed.")
 
     ghg_inputs_filepath = os.path.join(inputs_directory_relative_path, GHG_INPUTS_FILE)
-    # Ghg data type: dict[str, Union[float, dict[str, float]]]
+    # Ghg data type: dict[str, float | dict[str, float]]
     ghg_data = read_yaml(ghg_inputs_filepath, logger)
     if not isinstance(finance_data, dict):
         raise InputFileError(
@@ -2914,7 +2914,7 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
         ):
             for source in conventional_water_sources:
                 try:
-                    conventional_source_costs: Union[float, dict[str, float]] = [
+                    conventional_source_costs: float | dict[str, float] = [
                         entry[COSTS]
                         for entry in conventional_water_source_inputs
                         if entry[NAME] == source.name
@@ -2946,7 +2946,7 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
                 ] = defaultdict(float, conventional_source_costs)
 
                 try:
-                    conventional_source_emissions: Union[float, dict[str, float]] = [
+                    conventional_source_emissions: float | dict[str, float] = [
                         entry[EMISSIONS]
                         for entry in conventional_water_source_inputs
                         if entry[NAME] == source.name

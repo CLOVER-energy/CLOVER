@@ -21,7 +21,7 @@ for use locally within CLOVER.
 import enum
 
 from logging import Logger
-from typing import Any, Union
+from typing import Any
 
 import pandas as pd  # pylint: disable=import-error
 
@@ -762,7 +762,7 @@ class HybridPVTPanel(SolarPanel, panel_type=SolarPanelType.PV_T):
         return fractional_electric_performance, output_temperature
 
 
-def get_profile_prefix(panel: Union[PVPanel, HybridPVTPanel]) -> str:
+def get_profile_prefix(panel: PVPanel | HybridPVTPanel) -> str:
     """
     Determine the prefix to use for profile names based on the tracking and angles.
 
@@ -889,7 +889,7 @@ class SolarDataThread(
 
 
 def total_solar_output(
-    *args, pv_panel: Union[PVPanel, HybridPVTPanel]
+    *args, pv_panel: PVPanel | HybridPVTPanel
 ) -> pd.DataFrame:  # type: ignore
     """
     Wrapper function to wrap the total solar output.

@@ -647,7 +647,7 @@ def _calculate_renewable_hw_profiles(  # pylint: disable=too-many-locals, too-ma
     total_waste_produced: dict[WasteProduct, DefaultDict[int, float]],
     wind_speed_data: pd.Series | None,
 ) -> tuple[
-    Union[Converter, DieselWaterHeater] | None,
+    Converter | DieselWaterHeater | None,
     pd.DataFrame,
     pd.DataFrame | None,
     pd.DataFrame | None,
@@ -807,7 +807,7 @@ def _calculate_renewable_hw_profiles(  # pylint: disable=too-many-locals, too-ma
     # Determine the auxiliary heater associated with the system and its energy
     # consumption.
     if scenario.hot_water_scenario.auxiliary_heater == AuxiliaryHeaterType.DIESEL:
-        auxiliary_heater: Union[Converter, DieselWaterHeater] | None = (
+        auxiliary_heater: Converter | DieselWaterHeater | None = (
             minigrid.diesel_water_heater
         )
         if auxiliary_heater is None:

@@ -108,7 +108,7 @@ LOGGER_NAME: str = "hpc_clover"
 def _check_run(
     locations_foldername: str,
     logger: Logger,
-    hpc_run: Union[HpcOptimisation, HpcSimulation],
+    hpc_run: HpcOptimisation | HpcSimulation,
 ) -> bool:
     """
     Checks that the HPC run is valid.

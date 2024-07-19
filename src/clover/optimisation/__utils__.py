@@ -22,7 +22,7 @@ import enum
 import os
 
 from logging import Logger
-from typing import Any, Pattern, Union
+from typing import Any, Pattern
 
 import json
 import re
@@ -795,7 +795,7 @@ class OptimisationParameters:
 
         return self.iteration_length * self.number_of_iterations
 
-    def to_dict(self) -> dict[str, Union[int, float]]:
+    def to_dict(self) -> dict[str, float | int]:
         """
         Returns a `dict` representation of the :class:`OptimisationParameters` instance.
 
@@ -990,14 +990,14 @@ def recursive_iteration(  # pylint: disable=too-many-locals
     yearly_electric_load_statistics: pd.DataFrame,
     *,
     component_sizes: dict[
-        Union[Converter, ImpactingComponent, RenewableEnergySource],
-        Union[int, float],
+        Converter | ImpactingComponent | RenewableEnergySource,
+        float | int,
     ],
     parameter_space: list[
         tuple[
-            Union[Converter, ImpactingComponent, RenewableEnergySource],
+            Converter | ImpactingComponent | RenewableEnergySource,
             str,
-            Union[list[int], list[float]],
+            list[float] | list[int],
         ]
     ],
     system_appraisals: list[SystemAppraisal],
@@ -1126,8 +1126,8 @@ def recursive_iteration(  # pylint: disable=too-many-locals
     ):
         # Update the set of fixed sizes accordingly.
         updated_component_sizes: dict[
-            Union[Converter, ImpactingComponent, RenewableEnergySource],
-            Union[int, float],
+            Converter | ImpactingComponent | RenewableEnergySource,
+            float | int,
         ] = component_sizes.copy()
         updated_component_sizes[component] = size
 

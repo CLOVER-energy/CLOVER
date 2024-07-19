@@ -636,7 +636,7 @@ def _parse_optimisations_to_runs(
 
 def _process_hpc_input_file(
     input_filename: str, locations_foldername, logger: Logger
-) -> list[Union[HpcOptimisation, HpcSimulation]]:
+) -> list[HpcOptimisation | HpcSimulation]:
     """
     Parses the HPC input file into a list of runs.
 
@@ -657,7 +657,7 @@ def _process_hpc_input_file(
     filedata = _parse_hpc_input_file(input_filename, logger)
 
     # Parse this into HPC Optimisations and Simulations.
-    runs: list[Union[HpcOptimisation, HpcSimulation]] = []
+    runs: list[HpcOptimisation | HpcSimulation] = []
     for entry in filedata:
         if entry[TYPE] == HpcRunType.OPTIMISATION.value:
             runs.extend(
@@ -681,7 +681,7 @@ def _process_hpc_input_file(
 
 def parse_args_and_hpc_input_file(
     args: list[Any], logger: Logger
-) -> tuple[str, list[Union[HpcOptimisation, HpcSimulation]], bool, float]:
+) -> tuple[str, list[HpcOptimisation | HpcSimulation], bool, float]:
     """
     Parses command-line arguments and returns the HPC runs to be carried out.
 
