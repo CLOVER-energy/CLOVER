@@ -20,18 +20,20 @@ not affect the overall running of the code.
 
 import os
 import random
-import time
 import unittest
 
 import json
 import shutil
+import stat
+import uuid
 
 from contextlib import contextmanager
-from shutil import copytree
 from typing import Any, Generator, Union
 
 import pytest
 import yaml
+
+from pytest import fixture, TempPathFactory
 
 from clover.fileparser import INPUTS_DIRECTORY, SCENARIO_INPUTS_FILE
 
@@ -164,7 +166,7 @@ class _BaseTest(unittest.TestCase):
 
     """
 
-    def setUp(self) -> None:
+    def setUp(self, _temporary_location_dir: str | None = None) -> None:
         """
         Setup function for the base test case.
 
@@ -173,10 +175,7 @@ class _BaseTest(unittest.TestCase):
 
         """
 
-        self.temp_location_name: str = (
-            f"{TEMP_LOCATION_FOLDER_NAME}_"
-            + f"{time.ctime().replace(' ', '_').replace(':', '_').replace('__', '_')}"
-        )
+        self.temp_location_name: str = f"{TEMP_LOCATION_FOLDER_NAME}_{uuid.uuid4()}"
         self.temp_location_path: str = os.path.join(
             (locations_foldername := get_locations_foldername()),
             self.temp_location_name,
@@ -190,8 +189,8 @@ class _BaseTest(unittest.TestCase):
 
         # Copy the temporary location to CLOVER's locations folder, saving the name.
         os.makedirs(locations_foldername, exist_ok=True)
-        os.makedirs(self.temp_location_path, exist_ok=True)
-        copytree(TEMP_LOCATION_PATH, self.temp_location_path)
+        # os.makedirs(self.temp_location_path, exist_ok=True)
+        shutil.copytree(TEMP_LOCATION_PATH, self.temp_location_path)
 
         # Store these arguments for use when calling CLOVER.
         self.args = [
@@ -209,8 +208,17 @@ class _BaseTest(unittest.TestCase):
 
         """
 
-        if os.path.isdir(self.temp_location_path):
-            shutil.rmtree(self.temp_location_path)
+        try:
+            if os.path.isdir(self.temp_location_path):
+                shutil.rmtree(self.temp_location_path)
+        except PermissionError:
+            os.chmod(self.temp_location_path, stat.S_IWUSR)
+            for root, dirs, files in os.walk(self.temp_location_path):
+                for sub_dir in dirs:
+                    os.chmod(os.path.join(root, sub_dir), stat.S_IWUSR)
+
+            if os.path.isdir(self.temp_location_path):
+                shutil.rmtree(self.temp_location_path)
 
 
 class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
