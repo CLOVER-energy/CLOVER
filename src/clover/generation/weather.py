@@ -21,8 +21,6 @@ for use locally within CLOVER.
 
 import enum
 
-from typing import Any, Dict
-
 import pandas as pd  # pylint: disable=import-error
 
 
@@ -77,8 +75,7 @@ class WeatherDataThread(
     def __init__(
         self,
         auto_generated_files_directory: str,
-        generation_inputs: Dict[str, Any],
-        global_settings_inputs: Dict[str, str],
+        global_settings_inputs: dict[str, int | str],
         location: Location,
         logger_name: str,
         pause_time: int,
@@ -123,7 +120,6 @@ class WeatherDataThread(
         }
         super().__init__(
             auto_generated_files_directory,
-            generation_inputs,
             global_settings_inputs,
             location,
             logger_name,

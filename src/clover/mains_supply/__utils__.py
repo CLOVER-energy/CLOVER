@@ -23,7 +23,6 @@ import os
 import random
 
 from logging import Logger
-from typing import Dict, List
 
 import pandas as pd  # pylint: disable=import-error
 
@@ -39,7 +38,7 @@ def get_intermittent_supply_status(  # pylint: disable=too-many-locals
     logger: Logger,
     max_years: int,
     profile_inputs: pd.DataFrame,
-) -> Dict[str, pd.DataFrame]:
+) -> dict[str, pd.DataFrame]:
     """
     Computes the availability profiles for an intermittent supply.
 
@@ -64,10 +63,10 @@ def get_intermittent_supply_status(  # pylint: disable=too-many-locals
     """
 
     # Extract the profile names from the dataframe.
-    profile_types: List[str] = list(profile_inputs)
+    profile_types: list[str] = list(profile_inputs)
 
-    # Set up a holder dictionary to contain the grid information.
-    profiles: Dict[str, pd.DataFrame] = {}
+    # set up a holder dictionary to contain the grid information.
+    profiles: dict[str, pd.DataFrame] = {}
 
     # Loop through all the various grid profiles that have been defined.
     for index in tqdm(

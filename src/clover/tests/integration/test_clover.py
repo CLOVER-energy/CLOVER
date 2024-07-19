@@ -19,14 +19,16 @@ not affect the overall running of the code.
 """
 
 import os
+import random
 import time
 import unittest
 
 import json
 import shutil
 
-from distutils.dir_util import copy_tree  # pylint: disable=deprecated-module
-from typing import Any, Dict, List, Optional, Union
+from contextlib import contextmanager
+from shutil import copy_tree
+from typing import Any, Generator, Union
 
 import pytest
 import yaml
@@ -34,7 +36,7 @@ import yaml
 from clover.fileparser import INPUTS_DIRECTORY, SCENARIO_INPUTS_FILE
 
 from ...__main__ import main as clover_main
-from ...__utils__ import LOCATIONS_FOLDER_NAME, RAW_CLOVER_PATH
+from ...__utils__ import get_locations_foldername, RAW_CLOVER_PATH
 
 
 # Default PV panel name:
@@ -63,8 +65,44 @@ TEMP_LOCATION_PATH: str = os.path.join(
 )
 
 
+@contextmanager
+def mocked_global_settings_yaml() -> Generator[None, None, None]:
+    """
+    Allows for a mocked global-settings YAML file with alternative start and end years.
+
+    """
+
+    # Copy the file for use later
+    shutil.copy2(
+        (global_settings_yaml_filename := "global_settings.yaml"),
+        (
+            copied_global_settings_filename := f"global_settings_{str(random.random()).split('.')[1]}.yaml"
+        ),
+    )
+
+    # Replace the start and end years
+    try:
+        with open(global_settings_yaml_filename, "r", encoding="UTF-8") as f:
+            filedata = yaml.safe_load(f)
+
+        filedata["start_year"] = 2007
+        filedata["end_year"] = 2016
+
+        with open(global_settings_yaml_filename, "w", encoding="UTF-8") as f:
+            yaml.dump(filedata, f)
+
+        yield
+    # Ensure that the original file is restored so user settings are not impacted.
+    finally:
+        shutil.copy2(copied_global_settings_filename, global_settings_yaml_filename)
+        try:
+            os.remove(copied_global_settings_filename)
+        except FileNotFoundError:
+            pass
+
+
 def _recursive_updater(
-    dictionary: Dict[Any, Any], update_key: List[Any], value: Any
+    dictionary: dict[Any, Any], update_key: list[Any], value: Any
 ) -> None:
     """
     Helper function for recusively nested dictionaries.
@@ -126,7 +164,7 @@ class _BaseTest(unittest.TestCase):
 
     """
 
-    def setUp(self):
+    def setUp(self) -> None:
         """
         Setup function for the base test case.
 
@@ -140,7 +178,8 @@ class _BaseTest(unittest.TestCase):
             + f"{time.ctime().replace(' ', '_').replace(':', '_').replace('__', '_')}"
         )
         self.temp_location_path: str = os.path.join(
-            LOCATIONS_FOLDER_NAME, self.temp_location_name
+            (locations_foldername := get_locations_foldername()),
+            self.temp_location_name,
         )
         self.output_name: str = "test_output"
 
@@ -150,7 +189,7 @@ class _BaseTest(unittest.TestCase):
             )
 
         # Copy the temporary location to CLOVER's locations folder, saving the name.
-        os.makedirs(LOCATIONS_FOLDER_NAME, exist_ok=True)
+        os.makedirs(locations_foldername, exist_ok=True)
         os.makedirs(self.temp_location_path, exist_ok=True)
         copy_tree(TEMP_LOCATION_PATH, self.temp_location_path)
 
@@ -192,7 +231,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
         self.args.extend(["--simulation", "--analyse", "--skip-plots"])
 
     def _update_scenario_file(
-        self, key: Union[str, List[str]], value: Union[bool, str]
+        self, key: Union[str, list[str]], value: Union[bool, str]
     ) -> None:
         """
         Updates the scenario file within the temporary location.
@@ -229,9 +268,9 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
         storage: bool,
         *,
         prioritise_self_generation: bool = True,
-        pv_size: Optional[float] = None,
-        storage_size: Optional[float] = None,
-    ) -> Dict[str, Any]:
+        pv_size: float | None = None,
+        storage_size: float | None = None,
+    ) -> dict[str, Any]:
         """
         Wrapper to run a CLOVER simulation.
 
@@ -271,7 +310,8 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
             clover_args.extend(["--storage-size", "0"])
 
         # Call CLOVER with these arguments.
-        clover_main(clover_args)
+        with mocked_global_settings_yaml():
+            clover_main(clover_args)
 
         # Return the parsed output info file information.
         output_file_name: str = os.path.join(
@@ -285,13 +325,13 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
             self.fail("CLOVER simulation failed to produce an output info_file.json.")
 
         with open(os.path.join(output_file_name), "r") as f:
-            info_file_data: Dict[str, Any] = json.load(f)
+            info_file_data: dict[str, Any] = json.load(f)
 
         return info_file_data
 
     def _check_output(  # pylint: disable=too-many-locals
         self,
-        info_file_data: Dict[str, Any],
+        info_file_data: dict[str, Any],
         *,
         average_daily_diesel: float,
         average_daily_grid_energy: float,
@@ -389,7 +429,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
         )
         self.assertEqual(
             info_file_data["simulation_1"]["system_appraisal"]["criteria"][
-                "unmet_energy_fraction"
+                "unmet_electricity_fraction"
             ],
             unmet_energy_fraction,
         )
@@ -490,7 +530,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
             average_daily_renewables_energy=3.893,
             average_daily_storage_energy=7.52,
             blackouts=0.029,
-            cumulative_cost=31641.481,
+            cumulative_cost=41641.481,
             cumulative_ghgs=84941.765,
             cumulative_pv_generation=36685.0,
             diesel_capacity=0.0,
@@ -499,7 +539,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
             final_storage_size=21.34,
             initial_pv_size=20.0,
             initial_storage_size=25.0,
-            lcue=1.212,
+            lcue=1.601,
             renewables_fraction=0.613,
             unmet_energy_fraction=0.031,
         )
@@ -525,7 +565,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
             average_daily_renewables_energy=3.893,
             average_daily_storage_energy=0.0,
             blackouts=0.1,
-            cumulative_cost=26765.596,
+            cumulative_cost=36765.596,
             cumulative_ghgs=109899.46,
             cumulative_pv_generation=36685.0,
             diesel_capacity=3.0,
@@ -534,7 +574,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
             final_storage_size=0.0,
             initial_pv_size=20.0,
             initial_storage_size=0.0,
-            lcue=1.02,
+            lcue=1.435,
             renewables_fraction=0.22,
             unmet_energy_fraction=0.062,
         )
@@ -560,7 +600,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
             average_daily_renewables_energy=0.0,
             average_daily_storage_energy=0.005,
             blackouts=0.099,
-            cumulative_cost=23356.064,
+            cumulative_cost=33356.064,
             cumulative_ghgs=42639.989,
             cumulative_pv_generation=0.0,
             diesel_capacity=3.0,
@@ -569,7 +609,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
             final_storage_size=24.997,
             initial_pv_size=0.0,
             initial_storage_size=25.0,
-            lcue=0.928,
+            lcue=1.326,
             renewables_fraction=0.0,
             unmet_energy_fraction=0.026,
         )
@@ -594,7 +634,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
             average_daily_renewables_energy=0.0,
             average_daily_storage_energy=0.0,
             blackouts=0.1,
-            cumulative_cost=12364.081,
+            cumulative_cost=22364.081,
             cumulative_ghgs=39260.849,
             cumulative_pv_generation=0.0,
             diesel_capacity=3.0,
@@ -603,7 +643,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
             final_storage_size=0.0,
             initial_pv_size=0.0,
             initial_storage_size=0.0,
-            lcue=0.49,
+            lcue=0.888,
             renewables_fraction=0.0,
             unmet_energy_fraction=0.026,
         )
@@ -636,7 +676,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
             average_daily_renewables_energy=5.801,
             average_daily_storage_energy=9.807,
             blackouts=0.1,
-            cumulative_cost=34776.209,
+            cumulative_cost=44776.209,
             cumulative_ghgs=96155.431,
             cumulative_pv_generation=36685.0,
             diesel_capacity=3.0,
@@ -645,7 +685,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
             final_storage_size=20.227,
             initial_pv_size=20.0,
             initial_storage_size=25.0,
-            lcue=1.348,
+            lcue=1.756,
             renewables_fraction=0.881,
             unmet_energy_fraction=0.084,
         )
@@ -671,7 +711,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
             average_daily_renewables_energy=5.801,
             average_daily_storage_energy=0.0,
             blackouts=0.1,
-            cumulative_cost=30115.731,
+            cumulative_cost=40115.731,
             cumulative_ghgs=108591.131,
             cumulative_pv_generation=36685.0,
             diesel_capacity=3.0,
@@ -680,7 +720,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
             final_storage_size=0.0,
             initial_pv_size=20.0,
             initial_storage_size=0.0,
-            lcue=1.143,
+            lcue=1.55,
             renewables_fraction=0.322,
             unmet_energy_fraction=0.045,
         )
@@ -706,7 +746,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
             average_daily_renewables_energy=0.0,
             average_daily_storage_energy=0.006,
             blackouts=0.098,
-            cumulative_cost=28831.366,
+            cumulative_cost=38831.366,
             cumulative_ghgs=48163.701,
             cumulative_pv_generation=0.0,
             diesel_capacity=3.0,
@@ -715,7 +755,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
             final_storage_size=24.997,
             initial_pv_size=0.0,
             initial_storage_size=25.0,
-            lcue=1.142,
+            lcue=1.538,
             renewables_fraction=0.0,
             unmet_energy_fraction=0.021,
         )
@@ -740,7 +780,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
             average_daily_renewables_energy=0.0,
             average_daily_storage_energy=0.0,
             blackouts=0.098,
-            cumulative_cost=17843.344,
+            cumulative_cost=27843.344,
             cumulative_ghgs=44803.006,
             cumulative_pv_generation=0.0,
             diesel_capacity=3.0,
@@ -749,7 +789,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
             final_storage_size=0.0,
             initial_pv_size=0.0,
             initial_storage_size=0.0,
-            lcue=0.707,
+            lcue=1.103,
             renewables_fraction=0.0,
             unmet_energy_fraction=0.021,
         )
@@ -782,7 +822,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
             average_daily_renewables_energy=3.893,
             average_daily_storage_energy=7.52,
             blackouts=0.029,
-            cumulative_cost=31641.481,
+            cumulative_cost=41641.481,
             cumulative_ghgs=84941.765,
             cumulative_pv_generation=36685.0,
             diesel_capacity=0.0,
@@ -791,7 +831,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
             final_storage_size=21.34,
             initial_pv_size=20.0,
             initial_storage_size=25.0,
-            lcue=1.212,
+            lcue=1.601,
             renewables_fraction=0.613,
             unmet_energy_fraction=0.031,
         )
@@ -817,7 +857,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
             average_daily_renewables_energy=3.893,
             average_daily_storage_energy=0.0,
             blackouts=0.302,
-            cumulative_cost=33894.013,
+            cumulative_cost=43894.013,
             cumulative_ghgs=195403.455,
             cumulative_pv_generation=36685.0,
             diesel_capacity=0.0,
@@ -826,7 +866,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
             final_storage_size=0.0,
             initial_pv_size=20.0,
             initial_storage_size=0.0,
-            lcue=1.329,
+            lcue=1.987,
             renewables_fraction=0.351,
             unmet_energy_fraction=0.411,
         )
@@ -852,7 +892,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
             average_daily_renewables_energy=0.0,
             average_daily_storage_energy=0.005,
             blackouts=0.61,
-            cumulative_cost=28565.669,
+            cumulative_cost=38565.669,
             cumulative_ghgs=133907.16,
             cumulative_pv_generation=0.0,
             diesel_capacity=0.0,
@@ -861,7 +901,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
             final_storage_size=24.997,
             initial_pv_size=0.0,
             initial_storage_size=25.0,
-            lcue=1.492,
+            lcue=2.501,
             renewables_fraction=0.001,
             unmet_energy_fraction=0.618,
         )
@@ -886,7 +926,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
             average_daily_renewables_energy=0.0,
             average_daily_storage_energy=0.0,
             blackouts=0.611,
-            cumulative_cost=17585.402,
+            cumulative_cost=27585.402,
             cumulative_ghgs=130629.73,
             cumulative_pv_generation=0.0,
             diesel_capacity=0.0,
@@ -895,7 +935,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
             final_storage_size=0.0,
             initial_pv_size=0.0,
             initial_storage_size=0.0,
-            lcue=0.383,
+            lcue=1.393,
             renewables_fraction=0.0,
             unmet_energy_fraction=0.618,
         )
@@ -929,7 +969,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
             average_daily_renewables_energy=5.801,
             average_daily_storage_energy=9.807,
             blackouts=0.171,
-            cumulative_cost=34260.245,
+            cumulative_cost=44260.245,
             cumulative_ghgs=101882.52,
             cumulative_pv_generation=36685.0,
             diesel_capacity=0.0,
@@ -938,7 +978,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
             final_storage_size=20.227,
             initial_pv_size=20.0,
             initial_storage_size=25.0,
-            lcue=1.415,
+            lcue=1.87,
             renewables_fraction=1.0,
             unmet_energy_fraction=0.196,
         )
@@ -964,7 +1004,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
             average_daily_renewables_energy=5.801,
             average_daily_storage_energy=0.0,
             blackouts=0.543,
-            cumulative_cost=41805.298,
+            cumulative_cost=51805.298,
             cumulative_ghgs=255001.055,
             cumulative_pv_generation=36685.0,
             diesel_capacity=0.0,
@@ -973,7 +1013,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
             final_storage_size=0.0,
             initial_pv_size=20.0,
             initial_storage_size=0.0,
-            lcue=2.548,
+            lcue=3.816,
             renewables_fraction=1.0,
             unmet_energy_fraction=0.692,
         )
@@ -999,7 +1039,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
             average_daily_renewables_energy=0.0,
             average_daily_storage_energy=0.006,
             blackouts=0.999,
-            cumulative_cost=36512.623,
+            cumulative_cost=46512.623,
             cumulative_ghgs=193802.42,
             cumulative_pv_generation=0.0,
             diesel_capacity=0.0,
@@ -1008,7 +1048,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
             final_storage_size=24.997,
             initial_pv_size=0.0,
             initial_storage_size=25.0,
-            lcue=1377.525,
+            lcue=2315.347,
             renewables_fraction=1.0,
             unmet_energy_fraction=1.0,
         )
@@ -1054,7 +1094,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
             average_daily_renewables_energy=5.801,
             average_daily_storage_energy=7.516,
             blackouts=0.029,
-            cumulative_cost=31618.403,
+            cumulative_cost=41618.403,
             cumulative_ghgs=82405.975,
             cumulative_pv_generation=36685.0,
             diesel_capacity=0.0,
@@ -1063,7 +1103,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
             final_storage_size=21.342,
             initial_pv_size=20.0,
             initial_storage_size=25.0,
-            lcue=1.212,
+            lcue=1.6,
             renewables_fraction=0.716,
             unmet_energy_fraction=0.032,
         )
@@ -1089,7 +1129,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
             average_daily_renewables_energy=5.801,
             average_daily_storage_energy=0.0,
             blackouts=0.1,
-            cumulative_cost=26739.659,
+            cumulative_cost=36739.659,
             cumulative_ghgs=107334.74,
             cumulative_pv_generation=36685.0,
             diesel_capacity=3.0,
@@ -1098,7 +1138,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
             final_storage_size=0.0,
             initial_pv_size=20.0,
             initial_storage_size=0.0,
-            lcue=1.019,
+            lcue=1.434,
             renewables_fraction=0.329,
             unmet_energy_fraction=0.062,
         )
@@ -1124,7 +1164,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
             average_daily_renewables_energy=0.0,
             average_daily_storage_energy=0.005,
             blackouts=0.099,
-            cumulative_cost=23356.064,
+            cumulative_cost=33356.064,
             cumulative_ghgs=42639.989,
             cumulative_pv_generation=0.0,
             diesel_capacity=3.0,
@@ -1133,7 +1173,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
             final_storage_size=24.997,
             initial_pv_size=0.0,
             initial_storage_size=25.0,
-            lcue=0.928,
+            lcue=1.326,
             renewables_fraction=0.0,
             unmet_energy_fraction=0.026,
         )
@@ -1156,7 +1196,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
             average_daily_renewables_energy=0.0,
             average_daily_storage_energy=0.0,
             blackouts=0.1,
-            cumulative_cost=12364.081,
+            cumulative_cost=22364.081,
             cumulative_ghgs=39260.849,
             cumulative_pv_generation=0.0,
             diesel_capacity=3.0,
@@ -1165,7 +1205,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
             final_storage_size=0.0,
             initial_pv_size=0.0,
             initial_storage_size=0.0,
-            lcue=0.49,
+            lcue=0.888,
             renewables_fraction=0.0,
             unmet_energy_fraction=0.026,
         )
@@ -1197,7 +1237,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
             average_daily_renewables_energy=5.801,
             average_daily_storage_energy=9.807,
             blackouts=0.1,
-            cumulative_cost=34776.209,
+            cumulative_cost=44776.209,
             cumulative_ghgs=96155.431,
             cumulative_pv_generation=36685.0,
             diesel_capacity=3.0,
@@ -1206,7 +1246,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
             final_storage_size=20.227,
             initial_pv_size=20.0,
             initial_storage_size=25.0,
-            lcue=1.348,
+            lcue=1.756,
             renewables_fraction=0.881,
             unmet_energy_fraction=0.084,
         )
@@ -1232,7 +1272,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
             average_daily_renewables_energy=5.801,
             average_daily_storage_energy=0.0,
             blackouts=0.1,
-            cumulative_cost=30115.731,
+            cumulative_cost=40115.731,
             cumulative_ghgs=108591.131,
             cumulative_pv_generation=36685.0,
             diesel_capacity=3.0,
@@ -1241,7 +1281,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
             final_storage_size=0.0,
             initial_pv_size=20.0,
             initial_storage_size=0.0,
-            lcue=1.143,
+            lcue=1.55,
             renewables_fraction=0.322,
             unmet_energy_fraction=0.045,
         )
@@ -1267,7 +1307,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
             average_daily_renewables_energy=0.0,
             average_daily_storage_energy=0.006,
             blackouts=0.098,
-            cumulative_cost=28831.366,
+            cumulative_cost=38831.366,
             cumulative_ghgs=48163.701,
             cumulative_pv_generation=0.0,
             diesel_capacity=3.0,
@@ -1276,7 +1316,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
             final_storage_size=24.997,
             initial_pv_size=0.0,
             initial_storage_size=25.0,
-            lcue=1.142,
+            lcue=1.538,
             renewables_fraction=0.0,
             unmet_energy_fraction=0.021,
         )
@@ -1299,7 +1339,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
             average_daily_renewables_energy=0.0,
             average_daily_storage_energy=0.0,
             blackouts=0.098,
-            cumulative_cost=17843.344,
+            cumulative_cost=27843.344,
             cumulative_ghgs=44803.006,
             cumulative_pv_generation=0.0,
             diesel_capacity=3.0,
@@ -1308,7 +1348,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
             final_storage_size=0.0,
             initial_pv_size=0.0,
             initial_storage_size=0.0,
-            lcue=0.707,
+            lcue=1.103,
             renewables_fraction=0.0,
             unmet_energy_fraction=0.021,
         )
@@ -1340,7 +1380,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
             average_daily_renewables_energy=5.801,
             average_daily_storage_energy=7.516,
             blackouts=0.029,
-            cumulative_cost=31618.403,
+            cumulative_cost=41618.403,
             cumulative_ghgs=82405.975,
             cumulative_pv_generation=36685.0,
             diesel_capacity=0.0,
@@ -1349,7 +1389,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
             final_storage_size=21.342,
             initial_pv_size=20.0,
             initial_storage_size=25.0,
-            lcue=1.212,
+            lcue=1.6,
             renewables_fraction=0.716,
             unmet_energy_fraction=0.032,
         )
@@ -1375,7 +1415,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
             average_daily_renewables_energy=5.801,
             average_daily_storage_energy=0.0,
             blackouts=0.302,
-            cumulative_cost=33868.076,
+            cumulative_cost=43868.076,
             cumulative_ghgs=192838.735,
             cumulative_pv_generation=36685.0,
             diesel_capacity=0.0,
@@ -1384,7 +1424,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
             final_storage_size=0.0,
             initial_pv_size=20.0,
             initial_storage_size=0.0,
-            lcue=1.327,
+            lcue=1.985,
             renewables_fraction=0.523,
             unmet_energy_fraction=0.411,
         )
@@ -1410,7 +1450,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
             average_daily_renewables_energy=0.0,
             average_daily_storage_energy=0.005,
             blackouts=0.61,
-            cumulative_cost=28565.669,
+            cumulative_cost=38565.669,
             cumulative_ghgs=133907.16,
             cumulative_pv_generation=0.0,
             diesel_capacity=0.0,
@@ -1419,7 +1459,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
             final_storage_size=24.997,
             initial_pv_size=0.0,
             initial_storage_size=25.0,
-            lcue=1.492,
+            lcue=2.501,
             renewables_fraction=0.001,
             unmet_energy_fraction=0.618,
         )
@@ -1442,7 +1482,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
             average_daily_renewables_energy=0.0,
             average_daily_storage_energy=0.0,
             blackouts=0.611,
-            cumulative_cost=17585.402,
+            cumulative_cost=27585.402,
             cumulative_ghgs=130629.73,
             cumulative_pv_generation=0.0,
             diesel_capacity=0.0,
@@ -1451,7 +1491,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
             final_storage_size=0.0,
             initial_pv_size=0.0,
             initial_storage_size=0.0,
-            lcue=0.383,
+            lcue=1.393,
             renewables_fraction=0.0,
             unmet_energy_fraction=0.618,
         )
@@ -1484,7 +1524,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
             average_daily_renewables_energy=5.801,
             average_daily_storage_energy=9.807,
             blackouts=0.171,
-            cumulative_cost=34260.245,
+            cumulative_cost=44260.245,
             cumulative_ghgs=101882.52,
             cumulative_pv_generation=36685.0,
             diesel_capacity=0.0,
@@ -1493,7 +1533,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
             final_storage_size=20.227,
             initial_pv_size=20.0,
             initial_storage_size=25.0,
-            lcue=1.415,
+            lcue=1.87,
             renewables_fraction=1.0,
             unmet_energy_fraction=0.196,
         )
@@ -1519,7 +1559,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
             average_daily_renewables_energy=5.801,
             average_daily_storage_energy=0.0,
             blackouts=0.543,
-            cumulative_cost=41805.298,
+            cumulative_cost=51805.298,
             cumulative_ghgs=255001.055,
             cumulative_pv_generation=36685.0,
             diesel_capacity=0.0,
@@ -1528,7 +1568,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
             final_storage_size=0.0,
             initial_pv_size=20.0,
             initial_storage_size=0.0,
-            lcue=2.548,
+            lcue=3.816,
             renewables_fraction=1.0,
             unmet_energy_fraction=0.692,
         )
@@ -1554,7 +1594,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
             average_daily_renewables_energy=0.0,
             average_daily_storage_energy=0.006,
             blackouts=0.999,
-            cumulative_cost=36512.623,
+            cumulative_cost=46512.623,
             cumulative_ghgs=193802.42,
             cumulative_pv_generation=0.0,
             diesel_capacity=0.0,
@@ -1563,7 +1603,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
             final_storage_size=24.997,
             initial_pv_size=0.0,
             initial_storage_size=25.0,
-            lcue=1377.525,
+            lcue=2315.347,
             renewables_fraction=1.0,
             unmet_energy_fraction=1.0,
         )

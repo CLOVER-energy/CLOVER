@@ -18,7 +18,7 @@ contained and considered within this module.
 
 import dataclasses
 
-from typing import Any, Dict
+from typing import Any
 
 from ..__utils__ import (
     HEAT_CAPACITY_OF_WATER,
@@ -150,7 +150,7 @@ class _BaseStorage:
         )
 
     @classmethod
-    def from_dict(cls, storage_data: Dict[str, Any]) -> Any:
+    def from_dict(cls, storage_data: dict[str, Any]) -> Any:
         """
         Create a :class:`_BaseStorage` instance based on the file data passed in.
 
@@ -307,7 +307,7 @@ class Battery(_BaseStorage, label="battery", resource_type=ResourceType.ELECTRIC
         )
 
     @property
-    def as_dict(self) -> Dict[str, Any]:
+    def as_dict(self) -> dict[str, Any]:
         """
         Return a dictionary based on the battery information.
 
@@ -332,7 +332,7 @@ class Battery(_BaseStorage, label="battery", resource_type=ResourceType.ELECTRIC
         }
 
     @classmethod
-    def from_dict(cls, storage_data: Dict[str, Any]) -> Any:
+    def from_dict(cls, storage_data: dict[str, Any]) -> Any:
         """
         Create a :class:`Battery` instance based on the file data passed in.
 
@@ -357,9 +357,11 @@ class Battery(_BaseStorage, label="battery", resource_type=ResourceType.ELECTRIC
             storage_data["conversion_out"],
             storage_data["c_rate_discharging"],
             storage_data["lifetime_loss"],
-            storage_data["storage_unit"]
-            if "storage_unit" in storage_data
-            else DEFAULT_STORAGE_UNIT,
+            (
+                storage_data["storage_unit"]
+                if "storage_unit" in storage_data
+                else DEFAULT_STORAGE_UNIT
+            ),
             "storage_unit" in storage_data,
         )
 
@@ -445,7 +447,7 @@ class CleanWaterTank(
         )
 
     @classmethod
-    def from_dict(cls, storage_data: Dict[str, Any]) -> Any:
+    def from_dict(cls, storage_data: dict[str, Any]) -> Any:
         """
         Create a :class:`CleanWaterTank` instance based on the file data passed in.
 
@@ -593,7 +595,7 @@ class HotWaterTank(
         )
 
     @classmethod
-    def from_dict(cls, storage_data: Dict[str, Any]) -> Any:
+    def from_dict(cls, storage_data: dict[str, Any]) -> Any:
         """
         Create a :class:`HotWaterTank` instance based on the file data passed in.
 
@@ -614,8 +616,10 @@ class HotWaterTank(
             storage_data[NAME],
             storage_data["mass"],
             storage_data["area"],
-            storage_data["heat_capacity"]
-            if "heat_capacity" in storage_data
-            else HEAT_CAPACITY_OF_WATER,
+            (
+                storage_data["heat_capacity"]
+                if "heat_capacity" in storage_data
+                else HEAT_CAPACITY_OF_WATER
+            ),
             storage_data["heat_loss_coefficient"],
         )

@@ -20,7 +20,6 @@ This module generates availability profiles for conventional water sources for C
 import os
 
 from logging import Logger
-from typing import Dict
 
 import pandas as pd  # pylint: disable=import-error
 
@@ -249,8 +248,8 @@ def get_lifetime_water_source_status(
     location: Location,
     logger: Logger,
     regenerate: bool,
-    water_source_times: Dict[WaterSource, pd.DataFrame],
-) -> Dict[WaterSource, pd.DataFrame]:
+    water_source_times: dict[WaterSource, pd.DataFrame],
+) -> dict[WaterSource, pd.DataFrame]:
     """
     Calculates, and saves, the water-source availability profiles of all input types.
 
@@ -284,7 +283,7 @@ def get_lifetime_water_source_status(
 
     """
 
-    water_source_profiles: Dict[WaterSource, pd.DataFrame] = {}
+    water_source_profiles: dict[WaterSource, pd.DataFrame] = {}
 
     # Do not compute conventional profiles if there are none available.
     if len(water_source_times) == 0:

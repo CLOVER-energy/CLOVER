@@ -31,7 +31,7 @@ import time
 
 from json.decoder import JSONDecodeError
 from logging import Logger
-from typing import Any, Dict, Union
+from typing import Any
 
 import numpy as np  # pylint: disable=import-error
 import pandas as pd  # pylint: disable=import-error
@@ -100,7 +100,7 @@ def _get_profile_from_rn(
     authorisation_token: str,
     logger: Logger,
     renewables_ninja_keyword: str,
-    renewables_ninja_params: Dict[str, Any],
+    renewables_ninja_params: dict[str, Any],
     year: int = 2014,
 ) -> pd.DataFrame:
     """
@@ -236,11 +236,11 @@ def _get_profile_local_time(
 
     # East of Greenwich
     if time_difference > 0:
-        splits = np.split(data_utc, [len(data_utc) - time_difference])
+        splits = np.split(data_utc, [len(data_utc) - time_difference])  # type: ignore [call-overload]
         data_local: pd.DataFrame = pd.concat([splits[1], splits[0]], ignore_index=True)
     # West of Greenwich
     elif time_difference < 0:
-        splits = np.split(data_utc, [abs(time_difference)])
+        splits = np.split(data_utc, [abs(time_difference)])  # type: ignore [call-overload]
         data_local = pd.concat([splits[1], splits[0]], ignore_index=True)
     # No time difference, included for completeness
     else:
@@ -254,7 +254,7 @@ def _get_profile_output(
     location: Location,
     logger: Logger,
     renewables_ninja_keyword: str,
-    renewables_ninja_params: Dict[str, Any],
+    renewables_ninja_params: dict[str, Any],
     gen_year: int = 2014,
 ) -> pd.DataFrame:
     """
@@ -331,8 +331,9 @@ class BaseRenewablesNinjaThread(threading.Thread):
     .. attribute:: auto_generated_files_directory
         The directory in which CLOVER-generated files should be saved.
 
-    .. attribute:: generation_inputs:
-        The generation inputs information, extracted from the generation-inputs file.
+    .. attribute:: global_settings_inputs:
+        The global-settings inputs information, extracted from the generation-inputs
+        file.
 
     .. attribute:: location
         The location currently being considered.
@@ -361,8 +362,7 @@ class BaseRenewablesNinjaThread(threading.Thread):
     def __init__(
         self,
         auto_generated_files_directory: str,
-        generation_inputs: Dict[str, Any],
-        global_settings_inputs: Dict[str, str],
+        global_settings_inputs: dict[str, int | str],
         location: Location,
         logger_name: str,
         pause_time: int,
@@ -370,7 +370,7 @@ class BaseRenewablesNinjaThread(threading.Thread):
         sleep_multiplier: int,
         verbose: bool,
         *,
-        renewables_ninja_params: Dict[str, Any],
+        renewables_ninja_params: dict[str, Any],
         profile_prefix: str = "",
     ) -> None:
         """
@@ -379,8 +379,6 @@ class BaseRenewablesNinjaThread(threading.Thread):
         Inputs:
             - auto_generated_files_directory:
                 The directory in which CLOVER-generated files should be saved.
-            - generation_inputs:
-                The generation inputs.
             - global_settings_inputs:
                 The global-settings inputs.
             - location:
@@ -405,17 +403,14 @@ class BaseRenewablesNinjaThread(threading.Thread):
         """
 
         self.auto_generated_files_directory: str = auto_generated_files_directory
-        self.generation_inputs: Dict[
-            str, Union[bool, int, str, float]
-        ] = generation_inputs
-        self.global_settings_inputs: Dict[str, str] = global_settings_inputs
+        self.global_settings_inputs: dict[str, int | str] = global_settings_inputs
         self.location: Location = location
         self.logger: Logger = get_logger(logger_name, verbose)
         self.logger_name: str = logger_name
         self.pause_time: int = pause_time
         self.profile_prefix: str = profile_prefix
         self.regenerate: bool = regenerate
-        self.renewables_ninja_params: Dict[str, Any] = renewables_ninja_params
+        self.renewables_ninja_params: dict[str, Any] = renewables_ninja_params
         self.sleep_multiplier: int = sleep_multiplier
 
         super().__init__()
@@ -467,8 +462,8 @@ class BaseRenewablesNinjaThread(threading.Thread):
         try:
             for year in tqdm(
                 range(
-                    int(self.generation_inputs["start_year"]),
-                    int(self.generation_inputs["end_year"]) + 1,
+                    int(self.global_settings_inputs["start_year"]),
+                    int(self.global_settings_inputs["end_year"]) + 1,
                 ),
                 desc=f"{self.profile_name} "
                 f"{self.profile_prefix[:-1].replace('_', ' ')} profiles",
@@ -534,7 +529,7 @@ class BaseRenewablesNinjaThread(threading.Thread):
 
                 # The system waits to prevent overloading the renewables.ninja API and being
                 # locked out.
-                if year != self.generation_inputs["end_year"]:
+                if year != self.global_settings_inputs["end_year"]:
                     time.sleep(RENEWABLES_NINJA_SLEEP_TIME * self.sleep_multiplier)
 
         except Exception:

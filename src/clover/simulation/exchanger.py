@@ -21,7 +21,7 @@ heat-exchanger related information from anywhere within CLOVER.
 
 import dataclasses
 
-from typing import Any, Dict
+from typing import Any
 
 from ..__utils__ import NAME
 
@@ -58,7 +58,7 @@ class Exchanger:
         return f"Exchanger(name={self.name}, efficiency={self.efficiency})"
 
     @classmethod
-    def from_dict(cls, exchanger_inputs: Dict[str, Any]) -> Any:
+    def from_dict(cls, exchanger_inputs: dict[str, Any]) -> Any:
         """
         Instantiate a :class:`Exchanger` based on the input information.
 

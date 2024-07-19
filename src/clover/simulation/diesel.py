@@ -21,7 +21,7 @@ functionality to model diesel generators.
 import dataclasses
 import logging
 
-from typing import Any, Dict, Optional, Tuple
+from typing import Any
 
 import numpy as np  # pylint: disable=import-error
 import pandas as pd
@@ -94,7 +94,7 @@ class DieselWaterHeater(Converter):
 
     def __init__(
         self,
-        input_resource_consumption: Dict[ResourceType, float],
+        input_resource_consumption: dict[ResourceType, float],
         maximum_output_capacity: float,
         minimum_load: float,
         name: str,
@@ -127,7 +127,7 @@ class DieselWaterHeater(Converter):
         self.minimum_load = minimum_load
 
     @classmethod
-    def from_dict(cls, input_data: Dict[str, Any], logger: logging.Logger) -> Any:
+    def from_dict(cls, input_data: dict[str, Any], logger: logging.Logger) -> Any:
         """
         Instantiates a :class:`DieselWaterHeater` instance based on the input data.
 
@@ -143,11 +143,11 @@ class DieselWaterHeater(Converter):
         """
 
         try:
-            input_resource_consumption: Dict[ResourceType, float] = {
+            input_resource_consumption: dict[ResourceType, float] = {
                 ResourceType.DIESEL: input_data[DIESEL_CONSUMPTION],
-                ResourceType.ELECTRIC: input_data[ELECTRIC_POWER]
-                if ELECTRIC_POWER in input_data
-                else 0,
+                ResourceType.ELECTRIC: (
+                    input_data[ELECTRIC_POWER] if ELECTRIC_POWER in input_data else 0
+                ),
             }
         except KeyError as e:
             logger.error(
@@ -184,7 +184,7 @@ class DieselWaterHeater(Converter):
 
 def _find_deficit_threshold_blackout(
     unmet_energy: pd.DataFrame, blackouts: pd.DataFrame, backup_threshold: float
-) -> Optional[float]:
+) -> float | None:
     """
     Identifies the threshold energy level at which the diesel backup generator turns on
     when the threshold criterion is blackouts.
@@ -213,12 +213,12 @@ def _find_deficit_threshold_blackout(
     if reliability_difference <= 0.0:
         return None
 
-    return float(np.percentile(unmet_energy, percentile_threshold))
+    return float(np.percentile(unmet_energy, percentile_threshold))  # type: ignore [call-overload]
 
 
 def _find_deficit_threshold_unmet(
     unmet_energy: pd.DataFrame, backup_threshold: float, total_electric_load: float
-) -> Optional[float]:
+) -> float | None:
     """
     Identifies the threshold energy level at which the diesel backup generator turns on
     when the threshold criterion is unmet energy.
@@ -266,7 +266,7 @@ def _find_deficit_threshold(
     backup_threshold: float,
     total_electric_load: float,
     diesel_mode: DieselMode,
-) -> Optional[float]:
+) -> float | None:
     """
     Identifies the threshold energy level at which the diesel backup generator turns on.
 
@@ -313,7 +313,7 @@ def get_diesel_energy_and_times(
     backup_threshold: float,
     total_electric_load: float,
     diesel_mode: DieselMode,
-) -> Tuple[pd.DataFrame, pd.DataFrame]:
+) -> tuple[pd.DataFrame, pd.DataFrame]:
     """
     Finds times when the load is greater than the energy threshold.
 
@@ -391,7 +391,6 @@ def get_diesel_fuel_usage(
     below_minimum = (
         load_factor <= diesel_generator.minimum_load
     ) * diesel_generator.minimum_load
-    # @@@ Investigate variable reassignment here.
     load_factor = pd.DataFrame(
         diesel_times.values * (above_minimum.values + below_minimum.values)
     )
