@@ -27,7 +27,7 @@ import json
 import shutil
 
 from contextlib import contextmanager
-from shutil import copy_tree
+from shutil import copytree
 from typing import Any, Generator, Union
 
 import pytest
@@ -191,7 +191,7 @@ class _BaseTest(unittest.TestCase):
         # Copy the temporary location to CLOVER's locations folder, saving the name.
         os.makedirs(locations_foldername, exist_ok=True)
         os.makedirs(self.temp_location_path, exist_ok=True)
-        copy_tree(TEMP_LOCATION_PATH, self.temp_location_path)
+        copytree(TEMP_LOCATION_PATH, self.temp_location_path)
 
         # Store these arguments for use when calling CLOVER.
         self.args = [
