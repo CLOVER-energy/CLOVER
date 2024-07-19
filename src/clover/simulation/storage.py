@@ -103,7 +103,7 @@ def battery_iteration_step(
             "Battery undefined despite an itteration step being called.",
         )
 
-    battery_energy_flow = float(battery_storage_profile.iloc[time_index, 0])
+    battery_energy_flow = float(battery_storage_profile.iloc[time_index, 0])  # type: ignore [arg-type]
     if time_index == 0:
         new_hourly_battery_storage = initial_battery_storage + battery_energy_flow
     else:
@@ -226,7 +226,7 @@ def cw_tank_iteration_step(  # pylint: disable=too-many-locals
     """
 
     if scenario.desalination_scenario is not None:
-        tank_water_flow: float = float(tank_storage_profile.iloc[time_index, 0])
+        tank_water_flow: float = float(tank_storage_profile.iloc[time_index, 0])  # type: ignore [arg-type]
 
         # Raise an error if there is no clean-water tank defined.
         if minigrid.clean_water_tank is None:
@@ -647,8 +647,8 @@ def get_electric_battery_storage_profile(  # pylint: disable=too-many-locals, to
         # Take energy from PV first
         remaining_profile = pd.DataFrame(renewables_energy.values - load_energy.values)
         renewables_energy_used_directly: pd.DataFrame = pd.DataFrame(
-            (remaining_profile > 0) * load_energy.values
-            + (remaining_profile < 0) * renewables_energy.values
+            (remaining_profile > 0) * load_energy.values  # type: ignore [operator]
+            + (remaining_profile < 0) * renewables_energy.values  # type: ignore [operator]
         )
 
         # Then take energy from grid if available
@@ -668,7 +668,7 @@ def get_electric_battery_storage_profile(  # pylint: disable=too-many-locals, to
         # Take energy from grid first if available
         if scenario.grid:
             grid_energy = pd.DataFrame(  # type: ignore
-                grid_profile.mul(load_energy[0].values).values  # type: ignore [attr-defined, call-overload, operator]
+                grid_profile.mul(load_energy[0].values).values  # type: ignore [attr-defined, call-overload, operator, type-var]
             )
         else:
             grid_energy = pd.DataFrame([0] * (end_hour - start_hour))
@@ -776,8 +776,8 @@ def get_water_storage_profile(
         renewable_cw_produced.values - processed_total_cw_load.values
     )
     renewable_cw_used_directly: pd.DataFrame = pd.DataFrame(
-        (remaining_profile > 0) * processed_total_cw_load.values
-        + (remaining_profile < 0) * renewable_cw_produced.values
+        (remaining_profile > 0) * processed_total_cw_load.values  # type: ignore [operator]
+        + (remaining_profile < 0) * renewable_cw_produced.values  # type: ignore [operator]
     )
 
     tank_storage_profile: pd.DataFrame = pd.DataFrame(remaining_profile.values)

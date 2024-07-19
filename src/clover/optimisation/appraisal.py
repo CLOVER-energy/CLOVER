@@ -1130,7 +1130,7 @@ def _appraise_hot_water_system_tech(
                     * simulation_results[ColumnHeader.HW_TANK_OUTPUT.value].values
                 )
             )
-            / np.nansum(simulation_results[ColumnHeader.HW_TANK_OUTPUT.value].values)
+            / np.nansum(simulation_results[ColumnHeader.HW_TANK_OUTPUT.value].values)  # type: ignore [arg-type]
         ),
         3,
     )

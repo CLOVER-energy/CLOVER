@@ -231,11 +231,11 @@ def _get_profile_local_time(
     # East of Greenwich
     if time_difference > 0:
         splits = np.split(data_utc, [len(data_utc) - time_difference])  # type: ignore [call-overload]
-        data_local: pd.DataFrame = pd.concat([splits[1], splits[0]], ignore_index=True)
+        data_local: pd.DataFrame = pd.concat([splits[1], splits[0]], ignore_index=True)  # type: ignore [list-item]
     # West of Greenwich
     elif time_difference < 0:
         splits = np.split(data_utc, [abs(time_difference)])  # type: ignore [call-overload]
-        data_local = pd.concat([splits[1], splits[0]], ignore_index=True)
+        data_local = pd.concat([splits[1], splits[0]], ignore_index=True)  # type: ignore [list-item]
     # No time difference, included for completeness
     else:
         data_local = data_utc

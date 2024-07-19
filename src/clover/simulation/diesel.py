@@ -349,9 +349,9 @@ def get_diesel_energy_and_times(
         )
 
     diesel_energy = pd.DataFrame(
-        unmet_energy.values * (unmet_energy >= energy_threshold).values
+        unmet_energy.values * (unmet_energy >= energy_threshold).values  # type: ignore [operator]
     )
-    diesel_times = (unmet_energy >= energy_threshold) * 1
+    diesel_times = (unmet_energy >= energy_threshold) * 1  # type: ignore [operator]
     diesel_times = diesel_times.astype(float)
 
     return diesel_energy, diesel_times
@@ -386,9 +386,9 @@ def get_diesel_fuel_usage(
 
     load_factor: pd.DataFrame = diesel_energy.divide(capacity)  # type: ignore
     above_minimum = pd.DataFrame(
-        load_factor.values * (load_factor > diesel_generator.minimum_load).values
+        load_factor.values * (load_factor > diesel_generator.minimum_load).values  # type: ignore [operator]
     )
-    below_minimum = (
+    below_minimum = (  # type: ignore [operator]
         load_factor <= diesel_generator.minimum_load
     ) * diesel_generator.minimum_load
     load_factor = pd.DataFrame(
@@ -396,7 +396,7 @@ def get_diesel_fuel_usage(
     )
 
     fuel_usage: pd.DataFrame = (
-        load_factor * capacity * diesel_generator.diesel_consumption
+        load_factor * capacity * diesel_generator.diesel_consumption  # type: ignore [operator]
     )
     fuel_usage = fuel_usage.astype(float)
 

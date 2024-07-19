@@ -782,7 +782,7 @@ def process_device_hourly_usage(
                 [
                     pd.DataFrame(  # type: ignore
                         np.random.binomial(  # type: ignore
-                            float(daily_device_ownership.iloc[day, 0]),
+                            float(daily_device_ownership.iloc[day, 0]),  # type: ignore [arg-type]
                             daily_device_utilisation.iloc[day, :],
                         )
                     )

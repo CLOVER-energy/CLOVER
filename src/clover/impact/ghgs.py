@@ -664,13 +664,15 @@ def _calculate_inverter_ghgs(  # pylint: disable=too-many-locals
         for i in range(len(inverter_info))
     ]
     inverter_ghgs: float = np.sum(
-        inverter_info.iloc[
+        inverter_info.iloc[  # type: ignore [call-overload]
             inverter_info.index[
                 inverter_info[ColumnHeader.INSTALLATION_YEAR.value].isin(
                     list(np.array(range(start_year, end_year)))
                 )
             ]
-        ][ColumnHeader.TOTAL_GHGS.value]
+        ][
+            ColumnHeader.TOTAL_GHGS.value
+        ]  # type: ignore [index]
     ).round(2)
 
     return inverter_ghgs

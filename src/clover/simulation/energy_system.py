@@ -543,14 +543,14 @@ def _calculate_renewable_cw_profiles(  # pylint: disable=too-many-locals, too-ma
         logger.debug("PV-T performance successfully computed.")
 
         # Compute the clean water supplied by the desalination unit.
-        renewable_thermal_cw_produced: pd.DataFrame = (
+        renewable_thermal_cw_produced: pd.DataFrame = (  # type: ignore [operator]
             buffer_tank_volume_supplied > 0
         ) * thermal_desalination_plant.maximum_output_capacity
 
         # Compute the power consumed by the thermal desalination plant.
         thermal_desalination_electric_power_consumed: pd.DataFrame = pd.DataFrame(
             (
-                (renewable_thermal_cw_produced > 0)
+                (renewable_thermal_cw_produced > 0)  # type: ignore [operator]
                 * (
                     0.001
                     * thermal_desalination_plant.input_resource_consumption[
@@ -563,15 +563,15 @@ def _calculate_renewable_cw_profiles(  # pylint: disable=too-many-locals, too-ma
                     )
                 )
             ).values
-            + (clean_water_pvt_pump_times > 0) * 0.001 * minigrid.water_pump.consumption
+            + (clean_water_pvt_pump_times > 0) * 0.001 * minigrid.water_pump.consumption  # type: ignore [operator]
         )
         total_waste_produced.update(
             {
                 waste_product: defaultdict(
                     float,
-                    (
+                    (  # type: ignore [index]
                         pd.DataFrame(  # type: ignore [arg-type,call-overload]
-                            (renewable_thermal_cw_produced > 0).values
+                            (renewable_thermal_cw_produced > 0).values  # type: ignore [attr-defined]
                         )
                         * amount_produced
                     )[0].to_dict(),
@@ -893,7 +893,7 @@ def _calculate_renewable_hw_profiles(  # pylint: disable=too-many-locals, too-ma
     # Compute the electric power consumed by the auxiliary heater.
     if auxiliary_heater is not None:
         # Determine the electric power consumed by the auxiliary heater.
-        auxiliary_heater_power_consumption: pd.DataFrame = pd.DataFrame(
+        auxiliary_heater_power_consumption: pd.DataFrame = pd.DataFrame(  # type: ignore [call-overload]
             0.001  # type: ignore[operator]
             * auxiliary_heater.input_resource_consumption[
                 ResourceType.ELECTRIC
@@ -992,7 +992,7 @@ def _calculate_renewable_hw_profiles(  # pylint: disable=too-many-locals, too-ma
     # Determine the fraction of the output which was met renewably.
     solar_thermal_hw_fraction: pd.DataFrame = (
         # The fraction of the supply that was met volumetrically.
-        volumetric_hw_dc_fraction
+        volumetric_hw_dc_fraction  # type: ignore [operator]
         # The fraction of the total demand temperature that was covered using
         # renewables.
         * hot_water_temperature_gain.values  # type: ignore  [union-attr]
@@ -1246,7 +1246,7 @@ def _update_battery_health(
 def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
     clean_water_pvt_size: int,
     conventional_cw_source_profiles: dict[WaterSource, pd.DataFrame] | None,
-    converters: Union[dict[str, Converter], list[Converter]],
+    converters: dict[str, Converter] | list[Converter],
     disable_tqdm: bool,
     electric_storage_size: float,
     grid_profile: pd.DataFrame | None,
@@ -1632,7 +1632,7 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
     renewables_energy: pd.DataFrame
     renewables_energy_by_source: dict[RenewableEnergySource, pd.DataFrame]
     renewables_energy_map: dict[
-        RenewableEnergySource, Union[pd.DataFrame, dict[str, pd.Series]]
+        RenewableEnergySource, pd.DataFrame | dict[str, pd.Series]
     ] = {
         RenewableEnergySource.PV: pv_power_produced,
         RenewableEnergySource.CLEAN_WATER_PVT: (
@@ -1998,7 +1998,7 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
         )
 
     # Determine the times for which the system experienced a blackout.
-    blackout_times = ((unmet_energy > 0) * 1).astype(float)
+    blackout_times = ((unmet_energy > 0) * 1).astype(float)  # type: ignore [operator]
 
     # Use backup diesel generator if present
     diesel_energy: pd.DataFrame
@@ -2044,7 +2044,7 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
         )
 
     # Find new blackout times, according to when there is unmet energy
-    blackout_times = ((unmet_energy > 0) * 1).astype(float)
+    blackout_times = ((unmet_energy > 0) * 1).astype(float)  # type: ignore [operator]
     # Ensure all unmet energy is calculated correctly, removing any negative values
     unmet_energy = ((unmet_energy > 0) * unmet_energy).abs()  # type: ignore
     # Ensure all unmet clean-water energy is considered.
@@ -2163,7 +2163,7 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
         thermal_desalination_plant_renewable_fraction.columns = pd.Index(
             [ColumnHeader.DESALINATION_PLANT_RENEWABLE_FRACTION.value]
         )
-        total_cw_used.columns = pd.Index([ColumnHeader.TOTAL_CW_CONSUMED.value])
+        total_cw_used.columns = pd.Index([ColumnHeader.TOTAL_CW_CONSUMED.value])  # type: ignore [attr-defined]
         total_cw_supplied.columns = pd.Index(  # type: ignore
             [ColumnHeader.TOTAL_CW_SUPPLIED.value]
         )
@@ -2209,7 +2209,7 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
         )
         clean_water_pvt_electric_power_per_kwh: pd.DataFrame = (
             clean_water_pvt_electric_power_per_unit  # type: ignore
-            / minigrid.pvt_panel.pv_unit
+            / minigrid.pvt_panel.pv_unit  # type: ignore [union-attr]
         )
 
         clean_water_pvt_electric_power_per_kwh.columns = pd.Index(
@@ -2322,7 +2322,7 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
         (
             clean_water_pvt_size
             * float(
-                solar_degradation(minigrid.pvt_panel.lifetime, location.max_years).iloc[
+                solar_degradation(minigrid.pvt_panel.lifetime, location.max_years).iloc[  # type: ignore [arg-type]
                     HOURS_PER_YEAR * (simulation.end_year - simulation.start_year), 0
                 ]
             )
@@ -2333,7 +2333,7 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
         (
             hot_water_pvt_size
             * float(
-                solar_degradation(minigrid.pvt_panel.lifetime, location.max_years).iloc[
+                solar_degradation(minigrid.pvt_panel.lifetime, location.max_years).iloc[  # type: ignore [arg-type]
                     HOURS_PER_YEAR * (simulation.end_year - simulation.start_year), 0
                 ]
             )
@@ -2347,7 +2347,7 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
         {
             pv_panel.name: (pv_sizes[pv_panel.name] if pv_sizes is not None else 0)
             * float(
-                solar_degradation(pv_panel.lifetime, location.max_years).iloc[
+                solar_degradation(pv_panel.lifetime, location.max_years).iloc[  # type: ignore [arg-type]
                     HOURS_PER_YEAR * (simulation.end_year - simulation.start_year), 0
                 ]
             )
