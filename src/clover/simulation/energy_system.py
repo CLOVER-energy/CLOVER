@@ -436,9 +436,9 @@ def _calculate_renewable_cw_profiles(  # pylint: disable=too-many-locals, too-ma
             thermal_desalination_plant_input_type: ResourceType = (
                 ResourceType.UNCLEAN_WATER
             )
-        if thermal_desalination_plant.htf_mode == HTFMode.FEEDWATER_HEATING:
+        elif thermal_desalination_plant.htf_mode == HTFMode.FEEDWATER_HEATING:
             thermal_desalination_plant_input_type = ResourceType.HOT_UNCLEAN_WATER
-        if thermal_desalination_plant.htf_mode == HTFMode.COLD_WATER_HEATING:
+        elif thermal_desalination_plant.htf_mode == HTFMode.COLD_WATER_HEATING:
             logger.error(
                 "%sCold-water heating thermal desalination plants are not supported.%s",
                 BColours.fail,
@@ -448,6 +448,16 @@ def _calculate_renewable_cw_profiles(  # pylint: disable=too-many-locals, too-ma
                 "converter inputs OR desalination scenario",
                 f"The htf mode '{HTFMode.COLD_WATER_HEATING.value}' is not currently "
                 "supported.",
+            )
+        else:
+            logger.error(
+                "HTF mode %s not implemented.",
+                thermal_desalination_plant.htf_mode.value,
+            )
+            raise InputFileError(
+                "desalination scenario",
+                f"HTF heating mode {thermal_desalination_plant.htf_mode.value} for "
+                f"plant {thermal_desalination_plant.name} not impleented.",
             )
 
         thermal_desalination_plant_input_flow_rate = (
@@ -902,8 +912,9 @@ def _calculate_renewable_hw_profiles(  # pylint: disable=too-many-locals, too-ma
         if isinstance(auxiliary_heater, DieselWaterHeater):
             # Compute the heat consumed by the auxiliary heater.
             # TODO: Write auxiliary-heater heat-consumption handling.
-            auxiliary_heater_heat_consumption: pd.DataFrame = (
-                pd.DataFrame(  # pylint: disable=unused-variable  #  pylint: disable=unused-variable  # pylint: disable=unused-variable
+            # fmt: off
+            auxiliary_heater_heat_consumption: pd.DataFrame = (  # pylint: disable=unused-variable
+                pd.DataFrame(
                     (hot_water_tank_volume_supplied > 0)  # type: ignore [arg-type, operator]
                     * hot_water_tank_volume_supplied  # type: ignore [operator]
                     * minigrid.hot_water_tank.heat_capacity
@@ -913,6 +924,7 @@ def _calculate_renewable_hw_profiles(  # pylint: disable=too-many-locals, too-ma
                     )
                 )
             )
+            # fmt: on
         else:
             auxiliary_heater_heat_consumption = pd.DataFrame(
                 [0] * (end_hour - start_hour)
@@ -2106,14 +2118,6 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
         )
         unmet_clean_water = unmet_clean_water * (unmet_clean_water > 0)  # type: ignore
 
-        # Convert the PV-T units to kWh.
-        if minigrid.pvt_panel is None:
-            raise InternalError("Minigrid has no PV-T panel present.")
-        clean_water_pvt_electric_power_per_kwh: pd.DataFrame = (
-            clean_water_pvt_electric_power_per_unit  # type: ignore
-            / minigrid.pvt_panel.pv_unit
-        )
-
         # Find the new clean-water blackout times, according to when there is unmet
         # demand
         clean_water_blackout_times = ((unmet_clean_water > 0) * 1).astype(float)
@@ -2203,6 +2207,11 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
         clean_water_pvt_collector_output_temperature.columns = pd.Index(
             [ColumnHeader.CW_PVT_OUTPUT_TEMPERATURE.value]
         )
+        clean_water_pvt_electric_power_per_kwh: pd.DataFrame = (
+            clean_water_pvt_electric_power_per_unit  # type: ignore
+            / minigrid.pvt_panel.pv_unit
+        )
+
         clean_water_pvt_electric_power_per_kwh.columns = pd.Index(
             [ColumnHeader.CW_PVT_ELECTRICITY_SUPPLIED_PER_KWP.value]
         )

@@ -285,7 +285,7 @@ def _volume_withdrawn_from_tank(
             tank_supply_on = hot_water_load > 0
             volume_supplied = num_tanks * minigrid.hot_water_tank.mass
 
-    return tank_supply_on, volume_supplied
+    return tank_supply_on, volume_supplied  # pylint: disable=used-before-assignment
 
 
 def calculate_pvt_output(  # pylint: disable=too-many-locals, too-many-statements

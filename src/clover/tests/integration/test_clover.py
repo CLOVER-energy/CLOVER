@@ -27,7 +27,7 @@ import json
 import shutil
 
 from contextlib import contextmanager
-from distutils.dir_util import copy_tree  # pylint: disable=deprecated-module
+from shutil import copy_tree
 from typing import Any, Generator, Union
 
 import pytest

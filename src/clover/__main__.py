@@ -490,7 +490,7 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
                 else ""
             )
         )
-    if operating_mode == OperatingMode.OPTIMISATION:
+    elif operating_mode == OperatingMode.OPTIMISATION:
         output_directory = optimisation_output_directory
         logger.info(
             "A CLOVER optimisation will be run for location '%s'", parsed_args.location
@@ -503,7 +503,7 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
                 else ""
             )
         )
-    if operating_mode == OperatingMode.PROFILE_GENERATION:
+    elif operating_mode == OperatingMode.PROFILE_GENERATION:
         output_directory = None
         logger.info("No CLI mode was specified, CLOVER will only generate profiles.")
         print(
@@ -514,6 +514,12 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
                 if parsed_args.debug
                 else ""
             )
+        )
+    else:
+        logger.error("Operating mode %s is not implemented.", operating_mode.value)
+        raise ProgrammerJudgementFault(
+            "clover.__main__",
+            f"Operating mode {operating_mode.value} is not implemented.",
         )
 
     # If the output folder already exists, then confirm from the user that they wish to
