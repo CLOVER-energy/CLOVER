@@ -194,7 +194,7 @@ GHG_INPUTS_FILE: str = os.path.join("impact", "ghg_inputs.yaml")
 
 # Global settings file:
 #   The relative path to the global-settings file.
-GLOBAL_SETTINGS_FILE: str = "global_settings.yaml"
+GLOBAL_SETTINGS_FILE: str = os.path.join(os.path.expanduser("~"), "global_settings.yaml")
 
 # Grid inputs file:
 #   The relative path to the grid-inputs file.
