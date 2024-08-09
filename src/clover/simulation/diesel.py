@@ -289,13 +289,13 @@ def _find_deficit_threshold(
 
     """
 
-    # Find the blackout percentage is mode using blackout criterion
+    # Find the blackout percentage if mode using blackout criterion
     if diesel_mode == DieselMode.BACKUP:
         return _find_deficit_threshold_blackout(
             unmet_energy, blackouts, backup_threshold
         )
 
-    # Find the blackout percentage is mode using unmet energy criterion
+    # Find the blackout percentage if mode using unmet energy criterion
     if diesel_mode == DieselMode.BACKUP_UNMET:
         return _find_deficit_threshold_unmet(
             unmet_energy, backup_threshold, total_electric_load

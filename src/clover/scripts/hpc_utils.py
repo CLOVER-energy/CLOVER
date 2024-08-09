@@ -250,7 +250,7 @@ class HpcOptimisation(
 
         """
 
-        total_load_input: Union[str, bool] = input_data.get("total_load", False)
+        total_load_input: bool | str = input_data.get("total_load", False)
 
         if not total_load_input:
             total_load: bool = False
