@@ -29,7 +29,7 @@ from typing import Any, DefaultDict
 import json
 import numpy as np  # pylint: disable=import-error
 import pandas as pd  # pylint: disable=import-error
-import scipy  # pylint: disable=import-error
+import scipy.interpolate as scipy_interpolate  # pylint: disable=import-error
 import yaml  # pylint: disable=import-error
 
 from tqdm import tqdm  # pylint: disable=import-error
@@ -1496,7 +1496,7 @@ def monthly_profile_to_daily_profile(monthly_profile: pd.DataFrame) -> pd.DataFr
 
     # Interpolate the value that falls in the middle of the month.
     daily_profile = {
-        hour: scipy.interpolate.interp(
+        hour: scipy_interpolate.interp(
             range(365), MONTH_MID_DAY, extended_year_profile.iloc[hour]
         )
         for hour in range(24)
