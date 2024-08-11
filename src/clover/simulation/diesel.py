@@ -61,6 +61,9 @@ class DieselGenerator:
     """
     Represents a diesel backup generator.
 
+    .. attribute:: capacity
+        The capacity of the diesel generator, in kW, which can be installed.
+
     .. attribute:: diesel_consumption
         The diesel consumption of the generator, measured in litres per kW produced.
 
@@ -73,6 +76,7 @@ class DieselGenerator:
 
     """
 
+    capacity: float
     diesel_consumption: float
     minimum_load: float
     name: str
@@ -182,6 +186,13 @@ class DieselWaterHeater(Converter):
         return self.input_resource_consumption[ResourceType.DIESEL]
 
 
+def _acceptable_hour_for_diesel(hour: float) -> bool:
+    """Determine whether diesel can run at an hour."""
+
+    hour_of_day = hour % 24
+    return 8 <= hour_of_day <= 20
+
+
 def _find_deficit_threshold_blackout(
     unmet_energy: pd.DataFrame, blackouts: pd.DataFrame, backup_threshold: float
 ) -> float | None:
@@ -237,24 +248,39 @@ def _find_deficit_threshold_unmet(
 
     """
 
-    # Find the blackout percentage
-    unmet_energy_percentage = float(np.sum(unmet_energy) / total_electric_load)  # type: ignore
+    # Find the unmet-energy fraction
+    unmet_energy_fraction = float(np.sum(unmet_energy) / total_electric_load)  # type: ignore
 
     # Find the difference in reliability
-    reliability_difference = unmet_energy_percentage - backup_threshold
+    reliability_difference = unmet_energy_fraction - backup_threshold
 
     if reliability_difference <= 0:
         return None
 
+    # Determine the hours for which it is acceptable to run the diesel generator.
+    unmet_energy["acceptable"] = [
+        _acceptable_hour_for_diesel(entry) for entry in unmet_energy.index
+    ]
+
     # Sort unmet energy by smallest first
-    sorted_unmet_energy = sorted(unmet_energy.values)
+    sorted_unmet_energy = (
+        unmet_energy[unmet_energy["acceptable"] == True].sort_values(by=0)[0].to_list()
+    )
+    unmet_energy.pop("acceptable")
 
     # Loop through hours attributing unmet energy to diesel generator (largest first)
     attributed_unmet_energy: float = 0
-    energy_threshold: float
+    energy_threshold: float = 0
+    energy_to_attribute: float = float(
+        total_electric_load.iloc[0] * reliability_difference
+    )
 
-    while attributed_unmet_energy < total_electric_load * reliability_difference:
+    while attributed_unmet_energy < energy_to_attribute:
         energy_threshold = sorted_unmet_energy.pop()
+        # If there aren't enough acceptable hours to run the diesel generator to meet
+        # demand, then stop.
+        if energy_threshold < 0:
+            break
         attributed_unmet_energy += energy_threshold
 
     return energy_threshold
@@ -349,9 +375,9 @@ def get_diesel_energy_and_times(
         )
 
     diesel_energy = pd.DataFrame(
-        unmet_energy.values * (unmet_energy >= energy_threshold).values  # type: ignore [operator]
+        unmet_energy.values * (unmet_energy >= energy_threshold).values * (acceptable_hours := pd.DataFrame([_acceptable_hour_for_diesel(entry) for entry in unmet_energy.index]))  # type: ignore [operator]
     )
-    diesel_times = (unmet_energy >= energy_threshold) * 1  # type: ignore [operator]
+    diesel_times = (unmet_energy >= energy_threshold) * 1 * acceptable_hours  # type: ignore [operator]
     diesel_times = diesel_times.astype(float)
 
     return diesel_energy, diesel_times

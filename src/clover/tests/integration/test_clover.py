@@ -238,9 +238,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
         super().setUp()
         self.args.extend(["--simulation", "--analyse", "--skip-plots"])
 
-    def _update_scenario_file(
-        self, key: str | list[str], value: bool | str
-    ) -> None:
+    def _update_scenario_file(self, key: str | list[str], value: bool | str) -> None:
         """
         Updates the scenario file within the temporary location.
 

@@ -89,6 +89,10 @@ BATTERY: str = "battery"
 #   The relative path to the battery inputs file.
 BATTERY_INPUTS_FILE: str = os.path.join("simulation", "battery_inputs.yaml")
 
+# Capacity:
+#   Used to parse diesel-generator capacity information.
+CAPACITY: str = "capacity"
+
 # Conventional water-source-availability directory:
 #   The directory containing availability profiles for conventional water sources.
 CONVENTIONAL_WATER_SOURCE_AVAILABILITY_DIRECTORY: str = os.path.join(
@@ -194,7 +198,9 @@ GHG_INPUTS_FILE: str = os.path.join("impact", "ghg_inputs.yaml")
 
 # Global settings file:
 #   The relative path to the global-settings file.
-GLOBAL_SETTINGS_FILE: str = os.path.join(os.path.expanduser("~"), "global_settings.yaml")
+GLOBAL_SETTINGS_FILE: str = os.path.join(
+    os.path.expanduser("~"), "global_settings.yaml"
+)
 
 # Grid inputs file:
 #   The relative path to the grid-inputs file.
@@ -632,7 +638,12 @@ def _parse_diesel_inputs(  # pylint: disable=too-many-locals,too-many-statements
     # Instantiate DieselGenerators for every entry in the input file.
     try:
         diesel_generators: list[DieselGenerator] = [
-            DieselGenerator(entry[DIESEL_CONSUMPTION], entry[MINIMUM_LOAD], entry[NAME])
+            DieselGenerator(
+                entry.get(CAPACITY, 1),
+                entry[DIESEL_CONSUMPTION],
+                entry[MINIMUM_LOAD],
+                entry[NAME],
+            )
             for entry in diesel_inputs[DIESEL_GENERATORS]
         ]
     except KeyError as e:

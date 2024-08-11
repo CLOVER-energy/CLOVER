@@ -195,7 +195,7 @@ def _get_profile_from_rn(
         raise RenewablesNinjaError() from None
 
     data_frame: pd.DataFrame = pd.DataFrame(
-        pd.read_json(io.StringIO(json.dumps(parsed_response["data"]), orient="index"))
+        pd.read_json(io.StringIO(json.dumps(parsed_response["data"])), orient="index")
     )
     data_frame = data_frame.reset_index(drop=True)
 

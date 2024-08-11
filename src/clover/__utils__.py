@@ -22,6 +22,7 @@ import collections
 import dataclasses
 import enum
 import logging
+import math
 import os
 
 from typing import Any, DefaultDict
@@ -29,7 +30,6 @@ from typing import Any, DefaultDict
 import json
 import numpy as np  # pylint: disable=import-error
 import pandas as pd  # pylint: disable=import-error
-import scipy.interpolate as scipy_interpolate  # pylint: disable=import-error
 import yaml  # pylint: disable=import-error
 
 from tqdm import tqdm  # pylint: disable=import-error
@@ -105,7 +105,7 @@ CONVENTIONAL_SOURCES: str = "conventional_sources"
 
 # Cut off time:
 #   The time up and to which information about the load of each device will be returned.
-CUT_OFF_TIME: int = 480  # [hours]
+CUT_OFF_TIME: int = 8760  # [hours]
 
 # Default end year:
 #   The default end year to use in CLOVER for fetching renewables.ninja data.
@@ -663,19 +663,21 @@ def daily_sum_to_monthly_sum(daily_profile: pd.DataFrame) -> pd.DataFrame:
 
     """
 
-    years = int(daily_profile.shape[0] / 365)
+    # Determine the end and start days for each month
+    years = math.ceil(daily_profile.shape[0] / 365)
     month_start = pd.DataFrame(MONTH_START_DAY)
-    month_days = pd.DataFrame([])
-    for year in range(0, years):
-        month_days = month_days.append(month_start + (year * 365))  # type: ignore [operator]
-    month_days = month_days.append(pd.DataFrame([365 * years]))  # type: ignore [operator]
-    monthly_sum = pd.DataFrame([])
+    month_days = pd.DataFrame(MONTH_START_DAY)
+    for year in range(0, years - 1):
+        month_days = pd.concat([month_days, month_start + year * 365])  # type: ignore [operator]
+
+    month_days = pd.concat([month_days, pd.DataFrame([365 * years])])
+
+    monthly_sum = []
     for month in range(0, month_days.shape[0] - 1):
         start_day = month_days.iloc[month, 0]
         end_day = month_days.iloc[month + 1, 0]
-        monthly_sum = monthly_sum.append(
-            pd.DataFrame([np.sum(daily_profile.iloc[start_day:end_day, 0])])  # type: ignore
-        )
+        monthly_sum.append(float(np.sum(daily_profile.iloc[start_day:end_day])))
+
     return monthly_sum
 
 
@@ -1496,9 +1498,7 @@ def monthly_profile_to_daily_profile(monthly_profile: pd.DataFrame) -> pd.DataFr
 
     # Interpolate the value that falls in the middle of the month.
     daily_profile = {
-        hour: scipy_interpolate.interp(
-            range(365), MONTH_MID_DAY, extended_year_profile.iloc[hour]
-        )
+        hour: np.interp(range(365), MONTH_MID_DAY, extended_year_profile.iloc[hour])
         for hour in range(24)
     }
 

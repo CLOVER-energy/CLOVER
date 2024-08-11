@@ -29,8 +29,10 @@ from tqdm import tqdm  # pylint: disable=import-error
 from .__utils__ import (
     ColumnHeader,
     CUT_OFF_TIME,
+    daily_sum_to_monthly_sum,
     DemandType,
     HOURS_PER_YEAR,
+    hourly_profile_to_daily_sum,
     KeyResults,
     ResourceType,
 )
@@ -99,6 +101,32 @@ STYLE_SHEET: str = "tableau-colorblind10"
 #   seaborn-white
 #   seaborn-whitegrid
 #   tableau-colorblind10
+
+
+def _hatch_from_index(index: int) -> str | None:
+    """
+    Return the hatching from the index.
+
+    Inputs:
+        - index:
+            The index in the plotting.
+
+    Outputs:
+        The hatching.
+
+    """
+
+    if index <= (palette_length := len(sns.color_palette())):
+        return None
+    if index <= 2 * palette_length:
+        return "//"
+    if index <= 3 * palette_length:
+        return "\\\\"
+    if index <= 4 * palette_length:
+        return "-"
+    if index <= 5 * palette_length:
+        return "|"
+    return "+"
 
 
 def get_key_results(
@@ -346,7 +374,7 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
     plt.style.use(STYLE_SHEET)
     # set up the CLOVER plotting structure
     sns.set_context("notebook")
-    sns.set_style("whitegrid")
+    sns.set_style("ticks")
 
     # Setup the colour palette
     colorblind_palette = sns.color_palette(
@@ -364,6 +392,23 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
         ]
     )
     sns.set_palette(colorblind_palette)
+
+    sdg_palette = sns.color_palette(
+        list(
+            reversed(
+                [
+                    "#A21A43",
+                    "#E04606",
+                    "#FBC219",
+                    "#2CBCE0",
+                    "#2297D5",
+                    "#0D699F",
+                    "#19496A",
+                ]
+            )
+        )
+    )
+    sns.set_palette(sdg_palette)
 
     # Setup blended colour maps
     orange_blended = sns.blend_palette(["#FFFFFF", "#E04606"], as_cmap=True)
@@ -389,7 +434,7 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
     hw_pvt: bool = ColumnHeader.HW_PVT_ELECTRICITY_SUPPLIED.value in simulation_output
 
     with tqdm(
-        total=(10 + (2 if grid_profile is not None else 0))
+        total=(16 + (2 if grid_profile is not None else 0))
         + (17 if initial_cw_hourly_loads is not None else 0)
         + (4 if cw_pvt else 0)
         + (15 if initial_hw_hourly_loads is not None else 0),
@@ -494,13 +539,26 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
 
         # Plot the initial electric load of each device.
         fig, ax = plt.subplots()
-        cumulative_load = 0
-        for device, load in sorted(initial_electric_hourly_loads.items()):
-            ax.bar(range(len(load)), load[0], label=device, bottom=cumulative_load)
+        cumulative_load = [0] * 24
+        for index, device_and_load in enumerate(
+            sorted(
+                initial_electric_hourly_loads.items(),
+                key=lambda entry: np.sum(entry[1][0][:24]),
+                reverse=True,
+            )
+        ):
+            device, load = device_and_load
+            ax.bar(
+                x=range(24),
+                height=load[0][:24],
+                label=device.replace("_", " ").capitalize(),
+                bottom=cumulative_load[:24],
+                hatch=_hatch_from_index(index),
+            )
             if isinstance(cumulative_load, int) and cumulative_load == 0:
-                cumulative_load = load[0]
+                cumulative_load = load[0][:24]
                 continue
-            cumulative_load += load[0]
+            cumulative_load += load[0][:24]
 
         ax.set_xlabel("Hour of simulation")
         ax.set_ylabel("Device load / W")
@@ -514,10 +572,62 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
         plt.close(fig)
         pbar.update(1)
 
+        # Plot the monthly load of each device.
+        initial_electric_monthly_sums = {
+            device: daily_sum_to_monthly_sum(hourly_profile_to_daily_sum(load))
+            for device, load in initial_electric_hourly_loads.items()
+        }
+        fig, ax = plt.subplots(figsize=(48 / 5, 32 / 5))
+        cumulative_load = 0
+        for index, device_and_load in enumerate(
+            sorted(
+                initial_electric_monthly_sums.items(),
+                key=lambda entry: np.sum(entry[1]),
+                reverse=True,
+            )
+        ):
+            device, monthly_load = device_and_load
+            if sum(monthly_load) == 0:
+                continue
+            ax.bar(
+                x=range(len(monthly_load)),
+                height=monthly_load,
+                label=device.replace("_", " ").capitalize(),
+                bottom=cumulative_load,
+                linewidth=0,
+                hatch=_hatch_from_index(index),
+            )
+            if isinstance(cumulative_load, int) and cumulative_load == 0:
+                cumulative_load = monthly_load.copy()
+                continue
+            cumulative_load = [
+                cumulative_load[index] + entry
+                for index, entry in enumerate(monthly_load)
+            ]
+
+        ax.set_xlabel("Month of year")
+        ax.set_ylabel("Device load / W")
+        # ax.set_title("Electric load of each device")
+        ax.legend()
+        plt.savefig(
+            os.path.join(figures_directory, "electric_device_loads_monthly.png"),
+            bbox_inches="tight",
+            transparent=True,
+        )
+        plt.close(fig)
+        pbar.update(1)
+
         # Plot the average electric load of each device for the first year.
         cumulative_load = 0
         fig, ax = plt.subplots()
-        for device, load in sorted(initial_electric_hourly_loads.items()):
+        for index, device_and_load in enumerate(
+            sorted(
+                initial_electric_hourly_loads.items(),
+                key=lambda entry: np.sum(entry[1][0]),
+                reverse=True,
+            )
+        ):
+            device, load = device_and_load
             average_load = np.nanmean(
                 np.asarray(load[0:CUT_OFF_TIME]).reshape(
                     (CUT_OFF_TIME // 24, 24),
@@ -526,7 +636,13 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
             )
 
             if np.sum(average_load) > 0:
-                ax.bar(range(24), average_load, label=device, bottom=cumulative_load)
+                ax.bar(
+                    range(24),
+                    average_load,
+                    label=device.replace("_", " ").capitalize(),
+                    bottom=cumulative_load,
+                    hatch=_hatch_from_index(index),
+                )
             if isinstance(cumulative_load, int) and cumulative_load == 0:
                 cumulative_load = average_load.copy()
                 continue
@@ -650,18 +766,22 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
 
         # Plot as a bar plot
         fig, ax = plt.subplots()
-        ax.bar(range(len(domestic_demand)), domestic_demand, label="Domestic")
+        ax.bar(
+            range(len(domestic_demand)), domestic_demand, label="Domestic", color="C0"
+        )
         ax.bar(
             range(len(commercial_demand)),
             commercial_demand,
             label="Commercial",
             bottom=domestic_demand,
+            color="C2",
         )
         ax.bar(
             range(len(public_demand)),
             public_demand,
             label="Public",
             bottom=domestic_demand + commercial_demand,
+            color="C4",
         )
         ax.set_xlabel("Hour of simulation")
         ax.set_ylabel("Electric power demand / kW")
@@ -713,16 +833,19 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
             range(365),
             pd.DataFrame(domestic_demand).rolling(5).mean(),
             label="Domestic",
+            color="C0",
         )
         axis[0].plot(
             range(365),
             pd.DataFrame(commercial_demand).rolling(5).mean(),
             label="Commercial",
+            color="C2",
         )
         axis[0].plot(
             range(365),
             pd.DataFrame(public_demand).rolling(5).mean(),
             label="Public",
+            color="C4",
         )
         axis[0].plot(range(365), domestic_demand, alpha=0.5, color="C0")
         axis[0].plot(range(365), commercial_demand, alpha=0.5, color="C1")
@@ -1388,8 +1511,17 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
             # Plot the initial clean-water load of each device.
             fig, ax = plt.subplots()
             cumulative_load = 0
-            for device, load in sorted(initial_cw_hourly_loads.items()):
-                ax.bar(range(len(load)), load[0], label=device, bottom=cumulative_load)
+            for device, load in sorted(
+                initial_cw_hourly_loads.items(),
+                key=lambda entry: np.sum(entry[1]),
+                reverse=True,
+            ):
+                ax.bar(
+                    range(len(load)),
+                    load[0],
+                    label=device.replace("_", " ").capitalize(),
+                    bottom=cumulative_load,
+                )
 
                 if isinstance(cumulative_load, int) and cumulative_load == 0:
                     cumulative_load = load[0]
@@ -1411,14 +1543,23 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
             # Plot the average clean-water load of each device for the first year.
             fig, ax = plt.subplots()
             cumulative_load = 0
-            for device, load in sorted(initial_cw_hourly_loads.items()):
+            for device, load in sorted(
+                initial_cw_hourly_loads.items(),
+                key=lambda entry: np.sum(entry[1]),
+                reverse=True,
+            ):
                 average_load = np.nanmean(
                     np.asarray(load[0:CUT_OFF_TIME]).reshape(
                         (CUT_OFF_TIME // 24, 24),
                     ),
                     axis=0,
                 )
-                ax.bar(range(24), average_load, label=device, bottom=cumulative_load)
+                ax.bar(
+                    range(24),
+                    average_load,
+                    label=device.replace("_", " ").capitalize(),
+                    bottom=cumulative_load,
+                )
 
                 if isinstance(cumulative_load, int) and cumulative_load == 0:
                     cumulative_load = average_load.copy()
@@ -1513,19 +1654,19 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
                 range(365),
                 pd.DataFrame(domestic_demand).rolling(5).mean(),
                 label="Domestic",
-                color="blue",
+                color="C0",
             )
             axis[0].plot(
                 range(365),
                 pd.DataFrame(commercial_demand).rolling(5).mean(),
                 label="Commercial",
-                color="orange",
+                color="C2",
             )
             axis[0].plot(
                 range(365),
                 pd.DataFrame(public_demand).rolling(5).mean(),
                 label="Public",
-                color="green",
+                color="C4",
             )
             axis[0].plot(range(365), domestic_demand, alpha=0.5, color="blue")
             axis[0].plot(range(365), commercial_demand, alpha=0.5, color="orange")
@@ -2889,8 +3030,17 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
             # Plot the initial hot-water load of each device.
             fig, ax = plt.subplots()
             cumulative_load = 0
-            for device, load in sorted(initial_hw_hourly_loads.items()):
-                ax.bar(range(len(load)), load[0], label=device, bottom=cumulative_load)
+            for device, load in sorted(
+                initial_hw_hourly_loads.items(),
+                key=lambda entry: np.sum(entry[1]),
+                reverse=True,
+            ):
+                ax.bar(
+                    range(len(load)),
+                    load[0],
+                    label=device.replace("_", " ").capitalize(),
+                    bottom=cumulative_load,
+                )
 
                 if isinstance(cumulative_load, int) and cumulative_load == 0:
                     cumulative_load = load[0]
@@ -2912,14 +3062,23 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
             # Plot the average hot-water load of each device for the cut off period.
             fig, ax = plt.subplots()
             cumulative_load = 0
-            for device, load in sorted(initial_hw_hourly_loads.items()):
+            for device, load in sorted(
+                initial_hw_hourly_loads.items(),
+                key=lambda entry: np.sum(entry[1]),
+                reverse=True,
+            ):
                 average_load = np.nanmean(
                     np.asarray(load[0:CUT_OFF_TIME]).reshape(
                         (CUT_OFF_TIME // 24, 24),
                     ),
                     axis=0,
                 )
-                ax.bar(range(24), average_load, label=device, bottom=cumulative_load)
+                ax.bar(
+                    range(24),
+                    average_load,
+                    label=device.replace("_", " ").capitalize(),
+                    bottom=cumulative_load,
+                )
 
                 if isinstance(cumulative_load, int) and cumulative_load == 0:
                     cumulative_load = average_load.copy()
@@ -3013,19 +3172,19 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
                 range(365),
                 pd.DataFrame(domestic_demand).rolling(5).mean(),
                 label="Domestic",
-                color="blue",
+                color="C0",
             )
             axis[0].plot(
                 range(365),
                 pd.DataFrame(commercial_demand).rolling(5).mean(),
                 label="Commercial",
-                color="orange",
+                color="C2",
             )
             axis[0].plot(
                 range(365),
                 pd.DataFrame(public_demand).rolling(5).mean(),
                 label="Public",
-                color="green",
+                color="C4",
             )
             axis[0].plot(range(365), domestic_demand, alpha=0.5, color="blue")
             axis[0].plot(range(365), commercial_demand, alpha=0.5, color="orange")
