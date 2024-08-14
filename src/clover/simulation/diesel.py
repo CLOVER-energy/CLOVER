@@ -189,6 +189,8 @@ class DieselWaterHeater(Converter):
 def _acceptable_hour_for_diesel(hour: float) -> bool:
     """Determine whether diesel can run at an hour."""
 
+    return True
+
     hour_of_day = hour % 24
     return 8 <= hour_of_day <= 20
 
