@@ -141,7 +141,7 @@ class Minigrid:
     .. attribute:: pvt_panels
         The PV-T panel(s) being considered, if applicable.
 
-    .. attribute:: solar_thermal_panel
+    .. attribute:: solar_thermal_panels
         The solar-thermal panel being considered, if applicable.
 
     .. attribute:: water_pump
@@ -167,7 +167,7 @@ class Minigrid:
     inverter: Inverter
     pv_panels: list[PVPanel]
     pvt_panels: list[HybridPVTPanel]
-    st_panels: list[SolarThermalPanel]
+    solar_thermal_panels: list[SolarThermalPanel]
     water_pump: Transmitter | None
 
     @classmethod
@@ -426,6 +426,33 @@ class Minigrid:
             )
 
         return self.pvt_panels[0]
+
+    @property
+    def solar_thermal_panel(self) -> SolarThermalPanel | None:
+        """
+        Returns a ST panel if there is only one panel modelled, otherwise errors.
+
+        Outputs:
+            - solar_thermal_panel:
+                The :class:`SolarThermalPanel` being modelled, if only one is present.
+                If ST panels are not present in the system, `None` is returned.
+
+        Raises:
+            - ProgrammerJudgementFault
+                Raised if this is called when multiple panels are present.
+
+        """
+
+        if self.solar_thermal_panels is None or len(self.solar_thermal_panels) == 0:
+            return None
+
+        if len(self.solar_thermal_panels) > 1:
+            raise ProgrammerJudgementFault(
+                "Minigrid.pvt_panel",
+                "Cannot use `pvt_panel` when multiple panels present.",
+            )
+
+        return self.solar_thermal_panels[0]
 
 
 def check_scenario(
