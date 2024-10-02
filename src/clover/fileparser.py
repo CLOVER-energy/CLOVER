@@ -546,7 +546,7 @@ def _parse_conversion_inputs(
                     )
                     try:
                         converter_emissions[converter] = [
-                            entry[EMISSIONS]
+                            entry.get(EMISSIONS, defaultdict(float))
                             for entry in conversion_inputs[CONVERTERS]
                             if entry[NAME] == converter.name
                         ][0]
@@ -2343,7 +2343,7 @@ def _parse_transmission_inputs(
             )
             try:
                 transmission_emissions[transmitter.name] = [
-                    entry[EMISSIONS]
+                    entry.get(EMISSIONS, defaultdict(float))
                     for entry in transmission_inputs[TRANSMITTERS]
                     if entry[NAME] == transmitter.name
                 ][0]
