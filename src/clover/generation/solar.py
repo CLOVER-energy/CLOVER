@@ -2011,6 +2011,17 @@ class HybridPVTPanel(SolarPanel, panel_type=SolarPanelType.PV_T):
             else 0
         )
 
+    @property
+    def pv_unit(self) -> float:
+        """
+        Placeholder to return the PV unit of the Hybrid PV-T panel.
+
+        """
+
+        # return self.area * self.electric_performance_curve.eta_0 * REFERENCE_SOLAR_IRRADIANCE * self.pv_module_characteristics.nominal_power
+
+        return self.pv_module_characteristics.nominal_power
+
     def __repr__(self) -> str:
         """
         Return a nice-looking representation of the panel.
@@ -2401,6 +2412,15 @@ class SolarThermalPanel(SolarPanel, panel_type=SolarPanelType.SOLAR_THERMAL):
             if self._nominal_mass_flow_rate is not None
             else None
         )
+
+    @property
+    def pv_unit(self) -> float:
+        """
+        Placeholder to return the PV unit of the Hybrid PV-T panel.
+
+        """
+
+        return 0
 
     def __repr__(self) -> str:
         """

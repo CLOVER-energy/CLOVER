@@ -1005,7 +1005,7 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
             location.max_years,
             pv_panel=pv_panel,
         )
-        for pv_panel in (minigrid.pv_panels + minigrid.pvt_panels)  # type: ignore
+        for pv_panel in minigrid.solar_panels  # type: ignore
     }
     logger.info("Total solar output successfully computed and saved.")
 
@@ -1150,7 +1150,12 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
                     parsed_args.hot_water_solar_thermal_system_size
                     if parsed_args.hot_water_solar_thermal_system_size is not None
                     else 0,
-                    total_solar_data[solar.SolarDataType.TOTAL_IRRADIANCE.value],
+                    {
+                        panel.name: total_solar_data[panel.name][
+                            solar.SolarDataType.TOTAL_IRRADIANCE.value
+                        ]
+                        for panel in minigrid.solar_panels
+                    },
                     kerosene_usage,
                     location,
                     logger,
@@ -1162,7 +1167,7 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
                             solar.SolarDataType.ELECTRICITY.value
                         ]
                         * panel.pv_unit
-                        for panel in (minigrid.pv_panels + minigrid.pvt_panels)  # type: ignore
+                        for panel in minigrid.solar_panels  # type: ignore
                     },
                     (
                         pv_system_sizes

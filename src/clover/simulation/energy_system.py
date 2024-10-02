@@ -357,6 +357,10 @@ def _calculate_renewable_cw_profiles(  # pylint: disable=too-many-locals, too-ma
 
     # TODO: Include ST work here.
 
+    import pdb
+
+    pdb.set_trace()
+
     # Raise an error if no water pump was defined.
     if minigrid.water_pump is None:
         raise InputFileError(
@@ -1495,6 +1499,7 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
             "run-simulation function",
             "Misuse of `converters` parameter when calling `run_simulation`.",
         )
+
     logger.debug(
         "Available converters: %s",
         ", ".join([str(entry) for entry in available_converters]),
@@ -1519,6 +1524,10 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
     feedwater_sources: list[Converter]
     renewable_thermal_cw_produced: pd.DataFrame
     thermal_desalination_electric_power_consumed: pd.DataFrame
+
+    import pdb
+
+    pdb.set_trace()
 
     (
         buffer_tank_temperature,

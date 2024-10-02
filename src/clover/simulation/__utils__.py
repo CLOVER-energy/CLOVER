@@ -454,6 +454,18 @@ class Minigrid:
 
         return self.solar_thermal_panels[0]
 
+    @property
+    def solar_panels(self) -> list[PVPanel | HybridPVTPanel | SolarThermalPanel]:
+        """
+        Returns a `list` of all panels associated with the :class:`Minigrid` instance.
+        
+        Returns:
+            The solar panels associated with the minigrid.
+
+        """
+
+        return [self.pv_panel, self.pvt_panel, self.solar_thermal_panel]
+
 
 def check_scenario(
     logger: Logger,
