@@ -19,8 +19,6 @@ corresponding to the sugetsed analysis within the user guide.
 
 import os
 
-from typing import Dict, Optional
-
 import numpy as np  # pylint: disable=import-error
 import pandas as pd  # pylint: disable=import-error
 import seaborn as sns  # pylint: disable=import-error
@@ -31,8 +29,10 @@ from tqdm import tqdm  # pylint: disable=import-error
 from .__utils__ import (
     ColumnHeader,
     CUT_OFF_TIME,
+    daily_sum_to_monthly_sum,
     DemandType,
     HOURS_PER_YEAR,
+    hourly_profile_to_daily_sum,
     KeyResults,
     ResourceType,
 )
@@ -49,7 +49,7 @@ COLOUR_MAP: str = "Blues"
 
 # Hours until month:
 #   Mapping between month number and the hours until the start of the month.
-HOURS_UNTIL: Dict[int, int] = {
+HOURS_UNTIL: dict[int, int] = {
     1: 0,
     2: 744,
     3: 1416,
@@ -103,11 +103,37 @@ STYLE_SHEET: str = "tableau-colorblind10"
 #   tableau-colorblind10
 
 
+def _hatch_from_index(index: int) -> str | None:
+    """
+    Return the hatching from the index.
+
+    Inputs:
+        - index:
+            The index in the plotting.
+
+    Outputs:
+        The hatching.
+
+    """
+
+    if index <= (palette_length := len(sns.color_palette())):
+        return None
+    if index <= 2 * palette_length:
+        return "//"
+    if index <= 3 * palette_length:
+        return "\\\\"
+    if index <= 4 * palette_length:
+        return "-"
+    if index <= 5 * palette_length:
+        return "|"
+    return "+"
+
+
 def get_key_results(
     grid_input_profile: pd.DataFrame,
     num_years: int,
     simulation_results: pd.DataFrame,
-    total_solar_output: pd.DataFrame,
+    total_solar_output: dict[str, pd.DataFrame],
 ) -> KeyResults:
     """
     Computes the key results of the simulation.
@@ -120,7 +146,8 @@ def get_key_results(
         - simulation_results:
             The results of the simulation.
         - total_solar_output:
-            The total solar power produced by the PV installation.
+            The total solar power produced by the PV installation for each of the solar
+            PV panels installed.
 
     Outputs:
         - key_results:
@@ -132,11 +159,18 @@ def get_key_results(
     key_results = KeyResults()
 
     # Compute the solar-generation results.
-    total_solar_generation: float = np.round(np.sum(total_solar_output))
-    key_results.cumulative_pv_generation = float(total_solar_generation)
-    key_results.average_renewable_generation = float(
-        round(total_solar_generation / (20 * 365))
-    )
+    total_solar_generation: dict[str, float] = {
+        panel_name: np.round(np.sum(solar_output))
+        for panel_name, solar_output in total_solar_output.items()
+    }
+    key_results.cumulative_pv_generation: dict[str, float] = {
+        panel_name: float(solar_generation)
+        for panel_name, solar_generation in total_solar_generation.items()
+    }
+    key_results.average_pv_generation: dict[str, float] = {
+        panel_name: float(round(solar_generation / (20 * 365)))
+        for panel_name, solar_generation in total_solar_generation.items()
+    }
 
     # Compute the grid results.
     if grid_input_profile is not None:
@@ -304,18 +338,16 @@ def get_key_results(
 
 def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
     grid_input_profile: pd.DataFrame,
-    grid_profile: Optional[pd.DataFrame],
-    initial_cw_hourly_loads: Optional[
-        Dict[str, pd.DataFrame]
-    ],  # pylint: disable=unused-argument
-    initial_electric_hourly_loads: Dict[str, pd.DataFrame],
-    initial_hw_hourly_loads: Dict[str, pd.DataFrame],  # pylint: disable=unused-argument
+    grid_profile: pd.DataFrame | None,
+    initial_cw_hourly_loads: dict[str, pd.DataFrame] | None,
+    initial_electric_hourly_loads: dict[str, pd.DataFrame],
+    initial_hw_hourly_loads: dict[str, pd.DataFrame],  # pylint: disable=unused-argument
     num_years: int,
     output_directory: str,
     simulation_name: str,
     simulation_number: int,
     simulation_output: pd.DataFrame,
-    total_loads: Dict[ResourceType, pd.DataFrame],
+    total_loads: dict[ResourceType, pd.DataFrame],
     total_solar_output: pd.DataFrame,
 ) -> None:
     """
@@ -354,7 +386,7 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
 
     """
 
-    # Set plotting parameters.
+    # set plotting parameters.
     plt.rcParams["axes.labelsize"] = "11"
     # plt.rcParams["figure.figsize"] = (6.8, 5.8)
     plt.rcParams["font.family"] = "sans-serif"
@@ -363,6 +395,49 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
     plt.rcParams["xtick.labelsize"] = "11"
     plt.rcParams["ytick.labelsize"] = "11"
     plt.style.use(STYLE_SHEET)
+    # set up the CLOVER plotting structure
+    sns.set_context("notebook")
+    sns.set_style("ticks")
+
+    # Setup the colour palette
+    colorblind_palette = sns.color_palette(
+        [
+            "#E04606",  # Orange
+            "#F09F52",  # Pale orange
+            "#52C0AD",  # Pale green
+            "#006264",  # Green
+            "#D8247C",  # Pink
+            "#EDEDED",  # Pale pink
+            "#E7DFBE",  # Pale yellow
+            "#FBBB2C",  # Yellow
+            "#0A77AA",  # Medium blue
+            "#0EA755",  # CLOVER green
+        ]
+    )
+    sns.set_palette(colorblind_palette)
+
+    sdg_palette = sns.color_palette(
+        list(
+            reversed(
+                [
+                    "#A21A43",
+                    "#E04606",
+                    "#FBC219",
+                    "#2CBCE0",
+                    "#2297D5",
+                    "#0D699F",
+                    "#19496A",
+                ]
+            )
+        )
+    )
+    sns.set_palette(sdg_palette)
+
+    # Setup blended colour maps
+    orange_blended = sns.blend_palette(["#FFFFFF", "#E04606"], as_cmap=True)
+    light_orange_blended = sns.blend_palette(["#FFFFFF", "#F09F52"], as_cmap=True)
+    light_green_blended = sns.blend_palette(["#FFFFFF", "#52C0AD"], as_cmap=True)
+    green_blended = sns.blend_palette(["#FFFFFF", "#006264"], as_cmap=True)
 
     # Create an output directory for the various plots to be saved in.
     figures_directory = os.path.join(
@@ -382,8 +457,7 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
     hw_pvt: bool = ColumnHeader.HW_PVT_ELECTRICITY_SUPPLIED.value in simulation_output
 
     with tqdm(
-        total=15
-        + (1 if grid_profile is not None else 0)
+        total=(16 + (2 if grid_profile is not None else 0))
         + (17 if initial_cw_hourly_loads is not None else 0)
         + (4 if cw_pvt else 0)
         + (15 if initial_hw_hourly_loads is not None else 0),
@@ -399,7 +473,7 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
             reshaped_data,
             vmin=0,
             vmax=1,
-            cmap=COLOUR_MAP,
+            cmap=green_blended,
             cbar_kws={"label": "Power output / kW"},
         )
         heatmap.set(
@@ -423,7 +497,7 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
 
         # Plot the yearly power generated by the solar system.
         solar_daily_sums = pd.DataFrame(np.sum(reshaped_data, axis=1))
-        plt.plot(range(365), solar_daily_sums[0])
+        plt.plot(range(365), solar_daily_sums[0], color="C3")
         plt.xticks(range(0, 365, 30))
         plt.yticks(range(0, 9, 2))
         plt.xlabel("Day of year")
@@ -443,7 +517,7 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
                 grid_profile.iloc[0:HOURS_PER_YEAR].values, (365, 24)
             )
             heatmap = sns.heatmap(
-                reshaped_data, vmin=0, vmax=1, cmap="Greys_r", cbar=False
+                reshaped_data, vmin=0, vmax=1, cmap="Oranges", cbar=False
             )
             heatmap.set(
                 xticks=range(0, 24, 2),
@@ -463,36 +537,51 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
             plt.close()
             pbar.update(1)
 
-        # Plot the input vs. randomised grid avialability profiles.
-        plt.plot(range(24), grid_input_profile, color="k", label="Input")
-        plt.plot(
-            range(24), np.nanmean(reshaped_data, axis=0), color="r", label="Output"
-        )
-        plt.legend()
-        plt.xticks(range(0, 24, 2))
-        plt.yticks(np.arange(0, 1.1, 0.2))
-        plt.xlabel("Hour of day")
-        plt.ylabel("Probability")
-        # plt.title("Probability of grid electricity being available")
-        plt.savefig(
-            os.path.join(
-                figures_directory, "grid_availability_randomisation_comparison.png"
-            ),
-            bbox_inches="tight",
-            transparent=True,
-        )
-        plt.close()
-        pbar.update(1)
+            # Plot the input vs. randomised grid avialability profiles.
+            plt.plot(range(24), grid_input_profile, color="k", label="Input")
+            plt.plot(
+                range(24), np.mean(reshaped_data, axis=0), color="C0", label="Output"
+            )
+            plt.legend()
+            plt.xticks(range(0, 24, 2))
+            plt.yticks(np.arange(0, 1.1, 0.2))
+            plt.xlabel("Hour of day")
+            plt.ylabel("Probability")
+            plt.title("Probability of grid electricity being available")
+            plt.savefig(
+                os.path.join(
+                    figures_directory, "grid_availability_randomisation_comparison.png"
+                ),
+                transparent=True,
+            )
+            plt.close()
+            pbar.update(1)
+
+        else:
+            pbar.update(2)
 
         # Plot the initial electric load of each device.
         fig, ax = plt.subplots()
-        cumulative_load = 0
-        for device, load in sorted(initial_electric_hourly_loads.items()):
-            ax.bar(range(len(load)), load[0], label=device, bottom=cumulative_load)
+        cumulative_load = [0] * 24
+        for index, device_and_load in enumerate(
+            sorted(
+                initial_electric_hourly_loads.items(),
+                key=lambda entry: np.sum(entry[1][0][:24]),
+                reverse=True,
+            )
+        ):
+            device, load = device_and_load
+            ax.bar(
+                x=range(24),
+                height=load[0][:24],
+                label=device.replace("_", " ").capitalize(),
+                bottom=cumulative_load[:24],
+                hatch=_hatch_from_index(index),
+            )
             if isinstance(cumulative_load, int) and cumulative_load == 0:
-                cumulative_load = load[0]
+                cumulative_load = load[0][:24]
                 continue
-            cumulative_load += load[0]
+            cumulative_load += load[0][:24]
 
         ax.set_xlabel("Hour of simulation")
         ax.set_ylabel("Device load / W")
@@ -506,10 +595,62 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
         plt.close(fig)
         pbar.update(1)
 
+        # Plot the monthly load of each device.
+        initial_electric_monthly_sums = {
+            device: daily_sum_to_monthly_sum(hourly_profile_to_daily_sum(load))
+            for device, load in initial_electric_hourly_loads.items()
+        }
+        fig, ax = plt.subplots(figsize=(48 / 5, 32 / 5))
+        cumulative_load = 0
+        for index, device_and_load in enumerate(
+            sorted(
+                initial_electric_monthly_sums.items(),
+                key=lambda entry: np.sum(entry[1]),
+                reverse=True,
+            )
+        ):
+            device, monthly_load = device_and_load
+            if sum(monthly_load) == 0:
+                continue
+            ax.bar(
+                x=range(len(monthly_load)),
+                height=monthly_load,
+                label=device.replace("_", " ").capitalize(),
+                bottom=cumulative_load,
+                linewidth=0,
+                hatch=_hatch_from_index(index),
+            )
+            if isinstance(cumulative_load, int) and cumulative_load == 0:
+                cumulative_load = monthly_load.copy()
+                continue
+            cumulative_load = [
+                cumulative_load[index] + entry
+                for index, entry in enumerate(monthly_load)
+            ]
+
+        ax.set_xlabel("Month of year")
+        ax.set_ylabel("Device load / W")
+        # ax.set_title("Electric load of each device")
+        ax.legend()
+        plt.savefig(
+            os.path.join(figures_directory, "electric_device_loads_monthly.png"),
+            bbox_inches="tight",
+            transparent=True,
+        )
+        plt.close(fig)
+        pbar.update(1)
+
         # Plot the average electric load of each device for the first year.
         cumulative_load = 0
         fig, ax = plt.subplots()
-        for device, load in sorted(initial_electric_hourly_loads.items()):
+        for index, device_and_load in enumerate(
+            sorted(
+                initial_electric_hourly_loads.items(),
+                key=lambda entry: np.sum(entry[1][0]),
+                reverse=True,
+            )
+        ):
+            device, load = device_and_load
             average_load = np.nanmean(
                 np.asarray(load[0:CUT_OFF_TIME]).reshape(
                     (CUT_OFF_TIME // 24, 24),
@@ -518,7 +659,13 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
             )
 
             if np.sum(average_load) > 0:
-                ax.bar(range(24), average_load, label=device, bottom=cumulative_load)
+                ax.bar(
+                    range(24),
+                    average_load,
+                    label=device.replace("_", " ").capitalize(),
+                    bottom=cumulative_load,
+                    hatch=_hatch_from_index(index),
+                )
             if isinstance(cumulative_load, int) and cumulative_load == 0:
                 cumulative_load = average_load.copy()
                 continue
@@ -544,17 +691,17 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
         plt.plot(
             range(CUT_OFF_TIME),
             total_electric_load[0:CUT_OFF_TIME][DemandType.DOMESTIC.value],
-            label=DemandType.DOMESTIC.value,
+            label=DemandType.DOMESTIC.value.capitalize(),
         )
         plt.plot(
             range(CUT_OFF_TIME),
             total_electric_load[0:CUT_OFF_TIME][DemandType.COMMERCIAL.value],
-            label=DemandType.COMMERCIAL.value,
+            label=DemandType.COMMERCIAL.value.capitalize(),
         )
         plt.plot(
             range(CUT_OFF_TIME),
             total_electric_load[0:CUT_OFF_TIME][DemandType.PUBLIC.value],
-            label=DemandType.PUBLIC.value,
+            label=DemandType.PUBLIC.value.capitalize(),
         )
         plt.plot(
             range(CUT_OFF_TIME),
@@ -642,18 +789,22 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
 
         # Plot as a bar plot
         fig, ax = plt.subplots()
-        ax.bar(range(len(domestic_demand)), domestic_demand, label="Domestic")
+        ax.bar(
+            range(len(domestic_demand)), domestic_demand, label="Domestic", color="C0"
+        )
         ax.bar(
             range(len(commercial_demand)),
             commercial_demand,
             label="Commercial",
             bottom=domestic_demand,
+            color="C2",
         )
         ax.bar(
             range(len(public_demand)),
             public_demand,
             label="Public",
             bottom=domestic_demand + commercial_demand,
+            color="C4",
         )
         ax.set_xlabel("Hour of simulation")
         ax.set_ylabel("Electric power demand / kW")
@@ -705,27 +856,27 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
             range(365),
             pd.DataFrame(domestic_demand).rolling(5).mean(),
             label="Domestic",
-            color="blue",
+            color="C0",
         )
         axis[0].plot(
             range(365),
             pd.DataFrame(commercial_demand).rolling(5).mean(),
             label="Commercial",
-            color="orange",
+            color="C2",
         )
         axis[0].plot(
             range(365),
             pd.DataFrame(public_demand).rolling(5).mean(),
             label="Public",
-            color="green",
+            color="C4",
         )
-        axis[0].plot(range(365), domestic_demand, alpha=0.5, color="blue")
-        axis[0].plot(range(365), commercial_demand, alpha=0.5, color="orange")
-        axis[0].plot(range(365), public_demand, alpha=0.5, color="green")
+        axis[0].plot(range(365), domestic_demand, alpha=0.5, color="C0")
+        axis[0].plot(range(365), commercial_demand, alpha=0.5, color="C1")
+        axis[0].plot(range(365), public_demand, alpha=0.5, color="C2")
         axis[0].legend(loc="best")
         axis[0].set(
-            xticks=(range(0, 366, 60)),
-            yticks=range(0, 26, 5),
+            # xticks=(range(0, 366, 60)),
+            # yticks=range(0, 26, 5),
             xlabel="Day of simulation period",
             ylabel="Load / kWh/day",
             title="Energy demand of each load type",
@@ -735,13 +886,13 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
             pd.DataFrame(total_demand).rolling(5).mean(),
             "--",
             label="Total",
-            color="red",
+            color="C3",
         )
-        axis[1].plot(range(365), total_demand, "--", alpha=0.5, color="red")
+        axis[1].plot(range(365), total_demand, "--", alpha=0.5, color="C3")
         axis[1].legend(loc="best")
         axis[1].set(
-            xticks=(range(0, 366, 60)),
-            yticks=range(15, 41, 5),
+            # xticks=(range(0, 366, 60)),
+            # yticks=range(15, 41, 5),
             xlabel="Day of simulation period",
             ylabel="Load / kWh/day",
             title="Total community energy demand",
@@ -824,22 +975,19 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
         plt.plot(
             range(num_years),
             domestic_demand,
-            label=DemandType.DOMESTIC.value,
-            color="blue",
+            label=DemandType.DOMESTIC.value.capitalize(),
         )
         plt.plot(
             range(num_years),
             commercial_demand,
-            label=DemandType.COMMERCIAL.value,
-            color="orange",
+            label=DemandType.COMMERCIAL.value.capitalize(),
         )
         plt.plot(
             range(num_years),
             public_demand,
-            label=DemandType.PUBLIC.value,
-            color="green",
+            label=DemandType.PUBLIC.value.capitalize(),
         )
-        plt.plot(range(num_years), total_demand, "--", label="total", color="red")
+        plt.plot(range(num_years), total_demand, "--", label="total")
         plt.legend(loc="upper left")
         plt.xticks(range(0, num_years, 2 if num_years > 2 else 1))
         plt.xlabel("Year of investigation period")
@@ -952,14 +1100,20 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
             axis=0,
         )
 
-        plt.plot(total_used, "--", label="Total used", zorder=1)
-        plt.plot(unmet_energy, label="Unmet", zorder=2)
-        plt.plot(diesel_energy, label="Diesel", zorder=3)
-        plt.plot(dumped, label="Dumped", zorder=4)
-        plt.plot(grid_energy, label="Grid", zorder=5)
-        plt.plot(storage_energy, label="Storage", zorder=6)
-        plt.plot(renewable_energy, label="Renewables used directly", zorder=7)
-        plt.plot(pv_supplied, label="PV electricity generated", zorder=8)
+        plt.plot(total_used, "--", label="Total used", zorder=1, color="C0")
+        plt.plot(unmet_energy, "--", label="Unmet", zorder=2, color="C7")
+        plt.plot(diesel_energy, label="Diesel", zorder=3, color="C0")
+        plt.plot(dumped, label="Dumped", zorder=4, color="C4")
+        plt.plot(grid_energy, label="Grid", zorder=5, color="C1")
+        plt.plot(storage_energy, label="Storage", zorder=6, color="C2")
+        plt.plot(
+            renewable_energy,
+            "--",
+            label="Renewables used directly",
+            zorder=7,
+            color="C3",
+        )
+        plt.plot(pv_supplied, label="PV electricity generated", zorder=8, color="C3")
         if cw_pvt:
             clean_water_energy_via_excess = (
                 np.nanmean(
@@ -1007,27 +1161,32 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
                 clean_water_energy_via_excess,
                 label="Excess -> clean water",
                 zorder=int(10 + (2 if cw_pvt else 0) + (1 if hw_pvt else 0)),
+                color="C6",
             )
             plt.plot(
                 clean_water_energy_via_backup,
                 label="Backup -> clean water",
                 zorder=11 + (2 if cw_pvt else 0) + (1 if hw_pvt else 0),
+                color="57",
             )
             plt.plot(
                 clean_water_pvt_supplied,
                 label="CW PV-T electricity generated",
                 zorder=9,
+                color="C8",
             )
             plt.plot(
                 thermal_desalination_energy,
                 label="Thermal desal electric power",
                 zorder=10,
+                color="C9",
             )
         if hw_pvt:
             plt.plot(
                 hot_water_pvt_supplied,
                 label="HW PV-T electricity generated",
                 zorder=(10 + (2 if cw_pvt else 0)),
+                color="C10",
             )
         plt.legend()
         plt.xlim(0, 23)
@@ -1081,11 +1240,46 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
             axis=0,
         )
 
-        plt.plot(blackouts, label=ColumnHeader.BLACKOUTS.value)
-        plt.plot(solar_usage, label="Renewables")
-        plt.plot(storage_energy, label="Storage")
-        plt.plot(grid_energy, label="Grid")
-        plt.plot(diesel_times, label="Diesel")
+        plt.plot(blackouts, label=ColumnHeader.BLACKOUTS.value, color="C4")
+        plt.fill_between(
+            range(len(blackouts)),
+            [0] * len(blackouts),
+            blackouts,
+            color="C4",
+            alpha=0.3,
+        )
+        plt.plot(solar_usage, label="Renewables", color="C3")
+        plt.fill_between(
+            range(len(solar_usage)),
+            [0] * len(solar_usage),
+            solar_usage,
+            color="C3",
+            alpha=0.3,
+        )
+        plt.plot(storage_energy, label="Storage", color="C2")
+        plt.fill_between(
+            range(len(storage_energy)),
+            [0] * len(storage_energy),
+            storage_energy,
+            color="C2",
+            alpha=0.3,
+        )
+        plt.plot(grid_energy, label="Grid", color="C1")
+        plt.fill_between(
+            range(len(grid_energy)),
+            [0] * len(grid_energy),
+            grid_energy,
+            color="C1",
+            alpha=0.3,
+        )
+        plt.plot(diesel_times, label="Diesel", color="C0")
+        plt.fill_between(
+            range(len(diesel_times)),
+            [0] * len(diesel_times),
+            diesel_times,
+            color="C0",
+            alpha=0.3,
+        )
         plt.legend()
         plt.xlim(0, 23)
         plt.xticks(range(0, 24, 1))
@@ -1096,7 +1290,7 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
         # plt.title("Energy availability on an average day")
         plt.savefig(
             os.path.join(
-                figures_directory, "electricity_avilability_on_average_day.png"
+                figures_directory, "electricity_availability_on_average_day.png"
             ),
             bbox_inches="tight",
             transparent=True,
@@ -1128,9 +1322,38 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
             (365, 24),
         )
 
+        # Determine the maximum value to plot
+        max_value = max(
+            [
+                np.max(
+                    simulation_output[0:HOURS_PER_YEAR][ColumnHeader.GRID_ENERGY.value]
+                ),
+                np.max(
+                    simulation_output[0:HOURS_PER_YEAR][
+                        ColumnHeader.ELECTRICITY_FROM_STORAGE.value
+                    ]
+                ),
+                np.max(
+                    simulation_output[0:HOURS_PER_YEAR][
+                        ColumnHeader.RENEWABLE_ELECTRICITY_USED_DIRECTLY.value
+                    ]
+                ),
+                np.max(
+                    simulation_output[0:HOURS_PER_YEAR][
+                        ColumnHeader.DIESEL_GENERATOR_TIMES.value
+                    ]
+                ),
+            ]
+        )
+
         fig, ([ax1, ax2], [ax3, ax4]) = plt.subplots(2, 2)  # ,sharex=True, sharey=True)
         sns.heatmap(
-            renewable_energy, vmin=0.0, vmax=4.0, cmap="Reds", cbar=True, ax=ax1
+            renewable_energy,
+            vmin=0.0,
+            vmax=max_value,
+            cmap=green_blended,
+            cbar=True,
+            ax=ax1,
         )
         ax1.set(
             xticks=range(0, 25, 6),
@@ -1142,7 +1365,12 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
             title="Renewables",
         )
         sns.heatmap(
-            storage_energy, vmin=0.0, vmax=4.0, cmap="Greens", cbar=True, ax=ax2
+            storage_energy,
+            vmin=0.0,
+            vmax=max_value,
+            cmap=light_green_blended,
+            cbar=True,
+            ax=ax2,
         )
         ax2.set(
             xticks=range(0, 25, 6),
@@ -1153,7 +1381,14 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
             ylabel="Day of year",
             title="Storage",
         )
-        sns.heatmap(grid_energy, vmin=0.0, vmax=4.0, cmap="Blues", cbar=True, ax=ax3)
+        sns.heatmap(
+            grid_energy,
+            vmin=0.0,
+            vmax=max_value,
+            cmap=light_orange_blended,
+            cbar=True,
+            ax=ax3,
+        )
         ax3.set(
             xticks=range(0, 25, 6),
             xticklabels=range(0, 25, 6),
@@ -1163,7 +1398,14 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
             ylabel="Day of year",
             title="Grid",
         )
-        sns.heatmap(diesel_energy, vmin=0.0, vmax=4.0, cmap="Greys", cbar=True, ax=ax4)
+        sns.heatmap(
+            diesel_energy,
+            vmin=0.0,
+            vmax=max_value,
+            cmap=orange_blended,
+            cbar=True,
+            ax=ax4,
+        )
         ax4.set(
             xticks=range(0, 25, 6),
             xticklabels=range(0, 25, 6),
@@ -1220,19 +1462,26 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
             else None
         )
 
-        plt.plot(total_used, "--", label="Total used", zorder=1)
-        plt.plot(unmet_energy, label="Unmet", zorder=2)
-        plt.plot(diesel_energy, label="Diesel", zorder=3)
-        plt.plot(dumped_energy, label="Dumped", zorder=4)
-        plt.plot(grid_energy, label="Grid", zorder=5)
-        plt.plot(storage_energy, label="Storage", zorder=6)
-        plt.plot(renewable_energy, label="Solar used directly", zorder=7)
-        plt.plot(pv_supplied, label="PV generated", zorder=8)
+        plt.plot(total_used, "--", label="Total used", zorder=1, color="C0")
+        plt.plot(unmet_energy, "--", label="Unmet", zorder=2, color="C7")
+        plt.plot(diesel_energy, label="Diesel", zorder=3, color="C0")
+        plt.plot(dumped_energy, label="Dumped", zorder=4, color="C4")
+        plt.plot(grid_energy, label="Grid", zorder=5, color="C1")
+        plt.plot(storage_energy, label="Storage", zorder=6, color="C2")
+        plt.plot(
+            renewable_energy,
+            "--",
+            label="Renewables used directly",
+            zorder=7,
+            color="C3",
+        )
+        plt.plot(pv_supplied, label="PV electricity generated", zorder=8, color="C3")
         if cw_pvt:
             plt.plot(
                 clean_water_pvt_supplied,
                 label="CW PV-T electricity generated",
                 zorder=9,
+                color="C5",
             )
             thermal_desalination_energy = simulation_output.iloc[0:24][
                 ColumnHeader.POWER_CONSUMED_BY_THERMAL_DESALINATION.value
@@ -1241,12 +1490,14 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
                 thermal_desalination_energy,
                 label="Thermal desal electric power",
                 zorder=10,
+                color="C6",
             )
         if hw_pvt:
             plt.plot(
                 hot_water_pvt_supplied,
                 label="HW PV-T electricity generated",
                 zorder=9 + (2 if cw_pvt else 0),
+                color="C8",
             )
         # if initial_cw_hourly_loads is not None:
         #     clean_water_energy_via_excess = simulation_output.iloc[0:24][
@@ -1283,8 +1534,17 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
             # Plot the initial clean-water load of each device.
             fig, ax = plt.subplots()
             cumulative_load = 0
-            for device, load in sorted(initial_cw_hourly_loads.items()):
-                ax.bar(range(len(load)), load[0], label=device, bottom=cumulative_load)
+            for device, load in sorted(
+                initial_cw_hourly_loads.items(),
+                key=lambda entry: np.sum(entry[1]),
+                reverse=True,
+            ):
+                ax.bar(
+                    range(len(load)),
+                    load[0],
+                    label=device.replace("_", " ").capitalize(),
+                    bottom=cumulative_load,
+                )
 
                 if isinstance(cumulative_load, int) and cumulative_load == 0:
                     cumulative_load = load[0]
@@ -1306,14 +1566,23 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
             # Plot the average clean-water load of each device for the first year.
             fig, ax = plt.subplots()
             cumulative_load = 0
-            for device, load in sorted(initial_cw_hourly_loads.items()):
+            for device, load in sorted(
+                initial_cw_hourly_loads.items(),
+                key=lambda entry: np.sum(entry[1]),
+                reverse=True,
+            ):
                 average_load = np.nanmean(
                     np.asarray(load[0:CUT_OFF_TIME]).reshape(
                         (CUT_OFF_TIME // 24, 24),
                     ),
                     axis=0,
                 )
-                ax.bar(range(24), average_load, label=device, bottom=cumulative_load)
+                ax.bar(
+                    range(24),
+                    average_load,
+                    label=device.replace("_", " ").capitalize(),
+                    bottom=cumulative_load,
+                )
 
                 if isinstance(cumulative_load, int) and cumulative_load == 0:
                     cumulative_load = average_load.copy()
@@ -1408,19 +1677,19 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
                 range(365),
                 pd.DataFrame(domestic_demand).rolling(5).mean(),
                 label="Domestic",
-                color="blue",
+                color="C0",
             )
             axis[0].plot(
                 range(365),
                 pd.DataFrame(commercial_demand).rolling(5).mean(),
                 label="Commercial",
-                color="orange",
+                color="C2",
             )
             axis[0].plot(
                 range(365),
                 pd.DataFrame(public_demand).rolling(5).mean(),
                 label="Public",
-                color="green",
+                color="C4",
             )
             axis[0].plot(range(365), domestic_demand, alpha=0.5, color="blue")
             axis[0].plot(range(365), commercial_demand, alpha=0.5, color="orange")
@@ -2784,8 +3053,17 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
             # Plot the initial hot-water load of each device.
             fig, ax = plt.subplots()
             cumulative_load = 0
-            for device, load in sorted(initial_hw_hourly_loads.items()):
-                ax.bar(range(len(load)), load[0], label=device, bottom=cumulative_load)
+            for device, load in sorted(
+                initial_hw_hourly_loads.items(),
+                key=lambda entry: np.sum(entry[1]),
+                reverse=True,
+            ):
+                ax.bar(
+                    range(len(load)),
+                    load[0],
+                    label=device.replace("_", " ").capitalize(),
+                    bottom=cumulative_load,
+                )
 
                 if isinstance(cumulative_load, int) and cumulative_load == 0:
                     cumulative_load = load[0]
@@ -2807,14 +3085,23 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
             # Plot the average hot-water load of each device for the cut off period.
             fig, ax = plt.subplots()
             cumulative_load = 0
-            for device, load in sorted(initial_hw_hourly_loads.items()):
+            for device, load in sorted(
+                initial_hw_hourly_loads.items(),
+                key=lambda entry: np.sum(entry[1]),
+                reverse=True,
+            ):
                 average_load = np.nanmean(
                     np.asarray(load[0:CUT_OFF_TIME]).reshape(
                         (CUT_OFF_TIME // 24, 24),
                     ),
                     axis=0,
                 )
-                ax.bar(range(24), average_load, label=device, bottom=cumulative_load)
+                ax.bar(
+                    range(24),
+                    average_load,
+                    label=device.replace("_", " ").capitalize(),
+                    bottom=cumulative_load,
+                )
 
                 if isinstance(cumulative_load, int) and cumulative_load == 0:
                     cumulative_load = average_load.copy()
@@ -2908,19 +3195,19 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
                 range(365),
                 pd.DataFrame(domestic_demand).rolling(5).mean(),
                 label="Domestic",
-                color="blue",
+                color="C0",
             )
             axis[0].plot(
                 range(365),
                 pd.DataFrame(commercial_demand).rolling(5).mean(),
                 label="Commercial",
-                color="orange",
+                color="C2",
             )
             axis[0].plot(
                 range(365),
                 pd.DataFrame(public_demand).rolling(5).mean(),
                 label="Public",
-                color="green",
+                color="C4",
             )
             axis[0].plot(range(365), domestic_demand, alpha=0.5, color="blue")
             axis[0].plot(range(365), commercial_demand, alpha=0.5, color="orange")
@@ -3607,10 +3894,10 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
             pbar.update(1)
 
             # Plot monthly renewable DHW fraction
-            dhw_renewable_fraction: Dict[int:float] = {}
-            dhw_renewable_fraction_daily: Dict[int : np.ndarray] = {}
-            dhw_dc_fraction: Dict[int:float] = {}
-            dhw_dc_fraction_daily: Dict[int : np.ndarray] = {}
+            dhw_renewable_fraction: dict[int:float] = {}
+            dhw_renewable_fraction_daily: dict[int : np.ndarray] = {}
+            dhw_dc_fraction: dict[int:float] = {}
+            dhw_dc_fraction_daily: dict[int : np.ndarray] = {}
             for month in range(1, 13):
                 dhw_renewable_fraction[month] = np.nansum(
                     (

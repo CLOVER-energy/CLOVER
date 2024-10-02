@@ -15,7 +15,7 @@ argparser.py - The argument-parsing module for CLOVER.
 import argparse
 import logging
 
-from typing import Any, List
+from typing import Any
 
 from .__utils__ import BColours, DEFAULT_SCENARIO
 
@@ -47,9 +47,17 @@ class MissingParametersError(Exception):
         )
 
 
-def parse_args(args: List[Any]) -> argparse.Namespace:
+def parse_args(args: list[Any]) -> argparse.Namespace:
     """
     Parses command-line arguments into a :class:`argparse.NameSpace`.
+
+    Inputs:
+        - args:
+            The un-parsed command-line arguments.
+
+    Outputs:
+        - parsed_args:
+            The parsed command-line arguments.
 
     """
 
@@ -113,8 +121,9 @@ def parse_args(args: List[Any]) -> argparse.Namespace:
     action_arguments.add_argument(
         "--pv-system-size",
         "-pv",
-        type=float,
-        help="The size of the PV system being modelled in PV panel units, defaulting "
+        type=str,
+        help="The size of the PV system(s) being modelled in PV panel units, "
+        "defaulting "
         "to kWp.",
     )
     action_arguments.add_argument(

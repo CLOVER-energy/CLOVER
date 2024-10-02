@@ -20,6 +20,7 @@ scenarios:
       backup:
         threshold: 0.1 # Maximum acceptible blackouts (0.0-1.0)
     distribution_network: dc # DC ("dc") or AC ("ac") distribution network
+    # fixed_inverter_size: false # [kW] A fixed inverter size in kW if specified
     grid: true # "true" or "false"
     grid_type: default # The grid profile to use
     prioritise_self_generation: true # "true" or "false"

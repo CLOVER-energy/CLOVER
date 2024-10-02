@@ -18,22 +18,28 @@ import pkgutil
 
 from collections import defaultdict
 from logging import Logger
-from typing import Any, DefaultDict, Dict, List, Optional, Set, Tuple, Union
+from typing import Any, DefaultDict
 
 import json
-import pandas as pd  # pylint: disable=import-error
+import pandas as pd  # pyli`nt: disable=import-error
+import yaml
 
 from sklearn.linear_model._coordinate_descent import Lasso
 
 from . import load
 from .generation import solar
+from .impact.__utils__ import LIFETIME
 from .impact.finance import COSTS, FINANCE_IMPACT, ImpactingComponent
 from .impact.ghgs import EMISSIONS, GHG_IMPACT
 from .simulation.diesel import DIESEL_CONSUMPTION, MINIMUM_LOAD, DieselWaterHeater
 
 from .__utils__ import (
+    API_TOKEN_PLACEHOLDER_TEXT,
     AuxiliaryHeaterType,
     BColours,
+    DEFAULT_END_YEAR,
+    DEFAULT_START_YEAR,
+    DEFAULT_SYSTEM_LIFETIME,
     DesalinationScenario,
     DieselMode,
     EXCHANGER,
@@ -45,7 +51,6 @@ from .__utils__ import (
     RegressorType,
     ResourceType,
     Location,
-    LOCATIONS_FOLDER_NAME,
     NAME,
     PACKAGE_NAME,
     RAW_CLOVER_PATH,
@@ -53,6 +58,7 @@ from .__utils__ import (
     Scenario,
     Simulation,
     SolarPanelType,
+    TOKEN,
 )
 from .conversion.conversion import (
     Converter,
@@ -67,10 +73,10 @@ from .simulation.transmission import Transmitter
 
 __all__ = (
     "GENERATION_INPUTS_FILE",
+    "GLOBAL_SETTINGS_FILE",
     "INPUTS_DIRECTORY",
     "KEROSENE_TIMES_FILE",
     "KEROSENE_USAGE_FILE",
-    "LOCATIONS_FOLDER_NAME",
     "parse_input_files",
     "parse_scenario_inputs",
 )
@@ -83,6 +89,10 @@ BATTERY: str = "battery"
 # Battery inputs file:
 #   The relative path to the battery inputs file.
 BATTERY_INPUTS_FILE: str = os.path.join("simulation", "battery_inputs.yaml")
+
+# Capacity:
+#   Used to parse diesel-generator capacity information.
+CAPACITY: str = "capacity"
 
 # Conventional water-source-availability directory:
 #   The directory containing availability profiles for conventional water sources.
@@ -159,6 +169,10 @@ ELECTRIC_MODEL_FILE: str = os.path.join("src", "{}_electric_forest.sav")
 #   Keyword used for parsing electric water-heater information.
 ELECTRIC_WATER_HEATER: str = "electric_water_heater"
 
+# End year:
+#   Keyword used for parsing the end-year information.
+END_YEAR: str = "end_year"
+
 # Energy-system inputs file:
 #   The relative path to the energy-system-inputs file.
 ENERGY_SYSTEM_INPUTS_FILE: str = os.path.join("simulation", "energy_system.yaml")
@@ -182,6 +196,12 @@ GENERATION_INPUTS_FILE: str = os.path.join("generation", "generation_inputs.yaml
 # GHG inputs file:
 #   The relative path to the GHG inputs file.
 GHG_INPUTS_FILE: str = os.path.join("impact", "ghg_inputs.yaml")
+
+# Global settings file:
+#   The relative path to the global-settings file.
+GLOBAL_SETTINGS_FILE: str = os.path.join(
+    os.path.expanduser("~"), "global_settings.yaml"
+)
 
 # Grid inputs file:
 #   The relative path to the grid-inputs file.
@@ -253,6 +273,10 @@ SOLAR_INPUTS_FILE: str = os.path.join("generation", "solar_generation_inputs.yam
 #   Keyword used for parsing solar-thermal panel information.
 SOLAR_THERMAL_PANEL: str = "solar_thermal"
 
+# Start year:
+#   Keyword used for parsing the start-year information.
+START_YEAR: str = "start_year"
+
 # Tank inputs file:
 #   The relative path to the tank inputs file.
 TANK_INPUTS_FILE: str = os.path.join("simulation", "tank_inputs.yaml")
@@ -287,14 +311,14 @@ WATER_SOURCE_INPUTS_FILE: str = os.path.join("generation", "water_source_inputs.
 
 
 def _parse_battery_inputs(
-    energy_system_inputs: Dict[str, Any],
+    energy_system_inputs: dict[str, Any],
     inputs_directory_relative_path: str,
     logger: Logger,
-    scenarios: List[Scenario],
-) -> Tuple[
-    Optional[Dict[str, float]],
-    Optional[Dict[str, float]],
-    List[Dict[str, Any]],
+    scenarios: list[Scenario],
+) -> tuple[
+    dict[str, float] | None,
+    dict[str, float] | None,
+    list[dict[str, Any]],
     str,
 ]:
     """
@@ -332,7 +356,7 @@ def _parse_battery_inputs(
     if any(scenario.battery for scenario in scenarios):
         logger.info("Parsing battery impact information.")
         try:
-            battery_costs: Optional[Dict[str, float]] = [
+            battery_costs: dict[str, float] | None = [
                 entry[COSTS]
                 for entry in battery_inputs
                 if entry[NAME] == energy_system_inputs[BATTERY]
@@ -340,10 +364,10 @@ def _parse_battery_inputs(
         except (KeyError, IndexError):
             logger.error("Failed to determine battery cost information.")
             raise
-        else:
-            logger.info("Battery cost information successfully parsed.")
+        logger.info("Battery cost information successfully parsed.")
+
         try:
-            battery_emissions: Optional[Dict[str, float]] = [
+            battery_emissions: dict[str, float] | None = [
                 entry[EMISSIONS]
                 for entry in battery_inputs
                 if entry[NAME] == energy_system_inputs[BATTERY]
@@ -351,8 +375,7 @@ def _parse_battery_inputs(
         except (KeyError, IndexError):
             logger.error("Failed to determine battery emission information.")
             raise
-        else:
-            logger.info("Battery emission information successfully parsed.")
+        logger.info("Battery emission information successfully parsed.")
     else:
         battery_costs = None
         battery_emissions = None
@@ -366,7 +389,7 @@ def _parse_battery_inputs(
 def _parse_conventional_water_source_inputs(
     inputs_directory_relative_path: str,
     logger: Logger,
-) -> Tuple[List[Dict[str, Any]], str, Set[WaterSource]]:
+) -> tuple[list[dict[str, Any]], str, set[WaterSource]]:
     """
     Parses the device inputs file.
 
@@ -401,7 +424,7 @@ def _parse_conventional_water_source_inputs(
         raise InputFileError(
             "water source inputs", "Water source input information of the wrong type."
         )
-    water_sources: Set[WaterSource] = {
+    water_sources: set[WaterSource] = {
         WaterSource.from_dict(entry, logger) for entry in water_source_inputs
     }
 
@@ -411,11 +434,11 @@ def _parse_conventional_water_source_inputs(
 def _parse_conversion_inputs(
     inputs_directory_relative_path: str,
     logger: Logger,
-) -> Tuple[
+) -> tuple[
     str,
-    Dict[Converter, Dict[str, float]],
-    Dict[Converter, Dict[str, float]],
-    Dict[str, Converter],
+    dict[Converter, dict[str, float]],
+    dict[Converter, dict[str, float]],
+    dict[str, Converter],
 ]:
     """
     Parses the conversion inputs file.
@@ -446,13 +469,13 @@ def _parse_conversion_inputs(
         inputs_directory_relative_path, CONVERSION_INPUTS_FILE
     )
 
-    converter_costs: Dict[Converter, Dict[str, float]] = {}
-    converter_emissions: Dict[Converter, Dict[str, float]] = {}
+    converter_costs: dict[Converter, dict[str, float]] = {}
+    converter_emissions: dict[Converter, dict[str, float]] = {}
 
     # If the file exists, parse the converters contained.
     if os.path.isfile(conversion_file_relative_path):
-        parsed_converters: List[Converter] = []
-        conversion_inputs: Dict[str, List[Dict[str, Any]]] = read_yaml(  # type: ignore
+        parsed_converters: list[Converter] = []
+        conversion_inputs: dict[str, list[dict[str, Any]]] = read_yaml(  # type: ignore
             conversion_file_relative_path, logger
         )
         if conversion_inputs is not None:
@@ -512,7 +535,7 @@ def _parse_conversion_inputs(
                         logger.info("Parsed single-input converter from input data.")
 
                 # Convert the list to the required format.
-                converters: Dict[str, Converter] = {
+                converters: dict[str, Converter] = {
                     converter.name: converter for converter in parsed_converters
                 }
 
@@ -530,14 +553,13 @@ def _parse_conversion_inputs(
                             converter.name,
                         )
                         raise
-                    else:
-                        logger.info(
-                            "Converter cost information for %s successfully parsed.",
-                            converter.name,
-                        )
+                    logger.info(
+                        "Converter cost information for %s successfully parsed.",
+                        converter.name,
+                    )
                     try:
                         converter_emissions[converter] = [
-                            entry[EMISSIONS]
+                            entry.get(EMISSIONS, defaultdict(float))
                             for entry in conversion_inputs[CONVERTERS]
                             if entry[NAME] == converter.name
                         ][0]
@@ -547,11 +569,10 @@ def _parse_conversion_inputs(
                             converter.name,
                         )
                         raise
-                    else:
-                        logger.info(
-                            "Converter emission information for %s successfully parsed.",
-                            converter.name,
-                        )
+                    logger.info(
+                        "Converter emission information for %s successfully parsed.",
+                        converter.name,
+                    )
 
             else:
                 converters = {}
@@ -573,19 +594,20 @@ def _parse_conversion_inputs(
     )
 
 
-def _parse_diesel_inputs(  # pylint: disable=too-many-statements
-    energy_system_inputs: Dict[str, Any],
+def _parse_diesel_inputs(  # pylint: disable=too-many-locals,too-many-statements
+    energy_system_inputs: dict[str, Any],
     inputs_directory_relative_path: str,
     logger: Logger,
-    scenarios: List[Scenario],
-) -> Tuple[
-    Dict[str, float],
-    Dict[str, float],
+    scenarios: list[Scenario],
+) -> tuple[
+    dict[str, float],
+    dict[str, float],
+    dict[str, float] | None,
     DieselGenerator,
     str,
-    Optional[DieselWaterHeater],
-    Optional[Dict[str, float]],
-    Optional[Dict[str, float]],
+    DieselWaterHeater | None,
+    dict[str, float] | None,
+    dict[str, float] | None,
 ]:
     """
     Parses the diesel inputs file.
@@ -605,6 +627,7 @@ def _parse_diesel_inputs(  # pylint: disable=too-many-statements
         - The path to the diesel inputs file;
         - The diesel-generator cost information;
         - The diesel-generator emissions information;
+        - The diesel fuel costs and emissions information, if provided;
         - The diesel generator to use for the run;
         - The diesel water heater to use for the run, if applicable;
         - The diesel water heater emissions information, if applicable;
@@ -627,8 +650,13 @@ def _parse_diesel_inputs(  # pylint: disable=too-many-statements
 
     # Instantiate DieselGenerators for every entry in the input file.
     try:
-        diesel_generators: List[DieselGenerator] = [
-            DieselGenerator(entry[DIESEL_CONSUMPTION], entry[MINIMUM_LOAD], entry[NAME])
+        diesel_generators: list[DieselGenerator] = [
+            DieselGenerator(
+                entry.get(CAPACITY, 1),
+                entry[DIESEL_CONSUMPTION],
+                entry[MINIMUM_LOAD],
+                entry[NAME],
+            )
             for entry in diesel_inputs[DIESEL_GENERATORS]
         ]
     except KeyError as e:
@@ -684,8 +712,7 @@ def _parse_diesel_inputs(  # pylint: disable=too-many-statements
     except (KeyError, IndexError):
         logger.error("Failed to determine diesel cost information.")
         raise
-    else:
-        logger.info("Diesel cost information successfully parsed.")
+    logger.info("Diesel cost information successfully parsed.")
 
     # Determine the diesel emissions.
     try:
@@ -697,13 +724,12 @@ def _parse_diesel_inputs(  # pylint: disable=too-many-statements
     except (KeyError, IndexError):
         logger.error("Failed to determine diesel emission information.")
         raise
-    else:
-        logger.info("Diesel emission information successfully parsed.")
+    logger.info("Diesel emission information successfully parsed.")
 
     # Instantiate diesel water heaters for every entry in the input file.
     if DIESEL_WATER_HEATERS in diesel_inputs:
         try:
-            diesel_water_heaters: List[DieselWaterHeater] = [
+            diesel_water_heaters: list[DieselWaterHeater] = [
                 DieselWaterHeater.from_dict(entry, logger)
                 for entry in diesel_inputs[DIESEL_WATER_HEATERS]
             ]
@@ -725,7 +751,7 @@ def _parse_diesel_inputs(  # pylint: disable=too-many-statements
     # Determine the diesel generator being modelled.
     if DIESEL_WATER_HEATER in energy_system_inputs:
         try:
-            diesel_water_heater: Optional[DieselWaterHeater] = [
+            diesel_water_heater: DieselWaterHeater | None = [
                 heater
                 for heater in diesel_water_heaters
                 if heater.name == energy_system_inputs[DIESEL_WATER_HEATER]
@@ -757,7 +783,7 @@ def _parse_diesel_inputs(  # pylint: disable=too-many-statements
 
         # Determine the diesel costs.
         try:
-            diesel_water_heater_costs: Optional[Dict[str, float]] = [
+            diesel_water_heater_costs: dict[str, float] | None = [
                 entry[COSTS]
                 for entry in diesel_inputs[DIESEL_WATER_HEATERS]
                 if entry[NAME] == diesel_water_heater.name
@@ -769,12 +795,11 @@ def _parse_diesel_inputs(  # pylint: disable=too-many-statements
                 BColours.endc,
             )
             raise
-        else:
-            logger.info("Diesel water-heater cost information successfully parsed.")
+        logger.info("Diesel water-heater cost information successfully parsed.")
 
         # Determine the diesel emissions.
         try:
-            diesel_water_heater_emissions: Optional[Dict[str, float]] = [
+            diesel_water_heater_emissions: dict[str, float] | None = [
                 entry[EMISSIONS]
                 for entry in diesel_inputs[DIESEL_WATER_HEATERS]
                 if entry[NAME] == diesel_water_heater.name
@@ -786,8 +811,7 @@ def _parse_diesel_inputs(  # pylint: disable=too-many-statements
                 BColours.endc,
             )
             raise
-        else:
-            logger.info("Diesel water-heater emission information successfully parsed.")
+        logger.info("Diesel water-heater emission information successfully parsed.")
 
     elif any(scenario.hot_water_scenario is not None for scenario in scenarios) and any(
         scenario.hot_water_scenario.auxiliary_heater == AuxiliaryHeaterType.DIESEL  # type: ignore
@@ -816,9 +840,15 @@ def _parse_diesel_inputs(  # pylint: disable=too-many-statements
         diesel_water_heater_costs = None
         diesel_water_heater_emissions = None
 
+    # Determine the diesel fuel costs and emissions
+    diesel_fuel_impact: dict[str, float] | None = diesel_inputs.get(
+        ImpactingComponent.DIESEL_FUEL.value, None
+    )
+
     return (
         diesel_costs,
         diesel_emissions,
+        diesel_fuel_impact,
         diesel_generator,
         diesel_inputs_filepath,
         diesel_water_heater,
@@ -830,7 +860,7 @@ def _parse_diesel_inputs(  # pylint: disable=too-many-statements
 def _parse_device_inputs(
     inputs_directory_relative_path: str,
     logger: Logger,
-) -> Tuple[str, Set[load.load.Device]]:
+) -> tuple[str, set[load.load.Device]]:
     """
     Parses the device inputs file.
 
@@ -866,7 +896,7 @@ def _parse_device_inputs(
             "device inputs", "The device inputs file must contain a list of devices."
         )
 
-    devices: Set[load.load.Device] = {
+    devices: set[load.load.Device] = {
         load.load.Device.from_dict(entry) for entry in device_inputs
     }
 
@@ -887,13 +917,11 @@ def _parse_device_inputs(
 
 
 def _parse_exchanger_inputs(
-    energy_system_inputs: Dict[str, Any],
+    energy_system_inputs: dict[str, Any],
     inputs_directory_relative_path: str,
     logger: Logger,
-    scenarios: List[Scenario],
-) -> Tuple[
-    Optional[Dict[str, float]], Optional[Dict[str, float]], List[Dict[str, float]], str
-]:
+    scenarios: list[Scenario],
+) -> tuple[dict[str, float], dict[str, float] | None, list[dict[str, float]], str]:
     """
     Parses the exchanger inputs file.
 
@@ -949,8 +977,7 @@ def _parse_exchanger_inputs(
         except (KeyError, IndexError):
             logger.error("Failed to determine exchanger cost information.")
             raise
-        else:
-            logger.info("Exchanger cost information successfully parsed.")
+        logger.info("Exchanger cost information successfully parsed.")
         try:
             exchanger_emissions = [
                 entry[EMISSIONS]
@@ -960,8 +987,7 @@ def _parse_exchanger_inputs(
         except (KeyError, IndexError):
             logger.error("Failed to determine exchanger emission information.")
             raise
-        else:
-            logger.info("Exchanger emission information successfully parsed.")
+        logger.info("Exchanger emission information successfully parsed.")
     else:
         logger.info(
             "Exchanger disblaed in scenario file, skipping battery impact parsing."
@@ -977,9 +1003,55 @@ def _parse_exchanger_inputs(
     )
 
 
+def _parse_global_settings(logger: Logger) -> dict[str, Any]:
+    """Parses the global-settings file."""
+
+    def _create_global_setings_file() -> None:
+        """Create a default global-settings file if missing."""
+
+        with open(GLOBAL_SETTINGS_FILE, "w", encoding="UTF-8") as global_settings_file:
+            yaml.dump(
+                {
+                    TOKEN: API_TOKEN_PLACEHOLDER_TEXT,
+                    END_YEAR: DEFAULT_END_YEAR,
+                    START_YEAR: DEFAULT_START_YEAR,
+                    LIFETIME: DEFAULT_SYSTEM_LIFETIME,
+                },
+                global_settings_file,
+            )
+
+    # Parse global settings.
+    if not os.path.isfile(GLOBAL_SETTINGS_FILE):
+        _create_global_setings_file()
+
+    try:
+        global_settings_inputs: dict[str, Any] | list[dict[str, Any]] | None = (
+            read_yaml(GLOBAL_SETTINGS_FILE, logger)
+        )
+    except FileNotFoundError:
+        logger.error(
+            "No global-settings file found, check that this file was correctly created "
+            "and exists in your current CLOVER directory."
+        )
+        raise InternalError("Error parsing global-settings file.") from None
+    logger.info("Global settings inputs successfully read.")
+
+    # Ensure that the global-settings inputs are the correct format.
+    if not isinstance(global_settings_inputs, dict):
+        if global_settings_inputs is None:
+            global_settings_inputs = {}
+        else:
+            logger.error("Global settings inputs are not of type `dict`.")
+            raise InputFileError(
+                "global_settings.yaml", "Global-settings must be of type `dict`."
+            )
+
+    return global_settings_inputs
+
+
 def _parse_pvt_reduced_models(  # pylint: disable=too-many-statements
-    debug: bool, logger: Logger, scenarios: List[Scenario]
-) -> Tuple[Dict[RegressorType, Lasso], Dict[RegressorType, Lasso]]:
+    debug: bool, logger: Logger, scenarios: list[Scenario]
+) -> tuple[dict[RegressorType, Lasso], dict[RegressorType, Lasso]]:
     """
     Parses the PV-T models from the installed package or raw files.
 
@@ -993,7 +1065,7 @@ def _parse_pvt_reduced_models(  # pylint: disable=too-many-statements
             standard (a random forest regressor) mode.
         - logger:
             The :class:`logging.Logger` to use for the run.
-        - scenario:
+        - scenarios:
             The `list` of :class:`Scenario` instances available for the run.
 
     Outputs:
@@ -1003,8 +1075,8 @@ def _parse_pvt_reduced_models(  # pylint: disable=too-many-statements
     """
 
     # Instantiate variables
-    electric_models: Dict[RegressorType, Lasso] = {}
-    thermal_models: Dict[RegressorType, Lasso] = {}
+    electric_models: dict[RegressorType, Lasso] = {}
+    thermal_models: dict[RegressorType, Lasso] = {}
 
     # If any of the scenarios defined specify that PV-T should be used.
     if any(scenario.pv_t for scenario in scenarios):
@@ -1016,7 +1088,7 @@ def _parse_pvt_reduced_models(  # pylint: disable=too-many-statements
         )
         for model_type in RegressorType:
             try:
-                thermal_model: Optional[Lasso] = pickle.load(
+                thermal_model: Lasso | None = pickle.load(
                     pkgutil.get_data(  # type: ignore
                         PACKAGE_NAME, THERMAL_MODEL_FILE.format(model_type.value)
                     )
@@ -1083,7 +1155,7 @@ def _parse_pvt_reduced_models(  # pylint: disable=too-many-statements
             try:
                 # Attempt to read the electric model file as per CLOVER being an installed
                 # package.
-                electric_model: Optional[Lasso] = pickle.load(
+                electric_model: Lasso | None = pickle.load(
                     pkgutil.get_data(  # type: ignore
                         PACKAGE_NAME, ELECTRIC_MODEL_FILE.format(model_type.value)
                     )
@@ -1155,7 +1227,7 @@ def _parse_pvt_reduced_models(  # pylint: disable=too-many-statements
 def parse_scenario_inputs(
     inputs_directory_relative_path: str,
     logger: Logger,
-) -> Tuple[str, str, List[Scenario], str]:
+) -> tuple[str, str, list[Scenario], str]:
     """
     Parses the scenario input files.
 
@@ -1193,7 +1265,7 @@ def parse_scenario_inputs(
                 "scenario inputs", "Desalination scenario inputs is not of type `dict`."
             )
         try:
-            desalination_scenarios: Optional[List[DesalinationScenario]] = [
+            desalination_scenarios: list[DesalinationScenario] | None = [
                 DesalinationScenario.from_dict(entry, logger)
                 for entry in desalination_scenario_inputs[DESALINATION_SCENARIOS]
             ]
@@ -1222,7 +1294,7 @@ def parse_scenario_inputs(
                 "hot-water inputs", "Hot-water scenario inputs is not of type `dict`."
             )
         try:
-            hot_water_scenarios: Optional[List[HotWaterScenario]] = [
+            hot_water_scenarios: list[HotWaterScenario] | None = [
                 HotWaterScenario.from_dict(entry, logger)
                 for entry in hot_water_scenario_inputs[HOT_WATER_SCENARIOS]
             ]
@@ -1254,7 +1326,7 @@ def parse_scenario_inputs(
         )
 
     try:
-        scenarios: List[Scenario] = [
+        scenarios: list[Scenario] = [
             Scenario.from_dict(
                 desalination_scenarios, hot_water_scenarios, logger, entry
             )
@@ -1318,17 +1390,17 @@ def parse_scenario_inputs(
 
 def _parse_solar_inputs(  # pylint: disable=too-many-locals, too-many-statements
     debug: bool,
-    energy_system_inputs: Dict[str, Any],
+    energy_system_inputs: dict[str, Any],
     inputs_directory_relative_path: str,
     logger: Logger,
-    scenarios: List[Scenario],
-) -> Tuple[
-    solar.PVPanel,
-    Dict[str, float],
-    Dict[str, float],
-    Optional[solar.HybridPVTPanel],
-    Optional[Dict[str, float]],
-    Optional[Dict[str, float]],
+    scenarios: list[Scenario],
+) -> tuple[
+    list[solar.PVPanel],
+    dict[str, DefaultDict[str, float]],
+    dict[str, DefaultDict[str, float]],
+    list[solar.HybridPVTPanel],
+    dict[str, DefaultDict[str, float]] | None,
+    dict[str, DefaultDict[str, float]] | None,
     str,
     Optional[solar.SolarThermalPanel],
     Optional[Dict[str, float]],
@@ -1352,18 +1424,30 @@ def _parse_solar_inputs(  # pylint: disable=too-many-locals, too-many-statements
 
     Outputs:
         A `tuple` containing:
-        - The :class:`solar.PVPanel` being used for the run;
-        - The pv-panel cost information;
-        - The pv-panel emissions information;
-        - The :class:`HybridPVTPanel` being used for the run, if relevant;
-        - The pv-t-panel cost information, if relevant;
-        - The pv-t-panel emissions information, if relevant;
+        - A `list` of the :class:`solar.PVPanel` instances being used for the run;
+        - The pv-panel cost information for each panel being considered;
+        - The pv-panel emissions information for each panel being considered;
+        - A `list` of the :class:`HybridPVTPanel` being used for the run, if relevant;
+        - The pv-t-panel cost information for each panel being considered, if relevant;
+        - The pv-t-panel emissions informatio for each panel being considered, if
+          relevant;
         - The relative path to the solar generation inputs filepath.
         - The :class:`SolarThermalPanel` being used for the run, if relevant;
         - The solar-thermal-panel cost information, if relevant;
         - The solar-thermal-panel emissions information, if relevant;
 
     """
+
+    # Raise an error if both `pv_panel` and `pv_panels` etc. have been used.
+    if "pv_panel" in energy_system_inputs and "pv_panels" in energy_system_inputs:
+        logger.error(
+            "Cannot use both 'pv_panel' and 'pv_panels' in energy-system inputs. Only "
+            "one is acceptable use."
+        )
+        raise InputFileError(
+            "energy-system inputs",
+            "Both 'pv_panel' and 'pv_panels' keywords were used.",
+        )
 
     # Parse the solar input information.
     solar_generation_inputs_filepath = os.path.join(
@@ -1381,7 +1465,7 @@ def _parse_solar_inputs(  # pylint: disable=too-many-locals, too-many-statements
     logger.info("Solar generation inputs successfully parsed.")
 
     # Parse the PV-panel information.
-    solar_panels: List[solar.SolarPanel] = []
+    solar_panels: list[solar.SolarPanel] = []
     for panel_input in solar_generation_inputs["panels"]:
         if panel_input["type"] == SolarPanelType.PV.value:
             solar_panels.append(solar.PVPanel.from_dict(logger, panel_input))
@@ -1416,88 +1500,123 @@ def _parse_solar_inputs(  # pylint: disable=too-many-locals, too-many-statements
 
     # Determine the PV panel being modelled.
     try:
-        pv_panel: Union[solar.PVPanel, solar.SolarPanel] = [
+        pv_panels: list[solar.PVPanel | solar.SolarPanel] = [
             panel
             for panel in solar_panels
-            if panel.panel_type == SolarPanelType.PV  # type: ignore
-            and panel.name == energy_system_inputs[PV_PANEL]
-        ][0]
+            if panel.panel_type == solar.SolarPanelType.PV  # type: ignore
+            and (
+                panel.name == energy_system_inputs.get("pv_panel", "")
+                or panel.name in energy_system_inputs.get("pv_panels", [])
+            )
+        ]
     except IndexError:
         logger.error(
-            "%sPV panel %s not found in pv panel inputs.%s",
+            "%sPV panel%s %s not found in pv panel inputs.%s",
             BColours.fail,
-            energy_system_inputs[PV_PANEL],
+            "(s)" if "pv_panels" in energy_system_inputs else "",
+            energy_system_inputs.get(
+                "pv_panel", ", ".join(energy_system_inputs.get("pv_panels", []))
+            ),
             BColours.endc,
         )
         raise
 
-    if not isinstance(pv_panel, solar.PVPanel):
-        logger.error(
-            "%sThe PV panel selected is not a valid PV panel.%s",
-            BColours.fail,
-            BColours.endc,
-        )
-        raise InputFileError(
-            "solar inputs OR energy system inputs",
-            "The PV panel selected is not a valid PV panel.",
-        )
+    for pv_panel in pv_panels:
+        if not isinstance(pv_panel, solar.PVPanel):
+            logger.error(
+                "%sThe PV panel, %s, selected is not a valid PV panel.%s",
+                BColours.fail,
+                pv_panel.name,
+                BColours.endc,
+            )
+            raise InputFileError(
+                "solar inputs OR energy system inputs",
+                "The PV panel selected is not a valid PV panel.",
+            )
 
     # Determine the PV panel costs.
     try:
-        pv_panel_costs: Dict[str, float] = [
-            panel_data[COSTS]
-            for panel_data in solar_generation_inputs["panels"]
-            if panel_data[NAME] == pv_panel.name
-        ][0]
+        pv_panel_costs: dict[str, DefaultDict[str, float]] = {
+            pv_panel.name: [
+                defaultdict(float, panel_data[COSTS])
+                for panel_data in solar_generation_inputs["panels"]
+                if panel_data[NAME] == pv_panel.name
+            ][0]
+            for pv_panel in pv_panels
+        }
     except (KeyError, IndexError):
         logger.error(
-            "%sFailed to determine costs for PV panel %s.%s",
+            "%sFailed to determine costs for PV panel%s %s.%s",
             BColours.fail,
-            energy_system_inputs[PV_PANEL],
+            "(s)" if "pv_panels" in energy_system_inputs else "",
+            energy_system_inputs.get(
+                "pv_panel", ", ".join(energy_system_inputs.get("pv_panels", []))
+            ),
             BColours.endc,
         )
         raise
-    else:
-        logger.info("PV panel costs successfully determined.")
+    logger.info("PV panel costs successfully determined.")
 
     # Determine the PV panel emissions.
     try:
-        pv_panel_emissions: Dict[str, float] = [
-            panel_data[EMISSIONS]
-            for panel_data in solar_generation_inputs["panels"]
-            if panel_data[NAME] == pv_panel.name
-        ][0]
+        pv_panel_emissions: dict[str, dict[str, float]] = {
+            pv_panel.name: [
+                defaultdict(float, panel_data[EMISSIONS])
+                for panel_data in solar_generation_inputs["panels"]
+                if panel_data[NAME] == pv_panel.name
+            ][0]
+            for pv_panel in pv_panels
+        }
     except (KeyError, IndexError):
         logger.error(
-            "%sFailed to determine emissions for PV panel %s.%s",
+            "%sFailed to determine emissions for PV panel%s %s.%s",
             BColours.fail,
-            energy_system_inputs[PV_PANEL],
+            "(s)" if "pv_panels" in energy_system_inputs else "",
+            energy_system_inputs.get(
+                "pv_panel", ", ".join(energy_system_inputs.get("pv_panels", []))
+            ),
             BColours.endc,
         )
         raise
-    else:
-        logger.info("PV panel emissions successfully determined.")
+    logger.info("PV panel emissions successfully determined.")
 
     # Determine the PVT panel being modelled, if appropriate.
-    if PV_T_PANEL in energy_system_inputs:
+    if PV_T_PANEL in energy_system_inputs or f"{PV_T_PANEL}s" in energy_system_inputs:
+        # Raise an error if both `pvt_panel` and `pvt_panels` etc. have been used.
+        if "pvt_panel" in energy_system_inputs and "pvt_panels" in energy_system_inputs:
+            logger.error(
+                "Cannot use both 'pvt_panel' and 'pvt_panels' in energy-system inputs. "
+                "Only one is acceptable use."
+            )
+            raise InputFileError(
+                "energy-system inputs",
+                "Both 'pvt_panel' and 'pvt_panels' keywords were used.",
+            )
+
         try:
-            pvt_panel: Optional[Union[solar.HybridPVTPanel, solar.SolarPanel]] = [
+            pvt_panels: list[solar.HybridPVTPanel | solar.SolarPanel] = [
                 panel
                 for panel in solar_panels
-                if panel.panel_type == SolarPanelType.PV_T  # type: ignore
-                and panel.name == energy_system_inputs[PV_T_PANEL]
-            ][0]
+                if panel.panel_type == solar.SolarPanelType.PV_T  # type: ignore
+                and (
+                    panel.name == energy_system_inputs.get("pvt_panel", "")
+                    or panel.name in energy_system_inputs.get("pvt_panels", [])
+                )
+            ]
             logger.info("PV-T panel successfully determined.")
         except IndexError:
             logger.error(
-                "%sPV-T panel %s not found in pv panel inputs.%s",
+                "%sPV-T panel%s %s not found in pv panel inputs.%s",
                 BColours.fail,
-                energy_system_inputs[PV_T_PANEL],
+                "(s)" if "pvt_panels" in energy_system_inputs else "",
+                energy_system_inputs.get(
+                    "pvt_panel", ", ".join(energy_system_inputs.get("pvt_panels", []))
+                ),
                 BColours.endc,
             )
             raise
 
-        if pvt_panel is None:
+        if len(pvt_panels) == 0:
             logger.error(
                 "%sThe PV-T panel selected caused an internal error when determining "
                 "the relevant panel data.%s",
@@ -1508,54 +1627,68 @@ def _parse_solar_inputs(  # pylint: disable=too-many-locals, too-many-statements
                 "The PV-T panel selected was found but the information concerning it "
                 "was not successfully parsed."
             )
-        if not isinstance(pvt_panel, solar.HybridPVTPanel):
-            logger.error(
-                "%sThe PV-T panel selected %s is not a valid PV-T panel.%s",
-                BColours.fail,
-                energy_system_inputs[PV_PANEL],
-                BColours.endc,
-            )
-            raise InputFileError(
-                "solar inputs OR energy system inputs",
-                "The PV-T panel selected is not a valid HybridPVTPanel.",
-            )
+        for pvt_panel in pvt_panels:
+            if not isinstance(pvt_panel, solar.HybridPVTPanel):
+                logger.error(
+                    "%sThe PV-T panel selected %s is not a valid PV-T panel.%s",
+                    BColours.fail,
+                    pvt_panel.name,
+                    BColours.endc,
+                )
+                raise InputFileError(
+                    "solar inputs OR energy system inputs",
+                    "The PV-T panel selected is not a valid HybridPVTPanel.",
+                )
 
-        logger.info("PV-T panel successfully parsed: %s.", pvt_panel.name)
+        logger.info(
+            "PV-T panel(s) successfully parsed: %s.",
+            ", ".join({entry.name for entry in pvt_panels}),
+        )
 
         try:
-            pvt_panel_costs: Optional[Dict[str, float]] = [
-                panel_data[COSTS]
-                for panel_data in solar_generation_inputs["panels"]
-                if panel_data[NAME] == pvt_panel.name
-            ][0]
+            pvt_panel_costs: dict[str, DefaultDict[str, float]] | None = {
+                pvt_panel.name: [
+                    defaultdict(float, panel_data[COSTS])
+                    for panel_data in solar_generation_inputs["panels"]
+                    if panel_data[NAME] == pvt_panel.name
+                ][0]
+                for pvt_panel in pvt_panels
+            }
         except (KeyError, IndexError):
             logger.error(
-                "%sFailed to determine costs for PV-T panel %s.%s",
+                "%sFailed to determine costs for PV-T panel%s %s.%s",
                 BColours.fail,
-                energy_system_inputs[PV_T_PANEL],
+                "(s)" if "pvt_panels" in energy_system_inputs else "",
+                energy_system_inputs.get(
+                    "pvt_panel", ", ".join(energy_system_inputs.get("pvt_panels", []))
+                ),
                 BColours.endc,
             )
             raise
-        else:
-            logger.info("PV-T panel costs successfully determined.")
+        logger.info("PV-T panel costs successfully determined.")
         try:
-            pvt_panel_emissions: Optional[Dict[str, float]] = [
-                panel_data[EMISSIONS]
-                for panel_data in solar_generation_inputs["panels"]
-                if panel_data[NAME] == pvt_panel.name
-            ][0]
+            pvt_panel_emissions: dict[str, DefaultDict[str, float]] | None = {
+                pvt_panel.name: [
+                    defaultdict(float, panel_data[EMISSIONS])
+                    for panel_data in solar_generation_inputs["panels"]
+                    if panel_data[NAME] == pvt_panel.name
+                ][0]
+                for pvt_panel in pvt_panels
+            }
         except (KeyError, IndexError):
             logger.error(
-                "%sFailed to determine emissions for PV-T panel %s.%s",
+                "%sFailed to determine emissions for PV-T panel%s %s.%s",
                 BColours.fail,
-                energy_system_inputs[PV_T_PANEL],
+                "(s)" if "pvt_panels" in energy_system_inputs else "",
+                energy_system_inputs.get(
+                    "pvt_panel", ", ".join(energy_system_inputs.get("pvt_panels", []))
+                ),
                 BColours.endc,
             )
             raise
-        else:
-            logger.info("PV-T panel emissions successfully determined.")
+        logger.info("PV-T panel emissions successfully determined.")
     else:
-        pvt_panel = None
+        pvt_panels = []
         pvt_panel_costs = None
         pvt_panel_emissions = None
 
@@ -1648,10 +1781,10 @@ def _parse_solar_inputs(  # pylint: disable=too-many-locals, too-many-statements
         solar_thermal_panel_emissions = None
 
     return (
-        pv_panel,
+        pv_panels,  # type: ignore
         pv_panel_costs,
         pv_panel_emissions,
-        pvt_panel,
+        pvt_panels,  # type: ignore
         pvt_panel_costs,
         pvt_panel_emissions,
         solar_generation_inputs_filepath,
@@ -1662,19 +1795,19 @@ def _parse_solar_inputs(  # pylint: disable=too-many-locals, too-many-statements
 
 
 def _parse_tank_inputs(  # pylint: disable=too-many-statements
-    energy_system_inputs: Dict[str, Any],
+    energy_system_inputs: dict[str, Any],
     inputs_directory_relative_path: str,
     logger: Logger,
-    scenarios: List[Scenario],
-) -> Tuple[
-    Optional[Dict[str, float]],
-    Optional[Dict[str, float]],
-    Optional[Dict[str, float]],
-    Optional[Dict[str, float]],
-    Optional[Dict[str, float]],
-    Optional[Dict[str, float]],
-    Optional[List[Dict[str, Any]]],
-    Optional[str],
+    scenarios: list[Scenario],
+) -> tuple[
+    dict[str, float] | None,
+    dict[str, float] | None,
+    dict[str, float] | None,
+    dict[str, float] | None,
+    dict[str, float] | None,
+    dict[str, float] | None,
+    list[dict[str, Any]] | None,
+    str | None,
 ]:
     """
     Parses the tank inputs file.
@@ -1720,7 +1853,7 @@ def _parse_tank_inputs(  # pylint: disable=too-many-statements
         logger.info("Parsing clean-water tank impact information.")
         # Parse the clean-water tank costs information.
         try:
-            clean_water_tank_costs: Optional[Dict[str, float]] = [
+            clean_water_tank_costs: dict[str, float] | None = [
                 entry[COSTS]
                 for entry in tank_inputs
                 if entry[NAME]
@@ -1732,12 +1865,11 @@ def _parse_tank_inputs(  # pylint: disable=too-many-statements
                 "determine clean-water tank from the energy-system inputs file."
             )
             raise
-        else:
-            logger.info("Clean-water tank cost information successfully parsed.")
+        logger.info("Clean-water tank cost information successfully parsed.")
 
         # Parse the clean-water tank emissions information.
         try:
-            clean_water_tank_emissions: Optional[Dict[str, float]] = [
+            clean_water_tank_emissions: dict[str, float] | None = [
                 entry[EMISSIONS]
                 for entry in tank_inputs
                 if entry[NAME]
@@ -1752,8 +1884,7 @@ def _parse_tank_inputs(  # pylint: disable=too-many-statements
                 "file."
             )
             raise
-        else:
-            logger.info("Clean-water tank emission information successfully parsed.")
+        logger.info("Clean-water tank emission information successfully parsed.")
 
     else:
         clean_water_tank_costs = None
@@ -1777,7 +1908,7 @@ def _parse_tank_inputs(  # pylint: disable=too-many-statements
         logger.info("Parsing buffer-water tank impact information.")
         # Parse the buffer-water tank costs information.
         try:
-            buffer_tank_costs: Optional[Dict[str, float]] = [
+            buffer_tank_costs: dict[str, float] | None = [
                 entry[COSTS]
                 for entry in tank_inputs
                 if entry[NAME]
@@ -1791,12 +1922,11 @@ def _parse_tank_inputs(  # pylint: disable=too-many-statements
                 "Failed to determine buffer-water tank from the energy-system inputs file."
             )
             raise
-        else:
-            logger.info("HOt-water tank cost information successfully parsed.")
+        logger.info("HOt-water tank cost information successfully parsed.")
 
         # Parse the buffer-water tank emissions information.
         try:
-            buffer_tank_emissions: Optional[Dict[str, float]] = [
+            buffer_tank_emissions: dict[str, float] | None = [
                 entry[EMISSIONS]
                 for entry in tank_inputs
                 if entry[NAME]
@@ -1811,8 +1941,7 @@ def _parse_tank_inputs(  # pylint: disable=too-many-statements
                 "file."
             )
             raise
-        else:
-            logger.info("Buffer-water tank emission information successfully parsed.")
+        logger.info("Buffer-water tank emission information successfully parsed.")
 
     else:
         buffer_tank_costs = None
@@ -1825,7 +1954,7 @@ def _parse_tank_inputs(  # pylint: disable=too-many-statements
         logger.info("Parsing hot-water tank impact information.")
         # Parse the hot-water tank costs information.
         try:
-            hot_water_tank_costs: Optional[Dict[str, float]] = [
+            hot_water_tank_costs: dict[str, float] | None = [
                 entry[COSTS]
                 for entry in tank_inputs
                 if entry[NAME]
@@ -1842,12 +1971,11 @@ def _parse_tank_inputs(  # pylint: disable=too-many-statements
                 BColours.endc,
             )
             raise
-        else:
-            logger.info("Hot-water tank cost information successfully parsed.")
+        logger.info("Hot-water tank cost information successfully parsed.")
 
         # Parse the hot-water tank emissions information.
         try:
-            hot_water_tank_emissions: Optional[Dict[str, float]] = [
+            hot_water_tank_emissions: dict[str, float] | None = [
                 entry[EMISSIONS]
                 for entry in tank_inputs
                 if entry[NAME]
@@ -1862,8 +1990,7 @@ def _parse_tank_inputs(  # pylint: disable=too-many-statements
                 "file."
             )
             raise
-        else:
-            logger.info("Hot-water tank emission information successfully parsed.")
+        logger.info("Hot-water tank emission information successfully parsed.")
 
     else:
         hot_water_tank_costs = None
@@ -1885,43 +2012,43 @@ def _parse_tank_inputs(  # pylint: disable=too-many-statements
 
 
 def _parse_minigrid_inputs(  # pylint: disable=too-many-locals, too-many-statements
-    converters: Dict[str, Converter],
+    converters: dict[str, Converter],
     debug: bool,
+    finance_inputs: DefaultDict[str, DefaultDict[str, float]],
     inputs_directory_relative_path: str,
     logger: Logger,
-    scenarios: List[Scenario],
-) -> Tuple[
-    Optional[Dict[str, float]],
-    Optional[Dict[str, float]],
+    scenarios: list[Scenario],
+) -> tuple[
+    dict[str, float] | None,
+    dict[str, float] | None,
     str,
-    Optional[Dict[str, float]],
-    Optional[Dict[str, float]],
-    Optional[Dict[str, float]],
-    Optional[Dict[str, float]],
-    Dict[str, float],
-    Dict[str, float],
+    dict[str, float] | None,
+    dict[str, float] | None,
+    dict[str, float] | None,
+    dict[str, float] | None,
+    dict[str, float],
+    dict[str, float],
+    dict[str, float] | None,
     str,
-    Optional[Dict[str, float]],
-    Optional[Dict[str, float]],
+    dict[str, float] | None,
+    dict[str, float] | None,
     str,
-    Optional[Dict[str, float]],
-    Optional[Dict[str, float]],
-    Optional[str],
-    Optional[Dict[str, float]],
-    Optional[Dict[str, float]],
+    dict[str, float] | None,
+    dict[str, float] | None,
+    str | None,
+    dict[str, float] | None,
+    dict[str, float] | None,
     Minigrid,
-    Dict[str, float],
-    Dict[str, float],
-    Optional[Dict[str, float]],
-    Optional[Dict[str, float]],
+    dict[str, DefaultDict[str, float]],
+    dict[str, DefaultDict[str, float]],
+    dict[str, DefaultDict[str, float]] | None,
+    dict[str, DefaultDict[str, float]] | None,
     str,
-    Optional[Dict[str, float]],
-    Optional[Dict[str, float]],
-    Optional[str],
-    Dict[str, Dict[str, float]],
-    Dict[str, Dict[str, float]],
+    str | None,
+    dict[str, dict[str, float]],
+    dict[str, dict[str, float]],
     str,
-    Dict[str, Transmitter],
+    dict[str, Transmitter],
 ]:
     """
     Parses the energy-system-related input files.
@@ -1932,6 +2059,8 @@ def _parse_minigrid_inputs(  # pylint: disable=too-many-locals, too-many-stateme
         - debug:
             Whether to use the PV-T reduced models (False) or invented data for
             debugging purposes (True).
+        - finance_inputs:
+            The financial input information.
         - inputs_directory_relative_path:
             The relative path to the inputs folder directory.
         - logger:
@@ -1949,6 +2078,7 @@ def _parse_minigrid_inputs(  # pylint: disable=too-many-locals, too-many-stateme
         - Clean-water tank tank emissions,
         - Diesel costs,
         - Diesel emissions,
+        - Diesel fuel costs and emissions information,
         - Diesel input filepath,
         - Diesel water heater costs,
         - Diesel water heater emissions,
@@ -1961,8 +2091,7 @@ def _parse_minigrid_inputs(  # pylint: disable=too-many-locals, too-many-stateme
         - PV-T costs,
         - PV-T emissions,
         - Solar inputs filepath,
-        - Solar-thermal panel costs,
-        - Solar-thermal panel emissions,
+        - Solar panels,
         - Tank inputs filepath,
         - Transmission costs,
         - Transmission emissions,
@@ -1983,16 +2112,17 @@ def _parse_minigrid_inputs(  # pylint: disable=too-many-locals, too-many-stateme
     logger.info("Energy system inputs successfully parsed.")
 
     # Parse the diesel inputs information.
-    diesel_costs: Dict[str, float]
-    diesel_emissions: Dict[str, float]
+    diesel_costs: dict[str, float]
+    diesel_emissions: dict[str, float]
     diesel_generator: DieselGenerator
     diesel_inputs_filepath: str
-    diesel_water_heater: Optional[DieselWaterHeater]
-    diesel_water_heater_costs: Optional[Dict[str, float]]
-    diesel_water_heater_emissions: Optional[Dict[str, float]]
+    diesel_water_heater: DieselWaterHeater | None
+    diesel_water_heater_costs: dict[str, float] | None
+    diesel_water_heater_emissions: dict[str, float] | None
     (
         diesel_costs,
         diesel_emissions,
+        diesel_fuel_impact,
         diesel_generator,
         diesel_inputs_filepath,
         diesel_water_heater,
@@ -2009,21 +2139,19 @@ def _parse_minigrid_inputs(  # pylint: disable=too-many-locals, too-many-stateme
         "and water heater " if diesel_water_heater is not None else "",
     )
 
-    pv_panel: solar.PVPanel
-    pv_panel_costs: Dict[str, float]
-    pv_panel_emissions: Dict[str, float]
-    pvt_panel: Optional[solar.HybridPVTPanel]
-    pvt_panel_costs: Optional[Dict[str, float]]
-    pvt_panel_emissions: Optional[Dict[str, float]]
+    pv_panel_costs: dict[str, DefaultDict[str, float]]
+    pv_panel_emissions: dict[str, DefaultDict[str, float]]
+    pvt_panel_costs: dict[str, DefaultDict[str, float]] | None
+    pvt_panel_emissions: dict[str, DefaultDict[str, float]] | None
     solar_generation_inputs_filepath: str
     solar_thermal_panel: Optional[solar.SolarThermalPanel]
     solar_thermal_panel_costs: Optional[Dict[str, float]]
     solar_thermal_panel_emissions: Optional[Dict[str, float]]
     (
-        pv_panel,
+        pv_panels,
         pv_panel_costs,
         pv_panel_emissions,
-        pvt_panel,
+        pvt_panels,
         pvt_panel_costs,
         pvt_panel_emissions,
         solar_generation_inputs_filepath,
@@ -2054,7 +2182,7 @@ def _parse_minigrid_inputs(  # pylint: disable=too-many-locals, too-many-stateme
 
     # Parse the transmission inputs file.
     transmission_inputs_filepath: str
-    transmitters: Dict[str, Transmitter]
+    transmitters: dict[str, Transmitter]
 
     (
         transmission_costs,
@@ -2067,18 +2195,18 @@ def _parse_minigrid_inputs(  # pylint: disable=too-many-locals, too-many-stateme
     )
     logger.info("Transmission inputs successfully parsed.")
 
-    buffer_tank_costs: Optional[Dict[str, float]]
-    buffer_tank_emissions: Optional[Dict[str, float]]
-    clean_water_tank_costs: Optional[Dict[str, float]]
-    clean_water_tank_emissions: Optional[Dict[str, float]]
-    hot_water_tank_costs: Optional[Dict[str, float]]
-    hot_water_tank_emissions: Optional[Dict[str, float]]
-    exchanger_costs: Optional[Dict[str, float]]
-    exchanger_emissions: Optional[Dict[str, float]]
-    exchanger_inputs: Optional[List[Dict[str, Any]]]
-    exchanger_inputs_filepath: Optional[str]
-    tank_inputs: Optional[List[Dict[str, Any]]]
-    tank_inputs_filepath: Optional[str]
+    buffer_tank_costs: dict[str, float] | None
+    buffer_tank_emissions: dict[str, float] | None
+    clean_water_tank_costs: dict[str, float] | None
+    clean_water_tank_emissions: dict[str, float] | None
+    hot_water_tank_costs: dict[str, float] | None
+    hot_water_tank_emissions: dict[str, float] | None
+    exchanger_costs: dict[str, float] | None
+    exchanger_emissions: dict[str, float] | None
+    exchanger_inputs: list[dict[str, Any]] | None
+    exchanger_inputs_filepath: str | None
+    tank_inputs: list[dict[str, Any]] | None
+    tank_inputs_filepath: str | None
     if any(scenario.desalination_scenario is not None for scenario in scenarios) or any(
         scenario.hot_water_scenario is not None for scenario in scenarios
     ):
@@ -2110,7 +2238,7 @@ def _parse_minigrid_inputs(  # pylint: disable=too-many-locals, too-many-stateme
         logger.info("Heat exchanger information successfully parsed.")
 
         try:
-            water_pump: Optional[Transmitter] = transmitters[
+            water_pump: Transmitter | None = transmitters[
                 energy_system_inputs[WATER_PUMP]
             ]
         except KeyError:
@@ -2148,7 +2276,7 @@ def _parse_minigrid_inputs(  # pylint: disable=too-many-locals, too-many-stateme
         ]
     ):
         try:
-            electric_water_heater: Optional[Converter] = converters[
+            electric_water_heater: Converter | None = converters[
                 energy_system_inputs[ELECTRIC_WATER_HEATER]
             ]
         except KeyError:
@@ -2168,10 +2296,12 @@ def _parse_minigrid_inputs(  # pylint: disable=too-many-locals, too-many-stateme
         diesel_generator,
         diesel_water_heater,
         electric_water_heater,
+        finance_inputs,
+        logger,
         energy_system_inputs,
-        pv_panel,
-        pvt_panel,
-        solar_thermal_panel,
+        pv_panels,
+        pvt_panels,
+        solar_thermal_panels,
         battery_inputs,
         exchanger_inputs,
         tank_inputs,
@@ -2219,6 +2349,7 @@ def _parse_minigrid_inputs(  # pylint: disable=too-many-locals, too-many-stateme
         clean_water_tank_emissions,
         diesel_costs,
         diesel_emissions,
+        diesel_fuel_impact,
         diesel_inputs_filepath,
         diesel_water_heater_costs,
         diesel_water_heater_emissions,
@@ -2247,11 +2378,11 @@ def _parse_minigrid_inputs(  # pylint: disable=too-many-locals, too-many-stateme
 def _parse_transmission_inputs(
     inputs_directory_relative_path: str,
     logger: Logger,
-) -> Tuple[
-    Dict[str, Dict[str, float]],
-    Dict[str, Dict[str, float]],
+) -> tuple[
+    dict[str, dict[str, float]],
+    dict[str, dict[str, float]],
     str,
-    Dict[str, Transmitter],
+    dict[str, Transmitter],
 ]:
     """
     Parses the transmission inputs file.
@@ -2276,12 +2407,12 @@ def _parse_transmission_inputs(
         inputs_directory_relative_path, TRANSMISSION_INPUTS_FILE
     )
 
-    transmission_costs: Dict[str, Dict[str, float]] = {}
-    transmission_emissions: Dict[str, Dict[str, float]] = {}
+    transmission_costs: dict[str, dict[str, float]] = {}
+    transmission_emissions: dict[str, dict[str, float]] = {}
 
     # If the file exists, parse the converters contained.
     if os.path.isfile(transmission_file_relative_path):
-        parsed_transmitters: List[Transmitter] = []
+        parsed_transmitters: list[Transmitter] = []
         transmission_inputs = read_yaml(transmission_file_relative_path, logger)
         if not isinstance(transmission_inputs, dict):
             logger.error(
@@ -2317,7 +2448,7 @@ def _parse_transmission_inputs(
                 raise
 
         # Convert the list to the required format.
-        transmitters: Dict[str, Transmitter] = {
+        transmitters: dict[str, Transmitter] = {
             transmitter.name: transmitter for transmitter in parsed_transmitters
         }
 
@@ -2335,14 +2466,13 @@ def _parse_transmission_inputs(
                     transmitter.name,
                 )
                 raise
-            else:
-                logger.info(
-                    "Transmitter cost information for %s successfully parsed.",
-                    transmitter.name,
-                )
+            logger.info(
+                "Transmitter cost information for %s successfully parsed.",
+                transmitter.name,
+            )
             try:
                 transmission_emissions[transmitter.name] = [
-                    entry[EMISSIONS]
+                    entry.get(EMISSIONS, defaultdict(float))
                     for entry in transmission_inputs[TRANSMITTERS]
                     if entry[NAME] == transmitter.name
                 ][0]
@@ -2352,11 +2482,10 @@ def _parse_transmission_inputs(
                     transmitter.name,
                 )
                 raise
-            else:
-                logger.info(
-                    "Transmitter emission information for %s successfully parsed.",
-                    transmitter.name,
-                )
+            logger.info(
+                "Transmitter emission information for %s successfully parsed.",
+                transmitter.name,
+            )
 
     else:
         transmitters = {}
@@ -2372,26 +2501,27 @@ def _parse_transmission_inputs(
 
 def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
     debug: bool,
-    electric_load_profile: Optional[str],
+    electric_load_profile: str | None,
     location_name: str,
+    locations_foldername: str,
     logger: Logger,
-    optimisation_inputs_file: Optional[str],
-) -> Tuple[
-    Dict[str, Converter],
-    Dict[load.load.Device, pd.DataFrame],
+    optimisation_inputs_file: str | None,
+) -> tuple[
+    dict[str, Converter],
+    dict[load.load.Device, pd.DataFrame],
     Minigrid,
     DefaultDict[str, DefaultDict[str, float]],
-    Dict[str, Union[int, str]],
     DefaultDict[str, DefaultDict[str, float]],
+    dict[str, int | str],
     pd.DataFrame,
     Location,
-    Optional[OptimisationParameters],
-    List[Optimisation],
-    List[Scenario],
-    List[Simulation],
-    Optional[pd.DataFrame],
-    Dict[WaterSource, pd.DataFrame],
-    Dict[str, str],
+    OptimisationParameters | None,
+    list[Optimisation],
+    list[Scenario],
+    list[Simulation],
+    pd.DataFrame | None,
+    dict[WaterSource, pd.DataFrame],
+    dict[str, str],
 ]:
     """
     Parse the various input files and return content-related information.
@@ -2405,6 +2535,8 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
             in for the run.
         - location_name:
             The name of the location_name being considered.
+        - locations_foldername:
+            The path to the folder containing the locations.
         - logger:
             The logger to use for the run.
         - optimisation_inputs_file:
@@ -2419,6 +2551,7 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
             - minigrid,
             - finance_inputs,
             - ghg_inputs,
+            - global_settings_inputs,
             - grid_times,
             - optimisation_inputs,
             - optimisations, the `set` of optimisations to run,
@@ -2433,8 +2566,12 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
 
     """
 
+    # Parse global-settings files
+    global_settings_inputs = _parse_global_settings(logger)
+
+    # Parse location-specific files.
     inputs_directory_relative_path = os.path.join(
-        LOCATIONS_FOLDER_NAME,
+        locations_foldername,
         location_name,
         INPUTS_DIRECTORY,
     )
@@ -2459,7 +2596,7 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
     logger.info("Device inputs successfully parsed.")
 
     # Parse the device utilisation files.
-    device_utilisations: Dict[load.load.Device, pd.DataFrame] = {}
+    device_utilisations: dict[load.load.Device, pd.DataFrame] = {}
     for device in devices:
         try:
             with open(
@@ -2476,14 +2613,14 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
                     index_col=None,
                 )
         except FileNotFoundError:
-            logger.error(
+            logger.info(
                 "%sError parsing device-utilisation profile for %s, check that the "
                 "profile is present and that all device names are consistent.%s",
                 BColours.fail,
                 device.name,
                 BColours.endc,
             )
-            raise
+            device_utilisations[device] = pd.DataFrame([[0] * 12] * 24)
 
     # Parse the override electric profile file if specified.
     if electric_load_profile is not None:
@@ -2496,7 +2633,7 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
                 ),
                 "r",
             ) as f:
-                total_load_profile: Optional[pd.DataFrame] = pd.read_csv(f, index_col=0)
+                total_load_profile: pd.DataFrame | None = pd.read_csv(f, index_col=0)
         except FileNotFoundError:
             logger.error(
                 "%sTotal load profile '%s' could not be found.%s",
@@ -2520,9 +2657,11 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
     # Parse the optimisation input information.
     optimisation_inputs_filepath = os.path.join(
         inputs_directory_relative_path,
-        optimisation_inputs_file
-        if optimisation_inputs_file is not None
-        else OPTIMISATION_INPUTS_FILE,
+        (
+            optimisation_inputs_file
+            if optimisation_inputs_file is not None
+            else OPTIMISATION_INPUTS_FILE
+        ),
     )
     optimisation_inputs = read_yaml(optimisation_inputs_filepath, logger)
     if not isinstance(optimisation_inputs, dict):
@@ -2544,7 +2683,7 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
     logger.info("Optimisation inputs successfully parsed.")
 
     try:
-        optimisations: List[Optimisation] = [
+        optimisations: list[Optimisation] = [
             Optimisation.from_dict(logger, entry, scenarios)
             for entry in optimisation_inputs[OPTIMISATIONS]
         ]
@@ -2571,9 +2710,39 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
         raise InputFileError(
             "simulation inputs", "Simulation inputs must be of type `list`."
         )
-    simulations: List[Simulation] = [
+    simulations: list[Simulation] = [
         Simulation.from_dict(entry) for entry in simulations_file_contents
     ]
+
+    # Parse and collate the impact information.
+    finance_inputs_filepath = os.path.join(
+        inputs_directory_relative_path, FINANCE_INPUTS_FILE
+    )
+    # Finance input type: dict[str, float | dict[str, float]]
+    finance_data = read_yaml(finance_inputs_filepath, logger)
+    if not isinstance(finance_data, dict):
+        raise InputFileError(
+            "finance inputs", "Finance inputs must be of type `dict` not `list`."
+        )
+    finance_inputs: DefaultDict[str, DefaultDict[str, float]] = defaultdict(
+        lambda: defaultdict(float)
+    )
+    finance_inputs.update(finance_data)
+    logger.info("Finance inputs successfully parsed.")
+
+    ghg_inputs_filepath = os.path.join(inputs_directory_relative_path, GHG_INPUTS_FILE)
+    # Ghg data type: dict[str, float | dict[str, float]]
+    ghg_data = read_yaml(ghg_inputs_filepath, logger)
+    if not isinstance(finance_data, dict):
+        raise InputFileError(
+            "ghg inputs", "GHG inputs must be of type `dict` not `list`."
+        )
+    # Generate a default dict to take care of missing data.
+    ghg_inputs: DefaultDict[str, DefaultDict[str, float]] = defaultdict(
+        lambda: defaultdict(float)
+    )
+    ghg_inputs.update(ghg_data)  # type: ignore
+    logger.info("GHG inputs successfully parsed.")
 
     # Parse the energy-system input information.
     (
@@ -2586,6 +2755,7 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
         clean_water_tank_emissions,
         diesel_costs,
         diesel_emissions,
+        diesel_fuel_impact,
         diesel_inputs_filepath,
         diesel_water_heater_costs,
         diesel_water_heater_emissions,
@@ -2609,27 +2779,14 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
         transmission_inputs_filepath,
         transmitters,
     ) = _parse_minigrid_inputs(
-        converters, debug, inputs_directory_relative_path, logger, scenarios
+        converters,
+        debug,
+        finance_inputs,
+        inputs_directory_relative_path,
+        logger,
+        scenarios,
     )
     logger.info("Energy-system inputs successfully parsed.")
-
-    generation_inputs_filepath = os.path.join(
-        inputs_directory_relative_path, GENERATION_INPUTS_FILE
-    )
-    generation_inputs = read_yaml(generation_inputs_filepath, logger)
-    if not isinstance(generation_inputs, dict):
-        logger.error(
-            "%sThe generation inputs file was invalid: information must be contained "
-            "within a `dict`. See the user-guide.%s",
-            BColours.fail,
-            BColours.endc,
-        )
-        raise InputFileError(
-            "generation inputs",
-            "The contents of the generation inputs file must be a key-value "
-            "dictionary.",
-        )
-    logger.info("Generation inputs successfully parsed.")
 
     grid_times_filepath = os.path.join(
         inputs_directory_relative_path,
@@ -2647,9 +2804,9 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
 
     if any(scenario.desalination_scenario is not None for scenario in scenarios):
         # Parse the water-source inputs file.
-        conventional_water_source_inputs: Optional[List[Dict[str, float]]]
-        conventional_water_source_inputs_filepath: Optional[str]
-        conventional_water_sources: Optional[Set[WaterSource]]
+        conventional_water_source_inputs: list[dict[str, float]] | None
+        conventional_water_source_inputs_filepath: str | None
+        conventional_water_sources: set[WaterSource] | None
         (
             conventional_water_source_inputs,
             conventional_water_source_inputs_filepath,
@@ -2664,7 +2821,7 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
             ", ".join([source.name for source in conventional_water_sources]),
         )
 
-        water_source_times: Dict[WaterSource, pd.DataFrame] = {}
+        water_source_times: dict[WaterSource, pd.DataFrame] = {}
         for source in conventional_water_sources:
             try:
                 with open(
@@ -2720,41 +2877,29 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
         )
     logger.info("Location inputs successfully parsed.")
 
-    # Parse and collate the impact information.
-    finance_inputs_filepath = os.path.join(
-        inputs_directory_relative_path, FINANCE_INPUTS_FILE
-    )
-    # Finance input type: Dict[str, Union[float, Dict[str, float]]]
-    finance_data = read_yaml(finance_inputs_filepath, logger)
-    if not isinstance(finance_data, dict):
-        raise InputFileError(
-            "finance inputs", "Finance inputs must be of type `dict` not `list`."
-        )
-    finance_inputs: DefaultDict[str, DefaultDict[str, float]] = defaultdict(
-        lambda: defaultdict(float)
-    )
-    finance_inputs.update(finance_data)
-    logger.info("Finance inputs successfully parsed.")
-
-    ghg_inputs_filepath = os.path.join(inputs_directory_relative_path, GHG_INPUTS_FILE)
-    # Ghg data type: Dict[str, Union[float, Dict[str, float]]]
-    ghg_data = read_yaml(ghg_inputs_filepath, logger)
-    if not isinstance(finance_data, dict):
-        raise InputFileError(
-            "ghg inputs", "GHG inputs must be of type `dict` not `list`."
-        )
-    # Generate a default dict to take care of missing data.
-    ghg_inputs: DefaultDict[str, DefaultDict[str, float]] = defaultdict(
-        lambda: defaultdict(float)
-    )
-    ghg_inputs.update(ghg_data)  # type: ignore
-    logger.info("GHG inputs successfully parsed.")
-
     # Update the finance and GHG inputs accordingly with the PV data.
     logger.info("Updating with PV impact data.")
-    finance_inputs[ImpactingComponent.PV.value] = defaultdict(float, pv_panel_costs)
-    ghg_inputs[ImpactingComponent.PV.value] = defaultdict(float, pv_panel_emissions)
+    finance_inputs[ImpactingComponent.PV.value] = defaultdict(
+        lambda: defaultdict(float), pv_panel_costs  # type: ignore [arg-type, return-value]
+    )
+    ghg_inputs[ImpactingComponent.PV.value] = defaultdict(
+        lambda: defaultdict(float), pv_panel_emissions  # type: ignore [arg-type, return-value]
+    )
     logger.info("PV impact data successfully updated.")
+
+    # Update the impact inputs with the diesel fuel data.
+    if diesel_fuel_impact is not None:
+        finance_inputs[ImpactingComponent.DIESEL_FUEL.value] = defaultdict(
+            float, diesel_fuel_impact
+        )
+        ghg_inputs[ImpactingComponent.DIESEL_FUEL.value] = defaultdict(
+            float, diesel_fuel_impact
+        )
+        logger.info(
+            "Diesel impact data successfully updated from the diesel inputs file."
+        )
+    else:
+        logger.info("Diesel impact information taken from finance and GHG inputs.")
 
     # Update the impact inputs with the diesel data.
     if any(
@@ -2826,10 +2971,10 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
             )
             raise InternalError("Error processing PV-T panel cost and emissions.")
         finance_inputs[ImpactingComponent.PV_T.value] = defaultdict(
-            float, pvt_panel_costs
+            float, pvt_panel_costs  # type: ignore [arg-type]
         )
         ghg_inputs[ImpactingComponent.PV_T.value] = defaultdict(
-            float, pvt_panel_emissions
+            float, pvt_panel_emissions  # type: ignore [arg-type]
         )
     else:
         logger.info("PV-T disblaed in scenario file, skipping PV-T impact parsing.")
@@ -2878,9 +3023,11 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
             )
         ] = defaultdict(
             float,
-            converter_costs[converter]
-            if converter_costs[converter] is not None
-            else {},
+            (
+                converter_costs[converter]
+                if converter_costs[converter] is not None
+                else {}
+            ),
         )
         ghg_inputs[
             GHG_IMPACT.format(
@@ -2888,9 +3035,11 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
             )
         ] = defaultdict(
             float,
-            converter_emissions[converter]
-            if converter_emissions[converter] is not None
-            else {},
+            (
+                converter_emissions[converter]
+                if converter_emissions[converter] is not None
+                else {}
+            ),
         )
         logger.info("Converter %s impact data successfully updated.", converter.name)
 
@@ -2967,7 +3116,7 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
         ):
             for source in conventional_water_sources:
                 try:
-                    conventional_source_costs: Union[float, Dict[str, float]] = [
+                    conventional_source_costs: float | dict[str, float] = [
                         entry[COSTS]
                         for entry in conventional_water_source_inputs
                         if entry[NAME] == source.name
@@ -2999,7 +3148,7 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
                 ] = defaultdict(float, conventional_source_costs)
 
                 try:
-                    conventional_source_emissions: Union[float, Dict[str, float]] = [
+                    conventional_source_emissions: float | dict[str, float] = [
                         entry[EMISSIONS]
                         for entry in conventional_water_source_inputs
                         if entry[NAME] == source.name
@@ -3051,36 +3200,37 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
         )
         ghg_inputs[ImpactingComponent.DIESEL_WATER_HEATER.value] = defaultdict(
             float,
-            diesel_water_heater_emissions
-            if diesel_water_heater_emissions is not None
-            else {},
+            (
+                diesel_water_heater_emissions
+                if diesel_water_heater_emissions is not None
+                else {}
+            ),
         )
         logger.info("Diesel water-heater impact data successfully updated.")
 
     # Generate a dictionary with information about the input files used.
-    input_file_info: Dict[str, str] = {
+    input_file_info: dict[str, str] = {
         "batteries": battery_inputs_filepath,
         "converters": conversion_file_relative_path,
         "devices": device_inputs_filepath,
         "diesel_inputs": diesel_inputs_filepath,
         "energy_system": energy_system_inputs_filepath,
         "finance_inputs": finance_inputs_filepath,
-        "generation_inputs": generation_inputs_filepath,
         "ghg_inputs": ghg_inputs_filepath,
         "grid_times": grid_times_filepath,
         "location_inputs": location_inputs_filepath,
         "optimisation_inputs": optimisation_inputs_filepath,
         "scenarios": scenario_inputs_filepath,
-        "simularion": simulations_inputs_filepath,
+        "simulation": simulations_inputs_filepath,
         "solar_inputs": solar_generation_inputs_filepath,
         "transmission_inputs": transmission_inputs_filepath,
     }
 
     if any(scenario.desalination_scenario is not None for scenario in scenarios):
         if conventional_water_source_inputs_filepath is not None:
-            input_file_info[
-                "conventional_water_source_inputs"
-            ] = conventional_water_source_inputs_filepath
+            input_file_info["conventional_water_source_inputs"] = (
+                conventional_water_source_inputs_filepath
+            )
         if tank_inputs_filepath is not None:
             input_file_info["tank_inputs"] = tank_inputs_filepath
 
@@ -3137,8 +3287,8 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
         device_utilisations,
         minigrid,
         finance_inputs,
-        generation_inputs,
         ghg_inputs,
+        global_settings_inputs,
         grid_times,
         location,
         optimisation_parameters,

@@ -23,19 +23,19 @@ import os
 
 from contextlib import contextmanager
 from logging import Logger
-from typing import Any, Dict, Iterator, List, Optional, Tuple, Union
+from typing import Any, Iterator, Union
 
 import yaml
 
 from ..__utils__ import (
     BColours,
     DEFAULT_SCENARIO,
+    get_locations_foldername,
     InputFileError,
-    LOCATIONS_FOLDER_NAME,
     read_yaml,
 )
 from ..fileparser import INPUTS_DIRECTORY, OPTIMISATION_INPUTS_FILE, OPTIMISATIONS
-
+from ..optimisation.__utils__ import OPTIMISATION_CRITERIA, THRESHOLD_CRITERIA
 
 __all__ = (
     "HpcRunType",
@@ -93,6 +93,9 @@ class _BaseHpcRun:  # pylint: disable=too-few-public-methods
     .. attribute:: location
         The name of the location.
 
+    .. attribute:: output
+        The name of the output file to use.
+
     .. attribute:: total_load
         Whether a total-load file is being used (True) or not (False).
 
@@ -107,7 +110,11 @@ class _BaseHpcRun:  # pylint: disable=too-few-public-methods
     type: HpcRunType
 
     def __init__(
-        self, location: str, total_load: bool, total_load_file: Optional[str] = None
+        self,
+        location: str,
+        output: str,
+        total_load: bool,
+        total_load_file: str | None = None,
     ) -> None:
         """
         Instantiate a :class:`_BaseHpcRun` instance.
@@ -115,6 +122,8 @@ class _BaseHpcRun:  # pylint: disable=too-few-public-methods
         Inputs:
             - location:
                 The name of the location to use.
+            - output:
+                The name of the output file to use.
             - total_load:
                 Whether a total-load file should be used.
             - total_load_file:
@@ -123,6 +132,7 @@ class _BaseHpcRun:  # pylint: disable=too-few-public-methods
         """
 
         self.location = location
+        self._output = output
         self.total_load = total_load
         self.total_load_file = total_load_file
 
@@ -150,6 +160,7 @@ class _BaseHpcRun:  # pylint: disable=too-few-public-methods
 
         return (
             f"HpcRun(type={self.type}, location={self.location}"
+            + f", output={self.output}"
             + f", total_load={self.total_load}"
             + (
                 f", total_load_file={self.total_load_file}"
@@ -158,6 +169,18 @@ class _BaseHpcRun:  # pylint: disable=too-few-public-methods
             )
             + ")"
         )
+
+    @property
+    def output(self) -> str:
+        """
+        Return an output name for the class.
+
+        Outputs:
+            An output name for the run.
+
+        """
+
+        return self._output
 
 
 class HpcOptimisation(
@@ -171,10 +194,11 @@ class HpcOptimisation(
     def __init__(
         self,
         location: str,
-        optimisation: List[Dict[str, Any]],
-        optimisation_inputs_data: Dict[str, Any],
+        optimisation: list[dict[str, Any]],
+        optimisation_inputs_data: dict[str, Any],
+        output: str,
         total_load: bool,
-        total_load_file: Optional[str] = None,
+        total_load_file: str | None = None,
     ) -> None:
         """
         Instantiate a :class:`HpcOptimisation` instance.
@@ -187,6 +211,8 @@ class HpcOptimisation(
                 as a single entry in a `list` for easy temporary file generation.
             - optimisation_inputs_data:
                 The input data for optimisations in general.
+            - output:
+                The name of the output file to use.
             - total_load:
                 Whether a total-load file should be used.
             - total_load_file:
@@ -194,17 +220,17 @@ class HpcOptimisation(
 
         """
 
-        super().__init__(location, total_load, total_load_file)
-        self.optimisation: List[Dict[str, Any]] = optimisation
-        self.optimisation_inputs_data: Dict[str, Any] = optimisation_inputs_data
+        super().__init__(location, output, total_load, total_load_file)
+        self.optimisation: list[dict[str, Any]] = optimisation
+        self.optimisation_inputs_data: dict[str, Any] = optimisation_inputs_data
 
     @classmethod
     def from_dict(
         cls,
-        input_data: Dict[str, Any],
+        input_data: dict[str, Any],
         logger: Logger,
-        optimisation: List[Dict[str, Any]],
-        optimisation_inputs_data: Dict[str, Any],
+        optimisation: list[dict[str, Any]],
+        optimisation_inputs_data: dict[str, Any],
     ) -> Any:
         """
         Creates a :class:`HpcOptimisation` instance based on the inputs provided.
@@ -224,11 +250,11 @@ class HpcOptimisation(
 
         """
 
-        total_load_input: Union[str, bool] = input_data.get("total_load", False)
+        total_load_input: bool | str = input_data.get("total_load", False)
 
         if not total_load_input:
             total_load: bool = False
-            total_load_file: Optional[str] = None
+            total_load_file: str | None = None
         elif not isinstance(total_load_input, str):
             logger.error(
                 "%sCannot set total-load to be `true`.%s", BColours.fail, BColours.endc
@@ -245,12 +271,13 @@ class HpcOptimisation(
             input_data["location"],
             optimisation,
             optimisation_inputs_data,
+            input_data.get("output", "optimisation_output"),
             total_load,
             total_load_file,
         )
 
     @property
-    def optimisation_inputs(self) -> Dict[str, Any]:
+    def optimisation_inputs(self) -> dict[str, Any]:
         """
         Assembly optimisation input data for writing to file.
 
@@ -264,6 +291,35 @@ class HpcOptimisation(
 
         self.optimisation_inputs_data[OPTIMISATIONS] = self.optimisation
         return self.optimisation_inputs_data
+
+    @property
+    def output(self) -> str:
+        """
+        Return an output name for the class based on the optimisation criterion etc.
+
+        Outputs:
+            An output name for the run.
+
+        """
+
+        output_name: str = f"{self._output}_"
+
+        # Add the optimisation criteria information
+        for entry in self.optimisation[0][OPTIMISATION_CRITERIA]:
+            output_name += "_".join([f"{key}_{value}" for key, value in entry.items()])
+
+        output_name += "_"
+
+        # Add the threshold-criteria information
+        for entry in self.optimisation[0][THRESHOLD_CRITERIA]:
+            output_name += "_".join(
+                [
+                    f"{key}_{str(value).replace('.', '_')}"
+                    for key, value in entry.items()
+                ]
+            )
+
+        return output_name
 
 
 class HpcSimulation(
@@ -286,11 +342,12 @@ class HpcSimulation(
     def __init__(
         self,
         location: str,
+        output: str,
         pv_system_size: float,
         scenario: str,
         storage_size: float,
         total_load: bool,
-        total_load_file: Optional[str] = None,
+        total_load_file: str | None = None,
     ) -> None:
         """
         Instantiate a :class:`HpcSimulation` instance.
@@ -298,6 +355,8 @@ class HpcSimulation(
         Inputs:
             - location:
                 The name of the location to use for the simulation(s).
+            - output:
+                The name of the output file to use.
             - pv_system_size:
                 The size of the PV system installed.
             - scenario:
@@ -311,13 +370,13 @@ class HpcSimulation(
 
         """
 
-        super().__init__(location, total_load, total_load_file)
+        super().__init__(location, output, total_load, total_load_file)
         self.pv_system_size = pv_system_size
         self.scenario = scenario
         self.storage_size = storage_size
 
     @classmethod
-    def from_dict(cls, input_data: Dict[str, Any], logger: Logger) -> Any:
+    def from_dict(cls, input_data: dict[str, Any], logger: Logger) -> Any:
         """
         Creates a :class:`HpcOptimisation` instance based on the inputs provided.
 
@@ -336,10 +395,12 @@ class HpcSimulation(
 
         if not total_load_input:
             total_load: bool = False
-            total_load_file: Optional[str] = None
+            total_load_file: str | None = None
         else:
             total_load = True
             total_load_file = total_load_input
+
+        output: str = input_data.get("output", "simulation_outputs")
 
         try:
             pv_system_size: float = float(input_data["pv_system_size"])
@@ -385,6 +446,7 @@ class HpcSimulation(
 
         return cls(
             input_data["location"],
+            output,
             pv_system_size,
             scenario,
             storage_size,
@@ -393,7 +455,7 @@ class HpcSimulation(
         )
 
 
-def _check_walltime(logger: Logger, walltime: Optional[int]) -> int:
+def _check_walltime(logger: Logger, walltime: int | None) -> int:
     """
     Checks that the walltime is a valid integer for the HPC.
 
@@ -438,7 +500,7 @@ def _check_walltime(logger: Logger, walltime: Optional[int]) -> int:
     return walltime
 
 
-def _parse_hpc_args(args: List[Any]) -> argparse.Namespace:
+def _parse_hpc_args(args: list[Any]) -> argparse.Namespace:
     """
     Parses the input arguments to the hpc script to determine the HPC input file.
 
@@ -476,7 +538,7 @@ def _parse_hpc_args(args: List[Any]) -> argparse.Namespace:
     return parser.parse_args(args)
 
 
-def _parse_hpc_input_file(input_filename: str, logger: Logger) -> List[Dict[str, Any]]:
+def _parse_hpc_input_file(input_filename: str, logger: Logger) -> list[dict[str, Any]]:
     """
     Parses the HPC input file into a dictionary.
 
@@ -523,8 +585,8 @@ def _parse_hpc_input_file(input_filename: str, logger: Logger) -> List[Dict[str,
 
 
 def _parse_optimisations_to_runs(
-    entry: Dict[str, Any], logger: Logger
-) -> List[HpcOptimisation]:
+    entry: dict[str, Any], locations_foldername: str, logger: Logger
+) -> list[HpcOptimisation]:
     """
     Parses, from a single HPC entry, a series of optimisation runs to carry out.
 
@@ -535,6 +597,8 @@ def _parse_optimisations_to_runs(
     Inputs:
         - entry:
             The parsed entry from the file.
+        - locations_foldername:
+            The path to the CLOVER locations folder.
         - logger:
             The :class:`logging.Logger` to use for the run.
 
@@ -542,7 +606,7 @@ def _parse_optimisations_to_runs(
 
     # Read the optimisation inputs file.
     optimisation_inputs_file = os.path.join(
-        LOCATIONS_FOLDER_NAME,
+        locations_foldername,
         entry["location"],
         INPUTS_DIRECTORY,
         OPTIMISATION_INPUTS_FILE,
@@ -571,14 +635,16 @@ def _parse_optimisations_to_runs(
 
 
 def _process_hpc_input_file(
-    input_filename: str, logger: Logger
-) -> List[Union[HpcOptimisation, HpcSimulation]]:
+    input_filename: str, locations_foldername, logger: Logger
+) -> list[HpcOptimisation | HpcSimulation]:
     """
     Parses the HPC input file into a list of runs.
 
     Inputs:
         - input_filename:
             The name of the input file for the HPC runs.
+        - locations_foldername:
+            The path to the CLOVER locations directory.
         - logger:
             The :class:`logging.Logger` to use for the run.
 
@@ -591,10 +657,12 @@ def _process_hpc_input_file(
     filedata = _parse_hpc_input_file(input_filename, logger)
 
     # Parse this into HPC Optimisations and Simulations.
-    runs: List[Union[HpcOptimisation, HpcSimulation]] = []
+    runs: list[HpcOptimisation | HpcSimulation] = []
     for entry in filedata:
         if entry[TYPE] == HpcRunType.OPTIMISATION.value:
-            runs.extend(_parse_optimisations_to_runs(entry, logger))
+            runs.extend(
+                _parse_optimisations_to_runs(entry, locations_foldername, logger)
+            )
         elif entry[TYPE] == HpcRunType.SIMULATION.value:
             runs.append(HpcSimulation.from_dict(entry, logger))
         else:
@@ -612,8 +680,8 @@ def _process_hpc_input_file(
 
 
 def parse_args_and_hpc_input_file(
-    args: List[Any], logger: Logger
-) -> Tuple[str, List[Union[HpcOptimisation, HpcSimulation]], bool, float]:
+    args: list[Any], logger: Logger
+) -> tuple[str, list[HpcOptimisation | HpcSimulation], bool, float]:
     """
     Parses command-line arguments and returns the HPC runs to be carried out.
 
@@ -637,7 +705,7 @@ def parse_args_and_hpc_input_file(
     walltime = _check_walltime(logger, parsed_args.walltime)
 
     # Parse the input file to determine the runs to be carried out.
-    runs = _process_hpc_input_file(parsed_args.runs, logger)
+    runs = _process_hpc_input_file(parsed_args.runs, get_locations_foldername(), logger)
 
     # Return these runs along with the filename.
     return parsed_args.runs, runs, parsed_args.verbose, walltime
@@ -665,7 +733,7 @@ def temporary_optimisations_file(
     """
 
     temp_dirpath: str = os.path.join(
-        LOCATIONS_FOLDER_NAME,
+        get_locations_foldername(),
         run.location,
         INPUTS_DIRECTORY,
     )

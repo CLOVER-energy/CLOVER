@@ -24,14 +24,15 @@ that is passed in to the module.
 
 import enum
 import json
+import math
+import io
 import os
 import threading
 import time
 
 from json.decoder import JSONDecodeError
 from logging import Logger
-from math import ceil
-from typing import Any, Dict, Union
+from typing import Any
 
 import numpy as np  # pylint: disable=import-error
 import pandas as pd  # pylint: disable=import-error
@@ -45,11 +46,11 @@ from ..__utils__ import (
     get_logger,
     Location,
     RenewablesNinjaError,
+    TOKEN,
 )
 
 __all__ = (
     "BaseRenewablesNinjaThread",
-    "TOKEN",
     "total_profile_output",
 )
 
@@ -66,10 +67,6 @@ FEB_29: int = (31 + 28) * 24
 #   To avoid being locked out of the renewables.ninja API, it is necessary for CLOVER to
 #   sleep between requests. The time taken for this, in seconds, is set below.
 RENEWABLES_NINJA_SLEEP_TIME = 12
-
-# Token:
-#   Keyword used when parsing the generation token.
-TOKEN = "token"
 
 
 class SolarDataType(enum.Enum):
@@ -104,7 +101,7 @@ def _get_profile_from_rn(
     authorisation_token: str,
     logger: Logger,
     renewables_ninja_keyword: str,
-    renewables_ninja_params: Dict[str, Any],
+    renewables_ninja_params: dict[str, Any],
     year: int = 2014,
 ) -> pd.DataFrame:
     """
@@ -194,10 +191,11 @@ def _get_profile_from_rn(
             str(e),
             BColours.endc,
         )
+        logger.info("Session text: %s", session_url.text)
         raise RenewablesNinjaError() from None
 
     data_frame: pd.DataFrame = pd.DataFrame(
-        pd.read_json(json.dumps(parsed_response["data"]), orient="index")
+        pd.read_json(io.StringIO(json.dumps(parsed_response["data"])), orient="index")
     )
     data_frame = data_frame.reset_index(drop=True)
 
@@ -233,12 +231,12 @@ def _get_profile_local_time(
 
     # East of Greenwich
     if time_difference > 0:
-        splits = np.split(data_utc, [len(data_utc) - time_difference])
-        data_local: pd.DataFrame = pd.concat([splits[1], splits[0]], ignore_index=True)
+        splits = np.split(data_utc, [len(data_utc) - time_difference])  # type: ignore [call-overload]
+        data_local: pd.DataFrame = pd.concat([splits[1], splits[0]], ignore_index=True)  # type: ignore [list-item]
     # West of Greenwich
     elif time_difference < 0:
-        splits = np.split(data_utc, [abs(time_difference)])
-        data_local = pd.concat([splits[1], splits[0]], ignore_index=True)
+        splits = np.split(data_utc, [abs(time_difference)])  # type: ignore [call-overload]
+        data_local = pd.concat([splits[1], splits[0]], ignore_index=True)  # type: ignore [list-item]
     # No time difference, included for completeness
     else:
         data_local = data_utc
@@ -251,7 +249,7 @@ def _get_profile_output(
     location: Location,
     logger: Logger,
     renewables_ninja_keyword: str,
-    renewables_ninja_params: Dict[str, Any],
+    renewables_ninja_params: dict[str, Any],
     gen_year: int = 2014,
 ) -> pd.DataFrame:
     """
@@ -313,7 +311,7 @@ def _save_profile_output(
         profile.to_csv(
             f,  # type: ignore
             index=False,
-            line_terminator="\n",
+            lineterminator="\n",
         )
 
     logger.info(
@@ -328,14 +326,23 @@ class BaseRenewablesNinjaThread(threading.Thread):
     .. attribute:: auto_generated_files_directory
         The directory in which CLOVER-generated files should be saved.
 
-    .. attribute:: generation_inputs:
-        The generation inputs information, extracted from the generation-inputs file.
+    .. attribute:: global_settings_inputs:
+        The global-settings inputs information, extracted from the generation-inputs
+        file.
 
     .. attribute:: location
         The location currently being considered.
 
     .. attribute:: logger
         The :class:`logging.Logger` to use for the run.
+
+    .. attribute:: pause_time
+        A time in seconds for which to pause before launching to avoid renewables.ninja
+        returning errors due to a large number of threads being launched in a short
+        space of time.
+
+    .. attribute:: profile_prefix
+        A prefix to append to the filenames.
 
     .. attribute:: regenerate
         Whether the profiles are to be regenerated, i.e., re-fetched from the
@@ -350,14 +357,16 @@ class BaseRenewablesNinjaThread(threading.Thread):
     def __init__(
         self,
         auto_generated_files_directory: str,
-        generation_inputs: Dict[str, Any],
+        global_settings_inputs: dict[str, int | str],
         location: Location,
         logger_name: str,
+        pause_time: int,
         regenerate: bool,
         sleep_multiplier: int,
         verbose: bool,
         *,
-        renewables_ninja_params: Dict[str, Any],
+        renewables_ninja_params: dict[str, Any],
+        profile_prefix: str = "",
     ) -> None:
         """
         Instantiate a renewables-ninja-base-data thread.
@@ -365,12 +374,17 @@ class BaseRenewablesNinjaThread(threading.Thread):
         Inputs:
             - auto_generated_files_directory:
                 The directory in which CLOVER-generated files should be saved.
-            - generation_inputs:
-                The generation inputs.
+            - global_settings_inputs:
+                The global-settings inputs.
             - location:
                 The location currently being considerted.
             - logger_name:
                 The name to use for the logger.
+            - pause_time:
+                A time for which to pause before initialising data fetching to avoid
+                short-burst errors from renewables.ninja.
+            - profile_prefix:
+                A prefix to append to the output filenames.
             - regenerate:
                 Whether to regenerate the profiles.
             - renewables_ninja_params:
@@ -384,14 +398,14 @@ class BaseRenewablesNinjaThread(threading.Thread):
         """
 
         self.auto_generated_files_directory: str = auto_generated_files_directory
-        self.generation_inputs: Dict[
-            str, Union[bool, int, str, float]
-        ] = generation_inputs
+        self.global_settings_inputs: dict[str, int | str] = global_settings_inputs
         self.location: Location = location
         self.logger: Logger = get_logger(logger_name, verbose)
         self.logger_name: str = logger_name
+        self.pause_time: int = pause_time
+        self.profile_prefix: str = profile_prefix
         self.regenerate: bool = regenerate
-        self.renewables_ninja_params: Dict[str, Any] = renewables_ninja_params
+        self.renewables_ninja_params: dict[str, Any] = renewables_ninja_params
         self.sleep_multiplier: int = sleep_multiplier
 
         super().__init__()
@@ -435,19 +449,25 @@ class BaseRenewablesNinjaThread(threading.Thread):
             self.profile_name,
         )
 
+        # To avoid a high burst of calls, a random sleep up to the sleep time is made.
+        time.sleep(self.pause_time)
+
         # A counter is used to keep track of calls to renewables.ninja to prevent
         # overloading.
         try:
             for year in tqdm(
                 range(
-                    int(self.generation_inputs["start_year"]),
-                    int(self.generation_inputs["end_year"]) + 1,
+                    int(self.global_settings_inputs["start_year"]),
+                    int(self.global_settings_inputs["end_year"]) + 1,
                 ),
-                desc=f"{self.profile_name} profiles",
+                desc=f"{self.profile_name} "
+                f"{self.profile_prefix[:-1].replace('_', ' ')} profiles",
                 unit="year",
             ):
                 # If the data file for the year already exists, skip.
-                filename = f"{self.profile_name}_generation_{year}.csv"
+                filename = (
+                    f"{self.profile_prefix}{self.profile_name}_generation_{year}.csv"
+                )
                 filepath = os.path.join(self.auto_generated_files_directory, filename)
 
                 if os.path.isfile(filepath) and not self.regenerate:
@@ -463,7 +483,7 @@ class BaseRenewablesNinjaThread(threading.Thread):
                 )
                 try:
                     data = _get_profile_output(
-                        str(self.generation_inputs[TOKEN]),
+                        str(self.global_settings_inputs[TOKEN]),
                         self.location,
                         self.logger,
                         self.profile_key,
@@ -504,7 +524,7 @@ class BaseRenewablesNinjaThread(threading.Thread):
 
                 # The system waits to prevent overloading the renewables.ninja API and being
                 # locked out.
-                if year != self.generation_inputs["end_year"]:
+                if year != self.global_settings_inputs["end_year"]:
                     time.sleep(RENEWABLES_NINJA_SLEEP_TIME * self.sleep_multiplier)
 
         except Exception:
@@ -522,6 +542,7 @@ def total_profile_output(
     num_years: int = 20,
     *,
     profile_name: str,
+    profile_prefix: str,
 ) -> pd.DataFrame:
     """
     Generates total output data by taking the input years and repeating them.
@@ -537,15 +558,17 @@ def total_profile_output(
             The number of year for which to run the simulation.
         - profile_name:
             The name to use for saving the profiles.
-    Outputs:
+
+                Outputs:
         .csv file for twenty years of PV output data
+
     """
 
     output = pd.DataFrame([])
 
     total_output_filename = os.path.join(
         generation_directory,
-        f"{profile_name}_generation_{num_years}_years.csv",
+        f"{profile_prefix}{profile_name}_generation_{num_years}_years.csv",
     )
 
     # If the total output file already exists then simply read this in.
@@ -565,7 +588,7 @@ def total_profile_output(
             with open(
                 os.path.join(
                     generation_directory,
-                    f"{profile_name}_generation_{iteration_year}.csv",
+                    f"{profile_prefix}{profile_name}_generation_{iteration_year}.csv",
                 ),
                 "r",
             ) as f:
@@ -576,13 +599,13 @@ def total_profile_output(
 
         # Repeat the initial data in consecutive periods
         total_output = pd.DataFrame([])
-        for _ in range(int(ceil(num_years / 10))):
+        for _ in range(int(math.ceil(num_years / 10))):
             total_output = pd.concat([total_output, output], ignore_index=True)
         with open(total_output_filename, "w") as f:
             total_output.to_csv(
                 f,  # type: ignore
                 index=False,
-                line_terminator="\n",
+                lineterminator="\n",
             )
 
     return total_output

@@ -30,12 +30,12 @@ from typing import Union
 
 from ..__main__ import __version__
 from ..__utils__ import (
+    BColours,
     DONE,
     FAILED,
-    LOCATIONS_FOLDER_NAME,
-    BColours,
-    ProgrammerJudgementFault,
+    get_locations_foldername,
     get_logger,
+    ProgrammerJudgementFault,
 )
 from ..fileparser import INPUTS_DIRECTORY, LOAD_INPUTS_DIRECTORY, parse_scenario_inputs
 from .hpc_utils import (
@@ -105,11 +105,17 @@ HPC_SUBMISSION_SCRIPT_FILEPATH: str = os.path.join(
 LOGGER_NAME: str = "hpc_clover"
 
 
-def _check_run(logger: Logger, hpc_run: Union[HpcOptimisation, HpcSimulation]) -> bool:
+def _check_run(
+    locations_foldername: str,
+    logger: Logger,
+    hpc_run: HpcOptimisation | HpcSimulation,
+) -> bool:
     """
     Checks that the HPC run is valid.
 
     Inputs:
+        - locations_foldername:
+            The path to the locations folder containing the CLOVER locations.
         - logger:
             The logger to use for the run.
         - hpc_run:
@@ -121,7 +127,7 @@ def _check_run(logger: Logger, hpc_run: Union[HpcOptimisation, HpcSimulation]) -
     """
 
     # Check that the locations folder exists.
-    if not os.path.isdir(os.path.join(LOCATIONS_FOLDER_NAME, hpc_run.location)):
+    if not os.path.isdir(os.path.join(locations_foldername, hpc_run.location)):
         logger.error(
             "%sLocation '%s' does not exist.%s",
             BColours.fail,
@@ -133,7 +139,7 @@ def _check_run(logger: Logger, hpc_run: Union[HpcOptimisation, HpcSimulation]) -
     # Check that the total load file exists if specified.
     if hpc_run.total_load_file is not None and not os.path.isfile(
         os.path.join(
-            LOCATIONS_FOLDER_NAME,
+            locations_foldername,
             hpc_run.location,
             INPUTS_DIRECTORY,
             LOAD_INPUTS_DIRECTORY,
@@ -164,7 +170,7 @@ def _check_run(logger: Logger, hpc_run: Union[HpcOptimisation, HpcSimulation]) -
         # Parse the scenario files for the location.
         logger.info("%sParsing scenario input file.%s", BColours.fail, BColours.endc)
         _, _, scenarios, _ = parse_scenario_inputs(
-            os.path.join(LOCATIONS_FOLDER_NAME, hpc_run.location, INPUTS_DIRECTORY),
+            os.path.join(locations_foldername, hpc_run.location, INPUTS_DIRECTORY),
             logger,
         )
 
@@ -207,10 +213,13 @@ def main(args) -> None:
     logger.info("Command-line arguments successfully parsed. Run file: %s", run_file)
     logger.debug("Runs:\n%s- ", "\n- ".join(str(run) for run in runs))
 
+    # Determine the location of the CLOVER locations.
+    locations_foldername: str = get_locations_foldername()
+
     # Check that all of the runs are valid.
     print("Checking HPC runs .............................................    ", end="")
     logger.info("Checking all run files are valid.")
-    if not all(_check_run(logger, run) for run in runs):
+    if not all(_check_run(locations_foldername, logger, run) for run in runs):
         logger.error(
             "%sNot all HPC runs were valid, exiting.%s", BColours.fail, BColours.endc
         )

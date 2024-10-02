@@ -22,7 +22,7 @@ the HPC.
 
 import os
 import sys
-from typing import Any, List
+from typing import Any
 
 from ..__main__ import main as clover_main
 from ..__utils__ import BColours, InternalError, get_logger
@@ -48,7 +48,7 @@ HPC_JOB_NUMBER: str = "PBS_ARRAY_INDEX"
 LOGGER_NAME: str = "hpc_run_{}"
 
 
-def main(args: List[Any]) -> None:
+def main(args: list[Any]) -> None:
     """
     Wrapper around CLOVER when run on the HPC.
 
@@ -91,6 +91,8 @@ def main(args: List[Any]) -> None:
     clover_arguments = [
         "--location",
         hpc_run.location,
+        "--output",
+        f"{hpc_run.output}_hpc_run_{run_number}",
     ]
 
     if hpc_run.total_load:
@@ -165,6 +167,10 @@ def main(args: List[Any]) -> None:
                 str(hpc_run.pv_system_size),
                 "--storage-size",
                 str(hpc_run.storage_size),
+                "--scenario",
+                str(hpc_run.scenario),
+                "-a",
+                "-sp",
             ]
         )
 

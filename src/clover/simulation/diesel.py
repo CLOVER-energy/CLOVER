@@ -21,7 +21,7 @@ functionality to model diesel generators.
 import dataclasses
 import logging
 
-from typing import Any, Dict, Optional, Tuple
+from typing import Any
 
 import numpy as np  # pylint: disable=import-error
 import pandas as pd
@@ -61,6 +61,9 @@ class DieselGenerator:
     """
     Represents a diesel backup generator.
 
+    .. attribute:: capacity
+        The capacity of the diesel generator, in kW, which can be installed.
+
     .. attribute:: diesel_consumption
         The diesel consumption of the generator, measured in litres per kW produced.
 
@@ -73,6 +76,7 @@ class DieselGenerator:
 
     """
 
+    capacity: float
     diesel_consumption: float
     minimum_load: float
     name: str
@@ -94,7 +98,7 @@ class DieselWaterHeater(Converter):
 
     def __init__(
         self,
-        input_resource_consumption: Dict[ResourceType, float],
+        input_resource_consumption: dict[ResourceType, float],
         maximum_output_capacity: float,
         minimum_load: float,
         name: str,
@@ -127,7 +131,7 @@ class DieselWaterHeater(Converter):
         self.minimum_load = minimum_load
 
     @classmethod
-    def from_dict(cls, input_data: Dict[str, Any], logger: logging.Logger) -> Any:
+    def from_dict(cls, input_data: dict[str, Any], logger: logging.Logger) -> Any:
         """
         Instantiates a :class:`DieselWaterHeater` instance based on the input data.
 
@@ -143,11 +147,11 @@ class DieselWaterHeater(Converter):
         """
 
         try:
-            input_resource_consumption: Dict[ResourceType, float] = {
+            input_resource_consumption: dict[ResourceType, float] = {
                 ResourceType.DIESEL: input_data[DIESEL_CONSUMPTION],
-                ResourceType.ELECTRIC: input_data[ELECTRIC_POWER]
-                if ELECTRIC_POWER in input_data
-                else 0,
+                ResourceType.ELECTRIC: (
+                    input_data[ELECTRIC_POWER] if ELECTRIC_POWER in input_data else 0
+                ),
             }
         except KeyError as e:
             logger.error(
@@ -182,9 +186,18 @@ class DieselWaterHeater(Converter):
         return self.input_resource_consumption[ResourceType.DIESEL]
 
 
+def _acceptable_hour_for_diesel(hour: float) -> bool:
+    """Determine whether diesel can run at an hour."""
+
+    return True
+
+    hour_of_day = hour % 24
+    return 8 <= hour_of_day <= 20
+
+
 def _find_deficit_threshold_blackout(
     unmet_energy: pd.DataFrame, blackouts: pd.DataFrame, backup_threshold: float
-) -> Optional[float]:
+) -> float | None:
     """
     Identifies the threshold energy level at which the diesel backup generator turns on
     when the threshold criterion is blackouts.
@@ -204,7 +217,7 @@ def _find_deficit_threshold_blackout(
     """
 
     # Find the blackout percentage
-    blackout_percentage = float(blackouts.mean(axis=0))  # type: ignore
+    blackout_percentage = float(blackouts.mean(axis=0).iloc[0])  # type: ignore
 
     # Find the difference in reliability
     reliability_difference = blackout_percentage - backup_threshold
@@ -213,12 +226,12 @@ def _find_deficit_threshold_blackout(
     if reliability_difference <= 0.0:
         return None
 
-    return float(np.percentile(unmet_energy, percentile_threshold))
+    return float(np.percentile(unmet_energy, percentile_threshold))  # type: ignore [call-overload]
 
 
 def _find_deficit_threshold_unmet(
     unmet_energy: pd.DataFrame, backup_threshold: float, total_electric_load: float
-) -> Optional[float]:
+) -> float | None:
     """
     Identifies the threshold energy level at which the diesel backup generator turns on
     when the threshold criterion is unmet energy.
@@ -237,24 +250,39 @@ def _find_deficit_threshold_unmet(
 
     """
 
-    # Find the blackout percentage
-    unmet_energy_percentage = float(np.sum(unmet_energy) / total_electric_load)  # type: ignore
+    # Find the unmet-energy fraction
+    unmet_energy_fraction = float((np.sum(unmet_energy) / total_electric_load).iloc[0])  # type: ignore
 
     # Find the difference in reliability
-    reliability_difference = unmet_energy_percentage - backup_threshold
+    reliability_difference = unmet_energy_fraction - backup_threshold
 
     if reliability_difference <= 0:
         return None
 
+    # Determine the hours for which it is acceptable to run the diesel generator.
+    unmet_energy["acceptable"] = [
+        _acceptable_hour_for_diesel(entry) for entry in unmet_energy.index
+    ]
+
     # Sort unmet energy by smallest first
-    sorted_unmet_energy = sorted(unmet_energy.values)
+    sorted_unmet_energy = (
+        unmet_energy[unmet_energy["acceptable"] == True].sort_values(by=0)[0].to_list()
+    )
+    unmet_energy.pop("acceptable")
 
     # Loop through hours attributing unmet energy to diesel generator (largest first)
     attributed_unmet_energy: float = 0
-    energy_threshold: float
+    energy_threshold: float = 0
+    energy_to_attribute: float = float(
+        total_electric_load.iloc[0] * reliability_difference
+    )
 
-    while attributed_unmet_energy < total_electric_load * reliability_difference:
+    while attributed_unmet_energy < energy_to_attribute:
         energy_threshold = sorted_unmet_energy.pop()
+        # If there aren't enough acceptable hours to run the diesel generator to meet
+        # demand, then stop.
+        if energy_threshold < 0:
+            break
         attributed_unmet_energy += energy_threshold
 
     return energy_threshold
@@ -266,7 +294,7 @@ def _find_deficit_threshold(
     backup_threshold: float,
     total_electric_load: float,
     diesel_mode: DieselMode,
-) -> Optional[float]:
+) -> float | None:
     """
     Identifies the threshold energy level at which the diesel backup generator turns on.
 
@@ -289,13 +317,13 @@ def _find_deficit_threshold(
 
     """
 
-    # Find the blackout percentage is mode using blackout criterion
+    # Find the blackout percentage if mode using blackout criterion
     if diesel_mode == DieselMode.BACKUP:
         return _find_deficit_threshold_blackout(
             unmet_energy, blackouts, backup_threshold
         )
 
-    # Find the blackout percentage is mode using unmet energy criterion
+    # Find the blackout percentage if mode using unmet energy criterion
     if diesel_mode == DieselMode.BACKUP_UNMET:
         return _find_deficit_threshold_unmet(
             unmet_energy, backup_threshold, total_electric_load
@@ -313,7 +341,7 @@ def get_diesel_energy_and_times(
     backup_threshold: float,
     total_electric_load: float,
     diesel_mode: DieselMode,
-) -> Tuple[pd.DataFrame, pd.DataFrame]:
+) -> tuple[pd.DataFrame, pd.DataFrame]:
     """
     Finds times when the load is greater than the energy threshold.
 
@@ -349,9 +377,9 @@ def get_diesel_energy_and_times(
         )
 
     diesel_energy = pd.DataFrame(
-        unmet_energy.values * (unmet_energy >= energy_threshold).values
+        unmet_energy.values * (unmet_energy >= energy_threshold).values * (acceptable_hours := pd.DataFrame([_acceptable_hour_for_diesel(entry) for entry in unmet_energy.index]))  # type: ignore [operator]
     )
-    diesel_times = (unmet_energy >= energy_threshold) * 1
+    diesel_times = (unmet_energy >= energy_threshold) * 1 * acceptable_hours  # type: ignore [operator]
     diesel_times = diesel_times.astype(float)
 
     return diesel_energy, diesel_times
@@ -386,9 +414,9 @@ def get_diesel_fuel_usage(
 
     load_factor: pd.DataFrame = diesel_energy.divide(capacity)  # type: ignore
     above_minimum = pd.DataFrame(
-        load_factor.values * (load_factor > diesel_generator.minimum_load).values
+        load_factor.values * (load_factor > diesel_generator.minimum_load).values  # type: ignore [operator]
     )
-    below_minimum = (
+    below_minimum = (  # type: ignore [operator]
         load_factor <= diesel_generator.minimum_load
     ) * diesel_generator.minimum_load
     load_factor = pd.DataFrame(
@@ -396,7 +424,7 @@ def get_diesel_fuel_usage(
     )
 
     fuel_usage: pd.DataFrame = (
-        load_factor * capacity * diesel_generator.diesel_consumption
+        load_factor * capacity * diesel_generator.diesel_consumption  # type: ignore [operator]
     )
     fuel_usage = fuel_usage.astype(float)
 

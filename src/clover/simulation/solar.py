@@ -24,7 +24,6 @@ parameters using a quasi-steady-state model.
 import collections
 
 from logging import Logger
-from typing import Dict, List, Optional, Tuple, Union
 
 import pandas as pd  # pylint: disable=import-error
 
@@ -111,14 +110,14 @@ class MassFlowRateTooSmallError(Exception):
 def _volume_withdrawn_from_tank(
     ambient_temperature: float,
     best_guess_tank_temperature: float,
-    hot_water_load: Optional[float],
+    hot_water_load: float | None,
     logger: Logger,
     minigrid: Minigrid,
     num_tanks: int,
-    previous_tank_temperature: Optional[float],
+    previous_tank_temperature: float | None,
     resource_type: ResourceType,
-    thermal_desalination_plant: Optional[ThermalDesalinationPlant],
-) -> Tuple[bool, float]:
+    thermal_desalination_plant: ThermalDesalinationPlant | None,
+) -> tuple[bool, float]:
     """
     Computes whether the tank is supplying an output, and what this output is.
 
@@ -246,7 +245,7 @@ def _volume_withdrawn_from_tank(
             tank_supply_on = hot_water_load > 0
             volume_supplied = num_tanks * minigrid.hot_water_tank.mass
 
-    return tank_supply_on, volume_supplied
+    return tank_supply_on, volume_supplied  # pylint: disable=used-before-assignment
 
 
 def _get_collector_output_temperatures(
@@ -254,8 +253,8 @@ def _get_collector_output_temperatures(
     irradiance: float,
     logger: Logger,
     pvt_collector_mass_flow_rate: Optional[float],
-    relevant_scenarios: Dict[SolarPanelType, ThermalCollectorScenario],
-    solar_thermal_collectors: Dict[
+    relevant_scenarios: dict[SolarPanelType, ThermalCollectorScenario],
+    solar_thermal_collectors: dict[
         SolarPanelType, Union[HybridPVTPanel, SolarThermalPanel]
     ],
     st_collector_mass_flow_rate: Optional[float],
@@ -485,7 +484,7 @@ def _get_relevant_collector_scenario(
 
 
 def _get_supply_flow_rate(
-    collector_system_sizes: Dict[SolarPanelType, int],
+    collector_system_sizes: dict[SolarPanelType, int],
     pvt_collector_mass_flow_rate: float,
     solar_thermal_panels: List[Union[HybridPVTPanel, SolarThermalPanel]],
     st_collector_mass_flow_rate: float,
@@ -601,32 +600,27 @@ def _htf_fed_buffer_tank_mass_flow_rate(
 
 
 def _calculate_closed_loop_solar_thermal_output(  # pylint: disable=too-many-locals, too-many-statements
-    collector_system_sizes: Dict[SolarPanelType, int],
+    collector_system_sizes: dict[SolarPanelType, int],
     disable_tqdm: bool,
     end_hour: int,
     irradiances: pd.Series,
     logger: Logger,
     minigrid: Minigrid,
     num_tanks: int,
-    processed_total_hw_load: Optional[pd.Series],
-    relevant_scenarios: Dict[SolarPanelType, ThermalCollectorScenario],
+    processed_total_hw_load: pd.Series | None,
+    pvt_system_size: int,
+    relevant_scenarios: dict[SolarPanelType, ThermalCollectorScenario],
     resource_type: ResourceType,
     scenario: Scenario,
-    solar_thermal_collectors: Dict[
+    solar_thermal_collectors: dict[
         SolarPanelType, Union[HybridPVTPanel, SolarThermalPanel]
     ],
     start_hour: int,
     temperatures: pd.Series,
-    thermal_desalination_plant: Optional[ThermalDesalinationPlant],
+    thermal_desalination_plant: ThermalDesalinationPlant | None,
     wind_speeds: pd.Series,
-) -> Tuple[
-    Dict[SolarPanelType, pd.DataFrame],
-    Dict[SolarPanelType, pd.DataFrame],
-    pd.DataFrame,
-    pd.DataFrame,
-    pd.DataFrame,
-    pd.DataFrame,
-    pd.DataFrame,
+) -> tuple[
+    pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame
 ]:
     """
     Computes the output of a closed-loop (HTF-heating) solar-thermal system.
@@ -849,26 +843,31 @@ def _calculate_closed_loop_solar_thermal_output(  # pylint: disable=too-many-loc
         )
 
     # Instantiate maps for easy PV-T power lookups.
-    electric_power_per_unit_map: Dict[int, float] = {}
-    pump_times_map: Dict[int, int] = {}
+    electric_power_per_unit_map: dict[int, float] = {}
+    pump_times_map: dict[int, int] = {}
 
     # Instantiate maps for easy HTF and tank lookups.
-    tank_supply_temperature_map: Dict[  # pylint: disable=unused-variable
+    tank_supply_temperature_map: dict[  # pylint: disable=unused-variable
         int, float
     ] = {}
-    tank_volume_supplied_map: Dict[int, float] = {}
+    tank_volume_supplied_map: dict[int, float] = {}
 
-    collector_input_temperature_map: Dict[
-        SolarPanelType, Dict[int, float]
+    collector_input_temperature_map: dict[
+        SolarPanelType, dict[int, float]
     ] = collections.defaultdict(
         lambda: collections.defaultdict(lambda: default_supply_temperature)
     )
-    collector_output_temperature_map: Dict[
-        SolarPanelType, Dict[int, float]
+    collector_output_temperature_map: dict[
+        SolarPanelType, dict[int, float]
     ] = collections.defaultdict(
         lambda: collections.defaultdict(lambda: default_supply_temperature)
     )
-    collector_system_output_temperature_map: Dict[int, float] = collections.defaultdict(
+    collector_system_output_temperature_map: dict[int, float] = collections.defaultdict(
+    best_guess_collector_input_temperature: float = default_supply_temperature
+    pvt_collector_input_temperature_map: dict[int, float] = collections.defaultdict(
+        lambda: default_supply_temperature
+    )
+    pvt_collector_output_temperature_map: dict[int, float] = collections.defaultdict(
         lambda: default_supply_temperature
     )
     tank_environment_heat_transfer: float = (
@@ -880,7 +879,7 @@ def _calculate_closed_loop_solar_thermal_output(  # pylint: disable=too-many-loc
         * tank.heat_capacity
         / 3600  # [kg]  # [J/kg*K]  # [s/hour]
     )  # [W/K]
-    tank_temperature_map: Dict[int, float] = collections.defaultdict(
+    tank_temperature_map: dict[int, float] = collections.defaultdict(
         lambda: default_supply_temperature
     )
 
@@ -917,9 +916,11 @@ def _calculate_closed_loop_solar_thermal_output(  # pylint: disable=too-many-loc
         tank_supply_on, volume_supplied = _volume_withdrawn_from_tank(
             temperatures[index],
             previous_tank_temperature,
-            processed_total_hw_load[index]
-            if processed_total_hw_load is not None
-            else None,
+            (
+                processed_total_hw_load[index]
+                if processed_total_hw_load is not None
+                else None
+            ),
             logger,
             minigrid,
             num_tanks,
@@ -1131,12 +1132,12 @@ def _calculate_closed_loop_solar_thermal_output(  # pylint: disable=too-many-loc
     )
 
     # Convert these outputs to dataframes and return.
-    collector_input_temperature_frame: Dict[SolarPanelType, pd.DataFrame] = {
+    collector_input_temperature_frame: dict[SolarPanelType, pd.DataFrame] = {
         key: dict_to_dataframe(input_map, logger).reset_index(drop=True)
         for key, input_map in collector_input_temperature_map.items()
     }
 
-    collector_output_temperature_frame: Dict[SolarPanelType, pd.DataFrame] = {
+    collector_output_temperature_frame: dict[SolarPanelType, pd.DataFrame] = {
         key: dict_to_dataframe(output_map, logger).reset_index(drop=True)
         for key, output_map in collector_output_temperature_map.items()
     }
@@ -1173,15 +1174,15 @@ def _calculate_closed_loop_solar_thermal_output(  # pylint: disable=too-many-loc
 
 
 def _calculate_direct_heating_solar_thermal_output(  # pylint: disable=too-many-locals
-    collector_system_sizes: Dict[SolarPanelType, int],
+    collector_system_sizes: dict[SolarPanelType, int],
     disable_tqdm: bool,
     end_hour: int,
     irradiances: pd.Series,
     logger: Logger,
     processed_total_hw_load: Optional[pd.Series],
-    relevant_scenarios: Dict[SolarPanelType, ThermalCollectorScenario],
+    relevant_scenarios: dict[SolarPanelType, ThermalCollectorScenario],
     resource_type: ResourceType,
-    solar_thermal_collectors: Dict[
+    solar_thermal_collectors: dict[
         SolarPanelType, Union[HybridPVTPanel, SolarThermalPanel]
     ],
     start_hour: int,
@@ -1189,8 +1190,8 @@ def _calculate_direct_heating_solar_thermal_output(  # pylint: disable=too-many-
     thermal_scenario: Union[DesalinationScenario, HotWaterScenario],
     wind_speeds: pd.Series,
 ) -> Tuple[
-    Dict[SolarPanelType, pd.DataFrame],
-    Dict[SolarPanelType, pd.DataFrame],
+    dict[SolarPanelType, pd.DataFrame],
+    dict[SolarPanelType, pd.DataFrame],
     pd.DataFrame,
     pd.DataFrame,
     pd.DataFrame,
@@ -1274,8 +1275,8 @@ def _calculate_direct_heating_solar_thermal_output(  # pylint: disable=too-many-
             "requested.",
         )
 
-    collector_input_temperature: Dict[SolarPanelType, Dict[int, float]] = {}
-    collector_output_temperature: Dict[SolarPanelType, Dict[int, float]] = {}
+    collector_input_temperature: dict[SolarPanelType, dict[int, float]] = {}
+    collector_output_temperature: dict[SolarPanelType, dict[int, float]] = {}
 
     # Determine the PV-T output if present.
     if SolarPanelType.PV_T in solar_thermal_collectors:
@@ -1316,11 +1317,11 @@ def _calculate_direct_heating_solar_thermal_output(  # pylint: disable=too-many-
             )
         ]
 
-        fractional_electrical_performance: Optional[Dict[int, float]] = {
+        fractional_electrical_performance: Optional[dict[int, float]] = {
             (start_hour + index): float(performance_output[0])
             for index, performance_output in enumerate(pvt_output_performance)
         }
-        pvt_output_temperature: Optional[Dict[int, float]] = {
+        pvt_output_temperature: Optional[dict[int, float]] = {
             (start_hour + index): float(performance_output[1])
             for index, performance_output in enumerate(pvt_output_performance)
         }
@@ -1357,7 +1358,7 @@ def _calculate_direct_heating_solar_thermal_output(  # pylint: disable=too-many-
         )
 
         # Determine the supply temperature
-        solar_thermal_input_temperature: Dict[int, float] = (
+        solar_thermal_input_temperature: dict[int, float] = (
             pvt_output_temperature
             if pvt_output_temperature is not None
             else {
@@ -1388,7 +1389,7 @@ def _calculate_direct_heating_solar_thermal_output(  # pylint: disable=too-many-
                 unit="hour",
             )
         ]
-        solar_thermal_output_temperature: Optional[Dict[int, float]] = {
+        solar_thermal_output_temperature: Optional[dict[int, float]] = {
             (start_hour + index): performance_output[1]
             for index, performance_output in enumerate(solar_thermal_output_performance)
         }
@@ -1416,7 +1417,7 @@ def _calculate_direct_heating_solar_thermal_output(  # pylint: disable=too-many-
     )
     # Determine the output temperature of fluid supplied.
     if SolarPanelType.SOLAR_THERMAL in collector_output_temperature:
-        output_temperature: Dict[int, float] = collector_output_temperature[
+        output_temperature: dict[int, float] = collector_output_temperature[
             SolarPanelType.SOLAR_THERMAL
         ]
     else:
@@ -1434,7 +1435,7 @@ def _calculate_direct_heating_solar_thermal_output(  # pylint: disable=too-many-
         time: processed_total_hw_load[time] > 0 for time in range(start_hour, end_hour)
     }
 
-    volume_supplied: Dict[int, float] = {
+    volume_supplied: dict[int, float] = {
         time: min(processed_total_hw_load[time], supply_flow_rate)
         for time in range(start_hour, end_hour)
     }
@@ -1475,7 +1476,7 @@ def _calculate_direct_heating_solar_thermal_output(  # pylint: disable=too-many-
 
 
 def calculate_solar_thermal_output(  # pylint: disable=too-many-locals, too-many-statements
-    collector_system_sizes: Dict[SolarPanelType, int],
+    collector_system_sizes: dict[SolarPanelType, int],
     disable_tqdm: bool,
     end_hour: int,
     irradiances: pd.Series,
@@ -1485,7 +1486,7 @@ def calculate_solar_thermal_output(  # pylint: disable=too-many-locals, too-many
     processed_total_hw_load: Optional[pd.Series],
     resource_type: ResourceType,
     scenario: Scenario,
-    solar_thermal_collectors: Dict[
+    solar_thermal_collectors: dict[
         SolarPanelType, Union[Optional[HybridPVTPanel], Optional[SolarThermalPanel]]
     ],
     start_hour: int,
@@ -1493,8 +1494,8 @@ def calculate_solar_thermal_output(  # pylint: disable=too-many-locals, too-many
     thermal_desalination_plant: Optional[ThermalDesalinationPlant],
     wind_speeds: pd.Series,
 ) -> Tuple[
-    Dict[SolarPanelType, pd.DataFrame],
-    Dict[SolarPanelType, pd.DataFrame],
+    dict[SolarPanelType, pd.DataFrame],
+    dict[SolarPanelType, pd.DataFrame],
     pd.DataFrame,
     pd.DataFrame,
     pd.DataFrame,
@@ -1579,7 +1580,7 @@ def calculate_solar_thermal_output(  # pylint: disable=too-many-locals, too-many
     """
 
     # Determine the relevant scenario for each collector.
-    relevant_collector_scenarios: Dict[SolarPanelType, ThermalCollectorScenario] = {
+    relevant_collector_scenarios: dict[SolarPanelType, ThermalCollectorScenario] = {
         panel_type: _get_relevant_collector_scenario(resource_type, scenario, collector)
         for panel_type, collector in solar_thermal_collectors.items()
         if collector is not None

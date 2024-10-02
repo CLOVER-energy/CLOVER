@@ -23,7 +23,7 @@ import math
 import os
 
 from logging import Logger
-from typing import Any, Dict, Optional, Set, Tuple
+from typing import Any
 
 import numpy as np  # pylint: disable=import-error
 import pandas as pd  # pylint: disable=import-error
@@ -148,14 +148,14 @@ class Device:
 
     available: bool
     demand_type: DemandType
-    electric_power: Optional[float]
+    electric_power: float | None
     final_ownership: float
     initial_ownership: float
     innovation: float
     imitation: float
     name: str
-    clean_water_usage: Optional[float]
-    hot_water_usage: Optional[float]
+    clean_water_usage: float | None
+    hot_water_usage: float | None
 
     def __hash__(self) -> int:
         """
@@ -194,7 +194,7 @@ class Device:
         return representation_string
 
     @classmethod
-    def from_dict(cls, device_input: Dict[str, Any]) -> Any:
+    def from_dict(cls, device_input: dict[str, Any]) -> Any:
         """
         Processes input data to generate a :class:`Device` instance.
 
@@ -226,9 +226,11 @@ class Device:
             device_input[INNOVATION],
             device_input[IMITATION],
             device_input[DEVICE],
-            device_input[CLEAN_WATER_USAGE]
-            if CLEAN_WATER_USAGE in device_input
-            else None,
+            (
+                device_input[CLEAN_WATER_USAGE]
+                if CLEAN_WATER_USAGE in device_input
+                else None
+            ),
             device_input[HOT_WATER_USAGE] if HOT_WATER_USAGE in device_input else None,
         )
 
@@ -305,10 +307,12 @@ def _population_growth_daily(
 
     """
 
-    population = []
     growth_rate_daily = (1 + community_growth_rate) ** (1 / 365.0) - 1
-    for day in range(0, 365 * num_years):
-        population.append(math.floor(community_size * (1 + growth_rate_daily) ** day))
+    population: list[float] = [
+        math.floor(community_size * (1 + growth_rate_daily) ** day)
+        for day in range(0, 365 * num_years)
+    ]
+
     return pd.DataFrame(population)
 
 
@@ -429,14 +433,14 @@ def _number_of_devices_daily(
 
 def compute_total_hourly_load(  # pylint: disable=too-many-locals
     *,
-    device_hourly_loads: Dict[str, pd.DataFrame],
-    devices: Set[Device],
+    device_hourly_loads: dict[str, pd.DataFrame],
+    devices: set[Device],
     disable_tqdm: bool,
     generated_device_load_filepath: str,
     logger: Logger,
-    total_load_profile: Optional[pd.DataFrame],
+    total_load_profile: pd.DataFrame | None,
     years: int,
-) -> Tuple[pd.DataFrame, pd.DataFrame]:
+) -> tuple[pd.DataFrame, pd.DataFrame]:
     """
     Calculates the aggregated load of all devices.
 
@@ -525,7 +529,7 @@ def compute_total_hourly_load(  # pylint: disable=too-many-locals
 
         logger.info("Saving total load.")
         with open(total_load_filepath, "w") as f:
-            total_load.to_csv(f, line_terminator="")  # type: ignore
+            total_load.to_csv(f, lineterminator="")  # type: ignore
         logger.info("Total device load successfully saved to %s.", total_load_filepath)
 
     else:
@@ -564,9 +568,7 @@ def compute_total_hourly_load(  # pylint: disable=too-many-locals
 
     logger.info("Saving yearly load statistics.")
     with open(yearly_load_statistics_filepath, "w") as f:
-        yearly_load_statistics.to_csv(
-            f, index=False, line_terminator=""  # type: ignore
-        )
+        yearly_load_statistics.to_csv(f, index=False, lineterminator="")  # type: ignore
     logger.info("Yearly load statistics successfully saved.")
 
     return total_load, yearly_load_statistics
@@ -704,7 +706,7 @@ def process_device_hourly_power(
             "w",
         ) as f:
             device_load.to_csv(
-                f, header=None, index=False, line_terminator=""  # type: ignore
+                f, header=None, index=False, lineterminator=""  # type: ignore
             )
 
         logger.info(
@@ -780,7 +782,7 @@ def process_device_hourly_usage(
                 [
                     pd.DataFrame(  # type: ignore
                         np.random.binomial(  # type: ignore
-                            float(daily_device_ownership.iloc[day, 0]),
+                            float(daily_device_ownership.iloc[day, 0]),  # type: ignore [arg-type]
                             daily_device_utilisation.iloc[day, :],
                         )
                     )
@@ -808,7 +810,7 @@ def process_device_hourly_usage(
             "w",
         ) as f:
             hourly_device_usage.to_csv(
-                f, header=None, index=False, line_terminator=""  # type: ignore
+                f, header=None, index=False, lineterminator=""  # type: ignore
             )
 
         logger.info(
@@ -890,7 +892,7 @@ def process_device_ownership(
             "w",
         ) as f:
             daily_ownership.to_csv(
-                f, header=None, index=False, line_terminator=""  # type: ignore
+                f, header=None, index=False, lineterminator="\n"  # type: ignore
             )
         logger.info(
             "Monthly deivice-ownership profile for %s successfully saved to %s.",
@@ -904,7 +906,7 @@ def process_device_ownership(
 def process_device_utilisation(
     device: Device,
     *,
-    device_utilisations: Dict[Device, pd.DataFrame],
+    device_utilisations: dict[Device, pd.DataFrame],
     generated_device_utilisation_directory: str,
     location: Location,
     logger: Logger,
@@ -966,7 +968,7 @@ def process_device_utilisation(
         # Save this to the output file.
         with open(filepath, "w") as f:
             interpolated_daily_profile.to_csv(
-                f, header=None, index=False, line_terminator=""  # type: ignore
+                f, header=None, index=False, lineterminator=""  # type: ignore
             )
         logger.info(
             "Daily deivice-utilisation profile for %s successfully saved to %s.",
@@ -979,14 +981,14 @@ def process_device_utilisation(
 
 def process_load_profiles(  # pylint: disable=too-many-locals
     auto_generated_files_directory: str,
-    device_utilisations: Dict[Device, pd.DataFrame],
+    device_utilisations: dict[Device, pd.DataFrame],
     disable_tqdm: bool,
     location: Location,
     logger: Logger,
     regenerate: bool,
     resource_type: ResourceType,
-    total_load_profile: Optional[pd.DataFrame] = None,
-) -> Tuple[Dict[str, pd.DataFrame], pd.DataFrame, pd.DataFrame]:
+    total_load_profile: pd.DataFrame | None = None,
+) -> tuple[dict[str, pd.DataFrame], pd.DataFrame, pd.DataFrame]:
     """
     Process all the load information and profiles to generate the total load.
 
@@ -1019,10 +1021,10 @@ def process_load_profiles(  # pylint: disable=too-many-locals
 
     """
 
-    device_hourly_loads: Dict[str, pd.DataFrame] = {}
+    device_hourly_loads: dict[str, pd.DataFrame] = {}
     if resource_type == ResourceType.ELECTRIC:
         resource_name: str = "electric"
-        relevant_device_utilisations: Dict[Device, pd.DataFrame] = {
+        relevant_device_utilisations: dict[Device, pd.DataFrame] = {
             device: device_utilisation
             for device, device_utilisation in device_utilisations.items()
             if device.electric_power is not None
@@ -1174,7 +1176,7 @@ def compute_processed_load_profile(
 
     """
 
-    processed_total_load: Optional[pd.DataFrame] = None
+    processed_total_load: pd.DataFrame | None = None
 
     if scenario.demands.domestic:
         processed_total_load = pd.DataFrame(

@@ -24,7 +24,7 @@ import pkgutil
 import shutil
 import sys
 
-from typing import Any, List, Optional, Pattern
+from typing import Any, Pattern
 
 import re
 import yaml  # pylint: disable=import-error
@@ -32,7 +32,7 @@ import yaml  # pylint: disable=import-error
 from ..__utils__ import (
     InternalError,
     get_logger,
-    LOCATIONS_FOLDER_NAME,
+    get_locations_foldername,
     PACKAGE_NAME,
     RAW_CLOVER_PATH,
     read_yaml,
@@ -121,7 +121,7 @@ def _create_file(
 
 
 def _create_folder_and_contents(
-    contents: List[Any],
+    contents: list[Any],
     directory_name: str,
     logger: logging.Logger,
     parent_directory: str,
@@ -162,7 +162,7 @@ def _create_folder_and_contents(
             )
 
 
-def _parse_args(args: List[Any]) -> argparse.Namespace:
+def _parse_args(args: list[Any]) -> argparse.Namespace:
     """
     Parse the CLI arguments to determine the flow of the script.
 
@@ -189,7 +189,7 @@ def _parse_args(args: List[Any]) -> argparse.Namespace:
 
 
 def create_new_location(
-    from_existing: Optional[str],
+    from_existing: str | None,
     location: str,
     logger: logging.Logger,
     update: bool,
@@ -243,7 +243,8 @@ def create_new_location(
 
     # Process the new-location data into a usable format.
     new_location_directory = str(new_location_data[0][DIRECTORY]).format(
-        location=location, locations_folder_name=LOCATIONS_FOLDER_NAME
+        location=location,
+        locations_folder_name=(locations_foldername := get_locations_foldername()),
     )
 
     # If the new location already exists and the script is not run to update, then exit.
@@ -275,7 +276,7 @@ def create_new_location(
         # does not exist.
         existing_location_directory = new_location_data[0][DIRECTORY].format(
             location=from_existing,
-            locations_folder_name=LOCATIONS_FOLDER_NAME,
+            locations_folder_name=locations_foldername,
         )
         if not os.path.isdir(existing_location_directory):
             logger.error(
@@ -326,7 +327,7 @@ def create_new_location(
             )
 
 
-def main(args: List[Any]) -> None:
+def main(args: list[Any]) -> None:
     """
     The main method for the new-location-folder generation script.
 

@@ -19,7 +19,7 @@ another.
 """
 
 from logging import Logger
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from ..__utils__ import (
     BColours,
@@ -77,8 +77,8 @@ WASTE_PRODUCTS: str = "waste_products"
 
 
 def _parse_waste_production(
-    logger: Logger, name: str, waste_product_inputs: Dict[str, float]
-) -> Dict[WasteProduct, float]:
+    logger: Logger, name: str, waste_product_inputs: dict[str, float]
+) -> dict[WasteProduct, float]:
     """
     Parses waste-product information.
 
@@ -96,7 +96,7 @@ def _parse_waste_production(
 
     """
 
-    waste_production: Dict[WasteProduct, float] = {}
+    waste_production: dict[WasteProduct, float] = {}
 
     for waste_product, amount_produced in waste_product_inputs.items():
         try:
@@ -161,11 +161,11 @@ class Converter:
 
     def __init__(
         self,
-        input_resource_consumption: Dict[ResourceType, float],
+        input_resource_consumption: dict[ResourceType, float],
         maximum_output_capacity: float,
         name: str,
         output_resource_type: ResourceType,
-        waste_production: Optional[Dict[WasteProduct, float]] = None,
+        waste_production: dict[WasteProduct, float] | None = None,
     ) -> None:
         """
         Instantiate a :class:`Converter` instance.
@@ -184,13 +184,13 @@ class Converter:
 
         """
 
-        self.input_resource_consumption: Dict[
-            ResourceType, float
-        ] = input_resource_consumption
+        self.input_resource_consumption: dict[ResourceType, float] = (
+            input_resource_consumption
+        )
         self.maximum_output_capacity: float = maximum_output_capacity
         self.name: str = name
         self.output_resource_type: ResourceType = output_resource_type
-        self.waste_production: Dict[WasteProduct, float] = (
+        self.waste_production: dict[WasteProduct, float] = (
             waste_production if waste_production is not None else {}
         )
 
@@ -357,7 +357,7 @@ class MultiInputConverter(Converter):
         )
 
     @classmethod
-    def from_dict(cls, input_data: Dict[str, Any], logger: Logger) -> Any:
+    def from_dict(cls, input_data: dict[str, Any], logger: Logger) -> Any:
         """
         Generates a :class:`MultiInputConverter` instance based on the input data.
 
@@ -376,7 +376,7 @@ class MultiInputConverter(Converter):
             )
 
         # Determine the input load type.
-        input_resource_list: List[str] = [
+        input_resource_list: list[str] = [
             str(key)
             for key in input_data
             if key in RESOURCE_NAME_TO_RESOURCE_TYPE_MAPPING
@@ -411,7 +411,7 @@ class MultiInputConverter(Converter):
                 f"{BColours.fail}Invalid value type in conversion file: {str(e)}{BColours.endc}"
             ) from None
 
-        input_resource_consumption: Dict[ResourceType, float] = {}
+        input_resource_consumption: dict[ResourceType, float] = {}
 
         for input_resource in input_resource_list:
             try:
@@ -431,7 +431,7 @@ class MultiInputConverter(Converter):
                     f"Invalid value type in conversion file: {str(e)}",
                 ) from None
 
-        waste_production: Dict[WasteProduct, float] = {}
+        waste_production: dict[WasteProduct, float] = {}
 
         if WASTE_PRODUCTS in input_data:
             waste_production = _parse_waste_production(
@@ -478,16 +478,16 @@ class ThermalDesalinationPlant(MultiInputConverter):
     def __init__(
         self,
         htf_mode: HTFMode,
-        input_resource_consumption: Dict[ResourceType, float],
-        maximum_feedwater_temperature: Optional[float],
-        maximum_htf_temperature: Optional[float],
+        input_resource_consumption: dict[ResourceType, float],
+        maximum_feedwater_temperature: float | None,
+        maximum_htf_temperature: float | None,
         maximum_output_capacity: float,
-        minimum_feedwater_temperature: Optional[float],
-        minimum_htf_temperature: Optional[float],
+        minimum_feedwater_temperature: float | None,
+        minimum_htf_temperature: float | None,
         minimum_output_capacity: float,
         name: str,
         output_resource_type: ResourceType,
-        waste_production: Dict[WasteProduct, float],
+        waste_production: dict[WasteProduct, float],
     ) -> None:
         """
         Instantiate a :class:`ThermalDesalinationPlant` instance.
@@ -531,18 +531,14 @@ class ThermalDesalinationPlant(MultiInputConverter):
         )
 
         self.htf_mode = htf_mode
-        self.maximum_feedwater_temperature: Optional[
-            float
-        ] = maximum_feedwater_temperature
-        self.maximum_htf_temperature: Optional[float] = maximum_htf_temperature
-        self.minimum_feedwater_temperature: Optional[
-            float
-        ] = minimum_feedwater_temperature
-        self.minimum_htf_temperature: Optional[float] = minimum_htf_temperature
-        self.minimum_output_capacity: Optional[float] = minimum_output_capacity
+        self.maximum_feedwater_temperature: float | None = maximum_feedwater_temperature
+        self.maximum_htf_temperature: float | None = maximum_htf_temperature
+        self.minimum_feedwater_temperature: float | None = minimum_feedwater_temperature
+        self.minimum_htf_temperature: float | None = minimum_htf_temperature
+        self.minimum_output_capacity: float | None = minimum_output_capacity
 
     @classmethod
-    def from_dict(cls, input_data: Dict[str, Any], logger: Logger) -> Any:
+    def from_dict(cls, input_data: dict[str, Any], logger: Logger) -> Any:
         """
         Generates a :class:`ThermalDesalinationPlant` instance based on the input data.
 
@@ -561,7 +557,7 @@ class ThermalDesalinationPlant(MultiInputConverter):
             )
 
         # Determine the input load type.
-        input_resource_list: List[str] = [
+        input_resource_list: list[str] = [
             str(key)
             for key in input_data
             if key in RESOURCE_NAME_TO_RESOURCE_TYPE_MAPPING
@@ -596,7 +592,7 @@ class ThermalDesalinationPlant(MultiInputConverter):
                 f"{BColours.fail}Invalid value type in conversion file: {str(e)}{BColours.endc}"
             ) from None
 
-        input_resource_consumption: Dict[ResourceType, float] = {}
+        input_resource_consumption: dict[ResourceType, float] = {}
 
         for input_resource in input_resource_list:
             try:
@@ -628,7 +624,7 @@ class ThermalDesalinationPlant(MultiInputConverter):
             )
             raise
 
-        waste_production: Dict[WasteProduct, float] = {}
+        waste_production: dict[WasteProduct, float] = {}
 
         if WASTE_PRODUCTS in input_data:
             waste_production = _parse_waste_production(
@@ -638,19 +634,27 @@ class ThermalDesalinationPlant(MultiInputConverter):
         return cls(
             htf_mode,
             input_resource_consumption,
-            float(input_data[MAXIMUM_FEEDWATER_TEMPERATURE])
-            if MAXIMUM_FEEDWATER_TEMPERATURE in input_data
-            else None,
-            float(input_data[MAXIMUM_HTF_TEMPERATURE])
-            if MAXIMUM_HTF_TEMPERATURE in input_data
-            else None,
+            (
+                float(input_data[MAXIMUM_FEEDWATER_TEMPERATURE])
+                if MAXIMUM_FEEDWATER_TEMPERATURE in input_data
+                else None
+            ),
+            (
+                float(input_data[MAXIMUM_HTF_TEMPERATURE])
+                if MAXIMUM_HTF_TEMPERATURE in input_data
+                else None
+            ),
             maximum_output,
-            float(input_data[MINIMUM_FEEDWATER_TEMPERATURE])
-            if MINIMUM_FEEDWATER_TEMPERATURE in input_data
-            else None,
-            float(input_data[MINIMUM_HTF_TEMPERATURE])
-            if MINIMUM_HTF_TEMPERATURE in input_data
-            else None,
+            (
+                float(input_data[MINIMUM_FEEDWATER_TEMPERATURE])
+                if MINIMUM_FEEDWATER_TEMPERATURE in input_data
+                else None
+            ),
+            (
+                float(input_data[MINIMUM_HTF_TEMPERATURE])
+                if MINIMUM_HTF_TEMPERATURE in input_data
+                else None
+            ),
             float(input_data[MINIMUM_OUTPUT]),
             str(input_data[NAME]),
             output_resource_type,
@@ -687,7 +691,7 @@ class WaterSource(Converter):
         )
 
     @classmethod
-    def from_dict(cls, input_data: Dict[str, Any], logger: Logger) -> Any:
+    def from_dict(cls, input_data: dict[str, Any], logger: Logger) -> Any:
         """
         Generates a :class:`Converter` instance based on the input data provided.
 
@@ -706,7 +710,7 @@ class WaterSource(Converter):
             )
 
         # Determine the input load type.
-        input_resource_list: List[str] = [
+        input_resource_list: list[str] = [
             str(key)
             for key in input_data
             if key in RESOURCE_NAME_TO_RESOURCE_TYPE_MAPPING
@@ -774,7 +778,7 @@ class WaterSource(Converter):
 
         consumption = corresponding_input / maximum_output
 
-        waste_production: Dict[WasteProduct, float] = {}
+        waste_production: dict[WasteProduct, float] = {}
 
         if WASTE_PRODUCTS in input_data:
             waste_production = _parse_waste_production(

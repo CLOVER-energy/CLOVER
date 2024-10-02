@@ -19,8 +19,6 @@ namely the GHG and finance impact modules.
 
 import enum
 
-from typing import Dict
-
 from ..__utils__ import (
     CleanWaterMode,
     EXCHANGER,
@@ -148,7 +146,7 @@ class ImpactingComponent(enum.Enum):
 def update_diesel_costs(
     diesel_impact: float,
     scenario: Scenario,
-    subsystem_impacts: Dict[ResourceType, float],
+    subsystem_impacts: dict[ResourceType, float],
     technical_appraisal: TechnicalAppraisal,
 ) -> None:
     """

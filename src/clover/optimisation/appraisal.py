@@ -21,7 +21,7 @@ simulations.
 
 import collections
 from logging import Logger
-from typing import Any, Dict, Optional, Tuple
+from typing import Any
 
 import numpy as np  # pylint: disable=import-error
 import pandas as pd
@@ -37,12 +37,13 @@ from ..__utils__ import (
     EnvironmentalAppraisal,
     FinancialAppraisal,
     HEAT_CAPACITY_OF_WATER,
+    hourly_profile_to_daily_sum,
     InternalError,
+    Inverter,
+    Location,
     ProgrammerJudgementFault,
     ResourceType,
     Scenario,
-    hourly_profile_to_daily_sum,
-    Location,
     SystemAppraisal,
     SystemDetails,
     TechnicalAppraisal,
@@ -57,7 +58,7 @@ __all__ = ("appraise_system",)
 def _calculate_power_consumed_fraction(
     simulation_results: pd.DataFrame,
     total_electricity_consumed: float,
-) -> Dict[ResourceType, float]:
+) -> dict[ResourceType, float]:
     """
     Calculates the electric power consumed by each resource type.
 
@@ -73,7 +74,7 @@ def _calculate_power_consumed_fraction(
 
     """
 
-    power_consumed_fraction: Dict[ResourceType, float] = collections.defaultdict(float)
+    power_consumed_fraction: dict[ResourceType, float] = collections.defaultdict(float)
     if ColumnHeader.POWER_CONSUMED_BY_DESALINATION.value in simulation_results:
         total_clean_water_power_consumed = np.sum(
             simulation_results[  # type: ignore
@@ -283,16 +284,17 @@ def _simulation_cumulative_results(  # pylint: disable=too-many-locals
 def _simulation_environmental_appraisal(  # pylint: disable=too-many-locals
     buffer_tank_addition: int,
     clean_water_tank_addition: int,
-    converter_addition: Dict[Converter, int],
+    converter_addition: dict[Converter, int],
     diesel_addition: float,
     electric_yearly_load_statistics: pd.DataFrame,
     end_year: int,
-    ghg_inputs: Dict[str, Any],
+    ghg_inputs: dict[str, Any],
     heat_exchanger_addition: int,
     hot_water_tank_addition: int,
+    inverter: Inverter,
     location: Location,
     logger: Logger,
-    pv_addition: float,
+    pv_addition: dict[str, float],
     pvt_addition: float,
     scenario: Scenario,
     simulation_results: pd.DataFrame,
@@ -324,6 +326,8 @@ def _simulation_environmental_appraisal(  # pylint: disable=too-many-locals
             The additional number of heat exchangers added this iteration.
         - hot_water_tank_addition:
             The additional number of hot-water tanks added this iteration.
+        - inverter:
+            The :class:`Inverter` being used for the run.
         - location:
             The location being considered.
         - logger:
@@ -333,7 +337,7 @@ def _simulation_environmental_appraisal(  # pylint: disable=too-many-locals
         - pvt_addition:
             The additional number of PV-T panels added this iteration.
         - scenario:
-            The scenario for the run(s) being carried out.
+            The :class:`Scenario` currently being considered.
         - simulation_results:
             The system that was just simulated.
         - start_year:
@@ -366,7 +370,7 @@ def _simulation_environmental_appraisal(  # pylint: disable=too-many-locals
 
     # Calculate the total brine produced.
     total_brine = (
-        round(simulation_results[ColumnHeader.BRINE.value].sum(), 3)
+        round(simulation_results[ColumnHeader.BRINE.value].sum(axis=0), 3)
         if ColumnHeader.BRINE.value in simulation_results
         else None
     )
@@ -397,7 +401,14 @@ def _simulation_environmental_appraisal(  # pylint: disable=too-many-locals
 
     # Add the independent GHGs.
     additional_equipment_emissions += ghgs.calculate_independent_ghgs(
-        electric_yearly_load_statistics, end_year, ghg_inputs, location, start_year
+        electric_yearly_load_statistics,
+        end_year,
+        ghg_inputs,
+        inverter,
+        location,
+        logger,
+        scenario,
+        start_year,
     )
 
     # Calculate GHGs of connecting new households
@@ -412,28 +423,40 @@ def _simulation_environmental_appraisal(  # pylint: disable=too-many-locals
     # Calculate operating GHGs of the system during this simulation
     try:
         additional_om_emissions, subsystem_om_emissions = ghgs.calculate_total_om(
-            system_details.initial_num_buffer_tanks
-            if system_details.initial_num_buffer_tanks is not None
-            else 0,
-            system_details.initial_num_clean_water_tanks
-            if system_details.initial_num_clean_water_tanks is not None
-            else 0,
-            system_details.initial_converter_sizes
-            if system_details.initial_converter_sizes is not None
-            else None,
+            (
+                system_details.initial_num_buffer_tanks
+                if system_details.initial_num_buffer_tanks is not None
+                else 0
+            ),
+            (
+                system_details.initial_num_clean_water_tanks
+                if system_details.initial_num_clean_water_tanks is not None
+                else 0
+            ),
+            (
+                system_details.initial_converter_sizes
+                if system_details.initial_converter_sizes is not None
+                else None
+            ),
             system_details.diesel_capacity,
             ghg_inputs,
-            system_details.initial_num_buffer_tanks
-            if system_details.initial_num_buffer_tanks is not None
-            else 0,
-            system_details.initial_num_hot_water_tanks
-            if system_details.initial_num_hot_water_tanks is not None
-            else 0,
+            (
+                system_details.initial_num_buffer_tanks
+                if system_details.initial_num_buffer_tanks is not None
+                else 0
+            ),
+            (
+                system_details.initial_num_hot_water_tanks
+                if system_details.initial_num_hot_water_tanks is not None
+                else 0
+            ),
             logger,
-            system_details.initial_pv_size,
-            system_details.initial_pvt_size
-            if system_details.initial_pvt_size is not None
-            else 0,
+            system_details.initial_pv_sizes,
+            (
+                system_details.initial_pvt_size
+                if system_details.initial_pvt_size is not None
+                else 0
+            ),
             scenario,
             system_details.initial_storage_size,
             technical_appraisal,
@@ -481,7 +504,7 @@ def _simulation_environmental_appraisal(  # pylint: disable=too-many-locals
         raise
 
     # Apportion the grid emissions by the resource types.
-    total_subsystem_emissions: Dict[ResourceType, float] = {
+    total_subsystem_emissions: dict[ResourceType, float] = {
         resource_type: value
         + subsystem_om_emissions[resource_type]
         + (grid_ghgs * technical_appraisal.power_consumed_fraction[resource_type])
@@ -523,14 +546,15 @@ def _simulation_environmental_appraisal(  # pylint: disable=too-many-locals
 def _simulation_financial_appraisal(  # pylint: disable=too-many-locals
     buffer_tank_addition: int,
     clean_water_tank_addition: int,
-    converter_addition: Dict[Converter, int],
+    converter_addition: dict[Converter, int],
     diesel_addition: float,
-    finance_inputs: Dict[str, Any],
+    finance_inputs: dict[str, Any],
     heat_exchanger_addition: int,
     hot_water_tank_addition: int,
+    inverter: Inverter,
     location: Location,
     logger: Logger,
-    pv_addition: float,
+    pv_addition: dict[str, float],
     pvt_addition: float,
     scenario: Scenario,
     simulation_results: pd.DataFrame,
@@ -558,6 +582,8 @@ def _simulation_financial_appraisal(  # pylint: disable=too-many-locals
             The additional number of heat exchangers added this iteration.
         - hot_water_tank_addition:
             The additional number of hot-water tanks added this iteration.
+        - inverter:
+            The inverter being modelled.
         - location:
             The :class:`Location` being considered.
         - logger:
@@ -567,7 +593,7 @@ def _simulation_financial_appraisal(  # pylint: disable=too-many-locals
         - pvt_addition:
             The additional number of PV-T panels added this iteration.
         - scenario:
-            The scenario currently being considered.
+            The :class:`Scenario` currently being considered.
         - simulation_results:
             Outputs of Energy_System().simulation(...)
         - storage_addition:
@@ -621,7 +647,10 @@ def _simulation_financial_appraisal(  # pylint: disable=too-many-locals
     # Add the inddependent expenditure.
     independent_expenditure = finance.independent_expenditure(
         finance_inputs,
+        inverter,
         location,
+        logger,
+        scenario,
         yearly_load_statistics,
         start_year=system_details.start_year,
         end_year=system_details.end_year,
@@ -636,28 +665,40 @@ def _simulation_financial_appraisal(  # pylint: disable=too-many-locals
 
     # Calculate operating costs of the system during this simulation (discounted)
     additional_om_costs, subsystem_om_costs = finance.total_om(
-        system_details.initial_num_buffer_tanks
-        if system_details.initial_num_buffer_tanks is not None
-        else 0,
-        system_details.initial_num_clean_water_tanks
-        if system_details.initial_num_clean_water_tanks is not None
-        else 0,
-        system_details.initial_converter_sizes
-        if system_details.initial_converter_sizes is not None
-        else None,
+        (
+            system_details.initial_num_buffer_tanks
+            if system_details.initial_num_buffer_tanks is not None
+            else 0
+        ),
+        (
+            system_details.initial_num_clean_water_tanks
+            if system_details.initial_num_clean_water_tanks is not None
+            else 0
+        ),
+        (
+            system_details.initial_converter_sizes
+            if system_details.initial_converter_sizes is not None
+            else None
+        ),
         system_details.diesel_capacity,
         finance_inputs,
-        system_details.initial_num_buffer_tanks
-        if system_details.initial_num_buffer_tanks is not None
-        else 0,
-        system_details.initial_num_hot_water_tanks
-        if system_details.initial_num_hot_water_tanks is not None
-        else 0,
+        (
+            system_details.initial_num_buffer_tanks
+            if system_details.initial_num_buffer_tanks is not None
+            else 0
+        ),
+        (
+            system_details.initial_num_hot_water_tanks
+            if system_details.initial_num_hot_water_tanks is not None
+            else 0
+        ),
         logger,
-        system_details.initial_pv_size,
-        system_details.initial_pvt_size
-        if system_details.initial_pvt_size is not None
-        else 0,
+        system_details.initial_pv_sizes,
+        (
+            system_details.initial_pvt_size
+            if system_details.initial_pvt_size is not None
+            else 0
+        ),
         scenario,
         system_details.initial_storage_size,
         technical_appraisal,
@@ -700,7 +741,7 @@ def _simulation_financial_appraisal(  # pylint: disable=too-many-locals
     )
 
     # Apportion the grid running costs by the resource types.
-    total_subsystem_costs: Dict[ResourceType, float] = {
+    total_subsystem_costs: dict[ResourceType, float] = {
         resource_type: value
         + subsystem_om_costs[resource_type]
         + (
@@ -720,7 +761,7 @@ def _simulation_financial_appraisal(  # pylint: disable=too-many-locals
     total_subsystem_costs[ResourceType.ELECTRIC] += connections_cost
     total_subsystem_costs[ResourceType.HOT_CLEAN_WATER] += (
         additional_equipment_costs + additional_om_costs
-    )
+    ) * technical_appraisal.power_consumed_fraction[ResourceType.HOT_CLEAN_WATER]
 
     # Total cost incurred during simulation period (discounted)
     total_equipment_costs = sum(subsystem_equipment_costs.values())
@@ -746,18 +787,18 @@ def _simulation_financial_appraisal(  # pylint: disable=too-many-locals
 
 
 def _appraise_clean_water_system_tech(  # pylint: disable=too-many-locals
-    finance_inputs: Dict[str, Any],
+    finance_inputs: dict[str, Any],
     logger: Logger,
     renewables_fraction: float,
     simulation_results: pd.DataFrame,
     system_details: SystemDetails,
-) -> Tuple[
-    Optional[float],
-    Optional[float],
-    Optional[float],
-    Optional[float],
-    Optional[float],
-    Optional[float],
+) -> tuple[
+    float | None,
+    float | None,
+    float | None,
+    float | None,
+    float | None,
+    float | None,
 ]:
     """
     Appraises the clean-water system's technical parameters.
@@ -892,11 +933,11 @@ def _appraise_clean_water_system_tech(  # pylint: disable=too-many-locals
 
 
 def _appraise_electric_system_tech(  # pylint: disable=too-many-locals
-    finance_inputs: Dict[str, Any],
+    finance_inputs: dict[str, Any],
     logger: Logger,
     simulation_results: pd.DataFrame,
     system_details: SystemDetails,
-) -> Tuple[
+) -> tuple[
     float,
     pd.Series,
     float,
@@ -906,7 +947,7 @@ def _appraise_electric_system_tech(  # pylint: disable=too-many-locals
     float,
     float,
     float,
-    Optional[float],
+    float | None,
     float,
     float,
 ]:
@@ -967,7 +1008,7 @@ def _appraise_electric_system_tech(  # pylint: disable=too-many-locals
     total_pv_energy: float = np.sum(
         simulation_results[ColumnHeader.PV_ELECTRICITY_SUPPLIED.value]  # type: ignore
     )
-    total_pvt_energy: Optional[float] = (
+    total_pvt_energy: float | None = (
         np.sum(
             simulation_results[ColumnHeader.TOTAL_PVT_ELECTRICITY_SUPPLIED.value]  # type: ignore
         )
@@ -1020,19 +1061,19 @@ def _appraise_electric_system_tech(  # pylint: disable=too-many-locals
 
 
 def _appraise_hot_water_system_tech(
-    finance_inputs: Dict[str, Any],
+    finance_inputs: dict[str, Any],
     logger: Logger,
     renewables_fraction: float,
     scenario: Scenario,
     simulation_results: pd.DataFrame,
     system_details: SystemDetails,
-) -> Tuple[
-    Optional[float],
-    Optional[pd.Series],
-    Optional[float],
-    Optional[float],
-    Optional[float],
-    Optional[float],
+) -> tuple[
+    float | None,
+    pd.Series | None,
+    float | None,
+    float | None,
+    float | None,
+    float | None,
 ]:
     """
     Appraises the hot-water system's technical parameters.
@@ -1089,7 +1130,7 @@ def _appraise_hot_water_system_tech(
                     * simulation_results[ColumnHeader.HW_TANK_OUTPUT.value].values
                 )
             )
-            / np.nansum(simulation_results[ColumnHeader.HW_TANK_OUTPUT.value].values)
+            / np.nansum(simulation_results[ColumnHeader.HW_TANK_OUTPUT.value].values)  # type: ignore [arg-type]
         ),
         3,
     )
@@ -1134,7 +1175,7 @@ def _appraise_hot_water_system_tech(
     total_hot_water_consumed_daily: pd.Series = hourly_profile_to_daily_sum(
         pd.DataFrame(hot_water_consumed)
     )
-    discounted_hot_water: Optional[float] = finance.discounted_energy_total(
+    discounted_hot_water: float | None = finance.discounted_energy_total(
         finance_inputs,
         logger,
         total_hot_water_consumed_daily,
@@ -1153,7 +1194,7 @@ def _appraise_hot_water_system_tech(
 
 
 def _simulation_technical_appraisal(  # pylint: disable=too-many-locals
-    finance_inputs: Dict[str, Any],
+    finance_inputs: dict[str, Any],
     logger: Logger,
     scenario: Scenario,
     simulation_results: pd.DataFrame,
@@ -1247,14 +1288,14 @@ def _simulation_technical_appraisal(  # pylint: disable=too-many-locals
 
     # Heating system.
     if hot_water_consumed is not None:
-        heating_consumed: Optional[pd.Series] = (
+        heating_consumed: pd.Series | None = (
             hot_water_consumed  # [kg]
             * HEAT_CAPACITY_OF_WATER  # [J/kg*K]
             * simulation_results[  # type: ignore
                 ColumnHeader.HW_TEMPERATURE_GAIN.value
             ]  # [K]
         ) / 1000  # + clean_water_system_heat + ...
-        total_heating_consumed: Optional[float] = np.sum(heating_consumed)  # type: ignore
+        total_heating_consumed: float | None = np.sum(heating_consumed)  # type: ignore
 
         # Append the energy consumption information.
         energy_consumed += (
@@ -1268,7 +1309,7 @@ def _simulation_technical_appraisal(  # pylint: disable=too-many-locals
         total_heating_consumed_daily: pd.Series = hourly_profile_to_daily_sum(
             pd.DataFrame(heating_consumed)
         )
-        discounted_heating: Optional[float] = finance.discounted_energy_total(
+        discounted_heating: float | None = finance.discounted_energy_total(
             finance_inputs,
             logger,
             total_heating_consumed_daily,
@@ -1320,48 +1361,64 @@ def _simulation_technical_appraisal(  # pylint: disable=too-many-locals
     return TechnicalAppraisal(
         round(system_blackouts, 3),
         round(clean_water_blackouts, 3) if clean_water_blackouts is not None else None,
-        round(clean_water_demand_covered, 3)
-        if clean_water_demand_covered is not None
-        else None,
+        (
+            round(clean_water_demand_covered, 3)
+            if clean_water_demand_covered is not None
+            else None
+        ),
         round(total_diesel_used, 3),
         round(total_diesel_fuel, 3),
-        round(discounted_clean_water, 3)
-        if discounted_clean_water is not None
-        else None,
+        (
+            round(discounted_clean_water, 3)
+            if discounted_clean_water is not None
+            else None
+        ),
         round(discounted_electricity, 3),
         round(discounted_energy, 3),
         round(discounted_heating, 3) if discounted_heating is not None else None,
         round(discounted_hot_water, 3) if discounted_hot_water is not None else None,
         round(total_grid_used, 3),
-        round(hot_water_demand_covered, 3)
-        if hot_water_demand_covered is not None
-        else None,
+        (
+            round(hot_water_demand_covered, 3)
+            if hot_water_demand_covered is not None
+            else None
+        ),
         round(kerosene_displacement, 3),
         power_consumed_fraction,
         round(total_pv_energy, 3),
         round(total_pvt_energy, 3) if total_pvt_energy is not None else None,
-        round(renewable_clean_water_fraction, 3)
-        if renewable_clean_water_fraction is not None
-        else None,
+        (
+            round(renewable_clean_water_fraction, 3)
+            if renewable_clean_water_fraction is not None
+            else None
+        ),
         round(renewables_fraction, 3),
         round(renewable_electricity_used, 3),
-        round(renewable_hot_water_fraction, 3)
-        if renewable_hot_water_fraction is not None
-        else None,
-        round(solar_thermal_cw_fraction, 3)
-        if solar_thermal_cw_fraction is not None
-        else None,
-        round(solar_thermal_hw_fraction, 3)
-        if solar_thermal_hw_fraction is not None
-        else None,
+        (
+            round(renewable_hot_water_fraction, 3)
+            if renewable_hot_water_fraction is not None
+            else None
+        ),
+        (
+            round(solar_thermal_cw_fraction, 3)
+            if solar_thermal_cw_fraction is not None
+            else None
+        ),
+        (
+            round(solar_thermal_hw_fraction, 3)
+            if solar_thermal_hw_fraction is not None
+            else None
+        ),
         round(storage_electricity_used, 3),
         round(total_clean_water, 3) if total_clean_water is not None else None,
         round(total_hot_water, 3) if total_hot_water is not None else None,
         round(total_electricity_consumed, 3),
         round(total_energy_consumed, 3),
-        round(total_heating_consumed, 3)
-        if total_heating_consumed is not None
-        else None,
+        (
+            round(total_heating_consumed, 3)
+            if total_heating_consumed is not None
+            else None
+        ),
         round(unmet_electricity, 3),
         round(unmet_fraction, 3),
     )
@@ -1370,11 +1427,12 @@ def _simulation_technical_appraisal(  # pylint: disable=too-many-locals
 def appraise_system(  # pylint: disable=too-many-locals
     electric_yearly_load_statistics: pd.DataFrame,
     end_year: int,
-    finance_inputs: Dict[str, Any],
-    ghg_inputs: Dict[str, Any],
+    finance_inputs: dict[str, Any],
+    ghg_inputs: dict[str, Any],
+    inverter: Inverter,
     location: Location,
     logger: Logger,
-    previous_system: Optional[SystemAppraisal],
+    previous_system: SystemAppraisal | None,
     scenario: Scenario,
     simulation_results: pd.DataFrame,
     start_year: int,
@@ -1390,6 +1448,10 @@ def appraise_system(  # pylint: disable=too-many-locals
             The end year for the simulation that was just run.
         - finance_inputs:
             The finance input information.
+        - ghg_inputs:
+            The GHG input information.
+        - inverter:
+            The :class:`Inverter` being modelled.
         - location:
             The location currently being considered.
         - logger:
@@ -1398,7 +1460,7 @@ def appraise_system(  # pylint: disable=too-many-locals
             Report from previously installed system (not required if no system was
             previously deployed)
         - scenario:
-            The scenario currently being considered.
+            The :class:`Scenario` currently being considered.
         - simulation_results
             Outputs of Energy_System().simulation(...)
         - start_year:
@@ -1450,7 +1512,7 @@ def appraise_system(  # pylint: disable=too-many-locals
             BColours.endc,
         )
         raise InternalError("Misuse of system appraisal function.")
-    converter_addition: Dict[Converter, int] = {
+    converter_addition: dict[Converter, int] = {
         converter: size
         - (
             previous_system.system_details.final_converter_sizes[converter]
@@ -1476,9 +1538,11 @@ def appraise_system(  # pylint: disable=too-many-locals
         and previous_system.system_details.final_num_hot_water_tanks is not None
         else 0
     )
-    pv_addition = (
-        system_details.initial_pv_size - previous_system.system_details.final_pv_size
-    )
+    pv_addition: dict[str, float] = {
+        panel_name: initial_pv_size
+        - previous_system.system_details.final_pv_sizes[panel_name]
+        for panel_name, initial_pv_size in system_details.initial_pv_sizes.items()
+    }
     pvt_addition: float = (
         system_details.initial_pvt_size - previous_system.system_details.final_pvt_size
         if system_details.initial_pvt_size is not None
@@ -1503,6 +1567,7 @@ def appraise_system(  # pylint: disable=too-many-locals
         finance_inputs,
         heat_exchanger_addition,
         hot_water_tank_addition,
+        inverter,
         location,
         logger,
         pv_addition,
@@ -1524,6 +1589,7 @@ def appraise_system(  # pylint: disable=too-many-locals
         ghg_inputs,
         heat_exchanger_addition,
         hot_water_tank_addition,
+        inverter,
         location,
         logger,
         pv_addition,
@@ -1564,7 +1630,7 @@ def appraise_system(  # pylint: disable=too-many-locals
     lcu_energy = float(
         cumulative_results.system_cost / cumulative_results.discounted_energy
     )
-    lcu_h: Optional[float] = (
+    lcu_h: float | None = (
         float(
             cumulative_results.subsystem_costs[ResourceType.HOT_CLEAN_WATER]
             / cumulative_results.discounted_heating
@@ -1576,7 +1642,7 @@ def appraise_system(  # pylint: disable=too-many-locals
         cumulative_results.discounted_clean_water is not None
         and cumulative_results.discounted_clean_water > 0
     ):
-        lcu_w: Optional[float] = float(
+        lcu_w: float | None = float(
             cumulative_results.subsystem_costs[ResourceType.CLEAN_WATER]
             / cumulative_results.discounted_clean_water
         )
@@ -1590,7 +1656,7 @@ def appraise_system(  # pylint: disable=too-many-locals
 
     # Compute cumulative waste products.
     if cumulative_results.waste_produced is not None:
-        cumulative_brine: Optional[float] = (
+        cumulative_brine: float | None = (
             cumulative_results.waste_produced[WasteProduct.BRINE]
             if WasteProduct.BRINE in cumulative_results.waste_produced
             else None
@@ -1599,7 +1665,7 @@ def appraise_system(  # pylint: disable=too-many-locals
         cumulative_brine = None
 
     # pylint: disable=line-too-long
-    criteria: Dict[Criterion, Optional[float]] = {
+    criteria: dict[Criterion, float | None] = {
         Criterion.BLACKOUTS: technical_appraisal.blackouts,
         Criterion.CLEAN_WATER_BLACKOUTS: technical_appraisal.clean_water_blackouts,
         Criterion.CUMULATIVE_BRINE: cumulative_brine,
@@ -1628,14 +1694,17 @@ def appraise_system(  # pylint: disable=too-many-locals
         Criterion.TOTAL_SYSTEM_COST: financial_appraisal.total_system_cost,
         Criterion.TOTAL_SYSTEM_GHGS: environmental_appraisal.total_system_ghgs,
         Criterion.UNMET_CLEAN_WATER_FRACTION: (
-            1 - technical_appraisal.cw_demand_covered
-        )
-        if technical_appraisal.cw_demand_covered is not None
-        else None,
+            (1 - technical_appraisal.cw_demand_covered)
+            if technical_appraisal.cw_demand_covered is not None
+            else None
+        ),
         Criterion.UNMET_ELECTRICITY_FRACTION: technical_appraisal.unmet_energy_fraction,
-        Criterion.UNMET_HOT_WATER_FRACTION: (1 - technical_appraisal.hw_demand_covered)
-        if technical_appraisal.hw_demand_covered is not None
-        else None,
+        Criterion.UNMET_HOT_WATER_FRACTION: (
+            (1 - technical_appraisal.hw_demand_covered)
+            if technical_appraisal.hw_demand_covered is not None
+            else None
+        ),
+        Criterion.UPTIME: round(technical_appraisal.uptime, 3),
     }
 
     if technical_appraisal.clean_water_blackouts is not None:
