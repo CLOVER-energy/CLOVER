@@ -26,6 +26,9 @@ import math
 import os
 import re
 import sys
+import warnings
+
+warnings.simplefilter(action="ignore", category=FutureWarning)
 
 from argparse import Namespace
 from typing import Any, DefaultDict, Match, Pattern

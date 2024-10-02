@@ -131,7 +131,7 @@ def _calculate_backup_diesel_generator_usage(
         total_electric_load,
         scenario.diesel_scenario.mode,
     )
-    diesel_capacity: float = float(minigrid.diesel_generator.capacity * math.ceil(diesel_energy.max(axis=0) / minigrid.diesel_generator.capacity))  # type: ignore [call-arg, call-overload]
+    diesel_capacity: float = float((minigrid.diesel_generator.capacity * math.ceil(diesel_energy.max(axis=0).iloc[0] / minigrid.diesel_generator.capacity)))  # type: ignore [call-arg, call-overload]
     diesel_fuel_usage = pd.DataFrame(
         get_diesel_fuel_usage(
             int(diesel_capacity),

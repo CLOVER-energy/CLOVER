@@ -31,6 +31,7 @@ functions which can be used to carry out an optimisation:
 """
 
 import datetime
+import functools
 
 from logging import Logger
 from typing import Any, Union
@@ -1406,6 +1407,262 @@ def multiple_optimisation_step(  # pylint: disable=too-many-locals, too-many-sta
         unit="step",
     ):
         logger.info("Beginning optimisation step.")
+
+        def _target_function(
+            static_converter_sizes: dict[str, float],
+            optimisation_criterion: Criterion,
+            *,
+            cw_pvt_size: float = 0,
+            clean_water_tanks: float = 0,
+            hw_pvt_size: float = 0,
+            hot_water_tanks: float = 0,
+            pv_size: float = 0,
+            storage_size: float = 0,
+            **kwargs,
+        ) -> float:
+            """
+            Target function for running a CLOVER simulation and returning the result.
+
+            A CLOVER simulation is run, based on the information provided, and the
+            target criterion is then determined. This is then returned.
+
+            If a system doesn't meet the threshold criteria, then the system is rejected
+            by a large negative value being returned.
+
+            :param: kwargs
+                Used for any and all converter sizes.
+
+            """
+
+            # Determine the inputs required for the system.
+            end_year: int = start_year + int(optimisation_parameters.iteration_length)
+
+            # Append converters defined elsewhere.
+
+            simulation_converter_sizes: dict[Converter, int] = {
+                **kwargs,
+                **static_converter_sizes,
+            }
+
+            _, simulation_results, system_details = energy_system.run_simulation(
+                int(cw_pvt_size),
+                conventional_cw_source_profiles,
+                converters_from_sizing(simulation_converter_sizes),
+                disable_tqdm,
+                storage_size,
+                grid_profile,
+                hw_pvt_size,
+                irradiance_data,
+                kerosene_usage,
+                location,
+                logger,
+                minigrid,
+                clean_water_tanks,
+                hot_water_tanks,
+                total_solar_pv_power_produced,
+                {minigrid.pv_panel.name: pv_size},
+                optimisation.scenario,
+                Simulation(end_year, start_year),
+                temperature_data,
+                total_loads,
+                wind_speed_data,
+            )
+
+            system_appraisal = appraise_system(
+                yearly_electric_load_statistics,
+                end_year,
+                finance_inputs,
+                ghg_inputs,
+                minigrid.inverter,
+                location,
+                logger,
+                previous_system,
+                optimisation.scenario,
+                simulation_results,
+                start_year,
+                system_details,
+            )
+
+            sufficient_system_appraisals = get_sufficient_appraisals(
+                optimisation, [system_appraisal]
+            )
+
+            # Throw off systens that don't meet the threshold criteria
+            if len(sufficient_system_appraisals) == 0:
+                return (
+                    -1
+                    / system_appraisal.criteria[
+                        list(optimisation.optimisation_criteria.keys())[0]
+                    ]
+                )
+
+            # Determine the simulated system's criterion and return this value.
+            optimum_systems = _fetch_optimum_system(
+                optimisation, sufficient_system_appraisals
+            )
+            criterion_value = optimum_systems[optimisation_criterion].criteria[
+                optimisation_criterion
+            ]
+
+            if (
+                optimisation.optimisation_criteria[optimisation_criterion]
+                == CriterionMode.MAXIMISE
+            ):
+                return criterion_value
+
+            return 1 / criterion_value
+
+        from bayes_opt import BayesianOptimization
+
+        # Setup the parameter bounds and include converter sizes.
+        pbounds = optimisation_parameters.as_pbounds
+        available_converters: list[Converter] = determine_available_converters(
+            converters, logger, minigrid, optimisation.scenario
+        )
+        static_converter_sizes: dict[Converter, int] = {
+            converter: available_converters.count(converter)
+            for converter in available_converters
+            if converter not in pbounds
+        }
+
+        criterion_to_optimiser_map: dict[Criterion, BayesianOptimization] = {}
+        for optimisation_criterion in optimisation.optimisation_criteria:
+            criterion_to_optimiser_map[optimisation_criterion] = (
+                bayesian_optimiser := BayesianOptimization(
+                    f=functools.partial(
+                        _target_function,
+                        static_converter_sizes=static_converter_sizes,
+                        optimisation_criterion=optimisation_criterion,
+                    ),
+                    pbounds=pbounds,
+                )
+            )
+            bayesian_optimiser.maximize(init_points=len(pbounds), n_iter=100)
+
+        import pdb
+
+        pdb.set_trace()
+
+        import matplotlib.pyplot as plt
+        import matplotlib.colors as mcolors
+        import seaborn as sns
+
+        sns.set_context("notebook")
+        sns.set_style("ticks")
+
+        bayesian_optimiser = criterion_to_optimiser_map[Criterion.LCUE]
+
+        fig = plt.figure(figsize=(48 / 5, 32 / 5))
+
+        frame = pd.DataFrame(
+            {
+                "pv": [entry["params"]["pv_size"] for entry in bayesian_optimiser.res],
+                "storage": [
+                    entry["params"]["storage_size"] for entry in bayesian_optimiser.res
+                ],
+                "lcue": [1 / entry["target"] for entry in bayesian_optimiser.res],
+            }
+        )
+        frame = frame[frame["lcue"] >= 0]
+        sns.scatterplot(
+            frame,
+            x="pv",
+            y="storage",
+            hue="lcue",
+            s=200,
+            palette=(
+                this_palette := sns.cubehelix_palette(start=0.4, rot=-0.4, as_cmap=True)
+            ),
+        )
+        plt.scatter(
+            [bayesian_optimiser.max["params"]["pv_size"]],
+            [bayesian_optimiser.max["params"]["storage_size"]],
+            s=200,
+            facecolors="none",
+            edgecolors="orange",
+        )
+
+        plt.legend().remove()
+
+        norm = plt.Normalize(
+            frame["lcue"].min(),
+            frame["lcue"].max(),
+        )
+        scalar_mappable = plt.cm.ScalarMappable(
+            cmap=mcolors.LinearSegmentedColormap.from_list(
+                "Custom",
+                sns.cubehelix_palette(start=0.4, rot=-0.4).as_hex(),
+                len(set(frame["lcue"])),
+            ),
+            norm=norm,
+        )
+        colorbar = fig.colorbar(
+            scalar_mappable,
+            ax=plt.gca(),
+            label="LCUE / $/kWh",
+        )
+
+        plt.ylabel("Storage capacity / kWh")
+        plt.xlabel("PV capacity / kW$_p$")
+
+        plt.show()
+
+        bayesian_optimiser = criterion_to_optimiser_map[Criterion.EMISSIONS_INTENSITY]
+
+        fig = plt.figure(figsize=(48 / 5, 32 / 5))
+
+        frame = pd.DataFrame(
+            {
+                "pv": [entry["params"]["pv_size"] for entry in bayesian_optimiser.res],
+                "storage": [
+                    entry["params"]["storage_size"] for entry in bayesian_optimiser.res
+                ],
+                "lcue": [1 / entry["target"] for entry in bayesian_optimiser.res],
+            }
+        )
+        frame = frame[frame["lcue"] >= 0]
+        sns.scatterplot(
+            frame,
+            x="pv",
+            y="storage",
+            hue="lcue",
+            s=200,
+            palette=(
+                this_palette := sns.cubehelix_palette(start=0, rot=-0.4, as_cmap=True)
+            ),
+        )
+        plt.scatter(
+            [bayesian_optimiser.max["params"]["pv_size"]],
+            [bayesian_optimiser.max["params"]["storage_size"]],
+            s=200,
+            facecolors="none",
+            edgecolors="orange",
+        )
+
+        plt.legend().remove()
+
+        norm = plt.Normalize(
+            frame["lcue"].min(),
+            frame["lcue"].max(),
+        )
+        scalar_mappable = plt.cm.ScalarMappable(
+            cmap=mcolors.LinearSegmentedColormap.from_list(
+                "Custom",
+                sns.cubehelix_palette(start=0, rot=-0.4).as_hex(),
+                len(set(frame["lcue"])),
+            ),
+            norm=norm,
+        )
+        colorbar = fig.colorbar(
+            scalar_mappable,
+            ax=plt.gca(),
+            label="Emissions intensity / kgCO$_2$eq/kWh",
+        )
+
+        plt.ylabel("Storage capacity / kWh")
+        plt.xlabel("PV capacity / kW$_p$")
+
+        plt.show()
 
         # Fetch the optimum systems for this step.
         optimum_system = _optimisation_step(

@@ -825,7 +825,7 @@ def calculate_grid_ghgs(
         total_daily_energy.values * daily_emissions_intensity.values
     )
 
-    return float(np.sum(daily_emissions, axis=0))  # type: ignore
+    return float(np.sum(daily_emissions, axis=0).iloc[0])  # type: ignore
 
 
 def calculate_diesel_fuel_ghgs(

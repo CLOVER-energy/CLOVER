@@ -1028,7 +1028,7 @@ def discounted_energy_total(
         discount_rate, start_year=start_year, end_year=end_year
     )
     discounted_energy = pd.DataFrame(discounted_fraction[0] * total_daily)  # type: ignore [call-overload]
-    return float(np.sum(discounted_energy))  # type: ignore
+    return float(np.sum(discounted_energy).iloc[0])  # type: ignore
 
 
 def discounted_equipment_cost(  # pylint: disable=too-many-locals

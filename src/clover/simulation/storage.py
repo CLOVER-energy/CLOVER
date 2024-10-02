@@ -682,14 +682,14 @@ def get_electric_battery_storage_profile(  # pylint: disable=too-many-locals, to
         # Then take energy from PV if generated
         logger.debug(
             "Renewables profile: %s kWh",
-            f"{round(float(np.sum(renewables_energy)), 2)}",  # type: ignore [arg-type, call-overload]
+            f"{round(float(np.sum(renewables_energy, axis=0).iloc[0]), 2)}",  # type: ignore [arg-type, call-overload]
         )
         battery_storage_profile = pd.DataFrame(
             renewables_energy[0].values - remaining_profile.values  # type: ignore
         )
         logger.debug(
             "Storage profile: %s kWh",
-            f"{round(float(np.sum(battery_storage_profile)), 2)}",  # type: ignore [arg-type, call-overload]
+            f"{round(float(np.sum(battery_storage_profile, axis=0).iloc[0]), 2)}",  # type: ignore [arg-type, call-overload]
         )
 
         renewables_energy_used_directly = pd.DataFrame(
@@ -701,14 +701,14 @@ def get_electric_battery_storage_profile(  # pylint: disable=too-many-locals, to
 
         logger.debug(
             "Grid energy: %s kWh",
-            f"{round(float(np.sum(grid_energy)), 2)}",  # type: ignore [arg-type, call-overload]
+            f"{round(float(np.sum(grid_energy).iloc[0]), 2)}",  # type: ignore [arg-type, call-overload]
         )
         renewables_direct_rounded: float = round(
-            float(np.sum(renewables_energy_used_directly)), 2  # type: ignore [arg-type, call-overload]
+            float(np.sum(renewables_energy_used_directly).iloc[0]), 2  # type: ignore [arg-type, call-overload]
         )
         logger.debug(
             "Renewables direct: %s kWh",
-            round(float(np.sum(renewables_energy_used_directly)), 2),  # type: ignore [arg-type, call-overload]
+            round(float(np.sum(renewables_energy_used_directly).iloc[0]), 2),  # type: ignore [arg-type, call-overload]
         )
         logger.debug("Renewables direct: %s kWh", renewables_direct_rounded)
 

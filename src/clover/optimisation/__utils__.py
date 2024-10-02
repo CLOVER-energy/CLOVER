@@ -462,6 +462,38 @@ class TankSize:
     step: int = 1
 
 
+class OptimisationParameterNames(enum.Enum):
+    """
+    The name of the optimisation parameters to use as variable names.
+
+    - CLEAN_WATER_PVT_SIZE:
+        Used for the clean-water PV-T size.
+
+    - CLEAN_WATER_TANKS:
+        Used for the clean-water tanks.
+
+    - HOT_WATER_PVT_SIZE:
+        Used for the hot-water PV-T size.
+
+    - HOT_WATER_TANKS:
+        Used for the hot-water tanks.
+
+    - PV_SIZE:
+        Used for the PV size.
+
+    - STORAGE_SIZE:
+        Used for the storage size.
+
+    """
+
+    CLEAN_WATER_PVT_SIZE: str = "cw_pvt_size"
+    CLEAN_WATER_TANKS: str = "clean_water_tanks"
+    HOT_WATER_PVT_SIZE: str = "hw_pvt_size"
+    HOT_WATER_TANKS: str = "hot_water_tanks"
+    PV_SIZE: str = "pv_size"
+    STORAGE_SIZE: str = "storage_size"
+
+
 @dataclasses.dataclass
 class OptimisationParameters:
     """
@@ -506,6 +538,43 @@ class OptimisationParameters:
     number_of_iterations: int
     pv_size: SolarSystemSize
     storage_size: StorageSystemSize
+
+    @property
+    def as_pbounds(self) -> dict[str, tuple[float, float]]:
+        """
+        Return the optimisation criteria as bounds for use in optimisation methods.
+
+        The information returned is of the format:
+            {<variable_name>: (<lower_bound>, <upper_bound>)}
+
+        """
+
+        return {
+            OptimisationParameterNames.CLEAN_WATER_PVT_SIZE.value: (
+                self.cw_pvt_size.min,
+                self.cw_pvt_size.max,
+            ),
+            OptimisationParameterNames.CLEAN_WATER_TANKS.value: (
+                self.clean_water_tanks.min,
+                self.clean_water_tanks.max,
+            ),
+            OptimisationParameterNames.HOT_WATER_PVT_SIZE.value: (
+                self.hw_pvt_size.min,
+                self.hw_pvt_size.max,
+            ),
+            OptimisationParameterNames.HOT_WATER_TANKS.value: (
+                self.hot_water_tanks.min,
+                self.hot_water_tanks.max,
+            ),
+            OptimisationParameterNames.PV_SIZE.value: (
+                self.pv_size.min,
+                self.pv_size.max,
+            ),
+            OptimisationParameterNames.STORAGE_SIZE.value: (
+                self.storage_size.min,
+                self.storage_size.max,
+            ),
+        }
 
     @classmethod
     def from_dict(  # pylint: disable=too-many-statements

@@ -370,7 +370,7 @@ def _simulation_environmental_appraisal(  # pylint: disable=too-many-locals
 
     # Calculate the total brine produced.
     total_brine = (
-        round(simulation_results[ColumnHeader.BRINE.value].sum(), 3)
+        round(simulation_results[ColumnHeader.BRINE.value].sum(axis=0), 3)
         if ColumnHeader.BRINE.value in simulation_results
         else None
     )
