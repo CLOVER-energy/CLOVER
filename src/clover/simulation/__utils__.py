@@ -175,7 +175,7 @@ class Minigrid:
         diesel_generator: DieselGenerator,
         diesel_water_heater: DieselWaterHeater | None,
         electric_water_heater: Converter | None,
-        finance_inputs: DefaultDict[str, DefaultDict[str, float]],
+        finance_inputs: defaultdict[str, defaultdict[str, float]],
         logger: Logger,
         minigrid_inputs: dict[str, Any],
         pv_panels: list[PVPanel],

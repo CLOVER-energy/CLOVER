@@ -642,7 +642,7 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
     print("Generating necessary profiles", end="\n")
 
     # Determine the capacities of the various PV panels that are to be considered.
-    pv_system_sizes: DefaultDict[str, float] = collections.defaultdict(float)
+    pv_system_sizes: defaultdict[str, float] = collections.defaultdict(float)
     if parsed_args.pv_system_size is not None:
         try:
             pv_system_sizes.update(

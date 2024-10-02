@@ -273,7 +273,7 @@ def _calculate_renewable_cw_profiles(  # pylint: disable=too-many-locals, too-ma
     solar_thermal_size: int,
     start_hour: int,
     temperature_data: dict[str, pd.Series],
-    total_waste_produced: dict[WasteProduct, DefaultDict[int, float]],
+    total_waste_produced: dict[WasteProduct, defaultdict[int, float]],
     wind_speed_data: pd.Series | None,
 ) -> tuple[
     pd.DataFrame | None,
@@ -285,7 +285,7 @@ def _calculate_renewable_cw_profiles(  # pylint: disable=too-many-locals, too-ma
     pd.DataFrame,
     list[Converter],
     pd.DataFrame,
-    dict[WasteProduct, DefaultDict[int, float]],
+    dict[WasteProduct, defaultdict[int, float]],
 ]:
     """
     Calculates PV-T related profiles.
@@ -638,7 +638,7 @@ def _calculate_renewable_hw_profiles(  # pylint: disable=too-many-locals, too-ma
     scenario: Scenario,
     start_hour: int,
     temperature_data: dict[str, pd.Series],
-    total_waste_produced: dict[WasteProduct, DefaultDict[int, float]],
+    total_waste_produced: dict[WasteProduct, defaultdict[int, float]],
     wind_speed_data: pd.Series | None,
 ) -> tuple[
     Converter | DieselWaterHeater | None,
@@ -650,7 +650,7 @@ def _calculate_renewable_hw_profiles(  # pylint: disable=too-many-locals, too-ma
     pd.DataFrame | None,
     pd.DataFrame | None,
     pd.DataFrame | None,
-    dict[WasteProduct, DefaultDict[int, float]],
+    dict[WasteProduct, defaultdict[int, float]],
     pd.DataFrame | None,
 ]:
     """
@@ -862,7 +862,7 @@ def _calculate_renewable_hw_profiles(  # pylint: disable=too-many-locals, too-ma
 
     logger.info("Determining required feedwater sources.")
     feedwater_capacity: float = 0
-    required_feedwater_sources: List[Converter] = []
+    required_feedwater_sources: list[Converter] = []
     while (
         feedwater_capacity
         < thermal_desalination_plant.input_resource_consumption[
@@ -1506,7 +1506,7 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
     total_cw_load: pd.DataFrame | None = total_loads[ResourceType.CLEAN_WATER]
     total_electric_load: pd.DataFrame | None = total_loads[ResourceType.ELECTRIC]
     total_hw_load: pd.DataFrame | None = total_loads[ResourceType.HOT_CLEAN_WATER]
-    total_waste_produced: dict[WasteProduct, DefaultDict[int, float]] = defaultdict(
+    total_waste_produced: dict[WasteProduct, defaultdict[int, float]] = defaultdict(
         lambda: defaultdict(float)
     )
 
@@ -1644,17 +1644,13 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
 
     # Calculate hot-water PV-T related performance profiles.
     hot_water_pump_electric_power_consumed: pd.DataFrame  # pylint: disable=unused-variable
-    hot_water_collectors_input_temperatures: Optional[
-        Dict[SolarPanelType, pd.DataFrame]
-    ]
-    hot_water_collectors_output_temperatures: Optional[
-        Dict[SolarPanelType, pd.DataFrame]
-    ]
+    hot_water_collectors_input_temperatures: dict[SolarPanelType, pd.DataFrame] | None
+    hot_water_collectors_output_temperatures: dict[SolarPanelType, pd.DataFrame | None
     hot_water_pvt_electric_power_per_unit: pd.DataFrame
     hot_water_system_output_temperature: pd.DataFrame
-    hot_water_tank_temperature: Optional[pd.DataFrame]
-    hot_water_tank_volume_supplied: Optional[pd.DataFrame]
-    solar_thermal_hw_fraction: Optional[pd.DataFrame]
+    hot_water_tank_temperature: pd.DataFrame | None
+    hot_water_tank_volume_supplied: pd.DataFrame | None
+    solar_thermal_hw_fraction: pd.DataFrame | None
     hot_water_pvt_collector_input_temperature: pd.DataFrame | None
     hot_water_pvt_collector_output_temperature: pd.DataFrame | None
     hot_water_pvt_electric_power_per_unit: pd.DataFrame
@@ -2458,7 +2454,7 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
             )
 
         # Append these outputs
-        desalination_performance_outputs: List[Optional[pd.DataFrame]] = [
+        desalination_performance_outputs: list[pd.DataFrame | None] = [
             clean_water_demand_met_by_excess_energy_frame,
             clean_water_power_consumed,
             clean_water_supplied_by_excess_energy_frame,

@@ -28,7 +28,7 @@ import stat
 import uuid
 
 from contextlib import contextmanager
-from typing import Any, Generator, Union
+from typing import Any, Generator
 
 import pytest
 import yaml

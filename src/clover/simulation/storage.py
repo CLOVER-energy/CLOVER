@@ -155,10 +155,10 @@ def cw_tank_iteration_step(  # pylint: disable=too-many-locals
     scenario: Scenario,
     storage_water_supplied: dict[int, float],
     tank_storage_profile: pd.DataFrame,
-    total_waste_produced: dict[WasteProduct, DefaultDict[int, float]],
+    total_waste_produced: dict[WasteProduct, defaultdict[int, float]],
     *,
     time_index: int,
-) -> tuple[float, dict[WasteProduct, DefaultDict[int, float]]]:
+) -> tuple[float, dict[WasteProduct, defaultdict[int, float]]]:
     """
     Caries out an iteration calculation for the clean-water tanks.
 

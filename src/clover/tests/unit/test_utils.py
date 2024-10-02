@@ -15,7 +15,7 @@ test_utils.py - Module-level tests for CLOVER's utility module.
 import logging
 import unittest
 
-from typing import Any, Dict
+from typing import Any
 from unittest import mock  # pylint: disable=unused-import
 
 import json
@@ -118,7 +118,7 @@ class TestDesalinationScenario(unittest.TestCase):
         """Sets up functionality in common across the tests."""
 
         super().setUp()
-        self.input_data: Dict[str, Any] = {
+        self.input_data: dict[str, Any] = {
             "name": "default",
             "clean_water": {
                 "mode": "backup",
@@ -211,7 +211,7 @@ class TestHotWaterScenario(unittest.TestCase):
         """Sets up functionality in common across the tests."""
 
         super().setUp()
-        self.input_data: Dict[str, Any] = {
+        self.input_data: dict[str, Any] = {
             "name": "default",
             "hot_water": {
                 "auxiliary_heater": "none",

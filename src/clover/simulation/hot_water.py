@@ -20,7 +20,6 @@ system calculation.
 
 from collections import defaultdict
 from logging import Logger
-from typing import DefaultDict, Dict, List, Optional, Tuple, Union
 
 import pandas as pd
 
@@ -47,7 +46,7 @@ __all__ = ("calculate_renewable_hw_profiles",)
 
 
 def _check_water_pump(
-    collector_scenario: Optional[ThermalCollectorScenario],
+    collector_scenario: ThermalCollectorScenario | None,
     collector_system_size: float,
     logger: Logger,
     minigrid: Minigrid,
@@ -119,11 +118,11 @@ def _check_water_pump(
 
 
 def _determine_auxiliary_heater(
-    converters: List[Converter],
+    converters: list[Converter],
     hot_water_scenario: HotWaterScenario,
     logger: Logger,
     minigrid: Minigrid,
-) -> Optional[Converter]:
+) -> Converter:
     """
     Determine the auxiliary heater associated with the system based on the scenario.
 
@@ -143,9 +142,9 @@ def _determine_auxiliary_heater(
     """
 
     if hot_water_scenario.auxiliary_heater == AuxiliaryHeaterType.DIESEL:
-        auxiliary_heater: Optional[
-            Union[Converter, DieselWaterHeater]
-        ] = minigrid.diesel_water_heater
+        auxiliary_heater: Converter | DieselWaterHeater | None = (
+            minigrid.diesel_water_heater
+        )
         if auxiliary_heater is None:
             logger.error(
                 "%sDiesel water heater not defined despite hot-water auxiliary "
@@ -197,7 +196,7 @@ def _determine_auxiliary_heater(
 
 
 def calculate_renewable_hw_profiles(  # pylint: disable=too-many-locals, too-many-statements
-    converters: List[Converter],
+    converters: list[Converter],
     disable_tqdm: bool,
     end_hour: int,
     irradiance_data: pd.Series,
@@ -210,21 +209,21 @@ def calculate_renewable_hw_profiles(  # pylint: disable=too-many-locals, too-man
     solar_thermal_size: int,
     start_hour: int,
     temperature_data: pd.Series,
-    total_waste_produced: Dict[WasteProduct, DefaultDict[int, float]],
-    wind_speed_data: Optional[pd.Series],
-) -> Tuple[
-    Optional[Union[Converter, DieselWaterHeater]],
+    total_waste_produced: dict[WasteProduct, defaultdict[int, float]],
+    wind_speed_data: pd.Series | None,
+) -> tuple[
+    Converter | DieselWaterHeater | None,
     pd.DataFrame,
-    Dict[SolarPanelType, pd.DataFrame],
-    Dict[SolarPanelType, pd.DataFrame],
+    dict[SolarPanelType, pd.DataFrame],
+    dict[SolarPanelType, pd.DataFrame],
     pd.DataFrame,
-    Optional[pd.DataFrame],
-    Optional[pd.DataFrame],
-    Optional[pd.DataFrame],
-    Optional[pd.DataFrame],
-    Optional[pd.DataFrame],
-    Dict[WasteProduct, DefaultDict[int, float]],
-    Optional[pd.DataFrame],
+    pd.DataFrame | None,
+    pd.DataFrame | None,
+    pd.DataFrame | None,
+    pd.DataFrame | None,
+    pd.DataFrame | None,
+    dict[WasteProduct, defaultdict[int, float]],
+    pd.DataFrame | None,
 ]:
     """
     Calculates renewable hot-water related profiles for the system.
@@ -374,13 +373,13 @@ def calculate_renewable_hw_profiles(  # pylint: disable=too-many-locals, too-man
     logger.debug("Auxiliary heater: %s", str(auxiliary_heater))
 
     # Compute the output of the renewable solar hot-water system.
-    hot_water_collectors_input_temperatures: Dict[SolarPanelType, pd.DataFrame]
-    hot_water_collectors_output_temperatures: Dict[SolarPanelType, pd.DataFrame]
+    hot_water_collectors_input_temperatures: dict[SolarPanelType, pd.DataFrame]
+    hot_water_collectors_output_temperatures: dict[SolarPanelType, pd.DataFrame]
     hot_water_pvt_electric_power_per_unit: pd.DataFrame
     hot_water_system_output_temperature: pd.DataFrame
     hot_water_collector_pump_times: pd.DataFrame
-    hot_water_tank_temperature: Optional[pd.DataFrame]
-    hot_water_volume_supplied: Optional[pd.DataFrame]
+    hot_water_tank_temperature: pd.DataFrame | None
+    hot_water_volume_supplied: pd.DataFrame | None
     (
         hot_water_collectors_input_temperatures,
         hot_water_collectors_output_temperatures,
@@ -502,7 +501,7 @@ def calculate_renewable_hw_profiles(  # pylint: disable=too-many-locals, too-man
 
     # Determine the temperature gain of the hot-water as compared with the mains
     # supply temperature.
-    hot_water_temperature_gain: Optional[pd.DataFrame] = (
+    hot_water_temperature_gain: pd.DataFrame | None = (
         hot_water_system_output_temperature
         - scenario.hot_water_scenario.cold_water_supply_temperature
     )

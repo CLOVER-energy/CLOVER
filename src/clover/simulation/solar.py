@@ -252,15 +252,15 @@ def _get_collector_output_temperatures(
     collector_input_temperature: float,
     irradiance: float,
     logger: Logger,
-    pvt_collector_mass_flow_rate: Optional[float],
+    pvt_collector_mass_flow_rate: float | None,
     relevant_scenarios: dict[SolarPanelType, ThermalCollectorScenario],
     solar_thermal_collectors: dict[
         SolarPanelType, Union[HybridPVTPanel, SolarThermalPanel]
     ],
-    st_collector_mass_flow_rate: Optional[float],
+    st_collector_mass_flow_rate: float | None,
     temperature: float,
     wind_speed: float,
-) -> Tuple[float, Optional[float], Optional[float], Optional[float]]:
+) -> tuple[float, float | None, float | None, float | None]:
     """
     Calculate the output temperatures for the solar-thermal and PV-T collectors.
 
@@ -486,7 +486,7 @@ def _get_relevant_collector_scenario(
 def _get_supply_flow_rate(
     collector_system_sizes: dict[SolarPanelType, int],
     pvt_collector_mass_flow_rate: float,
-    solar_thermal_panels: List[Union[HybridPVTPanel, SolarThermalPanel]],
+    solar_thermal_panels: list[Union[HybridPVTPanel, SolarThermalPanel]],
     st_collector_mass_flow_rate: float,
     thermal_scenario: Union[DesalinationScenario, HotWaterScenario],
 ) -> float:
@@ -720,9 +720,9 @@ def _calculate_closed_loop_solar_thermal_output(  # pylint: disable=too-many-loc
         )
 
     # Instantiate variables
-    pvt_collector_mass_flow_rate: Optional[float] = None
+    pvt_collector_mass_flow_rate: float | None = None
     runs: int = 0
-    st_collector_mass_flow_rate: Optional[float] = None
+    st_collector_mass_flow_rate: float | None = None
 
     # Determine information useful across all time steps information.
     thermal_scenario = _get_relevant_thermal_scenario(resource_type, scenario)
@@ -931,10 +931,10 @@ def _calculate_closed_loop_solar_thermal_output(  # pylint: disable=too-many-loc
 
         # Only compute outputs if there is input irradiance.
         collector_system_output_temperature: float
-        fractional_electric_performance: Optional[float]
+        fractional_electric_performance: float | None
         solution_found: bool = False
-        pvt_collector_output_temperature: Optional[float]
-        st_collector_output_temperature: Optional[float]
+        pvt_collector_output_temperature: float | None
+        st_collector_output_temperature: float | None
 
         # Keep processing until the temperatures are consistent.
         while not solution_found:
@@ -1179,7 +1179,7 @@ def _calculate_direct_heating_solar_thermal_output(  # pylint: disable=too-many-
     end_hour: int,
     irradiances: pd.Series,
     logger: Logger,
-    processed_total_hw_load: Optional[pd.Series],
+    processed_total_hw_load: pd.Series | None,
     relevant_scenarios: dict[SolarPanelType, ThermalCollectorScenario],
     resource_type: ResourceType,
     solar_thermal_collectors: dict[
@@ -1189,7 +1189,7 @@ def _calculate_direct_heating_solar_thermal_output(  # pylint: disable=too-many-
     temperatures: pd.Series,
     thermal_scenario: Union[DesalinationScenario, HotWaterScenario],
     wind_speeds: pd.Series,
-) -> Tuple[
+) -> tuple[
     dict[SolarPanelType, pd.DataFrame],
     dict[SolarPanelType, pd.DataFrame],
     pd.DataFrame,
@@ -1283,7 +1283,7 @@ def _calculate_direct_heating_solar_thermal_output(  # pylint: disable=too-many-
         logger.info("Carrying out direct-heating PV-T calculation.")
 
         # Determine the mass flow rate.
-        pvt_collector_mass_flow_rate: Optional[float] = (
+        pvt_collector_mass_flow_rate: float | None = (
             (
                 thermal_scenario.throughput_mass_flow_rate
                 / collector_system_sizes[SolarPanelType.PV_T]
@@ -1297,7 +1297,7 @@ def _calculate_direct_heating_solar_thermal_output(  # pylint: disable=too-many-
         )
 
         # Calculate the output temperature map from the collector.
-        pvt_output_performance: List[Tuple[float, float]] = [
+        pvt_output_performance: list[tuple[float, float]] = [
             solar_thermal_collectors[SolarPanelType.PV_T].calculate_performance(
                 temperatures[index],
                 relevant_scenarios[SolarPanelType.PV_T].htf_heat_capacity,
@@ -1317,11 +1317,11 @@ def _calculate_direct_heating_solar_thermal_output(  # pylint: disable=too-many-
             )
         ]
 
-        fractional_electrical_performance: Optional[dict[int, float]] = {
+        fractional_electrical_performance: dict[int, float] | None = {
             (start_hour + index): float(performance_output[0])
             for index, performance_output in enumerate(pvt_output_performance)
         }
-        pvt_output_temperature: Optional[dict[int, float]] = {
+        pvt_output_temperature: dict[int, float] | None = {
             (start_hour + index): float(performance_output[1])
             for index, performance_output in enumerate(pvt_output_performance)
         }
@@ -1344,7 +1344,7 @@ def _calculate_direct_heating_solar_thermal_output(  # pylint: disable=too-many-
         logger.info("Carrying out direct-heating PV-T calculation.")
 
         # Determine the mass flow rate.
-        st_collector_mass_flow_rate: Optional[float] = (
+        st_collector_mass_flow_rate: float | None = (
             (
                 thermal_scenario.throughput_mass_flow_rate
                 / collector_system_sizes[SolarPanelType.SOLAR_THERMAL]
@@ -1368,7 +1368,7 @@ def _calculate_direct_heating_solar_thermal_output(  # pylint: disable=too-many-
         )
 
         # Calculate the output temperature map from the collector.
-        solar_thermal_output_performance: List[Tuple[Optional[float], float]] = [
+        solar_thermal_output_performance: list[tuple[float | None, float]] = [
             solar_thermal_collectors[
                 SolarPanelType.SOLAR_THERMAL
             ].calculate_performance(
@@ -1389,7 +1389,7 @@ def _calculate_direct_heating_solar_thermal_output(  # pylint: disable=too-many-
                 unit="hour",
             )
         ]
-        solar_thermal_output_temperature: Optional[dict[int, float]] = {
+        solar_thermal_output_temperature: dict[int, float] | None = {
             (start_hour + index): performance_output[1]
             for index, performance_output in enumerate(solar_thermal_output_performance)
         }
@@ -1483,23 +1483,23 @@ def calculate_solar_thermal_output(  # pylint: disable=too-many-locals, too-many
     logger: Logger,
     minigrid: Minigrid,
     num_tanks: int,
-    processed_total_hw_load: Optional[pd.Series],
+    processed_total_hw_load: pd.Series | None,
     resource_type: ResourceType,
     scenario: Scenario,
     solar_thermal_collectors: dict[
-        SolarPanelType, Union[Optional[HybridPVTPanel], Optional[SolarThermalPanel]]
+        SolarPanelType, HybridPVTPanel | SolarThermalPanel | None
     ],
     start_hour: int,
     temperatures: pd.Series,
-    thermal_desalination_plant: Optional[ThermalDesalinationPlant],
+    thermal_desalination_plant: ThermalDesalinationPlant | None,
     wind_speeds: pd.Series,
-) -> Tuple[
+) -> tuple[
     dict[SolarPanelType, pd.DataFrame],
     dict[SolarPanelType, pd.DataFrame],
     pd.DataFrame,
     pd.DataFrame,
     pd.DataFrame,
-    Optional[pd.DataFrame],
+    pd.DataFrame | None,
     pd.DataFrame,
 ]:
     """

@@ -164,6 +164,7 @@ class PerformanceCurve:
 
         return self.second_order_coefficient
 
+
 class Tracking(enum.Enum):
     """
     Specifies the tracking state of the panel being considered.
@@ -301,7 +302,7 @@ class SolarPanel:  # pylint: disable=too-few-public-methods
         mass_flow_rate: float,
         solar_irradiance: float,
         wind_speed: float,
-    ) -> Tuple[Optional[float], Optional[float]]:
+    ) -> tuple[float | None, float | None]:
         """
         Abstract method for calculation of collector performance.
 
@@ -367,7 +368,7 @@ class PVPanel(
         azimuthal_orientation: float | None,
         lifetime: int,
         name: str,
-        pv_unit: Optional[float],
+        pv_unit: float | None,
         pv_unit_overrided: bool,
         reference_efficiency: float | None,
         reference_temperature: float | None,
@@ -999,7 +1000,7 @@ class SolarThermalPanel(SolarPanel, panel_type=SolarPanelType.SOLAR_THERMAL):
     def __init__(
         self,
         performance_curve: PerformanceCurve,
-        solar_inputs: Dict[str, Any],
+        solar_inputs: dict[str, Any],
     ) -> None:
         """
         Instantiate a :class:`SolarThermalPanel` instance based on the input data.
@@ -1057,7 +1058,7 @@ class SolarThermalPanel(SolarPanel, panel_type=SolarPanelType.SOLAR_THERMAL):
         mass_flow_rate: float,
         solar_irradiance: float,
         wind_speed: float,
-    ) -> Tuple[Optional[float], Optional[float]]:
+    ) -> tuple[float | None, float | None]:
         """
         Calculates the performance characteristics of the solar-thermal collector.
 
@@ -1186,9 +1187,7 @@ class SolarThermalPanel(SolarPanel, panel_type=SolarPanelType.SOLAR_THERMAL):
         # the collector
         positive_root: float = (  # pylint: disable=unused-variable
             -b + math.sqrt(b**2 - 4 * a * c)
-        ) / (
-            2 * a
-        ) - ZERO_CELCIUS_OFFSET
+        ) / (2 * a) - ZERO_CELCIUS_OFFSET
         negative_root: float = (-b - math.sqrt(b**2 - 4 * a * c)) / (
             2 * a
         ) - ZERO_CELCIUS_OFFSET
@@ -1199,7 +1198,7 @@ class SolarThermalPanel(SolarPanel, panel_type=SolarPanelType.SOLAR_THERMAL):
     def from_dict(
         cls,
         logger: Logger,
-        solar_inputs: Dict[str, Any],
+        solar_inputs: dict[str, Any],
     ) -> Any:
         """
         Instantiate a :class:`SolarThermalPanel` instance based on the input data.
@@ -1244,6 +1243,8 @@ class SolarThermalPanel(SolarPanel, panel_type=SolarPanelType.SOLAR_THERMAL):
             raise
 
         return cls(performance_curve, solar_inputs)
+
+
 def get_profile_prefix(panel: PVPanel | HybridPVTPanel) -> str:
     """
     Determine the prefix to use for profile names based on the tracking and angles.

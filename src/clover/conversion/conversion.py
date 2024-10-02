@@ -184,9 +184,9 @@ class Converter:
 
         """
 
-        self.input_resource_consumption: dict[ResourceType, float] = (
-            input_resource_consumption
-        )
+        self.input_resource_consumption: dict[
+            ResourceType, float
+        ] = input_resource_consumption
         self.maximum_output_capacity: float = maximum_output_capacity
         self.name: str = name
         self.output_resource_type: ResourceType = output_resource_type
