@@ -642,7 +642,9 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
     print("Generating necessary profiles", end="\n")
 
     # Determine the capacities of the various PV panels that are to be considered.
-    pv_system_sizes: defaultdict[str, float] = collections.defaultdict(float)
+    pv_system_sizes: collections.defaultdict[str, float] = collections.defaultdict(
+        float
+    )
     if parsed_args.pv_system_size is not None:
         try:
             pv_system_sizes.update(
@@ -697,9 +699,34 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
             )
 
     # Determine the number of background tasks to carry out.
-    panels_to_fetch: set[solar.PVPanel] = set(
-        minigrid.pv_panels + minigrid.pvt_panels  # type: ignore [operator]
+    candidate_panels_to_fetch: set[solar.SolarPanel] = set(
+        minigrid.pv_panels + minigrid.pvt_panels + minigrid.solar_thermal_panels  # type: ignore [operator]
     )
+    panels_to_fetch: set[solar.SolarPanel] = set()
+
+    def _tilt_angles_and_tracking_from_panel(
+        panel: solar.SolarPanel,
+    ) -> tuple[float, float, solar.Tracking]:
+        """
+        Determine the tilt angles and tracking for a panel.
+
+        Returns:
+            A `tuple` containing:
+            - The panel azimuthal angle,
+            - The panel tilt,
+            - The tracking of the panel.
+
+        """
+
+        return (panel.azimuthal_orientation, panel.tilt, panel.tracking)
+
+    for panel in candidate_panels_to_fetch:
+        if _tilt_angles_and_tracking_from_panel(panel) not in [
+            _tilt_angles_and_tracking_from_panel(sub_panel)
+            for sub_panel in panels_to_fetch
+        ]:
+            panels_to_fetch.add(panel)
+
     num_ninjas: int = (
         len(panels_to_fetch)
         + (1 if any(scenario.pv_t for scenario in scenarios) else 0)
@@ -1043,9 +1070,7 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
     kerosene_usage.reset_index(drop=True)
 
     # Determine whether any default sizes have been overrided.
-    overrided_default_sizes: bool = any(
-        pv_panel.pv_unit_overrided for pv_panel in minigrid.pv_panels
-    ) or (
+    overrided_default_sizes: bool = (
         minigrid.battery.storage_unit_overrided
         if minigrid.battery is not None
         else False

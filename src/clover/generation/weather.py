@@ -137,4 +137,6 @@ def total_weather_output(*args, **kwargs) -> pd.DataFrame:
 
     """
 
-    return total_profile_output(*args, **kwargs, profile_name="weather")
+    return total_profile_output(
+        *args, **kwargs, profile_name="weather", profile_prefix=""
+    )

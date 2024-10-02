@@ -2663,12 +2663,12 @@ def get_profile_prefix(panel: PVPanel | HybridPVTPanel) -> str:
 
     """
 
-    if isinstance(panel, HybridPVTPanel):
-        tracking = Tracking.DUAL_AXIS
-    else:
-        tracking = panel.tracking
+    # if isinstance(panel, HybridPVTPanel):
+    #     tracking = Tracking.DUAL_AXIS
+    # else:
+    #     tracking = panel.tracking
 
-    if tracking == Tracking.SINGLE_AXIS:
+    if (tracking := panel.tracking) == Tracking.SINGLE_AXIS:
         return f"single_axis_tilt_{panel.tilt}_"
     if tracking == Tracking.DUAL_AXIS:
         return "dual_axis_"
