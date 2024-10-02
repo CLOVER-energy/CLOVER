@@ -254,9 +254,7 @@ def _get_collector_output_temperatures(
     logger: Logger,
     pvt_collector_mass_flow_rate: float | None,
     relevant_scenarios: dict[SolarPanelType, ThermalCollectorScenario],
-    solar_thermal_collectors: dict[
-        SolarPanelType, Union[HybridPVTPanel, SolarThermalPanel]
-    ],
+    solar_thermal_collectors: dict[SolarPanelType, HybridPVTPanel | SolarThermalPanel],
     st_collector_mass_flow_rate: float | None,
     temperature: float,
     wind_speed: float,
@@ -389,7 +387,7 @@ def _get_collector_output_temperatures(
 def _get_relevant_thermal_scenario(
     resource_type: ResourceType,
     scenario: Scenario,
-) -> Union[DesalinationScenario, HotWaterScenario]:
+) -> DesalinationScenario | HotWaterScenario:
     """
     Determines the relevant thermal scenario based on other information.
 
@@ -436,7 +434,7 @@ def _get_relevant_thermal_scenario(
 def _get_relevant_collector_scenario(
     resource_type: ResourceType,
     scenario: Scenario,
-    solar_thermal_collector: Union[HybridPVTPanel, SolarThermalPanel],
+    solar_thermal_collector: HybridPVTPanel | SolarThermalPanel,
 ) -> ThermalCollectorScenario:
     """
     Determines the relevant collector scenario based on other information.
@@ -486,9 +484,9 @@ def _get_relevant_collector_scenario(
 def _get_supply_flow_rate(
     collector_system_sizes: dict[SolarPanelType, int],
     pvt_collector_mass_flow_rate: float,
-    solar_thermal_panels: list[Union[HybridPVTPanel, SolarThermalPanel]],
+    solar_thermal_panels: list[HybridPVTPanel | SolarThermalPanel],
     st_collector_mass_flow_rate: float,
-    thermal_scenario: Union[DesalinationScenario, HotWaterScenario],
+    thermal_scenario: DesalinationScenario | HotWaterScenario,
 ) -> float:
     """
     Calculates the flow rate of HTF through a collector system of 1+ collector types.
@@ -612,9 +610,7 @@ def _calculate_closed_loop_solar_thermal_output(  # pylint: disable=too-many-loc
     relevant_scenarios: dict[SolarPanelType, ThermalCollectorScenario],
     resource_type: ResourceType,
     scenario: Scenario,
-    solar_thermal_collectors: dict[
-        SolarPanelType, Union[HybridPVTPanel, SolarThermalPanel]
-    ],
+    solar_thermal_collectors: dict[SolarPanelType, HybridPVTPanel | SolarThermalPanel],
     start_hour: int,
     temperatures: pd.Series,
     thermal_desalination_plant: ThermalDesalinationPlant | None,
@@ -863,6 +859,8 @@ def _calculate_closed_loop_solar_thermal_output(  # pylint: disable=too-many-loc
         lambda: collections.defaultdict(lambda: default_supply_temperature)
     )
     collector_system_output_temperature_map: dict[int, float] = collections.defaultdict(
+        float
+    )
     best_guess_collector_input_temperature: float = default_supply_temperature
     pvt_collector_input_temperature_map: dict[int, float] = collections.defaultdict(
         lambda: default_supply_temperature
@@ -993,8 +991,12 @@ def _calculate_closed_loop_solar_thermal_output(  # pylint: disable=too-many-loc
                 # Otherwise, assume that the collector is in steady state with the
                 # environment, a reasonable assumption given the one-hour resolution.
                 fractional_electric_performance = 0 if scenario.pv_t else None
-                st_collector_output_temperature = default_supply_temperature if scenario.solar_thermal else None
-                pvt_collector_output_temperature = default_supply_temperature if scenario.pv_t else None
+                st_collector_output_temperature = (
+                    default_supply_temperature if scenario.solar_thermal else None
+                )
+                pvt_collector_output_temperature = (
+                    default_supply_temperature if scenario.pv_t else None
+                )
                 collector_system_output_temperature = max(
                     tank_replacement_temperature, temperatures[index]
                 )
@@ -1182,12 +1184,10 @@ def _calculate_direct_heating_solar_thermal_output(  # pylint: disable=too-many-
     processed_total_hw_load: pd.Series | None,
     relevant_scenarios: dict[SolarPanelType, ThermalCollectorScenario],
     resource_type: ResourceType,
-    solar_thermal_collectors: dict[
-        SolarPanelType, Union[HybridPVTPanel, SolarThermalPanel]
-    ],
+    solar_thermal_collectors: dict[SolarPanelType, HybridPVTPanel | SolarThermalPanel],
     start_hour: int,
     temperatures: pd.Series,
-    thermal_scenario: Union[DesalinationScenario, HotWaterScenario],
+    thermal_scenario: DesalinationScenario | HotWaterScenario,
     wind_speeds: pd.Series,
 ) -> tuple[
     dict[SolarPanelType, pd.DataFrame],

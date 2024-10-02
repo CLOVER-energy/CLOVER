@@ -19,11 +19,9 @@ and profile files that have been parsed/generated.
 """
 
 from collections import defaultdict
-import datetime
 import math
 
 from logging import Logger
-from typing import DefaultDict, Union
 
 import numpy as np  # pylint: disable=import-error
 import pandas as pd  # pylint: disable=import-error
@@ -1045,6 +1043,7 @@ def _calculate_renewable_hw_profiles(  # pylint: disable=too-many-locals, too-ma
     tank_volume_supplied = tank_volume_supplied.reset_index(drop=True)
     thermal_desalination_electric_power_consumed = (
         thermal_desalination_electric_power_consumed.reset_index(drop=True)
+    )
     hot_water_power_consumed: pd.DataFrame = pd.DataFrame(
         auxiliary_heater_power_consumption
         + 0.001
@@ -1645,7 +1644,7 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
     # Calculate hot-water PV-T related performance profiles.
     hot_water_pump_electric_power_consumed: pd.DataFrame  # pylint: disable=unused-variable
     hot_water_collectors_input_temperatures: dict[SolarPanelType, pd.DataFrame] | None
-    hot_water_collectors_output_temperatures: dict[SolarPanelType, pd.DataFrame | None
+    hot_water_collectors_output_temperatures: dict[SolarPanelType, pd.DataFrame] | None
     hot_water_pvt_electric_power_per_unit: pd.DataFrame
     hot_water_system_output_temperature: pd.DataFrame
     hot_water_tank_temperature: pd.DataFrame | None
@@ -2485,7 +2484,6 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
         system_performance_outputs_list.extend(
             desalination_performance_outputs  # type: ignore
         )
-            raise InternalError("PV-T output temperature was expected but was `None`.")
         clean_water_pvt_collector_output_temperature.columns = pd.Index(
             [ColumnHeader.CW_PVT_OUTPUT_TEMPERATURE.value]
         )
