@@ -18,9 +18,10 @@ for use locally within CLOVER.
 
 """
 
+import enum
 import math
 
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 from dataclasses import dataclass
 from logging import Logger
 from typing import Any

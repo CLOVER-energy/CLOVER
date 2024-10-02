@@ -16,8 +16,8 @@ calculations associated with these storage media are carried out in this module.
 
 """
 
+from collections import defaultdict
 from logging import Logger
-from typing import DefaultDict, Union
 
 import pandas as pd
 import numpy as np

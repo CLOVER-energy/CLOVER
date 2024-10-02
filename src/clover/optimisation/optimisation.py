@@ -34,7 +34,7 @@ import datetime
 import functools
 
 from logging import Logger
-from typing import Any, Union
+from typing import Any
 
 import json
 import numpy as np  # pylint: disable=import-error
@@ -120,7 +120,6 @@ def _find_optimum_system(  # pylint: disable=too-many-locals
     irradiance_data: dict[str, pd.Series],
     kerosene_usage: pd.DataFrame,
     largest_converter_sizes: dict[Converter, ConverterSize],
-    largest_cw_tank_size: TankSize,
     largest_cw_pvt_system_size: SolarSystemSize,
     largest_cw_st_system_size: SolarSystemSize,
     largest_cw_tank_size: TankSize,

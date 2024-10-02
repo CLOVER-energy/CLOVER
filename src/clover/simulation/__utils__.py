@@ -26,7 +26,8 @@ from argparse import Namespace
 import dataclasses
 from logging import Logger
 
-from typing import Any, DefaultDict, Union
+from collections import defaultdict
+from typing import Any
 
 from ..__utils__ import (
     AuxiliaryHeaterType,

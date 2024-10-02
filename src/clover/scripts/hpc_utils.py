@@ -23,7 +23,7 @@ import os
 
 from contextlib import contextmanager
 from logging import Logger
-from typing import Any, Iterator, Union
+from typing import Any, Iterator
 
 import yaml
 

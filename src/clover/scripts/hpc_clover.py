@@ -26,7 +26,6 @@ import sys
 import tempfile
 
 from logging import Logger
-from typing import Union
 
 from ..__main__ import __version__
 from ..__utils__ import (

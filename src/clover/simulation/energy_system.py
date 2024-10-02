@@ -18,9 +18,10 @@ and profile files that have been parsed/generated.
 
 """
 
-from collections import defaultdict
+import datetime
 import math
 
+from collections import defaultdict
 from logging import Logger
 
 import numpy as np  # pylint: disable=import-error
@@ -54,6 +55,7 @@ from ..generation.solar import solar_degradation
 from ..load.load import compute_processed_load_profile, population_hourly
 from .__utils__ import determine_available_converters, Minigrid
 from .diesel import (
+    DieselWaterHeater,
     get_diesel_energy_and_times,
     get_diesel_fuel_usage,
 )

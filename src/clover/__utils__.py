@@ -25,6 +25,7 @@ import logging
 import math
 import os
 
+from collections import defaultdict
 from typing import Any, DefaultDict
 
 import json

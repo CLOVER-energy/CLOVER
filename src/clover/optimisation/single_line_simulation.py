@@ -22,7 +22,7 @@ parameter will result in a better system.
 """
 
 from logging import Logger
-from typing import Any, Union
+from typing import Any
 
 import numpy as np  # pylint: disable=import-error
 import pandas as pd

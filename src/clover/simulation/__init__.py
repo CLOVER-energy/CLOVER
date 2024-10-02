@@ -25,7 +25,8 @@ from .diesel import (
 )
 from .energy_system import Minigrid, run_simulation
 from .exchanger import Exchanger
-from .solar import calculate_pvt_output
+
+# from .solar import calculate_pvt_output
 from .storage_utils import Battery, CleanWaterTank, HotWaterTank
 from .storage import (
     battery_iteration_step,
