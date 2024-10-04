@@ -1133,23 +1133,31 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
                     system_performance_outputs,
                     system_details,
                 ) = energy_system.run_simulation(
-                    parsed_args.clean_water_pvt_system_size
-                    if parsed_args.clean_water_pvt_system_size is not None
-                    else 0,
-                    parsed_args.clean_water_solar_thermal_system_size
-                    if parsed_args.clean_water_solar_thermal_system_size is not None
-                    else 0,
+                    (
+                        parsed_args.clean_water_pvt_system_size
+                        if parsed_args.clean_water_pvt_system_size is not None
+                        else 0
+                    ),
+                    (
+                        parsed_args.clean_water_solar_thermal_system_size
+                        if parsed_args.clean_water_solar_thermal_system_size is not None
+                        else 0
+                    ),
                     conventional_cw_source_profiles,
                     converters,
                     disable_tqdm,
                     parsed_args.storage_size,
                     grid_profile,
-                    parsed_args.hot_water_pvt_system_size
-                    if parsed_args.hot_water_pvt_system_size is not None
-                    else 0,
-                    parsed_args.hot_water_solar_thermal_system_size
-                    if parsed_args.hot_water_solar_thermal_system_size is not None
-                    else 0,
+                    (
+                        parsed_args.hot_water_pvt_system_size
+                        if parsed_args.hot_water_pvt_system_size is not None
+                        else 0
+                    ),
+                    (
+                        parsed_args.hot_water_solar_thermal_system_size
+                        if parsed_args.hot_water_solar_thermal_system_size is not None
+                        else 0
+                    ),
                     {
                         panel.name: total_solar_data[panel.name][
                             solar.SolarDataType.TOTAL_IRRADIANCE.value
@@ -1160,7 +1168,9 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
                     location,
                     logger,
                     minigrid,
+                    parsed_args.num_clean_water_buffer_tanks,
                     parsed_args.num_clean_water_tanks,
+                    parsed_args.num_hot_water_buffer_tanks,
                     parsed_args.num_hot_water_tanks,
                     {
                         panel.name: total_solar_data[panel.name][

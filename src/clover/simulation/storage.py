@@ -774,6 +774,8 @@ def get_water_storage_profile(
 
     """
 
+    # TODO Include transmitter code here for CW power use.
+
     # Clean water is either produced directly or drawn from the storage tanks.
     remaining_profile = pd.DataFrame(
         renewable_cw_produced.values - processed_total_cw_load.values

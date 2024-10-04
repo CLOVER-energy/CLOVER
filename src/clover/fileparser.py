@@ -32,6 +32,7 @@ from .impact.__utils__ import LIFETIME
 from .impact.finance import COSTS, FINANCE_IMPACT, ImpactingComponent
 from .impact.ghgs import EMISSIONS, GHG_IMPACT
 from .simulation.diesel import DIESEL_CONSUMPTION, MINIMUM_LOAD, DieselWaterHeater
+from .simulation.heat_pump import HeatPump
 
 from .__utils__ import (
     API_TOKEN_PLACEHOLDER_TEXT,
@@ -502,37 +503,51 @@ def _parse_conversion_inputs(
                             "conversion inputs", "Converters not correctly defined."
                         )
 
+                    # Attempt to parse as a heat pump.
+                    try:
+                        parsed_converters.append(HeatPump(**entry))
+                    except TypeError:
+                        logger.info(
+                            "Converter %s is not a heat pump, continuing.",
+                            entry.get(NAME, ""),
+                        )
+                    else:
+                        logger.info("Parsed heat pump from data.")
+                        continue
+
                     # Attempt to parse as a water source.
                     try:
                         parsed_converters.append(WaterSource.from_dict(entry, logger))
                     except InputFileError:
                         logger.info(
-                            "Failed to create a single-input converter, trying a thermal "
-                            "desalination plant."
+                            "Failed to create a single-input converter, trying a "
+                            "thermal desalination plant."
                         )
+                    else:
+                        logger.info("Parsed water source from data.")
+                        continue
 
-                        # Attempt to parse as a thermal desalination plant.
-                        try:
-                            parsed_converters.append(
-                                ThermalDesalinationPlant.from_dict(entry, logger)
-                            )
-                        except KeyError:
-                            logger.info(
-                                "Failed to create a thermal desalination plant, trying "
-                                "a multi-input converter."
-                            )
-
-                            # Parse as a generic multi-input converter.
-                            parsed_converters.append(
-                                MultiInputConverter.from_dict(entry, logger)
-                            )
-                            logger.info("Parsed multi-input converter from input data.")
+                    # Attempt to parse as a thermal desalination plant.
+                    try:
+                        parsed_converters.append(
+                            ThermalDesalinationPlant.from_dict(entry, logger)
+                        )
+                    except KeyError:
+                        logger.info(
+                            "Failed to create a thermal desalination plant, trying "
+                            "a multi-input converter."
+                        )
+                    else:
                         logger.info(
                             "Parsed thermal desalination plant from input data."
                         )
+                        continue
 
-                    else:
-                        logger.info("Parsed single-input converter from input data.")
+                    # Parse as a generic multi-input converter.
+                    parsed_converters.append(
+                        MultiInputConverter.from_dict(entry, logger)
+                    )
+                    logger.info("Parsed multi-input converter from input data.")
 
                 # Convert the list to the required format.
                 converters: dict[str, Converter] = {
@@ -541,6 +556,10 @@ def _parse_conversion_inputs(
 
                 # Parse the transmission impact information.
                 for converter in converters.values():
+                    # Skip the costs for heat pumps as these are determined differently
+                    if isinstance(converter, HeatPump):
+                        continue
+
                     try:
                         converter_costs[converter] = [
                             entry[COSTS]
@@ -979,7 +998,7 @@ def _parse_exchanger_inputs(
             raise
         logger.info("Exchanger cost information successfully parsed.")
         try:
-            exchanger_emissions = [
+            exchanger_emissions: dict[str, float] | defaultdict[str, float] | None = [
                 entry[EMISSIONS]
                 for entry in exchanger_inputs[EXCHANGERS]
                 if entry[NAME] == energy_system_inputs[EXCHANGER]
@@ -987,10 +1006,12 @@ def _parse_exchanger_inputs(
         except (KeyError, IndexError):
             logger.error("Failed to determine exchanger emission information.")
             raise
+        if exchanger_emissions is None:
+            exchanger_emissions = defaultdict(float)
         logger.info("Exchanger emission information successfully parsed.")
     else:
         logger.info(
-            "Exchanger disblaed in scenario file, skipping battery impact parsing."
+            "Exchanger disblaed in scenario file, skipping exchanger impact parsing."
         )
         exchanger_costs = None
         exchanger_emissions = None
@@ -1025,9 +1046,9 @@ def _parse_global_settings(logger: Logger) -> dict[str, Any]:
         _create_global_setings_file()
 
     try:
-        global_settings_inputs: dict[str, Any] | list[
-            dict[str, Any]
-        ] | None = read_yaml(GLOBAL_SETTINGS_FILE, logger)
+        global_settings_inputs: dict[str, Any] | list[dict[str, Any]] | None = (
+            read_yaml(GLOBAL_SETTINGS_FILE, logger)
+        )
     except FileNotFoundError:
         logger.error(
             "No global-settings file found, check that this file was correctly created "
@@ -2250,12 +2271,19 @@ def _parse_minigrid_inputs(  # pylint: disable=too-many-locals, too-many-stateme
         water_pump = None
 
     # If applicable, determine the electric water heater for the system.
-    if any(scenario.hot_water_scenario is not None for scenario in scenarios) and any(
+    if any(
         scenario.hot_water_scenario.auxiliary_heater == AuxiliaryHeaterType.ELECTRIC  # type: ignore
         for scenario in [
             scenario
             for scenario in scenarios
             if scenario.hot_water_scenario is not None
+        ]
+    ) or any(
+        scenario.desalination_scenario.auxiliary_heater == AuxiliaryHeaterType.ELECTRIC  # type: ignore
+        for scenario in [
+            scenario
+            for scenario in scenarios
+            if scenario.desalination_scenario is not None
         ]
     ):
         try:
@@ -2999,6 +3027,14 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
 
     # Add transmitter impacts.
     for converter in converters.values():
+        if isinstance(converter, HeatPump):
+            logger.info(
+                "Not including impact data for %s because %s is a heatpump.",
+                converter.name,
+                converter.name,
+            )
+            continue
+
         logger.info("Updating with %s impact data.", converter.name)
         finance_inputs[
             FINANCE_IMPACT.format(
@@ -3211,9 +3247,9 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
 
     if any(scenario.desalination_scenario is not None for scenario in scenarios):
         if conventional_water_source_inputs_filepath is not None:
-            input_file_info[
-                "conventional_water_source_inputs"
-            ] = conventional_water_source_inputs_filepath
+            input_file_info["conventional_water_source_inputs"] = (
+                conventional_water_source_inputs_filepath
+            )
         if tank_inputs_filepath is not None:
             input_file_info["tank_inputs"] = tank_inputs_filepath
 

@@ -184,9 +184,9 @@ class Converter:
 
         """
 
-        self.input_resource_consumption: dict[
-            ResourceType, float
-        ] = input_resource_consumption
+        self.input_resource_consumption: dict[ResourceType, float] = (
+            input_resource_consumption
+        )
         self.maximum_output_capacity: float = maximum_output_capacity
         self.name: str = name
         self.output_resource_type: ResourceType = output_resource_type
@@ -477,6 +477,7 @@ class ThermalDesalinationPlant(MultiInputConverter):
 
     def __init__(
         self,
+        hot_water_return_temperature: float | None,
         htf_mode: HTFMode,
         input_resource_consumption: dict[ResourceType, float],
         maximum_feedwater_temperature: float | None,
@@ -493,6 +494,8 @@ class ThermalDesalinationPlant(MultiInputConverter):
         Instantiate a :class:`ThermalDesalinationPlant` instance.
 
         Inputs:
+            - hot_water_return_temperature:
+                The return temperature for hot water from the plant, if appropriate.
             - htf_mode:
                 The mode of inputting heat to the plant.
             - input_resource_types:
@@ -530,12 +533,42 @@ class ThermalDesalinationPlant(MultiInputConverter):
             waste_production,
         )
 
+        self.hot_water_return_temperature: float | None = hot_water_return_temperature
         self.htf_mode = htf_mode
         self.maximum_feedwater_temperature: float | None = maximum_feedwater_temperature
         self.maximum_htf_temperature: float | None = maximum_htf_temperature
-        self.minimum_feedwater_temperature: float | None = minimum_feedwater_temperature
-        self.minimum_htf_temperature: float | None = minimum_htf_temperature
-        self.minimum_output_capacity: float | None = minimum_output_capacity
+        self._minimum_feedwater_temperature: float | None = (
+            minimum_feedwater_temperature
+        )
+        self._minimum_htf_temperature: float | None = minimum_htf_temperature
+        self._minimum_output_capacity: float | None = minimum_output_capacity
+
+    @property
+    def minimum_feedwater_temperature(self) -> float:
+        """Return the minimum feedwater temperature."""
+
+        if self._minimum_feedwater_temperature is None:
+            return self.maximum_feedwater_temperature
+
+        return self._minimum_feedwater_temperature
+
+    @property
+    def minimum_htf_temperature(self) -> float:
+        """Return the minimum HTF temperature."""
+
+        if self._minimum_htf_temperature is None:
+            return self.maximum_htf_temperature
+
+        return self._minimum_htf_temperature
+
+    @property
+    def minimum_output_capacity(self) -> float:
+        """Return the minimum output capacity."""
+
+        if self._minimum_output_capacity is None:
+            return self.maximum_output_capacity
+
+        return self._minimum_output_capacity
 
     @classmethod
     def from_dict(cls, input_data: dict[str, Any], logger: Logger) -> Any:
@@ -632,6 +665,7 @@ class ThermalDesalinationPlant(MultiInputConverter):
             )
 
         return cls(
+            input_data.get("hot_water_return_temperature", None),
             htf_mode,
             input_resource_consumption,
             (

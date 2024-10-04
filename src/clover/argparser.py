@@ -146,6 +146,13 @@ def parse_args(args: list[Any]) -> argparse.Namespace:
         "clean-water-only arguments",
     )
     clean_water_parser.add_argument(
+        "--num-clean-water-buffer-tanks",
+        "-ncwbt",
+        default=0,
+        type=int,
+        help="The number of clean-water buffer tanks to be included in the system.",
+    )
+    clean_water_parser.add_argument(
         "--num-clean-water-tanks",
         "-ncwt",
         default=0,
@@ -172,11 +179,18 @@ def parse_args(args: list[Any]) -> argparse.Namespace:
         "hot-water-only arguments",
     )
     hot_water_parser.add_argument(
+        "--num-hot-water-buffer-tanks",
+        "-nhwbt",
+        default=0,
+        type=int,
+        help="The number of hot-water buffer tanks to be included in the system.",
+    )
+    hot_water_parser.add_argument(
         "--num-hot-water-tanks",
         "-nhwt",
         default=0,
         type=int,
-        help="The number of hpt-water tanks to be included in the system.",
+        help="The number of hot-water tanks to be included in the system.",
     )
     hot_water_parser.add_argument(
         "--hot-water-pvt-system-size",

@@ -46,7 +46,7 @@ from ..__utils__ import (
     ThermalCollectorScenario,
 )
 from ..conversion.conversion import ThermalDesalinationPlant
-from ..generation.solar import HybridPVTPanel, SolarThermalPanel
+from ..generation.solar import HybridPVTPanel, SolarPanel, SolarThermalPanel
 from .__utils__ import Minigrid
 from .storage_utils import HotWaterTank
 
@@ -116,6 +116,7 @@ def _volume_withdrawn_from_tank(
     num_tanks: int,
     previous_tank_temperature: float | None,
     resource_type: ResourceType,
+    scenario: Scenario,
     thermal_desalination_plant: ThermalDesalinationPlant | None,
 ) -> tuple[bool, float]:
     """
@@ -173,17 +174,22 @@ def _volume_withdrawn_from_tank(
 
             tank_supply_on: bool = (
                 previous_tank_temperature
-                > thermal_desalination_plant.minimum_htf_temperature
-            )
+                > (
+                    thermal_desalination_plant.minimum_htf_temperature
+                    + ZERO_CELCIUS_OFFSET
+                )
+            ) or scenario.desalination_scenario.auxiliary_heater is not None
             volume_supplied: float = (
                 _htf_fed_buffer_tank_mass_flow_rate(
                     ambient_temperature,
                     best_guess_tank_temperature,
                     minigrid.buffer_tank,
+                    num_tanks,
                     thermal_desalination_plant,
                 )
                 * tank_supply_on
             )
+
         if thermal_desalination_plant.htf_mode == HTFMode.FEEDWATER_HEATING:
             if thermal_desalination_plant.minimum_feedwater_temperature is None:
                 logger.error(
@@ -250,13 +256,13 @@ def _volume_withdrawn_from_tank(
 
 def _get_collector_output_temperatures(
     collector_input_temperature: float,
-    irradiance: float,
+    irradiance: dict[SolarPanelType, float],
     logger: Logger,
     pvt_collector_mass_flow_rate: float | None,
     relevant_scenarios: dict[SolarPanelType, ThermalCollectorScenario],
     solar_thermal_collectors: dict[SolarPanelType, HybridPVTPanel | SolarThermalPanel],
     st_collector_mass_flow_rate: float | None,
-    temperature: float,
+    temperature: dict[SolarPanelType, float],
     wind_speed: float,
 ) -> tuple[float, float | None, float | None, float | None]:
     """
@@ -266,7 +272,7 @@ def _get_collector_output_temperatures(
         - collector_input_temperature:
             The input temperature to use for the collector system.
         - irradiance:
-            The irradiance, in W/m^2.
+            The irradiance, in kW/m^2.
         - logger:
             The logger to use for the run.
         - pvt_collector_mass_flow_rate:
@@ -313,18 +319,22 @@ def _get_collector_output_temperatures(
         (
             fractional_electrical_performance,
             pvt_output_temperature,
+            reduced_pvt_collector_temperature,
+            pvt_thermal_efficiency,
         ) = solar_thermal_collectors[SolarPanelType.PV_T].calculate_performance(
-            temperature,
+            temperature[SolarPanelType.PV_T] + ZERO_CELCIUS_OFFSET,
+            logger,
+            1000 * irradiance[SolarPanelType.PV_T],
             relevant_scenarios[SolarPanelType.PV_T].htf_heat_capacity,
             collector_input_temperature,
-            logger,
             pvt_collector_mass_flow_rate,
-            1000 * irradiance,
             wind_speed,
         )
     else:
         fractional_electrical_performance = None
         pvt_output_temperature = None
+        reduced_pvt_collector_temperature = None
+        pvt_thermal_efficiency = None
 
     # Determine the solar-thermal output if present
     if SolarPanelType.SOLAR_THERMAL in solar_thermal_collectors:
@@ -349,19 +359,26 @@ def _get_collector_output_temperatures(
             )
 
         # Calculate the output temperature map from the collector.
-        _, solar_thermal_output_temperature = solar_thermal_collectors[
+        (
+            _,
+            solar_thermal_output_temperature,
+            reduced_solar_thermal_collector_temperature,
+            solar_thermal_thermal_efficiency,
+        ) = solar_thermal_collectors[
             SolarPanelType.SOLAR_THERMAL
         ].calculate_performance(
-            temperature,
+            temperature[SolarPanelType.SOLAR_THERMAL] + ZERO_CELCIUS_OFFSET,
+            logger,
+            1000 * irradiance[SolarPanelType.SOLAR_THERMAL],
             relevant_scenarios[SolarPanelType.SOLAR_THERMAL].htf_heat_capacity,
             solar_thermal_input_temperature,
-            logger,
             st_collector_mass_flow_rate,
-            irradiance,
             wind_speed,
         )
     else:
         solar_thermal_output_temperature = None
+        reduced_solar_thermal_collector_temperature = None
+        solar_thermal_thermal_efficiency = None
 
     if solar_thermal_output_temperature is None and pvt_output_temperature is None:
         logger.error(
@@ -375,12 +392,18 @@ def _get_collector_output_temperatures(
         )
 
     return (
-        solar_thermal_output_temperature  # type: ignore [return-value]
-        if solar_thermal_output_temperature is not None
-        else pvt_output_temperature,
+        (
+            solar_thermal_output_temperature  # type: ignore [return-value]
+            if solar_thermal_output_temperature is not None
+            else pvt_output_temperature
+        ),
         fractional_electrical_performance,
         pvt_output_temperature,
+        pvt_thermal_efficiency,
+        reduced_pvt_collector_temperature,
         solar_thermal_output_temperature,
+        solar_thermal_thermal_efficiency,
+        reduced_solar_thermal_collector_temperature,
     )
 
 
@@ -548,10 +571,37 @@ def _get_supply_flow_rate(
     )
 
 
+def _thermal_plant_hot_water_return_temperature(
+    ambient_temperature: float,
+    thermal_desalination_plant: ThermalDesalinationPlant,
+) -> float:
+    """
+    Return the hot-water return temperature from the desalination plant.
+
+    Inputs:
+        - ambient_temperature:
+            The ambient temperature.
+        - thermal_desalination_plant:
+            The thermal desalination plant.
+
+    Outputs:
+        The thermal desalination plant temperature in Celsius.
+
+    """
+
+    if (
+        plant_return_temperature := thermal_desalination_plant.hot_water_return_temperature
+    ) is not None:
+        return plant_return_temperature
+
+    return ambient_temperature
+
+
 def _htf_fed_buffer_tank_mass_flow_rate(
     ambient_temperature: float,
     best_guess_tank_temperature: float,
     buffer_tank: HotWaterTank,
+    num_tanks: int,
     thermal_desalination_plant: ThermalDesalinationPlant,
 ) -> float:
     """
@@ -561,13 +611,15 @@ def _htf_fed_buffer_tank_mass_flow_rate(
         - ambient_temperature:
             The ambient temperature, used as the base against which heat is being
             supplied. This is realistic as the final stage of desalination plants can be
-            no less than the ambient temprature. This is measured in degrees Celsius.
+            no less than the ambient temprature. This is measured in degrees Kelvin.
         - best_guess_tank_temperature:
             The best guess at the tank temperature at the current time step, measured in
             degrees Celsius. This is the temperature at which HTF is removed from the
             tank to supply the desalination plant.
         - buffer_tank:
             The HTF hot-water tank.
+        - num_tanks:
+            The number of buffer tanks.
         - thermal_desalination_plant:
             The thermal desalination plant being modelled.
 
@@ -592,7 +644,14 @@ def _htf_fed_buffer_tank_mass_flow_rate(
         * 3600  # [s/h]
         / (  # [Wth]
             buffer_tank.heat_capacity  # [J/kg*K]
-            * (best_guess_tank_temperature - ambient_temperature)  # [K]
+            * num_tanks
+            * (
+                (thermal_desalination_plant.minimum_htf_temperature)
+                - _thermal_plant_hot_water_return_temperature(
+                    (ambient_temperature - ZERO_CELCIUS_OFFSET),
+                    thermal_desalination_plant,
+                )
+            )  # [K]
         )
     )  # [kg/hour]
 
@@ -601,18 +660,17 @@ def _calculate_closed_loop_solar_thermal_output(  # pylint: disable=too-many-loc
     collector_system_sizes: dict[SolarPanelType, int],
     disable_tqdm: bool,
     end_hour: int,
-    irradiances: pd.Series,
+    irradiances: dict[SolarPanel, pd.Series],
     logger: Logger,
     minigrid: Minigrid,
     num_tanks: int,
     processed_total_hw_load: pd.Series | None,
-    pvt_system_size: int,
     relevant_scenarios: dict[SolarPanelType, ThermalCollectorScenario],
     resource_type: ResourceType,
     scenario: Scenario,
     solar_thermal_collectors: dict[SolarPanelType, HybridPVTPanel | SolarThermalPanel],
     start_hour: int,
-    temperatures: pd.Series,
+    temperatures: dict[SolarPanel, pd.Series],
     thermal_desalination_plant: ThermalDesalinationPlant | None,
     wind_speeds: pd.Series,
 ) -> tuple[
@@ -722,19 +780,27 @@ def _calculate_closed_loop_solar_thermal_output(  # pylint: disable=too-many-loc
 
     # Determine information useful across all time steps information.
     thermal_scenario = _get_relevant_thermal_scenario(resource_type, scenario)
-    default_supply_temperature: float = thermal_scenario.htf_supply_temperature
-    best_guess_collector_input_temperature: float = default_supply_temperature
-    tank_replacement_temperature: float = default_supply_temperature  # [degC]
+    default_supply_temperature: float = (
+        thermal_scenario.htf_supply_temperature + ZERO_CELCIUS_OFFSET
+    )
+    best_guess_collector_input_temperature: float = (
+        default_supply_temperature + ZERO_CELCIUS_OFFSET
+    )
+    tank_replacement_temperature: float = (
+        thermal_desalination_plant.hot_water_return_temperature
+        if thermal_desalination_plant.htf_mode == HTFMode.CLOSED_HTF
+        else default_supply_temperature
+    ) + ZERO_CELCIUS_OFFSET  # [degC]
 
     # The collector heat transfer depends only on the parameters of the final
     # collector in any series configuration.
     if SolarPanelType.PV_T in relevant_scenarios:
         collector_heat_transfer: float = (
             collector_system_sizes[SolarPanelType.PV_T]
-            * relevant_scenarios[SolarPanelType.PV_T].mass_flow_rate  # [kg/hour]
+            * relevant_scenarios[SolarPanelType.PV_T].mass_flow_rate  # [kg/s]
             * relevant_scenarios[SolarPanelType.PV_T].htf_heat_capacity  # [J/kg*K]
             * minigrid.heat_exchanger.efficiency
-            / 3600  # [s/hour]
+            # / 3600  # [s/hour]
         )  # [W/K]
         pvt_collector_mass_flow_rate = (
             (
@@ -752,14 +818,12 @@ def _calculate_closed_loop_solar_thermal_output(  # pylint: disable=too-many-loc
     if SolarPanelType.SOLAR_THERMAL in relevant_scenarios:
         collector_heat_transfer = (
             collector_system_sizes[SolarPanelType.SOLAR_THERMAL]
-            * relevant_scenarios[
-                SolarPanelType.SOLAR_THERMAL
-            ].mass_flow_rate  # [kg/hour]
+            * relevant_scenarios[SolarPanelType.SOLAR_THERMAL].mass_flow_rate  # [kg/s]
             * relevant_scenarios[
                 SolarPanelType.SOLAR_THERMAL
             ].htf_heat_capacity  # [J/kg*K]
             * minigrid.heat_exchanger.efficiency
-            / 3600  # [s/hour]
+            # / 3600  # [s/hour]
         )  # [W/K]
         st_collector_mass_flow_rate = (
             (
@@ -843,31 +907,33 @@ def _calculate_closed_loop_solar_thermal_output(  # pylint: disable=too-many-loc
     pump_times_map: dict[int, int] = {}
 
     # Instantiate maps for easy HTF and tank lookups.
-    tank_supply_temperature_map: dict[  # pylint: disable=unused-variable
-        int, float
-    ] = {}
+    tank_supply_temperature_map: dict[int, float] = (  # pylint: disable=unused-variable
+        {}
+    )
     tank_volume_supplied_map: dict[int, float] = {}
 
-    collector_input_temperature_map: dict[
-        SolarPanelType, dict[int, float]
-    ] = collections.defaultdict(
-        lambda: collections.defaultdict(lambda: default_supply_temperature)
+    auxiliary_heating_map: dict[int, float] = {}
+    collector_input_temperature_map: dict[SolarPanelType, dict[int, float]] = (
+        collections.defaultdict(
+            lambda: collections.defaultdict(lambda: default_supply_temperature)
+        )
     )
-    collector_output_temperature_map: dict[
-        SolarPanelType, dict[int, float]
-    ] = collections.defaultdict(
-        lambda: collections.defaultdict(lambda: default_supply_temperature)
+    collector_output_temperature_map: dict[SolarPanelType, dict[int, float]] = (
+        collections.defaultdict(
+            lambda: collections.defaultdict(lambda: default_supply_temperature)
+        )
+    )
+    collector_thermal_efficiencies_map: dict[
+        SolarPanelType, dict[int, float | None]
+    ] = collections.defaultdict(lambda: collections.defaultdict(lambda: None))
+    collector_reduced_temperatures_map: dict[SolarPanelType, dict[int, float]] = (
+        collections.defaultdict(lambda: collections.defaultdict(lambda: 0))
     )
     collector_system_output_temperature_map: dict[int, float] = collections.defaultdict(
         float
     )
+    renewable_heating_map: dict[int, float] = collections.defaultdict(float)
     best_guess_collector_input_temperature: float = default_supply_temperature
-    pvt_collector_input_temperature_map: dict[int, float] = collections.defaultdict(
-        lambda: default_supply_temperature
-    )
-    pvt_collector_output_temperature_map: dict[int, float] = collections.defaultdict(
-        lambda: default_supply_temperature
-    )
     tank_environment_heat_transfer: float = (
         num_tanks * tank.heat_transfer_coefficient
     )  # [W/K]
@@ -884,6 +950,7 @@ def _calculate_closed_loop_solar_thermal_output(  # pylint: disable=too-many-loc
     logger.info(
         "Beggining hourly %s closed-loop performance calculation.", resource_type.value
     )
+
     for index in tqdm(
         range(start_hour, end_hour),
         desc=f"{resource_type.value.replace('_', ' ')} "
@@ -900,19 +967,39 @@ def _calculate_closed_loop_solar_thermal_output(  # pylint: disable=too-many-loc
             collector_flow_on: bool = (
                 collector_system_output_temperature_map[index - 1]
                 > tank_temperature_map[index - 1]
-            ) and irradiances[index] > 0
+            ) and irradiances[solar_thermal_collectors[SolarPanelType.PV_T]][index] > 0
         else:
             collector_flow_on = False
 
+        ##############################
+        # All temperatures in Kelvin #
+        ##############################
+
         previous_tank_temperature: float = (
-            tank_temperature_map[index - 1]
+            tank_temperature_map[index - 1] + ZERO_CELCIUS_OFFSET
             if index > start_hour
-            else default_supply_temperature
+            else (
+                _thermal_plant_hot_water_return_temperature(
+                    (
+                        current_ambient_temperature := max(
+                            temperature_series[index]
+                            for temperature_series in temperatures.values()
+                        )
+                    ),
+                    thermal_desalination_plant,
+                )
+                + ZERO_CELCIUS_OFFSET
+                if thermal_desalination_plant.hot_water_return_temperature is not None
+                else default_supply_temperature
+            )
         )
 
         # Determine the volume withdrawn from the buffer tanks
         tank_supply_on, volume_supplied = _volume_withdrawn_from_tank(
-            temperatures[index],
+            (
+                current_ambient_temperature_kelvin := current_ambient_temperature
+                + ZERO_CELCIUS_OFFSET
+            ),
             previous_tank_temperature,
             (
                 processed_total_hw_load[index]
@@ -924,6 +1011,7 @@ def _calculate_closed_loop_solar_thermal_output(  # pylint: disable=too-many-loc
             num_tanks,
             previous_tank_temperature,
             resource_type,
+            scenario,
             thermal_desalination_plant,
         )
 
@@ -938,7 +1026,13 @@ def _calculate_closed_loop_solar_thermal_output(  # pylint: disable=too-many-loc
         while not solution_found:
             # Use the AI to determine the output temperature of the collector, based on
             # the best guess of the collector input temperature.
-            if (1000 * irradiances[index]) > MINIMUM_IRRADIANCE_THRESHOLD:
+            if (
+                1000
+                * max(
+                    irradiance_series[index]
+                    for irradiance_series in irradiances.values()
+                )
+            ) > MINIMUM_IRRADIANCE_THRESHOLD:
                 # If there is enough irradiance to trigger reliable modelling, use the
                 # in-built modelling tools.
                 # FIXME: Check units on mass-flow rate here.
@@ -946,16 +1040,26 @@ def _calculate_closed_loop_solar_thermal_output(  # pylint: disable=too-many-loc
                     collector_system_output_temperature,
                     fractional_electric_performance,
                     pvt_collector_output_temperature,
+                    pvt_thermal_efficiency,
+                    reduced_pvt_collector_temperature,
                     st_collector_output_temperature,
+                    st_thermal_efficiency,
+                    reduced_st_collector_temperature,
                 ) = _get_collector_output_temperatures(
                     best_guess_collector_input_temperature,
-                    irradiances[index],
+                    {
+                        panel.panel_type: irradiance_series[index]
+                        for panel, irradiance_series in irradiances.items()
+                    },
                     logger,
                     pvt_collector_mass_flow_rate,
                     relevant_scenarios,
                     solar_thermal_collectors,
                     st_collector_mass_flow_rate,
-                    temperatures[index],
+                    {
+                        panel.panel_type: temperature_series[index]
+                        for panel, temperature_series in temperatures.items()
+                    },
                     wind_speeds[index],
                 )
 
@@ -973,6 +1077,7 @@ def _calculate_closed_loop_solar_thermal_output(  # pylint: disable=too-many-loc
                         "Function returned `None` for electrical performance of a PV-T "
                         "collector.",
                     )
+
                 if collector_system_output_temperature is None:
                     logger.error(
                         "%s%s performance function returned `None` for thermal output."
@@ -991,14 +1096,23 @@ def _calculate_closed_loop_solar_thermal_output(  # pylint: disable=too-many-loc
                 # Otherwise, assume that the collector is in steady state with the
                 # environment, a reasonable assumption given the one-hour resolution.
                 fractional_electric_performance = 0 if scenario.pv_t else None
-                st_collector_output_temperature = (
-                    default_supply_temperature if scenario.solar_thermal else None
+                st_collector_output_temperature = max(
+                    (default_supply_temperature if scenario.solar_thermal else None),
+                    tank_replacement_temperature,
+                    current_ambient_temperature_kelvin,
                 )
-                pvt_collector_output_temperature = (
-                    default_supply_temperature if scenario.pv_t else None
+                pvt_collector_output_temperature = max(
+                    (default_supply_temperature if scenario.pv_t else None),
+                    tank_replacement_temperature,
+                    current_ambient_temperature_kelvin,
                 )
+                pvt_thermal_efficiency = None
+                reduced_pvt_collector_temperature = 0
+                st_thermal_efficiency = None
+                reduced_st_collector_temperature = 0
                 collector_system_output_temperature = max(
-                    tank_replacement_temperature, temperatures[index]
+                    tank_replacement_temperature,
+                    current_ambient_temperature_kelvin,
                 )
 
             # If the collector flow was not on, then the output temperature should
@@ -1007,7 +1121,7 @@ def _calculate_closed_loop_solar_thermal_output(  # pylint: disable=too-many-loc
                 collector_system_output_temperature = max(
                     best_guess_collector_input_temperature,
                     tank_replacement_temperature,
-                    temperatures[index],
+                    current_ambient_temperature_kelvin,
                 )
 
             tank_load_enthalpy_transfer = (
@@ -1018,25 +1132,24 @@ def _calculate_closed_loop_solar_thermal_output(  # pylint: disable=too-many-loc
 
             # Determine the tank temperature and collector input temperature that match.
             resultant_vector = [
-                collector_heat_transfer
-                * (collector_system_output_temperature + ZERO_CELCIUS_OFFSET)
-                + tank_environment_heat_transfer
-                * (temperatures[index] + ZERO_CELCIUS_OFFSET)
-                + tank_internal_energy
-                * (previous_tank_temperature + ZERO_CELCIUS_OFFSET)
+                collector_heat_transfer * (collector_system_output_temperature)
+                + tank_environment_heat_transfer * current_ambient_temperature_kelvin
+                + tank_internal_energy * (previous_tank_temperature)
                 + (
                     tank_load_enthalpy_transfer
                     # * (tank_replacement_temperature + ZERO_CELCIUS_OFFSET)
                     * (
-                        max(temperatures[index], tank_replacement_temperature)
-                        + ZERO_CELCIUS_OFFSET
+                        max(
+                            current_ambient_temperature_kelvin,
+                            tank_replacement_temperature,
+                        )
                     )
                     if tank_supply_on
                     else 0
                 ),
                 (
                     (1 - minigrid.heat_exchanger.efficiency)
-                    * (collector_system_output_temperature + ZERO_CELCIUS_OFFSET)
+                    * (collector_system_output_temperature)
                 ),
             ]
 
@@ -1056,10 +1169,6 @@ def _calculate_closed_loop_solar_thermal_output(  # pylint: disable=too-many-loc
             collector_input_temperature, tank_temperature = linalg.solve(
                 a=matrix, b=resultant_vector
             )
-
-            # Convert into Celsius.
-            collector_input_temperature -= ZERO_CELCIUS_OFFSET
-            tank_temperature -= ZERO_CELCIUS_OFFSET
 
             # If a solution has been found, then break the loop.
             if (
@@ -1082,45 +1191,97 @@ def _calculate_closed_loop_solar_thermal_output(  # pylint: disable=too-many-loc
                     "on" if collector_flow_on else "off",
                     "on" if tank_supply_on else "off",
                     round(collector_input_temperature, 3),
-                    round(pvt_collector_output_temperature, 3)
-                    if pvt_collector_output_temperature is not None
-                    else "N/A",
-                    round(st_collector_output_temperature, 3)
-                    if st_collector_output_temperature is not None
-                    else "N/A",
+                    (
+                        round(pvt_collector_output_temperature, 3)
+                        if pvt_collector_output_temperature is not None
+                        else "N/A"
+                    ),
+                    (
+                        round(st_collector_output_temperature, 3)
+                        if st_collector_output_temperature is not None
+                        else "N/A"
+                    ),
                     round(best_guess_collector_input_temperature, 3),
                     round(tank_temperature, 3),
                 )
+
             best_guess_collector_input_temperature = collector_input_temperature
+
+        ###############################
+        # All temperatures in Clesius #
+        ###############################
+
+        collector_input_temperature -= ZERO_CELCIUS_OFFSET
+        tank_temperature -= ZERO_CELCIUS_OFFSET
 
         # Save the performance characteristics and output temp.
         collector_input_temperature_map[SolarPanelType.PV_T][index] = (
             collector_input_temperature if scenario.pv_t else None
         )
         collector_input_temperature_map[SolarPanelType.SOLAR_THERMAL][index] = (
-            pvt_collector_output_temperature
+            pvt_collector_output_temperature - ZERO_CELCIUS_OFFSET
             if scenario.pv_t
             else collector_input_temperature
         )
+
         if scenario.pv_t:
-            collector_output_temperature_map[SolarPanelType.PV_T][
+            collector_output_temperature_map[SolarPanelType.PV_T][index] = (
+                pvt_collector_output_temperature - ZERO_CELCIUS_OFFSET
+            )  # type: ignore [assignment]
+            collector_thermal_efficiencies_map[SolarPanelType.PV_T][
                 index
-            ] = pvt_collector_output_temperature  # type: ignore [assignment]
+            ] = pvt_thermal_efficiency
+            collector_reduced_temperatures_map[SolarPanelType.PV_T][
+                index
+            ] = reduced_pvt_collector_temperature
+
         if scenario.solar_thermal:
-            collector_output_temperature_map[SolarPanelType.SOLAR_THERMAL][
+            collector_output_temperature_map[SolarPanelType.SOLAR_THERMAL][index] = (
+                st_collector_output_temperature - ZERO_CELCIUS_OFFSET
+            )  # type: ignore [assignment]
+            collector_thermal_efficiencies_map[SolarPanelType.SOLAR_THERMAL][
                 index
-            ] = st_collector_output_temperature  # type: ignore [assignment]
-        collector_system_output_temperature_map[
-            index
-        ] = collector_system_output_temperature
+            ] = st_thermal_efficiency
+            collector_reduced_temperatures_map[SolarPanelType.SOLAR_THERMAL][
+                index
+            ] = reduced_st_collector_temperature
+
+        auxiliary_heating_map[index] = max(
+            tank_load_enthalpy_transfer
+            * (
+                (
+                    thermal_desalination_plant.minimum_htf_temperature
+                    if thermal_desalination_plant.htf_mode == HTFMode.CLOSED_HTF
+                    else thermal_desalination_plant.minimum_feedwater_temperature
+                )
+                - tank_temperature
+            ),
+            0,
+        )
+        collector_system_output_temperature_map[index] = (
+            collector_system_output_temperature - ZERO_CELCIUS_OFFSET
+        )
         pump_times_map[index] = int(collector_flow_on)
+        renewable_heating_map[index] = max(
+            tank_load_enthalpy_transfer
+            * (
+                tank_temperature
+                - (
+                    thermal_desalination_plant.hot_water_return_temperature
+                    if thermal_desalination_plant.hot_water_return_temperature
+                    is not None
+                    else current_ambient_temperature
+                )
+            ),
+            0,
+        )
         tank_temperature_map[index] = tank_temperature
         tank_volume_supplied_map[index] = volume_supplied
 
         if fractional_electric_performance is not None:
             electric_power_per_unit_map[index] = (
                 fractional_electric_performance  # type: ignore [operator]
-                * solar_thermal_collectors[SolarPanelType.PV_T].pv_layer.pv_unit  # type: ignore [union-attr]
+                * solar_thermal_collectors[SolarPanelType.PV_T].pv_unit  # type: ignore [union-attr]
             )
 
     # @@@ Fractional electrical performance map is not saving entries for non times.
@@ -1134,19 +1295,35 @@ def _calculate_closed_loop_solar_thermal_output(  # pylint: disable=too-many-loc
     )
 
     # Convert these outputs to dataframes and return.
-    collector_input_temperature_frame: dict[SolarPanelType, pd.DataFrame] = {
-        key: dict_to_dataframe(input_map, logger).reset_index(drop=True)
-        for key, input_map in collector_input_temperature_map.items()
-    }
+    auxiliary_heating_frame: pd.DataFrame = dict_to_dataframe(
+        auxiliary_heating_map, logger
+    )
 
-    collector_output_temperature_frame: dict[SolarPanelType, pd.DataFrame] = {
-        key: dict_to_dataframe(output_map, logger).reset_index(drop=True)
-        for key, output_map in collector_output_temperature_map.items()
-    }
+    collector_input_temperature_frame: pd.DataFrame = pd.DataFrame(
+        collector_input_temperature_map
+    )
+    collector_input_temperature_frame.columns = [
+        key.value for key in collector_input_temperature_map.keys()
+    ]
+
+    collector_output_temperature_frame: pd.DataFrame = pd.DataFrame(
+        collector_output_temperature_map
+    )
+    collector_output_temperature_frame.columns = [
+        key.value for key in collector_output_temperature_map.keys()
+    ]
+
+    collector_reduced_temperatures_frame = pd.DataFrame(
+        {k.value: v for k, v in collector_reduced_temperatures_map.items()}
+    )
 
     collector_system_output_temperature_frame = dict_to_dataframe(
         collector_system_output_temperature_map, logger
     ).reset_index(drop=True)
+
+    collector_thermal_efficiencies_frame = pd.DataFrame(
+        {k.value: v for k, v in collector_thermal_efficiencies_map.items()}
+    )
 
     electric_power_per_unit: pd.DataFrame = dict_to_dataframe(
         electric_power_per_unit_map, logger
@@ -1154,6 +1331,10 @@ def _calculate_closed_loop_solar_thermal_output(  # pylint: disable=too-many-loc
 
     pump_times_frame: pd.DataFrame = dict_to_dataframe(
         pump_times_map, logger
+    ).reset_index(drop=True)
+
+    renewable_heating_frame: pd.DataFrame = dict_to_dataframe(
+        renewable_heating_map, logger
     ).reset_index(drop=True)
 
     tank_temperature_frame: pd.DataFrame = dict_to_dataframe(
@@ -1164,12 +1345,154 @@ def _calculate_closed_loop_solar_thermal_output(  # pylint: disable=too-many-loc
         tank_volume_supplied_map, logger
     ).reset_index(drop=True)
 
+    # import seaborn as sns
+
+    # sns.set_style("ticks")
+    # sns.set_context("notebook")
+    # thesis_traffic_lights = sns.color_palette(
+    #     [
+    #         "#144E56",
+    #         "#27BFE6",  # SDG 6
+    #         "#EFF2DD",
+    #         "#F9A130",
+    #         "#E04606",
+    #         "#D8247C",  # Pink
+    #         "#EDEDED",  # Pale pink
+    #         "#E7DFBE",  # Pale yellow
+    #     ]
+    # )
+    # sns.set_palette(thesis_traffic_lights)
+
+    # un_color_palette = sns.color_palette(
+    #     [
+    #         # "#C51A2E",
+    #         # "#ED6A30",
+    #         # "#FBC219",
+    #         # "#2CBCE0",
+    #         # "#2297D5",
+    #         # "#0D699F",
+    #         # "#19496A",
+    #         "#8F1838",
+    #         "#D9302F",
+    #         "#F36D25",
+    #         "#FDB713",
+    #         "#00AED9",
+    #         "#0169A4",
+    #         "#183668",
+    #     ]
+    # )
+    # sns.set_palette(un_color_palette)
+
+    # import matplotlib.pyplot as plt
+
+    # pvt_temperature_frame = pd.DataFrame(
+    #     {
+    #         "input": collector_input_temperature_frame["pv_t"].values,
+    #         "output": collector_output_temperature_frame["pv_t"].values,
+    #     }
+    # )
+    # st_temperature_frame = pd.DataFrame(
+    #     {
+    #         "input": collector_input_temperature_frame["solar_thermal"].values,
+    #         "output": collector_output_temperature_frame["solar_thermal"].values,
+    #     }
+    # )
+
+    # plt.figure(figsize=(48 / 5, 32 / 5))
+    # sns.scatterplot(pvt_temperature_frame[:24], marker="h", palette="Blues", s=100)
+    # sns.scatterplot(st_temperature_frame[:24], marker="h", palette="Reds", s=100)
+    # plt.plot(tank_temperature_frame[:24].index, tank_temperature_frame[:24].values, dashes=(2, 2), color="teal", label="Tank")
+    # plt.fill_between(
+    #     pvt_temperature_frame[:24].index,
+    #     pvt_temperature_frame[:24]["input"],
+    #     pvt_temperature_frame[:24]["output"],
+    #     color="blue",
+    #     alpha=0.3,
+    # )
+    # plt.fill_between(
+    #     st_temperature_frame[:24].index,
+    #     st_temperature_frame[:24]["input"],
+    #     st_temperature_frame[:24]["output"],
+    #     color="red",
+    #     alpha=0.3,
+    # )
+    # plt.show()
+
+    # pvt_temperature_frame["hour"] = pvt_temperature_frame.index % 24
+    # st_temperature_frame["hour"] = st_temperature_frame.index % 24
+    # tank_temperature_frame["hour"] = tank_temperature_frame.index % 24
+
+    # plt.figure(figsize=(48/5, 32/5))
+
+    # plt.plot((mean_pvt_frame:=pvt_temperature_frame.groupby("hour").mean()).index, mean_pvt_frame["input"], "--", color="C6", label="Input")
+    # plt.fill_between((std_pvt_frame:=pvt_temperature_frame.groupby("hour").std()).index, (mean_pvt_frame - std_pvt_frame)["input"], (mean_pvt_frame + std_pvt_frame)["input"], color="C6", alpha=0.2)
+
+    # plt.plot(mean_pvt_frame.index, mean_pvt_frame["output"], color="C2", label="Output")
+    # plt.fill_between(std_pvt_frame.index, (mean_pvt_frame - std_pvt_frame)["output"], (mean_pvt_frame + std_pvt_frame)["output"], color="C2", alpha=0.2)
+
+    # plt.xlabel("Hour of the day / hour")
+    # plt.ylabel("Temperature / $^\circ$C")
+    # plt.legend()
+
+    # plt.show()
+
+    # plt.figure(figsize=(48/5, 32/5))
+
+    # plt.plot((mean_st_frame:=st_temperature_frame.groupby("hour").mean()).index, mean_st_frame["input"], "--", color="C4")
+    # plt.fill_between((std_st_frame:=st_temperature_frame.groupby("hour").std()).index, (mean_st_frame - std_st_frame)["input"], (mean_st_frame + std_st_frame)["input"], color="C4", alpha=0.2)
+
+    # plt.plot(mean_st_frame.index, mean_st_frame["output"], color="C0")
+    # plt.fill_between(std_st_frame.index, (mean_st_frame - std_st_frame)["output"], (mean_st_frame + std_st_frame)["output"], color="C0", alpha=0.2)
+
+    # plt.xlabel("Hour of the day / hour")
+    # plt.ylabel("Temperature / $^\circ$C")
+    # plt.legend()
+
+    # plt.show()
+
+    # plt.figure(figsize=(48/5, 32/5))
+
+    # plt.plot(mean_pvt_frame.index, mean_pvt_frame["input"], "--", color="C6", label="Collector-system (PV-T) input")
+    # plt.fill_between(std_pvt_frame.index, (mean_pvt_frame - std_pvt_frame)["input"], (mean_pvt_frame + std_pvt_frame)["input"], color="C6", alpha=0.2)
+    # # plt.plot(mean_st_frame.index, mean_st_frame["input"], color="C2")
+    # # plt.fill_between(std_st_frame.index, (mean_st_frame - std_st_frame)["input"], (mean_st_frame + std_st_frame)["input"], color="C2", alpha=0.2)
+
+    # plt.plot(mean_pvt_frame.index, mean_pvt_frame["output"], ":", color="C2", label="PV-T output/ST input")
+    # plt.fill_between(std_pvt_frame.index, (mean_pvt_frame - std_pvt_frame)["output"], (mean_pvt_frame + std_pvt_frame)["output"], color="C2", alpha=0.2)
+    # plt.plot(mean_st_frame.index, mean_st_frame["output"], color="C0", label="Collector-system (ST) output")
+    # plt.fill_between(std_st_frame.index, (mean_st_frame - std_st_frame)["output"], (mean_st_frame + std_st_frame)["output"], color="C0", alpha=0.2)
+
+    # plt.plot((mean_tank_frame:=tank_temperature_frame.groupby("hour").mean()).index, mean_tank_frame.values, "-.", color="C3", label="Buffer tank")
+    # plt.fill_between((std_tank_frame:=tank_temperature_frame.groupby("hour").std()).index, (mean_tank_frame - std_tank_frame)[0], (mean_tank_frame + std_tank_frame)[0], color="C3", alpha=0.2)
+
+    # plt.fill_between((x_series:=std_tank_frame.index), [thermal_desalination_plant.minimum_htf_temperature] * len(x_series), [thermal_desalination_plant.maximum_htf_temperature] * len(x_series), color="grey", alpha=0.1, hatch="//", label="Required temperature range")
+
+    # plt.xlabel("Hour of the day / hour")
+    # plt.ylabel("Temperature / $^\circ$C")
+    # plt.legend()
+
+    # plt.show()
+
+    # pvt_thermal_efficiency_frame = pd.DataFrame({"eta": collector_thermal_efficiencies_frame["pv_t"].values, "t_r": collector_reduced_temperatures_frame["pv_t"].values})
+    # st_thermal_efficiency_frame = pd.DataFrame({"eta": collector_thermal_efficiencies_frame["solar_thermal"].values, "t_r": collector_reduced_temperatures_frame["solar_thermal"].values})
+
+    # sns.set_palette(sns.color_palette(["teal", "orange"]))
+
+    # plt.figure(figsize=(48 / 5, 32 / 5))
+    # sns.scatterplot(pvt_thermal_efficiency_frame, x="t_r", y="eta", marker="D", alpha=0.1, s=100)
+    # sns.scatterplot(st_thermal_efficiency_frame, x="t_r", y="eta", marker="D", alpha=0.1, s=100)
+    # plt.show()
+
     return (
+        auxiliary_heating_frame,
         collector_input_temperature_frame,
         collector_output_temperature_frame,
+        collector_reduced_temperatures_frame,
+        collector_thermal_efficiencies_frame,
         electric_power_per_unit,
         collector_system_output_temperature_frame,
         pump_times_frame,
+        renewable_heating_frame,
         tank_temperature_frame,
         tank_volume_output_supplied,
     )
@@ -1300,9 +1623,9 @@ def _calculate_direct_heating_solar_thermal_output(  # pylint: disable=too-many-
         pvt_output_performance: list[tuple[float, float]] = [
             solar_thermal_collectors[SolarPanelType.PV_T].calculate_performance(
                 temperatures[index],
+                logger,
                 relevant_scenarios[SolarPanelType.PV_T].htf_heat_capacity,
                 thermal_scenario.htf_supply_temperature,
-                logger,
                 pvt_collector_mass_flow_rate,
                 1000 * irradiances[index],
                 wind_speeds[index],
@@ -1373,9 +1696,9 @@ def _calculate_direct_heating_solar_thermal_output(  # pylint: disable=too-many-
                 SolarPanelType.SOLAR_THERMAL
             ].calculate_performance(
                 temperatures[index],
+                logger,
                 relevant_scenarios[SolarPanelType.SOLAR_THERMAL].htf_heat_capacity,
                 solar_thermal_input_temperature[index],
-                logger,
                 st_collector_mass_flow_rate,
                 irradiances[index],
                 wind_speeds[index],
@@ -1395,12 +1718,12 @@ def _calculate_direct_heating_solar_thermal_output(  # pylint: disable=too-many-
         }
         logger.info("Direct-heating solar-thermal calculation completed.")
 
-        collector_input_temperature[
-            SolarPanelType.SOLAR_THERMAL
-        ] = solar_thermal_input_temperature
-        collector_output_temperature[
-            SolarPanelType.SOLAR_THERMAL
-        ] = solar_thermal_output_temperature
+        collector_input_temperature[SolarPanelType.SOLAR_THERMAL] = (
+            solar_thermal_input_temperature
+        )
+        collector_output_temperature[SolarPanelType.SOLAR_THERMAL] = (
+            solar_thermal_output_temperature
+        )
 
     else:
         logger.info("No solar-thermal collector provided, skipping calcultion.")
@@ -1479,18 +1802,18 @@ def calculate_solar_thermal_output(  # pylint: disable=too-many-locals, too-many
     collector_system_sizes: dict[SolarPanelType, int],
     disable_tqdm: bool,
     end_hour: int,
-    irradiances: pd.Series,
+    irradiances: dict[SolarPanel, pd.Series],
     logger: Logger,
     minigrid: Minigrid,
     num_tanks: int,
     processed_total_hw_load: pd.Series | None,
     resource_type: ResourceType,
     scenario: Scenario,
-    solar_thermal_collectors: dict[
+    solar_thermal_collectors: list[
         SolarPanelType, HybridPVTPanel | SolarThermalPanel | None
     ],
     start_hour: int,
-    temperatures: pd.Series,
+    temperatures: dict[SolarPanel, pd.Series],
     thermal_desalination_plant: ThermalDesalinationPlant | None,
     wind_speeds: pd.Series,
 ) -> tuple[
@@ -1553,12 +1876,18 @@ def calculate_solar_thermal_output(  # pylint: disable=too-many-locals, too-many
             being modelled.
 
     Outputs:
+        - auxiliary_heating_frame
+            The auxiliary heating requirements in kWh, either electrical or thermal.
         - collector_input_temperature:
             The input temperature of the HTF entering the PV-T/solar-thermal collectors
             at each time step.
         - collector_output_temperature:
             The output temperature of HTF leaving the PV-T/solar-thermal collectors at
             each time step.
+        - collector_reduced_temperatures_frame:
+            The reduced temperatures of the collectors.
+        - collector_thermal_efficiencies_frame:
+            The thermal efficiencies of the collectors.
         - electric_power_per_unit:
             The electric power, per unit PV-T or solar-thermal collector, delivered by
             the PV-T/solar-thermal system.
@@ -1590,6 +1919,7 @@ def calculate_solar_thermal_output(  # pylint: disable=too-many-locals, too-many
     # Remove unneeded collector information.
     if not scenario.pv_t and SolarPanelType.PV_T in solar_thermal_collectors:
         solar_thermal_collectors.pop(SolarPanelType.PV_T)
+
     if (
         not scenario.solar_thermal
         and SolarPanelType.SOLAR_THERMAL in solar_thermal_collectors
