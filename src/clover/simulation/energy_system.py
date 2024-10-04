@@ -1731,10 +1731,6 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
         wind_speed_data,
     )
 
-    import pdb
-
-    pdb.set_trace()
-
     logger.debug(
         "Mean buffer tank temperature: %s",
         (
@@ -1896,10 +1892,7 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
     else:
         processed_total_hw_load = pd.DataFrame([0] * (end_hour - start_hour))
         hot_water_power_consumed = pd.DataFrame([0] * (end_hour - start_hour))
-
-    import pdb
-
-    pdb.set_trace()
+        hot_water_pvt_electric_power_per_unit = None
 
     # Post-process dataframes.
     processed_total_hw_load = processed_total_hw_load.reset_index(drop=True)
@@ -1937,6 +1930,7 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
         RenewableEnergySource.PV: pv_power_produced,
         RenewableEnergySource.CLEAN_WATER_PVT: (cw_electric_power_per_unit),
     }
+
     if hot_water_pvt_electric_power_per_unit is not None:
         renewables_energy_map[RenewableEnergySource.HOT_WATER_PVT] = (
             hot_water_pvt_electric_power_per_unit
@@ -2053,10 +2047,10 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
 
     # Initialise electric desalination paramteters.
     (
-        brine_per_desalinated_litre,
+        cw_el_brine_per_desalinated_litre,
         _,
-        energy_per_desalinated_litre,
-        maximum_water_throughput,
+        cw_el_energy_per_desalinated_litre,
+        cw_el_maximum_water_throughput,
     ) = _calculate_electric_desalination_parameters(
         available_converters, feedwater_sources, logger, scenario
     )
@@ -2133,13 +2127,13 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
                 total_waste_produced,
             ) = cw_tank_iteration_step(  # type: ignore  [assignment]
                 backup_desalinator_water_supplied,
-                brine_per_desalinated_litre,
+                cw_el_brine_per_desalinated_litre,
                 clean_water_power_consumed_mapping,
                 clean_water_demand_met_by_excess_energy,
                 clean_water_supplied_by_excess_energy,
                 conventional_cw_source_profiles,
                 conventional_water_supplied,
-                energy_per_desalinated_litre,
+                cw_el_energy_per_desalinated_litre,
                 excess_energy,
                 excess_energy_used_desalinating,
                 hourly_cw_tank_storage,
@@ -2147,7 +2141,7 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
                 logger,
                 maximum_battery_storage,
                 maximum_cw_tank_storage,
-                maximum_water_throughput,
+                cw_el_maximum_water_throughput,
                 minigrid,
                 minimum_cw_tank_storage,
                 new_hourly_battery_storage,
@@ -2437,6 +2431,10 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
         total_energy_used,
         unmet_energy,
     ]
+
+    import pdb
+
+    pdb.set_trace()
 
     # PV-T electrical performance outputs.
     if scenario.pv_t:
