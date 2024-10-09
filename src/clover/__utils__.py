@@ -584,8 +584,6 @@ class ColumnHeader(enum.Enum):
     BATTERY_HEALTH = "Battery health"
     BLACKOUTS = "Blackouts"
     BRINE = "Brine produced (l)"
-    BUFFER_TANK_OUTPUT = "Buffer tank output volume (l)"
-    BUFFER_TANK_TEMPERATURE = "Buffer tank temperature (degC)"
     CLEAN_WATER_BLACKOUTS = "Clean water blackouts"
     CLEAN_WATER_FROM_CONVENTIONAL_SOURCES = (
         "Drinking water supplied via conventional sources (l)"
@@ -598,6 +596,12 @@ class ColumnHeader(enum.Enum):
     CLEAN_WATER_FROM_THERMAL_RENEWABLES = (
         "Renewable clean water produced directly and thermally (l)"
     )
+    CW_AUXILIARY_HEATING = "Clean-water auxiliary heating (kWh)"
+    CW_BUFFER_TANK_TEMPERATURE = "Clean-water buffer tank temperature (degC)"
+    CW_BUFFER_TANK_OUTPUT = "Clean-water buffer tank output volume (l)"
+    CW_HEAT_PUMP_ELECTRICITY_REQUIREMENTS = (
+        "Clean-water auxiliary heat-pump electricity requirements (kWh)"
+    )
     CW_PVT_ELECTRICITY_SUPPLIED = "Clean-water PV-T electric energy supplied (kWh)"
     CW_PVT_ELECTRICITY_SUPPLIED_PER_KWP = (
         "Clean-water PV-T electric energy supplied per kWp"
@@ -605,10 +609,18 @@ class ColumnHeader(enum.Enum):
     CW_PVT_ELECTRICITY_SUPPLIED_PER_UNIT = (
         "Clean-water PV-T electric energy supplied per unit"
     )
+    CW_PVT_ELECTRICAL_EFFICIENCY = "Clean-water PV-T electrical efficiency"
+    CW_PVT_THERMAL_EFFICIENCY = "Clean-water PV-T thermal efficiency"
     CW_PVT_INPUT_TEMPERATURE = "Clean-water PV-T input temperature (degC)"
     CW_PVT_OUTPUT_TEMPERATURE = "Clean-water PV-T output temperature (degC)"
+    CW_PVT_REDUCED_TEMPERATURE = "Clean-water PV-T reduced temperature (degC / W/m$^2$)"
+    CW_RENEWABLE_HEATING = "Clean-water renewable heating (kWh)"
     CW_ST_INPUT_TEMPERATURE = "Clean-water solar-thermal input temperature (degC)"
     CW_ST_OUTPUT_TEMPERATURE = "Clean-water solar-thermal output temperature (degC)"
+    CW_ST_REDUCED_TEMPERATURE = (
+        "Clean-water solar-thermal reduced temperature (degC / W/m$^2$)"
+    )
+    CW_ST_THERMAL_EFFICIENCY = "Clean-water solar-thermal thermal efficiency"
     CW_TANK_STORAGE_PROFILE = "Water held in clean-water storage tanks (l)"
     DESALINATION_PLANT_RENEWABLE_FRACTION = (
         "Thermal desalination plant(s) renewable fraction"
@@ -629,6 +641,9 @@ class ColumnHeader(enum.Enum):
     HOUSEHOLDS = "Households"
     HW_PVT_INPUT_TEMPERATURE = "Hot-water PV-T input temperature (degC)"
     HW_PVT_OUTPUT_TEMPERATURE = "Hot-water PV-T output temperature (degC)"
+    HW_PVT_REDUCED_TEMPERATURE = "Hot-water PV-T reduced temperature (degC / W/m$^2$)"
+    HW_PVT_ELECTRICAL_EFFICIENCY = "Hot-water PV-T electrical efficiency"
+    HW_PVT_THERMAL_EFFICIENCY = "Hot-water PV-T thermal efficiency"
     HW_PVT_ELECTRICITY_SUPPLIED = "Hot-water PV-T electric energy supplied (kWh)"
     HW_PVT_ELECTRICITY_SUPPLIED_PER_KWP = (
         "Hot-water PV-T electric energy supplied per kWp"
@@ -639,6 +654,9 @@ class ColumnHeader(enum.Enum):
     HW_SOLAR_THERMAL_FRACTION = "Renewable hot-water fraction"
     HW_ST_INPUT_TEMPERATURE = "Hot-water solar-thermal input temperature (degC)"
     HW_ST_OUTPUT_TEMPERATURE = "Hot-water solar-thermal output temperature (degC)"
+    HW_ST_REDUCED_TEMPERATURE = (
+        "Hot-water solar-thermal reduced temperature (degC / W/m$^2$)"
+    )
     HW_TANK_OUTPUT = "Hot-water tank volume supplied (l)"
     HW_TANK_TEMPERATURE = "Hot-water tank temperature (degC)"
     HW_TEMPERATURE_GAIN = "Hot water temperature gain (degC)"
@@ -1119,9 +1137,9 @@ class KeyResults:
                 self.average_daily_cw_supplied, 3
             )
         if self.average_daily_cw_pvt_generation is not None:
-            data_dict["Average daily clean-water PV-T electricity supplied / kWh"] = (
-                round(self.average_daily_cw_pvt_generation, 3)
-            )
+            data_dict[
+                "Average daily clean-water PV-T electricity supplied / kWh"
+            ] = round(self.average_daily_cw_pvt_generation, 3)
         if self.average_daily_diesel_energy_supplied is not None:
             data_dict["Average daily diesel energy supplied / kWh"] = round(
                 self.average_daily_diesel_energy_supplied, 3
@@ -1143,9 +1161,9 @@ class KeyResults:
                 self.average_daily_hw_demand_covered, 3
             )
         if self.average_daily_hw_pvt_generation is not None:
-            data_dict["Average daily hot-water PV-T electricity supplied / kWh"] = (
-                round(self.average_daily_hw_pvt_generation, 3)
-            )
+            data_dict[
+                "Average daily hot-water PV-T electricity supplied / kWh"
+            ] = round(self.average_daily_hw_pvt_generation, 3)
         if self.average_daily_hw_renewable_fraction is not None:
             data_dict["Average daily hot-water renewable fraction"] = round(
                 self.average_daily_hw_renewable_fraction, 3
@@ -2814,13 +2832,14 @@ class SystemDetails:
     final_cw_st_size: float | None = 0
     final_hw_pvt_size: float | None = 0
     final_hw_st_size: float | None = 0
-    final_num_buffer_tanks: int | None = 0
+    final_num_clean_water_buffer_tanks: int | None = 0
     final_num_clean_water_tanks: int | None = 0
+    final_num_hot_water_buffer_tanks: int | None = 0
     final_num_hot_water_tanks: int | None = 0
-    final_pv_sizes: dict[str, float] | defaultdict[str, float] = (
-        dataclasses.field(  # type: ignore [assignment]
-            default_factory=lambda: collections.defaultdict(float)
-        )
+    final_pv_sizes: dict[str, float] | defaultdict[
+        str, float
+    ] = dataclasses.field(  # type: ignore [assignment]
+        default_factory=lambda: collections.defaultdict(float)
     )
     final_storage_size: float = 0
     initial_converter_sizes: dict[Any, int] | None = None
@@ -2828,13 +2847,14 @@ class SystemDetails:
     initial_cw_st_size: float | None = 0
     initial_hw_pvt_size: float | None = 0
     initial_hw_st_size: float | None = 0
-    initial_num_buffer_tanks: int | None = 0
+    initial_num_clean_water_buffer_tanks: int | None = 0
     initial_num_clean_water_tanks: int | None = 0
+    initial_num_hot_water_buffer_tanks: int | None = 0
     initial_num_hot_water_tanks: int | None = 0
-    initial_pv_sizes: dict[str, float] | defaultdict[str, float] = (
-        dataclasses.field(  # type: ignore [assignment]
-            default_factory=lambda: collections.defaultdict(float)
-        )
+    initial_pv_sizes: dict[str, float] | defaultdict[
+        str, float
+    ] = dataclasses.field(  # type: ignore [assignment]
+        default_factory=lambda: collections.defaultdict(float)
     )
     initial_storage_size: float = 0
     required_feedwater_sources: list[str] | None = None
@@ -3553,17 +3573,17 @@ class TechnicalAppraisal:
         # Add the fractions of power that were consumed providing each resource.
         if self.power_consumed_fraction is not None:
             if ResourceType.CLEAN_WATER in self.power_consumed_fraction:
-                technical_appraisal_dict["clean_water_power_consumption_fraction"] = (
-                    self.power_consumed_fraction[ResourceType.CLEAN_WATER]
-                )
+                technical_appraisal_dict[
+                    "clean_water_power_consumption_fraction"
+                ] = self.power_consumed_fraction[ResourceType.CLEAN_WATER]
             if ResourceType.ELECTRIC in self.power_consumed_fraction:
-                technical_appraisal_dict["electricity_power_consumption_fraction"] = (
-                    self.power_consumed_fraction[ResourceType.ELECTRIC]
-                )
+                technical_appraisal_dict[
+                    "electricity_power_consumption_fraction"
+                ] = self.power_consumed_fraction[ResourceType.ELECTRIC]
             if ResourceType.HOT_CLEAN_WATER in self.power_consumed_fraction:
-                technical_appraisal_dict["hot_water_power_consumption_fraction"] = (
-                    self.power_consumed_fraction[ResourceType.HOT_CLEAN_WATER]
-                )
+                technical_appraisal_dict[
+                    "hot_water_power_consumption_fraction"
+                ] = self.power_consumed_fraction[ResourceType.HOT_CLEAN_WATER]
 
         # Remove any "Nan" entries.
         technical_appraisal_dict = {
@@ -3695,9 +3715,9 @@ def save_simulation(
         existing_simulation_details = {}
 
     # Update the system info with the new simulation information.
-    existing_simulation_details[f"simulation_{simulation_number}"] = (
-        simulation_details_dict
-    )
+    existing_simulation_details[
+        f"simulation_{simulation_number}"
+    ] = simulation_details_dict
 
     with tqdm(
         total=2,

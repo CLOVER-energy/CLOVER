@@ -1255,7 +1255,6 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
                             total_solar_data[pv_panel.name][
                                 solar.SolarDataType.ELECTRICITY.value
                             ]
-                            * pv_panel.pv_unit
                             for pv_panel in minigrid.pv_panels
                         ),
                     )

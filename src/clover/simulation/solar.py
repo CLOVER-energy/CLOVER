@@ -907,28 +907,28 @@ def _calculate_closed_loop_solar_thermal_output(  # pylint: disable=too-many-loc
     pump_times_map: dict[int, int] = {}
 
     # Instantiate maps for easy HTF and tank lookups.
-    tank_supply_temperature_map: dict[int, float] = (  # pylint: disable=unused-variable
-        {}
-    )
+    tank_supply_temperature_map: dict[
+        int, float
+    ] = {}  # pylint: disable=unused-variable
     tank_volume_supplied_map: dict[int, float] = {}
 
     auxiliary_heating_map: dict[int, float] = {}
-    collector_input_temperature_map: dict[SolarPanelType, dict[int, float]] = (
-        collections.defaultdict(
-            lambda: collections.defaultdict(lambda: default_supply_temperature)
-        )
+    collector_input_temperature_map: dict[
+        SolarPanelType, dict[int, float]
+    ] = collections.defaultdict(
+        lambda: collections.defaultdict(lambda: default_supply_temperature)
     )
-    collector_output_temperature_map: dict[SolarPanelType, dict[int, float]] = (
-        collections.defaultdict(
-            lambda: collections.defaultdict(lambda: default_supply_temperature)
-        )
+    collector_output_temperature_map: dict[
+        SolarPanelType, dict[int, float]
+    ] = collections.defaultdict(
+        lambda: collections.defaultdict(lambda: default_supply_temperature)
     )
     collector_thermal_efficiencies_map: dict[
         SolarPanelType, dict[int, float | None]
     ] = collections.defaultdict(lambda: collections.defaultdict(lambda: None))
-    collector_reduced_temperatures_map: dict[SolarPanelType, dict[int, float]] = (
-        collections.defaultdict(lambda: collections.defaultdict(lambda: 0))
-    )
+    collector_reduced_temperatures_map: dict[
+        SolarPanelType, dict[int, float]
+    ] = collections.defaultdict(lambda: collections.defaultdict(lambda: 0))
     collector_system_output_temperature_map: dict[int, float] = collections.defaultdict(
         float
     )
@@ -1718,12 +1718,12 @@ def _calculate_direct_heating_solar_thermal_output(  # pylint: disable=too-many-
         }
         logger.info("Direct-heating solar-thermal calculation completed.")
 
-        collector_input_temperature[SolarPanelType.SOLAR_THERMAL] = (
-            solar_thermal_input_temperature
-        )
-        collector_output_temperature[SolarPanelType.SOLAR_THERMAL] = (
-            solar_thermal_output_temperature
-        )
+        collector_input_temperature[
+            SolarPanelType.SOLAR_THERMAL
+        ] = solar_thermal_input_temperature
+        collector_output_temperature[
+            SolarPanelType.SOLAR_THERMAL
+        ] = solar_thermal_output_temperature
 
     else:
         logger.info("No solar-thermal collector provided, skipping calcultion.")
