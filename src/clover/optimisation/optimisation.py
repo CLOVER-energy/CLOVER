@@ -885,9 +885,9 @@ def _simulation_iteration(  # pylint: disable=too-many-locals, too-many-statemen
             )
         )
     else:
-        component_sizes[
-            RenewableEnergySource.CLEAN_WATER_PVT
-        ] = simulation_cw_pvt_system_size[0]
+        component_sizes[RenewableEnergySource.CLEAN_WATER_PVT] = (
+            simulation_cw_pvt_system_size[0]
+        )
 
     # Add the iterable converter sizes.
     for converter, sizes in converter_sizes.items():
@@ -942,9 +942,9 @@ def _simulation_iteration(  # pylint: disable=too-many-locals, too-many-statemen
             )
         )
     else:
-        component_sizes[
-            RenewableEnergySource.HOT_WATER_PVT
-        ] = simulation_hw_pvt_system_size[0]
+        component_sizes[RenewableEnergySource.HOT_WATER_PVT] = (
+            simulation_hw_pvt_system_size[0]
+        )
 
     # Add the iterable PV sizes if appropriate.
     if len(simulation_pv_sizes) > 1:

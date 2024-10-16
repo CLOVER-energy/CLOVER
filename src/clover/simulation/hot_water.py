@@ -434,13 +434,15 @@ def calculate_renewable_hw_profiles(  # pylint: disable=too-many-locals, too-man
 
         if isinstance(auxiliary_heater, DieselWaterHeater):
             # Compute the heat consumed by the auxiliary heater.
-            auxiliary_heater_heat_consumption: pd.DataFrame = pd.DataFrame(  # pylint: disable=unused-variable
-                (hot_water_volume_supplied > 0)
-                * hot_water_volume_supplied  # type: ignore [operator]
-                * minigrid.hot_water_tank.heat_capacity  # type: ignore [attr-defined]
-                * (  # type: ignore [operator]
-                    scenario.hot_water_scenario.demand_temperature  # type: ignore [operator]
-                    - hot_water_tank_temperature
+            auxiliary_heater_heat_consumption: pd.DataFrame = (
+                pd.DataFrame(  # pylint: disable=unused-variable
+                    (hot_water_volume_supplied > 0)
+                    * hot_water_volume_supplied  # type: ignore [operator]
+                    * minigrid.hot_water_tank.heat_capacity  # type: ignore [attr-defined]
+                    * (  # type: ignore [operator]
+                        scenario.hot_water_scenario.demand_temperature  # type: ignore [operator]
+                        - hot_water_tank_temperature
+                    )
                 )
             )
         else:

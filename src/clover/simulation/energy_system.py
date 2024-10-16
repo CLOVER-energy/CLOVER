@@ -1971,9 +1971,9 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
     }
 
     if hot_water_pvt_electric_power_per_unit is not None:
-        renewables_energy_map[
-            RenewableEnergySource.HOT_WATER_PVT
-        ] = hot_water_pvt_electric_power_per_unit
+        renewables_energy_map[RenewableEnergySource.HOT_WATER_PVT] = (
+            hot_water_pvt_electric_power_per_unit
+        )
 
     renewables_energy_used_directly: pd.DataFrame
     (
@@ -2418,7 +2418,7 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
     # Separate out the various renewable inputs.
     pv_energy = pd.DataFrame(
         {
-            ColumnHeader.PV_ELECTRICITY_SUPPLIED: renewables_energy_map[
+            ColumnHeader.PV_ELECTRICITY_SUPPLIED.value: renewables_energy_map[
                 RenewableEnergySource.PV
             ][minigrid.pv_panel.name]
         }
@@ -2515,14 +2515,23 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
                 cw_electric_power_per_kwp.columns = pd.Index(
                     [ColumnHeader.CW_PVT_ELECTRICITY_SUPPLIED_PER_KWP.value]
                 )
-                cw_pvt_electricity_supplied = renewables_energy_map[
-                    RenewableEnergySource.CLEAN_WATER_PVT
-                ]
+                cw_pvt_electricity_supplied = (
+                    renewables_energy_map[RenewableEnergySource.CLEAN_WATER_PVT]
+                    * clean_water_pvt_size
+                )
+                cw_pvt_electricity_supplied.columns = pd.Index(
+                    [ColumnHeader.CW_PVT_ELECTRICITY_SUPPLIED.value]
+                )
+
+                import pdb
+
+                pdb.set_trace()
 
                 system_performance_outputs_list.extend(
                     [
                         cw_electric_power_per_unit,
                         cw_electric_power_per_kwp,
+                        cw_pvt_electricity_supplied,
                     ]
                 )
 
@@ -2662,13 +2671,16 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
 
         # Set column headers accordingly for the various desalination outputs.
         cw_demand_met_by_excess_energy_frame.columns = pd.Index(
-            [ColumnHeader.CLEAN_WATER_FROM_EXCESS_ELECTRICITY]  # type: ignore
+            [ColumnHeader.CLEAN_WATER_FROM_EXCESS_ELECTRICITY.value]
         )
         cw_power_consumed.columns = pd.Index(
             [ColumnHeader.POWER_CONSUMED_BY_DESALINATION.value]
         )
         cw_supplied_by_excess_energy_frame.columns = pd.Index(
             [ColumnHeader.CLEAN_WATER_FROM_EXCESS_ELECTRICITY.value]
+        )
+        assert (
+            cw_supplied_by_excess_energy_frame == cw_demand_met_by_excess_energy_frame
         )
         conventional_cw_supplied_frame.columns = pd.Index(
             [ColumnHeader.CLEAN_WATER_FROM_CONVENTIONAL_SOURCES.value]
@@ -2696,7 +2708,6 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
                 backup_desalinator_water_frame,
                 conventional_cw_supplied_frame,
                 cw_blackout_times,
-                cw_demand_met_by_excess_energy_frame,
                 cw_power_consumed,
                 cw_supplied_by_excess_energy_frame,
                 cw_tank_volume_output_supplied,
@@ -2736,12 +2747,12 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
         # Append various PV-T outputs
         if scenario.pv_t:
             # Collector input/output temperatures
-            hot_water_collectors_input_temperatures[
-                SolarPanelType.PV_T
-            ].columns = pd.Index([ColumnHeader.HW_PVT_INPUT_TEMPERATURE.value])
-            hot_water_collectors_output_temperatures[
-                SolarPanelType.PV_T
-            ].columns = pd.Index([ColumnHeader.HW_PVT_OUTPUT_TEMPERATURE.value])
+            hot_water_collectors_input_temperatures[SolarPanelType.PV_T].columns = (
+                pd.Index([ColumnHeader.HW_PVT_INPUT_TEMPERATURE.value])
+            )
+            hot_water_collectors_output_temperatures[SolarPanelType.PV_T].columns = (
+                pd.Index([ColumnHeader.HW_PVT_OUTPUT_TEMPERATURE.value])
+            )
 
             # Convert the PV-T units to kWh
             hot_water_pvt_electric_power_per_kwh: pd.DataFrame = pd.DataFrame(
@@ -2900,9 +2911,11 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
             and scenario.hot_water_scenario is not None
             else None
         ),
-        number_of_cw_buffer_tanks
-        if scenario.desalination_scenario is not None
-        else None,
+        (
+            number_of_cw_buffer_tanks
+            if scenario.desalination_scenario is not None
+            else None
+        ),
         number_of_cw_tanks if scenario.desalination_scenario is not None else None,
         number_of_hw_buffer_tanks if scenario.hot_water_scenario is not None else None,
         number_of_hw_tanks if scenario.hot_water_scenario is not None else None,
@@ -2944,9 +2957,11 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
             and scenario.hot_water_scenario is not None
             else None
         ),
-        number_of_cw_buffer_tanks
-        if scenario.desalination_scenario is not None
-        else None,
+        (
+            number_of_cw_buffer_tanks
+            if scenario.desalination_scenario is not None
+            else None
+        ),
         number_of_cw_tanks if scenario.desalination_scenario is not None else None,
         number_of_hw_buffer_tanks if scenario.hot_water_scenario is not None else None,
         number_of_hw_tanks if scenario.hot_water_scenario is not None else None,
