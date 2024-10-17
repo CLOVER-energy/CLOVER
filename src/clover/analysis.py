@@ -24,6 +24,8 @@ import pandas as pd  # pylint: disable=import-error
 import seaborn as sns  # pylint: disable=import-error
 
 import matplotlib.pyplot as plt  # pylint: disable=import-error
+
+from matplotlib import rc
 from tqdm import tqdm  # pylint: disable=import-error
 
 from .__utils__ import (
@@ -40,6 +42,29 @@ from .__utils__ import (
 __all__ = (
     "get_key_results",
     "plot_outputs",
+)
+
+# Seaborn setup
+rc("font", **{"family": "sans-serif", "sans-serif": ["Arial"]})
+sns.set_context("notebook")
+sns.set_style("whitegrid")
+un_color_palette = sns.color_palette(
+    [
+        # "#C51A2E",
+        # "#ED6A30",
+        # "#FBC219",
+        # "#2CBCE0",
+        # "#2297D5",
+        # "#0D699F",
+        # "#19496A",
+        "#8F1838",
+        "#D9302F",
+        "#F36D25",
+        "#FDB713",
+        "#00AED9",
+        "#0169A4",
+        "#183668",
+    ]
 )
 
 
@@ -74,7 +99,7 @@ SIMULATION_PLOTS_DIRECTORY: str = "simulation_{simulation_number}_plots"
 
 # Style sheet:
 #   The preferred matplotlib stylesheet to use.
-STYLE_SHEET: str = "tableau-colorblind10"
+# STYLE_SHEET: str = "tableau-colorblind10"
 # Options available:
 #   _classic_test_patch
 #   bmh
@@ -396,7 +421,7 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
     plt.rcParams["font.size"] = "11"
     plt.rcParams["xtick.labelsize"] = "11"
     plt.rcParams["ytick.labelsize"] = "11"
-    plt.style.use(STYLE_SHEET)
+    # plt.style.use(STYLE_SHEET)
     # set up the CLOVER plotting structure
     sns.set_context("notebook")
     sns.set_style("ticks")
@@ -495,9 +520,9 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
         plt.xticks(rotation=0)
         plt.tight_layout()
         plt.savefig(
-            os.path.join(figures_directory, "solar_output_hetamap.png"),
+            os.path.join(figures_directory, "solar_output_hetamap.pdf"),
             bbox_inches="tight",
-            transparent=True,
+            pad_inches=0,
         )
         plt.show()
         pbar.update(1)
@@ -511,9 +536,9 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
         plt.ylabel("PV Energy generation / kWh per day")
         # plt.title("Daily energy generation of 1 kWp of solar capacity")
         plt.savefig(
-            os.path.join(figures_directory, "solar_output_yearly.png"),
+            os.path.join(figures_directory, "solar_output_yearly.pdf"),
             bbox_inches="tight",
-            transparent=True,
+            pad_inches=0,
         )
         plt.show()
         pbar.update(1)
@@ -538,8 +563,8 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
             plt.xticks(rotation=0)
             plt.tight_layout()
             plt.savefig(
-                os.path.join(figures_directory, "grid_availability_heatmap.png"),
-                transparent=True,
+                os.path.join(figures_directory, "grid_availability_heatmap.pdf"),
+                pad_inches=0,
             )
             plt.show()
             pbar.update(1)
@@ -562,9 +587,9 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
             plt.title("Probability of grid electricity being available")
             plt.savefig(
                 os.path.join(
-                    figures_directory, "grid_availability_randomisation_comparison.png"
+                    figures_directory, "grid_availability_randomisation_comparison.pdf"
                 ),
-                transparent=True,
+                pad_inches=0,
             )
             plt.show()
             pbar.update(1)
@@ -600,9 +625,9 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
         # ax.set_title("Electric load of each device")
         ax.legend()
         plt.savefig(
-            os.path.join(figures_directory, "electric_device_loads.png"),
+            os.path.join(figures_directory, "electric_device_loads.pdf"),
             bbox_inches="tight",
-            transparent=True,
+            pad_inches=0,
         )
         plt.show()
         pbar.update(1)
@@ -645,9 +670,9 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
         # ax.set_title("Electric load of each device")
         ax.legend()
         plt.savefig(
-            os.path.join(figures_directory, "electric_device_loads_monthly.png"),
+            os.path.join(figures_directory, "electric_device_loads_monthly.pdf"),
             bbox_inches="tight",
-            transparent=True,
+            pad_inches=0,
         )
         plt.show()
         pbar.update(1)
@@ -692,9 +717,9 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
         # )
         ax.legend()
         plt.savefig(
-            os.path.join(figures_directory, "electric_device_loads_average.png"),
+            os.path.join(figures_directory, "electric_device_loads_average.pdf"),
             bbox_inches="tight",
-            transparent=True,
+            pad_inches=0,
         )
         plt.show()
         pbar.update(1)
@@ -727,9 +752,9 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
         plt.ylabel("Electric power demand / kW")
         # plt.title(f"Load profile of the community for the first {CUT_OFF_TIME} hours")
         plt.savefig(
-            os.path.join(figures_directory, "electric_demands.png"),
+            os.path.join(figures_directory, "electric_demands.pdf"),
             bbox_inches="tight",
-            transparent=True,
+            pad_inches=0,
         )
         plt.show()
         pbar.update(1)
@@ -793,9 +818,9 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
         #     "Average load profile of the community during the first simulation year"
         # )
         plt.savefig(
-            os.path.join(figures_directory, "electric_demands_yearly.png"),
+            os.path.join(figures_directory, "electric_demands_yearly.pdf"),
             bbox_inches="tight",
-            transparent=True,
+            pad_inches=0,
         )
         plt.show()
         pbar.update(1)
@@ -826,9 +851,9 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
         # )
         ax.legend()
         plt.savefig(
-            os.path.join(figures_directory, "electric_device_loads_average_bar.png"),
+            os.path.join(figures_directory, "electric_device_loads_average_bar.pdf"),
             bbox_inches="tight",
-            transparent=True,
+            pad_inches=0,
         )
         plt.show()
         pbar.update(1)
@@ -912,9 +937,9 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
         )
         plt.tight_layout()
         plt.savefig(
-            os.path.join(figures_directory, "electric_demand_annual_variation.png"),
+            os.path.join(figures_directory, "electric_demand_annual_variation.pdf"),
             bbox_inches="tight",
-            transparent=True,
+            pad_inches=0,
         )
         plt.show()
         pbar.update(1)
@@ -937,10 +962,10 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
         plt.tight_layout()
         plt.savefig(
             os.path.join(
-                figures_directory, "electric_demand_total_annual_variation.png"
+                figures_directory, "electric_demand_total_annual_variation.pdf"
             ),
             bbox_inches="tight",
-            transparent=True,
+            pad_inches=0,
         )
         plt.show()
         pbar.update(1)
@@ -1009,9 +1034,9 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
         plt.ylabel("Energy demand / MWh/year")
         # plt.title("Load growth of the community")
         plt.savefig(
-            os.path.join(figures_directory, "electric_load_growth.png"),
+            os.path.join(figures_directory, "electric_load_growth.pdf"),
             bbox_inches="tight",
-            transparent=True,
+            pad_inches=0,
         )
         plt.show()
         pbar.update(1)
@@ -1220,9 +1245,9 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
         plt.ylabel("Average energy / kWh/hour")
         # plt.title("Energy supply and demand on an average day")
         plt.savefig(
-            os.path.join(figures_directory, "electricity_use_on_average_day.png"),
+            os.path.join(figures_directory, "electricity_use_on_average_day.pdf"),
             bbox_inches="tight",
-            transparent=True,
+            pad_inches=0,
         )
         plt.show()
         pbar.update(1)
@@ -1375,10 +1400,10 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
         # plt.title("Energy availability on an average day")
         plt.savefig(
             os.path.join(
-                figures_directory, "electricity_availability_on_average_day.png"
+                figures_directory, "electricity_availability_on_average_day.pdf"
             ),
             bbox_inches="tight",
-            transparent=True,
+            pad_inches=0,
         )
         plt.show()
         pbar.update(1)
@@ -1508,10 +1533,10 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
         plt.xticks(rotation=0)
         plt.savefig(
             os.path.join(
-                figures_directory, "seasonal_electricity_supply_variations.png"
+                figures_directory, "seasonal_electricity_supply_variations.pdf"
             ),
             bbox_inches="tight",
-            transparent=True,
+            pad_inches=0,
         )
         plt.show()
         pbar.update(1)
@@ -1627,9 +1652,9 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
         plt.ylabel("Average energy / kWh/hour")
         # plt.title("Energy supply and demand on the frist day")
         plt.savefig(
-            os.path.join(figures_directory, "electricity_use_on_first_day.png"),
+            os.path.join(figures_directory, "electricity_use_on_first_day.pdf"),
             bbox_inches="tight",
-            transparent=True,
+            pad_inches=0,
         )
         plt.show()
         pbar.update(1)
@@ -1659,9 +1684,9 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
             # ax.set_title("Clean water demand of each device")
             ax.legend()
             plt.savefig(
-                os.path.join(figures_directory, "clean_water_device_loads.png"),
+                os.path.join(figures_directory, "clean_water_device_loads.pdf"),
                 bbox_inches="tight",
-                transparent=True,
+                pad_inches=0,
             )
             plt.show()
             pbar.update(1)
@@ -1701,9 +1726,9 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
             # )
             plt.legend()
             plt.savefig(
-                os.path.join(figures_directory, "clean_water_device_loads_average.png"),
+                os.path.join(figures_directory, "clean_water_device_loads_average.pdf"),
                 bbox_inches="tight",
-                transparent=True,
+                pad_inches=0,
             )
             plt.show()
             pbar.update(1)
@@ -1742,9 +1767,9 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
             #     f"Clean-water load profile of the community for the first {CUT_OFF_TIME} hours"
             # )
             plt.savefig(
-                os.path.join(figures_directory, "clean_water_demands.png"),
+                os.path.join(figures_directory, "clean_water_demands.pdf"),
                 bbox_inches="tight",
-                transparent=True,
+                pad_inches=0,
             )
             plt.show()
             pbar.update(1)
@@ -1825,10 +1850,10 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
             plt.tight_layout()
             plt.savefig(
                 os.path.join(
-                    figures_directory, "clean_water_demand_annual_variation.png"
+                    figures_directory, "clean_water_demand_annual_variation.pdf"
                 ),
                 bbox_inches="tight",
-                transparent=True,
+                pad_inches=0,
             )
             plt.show()
             pbar.update(1)
@@ -1850,10 +1875,10 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
             plt.tight_layout()
             plt.savefig(
                 os.path.join(
-                    figures_directory, "clean_water_demand_total_annual_variation.png"
+                    figures_directory, "clean_water_demand_total_annual_variation.pdf"
                 ),
                 bbox_inches="tight",
-                transparent=True,
+                pad_inches=0,
             )
             plt.show()
             pbar.update(1)
@@ -1926,9 +1951,9 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
             plt.ylabel("Clean-water demand / Cubic meters/year")
             # plt.title("Load growth of the community")
             plt.savefig(
-                os.path.join(figures_directory, "clean_water_load_growth.png"),
+                os.path.join(figures_directory, "clean_water_load_growth.pdf"),
                 bbox_inches="tight",
-                transparent=True,
+                pad_inches=0,
             )
             plt.show()
             pbar.update(1)
@@ -1996,9 +2021,9 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
             #     f"Average drinking water load profile of the community during the first year"
             # )
             plt.savefig(
-                os.path.join(figures_directory, "clean_water_demands_yearly.png"),
+                os.path.join(figures_directory, "clean_water_demands_yearly.pdf"),
                 bbox_inches="tight",
-                transparent=True,
+                pad_inches=0,
             )
             plt.show()
             pbar.update(1)
@@ -2148,9 +2173,9 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
             plt.ylabel("Clean-water usage / litres/hour")
             # plt.title("Water supply and demand on an average day")
             plt.savefig(
-                os.path.join(figures_directory, "clean_water_use_on_average_day.png"),
+                os.path.join(figures_directory, "clean_water_use_on_average_day.pdf"),
                 bbox_inches="tight",
-                transparent=True,
+                pad_inches=0,
             )
             plt.show()
             pbar.update(1)
@@ -2301,10 +2326,10 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
             # plt.title("Water supply and demand on an average July day")
             plt.savefig(
                 os.path.join(
-                    figures_directory, "clean_water_use_on_average_july_day.png"
+                    figures_directory, "clean_water_use_on_average_july_day.pdf"
                 ),
                 bbox_inches="tight",
-                transparent=True,
+                pad_inches=0,
             )
             plt.show()
             pbar.update(1)
@@ -2339,10 +2364,10 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
             plt.savefig(
                 os.path.join(
                     figures_directory,
-                    "clean_water_use_on_average_july_day_reduced_plot.png",
+                    "clean_water_use_on_average_july_day_reduced_plot.pdf",
                 ),
                 bbox_inches="tight",
-                transparent=True,
+                pad_inches=0,
             )
             plt.show()
             pbar.update(1)
@@ -2363,10 +2388,10 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
             plt.savefig(
                 os.path.join(
                     figures_directory,
-                    "thermal_desal_cw_on_average_july_day.png",
+                    "thermal_desal_cw_on_average_july_day.pdf",
                 ),
                 bbox_inches="tight",
-                transparent=True,
+                pad_inches=0,
             )
             plt.show()
             pbar.update(1)
@@ -2518,10 +2543,10 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
             # plt.title("Water supply and demand on an January average day")
             plt.savefig(
                 os.path.join(
-                    figures_directory, "clean_water_use_on_average_january_day.png"
+                    figures_directory, "clean_water_use_on_average_january_day.pdf"
                 ),
                 bbox_inches="tight",
-                transparent=True,
+                pad_inches=0,
             )
             plt.show()
             pbar.update(1)
@@ -2588,9 +2613,9 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
             plt.ylabel("Clean-water usage / litres/hour")
             # plt.title("Water supply and demand on the first day")
             plt.savefig(
-                os.path.join(figures_directory, "clean_water_use_on_first_day.png"),
+                os.path.join(figures_directory, "clean_water_use_on_first_day.pdf"),
                 bbox_inches="tight",
-                transparent=True,
+                pad_inches=0,
             )
             plt.show()
             pbar.update(1)
@@ -2638,10 +2663,10 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
             # plt.title("Water supply and demand in the first 48 hours")
             plt.savefig(
                 os.path.join(
-                    figures_directory, "clean_water_use_in_first_48_hours.png"
+                    figures_directory, "clean_water_use_in_first_48_hours.pdf"
                 ),
                 bbox_inches="tight",
-                transparent=True,
+                pad_inches=0,
             )
             plt.show()
             pbar.update(1)
@@ -2678,9 +2703,9 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
             # # plt.title("Clean-water availability on an average day")
             # plt.savefig(
             #     os.path.join(
-            #         figures_directory, "clean_water_avilability_on_average_day.png"
+            #         figures_directory, "clean_water_avilability_on_average_day.pdf"
             #     ),
-            #     transparent=True,
+            #     pad_inches=0
             # )
             # plt.show()
             # pbar.update(1)
@@ -2823,10 +2848,10 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
             # plt.title("Electriciy use by supply/device type on an average day")
             plt.savefig(
                 os.path.join(
-                    figures_directory, "cw_electricity_use_by_supply_type.png"
+                    figures_directory, "cw_electricity_use_by_supply_type.pdf"
                 ),
                 bbox_inches="tight",
-                transparent=True,
+                pad_inches=0,
             )
             plt.show()
             pbar.update(1)
@@ -3014,9 +3039,9 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
             fig.subplots_adjust(top=0.87)
             plt.xticks(rotation=0)
             plt.savefig(
-                os.path.join(figures_directory, "seasonal_water_supply_variations.png"),
+                os.path.join(figures_directory, "seasonal_water_supply_variations.pdf"),
                 bbox_inches="tight",
-                transparent=True,
+                pad_inches=0,
             )
             plt.show()
             pbar.update(1)
@@ -3048,8 +3073,8 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
                 plt.xticks(rotation=0)
                 plt.tight_layout()
                 plt.savefig(
-                    os.path.join(figures_directory, "pv_t_electric_output_hetamap.png"),
-                    transparent=True,
+                    os.path.join(figures_directory, "pv_t_electric_output_hetamap.pdf"),
+                    pad_inches=0,
                 )
                 plt.show()
                 pbar.update(1)
@@ -3063,8 +3088,8 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
                 plt.ylabel("Energy generation / kWh per day")
                 # plt.title("Daily electric energy generation of 1 kWp of PV-T capacity")
                 plt.savefig(
-                    os.path.join(figures_directory, "pv_t_electric_output_yearly.png"),
-                    transparent=True,
+                    os.path.join(figures_directory, "pv_t_electric_output_yearly.pdf"),
+                    pad_inches=0,
                 )
                 plt.show()
                 pbar.update(1)
@@ -3173,9 +3198,9 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
                 plt.savefig(
                     os.path.join(
                         figures_directory,
-                        "clean_water_collector_output_temperature_on_first_month_days.png",
+                        "clean_water_collector_output_temperature_on_first_month_days.pdf",
                     ),
-                    transparent=True,
+                    pad_inches=0,
                 )
                 plt.show()
                 pbar.update(1)
@@ -3373,9 +3398,9 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
                 plt.savefig(
                     os.path.join(
                         figures_directory,
-                        "clean_water_collector_output_temperature_on_average_month_days.png",
+                        "clean_water_collector_output_temperature_on_average_month_days.pdf",
                     ),
-                    transparent=True,
+                    pad_inches=0,
                 )
                 plt.show()
                 pbar.update(1)
@@ -3406,9 +3431,9 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
             # ax.set_title("Hot water demand of each device")
             ax.legend()
             plt.savefig(
-                os.path.join(figures_directory, "hot_water_device_loads.png"),
+                os.path.join(figures_directory, "hot_water_device_loads.pdf"),
                 bbox_inches="tight",
-                transparent=True,
+                pad_inches=0,
             )
             plt.show()
             pbar.update(1)
@@ -3448,9 +3473,9 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
             # )
             ax.legend()
             plt.savefig(
-                os.path.join(figures_directory, "hot_water_device_loads_average.png"),
+                os.path.join(figures_directory, "hot_water_device_loads_average.pdf"),
                 bbox_inches="tight",
-                transparent=True,
+                pad_inches=0,
             )
             plt.show()
             pbar.update(1)
@@ -3485,9 +3510,9 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
             #     f"Hot-water load profile of the community for the first {CUT_OFF_TIME} hours"
             # )
             plt.savefig(
-                os.path.join(figures_directory, "hot_water_demands.png"),
+                os.path.join(figures_directory, "hot_water_demands.pdf"),
                 bbox_inches="tight",
-                transparent=True,
+                pad_inches=0,
             )
             plt.show()
             pbar.update(1)
@@ -3568,10 +3593,10 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
             plt.tight_layout()
             plt.savefig(
                 os.path.join(
-                    figures_directory, "hot_water_demand_annual_variation.png"
+                    figures_directory, "hot_water_demand_annual_variation.pdf"
                 ),
                 bbox_inches="tight",
-                transparent=True,
+                pad_inches=0,
             )
             plt.show()
             plt.clf()
@@ -3595,10 +3620,10 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
             plt.tight_layout()
             plt.savefig(
                 os.path.join(
-                    figures_directory, "hot_water_demand_total_annual_variation.png"
+                    figures_directory, "hot_water_demand_total_annual_variation.pdf"
                 ),
                 bbox_inches="tight",
-                transparent=True,
+                pad_inches=0,
             )
             plt.show()
             pbar.update(1)
@@ -3660,9 +3685,9 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
             #     "Average DHW load profile of the community during the first simulation year"
             # )
             plt.savefig(
-                os.path.join(figures_directory, "hot_water_demands_yearly.png"),
+                os.path.join(figures_directory, "hot_water_demands_yearly.pdf"),
                 bbox_inches="tight",
-                transparent=True,
+                pad_inches=0,
             )
             plt.show()
             pbar.update(1)
@@ -3733,9 +3758,9 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
             plt.ylabel("Hot-water demand / Cubic meters/year")
             # plt.title("Load growth of the community")
             plt.savefig(
-                os.path.join(figures_directory, "hot_water_load_growth.png"),
+                os.path.join(figures_directory, "hot_water_load_growth.pdf"),
                 bbox_inches="tight",
-                transparent=True,
+                pad_inches=0,
             )
             plt.show()
             pbar.update(1)
@@ -3833,10 +3858,10 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
             plt.savefig(
                 os.path.join(
                     figures_directory,
-                    "hot_water_collector_output_temperature_on_first_month_days.png",
+                    "hot_water_collector_output_temperature_on_first_month_days.pdf",
                 ),
                 bbox_inches="tight",
-                transparent=True,
+                pad_inches=0,
             )
             plt.show()
             pbar.update(1)
@@ -3898,10 +3923,10 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
                 os.path.join(
                     figures_directory,
                     "hot_water_collector_output_temperature_on_first_month_days_with_"
-                    "renewable_fraction.png",
+                    "renewable_fraction.pdf",
                 ),
                 bbox_inches="tight",
-                transparent=True,
+                pad_inches=0,
             )
             plt.show()
             pbar.update(1)
@@ -4053,10 +4078,10 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
             plt.savefig(
                 os.path.join(
                     figures_directory,
-                    "hot_water_collector_output_temperature_on_average_month_days.png",
+                    "hot_water_collector_output_temperature_on_average_month_days.pdf",
                 ),
                 bbox_inches="tight",
-                transparent=True,
+                pad_inches=0,
             )
             plt.show()
             pbar.update(1)
@@ -4107,10 +4132,10 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
                 os.path.join(
                     figures_directory,
                     "hot_water_collector_output_temperature_on_average_days_with_"
-                    "renewables_fraction.png",
+                    "renewables_fraction.pdf",
                 ),
                 bbox_inches="tight",
-                transparent=True,
+                pad_inches=0,
             )
             plt.show()
             pbar.update(1)
@@ -4164,10 +4189,10 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
             # plt.title("Electriciy use by supply/device type on an average day")
             plt.savefig(
                 os.path.join(
-                    figures_directory, "hot_water_electricity_use_by_supply_type.png"
+                    figures_directory, "hot_water_electricity_use_by_supply_type.pdf"
                 ),
                 bbox_inches="tight",
-                transparent=True,
+                pad_inches=0,
             )
             plt.show()
             pbar.update(1)
@@ -4216,10 +4241,10 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
             # plt.title("PV-T in/out temperatures for an average July day")
             plt.savefig(
                 os.path.join(
-                    figures_directory, "hot_water_pvt_tank_temperature_july.png"
+                    figures_directory, "hot_water_pvt_tank_temperature_july.pdf"
                 ),
                 bbox_inches="tight",
-                transparent=True,
+                pad_inches=0,
             )
             plt.show()
             pbar.update(1)
@@ -4301,10 +4326,10 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
             plt.savefig(
                 os.path.join(
                     figures_directory,
-                    "hot_water_monthly_average_dc_fraction_daily.png",
+                    "hot_water_monthly_average_dc_fraction_daily.pdf",
                 ),
                 bbox_inches="tight",
-                transparent=True,
+                pad_inches=0,
             )
             plt.show()
             pbar.update(1)
@@ -4349,10 +4374,10 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
             plt.savefig(
                 os.path.join(
                     figures_directory,
-                    "hot_water_renewable_dc_fraction_with_guarracino.png",
+                    "hot_water_renewable_dc_fraction_with_guarracino.pdf",
                 ),
                 bbox_inches="tight",
-                transparent=True,
+                pad_inches=0,
             )
             plt.show()
             pbar.update(1)
@@ -4373,9 +4398,9 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
             plt.ylabel("Demand covered fraction")
             # plt.title("Renewable DHW demand covered throughout the year")
             plt.savefig(
-                os.path.join(figures_directory, "hot_water_renewable_dc_fraction.png"),
+                os.path.join(figures_directory, "hot_water_renewable_dc_fraction.pdf"),
                 bbox_inches="tight",
-                transparent=True,
+                pad_inches=0,
             )
             plt.show()
             pbar.update(1)

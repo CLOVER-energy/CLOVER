@@ -2522,11 +2522,6 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
                 cw_pvt_electricity_supplied.columns = pd.Index(
                     [ColumnHeader.CW_PVT_ELECTRICITY_SUPPLIED.value]
                 )
-
-                import pdb
-
-                pdb.set_trace()
-
                 system_performance_outputs_list.extend(
                     [
                         cw_electric_power_per_unit,
@@ -2679,8 +2674,9 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
         cw_supplied_by_excess_energy_frame.columns = pd.Index(
             [ColumnHeader.CLEAN_WATER_FROM_EXCESS_ELECTRICITY.value]
         )
-        assert (
-            cw_supplied_by_excess_energy_frame == cw_demand_met_by_excess_energy_frame
+        assert all(
+            cw_supplied_by_excess_energy_frame.values
+            == cw_demand_met_by_excess_energy_frame.values
         )
         conventional_cw_supplied_frame.columns = pd.Index(
             [ColumnHeader.CLEAN_WATER_FROM_CONVENTIONAL_SOURCES.value]
