@@ -424,8 +424,8 @@ def _simulation_environmental_appraisal(  # pylint: disable=too-many-locals
     try:
         additional_om_emissions, subsystem_om_emissions = ghgs.calculate_total_om(
             (
-                system_details.initial_num_buffer_tanks
-                if system_details.initial_num_buffer_tanks is not None
+                system_details.initial_num_clean_water_buffer_tanks
+                if system_details.initial_num_clean_water_buffer_tanks is not None
                 else 0
             ),
             (
@@ -441,8 +441,8 @@ def _simulation_environmental_appraisal(  # pylint: disable=too-many-locals
             system_details.diesel_capacity,
             ghg_inputs,
             (
-                system_details.initial_num_buffer_tanks
-                if system_details.initial_num_buffer_tanks is not None
+                system_details.initial_num_clean_water_buffer_tanks
+                if system_details.initial_num_clean_water_buffer_tanks is not None
                 else 0
             ),
             (
@@ -666,8 +666,8 @@ def _simulation_financial_appraisal(  # pylint: disable=too-many-locals
     # Calculate operating costs of the system during this simulation (discounted)
     additional_om_costs, subsystem_om_costs = finance.total_om(
         (
-            system_details.initial_num_buffer_tanks
-            if system_details.initial_num_buffer_tanks is not None
+            system_details.initial_num_clean_water_buffer_tanks
+            if system_details.initial_num_clean_water_buffer_tanks is not None
             else 0
         ),
         (
@@ -683,8 +683,8 @@ def _simulation_financial_appraisal(  # pylint: disable=too-many-locals
         system_details.diesel_capacity,
         finance_inputs,
         (
-            system_details.initial_num_buffer_tanks
-            if system_details.initial_num_buffer_tanks is not None
+            system_details.initial_num_clean_water_buffer_tanks
+            if system_details.initial_num_clean_water_buffer_tanks is not None
             else 0
         ),
         (
@@ -1491,10 +1491,11 @@ def appraise_system(  # pylint: disable=too-many-locals
 
     # Compute the additions made to the system.
     buffer_tank_addition: int = (
-        system_details.initial_num_buffer_tanks
-        - previous_system.system_details.final_num_buffer_tanks
-        if system_details.initial_num_buffer_tanks is not None
-        and previous_system.system_details.final_num_buffer_tanks is not None
+        system_details.initial_num_clean_water_buffer_tanks
+        - previous_system.system_details.final_num_clean_water_buffer_tanks
+        if system_details.initial_num_clean_water_buffer_tanks is not None
+        and previous_system.system_details.final_num_clean_water_buffer_tanks
+        is not None
         else 0
     )
     clean_water_tank_addition: int = (
@@ -1525,10 +1526,11 @@ def appraise_system(  # pylint: disable=too-many-locals
         system_details.diesel_capacity - previous_system.system_details.diesel_capacity
     )
     heat_exchanger_addition: int = (
-        system_details.initial_num_buffer_tanks
-        - previous_system.system_details.final_num_buffer_tanks
-        if system_details.initial_num_buffer_tanks is not None
-        and previous_system.system_details.final_num_buffer_tanks is not None
+        system_details.initial_num_clean_water_buffer_tanks
+        - previous_system.system_details.final_num_clean_water_buffer_tanks
+        if system_details.initial_num_clean_water_buffer_tanks is not None
+        and previous_system.system_details.final_num_clean_water_buffer_tanks
+        is not None
         else 0
     )
     hot_water_tank_addition: int = (

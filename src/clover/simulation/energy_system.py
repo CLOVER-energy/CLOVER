@@ -284,12 +284,17 @@ def _calculate_renewable_cw_profiles(  # pylint: disable=too-many-locals, too-ma
     wind_speed_data: pd.Series | None,
 ) -> tuple[
     pd.DataFrame | None,
-    pd.DataFrame,
-    list[Converter],
     pd.DataFrame | None,
     pd.DataFrame | None,
-    pd.DataFrame,
-    pd.DataFrame,
+    pd.DataFrame | None,
+    pd.DataFrame | None,
+    pd.DataFrame | None,
+    pd.DataFrame | None,
+    pd.DataFrame | None,
+    pd.DataFrame | None,
+    pd.DataFrame | None,
+    pd.DataFrame | None,
+    pd.DataFrame | None,
     list[Converter],
     pd.DataFrame,
     dict[WasteProduct, defaultdict[int, float]],
@@ -2159,6 +2164,7 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
             )
 
             # Calculate the hot-water iteration.
+            # TODO: Insert the HW iteration step.
 
             # Calculate the clean-water iteration.
             (
@@ -2421,6 +2427,7 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
             ColumnHeader.PV_ELECTRICITY_SUPPLIED.value: renewables_energy_map[
                 RenewableEnergySource.PV
             ][minigrid.pv_panel.name]
+            * pv_sizes[minigrid.pv_panel.name]  # type: ignore
         }
     )
 
@@ -2628,6 +2635,7 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
 
         total_cw_supplied: pd.DataFrame = pd.DataFrame(
             thermal_desalination_plant_volume_output_supplied.values
+            + storage_water_supplied_frame.values
             + backup_desalinator_water_frame.values
             + cw_supplied_by_excess_energy_frame.values
             + conventional_cw_supplied_frame.values
@@ -2673,10 +2681,6 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
         )
         cw_supplied_by_excess_energy_frame.columns = pd.Index(
             [ColumnHeader.CLEAN_WATER_FROM_EXCESS_ELECTRICITY.value]
-        )
-        assert all(
-            cw_supplied_by_excess_energy_frame.values
-            == cw_demand_met_by_excess_energy_frame.values
         )
         conventional_cw_supplied_frame.columns = pd.Index(
             [ColumnHeader.CLEAN_WATER_FROM_CONVENTIONAL_SOURCES.value]

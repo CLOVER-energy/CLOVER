@@ -270,9 +270,12 @@ def cw_tank_iteration_step(  # pylint: disable=too-many-locals
             )
 
             # Compute the amount of water that was actually desalinated.
-            desalinated_water = min(
-                maximum_desalinated_water,
-                maximum_cw_tank_storage - current_net_water_flow,
+            desalinated_water = max(
+                min(
+                    maximum_desalinated_water,
+                    maximum_cw_tank_storage - current_net_water_flow,
+                ),
+                0,
             )
 
             # Compute the remaining excess energy and the energy used in

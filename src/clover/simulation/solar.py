@@ -397,7 +397,7 @@ def _get_collector_output_temperatures(
             if solar_thermal_output_temperature is not None
             else pvt_output_temperature
         ),
-        fractional_electrical_performance,
+        fractional_electrical_performance * irradiance[SolarPanelType.PV_T],  # type: ignore
         pvt_output_temperature,
         pvt_thermal_efficiency,
         reduced_pvt_collector_temperature,
