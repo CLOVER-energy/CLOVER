@@ -40,7 +40,7 @@ from ..__utils__ import (
     Scenario,
     TechnicalAppraisal,
 )
-from ..conversion.conversion import Converter
+from ..conversion.conversion import Converter, converter_cost
 
 __all__ = (
     "connections_expenditure",
@@ -575,41 +575,21 @@ def get_total_equipment_costs(  # pylint: disable=too-many-locals, too-many-stat
     cumulative_converter_installation_costs: float = 0
     for resource_type in [ResourceType.CLEAN_WATER, ResourceType.HOT_CLEAN_WATER]:
         converter_costs = sum(
-            _component_cost(
+            converter_cost(
+                converter,
                 finance_inputs[
                     FINANCE_IMPACT.format(
-                        type=ImpactingComponent.CONVERTER.value, name=converter
+                        type=ImpactingComponent.CONVERTER.value, name=converter.name
                     )
-                ][COST],
-                finance_inputs[
-                    FINANCE_IMPACT.format(
-                        type=ImpactingComponent.CONVERTER.value, name=converter
-                    )
-                ][COST_DECREASE],
+                ],
                 size,
-                installation_year,
             )
             for converter, size in converters.items()
             if converter.output_resource_type == resource_type
         )
         cumulative_converter_costs += converter_costs
-        converter_installation_costs = sum(
-            _component_installation_cost(
-                size,
-                finance_inputs[
-                    FINANCE_IMPACT.format(
-                        type=ImpactingComponent.CONVERTER.value, name=converter
-                    )
-                ][INSTALLATION_COST],
-                finance_inputs[
-                    FINANCE_IMPACT.format(
-                        type=ImpactingComponent.CONVERTER.value, name=converter
-                    )
-                ][INSTALLATION_COST_DECREASE],
-                installation_year,
-            )
-            for converter, size in converters.items()
-        )
+        # NOTE: Converters use CapEx and OpEx costs and so do not use installation costs.
+        converter_installation_costs = 0
         cumulative_converter_installation_costs += converter_installation_costs
         subsystem_costs[resource_type] += converter_costs + converter_installation_costs
         logger.debug(

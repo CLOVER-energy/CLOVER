@@ -666,6 +666,9 @@ def _calculate_renewable_cw_profiles(  # pylint: disable=too-many-locals, too-ma
             [thermal_desalination_plant.maximum_output_capacity]
             * (end_hour - start_hour)
         )
+        thermal_desalination_plant.set_throughput(
+            float(thermal_desalination_plant_volume_output_supplied.sum(axis=0))
+        )
 
         total_waste_produced.update(
             {
@@ -2092,12 +2095,13 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
     # Initialise electric desalination paramteters.
     (
         cw_el_brine_per_desalinated_litre,
-        _,
+        cw_electric_desalinators,
         cw_el_energy_per_desalinated_litre,
         cw_el_maximum_water_throughput,
     ) = _calculate_electric_desalination_parameters(
         available_converters, feedwater_sources, logger, scenario
     )
+    electric_desalination_throughput: float = 0
 
     # Intialise tank accounting parameters
     backup_desalinator_water_supplied: dict[int, float] = {}
@@ -2168,6 +2172,7 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
 
             # Calculate the clean-water iteration.
             (
+                electric_desalinated_water,
                 excess_energy,
                 total_waste_produced,
             ) = cw_tank_iteration_step(  # type: ignore  [assignment]
@@ -2196,6 +2201,9 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
                 total_waste_produced,
                 time_index=t,
             )
+
+            # Electric desalination throughput
+            electric_desalination_throughput += electric_desalinated_water
 
             # Dumped energy and unmet demand
             energy_surplus[t] = excess_energy  # type: ignore
@@ -2640,6 +2648,33 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
             + cw_supplied_by_excess_energy_frame.values
             + conventional_cw_supplied_frame.values
         )
+
+        # Set the throughput on the electric desalinators
+        cw_electric_desalinator_counts = {
+            name: [desalinator.name for desalinator in cw_electric_desalinators].count(
+                name
+            )
+            for name in {desalinator.name for desalinator in cw_electric_desalinators}
+        }
+        # Work out the share that each would have produced, on average
+        cw_electric_desalinator_share = {
+            name: count
+            * {
+                desalinator.name: desalinator.maximum_output_capacity
+                for desalinator in cw_electric_desalinators
+            }[name]
+            / sum(
+                [
+                    desalinator.maximum_output_capacity
+                    for desalinator in cw_electric_desalinators
+                ]
+            )
+            for name, count in cw_electric_desalinator_counts.items()
+        }
+        for name, share in cw_electric_desalinator_share.items():
+            Converter.converter_to_throughput[name] = (
+                electric_desalination_throughput * share
+            )
 
         # Compute the excess clean water supplied.
         water_surplus_frame = (  # type: ignore

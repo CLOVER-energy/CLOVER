@@ -158,7 +158,7 @@ def cw_tank_iteration_step(  # pylint: disable=too-many-locals
     total_waste_produced: dict[WasteProduct, defaultdict[int, float]],
     *,
     time_index: int,
-) -> tuple[float, dict[WasteProduct, defaultdict[int, float]]]:
+) -> tuple[float, float, dict[WasteProduct, defaultdict[int, float]]]:
     """
     Caries out an iteration calculation for the clean-water tanks.
 
@@ -297,6 +297,7 @@ def cw_tank_iteration_step(  # pylint: disable=too-many-locals
             )
             clean_water_supplied_by_excess_energy[time_index] = desalinated_water
         else:
+            desalinated_water = 0
             excess_energy_used_desalinating[time_index] = 0
             clean_water_demand_met_by_excess_energy[time_index] = 0
             clean_water_supplied_by_excess_energy[time_index] = 0
@@ -327,6 +328,7 @@ def cw_tank_iteration_step(  # pylint: disable=too-many-locals
             # Store this as water and electricity supplied by backup.
             clean_water_power_consumed_mapping[time_index] += energy_consumed
             backup_desalinator_water_supplied[time_index] = current_unmet_water_demand
+            desalinated_water += current_unmet_water_demand
         else:
             clean_water_power_consumed_mapping[time_index] = 0
             backup_desalinator_water_supplied[time_index] = 0
@@ -374,7 +376,7 @@ def cw_tank_iteration_step(  # pylint: disable=too-many-locals
                 0.0,
             )
 
-    return excess_energy, total_waste_produced
+    return desalinated_water, excess_energy, total_waste_produced
 
 
 def get_electric_battery_storage_profile(  # pylint: disable=too-many-locals, too-many-statements

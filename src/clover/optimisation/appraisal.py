@@ -49,7 +49,7 @@ from ..__utils__ import (
     TechnicalAppraisal,
     WasteProduct,
 )
-from ..conversion.conversion import Converter
+from ..conversion.conversion import Converter, converter_cost
 from ..impact.__utils__ import ImpactingComponent, update_diesel_costs
 
 __all__ = ("appraise_system",)

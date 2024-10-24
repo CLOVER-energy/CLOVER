@@ -33,11 +33,20 @@ from ..__utils__ import (
 
 __all__ = (
     "Converter",
+    "converter_cost",
     "MultiInputConverter",
     "ThermalDesalinationPlant",
     "WaterSource",
 )
 
+
+# CAPEX:
+#   Keyword for parsing CapEx costs.
+CAPEX: str = "capex"
+
+# COST:
+#   Keyword for parsing costs.
+COST: str = "cost"
 
 # Heat source:
 #   Keyword used for parsing the heat source of thermal desalination plants.
@@ -67,9 +76,17 @@ MINIMUM_HTF_TEMPERATURE: str = "min_htf_temperature"
 #   Keyword used for parsing minimum output information.
 MINIMUM_OUTPUT: str = "minimum_output"
 
+# OPEX:
+#   Keyword for parsing OpEx costs.
+OPEX: str = "opex"
+
 # Output:
 #   Keyword used for parsing output information.
 OUTPUT: str = "output"
+
+# TOTEX:
+#   Keyword for parsing TotEx costs.
+TOTEX: str = "totex"
 
 # Waste products:
 #   Keyword used for parsing waste-product information.
@@ -159,6 +176,8 @@ class Converter:
 
     """
 
+    converter_to_throughput: dict[str, float] = {}
+
     def __init__(
         self,
         input_resource_consumption: dict[ResourceType, float],
@@ -193,6 +212,11 @@ class Converter:
         self.waste_production: dict[WasteProduct, float] = (
             waste_production if waste_production is not None else {}
         )
+
+        self._throughput: float = 0
+
+        if name not in self.converter_to_throughput:
+            self.converter_to_throughput[self.name] = 0
 
     def __eq__(self, other: Any) -> bool:
         """
@@ -312,6 +336,28 @@ class Converter:
 
         return list(self.input_resource_consumption.values())[0]
 
+    def get_throughput(self) -> float:
+        """
+        Get the current value of the throughput.
+
+        Outputs:
+            The throughput through the converter.
+
+        """
+
+        return self.converter_to_throughput[self.name]
+
+    def set_throughput(self, throughput: float) -> None:
+        """
+        Set the throughput based on the lifetime throughput of the converter.
+
+        Inputs:
+            - The throughput.
+
+        """
+
+        self.converter_to_throughput[self.name] = throughput
+
     @property
     def value(self) -> str:
         """
@@ -328,6 +374,53 @@ class Converter:
         """
 
         return self.name
+
+
+def converter_cost(
+    converter: Converter, converter_costs: dict[str, float], num_converters: int
+) -> float:
+    """
+    Compute the lifetime cost of the converter.
+
+    Inputs:
+        - converter:
+            The converter to compute costs for.
+        - converter_costs:
+            The converter cost information.
+        - num_converters:
+            The number of converters which were installed.
+
+    Returns:
+        The lifetime cost associated with the converter, where "lifetime" refers to the
+        modelling period.
+
+    """
+
+    # Use totex cost if present
+    if TOTEX in converter_costs:
+        return converter_costs[TOTEX] * converter.get_throughput()
+
+    # Otherwise, use a combinatin of CapEx and OpEx costs.
+    opex = converter_costs.get(OPEX, 0) * converter.get_throughput()  # [$/m3]
+
+    if CAPEX in converter_costs:
+        capex = (
+            converter_costs[CAPEX]  # [$/m3/day]
+            * num_converters
+            * converter.maximum_output_capacity  # [litres/hour]
+            * 24  # [horus/day]
+            / 1000  # [litres/m3]
+        )
+
+        return capex + opex
+
+    if COST in converter_costs:
+        return opex + (converter_costs[COST] * num_converters)  #  [$/unit]
+
+    raise InputFileError(
+        "conversion_inputs.yaml",
+        f"The converter {converter.name} does not have properly formatted cost information.",
+    )
 
 
 class MultiInputConverter(Converter):
