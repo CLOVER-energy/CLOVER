@@ -2740,7 +2740,30 @@ class Simulation:
         return cls(simulation_inputs["end_year"], simulation_inputs["start_year"])
 
 
-@dataclasses.dataclass
+def _merge_and_sum_dictionaries(
+    dict_1: dict[Any, float], dict_2: dict[Any, float]
+) -> dict[Any, float]:
+    """
+    Merge and sum two dictionaries.
+
+    Inputs:
+        - dict_1:
+            The first dictionary to sum.
+        - dict_2:
+            The dictionary to add it to.
+
+    Returns:
+        - A combined, summed dictionary.
+
+    """
+
+    return {
+        key: dict_1.get(key, 0) + dict_2.get(key, 0)
+        for key in set(dict_1.keys()) | set(dict_2.keys())
+    }
+
+
+@dataclasses.dataclass(kw_only=True)
 class SystemDetails:
     """
     Contains system-detail information.
@@ -2828,10 +2851,26 @@ class SystemDetails:
     diesel_capacity: float = 0
     end_year: int = 0
     final_converter_sizes: dict[Any, int] | None = None
-    final_cw_pvt_size: float | None = 0
-    final_cw_st_size: float | None = 0
-    final_hw_pvt_size: float | None = 0
-    final_hw_st_size: float | None = 0
+    final_cw_pvt_sizes: dict[str, float] | defaultdict[str, float] = (
+        dataclasses.field(  # type: ignore [assignment]
+            default_factory=lambda: collections.defaultdict(float)
+        )
+    )
+    final_cw_st_sizes: dict[str, float] | defaultdict[str, float] = (
+        dataclasses.field(  # type: ignore [assignment]
+            default_factory=lambda: collections.defaultdict(float)
+        )
+    )
+    final_hw_pvt_sizes: dict[str, float] | defaultdict[str, float] = (
+        dataclasses.field(  # type: ignore [assignment]
+            default_factory=lambda: collections.defaultdict(float)
+        )
+    )
+    final_hw_st_sizes: dict[str, float] | defaultdict[str, float] = (
+        dataclasses.field(  # type: ignore [assignment]
+            default_factory=lambda: collections.defaultdict(float)
+        )
+    )
     final_num_clean_water_buffer_tanks: int | None = 0
     final_num_clean_water_tanks: int | None = 0
     final_num_hot_water_buffer_tanks: int | None = 0
@@ -2843,10 +2882,26 @@ class SystemDetails:
     )
     final_storage_size: float = 0
     initial_converter_sizes: dict[Any, int] | None = None
-    initial_cw_pvt_size: float | None = 0
-    initial_cw_st_size: float | None = 0
-    initial_hw_pvt_size: float | None = 0
-    initial_hw_st_size: float | None = 0
+    initial_cw_pvt_sizes: dict[str, float] | defaultdict[str, float] = (
+        dataclasses.field(  # type: ignore [assignment]
+            default_factory=lambda: collections.defaultdict(float)
+        )
+    )
+    initial_cw_st_sizes: dict[str, float] | defaultdict[str, float] = (
+        dataclasses.field(  # type: ignore [assignment]
+            default_factory=lambda: collections.defaultdict(float)
+        )
+    )
+    initial_hw_pvt_sizes: dict[str, float] | defaultdict[str, float] = (
+        dataclasses.field(  # type: ignore [assignment]
+            default_factory=lambda: collections.defaultdict(float)
+        )
+    )
+    initial_hw_st_sizes: dict[str, float] | defaultdict[str, float] = (
+        dataclasses.field(  # type: ignore [assignment]
+            default_factory=lambda: collections.defaultdict(float)
+        )
+    )
     initial_num_clean_water_buffer_tanks: int | None = 0
     initial_num_clean_water_tanks: int | None = 0
     initial_num_hot_water_buffer_tanks: int | None = 0
@@ -2860,6 +2915,72 @@ class SystemDetails:
     required_feedwater_sources: list[str] | None = None
     start_year: int = 0
     file_information: dict[str, str] | None = None
+
+    @property
+    def initial_pvt_sizes(self) -> dict[str, float]:
+        """
+        Return a mapping which contains the initial PV-T sizes for hot and clean water.
+
+        Returns:
+            A combined mapping.
+
+        """
+
+        return collections.defaultdict(
+            float,
+            _merge_and_sum_dictionaries(
+                self.initial_cw_pvt_sizes, self.initial_hw_pvt_sizes
+            ),
+        )
+
+    @property
+    def final_pvt_sizes(self) -> dict[str, float]:
+        """
+        Return a mapping which contains the final PV-T sizes for hot and clean water.
+
+        Returns:
+            A combined mapping.
+
+        """
+
+        return collections.defaultdict(
+            float,
+            _merge_and_sum_dictionaries(
+                self.final_cw_pvt_sizes, self.final_hw_pvt_sizes
+            ),
+        )
+
+    @property
+    def initial_st_sizes(self) -> dict[str, float]:
+        """
+        Return a mapping which contains the PV-T sizes for both hot and clean water.
+
+        Returns:
+            A combined mapping.
+
+        """
+
+        return collections.defaultdict(
+            float,
+            _merge_and_sum_dictionaries(
+                self.initial_cw_st_sizes, self.initial_hw_st_sizes
+            ),
+        )
+
+    @property
+    def final_st_sizes(self) -> dict[str, float]:
+        """
+        Return a mapping which contains the PV-T sizes for both hot and clean water.
+
+        Returns:
+            A combined mapping.
+
+        """
+
+        return collections.defaultdict(
+            float,
+            _merge_and_sum_dictionaries(self.final_cw_st_sizes, self.final_hw_st_sizes),
+        )
 
     def to_dict(
         self,
@@ -2918,13 +3039,21 @@ class SystemDetails:
                     for key, value in self.final_converter_sizes.items()
                 }
             )
-        if self.initial_num_buffer_tanks is not None:
+        if self.initial_num_clean_water_buffer_tanks is not None:
             system_details_as_dict["initial_num_buffer_tanks"] = round(
-                self.initial_num_buffer_tanks, 3
+                self.initial_num_clean_water_buffer_tanks, 3
             )
-        if self.final_num_buffer_tanks is not None:
+        if self.final_num_clean_water_buffer_tanks is not None:
             system_details_as_dict["final_num_buffer_tanks"] = round(
-                self.final_num_buffer_tanks, 3
+                self.final_num_clean_water_buffer_tanks, 3
+            )
+        if self.initial_num_hot_water_buffer_tanks is not None:
+            system_details_as_dict["initial_num_buffer_tanks"] = round(
+                self.initial_num_hot_water_buffer_tanks, 3
+            )
+        if self.final_num_hot_water_buffer_tanks is not None:
+            system_details_as_dict["initial_num_buffer_tanks"] = round(
+                self.final_num_hot_water_buffer_tanks, 3
             )
         if self.initial_num_clean_water_tanks is not None:
             system_details_as_dict["initial_num_clean_water_tanks"] = round(
@@ -2942,34 +3071,46 @@ class SystemDetails:
             system_details_as_dict["final_num_hot_water_tanks"] = round(
                 self.final_num_hot_water_tanks, 3
             )
-        if self.initial_cw_pvt_size is not None:
-            system_details_as_dict["initial_cw_pvt_size"] = round(
-                self.initial_cw_pvt_size, 3
-            )
-        if self.final_cw_pvt_size is not None:
-            system_details_as_dict["final_cw_pvt_size"] = round(
-                self.final_cw_pvt_size, 3
-            )
-        if self.initial_cw_st_size is not None:
-            system_details_as_dict["initial_cw_st_size"] = round(
-                self.initial_cw_st_size, 3
-            )
-        if self.final_cw_st_size is not None:
-            system_details_as_dict["final_cw_st_size"] = round(self.final_cw_st_size, 3)
-        if self.initial_hw_pvt_size is not None:
-            system_details_as_dict["initial_hw_pvt_size"] = round(
-                self.initial_hw_pvt_size, 3
-            )
-        if self.final_hw_pvt_size is not None:
-            system_details_as_dict["final_hw_pvt_size"] = round(
-                self.final_hw_pvt_size, 3
-            )
-        if self.initial_hw_st_size is not None:
-            system_details_as_dict["initial_hw_st_size"] = round(
-                self.initial_hw_st_size, 3
-            )
-        if self.final_hw_st_size is not None:
-            system_details_as_dict["final_hw_st_size"] = round(self.final_hw_st_size, 3)
+        if self.initial_cw_pvt_sizes is not None:
+            system_details_as_dict["initial_cw_pvt_sizes"] = {
+                panel_name: round(capacity, 3)
+                for panel_name, capacity in self.initial_cw_pvt_sizes.items()
+            }
+        if self.final_cw_pvt_sizes is not None:
+            system_details_as_dict["final_cw_pvt_sizes"] = {
+                panel_name: round(capacity, 3)
+                for panel_name, capacity in self.final_cw_pvt_sizes.items()
+            }
+        if self.initial_cw_st_sizes is not None:
+            system_details_as_dict["initial_cw_st_sizes"] = {
+                panel_name: round(capacity, 3)
+                for panel_name, capacity in self.initial_cw_st_sizes.items()
+            }
+        if self.final_cw_st_sizes is not None:
+            system_details_as_dict["final_cw_st_sizes"] = {
+                panel_name: round(capacity, 3)
+                for panel_name, capacity in self.final_cw_st_sizes.items()
+            }
+        if self.initial_hw_pvt_sizes is not None:
+            system_details_as_dict["initial_hw_pvt_sizes"] = {
+                panel_name: round(capacity, 3)
+                for panel_name, capacity in self.initial_hw_pvt_sizes.items()
+            }
+        if self.final_hw_pvt_sizes is not None:
+            system_details_as_dict["final_hw_pvt_sizes"] = {
+                panel_name: round(capacity, 3)
+                for panel_name, capacity in self.final_hw_pvt_sizes.items()
+            }
+        if self.initial_hw_st_sizes is not None:
+            system_details_as_dict["initial_hw_st_sizes"] = {
+                panel_name: round(capacity, 3)
+                for panel_name, capacity in self.initial_hw_st_sizes.items()
+            }
+        if self.final_hw_st_sizes is not None:
+            system_details_as_dict["final_hw_st_sizes"] = {
+                panel_name: round(capacity, 3)
+                for panel_name, capacity in self.final_hw_st_sizes.items()
+            }
         if self.required_feedwater_sources is not None:
             system_details_as_dict["required_feedwater_sources"] = ", ".join(
                 self.required_feedwater_sources
@@ -3001,20 +3142,6 @@ class SystemDetails:
         return list(self.initial_pv_sizes.values())[0]
 
     @property
-    def initial_pvt_size(self) -> float:
-        """
-        Returns the total size of the PV-T system initially installed.
-
-        Outputs:
-            - The total size of the PV-T system initially installed.
-
-        """
-
-        return (
-            self.initial_cw_pvt_size if self.initial_cw_pvt_size is not None else 0
-        ) + (self.initial_hw_pvt_size if self.initial_hw_pvt_size is not None else 0)
-
-    @property
     def final_pv_size(self) -> float:
         """
         Returns the final PV size if only one panel is present, otherwise an error.
@@ -3036,20 +3163,6 @@ class SystemDetails:
             )
 
         return list(self.final_pv_sizes.values())[0]
-
-    @property
-    def final_pvt_size(self) -> float:
-        """
-        Returns the total size of the PV-T system installed at the end of the iteration.
-
-        Outputs:
-            - The total size of the PV-T system installed at the end of the simulation.
-
-        """
-
-        return (self.final_cw_pvt_size if self.final_cw_pvt_size is not None else 0) + (
-            self.final_hw_pvt_size if self.final_hw_pvt_size is not None else 0
-        )
 
 
 class WasteProduct(enum.Enum):

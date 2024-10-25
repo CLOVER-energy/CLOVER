@@ -225,13 +225,13 @@ def _find_optimum_system(  # pylint: disable=too-many-locals
                 for converter, sizes in largest_converter_sizes.items()
             )
             or (
-                optimum_system.system_details.initial_cw_pvt_size
+                optimum_system.system_details.initial_cw_pvt_sizes
                 == largest_cw_pvt_system_size.max
                 and optimisation.scenario.desalination_scenario is not None
                 and optimisation.scenario.pv_t
             )
             or (
-                optimum_system.system_details.initial_cw_st_size
+                optimum_system.system_details.initial_cw_st_sizes
                 == largest_cw_st_system_size.max
                 and optimisation.scenario.desalination_scenario is not None
                 and optimisation.scenario.solar_thermal
@@ -242,13 +242,13 @@ def _find_optimum_system(  # pylint: disable=too-many-locals
                 and optimisation.scenario.desalination_scenario is not None
             )
             or (
-                optimum_system.system_details.initial_hw_pvt_size
+                optimum_system.system_details.initial_hw_pvt_sizes
                 == largest_hw_pvt_system_size.max
                 and optimisation.scenario.hot_water_scenario is not None
                 and optimisation.scenario.pv_t
             )
             or (
-                optimum_system.system_details.initial_hw_st_size
+                optimum_system.system_details.initial_hw_st_sizes
                 == largest_hw_st_system_size.max
                 and optimisation.scenario.hot_water_scenario is not None
                 and optimisation.scenario.solar_thermal
@@ -1854,15 +1854,15 @@ def multiple_optimisation_step(  # pylint: disable=too-many-locals, too-many-sta
 
         # Prepare the clean-water PV-T parameters
         cw_pvt_size_min = (
-            optimum_system.system_details.final_cw_pvt_size
-            if optimum_system.system_details.final_cw_pvt_size is not None
+            optimum_system.system_details.final_cw_pvt_sizes
+            if optimum_system.system_details.final_cw_pvt_sizes is not None
             else optimisation_parameters.cw_pvt_size.min
         )
         cw_pvt_size_max = float(
             optimisation_parameters.cw_pvt_size.max
             + (
-                optimum_system.system_details.final_cw_pvt_size
-                if optimum_system.system_details.final_cw_pvt_size is not None
+                optimum_system.system_details.final_cw_pvt_sizes
+                if optimum_system.system_details.final_cw_pvt_sizes is not None
                 else 0
             )
             if optimisation.scenario.pv_t
@@ -1899,15 +1899,15 @@ def multiple_optimisation_step(  # pylint: disable=too-many-locals, too-many-sta
 
         # Prepare the hot-water PV-T parameters
         hw_pvt_size_min = (
-            optimum_system.system_details.final_hw_pvt_size
-            if optimum_system.system_details.final_hw_pvt_size is not None
+            optimum_system.system_details.final_hw_pvt_sizes
+            if optimum_system.system_details.final_hw_pvt_sizes is not None
             else optimisation_parameters.hw_pvt_size.min
         )
         hw_pvt_size_max = float(
             optimisation_parameters.hw_pvt_size.max
             + (
-                optimum_system.system_details.final_hw_pvt_size
-                if optimum_system.system_details.final_hw_pvt_size is not None
+                optimum_system.system_details.final_hw_pvt_sizes
+                if optimum_system.system_details.final_hw_pvt_sizes is not None
                 else 0
             )
             if optimisation.scenario.pv_t

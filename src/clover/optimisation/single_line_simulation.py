@@ -181,23 +181,23 @@ def single_line_simulation(  # pylint: disable=too-many-locals, too-many-stateme
         for name, value in potential_system.system_details.initial_converter_sizes.items()
     }
     potential_cw_pvt_size = (
-        potential_system.system_details.initial_cw_pvt_size
-        if potential_system.system_details.initial_cw_pvt_size is not None
+        potential_system.system_details.initial_cw_pvt_sizes
+        if potential_system.system_details.initial_cw_pvt_sizes is not None
         else 0
     )
     potential_cw_st_size = (
-        potential_system.system_details.initial_cw_st_size
-        if potential_system.system_details.initial_cw_st_size is not None
+        potential_system.system_details.initial_cw_st_sizes
+        if potential_system.system_details.initial_cw_st_sizes is not None
         else 0
     )
     potential_hw_pvt_size = (
-        potential_system.system_details.initial_hw_pvt_size
-        if potential_system.system_details.initial_hw_pvt_size is not None
+        potential_system.system_details.initial_hw_pvt_sizes
+        if potential_system.system_details.initial_hw_pvt_sizes is not None
         else 0
     )
     potential_hw_st_size = (
-        potential_system.system_details.initial_hw_st_size
-        if potential_system.system_details.initial_hw_st_size is not None
+        potential_system.system_details.initial_hw_st_sizes
+        if potential_system.system_details.initial_hw_st_sizes is not None
         else 0
     )
     potential_num_clean_water_tanks = (

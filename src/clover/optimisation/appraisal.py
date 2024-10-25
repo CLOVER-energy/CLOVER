@@ -295,8 +295,11 @@ def _simulation_environmental_appraisal(  # pylint: disable=too-many-locals
     location: Location,
     logger: Logger,
     pv_addition: dict[str, float],
-    pvt_addition: float,
+    cw_pvt_addition: dict[str, float],
+    hw_pvt_addition: dict[str, float],
     scenario: Scenario,
+    cw_st_addition: dict[str, float],
+    hw_st_addition: dict[str, float],
     simulation_results: pd.DataFrame,
     start_year: int,
     storage_addition: float,
@@ -390,8 +393,11 @@ def _simulation_environmental_appraisal(  # pylint: disable=too-many-locals
             hot_water_tank_addition,
             logger,
             pv_addition,
-            pvt_addition,
+            cw_pvt_addition,
+            hw_pvt_addition,
             scenario,
+            cw_st_addition,
+            hw_st_addition,
             storage_addition,
             technical_appraisal,
         )
@@ -452,12 +458,9 @@ def _simulation_environmental_appraisal(  # pylint: disable=too-many-locals
             ),
             logger,
             system_details.initial_pv_sizes,
-            (
-                system_details.initial_pvt_size
-                if system_details.initial_pvt_size is not None
-                else 0
-            ),
+            system_details.initial_pvt_sizes,
             scenario,
+            system_details.initial_st_sizes,
             system_details.initial_storage_size,
             technical_appraisal,
             start_year,
@@ -555,9 +558,12 @@ def _simulation_financial_appraisal(  # pylint: disable=too-many-locals
     location: Location,
     logger: Logger,
     pv_addition: dict[str, float],
-    pvt_addition: float,
+    cw_pvt_addition: dict[str, float],
+    hw_pvt_addition: dict[str, float],
     scenario: Scenario,
     simulation_results: pd.DataFrame,
+    cw_st_addition: dict[str, float],
+    hw_st_addition: dict[str, float],
     storage_addition: float,
     system_details: SystemDetails,
     technical_appraisal: TechnicalAppraisal,
@@ -637,8 +643,11 @@ def _simulation_financial_appraisal(  # pylint: disable=too-many-locals
         hot_water_tank_addition,
         logger,
         pv_addition,
-        pvt_addition,
+        cw_pvt_addition,
+        hw_pvt_addition,
         scenario,
+        cw_st_addition,
+        hw_st_addition,
         storage_addition,
         technical_appraisal,
         system_details.start_year,
@@ -694,12 +703,11 @@ def _simulation_financial_appraisal(  # pylint: disable=too-many-locals
         ),
         logger,
         system_details.initial_pv_sizes,
-        (
-            system_details.initial_pvt_size
-            if system_details.initial_pvt_size is not None
-            else 0
-        ),
+        system_details.initial_cw_pvt_sizes,
+        system_details.initial_hw_pvt_sizes,
         scenario,
+        system_details.initial_cw_st_sizes,
+        system_details.initial_hw_st_sizes,
         system_details.initial_storage_size,
         technical_appraisal,
         start_year=system_details.start_year,
@@ -1545,12 +1553,50 @@ def appraise_system(  # pylint: disable=too-many-locals
         - previous_system.system_details.final_pv_sizes[panel_name]
         for panel_name, initial_pv_size in system_details.initial_pv_sizes.items()
     }
-    pvt_addition: float = (
-        system_details.initial_pvt_size - previous_system.system_details.final_pvt_size
-        if system_details.initial_pvt_size is not None
-        and previous_system.system_details.final_pvt_size is not None
-        else 0
-    )
+    cw_pvt_addition: dict[str, float] = {
+        panel_name: (
+            (
+                initial_pvt_size
+                - previous_system.system_details.final_cw_pvt_sizes[panel_name]
+            )
+            if initial_pvt_size is not None
+            else 0
+        )
+        for panel_name, initial_pvt_size in system_details.initial_cw_pvt_sizes.items()
+    }
+    hw_pvt_addition: dict[str, float] = {
+        panel_name: (
+            (
+                initial_pvt_size
+                - previous_system.system_details.final_hw_pvt_sizes[panel_name]
+            )
+            if initial_pvt_size is not None
+            else 0
+        )
+        for panel_name, initial_pvt_size in system_details.initial_hw_pvt_sizes.items()
+    }
+    cw_st_addition: dict[str, float] = {
+        panel_name: (
+            (
+                initial_st_size
+                - previous_system.system_details.final_cw_st_sizes[panel_name]
+            )
+            if initial_st_size is not None
+            else 0
+        )
+        for panel_name, initial_st_size in system_details.initial_cw_st_sizes.items()
+    }
+    hw_st_addition: dict[str, float] = {
+        panel_name: (
+            (
+                initial_st_size
+                - previous_system.system_details.final_hw_st_sizes[panel_name]
+            )
+            if initial_st_size is not None
+            else 0
+        )
+        for panel_name, initial_st_size in system_details.initial_hw_st_sizes.items()
+    }
     storage_addition = (
         system_details.initial_storage_size
         - previous_system.system_details.final_storage_size
@@ -1573,9 +1619,12 @@ def appraise_system(  # pylint: disable=too-many-locals
         location,
         logger,
         pv_addition,
-        pvt_addition,
+        cw_pvt_addition,
+        hw_pvt_addition,
         scenario,
         simulation_results,
+        cw_st_addition,
+        hw_st_addition,
         storage_addition,
         system_details,
         technical_appraisal,
@@ -1595,8 +1644,11 @@ def appraise_system(  # pylint: disable=too-many-locals
         location,
         logger,
         pv_addition,
-        pvt_addition,
+        cw_pvt_addition,
+        hw_pvt_addition,
         scenario,
+        cw_st_addition,
+        hw_st_addition,
         simulation_results,
         start_year,
         storage_addition,
@@ -1665,6 +1717,10 @@ def appraise_system(  # pylint: disable=too-many-locals
         )
     else:
         cumulative_brine = None
+
+    import pdb
+
+    pdb.set_trace()
 
     # pylint: disable=line-too-long
     criteria: dict[Criterion, float | None] = {

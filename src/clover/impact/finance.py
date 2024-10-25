@@ -436,8 +436,11 @@ def get_total_equipment_costs(  # pylint: disable=too-many-locals, too-many-stat
     hot_water_tanks: float,
     logger: Logger,
     pv_array_size: dict[str, float],
-    pvt_array_size: float,
+    cw_pvt_array_size: dict[str, float],
+    hw_pvt_array_size: dict[str, float],
     scenario: Scenario,
+    cw_st_array_size: dict[str, float],
+    hw_st_array_size: dict[str, float],
     storage_size: float,
     technical_appraisal: TechnicalAppraisal,
     installation_year: int = 0,
@@ -696,7 +699,10 @@ def get_total_equipment_costs(  # pylint: disable=too-many-locals, too-many-stat
         for panel_name, array_size in pv_array_size.items()
     )
 
-    if ImpactingComponent.PV_T.value not in finance_inputs and pvt_array_size > 0:
+    if (
+        ImpactingComponent.PV_T.value not in finance_inputs
+        and sum(cw_pvt_array_size.values()) > 0
+    ):
         logger.error(
             "%sNo PV-T financial input information provided.%s",
             BColours.fail,
@@ -704,23 +710,154 @@ def get_total_equipment_costs(  # pylint: disable=too-many-locals, too-many-stat
         )
         raise InputFileError(
             "finance inputs",
-            "No PV-T financial input information provided and a non-zero number of PV-T"
-            "panels are being considered.",
+            "No PV-T financial input information provided and a non-zero number of "
+            "clean-water PV-T panels are being considered.",
         )
-    pvt_cost: float = 0
-    pvt_installation_cost: float = 0
-    if pvt_array_size > 0:
-        pvt_cost = _component_cost(
-            finance_inputs[ImpactingComponent.PV_T.value][COST],
-            finance_inputs[ImpactingComponent.PV_T.value][COST_DECREASE],
-            pvt_array_size,
-            installation_year,
+
+    cw_pvt_cost: float = 0
+    cw_pvt_installation_cost: float = 0
+    if sum(cw_pvt_array_size.values()) > 0:
+        cw_pvt_cost = sum(
+            _component_cost(
+                finance_inputs[ImpactingComponent.PV_T.value][panel_name][COST],
+                finance_inputs[ImpactingComponent.PV_T.value][panel_name][
+                    COST_DECREASE
+                ],
+                array_size,
+                installation_year,
+            )
+            for panel_name, array_size in cw_pvt_array_size.items()
         )
-        pvt_installation_cost = _component_installation_cost(
-            pvt_array_size,
-            finance_inputs[ImpactingComponent.PV_T.value][INSTALLATION_COST],
-            finance_inputs[ImpactingComponent.PV_T.value][INSTALLATION_COST_DECREASE],
-            installation_year,
+        cw_pvt_installation_cost = sum(
+            _component_cost(
+                finance_inputs[ImpactingComponent.PV_T.value][panel_name][
+                    INSTALLATION_COST
+                ],
+                finance_inputs[ImpactingComponent.PV_T.value][panel_name][
+                    INSTALLATION_COST_DECREASE
+                ],
+                array_size,
+                installation_year,
+            )
+            for panel_name, array_size in cw_pvt_array_size.items()
+        )
+
+    if (
+        ImpactingComponent.PV_T.value not in finance_inputs
+        and sum(hw_pvt_array_size.values()) > 0
+    ):
+        logger.error(
+            "%sNo PV-T financial input information provided.%s",
+            BColours.fail,
+            BColours.endc,
+        )
+        raise InputFileError(
+            "finance inputs",
+            "No PV-T financial input information provided and a non-zero number of "
+            "hot-water PV-T panels are being considered.",
+        )
+
+    hw_pvt_cost: float = 0
+    hw_pvt_installation_cost: float = 0
+    if sum(hw_pvt_array_size.values()) > 0:
+        hw_pvt_cost = sum(
+            _component_cost(
+                finance_inputs[ImpactingComponent.PV_T.value][panel_name][COST],
+                finance_inputs[ImpactingComponent.PV_T.value][panel_name][
+                    COST_DECREASE
+                ],
+                array_size,
+                installation_year,
+            )
+            for panel_name, array_size in hw_pvt_array_size.items()
+        )
+        hw_pvt_installation_cost = sum(
+            _component_cost(
+                finance_inputs[ImpactingComponent.PV_T.value][panel_name][
+                    INSTALLATION_COST
+                ],
+                finance_inputs[ImpactingComponent.PV_T.value][panel_name][
+                    INSTALLATION_COST_DECREASE
+                ],
+                array_size,
+                installation_year,
+            )
+            for panel_name, array_size in hw_pvt_array_size.items()
+        )
+
+    if (
+        ImpactingComponent.SOLAR_THERMAL.value not in finance_inputs
+        and sum(cw_st_array_size.values()) > 0
+    ):
+        logger.error(
+            "%sNo ST financial input information provided.%s",
+            BColours.fail,
+            BColours.endc,
+        )
+        raise InputFileError(
+            "finance inputs",
+            "No ST financial input information provided and a non-zero number of clean-"
+            "water ST collectors are being considered.",
+        )
+
+    cw_st_cost: float = 0
+    cw_st_installation_cost: float = 0
+    if sum(cw_st_array_size.values()) > 0:
+        st_cost = sum(
+            _component_cost(
+                finance_inputs[ImpactingComponent.SOLAR_THERMAL.value][panel_name][
+                    COST
+                ],
+                finance_inputs[ImpactingComponent.SOLAR_THERMAL.value][panel_name][
+                    COST_DECREASE
+                ],
+                array_size,
+                installation_year,
+            )
+            for panel_name, array_size in cw_st_array_size.items()
+        )
+        cw_st_installation_cost = sum(
+            _component_cost(
+                finance_inputs[ImpactingComponent.SOLAR_THERMAL.value][panel_name][
+                    INSTALLATION_COST
+                ],
+                finance_inputs[ImpactingComponent.SOLAR_THERMAL.value][panel_name][
+                    INSTALLATION_COST_DECREASE
+                ],
+                array_size,
+                installation_year,
+            )
+            for panel_name, array_size in cw_st_array_size.items()
+        )
+
+    hw_st_cost: float = 0
+    hw_st_installation_cost: float = 0
+    if sum(hw_st_array_size.values()) > 0:
+        hw_st_cost = sum(
+            _component_cost(
+                finance_inputs[ImpactingComponent.SOLAR_THERMAL.value][panel_name][
+                    COST
+                ],
+                finance_inputs[ImpactingComponent.SOLAR_THERMAL.value][panel_name][
+                    COST_DECREASE
+                ],
+                array_size,
+                installation_year,
+            )
+            for panel_name, array_size in hw_st_array_size.items()
+        )
+        hw_st_installation_cost = sum(
+            _component_cost(
+                finance_inputs[ImpactingComponent.SOLAR_THERMAL.value][panel_name][
+                    INSTALLATION_COST
+                ],
+                finance_inputs[ImpactingComponent.SOLAR_THERMAL.value][panel_name][
+                    INSTALLATION_COST_DECREASE
+                ],
+                array_size,
+                installation_year,
+            )
+            for panel_name, array_size in hw_st_array_size.items()
         )
 
     storage_cost = _component_cost(
@@ -784,6 +921,10 @@ def get_total_equipment_costs(  # pylint: disable=too-many-locals, too-many-stat
             + buffer_tank_installation_cost
             + clean_water_tank_cost
             + clean_water_tank_installation_cost
+            + cw_pvt_cost
+            + cw_pvt_installation_cost
+            + cw_st_cost
+            + cw_st_installation_cost
             + heat_exchanger_cost
             + heat_exchanger_installation_cost
             + (
@@ -809,7 +950,11 @@ def get_total_equipment_costs(  # pylint: disable=too-many-locals, too-many-stat
 
     # Compute the hot-water subsystem costs.
     subsystem_costs[ResourceType.HOT_CLEAN_WATER] += (
-        hot_water_tank_cost
+        hw_pvt_cost
+        + hw_pvt_installation_cost
+        + hw_st_cost
+        + hw_st_installation_cost
+        + hot_water_tank_cost
         + hot_water_tank_installation_cost
         + (
             bos_cost
@@ -839,7 +984,10 @@ def get_total_equipment_costs(  # pylint: disable=too-many-locals, too-many-stat
         + heat_exchanger_installation_cost
         + hot_water_tank_installation_cost
         + pv_installation_cost
-        + pvt_installation_cost
+        + cw_pvt_installation_cost
+        + hw_pvt_installation_cost
+        + cw_st_installation_cost
+        + hw_st_installation_cost
         + storage_installation_cost
     )
 
@@ -853,7 +1001,10 @@ def get_total_equipment_costs(  # pylint: disable=too-many-locals, too-many-stat
         + hot_water_tank_cost
         + misc_costs
         + pv_cost
-        + pvt_cost
+        + cw_pvt_cost
+        + hw_pvt_cost
+        + cw_st_cost
+        + hw_st_cost
         + storage_cost
         + total_installation_cost,
         subsystem_costs,
@@ -1021,8 +1172,11 @@ def discounted_equipment_cost(  # pylint: disable=too-many-locals
     hot_water_tanks: int,
     logger: Logger,
     pv_array_size: dict[str, float],
-    pvt_array_size: float,
+    cw_pvt_array_size: dict[str, float],
+    hw_pvt_array_size: dict[str, float],
     scenario: Scenario,
+    cw_st_array_size: dict[str, float],
+    hw_st_array_size: dict[str, float],
     storage_size: float,
     technical_appraisal: TechnicalAppraisal,
     installation_year: int = 0,
@@ -1077,8 +1231,11 @@ def discounted_equipment_cost(  # pylint: disable=too-many-locals
         hot_water_tanks,
         logger,
         pv_array_size,
-        pvt_array_size,
+        cw_pvt_array_size,
+        hw_pvt_array_size,
         scenario,
+        cw_st_array_size,
+        hw_st_array_size,
         storage_size,
         technical_appraisal,
         installation_year,
@@ -1195,8 +1352,11 @@ def total_om(  # pylint: disable=too-many-locals
     hot_water_tanks: int,
     logger: Logger,
     pv_array_size: dict[str, float],
-    pvt_array_size: float,
+    cw_pvt_array_size: dict[str, float],
+    hw_pvt_array_size: dict[str, float],
     scenario: Scenario,
+    cw_st_array_size: dict[str, float],
+    hw_st_array_size: dict[str, float],
     storage_size: float,
     technical_appraisal: TechnicalAppraisal,
     *,
@@ -1415,7 +1575,10 @@ def total_om(  # pylint: disable=too-many-locals
         for panel_name, array_size in pv_array_size.items()
     )
 
-    if ImpactingComponent.PV_T.value not in finance_inputs and pvt_array_size > 0:
+    if (
+        ImpactingComponent.PV_T.value not in finance_inputs
+        and sum(cw_pvt_array_size.values()) > 0
+    ):
         logger.error(
             "%sNo PV-T financial input information provided.%s",
             BColours.fail,
@@ -1423,18 +1586,109 @@ def total_om(  # pylint: disable=too-many-locals
         )
         raise InputFileError(
             "finance inputs",
-            "No PV-T financial input information provided and a non-zero number of PV-T"
-            "panels are being considered.",
+            "No PV-T financial input information provided and a non-zero number of "
+            "clean-water PV-T panels are being considered.",
         )
-    pvt_om: float = 0
-    if pvt_array_size > 0:
-        pvt_om = _component_om(
-            finance_inputs[ImpactingComponent.PV_T.value][OM],
-            pvt_array_size,
-            finance_inputs,
-            logger,
-            start_year=start_year,
-            end_year=end_year,
+
+    cw_pvt_om: float = 0
+    if sum(cw_pvt_array_size.values()) > 0:
+        cw_pvt_om = sum(
+            _component_om(
+                finance_inputs[ImpactingComponent.PV_T.value][panel_name][OM],
+                array_size,
+                finance_inputs,
+                logger,
+                start_year=start_year,
+                end_year=end_year,
+            )
+            for panel_name, array_size in cw_pvt_array_size.items()
+        )
+
+    if (
+        ImpactingComponent.PV_T.value not in finance_inputs
+        and sum(hw_pvt_array_size.values()) > 0
+    ):
+        logger.error(
+            "%sNo PV-T financial input information provided.%s",
+            BColours.fail,
+            BColours.endc,
+        )
+        raise InputFileError(
+            "finance inputs",
+            "No PV-T financial input information provided and a non-zero number of "
+            "hot-water PV-T panels are being considered.",
+        )
+
+    hw_pvt_om: float = 0
+    if sum(hw_pvt_array_size.values()) > 0:
+        hw_pvt_om = sum(
+            _component_om(
+                finance_inputs[ImpactingComponent.PV_T.value][panel_name][OM],
+                array_size,
+                finance_inputs,
+                logger,
+                start_year=start_year,
+                end_year=end_year,
+            )
+            for panel_name, array_size in hw_pvt_array_size.items()
+        )
+
+    if (
+        ImpactingComponent.SOLAR_THERMAL.value not in finance_inputs
+        and sum(cw_st_array_size.values()) > 0
+    ):
+        logger.error(
+            "%sNo ST financial input information provided.%s",
+            BColours.fail,
+            BColours.endc,
+        )
+        raise InputFileError(
+            "finance inputs",
+            "No ST financial input information provided and a non-zero number of clean-"
+            "water ST collectors are being considered.",
+        )
+
+    cw_st_om: float = 0
+    if sum(cw_st_array_size.values()) > 0:
+        cw_st_om = sum(
+            _component_om(
+                finance_inputs[ImpactingComponent.SOLAR_THERMAL.value][panel_name][OM],
+                array_size,
+                finance_inputs,
+                logger,
+                start_year=start_year,
+                end_year=end_year,
+            )
+            for panel_name, array_size in cw_st_array_size.items()
+        )
+
+    if (
+        ImpactingComponent.SOLAR_THERMAL.value not in finance_inputs
+        and sum(hw_st_array_size.values()) > 0
+    ):
+        logger.error(
+            "%sNo ST financial input information provided.%s",
+            BColours.fail,
+            BColours.endc,
+        )
+        raise InputFileError(
+            "finance inputs",
+            "No ST financial input information provided and a non-zero number of hot-"
+            "water ST panels are being considered.",
+        )
+
+    hw_st_om: float = 0
+    if sum(hw_st_array_size.values()) > 0:
+        hw_st_om = sum(
+            _component_om(
+                finance_inputs[ImpactingComponent.SOLAR_THERMAL.value][panel_name][OM],
+                array_size,
+                finance_inputs,
+                logger,
+                start_year=start_year,
+                end_year=end_year,
+            )
+            for panel_name, array_size in hw_st_array_size.items()
         )
 
     storage_om = _component_om(
@@ -1451,6 +1705,8 @@ def total_om(  # pylint: disable=too-many-locals
         subsystem_costs[ResourceType.CLEAN_WATER] += (
             buffer_tank_om
             + clean_water_tank_om
+            + cw_pvt_om
+            + cw_st_om
             + heat_exchanger_om
             + (
                 (general_om + pv_om + storage_om)
@@ -1466,6 +1722,8 @@ def total_om(  # pylint: disable=too-many-locals
     # Compute the hot-water subsystem costs.
     subsystem_costs[ResourceType.HOT_CLEAN_WATER] += (
         hot_water_tank_om
+        + hw_pvt_om
+        + hw_st_om
         + (general_om + pv_om + storage_om)
         * technical_appraisal.power_consumed_fraction[ResourceType.HOT_CLEAN_WATER]
     )
@@ -1478,7 +1736,7 @@ def total_om(  # pylint: disable=too-many-locals
         technical_appraisal,
     )
 
-    return (pvt_om, subsystem_costs)
+    return (0, subsystem_costs)
 
 
 # #%%

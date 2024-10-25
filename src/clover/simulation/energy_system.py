@@ -2892,69 +2892,29 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
 
     # System details
     system_details = SystemDetails(
-        diesel_capacity,
-        simulation.end_year,
-        {
+        diesel_capacity=diesel_capacity,
+        end_year=simulation.end_year,
+        final_converter_sizes={
             converter: available_converters.count(converter)
             for converter in available_converters
         },
-        (
-            clean_water_pvt_size
-            * float(
-                solar_degradation(minigrid.pvt_panel.lifetime, location.max_years).iloc[
-                    HOURS_PER_YEAR * (simulation.end_year - simulation.start_year), 0
-                ]
-            )
-            if minigrid.pvt_panel is not None
-            and scenario.desalination_scenario is not None
-            else None
-        ),
-        (
-            clean_water_solar_thermal_size
-            * float(
-                solar_degradation(
-                    minigrid.solar_thermal_panel.lifetime, location.max_years
-                ).iloc[
-                    HOURS_PER_YEAR * (simulation.end_year - simulation.start_year), 0
-                ]
-            )
-            if minigrid.solar_thermal_panel is not None
-            and scenario.desalination_scenario is not None
-            else None
-        ),
-        (
-            hot_water_pvt_size
-            * float(
-                solar_degradation(minigrid.pvt_panel.lifetime, location.max_years).iloc[
-                    HOURS_PER_YEAR * (simulation.end_year - simulation.start_year), 0
-                ]
-            )
-            if minigrid.pvt_panel is not None
-            and scenario.hot_water_scenario is not None
-            else None
-        ),
-        (
-            hot_water_solar_thermal_size
-            * float(
-                solar_degradation(
-                    minigrid.solar_thermal_panel.lifetime, location.max_years
-                ).iloc[
-                    HOURS_PER_YEAR * (simulation.end_year - simulation.start_year), 0
-                ]
-            )
-            if minigrid.solar_thermal_panel is not None
-            and scenario.hot_water_scenario is not None
-            else None
-        ),
-        (
+        final_num_clean_water_buffer_tanks=(
             number_of_cw_buffer_tanks
             if scenario.desalination_scenario is not None
             else None
         ),
-        number_of_cw_tanks if scenario.desalination_scenario is not None else None,
-        number_of_hw_buffer_tanks if scenario.hot_water_scenario is not None else None,
-        number_of_hw_tanks if scenario.hot_water_scenario is not None else None,
-        {
+        final_num_clean_water_tanks=(
+            number_of_cw_tanks if scenario.desalination_scenario is not None else None
+        ),
+        final_num_hot_water_buffer_tanks=(
+            number_of_hw_buffer_tanks
+            if scenario.hot_water_scenario is not None
+            else None
+        ),
+        final_num_hot_water_tanks=(
+            number_of_hw_tanks if scenario.hot_water_scenario is not None else None
+        ),
+        final_pv_sizes={
             pv_panel.name: (pv_sizes[pv_panel.name] if pv_sizes is not None else 0)
             * float(
                 solar_degradation(pv_panel.lifetime, location.max_years).iloc[  # type: ignore [arg-type]
@@ -2963,59 +2923,115 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
             )
             for pv_panel in minigrid.pv_panels
         },
-        final_storage_size,
-        {
+        final_storage_size=final_storage_size,
+        initial_converter_sizes={
             converter: available_converters.count(converter)
             for converter in available_converters
         },
-        (
-            clean_water_pvt_size
-            if minigrid.pvt_panel is not None
-            and scenario.desalination_scenario is not None
-            else None
-        ),
-        (
-            clean_water_solar_thermal_size
-            if minigrid.solar_thermal_panel is not None
-            and scenario.desalination_scenario is not None
-            else None
-        ),
-        (
-            hot_water_pvt_size
-            if minigrid.pvt_panel is not None
-            and scenario.hot_water_scenario is not None
-            else None
-        ),
-        (
-            hot_water_solar_thermal_size
-            if minigrid.solar_thermal_panel is not None
-            and scenario.hot_water_scenario is not None
-            else None
-        ),
-        (
+        initial_num_clean_water_buffer_tanks=(
             number_of_cw_buffer_tanks
             if scenario.desalination_scenario is not None
             else None
         ),
-        number_of_cw_tanks if scenario.desalination_scenario is not None else None,
-        number_of_hw_buffer_tanks if scenario.hot_water_scenario is not None else None,
-        number_of_hw_tanks if scenario.hot_water_scenario is not None else None,
-        (
+        initial_num_clean_water_tanks=(
+            number_of_cw_tanks if scenario.desalination_scenario is not None else None
+        ),
+        initial_num_hot_water_buffer_tanks=(
+            number_of_hw_buffer_tanks
+            if scenario.hot_water_scenario is not None
+            else None
+        ),
+        initial_num_hot_water_tanks=(
+            number_of_hw_tanks if scenario.hot_water_scenario is not None else None
+        ),
+        initial_pv_sizes=(
             pv_sizes
             if pv_sizes is not None
             else {pv_panel.name: 0 for pv_panel in minigrid.pv_panels}
         ),
-        float(
+        initial_storage_size=float(
             (electric_storage_size if electric_storage_size is not None else 0)
             * minigrid.battery.storage_unit
         ),
-        (
+        required_feedwater_sources=(
             [source.name for source in feedwater_sources]
             if len(feedwater_sources) > 0
             else None
         ),
-        simulation.start_year,
+        start_year=simulation.start_year,
     )
+
+    if scenario.desalination_scenario is not None:
+        if minigrid.pvt_panel is not None:
+            system_details.initial_cw_pvt_sizes = {
+                minigrid.pvt_panel.name: clean_water_pvt_size
+            }
+            system_details.final_cw_pvt_sizes = {
+                minigrid.pvt_panel.name: (
+                    clean_water_pvt_size
+                    * float(
+                        solar_degradation(
+                            minigrid.pvt_panel.lifetime, location.max_years
+                        ).iloc[
+                            HOURS_PER_YEAR
+                            * (simulation.end_year - simulation.start_year),
+                            0,
+                        ]
+                    )
+                )
+            }
+
+        if minigrid.solar_thermal_panel is not None:
+            system_details.final_cw_pvt_sizes = {
+                minigrid.solar_thermal_panel.name: clean_water_pvt_size
+            }
+            system_details.final_cw_st_sizes = {
+                minigrid.solar_thermal_panel.name: clean_water_solar_thermal_size
+                * float(
+                    solar_degradation(
+                        minigrid.solar_thermal_panel.lifetime, location.max_years
+                    ).iloc[
+                        HOURS_PER_YEAR * (simulation.end_year - simulation.start_year),
+                        0,
+                    ]
+                )
+            }
+
+    if scenario.hot_water_scenario is not None:
+        if minigrid.pvt_panel is not None:
+            system_details.initial_hw_pvt_sizes = {
+                minigrid.pvt_panel.name: hot_water_pvt_size
+            }
+            system_details.final_hw_pvt_sizes = {
+                minigrid.pvt_panel.name: (
+                    hot_water_pvt_size
+                    * float(
+                        solar_degradation(
+                            minigrid.pvt_panel.lifetime, location.max_years
+                        ).iloc[
+                            HOURS_PER_YEAR
+                            * (simulation.end_year - simulation.start_year),
+                            0,
+                        ]
+                    )
+                )
+            }
+
+        if minigrid.solar_thermal_panel is not None:
+            system_details.final_hw_pvt_sizes = {
+                minigrid.solar_thermal_panel.name: hot_water_pvt_size
+            }
+            system_details.final_hw_st_sizes = {
+                minigrid.solar_thermal_panel.name: hot_water_solar_thermal_size
+                * float(
+                    solar_degradation(
+                        minigrid.solar_thermal_panel.lifetime, location.max_years
+                    ).iloc[
+                        HOURS_PER_YEAR * (simulation.end_year - simulation.start_year),
+                        0,
+                    ]
+                )
+            }
 
     # Separate out the various renewable inputs.
     pv_energy = renewables_energy_by_source[RenewableEnergySource.PV]
