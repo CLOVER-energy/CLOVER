@@ -2702,6 +2702,24 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
         unmet_clean_water = unmet_clean_water * (unmet_clean_water > 0)  # type: ignore
         unmet_clean_water.columns = pd.Index([ColumnHeader.UNMET_CLEAN_WATER.value])
 
+        # Waste product performance outputs
+        #
+        brine_produced: pd.DataFrame | None = (
+            pd.DataFrame.from_dict(  # type: ignore [attr-defined]
+                {
+                    int(key): float(value)  # type: ignore [misc]
+                    for key, value in dict(
+                        total_waste_produced[WasteProduct.BRINE]
+                    ).items()
+                },
+                orient="index",
+            )
+            if WasteProduct.BRINE in total_waste_produced
+            else None
+        )
+        if brine_produced is not None:
+            brine_produced.columns = pd.Index([ColumnHeader.BRINE.value])
+
         # Find the new clean-water blackout times, according to when there is unmet
         # demand
         cw_blackout_times = ((unmet_clean_water > 0) * 1).astype(float)
@@ -2741,6 +2759,7 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
         system_performance_outputs_list.extend(
             [
                 backup_desalinator_water_frame,
+                brine_produced,
                 conventional_cw_supplied_frame,
                 cw_blackout_times,
                 cw_power_consumed,
@@ -2873,22 +2892,6 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
                 volumetric_hw_dc_fraction,  # type: ignore [list-item]
             ]
         )
-
-    # Waste product performance outputs
-    #
-    brine_produced: pd.DataFrame | None = (
-        pd.DataFrame.from_dict(  # type: ignore [attr-defined]
-            {
-                int(key): float(value)  # type: ignore [misc]
-                for key, value in dict(total_waste_produced[WasteProduct.BRINE]).items()
-            },
-            orient="index",
-        )
-        if WasteProduct.BRINE in total_waste_produced
-        else None
-    )
-    if brine_produced is not None:
-        brine_produced.columns = pd.Index([ColumnHeader.BRINE.value])
 
     # System details
     system_details = SystemDetails(

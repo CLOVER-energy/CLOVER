@@ -803,7 +803,7 @@ def get_total_equipment_costs(  # pylint: disable=too-many-locals, too-many-stat
     cw_st_cost: float = 0
     cw_st_installation_cost: float = 0
     if sum(cw_st_array_size.values()) > 0:
-        st_cost = sum(
+        cw_st_cost = sum(
             _component_cost(
                 finance_inputs[ImpactingComponent.SOLAR_THERMAL.value][panel_name][
                     COST

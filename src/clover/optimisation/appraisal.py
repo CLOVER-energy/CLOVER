@@ -76,10 +76,22 @@ def _calculate_power_consumed_fraction(
 
     power_consumed_fraction: dict[ResourceType, float] = collections.defaultdict(float)
     if ColumnHeader.POWER_CONSUMED_BY_DESALINATION.value in simulation_results:
-        total_clean_water_power_consumed = np.sum(
-            simulation_results[  # type: ignore
-                ColumnHeader.POWER_CONSUMED_BY_DESALINATION.value
-            ]
+        total_clean_water_power_consumed = (
+            np.sum(
+                simulation_results[  # type: ignore
+                    ColumnHeader.POWER_CONSUMED_BY_DESALINATION.value
+                ]
+            )
+            + np.sum(
+                simulation_results[  # type: ignore
+                    ColumnHeader.POWER_CONSUMED_BY_THERMAL_DESALINATION.value
+                ]
+            )
+            + np.sum(
+                simulation_results[  # type: ignore
+                    ColumnHeader.EXCESS_POWER_CONSUMED_BY_DESALINATION.value
+                ]
+            )
         )
         power_consumed_fraction[ResourceType.CLEAN_WATER] = (
             total_clean_water_power_consumed / total_electricity_consumed
@@ -155,7 +167,7 @@ def _simulation_cumulative_results(  # pylint: disable=too-many-locals
 
     # Compute the cumulative useful products.
     if (
-        previous_system.cumulative_results.clean_water > 0
+        previous_system.cumulative_results.clean_water is not None
         and technical_appraisal.total_clean_water is not None
     ):
         cumulative_clean_water: float = (
@@ -1707,6 +1719,14 @@ def appraise_system(  # pylint: disable=too-many-locals
     emissions_intensity = 1000.0 * float(
         cumulative_results.system_ghgs / cumulative_results.energy
     )
+    electricity_emissions_intensity = 1000.0 * float(
+        cumulative_results.subsystem_ghgs[ResourceType.ELECTRIC]
+        / cumulative_results.electricity
+    )
+    water_emissions_intensity = 1000.0 * float(
+        cumulative_results.subsystem_ghgs[ResourceType.CLEAN_WATER]
+        / cumulative_results.clean_water
+    )
 
     # Compute cumulative waste products.
     if cumulative_results.waste_produced is not None:
@@ -1718,10 +1738,6 @@ def appraise_system(  # pylint: disable=too-many-locals
     else:
         cumulative_brine = None
 
-    import pdb
-
-    pdb.set_trace()
-
     # pylint: disable=line-too-long
     criteria: dict[Criterion, float | None] = {
         Criterion.BLACKOUTS: technical_appraisal.blackouts,
@@ -1732,9 +1748,11 @@ def appraise_system(  # pylint: disable=too-many-locals
         Criterion.CUMULATIVE_SYSTEM_COST: cumulative_results.system_cost,
         Criterion.CUMULATIVE_SYSTEM_GHGS: cumulative_results.system_ghgs,
         Criterion.CW_DEMAND_COVERED: technical_appraisal.cw_demand_covered,
+        Criterion.CW_EMISSIONS_INTENSITY: round(water_emissions_intensity, 3),
         Criterion.CW_RENEWABLES_FRACTION: technical_appraisal.renewable_clean_water_fraction,
         Criterion.CW_SOLAR_THERMAL_FRACTION: technical_appraisal.solar_thermal_cw_fraction,
-        Criterion.EMISSIONS_INTENSITY: round(emissions_intensity, 3),
+        Criterion.EMISSIONS_INTENSITY: round(electricity_emissions_intensity, 3),
+        Criterion.ENERGY_EMISSIONS_INTENSITY: round(emissions_intensity, 3),
         Criterion.HW_DEMAND_COVERED: technical_appraisal.hw_demand_covered,
         Criterion.HW_RENEWABLES_FRACTION: technical_appraisal.renewable_hot_water_fraction,
         Criterion.HW_SOLAR_THERMAL_FRACTION: technical_appraisal.solar_thermal_hw_fraction,
@@ -1764,11 +1782,6 @@ def appraise_system(  # pylint: disable=too-many-locals
         ),
         Criterion.UPTIME: round(technical_appraisal.uptime, 3),
     }
-
-    if technical_appraisal.clean_water_blackouts is not None:
-        criteria[Criterion.CLEAN_WATER_BLACKOUTS] = round(
-            technical_appraisal.clean_water_blackouts, 3
-        )
 
     # Combine the outputs into a single system appraisal instance.
     system_appraisal = SystemAppraisal(
