@@ -349,6 +349,7 @@ def _find_optimum_system(  # pylint: disable=too-many-locals
 def _simulation_iteration(  # pylint: disable=too-many-locals, too-many-statements
     conventional_cw_source_profiles: dict[WaterSource, pd.DataFrame] | None,
     converter_sizes: dict[Converter, ConverterSize],
+    cw_buffer_tanks: TankSize,
     cw_pvt_system_size: SolarSystemSize,
     cw_st_system_size: SolarSystemSize,
     cw_tanks: TankSize,
@@ -357,6 +358,7 @@ def _simulation_iteration(  # pylint: disable=too-many-locals, too-many-statemen
     finance_inputs: dict[str, Any],
     ghg_inputs: dict[str, Any],
     grid_profile: pd.DataFrame | None,
+    hw_buffer_tanks: TankSize,
     hw_pvt_system_size: SolarSystemSize,
     hw_st_system_size: SolarSystemSize,
     hw_tanks: TankSize,
@@ -530,7 +532,9 @@ def _simulation_iteration(  # pylint: disable=too-many-locals, too-many-statemen
         location,
         logger,
         minigrid,
+        cw_buffer_tanks.max,
         cw_tanks.max,
+        hw_buffer_tanks.max,
         hw_tanks.max,
         total_solar_pv_power_produced,
         {minigrid.pv_panel.name: pv_sizes.max},
@@ -1028,6 +1032,7 @@ def _simulation_iteration(  # pylint: disable=too-many-locals, too-many-statemen
 def _optimisation_step(  # pylint: disable=too-many-locals
     conventional_cw_source_profiles: dict[WaterSource, pd.DataFrame] | None,
     converter_sizes: dict[Converter, ConverterSize],
+    cw_buffer_tanks: TankSize,
     cw_pvt_system_size: SolarSystemSize,
     cw_st_system_size: SolarSystemSize,
     cw_tanks: TankSize,
@@ -1036,6 +1041,7 @@ def _optimisation_step(  # pylint: disable=too-many-locals
     finance_inputs: dict[str, Any],
     ghg_inputs: dict[str, Any],
     grid_profile: pd.DataFrame | None,
+    hw_buffer_tanks: TankSize,
     hw_pvt_system_size: SolarSystemSize,
     hw_st_system_size: SolarSystemSize,
     hw_tanks: TankSize,
@@ -1143,6 +1149,7 @@ def _optimisation_step(  # pylint: disable=too-many-locals
     ) = _simulation_iteration(
         conventional_cw_source_profiles,
         converter_sizes,
+        cw_buffer_tanks,
         cw_pvt_system_size,
         cw_st_system_size,
         cw_tanks,
@@ -1151,6 +1158,7 @@ def _optimisation_step(  # pylint: disable=too-many-locals
         finance_inputs,
         ghg_inputs,
         grid_profile,
+        hw_buffer_tanks,
         hw_pvt_system_size,
         hw_st_system_size,
         hw_tanks,
@@ -1234,9 +1242,11 @@ def multiple_optimisation_step(  # pylint: disable=too-many-locals, too-many-sta
     yearly_electric_load_statistics: pd.DataFrame,
     *,
     input_converter_sizes: dict[Converter, ConverterSize] | None = None,
+    input_cw_buffer_tanks: TankSize | None = None,
     input_cw_pvt_system_size: SolarSystemSize | None = None,
     input_cw_st_system_size: SolarSystemSize | None = None,
     input_cw_tanks: TankSize | None = None,
+    input_hw_buffer_tanks: TankSize | None = None,
     input_hw_pvt_system_size: SolarSystemSize | None = None,
     input_hw_st_system_size: SolarSystemSize | None = None,
     input_hw_tanks: TankSize | None = None,
@@ -1403,6 +1413,14 @@ def multiple_optimisation_step(  # pylint: disable=too-many-locals, too-many-sta
             optimisation_parameters.clean_water_tanks.min,
             optimisation_parameters.clean_water_tanks.step,
         )
+        if minigrid.pvt_panel is not None or minigrid.solar_thermal_panel is not None:
+            input_cw_buffer_tanks = TankSize(
+                optimisation_parameters.clean_water_buffer_tanks.max,
+                optimisation_parameters.clean_water_buffer_tanks.min,
+                optimisation_parameters.clean_water_buffer_tanks.step,
+            )
+        else:
+            input_cw_buffer_tanks = TankSize()
     else:
         input_cw_tanks = TankSize()
 
@@ -1426,6 +1444,14 @@ def multiple_optimisation_step(  # pylint: disable=too-many-locals, too-many-sta
             optimisation_parameters.hw_pvt_size.min,
             optimisation_parameters.hw_pvt_size.step,
         )
+        if minigrid.pvt_panel is not None or minigrid.solar_thermal_panel is not None:
+            input_hw_buffer_tanks = TankSize(
+                optimisation_parameters.hot_water_buffer_tanks.max,
+                optimisation_parameters.hot_water_buffer_tanks.min,
+                optimisation_parameters.hot_water_buffer_tanks.step,
+            )
+        else:
+            input_hw_buffer_tanks = TankSize()
     else:
         input_hw_pvt_system_size = SolarSystemSize()
 
@@ -1526,12 +1552,16 @@ def multiple_optimisation_step(  # pylint: disable=too-many-locals, too-many-sta
             static_converter_sizes: dict[str, float],
             optimisation_criterion: Criterion,
             *,
-            cw_pvt_size: float = 0,
-            clean_water_tanks: float = 0,
-            hw_pvt_size: float = 0,
-            hot_water_tanks: float = 0,
-            pv_size: float = 0,
-            storage_size: float = 0,
+            this_cw_buffer_tanks: float = 0,
+            this_cw_pvt_size: float = 0,
+            this_cw_st_size: float = 0,
+            this_clean_water_tanks: float = 0,
+            this_hw_buffer_tanks: float = 0,
+            this_hw_pvt_size: float = 0,
+            this_hw_st_size: float = 0,
+            this_hot_water_tanks: float = 0,
+            this_pv_size: float = 0,
+            this_storage_size: float = 0,
             **kwargs,
         ) -> float:
             """
@@ -1552,29 +1582,38 @@ def multiple_optimisation_step(  # pylint: disable=too-many-locals, too-many-sta
             end_year: int = start_year + int(optimisation_parameters.iteration_length)
 
             # Append converters defined elsewhere.
-
+            dynamic_converter_sizes: dict[Converter, int] = {
+                {converter.name: converter for converter in available_converters}[
+                    converter_name
+                ]: size
+                for converter_name, size in kwargs.items()
+            }
             simulation_converter_sizes: dict[Converter, int] = {
-                **kwargs,
+                **dynamic_converter_sizes,
                 **static_converter_sizes,
             }
 
             _, simulation_results, system_details = energy_system.run_simulation(
-                int(cw_pvt_size),
+                int(this_cw_pvt_size),
+                int(this_cw_st_size),
                 conventional_cw_source_profiles,
                 converters_from_sizing(simulation_converter_sizes),
                 disable_tqdm,
-                storage_size,
+                int(this_storage_size),
                 grid_profile,
-                hw_pvt_size,
+                int(this_hw_pvt_size),
+                int(this_hw_st_size),
                 irradiance_data,
                 kerosene_usage,
                 location,
                 logger,
                 minigrid,
-                clean_water_tanks,
-                hot_water_tanks,
+                int(this_cw_buffer_tanks),
+                int(this_clean_water_tanks),
+                int(this_hw_buffer_tanks),
+                int(this_hot_water_tanks),
                 total_solar_pv_power_produced,
-                {minigrid.pv_panel.name: pv_size},
+                {minigrid.pv_panel.name: this_pv_size},
                 optimisation.scenario,
                 Simulation(end_year, start_year),
                 temperature_data,
@@ -1636,8 +1675,12 @@ def multiple_optimisation_step(  # pylint: disable=too-many-locals, too-many-sta
         static_converter_sizes: dict[Converter, int] = {
             converter: available_converters.count(converter)
             for converter in available_converters
-            if converter not in pbounds
+            if converter.name not in pbounds
         }
+
+        import pdb
+
+        pdb.set_trace()
 
         criterion_to_optimiser_map: dict[Criterion, BayesianOptimization] = {}
         for optimisation_criterion in optimisation.optimisation_criteria:
@@ -1782,6 +1825,11 @@ def multiple_optimisation_step(  # pylint: disable=too-many-locals, too-many-sta
         optimum_system = _optimisation_step(
             conventional_cw_source_profiles,
             input_converter_sizes.copy() if input_converter_sizes is not None else None,
+            TankSize(
+                input_cw_buffer_tanks.max,
+                input_cw_buffer_tanks.min,
+                input_cw_buffer_tanks.step,
+            ),
             SolarSystemSize(
                 input_cw_pvt_system_size.max,
                 input_cw_pvt_system_size.min,
@@ -1802,6 +1850,11 @@ def multiple_optimisation_step(  # pylint: disable=too-many-locals, too-many-sta
             finance_inputs,
             ghg_inputs,
             grid_profile,
+            TankSize(
+                input_hw_buffer_tanks.max,
+                input_hw_buffer_tanks.min,
+                input_hw_buffer_tanks.step,
+            ),
             SolarSystemSize(
                 input_hw_pvt_system_size.max,
                 input_hw_pvt_system_size.min,

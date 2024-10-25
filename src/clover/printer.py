@@ -74,9 +74,7 @@ def generate_optimisation_string(
         ):
             optimisation_string_list.append(
                 "- Clean-water PV-T resolution of "
-                + f"{optimisation_inputs.cw_pvt_size.step} units "
-                + f"({minigrid.pvt_panel.pv_layer.pv_unit} kWp and "
-                + f"{minigrid.pvt_panel.thermal_unit} kWth per unit)"
+                + f"{optimisation_inputs.cw_pvt_size.step} collectors "
             )
         if (
             optimisation_inputs.cw_st_size is not None
@@ -104,9 +102,7 @@ def generate_optimisation_string(
         ):
             optimisation_string_list.append(
                 "- Hot-water PV-T resolution of "
-                f"{optimisation_inputs.hw_pvt_size.step} units "
-                + f"({minigrid.pvt_panel.pv_layer.pv_unit} kWp and "
-                + f"{minigrid.pvt_panel.thermal_unit} kWth per unit)"
+                f"{optimisation_inputs.hw_pvt_size.step} collectors "
             )
         if (
             optimisation_inputs.hw_st_size is not None
