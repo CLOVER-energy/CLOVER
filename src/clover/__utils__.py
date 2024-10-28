@@ -668,7 +668,9 @@ class ColumnHeader(enum.Enum):
     KEROSENE_MITIGATION = "Kerosene mitigation"
     LOAD_ENERGY = "Load energy (kWh)"
     MAXIMUM = "Maximum"
-    POWER_CONSUMED_BY_DESALINATION = "Power consumed providing clean water (kWh)"
+    POWER_CONSUMED_BY_PRIORITY_DESALINATION = (
+        "Power consumed providing (priority) electric clean water (kWh)"
+    )
     POWER_CONSUMED_BY_ELECTRIC_DEVICES = "Power consumed providing electricity (kWh)"
     POWER_CONSUMED_BY_HOT_WATER = "Power consumed providing hot water (kWh)"
     POWER_CONSUMED_BY_THERMAL_DESALINATION = (

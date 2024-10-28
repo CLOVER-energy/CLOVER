@@ -106,16 +106,27 @@ def battery_iteration_step(
     battery_energy_flow = float(battery_storage_profile.iloc[time_index, 0])  # type: ignore [arg-type]
     if time_index == 0:
         new_hourly_battery_storage = initial_battery_storage + battery_energy_flow
+        excess_energy = 0
+
     else:
-        # Battery charging
+        # Battery charging or no loads present
         if battery_energy_flow >= 0.0:
             new_hourly_battery_storage = float(
                 hourly_battery_storage[time_index - 1]
-            ) * (1.0 - minigrid.battery.leakage) + minigrid.battery.conversion_in * min(
-                battery_energy_flow,
-                minigrid.battery.charge_rate
-                * (maximum_battery_storage - minimum_battery_storage),
+            ) * (1.0 - minigrid.battery.leakage) + minigrid.battery.conversion_in * (
+                energy_transferred_to_storage := min(
+                    battery_energy_flow,
+                    minigrid.battery.charge_rate
+                    * (maximum_battery_storage - minimum_battery_storage),
+                )
             )
+
+            if energy_transferred_to_storage < 0:
+                raise Exception(
+                    "The battery was charging but energy was removed from storage."
+                )
+
+            excess_energy = max(battery_energy_flow - energy_transferred_to_storage, 0)
         # Battery discharging
         else:
             new_hourly_battery_storage = hourly_battery_storage[time_index - 1] * (
@@ -127,13 +138,13 @@ def battery_iteration_step(
                 * (maximum_battery_storage - minimum_battery_storage),
             )
 
-    excess_energy = max(new_hourly_battery_storage - maximum_battery_storage, 0.0)
+            excess_energy = 0
 
     return battery_energy_flow, excess_energy, new_hourly_battery_storage
 
 
 def cw_tank_iteration_step(  # pylint: disable=too-many-locals
-    backup_desalinator_water_supplied: dict[int, float],
+    prioritise_desalinator_water: dict[int, float],
     brine_per_desalinated_litre: float,
     clean_water_power_consumed_mapping: dict[int, float],
     clean_water_demand_met_by_excess_energy: dict[int, float],
@@ -150,20 +161,22 @@ def cw_tank_iteration_step(  # pylint: disable=too-many-locals
     maximum_cw_tank_storage: float,
     maximum_water_throughput: float,
     minigrid: Minigrid,
+    minimum_battery_storage: float,
     minimum_cw_tank_storage: float,
     new_hourly_battery_storage: float,
+    renewables_energy_used_directly: pd.DataFrame,
     scenario: Scenario,
     storage_water_supplied: dict[int, float],
     tank_storage_profile: pd.DataFrame,
     total_waste_produced: dict[WasteProduct, defaultdict[int, float]],
     *,
     time_index: int,
-) -> tuple[float, float, dict[WasteProduct, defaultdict[int, float]]]:
+) -> tuple[float, float, float, dict[WasteProduct, defaultdict[int, float]]]:
     """
     Caries out an iteration calculation for the clean-water tanks.
 
     Inputs:
-        - backup_desalinator_water_supplied:
+        - prioritise_desalinator_water:
             The water supplied by the backup (electric) desalination.
         - clean_water_power_consumed_mapping:
             The power consumed in providing clean water.
@@ -245,6 +258,9 @@ def cw_tank_iteration_step(  # pylint: disable=too-many-locals
         if time_index == 0:
             current_net_water_flow = initial_cw_tank_storage + tank_water_flow
         else:
+            # The current_net_water_flow parameter is positive if water has been added
+            # to the tank via thermal desalination and is negative if water has been
+            # removed from the tank at this time step to fulfil demand.
             current_net_water_flow = (
                 hourly_cw_tank_storage[time_index - 1]
                 * (1.0 - minigrid.clean_water_tank.leakage)  # type: ignore
@@ -282,16 +298,18 @@ def cw_tank_iteration_step(  # pylint: disable=too-many-locals
             # desalination along with the waste brine produced.
             brine_produced = brine_per_desalinated_litre * desalinated_water
             energy_consumed = energy_per_desalinated_litre * desalinated_water
-            new_hourly_battery_storage -= energy_consumed
+            excess_energy -= energy_consumed
+            # new_hourly_battery_storage -= energy_consumed
 
             # Ensure that the excess energy is normalised correctly.
-            excess_energy = max(
-                new_hourly_battery_storage - maximum_battery_storage, 0.0
-            )
+            # excess_energy = max(
+            #     new_hourly_battery_storage - maximum_battery_storage, 0.0
+            # )
 
             # Store this as water and electricity supplied using excess power.
             total_waste_produced[WasteProduct.BRINE][time_index] += brine_produced
             excess_energy_used_desalinating[time_index] = energy_consumed
+            renewables_energy_used_directly.iloc[time_index] += energy_consumed
             clean_water_demand_met_by_excess_energy[time_index] = max(
                 0, -current_net_water_flow
             )
@@ -312,26 +330,62 @@ def cw_tank_iteration_step(  # pylint: disable=too-many-locals
             and scenario.desalination_scenario.clean_water_scenario.mode
             == CleanWaterMode.PRIORITISE
         ):
-            # Compute the electricity consumed meeting this demand.
-            energy_consumed = energy_per_desalinated_litre * current_unmet_water_demand
+            # Compute the electricity consumed meeting this demand subject to the
+            # availability of converters.
+            energy_consumed = min(
+                [
+                    energy_per_desalinated_litre
+                    * (
+                        maximum_water_supplied := min(
+                            current_unmet_water_demand, maximum_water_throughput
+                        )
+                    ),
+                    (
+                        (new_hourly_battery_storage - minimum_battery_storage)
+                        * (1 - minigrid.battery.leakage)  # type: ignore
+                        * minigrid.battery.conversion_out  # type: ignore
+                    )
+                    + excess_energy,
+                ]
+            )
 
-            # Withdraw this energy from the batteries.
+            # Use excess energy, then withdraw this energy from the batteries.
+            excess_energy -= (
+                excess_renewables_used_directly := min(energy_consumed, excess_energy)
+            )
+            excess_energy_used_desalinating[
+                time_index
+            ] += excess_renewables_used_directly
+            energy_consumed -= excess_renewables_used_directly
+
             new_hourly_battery_storage -= (
-                1.0 / minigrid.battery.conversion_out  # type: ignore
-            ) * energy_consumed
+                min(
+                    energy_consumed,
+                    (new_hourly_battery_storage - minimum_battery_storage),
+                )
+                * minigrid.battery.conversion_out
+                / (1 - minigrid.battery.leakage)
+            )  # type: ignore
 
             # Ensure that the excess energy is normalised correctly.
-            excess_energy = max(
-                new_hourly_battery_storage - maximum_battery_storage, 0.0
-            )
+            # excess_energy = max(
+            #     new_hourly_battery_storage - maximum_battery_storage, 0.0
+            # )
+
+            # Compute the water supplied and brine produced
+            water_supplied = energy_consumed / energy_per_desalinated_litre
+            brine_produced = brine_per_desalinated_litre * water_supplied
 
             # Store this as water and electricity supplied by backup.
             clean_water_power_consumed_mapping[time_index] += energy_consumed
-            backup_desalinator_water_supplied[time_index] = current_unmet_water_demand
-            desalinated_water += current_unmet_water_demand
+            current_hourly_cw_tank_storage -= water_supplied
+            current_unmet_water_demand -= water_supplied
+            prioritise_desalinator_water[time_index] = water_supplied
+            total_waste_produced[WasteProduct.BRINE][time_index] += brine_produced
+            desalinated_water += water_supplied
         else:
             clean_water_power_consumed_mapping[time_index] = 0
-            backup_desalinator_water_supplied[time_index] = 0
+            prioritise_desalinator_water[time_index] = 0
 
         # Any remaining unmet water demand should be met using conventional clean-water
         # sources if available.
@@ -376,7 +430,12 @@ def cw_tank_iteration_step(  # pylint: disable=too-many-locals
                 0.0,
             )
 
-    return desalinated_water, excess_energy, total_waste_produced
+    return (
+        desalinated_water,
+        excess_energy,
+        new_hourly_battery_storage,
+        total_waste_produced,
+    )
 
 
 def get_electric_battery_storage_profile(  # pylint: disable=too-many-locals, too-many-statements

@@ -1552,16 +1552,16 @@ def multiple_optimisation_step(  # pylint: disable=too-many-locals, too-many-sta
             static_converter_sizes: dict[str, float],
             optimisation_criterion: Criterion,
             *,
-            this_cw_buffer_tanks: float = 0,
-            this_cw_pvt_size: float = 0,
-            this_cw_st_size: float = 0,
-            this_clean_water_tanks: float = 0,
-            this_hw_buffer_tanks: float = 0,
-            this_hw_pvt_size: float = 0,
-            this_hw_st_size: float = 0,
-            this_hot_water_tanks: float = 0,
-            this_pv_size: float = 0,
-            this_storage_size: float = 0,
+            cw_buffer_tanks: float = 0,
+            cw_pvt_size: float = 0,
+            cw_st_size: float = 0,
+            clean_water_tanks: float = 0,
+            hw_buffer_tanks: float = 0,
+            hw_pvt_size: float = 0,
+            hw_st_size: float = 0,
+            hot_water_tanks: float = 0,
+            pv_size: float = 0,
+            storage_size: float = 0,
             **kwargs,
         ) -> float:
             """
@@ -1585,7 +1585,7 @@ def multiple_optimisation_step(  # pylint: disable=too-many-locals, too-many-sta
             dynamic_converter_sizes: dict[Converter, int] = {
                 {converter.name: converter for converter in available_converters}[
                     converter_name
-                ]: size
+                ]: int(size)
                 for converter_name, size in kwargs.items()
             }
             simulation_converter_sizes: dict[Converter, int] = {
@@ -1594,26 +1594,26 @@ def multiple_optimisation_step(  # pylint: disable=too-many-locals, too-many-sta
             }
 
             _, simulation_results, system_details = energy_system.run_simulation(
-                int(this_cw_pvt_size),
-                int(this_cw_st_size),
+                int(cw_pvt_size),
+                int(cw_st_size),
                 conventional_cw_source_profiles,
                 converters_from_sizing(simulation_converter_sizes),
                 disable_tqdm,
-                int(this_storage_size),
+                int(storage_size),
                 grid_profile,
-                int(this_hw_pvt_size),
-                int(this_hw_st_size),
+                int(hw_pvt_size),
+                int(hw_st_size),
                 irradiance_data,
                 kerosene_usage,
                 location,
                 logger,
                 minigrid,
-                int(this_cw_buffer_tanks),
-                int(this_clean_water_tanks),
-                int(this_hw_buffer_tanks),
-                int(this_hot_water_tanks),
+                int(cw_buffer_tanks),
+                int(clean_water_tanks),
+                int(hw_buffer_tanks),
+                int(hot_water_tanks),
                 total_solar_pv_power_produced,
-                {minigrid.pv_panel.name: this_pv_size},
+                {minigrid.pv_panel.name: pv_size},
                 optimisation.scenario,
                 Simulation(end_year, start_year),
                 temperature_data,
@@ -1694,7 +1694,11 @@ def multiple_optimisation_step(  # pylint: disable=too-many-locals, too-many-sta
                     pbounds=pbounds,
                 )
             )
-            bayesian_optimiser.maximize(init_points=len(pbounds), n_iter=100)
+            bayesian_optimiser.maximize(
+                init_points=len(pbounds),
+                n_iter=2
+                ** len({key for key, value in pbounds.items() if value != (0, 0)}),
+            )
 
         import pdb
 
@@ -1707,7 +1711,7 @@ def multiple_optimisation_step(  # pylint: disable=too-many-locals, too-many-sta
         sns.set_context("notebook")
         sns.set_style("ticks")
 
-        bayesian_optimiser = criterion_to_optimiser_map[Criterion.LCUE]
+        bayesian_optimiser = criterion_to_optimiser_map[(criterion := Criterion.LCUW)]
 
         fig = plt.figure(figsize=(48 / 5, 32 / 5))
 
@@ -1717,18 +1721,20 @@ def multiple_optimisation_step(  # pylint: disable=too-many-locals, too-many-sta
                 "storage": [
                     entry["params"]["storage_size"] for entry in bayesian_optimiser.res
                 ],
-                "lcue": [1 / entry["target"] for entry in bayesian_optimiser.res],
+                criterion.value: [
+                    1 / entry["target"] for entry in bayesian_optimiser.res
+                ],
             }
         )
-        frame = frame[frame["lcue"] >= 0]
+        frame = frame[frame[criterion.value] >= 0]
         sns.scatterplot(
             frame,
             x="pv",
             y="storage",
-            hue="lcue",
+            hue=criterion.value,
             s=200,
             palette=(
-                this_palette := sns.cubehelix_palette(start=0.4, rot=-0.4, as_cmap=True)
+                palette := sns.cubehelix_palette(start=0.4, rot=-0.4, as_cmap=True)
             ),
         )
         plt.scatter(
@@ -1742,25 +1748,215 @@ def multiple_optimisation_step(  # pylint: disable=too-many-locals, too-many-sta
         plt.legend().remove()
 
         norm = plt.Normalize(
-            frame["lcue"].min(),
-            frame["lcue"].max(),
+            frame[criterion.value].min(),
+            frame[criterion.value].max(),
         )
         scalar_mappable = plt.cm.ScalarMappable(
             cmap=mcolors.LinearSegmentedColormap.from_list(
                 "Custom",
                 sns.cubehelix_palette(start=0.4, rot=-0.4).as_hex(),
-                len(set(frame["lcue"])),
+                len(set(frame[criterion.value])),
             ),
             norm=norm,
         )
         colorbar = fig.colorbar(
             scalar_mappable,
             ax=plt.gca(),
-            label="LCUE / $/kWh",
+            label=f"{criterion.value.upper()} / $/kWh",
         )
 
         plt.ylabel("Storage capacity / kWh")
         plt.xlabel("PV capacity / kW$_p$")
+
+        plt.show()
+
+        fig = plt.figure(figsize=(48 / 5, 32 / 5))
+
+        frame = pd.DataFrame(
+            {
+                "med_units": [
+                    entry["params"]["med_joo"] for entry in bayesian_optimiser.res
+                ],
+                "ro_units": [
+                    entry["params"]["reverse_osmosis_lowerbound"]
+                    for entry in bayesian_optimiser.res
+                ],
+                criterion.value: [
+                    1 / entry["target"] for entry in bayesian_optimiser.res
+                ],
+            }
+        )
+        frame = frame[frame[criterion.value] >= 0]
+        sns.scatterplot(
+            frame,
+            x="med_units",
+            y="ro_units",
+            hue=criterion.value,
+            s=200,
+            palette=(
+                palette := sns.cubehelix_palette(start=0.4, rot=-0.4, as_cmap=True)
+            ),
+        )
+        plt.scatter(
+            [bayesian_optimiser.max["params"]["med_joo"]],
+            [bayesian_optimiser.max["params"]["reverse_osmosis_lowerbound"]],
+            s=200,
+            facecolors="none",
+            edgecolors="orange",
+        )
+
+        plt.legend().remove()
+
+        norm = plt.Normalize(
+            frame[criterion.value].min(),
+            frame[criterion.value].max(),
+        )
+        scalar_mappable = plt.cm.ScalarMappable(
+            cmap=mcolors.LinearSegmentedColormap.from_list(
+                "Custom",
+                sns.cubehelix_palette(start=0.4, rot=-0.4).as_hex(),
+                len(set(frame[criterion.value])),
+            ),
+            norm=norm,
+        )
+        colorbar = fig.colorbar(
+            scalar_mappable,
+            ax=plt.gca(),
+            label=f"{criterion.value.upper()} / $/kWh",
+        )
+
+        plt.xlabel("MED units installed")
+        plt.ylabel("RO units installed")
+
+        plt.savefig(
+            "med_and_ro_units.pdf", format="pdf", bbox_inches="tight", pad_inches=0
+        )
+
+        plt.show()
+
+        fig = plt.figure(figsize=(48 / 5, 32 / 5))
+
+        frame = pd.DataFrame(
+            {
+                "cw_pvt_size": [
+                    entry["params"]["cw_pvt_size"] for entry in bayesian_optimiser.res
+                ],
+                "cw_st_size": [
+                    entry["params"]["cw_st_size"] for entry in bayesian_optimiser.res
+                ],
+                criterion.value: [
+                    1 / entry["target"] for entry in bayesian_optimiser.res
+                ],
+            }
+        )
+        frame = frame[frame[criterion.value] >= 0]
+        sns.scatterplot(
+            frame,
+            x="cw_pvt_size",
+            y="cw_st_size",
+            hue=criterion.value,
+            s=200,
+            palette=(
+                palette := sns.cubehelix_palette(start=0.4, rot=-0.4, as_cmap=True)
+            ),
+        )
+        plt.scatter(
+            [bayesian_optimiser.max["params"]["cw_pvt_size"]],
+            [bayesian_optimiser.max["params"]["cw_st_size"]],
+            s=200,
+            facecolors="none",
+            edgecolors="orange",
+        )
+
+        plt.legend().remove()
+
+        norm = plt.Normalize(
+            frame[criterion.value].min(),
+            frame[criterion.value].max(),
+        )
+        scalar_mappable = plt.cm.ScalarMappable(
+            cmap=mcolors.LinearSegmentedColormap.from_list(
+                "Custom",
+                sns.cubehelix_palette(start=0.4, rot=-0.4).as_hex(),
+                len(set(frame[criterion.value])),
+            ),
+            norm=norm,
+        )
+        colorbar = fig.colorbar(
+            scalar_mappable,
+            ax=plt.gca(),
+            label=f"{criterion.value.upper()} / $/kWh",
+        )
+
+        plt.xlabel("PV-T collectors")
+        plt.ylabel("ST collectors")
+
+        plt.savefig(
+            "pvt_st_collectors.pdf", format="pdf", bbox_inches="tight", pad_inches=0
+        )
+
+        plt.show()
+
+        fig = plt.figure(figsize=(48 / 5, 32 / 5))
+
+        frame = pd.DataFrame(
+            {
+                "clean_water_tanks": [
+                    entry["params"]["clean_water_tanks"]
+                    for entry in bayesian_optimiser.res
+                ],
+                "cw_buffer_tanks": [
+                    entry["params"]["cw_buffer_tanks"]
+                    for entry in bayesian_optimiser.res
+                ],
+                criterion.value: [
+                    1 / entry["target"] for entry in bayesian_optimiser.res
+                ],
+            }
+        )
+        frame = frame[frame[criterion.value] >= 0]
+        sns.scatterplot(
+            frame,
+            x="clean_water_tanks",
+            y="cw_buffer_tanks",
+            hue=criterion.value,
+            s=200,
+            palette=(
+                palette := sns.cubehelix_palette(start=0.4, rot=-0.4, as_cmap=True)
+            ),
+        )
+        plt.scatter(
+            [bayesian_optimiser.max["params"]["clean_water_tanks"]],
+            [bayesian_optimiser.max["params"]["cw_buffer_tanks"]],
+            s=200,
+            facecolors="none",
+            edgecolors="orange",
+        )
+
+        plt.legend().remove()
+
+        norm = plt.Normalize(
+            frame[criterion.value].min(),
+            frame[criterion.value].max(),
+        )
+        scalar_mappable = plt.cm.ScalarMappable(
+            cmap=mcolors.LinearSegmentedColormap.from_list(
+                "Custom",
+                sns.cubehelix_palette(start=0.4, rot=-0.4).as_hex(),
+                len(set(frame[criterion.value])),
+            ),
+            norm=norm,
+        )
+        colorbar = fig.colorbar(
+            scalar_mappable,
+            ax=plt.gca(),
+            label=f"{criterion.value.upper()} / $/kWh",
+        )
+
+        plt.xlabel("Number of clean-water tanks")
+        plt.ylabel("Number of thermal-system buffer tanks")
+
+        plt.savefig("water_tanks.pdf", format="pdf", bbox_inches="tight", pad_inches=0)
 
         plt.show()
 
@@ -1784,9 +1980,7 @@ def multiple_optimisation_step(  # pylint: disable=too-many-locals, too-many-sta
             y="storage",
             hue="lcue",
             s=200,
-            palette=(
-                this_palette := sns.cubehelix_palette(start=0, rot=-0.4, as_cmap=True)
-            ),
+            palette=(palette := sns.cubehelix_palette(start=0, rot=-0.4, as_cmap=True)),
         )
         plt.scatter(
             [bayesian_optimiser.max["params"]["pv_size"]],
@@ -1818,6 +2012,8 @@ def multiple_optimisation_step(  # pylint: disable=too-many-locals, too-many-sta
 
         plt.ylabel("Storage capacity / kWh")
         plt.xlabel("PV capacity / kW$_p$")
+
+        plt.savefig("pv_battery.pdf", format="pdf", bbox_inches="tight", pad_inches=0)
 
         plt.show()
 

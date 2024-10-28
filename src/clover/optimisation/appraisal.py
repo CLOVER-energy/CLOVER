@@ -75,11 +75,11 @@ def _calculate_power_consumed_fraction(
     """
 
     power_consumed_fraction: dict[ResourceType, float] = collections.defaultdict(float)
-    if ColumnHeader.POWER_CONSUMED_BY_DESALINATION.value in simulation_results:
+    if ColumnHeader.POWER_CONSUMED_BY_PRIORITY_DESALINATION.value in simulation_results:
         total_clean_water_power_consumed = (
             np.sum(
                 simulation_results[  # type: ignore
-                    ColumnHeader.POWER_CONSUMED_BY_DESALINATION.value
+                    ColumnHeader.POWER_CONSUMED_BY_PRIORITY_DESALINATION.value
                 ]
             )
             + np.sum(
@@ -119,7 +119,8 @@ def _calculate_power_consumed_fraction(
     # If no other resource types consumed electricity, then all was consumed by electric
     # devices.
     elif (
-        ColumnHeader.POWER_CONSUMED_BY_DESALINATION.value not in simulation_results
+        ColumnHeader.POWER_CONSUMED_BY_PRIORITY_DESALINATION.value
+        not in simulation_results
         and ColumnHeader.POWER_CONSUMED_BY_HOT_WATER.value not in simulation_results
     ):
         power_consumed_fraction[ResourceType.ELECTRIC] = 1
@@ -877,8 +878,14 @@ def _appraise_clean_water_system_tech(  # pylint: disable=too-many-locals
                     ColumnHeader.DESALINATION_PLANT_RENEWABLE_FRACTION.value
                 ]
             )
-            if ColumnHeader.CLEAN_WATER_FROM_THERMAL_RENEWABLES.value
-            in simulation_results
+            if (
+                ColumnHeader.CLEAN_WATER_FROM_THERMAL_RENEWABLES.value
+                in simulation_results
+            )
+            and (
+                ColumnHeader.DESALINATION_PLANT_RENEWABLE_FRACTION.value
+                in simulation_results
+            )
             else 0
         )
         # Clean water taken from tank storage.
@@ -918,12 +925,16 @@ def _appraise_clean_water_system_tech(  # pylint: disable=too-many-locals
                 ColumnHeader.DESALINATION_PLANT_RENEWABLE_FRACTION.value
             ]
         )
-        if ColumnHeader.CLEAN_WATER_FROM_THERMAL_RENEWABLES.value in simulation_results
+        if (
+            ColumnHeader.CLEAN_WATER_FROM_THERMAL_RENEWABLES.value in simulation_results
+            and ColumnHeader.DESALINATION_PLANT_RENEWABLE_FRACTION.value
+            in simulation_results
+        )
         else 0
     )
 
     total_clean_water: float = np.sum(
-        simulation_results[ColumnHeader.TOTAL_CW_SUPPLIED.value]  # type: ignore
+        simulation_results[ColumnHeader.TOTAL_CW_CONSUMED.value]  # type: ignore
     )
 
     clean_water_demand_covered: float = total_clean_water / np.sum(

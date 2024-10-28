@@ -1184,13 +1184,13 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
                 np.nanmean(
                     np.reshape(
                         simulation_output[0:HOURS_PER_YEAR][
-                            ColumnHeader.POWER_CONSUMED_BY_DESALINATION.value
+                            ColumnHeader.POWER_CONSUMED_BY_PRIORITY_DESALINATION.value
                         ].values,
                         (365, 24),
                     ),
                     axis=0,
                 )
-                if ColumnHeader.POWER_CONSUMED_BY_DESALINATION.value
+                if ColumnHeader.POWER_CONSUMED_BY_PRIORITY_DESALINATION.value
                 in simulation_output
                 else None
             )
@@ -1852,7 +1852,7 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
             pbar.update(1)
 
             # Plot the clean-water load breakdown by load type.
-            pltfigure(figsize=(48 / 5, 32 / 5))
+            plt.figure(figsize=(48 / 5, 32 / 5))
             plt.plot(
                 range(24),
                 total_cw_load[0:24][DemandType.DOMESTIC.value],
@@ -3029,7 +3029,7 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
             clean_water_power_consumed = np.nanmean(
                 np.reshape(
                     simulation_output[0:HOURS_PER_YEAR][
-                        ColumnHeader.POWER_CONSUMED_BY_DESALINATION.value
+                        ColumnHeader.POWER_CONSUMED_BY_PRIORITY_DESALINATION.value
                     ].values,
                     (365, 24),
                 ),

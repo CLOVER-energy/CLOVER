@@ -539,6 +539,13 @@ def _get_supply_flow_rate(
 
     """
 
+    import pdb
+
+    pdb.set_trace()
+
+    # The code in this function works for when fluid is passing through collectors and
+    # not circulating to a tank. An alternative snippet is provided at the end.
+
     # Use the throughput flow rate if provided.
     if thermal_scenario.throughput_mass_flow_rate is not None:
         return thermal_scenario.throughput_mass_flow_rate
@@ -569,6 +576,41 @@ def _get_supply_flow_rate(
         f"'{solar_thermal_panel.panel_type}'. Valid types are "
         + f"'{SolarPanelType.PV_T.value}' and '{SolarPanelType.SOLAR_THERMAL.value}'.",
     )
+
+    # Potential alternative snippet.
+    # # If a throughput rate is provided, use this.
+    # if thermal_scenario.throughput_mass_flow_rate is not None:
+    #     throughput_mass_flow_rate = thermal_scenario.throughput_mass_flow_rate
+
+    # # Otherwise, the throughput rate is determined based on the parameters given for the
+    # # collectors:
+    # else:
+    #     # If only PV-T collectors are present, then their flow rate is fixed.
+    #     if SolarPanelType.SOLAR_THERMAL not in relevant_scenarios:
+    #         throughput_mass_flow_rate = (
+    #             collector_system_sizes[SolarPanelType.PV_T]
+    #             * relevant_scenarios[SolarPanelType.PV_T].mass_flow_rate
+    #         )
+
+    #     # Likewise, if only ST collectors are present, then their flow rate is fixed.
+    #     elif SolarPanelType.PV_T not in relevant_scenarios:
+    #         throughput_mass_flow_rate = (
+    #             collector_system_sizes[SolarPanelType.SOLAR_THERMAL]
+    #             * relevant_scenarios[SolarPanelType.SOLAR_THERMAL].mass_flow_rate
+    #         )
+
+    #     # Otherwise, the throughput rate is based on whichever panel there are more of.
+    #     else:
+    #         throughput_mass_flow_rate = max(
+    #             (
+    #                 collector_system_sizes[SolarPanelType.SOLAR_THERMAL]
+    #                 * relevant_scenarios[SolarPanelType.SOLAR_THERMAL].mass_flow_rate
+    #             ),
+    #             (
+    #                 collector_system_sizes[SolarPanelType.PV_T]
+    #                 * relevant_scenarios[SolarPanelType.PV_T].mass_flow_rate
+    #             ),
+    #         )
 
 
 def _thermal_plant_hot_water_return_temperature(
@@ -792,6 +834,47 @@ def _calculate_closed_loop_solar_thermal_output(  # pylint: disable=too-many-loc
         else default_supply_temperature
     ) + ZERO_CELCIUS_OFFSET  # [degC]
 
+    # Sanitise the mass flow rates.
+    # Here, the logic we employ either utilises the throughput mass flow rate, if
+    # provided, to be that which passes through the entire system. Otherwise, if
+    # separate mass flow rates are given, then these are sanitised such that fluid flows
+    # more quickly through which ever collector there are fewer of in order to have a
+    # continuity of flow.
+
+    # If a throughput rate is provided, use this.
+    if thermal_scenario.throughput_mass_flow_rate is not None:
+        throughput_mass_flow_rate = thermal_scenario.throughput_mass_flow_rate
+
+    # Otherwise, the throughput rate is determined based on the parameters given for the
+    # collectors:
+    else:
+        # If only PV-T collectors are present, then their flow rate is fixed.
+        if SolarPanelType.SOLAR_THERMAL not in relevant_scenarios:
+            throughput_mass_flow_rate = (
+                collector_system_sizes[SolarPanelType.PV_T]
+                * relevant_scenarios[SolarPanelType.PV_T].mass_flow_rate
+            )
+
+        # Likewise, if only ST collectors are present, then their flow rate is fixed.
+        elif SolarPanelType.PV_T not in relevant_scenarios:
+            throughput_mass_flow_rate = (
+                collector_system_sizes[SolarPanelType.SOLAR_THERMAL]
+                * relevant_scenarios[SolarPanelType.SOLAR_THERMAL].mass_flow_rate
+            )
+
+        # Otherwise, the throughput rate is based on whichever panel there are more of.
+        else:
+            throughput_mass_flow_rate = max(
+                (
+                    collector_system_sizes[SolarPanelType.SOLAR_THERMAL]
+                    * relevant_scenarios[SolarPanelType.SOLAR_THERMAL].mass_flow_rate
+                ),
+                (
+                    collector_system_sizes[SolarPanelType.PV_T]
+                    * relevant_scenarios[SolarPanelType.PV_T].mass_flow_rate
+                ),
+            )
+
     # The collector heat transfer depends only on the parameters of the final
     # collector in any series configuration.
     if SolarPanelType.PV_T in relevant_scenarios:
@@ -803,12 +886,7 @@ def _calculate_closed_loop_solar_thermal_output(  # pylint: disable=too-many-loc
             # / 3600  # [s/hour]
         )  # [W/K]
         pvt_collector_mass_flow_rate = (
-            (
-                thermal_scenario.throughput_mass_flow_rate
-                / collector_system_sizes[SolarPanelType.PV_T]
-            )
-            if thermal_scenario.throughput_mass_flow_rate is not None
-            else relevant_scenarios[SolarPanelType.PV_T].mass_flow_rate
+            throughput_mass_flow_rate / collector_system_sizes[SolarPanelType.PV_T]
         )
         logger.debug(
             "Mass flow rate through PV-T collectors: %s",
@@ -826,12 +904,8 @@ def _calculate_closed_loop_solar_thermal_output(  # pylint: disable=too-many-loc
             # / 3600  # [s/hour]
         )  # [W/K]
         st_collector_mass_flow_rate = (
-            (
-                thermal_scenario.throughput_mass_flow_rate
-                / collector_system_sizes[SolarPanelType.SOLAR_THERMAL]
-            )
-            if thermal_scenario.throughput_mass_flow_rate is not None
-            else relevant_scenarios[SolarPanelType.SOLAR_THERMAL].mass_flow_rate
+            throughput_mass_flow_rate
+            / collector_system_sizes[SolarPanelType.SOLAR_THERMAL]
         )
         logger.debug(
             "Mass flow rate through solar-thermal collectors: %s",
