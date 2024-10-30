@@ -167,13 +167,11 @@ def _simulation_cumulative_results(  # pylint: disable=too-many-locals
     cumulative_waste_produced = {WasteProduct.BRINE: cumulative_brine}
 
     # Compute the cumulative useful products.
-    if (
-        previous_system.cumulative_results.clean_water is not None
-        and technical_appraisal.total_clean_water is not None
-    ):
-        cumulative_clean_water: float = (
-            technical_appraisal.total_clean_water
-            + previous_system.cumulative_results.clean_water
+    if technical_appraisal.total_clean_water is not None:
+        cumulative_clean_water: float = technical_appraisal.total_clean_water + (
+            previous_system.cumulative_results.clean_water
+            if previous_system.cumulative_results.clean_water is not None
+            else 0
         )
     else:
         logger.debug("No clean water produced.")
@@ -1061,7 +1059,9 @@ def _appraise_electric_system_tech(  # pylint: disable=too-many-locals
     renewables_fraction: float = (
         renewable_electricity_used + storage_electricity_used
     ) / total_electricity_consumed
-    unmet_fraction: float = unmet_electricity / total_load_energy
+    unmet_fraction: float = (
+        (unmet_electricity / total_load_energy) if total_load_energy > 0 else np.inf
+    )
 
     # Calculate total discounted electricity values
     total_electricity_consumed_daily = hourly_profile_to_daily_sum(
@@ -1748,6 +1748,10 @@ def appraise_system(  # pylint: disable=too-many-locals
         )
     else:
         cumulative_brine = None
+
+    # import pdb
+
+    # pdb.set_trace()
 
     # pylint: disable=line-too-long
     criteria: dict[Criterion, float | None] = {

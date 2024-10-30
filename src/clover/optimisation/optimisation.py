@@ -32,6 +32,7 @@ functions which can be used to carry out an optimisation:
 
 import datetime
 import functools
+import math
 
 from logging import Logger
 from typing import Any
@@ -1585,7 +1586,7 @@ def multiple_optimisation_step(  # pylint: disable=too-many-locals, too-many-sta
             dynamic_converter_sizes: dict[Converter, int] = {
                 {converter.name: converter for converter in available_converters}[
                     converter_name
-                ]: int(size)
+                ]: math.floor(size)
                 for converter_name, size in kwargs.items()
             }
             simulation_converter_sizes: dict[Converter, int] = {
@@ -1593,77 +1594,91 @@ def multiple_optimisation_step(  # pylint: disable=too-many-locals, too-many-sta
                 **static_converter_sizes,
             }
 
-            _, simulation_results, system_details = energy_system.run_simulation(
-                int(cw_pvt_size),
-                int(cw_st_size),
-                conventional_cw_source_profiles,
-                converters_from_sizing(simulation_converter_sizes),
-                disable_tqdm,
-                int(storage_size),
-                grid_profile,
-                int(hw_pvt_size),
-                int(hw_st_size),
-                irradiance_data,
-                kerosene_usage,
-                location,
-                logger,
-                minigrid,
-                int(cw_buffer_tanks),
-                int(clean_water_tanks),
-                int(hw_buffer_tanks),
-                int(hot_water_tanks),
-                total_solar_pv_power_produced,
-                {minigrid.pv_panel.name: pv_size},
-                optimisation.scenario,
-                Simulation(end_year, start_year),
-                temperature_data,
-                total_loads,
-                wind_speed_data,
-            )
-
-            system_appraisal = appraise_system(
-                yearly_electric_load_statistics,
-                end_year,
-                finance_inputs,
-                ghg_inputs,
-                minigrid.inverter,
-                location,
-                logger,
-                previous_system,
-                optimisation.scenario,
-                simulation_results,
-                start_year,
-                system_details,
-            )
-
-            sufficient_system_appraisals = get_sufficient_appraisals(
-                optimisation, [system_appraisal]
-            )
-
-            # Throw off systens that don't meet the threshold criteria
-            if len(sufficient_system_appraisals) == 0:
-                return (
-                    -1
-                    / system_appraisal.criteria[
-                        list(optimisation.optimisation_criteria.keys())[0]
-                    ]
+            def _simulation_run() -> float:
+                """Run a simulation and return the appraised result."""
+                _, simulation_results, system_details = energy_system.run_simulation(
+                    math.floor(cw_pvt_size),
+                    math.floor(cw_st_size),
+                    conventional_cw_source_profiles,
+                    converters_from_sizing(simulation_converter_sizes),
+                    disable_tqdm,
+                    math.floor(storage_size),
+                    grid_profile,
+                    math.floor(hw_pvt_size),
+                    math.floor(hw_st_size),
+                    irradiance_data,
+                    kerosene_usage,
+                    location,
+                    logger,
+                    minigrid,
+                    math.floor(cw_buffer_tanks),
+                    math.floor(clean_water_tanks),
+                    math.floor(hw_buffer_tanks),
+                    math.floor(hot_water_tanks),
+                    total_solar_pv_power_produced,
+                    {minigrid.pv_panel.name: pv_size},
+                    optimisation.scenario,
+                    Simulation(end_year, start_year),
+                    temperature_data,
+                    total_loads,
+                    wind_speed_data,
                 )
 
-            # Determine the simulated system's criterion and return this value.
-            optimum_systems = _fetch_optimum_system(
-                optimisation, sufficient_system_appraisals
-            )
-            criterion_value = optimum_systems[optimisation_criterion].criteria[
-                optimisation_criterion
-            ]
+                system_appraisal = appraise_system(
+                    yearly_electric_load_statistics,
+                    end_year,
+                    finance_inputs,
+                    ghg_inputs,
+                    minigrid.inverter,
+                    location,
+                    logger,
+                    previous_system,
+                    optimisation.scenario,
+                    simulation_results,
+                    start_year,
+                    system_details,
+                )
 
-            if (
-                optimisation.optimisation_criteria[optimisation_criterion]
-                == CriterionMode.MAXIMISE
-            ):
-                return criterion_value
+                sufficient_system_appraisals = get_sufficient_appraisals(
+                    optimisation, [system_appraisal]
+                )
 
-            return 1 / criterion_value
+                # Throw off systens that don't meet the threshold criteria
+                if len(sufficient_system_appraisals) == 0:
+                    return (
+                        -1
+                        / system_appraisal.criteria[
+                            list(optimisation.optimisation_criteria.keys())[0]
+                        ]
+                    )
+
+                # Determine the simulated system's criterion and return this value.
+                optimum_systems = _fetch_optimum_system(
+                    optimisation, sufficient_system_appraisals
+                )
+                criterion_value = optimum_systems[optimisation_criterion].criteria[
+                    optimisation_criterion
+                ]
+
+                if (
+                    optimisation.optimisation_criteria[optimisation_criterion]
+                    == CriterionMode.MAXIMISE
+                ):
+                    return criterion_value
+
+                return 1 / criterion_value
+
+            return _simulation_run()
+
+            # results = [_simulation_run() for _ in range(3)]
+
+            # if len(set(results)) != 1:
+            #     raise RuntimeError(
+            #         "Results were not the same within an iteration: "
+            #         f"{', '.join(results)}"
+            #     )
+
+            # return results[0]
 
         from bayes_opt import BayesianOptimization
 
@@ -1696,8 +1711,11 @@ def multiple_optimisation_step(  # pylint: disable=too-many-locals, too-many-sta
             )
             bayesian_optimiser.maximize(
                 init_points=len(pbounds),
-                n_iter=2
-                ** len({key for key, value in pbounds.items() if value != (0, 0)}),
+                n_iter=max(
+                    2
+                    ** len({key for key, value in pbounds.items() if value != (0, 0)}),
+                    100,
+                ),
             )
 
         import pdb
@@ -1726,9 +1744,22 @@ def multiple_optimisation_step(  # pylint: disable=too-many-locals, too-many-sta
                 ],
             }
         )
-        frame = frame[frame[criterion.value] >= 0]
+        # frame = frame[frame[criterion.value] >= 0]
         sns.scatterplot(
-            frame,
+            (_invalid_systems := frame[frame[criterion.value] < 0]),
+            x="pv",
+            y="storage",
+            color="grey",
+            s=200,
+        )
+        sns.scatterplot(
+            frame[
+                (frame[criterion.value] >= 0)
+                & (
+                    frame[criterion.value]
+                    <= (frame_max := 10 * frame[criterion.value].median(axis=0))
+                )
+            ],
             x="pv",
             y="storage",
             hue=criterion.value,
@@ -1748,8 +1779,8 @@ def multiple_optimisation_step(  # pylint: disable=too-many-locals, too-many-sta
         plt.legend().remove()
 
         norm = plt.Normalize(
-            frame[criterion.value].min(),
-            frame[criterion.value].max(),
+            0,
+            frame_max,
         )
         scalar_mappable = plt.cm.ScalarMappable(
             cmap=mcolors.LinearSegmentedColormap.from_list(
@@ -1786,9 +1817,21 @@ def multiple_optimisation_step(  # pylint: disable=too-many-locals, too-many-sta
                 ],
             }
         )
-        frame = frame[frame[criterion.value] >= 0]
         sns.scatterplot(
-            frame,
+            (_invalid_systems := frame[frame[criterion.value] < 0]),
+            x="med_units",
+            y="ro_units",
+            color="grey",
+            s=200,
+        )
+        sns.scatterplot(
+            frame[
+                (frame[criterion.value] >= 0)
+                & (
+                    frame[criterion.value]
+                    <= (frame_max := 10 * frame[criterion.value].median(axis=0))
+                )
+            ],
             x="med_units",
             y="ro_units",
             hue=criterion.value,
@@ -1838,6 +1881,83 @@ def multiple_optimisation_step(  # pylint: disable=too-many-locals, too-many-sta
 
         frame = pd.DataFrame(
             {
+                "reverse_osmosis_lowerbound": [
+                    entry["params"]["reverse_osmosis_lowerbound"]
+                    for entry in bayesian_optimiser.res
+                ],
+                "clean_water_tanks": [
+                    entry["params"]["clean_water_tanks"]
+                    for entry in bayesian_optimiser.res
+                ],
+                criterion.value: [
+                    1 / entry["target"] for entry in bayesian_optimiser.res
+                ],
+            }
+        )
+        sns.scatterplot(
+            (_invalid_systems := frame[frame[criterion.value] < 0]),
+            x="reverse_osmosis_lowerbound",
+            y="clean_water_tanks",
+            color="grey",
+            s=200,
+        )
+        sns.scatterplot(
+            frame[
+                (frame[criterion.value] >= 0)
+                & (
+                    frame[criterion.value]
+                    <= (frame_max := 10 * frame[criterion.value].median(axis=0))
+                )
+            ],
+            x="reverse_osmosis_lowerbound",
+            y="clean_water_tanks",
+            hue=criterion.value,
+            s=200,
+            palette=(
+                palette := sns.cubehelix_palette(start=0.4, rot=-0.4, as_cmap=True)
+            ),
+        )
+        plt.scatter(
+            [bayesian_optimiser.max["params"]["reverse_osmosis_lowerbound"]],
+            [bayesian_optimiser.max["params"]["clean_water_tanks"]],
+            s=200,
+            facecolors="none",
+            edgecolors="orange",
+        )
+
+        plt.legend().remove()
+
+        norm = plt.Normalize(
+            frame[criterion.value].min(),
+            frame[criterion.value].max(),
+        )
+        scalar_mappable = plt.cm.ScalarMappable(
+            cmap=mcolors.LinearSegmentedColormap.from_list(
+                "Custom",
+                sns.cubehelix_palette(start=0.4, rot=-0.4).as_hex(),
+                len(set(frame[criterion.value])),
+            ),
+            norm=norm,
+        )
+        colorbar = fig.colorbar(
+            scalar_mappable,
+            ax=plt.gca(),
+            label=f"{criterion.value.upper()} / $/kWh",
+        )
+
+        plt.xlabel("RO units installed")
+        plt.ylabel("Number of clean-water tanks installed")
+
+        plt.savefig(
+            "ro_units_and_storage.pdf", format="pdf", bbox_inches="tight", pad_inches=0
+        )
+
+        plt.show()
+
+        fig = plt.figure(figsize=(48 / 5, 32 / 5))
+
+        frame = pd.DataFrame(
+            {
                 "cw_pvt_size": [
                     entry["params"]["cw_pvt_size"] for entry in bayesian_optimiser.res
                 ],
@@ -1849,9 +1969,21 @@ def multiple_optimisation_step(  # pylint: disable=too-many-locals, too-many-sta
                 ],
             }
         )
-        frame = frame[frame[criterion.value] >= 0]
         sns.scatterplot(
-            frame,
+            (_invalid_systems := frame[frame[criterion.value] < 0]),
+            x="cw_pvt_size",
+            y="cw_st_size",
+            color="grey",
+            s=200,
+        )
+        sns.scatterplot(
+            frame[
+                (frame[criterion.value] >= 0)
+                & (
+                    frame[criterion.value]
+                    <= (frame_max := 10 * frame[criterion.value].median(axis=0))
+                )
+            ],
             x="cw_pvt_size",
             y="cw_st_size",
             hue=criterion.value,
@@ -1914,9 +2046,21 @@ def multiple_optimisation_step(  # pylint: disable=too-many-locals, too-many-sta
                 ],
             }
         )
-        frame = frame[frame[criterion.value] >= 0]
         sns.scatterplot(
-            frame,
+            (_invalid_systems := frame[frame[criterion.value] < 0]),
+            x="clean_water_tanks",
+            y="cw_buffer_tanks",
+            color="grey",
+            s=200,
+        )
+        sns.scatterplot(
+            frame[
+                (frame[criterion.value] >= 0)
+                & (
+                    frame[criterion.value]
+                    <= (frame_max := 10 * frame[criterion.value].median(axis=0))
+                )
+            ],
             x="clean_water_tanks",
             y="cw_buffer_tanks",
             hue=criterion.value,
@@ -1961,6 +2105,10 @@ def multiple_optimisation_step(  # pylint: disable=too-many-locals, too-many-sta
         plt.show()
 
         bayesian_optimiser = criterion_to_optimiser_map[Criterion.EMISSIONS_INTENSITY]
+
+        ########
+        # STOP #
+        ########
 
         fig = plt.figure(figsize=(48 / 5, 32 / 5))
 

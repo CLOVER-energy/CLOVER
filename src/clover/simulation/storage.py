@@ -363,8 +363,8 @@ def cw_tank_iteration_step(  # pylint: disable=too-many-locals
                     energy_consumed,
                     (new_hourly_battery_storage - minimum_battery_storage),
                 )
-                * minigrid.battery.conversion_out
-                / (1 - minigrid.battery.leakage)
+                * minigrid.battery.conversion_out  # type: ignore
+                / (1 - minigrid.battery.leakage)  # type: ignore
             )  # type: ignore
 
             # Ensure that the excess energy is normalised correctly.
