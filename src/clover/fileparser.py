@@ -1002,7 +1002,7 @@ def _parse_global_settings(logger: Logger) -> dict[str, Any]:
 
     try:
         global_settings_inputs: Union[dict[str, Any], list[dict[str, Any]] | None] = (
-            read_yaml(GLOBAL_SETTINGS_FILE, logger)
+            read_yaml(global_settings_filepath, logger)
         )
     except FileNotFoundError:
         logger.error(
