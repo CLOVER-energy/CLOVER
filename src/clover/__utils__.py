@@ -31,6 +31,8 @@ from typing import Any, DefaultDict
 import json
 import numpy as np  # pylint: disable=import-error
 import pandas as pd  # pylint: disable=import-error
+import scipy  # pylint: disable=import-error
+import scipy.interpolate
 import yaml  # pylint: disable=import-error
 
 from tqdm import tqdm  # pylint: disable=import-error
@@ -166,7 +168,7 @@ KEROSENE_DEVICE_NAME: str = "kerosene"
 
 # Locations folder name:
 #   The name of the locations folder.
-LOCATIONS_FOLDER_NAME: str = "clover_locations"
+LOCATIONS_FOLDER_NAME: str = os.path.join(os.path.expanduser("~"), "clover_locations")
 
 # Logger directory:
 #   The directory in which to save logs.
@@ -1495,6 +1497,10 @@ class Location:
     .. attribute:: time_difference
         The time difference, in hours, at the location vs. UTC.
 
+    .. attribute:: final_community_size
+        Used in stranded-asset paper modelling to fix the final size of the
+        community.
+
     """
 
     community_growth_rate: float
@@ -1505,6 +1511,7 @@ class Location:
     max_years: int
     name: str
     time_difference: float
+    final_community_size: int
 
     @classmethod
     def from_dict(cls, location_inputs: dict[str, Any]) -> Any:
@@ -1529,6 +1536,9 @@ class Location:
             location_inputs["max_years"],
             location_inputs["location"],
             location_inputs["time_difference"],
+            location_inputs.get(
+                "final_community_size", location_inputs["community_size"]
+            ),
         )
 
     @property

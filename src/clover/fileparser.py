@@ -1042,12 +1042,12 @@ def _parse_global_settings(logger: Logger) -> dict[str, Any]:
             )
 
     # Parse global settings.
-    if not os.path.isfile(GLOBAL_SETTINGS_FILE):
+    if not os.path.isfile((global_settings_filepath:=os.path.join(os.path.expanduser("~"), GLOBAL_SETTINGS_FILE))):
         _create_global_setings_file()
 
     try:
-        global_settings_inputs: dict[str, Any] | list[dict[str, Any]] | None = (
-            read_yaml(GLOBAL_SETTINGS_FILE, logger)
+        global_settings_inputs: Union[dict[str, Any], list[dict[str, Any]] | None] = (
+            read_yaml(global_settings_filepath, logger)
         )
     except FileNotFoundError:
         logger.error(
