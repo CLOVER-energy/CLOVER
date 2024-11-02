@@ -1753,6 +1753,8 @@ def appraise_system(  # pylint: disable=too-many-locals
 
     # pdb.set_trace()
 
+    logger.info("Criteria computation.")
+
     # pylint: disable=line-too-long
     criteria: dict[Criterion, float | None] = {
         Criterion.BLACKOUTS: technical_appraisal.blackouts,

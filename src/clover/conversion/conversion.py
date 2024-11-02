@@ -230,12 +230,7 @@ class Converter:
 
         """
 
-        return bool(
-            self.input_resource_consumption == other.input_resource_consumption
-            and self.output_resource_type == other.output_resource_type
-            and self.consumption == other.consumption
-            and self.waste_production == other.waste_production
-        )
+        return bool(self.name == other.name)
 
     def __hash__(self) -> int:
         """

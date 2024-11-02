@@ -326,8 +326,13 @@ def _linear_population_hourly(
         ]
     )
 
+
 def _normalised_linear_population_hourly(
-    *, initial_community_size: int, final_community_size: int, num_growth_years: int, num_years_total
+    *,
+    initial_community_size: int,
+    final_community_size: int,
+    num_growth_years: int,
+    num_years_total,
 ) -> pd.DataFrame:
     """
     Function to generate a normalised growing population based on values.
@@ -357,12 +362,19 @@ def _normalised_linear_population_hourly(
     )
 
     # Append the static popultion
-    population = pd.concat([population, pd.DataFrame([final_community_size] * (8760 * (num_years_total - num_growth_years)))], axis=0)
+    population = pd.concat(
+        [
+            population,
+            pd.DataFrame(
+                [final_community_size] * (8760 * (num_years_total - num_growth_years))
+            ),
+        ],
+        axis=0,
+    )
 
     population = population.reset_index(drop=True)
 
     return population / initial_community_size
-
 
 
 def _population_growth_daily(
@@ -500,7 +512,11 @@ def _number_of_devices_daily(
                 )
             )
             # Normalise the ownership based on the initial value being a math.floor.
-            daily_ownership = pd.DataFrame(daily_ownership[0] * math.floor(daily_ownership[0].loc[0]) / daily_ownership[0].loc[0])
+            daily_ownership = pd.DataFrame(
+                daily_ownership[0]
+                * math.floor(daily_ownership[0].loc[0])
+                / daily_ownership[0].loc[0]
+            )
         logger.info(
             "Ownership for device %s calculated.",
             device.name,
@@ -585,7 +601,10 @@ def compute_total_hourly_load(  # pylint: disable=too-many-locals
 
             if device.demand_type == DemandType.DOMESTIC:
                 domestic_load = pd.DataFrame(
-                    domestic_load.values + device_hourly_loads[device.name].values
+                    domestic_load.values
+                    + device_hourly_loads[device.name].values[
+                        : len(domestic_load.values)
+                    ]
                 )
             elif device.demand_type == DemandType.COMMERCIAL:
                 commercial_load = pd.DataFrame(
@@ -619,30 +638,36 @@ def compute_total_hourly_load(  # pylint: disable=too-many-locals
 
     else:
         total_load = total_load_profile
-        if not all(
-            total_load.columns
-            == pd.Index(
-                [
-                    DemandType.DOMESTIC.value,
-                    DemandType.COMMERCIAL.value,
-                    DemandType.PUBLIC.value,
-                ]
-            )
-        ):
+        try:
+            if not all(
+                total_load.columns
+                == pd.Index(
+                    [
+                        DemandType.DOMESTIC.value,
+                        DemandType.COMMERCIAL.value,
+                        DemandType.PUBLIC.value,
+                    ]
+                )
+            ):
+                logger.error(
+                    "%sThe total load profile specified is not of the right format. See "
+                    "logs for details.%s",
+                    BColours.fail,
+                    BColours.endc,
+                )
+                logger.info(
+                    "The total load file given must have columns which match %s.",
+                    ", ".join(f"'{e.value}'" for e in DemandType),
+                )
+                raise InputFileError(
+                    "total-load file",
+                    "The total load profile is not of the correct format.",
+                )
+        except ValueError:
             logger.error(
-                "%sThe total load profile specified is not of the right format. See "
-                "logs for details.%s",
-                BColours.fail,
-                BColours.endc,
+                "Total load profile supplied is not of the correct format. Check that your load profile has the correct format of columns and re-run."
             )
-            logger.info(
-                "The total load file given must have columns which match %s.",
-                ", ".join(f"'{e.value}'" for e in DemandType),
-            )
-            raise InputFileError(
-                "total-load file",
-                "The total load profile is not of the correct format.",
-            )
+            raise
 
     # Attempt to read the yearly load statistics from a file and compute if it doesn't
     # exist.
@@ -732,8 +757,8 @@ def process_device_hourly_power(
     # If the hourly power usage file already exists, load the data in.
     logger.info("Processing hourly power profile for %s.", device.name)
     # if os.path.isfile(hourly_usage_filepath) and not regenerate:
-#     with open(hourly_usage_filepath, "r") as f:
-#         device_load: pd.DataFrame = pd.read_csv(f, header=None)
+    #     with open(hourly_usage_filepath, "r") as f:
+    #         device_load: pd.DataFrame = pd.read_csv(f, header=None)
     #     logger.info(
     #         "Hourly power profile for %s successfully read from file %s.",
     #         device.name,
@@ -748,11 +773,15 @@ def process_device_hourly_power(
                     f"{BColours.fail}Internal error processing device "
                     + f"'{device.name}', electric power unexpectedly `None`.{BColours.endc}",
                 )
-            device_load = hourly_device_usage * device.electric_power * _normalised_linear_population_hourly(
-                initial_community_size=location.community_size,
-                final_community_size=location.final_community_size,
-                num_growth_years=simulation.end_year - simulation.start_year,
-                num_years_total=location.max_years,
+            device_load = (
+                hourly_device_usage
+                * device.electric_power
+                * _normalised_linear_population_hourly(
+                    initial_community_size=location.community_size,
+                    final_community_size=location.final_community_size,
+                    num_growth_years=simulation.end_year - simulation.start_year,
+                    num_years_total=location.max_years,
+                )
             )
             logger.info(
                 "Electric hourly power usage for %s successfully computed.", device.name
@@ -798,6 +827,8 @@ def process_device_hourly_power(
 
         # Save the hourly power profile.
         logger.info("Saving hourly power usage for %s.", device.name)
+
+        os.makedirs(os.path.dirname(hourly_usage_filepath), exist_ok=True)
 
         with open(
             hourly_usage_filepath,

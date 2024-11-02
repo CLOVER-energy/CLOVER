@@ -1042,11 +1042,17 @@ def _parse_global_settings(logger: Logger) -> dict[str, Any]:
             )
 
     # Parse global settings.
-    if not os.path.isfile((global_settings_filepath:=os.path.join(os.path.expanduser("~"), GLOBAL_SETTINGS_FILE))):
+    if not os.path.isfile(
+        (
+            global_settings_filepath := os.path.join(
+                os.path.expanduser("~"), GLOBAL_SETTINGS_FILE
+            )
+        )
+    ):
         _create_global_setings_file()
 
     try:
-        global_settings_inputs: Union[dict[str, Any], list[dict[str, Any]] | None] = (
+        global_settings_inputs: dict[str, Any] | list[dict[str, Any]] | None = (
             read_yaml(global_settings_filepath, logger)
         )
     except FileNotFoundError:
@@ -2511,6 +2517,7 @@ def _parse_transmission_inputs(
 
 
 def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
+    clean_water_load_profile: str | None,
     debug: bool,
     electric_load_profile: str | None,
     location_name: str,
@@ -2530,6 +2537,7 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
     list[Optimisation],
     list[Scenario],
     list[Simulation],
+    pd.DataFrame | None,
     pd.DataFrame | None,
     dict[WaterSource, pd.DataFrame],
     dict[str, str],
@@ -2634,6 +2642,30 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
             device_utilisations[device] = pd.DataFrame([[0] * 12] * 24)
 
     # Parse the override electric profile file if specified.
+    if clean_water_load_profile is not None:
+        try:
+            with open(
+                os.path.join(
+                    inputs_directory_relative_path,
+                    LOAD_INPUTS_DIRECTORY,
+                    clean_water_load_profile,
+                ),
+                "r",
+            ) as f:
+                total_clean_water_load_profile: pd.DataFrame | None = pd.read_csv(
+                    f, index_col=0
+                )
+        except FileNotFoundError:
+            logger.error(
+                "%sTotal load profile '%s' could not be found.%s",
+                BColours.fail,
+                clean_water_load_profile,
+                BColours.endc,
+            )
+            raise
+    else:
+        total_clean_water_load_profile = None
+
     if electric_load_profile is not None:
         try:
             with open(
@@ -2644,7 +2676,9 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
                 ),
                 "r",
             ) as f:
-                total_load_profile: pd.DataFrame | None = pd.read_csv(f, index_col=0)
+                total_electric_load_profile: pd.DataFrame | None = pd.read_csv(
+                    f, index_col=0
+                )
         except FileNotFoundError:
             logger.error(
                 "%sTotal load profile '%s' could not be found.%s",
@@ -2654,7 +2688,7 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
             )
             raise
     else:
-        total_load_profile = None
+        total_electric_load_profile = None
 
     # Parse the scenario input information.
     (
@@ -3314,7 +3348,8 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
         optimisations,
         scenarios,
         simulations,
-        total_load_profile,
+        total_clean_water_load_profile,
+        total_electric_load_profile,
         water_source_times,
         input_file_info,
     )

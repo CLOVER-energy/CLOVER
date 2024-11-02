@@ -1668,7 +1668,9 @@ def multiple_optimisation_step(  # pylint: disable=too-many-locals, too-many-sta
 
                 return 1 / criterion_value
 
-            return _simulation_run()
+            result = _simulation_run()
+
+            return result if result is not None else 0
 
             # results = [_simulation_run() for _ in range(3)]
 

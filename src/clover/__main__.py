@@ -189,7 +189,9 @@ def _prepare_location(
     """
 
     # Prepare for locations that may have been created in a CLOVER 5.2 environment.
-    locations_foldername: str = os.path.join(os.path.expanduser("~"), "clover_locations")
+    locations_foldername: str = os.path.join(
+        os.path.expanduser("~"), "clover_locations"
+    )
 
     if not os.path.isdir(os.path.join(locations_foldername, location)):
         logger.error(
@@ -207,15 +209,17 @@ def _prepare_location(
             locations_foldername, location, INPUTS_DIRECTORY, KEROSENE_TIMES_FILE
         )
     ):
-        logger.info(
+        logger.error(
             "%sThe specified location, '%s', does not contain a kerosene times file. "
-            "The auto-generation script will be run to replace the lost file.%s",
-            BColours.warning,
+            "You can run the auto-generation script will be run to replace the lost "
+            "file.%s",
+            BColours.fail,
             location,
             BColours.endc,
         )
-        new_location.create_new_location(None, location, logger, True)
-        logger.info("%s succesfully updated with missing files.", location)
+        raise Exception("Cannot continue without kerosene: read the documentation.")
+        # new_location.create_new_location(None, location, logger, True)
+        # logger.info("%s succesfully updated with missing files.", location)
 
 
 def _prepare_water_system(
@@ -229,6 +233,8 @@ def _prepare_water_system(
     resource_type: ResourceType,
     simulation,
     water_source_times: dict[WaterSource, pd.DataFrame],
+    *,
+    clean_water_load_profile: pd.DataFrame | None,
 ) -> tuple[
     dict[WaterSource, pd.DataFrame], dict[str, pd.DataFrame], pd.DataFrame, pd.DataFrame
 ]:
@@ -317,6 +323,7 @@ def _prepare_water_system(
             parsed_args.regenerate,
             resource_type,
             simulation,
+            clean_water_load_profile,
         )
     except InputFileError:
         print(
@@ -606,10 +613,12 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
             optimisations,
             scenarios,
             simulations,
+            clean_water_load_profile,
             electric_load_profile,
             water_source_times,
             input_file_info,
         ) = parse_input_files(
+            parsed_args.clean_water_load_profile,
             parsed_args.debug,
             parsed_args.electric_load_profile,
             parsed_args.location,
@@ -914,8 +923,9 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
             logger,
             parsed_args,
             ResourceType.CLEAN_WATER,
-            simulation,
+            simulations[0],
             water_source_times,
+            clean_water_load_profile=clean_water_load_profile,
         )
 
     conventional_hw_source_profiles: dict[  # pylint: disable=unused-variable

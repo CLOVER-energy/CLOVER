@@ -189,15 +189,14 @@ def _calculate_electric_desalination_parameters(
         in {CleanWaterMode.BACKUP, CleanWaterMode.PRIORITISE}
     ):
         # Initialise deslination converters.
-        electric_desalinators: list[Converter] = sorted(
-            [
+        logger.info("Computing available electric desalinators.")
+        electric_desalinators: list[Converter] = [
                 converter
                 for converter in converters
                 if list(converter.input_resource_consumption)
                 == [ResourceType.ELECTRIC, ResourceType.UNCLEAN_WATER]
                 and converter.output_resource_type == ResourceType.CLEAN_WATER
             ]
-        )
 
         # Raise an error if there were no electric desalinators defined.
         if len(electric_desalinators) == 0:
@@ -2914,6 +2913,8 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
             ]
         )
 
+    logger.info("Computing system details.")
+
     # System details
     system_details = SystemDetails(
         diesel_capacity=diesel_capacity,
@@ -3086,6 +3087,8 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
     # End simulation timer
     timer_end = datetime.datetime.now()
     time_delta = timer_end - timer_start
+
+    logger.info("Energy-system computation complete, returning.")
 
     return time_delta, system_performance_outputs, system_details
 
