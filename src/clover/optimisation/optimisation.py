@@ -1645,12 +1645,16 @@ def multiple_optimisation_step(  # pylint: disable=too-many-locals, too-many-sta
 
                 # Throw off systens that don't meet the threshold criteria
                 if len(sufficient_system_appraisals) == 0:
-                    return (
-                        -1
-                        / system_appraisal.criteria[
-                            list(optimisation.optimisation_criteria.keys())[0]
-                        ]
-                    )
+                    try:
+                        return (
+                            -1
+                            / system_appraisal.criteria[
+                                list(optimisation.optimisation_criteria.keys())[0]
+                            ]
+                        )
+                    except TypeError:
+                        print("Invalid appraisl carried out, returning 0.")
+                        return 0
 
                 # Determine the simulated system's criterion and return this value.
                 optimum_systems = _fetch_optimum_system(

@@ -191,12 +191,12 @@ def _calculate_electric_desalination_parameters(
         # Initialise deslination converters.
         logger.info("Computing available electric desalinators.")
         electric_desalinators: list[Converter] = [
-                converter
-                for converter in converters
-                if list(converter.input_resource_consumption)
-                == [ResourceType.ELECTRIC, ResourceType.UNCLEAN_WATER]
-                and converter.output_resource_type == ResourceType.CLEAN_WATER
-            ]
+            converter
+            for converter in converters
+            if list(converter.input_resource_consumption)
+            == [ResourceType.ELECTRIC, ResourceType.UNCLEAN_WATER]
+            and converter.output_resource_type == ResourceType.CLEAN_WATER
+        ]
 
         # Raise an error if there were no electric desalinators defined.
         if len(electric_desalinators) == 0:
@@ -380,22 +380,24 @@ def _calculate_renewable_cw_profiles(  # pylint: disable=too-many-locals, too-ma
     # Determine the list of available feedwater sources if relevant.
     if scenario.desalination_scenario is not None:
         logger.info("Determining available feedwater sources.")
-        feedwater_sources: list[Converter] = sorted(
-            [
-                converter
-                for converter in converters
-                if list(converter.input_resource_consumption) == [ResourceType.ELECTRIC]
-                and converter.output_resource_type == ResourceType.UNCLEAN_WATER
-            ]
-        )
-        logger.debug(
-            "Available feedwater sources determined: %s",
-            (
-                ", ".join([str(source) for source in feedwater_sources])
-                if len(feedwater_sources) > 0
-                else ""
-            ),
-        )
+        feedwater_sources: list[Converter] = [
+            converter
+            for converter in converters
+            if (
+                list(converter.input_resource_consumption) == [ResourceType.ELECTRIC]
+                or list(converter.input_resource_consumption) == []
+            )
+            and converter.output_resource_type == ResourceType.UNCLEAN_WATER
+        ]
+        logger.debug("Available feedwater sources determined.")
+        # logger.debug(
+        #     "Available feedwater sources determined to be as follows: %s",
+        #     (
+        #         ", ".join([str(source) for source in feedwater_sources])
+        #         if len(feedwater_sources) > 0
+        #         else ""
+        #     ),
+        # )
     else:
         feedwater_sources = []
 
@@ -466,7 +468,7 @@ def _calculate_renewable_cw_profiles(  # pylint: disable=too-many-locals, too-ma
                 "conversion inputs", "No valid thermal desalination plants specified."
             ) from None
         logger.info(
-            "Desalination plant determined: %s", thermal_desalination_plant.name
+            "Thermal desalination plant determined: %s", thermal_desalination_plant.name
         )
 
         if thermal_desalination_plant.htf_mode == HTFMode.CLOSED_HTF:
@@ -1724,10 +1726,10 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
             "Misuse of `converters` parameter when calling `run_simulation`.",
         )
 
-    logger.debug(
-        "Available converters: %s",
-        ", ".join([str(entry) for entry in available_converters]),
-    )
+    # logger.debug(
+    #     "Available converters: %s",
+    #     ", ".join([str(entry) for entry in available_converters]),
+    # )
     grid_profile = (
         grid_profile
         if grid_profile is not None
@@ -1774,6 +1776,7 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
         wind_speed_data,
     )
 
+    logger.info("Renewable CW profile step complete.")
     logger.debug(
         "Mean buffer tank temperature: %s",
         (
@@ -2921,7 +2924,7 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
         end_year=simulation.end_year,
         final_converter_sizes={
             converter: available_converters.count(converter)
-            for converter in available_converters
+            for converter in set(available_converters)
         },
         final_num_clean_water_buffer_tanks=(
             number_of_cw_buffer_tanks
@@ -2951,7 +2954,7 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
         final_storage_size=final_storage_size,
         initial_converter_sizes={
             converter: available_converters.count(converter)
-            for converter in available_converters
+            for converter in set(available_converters)
         },
         initial_num_clean_water_buffer_tanks=(
             number_of_cw_buffer_tanks
