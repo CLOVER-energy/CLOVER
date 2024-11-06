@@ -452,11 +452,11 @@ def _calculate_renewable_cw_profiles(  # pylint: disable=too-many-locals, too-ma
         # Determine the thermal desalination plant being used.
         logger.info("Determining desalination plant.")
         try:
-            thermal_desalination_plant: ThermalDesalinationPlant = [
+            number_of_thermal_desalination_plants = ((thermal_desalination_plant:=(thermal_desalination_plants_list:=[
                 converter
                 for converter in converters
                 if isinstance(converter, ThermalDesalinationPlant)
-            ][0]
+            ])[0]), thermal_desalination_plants_list.count(thermal_desalination_plant))
         except IndexError:
             logger.error(
                 "%sNo valid thermal desalination plants specified despite PV-T being "
@@ -470,6 +470,7 @@ def _calculate_renewable_cw_profiles(  # pylint: disable=too-many-locals, too-ma
         logger.info(
             "Thermal desalination plant determined: %s", thermal_desalination_plant.name
         )
+        logger.info("Number of thermal desalination plants determined: %s", number_of_thermal_desalination_plants)
 
         if thermal_desalination_plant.htf_mode == HTFMode.CLOSED_HTF:
             thermal_desalination_plant_input_type: ResourceType = (
@@ -503,7 +504,7 @@ def _calculate_renewable_cw_profiles(  # pylint: disable=too-many-locals, too-ma
             thermal_desalination_plant.input_resource_consumption[
                 thermal_desalination_plant_input_type
             ]
-        )
+        ) * number_of_thermal_desalination_plants
 
         if (
             max_feedwater_throughput := sum(
@@ -535,7 +536,7 @@ def _calculate_renewable_cw_profiles(  # pylint: disable=too-many-locals, too-ma
             feedwater_capacity
             < thermal_desalination_plant.input_resource_consumption[
                 thermal_desalination_plant_input_type
-            ]
+            ] * thermal_desalination_plant_input_flow_rate
         ):
             required_feedwater_sources.append(feedwater_sources.pop(0))
             feedwater_capacity += required_feedwater_sources[-1].maximum_output_capacity
@@ -552,6 +553,10 @@ def _calculate_renewable_cw_profiles(  # pylint: disable=too-many-locals, too-ma
             thermal_collector_sizes[SolarPanelType.PV_T] = pvt_size
         if scenario.solar_thermal:
             thermal_collector_sizes[SolarPanelType.SOLAR_THERMAL] = solar_thermal_size
+
+        import pdb
+
+        pdb.set_trace()
 
         (
             cw_auxiliary_heating_frame,
@@ -579,6 +584,7 @@ def _calculate_renewable_cw_profiles(  # pylint: disable=too-many-locals, too-ma
             logger,
             minigrid,
             number_of_cw_buffer_tanks,
+            number_of_thermal_desalination_plants,
             None,
             ResourceType.CLEAN_WATER,
             scenario,

@@ -1880,6 +1880,7 @@ def calculate_solar_thermal_output(  # pylint: disable=too-many-locals, too-many
     logger: Logger,
     minigrid: Minigrid,
     num_tanks: int,
+    num_thermal_desalination_plants: int,
     processed_total_hw_load: pd.Series | None,
     resource_type: ResourceType,
     scenario: Scenario,
