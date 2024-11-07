@@ -413,6 +413,36 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
 
     """
 
+    try:
+        initial_cw_hourly_loads.pop("kerosene")
+    except (AttributeError, KeyError):
+        pass
+
+    try:
+        initial_cw_hourly_loads.pop("Kerosene")
+    except (AttributeError, KeyError):
+        pass
+
+    try:
+        initial_electric_hourly_loads.pop("kerosene")
+    except (AttributeError, KeyError):
+        pass
+
+    try:
+        initial_electric_hourly_loads.pop("Kerosene")
+    except (AttributeError, KeyError):
+        pass
+
+    try:
+        initial_hw_hourly_loads.pop("kerosene")
+    except (AttributeError, KeyError):
+        pass
+
+    try:
+        initial_hw_hourly_loads.pop("Kerosene")
+    except (AttributeError, KeyError):
+        pass
+
     # set plotting parameters.
     plt.rcParams["axes.labelsize"] = "11"
     # plt.rcParams["figure.figsize"] = (6.8, 5.8)

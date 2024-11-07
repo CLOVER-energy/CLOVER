@@ -114,6 +114,7 @@ def _volume_withdrawn_from_tank(
     logger: Logger,
     minigrid: Minigrid,
     num_tanks: int,
+    num_thermal_desalination_plants: int,
     previous_tank_temperature: float | None,
     resource_type: ResourceType,
     scenario: Scenario,
@@ -188,6 +189,7 @@ def _volume_withdrawn_from_tank(
                     thermal_desalination_plant,
                 )
                 * tank_supply_on
+                * num_thermal_desalination_plants
             )
 
         if thermal_desalination_plant.htf_mode == HTFMode.FEEDWATER_HEATING:
@@ -213,6 +215,7 @@ def _volume_withdrawn_from_tank(
                     ResourceType.HOT_UNCLEAN_WATER
                 ]
                 * tank_supply_on
+                * num_thermal_desalination_plants
             )
 
     elif resource_type == ResourceType.HOT_CLEAN_WATER:
@@ -706,6 +709,7 @@ def _calculate_closed_loop_solar_thermal_output(  # pylint: disable=too-many-loc
     logger: Logger,
     minigrid: Minigrid,
     num_tanks: int,
+    num_thermal_desalination_plants: int,
     processed_total_hw_load: pd.Series | None,
     relevant_scenarios: dict[SolarPanelType, ThermalCollectorScenario],
     resource_type: ResourceType,
@@ -981,28 +985,28 @@ def _calculate_closed_loop_solar_thermal_output(  # pylint: disable=too-many-loc
     pump_times_map: dict[int, int] = {}
 
     # Instantiate maps for easy HTF and tank lookups.
-    tank_supply_temperature_map: dict[int, float] = (
-        {}
-    )  # pylint: disable=unused-variable
+    tank_supply_temperature_map: dict[
+        int, float
+    ] = {}  # pylint: disable=unused-variable
     tank_volume_supplied_map: dict[int, float] = {}
 
     auxiliary_heating_map: dict[int, float] = {}
-    collector_input_temperature_map: dict[SolarPanelType, dict[int, float]] = (
-        collections.defaultdict(
-            lambda: collections.defaultdict(lambda: default_supply_temperature)
-        )
+    collector_input_temperature_map: dict[
+        SolarPanelType, dict[int, float]
+    ] = collections.defaultdict(
+        lambda: collections.defaultdict(lambda: default_supply_temperature)
     )
-    collector_output_temperature_map: dict[SolarPanelType, dict[int, float]] = (
-        collections.defaultdict(
-            lambda: collections.defaultdict(lambda: default_supply_temperature)
-        )
+    collector_output_temperature_map: dict[
+        SolarPanelType, dict[int, float]
+    ] = collections.defaultdict(
+        lambda: collections.defaultdict(lambda: default_supply_temperature)
     )
     collector_thermal_efficiencies_map: dict[
         SolarPanelType, dict[int, float | None]
     ] = collections.defaultdict(lambda: collections.defaultdict(lambda: None))
-    collector_reduced_temperatures_map: dict[SolarPanelType, dict[int, float]] = (
-        collections.defaultdict(lambda: collections.defaultdict(lambda: 0))
-    )
+    collector_reduced_temperatures_map: dict[
+        SolarPanelType, dict[int, float]
+    ] = collections.defaultdict(lambda: collections.defaultdict(lambda: 0))
     collector_system_output_temperature_map: dict[int, float] = collections.defaultdict(
         float
     )
@@ -1082,6 +1086,7 @@ def _calculate_closed_loop_solar_thermal_output(  # pylint: disable=too-many-loc
             ),
             logger,
             minigrid,
+            num_thermal_desalination_plants,
             num_tanks,
             previous_tank_temperature,
             resource_type,
@@ -1792,12 +1797,12 @@ def _calculate_direct_heating_solar_thermal_output(  # pylint: disable=too-many-
         }
         logger.info("Direct-heating solar-thermal calculation completed.")
 
-        collector_input_temperature[SolarPanelType.SOLAR_THERMAL] = (
-            solar_thermal_input_temperature
-        )
-        collector_output_temperature[SolarPanelType.SOLAR_THERMAL] = (
-            solar_thermal_output_temperature
-        )
+        collector_input_temperature[
+            SolarPanelType.SOLAR_THERMAL
+        ] = solar_thermal_input_temperature
+        collector_output_temperature[
+            SolarPanelType.SOLAR_THERMAL
+        ] = solar_thermal_output_temperature
 
     else:
         logger.info("No solar-thermal collector provided, skipping calcultion.")
@@ -2036,6 +2041,7 @@ def calculate_solar_thermal_output(  # pylint: disable=too-many-locals, too-many
             irradiances,
             logger,
             minigrid,
+            num_thermal_desalination_plants,
             num_tanks,
             processed_total_hw_load,
             relevant_collector_scenarios,

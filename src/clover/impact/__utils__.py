@@ -198,6 +198,11 @@ def update_diesel_costs(
             technical_appraisal.power_consumed_fraction[ResourceType.ELECTRIC]
             + technical_appraisal.power_consumed_fraction[ResourceType.HOT_CLEAN_WATER]
         )
+
+        # Do not apportion costs if not diesel power was consumed
+        if total_diesel_frac == 0:
+            return
+
         subsystem_impacts[ResourceType.ELECTRIC] += (
             diesel_impact
             * technical_appraisal.power_consumed_fraction[ResourceType.ELECTRIC]

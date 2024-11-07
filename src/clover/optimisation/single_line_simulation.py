@@ -326,9 +326,9 @@ def single_line_simulation(  # pylint: disable=too-many-locals, too-many-stateme
             component_sizes[converter] = size
 
         if len(increased_cw_pvt_system_sizes) <= 1:
-            component_sizes[RenewableEnergySource.CLEAN_WATER_PVT] = (
-                potential_cw_pvt_size
-            )
+            component_sizes[
+                RenewableEnergySource.CLEAN_WATER_PVT
+            ] = potential_cw_pvt_size
         else:
             parameter_space.append(
                 (
@@ -338,9 +338,9 @@ def single_line_simulation(  # pylint: disable=too-many-locals, too-many-stateme
                 )
             )
         if len(increased_cw_st_system_sizes) <= 1:
-            component_sizes[RenewableEnergySource.CLEAN_WATER_SOLAR_THERMAL] = (
-                potential_cw_st_size
-            )
+            component_sizes[
+                RenewableEnergySource.CLEAN_WATER_SOLAR_THERMAL
+            ] = potential_cw_st_size
         else:
             parameter_space.append(
                 (
@@ -360,9 +360,9 @@ def single_line_simulation(  # pylint: disable=too-many-locals, too-many-stateme
                 )
             )
         if len(increased_hw_st_system_sizes) <= 1:
-            component_sizes[RenewableEnergySource.HOT_WATER_SOLAR_THERMAL] = (
-                potential_hw_st_size
-            )
+            component_sizes[
+                RenewableEnergySource.HOT_WATER_SOLAR_THERMAL
+            ] = potential_hw_st_size
         else:
             parameter_space.append(
                 (
@@ -372,9 +372,9 @@ def single_line_simulation(  # pylint: disable=too-many-locals, too-many-stateme
                 )
             )
         if len(increased_pv_system_sizes) <= 1:
-            component_sizes[RenewableEnergySource.PV] = (
-                potential_system.system_details.initial_pv_size
-            )
+            component_sizes[
+                RenewableEnergySource.PV
+            ] = potential_system.system_details.initial_pv_size
         else:
             parameter_space.append(
                 (
@@ -546,9 +546,9 @@ def single_line_simulation(  # pylint: disable=too-many-locals, too-many-stateme
             component_sizes[converter] = size
 
         if len(increased_cw_pvt_system_sizes) <= 1:
-            component_sizes[RenewableEnergySource.CLEAN_WATER_PVT] = (
-                potential_cw_pvt_size
-            )
+            component_sizes[
+                RenewableEnergySource.CLEAN_WATER_PVT
+            ] = potential_cw_pvt_size
         else:
             parameter_space.append(
                 (
@@ -558,9 +558,9 @@ def single_line_simulation(  # pylint: disable=too-many-locals, too-many-stateme
                 )
             )
         if len(increased_cw_st_system_sizes) <= 1:
-            component_sizes[RenewableEnergySource.CLEAN_WATER_SOLAR_THERMAL] = (
-                potential_cw_st_size
-            )
+            component_sizes[
+                RenewableEnergySource.CLEAN_WATER_SOLAR_THERMAL
+            ] = potential_cw_st_size
         else:
             parameter_space.append(
                 (
@@ -570,9 +570,9 @@ def single_line_simulation(  # pylint: disable=too-many-locals, too-many-stateme
                 )
             )
         if len(increased_pv_system_sizes) <= 1:
-            component_sizes[RenewableEnergySource.PV] = (
-                potential_system.system_details.initial_pv_size
-            )
+            component_sizes[
+                RenewableEnergySource.PV
+            ] = potential_system.system_details.initial_pv_size
         else:
             parameter_space.append(
                 (
@@ -582,9 +582,9 @@ def single_line_simulation(  # pylint: disable=too-many-locals, too-many-stateme
                 )
             )
         if len(increased_storage_sizes) <= 1:
-            component_sizes[ImpactingComponent.STORAGE] = (
-                potential_system.system_details.initial_storage_size
-            )
+            component_sizes[
+                ImpactingComponent.STORAGE
+            ] = potential_system.system_details.initial_storage_size
         else:
             parameter_space.append(
                 (
@@ -712,9 +712,9 @@ def single_line_simulation(  # pylint: disable=too-many-locals, too-many-stateme
                 )
             )
         if len(increased_hw_st_system_sizes) <= 1:
-            component_sizes[RenewableEnergySource.HOT_WATER_SOLAR_THERMAL] = (
-                potential_hw_st_size
-            )
+            component_sizes[
+                RenewableEnergySource.HOT_WATER_SOLAR_THERMAL
+            ] = potential_hw_st_size
         else:
             parameter_space.append(
                 (
@@ -724,9 +724,9 @@ def single_line_simulation(  # pylint: disable=too-many-locals, too-many-stateme
                 )
             )
         if len(increased_pv_system_sizes) <= 1:
-            component_sizes[RenewableEnergySource.PV] = (
-                potential_system.system_details.initial_pv_size
-            )
+            component_sizes[
+                RenewableEnergySource.PV
+            ] = potential_system.system_details.initial_pv_size
         else:
             parameter_space.append(
                 (
@@ -736,9 +736,9 @@ def single_line_simulation(  # pylint: disable=too-many-locals, too-many-stateme
                 )
             )
         if len(increased_storage_sizes) <= 1:
-            component_sizes[ImpactingComponent.STORAGE] = (
-                potential_system.system_details.initial_storage_size
-            )
+            component_sizes[
+                ImpactingComponent.STORAGE
+            ] = potential_system.system_details.initial_storage_size
         else:
             parameter_space.append(
                 (
@@ -886,9 +886,9 @@ def single_line_simulation(  # pylint: disable=too-many-locals, too-many-stateme
             component_sizes[converter] = size
 
         if len(increased_cw_pvt_system_sizes) <= 1:
-            component_sizes[RenewableEnergySource.CLEAN_WATER_PVT] = (
-                potential_cw_pvt_size
-            )
+            component_sizes[
+                RenewableEnergySource.CLEAN_WATER_PVT
+            ] = potential_cw_pvt_size
         else:
             parameter_space.append(
                 (
@@ -898,9 +898,9 @@ def single_line_simulation(  # pylint: disable=too-many-locals, too-many-stateme
                 )
             )
         if len(increased_cw_st_system_sizes) <= 1:
-            component_sizes[RenewableEnergySource.CLEAN_WATER_SOLAR_THERMAL] = (
-                potential_cw_st_size
-            )
+            component_sizes[
+                RenewableEnergySource.CLEAN_WATER_SOLAR_THERMAL
+            ] = potential_cw_st_size
         else:
             parameter_space.append(
                 (
@@ -910,9 +910,9 @@ def single_line_simulation(  # pylint: disable=too-many-locals, too-many-stateme
                 )
             )
         if len(increased_cw_tank_sizes) <= 1:
-            component_sizes[ImpactingComponent.CLEAN_WATER_TANK] = (
-                potential_num_clean_water_tanks
-            )
+            component_sizes[
+                ImpactingComponent.CLEAN_WATER_TANK
+            ] = potential_num_clean_water_tanks
         else:
             parameter_space.append(
                 (
@@ -932,9 +932,9 @@ def single_line_simulation(  # pylint: disable=too-many-locals, too-many-stateme
                 )
             )
         if len(increased_hw_st_system_sizes) <= 1:
-            component_sizes[RenewableEnergySource.HOT_WATER_SOLAR_THERMAL] = (
-                potential_hw_st_size
-            )
+            component_sizes[
+                RenewableEnergySource.HOT_WATER_SOLAR_THERMAL
+            ] = potential_hw_st_size
         else:
             parameter_space.append(
                 (
@@ -944,9 +944,9 @@ def single_line_simulation(  # pylint: disable=too-many-locals, too-many-stateme
                 )
             )
         if len(increased_hw_tank_sizes) <= 1:
-            component_sizes[ImpactingComponent.HOT_WATER_TANK] = (
-                potential_num_hot_water_tanks
-            )
+            component_sizes[
+                ImpactingComponent.HOT_WATER_TANK
+            ] = potential_num_hot_water_tanks
         else:
             parameter_space.append(
                 (
@@ -956,9 +956,9 @@ def single_line_simulation(  # pylint: disable=too-many-locals, too-many-stateme
                 )
             )
         if len(increased_storage_sizes) <= 1:
-            component_sizes[ImpactingComponent.STORAGE] = (
-                potential_system.system_details.initial_storage_size
-            )
+            component_sizes[
+                ImpactingComponent.STORAGE
+            ] = potential_system.system_details.initial_storage_size
         else:
             parameter_space.append(
                 (
@@ -1114,9 +1114,9 @@ def single_line_simulation(  # pylint: disable=too-many-locals, too-many-stateme
             component_sizes[converter] = size
 
         if len(increased_cw_st_system_sizes) <= 1:
-            component_sizes[RenewableEnergySource.CLEAN_WATER_SOLAR_THERMAL] = (
-                potential_cw_st_size
-            )
+            component_sizes[
+                RenewableEnergySource.CLEAN_WATER_SOLAR_THERMAL
+            ] = potential_cw_st_size
         else:
             parameter_space.append(
                 (
@@ -1126,9 +1126,9 @@ def single_line_simulation(  # pylint: disable=too-many-locals, too-many-stateme
                 )
             )
         if len(increased_cw_tank_sizes) <= 1:
-            component_sizes[ImpactingComponent.CLEAN_WATER_TANK] = (
-                potential_num_clean_water_tanks
-            )
+            component_sizes[
+                ImpactingComponent.CLEAN_WATER_TANK
+            ] = potential_num_clean_water_tanks
         else:
             parameter_space.append(
                 (
@@ -1148,9 +1148,9 @@ def single_line_simulation(  # pylint: disable=too-many-locals, too-many-stateme
                 )
             )
         if len(increased_hw_st_system_sizes) <= 1:
-            component_sizes[RenewableEnergySource.HOT_WATER_SOLAR_THERMAL] = (
-                potential_hw_st_size
-            )
+            component_sizes[
+                RenewableEnergySource.HOT_WATER_SOLAR_THERMAL
+            ] = potential_hw_st_size
         else:
             parameter_space.append(
                 (
@@ -1160,9 +1160,9 @@ def single_line_simulation(  # pylint: disable=too-many-locals, too-many-stateme
                 )
             )
         if len(increased_hw_tank_sizes) <= 1:
-            component_sizes[ImpactingComponent.HOT_WATER_TANK] = (
-                potential_num_hot_water_tanks
-            )
+            component_sizes[
+                ImpactingComponent.HOT_WATER_TANK
+            ] = potential_num_hot_water_tanks
         else:
             parameter_space.append(
                 (
@@ -1172,9 +1172,9 @@ def single_line_simulation(  # pylint: disable=too-many-locals, too-many-stateme
                 )
             )
         if len(increased_storage_sizes) <= 1:
-            component_sizes[ImpactingComponent.STORAGE] = (
-                potential_system.system_details.initial_storage_size
-            )
+            component_sizes[
+                ImpactingComponent.STORAGE
+            ] = potential_system.system_details.initial_storage_size
         else:
             parameter_space.append(
                 (
@@ -1184,9 +1184,9 @@ def single_line_simulation(  # pylint: disable=too-many-locals, too-many-stateme
                 )
             )
         if len(increased_pv_system_sizes) <= 1:
-            component_sizes[RenewableEnergySource.PV] = (
-                potential_system.system_details.initial_pv_size
-            )
+            component_sizes[
+                RenewableEnergySource.PV
+            ] = potential_system.system_details.initial_pv_size
         else:
             parameter_space.append(
                 (
@@ -1339,9 +1339,9 @@ def single_line_simulation(  # pylint: disable=too-many-locals, too-many-stateme
             component_sizes[converter] = size
 
         if len(increased_cw_pvt_system_sizes) <= 1:
-            component_sizes[RenewableEnergySource.CLEAN_WATER_PVT] = (
-                potential_cw_pvt_size
-            )
+            component_sizes[
+                RenewableEnergySource.CLEAN_WATER_PVT
+            ] = potential_cw_pvt_size
         else:
             parameter_space.append(
                 (
@@ -1351,9 +1351,9 @@ def single_line_simulation(  # pylint: disable=too-many-locals, too-many-stateme
                 )
             )
         if len(increased_cw_tank_sizes) <= 1:
-            component_sizes[ImpactingComponent.CLEAN_WATER_TANK] = (
-                potential_num_clean_water_tanks
-            )
+            component_sizes[
+                ImpactingComponent.CLEAN_WATER_TANK
+            ] = potential_num_clean_water_tanks
         else:
             parameter_space.append(
                 (
@@ -1373,9 +1373,9 @@ def single_line_simulation(  # pylint: disable=too-many-locals, too-many-stateme
                 )
             )
         if len(increased_hw_st_system_sizes) <= 1:
-            component_sizes[RenewableEnergySource.HOT_WATER_SOLAR_THERMAL] = (
-                potential_hw_st_size
-            )
+            component_sizes[
+                RenewableEnergySource.HOT_WATER_SOLAR_THERMAL
+            ] = potential_hw_st_size
         else:
             parameter_space.append(
                 (
@@ -1385,9 +1385,9 @@ def single_line_simulation(  # pylint: disable=too-many-locals, too-many-stateme
                 )
             )
         if len(increased_hw_tank_sizes) <= 1:
-            component_sizes[ImpactingComponent.HOT_WATER_TANK] = (
-                potential_num_hot_water_tanks
-            )
+            component_sizes[
+                ImpactingComponent.HOT_WATER_TANK
+            ] = potential_num_hot_water_tanks
         else:
             parameter_space.append(
                 (
@@ -1397,9 +1397,9 @@ def single_line_simulation(  # pylint: disable=too-many-locals, too-many-stateme
                 )
             )
         if len(increased_storage_sizes) <= 1:
-            component_sizes[ImpactingComponent.STORAGE] = (
-                potential_system.system_details.initial_storage_size
-            )
+            component_sizes[
+                ImpactingComponent.STORAGE
+            ] = potential_system.system_details.initial_storage_size
         else:
             parameter_space.append(
                 (
@@ -1409,9 +1409,9 @@ def single_line_simulation(  # pylint: disable=too-many-locals, too-many-stateme
                 )
             )
         if len(increased_pv_system_sizes) <= 1:
-            component_sizes[RenewableEnergySource.PV] = (
-                potential_system.system_details.initial_pv_size
-            )
+            component_sizes[
+                RenewableEnergySource.PV
+            ] = potential_system.system_details.initial_pv_size
         else:
             parameter_space.append(
                 (
@@ -1567,9 +1567,9 @@ def single_line_simulation(  # pylint: disable=too-many-locals, too-many-stateme
             component_sizes[converter] = size
 
         if len(increased_cw_pvt_system_sizes) <= 1:
-            component_sizes[RenewableEnergySource.CLEAN_WATER_PVT] = (
-                potential_cw_pvt_size
-            )
+            component_sizes[
+                RenewableEnergySource.CLEAN_WATER_PVT
+            ] = potential_cw_pvt_size
         else:
             parameter_space.append(
                 (
@@ -1579,9 +1579,9 @@ def single_line_simulation(  # pylint: disable=too-many-locals, too-many-stateme
                 )
             )
         if len(increased_cw_st_system_sizes) <= 1:
-            component_sizes[RenewableEnergySource.CLEAN_WATER_SOLAR_THERMAL] = (
-                potential_cw_st_size
-            )
+            component_sizes[
+                RenewableEnergySource.CLEAN_WATER_SOLAR_THERMAL
+            ] = potential_cw_st_size
         else:
             parameter_space.append(
                 (
@@ -1591,9 +1591,9 @@ def single_line_simulation(  # pylint: disable=too-many-locals, too-many-stateme
                 )
             )
         if len(increased_cw_tank_sizes) <= 1:
-            component_sizes[ImpactingComponent.CLEAN_WATER_TANK] = (
-                potential_num_clean_water_tanks
-            )
+            component_sizes[
+                ImpactingComponent.CLEAN_WATER_TANK
+            ] = potential_num_clean_water_tanks
         else:
             parameter_space.append(
                 (
@@ -1603,9 +1603,9 @@ def single_line_simulation(  # pylint: disable=too-many-locals, too-many-stateme
                 )
             )
         if len(increased_hw_st_system_sizes) <= 1:
-            component_sizes[RenewableEnergySource.HOT_WATER_SOLAR_THERMAL] = (
-                potential_hw_st_size
-            )
+            component_sizes[
+                RenewableEnergySource.HOT_WATER_SOLAR_THERMAL
+            ] = potential_hw_st_size
         else:
             parameter_space.append(
                 (
@@ -1615,9 +1615,9 @@ def single_line_simulation(  # pylint: disable=too-many-locals, too-many-stateme
                 )
             )
         if len(increased_hw_tank_sizes) <= 1:
-            component_sizes[ImpactingComponent.HOT_WATER_TANK] = (
-                potential_num_hot_water_tanks
-            )
+            component_sizes[
+                ImpactingComponent.HOT_WATER_TANK
+            ] = potential_num_hot_water_tanks
         else:
             parameter_space.append(
                 (
@@ -1627,9 +1627,9 @@ def single_line_simulation(  # pylint: disable=too-many-locals, too-many-stateme
                 )
             )
         if len(increased_storage_sizes) <= 1:
-            component_sizes[ImpactingComponent.STORAGE] = (
-                potential_system.system_details.initial_storage_size
-            )
+            component_sizes[
+                ImpactingComponent.STORAGE
+            ] = potential_system.system_details.initial_storage_size
         else:
             parameter_space.append(
                 (
@@ -1639,9 +1639,9 @@ def single_line_simulation(  # pylint: disable=too-many-locals, too-many-stateme
                 )
             )
         if len(increased_pv_system_sizes) <= 1:
-            component_sizes[RenewableEnergySource.PV] = (
-                potential_system.system_details.initial_pv_size
-            )
+            component_sizes[
+                RenewableEnergySource.PV
+            ] = potential_system.system_details.initial_pv_size
         else:
             parameter_space.append(
                 (
@@ -1794,9 +1794,9 @@ def single_line_simulation(  # pylint: disable=too-many-locals, too-many-stateme
             component_sizes[converter] = size
 
         if len(increased_cw_pvt_system_sizes) <= 1:
-            component_sizes[RenewableEnergySource.CLEAN_WATER_PVT] = (
-                potential_cw_pvt_size
-            )
+            component_sizes[
+                RenewableEnergySource.CLEAN_WATER_PVT
+            ] = potential_cw_pvt_size
         else:
             parameter_space.append(
                 (
@@ -1806,9 +1806,9 @@ def single_line_simulation(  # pylint: disable=too-many-locals, too-many-stateme
                 )
             )
         if len(increased_cw_st_system_sizes) <= 1:
-            component_sizes[RenewableEnergySource.CLEAN_WATER_SOLAR_THERMAL] = (
-                potential_cw_st_size
-            )
+            component_sizes[
+                RenewableEnergySource.CLEAN_WATER_SOLAR_THERMAL
+            ] = potential_cw_st_size
         else:
             parameter_space.append(
                 (
@@ -1818,9 +1818,9 @@ def single_line_simulation(  # pylint: disable=too-many-locals, too-many-stateme
                 )
             )
         if len(increased_cw_tank_sizes) <= 1:
-            component_sizes[ImpactingComponent.CLEAN_WATER_TANK] = (
-                potential_num_clean_water_tanks
-            )
+            component_sizes[
+                ImpactingComponent.CLEAN_WATER_TANK
+            ] = potential_num_clean_water_tanks
         else:
             parameter_space.append(
                 (
@@ -1840,9 +1840,9 @@ def single_line_simulation(  # pylint: disable=too-many-locals, too-many-stateme
                 )
             )
         if len(increased_hw_tank_sizes) <= 1:
-            component_sizes[ImpactingComponent.HOT_WATER_TANK] = (
-                potential_num_hot_water_tanks
-            )
+            component_sizes[
+                ImpactingComponent.HOT_WATER_TANK
+            ] = potential_num_hot_water_tanks
         else:
             parameter_space.append(
                 (
@@ -1852,9 +1852,9 @@ def single_line_simulation(  # pylint: disable=too-many-locals, too-many-stateme
                 )
             )
         if len(increased_storage_sizes) <= 1:
-            component_sizes[ImpactingComponent.STORAGE] = (
-                potential_system.system_details.initial_storage_size
-            )
+            component_sizes[
+                ImpactingComponent.STORAGE
+            ] = potential_system.system_details.initial_storage_size
         else:
             parameter_space.append(
                 (
@@ -1864,9 +1864,9 @@ def single_line_simulation(  # pylint: disable=too-many-locals, too-many-stateme
                 )
             )
         if len(increased_pv_system_sizes) <= 1:
-            component_sizes[RenewableEnergySource.PV] = (
-                potential_system.system_details.initial_pv_size
-            )
+            component_sizes[
+                RenewableEnergySource.PV
+            ] = potential_system.system_details.initial_pv_size
         else:
             parameter_space.append(
                 (

@@ -931,13 +931,13 @@ def _appraise_clean_water_system_tech(  # pylint: disable=too-many-locals
         else 0
     )
 
-    total_clean_water: float = np.sum(
-        simulation_results[ColumnHeader.TOTAL_CW_CONSUMED.value]  # type: ignore
-    )
+    total_clean_water: float = simulation_results[
+        ColumnHeader.TOTAL_CW_CONSUMED.value
+    ].sum(axis=0)
 
-    clean_water_demand_covered: float = total_clean_water / np.sum(
-        simulation_results[ColumnHeader.TOTAL_CW_LOAD.value]  # type: ignore
-    )
+    clean_water_demand_covered: float = total_clean_water / simulation_results[
+        ColumnHeader.TOTAL_CW_LOAD.value
+    ].sum(axis=0)
 
     # Calculate total discounted clean water values
     total_clean_water_consumed_daily: pd.Series = hourly_profile_to_daily_sum(
@@ -1754,6 +1754,14 @@ def appraise_system(  # pylint: disable=too-many-locals
     # pdb.set_trace()
 
     logger.info("Criteria computation.")
+
+    print(
+        f"{Criterion.CLEAN_WATER_BLACKOUTS.value}: {technical_appraisal.clean_water_blackouts}"
+    )
+    print(
+        f"{Criterion.CW_DEMAND_COVERED.value}: {technical_appraisal.cw_demand_covered}"
+    )
+    print(f"{Criterion.LCUW.value}: {round(lcu_w, 6) if lcu_w is not None else None}")
 
     # pylint: disable=line-too-long
     criteria: dict[Criterion, float | None] = {
