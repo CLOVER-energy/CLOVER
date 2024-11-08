@@ -186,7 +186,9 @@ def _prepare_location(
     """
 
     # Prepare for locations that may have been created in a CLOVER 5.2 environment.
-    locations_foldername: str = os.path.join(os.path.expanduser("~"), "clover_locations")
+    locations_foldername: str = os.path.join(
+        os.path.expanduser("~"), "clover_locations"
+    )
 
     if not os.path.isdir(os.path.join(locations_foldername, location)):
         logger.error(

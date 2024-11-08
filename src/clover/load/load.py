@@ -326,8 +326,13 @@ def _linear_population_hourly(
         ]
     )
 
+
 def _normalised_linear_population_hourly(
-    *, initial_community_size: int, final_community_size: int, num_growth_years: int, num_years_total
+    *,
+    initial_community_size: int,
+    final_community_size: int,
+    num_growth_years: int,
+    num_years_total,
 ) -> pd.DataFrame:
     """
     Function to generate a normalised growing population based on values.
@@ -357,12 +362,19 @@ def _normalised_linear_population_hourly(
     )
 
     # Append the static popultion
-    population = pd.concat([population, pd.DataFrame([final_community_size] * (8760 * (num_years_total - num_growth_years)))], axis=0)
+    population = pd.concat(
+        [
+            population,
+            pd.DataFrame(
+                [final_community_size] * (8760 * (num_years_total - num_growth_years))
+            ),
+        ],
+        axis=0,
+    )
 
     population = population.reset_index(drop=True)
 
     return population / initial_community_size
-
 
 
 def _population_growth_daily(
@@ -500,7 +512,11 @@ def _number_of_devices_daily(
                 )
             )
             # Normalise the ownership based on the initial value being a math.floor.
-            daily_ownership = pd.DataFrame(daily_ownership[0] * math.floor(daily_ownership[0].loc[0]) / daily_ownership[0].loc[0])
+            daily_ownership = pd.DataFrame(
+                daily_ownership[0]
+                * math.floor(daily_ownership[0].loc[0])
+                / daily_ownership[0].loc[0]
+            )
         logger.info(
             "Ownership for device %s calculated.",
             device.name,
@@ -732,8 +748,8 @@ def process_device_hourly_power(
     # If the hourly power usage file already exists, load the data in.
     logger.info("Processing hourly power profile for %s.", device.name)
     # if os.path.isfile(hourly_usage_filepath) and not regenerate:
-#     with open(hourly_usage_filepath, "r") as f:
-#         device_load: pd.DataFrame = pd.read_csv(f, header=None)
+    #     with open(hourly_usage_filepath, "r") as f:
+    #         device_load: pd.DataFrame = pd.read_csv(f, header=None)
     #     logger.info(
     #         "Hourly power profile for %s successfully read from file %s.",
     #         device.name,
@@ -748,11 +764,15 @@ def process_device_hourly_power(
                     f"{BColours.fail}Internal error processing device "
                     + f"'{device.name}', electric power unexpectedly `None`.{BColours.endc}",
                 )
-            device_load = hourly_device_usage * device.electric_power * _normalised_linear_population_hourly(
-                initial_community_size=location.community_size,
-                final_community_size=location.final_community_size,
-                num_growth_years=simulation.end_year - simulation.start_year,
-                num_years_total=location.max_years,
+            device_load = (
+                hourly_device_usage
+                * device.electric_power
+                * _normalised_linear_population_hourly(
+                    initial_community_size=location.community_size,
+                    final_community_size=location.final_community_size,
+                    num_growth_years=simulation.end_year - simulation.start_year,
+                    num_years_total=location.max_years,
+                )
             )
             logger.info(
                 "Electric hourly power usage for %s successfully computed.", device.name

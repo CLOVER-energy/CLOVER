@@ -96,6 +96,10 @@ __all__ = (
 #   Placeholder text to use when the renewables.ninja API token has not been specified.
 API_TOKEN_PLACEHOLDER_TEXT: str = "YOUR API TOKEN HERE"
 
+# Carbon pricing:
+#   Keyword used for parsing carbon-pricing information.
+CARBON_PRICING: str = "carbon_pricing"
+
 # Cold water:
 #   Used for parsing cold-water related information.
 COLD_WATER: str = "cold_water"
@@ -2210,6 +2214,62 @@ class HotWaterScenario:
 
 
 @dataclasses.dataclass
+class CarbonPricing:
+    """
+    Contains information about the carbon-pricing tariffs to apply.
+
+    .. attribute:: diesel
+        The carbon price associated with the diesel component, in $/kg.
+
+    .. attribute:: grid
+        The carbon price associated with the grid, in $/kg.
+
+    .. attribute:: system
+        The carbon price associated with the renewable local system, in $/kg.
+
+    .. attribute:: total
+        The total carbon price to apply to all installed assets and emissions, in $/kg.
+
+    """
+
+    diesel: float | None = None
+    grid: float | None = None
+    system: float | None = None
+    total: float | None = None
+
+    def __post_init__(self) -> None:
+        """
+        Ensures that the carbon pricing strategy is ok.
+
+        If a total carbon price is provided, then the other values should not be
+        provided. Similarly, the other attributes should be mean that total is not
+        speficied if they are.
+
+        """
+
+        component_wise_carbon_prices: set[float | None] = {
+            self.diesel,
+            self.grid,
+            self.system,
+        }
+
+        if (self.total is not None and self.total) and any(
+            {entry is not None for entry in component_wise_carbon_prices}
+        ):
+            raise InputFileError(
+                "scenario_inputs",
+                "If using a total carbon price, must not specify the other values.",
+            )
+
+        # If no total carbon price is provided, then set the values to be zero on the
+        # non-specified component-wise carbon prices.
+        if self.total is None:
+            self.diesel = self.diesel if self.diesel is not None else 0
+            self.grid = self.grid if self.grid is not None else 0
+            self.system = self.system if self.system is not None else 0
+
+
+@dataclasses.dataclass
 class Scenario:
     """
     Represents a scenario being run.
@@ -2263,6 +2323,7 @@ class Scenario:
     """
 
     battery: bool
+    carbon_pricing: CarbonPricing
     demands: Demands
     desalination_scenario: DesalinationScenario | None
     diesel_scenario: DieselScenario
@@ -2405,8 +2466,18 @@ class Scenario:
         else:
             hot_water_scenario = None
 
+        # Determine the carbon pricing if specified.
+        if (
+            carbon_pricing_inputs := scenario_inputs.get(CARBON_PRICING, None)
+        ) is not None:
+            carbon_pricing = CarbonPricing(**carbon_pricing_inputs)
+
+        else:
+            carbon_pricing = CarbonPricing()
+
         return cls(
             scenario_inputs["battery"],
+            carbon_pricing,
             demands,
             desalination_scenario,
             diesel_scenario,

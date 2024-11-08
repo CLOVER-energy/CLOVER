@@ -997,7 +997,13 @@ def _parse_global_settings(logger: Logger) -> dict[str, Any]:
             )
 
     # Parse global settings.
-    if not os.path.isfile((global_settings_filepath:=os.path.join(os.path.expanduser("~"), GLOBAL_SETTINGS_FILE))):
+    if not os.path.isfile(
+        (
+            global_settings_filepath := os.path.join(
+                os.path.expanduser("~"), GLOBAL_SETTINGS_FILE
+            )
+        )
+    ):
         _create_global_setings_file()
 
     try:
