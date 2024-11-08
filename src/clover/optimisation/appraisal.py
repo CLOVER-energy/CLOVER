@@ -1653,9 +1653,6 @@ def appraise_system(  # pylint: disable=too-many-locals
         cumulative_results.subsystem_costs[ResourceType.ELECTRIC]
         / cumulative_results.discounted_electricity
     )
-    import pdb
-
-    pdb.set_trace()
     lcu_energy = float(
         cumulative_results.system_cost / cumulative_results.discounted_energy
     )
