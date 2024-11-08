@@ -548,6 +548,7 @@ def _simulation_financial_appraisal(  # pylint: disable=too-many-locals
     clean_water_tank_addition: int,
     converter_addition: dict[Converter, int],
     diesel_addition: float,
+    environmental_appraisal: EnvironmentalAppraisal,
     finance_inputs: dict[str, Any],
     heat_exchanger_addition: int,
     hot_water_tank_addition: int,
@@ -576,6 +577,8 @@ def _simulation_financial_appraisal(  # pylint: disable=too-many-locals
             system this iteration.
         - diesel_addition:
             The additional diesel capacity added this iteration.
+        - environment_appraisal:
+            The environmental appraisal.
         - finance_inputs:
             The finance input information.
         - heat_exchanger_addition:
@@ -740,6 +743,24 @@ def _simulation_financial_appraisal(  # pylint: disable=too-many-locals
         end_year=system_details.end_year,
     )
 
+    # Apply the carbon pricing where relevant
+    if scenario.carbon_pricing.diesel is not None:
+        diesel_fuel_costs += (
+            environmental_appraisal.diesel_ghgs * scenario.carbon_pricing.diesel
+        )
+
+    if scenario.carbon_pricing.grid is not None:
+        grid_costs += environmental_appraisal.grid_ghgs * scenario.carbon_pricing.grid
+
+    if scenario.carbon_pricing.system is not None:
+        for resource_type, subsystem_cost in subsystem_equipment_costs.items():
+            subsystem_equipment_costs[resource_type] = (
+                subsystem_cost
+                + environmental_appraisal.new_equipment_ghgs
+                * technical_appraisal.power_consumed_fraction[resource_type]
+                * scenario.carbon_pricing.system
+            )
+
     # Apportion the grid running costs by the resource types.
     total_subsystem_costs: dict[ResourceType, float] = {
         resource_type: value
@@ -770,6 +791,10 @@ def _simulation_financial_appraisal(  # pylint: disable=too-many-locals
     total_system_cost = sum(total_subsystem_costs.values())
 
     total_cost = total_system_cost + kerosene_costs
+
+    # Apply the total carbon price if specified.
+    if (total_carbon_price := scenario.carbon_pricing.total) is not None:
+        total_cost += total_carbon_price * environmental_appraisal.total_ghgs
 
     # Return outputs
     return FinancialAppraisal(
@@ -1559,26 +1584,6 @@ def appraise_system(  # pylint: disable=too-many-locals
         finance_inputs, logger, scenario, simulation_results, system_details
     )
 
-    financial_appraisal = _simulation_financial_appraisal(
-        buffer_tank_addition,
-        clean_water_tank_addition,
-        converter_addition,
-        diesel_addition,
-        finance_inputs,
-        heat_exchanger_addition,
-        hot_water_tank_addition,
-        inverter,
-        location,
-        logger,
-        pv_addition,
-        pvt_addition,
-        scenario,
-        simulation_results,
-        storage_addition,
-        system_details,
-        technical_appraisal,
-        electric_yearly_load_statistics,
-    )
     environmental_appraisal = _simulation_environmental_appraisal(
         buffer_tank_addition,
         clean_water_tank_addition,
@@ -1600,6 +1605,27 @@ def appraise_system(  # pylint: disable=too-many-locals
         storage_addition,
         system_details,
         technical_appraisal,
+    )
+    financial_appraisal = _simulation_financial_appraisal(
+        buffer_tank_addition,
+        clean_water_tank_addition,
+        converter_addition,
+        diesel_addition,
+        environmental_appraisal,
+        finance_inputs,
+        heat_exchanger_addition,
+        hot_water_tank_addition,
+        inverter,
+        location,
+        logger,
+        pv_addition,
+        pvt_addition,
+        scenario,
+        simulation_results,
+        storage_addition,
+        system_details,
+        technical_appraisal,
+        electric_yearly_load_statistics,
     )
 
     # Get results that rely on metrics of different kinds and several different
@@ -1627,6 +1653,9 @@ def appraise_system(  # pylint: disable=too-many-locals
         cumulative_results.subsystem_costs[ResourceType.ELECTRIC]
         / cumulative_results.discounted_electricity
     )
+    import pdb
+
+    pdb.set_trace()
     lcu_energy = float(
         cumulative_results.system_cost / cumulative_results.discounted_energy
     )
