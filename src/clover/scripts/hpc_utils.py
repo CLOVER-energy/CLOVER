@@ -397,8 +397,10 @@ class HpcSimulation(
         pv_system_size: float,
         scenario: str,
         storage_size: float,
-        total_load: bool,
-        total_load_file: str | None = None,
+        total_clean_water_load: bool,
+        total_electric_load: bool,
+        total_electric_load_file: str | None = None,
+        total_clean_water_load_file: str | None = None,
     ) -> None:
         """
         Instantiate a :class:`HpcSimulation` instance.
@@ -414,14 +416,25 @@ class HpcSimulation(
                 The scenario to use for the simulation(s).
             - storage_size:
                 The size of the storage system installed.
-            - total_load:
-                Whether a total-load file should be used for the simulation(s).
-            - total_load_file:
-                If being used, the name of the total-load file for the simulation(s).
+            - total_clean_water_load:
+                Whether a total-load file should be used.
+            - total_electric_load:
+                Whether a total-load file should be used.
+            - total_clean_water_load_file:
+                If being used, the name of the total-load file.
+            - total_electric_load_file:
+                If being used, the name of the total-load file.
 
         """
 
-        super().__init__(location, output, total_load, total_load_file)
+        super().__init__(
+            location,
+            output,
+            total_clean_water_load,
+            total_electric_load,
+            total_clean_water_load_file,
+            total_electric_load_file,
+        )
         self.pv_system_size = pv_system_size
         self.scenario = scenario
         self.storage_size = storage_size
@@ -442,14 +455,44 @@ class HpcSimulation(
 
         """
 
-        total_load_input: str = input_data.get("total_load", False)
+        total_clean_water_load_input: bool | str = input_data.get(
+            "total_clean_water_load", False
+        )
+        total_electric_load_input: bool | str = input_data.get(
+            "total_electric_load", False
+        )
 
-        if not total_load_input:
-            total_load: bool = False
-            total_load_file: str | None = None
+        # Process the clean-water load file
+        if not total_clean_water_load_input:
+            total_clean_water_load: bool = False
+            total_clean_water_load_file: str | None = None
+        elif not isinstance(total_clean_water_load_input, str):
+            logger.error(
+                "%sCannot set total-load to be `true`.%s", BColours.fail, BColours.endc
+            )
+            raise InvalidRunError(
+                "Cannot set total-load file to be `true` in HPC input file. Either "
+                "`false` or the name of the file can be used."
+            )
         else:
-            total_load = True
-            total_load_file = total_load_input
+            total_clean_water_load = True
+            total_clean_water_load_file = total_clean_water_load_input
+
+        # Process the electric load file
+        if not total_electric_load_input:
+            total_electric_load: bool = False
+            total_electric_load_file: str | None = None
+        elif not isinstance(total_electric_load_input, str):
+            logger.error(
+                "%sCannot set total-load to be `true`.%s", BColours.fail, BColours.endc
+            )
+            raise InvalidRunError(
+                "Cannot set total-load file to be `true` in HPC input file. Either "
+                "`false` or the name of the file can be used."
+            )
+        else:
+            total_electric_load = True
+            total_electric_load_file = total_electric_load_file
 
         output: str = input_data.get("output", "simulation_outputs")
 
@@ -501,8 +544,10 @@ class HpcSimulation(
             pv_system_size,
             scenario,
             storage_size,
-            total_load,
-            total_load_file,
+            total_clean_water_load,
+            total_electric_load,
+            total_clean_water_load_file,
+            total_electric_load_file,
         )
 
 
