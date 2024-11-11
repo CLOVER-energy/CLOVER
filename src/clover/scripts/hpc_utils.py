@@ -314,7 +314,7 @@ class HpcOptimisation(
             )
         else:
             total_electric_load = True
-            total_electric_load_file = total_electric_load_file
+            total_electric_load_file = total_electric_load_input
 
         return cls(
             input_data["location"],
