@@ -136,20 +136,20 @@ def _check_run(
         return False
 
     # Check that the total load file exists if specified.
-    if hpc_run.total_load_file is not None and not os.path.isfile(
+    if hpc_run.total_electric_load_file is not None and not os.path.isfile(
         os.path.join(
             locations_foldername,
             hpc_run.location,
             INPUTS_DIRECTORY,
             LOAD_INPUTS_DIRECTORY,
-            hpc_run.total_load_file,
+            hpc_run.total_electric_load_file,
         )
     ):
         logger.error(
             "%sThe total run file '%s' could not be found in the load inputs directory."
             "%s",
             BColours.fail,
-            hpc_run.total_load_file,
+            hpc_run.total_electric_load_file,
             BColours.endc,
         )
         return False

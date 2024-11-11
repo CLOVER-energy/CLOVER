@@ -1445,20 +1445,21 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
                 )
                 raise
 
-            # Add the time to the counter.
-            optimisation_times.append(
-                "{0:.3f} s/year".format(  # pylint: disable=consider-using-f-string
-                    (time_delta.seconds + time_delta.microseconds * 0.000001)
-                    / (
-                        optimisation_results[-1].system_details.end_year
-                        - optimisation_results[0].system_details.start_year
-                    )
-                )
-            )
+            # FIXME: Fix this block of code.
+            # # Add the time to the counter.
+            # optimisation_times.append(
+            #     "{0:.3f} s/year".format(  # pylint: disable=consider-using-f-string
+            #         (time_delta.seconds + time_delta.microseconds * 0.000001)
+            #         / (
+            #             optimisation_results[-1].system_details.end_year
+            #             - optimisation_results[0].system_details.start_year
+            #         )
+            #     )
+            # )
 
-            # Add the input file information to the system details file.
-            for appraisal in optimisation_results:
-                appraisal.system_details.file_information = input_file_info
+            # # Add the input file information to the system details file.
+            # for appraisal in optimisation_results:
+            #     appraisal.system_details.file_information = input_file_info
 
             # Save the optimisation output.
             save_optimisation(

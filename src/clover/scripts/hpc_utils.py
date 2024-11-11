@@ -113,8 +113,10 @@ class _BaseHpcRun:  # pylint: disable=too-few-public-methods
         self,
         location: str,
         output: str,
-        total_load: bool,
-        total_load_file: str | None = None,
+        total_clean_water_load: bool,
+        total_electric_load: bool,
+        total_electric_load_file: str | None = None,
+        total_clean_water_load_file: str | None = None,
     ) -> None:
         """
         Instantiate a :class:`_BaseHpcRun` instance.
@@ -124,17 +126,23 @@ class _BaseHpcRun:  # pylint: disable=too-few-public-methods
                 The name of the location to use.
             - output:
                 The name of the output file to use.
-            - total_load:
+            - total_clean_water_load:
                 Whether a total-load file should be used.
-            - total_load_file:
+            - total_electric_load:
+                Whether a total-load file should be used.
+            - total_clean_water_load_file:
+                If being used, the name of the total-load file.
+            - total_electric_load_file:
                 If being used, the name of the total-load file.
 
         """
 
         self.location = location
         self._output = output
-        self.total_load = total_load
-        self.total_load_file = total_load_file
+        self.total_clean_water_load = total_clean_water_load
+        self.total_electric_load = total_electric_load
+        self.total_clean_water_load_file = total_clean_water_load_file
+        self.total_electric_load_file = total_electric_load_file
 
     def __init_subclass__(cls, run_type: HpcRunType) -> None:
         """
@@ -161,10 +169,15 @@ class _BaseHpcRun:  # pylint: disable=too-few-public-methods
         return (
             f"HpcRun(type={self.type}, location={self.location}"
             + f", output={self.output}"
-            + f", total_load={self.total_load}"
+            + f", total_load={self.total_electric_load}"
             + (
-                f", total_load_file={self.total_load_file}"
-                if self.total_load_file is not None
+                f", total_clean_water_load_file={self.total_clean_water_load_file}"
+                if self.total_clean_water_load
+                else ""
+            )
+            + (
+                f", total_electric_load_file={self.total_electric_load_file}"
+                if self.total_electric_load
                 else ""
             )
             + ")"
@@ -197,8 +210,10 @@ class HpcOptimisation(
         optimisation: list[dict[str, Any]],
         optimisation_inputs_data: dict[str, Any],
         output: str,
-        total_load: bool,
-        total_load_file: str | None = None,
+        total_clean_water_load: bool,
+        total_electric_load: bool,
+        total_electric_load_file: str | None = None,
+        total_clean_water_load_file: str | None = None,
     ) -> None:
         """
         Instantiate a :class:`HpcOptimisation` instance.
@@ -213,14 +228,26 @@ class HpcOptimisation(
                 The input data for optimisations in general.
             - output:
                 The name of the output file to use.
-            - total_load:
+            - total_clean_water_load:
                 Whether a total-load file should be used.
-            - total_load_file:
+            - total_electric_load:
+                Whether a total-load file should be used.
+            - total_clean_water_load_file:
                 If being used, the name of the total-load file.
+            - total_electric_load_file:
+                If being used, the name of the total-load file.
+
 
         """
 
-        super().__init__(location, output, total_load, total_load_file)
+        super().__init__(
+            location,
+            output,
+            total_clean_water_load,
+            total_electric_load,
+            total_clean_water_load_file,
+            total_electric_load_file,
+        )
         self.optimisation: list[dict[str, Any]] = optimisation
         self.optimisation_inputs_data: dict[str, Any] = optimisation_inputs_data
 
@@ -250,12 +277,18 @@ class HpcOptimisation(
 
         """
 
-        total_load_input: bool | str = input_data.get("total_load", False)
+        total_clean_water_load_input: bool | str = input_data.get(
+            "total_clean_water_load", False
+        )
+        total_electric_load_input: bool | str = input_data.get(
+            "total_electric_load", False
+        )
 
-        if not total_load_input:
-            total_load: bool = False
-            total_load_file: str | None = None
-        elif not isinstance(total_load_input, str):
+        # Process the clean-water load file
+        if not total_clean_water_load_input:
+            total_clean_water_load: bool = False
+            total_clean_water_load_file: str | None = None
+        elif not isinstance(total_clean_water_load_input, str):
             logger.error(
                 "%sCannot set total-load to be `true`.%s", BColours.fail, BColours.endc
             )
@@ -264,16 +297,34 @@ class HpcOptimisation(
                 "`false` or the name of the file can be used."
             )
         else:
-            total_load = True
-            total_load_file = total_load_input
+            total_clean_water_load = True
+            total_clean_water_load_file = total_clean_water_load_input
+
+        # Process the electric load file
+        if not total_electric_load_input:
+            total_electric_load: bool = False
+            total_electric_load_file: str | None = None
+        elif not isinstance(total_electric_load_input, str):
+            logger.error(
+                "%sCannot set total-load to be `true`.%s", BColours.fail, BColours.endc
+            )
+            raise InvalidRunError(
+                "Cannot set total-load file to be `true` in HPC input file. Either "
+                "`false` or the name of the file can be used."
+            )
+        else:
+            total_electric_load = True
+            total_electric_load_file = total_electric_load_file
 
         return cls(
             input_data["location"],
             optimisation,
             optimisation_inputs_data,
             input_data.get("output", "optimisation_output"),
-            total_load,
-            total_load_file,
+            total_clean_water_load,
+            total_electric_load,
+            total_clean_water_load_file,
+            total_electric_load_file,
         )
 
     @property

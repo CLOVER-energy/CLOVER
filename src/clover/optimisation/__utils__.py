@@ -1514,7 +1514,7 @@ def save_optimisation(
     output: str,
     output_directory: str,
     scenario: Scenario,
-    system_appraisals: list[SystemAppraisal],
+    system_appraisals: list[pd.DataFrame],
 ) -> None:
     """
     Saves simulation outputs to a .csv file
