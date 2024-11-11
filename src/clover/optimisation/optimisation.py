@@ -1710,6 +1710,15 @@ def multiple_optimisation_step(  # pylint: disable=too-many-locals, too-many-sta
             if converter.name not in pbounds
         }
 
+        # Remove unavailable converters
+        unavailable_converters = [
+            converter
+            for converter in optimisation_parameters.converter_sizes
+            if converter not in available_converters
+        ]
+        for unavailable_converter in unavailable_converters:
+            pbounds.pop(unavailable_converter.name)
+
         criterion_to_optimiser_map: dict[Criterion, BayesianOptimization] = {}
         for optimisation_criterion in optimisation.optimisation_criteria:
             criterion_to_optimiser_map[optimisation_criterion] = (
@@ -1746,7 +1755,9 @@ def multiple_optimisation_step(  # pylint: disable=too-many-locals, too-many-sta
             )
             bayesian_optimiser.set_gp_params(alpha=1e-3, n_restarts_optimizer=5)
             bayesian_optimiser.maximize(
-                init_points=1000,
+                # init_points=1,
+                # n_iter=1,
+                init_points=200,
                 n_iter=1000,
             )
 

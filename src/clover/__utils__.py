@@ -349,6 +349,15 @@ class CleanWaterScenario:
     mode: CleanWaterMode
     sources: list[str]
 
+    def to_dict(self) -> dict[str, Any]:
+        """Returns a nice-looking `dict` representing the class."""
+
+        return {
+            "conventional_sources": self.conventional_sources,
+            MODE: self.mode.value,
+            "sources": self.sources,
+        }
+
 
 class ColdWaterSupply(enum.Enum):
     """
@@ -1885,6 +1894,16 @@ class ThermalCollectorScenario:
     htf_heat_capacity: float
     mass_flow_rate: float
 
+    def to_dict(self) -> dict[str, Any]:
+        """Returns a nice-looking representation of the class."""
+
+        return {
+            "collector_type": self.collector_type.value,
+            "heats": self.heats.value,
+            "htf_heat_capacity": self.htf_heat_capacity,
+            "mass_flow_rate": self.mass_flow_rate,
+        }
+
     def __repr__(self) -> str:
         """
         The default representation of the :class:`ThermalCollectorScenario`.
@@ -2011,6 +2030,32 @@ class DesalinationScenario:
     solar_thermal_scenario: ThermalCollectorScenario | None
     throughput_mass_flow_rate: float | None
     unclean_water_sources: str | None
+
+    def to_dict(self) -> dict[str, Any]:
+        """
+        Returns a `dict` representing the class.
+
+        Returns:
+            -a nice-looking dictionary representing the class.
+
+        """
+
+        return {
+            "auxiliary_heater": self.auxiliary_heater.value
+            if self.auxiliary_heater is not None
+            else None,
+            "clean_water_scenario": self.clean_water_scenario.to_dict(),
+            "feedwater_supply_temperature": self.feedwater_supply_temperature,
+            "name": self.name,
+            "pvt_scenario": self.pvt_scenario.to_dict()
+            if self.pvt_scenario is not None
+            else None,
+            "solar_thermal_scenario": self.solar_thermal_scenario.to_dict()
+            if self.solar_thermal_scenario is not None
+            else None,
+            "throughput_mass_flow_rate": self.throughput_mass_flow_rate,
+            "unclean_water_sources": self.unclean_water_sources,
+        }
 
     @classmethod
     def from_dict(
@@ -2699,6 +2744,11 @@ class Scenario:
             "prioritise_self_generation": self.prioritise_self_generation,
             "pv": self.pv,
         }
+
+        if self.desalination_scenario is not None:
+            scenario_dict[
+                "desalination_scenario"
+            ] = self.desalination_scenario.to_dict()
 
         return scenario_dict
 
