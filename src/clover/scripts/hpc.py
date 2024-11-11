@@ -95,11 +95,28 @@ def main(args: list[Any]) -> None:
         f"{hpc_run.output}_hpc_run_{run_number}",
     ]
 
+    if hpc_run.total_clean_water_load:
+        if hpc_run.total_clean_water_load_file is None:
+            logger.error(
+                "%sRun %s was processed as having a total electric load file but an "
+                "internal error occurred determining the total-load file name.%s",
+                BColours.fail,
+                hpc_job_number,
+                BColours.endc,
+            )
+            raise InternalError(
+                "Error occurred processing total-load filename for run #"
+                f"{hpc_job_number}."
+            )
+        clover_arguments.extend(
+            ["--clean-water-load-profile", hpc_run.total_clean_water_load_file]
+        )
+
     if hpc_run.total_electric_load:
         if hpc_run.total_electric_load_file is None:
             logger.error(
-                "%sRun %s was processed as having a total-load file but an internal "
-                "error occurred determining the total-load file name.%s",
+                "%sRun %s was processed as having a total electric-load file but an "
+                "internal error occurred determining the total-load file name.%s",
                 BColours.fail,
                 hpc_job_number,
                 BColours.endc,
