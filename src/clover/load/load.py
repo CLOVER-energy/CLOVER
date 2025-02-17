@@ -226,9 +226,11 @@ class Device:
             device_input[INNOVATION],
             device_input[IMITATION],
             device_input[DEVICE],
-            device_input[CLEAN_WATER_USAGE]
-            if CLEAN_WATER_USAGE in device_input
-            else None,
+            (
+                device_input[CLEAN_WATER_USAGE]
+                if CLEAN_WATER_USAGE in device_input
+                else None
+            ),
             device_input[HOT_WATER_USAGE] if HOT_WATER_USAGE in device_input else None,
         )
 

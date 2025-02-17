@@ -184,9 +184,9 @@ class Converter:
 
         """
 
-        self.input_resource_consumption: Dict[
-            ResourceType, float
-        ] = input_resource_consumption
+        self.input_resource_consumption: Dict[ResourceType, float] = (
+            input_resource_consumption
+        )
         self.maximum_output_capacity: float = maximum_output_capacity
         self.name: str = name
         self.output_resource_type: ResourceType = output_resource_type
@@ -531,13 +531,13 @@ class ThermalDesalinationPlant(MultiInputConverter):
         )
 
         self.htf_mode = htf_mode
-        self.maximum_feedwater_temperature: Optional[
-            float
-        ] = maximum_feedwater_temperature
+        self.maximum_feedwater_temperature: Optional[float] = (
+            maximum_feedwater_temperature
+        )
         self.maximum_htf_temperature: Optional[float] = maximum_htf_temperature
-        self.minimum_feedwater_temperature: Optional[
-            float
-        ] = minimum_feedwater_temperature
+        self.minimum_feedwater_temperature: Optional[float] = (
+            minimum_feedwater_temperature
+        )
         self.minimum_htf_temperature: Optional[float] = minimum_htf_temperature
         self.minimum_output_capacity: Optional[float] = minimum_output_capacity
 
@@ -638,19 +638,27 @@ class ThermalDesalinationPlant(MultiInputConverter):
         return cls(
             htf_mode,
             input_resource_consumption,
-            float(input_data[MAXIMUM_FEEDWATER_TEMPERATURE])
-            if MAXIMUM_FEEDWATER_TEMPERATURE in input_data
-            else None,
-            float(input_data[MAXIMUM_HTF_TEMPERATURE])
-            if MAXIMUM_HTF_TEMPERATURE in input_data
-            else None,
+            (
+                float(input_data[MAXIMUM_FEEDWATER_TEMPERATURE])
+                if MAXIMUM_FEEDWATER_TEMPERATURE in input_data
+                else None
+            ),
+            (
+                float(input_data[MAXIMUM_HTF_TEMPERATURE])
+                if MAXIMUM_HTF_TEMPERATURE in input_data
+                else None
+            ),
             maximum_output,
-            float(input_data[MINIMUM_FEEDWATER_TEMPERATURE])
-            if MINIMUM_FEEDWATER_TEMPERATURE in input_data
-            else None,
-            float(input_data[MINIMUM_HTF_TEMPERATURE])
-            if MINIMUM_HTF_TEMPERATURE in input_data
-            else None,
+            (
+                float(input_data[MINIMUM_FEEDWATER_TEMPERATURE])
+                if MINIMUM_FEEDWATER_TEMPERATURE in input_data
+                else None
+            ),
+            (
+                float(input_data[MINIMUM_HTF_TEMPERATURE])
+                if MINIMUM_HTF_TEMPERATURE in input_data
+                else None
+            ),
             float(input_data[MINIMUM_OUTPUT]),
             str(input_data[NAME]),
             output_resource_type,

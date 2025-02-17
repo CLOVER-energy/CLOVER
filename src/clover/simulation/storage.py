@@ -632,7 +632,7 @@ def get_electric_battery_storage_profile(  # pylint: disable=too-many-locals, to
     )
 
     # Check for self-generation prioritisation
-    if scenario.prioritise_self_generation:
+    if scenario.prioritisation_strategy:
         # Take energy from PV first
         remaining_profile = pd.DataFrame(renewables_energy.values - load_energy.values)
         renewables_energy_used_directly: pd.DataFrame = pd.DataFrame(

@@ -25,6 +25,7 @@ import logging
 import os
 
 from typing import Any, DefaultDict, Dict, List, Optional, Set, Union
+from warnings import warn
 
 import json
 import numpy as np  # pylint: disable=import-error
@@ -761,9 +762,11 @@ class DieselScenario:
         """
 
         return {
-            "backup_threshold": float(self.backup_threshold)
-            if self.backup_threshold is not None
-            else str(None),
+            "backup_threshold": (
+                float(self.backup_threshold)
+                if self.backup_threshold is not None
+                else str(None)
+            ),
             "mode": str(self.mode.value),
         }
 
@@ -993,9 +996,9 @@ class KeyResults:
                 self.average_daily_cw_supplied, 3
             )
         if self.average_daily_cw_pvt_generation is not None:
-            data_dict[
-                "Average daily clean-water PV-T electricity supplied / kWh"
-            ] = round(self.average_daily_cw_pvt_generation, 3)
+            data_dict["Average daily clean-water PV-T electricity supplied / kWh"] = (
+                round(self.average_daily_cw_pvt_generation, 3)
+            )
         if self.average_daily_diesel_energy_supplied is not None:
             data_dict["Average daily diesel energy supplied / kWh"] = round(
                 self.average_daily_diesel_energy_supplied, 3
@@ -1017,9 +1020,9 @@ class KeyResults:
                 self.average_daily_hw_demand_covered, 3
             )
         if self.average_daily_hw_pvt_generation is not None:
-            data_dict[
-                "Average daily hot-water PV-T electricity supplied / kWh"
-            ] = round(self.average_daily_hw_pvt_generation, 3)
+            data_dict["Average daily hot-water PV-T electricity supplied / kWh"] = (
+                round(self.average_daily_hw_pvt_generation, 3)
+            )
         if self.average_daily_hw_supplied is not None:
             data_dict["Average daily hot water supplied / litres"] = round(
                 self.average_daily_hw_supplied, 3
@@ -1703,10 +1706,14 @@ class DesalinationScenario:
             ) from None
 
         clean_water_scenario: CleanWaterScenario = CleanWaterScenario(
-            desalination_inputs[ResourceType.CLEAN_WATER.value][CONVENTIONAL_SOURCES]
-            if CONVENTIONAL_SOURCES
-            in desalination_inputs[ResourceType.CLEAN_WATER.value]
-            else [],
+            (
+                desalination_inputs[ResourceType.CLEAN_WATER.value][
+                    CONVENTIONAL_SOURCES
+                ]
+                if CONVENTIONAL_SOURCES
+                in desalination_inputs[ResourceType.CLEAN_WATER.value]
+                else []
+            ),
             clean_water_mode,
             list(desalination_inputs[ResourceType.CLEAN_WATER.value]["sources"]),
         )
@@ -1714,9 +1721,11 @@ class DesalinationScenario:
         try:
             pvt_scenario: PVTScenario = PVTScenario(
                 HTFMode(desalination_inputs[PVT_SCENARIO]["heats"]),
-                desalination_inputs[PVT_SCENARIO]["htf_heat_capacity"]
-                if "htf_heat_capacity" in desalination_inputs[PVT_SCENARIO]
-                else HEAT_CAPACITY_OF_WATER,
+                (
+                    desalination_inputs[PVT_SCENARIO]["htf_heat_capacity"]
+                    if "htf_heat_capacity" in desalination_inputs[PVT_SCENARIO]
+                    else HEAT_CAPACITY_OF_WATER
+                ),
                 desalination_inputs[PVT_SCENARIO]["mass_flow_rate"],
             )
         except ValueError:
@@ -1933,9 +1942,11 @@ class HotWaterScenario:
         try:
             pvt_scenario: PVTScenario = PVTScenario(
                 HTFMode(hot_water_inputs[PVT_SCENARIO]["heats"]),
-                hot_water_inputs[PVT_SCENARIO]["htf_heat_capacity"]
-                if "htf_heat_capacity" in hot_water_inputs[PVT_SCENARIO]
-                else HEAT_CAPACITY_OF_WATER,
+                (
+                    hot_water_inputs[PVT_SCENARIO]["htf_heat_capacity"]
+                    if "htf_heat_capacity" in hot_water_inputs[PVT_SCENARIO]
+                    else HEAT_CAPACITY_OF_WATER
+                ),
                 hot_water_inputs[PVT_SCENARIO]["mass_flow_rate"],
             )
         except ValueError:
@@ -1967,6 +1978,40 @@ class HotWaterScenario:
             hot_water_inputs[NAME],
             pvt_scenario,
         )
+
+
+class PrioritisationStrategy(enum.Enum):
+    """
+    Denotes the prioritisation strategy.
+
+    - GRID_PRIORITISATION: Power will be taken from the national-grid network first and
+    foremost, with PV panels and battery storage only meeting demand if the national-
+    grid network is not available to meet demand. If the grid is available, any
+    installed PV panels will charge any installed battery storage but the batteries
+    won't be charged from the national-grid network.
+
+    - SELF_CONSUMPTION: All locally-generated power will be consumed before any power is
+    taken from the national-grid network. PV power will be used to power the system,
+    with battery storage then used and, finally, power taken from the national-grid
+    network if the local assets are unable to meet demand.
+
+    - STORAGE_AS_BACKUP_SERVICE: Battery storage will be used as a backup for if power
+    from the grid is not available. If grid-sourced power is available, this will be
+    consumed. PV power will be used to power the system with any excess used to charge
+    battery storage. If power is available from the national-grid network, the battery
+    storage will be charged c-rates depending.
+
+    - STORAGE_AS_SOLAR_BACKUP: Battery storage will be used as a backup for if power from
+    the grid is not available and the PV panels are unable to meet demand. Battery
+    storage will only be charged if there is excess PV power and will not be charged
+    from the national-grid network.
+
+    """
+
+    GRID_PRIORITISATION = "grid_prioritisation"
+    SELF_CONSUMPTION = "self_consumption"
+    STORAGE_AS_BACKUP_SERVICE = "storage_as_backup_service"
+    STORAGE_AS_SOLAR_BACKUP = "storage_as_solar_backup"
 
 
 @dataclasses.dataclass
@@ -2005,7 +2050,7 @@ class Scenario:
     .. attribute:: resource_types
         The load types being modelled.
 
-    .. attribute:: prioritise_self_generation
+    .. attribute:: prioritisation_strategy
         Whether self generation should be prioritised.
 
     .. attribute:: pv
@@ -2030,7 +2075,7 @@ class Scenario:
     hot_water_scenario: Optional[HotWaterScenario]
     name: str
     resource_types: Set[ResourceType]
-    prioritise_self_generation: bool
+    prioritisation_strategy: PrioritisationStrategy
     pv: bool
     pv_d: bool
     pv_t: bool
@@ -2068,10 +2113,12 @@ class Scenario:
         )
 
         diesel_scenario = DieselScenario(
-            scenario_inputs["diesel"]["backup"]["threshold"]
-            if scenario_inputs["diesel"][MODE]
-            in (DieselMode.BACKUP.value, DieselMode.BACKUP_UNMET.value)
-            else None,
+            (
+                scenario_inputs["diesel"]["backup"]["threshold"]
+                if scenario_inputs["diesel"][MODE]
+                in (DieselMode.BACKUP.value, DieselMode.BACKUP_UNMET.value)
+                else None
+            ),
             DieselMode(scenario_inputs["diesel"][MODE]),
         )
 
@@ -2159,6 +2206,33 @@ class Scenario:
         else:
             hot_water_scenario = None
 
+        # Parse the prioritisation strategy
+        try:
+            prioritisation_strategy: PrioritisationStrategy = PrioritisationStrategy(
+                scenario_inputs["prioritisation_strategy"]
+            )
+        except KeyError:
+            try:
+                self_prioritisation: bool = scenario_inputs[
+                    "prioritise_self_generation"
+                ]
+                warn(
+                    "self-prioritisation is a deprecated flag. Consult the documentation.",
+                    DeprecationWarning,
+                )
+
+                if self_prioritisation:
+                    prioritisation_strategy = (
+                        PrioritisationStrategy.STORAGE_AS_SOLAR_BACKUP
+                    )
+                else:
+                    prioritisation_strategy = PrioritisationStrategy.GRID_PRIORITISATION
+            except KeyError:
+                raise InputFileError(
+                    "scenario_inputs",
+                    "Self-prioritisation and prioritisation strategy fault.",
+                ) from None
+
         return cls(
             scenario_inputs["battery"],
             demands,
@@ -2171,7 +2245,7 @@ class Scenario:
             hot_water_scenario,
             scenario_inputs[NAME],
             resource_types,
-            scenario_inputs["prioritise_self_generation"],
+            prioritisation_strategy,
             scenario_inputs["pv"],
             scenario_inputs.get("pv_d", False),
             scenario_inputs.get("pv_t", False),
@@ -2200,7 +2274,7 @@ class Scenario:
             "grid_type": self.grid_type,
             "name": self.name,
             "resource_types": [str(e.value) for e in self.resource_types],
-            "prioritise_self_generation": self.prioritise_self_generation,
+            "prioritisation_strategy": self.prioritisation_strategy,
             "pv": self.pv,
         }
 
@@ -2339,10 +2413,10 @@ class SystemDetails:
     final_num_buffer_tanks: Optional[int] = 0
     final_num_clean_water_tanks: Optional[int] = 0
     final_num_hot_water_tanks: Optional[int] = 0
-    final_pv_sizes: Union[
-        Dict[str, float], DefaultDict[str, float]
-    ] = dataclasses.field(  # type: ignore [assignment]
-        default_factory=lambda: collections.defaultdict(float)
+    final_pv_sizes: Union[Dict[str, float], DefaultDict[str, float]] = (
+        dataclasses.field(  # type: ignore [assignment]
+            default_factory=lambda: collections.defaultdict(float)
+        )
     )
     final_storage_size: float = 0
     initial_converter_sizes: Optional[Dict[str, int]] = None
@@ -2351,10 +2425,10 @@ class SystemDetails:
     initial_num_buffer_tanks: Optional[int] = 0
     initial_num_clean_water_tanks: Optional[int] = 0
     initial_num_hot_water_tanks: Optional[int] = 0
-    initial_pv_sizes: Union[
-        Dict[str, float], DefaultDict[str, float]
-    ] = dataclasses.field(  # type: ignore [assignment]
-        default_factory=lambda: collections.defaultdict(float)
+    initial_pv_sizes: Union[Dict[str, float], DefaultDict[str, float]] = (
+        dataclasses.field(  # type: ignore [assignment]
+            default_factory=lambda: collections.defaultdict(float)
+        )
     )
     initial_storage_size: float = 0
     required_feedwater_sources: Optional[List[str]] = None
@@ -2843,9 +2917,9 @@ class TechnicalAppraisal:
         }
 
         if self.clean_water_blackouts is not None:
-            technical_appraisal_dict[
-                "clean_water_blackouts"
-            ] = self.clean_water_blackouts
+            technical_appraisal_dict["clean_water_blackouts"] = (
+                self.clean_water_blackouts
+            )
 
         technical_appraisal_dict = {
             str(key): float(value) for key, value in technical_appraisal_dict.items()
@@ -2902,9 +2976,11 @@ class SystemAppraisal:
             "financial_appraisal": self.financial_appraisal.to_dict(),
             "system_details": self.system_details.to_dict(),
             "technical_appraisal": self.technical_appraisal.to_dict(),
-            "criteria": {str(key.value): value for key, value in self.criteria.items()}
-            if self.criteria is not None
-            else "None",
+            "criteria": (
+                {str(key.value): value for key, value in self.criteria.items()}
+                if self.criteria is not None
+                else "None"
+            ),
         }
 
 
@@ -2972,9 +3048,9 @@ def save_simulation(
         existing_simulation_details = {}
 
     # Update the system info with the new simulation information.
-    existing_simulation_details[
-        f"simulation_{simulation_number}"
-    ] = simulation_details_dict
+    existing_simulation_details[f"simulation_{simulation_number}"] = (
+        simulation_details_dict
+    )
 
     with tqdm(
         total=2,
