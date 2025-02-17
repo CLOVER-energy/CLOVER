@@ -31,9 +31,12 @@ import numpy as np  # pylint: disable=import-error
 import pandas as pd  # pylint: disable=import-error
 import scipy  # pylint: disable=import-error
 import scipy.interpolate
+import warnings
 import yaml  # pylint: disable=import-error
 
 from tqdm import tqdm  # pylint: disable=import-error
+
+warnings.filterwarnings("ignore")
 
 __all__ = (
     "API_TOKEN_PLACEHOLDER_TEXT",
