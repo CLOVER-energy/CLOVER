@@ -2440,8 +2440,8 @@ class Scenario:
                     "prioritise_self_generation"
                 ]
                 warn(
-                    "self-prioritisation is a deprecated flag. Consult the documentation.",
-                    DeprecationWarning,
+                    BColours.warning + "self-prioritisation is a deprecated flag. Consult the documentation." + BColours.endc,
+                    FutureWarning,
                 )
 
                 if self_prioritisation:

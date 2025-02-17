@@ -17,7 +17,7 @@ the clover module from the command-line interface.
 
 """
 
-__version__ = "5.2.0a7"
+__version__ = "5.3.0b1"
 
 import collections
 import datetime
@@ -28,7 +28,8 @@ import re
 import sys
 import warnings
 
-warnings.simplefilter(action="ignore", category=FutureWarning)
+warnings.simplefilter('always', UserWarning)
+# warnings.simplefilter(action="ignore", category=FutureWarning)
 
 from argparse import Namespace
 from typing import Any, DefaultDict, Match, Pattern

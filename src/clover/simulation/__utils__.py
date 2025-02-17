@@ -22,11 +22,12 @@ that is passed in to the module.
 
 """
 
-from argparse import Namespace
 import dataclasses
-from logging import Logger
 
+from argparse import Namespace
+from logging import Logger
 from typing import Any, DefaultDict, Union
+from warnings import warn
 
 from ..__utils__ import (
     AuxiliaryHeaterType,
@@ -312,9 +313,10 @@ class Minigrid:
                     "energy system inputs",
                     "Inverter information should be in energy system inputs.",
                 ) from None
-            logger.warning(
-                "Specifying inverter information in the finance inputs is deprecated. "
-                "Use the energy-system inputs."
+            warn(
+                BColours.warning + "Specifying inverter information in the finance inputs is deprecated. "
+                "Use the energy-system inputs." + BColours.endc,
+                FutureWarning
             )
 
         # Return the minigrid instance.
