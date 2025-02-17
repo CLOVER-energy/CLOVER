@@ -28,9 +28,8 @@
 *.coverage
 # Ignore VSCode files
 .vscode
-# Ignore model files for now
-*.sav
 # Ignore misc. files
+*.sav
 *.zip
 # Ignore user settings
 global_settings.yaml

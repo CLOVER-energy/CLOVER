@@ -19,7 +19,7 @@ is concerned with the modelling and consideration of these aspects of the energy
 import dataclasses
 
 from logging import Logger
-from typing import Any, Dict, List
+from typing import Any
 
 from ..__utils__ import (
     BColours,
@@ -100,7 +100,7 @@ class Transmitter:
         return representation_string
 
     @classmethod
-    def from_dict(cls, input_data: Dict[str, Any], logger: Logger) -> Any:
+    def from_dict(cls, input_data: dict[str, Any], logger: Logger) -> Any:
         """
         Processes input data to generate a :class:`Transmitter` instance.
 
@@ -114,7 +114,7 @@ class Transmitter:
         """
 
         # Determine the input load type.
-        input_resource_list: List[str] = [
+        input_resource_list: list[str] = [
             str(key)
             for key in input_data
             if key in RESOURCE_NAME_TO_RESOURCE_TYPE_MAPPING
@@ -131,7 +131,7 @@ class Transmitter:
             )
 
         # Determine the consumption of this resource.
-        input_resource_consumption: Dict[ResourceType, float] = {}
+        input_resource_consumption: dict[ResourceType, float] = {}
         for input_resource in input_resource_list:
             try:
                 input_resource_consumption[

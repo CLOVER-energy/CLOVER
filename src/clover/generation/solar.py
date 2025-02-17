@@ -21,11 +21,11 @@ for use locally within CLOVER.
 import enum
 
 from logging import Logger
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any
 
 import pandas as pd  # pylint: disable=import-error
 
-# from sklearn.linear_model._coordinate_descent import Lasso
+from sklearn.linear_model._coordinate_descent import Lasso
 
 from ..__utils__ import (
     BColours,
@@ -33,6 +33,7 @@ from ..__utils__ import (
     Location,
     NAME,
     ProgrammerJudgementFault,
+    RegressorType,
     RenewablesNinjaError,
 )
 from .__utils__ import BaseRenewablesNinjaThread, SolarDataType, total_profile_output
@@ -54,6 +55,15 @@ __all__ = (
 #   The default PV unit size to use, measured in kWp.
 DEFAULT_PV_UNIT: float = 1  # [kWp]
 
+# Low irradiance threshold:
+#   The threshold at which to switch between a low-irradiance model and a standard-
+#   irradiance model.
+LOW_IRRADIANCE_THRESHOLD: float = 25  # [W/m^2]
+
+# Low temperature threshold:
+#   The threshold at which to switch between a low-temperature model and a standard-
+#   temperature model.
+LOW_TEMPERATURE_THRESHOLD: float = 50  # [degC]
 # Default tracking:
 #   The default keyword to use for fixed-mounted panels.
 _DEFAULT_TRACKING: str = "fixed"
@@ -69,7 +79,7 @@ SOLAR_LOGGER_NAME = "solar_generation"
 
 # Tracking map:
 #   Map used for determining the tracking state of the panels.
-_TRACKING_MAP: Dict[str, int] = {
+_TRACKING_MAP: dict[str, int] = {
     _DEFAULT_TRACKING: 0,
     "single": 1,
     "single_axis": 1,
@@ -195,15 +205,15 @@ class SolarPanel:  # pylint: disable=too-few-public-methods
 
     def __init__(
         self,
-        azimuthal_orientation: Optional[float],
+        azimuthal_orientation: float | None,
         lifetime: int,
         name: str,
         pv_unit: float,
         pv_unit_overrided: bool,
-        reference_efficiency: Optional[float],
-        reference_temperature: Optional[float],
-        thermal_coefficient: Optional[float],
-        tilt: Optional[float],
+        reference_efficiency: float | None,
+        reference_temperature: float | None,
+        thermal_coefficient: float | None,
+        tilt: float | None,
     ) -> None:
         """
         Instantiate a :class:`SolarPanel` instance.
@@ -235,15 +245,15 @@ class SolarPanel:  # pylint: disable=too-few-public-methods
 
         """
 
-        self.azimuthal_orientation: Optional[float] = azimuthal_orientation
+        self.azimuthal_orientation: float | None = azimuthal_orientation
         self.lifetime: int = lifetime
         self.name: str = name
         self.pv_unit: float = pv_unit
         self.pv_unit_overrided: bool = pv_unit_overrided
-        self.reference_efficiency: Optional[float] = reference_efficiency
-        self.reference_temperature: Optional[float] = reference_temperature
-        self.thermal_coefficient: Optional[float] = thermal_coefficient
-        self.tilt: Optional[float] = tilt
+        self.reference_efficiency: float | None = reference_efficiency
+        self.reference_temperature: float | None = reference_temperature
+        self.thermal_coefficient: float | None = thermal_coefficient
+        self.tilt: float | None = tilt
 
     def __init_subclass__(cls, panel_type: SolarPanelType) -> None:
         """
@@ -276,15 +286,15 @@ class PVPanel(
 
     def __init__(
         self,
-        azimuthal_orientation: Optional[float],
+        azimuthal_orientation: float | None,
         lifetime: int,
         name: str,
         pv_unit: float,
         pv_unit_overrided: bool,
-        reference_efficiency: Optional[float],
-        reference_temperature: Optional[float],
-        thermal_coefficient: Optional[float],
-        tilt: Optional[float],
+        reference_efficiency: float | None,
+        reference_temperature: float | None,
+        thermal_coefficient: float | None,
+        tilt: float | None,
         tracking: Tracking,
     ) -> None:
         """
@@ -367,7 +377,7 @@ class PVPanel(
         )
 
     @property
-    def as_dict(self) -> Dict[str, Any]:
+    def as_dict(self) -> dict[str, Any]:
         """
         Return a dictionary based on the panel information.
 
@@ -391,7 +401,7 @@ class PVPanel(
         }
 
     @classmethod
-    def from_dict(cls, logger: Logger, solar_inputs: Dict[str, Any]) -> Any:
+    def from_dict(cls, logger: Logger, solar_inputs: dict[str, Any]) -> Any:
         """
         Instantiate a :class:`PVPanel` instance based on the input data.
 
@@ -424,14 +434,12 @@ class PVPanel(
         )
 
         if tracking == Tracking.FIXED:
-            azimuthal_orientation: Optional[float] = solar_inputs[
-                "azimuthal_orientation"
-            ]
+            azimuthal_orientation: float | None = solar_inputs["azimuthal_orientation"]
         else:
             azimuthal_orientation = None
 
         if tracking != Tracking.DUAL_AXIS:
-            tilt: Optional[float] = solar_inputs["tilt"]
+            tilt: float | None = solar_inputs["tilt"]
         else:
             tilt = None
 
@@ -466,7 +474,8 @@ class HybridPVTPanel(SolarPanel, panel_type=SolarPanelType.PV_T):
     Represents a PV-T panel.
 
     .. attribute:: electric_model
-        The model of the electric performance of the collector.
+        The model(s) of the electric performance of the collector, stored as a mapping
+        between :class:`RegressorType` instances and :class:`Lasso` models.
 
     .. attribute:: max_mass_flow_rate
         The maximum mass-flow rate of heat-transfer fluid through the PV-T collector,
@@ -476,8 +485,9 @@ class HybridPVTPanel(SolarPanel, panel_type=SolarPanelType.PV_T):
         The minimum mass-flow rate of heat-transfer fluid through the PV-T collector,
         measured in litres per hour.
 
-    .. attribute:: thermal_model
-        The model of the thermal performance of the collector.
+    .. attribute:: thermal_models
+        The model(s) of the thermal performance of the collector, stored as a mapping
+        between :class:`RegressorType` instances and :class:`Lasso` models.
 
     .. attribute:: thermal_unit
         The unit of thermal panel that the panel can output which is being considered,
@@ -487,18 +497,18 @@ class HybridPVTPanel(SolarPanel, panel_type=SolarPanelType.PV_T):
 
     def __init__(
         self,
-        electric_model: Optional[Any],
+        electric_models: dict[RegressorType, Lasso] | None,
         logger: Logger,
-        solar_inputs: Dict[str, Any],
-        solar_panels: List[SolarPanel],
-        thermal_model: Optional[Any],
+        solar_inputs: dict[str, Any],
+        solar_panels: list[SolarPanel],
+        thermal_models: dict[RegressorType, Lasso] | None,
     ) -> None:
         """
         Instantiate a :class:`HybridPVTPanel` instance based on the input data.
 
         Inputs:
             - electric_model:
-                The reduced electrical-efficiency model to use when generating the
+                The reduced electrical-efficiency model(s) to use when generating the
                 electric properties of the collector.
             - logger:
                 The logger to use for the run.
@@ -507,8 +517,8 @@ class HybridPVTPanel(SolarPanel, panel_type=SolarPanelType.PV_T):
             - solar_panels:
                 The full set of solar generation data.
             - thermal_model:
-                The reduced thermal model to use when generating the thermal properties
-                of the collector.
+                The reduced thermal model (s)to use when generating the thermal
+                properties of the collector.
 
         """
 
@@ -567,10 +577,10 @@ class HybridPVTPanel(SolarPanel, panel_type=SolarPanelType.PV_T):
             solar_inputs["tilt"],
         )
 
-        self.electric_model = electric_model
+        self.electric_models = electric_models
         self.max_mass_flow_rate = solar_inputs["max_mass_flow_rate"]
         self.min_mass_flow_rate = solar_inputs["min_mass_flow_rate"]
-        self.thermal_model = thermal_model
+        self.thermal_models = thermal_models
         self.thermal_unit = solar_inputs.get("thermal_unit", None)
 
     def __repr__(self) -> str:
@@ -585,7 +595,7 @@ class HybridPVTPanel(SolarPanel, panel_type=SolarPanelType.PV_T):
         return (
             "HybridPVTPanel("
             + f"azimuthal_orientation={self.azimuthal_orientation}"
-            + f", electric_model={self.electric_model}"
+            + f", electric_models defined={self.electric_models is not None}"
             + f", lifetime={self.lifetime}"
             + f", max_mass_flow_rate={self.max_mass_flow_rate}"
             + f", min_mass_flow_rate={self.min_mass_flow_rate}"
@@ -594,7 +604,7 @@ class HybridPVTPanel(SolarPanel, panel_type=SolarPanelType.PV_T):
             + f", reference_efficiency={self.reference_efficiency}"
             + f", reference_temperature={self.reference_temperature}"
             + f", thermal_coefficient={self.thermal_coefficient}"
-            + f", thermal_model={self.thermal_model}"
+            + f", thermal_models defined={self.thermal_models is not None}"
             + f", thermal_unit={self.thermal_unit}"
             + f", tilt={self.tilt}"
             + ")"
@@ -637,7 +647,7 @@ class HybridPVTPanel(SolarPanel, panel_type=SolarPanelType.PV_T):
         mass_flow_rate: float,
         solar_irradiance: float,
         wind_speed: float,
-    ) -> Tuple[float, float]:
+    ) -> tuple[float, float]:
         """
         Calculates the performance characteristics of the hybrid PV-T collector.
 
@@ -672,7 +682,7 @@ class HybridPVTPanel(SolarPanel, panel_type=SolarPanelType.PV_T):
 
         """
 
-        if self.electric_model is None or self.thermal_model is None:
+        if self.electric_models is None or self.thermal_models is None:
             logger.error(
                 "%sThe PV-T instance does not have well-defined and loaded models.%s",
                 BColours.fail,
@@ -708,8 +718,26 @@ class HybridPVTPanel(SolarPanel, panel_type=SolarPanelType.PV_T):
             ]
         )
 
+        # Determine which models to use.
+        if solar_irradiance < LOW_IRRADIANCE_THRESHOLD:
+            if input_temperature < LOW_TEMPERATURE_THRESHOLD:
+                regressor_type: RegressorType = (
+                    RegressorType.LOW_IRRADIANCE_LOW_TEMPERATURE
+                )
+            else:
+                regressor_type = RegressorType.LOW_IRRADIANCE_HIGH_TEMPERATURE
+        else:
+            if input_temperature < LOW_TEMPERATURE_THRESHOLD:
+                regressor_type = RegressorType.STANDARD_IRRADIANCE_LOW_TEMPERATURE
+            else:
+                regressor_type = RegressorType.STANDARD_IRRADIANCE_HIGH_TEMPERATURE
+
+        electric_model = self.electric_models[regressor_type]
+        thermal_model = self.thermal_models[regressor_type]
+
+        # Use the model selected to predict the collector performance.
         try:
-            electric_efficiency = float(self.electric_model.predict(input_data_frame))
+            electric_efficiency = float(electric_model.predict(input_data_frame))
         except Exception as e:  # pylint: disable=broad-except
             logger.error(
                 "Error attempting to predict electric efficiency of the PV-T collector: %s",
@@ -723,7 +751,7 @@ class HybridPVTPanel(SolarPanel, panel_type=SolarPanelType.PV_T):
         ) * (solar_irradiance / REFERENCE_SOLAR_IRRADIANCE)
 
         try:
-            output_temperature = float(self.thermal_model.predict(input_data_frame))
+            output_temperature = float(thermal_model.predict(input_data_frame))
         except Exception as e:  # pylint: disable=broad-except
             logger.error(
                 "Error attempting to predict electric efficiency of the PV-T collector: %s",
@@ -734,7 +762,7 @@ class HybridPVTPanel(SolarPanel, panel_type=SolarPanelType.PV_T):
         return fractional_electric_performance, output_temperature
 
 
-def get_profile_prefix(panel: Union[PVPanel, HybridPVTPanel]) -> str:
+def get_profile_prefix(panel: PVPanel | HybridPVTPanel) -> str:
     """
     Determine the prefix to use for profile names based on the tracking and angles.
 
@@ -808,8 +836,7 @@ class SolarDataThread(
     def __init__(
         self,
         auto_generated_files_directory: str,
-        generation_inputs: Dict[str, Any],
-        global_settings_inputs: Dict[str, str],
+        global_settings_inputs: dict[str, int | str],
         location: Location,
         logger_name: str,
         pause_time: int,
@@ -849,7 +876,6 @@ class SolarDataThread(
 
         super().__init__(
             auto_generated_files_directory,
-            generation_inputs,
             global_settings_inputs,
             location,
             logger_name,
@@ -863,7 +889,7 @@ class SolarDataThread(
 
 
 def total_solar_output(
-    *args, pv_panel: Union[PVPanel, HybridPVTPanel]
+    *args, pv_panel: PVPanel | HybridPVTPanel
 ) -> pd.DataFrame:  # type: ignore
     """
     Wrapper function to wrap the total solar output.

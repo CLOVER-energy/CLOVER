@@ -20,7 +20,7 @@ import argparse
 import os
 import sys
 
-from typing import Any, Dict, List
+from typing import Any
 
 import yaml  # pylint: disable=import-error
 
@@ -34,7 +34,7 @@ __all__ = ("main",)
 LOGGER_NAME: str = "update_api_token"
 
 
-def _parse_args(args: List[Any]) -> argparse.Namespace:
+def _parse_args(args: list[Any]) -> argparse.Namespace:
     """
     Parse the CLI arguments to determine the flow of the script.
 
@@ -54,7 +54,7 @@ def _parse_args(args: List[Any]) -> argparse.Namespace:
     return parser.parse_args(args)
 
 
-def main(args: List[Any]) -> None:
+def main(args: list[Any]) -> None:
     """
     The main method of the update api token script.
 
@@ -87,7 +87,7 @@ def main(args: List[Any]) -> None:
         )
 
     # Attempt to update the token.
-    filedata: Dict[str, Any]
+    filedata: dict[str, Any]
     try:
         filedata = read_yaml(global_settings_file_path, logger)  # type: ignore
     except Exception:

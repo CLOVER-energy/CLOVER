@@ -22,7 +22,7 @@ from .finance import (
     discounted_energy_total,
     discounted_equipment_cost,
     expenditure,
-    get_total_equipment_cost,
+    get_total_equipment_costs,
     ImpactingComponent,
     independent_expenditure,
     total_om,

@@ -20,7 +20,6 @@ This module generates grid-availability profiles for CLOVER.
 import os
 
 from logging import Logger
-from typing import Dict, Optional
 
 import pandas as pd
 
@@ -36,7 +35,7 @@ def get_lifetime_grid_status(
     grid_times: pd.DataFrame,
     logger: Logger,
     max_years: int,
-) -> Dict[str, pd.DataFrame]:
+) -> dict[str, pd.DataFrame]:
     """
     Calculates, and saves, the grid-availability profiles of all input types.
 
@@ -87,7 +86,7 @@ def get_lifetime_grid_status(
 
 def load_grid_profile(
     auto_generated_files_directory: str, logger: Logger, scenario: Scenario
-) -> Optional[pd.DataFrame]:
+) -> pd.DataFrame | None:
     """
     Loads the grid profile required for the run.
 
@@ -101,7 +100,7 @@ def load_grid_profile(
 
     """
 
-    grid_profile: Optional[pd.DataFrame] = None
+    grid_profile: pd.DataFrame | None = None
     if scenario.grid:
         try:
             with open(

@@ -4,6 +4,15 @@ CLOVER minigrid simulation and optimisation for supporting rural electrification
 
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.7638702.svg)](https://doi.org/10.5281/zenodo.7638702)
 
+[![PyPI pyversions](https://img.shields.io/pypi/pyversions/clover-energy.svg)](https://pypi.python.org/pypi/clover-energy/)
+[![GitHub release](https://img.shields.io/github/release/CLOVER-energy/clover)](https://GitHub.com/CLOVER-energy/clover/releases/)
+[![PyPI version fury.io](https://badge.fury.io/py/clover-energy.svg)](https://pypi.python.org/pypi/clover-energy/)
+![example branch parameter](https://github.com/CLOVER-energy/CLOVER/actions/workflows/pytest.yml/badge.svg?branch=master)
+[![PyPI download month](https://img.shields.io/pypi/dm/clover-energy.svg)](https://pypi.python.org/pypi/clover-energy/)
+[![PyPI download week](https://img.shields.io/pypi/dw/clover-energy.svg)](https://pypi.python.org/pypi/clover-energy/)
+
+If you cite this repository, please cite both the repository [[1]](#1) and the Journal of Open Source Software publication [[2]](#2)
+
 The quick start guide below provides step-by-step introductions for downloading, setting up, and using CLOVER. For full documentation containing further information about CLOVER and more detailed descriptions of its functionality, please [visit the Wiki](https://github.com/CLOVER-energy/CLOVER/wiki).
 
 #### Table Of Contents
@@ -14,6 +23,7 @@ The quick start guide below provides step-by-step introductions for downloading,
  * [Stable installation](#stable-installation)
    * [Upgrading](#upgrading)
  * [Downloading as a developer](#downloading-as-a-developer)
+   * [Downloading PV-T modelling files](#downloading-pv-t-modelling-files)
 
 🐍 [Setting up your Python environment](#setting-up-your-python-environment)
   * [Anaconda method](#anaconda-method)
@@ -35,6 +45,8 @@ The quick start guide below provides step-by-step introductions for downloading,
 * [Analysis](#analysis)
 
 🎓 [Running CLOVER on Imperial College London's high-performance computers](#running-clover-on-imperial-college-londons-high-performance-computers)
+
+[References](#references)
 
 # 🚤 Quick start guide
 
@@ -68,13 +80,21 @@ To update the version of CLOVER that you have installed, from anywhere on your s
 python -m pip install clover-energy --upragde
 ```
 This will fetch the latest stable version of CLOVER and install it into your current virtual environment.
-
 ### Downloading as a developer
 
 To download the CLOVER source, with a view to editing and helping to develop the code, simply click the green `Code` button near the top of this page, copy the URL, and, in your local terminal, run `git clone <URL>` to get your local copy of CLOVER. From there, check out a new branch for any of your edits:
 ```
 git checkout -b <new_branch_name>
 ```
+#### Downloading PV-T modelling files
+
+For modelling certain renewable technologies, CLOVER utilises external file-hosting platforms. If you don't intend to consider any thermal technologies, you can skip this section for now and jump straight to [Setting up your Python environment](#setting-up-your-python-environment). Otherwise, you should follow the steps below.
+
+[Zenodo](https://about.zenodo.org/) is a library for storing, sharing, and accessing open source data, files, and modelling tools. Large modelling files for CLOVER are hosted on Zenodo and should be downloaded should these be required in the development version of CLOVER.
+
+These files can be downlaoded using the latest DOI link below. Once downloaded, extract the archive into the `src/clover/src` directory within your repository:
+
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.6647054.svg)](https://doi.org/10.5281/zenodo.6647054)  
 
 ### ⚠️ One-time download from Github
 
@@ -302,6 +322,14 @@ or
 python -m clover-hpc --runs <jobs_file>
 ```
 
+
+# References
+
+<a id="1">[1]</a> 
+Winchester, B., Beath, H., Nelson, J., & Sandwell, P. (2022). CLOVER (Version v5.0.6) [Computer software]. [https://doi.org/10.5281/zenodo.6925535](https://doi.org/10.5281/zenodo.6925535)
+
+<a id="2">[2]</a>
+Sandwell P., Winchester B., Beath H., & Nelson J., (2023). CLOVER: A modelling framework for sustainable community-scale energy systems. Journal of Open Source Software, 8(82), 4799, [https://doi.org/10.21105/joss.04799](https://doi.org/10.21105/joss.04799)
 
 ***
 

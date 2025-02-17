@@ -21,7 +21,6 @@ performance under environmental conditions needs to be calculated.
 import collections
 
 from logging import Logger
-from typing import Dict, Optional, Tuple
 
 import pandas as pd  # pylint: disable=import-error
 
@@ -45,6 +44,11 @@ from .storage_utils import HotWaterTank
 
 __all__ = ("calculate_pvt_output",)
 
+
+# Minimum irradiance threshold;
+#   To avoid edge cases, where a very small, but non-zero, irradiance causes the AI to
+#   predict
+MINIMUM_IRRADIANCE_THRESHOLD: float = 0  # [W/m^2]
 
 # Temperature precision:
 #   The precision required when solving the differential equation for the system
@@ -146,18 +150,18 @@ def _htf_fed_buffer_tank_mass_flow_rate(
 def _volume_withdrawn_from_tank(
     ambient_temperature: float,
     best_guess_tank_temperature: float,
-    hot_water_load: Optional[float],
+    hot_water_load: float | None,
     logger: Logger,
     minigrid: Minigrid,
-    previous_tank_temperature: Optional[float],
+    num_tanks: int,
+    previous_tank_temperature: float | None,
     resource_type: ResourceType,
-    thermal_desalination_plant: Optional[ThermalDesalinationPlant],
-) -> Tuple[bool, float]:
+    thermal_desalination_plant: ThermalDesalinationPlant | None,
+) -> tuple[bool, float]:
     """
     Computes whether the tank is supplying an output, and what this output is.
 
     Inputs:
-
 
     Outputs:
         A `tuple` containing:
@@ -258,10 +262,30 @@ def _volume_withdrawn_from_tank(
                 "calculation method despite hot water being defined in the scenario "
                 "file."
             )
-        tank_supply_on = hot_water_load > 0
-        volume_supplied = hot_water_load
+        if minigrid.hot_water_tank is None:
+            logger.error(
+                "%sNo hot-water tank defined despite a hot-water system being "
+                "specified.%s",
+                BColours.fail,
+                BColours.endc,
+            )
+            raise InternalError(
+                "No hot-water tank was defined on the minigrid when calling the 'tank "
+                "volume supplied' calculation method despite hot water being defined "
+                "in the scenario file."
+            )
 
-    return tank_supply_on, volume_supplied
+        # The tank should only supply water if the load is less than the capacity of the
+        # tanks.
+        if hot_water_load <= num_tanks * minigrid.hot_water_tank.mass:
+            tank_supply_on = hot_water_load > 0
+            volume_supplied = hot_water_load
+        # Otherwise, no water should be supplied.
+        else:
+            tank_supply_on = hot_water_load > 0
+            volume_supplied = num_tanks * minigrid.hot_water_tank.mass
+
+    return tank_supply_on, volume_supplied  # pylint: disable=used-before-assignment
 
 
 def calculate_pvt_output(  # pylint: disable=too-many-locals, too-many-statements
@@ -271,15 +295,17 @@ def calculate_pvt_output(  # pylint: disable=too-many-locals, too-many-statement
     logger: Logger,
     minigrid: Minigrid,
     num_tanks: int,
-    processed_total_hw_load: Optional[pd.Series],
+    processed_total_hw_load: pd.Series | None,
     pvt_system_size: int,
     resource_type: ResourceType,
     scenario: Scenario,
     start_hour: int,
     temperatures: pd.Series,
-    thermal_desalination_plant: Optional[ThermalDesalinationPlant],
+    thermal_desalination_plant: ThermalDesalinationPlant | None,
     wind_speeds: pd.Series,
-) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+) -> tuple[
+    pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame
+]:
     """
     Computes the output of a PV-T system.
 
@@ -319,8 +345,11 @@ def calculate_pvt_output(  # pylint: disable=too-many-locals, too-many-statement
             being modelled.
 
     Outputs:
+        - pvt_collector_input_temperature:
+            The input temperature of the HTF entering the PV-T collectors at each time
+            step.
         - pvt_collector_output_temperature:
-            The output temperature of the PV-T collectors at each time step.
+            The output temperature of HTF leaving the PV-T collectors at each time step.
         - pvt_electric_power_per_unit:
             The electric power, per unit PV-T, delivered by the PV-T system.
         - pvt_pump_times_frame:
@@ -363,12 +392,12 @@ def calculate_pvt_output(  # pylint: disable=too-many-locals, too-many-statement
     runs: int = 0
 
     # Instantiate maps for easy PV-T power lookups.
-    pvt_electric_power_per_unit_map: Dict[int, float] = {}
-    pvt_pump_times_map: Dict[int, int] = {}
-    tank_supply_temperature_map: Dict[int, float] = (  # pylint: disable=unused-variable
+    pvt_electric_power_per_unit_map: dict[int, float] = {}
+    pvt_pump_times_map: dict[int, int] = {}
+    tank_supply_temperature_map: dict[int, float] = (  # pylint: disable=unused-variable
         {}
     )
-    tank_volume_supplied_map: Dict[int, float] = {}
+    tank_volume_supplied_map: dict[int, float] = {}
 
     # Compute the various terms which remain common across all time steps.
     if (
@@ -463,7 +492,10 @@ def calculate_pvt_output(  # pylint: disable=too-many-locals, too-many-statement
         )
 
     best_guess_collector_input_temperature: float = default_supply_temperature
-    pvt_collector_output_temperature_map: Dict[int, float] = collections.defaultdict(
+    pvt_collector_input_temperature_map: dict[int, float] = collections.defaultdict(
+        lambda: default_supply_temperature
+    )
+    pvt_collector_output_temperature_map: dict[int, float] = collections.defaultdict(
         lambda: default_supply_temperature
     )
     tank_environment_heat_transfer: float = (
@@ -475,7 +507,7 @@ def calculate_pvt_output(  # pylint: disable=too-many-locals, too-many-statement
         * tank.heat_capacity
         / 3600  # [kg]  # [J/kg*K]  # [s/hour]
     )  # [W/K]
-    tank_temperature_map: Dict[int, float] = collections.defaultdict(
+    tank_temperature_map: dict[int, float] = collections.defaultdict(
         lambda: default_supply_temperature
     )
 
@@ -515,6 +547,7 @@ def calculate_pvt_output(  # pylint: disable=too-many-locals, too-many-statement
             ),
             logger,
             minigrid,
+            num_tanks,
             previous_tank_temperature,
             resource_type,
             thermal_desalination_plant,
@@ -526,7 +559,9 @@ def calculate_pvt_output(  # pylint: disable=too-many-locals, too-many-statement
         while not solution_found:
             # Use the AI to determine the output temperature of the collector, based on
             # the best guess of the collector input temperature.
-            if irradiances[index] > 0:
+            if (1000 * irradiances[index]) > MINIMUM_IRRADIANCE_THRESHOLD:
+                # If there is enough irradiance to trigger reliable modelling, use the
+                # in-built modelling tools.
                 (
                     fractional_electric_performance,
                     collector_output_temperature,
@@ -539,8 +574,21 @@ def calculate_pvt_output(  # pylint: disable=too-many-locals, too-many-statement
                     wind_speeds[index],
                 )
             else:
+                # Otherwise, assume that the collector is in steady state with the
+                # environment, a reasonable assumption given the one-hour resolution.
                 fractional_electric_performance = 0
-                collector_output_temperature = default_supply_temperature
+                collector_output_temperature = max(
+                    tank_replacement_temperature, temperatures[index]
+                )
+
+            # If the PV-T collector flow was not on, then the output temperature should
+            # simply be the same as the input temperature.
+            if not pvt_flow_on:
+                collector_output_temperature = max(
+                    best_guess_collector_input_temperature,
+                    tank_replacement_temperature,
+                    temperatures[index],
+                )
 
             tank_load_enthalpy_transfer = (
                 volume_supplied  # [kg/hour]
@@ -550,19 +598,18 @@ def calculate_pvt_output(  # pylint: disable=too-many-locals, too-many-statement
 
             # Determine the tank temperature and collector input temperature that match.
             resultant_vector = [
-                (
-                    pvt_heat_transfer
-                    * (collector_output_temperature + ZERO_CELCIUS_OFFSET)
-                    if pvt_flow_on
-                    else 0
-                )
+                pvt_heat_transfer * (collector_output_temperature + ZERO_CELCIUS_OFFSET)
                 + tank_environment_heat_transfer
                 * (temperatures[index] + ZERO_CELCIUS_OFFSET)
                 + tank_internal_energy
                 * (previous_tank_temperature + ZERO_CELCIUS_OFFSET)
                 + (
                     tank_load_enthalpy_transfer
-                    * (tank_replacement_temperature + ZERO_CELCIUS_OFFSET)
+                    # * (tank_replacement_temperature + ZERO_CELCIUS_OFFSET)
+                    * (
+                        max(temperatures[index], tank_replacement_temperature)
+                        + ZERO_CELCIUS_OFFSET
+                    )
                     if tank_supply_on
                     else 0
                 ),
@@ -576,7 +623,7 @@ def calculate_pvt_output(  # pylint: disable=too-many-locals, too-many-statement
                 [
                     0,
                     (
-                        (pvt_heat_transfer if pvt_flow_on else 0)
+                        pvt_heat_transfer
                         + tank_environment_heat_transfer
                         + tank_internal_energy
                         + (tank_load_enthalpy_transfer if tank_supply_on else 0)
@@ -620,6 +667,7 @@ def calculate_pvt_output(  # pylint: disable=too-many-locals, too-many-statement
             best_guess_collector_input_temperature = collector_input_temperature
 
         # Save the fractional electrical performance and output temp.
+        pvt_collector_input_temperature_map[index] = collector_input_temperature
         pvt_collector_output_temperature_map[index] = collector_output_temperature
         pvt_electric_power_per_unit_map[index] = (
             fractional_electric_performance * minigrid.pvt_panel.pv_unit
@@ -631,21 +679,40 @@ def calculate_pvt_output(  # pylint: disable=too-many-locals, too-many-statement
     logger.info("Hourly %s PV-T performance calculation complete.", resource_type.value)
 
     # Convert these outputs to dataframes and return.
+    pvt_collector_input_temperature: pd.DataFrame = dict_to_dataframe(
+        pvt_collector_input_temperature_map, logger
+    )
+    pvt_collector_input_temperature = pvt_collector_input_temperature.reset_index(
+        drop=True
+    )
+
     pvt_collector_output_temperature: pd.DataFrame = dict_to_dataframe(
         pvt_collector_output_temperature_map, logger
     )
+    pvt_collector_output_temperature = pvt_collector_output_temperature.reset_index(
+        drop=True
+    )
+
     pvt_electric_power_per_unit: pd.DataFrame = dict_to_dataframe(
         pvt_electric_power_per_unit_map, logger
     )
+    pvt_electric_power_per_unit = pvt_electric_power_per_unit.reset_index(drop=True)
+
     pvt_pump_times_frame: pd.DataFrame = dict_to_dataframe(pvt_pump_times_map, logger)
+    pvt_pump_times_frame = pvt_pump_times_frame.reset_index(drop=True)
+
     tank_temperature_frame: pd.DataFrame = dict_to_dataframe(
         tank_temperature_map, logger
     )
+    tank_temperature_frame = tank_temperature_frame.reset_index(drop=True)
+
     tank_volume_output_supplied: pd.DataFrame = dict_to_dataframe(
         tank_volume_supplied_map, logger
     )
+    tank_volume_output_supplied = tank_volume_output_supplied.reset_index(drop=True)
 
     return (
+        pvt_collector_input_temperature,
         pvt_collector_output_temperature,
         pvt_electric_power_per_unit,
         pvt_pump_times_frame,
