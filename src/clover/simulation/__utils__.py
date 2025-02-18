@@ -314,9 +314,10 @@ class Minigrid:
                     "Inverter information should be in energy system inputs.",
                 ) from None
             warn(
-                BColours.warning + "Specifying inverter information in the finance inputs is deprecated. "
+                BColours.warning
+                + "Specifying inverter information in the finance inputs is deprecated. "
                 "Use the energy-system inputs." + BColours.endc,
-                FutureWarning
+                FutureWarning,
             )
 
         # Return the minigrid instance.

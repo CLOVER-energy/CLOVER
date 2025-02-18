@@ -28,7 +28,7 @@ import re
 import sys
 import warnings
 
-warnings.simplefilter('always', UserWarning)
+warnings.simplefilter("always", UserWarning)
 # warnings.simplefilter(action="ignore", category=FutureWarning)
 
 from argparse import Namespace

@@ -1811,15 +1811,20 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
             (
                 battery_energy_flow,
                 excess_energy,
+                grid_energy,
+                grid_profile,
                 new_hourly_battery_storage,
             ) = battery_iteration_step(
                 battery_storage_profile,
+                grid_energy,
+                grid_profile,
                 hourly_battery_storage,
                 initial_battery_storage,
                 logger,
                 maximum_battery_storage,
                 minigrid,
                 minimum_battery_storage,
+                scenario,
                 time_index=t,
             )
 
