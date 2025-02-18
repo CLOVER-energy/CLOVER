@@ -130,7 +130,7 @@ def battery_iteration_step(
                     * (maximum_battery_storage - minimum_battery_storage),
                 )
             )
-            un_accouted_power = battery_energy_flow - stored_power
+            remaining_energy_balance = battery_energy_flow - stored_power
         # Battery discharging
         else:
             new_hourly_battery_storage = hourly_battery_storage[time_index - 1] * (
@@ -143,9 +143,9 @@ def battery_iteration_step(
                     * (maximum_battery_storage - minimum_battery_storage),
                 )
             )
-            un_accouted_power = battery_energy_flow + abs(discharged_power)
+            remaining_energy_balance = battery_energy_flow + abs(discharged_power)
 
-        return new_hourly_battery_storage, un_accouted_power
+        return new_hourly_battery_storage, remaining_energy_balance
 
     energy_generation_or_load_deficit = float(
         battery_storage_profile.iloc[time_index, 0]
@@ -162,17 +162,18 @@ def battery_iteration_step(
             # If consuming self-generated electricity, then take power from the batteries
             # first, then use the grid if available.
             case PrioritisationStrategy.SELF_CONSUMPTION:
-                new_hourly_battery_storage, un_accouted_power = _charge_or_discharge(
-                    energy_generation_or_load_deficit
+                new_hourly_battery_storage, remaining_energy_balance = (
+                    _charge_or_discharge(energy_generation_or_load_deficit)
                 )
 
                 # If the battery was discharging and there is still load to be met, then
                 # take power from the grid if available.
-                grid_energy.iloc[time_index, 0] += (
-                    grid_power_consumed := (-un_accouted_power)
-                    * grid_profile.iloc[time_index, 0]
+                grid_energy.iloc[time_index, 0] += max(
+                    grid_power_consumed := (-remaining_energy_balance)
+                    * grid_profile.iloc[time_index, 0],
+                    0,
                 )
-                un_accouted_power += grid_power_consumed
+                remaining_energy_balance += grid_power_consumed
 
             # If the battery storage functions as a backup _only_, such that power
             # should be taken from the grid first if available, then do this.
@@ -189,8 +190,8 @@ def battery_iteration_step(
                 # available), discharge the batteries.
                 # Similarly, if there is surplus power from the on-site solar, then
                 # charge the batteries by this amout.
-                new_hourly_battery_storage, un_accouted_power = _charge_or_discharge(
-                    energy_generation_or_load_deficit
+                new_hourly_battery_storage, remaining_energy_balance = (
+                    _charge_or_discharge(energy_generation_or_load_deficit)
                 )
 
             # If consuming from the grid, and storage is utilised to meet unmet demand but
@@ -202,8 +203,8 @@ def battery_iteration_step(
                 # power would already have been taken from the grid if available.
                 # If there is surplus solar generation, then store this in the
                 # batteries.
-                new_hourly_battery_storage, un_accouted_power = _charge_or_discharge(
-                    energy_generation_or_load_deficit
+                new_hourly_battery_storage, remaining_energy_balance = (
+                    _charge_or_discharge(energy_generation_or_load_deficit)
                 )
 
             # If consuming from the grid and aiming to use storage as an emergency backup,
@@ -214,8 +215,8 @@ def battery_iteration_step(
                 # power would already have been taken from the grid if available.
                 # If there is surplus solar generation, then store this in the
                 # batteries.
-                new_hourly_battery_storage, un_accouted_power = _charge_or_discharge(
-                    energy_generation_or_load_deficit
+                new_hourly_battery_storage, remaining_energy_balance = (
+                    _charge_or_discharge(energy_generation_or_load_deficit)
                 )
 
                 # Otherwise, the batteries should be fully charged if the grid is
