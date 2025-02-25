@@ -2504,7 +2504,7 @@ class Scenario:
             "grid_type": self.grid_type,
             "name": self.name,
             "resource_types": [str(e.value) for e in self.resource_types],
-            "prioritisation_strategy": self.prioritisation_strategy,
+            "prioritisation_strategy": self.prioritisation_strategy.value,
             "pv": self.pv,
         }
 
@@ -3441,6 +3441,29 @@ class SystemAppraisal:
                 else "None"
             ),
         }
+
+    def as_single_dict(self) -> dict[str, Any]:
+        """
+        Returns a single dictionary representation of the class for outputs.
+
+        Outputs:
+            A `dict` representing the :class:`SystemAppraisl` instance for storage
+            purposes.
+
+        """
+
+        return (
+            (self_dict := self.to_dict())["cumulative_results"]
+            | self_dict["environmental_appraisal"]
+            | self_dict["financial_appraisal"]
+            | self_dict["technical_appraisal"]
+            | self_dict["criteria"]
+            | {
+                key: value
+                for key, value in self_dict["system_details"].items()
+                if key != "input_files"
+            }
+        )
 
 
 def save_simulation(

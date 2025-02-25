@@ -1275,6 +1275,7 @@ def save_optimisation(
     output_directory: str,
     scenario: Scenario,
     system_appraisals: list[SystemAppraisal],
+    simulated_systems: list[SystemAppraisal],
 ) -> None:
     """
     Saves simulation outputs to a .csv file
@@ -1298,6 +1299,8 @@ def save_optimisation(
         - system_appraisals:
             A `list` of the :class:`SystemAppraisal` instances which specify the
             optimum systems at each time step.
+        - simulated_systems:
+            Systems that were simulated along the way as a `list`.
 
     """
 
@@ -1329,8 +1332,16 @@ def save_optimisation(
         "system_appraisals": system_appraisals_dict,
     }
 
+    simulated_systems_frame = pd.DataFrame(
+        [
+            entry.as_single_dict() | {"scenario": scenario.name}
+            for entry in simulated_systems
+        ]
+    )
+    simulated_systems = []
+
     with tqdm(
-        total=1,
+        total=2,
         desc="saving output files",
         disable=disable_tqdm,
         leave=False,
@@ -1348,5 +1359,20 @@ def save_optimisation(
             json.dump(output_dict, f, indent=4)
         logger.info(
             "Optimisation successfully saved to %s.", optimisation_output_folder
+        )
+        pbar.update(1)
+
+        # Saving en route simulations data.
+        with open(
+            os.path.join(
+                optimisation_output_folder,
+                f"optimisation_output_{optimisation_number}.csv",
+            ),
+            "w",
+        ) as simulated_systems_file:
+            simulated_systems_frame.to_csv(simulated_systems_file)
+
+        logger.info(
+            "En route simulations successfully saved to %s.", optimisation_output_folder
         )
         pbar.update(1)
