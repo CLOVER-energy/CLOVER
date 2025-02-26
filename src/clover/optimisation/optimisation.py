@@ -1567,7 +1567,7 @@ def multiple_optimisation_step(  # pylint: disable=too-many-locals, too-many-sta
             def _recursive_optimise(index: int = 0) -> SystemAppraisal:
 
                 # Run the Bayesian optimisation.
-                bayesian_optimiser.maximize(init_points=32, n_iter=224)
+                bayesian_optimiser.maximize(init_points=256, n_iter=1792)
 
                 # Find the optimum solution, and re-run if not found.
                 try:
