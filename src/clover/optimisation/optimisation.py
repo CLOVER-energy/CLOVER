@@ -32,9 +32,13 @@ functions which can be used to carry out an optimisation:
 
 import datetime
 import functools
+import matplotlib.pyplot as plt
+import matplotlib.colors as mcolors
+import seaborn as sns
 
+from collections import defaultdict
 from logging import Logger
-from typing import Any, Union
+from typing import Any
 
 import json
 import numpy as np  # pylint: disable=import-error
@@ -73,6 +77,13 @@ from .__utils__ import (
 )
 
 __all__ = ("multiple_optimisation_step",)
+
+
+# SYSTEM_APPRAISALS:
+#   Object capable of storing optimum appraisal information.
+SYSTEM_APPRAISALS: defaultdict[tuple[int, Criterion], list[SystemAppraisal]] = (
+    defaultdict(list)
+)
 
 
 def _fetch_optimum_system(
@@ -1183,9 +1194,10 @@ def multiple_optimisation_step(  # pylint: disable=too-many-locals, too-many-sta
     input_hw_tanks: TankSize | None = None,
     input_pv_sizes: SolarSystemSize | None = None,
     input_storage_sizes: StorageSystemSize | None = None,
+    optimisation_number: int | None = None,
     previous_system: SystemAppraisal | None = None,
     start_year: int = 0,
-) -> tuple[datetime.timedelta, list[SystemAppraisal]]:
+) -> tuple[datetime.timedelta, list[SystemAppraisal], list[SystemAppraisal]]:
     """
     Carries out multiple optimisation steps of the continuous lifetime optimisation.
 
@@ -1246,7 +1258,9 @@ def multiple_optimisation_step(  # pylint: disable=too-many-locals, too-many-sta
         - time_delta:
             The time taken for the optimisation run;
         - results:
-            The results of each Optimisation().optimisation_step(...)
+            The results of each Optimisation().optimisation_step(...);
+        - simulated_systems:
+            The systems simulated along the way.
 
     """
 
@@ -1256,6 +1270,7 @@ def multiple_optimisation_step(  # pylint: disable=too-many-locals, too-many-sta
 
     # Initialise
     results: list[SystemAppraisal] = []
+    simulated_systems: list[SystemAppraisal] = []
 
     # set up the input converter sizes for the first loop.
     if (
@@ -1399,7 +1414,7 @@ def multiple_optimisation_step(  # pylint: disable=too-many-locals, too-many-sta
             input_storage_sizes = StorageSystemSize()
 
     # Iterate over each optimisation step
-    for _ in tqdm(
+    for iteration_number in tqdm(
         range(int(optimisation_parameters.number_of_iterations)),
         desc="optimisation steps",
         disable=disable_tqdm,
@@ -1500,6 +1515,9 @@ def multiple_optimisation_step(  # pylint: disable=too-many-locals, too-many-sta
             optimum_systems = _fetch_optimum_system(
                 optimisation, sufficient_system_appraisals
             )
+            SYSTEM_APPRAISALS[(optimisation_number, optimisation_criterion)].append(
+                optimum_systems[optimisation_criterion]
+            )
             criterion_value = optimum_systems[optimisation_criterion].criteria[
                 optimisation_criterion
             ]
@@ -1525,9 +1543,16 @@ def multiple_optimisation_step(  # pylint: disable=too-many-locals, too-many-sta
             if converter not in pbounds
         }
 
-        criterion_to_optimiser_map: dict[Criterion, BayesianOptimization] = {}
-        for optimisation_criterion in optimisation.optimisation_criteria:
-            criterion_to_optimiser_map[optimisation_criterion] = (
+        criterion_to_optimiser_map: dict[
+            tuple[int, Criterion], BayesianOptimization
+        ] = {}
+        for (
+            optimisation_criterion,
+            criterion_mode,
+        ) in optimisation.optimisation_criteria.items():
+            criterion_to_optimiser_map[
+                (optimisation_number, optimisation_criterion)
+            ] = (
                 bayesian_optimiser := BayesianOptimization(
                     f=functools.partial(
                         _target_function,
@@ -1537,192 +1562,112 @@ def multiple_optimisation_step(  # pylint: disable=too-many-locals, too-many-sta
                     pbounds=pbounds,
                 )
             )
-            bayesian_optimiser.maximize(init_points=len(pbounds), n_iter=100)
+            # bayesian_optimiser.maximize(init_points=32, n_iter=224)
 
-        import pdb
+            def _recursive_optimise(index: int = 0) -> SystemAppraisal:
 
-        pdb.set_trace()
+                # Run the Bayesian optimisation.
+                bayesian_optimiser.maximize(init_points=256, n_iter=1792)
 
-        import matplotlib.pyplot as plt
-        import matplotlib.colors as mcolors
-        import seaborn as sns
+                # Find the optimum solution, and re-run if not found.
+                try:
+                    return _fetch_optimum_system(
+                        optimisation,
+                        SYSTEM_APPRAISALS[
+                            (optimisation_number, optimisation_criterion)
+                        ],
+                    )[optimisation_criterion]
+                except IndexError:
+                    if index == 3:
+                        raise
 
-        sns.set_context("notebook")
-        sns.set_style("ticks")
+                logger.error("No sufficient systems found, retrying...")
+                return _recursive_optimise(index + 1)
 
-        bayesian_optimiser = criterion_to_optimiser_map[Criterion.LCUE]
+            optimum_system = _recursive_optimise()
 
-        fig = plt.figure(figsize=(48 / 5, 32 / 5))
+            # Plot the criterion across the space of simulated systems.
+            sns.set_context("notebook")
+            sns.set_style("ticks")
 
-        frame = pd.DataFrame(
-            {
-                "pv": [entry["params"]["pv_size"] for entry in bayesian_optimiser.res],
-                "storage": [
-                    entry["params"]["storage_size"] for entry in bayesian_optimiser.res
-                ],
-                "lcue": [1 / entry["target"] for entry in bayesian_optimiser.res],
-            }
-        )
-        frame = frame[frame["lcue"] >= 0]
-        sns.scatterplot(
-            frame,
-            x="pv",
-            y="storage",
-            hue="lcue",
-            s=200,
-            palette=(
-                this_palette := sns.cubehelix_palette(start=0.4, rot=-0.4, as_cmap=True)
-            ),
-        )
-        plt.scatter(
-            [bayesian_optimiser.max["params"]["pv_size"]],
-            [bayesian_optimiser.max["params"]["storage_size"]],
-            s=200,
-            facecolors="none",
-            edgecolors="orange",
-        )
+            fig = plt.figure(figsize=(48 / 5, 32 / 5))
 
-        plt.legend().remove()
+            frame = pd.DataFrame(
+                {
+                    "pv": [
+                        entry["params"]["pv_size"] for entry in bayesian_optimiser.res
+                    ],
+                    "storage": [
+                        entry["params"]["storage_size"]
+                        for entry in bayesian_optimiser.res
+                    ],
+                    "lcue": (
+                        [1 / entry["target"] for entry in bayesian_optimiser.res]
+                        if criterion_mode == CriterionMode.MINIMISE
+                        else [entry["target"] for entry in bayesian_optimiser.res]
+                    ),
+                }
+            )
+            frame = frame[frame["lcue"] >= 0]
+            sns.scatterplot(
+                frame,
+                x="pv",
+                y="storage",
+                hue="lcue",
+                s=200,
+                palette=(
+                    this_palette := sns.cubehelix_palette(
+                        start=0.4, rot=-0.4, as_cmap=True
+                    )
+                ),
+            )
+            plt.scatter(
+                [bayesian_optimiser.max["params"]["pv_size"]],
+                [bayesian_optimiser.max["params"]["storage_size"]],
+                s=200,
+                facecolors="none",
+                edgecolors="orange",
+            )
 
-        norm = plt.Normalize(
-            frame["lcue"].min(),
-            frame["lcue"].max(),
-        )
-        scalar_mappable = plt.cm.ScalarMappable(
-            cmap=mcolors.LinearSegmentedColormap.from_list(
-                "Custom",
-                sns.cubehelix_palette(start=0.4, rot=-0.4).as_hex(),
-                len(set(frame["lcue"])),
-            ),
-            norm=norm,
-        )
-        colorbar = fig.colorbar(
-            scalar_mappable,
-            ax=plt.gca(),
-            label="LCUE / $/kWh",
-        )
+            plt.legend().remove()
 
-        plt.ylabel("Storage capacity / kWh")
-        plt.xlabel("PV capacity / kW$_p$")
+            norm = plt.Normalize(
+                frame["lcue"].min(),
+                frame["lcue"].max(),
+            )
+            scalar_mappable = plt.cm.ScalarMappable(
+                cmap=mcolors.LinearSegmentedColormap.from_list(
+                    "Custom",
+                    sns.cubehelix_palette(start=0.4, rot=-0.4).as_hex(),
+                    len(set(frame["lcue"])),
+                ),
+                norm=norm,
+            )
+            try:
+                colorbar = fig.colorbar(
+                    scalar_mappable,
+                    ax=plt.gca(),
+                    label="LCUE / $/kWh",
+                )
+            except Exception:
+                pass
 
-        plt.show()
+            plt.ylabel("Storage capacity / kWh")
+            plt.xlabel("PV capacity / kW$_p$")
 
-        bayesian_optimiser = criterion_to_optimiser_map[Criterion.EMISSIONS_INTENSITY]
+            plt.savefig(
+                f"{location.name}_opt_{optimisation_criterion.value}_it_no_{iteration_number}.pdf"
+            )
 
-        fig = plt.figure(figsize=(48 / 5, 32 / 5))
+            logger.info(
+                "Optimisation step complete, optimum system determined: %s",
+                optimum_system.system_details,
+            )
 
-        frame = pd.DataFrame(
-            {
-                "pv": [entry["params"]["pv_size"] for entry in bayesian_optimiser.res],
-                "storage": [
-                    entry["params"]["storage_size"] for entry in bayesian_optimiser.res
-                ],
-                "lcue": [1 / entry["target"] for entry in bayesian_optimiser.res],
-            }
-        )
-        frame = frame[frame["lcue"] >= 0]
-        sns.scatterplot(
-            frame,
-            x="pv",
-            y="storage",
-            hue="lcue",
-            s=200,
-            palette=(
-                this_palette := sns.cubehelix_palette(start=0, rot=-0.4, as_cmap=True)
-            ),
-        )
-        plt.scatter(
-            [bayesian_optimiser.max["params"]["pv_size"]],
-            [bayesian_optimiser.max["params"]["storage_size"]],
-            s=200,
-            facecolors="none",
-            edgecolors="orange",
-        )
-
-        plt.legend().remove()
-
-        norm = plt.Normalize(
-            frame["lcue"].min(),
-            frame["lcue"].max(),
-        )
-        scalar_mappable = plt.cm.ScalarMappable(
-            cmap=mcolors.LinearSegmentedColormap.from_list(
-                "Custom",
-                sns.cubehelix_palette(start=0, rot=-0.4).as_hex(),
-                len(set(frame["lcue"])),
-            ),
-            norm=norm,
-        )
-        colorbar = fig.colorbar(
-            scalar_mappable,
-            ax=plt.gca(),
-            label="Emissions intensity / kgCO$_2$eq/kWh",
-        )
-
-        plt.ylabel("Storage capacity / kWh")
-        plt.xlabel("PV capacity / kW$_p$")
-
-        plt.show()
-
-        # Fetch the optimum systems for this step.
-        optimum_system = _optimisation_step(
-            conventional_cw_source_profiles,
-            input_converter_sizes.copy() if input_converter_sizes is not None else None,
-            SolarSystemSize(
-                input_cw_pvt_system_size.max,
-                input_cw_pvt_system_size.min,
-                input_cw_pvt_system_size.step,
-            ),
-            TankSize(
-                input_cw_tanks.max,
-                input_cw_tanks.min,
-                input_cw_tanks.step,
-            ),
-            converters,
-            disable_tqdm,
-            finance_inputs,
-            ghg_inputs,
-            grid_profile,
-            SolarSystemSize(
-                input_hw_pvt_system_size.max,
-                input_hw_pvt_system_size.min,
-                input_hw_pvt_system_size.step,
-            ),
-            TankSize(
-                input_hw_tanks.max,
-                input_hw_tanks.min,
-                input_hw_tanks.step,
-            ),
-            irradiance_data,
-            kerosene_usage,
-            location,
-            logger,
-            minigrid,
-            optimisation,
-            optimisation_parameters,
-            previous_system,
-            SolarSystemSize(
-                input_pv_sizes.max, input_pv_sizes.min, input_pv_sizes.step
-            ),
-            start_year,
-            StorageSystemSize(
-                input_storage_sizes.max,
-                input_storage_sizes.min,
-                input_storage_sizes.step,
-            ),
-            temperature_data,
-            total_loads,
-            total_solar_pv_power_produced,
-            wind_speed_data,
-            yearly_electric_load_statistics,
-        )
-
-        logger.info(
-            "Optimisation step complete, optimum system determined: %s",
-            optimum_system.system_details,
-        )
-
-        results.append(optimum_system)
+            results.append(optimum_system)
+            simulated_systems.extend(
+                SYSTEM_APPRAISALS[(optimisation_number, optimisation_criterion)]
+            )
 
         # Prepare inputs for next optimisation step
         start_year += optimisation_parameters.iteration_length
@@ -1867,125 +1812,5 @@ def multiple_optimisation_step(  # pylint: disable=too-many-locals, too-many-sta
     timer_end = datetime.datetime.now()
     time_delta = timer_end - timer_start
 
-    # Return the results along with the time taken.
-    return time_delta, results
-
-
-#     def summarise_optimisation_results(self, optimisation_results):
-#         """
-#         Summarises the optimisation step results into a output for the system lifetime
-
-#         Inputs:
-#             - optimisation_results:
-#                 Results of Optimisation().multiple_optimisation_step(...)
-
-#         Outputs:
-#             - result:
-#                 Aggregated results for the lifetime of the system
-
-#         """
-
-#         # Data where the inital and/or final entries are most relevant
-#         start_year = int(optimisation_results["Start year"].iloc[0])
-#         end_year = int(optimisation_results["End year"].iloc[-1])
-#         step_length = int(
-#             optimisation_results["End year"].iloc[0]
-#             - optimisation_results["Start year"].iloc[0]
-#         )
-#         optimisation_length = end_year - start_year
-#         max_PV = optimisation_results["Initial PV size"].iloc[-1]
-#         max_storage = optimisation_results["Initial storage size"].iloc[-1]
-#         max_diesel = optimisation_results["Diesel capacity"].iloc[-1]
-#         LCUE = optimisation_results["LCUE ($/kWh)"].iloc[-1]
-#         emissions_intensity = optimisation_results[
-#             "Emissions intensity (gCO2/kWh)"
-#         ].iloc[-1]
-#         total_GHGs = optimisation_results["Cumulative GHGs (kgCO2eq)"].iloc[-1]
-#         total_system_GHGs = optimisation_results[
-#             "Cumulative system GHGs (kgCO2eq)"
-#         ].iloc[-1]
-#         #   Data where the mean is most relevant
-#         blackouts = np.mean(optimisation_results[ColumnHeader.BLACKOUTS.value])
-#         kerosene_displacement = np.mean(optimisation_results["Kerosene displacement"])
-#         #   Data where the sum is most relevant
-#         total_energy = np.sum(optimisation_results["Total energy (kWh)"])
-#         unmet_energy = np.sum(optimisation_results[ColumnHeader.UNMET_ELECTRICITY.value])
-#         renewable_energy = np.sum(optimisation_results["Renewable energy (kWh)"])
-#         storage_energy = np.sum(optimisation_results["Storage energy (kWh)"])
-#         grid_energy = np.sum(optimisation_results[ColumnHeader.GRID_ENERGY.value])
-#         diesel_energy = np.sum(optimisation_results[ColumnHeader.DIESEL_ENERGY_SUPPLIED.value])
-#         discounted_energy = np.sum(optimisation_results["Discounted energy (kWh)"])
-#         diesel_fuel_usage = np.sum(optimisation_results[ColumnHeader.DIESEL_FUEL_USAGE.value])
-#         total_cost = np.sum(optimisation_results["Total cost ($)"])
-#         total_system_cost = np.sum(optimisation_results["Total system cost ($)"])
-#         new_equipment_cost = np.sum(optimisation_results["New equipment cost ($)"])
-#         new_connection_cost = np.sum(optimisation_results["New connection cost ($)"])
-#         OM_cost = np.sum(optimisation_results["O&M cost ($)"])
-#         diesel_cost = np.sum(optimisation_results["Diesel cost ($)"])
-#         grid_cost = np.sum(optimisation_results["Grid cost ($)"])
-#         kerosene_cost = np.sum(optimisation_results["Kerosene cost ($)"])
-#         kerosene_cost_mitigated = np.sum(
-#             optimisation_results["Kerosene cost mitigated ($)"]
-#         )
-#         OM_GHGs = np.sum(optimisation_results["O&M GHGs (kgCO2eq)"])
-#         diesel_GHGs = np.sum(optimisation_results["Diesel GHGs (kgCO2eq)"])
-#         grid_GHGs = np.sum(optimisation_results["Grid GHGs (kgCO2eq)"])
-#         kerosene_GHGs = np.sum(optimisation_results["Kerosene GHGs (kgCO2eq)"])
-#         kerosene_mitigated_GHGs = np.sum(
-#             optimisation_results["Kerosene GHGs mitigated (kgCO2eq)"]
-#         )
-
-#         #   Data which requires combinations of summary results
-#         unmet_fraction = round(unmet_energy / total_energy, 3)
-#         renewables_fraction = round(renewable_energy / total_energy, 3)
-#         storage_fraction = round(storage_energy / total_energy, 3)
-#         diesel_fraction = round(diesel_energy / total_energy, 3)
-#         grid_fraction = round(grid_energy / total_energy, 3)
-#         #   Combine results into output
-#         results = pd.DataFrame(
-#             {
-#                 "Start year": start_year,
-#                 "End year": end_year,
-#                 "Step length": step_length,
-#                 "Optimisation length": optimisation_length,
-#                 "Maximum PV size": max_PV,
-#                 "Maximum storage size": max_storage,
-#                 "Maximum diesel capacity": max_diesel,
-#                 "LCUE ($/kWh)": LCUE,
-#                 "Emissions intensity (gCO2/kWh)": emissions_intensity,
-#                 ColumnHeader.BLACKOUTS.value: blackouts,
-#                 "Unmet fraction": unmet_fraction,
-#                 "Renewables fraction": renewables_fraction,
-#                 "Storage fraction": storage_fraction,
-#                 "Diesel fraction": diesel_fraction,
-#                 "Grid fraction": grid_fraction,
-#                 "Total energy (kWh)": total_energy,
-#                 ColumnHeader.UNMET_ELECTRICITY.value: unmet_energy,
-#                 "Renewable energy (kWh)": renewable_energy,
-#                 "Storage energy (kWh)": storage_energy,
-#                 ColumnHeader.GRID_ENERGY.value: grid_energy,
-#                 ColumnHeader.DIESEL_ENERGY_SUPPLIED.value: diesel_energy,
-#                 "Discounted energy (kWh)": discounted_energy,
-#                 "Total cost ($)": total_cost,
-#                 "Total system cost ($)": total_system_cost,
-#                 "New equipment cost ($)": new_equipment_cost,
-#                 "New connection cost ($)": new_connection_cost,
-#                 "O&M cost ($)": OM_cost,
-#                 "Diesel cost ($)": diesel_cost,
-#                 "Grid cost ($)": grid_cost,
-#                 "Kerosene cost ($)": kerosene_cost,
-#                 "Kerosene cost mitigated ($)": kerosene_cost_mitigated,
-#                 "Kerosene displacement": kerosene_displacement,
-#                 ColumnHeader.DIESEL_FUEL_USAGE.value: diesel_fuel_usage,
-#                 "Total GHGs (kgCO2eq)": total_GHGs,
-#                 "Total system GHGs (kgCO2eq)": total_system_GHGs,
-#                 "Total GHGs (kgCO2eq)": total_GHGs,
-#                 "O&M GHGs (kgCO2eq)": OM_GHGs,
-#                 "Diesel GHGs (kgCO2eq)": diesel_GHGs,
-#                 "Grid GHGs (kgCO2eq)": grid_GHGs,
-#                 "Kerosene GHGs (kgCO2eq)": kerosene_GHGs,
-#                 "Kerosene GHGs mitigated (kgCO2eq)": kerosene_mitigated_GHGs,
-#             },
-#             index=["Lifetime results"],
-#         )
-#         return results
+    # Return the results along with the time taken and systems simulated along the way.
+    return time_delta, results, simulated_systems

@@ -26,6 +26,7 @@ import math
 import os
 
 from typing import Any, DefaultDict
+from warnings import warn
 
 import json
 import numpy as np  # pylint: disable=import-error
@@ -2198,6 +2199,40 @@ class HotWaterScenario:
         )
 
 
+class PrioritisationStrategy(enum.Enum):
+    """
+    Denotes the prioritisation strategy.
+
+    - GRID_PRIORITISATION: Power will be taken from the national-grid network first and
+    foremost, with PV panels and battery storage only meeting demand if the national-
+    grid network is not available to meet demand. If the grid is available, any
+    installed PV panels will charge any installed battery storage but the batteries
+    won't be charged from the national-grid network.
+
+    - SELF_CONSUMPTION: All locally-generated power will be consumed before any power is
+    taken from the national-grid network. PV power will be used to power the system,
+    with battery storage then used and, finally, power taken from the national-grid
+    network if the local assets are unable to meet demand.
+
+    - STORAGE_AS_BACKUP_SERVICE: Battery storage will be used as a backup for if power
+    from the grid is not available. If grid-sourced power is available, this will be
+    consumed. PV power will be used to power the system with any excess used to charge
+    battery storage. If power is available from the national-grid network, the battery
+    storage will be charged c-rates depending.
+
+    - STORAGE_AS_SOLAR_BACKUP: Battery storage will be used as a backup for if power from
+    the grid is not available and the PV panels are unable to meet demand. Battery
+    storage will only be charged if there is excess PV power and will not be charged
+    from the national-grid network.
+
+    """
+
+    GRID_PRIORITISATION = "grid_prioritisation"
+    SELF_CONSUMPTION = "self_consumption"
+    STORAGE_AS_BACKUP_SERVICE = "storage_as_backup_service"
+    STORAGE_AS_SOLAR_BACKUP = "storage_as_solar_backup"
+
+
 @dataclasses.dataclass
 class Scenario:
     """
@@ -2234,7 +2269,7 @@ class Scenario:
     .. attribute:: resource_types
         The load types being modelled.
 
-    .. attribute:: prioritise_self_generation
+    .. attribute:: prioritisation_strategy
         Whether self generation should be prioritised.
 
     .. attribute:: pv
@@ -2262,7 +2297,7 @@ class Scenario:
     hot_water_scenario: HotWaterScenario | None
     name: str
     resource_types: set[ResourceType]
-    prioritise_self_generation: bool
+    prioritisation_strategy: PrioritisationStrategy
     pv: bool
     pv_d: bool
     pv_t: bool
@@ -2394,6 +2429,35 @@ class Scenario:
         else:
             hot_water_scenario = None
 
+        # Parse the prioritisation strategy
+        try:
+            prioritisation_strategy: PrioritisationStrategy = PrioritisationStrategy(
+                scenario_inputs["prioritisation_strategy"]
+            )
+        except KeyError:
+            try:
+                self_prioritisation: bool = scenario_inputs[
+                    "prioritise_self_generation"
+                ]
+                warn(
+                    BColours.warning
+                    + "self-prioritisation is a deprecated flag. Consult the documentation."
+                    + BColours.endc,
+                    FutureWarning,
+                )
+
+                if self_prioritisation:
+                    prioritisation_strategy = (
+                        PrioritisationStrategy.STORAGE_AS_SOLAR_BACKUP
+                    )
+                else:
+                    prioritisation_strategy = PrioritisationStrategy.GRID_PRIORITISATION
+            except KeyError:
+                raise InputFileError(
+                    "scenario_inputs",
+                    "Self-prioritisation and prioritisation strategy fault.",
+                ) from None
+
         return cls(
             scenario_inputs["battery"],
             demands,
@@ -2406,7 +2470,7 @@ class Scenario:
             hot_water_scenario,
             scenario_inputs[NAME],
             resource_types,
-            scenario_inputs["prioritise_self_generation"],
+            prioritisation_strategy,
             scenario_inputs["pv"],
             scenario_inputs["pv_d"] if "pv_d" in scenario_inputs else False,
             scenario_inputs["pv_t"] if "pv_t" in scenario_inputs else False,
@@ -2440,7 +2504,7 @@ class Scenario:
             "grid_type": self.grid_type,
             "name": self.name,
             "resource_types": [str(e.value) for e in self.resource_types],
-            "prioritise_self_generation": self.prioritise_self_generation,
+            "prioritisation_strategy": self.prioritisation_strategy.value,
             "pv": self.pv,
         }
 
@@ -3377,6 +3441,29 @@ class SystemAppraisal:
                 else "None"
             ),
         }
+
+    def as_single_dict(self) -> dict[str, Any]:
+        """
+        Returns a single dictionary representation of the class for outputs.
+
+        Outputs:
+            A `dict` representing the :class:`SystemAppraisl` instance for storage
+            purposes.
+
+        """
+
+        return (
+            (self_dict := self.to_dict())["cumulative_results"]
+            | self_dict["environmental_appraisal"]
+            | self_dict["financial_appraisal"]
+            | self_dict["technical_appraisal"]
+            | self_dict["criteria"]
+            | {
+                key: value
+                for key, value in self_dict["system_details"].items()
+                if key != "input_files"
+            }
+        )
 
 
 def save_simulation(

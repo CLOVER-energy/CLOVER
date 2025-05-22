@@ -74,6 +74,15 @@ def parse_args(args: list[Any]) -> argparse.Namespace:
     parser.add_argument(
         "--verbose", "-v", action="store_true", default=False, help=argparse.SUPPRESS
     )
+    # Disable warnings:
+    #   Used for disabling warnings.
+    parser.add_argument(
+        "--disable-warnings",
+        "-dw",
+        action="store_true",
+        default=False,
+        help=argparse.SUPPRESS,
+    )
 
     # Mandatory arguments regardless of the use case.
     mandatory_arguments = parser.add_argument_group("mandatory arguments")
