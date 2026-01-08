@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/python3.10
 ########################################################################################
 # test_storage_utils.py - Tests for CLOVER's storage utility module.                   #
 #                                                                                      #

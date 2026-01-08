@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/python3.10
 ########################################################################################
 # test_ghgs.py - Tests for CLOVER's ghgs module.                                       #
 #                                                                                      #

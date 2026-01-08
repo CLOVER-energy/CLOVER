@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/python3.10
 ########################################################################################
 # test_energy_system.py - Tests for CLOVER's energy-system simulation module.          #
 #                                                                                      #

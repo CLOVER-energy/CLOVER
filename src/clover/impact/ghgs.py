@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/python3.10
 ########################################################################################
 # ghgs.py - GHG impact assessment module.                                              #
 #                                                                                      #

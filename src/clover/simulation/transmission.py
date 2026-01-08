@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/python3.10
 ########################################################################################
 # transmission.py - Transmission module.                                               #
 #                                                                                      #

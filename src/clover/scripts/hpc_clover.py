@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/python3.10
 ########################################################################################
 # hpc_clover.py - Entry point for running CLOVER on Imperial College's HPC.            #
 #                                                                                      #
