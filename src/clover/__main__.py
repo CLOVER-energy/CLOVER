@@ -106,9 +106,9 @@ CLOVER_HEADER_STRING = """
 {version_line}
 
                          For more information, contact
-                   Phil Sandwell (philip.sandwell@gmail.com),
+                Ben Winchester (benedict.winchester@gmail.com),
                     Hamish Beath (hamishbeath@outlook.com),
-               or Ben Winchester (benedict.winchester@gmail.com)
+                 or Phil Sandwell (philip.sandwell@gmail.com).
 
 """
 
