@@ -23,7 +23,7 @@ scenarios:
         threshold: 0.1 # Maximum acceptible blackouts (0.0-1.0)
     grid: true # "true" or "false"
     grid_type: default # The grid profile to use
-    prioritise_self_generation: true # "true" or "false"
+    prioritisation_strategy: self_consumption
     demands:
       domestic: true # "true" or "false"
       commercial: false # "true" or "false"
