@@ -33,7 +33,9 @@ from tqdm import tqdm  # pylint: disable=import-error
 from .__utils__ import (
     ColumnHeader,
     CUT_OFF_TIME,
+    daily_sum_to_monthly_sum,
     DemandType,
+    hourly_profile_to_daily_sum,
     HOURS_PER_YEAR,
     KeyResults,
     ResourceType,
@@ -129,7 +131,7 @@ SIMULATION_PLOTS_DIRECTORY: str = "simulation_{simulation_number}_plots"
 
 # Hatches:
 #   The list of hatches to use.
-HATCHES: list[str] = ["/", "\\", "|", "-", "+", "x", "o", "O", ".", "*"]
+HATCHES: list[str] = [None, "/", "\\", "|", "-", "+", "x", "o", "O", ".", "*"]
 
 
 def _hatch_from_index(index: int) -> "str":
@@ -146,7 +148,7 @@ def _hatch_from_index(index: int) -> "str":
 
     """
 
-    return HATCHES[index % len(HATCHES)]
+    return HATCHES[(index // len(un_color_palette)) % len(HATCHES)]
 
 
 def get_key_results(
@@ -201,35 +203,35 @@ def get_key_results(
     # Compute the simulation related averages and sums.
     key_results.average_daily_diesel_energy_supplied = simulation_results[
         ColumnHeader.DIESEL_ENERGY_SUPPLIED.value
-    ].sum() / (365 * num_years)
+    ].sum(axis=0) / (365 * num_years)
 
     key_results.average_daily_dumped_energy = simulation_results[
         ColumnHeader.DUMPED_ELECTRICITY.value
-    ].sum() / (365 * num_years)
+    ].sum(axis=0) / (365 * num_years)
 
     key_results.average_daily_electricity_consumption = simulation_results[
         ColumnHeader.TOTAL_ELECTRICITY_CONSUMED.value
-    ].sum() / (365 * num_years)
+    ].sum(axis=0) / (365 * num_years)
 
     key_results.average_daily_grid_energy_supplied = simulation_results[
         ColumnHeader.GRID_ENERGY.value
-    ].sum() / (365 * num_years)
+    ].sum(axis=0) / (365 * num_years)
 
     key_results.average_daily_renewables_energy_supplied = simulation_results[
         ColumnHeader.RENEWABLE_ELECTRICITY_SUPPLIED.value
-    ].sum() / (365 * num_years)
+    ].sum(axis=0) / (365 * num_years)
 
     key_results.average_daily_renewables_energy_used = simulation_results[
         ColumnHeader.RENEWABLE_ELECTRICITY_USED_DIRECTLY.value
-    ].sum() / (365 * num_years)
+    ].sum(axis=0) / (365 * num_years)
 
     key_results.average_daily_stored_energy_supplied = simulation_results[
         ColumnHeader.ELECTRICITY_FROM_STORAGE.value
-    ].sum() / (365 * num_years)
+    ].sum(axis=0) / (365 * num_years)
 
     key_results.average_daily_unmet_energy = simulation_results[
         ColumnHeader.UNMET_ELECTRICITY.value
-    ].sum() / (365 * num_years)
+    ].sum(axis=0) / (365 * num_years)
 
     key_results.diesel_times = round(
         np.nanmean(simulation_results[ColumnHeader.DIESEL_GENERATOR_TIMES.value]), 3
@@ -241,12 +243,12 @@ def get_key_results(
     # Compute the clean-water key results.
     if ColumnHeader.TOTAL_CW_LOAD.value in simulation_results:
         key_results.average_daily_cw_demand_covered = round(
-            simulation_results[ColumnHeader.TOTAL_CW_SUPPLIED.value].sum()
-            / simulation_results[ColumnHeader.TOTAL_CW_LOAD.value].sum(),
+            simulation_results[ColumnHeader.TOTAL_CW_SUPPLIED.value].sum(axis=0)
+            / simulation_results[ColumnHeader.TOTAL_CW_LOAD.value].sum(axis=0),
             3,
         )
         key_results.average_daily_cw_supplied = round(
-            simulation_results[ColumnHeader.TOTAL_CW_SUPPLIED.value].sum()
+            simulation_results[ColumnHeader.TOTAL_CW_SUPPLIED.value].sum(axis=0)
             / (365 * num_years),
             3,
         )
@@ -254,10 +256,10 @@ def get_key_results(
             np.nanmean(simulation_results[ColumnHeader.CLEAN_WATER_BLACKOUTS.value]), 3
         )
         key_results.cumulative_cw_load = round(
-            simulation_results[ColumnHeader.TOTAL_CW_LOAD.value].sum(), 3
+            simulation_results[ColumnHeader.TOTAL_CW_LOAD.value].sum(axis=0), 3
         )
         key_results.cumulative_cw_supplied = round(
-            simulation_results[ColumnHeader.TOTAL_CW_SUPPLIED.value].sum(), 3
+            simulation_results[ColumnHeader.TOTAL_CW_SUPPLIED.value].sum(axis=0), 3
         )
 
     # Compute the clean-water PV-T key results.
@@ -265,14 +267,14 @@ def get_key_results(
         key_results.average_daily_cw_pvt_generation = round(
             simulation_results[
                 ColumnHeader.CW_PVT_ELECTRICITY_SUPPLIED_PER_KWP.value
-            ].sum()
+            ].sum(axis=0)
             / (365 * num_years),
             3,
         )
         key_results.cumulative_cw_pvt_generation = round(
             simulation_results[
                 ColumnHeader.CW_PVT_ELECTRICITY_SUPPLIED_PER_KWP.value
-            ].sum(),
+            ].sum(axis=0),
             3,
         )
         key_results.max_buffer_tank_temperature = (
@@ -337,7 +339,7 @@ def get_key_results(
         )
         key_results.average_daily_hw_supplied = (
             round(
-                simulation_results[ColumnHeader.HW_TANK_OUTPUT.value].sum()
+                simulation_results[ColumnHeader.HW_TANK_OUTPUT.value].sum(axis=0)
                 / (365 * num_years),
                 3,
             )
@@ -352,7 +354,7 @@ def get_key_results(
     # Compute the waste-product key results.
     if ColumnHeader.BRINE.value in simulation_results:
         key_results.cumulative_brine = round(
-            simulation_results[ColumnHeader.BRINE.value].sum(), 3
+            simulation_results[ColumnHeader.BRINE.value].sum(axis=0), 3
         )
 
     return key_results
@@ -650,7 +652,7 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
             if isinstance(cumulative_load, int) and cumulative_load == 0:
                 cumulative_load = load[0]
                 continue
-            cumulative_load += load[0]
+            cumulative_load += load[0][:24]
 
         ax.set_xlabel("Hour of simulation")
         ax.set_ylabel("Device load / W")
@@ -728,7 +730,14 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
             )
 
             if np.sum(average_load) > 0:
-                ax.bar(range(24), average_load, label=device, bottom=cumulative_load)
+                ax.bar(
+                    x=range(24),
+                    height=average_load,
+                    label=device.replace("_", " ").capitalize(),
+                    bottom=cumulative_load,
+                    linewidth=0,
+                    hatch=_hatch_from_index(index),
+                )
             if isinstance(cumulative_load, int) and cumulative_load == 0:
                 cumulative_load = average_load.copy()
                 continue

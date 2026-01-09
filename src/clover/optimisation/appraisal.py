@@ -1734,10 +1734,16 @@ def appraise_system(  # pylint: disable=too-many-locals
         cumulative_results.subsystem_ghgs[ResourceType.ELECTRIC]
         / cumulative_results.electricity
     )
-    water_emissions_intensity = 1000.0 * float(
-        cumulative_results.subsystem_ghgs[ResourceType.CLEAN_WATER]
-        / cumulative_results.clean_water
-    )
+    if (
+        cumulative_results.clean_water is not None
+        and cumulative_results.clean_water > 0
+    ):
+        water_emissions_intensity = 1000.0 * float(
+            cumulative_results.subsystem_ghgs[ResourceType.CLEAN_WATER]
+            / cumulative_results.clean_water
+        )
+    else:
+        water_emissions_intensity = None
 
     # Compute cumulative waste products.
     if cumulative_results.waste_produced is not None:
@@ -1773,7 +1779,11 @@ def appraise_system(  # pylint: disable=too-many-locals
         Criterion.CUMULATIVE_SYSTEM_COST: cumulative_results.system_cost,
         Criterion.CUMULATIVE_SYSTEM_GHGS: cumulative_results.system_ghgs,
         Criterion.CW_DEMAND_COVERED: technical_appraisal.cw_demand_covered,
-        Criterion.CW_EMISSIONS_INTENSITY: round(water_emissions_intensity, 3),
+        Criterion.CW_EMISSIONS_INTENSITY: (
+            round(water_emissions_intensity, 3)
+            if water_emissions_intensity is not None
+            else None
+        ),
         Criterion.CW_RENEWABLES_FRACTION: technical_appraisal.renewable_clean_water_fraction,
         Criterion.CW_SOLAR_THERMAL_FRACTION: technical_appraisal.solar_thermal_cw_fraction,
         Criterion.EMISSIONS_INTENSITY: round(electricity_emissions_intensity, 3),
