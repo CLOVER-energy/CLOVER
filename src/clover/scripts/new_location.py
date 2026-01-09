@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/python3.10
 ########################################################################################
 # new_location.py - Script for generating a new location folder.                       #
 #                                                                                      #

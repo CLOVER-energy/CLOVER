@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/python3.10
 ########################################################################################
 # solar.py - Solar generation module  .                                                #
 #                                                                                      #
@@ -27,8 +27,6 @@ from logging import Logger
 from typing import Any, Type
 
 import pandas as pd
-
-from sklearn.linear_model._coordinate_descent import Lasso
 
 from ..__utils__ import (
     BColours,
@@ -499,118 +497,118 @@ def reduced_temperature(
     return (average_temperature - ambient_temperature) / solar_irradiance
 
 
-class SolarPanel:  # pylint: disable=too-few-public-methods
-    """
-    Represents a solar panel being considered.
+# class SolarPanel:  # pylint: disable=too-few-public-methods
+#     """
+#     Represents a solar panel being considered.
 
-    .. attribute:: azimuthal_orientation
-        The azimuthal orientation of the panel, defined in degrees from North.
+#     .. attribute:: azimuthal_orientation
+#         The azimuthal orientation of the panel, defined in degrees from North.
 
-    .. attribute:: lifetime
-        The lifetime of the panel in years.
+#     .. attribute:: lifetime
+#         The lifetime of the panel in years.
 
-    .. attribute:: name
-        The name of the panel being considered.
+#     .. attribute:: name
+#         The name of the panel being considered.
 
-    .. attribite:: panel_type
-        The type of panel being considered.
+#     .. attribite:: panel_type
+#         The type of panel being considered.
 
-    .. attribute:: tilt
-        The angle between the panel and the horizontal.
+#     .. attribute:: tilt
+#         The angle between the panel and the horizontal.
 
-    """
+#     """
 
-    panel_type: SolarPanelType
+#     panel_type: SolarPanelType
 
-    def __init__(
-        self,
-        azimuthal_orientation: float,
-        lifetime: int,
-        name: str,
-        tilt: float,
-    ) -> None:
-        """
-        Instantiate a :class:`SolarPanel` instance.
+#     def __init__(
+#         self,
+#         azimuthal_orientation: float,
+#         lifetime: int,
+#         name: str,
+#         tilt: float,
+#     ) -> None:
+#         """
+#         Instantiate a :class:`SolarPanel` instance.
 
-        Inputs:
-            - azimuthal_orientation:
-                The azimuthal orientation of the :class:`SolarPanel`.
-            - lifetime:
-                The lifetime of the :class:`SolarPanel` in years.
-            - name:
-                The name to assign to the :class:`SolarPanel` in order to uniquely
-                identify it.
-            - tilt:
-                The tilt of the panel in degrees above the horizontal.
+#         Inputs:
+#             - azimuthal_orientation:
+#                 The azimuthal orientation of the :class:`SolarPanel`.
+#             - lifetime:
+#                 The lifetime of the :class:`SolarPanel` in years.
+#             - name:
+#                 The name to assign to the :class:`SolarPanel` in order to uniquely
+#                 identify it.
+#             - tilt:
+#                 The tilt of the panel in degrees above the horizontal.
 
-        """
+#         """
 
-        self.azimuthal_orientation: float = azimuthal_orientation
-        self.lifetime: int = lifetime
-        self.name: str = name
-        self.tilt: float = tilt
+#         self.azimuthal_orientation: float = azimuthal_orientation
+#         self.lifetime: int = lifetime
+#         self.name: str = name
+#         self.tilt: float = tilt
 
-    def __init_subclass__(cls, panel_type: SolarPanelType) -> None:
-        """
-        The init_subclass hook, run on instantiation of the :class:`SolarPanel`.
+#     def __init_subclass__(cls, panel_type: SolarPanelType) -> None:
+#         """
+#         The init_subclass hook, run on instantiation of the :class:`SolarPanel`.
 
-        Inputs:
-            - panel_type:
-                The type of panel being considered.
+#         Inputs:
+#             - panel_type:
+#                 The type of panel being considered.
 
-        Outputs:
-            An instantiated :class:`SolarPanel` instance.
+#         Outputs:
+#             An instantiated :class:`SolarPanel` instance.
 
-        """
+#         """
 
-        cls.panel_type = panel_type
+#         cls.panel_type = panel_type
 
-        return super().__init_subclass__()
+#         return super().__init_subclass__()
 
-    @abstractmethod
-    def calculate_performance(
-        self,
-        ambient_temperature: float,
-        htf_heat_capacity: float,
-        input_temperature: float,
-        logger: Logger,
-        mass_flow_rate: float,
-        solar_irradiance: float,
-        wind_speed: float,
-    ) -> tuple[float | None, float | None]:
-        """
-        Abstract method for calculation of collector performance.
+#     @abstractmethod
+#     def calculate_performance(
+#         self,
+#         ambient_temperature: float,
+#         htf_heat_capacity: float,
+#         input_temperature: float,
+#         logger: Logger,
+#         mass_flow_rate: float,
+#         solar_irradiance: float,
+#         wind_speed: float,
+#     ) -> tuple[float | None, float | None]:
+#         """
+#         Abstract method for calculation of collector performance.
 
-        Inputs:
-            - ambient_temperature:
-                The ambient temperature, measured in degrees Celsius.
-            - htf_heat_capacity:
-                The heat capacity of the HTF entering the collector, measured in Joules
-                per kilogram Kelvin (J/kgK).
-            - input_temperature:
-                The input temperature of the HTF entering the collector, measured in
-                in degrees Celsius.
-            - logger:
-                The :class:`logging.Logger` to use for the run.
-            - mass_flow_rate:
-                The mass-flow rate of HTF passing through the collector, measured in
-                kilograms per second.
-            - solar_irradiance:
-                The solar irradiance incident on the surface of the collector, measured
-                in Watts per meter squared.
-            - wind_speed:
-                The wind speed at the collector, measured in meters per second.
+#         Inputs:
+#             - ambient_temperature:
+#                 The ambient temperature, measured in degrees Celsius.
+#             - htf_heat_capacity:
+#                 The heat capacity of the HTF entering the collector, measured in Joules
+#                 per kilogram Kelvin (J/kgK).
+#             - input_temperature:
+#                 The input temperature of the HTF entering the collector, measured in
+#                 in degrees Celsius.
+#             - logger:
+#                 The :class:`logging.Logger` to use for the run.
+#             - mass_flow_rate:
+#                 The mass-flow rate of HTF passing through the collector, measured in
+#                 kilograms per second.
+#             - solar_irradiance:
+#                 The solar irradiance incident on the surface of the collector, measured
+#                 in Watts per meter squared.
+#             - wind_speed:
+#                 The wind speed at the collector, measured in meters per second.
 
-        Outputs:
-            - fractional_electric_performance:
-                The fractional electric performance defined between 0 (panel is not
-                operating, i.e., no output) and 1 (panel is operating at full test
-                potential of reference efficiency under reference irradiance).
-            - output_temperature:
-                The temperature of the HTF leaving the collector, measured in degrees
-                Celsius.
+#         Outputs:
+#             - fractional_electric_performance:
+#                 The fractional electric performance defined between 0 (panel is not
+#                 operating, i.e., no output) and 1 (panel is operating at full test
+#                 potential of reference efficiency under reference irradiance).
+#             - output_temperature:
+#                 The temperature of the HTF leaving the collector, measured in degrees
+#                 Celsius.
 
-        """
+#         """
 
 
 # class PVPanel(

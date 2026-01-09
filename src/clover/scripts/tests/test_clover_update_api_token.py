@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/python3.10
 ########################################################################################
 # test_clover_update_api_token.py - Tests for CLOVER's update-token wrapper script.    #
 #                                                                                      #

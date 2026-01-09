@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/python3.10
 ########################################################################################
 # __utils__.py - CLOVER Scripts Utility module.                                        #
 #                                                                                      #

@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/python3.10
 ########################################################################################
 # solar.py - Solar panel modelling code for CLOVER.                                    #
 #                                                                                      #

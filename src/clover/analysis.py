@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/python3.10
 # type: ignore
 ########################################################################################
 # analysis.py - In-built analysis module for CLOVER.                                   #
@@ -19,6 +19,8 @@ corresponding to the sugetsed analysis within the user guide.
 
 import os
 
+from typing import Dict, Optional
+
 import numpy as np  # pylint: disable=import-error
 import pandas as pd  # pylint: disable=import-error
 import seaborn as sns  # pylint: disable=import-error
@@ -31,10 +33,8 @@ from tqdm import tqdm  # pylint: disable=import-error
 from .__utils__ import (
     ColumnHeader,
     CUT_OFF_TIME,
-    daily_sum_to_monthly_sum,
     DemandType,
     HOURS_PER_YEAR,
-    hourly_profile_to_daily_sum,
     KeyResults,
     ResourceType,
 )
@@ -74,7 +74,7 @@ COLOUR_MAP: str = "Blues"
 
 # Hours until month:
 #   Mapping between month number and the hours until the start of the month.
-HOURS_UNTIL: dict[int, int] = {
+HOURS_UNTIL: Dict[int, int] = {
     1: 0,
     2: 744,
     3: 1416,
@@ -128,37 +128,11 @@ SIMULATION_PLOTS_DIRECTORY: str = "simulation_{simulation_number}_plots"
 #   tableau-colorblind10
 
 
-def _hatch_from_index(index: int) -> str | None:
-    """
-    Return the hatching from the index.
-
-    Inputs:
-        - index:
-            The index in the plotting.
-
-    Outputs:
-        The hatching.
-
-    """
-
-    if index <= (palette_length := len(sns.color_palette())):
-        return None
-    if index <= 2 * palette_length:
-        return "//"
-    if index <= 3 * palette_length:
-        return "\\\\"
-    if index <= 4 * palette_length:
-        return "-"
-    if index <= 5 * palette_length:
-        return "|"
-    return "+"
-
-
 def get_key_results(
     grid_input_profile: pd.DataFrame,
     num_years: int,
     simulation_results: pd.DataFrame,
-    total_solar_output: dict[str, pd.DataFrame],
+    total_solar_output: Dict[str, pd.DataFrame],
 ) -> KeyResults:
     """
     Computes the key results of the simulation.
@@ -184,15 +158,15 @@ def get_key_results(
     key_results = KeyResults()
 
     # Compute the solar-generation results.
-    total_solar_generation: dict[str, float] = {
+    total_solar_generation: Dict[str, float] = {
         panel_name: np.round(np.sum(solar_output))
         for panel_name, solar_output in total_solar_output.items()
     }
-    key_results.cumulative_pv_generation: dict[str, float] = {
+    key_results.cumulative_pv_generation: Dict[str, float] = {
         panel_name: float(solar_generation)
         for panel_name, solar_generation in total_solar_generation.items()
     }
-    key_results.average_pv_generation: dict[str, float] = {
+    key_results.average_pv_generation: Dict[str, float] = {
         panel_name: float(round(solar_generation / (20 * 365)))
         for panel_name, solar_generation in total_solar_generation.items()
     }
@@ -365,16 +339,18 @@ def get_key_results(
 
 def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
     grid_input_profile: pd.DataFrame,
-    grid_profile: pd.DataFrame | None,
-    initial_cw_hourly_loads: dict[str, pd.DataFrame] | None,
-    initial_electric_hourly_loads: dict[str, pd.DataFrame],
-    initial_hw_hourly_loads: dict[str, pd.DataFrame],  # pylint: disable=unused-argument
+    grid_profile: Optional[pd.DataFrame],
+    initial_cw_hourly_loads: Optional[  # pylint: disable=unused-argument
+        Dict[str, pd.DataFrame]
+    ],
+    initial_electric_hourly_loads: Dict[str, pd.DataFrame],
+    initial_hw_hourly_loads: Dict[str, pd.DataFrame],  # pylint: disable=unused-argument
     num_years: int,
     output_directory: str,
     simulation_name: str,
     simulation_number: int,
     simulation_output: pd.DataFrame,
-    total_loads: dict[ResourceType, pd.DataFrame],
+    total_loads: Dict[ResourceType, pd.DataFrame],
     total_solar_output: pd.DataFrame,
 ) -> None:
     """
@@ -519,7 +495,8 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
     )
 
     with tqdm(
-        total=(16 + (2 if grid_profile is not None else 0))
+        total=15
+        + (1 if grid_profile is not None else 0)
         + (17 if initial_cw_hourly_loads is not None else 0)
         + (4 if cw_pvt else 0)
         + (15 if initial_hw_hourly_loads is not None else 0),
@@ -582,7 +559,7 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
             )
             plt.figure(figsize=(48 / 5, 32 / 5))
             heatmap = sns.heatmap(
-                reshaped_data, vmin=0, vmax=1, cmap="Oranges", cbar=False
+                reshaped_data, vmin=0, vmax=1, cmap="Greys_r", cbar=False
             )
             heatmap.set(
                 xticks=range(0, 24, 2),
@@ -650,9 +627,9 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
                 hatch=_hatch_from_index(index),
             )
             if isinstance(cumulative_load, int) and cumulative_load == 0:
-                cumulative_load = load[0][:24]
+                cumulative_load = load[0]
                 continue
-            cumulative_load += load[0][:24]
+            cumulative_load += load[0]
 
         ax.set_xlabel("Hour of simulation")
         ax.set_ylabel("Device load / W")
@@ -730,13 +707,7 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
             )
 
             if np.sum(average_load) > 0:
-                ax.bar(
-                    range(24),
-                    average_load,
-                    label=device.replace("_", " ").capitalize(),
-                    bottom=cumulative_load,
-                    hatch=_hatch_from_index(index),
-                )
+                ax.bar(range(24), average_load, label=device, bottom=cumulative_load)
             if isinstance(cumulative_load, int) and cumulative_load == 0:
                 cumulative_load = average_load.copy()
                 continue
@@ -946,13 +917,13 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
             label=DemandType.PUBLIC.value.capitalize(),
             color="C2",
         )
-        axis[0].plot(range(365), domestic_demand, alpha=0.5, color="C0")
-        axis[0].plot(range(365), commercial_demand, alpha=0.5, color="C1")
-        axis[0].plot(range(365), public_demand, alpha=0.5, color="C2")
+        axis[0].plot(range(365), domestic_demand, alpha=0.5, color="blue")
+        axis[0].plot(range(365), commercial_demand, alpha=0.5, color="orange")
+        axis[0].plot(range(365), public_demand, alpha=0.5, color="green")
         axis[0].legend(loc="best")
         axis[0].set(
-            # xticks=(range(0, 366, 60)),
-            # yticks=range(0, 26, 5),
+            xticks=(range(0, 366, 60)),
+            yticks=range(0, 26, 5),
             xlabel="Day of simulation period",
             ylabel="Load / kWh/day",
             title="Energy demand of each load type",
@@ -962,13 +933,13 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
             pd.DataFrame(total_demand).rolling(5).mean(),
             "--",
             label="Total",
-            color="C3",
+            color="red",
         )
-        axis[1].plot(range(365), total_demand, "--", alpha=0.5, color="C3")
+        axis[1].plot(range(365), total_demand, "--", alpha=0.5, color="red")
         axis[1].legend(loc="best")
         axis[1].set(
-            # xticks=(range(0, 366, 60)),
-            # yticks=range(15, 41, 5),
+            xticks=(range(0, 366, 60)),
+            yticks=range(15, 41, 5),
             xlabel="Day of simulation period",
             ylabel="Load / kWh/day",
             title="Total community energy demand",
@@ -1053,17 +1024,20 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
         plt.plot(
             range(num_years),
             domestic_demand,
-            label=DemandType.DOMESTIC.value.capitalize(),
+            label=DemandType.DOMESTIC.value,
+            color="blue",
         )
         plt.plot(
             range(num_years),
             commercial_demand,
-            label=DemandType.COMMERCIAL.value.capitalize(),
+            label=DemandType.COMMERCIAL.value,
+            color="orange",
         )
         plt.plot(
             range(num_years),
             public_demand,
-            label=DemandType.PUBLIC.value.capitalize(),
+            label=DemandType.PUBLIC.value,
+            color="green",
         )
         plt.plot(range(num_years), total_demand, "--", label="Total")
         plt.legend(loc="upper left")
@@ -1271,7 +1245,6 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
                 hot_water_pvt_supplied,
                 label="HW PV-T electricity generated",
                 zorder=(10 + (2 if cw_pvt else 0)),
-                color="C10",
             )
         plt.legend()
         plt.xlim(0, 23)
@@ -1657,7 +1630,6 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
                 "-.",
                 label="Thermal desal electric power",
                 zorder=10,
-                color="C6",
             )
 
         if hw_pvt:
@@ -1665,7 +1637,6 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
                 hot_water_pvt_supplied,
                 label="HW PV-T electricity generated",
                 zorder=9 + (2 if cw_pvt else 0),
-                color="C8",
             )
         # if initial_cw_hourly_loads is not None:
         #     clean_water_energy_via_excess = simulation_output.iloc[0:24][
@@ -3759,17 +3730,8 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
             # Plot the initial hot-water load of each device.
             fig, ax = plt.subplots()
             cumulative_load = 0
-            for device, load in sorted(
-                initial_hw_hourly_loads.items(),
-                key=lambda entry: np.sum(entry[1]),
-                reverse=True,
-            ):
-                ax.bar(
-                    range(len(load)),
-                    load[0],
-                    label=device.replace("_", " ").capitalize(),
-                    bottom=cumulative_load,
-                )
+            for device, load in sorted(initial_hw_hourly_loads.items()):
+                ax.bar(range(len(load)), load[0], label=device, bottom=cumulative_load)
 
                 if isinstance(cumulative_load, int) and cumulative_load == 0:
                     cumulative_load = load[0]
@@ -3791,23 +3753,14 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
             # Plot the average hot-water load of each device for the cut off period.
             fig, ax = plt.subplots()
             cumulative_load = 0
-            for device, load in sorted(
-                initial_hw_hourly_loads.items(),
-                key=lambda entry: np.sum(entry[1]),
-                reverse=True,
-            ):
+            for device, load in sorted(initial_hw_hourly_loads.items()):
                 average_load = np.nanmean(
                     np.asarray(load[0:CUT_OFF_TIME]).reshape(
                         (CUT_OFF_TIME // 24, 24),
                     ),
                     axis=0,
                 )
-                ax.bar(
-                    range(24),
-                    average_load,
-                    label=device.replace("_", " ").capitalize(),
-                    bottom=cumulative_load,
-                )
+                ax.bar(range(24), average_load, label=device, bottom=cumulative_load)
 
                 if isinstance(cumulative_load, int) and cumulative_load == 0:
                     cumulative_load = average_load.copy()
@@ -4600,10 +4553,10 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
             pbar.update(1)
 
             # Plot monthly renewable DHW fraction
-            dhw_renewable_fraction: dict[int:float] = {}
-            dhw_renewable_fraction_daily: dict[int : np.ndarray] = {}
-            dhw_dc_fraction: dict[int:float] = {}
-            dhw_dc_fraction_daily: dict[int : np.ndarray] = {}
+            dhw_renewable_fraction: Dict[int:float] = {}
+            dhw_renewable_fraction_daily: Dict[int : np.ndarray] = {}
+            dhw_dc_fraction: Dict[int:float] = {}
+            dhw_dc_fraction_daily: Dict[int : np.ndarray] = {}
             for month in range(1, 13):
                 dhw_renewable_fraction[month] = np.nansum(
                     (

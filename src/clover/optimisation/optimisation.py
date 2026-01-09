@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/python3.10
 ########################################################################################
 # optimisation.py - Optimisation module.                                               #
 #                                                                                      #
@@ -34,6 +34,7 @@ import datetime
 import functools
 import math
 
+from collections import defaultdict
 from logging import Logger
 from typing import Any
 
@@ -74,6 +75,13 @@ from .__utils__ import (
 )
 
 __all__ = ("multiple_optimisation_step",)
+
+
+# SYSTEM_APPRAISALS:
+#   Object capable of storing optimum appraisal information.
+SYSTEM_APPRAISALS: defaultdict[tuple[int, Criterion], list[SystemAppraisal]] = (
+    defaultdict(list)
+)
 
 
 def _fetch_optimum_system(
@@ -1401,9 +1409,10 @@ def multiple_optimisation_step(  # pylint: disable=too-many-locals, too-many-sta
     input_hw_tanks: TankSize | None = None,
     input_pv_sizes: SolarSystemSize | None = None,
     input_storage_sizes: StorageSystemSize | None = None,
+    optimisation_number: int | None = None,
     previous_system: SystemAppraisal | None = None,
     start_year: int = 0,
-) -> tuple[datetime.timedelta, list[pd.DataFrame]]:
+) -> tuple[datetime.timedelta, list[SystemAppraisal], list[SystemAppraisal]]:
     """
     Carries out multiple optimisation steps of the continuous lifetime optimisation.
 
@@ -1470,7 +1479,9 @@ def multiple_optimisation_step(  # pylint: disable=too-many-locals, too-many-sta
         - time_delta:
             The time taken for the optimisation run;
         - results:
-            The results of each Optimisation().optimisation_step(...)
+            The results of each Optimisation().optimisation_step(...);
+        - simulated_systems:
+            The systems simulated along the way.
 
     """
 
@@ -1479,7 +1490,8 @@ def multiple_optimisation_step(  # pylint: disable=too-many-locals, too-many-sta
     logger.info("Multiple optimisation step process begun.")
 
     # Initialise
-    results: list[pd.DataFrame] = []
+    results: list[SystemAppraisal] = []
+    simulated_systems: list[SystemAppraisal] = []
 
     # set up the input converter sizes for the first loop.
     if (
@@ -1688,7 +1700,7 @@ def multiple_optimisation_step(  # pylint: disable=too-many-locals, too-many-sta
             input_storage_sizes = StorageSystemSize()
 
     # Iterate over each optimisation step
-    for _ in tqdm(
+    for iteration_number in tqdm(
         range(int(optimisation_parameters.number_of_iterations)),
         desc="optimisation steps",
         disable=disable_tqdm,
@@ -1790,125 +1802,5 @@ def multiple_optimisation_step(  # pylint: disable=too-many-locals, too-many-sta
     timer_end = datetime.datetime.now()
     time_delta = timer_end - timer_start
 
-    # Return the results along with the time taken.
-    return time_delta, results
-
-
-#     def summarise_optimisation_results(self, optimisation_results):
-#         """
-#         Summarises the optimisation step results into a output for the system lifetime
-
-#         Inputs:
-#             - optimisation_results:
-#                 Results of Optimisation().multiple_optimisation_step(...)
-
-#         Outputs:
-#             - result:
-#                 Aggregated results for the lifetime of the system
-
-#         """
-
-#         # Data where the inital and/or final entries are most relevant
-#         start_year = int(optimisation_results["Start year"].iloc[0])
-#         end_year = int(optimisation_results["End year"].iloc[-1])
-#         step_length = int(
-#             optimisation_results["End year"].iloc[0]
-#             - optimisation_results["Start year"].iloc[0]
-#         )
-#         optimisation_length = end_year - start_year
-#         max_PV = optimisation_results["Initial PV size"].iloc[-1]
-#         max_storage = optimisation_results["Initial storage size"].iloc[-1]
-#         max_diesel = optimisation_results["Diesel capacity"].iloc[-1]
-#         LCUE = optimisation_results["LCUE ($/kWh)"].iloc[-1]
-#         emissions_intensity = optimisation_results[
-#             "Emissions intensity (gCO2/kWh)"
-#         ].iloc[-1]
-#         total_GHGs = optimisation_results["Cumulative GHGs (kgCO2eq)"].iloc[-1]
-#         total_system_GHGs = optimisation_results[
-#             "Cumulative system GHGs (kgCO2eq)"
-#         ].iloc[-1]
-#         #   Data where the mean is most relevant
-#         blackouts = np.mean(optimisation_results[ColumnHeader.BLACKOUTS.value])
-#         kerosene_displacement = np.mean(optimisation_results["Kerosene displacement"])
-#         #   Data where the sum is most relevant
-#         total_energy = np.sum(optimisation_results["Total energy (kWh)"])
-#         unmet_energy = np.sum(optimisation_results[ColumnHeader.UNMET_ELECTRICITY.value])
-#         renewable_energy = np.sum(optimisation_results["Renewable energy (kWh)"])
-#         storage_energy = np.sum(optimisation_results["Storage energy (kWh)"])
-#         grid_energy = np.sum(optimisation_results[ColumnHeader.GRID_ENERGY.value])
-#         diesel_energy = np.sum(optimisation_results[ColumnHeader.DIESEL_ENERGY_SUPPLIED.value])
-#         discounted_energy = np.sum(optimisation_results["Discounted energy (kWh)"])
-#         diesel_fuel_usage = np.sum(optimisation_results[ColumnHeader.DIESEL_FUEL_USAGE.value])
-#         total_cost = np.sum(optimisation_results["Total cost ($)"])
-#         total_system_cost = np.sum(optimisation_results["Total system cost ($)"])
-#         new_equipment_cost = np.sum(optimisation_results["New equipment cost ($)"])
-#         new_connection_cost = np.sum(optimisation_results["New connection cost ($)"])
-#         OM_cost = np.sum(optimisation_results["O&M cost ($)"])
-#         diesel_cost = np.sum(optimisation_results["Diesel cost ($)"])
-#         grid_cost = np.sum(optimisation_results["Grid cost ($)"])
-#         kerosene_cost = np.sum(optimisation_results["Kerosene cost ($)"])
-#         kerosene_cost_mitigated = np.sum(
-#             optimisation_results["Kerosene cost mitigated ($)"]
-#         )
-#         OM_GHGs = np.sum(optimisation_results["O&M GHGs (kgCO2eq)"])
-#         diesel_GHGs = np.sum(optimisation_results["Diesel GHGs (kgCO2eq)"])
-#         grid_GHGs = np.sum(optimisation_results["Grid GHGs (kgCO2eq)"])
-#         kerosene_GHGs = np.sum(optimisation_results["Kerosene GHGs (kgCO2eq)"])
-#         kerosene_mitigated_GHGs = np.sum(
-#             optimisation_results["Kerosene GHGs mitigated (kgCO2eq)"]
-#         )
-
-#         #   Data which requires combinations of summary results
-#         unmet_fraction = round(unmet_energy / total_energy, 3)
-#         renewables_fraction = round(renewable_energy / total_energy, 3)
-#         storage_fraction = round(storage_energy / total_energy, 3)
-#         diesel_fraction = round(diesel_energy / total_energy, 3)
-#         grid_fraction = round(grid_energy / total_energy, 3)
-#         #   Combine results into output
-#         results = pd.DataFrame(
-#             {
-#                 "Start year": start_year,
-#                 "End year": end_year,
-#                 "Step length": step_length,
-#                 "Optimisation length": optimisation_length,
-#                 "Maximum PV size": max_PV,
-#                 "Maximum storage size": max_storage,
-#                 "Maximum diesel capacity": max_diesel,
-#                 "LCUE ($/kWh)": LCUE,
-#                 "Emissions intensity (gCO2/kWh)": emissions_intensity,
-#                 ColumnHeader.BLACKOUTS.value: blackouts,
-#                 "Unmet fraction": unmet_fraction,
-#                 "Renewables fraction": renewables_fraction,
-#                 "Storage fraction": storage_fraction,
-#                 "Diesel fraction": diesel_fraction,
-#                 "Grid fraction": grid_fraction,
-#                 "Total energy (kWh)": total_energy,
-#                 ColumnHeader.UNMET_ELECTRICITY.value: unmet_energy,
-#                 "Renewable energy (kWh)": renewable_energy,
-#                 "Storage energy (kWh)": storage_energy,
-#                 ColumnHeader.GRID_ENERGY.value: grid_energy,
-#                 ColumnHeader.DIESEL_ENERGY_SUPPLIED.value: diesel_energy,
-#                 "Discounted energy (kWh)": discounted_energy,
-#                 "Total cost ($)": total_cost,
-#                 "Total system cost ($)": total_system_cost,
-#                 "New equipment cost ($)": new_equipment_cost,
-#                 "New connection cost ($)": new_connection_cost,
-#                 "O&M cost ($)": OM_cost,
-#                 "Diesel cost ($)": diesel_cost,
-#                 "Grid cost ($)": grid_cost,
-#                 "Kerosene cost ($)": kerosene_cost,
-#                 "Kerosene cost mitigated ($)": kerosene_cost_mitigated,
-#                 "Kerosene displacement": kerosene_displacement,
-#                 ColumnHeader.DIESEL_FUEL_USAGE.value: diesel_fuel_usage,
-#                 "Total GHGs (kgCO2eq)": total_GHGs,
-#                 "Total system GHGs (kgCO2eq)": total_system_GHGs,
-#                 "Total GHGs (kgCO2eq)": total_GHGs,
-#                 "O&M GHGs (kgCO2eq)": OM_GHGs,
-#                 "Diesel GHGs (kgCO2eq)": diesel_GHGs,
-#                 "Grid GHGs (kgCO2eq)": grid_GHGs,
-#                 "Kerosene GHGs (kgCO2eq)": kerosene_GHGs,
-#                 "Kerosene GHGs mitigated (kgCO2eq)": kerosene_mitigated_GHGs,
-#             },
-#             index=["Lifetime results"],
-#         )
-#         return results
+    # Return the results along with the time taken and systems simulated along the way.
+    return time_delta, results, simulated_systems

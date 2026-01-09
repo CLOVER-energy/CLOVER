@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/python3.10
 ########################################################################################
 # argparser.py - Argument-parsing code for CLOVER.                                     #
 #                                                                                      #
@@ -73,6 +73,15 @@ def parse_args(args: list[Any]) -> argparse.Namespace:
     #   Used for generating verbose logs for debugging.
     parser.add_argument(
         "--verbose", "-v", action="store_true", default=False, help=argparse.SUPPRESS
+    )
+    # Disable warnings:
+    #   Used for disabling warnings.
+    parser.add_argument(
+        "--disable-warnings",
+        "-dw",
+        action="store_true",
+        default=False,
+        help=argparse.SUPPRESS,
     )
 
     # Mandatory arguments regardless of the use case.

@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/python3.10
 ########################################################################################
 # __main__.py - Main module for CLOVER.                                                #
 #                                                                                      #
@@ -17,7 +17,7 @@ the clover module from the command-line interface.
 
 """
 
-__version__ = "5.2.0a7"
+__version__ = "6.0.0a1"
 
 import collections
 import datetime
@@ -27,8 +27,6 @@ import os
 import re
 import sys
 import warnings
-
-warnings.simplefilter(action="ignore", category=FutureWarning)
 
 from argparse import Namespace
 from typing import Any, DefaultDict, Match, Pattern
@@ -108,9 +106,9 @@ CLOVER_HEADER_STRING = """
 {version_line}
 
                          For more information, contact
-                   Phil Sandwell (philip.sandwell@gmail.com),
+                Ben Winchester (benedict.winchester@gmail.com),
                     Hamish Beath (hamishbeath@outlook.com),
-               or Ben Winchester (benedict.winchester@gmail.com)
+                 or Phil Sandwell (philip.sandwell@gmail.com).
 
 """
 
@@ -434,6 +432,12 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
         parsed_args.verbose,
     )
     logger.info("CLOVER run initiated. Options specified: %s", " ".join(args))
+
+    # Disable warnings if specified.
+    if not parsed_args.disable_warnings:
+        warnings.simplefilter("always", UserWarning)
+    else:
+        warnings.simplefilter(action="ignore", category=FutureWarning)
 
     # Validate the command-line arguments.
     logger.info("Command-line arguments successfully parsed.")
@@ -1394,43 +1398,48 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
             print(f"Running an optimisation with:\n{optimisation_string}")
 
             try:
-                time_delta, optimisation_results = multiple_optimisation_step(
-                    conventional_cw_source_profiles,
-                    converters,
-                    disable_tqdm,
-                    finance_inputs,
-                    ghg_inputs,
-                    grid_profile,
-                    {
-                        panel_name: solar_data[
-                            solar.SolarDataType.TOTAL_IRRADIANCE.value
-                        ]
-                        for panel_name, solar_data in total_solar_data.items()
-                    },
-                    kerosene_usage,
-                    location,
-                    logger,
-                    minigrid,
-                    optimisation,
-                    optimisation_inputs,
-                    {
-                        panel_name: solar_data[solar.SolarDataType.TEMPERATURE.value]
-                        for panel_name, solar_data in total_solar_data.items()
-                    },
-                    total_loads,
-                    {
-                        pv_panel.name: total_solar_data[pv_panel.name][
-                            solar.SolarDataType.ELECTRICITY.value
-                        ]
-                        * minigrid.pv_panel.pv_unit
-                        for pv_panel in (minigrid.pv_panels + minigrid.pvt_panels)  # type: ignore
-                    },
-                    (
-                        total_wind_data[wind.WindDataType.WIND_SPEED.value]
-                        if total_wind_data is not None
-                        else None
-                    ),
-                    electric_yearly_load_statistics,
+                time_delta, optimisation_results, simulated_systems = (
+                    multiple_optimisation_step(
+                        conventional_cw_source_profiles,
+                        converters,
+                        disable_tqdm,
+                        finance_inputs,
+                        ghg_inputs,
+                        grid_profile,
+                        {
+                            panel_name: solar_data[
+                                solar.SolarDataType.TOTAL_IRRADIANCE.value
+                            ]
+                            for panel_name, solar_data in total_solar_data.items()
+                        },
+                        kerosene_usage,
+                        location,
+                        logger,
+                        minigrid,
+                        optimisation,
+                        optimisation_inputs,
+                        {
+                            panel_name: solar_data[
+                                solar.SolarDataType.TEMPERATURE.value
+                            ]
+                            for panel_name, solar_data in total_solar_data.items()
+                        },
+                        total_loads,
+                        {
+                            pv_panel.name: total_solar_data[pv_panel.name][
+                                solar.SolarDataType.ELECTRICITY.value
+                            ]
+                            * minigrid.pv_panel.pv_unit
+                            for pv_panel in (minigrid.pv_panels + minigrid.pvt_panels)  # type: ignore
+                        },
+                        (
+                            total_wind_data[wind.WindDataType.WIND_SPEED.value]
+                            if total_wind_data is not None
+                            else None
+                        ),
+                        electric_yearly_load_statistics,
+                        optimisation_number=optimisation_number,
+                    )
                 )
             except Exception as e:
                 print(f"Beginning CLOVER optimisation runs {'.' * 28}    {FAILED}")
@@ -1472,6 +1481,7 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
                 optimisation_output_directory,
                 optimisation.scenario,
                 optimisation_results,
+                simulated_systems,
             )
 
         print(f"Beginning CLOVER optimisation runs {'.' * 28}    {DONE}")

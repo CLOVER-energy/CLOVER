@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/python3.10
 ########################################################################################
 # load.py - Load-profile generation module.                                            #
 #                                                                                      #

@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/python3.10
 ########################################################################################
 # exchanger.py - Heat-exchanger module for CLOVER.                                     #
 #                                                                                      #

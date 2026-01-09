@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/python3.10
 ########################################################################################
 # storage.py - Storage module.                                                         #
 #                                                                                      #
@@ -30,6 +30,7 @@ from ..__utils__ import (
     InputFileError,
     InternalError,
     Location,
+    PrioritisationStrategy,
     RenewableEnergySource,
     Scenario,
     WasteProduct,
@@ -48,15 +49,18 @@ __all__ = (
 
 def battery_iteration_step(
     battery_storage_profile: pd.DataFrame,
+    grid_energy: pd.DataFrame,
+    grid_profile: pd.DataFrame,
     hourly_battery_storage: dict[int, float],
     initial_battery_storage: float,
     logger: Logger,
     maximum_battery_storage: float,
     minigrid: Minigrid,
     minimum_battery_storage: float,
+    scenario: Scenario,
     *,
     time_index: int,
-) -> tuple[float, float, float]:
+) -> tuple[float, float, pd.DataFrame, pd.DataFrame, float]:
     """
     Carries out an iteration calculation for the battery.
 
@@ -103,44 +107,140 @@ def battery_iteration_step(
             "Battery undefined despite an itteration step being called.",
         )
 
-    battery_energy_flow = float(battery_storage_profile.iloc[time_index, 0])  # type: ignore [arg-type]
-    if time_index == 0:
-        new_hourly_battery_storage = initial_battery_storage + battery_energy_flow
-        excess_energy = 0
+    def _charge_or_discharge(battery_energy_flow: float) -> tuple[float, float]:
+        """
+        Charge or discharge the battery by some amount.
 
-    else:
-        # Battery charging or no loads present
+        :param: battery_energy_flow:
+            The energy flow into or out of the battery.
+
+        :returns:
+            - The new hourly battery storage;
+            - Any power which wasn't stored in the batteries or couldn't be discharged.
+
+        """
+        # Battery charging
         if battery_energy_flow >= 0.0:
             new_hourly_battery_storage = float(
                 hourly_battery_storage[time_index - 1]
             ) * (1.0 - minigrid.battery.leakage) + minigrid.battery.conversion_in * (
-                energy_transferred_to_storage := min(
+                stored_power := min(
                     battery_energy_flow,
                     minigrid.battery.charge_rate
                     * (maximum_battery_storage - minimum_battery_storage),
                 )
             )
-
-            if energy_transferred_to_storage < 0:
-                raise Exception(
-                    "The battery was charging but energy was removed from storage."
-                )
-
-            excess_energy = max(battery_energy_flow - energy_transferred_to_storage, 0)
+            remaining_energy_balance = battery_energy_flow - stored_power
         # Battery discharging
         else:
             new_hourly_battery_storage = hourly_battery_storage[time_index - 1] * (
                 1.0 - minigrid.battery.leakage
-            ) + (1.0 / minigrid.battery.conversion_out) * max(
-                battery_energy_flow,
-                (-1.0)
-                * minigrid.battery.discharge_rate
-                * (maximum_battery_storage - minimum_battery_storage),
+            ) + (1.0 / minigrid.battery.conversion_out) * (
+                discharged_power := max(
+                    battery_energy_flow,
+                    (-1.0)
+                    * minigrid.battery.discharge_rate
+                    * (maximum_battery_storage - minimum_battery_storage),
+                )
             )
+            remaining_energy_balance = battery_energy_flow + abs(discharged_power)
+
+        return new_hourly_battery_storage, remaining_energy_balance
+
+    energy_generation_or_load_deficit = float(
+        battery_storage_profile.iloc[time_index, 0]
+    )
+    if time_index == 0:
+        new_hourly_battery_storage = (
+            initial_battery_storage + energy_generation_or_load_deficit
+        )
+
+    else:
+        # Carry out logic based on the grid-electricity prioritisation strategy.
+        match scenario.prioritisation_strategy:
+
+            # If consuming self-generated electricity, then take power from the batteries
+            # first, then use the grid if available.
+            case PrioritisationStrategy.SELF_CONSUMPTION:
+                new_hourly_battery_storage, remaining_energy_balance = (
+                    _charge_or_discharge(energy_generation_or_load_deficit)
+                )
+
+                # If the battery was discharging and there is still load to be met, then
+                # take power from the grid if available.
+                grid_energy.iloc[time_index, 0] += max(
+                    grid_power_consumed := (-remaining_energy_balance)
+                    * grid_profile.iloc[time_index, 0],
+                    0,
+                )
+                remaining_energy_balance += grid_power_consumed
+
+            # If the battery storage functions as a backup _only_, such that power
+            # should be taken from the grid first if available, then do this.
+            case PrioritisationStrategy.STORAGE_AS_SOLAR_BACKUP:
+                # Take power from the grid network if there is power to be taken.
+                # NOTE: Energy arbitrage could be coded up here.
+                grid_energy.iloc[time_index, 0] += (
+                    grid_power_consumed := -min(energy_generation_or_load_deficit, 0)
+                    * grid_profile.iloc[time_index, 0]
+                )
+                energy_generation_or_load_deficit += grid_power_consumed
+
+                # Then, if there is still unmet demand (such that the grid was not
+                # available), discharge the batteries.
+                # Similarly, if there is surplus power from the on-site solar, then
+                # charge the batteries by this amout.
+                new_hourly_battery_storage, remaining_energy_balance = (
+                    _charge_or_discharge(energy_generation_or_load_deficit)
+                )
+
+            # If consuming from the grid, and storage is utilised to meet unmet demand but
+            # is not topped up to function as an emergency backup, then power should be
+            # taken from the storage if required but, if the grid is available, the storage
+            # should not be charged up from the grid.
+            case PrioritisationStrategy.GRID_PRIORITISATION:
+                # If there is a deficit, and power needs to be met, then discharge as
+                # power would already have been taken from the grid if available.
+                # If there is surplus solar generation, then store this in the
+                # batteries.
+                new_hourly_battery_storage, remaining_energy_balance = (
+                    _charge_or_discharge(energy_generation_or_load_deficit)
+                )
+
+            # If consuming from the grid and aiming to use storage as an emergency backup,
+            # then the batteries should be discharged if there's unmet load but, if the grid
+            # is available, then they should be fully charged as much as is possible.
+            case PrioritisationStrategy.STORAGE_AS_BACKUP_SERVICE:
+                # If there is a deficit, and power needs to be met, then discharge as
+                # power would already have been taken from the grid if available.
+                # If there is surplus solar generation, then store this in the
+                # batteries.
+                new_hourly_battery_storage, remaining_energy_balance = (
+                    _charge_or_discharge(energy_generation_or_load_deficit)
+                )
+
+                # Otherwise, the batteries should be fully charged if the grid is
+                # available.
+                grid_energy.iloc[time_index, 0] += (
+                    grid_power_consumed := min(
+                        (minigrid.battery.capacity - new_hourly_battery_storage),
+                        (
+                            minigrid.battery.charge_rate
+                            * (maximum_battery_storage - minimum_battery_storage),
+                        ),
+                    )
+                    * grid_profile.iloc[time_index, 0]
+                )
 
             excess_energy = 0
 
-    return battery_energy_flow, excess_energy, new_hourly_battery_storage
+    return (
+        energy_generation_or_load_deficit,
+        excess_energy,
+        grid_energy,
+        grid_profile,
+        new_hourly_battery_storage,
+    )
 
 
 def cw_tank_iteration_step(  # pylint: disable=too-many-locals
@@ -710,74 +810,88 @@ def get_electric_battery_storage_profile(  # pylint: disable=too-many-locals, to
     )
 
     # Check for self-generation prioritisation
-    if scenario.prioritise_self_generation:
-        # Take energy from PV first
-        remaining_profile = pd.DataFrame(renewables_energy.values - load_energy.values)
-        renewables_energy_used_directly: pd.DataFrame = pd.DataFrame(
-            (remaining_profile > 0) * load_energy.values  # type: ignore [operator]
-            + (remaining_profile < 0) * renewables_energy.values  # type: ignore [operator]
-        )
-
-        # Then take energy from grid if available
-        if scenario.grid:
-            grid_energy: pd.DataFrame = pd.DataFrame(
-                ((remaining_profile < 0) * remaining_profile)[0]  # type: ignore
-                * -1.0
-                * grid_profile.values
+    match scenario.prioritisation_strategy:
+        case (
+            PrioritisationStrategy.SELF_CONSUMPTION
+            | PrioritisationStrategy.STORAGE_AS_SOLAR_BACKUP
+        ):
+            # Take energy from PV first
+            remaining_profile = pd.DataFrame(
+                renewables_energy.values - load_energy.values
             )
-        else:
-            grid_energy = pd.DataFrame([0] * (end_hour - start_hour))
-        battery_storage_profile: pd.DataFrame = pd.DataFrame(
-            remaining_profile.values + grid_energy.values
-        )
-
-    else:
-        # Take energy from grid first if available
-        if scenario.grid:
-            grid_energy = pd.DataFrame(  # type: ignore
-                grid_profile.mul(load_energy[0].values).values  # type: ignore [attr-defined, call-overload, operator, type-var]
+            renewables_energy_used_directly: pd.DataFrame = pd.DataFrame(
+                (remaining_profile > 0) * load_energy.values  # type: ignore [operator]
+                + (remaining_profile < 0) * renewables_energy.values  # type: ignore [operator]
             )
-        else:
-            grid_energy = pd.DataFrame([0] * (end_hour - start_hour))
-        # as needed for load
-        remaining_profile = (grid_energy[0] <= 0).mul(load_energy[0])  # type: ignore
-        logger.debug(
-            "Remainig profile: %s kWh",
-            round(float(np.sum(remaining_profile)), 2),  # type: ignore [arg-type, call-overload]
-        )
 
-        # Then take energy from PV if generated
-        logger.debug(
-            "Renewables profile: %s kWh",
-            f"{round(float(np.sum(renewables_energy, axis=0).iloc[0]), 2)}",  # type: ignore [arg-type, call-overload]
-        )
-        battery_storage_profile = pd.DataFrame(
-            renewables_energy[0].values - remaining_profile.values  # type: ignore
-        )
-        logger.debug(
-            "Storage profile: %s kWh",
-            f"{round(float(np.sum(battery_storage_profile, axis=0).iloc[0]), 2)}",  # type: ignore [arg-type, call-overload]
-        )
+            if (
+                scenario.prioritisation_strategy
+                == PrioritisationStrategy.STORAGE_AS_SOLAR_BACKUP
+                and scenario.grid
+            ):
+                grid_energy: pd.DataFrame = pd.DataFrame(
+                    ((remaining_profile < 0) * remaining_profile)[0]  # type: ignore
+                    * -1.0
+                    * grid_profile.values
+                )
+            else:
+                grid_energy = pd.DataFrame([0] * (end_hour - start_hour))
 
-        renewables_energy_used_directly = pd.DataFrame(
-            ((renewables_energy[0] > 0) * (remaining_profile > 0))  # type: ignore [call-overload]
-            * pd.concat(  # type: ignore [call-arg, call-overload]
-                [renewables_energy[0], remaining_profile], axis=1  # type: ignore [call-overload]
-            ).min(axis=1)
-        )
+            # The profile is the remaining energy
+            battery_storage_profile: pd.DataFrame = pd.DataFrame(
+                remaining_profile.values + grid_energy.values
+            )
 
-        logger.debug(
-            "Grid energy: %s kWh",
-            f"{round(float(np.sum(grid_energy).iloc[0]), 2)}",  # type: ignore [arg-type, call-overload]
-        )
-        renewables_direct_rounded: float = round(
-            float(np.sum(renewables_energy_used_directly).iloc[0]), 2  # type: ignore [arg-type, call-overload]
-        )
-        logger.debug(
-            "Renewables direct: %s kWh",
-            round(float(np.sum(renewables_energy_used_directly).iloc[0]), 2),  # type: ignore [arg-type, call-overload]
-        )
-        logger.debug("Renewables direct: %s kWh", renewables_direct_rounded)
+        case (
+            PrioritisationStrategy.STORAGE_AS_BACKUP_SERVICE
+            | PrioritisationStrategy.GRID_PRIORITISATION
+        ):
+            # Take energy from grid first if available
+            if scenario.grid:
+                grid_energy = pd.DataFrame(  # type: ignore
+                    grid_profile.mul(load_energy[0].values).values  # type: ignore [attr-defined, call-overload, operator, type-var]
+                )
+            else:
+                grid_energy = pd.DataFrame([0] * (end_hour - start_hour))
+            # as needed for load
+            remaining_profile = (grid_energy[0] <= 0).mul(load_energy[0])  # type: ignore
+            logger.debug(
+                "Remainig profile: %s kWh",
+                round(float(np.sum(remaining_profile)), 2),  # type: ignore [arg-type, call-overload]
+            )
+
+            # Then take energy from PV if generated
+            logger.debug(
+                "Renewables profile: %s kWh",
+                f"{round(float(np.sum(renewables_energy, axis=0).iloc[0]), 2)}",  # type: ignore [arg-type, call-overload]
+            )
+            battery_storage_profile = pd.DataFrame(
+                renewables_energy[0].values - remaining_profile.values  # type: ignore
+            )
+            logger.debug(
+                "Storage profile: %s kWh",
+                f"{round(float(np.sum(battery_storage_profile, axis=0).iloc[0]), 2)}",  # type: ignore [arg-type, call-overload]
+            )
+
+            renewables_energy_used_directly = pd.DataFrame(
+                ((renewables_energy[0] > 0) * (remaining_profile > 0))  # type: ignore [call-overload]
+                * pd.concat(  # type: ignore [call-arg, call-overload]
+                    [renewables_energy[0], remaining_profile], axis=1  # type: ignore [call-overload]
+                ).min(axis=1)
+            )
+
+            logger.debug(
+                "Grid energy: %s kWh",
+                f"{round(float(np.sum(grid_energy).iloc[0]), 2)}",  # type: ignore [arg-type, call-overload]
+            )
+            renewables_direct_rounded: float = round(
+                float(np.sum(renewables_energy_used_directly).iloc[0]), 2  # type: ignore [arg-type, call-overload]
+            )
+            logger.debug(
+                "Renewables direct: %s kWh",
+                round(float(np.sum(renewables_energy_used_directly).iloc[0]), 2),  # type: ignore [arg-type, call-overload]
+            )
+            logger.debug("Renewables direct: %s kWh", renewables_direct_rounded)
 
     battery_storage_profile.columns = pd.Index([ColumnHeader.STORAGE_PROFILE.value])
     grid_energy.columns = pd.Index([ColumnHeader.GRID_ENERGY.value])

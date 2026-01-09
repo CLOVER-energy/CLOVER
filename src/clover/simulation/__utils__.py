@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/python3.10
 ########################################################################################
 # __utils__.py - Profile-generation utility module.                                    #
 #                                                                                      #
@@ -22,12 +22,13 @@ that is passed in to the module.
 
 """
 
-from argparse import Namespace
 import dataclasses
-from logging import Logger
 
+from argparse import Namespace
 from collections import defaultdict
+from logging import Logger
 from typing import Any
+from warnings import warn
 
 from ..__utils__ import (
     AuxiliaryHeaterType,
@@ -321,9 +322,11 @@ class Minigrid:
                     "energy system inputs",
                     "Inverter information should be in energy system inputs.",
                 ) from None
-            logger.warning(
-                "Specifying inverter information in the finance inputs is deprecated. "
-                "Use the energy-system inputs."
+            warn(
+                BColours.warning
+                + "Specifying inverter information in the finance inputs is deprecated. "
+                "Use the energy-system inputs." + BColours.endc,
+                FutureWarning,
             )
 
         # Return the minigrid instance.
