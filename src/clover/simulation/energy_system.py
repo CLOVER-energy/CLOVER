@@ -138,7 +138,14 @@ def _calculate_backup_diesel_generator_usage(
         total_electric_load,
         scenario.diesel_scenario.mode,
     )
-    diesel_capacity: float = float((minigrid.diesel_generator.capacity * math.ceil(diesel_energy.max(axis=0).iloc[0] / minigrid.diesel_generator.capacity)))  # type: ignore [call-arg, call-overload]
+    diesel_capacity: float = float(
+        (
+            minigrid.diesel_generator.capacity
+            * math.ceil(
+                diesel_energy.max(axis=0).iloc[0] / minigrid.diesel_generator.capacity
+            )
+        )
+    )
     diesel_fuel_usage = pd.DataFrame(
         get_diesel_fuel_usage(
             int(diesel_capacity),
@@ -2419,6 +2426,9 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
         raise InputFileError(
             "scenario inputs", "Diesel mode must be specified in the scenario file."
         )
+
+    # Re-calculate the blackout times based on the operation of the diesel generator.
+    blackout_times = ((unmet_energy > 0) * 1).astype(float)  # type: ignore [operator]
 
     # Find total energy used by the system
     total_energy_used = pd.DataFrame(
