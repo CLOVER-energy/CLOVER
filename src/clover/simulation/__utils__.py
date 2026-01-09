@@ -467,7 +467,11 @@ class Minigrid:
 
         """
 
-        return [self.pv_panel, self.pvt_panel, self.solar_thermal_panel]
+        return [
+            entry
+            for entry in [self.pv_panel, self.pvt_panel, self.solar_thermal_panel]
+            if entry is not None
+        ]
 
 
 def check_scenario(
