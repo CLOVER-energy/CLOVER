@@ -475,10 +475,12 @@ class TestSolarThermalPanelPerformance(unittest.TestCase):
             "name": "default_solar_thermal",
             "area": 2.106,
             "azimuthal_orientation": 180,
+            "land_use": 2.52,
             "lifetime": 20,
             "max_mass_flow_rate": 250,
             "min_mass_flow_rate": 60,
             "nominal_mass_flow_rate": 125,
+            "stagnation_temperature": 183.4,
             "tilt": 29,
             "type": "solar_thermal",
             "costs": {
@@ -495,7 +497,7 @@ class TestSolarThermalPanelPerformance(unittest.TestCase):
                 "installation_ghg_decrease": 0,
                 "o&m": 5,
             },
-            "performance_curve": {
+            "thermal_performance_curve": {
                 "zeroth_order": 0.694,
                 "first_order": 3.53,
                 "second_order": 0.0047,
@@ -503,8 +505,8 @@ class TestSolarThermalPanelPerformance(unittest.TestCase):
         }
 
         # Set up required mocks for instantiation.
-        self.ambient_temperature = 40
-        self.input_temperature = 30
+        self.ambient_temperature = 313
+        self.input_temperature = 303
         self.irradiance = 1000
         self.mass_flow_rate = 15
         self.test_logger = mock.Mock()
@@ -532,36 +534,38 @@ class TestSolarThermalPanelPerformance(unittest.TestCase):
 
         """
 
-        _, output_temperature = self.solar_thermal_panel.calculate_performance(
-            self.ambient_temperature,
-            HEAT_CAPACITY_OF_WATER,
-            self.input_temperature,
-            self.test_logger,
-            self.solar_thermal_panel.nominal_mass_flow_rate,
-            self.irradiance / 1000,
-            self.wind_speed,
+        _, output_temperature, reduced_temperature, thermal_efficiency = (
+            self.solar_thermal_panel.calculate_performance(
+                self.ambient_temperature,
+                self.test_logger,
+                self.irradiance,
+                HEAT_CAPACITY_OF_WATER,
+                self.input_temperature,
+                self.solar_thermal_panel.nominal_mass_flow_rate,
+                self.wind_speed,
+            )
         )
-
         # Type-check the outputs
         self.assertIsInstance(output_temperature, float)
 
         # Compute the efficiency two ways and check that these are equal.
         collector_temperature = 0.5 * (self.input_temperature + output_temperature)  # type: ignore [operator]
         efficiency_by_equation = (
-            self.solar_thermal_panel.performance_curve.eta_0
-            + self.solar_thermal_panel.performance_curve.c_1
+            self.solar_thermal_panel.thermal_performance_curve.eta_0
+            + self.solar_thermal_panel.thermal_performance_curve.c_1
             * (collector_temperature - self.ambient_temperature)
             / self.irradiance
-            + self.solar_thermal_panel.performance_curve.c_2
+            + self.solar_thermal_panel.thermal_performance_curve.c_2
             * (collector_temperature - self.ambient_temperature) ** 2
             / self.irradiance
         )
         efficiency_by_output: float = (
-            (self.solar_thermal_panel.nominal_mass_flow_rate / 3600)
+            (self.solar_thermal_panel.nominal_mass_flow_rate)
             * HEAT_CAPACITY_OF_WATER
             * (output_temperature - self.input_temperature)  # type: ignore [operator]
         ) / (self.solar_thermal_panel.area * self.irradiance)
 
+        self.assertEqual(round(thermal_efficiency, 8), round(efficiency_by_equation, 8))
         self.assertEqual(
             round(efficiency_by_equation, 8), round(efficiency_by_output, 8)
         )
