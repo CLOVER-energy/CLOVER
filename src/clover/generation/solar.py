@@ -1702,6 +1702,19 @@ class PVPanel(SolarPanel, panel_type=SolarPanelType.PV):
         self.thermal_coefficient: float = thermal_coefficient
 
     @property
+    def pv_unit_overrided(self) -> bool:
+        """
+        Return if the PV unit variable has been overrided.
+
+        Outputs:
+            - True: if the `pv_unit` attribute has been overrided;
+            - False: otherwise.
+
+        """
+
+        return self.pv_unit != DEFAULT_PV_UNIT
+
+    @property
     def reference_temperature(self) -> float:
         """
         Return the reference temperature in degrees Kelvin.
