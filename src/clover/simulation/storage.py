@@ -93,7 +93,7 @@ def battery_iteration_step(
 
     """
 
-    if minigrid.battery is None:
+    if (battery := minigrid.battery) is None:
         logger.error(
             "%sNo battery was defined on the minigrid despite the iteration "
             "calculation being called to compute the energy stored within the "
@@ -123,10 +123,10 @@ def battery_iteration_step(
         if battery_energy_flow >= 0.0:
             new_hourly_battery_storage = float(
                 hourly_battery_storage[time_index - 1]
-            ) * (1.0 - minigrid.battery.leakage) + minigrid.battery.conversion_in * (
+            ) * (1.0 - battery.leakage) + battery.conversion_in * (
                 stored_power := min(
                     battery_energy_flow,
-                    minigrid.battery.charge_rate
+                    battery.charge_rate
                     * (maximum_battery_storage - minimum_battery_storage),
                 )
             )
@@ -134,12 +134,12 @@ def battery_iteration_step(
         # Battery discharging
         else:
             new_hourly_battery_storage = hourly_battery_storage[time_index - 1] * (
-                1.0 - minigrid.battery.leakage
-            ) + (1.0 / minigrid.battery.conversion_out) * (
+                1.0 - battery.leakage
+            ) + (1.0 / battery.conversion_out) * (
                 discharged_power := max(
                     battery_energy_flow,
                     (-1.0)
-                    * minigrid.battery.discharge_rate
+                    * battery.discharge_rate
                     * (maximum_battery_storage - minimum_battery_storage),
                 )
             )
@@ -223,9 +223,9 @@ def battery_iteration_step(
                 # available.
                 grid_energy.iloc[time_index, 0] += (
                     grid_power_consumed := min(
-                        (minigrid.battery.capacity - new_hourly_battery_storage),
+                        (battery.capacity - new_hourly_battery_storage),
                         (
-                            minigrid.battery.charge_rate
+                            battery.charge_rate
                             * (maximum_battery_storage - minimum_battery_storage),
                         ),
                     )
