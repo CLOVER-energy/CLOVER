@@ -232,8 +232,6 @@ def battery_iteration_step(
                     * grid_profile.iloc[time_index, 0]
                 )
 
-            excess_energy = 0
-
     return (
         energy_generation_or_load_deficit,
         excess_energy,

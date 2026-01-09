@@ -1050,9 +1050,9 @@ def _parse_global_settings(logger: Logger) -> dict[str, Any]:
         _create_global_setings_file()
 
     try:
-        global_settings_inputs: dict[str, Any] | list[
-            dict[str, Any]
-        ] | None = read_yaml(global_settings_filepath, logger)
+        global_settings_inputs: dict[str, Any] | list[dict[str, Any]] | None = (
+            read_yaml(global_settings_filepath, logger)
+        )
     except FileNotFoundError:
         logger.error(
             "No global-settings file found, check that this file was correctly created "
@@ -1694,7 +1694,7 @@ def _parse_solar_inputs(  # pylint: disable=too-many-locals, too-many-statements
     # Determine the solar-thermal panel being modelled, if appropriate.
     if SOLAR_THERMAL_PANEL in energy_system_inputs:
         try:
-            solar_thermal_panels: solar.SolarThermalPanel | solar.SolarPanel | None = [
+            solar_thermal_panels: list[solar.SolarThermalPanel | solar.SolarPanel] = [
                 panel
                 for panel in solar_panels
                 if panel.panel_type == SolarPanelType.SOLAR_THERMAL  # type: ignore
@@ -1784,7 +1784,7 @@ def _parse_solar_inputs(  # pylint: disable=too-many-locals, too-many-statements
             raise
         logger.info("ST panel emissions successfully determined.")
     else:
-        solar_thermal_panels = None
+        solar_thermal_panels = []
         solar_thermal_panel_costs = None
         solar_thermal_panel_emissions = None
 
@@ -3279,9 +3279,9 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
 
     if any(scenario.desalination_scenario is not None for scenario in scenarios):
         if conventional_water_source_inputs_filepath is not None:
-            input_file_info[
-                "conventional_water_source_inputs"
-            ] = conventional_water_source_inputs_filepath
+            input_file_info["conventional_water_source_inputs"] = (
+                conventional_water_source_inputs_filepath
+            )
         if tank_inputs_filepath is not None:
             input_file_info["tank_inputs"] = tank_inputs_filepath
 

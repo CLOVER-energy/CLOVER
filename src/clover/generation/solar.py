@@ -1544,7 +1544,12 @@ class SolarPanel(ABC):  # pylint: disable=too-few-public-methods
         mass_flow_rate: float | None,
         solar_irradiance: float,
         wind_speed: float | None,
-    ) -> tuple[float | None, float | None, float | None, float | None,]:
+    ) -> tuple[
+        float | None,
+        float | None,
+        float | None,
+        float | None,
+    ]:
         """
         Abstract method for calculation of collector performance.
 
@@ -2157,7 +2162,12 @@ class HybridPVTPanel(SolarPanel, panel_type=SolarPanelType.PV_T):
         input_temperature: float | None,
         mass_flow_rate: float | None,
         wind_speed: float | None = None,
-    ) -> tuple[float | None, float | None, float | None, float | None,]:
+    ) -> tuple[
+        float | None,
+        float | None,
+        float | None,
+        float | None,
+    ]:
         """
         Calculates the performance characteristics of the hybrid PV-T collector.
 
@@ -2483,7 +2493,12 @@ class SolarThermalPanel(SolarPanel, panel_type=SolarPanelType.SOLAR_THERMAL):
         input_temperature: float | None,
         mass_flow_rate: float | None,
         wind_speed: float | None = None,
-    ) -> tuple[float | None, float | None, float | None, float | None,]:
+    ) -> tuple[
+        float | None,
+        float | None,
+        float | None,
+        float | None,
+    ]:
         """
         Calculates the performance characteristics of the solar-thermal collector.
 

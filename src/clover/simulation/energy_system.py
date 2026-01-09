@@ -1995,9 +1995,9 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
     }
 
     if hot_water_pvt_electric_power_per_unit is not None:
-        renewables_energy_map[
-            RenewableEnergySource.HOT_WATER_PVT
-        ] = hot_water_pvt_electric_power_per_unit
+        renewables_energy_map[RenewableEnergySource.HOT_WATER_PVT] = (
+            hot_water_pvt_electric_power_per_unit
+        )
 
     renewables_energy_used_directly: pd.DataFrame
     (
@@ -2899,12 +2899,12 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
         # Append various PV-T outputs
         if scenario.pv_t:
             # Collector input/output temperatures
-            hot_water_collectors_input_temperatures[
-                SolarPanelType.PV_T
-            ].columns = pd.Index([ColumnHeader.HW_PVT_INPUT_TEMPERATURE.value])
-            hot_water_collectors_output_temperatures[
-                SolarPanelType.PV_T
-            ].columns = pd.Index([ColumnHeader.HW_PVT_OUTPUT_TEMPERATURE.value])
+            hot_water_collectors_input_temperatures[SolarPanelType.PV_T].columns = (
+                pd.Index([ColumnHeader.HW_PVT_INPUT_TEMPERATURE.value])
+            )
+            hot_water_collectors_output_temperatures[SolarPanelType.PV_T].columns = (
+                pd.Index([ColumnHeader.HW_PVT_OUTPUT_TEMPERATURE.value])
+            )
 
             # Convert the PV-T units to kWh
             hot_water_pvt_electric_power_per_kwh: pd.DataFrame = pd.DataFrame(

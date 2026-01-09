@@ -143,7 +143,7 @@ class Minigrid:
         The PV-T panel(s) being considered, if applicable.
 
     .. attribute:: solar_thermal_panels
-        The solar-thermal panel being considered, if applicable.
+        The solar-thermal panel(s) being considered, if applicable.
 
     .. attribute:: water_pump
         The water pump associated with the energy system, as a :class:`Transmitter`
