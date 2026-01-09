@@ -370,13 +370,6 @@ def _calculate_renewable_cw_profiles(  # pylint: disable=too-many-locals, too-ma
 
     # TODO: Include ST work here.
 
-    # Raise an error if no water pump was defined.
-    if minigrid.water_pump is None:
-        raise InputFileError(
-            "energy system",
-            "No water pump was defined despite clean-water modelling being requested.",
-        )
-
     # Determine the list of available feedwater sources if relevant.
     if scenario.desalination_scenario is not None:
         logger.info("Determining available feedwater sources.")
@@ -401,10 +394,14 @@ def _calculate_renewable_cw_profiles(  # pylint: disable=too-many-locals, too-ma
     else:
         feedwater_sources = []
 
-    # If no renewable hot-water sources were specified, skip the calculation.
-    if scenario.desalination_scenario is None or (
-        scenario.desalination_scenario.pvt_scenario is None
-        and scenario.desalination_scenario.solar_thermal_scenario is None
+    # If no renewable clean-water sources were specified, skip the calculation.
+    if (
+        scenario.desalination_scenario is None
+        or (
+            scenario.desalination_scenario.pvt_scenario is None
+            and scenario.desalination_scenario.solar_thermal_scenario is None
+        )
+        or ResourceType.CLEAN_WATER not in scenario.resource_types
     ):
         logger.debug(
             "Skipping clean-water PV-T and solar-thermal performance-profile "
@@ -426,6 +423,13 @@ def _calculate_renewable_cw_profiles(  # pylint: disable=too-many-locals, too-ma
             feedwater_sources,
             pd.DataFrame([0] * (end_hour - start_hour)),
             pd.DataFrame([0] * (end_hour - start_hour)),
+        )
+
+    # Raise an error if no water pump was defined.
+    if minigrid.water_pump is None:
+        raise InputFileError(
+            "energy system",
+            "No water pump was defined despite clean-water modelling being requested.",
         )
 
     # Determine whether the water pump is capable for supplying the PV-T panels with
