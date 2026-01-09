@@ -2195,43 +2195,44 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
             # Calculate the hot-water iteration.
             # TODO: Insert the HW iteration step.
 
-            # Calculate the clean-water iteration.
-            (
-                electric_desalinated_water,
-                excess_energy,
-                new_hourly_battery_storage,
-                total_waste_produced,
-            ) = cw_tank_iteration_step(  # type: ignore  [assignment]
-                prioritise_desalinator_water,
-                cw_el_brine_per_desalinated_litre,
-                cw_prioritisation_power_consumed_mapping,
-                clean_water_demand_met_by_excess_energy,
-                clean_water_supplied_by_excess_energy,
-                conventional_cw_source_profiles,
-                conventional_water_supplied,
-                cw_el_energy_per_desalinated_litre,
-                excess_energy,
-                excess_energy_used_desalinating,
-                hourly_cw_tank_storage,
-                initial_cw_tank_storage,
-                logger,
-                maximum_battery_storage,
-                maximum_cw_tank_storage,
-                cw_el_maximum_water_throughput,
-                minigrid,
-                minimum_battery_storage,
-                minimum_cw_tank_storage,
-                new_hourly_battery_storage,
-                renewables_energy_used_directly,
-                scenario,
-                storage_water_supplied,
-                tank_storage_profile,
-                total_waste_produced,
-                time_index=t,
-            )
+            if ResourceType.CLEAN_WATER in scenario.resource_types:
+                # Calculate the clean-water iteration.
+                (
+                    electric_desalinated_water,
+                    excess_energy,
+                    new_hourly_battery_storage,
+                    total_waste_produced,
+                ) = cw_tank_iteration_step(  # type: ignore  [assignment]
+                    prioritise_desalinator_water,
+                    cw_el_brine_per_desalinated_litre,
+                    cw_prioritisation_power_consumed_mapping,
+                    clean_water_demand_met_by_excess_energy,
+                    clean_water_supplied_by_excess_energy,
+                    conventional_cw_source_profiles,
+                    conventional_water_supplied,
+                    cw_el_energy_per_desalinated_litre,
+                    excess_energy,
+                    excess_energy_used_desalinating,
+                    hourly_cw_tank_storage,
+                    initial_cw_tank_storage,
+                    logger,
+                    maximum_battery_storage,
+                    maximum_cw_tank_storage,
+                    cw_el_maximum_water_throughput,
+                    minigrid,
+                    minimum_battery_storage,
+                    minimum_cw_tank_storage,
+                    new_hourly_battery_storage,
+                    renewables_energy_used_directly,
+                    scenario,
+                    storage_water_supplied,
+                    tank_storage_profile,
+                    total_waste_produced,
+                    time_index=t,
+                )
 
-            # Electric desalination throughput
-            electric_desalination_throughput += electric_desalinated_water
+                # Electric desalination throughput
+                electric_desalination_throughput += electric_desalinated_water
 
             # Dumped energy and unmet demand
             energy_surplus[t] = excess_energy  # type: ignore
@@ -2881,7 +2882,7 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
         )
 
     pvt_values: np.ndarray | None = None
-    if cw_pvt_electricity_supplied is not None:
+    if ResourceType.CLEAN_WATER in scenario.resource_types:
         pvt_values = cw_pvt_electricity_supplied.values
 
         total_pvt_electricity = pd.DataFrame(pvt_values)
