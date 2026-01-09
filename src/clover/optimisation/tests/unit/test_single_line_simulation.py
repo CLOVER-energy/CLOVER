@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/python3.10
 ########################################################################################
 # test_single_line_simulation.py - Tests for CLOVER's single-line simulation module.   #
 #                                                                                      #

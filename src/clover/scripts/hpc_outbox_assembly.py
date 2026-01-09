@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/python3.10
 ########################################################################################
 # hpc_outbox_assembly.py - CLOVER optimisation outbox assembly script.                 #
 #                                                                                      #

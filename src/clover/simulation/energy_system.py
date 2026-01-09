@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/python3.10
 ########################################################################################
 # minigrid.py - Energy-system main module for CLOVER.                                  #
 #                                                                                      #

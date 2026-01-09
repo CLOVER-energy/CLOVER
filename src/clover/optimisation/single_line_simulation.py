@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/python3.10
 ########################################################################################
 # single_line_simulation.py - Single-line simulation module for optimisation component.#
 #                                                                                      #

@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/python3.10
 ########################################################################################
 # hpc.py - Wrapper script around CLOVER when run on Imperial College's HPC.            #
 #                                                                                      #

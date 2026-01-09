@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/python3.10
 ########################################################################################
 # fileparser.py - File-parsing code for CLOVER.                                        #
 #                                                                                      #
@@ -23,8 +23,6 @@ from typing import Any, DefaultDict
 import json
 import pandas as pd  # pyli`nt: disable=import-error
 import yaml
-
-from sklearn.linear_model._coordinate_descent import Lasso
 
 from . import load
 from .generation import solar
@@ -1036,179 +1034,179 @@ def _parse_global_settings(logger: Logger) -> dict[str, Any]:
     return global_settings_inputs
 
 
-def _parse_pvt_reduced_models(  # pylint: disable=too-many-statements
-    debug: bool, logger: Logger, scenarios: list[Scenario]
-) -> tuple[dict[RegressorType, Lasso], dict[RegressorType, Lasso]]:
-    """
-    Parses the PV-T models from the installed package or raw files.
+# def _parse_pvt_reduced_models(  # pylint: disable=too-many-statements
+#     debug: bool, logger: Logger, scenarios: list[Scenario]
+# ) -> tuple[dict[RegressorType, Lasso], dict[RegressorType, Lasso]]:
+#     """
+#     Parses the PV-T models from the installed package or raw files.
 
-    To improve accuracy, CLOVER uses a series of PV-T models depending on the weather
-    conditions being modelled. Each of these files is parsed and stored on the PV-T
-    panel instance.
+#     To improve accuracy, CLOVER uses a series of PV-T models depending on the weather
+#     conditions being modelled. Each of these files is parsed and stored on the PV-T
+#     panel instance.
 
-    Inputs:
-        - debug:
-            Whether CLOVER is being run in debug (a single decision tree regressor) or
-            standard (a random forest regressor) mode.
-        - logger:
-            The :class:`logging.Logger` to use for the run.
-        - scenarios:
-            The `list` of :class:`Scenario` instances available for the run.
+#     Inputs:
+#         - debug:
+#             Whether CLOVER is being run in debug (a single decision tree regressor) or
+#             standard (a random forest regressor) mode.
+#         - logger:
+#             The :class:`logging.Logger` to use for the run.
+#         - scenarios:
+#             The `list` of :class:`Scenario` instances available for the run.
 
-    Outputs:
-        - A `list` of :class:`DieselGenerator` instances based on the input information
-          provided.
+#     Outputs:
+#         - A `list` of :class:`DieselGenerator` instances based on the input information
+#           provided.
 
-    """
+#     """
 
-    # Instantiate variables
-    electric_models: dict[RegressorType, Lasso] = {}
-    thermal_models: dict[RegressorType, Lasso] = {}
+#     # Instantiate variables
+#     electric_models: dict[RegressorType, Lasso] = {}
+#     thermal_models: dict[RegressorType, Lasso] = {}
 
-    # If any of the scenarios defined specify that PV-T should be used.
-    if any(scenario.pv_t for scenario in scenarios):
-        # Attempt to read the thermal model file as per CLOVER being an installed
-        # package.
-        logger.info(
-            "Attempting to read PV-T reduced thermal model(s) from installed package "
-            "info."
-        )
-        for model_type in RegressorType:
-            try:
-                thermal_model: Lasso | None = pickle.load(
-                    pkgutil.get_data(  # type: ignore
-                        PACKAGE_NAME, THERMAL_MODEL_FILE.format(model_type.value)
-                    )
-                )
-            except (AttributeError, FileNotFoundError, TypeError):
-                logger.info("Failed to read data as if package was installed.")
+#     # If any of the scenarios defined specify that PV-T should be used.
+#     if any(scenario.pv_t for scenario in scenarios):
+#         # Attempt to read the thermal model file as per CLOVER being an installed
+#         # package.
+#         logger.info(
+#             "Attempting to read PV-T reduced thermal model(s) from installed package "
+#             "info."
+#         )
+#         for model_type in RegressorType:
+#             try:
+#                 thermal_model: Lasso | None = pickle.load(
+#                     pkgutil.get_data(  # type: ignore
+#                         PACKAGE_NAME, THERMAL_MODEL_FILE.format(model_type.value)
+#                     )
+#                 )
+#             except (AttributeError, FileNotFoundError, TypeError):
+#                 logger.info("Failed to read data as if package was installed.")
 
-                # Attempt to read the thermal model file from raw source information.
-                logger.info(
-                    "Attempting to read PV-T reduced thermal model from raw source file."
-                )
-                if debug:
-                    try:
-                        with open(
-                            os.path.join(
-                                RAW_CLOVER_PATH,
-                                THERMAL_MODEL_FAST_FILE.format(model_type.value),
-                            ),
-                            "rb",
-                        ) as f:
-                            thermal_model = pickle.load(f)
-                    except Exception:
-                        logger.error(
-                            "Failed to read fast PV-T reduced thermal model from raw source."
-                        )
-                        logger.critical(
-                            "Failed to determine PV-T reduced thermal model."
-                        )
-                        raise
-                else:
-                    try:
-                        with open(
-                            os.path.join(
-                                RAW_CLOVER_PATH,
-                                THERMAL_MODEL_FILE.format(model_type.value),
-                            ),
-                            "rb",
-                        ) as f:
-                            thermal_model = pickle.load(f)
-                    except Exception:
-                        logger.error(
-                            "Failed to read PV-T reduced thermal model from raw source."
-                        )
-                        logger.critical(
-                            "Failed to determine PV-T reduced thermal model."
-                        )
-                        raise
-                logger.info(
-                    "Successfully read PV-T reduced thermal model from local source."
-                )
+#                 # Attempt to read the thermal model file from raw source information.
+#                 logger.info(
+#                     "Attempting to read PV-T reduced thermal model from raw source file."
+#                 )
+#                 if debug:
+#                     try:
+#                         with open(
+#                             os.path.join(
+#                                 RAW_CLOVER_PATH,
+#                                 THERMAL_MODEL_FAST_FILE.format(model_type.value),
+#                             ),
+#                             "rb",
+#                         ) as f:
+#                             thermal_model = pickle.load(f)
+#                     except Exception:
+#                         logger.error(
+#                             "Failed to read fast PV-T reduced thermal model from raw source."
+#                         )
+#                         logger.critical(
+#                             "Failed to determine PV-T reduced thermal model."
+#                         )
+#                         raise
+#                 else:
+#                     try:
+#                         with open(
+#                             os.path.join(
+#                                 RAW_CLOVER_PATH,
+#                                 THERMAL_MODEL_FILE.format(model_type.value),
+#                             ),
+#                             "rb",
+#                         ) as f:
+#                             thermal_model = pickle.load(f)
+#                     except Exception:
+#                         logger.error(
+#                             "Failed to read PV-T reduced thermal model from raw source."
+#                         )
+#                         logger.critical(
+#                             "Failed to determine PV-T reduced thermal model."
+#                         )
+#                         raise
+#                 logger.info(
+#                     "Successfully read PV-T reduced thermal model from local source."
+#                 )
 
-            else:
-                logger.info(
-                    "Successfully read PV-T reduced thermal model from installed package "
-                    "file."
-                )
+#             else:
+#                 logger.info(
+#                     "Successfully read PV-T reduced thermal model from installed package "
+#                     "file."
+#                 )
 
-            logger.info("PV-T reduced thermal model file successfully read.")
+#             logger.info("PV-T reduced thermal model file successfully read.")
 
-            # Read the electric model.
-            logger.info(
-                "Attempting to read PV-T reduced electric model from installed package info."
-            )
-            try:
-                # Attempt to read the electric model file as per CLOVER being an installed
-                # package.
-                electric_model: Lasso | None = pickle.load(
-                    pkgutil.get_data(  # type: ignore
-                        PACKAGE_NAME, ELECTRIC_MODEL_FILE.format(model_type.value)
-                    )
-                )
-            except (AttributeError, FileNotFoundError, TypeError):
-                logger.info("Failed to read data as if package was installed.")
+#             # Read the electric model.
+#             logger.info(
+#                 "Attempting to read PV-T reduced electric model from installed package info."
+#             )
+#             try:
+#                 # Attempt to read the electric model file as per CLOVER being an installed
+#                 # package.
+#                 electric_model: Lasso | None = pickle.load(
+#                     pkgutil.get_data(  # type: ignore
+#                         PACKAGE_NAME, ELECTRIC_MODEL_FILE.format(model_type.value)
+#                     )
+#                 )
+#             except (AttributeError, FileNotFoundError, TypeError):
+#                 logger.info("Failed to read data as if package was installed.")
 
-                # Attempt to read the electric model from raw source information.
-                logger.info(
-                    "Attempting to read PV-T reduced electric model from raw source file."
-                )
-                if debug:
-                    try:
-                        with open(
-                            os.path.join(
-                                RAW_CLOVER_PATH,
-                                ELECTRIC_MODEL_FAST_FILE.format(model_type.value),
-                            ),
-                            "rb",
-                        ) as f:
-                            electric_model = pickle.load(f)
-                    except Exception:
-                        logger.error(
-                            "Failed to read fast PV-T reduced electric model from raw "
-                            "source."
-                        )
-                        logger.critical(
-                            "Failed to determine PV-T reduced electric model."
-                        )
-                        raise
-                else:
-                    try:
-                        with open(
-                            os.path.join(
-                                RAW_CLOVER_PATH,
-                                ELECTRIC_MODEL_FILE.format(model_type.value),
-                            ),
-                            "rb",
-                        ) as f:
-                            electric_model = pickle.load(f)
-                    except Exception:
-                        logger.error(
-                            "Failed to read PV-T reduced electric model from raw source."
-                        )
-                        logger.critical(
-                            "Failed to determine PV-T reduced electric model."
-                        )
-                        raise
+#                 # Attempt to read the electric model from raw source information.
+#                 logger.info(
+#                     "Attempting to read PV-T reduced electric model from raw source file."
+#                 )
+#                 if debug:
+#                     try:
+#                         with open(
+#                             os.path.join(
+#                                 RAW_CLOVER_PATH,
+#                                 ELECTRIC_MODEL_FAST_FILE.format(model_type.value),
+#                             ),
+#                             "rb",
+#                         ) as f:
+#                             electric_model = pickle.load(f)
+#                     except Exception:
+#                         logger.error(
+#                             "Failed to read fast PV-T reduced electric model from raw "
+#                             "source."
+#                         )
+#                         logger.critical(
+#                             "Failed to determine PV-T reduced electric model."
+#                         )
+#                         raise
+#                 else:
+#                     try:
+#                         with open(
+#                             os.path.join(
+#                                 RAW_CLOVER_PATH,
+#                                 ELECTRIC_MODEL_FILE.format(model_type.value),
+#                             ),
+#                             "rb",
+#                         ) as f:
+#                             electric_model = pickle.load(f)
+#                     except Exception:
+#                         logger.error(
+#                             "Failed to read PV-T reduced electric model from raw source."
+#                         )
+#                         logger.critical(
+#                             "Failed to determine PV-T reduced electric model."
+#                         )
+#                         raise
 
-                logger.info(
-                    "Successfully read %s PV-T reduced electric model from local "
-                    "source.",
-                    model_type.value,
-                )
+#                 logger.info(
+#                     "Successfully read %s PV-T reduced electric model from local "
+#                     "source.",
+#                     model_type.value,
+#                 )
 
-                thermal_models[model_type] = thermal_model
-                electric_models[model_type] = electric_model
+#                 thermal_models[model_type] = thermal_model
+#                 electric_models[model_type] = electric_model
 
-            else:
-                logger.info(
-                    "Successfully read PV-T reduced electric model from installed package file."
-                )
+#             else:
+#                 logger.info(
+#                     "Successfully read PV-T reduced electric model from installed package file."
+#                 )
 
-            logger.info("PV-T reduced electric model file successfully read.")
+#             logger.info("PV-T reduced electric model file successfully read.")
 
-    return electric_models, thermal_models
+#     return electric_models, thermal_models
 
 
 def parse_scenario_inputs(
@@ -1451,10 +1449,11 @@ def _parse_solar_inputs(  # pylint: disable=too-many-locals, too-many-statements
         if panel_input["type"] == solar.SolarPanelType.PV.value:
             solar_panels.append(solar.PVPanel.from_dict(logger, panel_input))
 
-    # Parse the PV-T models if relevant for the code flow.
-    electric_models, thermal_models = _parse_pvt_reduced_models(
-        debug, logger, scenarios
-    )
+    # # Parse the PV-T models if relevant for the code flow.
+    # electric_models, thermal_models = _parse_pvt_reduced_models(
+    #     debug, logger, scenarios
+    # )
+    electric_models, thermal_models = None, None
 
     # Parse the PV-T panel information
     for panel_input in solar_generation_inputs["panels"]:

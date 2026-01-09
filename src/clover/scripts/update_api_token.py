@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/python3.10
 ########################################################################################
 # update_api_token.py - Script for updating API tokens in locations.                   #
 #                                                                                      #
