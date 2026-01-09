@@ -127,6 +127,27 @@ SIMULATION_PLOTS_DIRECTORY: str = "simulation_{simulation_number}_plots"
 #   seaborn-whitegrid
 #   tableau-colorblind10
 
+# Hatches:
+#   The list of hatches to use.
+HATCHES: list[str] = ["/", "\\", "|", "-", "+", "x", "o", "O", ".", "*"]
+
+
+def _hatch_from_index(index: int) -> "str":
+    """
+    Return the hatching from an index.
+
+    Inputs:
+        - index:
+            The index to use for the hatching.
+
+
+    Outputs:
+        The hatching string.
+
+    """
+
+    return HATCHES[index % len(HATCHES)]
+
 
 def get_key_results(
     grid_input_profile: pd.DataFrame,
