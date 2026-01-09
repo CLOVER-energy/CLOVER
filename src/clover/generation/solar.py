@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/python3.10
 ########################################################################################
 # solar.py - Solar generation module  .                                                #
 #                                                                                      #
@@ -24,8 +24,6 @@ from logging import Logger
 from typing import Any
 
 import pandas as pd  # pylint: disable=import-error
-
-from sklearn.linear_model._coordinate_descent import Lasso
 
 from ..__utils__ import (
     BColours,
@@ -497,11 +495,11 @@ class HybridPVTPanel(SolarPanel, panel_type=SolarPanelType.PV_T):
 
     def __init__(
         self,
-        electric_models: dict[RegressorType, Lasso] | None,
+        electric_models: dict[RegressorType, Any] | None,
         logger: Logger,
         solar_inputs: dict[str, Any],
         solar_panels: list[SolarPanel],
-        thermal_models: dict[RegressorType, Lasso] | None,
+        thermal_models: dict[RegressorType, Any] | None,
     ) -> None:
         """
         Instantiate a :class:`HybridPVTPanel` instance based on the input data.

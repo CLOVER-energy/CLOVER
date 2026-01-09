@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/python3.10
 # type: ignore
 ########################################################################################
 # analysis.py - In-built analysis module for CLOVER.                                   #

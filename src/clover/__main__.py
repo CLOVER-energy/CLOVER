@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/python3.10
 ########################################################################################
 # __main__.py - Main module for CLOVER.                                                #
 #                                                                                      #
@@ -17,7 +17,7 @@ the clover module from the command-line interface.
 
 """
 
-__version__ = "5.3.0b1"
+__version__ = "6.0.0a1"
 
 import collections
 import datetime
@@ -106,9 +106,9 @@ CLOVER_HEADER_STRING = """
 {version_line}
 
                          For more information, contact
-                   Phil Sandwell (philip.sandwell@gmail.com),
+                Ben Winchester (benedict.winchester@gmail.com),
                     Hamish Beath (hamishbeath@outlook.com),
-               or Ben Winchester (benedict.winchester@gmail.com)
+                 or Phil Sandwell (philip.sandwell@gmail.com).
 
 """
 

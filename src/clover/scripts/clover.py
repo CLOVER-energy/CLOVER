@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-#!/usr/bin/python3
+#!/usr/bin/python3.10
 ########################################################################################
 # clover.py - Primary entry point for the CLOVER package.                              #
 #                                                                                      #

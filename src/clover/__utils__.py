@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/python3.10
 ########################################################################################
 # __utils__.py - CLOVER Utility module.                                                #
 #                                                                                      #
@@ -852,15 +852,14 @@ def get_locations_foldername() -> str:
 
     """
 
-    if os.path.isdir(
-        os.path.join(
-            (_old_clover_locations_dir := os.path.expanduser("~")),
-            LOCATIONS_FOLDER_NAME.split("_")[1],
-        )
-    ):
-        return _old_clover_locations_dir
+    os.makedirs(
+        _clover_locations_folderpath := os.path.join(
+            os.path.expanduser("~"), LOCATIONS_FOLDER_NAME
+        ),
+        exist_ok=True,
+    )
 
-    return os.path.join(os.path.expanduser("~"), LOCATIONS_FOLDER_NAME)
+    return _clover_locations_folderpath
 
 
 def get_logger(logger_name: str, verbose: bool = False) -> logging.Logger:

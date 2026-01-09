@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/python3.10
 ########################################################################################
 # test_load.py - Tests for CLOVER's load module of the load component.                 #
 #                                                                                      #

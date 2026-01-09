@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/python3.10
 ########################################################################################
 # __init__.py - Python internals module, used to expose code here.                     #
 #                                                                                      #

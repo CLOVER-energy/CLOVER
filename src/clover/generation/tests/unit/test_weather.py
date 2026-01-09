@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/python3.10
 ########################################################################################
 # test_weather.py - Tests for CLOVER's weather generation module.                      #
 #                                                                                      #
