@@ -121,347 +121,102 @@ class TestHybridPVTPanelPerformance(unittest.TestCase):
 
         self.input_data = {
             "name": "default_pvt",
-            "azimuthal_orientation": 180,
+            "area": 1.876,
+            "azimuthal_orientation": 231,
+            "costs": {"cost": 1022.0},
+            "emissions": {"ghgs": 362.74},
+            "land_use": 1.876,
             "lifetime": 20,
-            "max_mass_flow_rate": 7.37,
-            "min_mass_flow_rate": 7.37,
-            "pv": "default_pv",
-            "pv_unit": 0.2,
-            "reference_efficiency": 0.125,
-            "reference_temperature": 25,
-            "thermal_coefficient": 0.0053,
-            "tilt": 29,
+            "max_mass_flow_rate": None,
+            "min_mass_flow_rate": 0.0,
+            "nominal_mass_flow_rate": 60.0,
+            "pv_module_characteristics": {
+                "nominal_power": 0.4,
+                "reference_efficiency": 0.213,
+                "reference_temperature": 25.0,
+                "thermal_coefficient": 0.0034,
+            },
+            "stagnation_temperature": 90.0,
+            "thermal_performance_curve": {
+                "zeroth_order": 0.621,
+                "first_order": -7.4,
+                "second_order": 0.0,
+            },
+            "tilt": 15,
             "type": "pv_t",
-            "costs": {
-                "cost": 500,
-                "cost_decrease": 5,
-                "installation_cost": 100,
-                "installation_cost_decrease": 0,
-                "o&m": 5,
-            },
-            "emissions": {
-                "ghgs": 3000,
-                "ghg_decrease": 5,
-                "installation_ghgs": 50,
-                "installation_ghg_decrease": 0,
-                "o&m": 5,
-            },
         }
 
         # Set up required mocks for instantiation.
-        self.ambient_temperature = 40
-        self.electric_models = {
-            regressor_type: mock.Mock() for regressor_type in RegressorType
-        }
+        self.ambient_temperature = 313
+        self.input_temperature = 303
+        self.irradiance = 1000
         self.mass_flow_rate = 15
         self.test_logger = mock.Mock()
-        self.thermal_models = {
-            regressor_type: mock.Mock() for regressor_type in RegressorType
-        }
-
-        solar_panel = mock.Mock()
-        solar_panel.name = self.input_data["pv"]
-        solar_panel.reference_efficiency = 0.125
-        solar_panel.panel_type = SolarPanelType.PV
-        self.solar_panels = [solar_panel]
-
         self.wind_speed = 10
 
         # Create the PVT Panel instance.
-        self.pvt_panel = HybridPVTPanel(
-            self.electric_models,
-            self.test_logger,
-            self.input_data,
-            self.solar_panels,  # type: ignore [arg-type]
-            self.thermal_models,
+        self.pvt_collector = HybridPVTPanel.from_dict(
+            (test_logger := mock.Mock()), self.input_data
         )
 
         super().setUp()
 
-    def test_electrical_model_error(self) -> None:
-        """Tests the case where there is an error in the electric calculation."""
+    def test_mainline(self) -> None:
+        """
+        Tests the mainline case.
 
-        # Set up input parameters.
-        input_temperature = LOW_TEMPERATURE_THRESHOLD - 0.1
-        irradiance = LOW_IRRADIANCE_THRESHOLD - 0.1
-        test_exception = Exception("TEST EXCEPTION")
+        The output temperature of the PV-T collector is calculated and then used to
+        compute the efficiency of the collector two ways:
 
-        # Set up electrical and thermal model return values.
-        self.pvt_panel.electric_models[  # type: ignore [index]
-            RegressorType.LOW_IRRADIANCE_LOW_TEMPERATURE
-        ].predict.side_effect = test_exception
+            eta = eta_0
+                + c_1 * (T_c - T_amb) / G
+                + c_2 * (T_c - T_amb) ** 2 / G ,                        (1)
 
-        # Call the calculation method.
-        with self.assertRaises(Exception) as e:
-            self.pvt_panel.calculate_performance(
-                self.ambient_temperature,
-                HEAT_CAPACITY_OF_WATER,
-                input_temperature,
-                self.test_logger,
-                self.mass_flow_rate,
-                irradiance,
-                self.wind_speed,
-            )
+            eta = m_htf * c_htf * (T_out - T_in) / (A * G) .            (2)
 
-        self.assertEqual(e.exception, test_exception)
-        self.test_logger.error.assert_called_once_with(
-            "Error attempting to predict electric efficiency of the PV-T collector: %s",
-            str(e.exception),
-        )
+        Tests that the electrical efficiency is calculated also based on the average
+        temperature of the collector.
 
-    def test_low_irradiance_low_temperature(self) -> None:
-        """Tests the case with low irradiance and low temperature."""
+        """
 
-        # Set up input parameters.
-        electrical_efficiency = 0.15
-        input_temperature = LOW_TEMPERATURE_THRESHOLD - 0.1
-        irradiance = LOW_IRRADIANCE_THRESHOLD - 0.1
-        output_temperature = 80
-
-        # Set up electrical and thermal model return values.
-        self.pvt_panel.electric_models[  # type: ignore [index]
-            RegressorType.LOW_IRRADIANCE_LOW_TEMPERATURE
-        ].predict.return_value = electrical_efficiency
-        self.pvt_panel.thermal_models[  # type: ignore [index]
-            RegressorType.LOW_IRRADIANCE_LOW_TEMPERATURE
-        ].predict.return_value = output_temperature
-
-        # Call the calculation method.
         (
-            calculated_fractional_electrical_performance,
-            calculated_output_temperature,
-        ) = self.pvt_panel.calculate_performance(
+            electrical_efficiency,
+            output_temperature,
+            reduced_temperature,
+            thermal_efficiency,
+        ) = self.pvt_collector.calculate_performance(
             self.ambient_temperature,
-            HEAT_CAPACITY_OF_WATER,
-            input_temperature,
             self.test_logger,
-            self.mass_flow_rate,
-            irradiance,
-            self.wind_speed,
-        )
-
-        # Type-check the results
-        self.assertIsInstance(electrical_efficiency, float)
-
-        # Assert the calculation was correct.
-        expected_fractional_electrical_performance = (
-            electrical_efficiency / self.pvt_panel.pv_layer.reference_efficiency  # type: ignore [operator]
-        ) * (irradiance / REFERENCE_SOLAR_IRRADIANCE)
-        self.assertEqual(
-            expected_fractional_electrical_performance,
-            calculated_fractional_electrical_performance,
-        )
-        self.assertEqual(output_temperature, calculated_output_temperature)
-
-    def test_low_irradiance_high_temperature(self) -> None:
-        """Tests the case with low irradiance and high temperature."""
-
-        # Set up input parameters.
-        electrical_efficiency = 0.15
-        input_temperature = LOW_TEMPERATURE_THRESHOLD
-        irradiance = LOW_IRRADIANCE_THRESHOLD - 0.1
-        output_temperature = 80
-
-        # Set up electrical and thermal model return values.
-        self.pvt_panel.electric_models[  # type: ignore [index]
-            RegressorType.LOW_IRRADIANCE_HIGH_TEMPERATURE
-        ].predict.return_value = electrical_efficiency
-        self.pvt_panel.thermal_models[  # type: ignore [index]
-            RegressorType.LOW_IRRADIANCE_HIGH_TEMPERATURE
-        ].predict.return_value = output_temperature
-
-        # Call the calculation method.
-        (
-            calculated_fractional_electrical_performance,
-            calculated_output_temperature,
-        ) = self.pvt_panel.calculate_performance(
-            self.ambient_temperature,
+            self.irradiance,
             HEAT_CAPACITY_OF_WATER,
-            input_temperature,
-            self.test_logger,
+            self.input_temperature,
             self.mass_flow_rate,
-            irradiance,
-            self.wind_speed,
-        )
-
-        # Type-check the returned variables
-        self.assertIsInstance(calculated_fractional_electrical_performance, float)
-        self.assertIsInstance(calculated_output_temperature, float)
-
-        # Assert the calculation was correct.
-        expected_fractional_electrical_performance = (
-            electrical_efficiency / self.pvt_panel.pv_layer.reference_efficiency  # type: ignore [operator]
-        ) * (irradiance / REFERENCE_SOLAR_IRRADIANCE)
-        self.assertEqual(
-            expected_fractional_electrical_performance,
-            calculated_fractional_electrical_performance,
-        )
-        self.assertEqual(output_temperature, calculated_output_temperature)
-
-    def test_high_irradiance_low_temperature(self) -> None:
-        """Tests the case with high irradiance and low temperature."""
-
-        # Set up input parameters.
-        electrical_efficiency = 0.15
-        input_temperature = LOW_TEMPERATURE_THRESHOLD - 0.1
-        irradiance = LOW_IRRADIANCE_THRESHOLD
-        output_temperature = 80
-
-        # Set up electrical and thermal model return values.
-        self.pvt_panel.electric_models[  # type: ignore [index]
-            RegressorType.STANDARD_IRRADIANCE_LOW_TEMPERATURE
-        ].predict.return_value = electrical_efficiency
-        self.pvt_panel.thermal_models[  # type: ignore [index]
-            RegressorType.STANDARD_IRRADIANCE_LOW_TEMPERATURE
-        ].predict.return_value = output_temperature
-
-        # Call the calculation method.
-        (
-            calculated_fractional_electrical_performance,
-            calculated_output_temperature,
-        ) = self.pvt_panel.calculate_performance(
-            self.ambient_temperature,
-            HEAT_CAPACITY_OF_WATER,
-            input_temperature,
-            self.test_logger,
-            self.mass_flow_rate,
-            irradiance,
-            self.wind_speed,
-        )
-
-        # Type-check the returned variables
-        self.assertIsInstance(calculated_fractional_electrical_performance, float)
-        self.assertIsInstance(calculated_output_temperature, float)
-
-        # Assert the calculation was correct.
-        expected_fractional_electrical_performance = (
-            electrical_efficiency / self.pvt_panel.pv_layer.reference_efficiency  # type: ignore [operator]
-        ) * (irradiance / REFERENCE_SOLAR_IRRADIANCE)
-        self.assertEqual(
-            expected_fractional_electrical_performance,
-            calculated_fractional_electrical_performance,
-        )
-        self.assertEqual(output_temperature, calculated_output_temperature)
-
-    def test_high_irradiance_high_temperature(self) -> None:
-        """Tests the case with high irradiance and high temperature."""
-
-        # Set up input parameters.
-        electrical_efficiency = 0.15
-        input_temperature = LOW_TEMPERATURE_THRESHOLD
-        irradiance = LOW_IRRADIANCE_THRESHOLD
-        output_temperature = 80
-
-        # Set up electrical and thermal model return values.
-        self.pvt_panel.electric_models[  # type: ignore [index]
-            RegressorType.STANDARD_IRRADIANCE_HIGH_TEMPERATURE
-        ].predict.return_value = electrical_efficiency
-        self.pvt_panel.thermal_models[  # type: ignore [index]
-            RegressorType.STANDARD_IRRADIANCE_HIGH_TEMPERATURE
-        ].predict.return_value = output_temperature
-
-        # Call the calculation method.
-        (
-            calculated_fractional_electrical_performance,
-            calculated_output_temperature,
-        ) = self.pvt_panel.calculate_performance(
-            self.ambient_temperature,
-            HEAT_CAPACITY_OF_WATER,
-            input_temperature,
-            self.test_logger,
-            self.mass_flow_rate,
-            irradiance,
             self.wind_speed,
         )
 
         # Type-check the outputs
-        self.assertIsInstance(calculated_fractional_electrical_performance, float)
-        self.assertIsInstance(calculated_output_temperature, float)
+        self.assertIsInstance(output_temperature, float)
 
-        # Assert the calculation was correct.
-        expected_fractional_electrical_performance = (
-            electrical_efficiency / self.pvt_panel.pv_layer.reference_efficiency  # type: ignore [operator]
-        ) * (irradiance / REFERENCE_SOLAR_IRRADIANCE)
+        # Compute the efficiency two ways and check that these are equal.
+        collector_temperature = 0.5 * (self.input_temperature + output_temperature)  # type: ignore [operator]
+        efficiency_by_equation = (
+            self.pvt_collector.thermal_performance_curve.eta_0
+            + self.pvt_collector.thermal_performance_curve.c_1
+            * (collector_temperature - self.ambient_temperature)
+            / self.irradiance
+            + self.pvt_collector.thermal_performance_curve.c_2
+            * (collector_temperature - self.ambient_temperature) ** 2
+            / self.irradiance
+        )
+        efficiency_by_output: float = (
+            (self.mass_flow_rate)
+            * HEAT_CAPACITY_OF_WATER
+            * (output_temperature - self.input_temperature)  # type: ignore [operator]
+        ) / (self.pvt_collector.area * self.irradiance)
+
+        self.assertEqual(round(thermal_efficiency, 8), round(efficiency_by_equation, 8))
         self.assertEqual(
-            expected_fractional_electrical_performance,
-            calculated_fractional_electrical_performance,
-        )
-        self.assertEqual(output_temperature, calculated_output_temperature)
-
-    def test_no_electric_models(self) -> None:
-        """Tests the case where there are no electric models on the instance."""
-
-        self.pvt_panel.electric_models = None
-        with self.assertRaises(ProgrammerJudgementFault):
-            self.pvt_panel.calculate_performance(
-                self.ambient_temperature,
-                HEAT_CAPACITY_OF_WATER,
-                mock.MagicMock(),  # type: ignore [arg-type]
-                self.test_logger,
-                self.mass_flow_rate,
-                mock.MagicMock(),  # type: ignore [arg-type]
-                self.wind_speed,
-            )
-
-        self.test_logger.error.assert_called_once_with(
-            "%sThe PV-T instance does not have well-defined and loaded models.%s",
-            BColours.fail,
-            BColours.endc,
-        )
-
-    def test_no_thermal_models(self) -> None:
-        """Tests the case where there are no thermal models on the instance."""
-
-        self.pvt_panel.thermal_models = None
-        with self.assertRaises(ProgrammerJudgementFault):
-            self.pvt_panel.calculate_performance(
-                self.ambient_temperature,
-                HEAT_CAPACITY_OF_WATER,
-                mock.MagicMock(),  # type: ignore [arg-type]
-                self.test_logger,
-                self.mass_flow_rate,
-                mock.MagicMock(),  # type: ignore [arg-type]
-                self.wind_speed,
-            )
-
-        self.test_logger.error.assert_called_once_with(
-            "%sThe PV-T instance does not have well-defined and loaded models.%s",
-            BColours.fail,
-            BColours.endc,
-        )
-
-    def test_thermal_model_error(self) -> None:
-        """Tests the case where the thermal model throws and error."""
-
-        # Set up input parameters.
-        input_temperature = LOW_TEMPERATURE_THRESHOLD - 0.1
-        irradiance = LOW_IRRADIANCE_THRESHOLD - 0.1
-        test_exception = Exception("TEST EXCEPTION")
-
-        # Set up electrical and thermal model return values.
-        self.pvt_panel.electric_models[  # type: ignore [index]
-            RegressorType.LOW_IRRADIANCE_LOW_TEMPERATURE
-        ].predict.return_value = 0
-        self.pvt_panel.thermal_models[  # type: ignore [index]
-            RegressorType.LOW_IRRADIANCE_LOW_TEMPERATURE
-        ].predict.side_effect = test_exception
-
-        # Call the calculation method.
-        with self.assertRaises(Exception) as e:
-            self.pvt_panel.calculate_performance(
-                self.ambient_temperature,
-                HEAT_CAPACITY_OF_WATER,
-                input_temperature,
-                self.test_logger,
-                self.mass_flow_rate,
-                irradiance,
-                self.wind_speed,
-            )
-
-        self.assertEqual(e.exception, test_exception)
-        self.test_logger.error.assert_called_once_with(
-            "Error attempting to predict electric efficiency of the PV-T collector: %s",
-            str(e.exception),
+            round(efficiency_by_equation, 8), round(efficiency_by_output, 8)
         )
 
 
@@ -545,6 +300,7 @@ class TestSolarThermalPanelPerformance(unittest.TestCase):
                 self.wind_speed,
             )
         )
+
         # Type-check the outputs
         self.assertIsInstance(output_temperature, float)
 
