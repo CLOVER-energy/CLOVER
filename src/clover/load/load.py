@@ -776,16 +776,18 @@ def process_device_hourly_power(
             device_load = (
                 hourly_device_usage
                 * device.electric_power
-                * _normalised_linear_population_hourly(
+            )
+            if location.final_community_size is not None:
+                device_load *= _normalised_linear_population_hourly(
                     initial_community_size=location.community_size,
                     final_community_size=location.final_community_size,
                     num_growth_years=simulation.end_year - simulation.start_year,
                     num_years_total=location.max_years,
                 )
-            )
             logger.info(
                 "Electric hourly power usage for %s successfully computed.", device.name
             )
+
         elif resource_type == ResourceType.CLEAN_WATER:
             if device.clean_water_usage is None:
                 raise InternalError(
@@ -796,6 +798,7 @@ def process_device_hourly_power(
 
             device_load = hourly_device_usage * device.clean_water_usage
             logger.info("Water usage for %s successfully computed.", device.name)
+
         elif resource_type == ResourceType.HOT_CLEAN_WATER:
             if device.hot_water_usage is None:
                 raise InternalError(
@@ -805,6 +808,7 @@ def process_device_hourly_power(
                 )
 
             device_load = hourly_device_usage * device.hot_water_usage
+
         else:
             logger.error(
                 "%sUnsuported load type used: %s%s",
