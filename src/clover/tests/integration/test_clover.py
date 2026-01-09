@@ -512,8 +512,8 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
             info_file_data["simulation_1"]["initial_storage_size"], initial_storage_size
         )
 
-    @unittest.skip("Work in progress")
-    # @pytest.mark.integtest
+    # @unittest.skip("Work in progress")
+    @pytest.mark.integtest
     def test_grid_prioritise_diesel_grid_pv_and_storage(self):
         """
         Tests the case with diesel, grid, PV and storage.
@@ -1135,7 +1135,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
         )
 
     @pytest.mark.integtest
-    def test_self_prioritise_diesel_grid_pv_and_storage(self):
+    def test_self_consume_diesel_grid_pv_and_storage(self):
         """
         Tests the case with diesel, grid, PV and storage.
 
@@ -1177,7 +1177,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
         )
 
     @pytest.mark.integtest
-    def test_self_prioritise_diesel_grid_and_pv(self):
+    def test_self_consume_diesel_grid_and_pv(self):
         """
         Tests the case with diesel, grid and PV.
 
@@ -1217,7 +1217,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
         )
 
     @pytest.mark.integtest
-    def test_self_prioritise_diesel_grid_and_storage(self):
+    def test_self_consume_diesel_grid_and_storage(self):
         """
         Tests the case with diesel, grid and storage.
 
@@ -1257,7 +1257,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
         )
 
     @pytest.mark.integtest
-    def test_self_prioritise_diesel_and_grid(self):
+    def test_self_consume_diesel_and_grid(self):
         """
         Tests the case with diesel and grid.
 
@@ -1295,7 +1295,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
         )
 
     @pytest.mark.integtest
-    def test_self_prioritise_diesel_pv_and_storage(self):
+    def test_self_consume_diesel_pv_and_storage(self):
         """
         Tests the case with diesel, PV and storage.
 
@@ -1337,7 +1337,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
         )
 
     @pytest.mark.integtest
-    def test_self_prioritise_diesel_and_pv(self):
+    def test_self_consume_diesel_and_pv(self):
         """
         Tests the case with diesel and PV.
 
@@ -1377,7 +1377,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
         )
 
     @pytest.mark.integtest
-    def test_self_prioritise_diesel_and_storage(self):
+    def test_self_consume_diesel_and_storage(self):
         """
         Tests the case with diesel and storage.
 
@@ -1417,7 +1417,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
         )
 
     @pytest.mark.integtest
-    def test_self_prioritise_diesel_only(self):
+    def test_self_consume_diesel_only(self):
         """
         Tests the case with diesel only.
 
@@ -1455,7 +1455,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
         )
 
     @pytest.mark.integtest
-    def test_self_prioritise_grid_pv_and_storage(self):
+    def test_self_consume_grid_pv_and_storage(self):
         """
         Tests the case with grid, PV and storage.
 
@@ -1497,7 +1497,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
         )
 
     @pytest.mark.integtest
-    def test_self_prioritise_grid_and_pv(self):
+    def test_self_consume_grid_and_pv(self):
         """
         Tests the case with grid and PV.
 
@@ -1537,7 +1537,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
         )
 
     @pytest.mark.integtest
-    def test_self_prioritise_grid_and_storage(self):
+    def test_self_consume_grid_and_storage(self):
         """
         Tests the case with grid and storage.
 
@@ -1577,7 +1577,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
         )
 
     @pytest.mark.integtest
-    def test_self_prioritise_grid_only(self):
+    def test_self_consume_grid_only(self):
         """
         Tests the case with only grid.
 
@@ -1615,7 +1615,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
         )
 
     @pytest.mark.integtest
-    def test_self_prioritise_pv_and_storage(self):
+    def test_self_consume_pv_and_storage(self):
         """
         Tests the case with PV and storage.
 
@@ -1658,7 +1658,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
         )
 
     @pytest.mark.integtest
-    def test_self_prioritise_pv_only(self):
+    def test_self_consume_pv_only(self):
         """
         Tests the case with only PV.
 
@@ -1698,7 +1698,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
         )
 
     @pytest.mark.integtest
-    def test_self_prioritise_storage_only(self):
+    def test_self_consume_storage_only(self):
         """
         Tests the case with only storage.
 
@@ -1739,7 +1739,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
 
     # @unittest.skip("No need to test scenario with no power generation sources.")
     @pytest.mark.integtest
-    def test_self_prioritise_no_diesel_no_grid_no_pv_no_storage(self):
+    def test_self_consume_no_diesel_no_grid_no_pv_no_storage(self):
         """
         Tests the case with diesel, grid, PV and storage.
 
