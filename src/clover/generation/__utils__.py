@@ -544,6 +544,10 @@ class BaseRenewablesNinjaThread(threading.Thread):
                 "Error occured in profile fetching. See %s for details.",
                 f"{os.path.join('logs', self.logger_name)}.log",
             )
+            try:
+                self.logger.info(str(data))
+            except NameError:
+                pass
             raise
 
 
