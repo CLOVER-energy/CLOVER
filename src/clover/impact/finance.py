@@ -43,15 +43,23 @@ from ..__utils__ import (
 from ..conversion.conversion import Converter, converter_cost
 
 __all__ = (
+    "CAPACITY_COST",
+    "CONNECTION_COST",
     "connections_expenditure",
+    "COST",
+    "COST_DECREASE",
     "COSTS",
     "diesel_fuel_expenditure",
+    "DISCOUNT_RATE",
     "discounted_energy_total",
     "discounted_equipment_cost",
     "expenditure",
+    "FIXED_COST",
+    "GENERAL_OM",
     "get_total_equipment_costs",
     "ImpactingComponent",
     "independent_expenditure",
+    "OM",
     "total_om",
 )
 
