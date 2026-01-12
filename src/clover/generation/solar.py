@@ -195,6 +195,22 @@ class PerformanceCurve:
     second_order_coefficient: float
 
     @property
+    def as_dict(self) -> dict[str, float]:
+        """
+        Return the representation of the :class:`PerformanceCurve` instance as a `dict`.
+
+        Outputs:
+            A `dict` representing the class.
+
+        """
+
+        return {
+            ZEROTH_ORDER: self.zeroth_order_coefficient,
+            FIRST_ORDER: self.first_order_coefficient,
+            SECOND_ORDER: self.second_order_coefficient,
+        }
+
+    @property
     def eta_0(self) -> float:
         """
         Wrapper around the zeroth-order coefficient.
@@ -1702,6 +1718,35 @@ class PVPanel(SolarPanel, panel_type=SolarPanelType.PV):
         self.thermal_coefficient: float = thermal_coefficient
 
     @property
+    def as_dict(self) -> dict[str, Any]:
+        """
+        Return a dictionary based on the panel information.
+
+        Outputs:
+            - A mapping containing the input information based on the panel.
+
+        """
+
+        return {
+            "type": self.panel_type.value,
+            # General parameters
+            "area": self.area,
+            "azimuthal_orientation": self.azimuthal_orientation,
+            "land_use": self.land_use,
+            "lifetime": self.lifetime,
+            "name": self.name,
+            "tilt": self.tilt,
+            "tracking": self.tracking.as_string,
+            # PV-specific parameters
+            "absorptivity": self.absorptivity,
+            "emissivity": self.emissivity,
+            "pv_unit": self.pv_unit,
+            "reference_efficiency": self.reference_efficiency,
+            "reference_temperature": self.reference_temperature,
+            "thermal_coefficient": self.thermal_coefficient,
+        }
+
+    @property
     def pv_unit_overrided(self) -> bool:
         """
         Return if the PV unit variable has been overrided.
@@ -1994,6 +2039,40 @@ class HybridPVTPanel(SolarPanel, panel_type=SolarPanelType.PV_T):
             pv_module_characteristics
         )
         self.thermal_performance_curve: PerformanceCurve = thermal_performance_curve
+
+    @property
+    def as_dict(self) -> dict[str, Any]:
+        """
+        Return a dictionary based on the panel information.
+
+        Outputs:
+            - A mapping containing the input information based on the panel.
+
+        """
+
+        pvt_panel_dict: dict[str, Any] = {
+            "type": self.panel_type.value,
+            # General parameters
+            "area": self.area,
+            "azimuthal_orientation": self.azimuthal_orientation,
+            "land_use": self.land_use,
+            "lifetime": self.lifetime,
+            "name": self.name,
+            "tilt": self.tilt,
+            "tracking": self.tracking.as_string,
+            # PV-T-specific parameters
+            MAX_MASS_FLOW_RATE: self._max_mass_flow_rate,
+            MIN_MASS_FLOW_RATE: self._min_mass_flow_rate,
+            PV_MODULE_CHARACTERISTICS: self.pv_module_characteristics,
+            THERMAL_PERFORMANCE_CURVE: self.thermal_performance_curve.as_dict,
+        }
+
+        if self.electric_performance_curve is not None:
+            pvt_panel_dict[ELECTRIC_PERFORMANCE_CURVE] = (
+                self.electric_performance_curve.as_dict
+            )
+
+        return pvt_panel_dict
 
     @property
     def max_mass_flow_rate(self) -> float | None:
@@ -2387,6 +2466,34 @@ class SolarThermalPanel(SolarPanel, panel_type=SolarPanelType.SOLAR_THERMAL):
         )
         self._stagnation_temperature: float = solar_inputs[STAGNATION_TEMPERATURE]
         self.thermal_performance_curve: PerformanceCurve = performance_curve
+
+    @property
+    def as_dict(self) -> dict[str, Any]:
+        """
+        Return a dictionary based on the panel information.
+
+        Outputs:
+            - A mapping containing the input information based on the panel.
+
+        """
+
+        return {
+            "type": self.panel_type.value,
+            # General parameters
+            "area": self.area,
+            "azimuthal_orientation": self.azimuthal_orientation,
+            "land_use": self.land_use,
+            "lifetime": self.lifetime,
+            "name": self.name,
+            "tilt": self.tilt,
+            "tracking": self.tracking.as_string,
+            # Solar thermal--specific parameters
+            MAX_MASS_FLOW_RATE: self._max_mass_flow_rate,
+            MIN_MASS_FLOW_RATE: self._min_mass_flow_rate,
+            NOMINAL_MASS_FLOW_RATE: self._nominal_mass_flow_rate,
+            STAGNATION_TEMPERATURE: self._stagnation_temperature,
+            THERMAL_PERFORMANCE_CURVE: self.thermal_performance_curve.as_dict,
+        }
 
     @property
     def max_mass_flow_rate(self) -> float:
