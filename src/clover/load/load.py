@@ -475,16 +475,22 @@ def _number_of_devices_daily(
             "Calculating ownership for device %s.",
             device.name,
         )
-        population_growth_rate = _linear_population_hourly(
-            initial_community_size=location.community_size,
-            final_community_size=location.final_community_size,
-            num_growth_years=simulation.end_year - simulation.start_year,
-        )
-        population_growth_rate = _population_growth_daily(
-            location.community_growth_rate,
-            location.community_size,
-            location.max_years,
-        )
+
+        # Use the final-population parameters if provided.
+        if location.final_community_size is not None:
+            population_growth_rate = _linear_population_hourly(
+                initial_community_size=location.community_size,
+                final_community_size=location.final_community_size,
+                num_growth_years=simulation.end_year - simulation.start_year,
+            )
+        else:
+            population_growth_rate = _population_growth_daily(
+                location.community_growth_rate,
+                location.community_size,
+                location.max_years,
+            )
+
+        # Compute the growth rate in device demand.
         if device.final_ownership != device.initial_ownership:
             logger.info(
                 "%s ownership changes over time, calculating.",
