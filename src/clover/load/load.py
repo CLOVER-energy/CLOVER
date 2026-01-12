@@ -700,21 +700,24 @@ def population_hourly(location: Location, simulation: Simulation) -> pd.DataFram
 
     """
 
-    return _linear_population_hourly(
-        initial_community_size=location.community_size,
-        final_community_size=location.final_community_size,
-        num_growth_years=simulation.end_year - simulation.start_year,
-    )
+    # If a final size is provided, then perform a linear calculation.
+    if location.final_community_size is not None:
+        return _linear_population_hourly(
+            initial_community_size=location.community_size,
+            final_community_size=location.final_community_size,
+            num_growth_years=simulation.end_year - simulation.start_year,
+        )
 
-    # growth_rate_hourly = (1 + location.community_growth_rate) ** (
-    #     1 / (24.0 * 365.0)
-    # ) - 1
-    # population = [
-    #     math.floor(location.community_size * (1 + growth_rate_hourly) ** hour)
-    #     for hour in range(0, 365 * 24 * location.max_years)
-    # ]
+    # Otherwise, use CLOVER 4.0 functionality to do a community growth-rate calculation.
+    growth_rate_hourly = (1 + location.community_growth_rate) ** (
+        1 / (24.0 * 365.0)
+    ) - 1
+    population = [
+        math.floor(location.community_size * (1 + growth_rate_hourly) ** hour)
+        for hour in range(0, 365 * 24 * location.max_years)
+    ]
 
-    # return pd.DataFrame(population)
+    return pd.DataFrame(population)
 
 
 def process_device_hourly_power(
@@ -773,10 +776,7 @@ def process_device_hourly_power(
                     f"{BColours.fail}Internal error processing device "
                     + f"'{device.name}', electric power unexpectedly `None`.{BColours.endc}",
                 )
-            device_load = (
-                hourly_device_usage
-                * device.electric_power
-            )
+            device_load = hourly_device_usage * device.electric_power
             if location.final_community_size is not None:
                 device_load *= _normalised_linear_population_hourly(
                     initial_community_size=location.community_size,

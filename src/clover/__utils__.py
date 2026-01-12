@@ -1520,7 +1520,7 @@ class Location:
     max_years: int
     name: str
     time_difference: float
-    final_community_size: int
+    final_community_size: int | None
 
     @classmethod
     def from_dict(cls, location_inputs: dict[str, Any]) -> Any:
@@ -1545,9 +1545,7 @@ class Location:
             location_inputs["max_years"],
             location_inputs["location"],
             location_inputs["time_difference"],
-            location_inputs.get(
-                "final_community_size", location_inputs["community_size"]
-            ),
+            location_inputs.get("final_community_size", None),
         )
 
     @property
