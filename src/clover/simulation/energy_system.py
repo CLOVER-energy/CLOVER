@@ -2276,6 +2276,12 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
                     time_index=t,
                 )
 
+        # Determine the initial and final storage sizes
+        initial_storage_size = float(electric_storage_size * minigrid.battery.storage_unit)
+        final_storage_size = float(
+            initial_storage_size * np.min(battery_health_frame[0])  # type: ignore [call-overload]
+        )
+
     # Process the various outputs into dataframes.
     if energy_deficit is not None and len(energy_deficit) > 0:
         energy_deficit_frame = dict_to_dataframe(energy_deficit, logger)
@@ -2295,12 +2301,6 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
         battery_health_frame = pd.DataFrame([0] * (end_hour - start_hour))
         hourly_battery_storage_frame = pd.DataFrame([0] * (end_hour - start_hour))
         storage_power_supplied_frame = pd.DataFrame([0] * (end_hour - start_hour))
-
-    # Determine the initial and final storage sizes
-    initial_storage_size = float(electric_storage_size * minigrid.battery.storage_unit)
-    final_storage_size = float(
-        initial_storage_size * np.min(battery_health_frame[0])  # type: ignore [call-overload]
-    )
 
     if scenario.desalination_scenario is not None:
         cw_demand_met_by_electric_prioritisation: pd.DataFrame = dict_to_dataframe(
