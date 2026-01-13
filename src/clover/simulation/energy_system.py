@@ -41,6 +41,7 @@ from ..__utils__ import (
     HTFMode,
     InputFileError,
     InternalError,
+    PrioritisationStrategy,
     ProgrammerJudgementFault,
     RenewableEnergySource,
     ResourceType,
@@ -2168,6 +2169,29 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
         storage_power_supplied_frame: pd.DataFrame = pd.DataFrame(
             [float(0)] * (end_hour - start_hour)
         )
+
+        # Utilise energy from the grid as and when appropriate
+        match scenario.prioritisation_strategy:
+            # If consuming self-generated electricity, then, with no storage, energy
+            # should be taken from the national-grid network if available.
+            #
+            # This applies also if storage was working as a solar backup: storage
+            # not being present means that the grid should be discharged. However, this
+            # calculation takes place prior to the storage calculation.
+            case PrioritisationStrategy.SELF_CONSUMPTION:
+                grid_energy = pd.DataFrame(
+                    (-battery_storage_profile[ColumnHeader.STORAGE_PROFILE.value])
+                    .mul(
+                        (grid_profile.iloc[start_hour:end_hour, 0] > 0)
+                        & (
+                            battery_storage_profile[ColumnHeader.STORAGE_PROFILE.value]
+                            < 0
+                        )
+                    )
+                    .iloc[start_hour:end_hour]
+                )
+                grid_energy.columns = pd.Index([ColumnHeader.GRID_ENERGY.value])
+
     # Carry out the itteration if there is some storage involved in the system.
     else:
         # Begin simulation, iterating over timesteps
@@ -2276,8 +2300,13 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
                     time_index=t,
                 )
 
+        # Create a battery-health frame
+        battery_health_frame = pd.DataFrame.from_dict(battery_health, orient="index")
+
         # Determine the initial and final storage sizes
-        initial_storage_size = float(electric_storage_size * minigrid.battery.storage_unit)
+        initial_storage_size = float(
+            electric_storage_size * minigrid.battery.storage_unit
+        )
         final_storage_size = float(
             initial_storage_size * np.min(battery_health_frame[0])  # type: ignore [call-overload]
         )

@@ -116,6 +116,7 @@ def battery_iteration_step(
 
         :returns:
             - The new hourly battery storage;
+
             - Any power which wasn't stored in the batteries or couldn't be discharged.
 
         """
@@ -177,32 +178,22 @@ def battery_iteration_step(
 
             # If the battery storage functions as a backup _only_, such that power
             # should be taken from the grid first if available, then do this.
-            case PrioritisationStrategy.STORAGE_AS_SOLAR_BACKUP:
-                # Take power from the grid network if there is power to be taken.
-                # NOTE: Energy arbitrage could be coded up here.
-                grid_energy.iloc[time_index, 0] += (
-                    grid_power_consumed := -min(energy_generation_or_load_deficit, 0)
-                    * grid_profile.iloc[time_index, 0]
-                )
-                energy_generation_or_load_deficit += grid_power_consumed
-
-                # Then, if there is still unmet demand (such that the grid was not
-                # available), discharge the batteries.
-                # Similarly, if there is surplus power from the on-site solar, then
-                # charge the batteries by this amout.
-                new_hourly_battery_storage, remaining_energy_balance = (
-                    _charge_or_discharge(energy_generation_or_load_deficit)
-                )
-
+            # Power would have been taken from the grid if available when the storage
+            # profile was calculated before the iteration step. As such, power only
+            # needs to be charged or discharged if any remains.
+            # As such, if there is still unmet demand (such that the grid was not
+            # available), discharge the batteries.
+            # Similarly, if there is surplus power from the on-site solar, then
+            # charge the batteries by this amout.
+            #
             # If consuming from the grid, and storage is utilised to meet unmet demand but
             # is not topped up to function as an emergency backup, then power should be
             # taken from the storage if required but, if the grid is available, the storage
             # should not be charged up from the grid.
-            case PrioritisationStrategy.GRID_PRIORITISATION:
-                # If there is a deficit, and power needs to be met, then discharge as
-                # power would already have been taken from the grid if available.
-                # If there is surplus solar generation, then store this in the
-                # batteries.
+            case (
+                PrioritisationStrategy.STORAGE_AS_SOLAR_BACKUP
+                | PrioritisationStrategy.GRID_PRIORITISATION
+            ):
                 new_hourly_battery_storage, remaining_energy_balance = (
                     _charge_or_discharge(energy_generation_or_load_deficit)
                 )
@@ -220,19 +211,21 @@ def battery_iteration_step(
                 )
 
                 # Otherwise, the batteries should be fully charged if the grid is
-                # available.
+                # available, subject to the c-rates.
                 grid_energy.iloc[time_index, 0] += (
                     grid_power_consumed := min(
-                        (battery.capacity - new_hourly_battery_storage),
+                        (new_hourly_battery_storage - new_hourly_battery_storage),
                         (
                             battery.charge_rate
-                            * (maximum_battery_storage - minimum_battery_storage),
+                            * (maximum_battery_storage - minimum_battery_storage)
                         ),
                     )
                     * grid_profile.iloc[time_index, 0]
                 )
+                new_hourly_battery_storage += grid_power_consumed
 
     excess_energy = max(new_hourly_battery_storage - maximum_battery_storage, 0.0)
+    new_hourly_battery_storage -= excess_energy
 
     return (
         energy_generation_or_load_deficit,
@@ -809,7 +802,7 @@ def get_electric_battery_storage_profile(  # pylint: disable=too-many-locals, to
         sum(renewables_energy_map.values())  # type: ignore
     )
 
-    # Check for self-generation prioritisation
+    # Check the prioritisation strategy
     match scenario.prioritisation_strategy:
         case (
             PrioritisationStrategy.SELF_CONSUMPTION
@@ -824,22 +817,30 @@ def get_electric_battery_storage_profile(  # pylint: disable=too-many-locals, to
                 + (remaining_profile < 0) * renewables_energy.values  # type: ignore [operator]
             )
 
+            # In the storage-as-solar-backup scenario, the battery storage should only
+            # be utilised if the grid is not available.
             if (
                 scenario.prioritisation_strategy
                 == PrioritisationStrategy.STORAGE_AS_SOLAR_BACKUP
                 and scenario.grid
             ):
+                # Compute the power taken from the grid.
                 grid_energy: pd.DataFrame = pd.DataFrame(
                     ((remaining_profile < 0) * remaining_profile)[0]  # type: ignore
                     * -1.0
                     * grid_profile.values
                 )
+
+                # Remove these hours from the "PV - Load" (remaining) profile as demand
+                # in these hours no longer needs to be met from storage.
+                remaining_profile += grid_energy
+
             else:
                 grid_energy = pd.DataFrame([0] * (end_hour - start_hour))
 
             # The profile is the remaining energy
             battery_storage_profile: pd.DataFrame = pd.DataFrame(
-                remaining_profile.values + grid_energy.values
+                remaining_profile.values
             )
 
         case (
