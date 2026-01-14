@@ -539,10 +539,10 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
             average_daily_grid_energy=7.212,  # 7.196
             average_daily_grid_times=9.338,
             average_daily_renewables_energy=3.901,  # 3.893
-            average_daily_storage_energy=7.536,  # 7.52
-            blackouts=0.03,  # 0.029
-            cumulative_cost=41663.851,  # 41641.481
-            cumulative_ghgs=85187.582,  # 84941.765
+            average_daily_storage_energy=7.159,  # 7.52
+            blackouts=0.030,  # 0.029
+            cumulative_cost=41671.696,  # 41641.481
+            cumulative_ghgs=85268.652,  # 84941.765
             cumulative_pv_generation=36685.0,
             diesel_capacity=0.0,
             diesel_times=0.0,
@@ -550,9 +550,9 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
             final_storage_size=21.333,  # 21.34
             initial_pv_size=20.0,
             initial_storage_size=25.0,
-            lcue=1.598,  # 1.601
-            renewables_fraction=0.613,
-            unmet_energy_fraction=0.013,  # 0.031
+            lcue=1.631,  # 1.601
+            renewables_fraction=0.605,  # 0.605
+            unmet_energy_fraction=0.033,  # 0.031
         )
 
     @pytest.mark.integtest
@@ -575,14 +575,14 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
         )
         self._check_output(
             info_file_data,
-            average_daily_diesel=6.611,  # 6.568
+            average_daily_diesel=6.608,  # 6.568
             average_daily_grid_energy=7.212,  # 7.196
             average_daily_grid_times=9.338,
             average_daily_renewables_energy=3.901,  # 3.893
             average_daily_storage_energy=0.0,
             blackouts=0.1,
-            cumulative_cost=36773.061,  # 36765.596
-            cumulative_ghgs=109884.244,  # 109899.46
+            cumulative_cost=36774.941,  # 36765.596
+            cumulative_ghgs=109913.879,  # 109899.46
             cumulative_pv_generation=36685.0,
             diesel_capacity=3.0,
             diesel_times=0.203,  # 0.202
@@ -620,9 +620,9 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
             average_daily_grid_times=9.338,
             average_daily_renewables_energy=0.0,
             average_daily_storage_energy=0.005,
-            blackouts=0.098,  # 0.099
-            cumulative_cost=33397.886,  # 33356.64
-            cumulative_ghgs=42748.178,  # 42639.989
+            blackouts=0.097,  # 0.099
+            cumulative_cost=33395.374,  # 33356.64
+            cumulative_ghgs=42730.908,  # 42639.989
             cumulative_pv_generation=0.0,
             diesel_capacity=3.0,
             diesel_times=0.513,  # 0.511
@@ -695,24 +695,24 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
         )
         self._check_output(
             info_file_data,
-            average_daily_diesel=2.164,  # 2.116
+            average_daily_diesel=2.198,  # 2.116
             average_daily_grid_energy=0.0,
             average_daily_grid_times=0.0,
             average_daily_renewables_energy=5.81,  # 5.801
-            average_daily_storage_energy=9.811,  # 9.807
+            average_daily_storage_energy=9.32,  # 9.807
             blackouts=0.1,
-            cumulative_cost=44796.396,  # 44776.209
-            cumulative_ghgs=96196.331,  # 96155.431
+            cumulative_cost=44817.766,  # 44776.209
+            cumulative_ghgs=96277.372,  # 96155.431
             cumulative_pv_generation=36685.0,
             diesel_capacity=3.0,
-            diesel_times=0.073,  # 0.071
+            diesel_times=0.074,  # 0.071
             final_pv_size=19.0,
             final_storage_size=20.225,  # 20.227
             initial_pv_size=20.0,
             initial_storage_size=25.0,
-            lcue=1.752,  # 1.756
-            renewables_fraction=0.878,  # 0.881
-            unmet_energy_fraction=0.059,  # 0.084
+            lcue=1.801,  # 1.756
+            renewables_fraction=0.873,  # 0.881
+            unmet_energy_fraction=0.083,  # 0.084
         )
 
     @pytest.mark.integtest
@@ -780,9 +780,9 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
             average_daily_grid_times=0.0,
             average_daily_renewables_energy=0.0,
             average_daily_storage_energy=0.006,
-            blackouts=0.099,  # 0.098
-            cumulative_cost=38861.049,  # 38831.366
-            cumulative_ghgs=48306.018,  # 48163.701
+            blackouts=0.098,
+            cumulative_cost=38854.361,  # 38831.366
+            cumulative_ghgs=48260.038,  # 48163.701
             cumulative_pv_generation=0.0,
             diesel_capacity=3.0,
             diesel_times=0.901,
@@ -859,10 +859,10 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
             average_daily_grid_energy=7.212,  # 7.196
             average_daily_grid_times=9.338,
             average_daily_renewables_energy=3.901,  # 3.893
-            average_daily_storage_energy=7.536,  # 7.52
+            average_daily_storage_energy=7.159,  # 7.52
             blackouts=0.03,  # 0.029
-            cumulative_cost=41663.851,  # 41641.481
-            cumulative_ghgs=85187.582,  # 84941.765
+            cumulative_cost=41671.696,  # 41641.481
+            cumulative_ghgs=85268.652,  # 84941.765
             cumulative_pv_generation=36685.0,
             diesel_capacity=0.0,
             diesel_times=0.0,
@@ -870,9 +870,9 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
             final_storage_size=21.333,  # 21.34
             initial_pv_size=20.0,
             initial_storage_size=25.0,
-            lcue=1.598,  # 1.601
-            renewables_fraction=0.613,
-            unmet_energy_fraction=0.013,  # 0.031
+            lcue=1.631,  # 1.601
+            renewables_fraction=0.605,  # 0.613
+            unmet_energy_fraction=0.033,  # 0.031
         )
 
     @pytest.mark.integtest
@@ -900,7 +900,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
             average_daily_grid_times=9.338,
             average_daily_renewables_energy=3.901,  # 3.893
             average_daily_storage_energy=0.0,
-            blackouts=0.303,  # 0.302
+            blackouts=0.302,
             cumulative_cost=43894.787,  # 43894.013
             cumulative_ghgs=195432.737,  # 195403.455,
             cumulative_pv_generation=36685.0,
@@ -1020,10 +1020,10 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
             average_daily_grid_energy=0.0,
             average_daily_grid_times=0.0,
             average_daily_renewables_energy=5.81,  # 5.801
-            average_daily_storage_energy=9.811,  # 9.807
-            blackouts=0.172,  # 0.171
-            cumulative_cost=44294.292,  # 44260.245
-            cumulative_ghgs=102226.38,  # 101882.52
+            average_daily_storage_energy=9.320,  # 9.807
+            blackouts=0.174,  # 0.171
+            cumulative_cost=44329.094,  # 44260.245
+            cumulative_ghgs=102560.78,  # 101882.52
             cumulative_pv_generation=36685.0,
             diesel_capacity=0.0,
             diesel_times=0.0,
@@ -1031,9 +1031,9 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
             final_storage_size=20.225,  # 20.227
             initial_pv_size=20.0,
             initial_storage_size=25.0,
-            lcue=1.868,  # 1.87
+            lcue=1.930,  # 1.87
             renewables_fraction=1.0,
-            unmet_energy_fraction=0.173,  # 0.196
+            unmet_energy_fraction=0.199,  # 0.196
         )
 
     @pytest.mark.integtest
@@ -1111,7 +1111,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
             final_storage_size=24.997,
             initial_pv_size=0.0,
             initial_storage_size=25.0,
-            lcue=2303.466,  # 2315.347
+            lcue=2420.920,  # 2315.347
             renewables_fraction=1.0,
             unmet_energy_fraction=1.0,
         )
@@ -1135,7 +1135,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
         )
 
     @pytest.mark.integtest
-    def test_storage_as_solar_backup_diesel_grid_pv_and_storage(self):
+    def test_self_consumption_diesel_grid_pv_and_storage(self):
         """
         Tests the case with diesel, grid, PV and storage.
 
@@ -1150,34 +1150,34 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
             True,
             True,
             True,
-            prioritisation_strategy=PrioritisationStrategy.STORAGE_AS_SOLAR_BACKUP,
+            prioritisation_strategy=PrioritisationStrategy.SELF_CONSUMPTION,
             pv_size=20,
             storage_size=25,
         )
         self._check_output(
             info_file_data,
             average_daily_diesel=0.0,
-            average_daily_grid_energy=5.303,  # 5.288
+            average_daily_grid_energy=1.894,  # 5.288
             average_daily_grid_times=9.338,
             average_daily_renewables_energy=5.81,  # 5.801
-            average_daily_storage_energy=7.531,  # 7.516
-            blackouts=0.03,  # 0.029
-            cumulative_cost=41641.658,  # 41618.403
-            cumulative_ghgs=82660.385,  # 82405.975
+            average_daily_storage_energy=9.32,  # 7.516
+            blackouts=0.1,  # 0.029
+            cumulative_cost=43051.376,  # 41618.403
+            cumulative_ghgs=92127.493,  # 82405.975
             cumulative_pv_generation=36685.0,
             diesel_capacity=0.0,
             diesel_times=0.0,
             final_pv_size=19.0,
-            final_storage_size=21.335,  # 21.342
+            final_storage_size=20.225,  # 21.342
             initial_pv_size=20.0,
             initial_storage_size=25.0,
-            lcue=1.597,  # 1.6
-            renewables_fraction=0.716,
-            unmet_energy_fraction=0.013,  # 0.032
+            lcue=1.738,  # 1.6
+            renewables_fraction=0.889,  # 0.716
+            unmet_energy_fraction=0.099,  # 0.032
         )
 
     @pytest.mark.integtest
-    def test_storage_as_solar_backup_diesel_grid_and_pv(self):
+    def test_self_consumption_diesel_grid_and_pv(self):
         """
         Tests the case with diesel, grid and PV.
 
@@ -1191,19 +1191,19 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
             True,
             True,
             False,
-            prioritisation_strategy=PrioritisationStrategy.STORAGE_AS_SOLAR_BACKUP,
+            prioritisation_strategy=PrioritisationStrategy.SELF_CONSUMPTION,
             pv_size=20,
         )
         self._check_output(
             info_file_data,
-            average_daily_diesel=6.611,  # 6.568
+            average_daily_diesel=6.608,  # 6.568
             average_daily_grid_energy=5.303,  # 5.288
             average_daily_grid_times=9.338,
             average_daily_renewables_energy=5.81,  # 5.801
             average_daily_storage_energy=0.0,
             blackouts=0.1,
-            cumulative_cost=36747.098,  # 36739.659
-            cumulative_ghgs=107317.832,  # 107334.74
+            cumulative_cost=36748.979,  # 36739.659
+            cumulative_ghgs=107347.467,  # 107334.74
             cumulative_pv_generation=36685.0,
             diesel_capacity=3.0,
             diesel_times=0.203,  # 0.202
@@ -1217,7 +1217,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
         )
 
     @pytest.mark.integtest
-    def test_storage_as_solar_backup_diesel_grid_and_storage(self):
+    def test_self_consumption_diesel_grid_and_storage(self):
         """
         Tests the case with diesel, grid and storage.
 
@@ -1231,19 +1231,19 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
             True,
             False,
             True,
-            prioritisation_strategy=PrioritisationStrategy.STORAGE_AS_SOLAR_BACKUP,
+            prioritisation_strategy=PrioritisationStrategy.SELF_CONSUMPTION,
             storage_size=25,
         )
         self._check_output(
             info_file_data,
-            average_daily_diesel=11.209,  # 11.149
-            average_daily_grid_energy=7.212,  # 7.196
+            average_daily_diesel=11.210,  # 11.149
+            average_daily_grid_energy=7.211,  # 7.196
             average_daily_grid_times=9.338,
             average_daily_renewables_energy=0.0,
-            average_daily_storage_energy=0.005,
-            blackouts=0.097,  # 0.099
-            cumulative_cost=33395.374,  # 33356.64
-            cumulative_ghgs=42730.908,  # 42639.989
+            average_daily_storage_energy=0.006,  # 0.005
+            blackouts=0.098,  # 0.099
+            cumulative_cost=33394.400,  # 33356.64
+            cumulative_ghgs=42716.282,  # 42639.989
             cumulative_pv_generation=0.0,
             diesel_capacity=3.0,
             diesel_times=0.513,  # 0.511
@@ -1251,13 +1251,13 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
             final_storage_size=24.997,
             initial_pv_size=0.0,
             initial_storage_size=25.0,
-            lcue=1.322,  # 1.326
+            lcue=1.323,  # 1.326
             renewables_fraction=0.0,
             unmet_energy_fraction=0.025,  # 0.026
         )
 
     @pytest.mark.integtest
-    def test_storage_as_solar_backup_diesel_and_grid(self):
+    def test_self_consumption_diesel_and_grid(self):
         """
         Tests the case with diesel and grid.
 
@@ -1270,7 +1270,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
             True,
             False,
             False,
-            prioritisation_strategy=PrioritisationStrategy.STORAGE_AS_SOLAR_BACKUP,
+            prioritisation_strategy=PrioritisationStrategy.SELF_CONSUMPTION,
         )
         self._check_output(
             info_file_data,
@@ -1295,7 +1295,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
         )
 
     @pytest.mark.integtest
-    def test_storage_as_solar_backup_diesel_pv_and_storage(self):
+    def test_self_consumption_diesel_pv_and_storage(self):
         """
         Tests the case with diesel, PV and storage.
 
@@ -1310,34 +1310,34 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
             False,
             True,
             True,
-            prioritisation_strategy=PrioritisationStrategy.STORAGE_AS_SOLAR_BACKUP,
+            prioritisation_strategy=PrioritisationStrategy.SELF_CONSUMPTION,
             pv_size=20,
             storage_size=25,
         )
         self._check_output(
             info_file_data,
-            average_daily_diesel=2.164,  # 2.116
+            average_daily_diesel=2.198,  # 2.116
             average_daily_grid_energy=0.0,
             average_daily_grid_times=0.0,
             average_daily_renewables_energy=5.81,  # 5.801
-            average_daily_storage_energy=9.811,  # 9.807
+            average_daily_storage_energy=9.32,  # 9.807
             blackouts=0.1,
-            cumulative_cost=44796.396,  # 44776.209
-            cumulative_ghgs=96196.331,  # 96155.431
+            cumulative_cost=44817.766,  # 44776.209
+            cumulative_ghgs=96277.372,  # 96155.431
             cumulative_pv_generation=36685.0,
             diesel_capacity=3.0,
-            diesel_times=0.073,  # 0.071
+            diesel_times=0.074,  # 0.071
             final_pv_size=19.0,
             final_storage_size=20.225,  # 20.227
             initial_pv_size=20.0,
             initial_storage_size=25.0,
-            lcue=1.752,  # 1.756
-            renewables_fraction=0.878,  # 0.881
-            unmet_energy_fraction=0.059,  # 0.084
+            lcue=1.801,  # 1.756
+            renewables_fraction=0.873,  # 0.881
+            unmet_energy_fraction=0.083,  # 0.084
         )
 
     @pytest.mark.integtest
-    def test_storage_as_solar_backup_diesel_and_pv(self):
+    def test_self_consumption_diesel_and_pv(self):
         """
         Tests the case with diesel and PV.
 
@@ -1351,7 +1351,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
             False,
             True,
             False,
-            prioritisation_strategy=PrioritisationStrategy.STORAGE_AS_SOLAR_BACKUP,
+            prioritisation_strategy=PrioritisationStrategy.SELF_CONSUMPTION,
             pv_size=20,
         )
         self._check_output(
@@ -1377,7 +1377,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
         )
 
     @pytest.mark.integtest
-    def test_storage_as_solar_backup_diesel_and_storage(self):
+    def test_self_consumption_diesel_and_storage(self):
         """
         Tests the case with diesel and storage.
 
@@ -1391,7 +1391,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
             False,
             False,
             True,
-            prioritisation_strategy=PrioritisationStrategy.STORAGE_AS_SOLAR_BACKUP,
+            prioritisation_strategy=PrioritisationStrategy.SELF_CONSUMPTION,
             storage_size=25,
         )
         self._check_output(
@@ -1417,7 +1417,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
         )
 
     @pytest.mark.integtest
-    def test_storage_as_solar_backup_diesel_only(self):
+    def test_self_consumption_diesel_only(self):
         """
         Tests the case with diesel only.
 
@@ -1430,7 +1430,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
             False,
             False,
             False,
-            prioritisation_strategy=PrioritisationStrategy.STORAGE_AS_SOLAR_BACKUP,
+            prioritisation_strategy=PrioritisationStrategy.SELF_CONSUMPTION,
         )
         self._check_output(
             info_file_data,
@@ -1455,7 +1455,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
         )
 
     @pytest.mark.integtest
-    def test_storage_as_solar_backup_grid_pv_and_storage(self):
+    def test_self_consumption_grid_pv_and_storage(self):
         """
         Tests the case with grid, PV and storage.
 
@@ -1470,34 +1470,34 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
             True,
             True,
             True,
-            prioritisation_strategy=PrioritisationStrategy.STORAGE_AS_SOLAR_BACKUP,
+            prioritisation_strategy=PrioritisationStrategy.SELF_CONSUMPTION,
             pv_size=20,
             storage_size=25,
         )
         self._check_output(
             info_file_data,
             average_daily_diesel=0.0,
-            average_daily_grid_energy=5.303,  #
+            average_daily_grid_energy=1.894,  # 5.288
             average_daily_grid_times=9.338,
             average_daily_renewables_energy=5.81,  # 5.801
-            average_daily_storage_energy=7.531,  # 7.516
-            blackouts=0.03,  # 0.029
-            cumulative_cost=41641.658,  # 41618.403
-            cumulative_ghgs=82660.385,  # 82405.975
+            average_daily_storage_energy=9.32,  # 7.516
+            blackouts=0.1,  # 0.029
+            cumulative_cost=43051.376,  # 41618.403
+            cumulative_ghgs=92127.493,  # 82405.975
             cumulative_pv_generation=36685.0,
             diesel_capacity=0.0,
             diesel_times=0.0,
             final_pv_size=19.0,
-            final_storage_size=21.335,  # 21.342
+            final_storage_size=20.225,  # 21.342
             initial_pv_size=20.0,
             initial_storage_size=25.0,
-            lcue=1.597,  # 1.6
-            renewables_fraction=0.716,
-            unmet_energy_fraction=0.013,  # 0.032
+            lcue=1.738,  # 1.6
+            renewables_fraction=0.889,  # 0.716
+            unmet_energy_fraction=0.099,  # 0.032
         )
 
     @pytest.mark.integtest
-    def test_storage_as_solar_backup_grid_and_pv(self):
+    def test_self_consumption_grid_and_pv(self):
         """
         Tests the case with grid and PV.
 
@@ -1511,7 +1511,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
             True,
             True,
             False,
-            prioritisation_strategy=PrioritisationStrategy.STORAGE_AS_SOLAR_BACKUP,
+            prioritisation_strategy=PrioritisationStrategy.SELF_CONSUMPTION,
             pv_size=20,
         )
         self._check_output(
@@ -1521,7 +1521,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
             average_daily_grid_times=9.338,
             average_daily_renewables_energy=5.81,  # 5.801
             average_daily_storage_energy=0.0,
-            blackouts=0.303,  # 0.302
+            blackouts=0.302,
             cumulative_cost=43868.825,  # 43868.076
             cumulative_ghgs=192866.325,  # 192838.735
             cumulative_pv_generation=36685.0,
@@ -1537,7 +1537,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
         )
 
     @pytest.mark.integtest
-    def test_storage_as_solar_backup_grid_and_storage(self):
+    def test_self_consumption_grid_and_storage(self):
         """
         Tests the case with grid and storage.
 
@@ -1551,19 +1551,19 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
             True,
             False,
             True,
-            prioritisation_strategy=PrioritisationStrategy.STORAGE_AS_SOLAR_BACKUP,
+            prioritisation_strategy=PrioritisationStrategy.SELF_CONSUMPTION,
             storage_size=25,
         )
         self._check_output(
             info_file_data,
             average_daily_diesel=0.0,
-            average_daily_grid_energy=7.212,  # 7.196
+            average_daily_grid_energy=7.211,  # 7.196
             average_daily_grid_times=9.338,
             average_daily_renewables_energy=0.0,
-            average_daily_storage_energy=0.005,
-            blackouts=0.61,
-            cumulative_cost=38565.893,  # 38565.669
-            cumulative_ghgs=133929.347,  # 133907.16
+            average_daily_storage_energy=0.006,  # 0.005
+            blackouts=0.611,  # 0.610
+            cumulative_cost=38567.808,  # 38565.669
+            cumulative_ghgs=133939.866,  # 133907.16
             cumulative_pv_generation=0.0,
             diesel_capacity=0.0,
             diesel_times=0.0,
@@ -1571,13 +1571,13 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
             final_storage_size=24.997,
             initial_pv_size=0.0,
             initial_storage_size=25.0,
-            lcue=2.495,  # 2.501
+            lcue=2.496,  # 2.501
             renewables_fraction=0.001,
             unmet_energy_fraction=0.618,
         )
 
     @pytest.mark.integtest
-    def test_storage_as_solar_backup_grid_only(self):
+    def test_self_consumption_grid_only(self):
         """
         Tests the case with only grid.
 
@@ -1590,7 +1590,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
             True,
             False,
             False,
-            prioritisation_strategy=PrioritisationStrategy.STORAGE_AS_SOLAR_BACKUP,
+            prioritisation_strategy=PrioritisationStrategy.SELF_CONSUMPTION,
         )
         self._check_output(
             info_file_data,
@@ -1615,7 +1615,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
         )
 
     @pytest.mark.integtest
-    def test_storage_as_solar_backup_pv_and_storage(self):
+    def test_self_consumption_pv_and_storage(self):
         """
         Tests the case with PV and storage.
 
@@ -1630,7 +1630,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
             False,
             True,
             True,
-            prioritisation_strategy=PrioritisationStrategy.STORAGE_AS_SOLAR_BACKUP,
+            prioritisation_strategy=PrioritisationStrategy.SELF_CONSUMPTION,
             pv_size=20,
             storage_size=25,
         )
@@ -1641,10 +1641,10 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
             average_daily_grid_energy=0.0,
             average_daily_grid_times=0.0,
             average_daily_renewables_energy=5.81,  # 5.801
-            average_daily_storage_energy=9.811,  # 9.807
-            blackouts=0.172,  # 0.171
-            cumulative_cost=44294.292,  # 44260.245
-            cumulative_ghgs=102226.38,  # 101882.52
+            average_daily_storage_energy=9.320,  # 9.807
+            blackouts=0.174,  # 0.171
+            cumulative_cost=44329.094,  # 44260.245
+            cumulative_ghgs=102560.78,  # 101882.52
             cumulative_pv_generation=36685.0,
             diesel_capacity=0.0,
             diesel_times=0.0,
@@ -1652,13 +1652,13 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
             final_storage_size=20.225,  # 20.227
             initial_pv_size=20.0,
             initial_storage_size=25.0,
-            lcue=1.868,  # 1.87
+            lcue=1.930,  # 1.87
             renewables_fraction=1.0,
-            unmet_energy_fraction=0.173,  # 0.196
+            unmet_energy_fraction=0.199,  # 0.196
         )
 
     @pytest.mark.integtest
-    def test_storage_as_solar_backup_pv_only(self):
+    def test_self_consumption_pv_only(self):
         """
         Tests the case with only PV.
 
@@ -1672,7 +1672,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
             False,
             True,
             False,
-            prioritisation_strategy=PrioritisationStrategy.STORAGE_AS_SOLAR_BACKUP,
+            prioritisation_strategy=PrioritisationStrategy.SELF_CONSUMPTION,
             pv_size=20,
         )
         self._check_output(
@@ -1698,7 +1698,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
         )
 
     @pytest.mark.integtest
-    def test_storage_as_solar_backup_storage_only(self):
+    def test_self_consumption_storage_only(self):
         """
         Tests the case with only storage.
 
@@ -1712,7 +1712,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
             False,
             False,
             True,
-            prioritisation_strategy=PrioritisationStrategy.STORAGE_AS_SOLAR_BACKUP,
+            prioritisation_strategy=PrioritisationStrategy.SELF_CONSUMPTION,
             storage_size=25,
         )
         self._check_output(
@@ -1732,14 +1732,14 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
             final_storage_size=24.997,
             initial_pv_size=0.0,
             initial_storage_size=25.0,
-            lcue=2303.466,  # 2315.347
+            lcue=2420.92,  # 2315.347
             renewables_fraction=1.0,
             unmet_energy_fraction=1.0,
         )
 
     # @unittest.skip("No need to test scenario with no power generation sources.")
     @pytest.mark.integtest
-    def test_storage_as_solar_backup_no_diesel_no_grid_no_pv_no_storage(self):
+    def test_self_consumption_no_diesel_no_grid_no_pv_no_storage(self):
         """
         Tests the case with diesel, grid, PV and storage.
 
@@ -1752,5 +1752,5 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
             False,
             False,
             False,
-            prioritisation_strategy=PrioritisationStrategy.STORAGE_AS_SOLAR_BACKUP,
+            prioritisation_strategy=PrioritisationStrategy.SELF_CONSUMPTION,
         )

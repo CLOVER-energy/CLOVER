@@ -190,9 +190,6 @@ def battery_iteration_step(
 
                 # If the battery was discharging and there is still load to be met, then
                 # take power from the grid if available.
-                import pdb
-
-                # pdb.set_trace(header=time_index)
                 if scenario.grid:
                     grid_energy.iloc[time_index, 0] += max(
                         grid_power_consumed := (-remaining_energy_balance)

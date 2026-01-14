@@ -1263,21 +1263,53 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
             axis=0,
         )
 
-        plt.plot(total_used, "--", label="Total used", zorder=1, color="C0")
-        plt.plot(unmet_energy, "--", label="Unmet", zorder=2, color="C5")
-        plt.plot(diesel_energy, label="Diesel", zorder=3, color="C6")
-        plt.plot(dumped, label="Dumped", zorder=4, color="C5")
-        plt.plot(grid_energy, label="Grid", zorder=5, color="C2")
-        plt.plot(storage_energy, label="Storage", zorder=6, color="C3")
-        plt.plot(
-            renewable_energy,
+        plt.bar(
+            range(24),
+            (bottom := renewable_energy),
+            # bottom=(bottom := bottom + diesel_energy),
             label="Renewables used directly",
-            zorder=7,
+            color="C3",
+        )
+        plt.bar(
+            range(24),
+            storage_energy,
+            bottom=(bottom := bottom),
+            label="Storage",
+            color="C1",
+        )
+        plt.bar(
+            range(24),
+            grid_energy,
+            bottom=(bottom := bottom + storage_energy),
+            # bottom=(bottom := bottom + unmet_energy),
+            label="Grid",
+            color="C0",
+        )
+        plt.bar(
+            range(24),
+            diesel_energy,
+            bottom=(bottom := bottom + grid_energy),
+            label="Diesel",
+            color="C2",
+        )
+        plt.bar(
+            range(24),
+            dumped,
+            bottom=(bottom := bottom + diesel_energy),
+            label="Dumped",
             color="C4",
         )
-        plt.plot(
-            pv_supplied, "--", label="PV electricity generated", zorder=8, color="C4"
+        plt.bar(
+            range(24),
+            unmet_energy,
+            bottom=(bottom := bottom + dumped),
+            label="Unmet",
+            color="C5",
         )
+        plt.plot(
+            pv_supplied, "--", label="PV electricity generated", zorder=8, color="C3"
+        )
+        plt.plot(total_used, "--", label="Total used", zorder=1, color="C0")
 
         if cw_pvt:
             clean_water_energy_via_excess = (
@@ -1845,7 +1877,7 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
         plt.bar(
             range(24),
             dumped,
-            bottom=(bottom := bottom + renewable_energy),
+            bottom=(bottom := bottom + diesel_energy),
             label="Dumped",
             color="C4",
         )

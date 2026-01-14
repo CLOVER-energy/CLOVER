@@ -2433,7 +2433,7 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
     # unmet_energy = energy_deficit_frame
 
     # Determine the times for which the system experienced a blackout.
-    blackout_times = ((unmet_energy > 0) * 1).astype(float)  # type: ignore [operator]
+    blackout_times = ((unmet_energy > 1e-3) * 1).astype(float)  # type: ignore [operator]
 
     # Use backup diesel generator if present
     diesel_energy: pd.DataFrame
@@ -2479,7 +2479,7 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
         )
 
     # Re-calculate the blackout times based on the operation of the diesel generator.
-    blackout_times = ((unmet_energy > 0) * 1).astype(float)  # type: ignore [operator]
+    blackout_times = ((unmet_energy > 1e-3) * 1).astype(float)
 
     # Find total energy used by the system
     total_energy_used = pd.DataFrame(
