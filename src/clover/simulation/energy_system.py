@@ -1498,6 +1498,7 @@ def _setup_tank_storage_profiles(
 
 
 def _update_battery_health(
+    battery_conversion_out: float,
     battery_energy_flow: float,
     battery_health: dict[int, float],
     cumulative_battery_storage_power: float,
@@ -1506,6 +1507,7 @@ def _update_battery_health(
     maximum_battery_energy_throughput: float,
     minigrid: Minigrid,
     storage_power_supplied: dict[int, float],
+    storage_power_withdrawn: dict[int, float],
     *,
     time_index: int,
 ) -> tuple[float, float, float]:
@@ -1513,6 +1515,8 @@ def _update_battery_health(
     Updates the health of the batteries.
 
     Inputs:
+        - battery_conversion_out:
+            The outgoing conversion efficiency of the battery.
         - battery_energy_flow:
             The net energy flow, into, or out of, the battery.
         - battery_health:
@@ -1530,6 +1534,8 @@ def _update_battery_health(
             The :class:`Minigrid` being modelled.
         - storage_power_supplied:
             The amount of power supplied by the storage system.
+        - storage_power_withdrawn:
+            The amount of power (energy) withdrawn from the storage system.
         - time_index:
             The current time (hour) being considered.
 
@@ -1546,15 +1552,25 @@ def _update_battery_health(
     """
 
     if time_index == 0:
-        storage_power_supplied[time_index] = 0.0 - battery_energy_flow
+        storage_power_supplied[time_index] = max(0.0 - battery_energy_flow, 0.0)
+        storage_power_withdrawn[time_index] = max(0.0 - battery_energy_flow, 0.0)
     else:
         storage_power_supplied[time_index] = max(
+            (
+                hourly_battery_storage[time_index - 1]
+                * (1.0 - minigrid.battery.leakage)  # type: ignore
+                - hourly_battery_storage[time_index]
+            )
+            * battery_conversion_out,
+            0.0,
+        )
+        storage_power_withdrawn[time_index] = max(
             hourly_battery_storage[time_index - 1]
             * (1.0 - minigrid.battery.leakage)  # type: ignore
             - hourly_battery_storage[time_index],
             0.0,
         )
-    cumulative_battery_storage_power += storage_power_supplied[time_index]
+    cumulative_battery_storage_power += storage_power_withdrawn[time_index]
 
     battery_storage_degradation = (
         1.0
@@ -2145,6 +2161,7 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
     energy_surplus: dict[int, float] | None = {}
     energy_deficit: dict[int, float] | None = {}
     storage_power_supplied: dict[int, float] = {}
+    storage_power_withdrawn: dict[int, float] = {}
 
     # Do not do the itteration if no storage is being used
     if (
@@ -2166,7 +2183,10 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
         hourly_battery_storage_frame: pd.DataFrame = pd.DataFrame(
             [float(0)] * (end_hour - start_hour)
         )
-        storage_power_supplied_frame: pd.DataFrame = pd.DataFrame(
+        storage_energy_frame: pd.DataFrame = pd.DataFrame(
+            [float(0)] * (end_hour - start_hour)
+        )
+        storage_power_withdrawn_frame: pd.DataFrame = pd.DataFrame(
             [float(0)] * (end_hour - start_hour)
         )
 
@@ -2289,6 +2309,7 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
                     maximum_battery_storage,
                     minimum_battery_storage,
                 ) = _update_battery_health(
+                    minigrid.battery.conversion_out,
                     battery_energy_flow,
                     battery_health,
                     cumulative_battery_storage_power,
@@ -2297,6 +2318,7 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
                     maximum_battery_energy_throughput,
                     minigrid,
                     storage_power_supplied,
+                    storage_power_withdrawn,
                     time_index=t,
                 )
 
@@ -2325,11 +2347,11 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
     if scenario.battery and electric_storage_size > 0:
         battery_health_frame = dict_to_dataframe(battery_health, logger)
         hourly_battery_storage_frame = dict_to_dataframe(hourly_battery_storage, logger)
-        storage_power_supplied_frame = dict_to_dataframe(storage_power_supplied, logger)
+        storage_energy_frame = dict_to_dataframe(storage_power_supplied, logger)
     else:
         battery_health_frame = pd.DataFrame([0] * (end_hour - start_hour))
         hourly_battery_storage_frame = pd.DataFrame([0] * (end_hour - start_hour))
-        storage_power_supplied_frame = pd.DataFrame([0] * (end_hour - start_hour))
+        storage_energy_frame = pd.DataFrame([0] * (end_hour - start_hour))
 
     if scenario.desalination_scenario is not None:
         cw_demand_met_by_electric_prioritisation: pd.DataFrame = dict_to_dataframe(
@@ -2403,7 +2425,7 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
             + hot_water_power_consumed.values
             - renewables_energy_used_directly.values
             - grid_energy.values
-            - storage_power_supplied_frame.values
+            - storage_energy_frame.values
         )
     )
 
@@ -2462,7 +2484,7 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
     # Find total energy used by the system
     total_energy_used = pd.DataFrame(
         renewables_energy_used_directly.values
-        + storage_power_supplied_frame.values
+        + storage_energy_frame.values
         + grid_energy.values
         + diesel_energy.values
         # + thermal_desalination_electric_power_consumed.values
@@ -2584,7 +2606,7 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
     diesel_energy.columns = pd.Index([ColumnHeader.DIESEL_ENERGY_SUPPLIED.value])
     kerosene_mitigation.columns = pd.Index([ColumnHeader.KEROSENE_MITIGATION.value])
     kerosene_usage.columns = pd.Index([ColumnHeader.KEROSENE_LAMPS.value])
-    storage_power_supplied_frame.columns = pd.Index(
+    storage_energy_frame.columns = pd.Index(
         [ColumnHeader.ELECTRICITY_FROM_STORAGE.value]
     )
     total_energy_used.columns = pd.Index(
@@ -2612,7 +2634,7 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
         pv_energy,
         renewables_energy,
         renewables_energy_used_directly,
-        storage_power_supplied_frame,
+        storage_energy_frame,
         total_energy_used,
         unmet_energy,
     ]

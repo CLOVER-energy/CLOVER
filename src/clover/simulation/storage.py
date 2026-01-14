@@ -120,6 +120,7 @@ def battery_iteration_step(
             - Any power which wasn't stored in the batteries or couldn't be discharged.
 
         """
+
         # Battery charging
         if battery_energy_flow >= 0.0:
             # Charge by an amount dictated by the flow rates
@@ -139,16 +140,29 @@ def battery_iteration_step(
             return new_hourly_battery_storage, remaining_energy_balance
 
         # Battery discharging
-        # Discharge all available power if available
-        new_hourly_battery_storage = hourly_battery_storage[time_index - 1] * (
-            1.0 - battery.leakage
-        ) + (1.0 / battery.conversion_out) * (
-            discharged_power := max(
-                battery_energy_flow,
+        # Discharge all available power if available but do not discharge the batteries
+        # below their minimum permitted value.
+        discharged_power = min(
+            (1.0 / battery.conversion_out)
+            * max(
+                -battery_energy_flow,
                 (-1.0)
                 * battery.discharge_rate
                 * (maximum_battery_storage - minimum_battery_storage),
-            )
+            ),
+            max(
+                (
+                    energy_leftover_from_previous_timestep := hourly_battery_storage[
+                        time_index - 1
+                    ]
+                    * (1.0 - battery.leakage)
+                )
+                - minimum_battery_storage,
+                0,
+            ),
+        )
+        new_hourly_battery_storage = (
+            energy_leftover_from_previous_timestep - discharged_power
         )
         remaining_energy_balance = battery_energy_flow + abs(discharged_power)
 
@@ -158,6 +172,7 @@ def battery_iteration_step(
         battery_storage_profile.iloc[time_index, 0]
     )
     if time_index == 0:
+        # FIXME: Add conversion in/out factors here.
         new_hourly_battery_storage = (
             initial_battery_storage + energy_generation_or_load_deficit
         )
@@ -169,12 +184,15 @@ def battery_iteration_step(
             # If consuming self-generated electricity, then take power from the batteries
             # first, then use the grid if available.
             case PrioritisationStrategy.SELF_CONSUMPTION:
-                new_hourly_battery_storage, _ = _charge_or_discharge(
-                    energy_generation_or_load_deficit
+                new_hourly_battery_storage, remaining_energy_balance = (
+                    _charge_or_discharge(energy_generation_or_load_deficit)
                 )
 
                 # If the battery was discharging and there is still load to be met, then
                 # take power from the grid if available.
+                import pdb
+
+                # pdb.set_trace(header=time_index)
                 if scenario.grid:
                     grid_energy.iloc[time_index, 0] += max(
                         grid_power_consumed := (-remaining_energy_balance)

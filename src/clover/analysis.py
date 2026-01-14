@@ -1717,7 +1717,7 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
         )
 
         plt.figure(figsize=(48 / 5, 32 / 5))
-        plt.plot(total_used, "--", label="Total used", zorder=1, color="C0")
+        plt.plot(total_used, "--", label="Total used", zorder=2, color="C0")
         plt.plot(
             unmet_energy + total_used,
             "--",
@@ -1735,7 +1735,7 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
             color="C4",
         )
         plt.plot(grid_energy, label="Grid", zorder=5, color="C1")
-        plt.plot(storage_energy, label="Storage", zorder=6, color="C2")
+        plt.plot(storage_energy, label="Storage", zorder=1, color="C2")
         plt.plot(
             renewable_energy,
             label="Renewables used directly",
@@ -1815,10 +1815,10 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
         plt.figure(figsize=(48 / 5, 32 / 5))
         plt.bar(
             range(24),
-            (bottom := grid_energy),
-            # bottom=(bottom := bottom + unmet_energy),
-            label="Grid",
-            color="C0",
+            (bottom := renewable_energy),
+            # bottom=(bottom := bottom + diesel_energy),
+            label="Renewables used directly",
+            color="C3",
         )
         plt.bar(
             range(24),
@@ -1829,17 +1829,18 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
         )
         plt.bar(
             range(24),
-            diesel_energy,
+            grid_energy,
             bottom=(bottom := bottom + storage_energy),
-            label="Diesel",
-            color="C2",
+            # bottom=(bottom := bottom + unmet_energy),
+            label="Grid",
+            color="C0",
         )
         plt.bar(
             range(24),
-            renewable_energy,
-            bottom=(bottom := bottom + diesel_energy),
-            label="Renewables used directly",
-            color="C3",
+            diesel_energy,
+            bottom=(bottom := bottom + grid_energy),
+            label="Diesel",
+            color="C2",
         )
         plt.bar(
             range(24),
