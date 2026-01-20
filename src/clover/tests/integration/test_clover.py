@@ -44,7 +44,6 @@ from ...__utils__ import (
     RAW_CLOVER_PATH,
 )
 
-
 # Default PV panel name:
 #    Name to use for the default PV panel.
 DEFAULT_PV_PANEL_NAME: str = "default_pv"
@@ -585,7 +584,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
             cumulative_ghgs=109913.879,  # 109899.46
             cumulative_pv_generation=36685.0,
             diesel_capacity=3.0,
-            diesel_times=0.203,  # 0.202
+            diesel_times=0.202,
             final_pv_size=19.0,
             final_storage_size=0.0,
             initial_pv_size=20.0,
@@ -1206,7 +1205,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
             cumulative_ghgs=107347.467,  # 107334.74
             cumulative_pv_generation=36685.0,
             diesel_capacity=3.0,
-            diesel_times=0.203,  # 0.202
+            diesel_times=0.202,
             final_pv_size=19.0,
             final_storage_size=0.0,
             initial_pv_size=20.0,

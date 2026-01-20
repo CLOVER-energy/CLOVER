@@ -50,7 +50,6 @@ from ..generation.solar import HybridPVTPanel, SolarPanel, SolarThermalPanel
 from .__utils__ import Minigrid
 from .storage_utils import HotWaterTank
 
-
 __all__ = ("calculate_solar_thermal_output",)
 
 

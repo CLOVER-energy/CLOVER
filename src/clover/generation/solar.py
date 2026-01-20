@@ -283,6 +283,23 @@ class PVModuleCharacteristics:
 
         return self._reference_temperature + ZERO_CELCIUS_OFFSET
 
+    @property
+    def as_dict(self) -> dict[str, float]:
+        """
+        Return a `dict` instance containing the module characteristics.
+
+        Outputs:
+            A `dict` containing the PVModule characteristics.
+
+        """
+
+        return {
+            "nominal_power": self.nominal_power,
+            "reference_efficiency": self.reference_efficiency,
+            "reference_temperature": self._reference_temperature,
+            "thermal_coefficient": self.thermal_coefficient,
+        }
+
 
 class Tracking(enum.Enum):
     """
@@ -1997,7 +2014,7 @@ class HybridPVTPanel(SolarPanel, panel_type=SolarPanelType.PV_T):
     def __init__(
         self,
         electric_performance_curve: PerformanceCurve | None,
-        logger: Logger,
+        logger: Logger | None,
         pv_module_characteristics: PVModuleCharacteristics,
         solar_inputs: dict[str, Any],
         thermal_performance_curve: PerformanceCurve,
@@ -2038,6 +2055,7 @@ class HybridPVTPanel(SolarPanel, panel_type=SolarPanelType.PV_T):
         self.pv_module_characteristics: PVModuleCharacteristics = (
             pv_module_characteristics
         )
+        self._stagnation_temperature: float | None = solar_inputs.get(STAGNATION_TEMPERATURE, None)
         self.thermal_performance_curve: PerformanceCurve = thermal_performance_curve
 
     @property
@@ -2063,8 +2081,9 @@ class HybridPVTPanel(SolarPanel, panel_type=SolarPanelType.PV_T):
             # PV-T-specific parameters
             MAX_MASS_FLOW_RATE: self._max_mass_flow_rate,
             MIN_MASS_FLOW_RATE: self._min_mass_flow_rate,
-            PV_MODULE_CHARACTERISTICS: self.pv_module_characteristics,
+            PV_MODULE_CHARACTERISTICS: self.pv_module_characteristics.as_dict,
             THERMAL_PERFORMANCE_CURVE: self.thermal_performance_curve.as_dict,
+            STAGNATION_TEMPERATURE: self._stagnation_temperature,
         }
 
         if self.electric_performance_curve is not None:
@@ -2116,6 +2135,18 @@ class HybridPVTPanel(SolarPanel, panel_type=SolarPanelType.PV_T):
         # return self.area * self.electric_performance_curve.eta_0 * REFERENCE_SOLAR_IRRADIANCE * self.pv_module_characteristics.nominal_power
 
         return self.pv_module_characteristics.nominal_power
+
+    @property
+    def stagnation_temperature(self) -> float | None:
+        """
+        Return the stagnation temperature of the collector in degrees Kelvin.
+
+        Outputs:
+            The stagnation temperature of the collector, measured in degrees Kelvin.
+
+        """
+
+        return (self._stagnation_temperature + ZERO_CELCIUS_OFFSET) if self._stagnation_temperature is not None else None
 
     def __repr__(self) -> str:
         """
