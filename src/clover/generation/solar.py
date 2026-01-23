@@ -2050,12 +2050,17 @@ class HybridPVTPanel(SolarPanel, panel_type=SolarPanelType.PV_T):
         self.electric_performance_curve: PerformanceCurve | None = (
             electric_performance_curve
         )
-        self._max_mass_flow_rate: float = solar_inputs[MAX_MASS_FLOW_RATE]
+        self._max_mass_flow_rate: float | None = solar_inputs[MAX_MASS_FLOW_RATE]
         self._min_mass_flow_rate: float = solar_inputs[MIN_MASS_FLOW_RATE]
+        self._nominal_mass_flow_rate: float | None = solar_inputs.get(
+            NOMINAL_MASS_FLOW_RATE, None
+        )
         self.pv_module_characteristics: PVModuleCharacteristics = (
             pv_module_characteristics
         )
-        self._stagnation_temperature: float | None = solar_inputs.get(STAGNATION_TEMPERATURE, None)
+        self._stagnation_temperature: float | None = solar_inputs.get(
+            STAGNATION_TEMPERATURE, None
+        )
         self.thermal_performance_curve: PerformanceCurve = thermal_performance_curve
 
     @property
@@ -2081,6 +2086,7 @@ class HybridPVTPanel(SolarPanel, panel_type=SolarPanelType.PV_T):
             # PV-T-specific parameters
             MAX_MASS_FLOW_RATE: self._max_mass_flow_rate,
             MIN_MASS_FLOW_RATE: self._min_mass_flow_rate,
+            NOMINAL_MASS_FLOW_RATE: self._nominal_mass_flow_rate,
             PV_MODULE_CHARACTERISTICS: self.pv_module_characteristics.as_dict,
             THERMAL_PERFORMANCE_CURVE: self.thermal_performance_curve.as_dict,
             STAGNATION_TEMPERATURE: self._stagnation_temperature,
@@ -2146,7 +2152,11 @@ class HybridPVTPanel(SolarPanel, panel_type=SolarPanelType.PV_T):
 
         """
 
-        return (self._stagnation_temperature + ZERO_CELCIUS_OFFSET) if self._stagnation_temperature is not None else None
+        return (
+            (self._stagnation_temperature + ZERO_CELCIUS_OFFSET)
+            if self._stagnation_temperature is not None
+            else None
+        )
 
     def __repr__(self) -> str:
         """
@@ -2490,7 +2500,7 @@ class SolarThermalPanel(SolarPanel, panel_type=SolarPanelType.SOLAR_THERMAL):
             Tracking(solar_inputs.get("tracking", 0)),
         )
 
-        self._max_mass_flow_rate: float = solar_inputs[MAX_MASS_FLOW_RATE]
+        self._max_mass_flow_rate: float | None = solar_inputs[MAX_MASS_FLOW_RATE]
         self._min_mass_flow_rate: float = solar_inputs.get(MIN_MASS_FLOW_RATE, 0)
         self._nominal_mass_flow_rate: float | None = solar_inputs.get(
             NOMINAL_MASS_FLOW_RATE, None
@@ -2527,17 +2537,18 @@ class SolarThermalPanel(SolarPanel, panel_type=SolarPanelType.SOLAR_THERMAL):
         }
 
     @property
-    def max_mass_flow_rate(self) -> float:
+    def max_mass_flow_rate(self) -> float | None:
         """
         Return the maximum mass flow rate in kg/s.
 
         Outputs:
-            The maximum mass flow rate of HTF through the collectors in kg/s.
+            The maximum mass flow rate of HTF through the collectors in kg/s or `None`
+            if there is no maximum flow rate.
 
         """
 
         return (
-            self._max_mass_flow_rate / 3600
+            (self._max_mass_flow_rate / 3600)
             if self._max_mass_flow_rate is not None
             else None
         )
@@ -2552,11 +2563,7 @@ class SolarThermalPanel(SolarPanel, panel_type=SolarPanelType.SOLAR_THERMAL):
 
         """
 
-        return (
-            self._min_mass_flow_rate / 3600
-            if self._min_mass_flow_rate is not None
-            else None
-        )
+        return self._min_mass_flow_rate / 3600
 
     @property
     def nominal_mass_flow_rate(self) -> float | None:
