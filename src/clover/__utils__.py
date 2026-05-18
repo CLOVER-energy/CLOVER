@@ -1826,6 +1826,7 @@ class Criterion(enum.Enum):
     KEROSENE_GHGS_MITIGATED = "kerosene_ghgs_mitigated"
     LCU_ENERGY = "lcu_energy"
     LCUE = "lcue"
+    LCUE_INCLUDING_CARBON_PRICE = "lcue_using_carbon_price"
     LCUH = "lcuh"
     LCUW = "lcuw"
     RENEWABLES_ELECTRICITY_FRACTION = "renewables_fraction"

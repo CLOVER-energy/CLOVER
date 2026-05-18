@@ -1796,6 +1796,13 @@ def appraise_system(  # pylint: disable=too-many-locals
         Criterion.KEROSENE_GHGS_MITIGATED: environmental_appraisal.kerosene_ghgs_mitigated,
         Criterion.LCU_ENERGY: round(lcu_energy, 6),
         Criterion.LCUE: round(lcu_electricity, 3),
+        Criterion.LCUE_INCLUDING_CARBON_PRICE: round(
+            (
+                financial_appraisal.total_cost
+                + 0.400 * environmental_appraisal.total_ghgs
+            )
+            / technical_appraisal.total_energy_consumed
+        ),
         Criterion.LCUH: round(lcu_h, 6) if lcu_h is not None else None,
         Criterion.LCUW: round(lcu_w, 6) if lcu_w is not None else None,
         Criterion.RENEWABLES_ELECTRICITY_FRACTION: technical_appraisal.renewable_electricity_fraction,
