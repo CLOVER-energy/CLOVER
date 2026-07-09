@@ -234,6 +234,8 @@ def battery_iteration_step(
 
     excess_energy = max(new_hourly_battery_storage - maximum_battery_storage, 0.0)
 
+    # Option 1.1. Shift forward all load to the next hour, irrespective of forecasting.
+
     return (
         energy_generation_or_load_deficit,
         excess_energy,
