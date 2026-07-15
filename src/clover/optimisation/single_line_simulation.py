@@ -52,7 +52,6 @@ from .__utils__ import (
 )
 from .appraisal import appraise_system
 
-
 __all__ = ("single_line_simulation",)
 
 

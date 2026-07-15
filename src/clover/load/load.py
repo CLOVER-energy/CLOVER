@@ -18,6 +18,7 @@ in.
 
 """
 
+import enum
 import dataclasses
 import math
 import os
@@ -106,6 +107,27 @@ MEAN: str = "Mean"
 MEDIAN: str = "Median"
 
 
+
+class Shiftability(enum.Enum):
+    """
+    """
+
+    UNSHIFTABLE = 0
+    SHIFTABLE = 1
+    PRIORITY = 2
+
+class DeviceShiftingStrategy:
+    """
+    .. attribute:: shiftability
+
+    .. attribute:: shiftable_hours
+        The hours during which, or into which, the device can be shifted.
+        Or a measure of the number of hours in each direction that the load can
+        be shifted.
+
+    """
+
+
 @dataclasses.dataclass
 class Device:
     """
@@ -148,6 +170,7 @@ class Device:
 
     available: bool
     demand_type: DemandType
+    # electric_energy_hourly: float | None
     electric_power: float | None
     final_ownership: float
     initial_ownership: float
@@ -156,6 +179,8 @@ class Device:
     name: str
     clean_water_usage: float | None
     hot_water_usage: float | None
+    # **OR** electric_runtime: float | None = 60
+    # [1.2] Keep track of shiftability of the load/device
 
     def __hash__(self) -> int:
         """
@@ -1153,6 +1178,7 @@ def process_load_profiles(  # pylint: disable=too-many-locals
             device_name: load.iloc[0:CUT_OFF_TIME, :]
             for device_name, load in device_hourly_loads.items()
         },
+        # [1.2] Device-specific hourly profiles.
         total_load,
         yearly_statistics,
     )

@@ -1774,7 +1774,7 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
     energy_deficit: dict[int, float] | None = {}
     storage_power_supplied: dict[int, float] = {}
 
-    # Do not do the itteration if no storage is being used
+    # Do not do the iteration if no storage is being used
     if (
         electric_storage_size == 0
         or electric_storage_size is None
@@ -1799,7 +1799,20 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
         )
     # Carry out the itteration if there is some storage involved in the system.
     else:
+        # 1.2. When determining the load shifting of demand profiles,
+        # - the hourly calculation needs to be replaced with a daily, weekly or other calcualtion
+        # Begin interup: [1.2] [START]
         # Begin simulation, iterating over timesteps
+
+        # 1.3. If there's too much demand in a given hour, even if there's solar
+        # availaility, then we want to prioritise loads which are high-priority in this
+        # hour, or which can't be shifted to another hour.
+        # 1.4. As part of this, the power peak in each hour, not just the energy
+        # consumption, can feed into the algorithm.
+
+        # 1.1 initialise hourly load shifting parameter
+        shifted_out: dict[int, float] = {} # represents load shifted from t to t+1
+
         for t in tqdm(
             range(int(battery_storage_profile.size)),
             desc="hourly computation",
@@ -1814,6 +1827,7 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
                 grid_energy,
                 grid_profile,
                 new_hourly_battery_storage,
+                unmet_t # 1.1 unmet load at end of hour
             ) = battery_iteration_step(
                 battery_storage_profile,
                 grid_energy,
@@ -1863,9 +1877,10 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
 
             # Dumped energy and unmet demand
             energy_surplus[t] = excess_energy  # type: ignore
-            energy_deficit[t] = max(  # type: ignore
-                minimum_battery_storage - new_hourly_battery_storage, 0.0
-            )  # Battery too empty
+            # 1.1 energy_deficit calculated later
+            # energy_deficit[t] = max(  # type: ignore
+            #     minimum_battery_storage - new_hourly_battery_storage, 0.0
+            # )  # Battery too empty
 
             # Battery capacities and blackouts (if battery is too full or empty)
             new_hourly_battery_storage = min(
@@ -1894,7 +1909,19 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
                     minigrid,
                     storage_power_supplied,
                     time_index=t,
-                )
+                ) 
+            # 1.1 update the hourly load parameters to shift unmet demand by an hour
+            if t < (int(battery_storage_profile.size) - 1):
+                battery_storage_profile.iloc[t+1, 0] -= unmet_t
+                energy_deficit[t] = 0.0
+                shifted_out[t] = unmet_t
+                # additional shifted load for t+1 = (NOT load at t +) shifted load
+                # reset load at t to 0
+            else:
+                shifted_out[t] = 0.0
+                energy_deficit[t] = unmet_t
+
+            # End interup: [1.2] [END]
 
     # Process the various outputs into dataframes.
     if energy_deficit is not None and len(energy_deficit) > 0:
@@ -1915,6 +1942,12 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
         battery_health_frame = pd.DataFrame([0] * (end_hour - start_hour))
         hourly_battery_storage_frame = pd.DataFrame([0] * (end_hour - start_hour))
         storage_power_supplied_frame = pd.DataFrame([0] * (end_hour - start_hour))
+
+    # 1.1 process shifted load output
+    if shifted_out is not None and len(shifted_out) > 0:
+        shifted_energy_frame = dict_to_dataframe(shifted_out, logger)
+    else:
+        shifted_energy_frame = pd.DataFrame([0] * (end_hour - start_hour))
 
     # Determine the initial and final storage sizes
     initial_storage_size = float(electric_storage_size * minigrid.battery.storage_unit)
@@ -1995,12 +2028,27 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
             - renewables_energy_used_directly.values
             - grid_energy.values
             - storage_power_supplied_frame.values
+            - shifted_energy_frame.values # 1.1 subtract shifted load from unmet energy
         )
     )
     if thermal_desalination_electric_power_consumed is not None:
         unmet_energy = pd.DataFrame(
             (unmet_energy.values + thermal_desalination_electric_power_consumed.values)
         )
+
+    # 1.1 Find load profile after shifting
+    base_electric_load_frame = processed_total_electric_load.reset_index(drop=True)
+    shifted_out_frame = dict_to_dataframe(shifted_out, logger).reindex(
+    range(len(base_electric_load_frame)), fill_value=0.0
+    )
+    shifted_in_frame = shifted_out_frame.shift(1).fillna(0.0)
+
+    shifted_load_profile = (
+        base_electric_load_frame
+        - shifted_out_frame.values
+        + shifted_in_frame.values
+        - energy_deficit_frame.values
+    ).clip(lower=0.0)
 
     # Determine the times for which the system experienced a blackout.
     blackout_times = ((unmet_energy > 0) * 1).astype(float)  # type: ignore [operator]
@@ -2315,6 +2363,7 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
         [ColumnHeader.TOTAL_ELECTRICITY_CONSUMED.value]
     )
     unmet_energy.columns = pd.Index([ColumnHeader.UNMET_ELECTRICITY.value])
+    shifted_load_profile.columns = pd.Index([ColumnHeader.SHIFTED_PROFILE.value]) # 1.1
 
     # System details
     system_details = SystemDetails(
@@ -2420,6 +2469,7 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
         total_energy_used,
         power_used_on_electricity,
         unmet_energy,
+        shifted_load_profile,
         blackout_times,
         renewables_energy_used_directly,
         storage_power_supplied_frame,

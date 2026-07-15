@@ -367,7 +367,7 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
     hw_pvt: bool = ColumnHeader.HW_PVT_ELECTRICITY_SUPPLIED.value in simulation_output
 
     with tqdm(
-        total=15
+        total=15 + 2 # +2 for 1.1 shifting plots, change to conditional for 1.2
         + (1 if grid_profile is not None else 0)
         + (17 if initial_cw_hourly_loads is not None else 0)
         + (4 if cw_pvt else 0)
@@ -836,6 +836,64 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
             transparent=True,
         )
         plt.close()
+        pbar.update(1)
+
+        # 1.1 Plot the shifted load profile: first 3 days
+        fig, ax = plt.subplots()
+
+        shifted_load = simulation_output.iloc[0:72]["Shifted Loads (kWh)"]
+        pv_supplied = simulation_output.iloc[0:72][
+            ColumnHeader.PV_ELECTRICITY_SUPPLIED.value
+        ]
+
+        ax.bar(range(72), shifted_load, label='Shifted load profile', zorder=1, alpha=0.7)
+        ax.plot(range(72), pv_supplied, label="PV generated", zorder=2, color='lightskyblue')
+        ax.set_xlim(0, 72)
+        ax.set_xticks(range(0,72,3))
+        ax.set_xlabel("Hour of Day")
+        ax.set_ylabel("Load / kWh/hour")
+        ax.legend()
+        plt.savefig(
+            os.path.join(figures_directory, "shifted_loads_first_three_days.png"),
+            bbox_inches="tight",
+            transparent=True,
+        )
+        plt.close(fig)
+        pbar.update(1)
+
+        # 1.1 Plot the shifted load profile: average day
+        fig, ax = plt.subplots()
+        shifted_year = simulation_output[0:HOURS_PER_YEAR][
+            ColumnHeader.SHIFTED_PROFILE.value
+        ].values.astype(float)
+        shifted_2d = np.reshape(shifted_year, (365, 24))
+        average_shifted_load = np.nanmean(
+            shifted_2d,
+            axis=0,
+        )
+        pv_supplied = np.nanmean(
+            np.reshape(
+                simulation_output[0:HOURS_PER_YEAR][
+                    ColumnHeader.RENEWABLE_ELECTRICITY_SUPPLIED.value
+                ].values,
+                (365, 24),
+            ),
+            axis=0,
+        )
+
+        ax.bar(range(24), average_shifted_load, label='Shifted load profile', zorder = 1, alpha=0.7)
+        ax.plot(range(24), pv_supplied, label="PV generated", zorder = 2, color='lightskyblue')
+        ax.set_xlim(0, 23)
+        ax.set_xticks(range(0,24,1))
+        ax.set_xlabel("Hour of Day")
+        ax.set_ylabel("Average Load / kWh/hour")
+        ax.legend()
+        plt.savefig(
+            os.path.join(figures_directory, "shifted_loads_average.png"),
+            bbox_inches="tight",
+            transparent=True,
+        )
+        plt.close(fig)
         pbar.update(1)
 
         total_used = np.nanmean(

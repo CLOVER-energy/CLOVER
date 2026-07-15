@@ -639,6 +639,7 @@ class ColumnHeader(enum.Enum):
     RENEWABLE_ELECTRICITY_SUPPLIED = "Renewables energy supplied (kWh)"
     RENEWABLE_ELECTRICITY_USED_DIRECTLY = "Renewables energy used (kWh)"
     STORAGE_PROFILE = "Storage profile (kWh)"
+    SHIFTED_PROFILE = "Shifted Loads (kWh)" # 1.1
     TOTAL_CW_CONSUMED = "Total clean water consumed (l)"
     TOTAL_CW_LOAD = "Total clean water demand (l)"
     TOTAL_CW_SUPPLIED = "Total clean water supplied (l)"
@@ -2232,6 +2233,21 @@ class PrioritisationStrategy(enum.Enum):
     STORAGE_AS_SOLAR_BACKUP = "storage_as_solar_backup"
 
 
+class ShiftingStrategy(enum.Enum):
+    """
+    Denotes the shifting strategy.
+
+    - DISABLED: No shifting is being carried out.
+
+    - ENABLED: Shifting is being carried out.
+
+    """
+
+    DISABLED = "disabled"
+    ENABLED = "enabled"
+    PRIORITY_ONLY = "priority_only"
+    # ...
+
 @dataclasses.dataclass
 class Scenario:
     """
@@ -2283,6 +2299,8 @@ class Scenario:
     .. attribute:: reference_thermal_efficiency
         If defined, gives the reference efficiency of a thermal power plant.
 
+    .. attribute:: shifting
+        The type of shifting protocol being used.
     """
 
     battery: bool
@@ -2301,6 +2319,7 @@ class Scenario:
     pv_d: bool
     pv_t: bool
     reference_thermal_efficiency: float = 0
+    shifting: ShiftingStrategy = ShiftingStrategy.DISABLED
 
     @classmethod
     def from_dict(
