@@ -159,28 +159,40 @@ def _simulation_environmental_appraisal(  # pylint: disable=too-many-locals
     # Calculate operating GHGs of the system during this simulation
     try:
         om_ghgs = ghgs.calculate_total_om(
-            system_details.initial_num_buffer_tanks
-            if system_details.initial_num_buffer_tanks is not None
-            else 0,
-            system_details.initial_num_clean_water_tanks
-            if system_details.initial_num_clean_water_tanks is not None
-            else 0,
-            system_details.initial_converter_sizes
-            if system_details.initial_converter_sizes is not None
-            else None,
+            (
+                system_details.initial_num_buffer_tanks
+                if system_details.initial_num_buffer_tanks is not None
+                else 0
+            ),
+            (
+                system_details.initial_num_clean_water_tanks
+                if system_details.initial_num_clean_water_tanks is not None
+                else 0
+            ),
+            (
+                system_details.initial_converter_sizes
+                if system_details.initial_converter_sizes is not None
+                else None
+            ),
             system_details.diesel_capacity,
             ghg_inputs,
-            system_details.initial_num_buffer_tanks
-            if system_details.initial_num_buffer_tanks is not None
-            else 0,
-            system_details.initial_num_hot_water_tanks
-            if system_details.initial_num_hot_water_tanks is not None
-            else 0,
+            (
+                system_details.initial_num_buffer_tanks
+                if system_details.initial_num_buffer_tanks is not None
+                else 0
+            ),
+            (
+                system_details.initial_num_hot_water_tanks
+                if system_details.initial_num_hot_water_tanks is not None
+                else 0
+            ),
             logger,
             system_details.initial_pv_sizes,
-            system_details.initial_pvt_size
-            if system_details.initial_pvt_size is not None
-            else 0,
+            (
+                system_details.initial_pvt_size
+                if system_details.initial_pvt_size is not None
+                else 0
+            ),
             system_details.initial_storage_size,
             start_year,
             end_year,
@@ -351,28 +363,40 @@ def _simulation_financial_appraisal(  # pylint: disable=too-many-locals
 
     # Calculate operating costs of the system during this simulation (discounted)
     om_costs = finance.total_om(
-        system_details.initial_num_buffer_tanks
-        if system_details.initial_num_buffer_tanks is not None
-        else 0,
-        system_details.initial_num_clean_water_tanks
-        if system_details.initial_num_clean_water_tanks is not None
-        else 0,
-        system_details.initial_converter_sizes
-        if system_details.initial_converter_sizes is not None
-        else None,
+        (
+            system_details.initial_num_buffer_tanks
+            if system_details.initial_num_buffer_tanks is not None
+            else 0
+        ),
+        (
+            system_details.initial_num_clean_water_tanks
+            if system_details.initial_num_clean_water_tanks is not None
+            else 0
+        ),
+        (
+            system_details.initial_converter_sizes
+            if system_details.initial_converter_sizes is not None
+            else None
+        ),
         system_details.diesel_capacity,
         finance_inputs,
-        system_details.initial_num_buffer_tanks
-        if system_details.initial_num_buffer_tanks is not None
-        else 0,
-        system_details.initial_num_hot_water_tanks
-        if system_details.initial_num_hot_water_tanks is not None
-        else 0,
+        (
+            system_details.initial_num_buffer_tanks
+            if system_details.initial_num_buffer_tanks is not None
+            else 0
+        ),
+        (
+            system_details.initial_num_hot_water_tanks
+            if system_details.initial_num_hot_water_tanks is not None
+            else 0
+        ),
         logger,
         system_details.initial_pv_sizes,
-        system_details.initial_pvt_size
-        if system_details.initial_pvt_size is not None
-        else 0,
+        (
+            system_details.initial_pvt_size
+            if system_details.initial_pvt_size is not None
+            else 0
+        ),
         system_details.initial_storage_size,
         start_year=system_details.start_year,
         end_year=system_details.end_year,

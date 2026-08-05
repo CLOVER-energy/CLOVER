@@ -42,7 +42,6 @@ from ..conversion.conversion import ThermalDesalinationPlant
 from .__utils__ import Minigrid
 from .storage_utils import HotWaterTank
 
-
 __all__ = ("calculate_pvt_output",)
 
 
@@ -365,9 +364,9 @@ def calculate_pvt_output(  # pylint: disable=too-many-locals, too-many-statement
     # Instantiate maps for easy PV-T power lookups.
     pvt_electric_power_per_unit_map: Dict[int, float] = {}
     pvt_pump_times_map: Dict[int, int] = {}
-    tank_supply_temperature_map: Dict[  # pylint: disable=unused-variable
-        int, float
-    ] = {}
+    tank_supply_temperature_map: Dict[int, float] = (  # pylint: disable=unused-variable
+        {}
+    )
     tank_volume_supplied_map: Dict[int, float] = {}
 
     # Compute the various terms which remain common across all time steps.
@@ -508,9 +507,11 @@ def calculate_pvt_output(  # pylint: disable=too-many-locals, too-many-statement
         tank_supply_on, volume_supplied = _volume_withdrawn_from_tank(
             temperatures[index],
             previous_tank_temperature,
-            processed_total_hw_load[index]
-            if processed_total_hw_load is not None
-            else None,
+            (
+                processed_total_hw_load[index]
+                if processed_total_hw_load is not None
+                else None
+            ),
             logger,
             minigrid,
             previous_tank_temperature,

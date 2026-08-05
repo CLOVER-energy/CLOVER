@@ -399,9 +399,9 @@ class BaseRenewablesNinjaThread(threading.Thread):
         """
 
         self.auto_generated_files_directory: str = auto_generated_files_directory
-        self.generation_inputs: Dict[
-            str, Union[bool, int, str, float]
-        ] = generation_inputs
+        self.generation_inputs: Dict[str, Union[bool, int, str, float]] = (
+            generation_inputs
+        )
         self.global_settings_inputs: Dict[str, str] = global_settings_inputs
         self.location: Location = location
         self.logger: Logger = get_logger(logger_name, verbose)

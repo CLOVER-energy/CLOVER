@@ -563,20 +563,28 @@ def _simulation_iteration(  # pylint: disable=too-many-locals, too-many-statemen
             "Probing system upper bounds: pv_size: %s, storage_size: %s%s%s%s%s%s",
             pv_size_max,
             storage_size_max,
-            f", clean-water PV-T size: {cw_pvt_size_max}"
-            if optimisation.scenario.desalination_scenario is not None
-            and optimisation.scenario.pv_t
-            else "",
-            f", num clean-water tanks: {cw_tanks_max}"
-            if optimisation.scenario.desalination_scenario is not None
-            else "",
-            f", hot-water PV-T size: {hw_pvt_size_max}"
-            if optimisation.scenario.hot_water_scenario is not None
-            and optimisation.scenario.pv_t
-            else "",
-            f", num hot-water tanks: {hw_tanks_max}"
-            if optimisation.scenario.hot_water_scenario is not None
-            else "",
+            (
+                f", clean-water PV-T size: {cw_pvt_size_max}"
+                if optimisation.scenario.desalination_scenario is not None
+                and optimisation.scenario.pv_t
+                else ""
+            ),
+            (
+                f", num clean-water tanks: {cw_tanks_max}"
+                if optimisation.scenario.desalination_scenario is not None
+                else ""
+            ),
+            (
+                f", hot-water PV-T size: {hw_pvt_size_max}"
+                if optimisation.scenario.hot_water_scenario is not None
+                and optimisation.scenario.pv_t
+                else ""
+            ),
+            (
+                f", num hot-water tanks: {hw_tanks_max}"
+                if optimisation.scenario.hot_water_scenario is not None
+                else ""
+            ),
             ", ".join(
                 [
                     f"{converter.name} size: {size}"
@@ -703,22 +711,30 @@ def _simulation_iteration(  # pylint: disable=too-many-locals, too-many-statemen
     logger.info(
         "Largest system size determined:\n- pv_size: %s\n%s%s%s%s- storage_size: %s",
         pv_size_max,
-        f"- clean-water pvt-size: {cw_pvt_size_max}\n"
-        if minigrid.pvt_panel is not None
-        and optimisation.scenario.desalination_scenario is not None
-        else "",
-        f"- num clean-water tanks: {cw_tanks_max}\n"
-        if minigrid.clean_water_tank is not None
-        and optimisation.scenario.desalination_scenario is not None
-        else "",
-        f"- hot-water pvt-size: {hw_pvt_size_max}\n"
-        if minigrid.pvt_panel is not None
-        and optimisation.scenario.hot_water_scenario is not None
-        else "",
-        f"- num hot-water tanks: {hw_tanks_max}\n"
-        if minigrid.hot_water_tank is not None
-        and optimisation.scenario.hot_water_scenario is not None
-        else "",
+        (
+            f"- clean-water pvt-size: {cw_pvt_size_max}\n"
+            if minigrid.pvt_panel is not None
+            and optimisation.scenario.desalination_scenario is not None
+            else ""
+        ),
+        (
+            f"- num clean-water tanks: {cw_tanks_max}\n"
+            if minigrid.clean_water_tank is not None
+            and optimisation.scenario.desalination_scenario is not None
+            else ""
+        ),
+        (
+            f"- hot-water pvt-size: {hw_pvt_size_max}\n"
+            if minigrid.pvt_panel is not None
+            and optimisation.scenario.hot_water_scenario is not None
+            else ""
+        ),
+        (
+            f"- num hot-water tanks: {hw_tanks_max}\n"
+            if minigrid.hot_water_tank is not None
+            and optimisation.scenario.hot_water_scenario is not None
+            else ""
+        ),
         storage_size_max,
     )
 
@@ -821,9 +837,9 @@ def _simulation_iteration(  # pylint: disable=too-many-locals, too-many-statemen
             )
         )
     else:
-        component_sizes[
-            RenewableEnergySource.CLEAN_WATER_PVT
-        ] = simulation_cw_pvt_system_size[0]
+        component_sizes[RenewableEnergySource.CLEAN_WATER_PVT] = (
+            simulation_cw_pvt_system_size[0]
+        )
 
     # Add the iterable converter sizes.
     for converter, sizes in converter_sizes.items():
@@ -841,9 +857,11 @@ def _simulation_iteration(  # pylint: disable=too-many-locals, too-many-statemen
             parameter_space.append(
                 (
                     converter,
-                    "simulation"
-                    if len(parameter_space) == 0
-                    else f"{converter.name} size",
+                    (
+                        "simulation"
+                        if len(parameter_space) == 0
+                        else f"{converter.name} size"
+                    ),
                     simulation_converter_size_list,
                 )
             )
@@ -876,9 +894,9 @@ def _simulation_iteration(  # pylint: disable=too-many-locals, too-many-statemen
             )
         )
     else:
-        component_sizes[
-            RenewableEnergySource.HOT_WATER_PVT
-        ] = simulation_hw_pvt_system_size[0]
+        component_sizes[RenewableEnergySource.HOT_WATER_PVT] = (
+            simulation_hw_pvt_system_size[0]
+        )
 
     # Add the iterable PV sizes if appropriate.
     if len(simulation_pv_sizes) > 1:
