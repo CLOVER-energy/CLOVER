@@ -37,7 +37,6 @@ from ..__utils__ import (
 )
 from ..conversion.conversion import MAXIMUM_OUTPUT, Converter
 
-
 __all__ = (
     "DIESEL_CONSUMPTION",
     "DieselGenerator",
