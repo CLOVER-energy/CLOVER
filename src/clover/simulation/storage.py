@@ -46,6 +46,7 @@ __all__ = (
     "get_water_storage_profile",
 )
 
+
 # 1.2. Potentially adapt this function to take in a shorter dataframe with less
 # information.
 def battery_iteration_step(
@@ -91,7 +92,7 @@ def battery_iteration_step(
             The energy surplus generated which could not be stored in the batteries.
         - new_hourly_battery_storage;
             The computed level of energy stored in the batteries at this time step.
-        - 
+        -
     """
 
     if minigrid.battery is None:
@@ -120,15 +121,10 @@ def battery_iteration_step(
             - Any power which wasn't stored in the batteries or couldn't be discharged.
 
         """
-        # 1.1 to find unmet_t at t == 0
-        if time_index == 0:
-            prev_storage = initial_battery_storage
-        else:
-            prev_storage = hourly_battery_storage[time_index - 1]
         # Battery charging
         if battery_energy_flow >= 0.0:
             new_hourly_battery_storage = float(
-                prev_storage
+                hourly_battery_storage[time_index - 1]
             ) * (1.0 - minigrid.battery.leakage) + minigrid.battery.conversion_in * (
                 stored_power := min(
                     battery_energy_flow,
@@ -139,7 +135,7 @@ def battery_iteration_step(
             remaining_energy_balance = battery_energy_flow - stored_power
         # Battery discharging
         else:
-            new_hourly_battery_storage = prev_storage * (
+            new_hourly_battery_storage = hourly_battery_storage[time_index - 1] * (
                 1.0 - minigrid.battery.leakage
             ) + (1.0 / minigrid.battery.conversion_out) * (
                 discharged_power := max(
@@ -156,101 +152,101 @@ def battery_iteration_step(
     energy_generation_or_load_deficit = float(
         battery_storage_profile.iloc[time_index, 0]
     )
-    # if time_index < 0: # 1.1 not needed, updated charge_or_discharge to account for t==0
-    #     new_hourly_battery_storage = (
-    #         initial_battery_storage + energy_generation_or_load_deficit
-    #     )
+    if time_index == 0:
+        new_hourly_battery_storage = (
+            initial_battery_storage + energy_generation_or_load_deficit
+        )
 
-    # else:
-    # Carry out logic based on the grid-electricity prioritisation strategy.
-    match scenario.prioritisation_strategy:
+    else:
+        # Carry out logic based on the grid-electricity prioritisation strategy.
+        match scenario.prioritisation_strategy:
 
-        # If consuming self-generated electricity, then take power from the batteries
-        # first, then use the grid if available.
-        case PrioritisationStrategy.SELF_CONSUMPTION:
-            new_hourly_battery_storage, remaining_energy_balance = (
-                _charge_or_discharge(energy_generation_or_load_deficit)
-            )
-
-            # If the battery was discharging and there is still load to be met, then
-            # take power from the grid if available.
-            grid_energy.iloc[time_index, 0] += max(
-                grid_power_consumed := (-remaining_energy_balance)
-                * grid_profile.iloc[time_index, 0],
-                0,
-            )
-            remaining_energy_balance += grid_power_consumed
-
-       # If the battery storage functions as a backup _only_, such that power
-        # should be taken from the grid first if available, then do this.
-        case PrioritisationStrategy.STORAGE_AS_SOLAR_BACKUP:
-            # Take power from the grid network if there is power to be taken.
-            # NOTE: Energy arbitrage could be coded up here.
-            grid_energy.iloc[time_index, 0] += (
-                grid_power_consumed := -min(energy_generation_or_load_deficit, 0)
-                * grid_profile.iloc[time_index, 0]
-            )
-            energy_generation_or_load_deficit += grid_power_consumed
-
-            # Then, if there is still unmet demand (such that the grid was not
-            # available), discharge the batteries.
-            # Similarly, if there is surplus power from the on-site solar, then
-            # charge the batteries by this amout.
-            new_hourly_battery_storage, remaining_energy_balance = (
-                _charge_or_discharge(energy_generation_or_load_deficit)
-            )
-
-        # If consuming from the grid, and storage is utilised to meet unmet demand but
-        # is not topped up to function as an emergency backup, then power should be
-        # taken from the storage if required but, if the grid is available, the storage
-        # should not be charged up from the grid.
-        case PrioritisationStrategy.GRID_PRIORITISATION:
-            # If there is a deficit, and power needs to be met, then discharge as
-            # power would already have been taken from the grid if available.
-            # If there is surplus solar generation, then store this in the
-            # batteries.
-            new_hourly_battery_storage, remaining_energy_balance = (
-                _charge_or_discharge(energy_generation_or_load_deficit)
-            )
-
-        # If consuming from the grid and aiming to use storage as an emergency backup,
-        # then the batteries should be discharged if there's unmet load but, if the grid
-        # is available, then they should be fully charged as much as is possible.
-        case PrioritisationStrategy.STORAGE_AS_BACKUP_SERVICE:
-            # If there is a deficit, and power needs to be met, then discharge as
-            # power would already have been taken from the grid if available.
-            # If there is surplus solar generation, then store this in the
-            # batteries.
-            new_hourly_battery_storage, remaining_energy_balance = (
-                _charge_or_discharge(energy_generation_or_load_deficit)
-            )
-
-            # Otherwise, the batteries should be fully charged if the grid is
-            # available.
-            grid_energy.iloc[time_index, 0] += (
-                grid_power_consumed := min(
-                    (minigrid.battery.capacity - new_hourly_battery_storage),
-                    (
-                        minigrid.battery.charge_rate
-                        * (maximum_battery_storage - minimum_battery_storage),
-                    ),
+            # If consuming self-generated electricity, then take power from the batteries
+            # first, then use the grid if available.
+            case PrioritisationStrategy.SELF_CONSUMPTION:
+                new_hourly_battery_storage, remaining_energy_balance = (
+                    _charge_or_discharge(energy_generation_or_load_deficit)
                 )
-                * grid_profile.iloc[time_index, 0]
-            )
+
+                # If the battery was discharging and there is still load to be met, then
+                # take power from the grid if available.
+                grid_energy.iloc[time_index, 0] += max(
+                    grid_power_consumed := (-remaining_energy_balance)
+                    * grid_profile.iloc[time_index, 0],
+                    0,
+                )
+                remaining_energy_balance += grid_power_consumed
+
+            # If the battery storage functions as a backup _only_, such that power
+            # should be taken from the grid first if available, then do this.
+            case PrioritisationStrategy.STORAGE_AS_SOLAR_BACKUP:
+                # Take power from the grid network if there is power to be taken.
+                # NOTE: Energy arbitrage could be coded up here.
+                grid_energy.iloc[time_index, 0] += (
+                    grid_power_consumed := -min(energy_generation_or_load_deficit, 0)
+                    * grid_profile.iloc[time_index, 0]
+                )
+                energy_generation_or_load_deficit += grid_power_consumed
+
+                # Then, if there is still unmet demand (such that the grid was not
+                # available), discharge the batteries.
+                # Similarly, if there is surplus power from the on-site solar, then
+                # charge the batteries by this amout.
+                new_hourly_battery_storage, remaining_energy_balance = (
+                    _charge_or_discharge(energy_generation_or_load_deficit)
+                )
+
+            # If consuming from the grid, and storage is utilised to meet unmet demand but
+            # is not topped up to function as an emergency backup, then power should be
+            # taken from the storage if required but, if the grid is available, the storage
+            # should not be charged up from the grid.
+            case PrioritisationStrategy.GRID_PRIORITISATION:
+                # If there is a deficit, and power needs to be met, then discharge as
+                # power would already have been taken from the grid if available.
+                # If there is surplus solar generation, then store this in the
+                # batteries.
+                new_hourly_battery_storage, remaining_energy_balance = (
+                    _charge_or_discharge(energy_generation_or_load_deficit)
+                )
+
+            # If consuming from the grid and aiming to use storage as an emergency backup,
+            # then the batteries should be discharged if there's unmet load but, if the grid
+            # is available, then they should be fully charged as much as is possible.
+            case PrioritisationStrategy.STORAGE_AS_BACKUP_SERVICE:
+                # If there is a deficit, and power needs to be met, then discharge as
+                # power would already have been taken from the grid if available.
+                # If there is surplus solar generation, then store this in the
+                # batteries.
+                new_hourly_battery_storage, remaining_energy_balance = (
+                    _charge_or_discharge(energy_generation_or_load_deficit)
+                )
+
+                # Otherwise, the batteries should be fully charged if the grid is
+                # available.
+                grid_energy.iloc[time_index, 0] += (
+                    grid_power_consumed := min(
+                        (minigrid.battery.capacity - new_hourly_battery_storage),
+                        (
+                            minigrid.battery.charge_rate
+                            * (maximum_battery_storage - minimum_battery_storage),
+                        ),
+                    )
+                    * grid_profile.iloc[time_index, 0]
+                )
 
     excess_energy = max(new_hourly_battery_storage - maximum_battery_storage, 0.0)
 
     # Option 1.1. Shift forward all load to the next hour, irrespective of forecasting.
     # [1.1] Compute unmet load which remains.
-    unmet_demand = max(-remaining_energy_balance, 0.0) 
-    
+    # unmet_demand = max(-remaining_energy_balance, 0.0)
+
     return (
         energy_generation_or_load_deficit,
         excess_energy,
         grid_energy,
         grid_profile,
         new_hourly_battery_storage,
-        unmet_demand # [1.1] Unmet load argument to return.
+        # unmet_demand # [1.1] Unmet load argument to return.
     )
 
 
@@ -733,7 +729,7 @@ def get_electric_battery_storage_profile(  # pylint: disable=too-many-locals, to
 
     # Consider transmission efficiency
     load_energy: pd.DataFrame = (
-        processed_total_electric_load / transmission_efficiency  # type: ignore
+        processed_total_electric_load.reset_index(drop=True) / transmission_efficiency  # type: ignore
     )
     pv_energy = pv_generation * transmission_efficiency
 

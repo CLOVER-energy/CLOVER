@@ -27,6 +27,8 @@ from typing import DefaultDict, Union
 
 import numpy as np  # pylint: disable=import-error
 import pandas as pd  # pylint: disable=import-error
+import matplotlib.pyplot as plt
+import matplotlib.animation as ani
 
 from tqdm import tqdm
 
@@ -36,6 +38,7 @@ from ..__utils__ import (
     CleanWaterMode,
     ColdWaterSupply,
     ColumnHeader,
+    CUT_OFF_TIME,
     dict_to_dataframe,
     DieselMode,
     HOURS_PER_YEAR,
@@ -47,13 +50,20 @@ from ..__utils__ import (
     ResourceType,
     Location,
     Scenario,
+    ShiftingStrategy,
     Simulation,
     SystemDetails,
     WasteProduct,
 )
 from ..conversion.conversion import Converter, ThermalDesalinationPlant, WaterSource
 from ..generation.solar import solar_degradation
-from ..load.load import compute_processed_load_profile, population_hourly
+from ..load.load import (
+    compute_processed_load_profile,
+    Device,
+    population_hourly,
+    Shiftability,
+)
+from .load_shifting import Task, process_load_shifting
 from .__utils__ import determine_available_converters, Minigrid
 from .diesel import (
     DieselWaterHeater,
@@ -1264,6 +1274,8 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
     simulation: Simulation,
     temperature_data: dict[str, pd.Series],
     total_loads: dict[ResourceType, pd.DataFrame | None],
+    device_hourly_usage: dict[Device, pd.DataFrame] | None,
+    daily_device_ownership: dict[Device, pd.DataFrame] | None,
     wind_speed_data: pd.Series | None,
 ) -> tuple[datetime.timedelta, pd.DataFrame, SystemDetails]:
     """
@@ -1318,6 +1330,10 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
         - total_loads:
             A mapping between :class:`ResourceType`s and their associated total loads
             placed on the system.
+        - device_hourly_usage: [1.2]
+            The hourly data for usage counts by device.
+        - daily_device_ownership: [1.2]
+            The daily data for ownership by device.
         - wind_speed_data:
             The wind-speed data series.
 
@@ -1363,6 +1379,8 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
                 Number of kerosene lamps in use (if no power available)
             - kerosene_mitigation:
                 Number of kerosene lamps not used (when power is available)
+            - initial_hourly_loads: 1.2
+                Hourly loads by device for the first few cycles
         - System details about the run.
 
     """
@@ -1624,6 +1642,165 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
         + thermal_desalination_electric_power_consumed.values
     )
 
+    # [1.2] re-arrange loads for shifting here.
+    if (
+        scenario.shifting_scenario.strategy == ShiftingStrategy.ENABLED
+    ):  # or match scenario.shifting
+        time_period = scenario.shifting_scenario.shifting_period
+        # shifted_total_load: pd.Series = pd.Series()
+        initial_shifted_load: dict[str, pd.DataFrame] = {}  # return in main
+        renewables_power_produced = pd.DataFrame(*[pv_power_produced])
+        sim_start, sim_end = start_hour, end_hour
+
+        hourly_priority_scores: pd.Series = pd.Series(
+            0.0, index=range(start_hour, end_hour)
+        )
+        # xxxxxxxx shiftable_load = pd.Series(0.0, index=range(start_hour, end_hour))
+        processed_total_electric_load.index = (
+            processed_total_electric_load.index + start_hour
+        )
+
+        tasks: list[list[Task]] = []
+        task_id = 0
+        device_count = defaultdict(
+            lambda: pd.Series(0.0, index=range(start_hour, end_hour))
+        )
+        day1_loads: dict[str, pd.DataFrame] = {}
+        frames = []  # animation
+
+        logger.info("Begin shifting loads")
+
+        for (
+            device,
+            hourly_df,
+        ) in (
+            device_hourly_usage.items()
+        ):  # counts for unshiftable loads, and calculate shiftable load
+            hourly_counts = hourly_df.iloc[start_hour:end_hour, 0].astype(int)
+            day1_loads[device.name] = hourly_counts.iloc[0:24].mul(
+                device.electric_power
+            )  # animation
+            # if device.shifting.shiftability == Shiftability.UNSHIFTABLE:
+            hourly_priority_scores += hourly_counts.mul(device.priority)
+            d_hourly_usage = hourly_df.iloc[
+                start_hour : min(start_hour + CUT_OFF_TIME, end_hour), 0
+            ].astype(int)
+            device_count[device] = d_hourly_usage
+
+            # shiftable contribution to removable load
+            # device_power = device.electric_power / 1000
+            # shiftable_load += hourly_counts * device_power
+
+        for period_start in range(
+            start_hour, end_hour, time_period
+        ):  # shift over periods
+            period_end = min(period_start + time_period, end_hour)
+            period_tasks: list[Task] = []
+
+            for device, hourly_df in device_hourly_usage.items():
+                if device.shifting.shiftability == Shiftability.UNSHIFTABLE:
+                    continue
+                # device_count[device] = hourly_df.iloc[start_hour:end_hour, 0].astype(int)
+                device_power = device.electric_power / 1000
+                priority = device.priority
+                device_shift_limit = device.shifting.shift_limit
+                penalty_factor = device.shifting.shift_penalty
+
+                day_counts = hourly_df.iloc[period_start:period_end, 0].astype(int)
+
+                for hour, count in day_counts.items():
+                    if count < 0:
+                        raise ValueError
+
+                    period_tasks.extend(
+                        Task(
+                            device=device,
+                            original_hour=hour,
+                            electric_power=device_power,
+                            priority_score=priority,
+                            shift_limit=device_shift_limit,
+                            is_priority=(priority != 0),
+                            shift_penalty=penalty_factor,
+                            task_id=task_id + c,
+                        )
+                        for c in range(count)
+                    )
+                    task_id += count
+
+            tasks.append(period_tasks)
+
+        logger.info("All tasks instantiated")
+
+        # variables for animation
+        frames.append({dev: loads.copy() for dev, loads in day1_loads.items()})
+
+        # subtract shiftable contributions from total_load
+        # base_load = (
+        #     processed_total_electric_load.iloc[:, 0] - shiftable_load
+        # )  # find renewables available after base_load is used
+        renewables_available = (
+            renewables_power_produced.iloc[start_hour:end_hour, 0]
+            - processed_total_electric_load.loc[start_hour:end_hour, 0]
+        )
+        # shifted_load = pd.Series(0.0, index=range(start_hour, end_hour))
+
+        total_unmet_load = pd.Series(0.0, index=range(start_hour, end_hour))
+        total_unmet_tasks = []
+
+        for t in range(0, end_hour - start_hour, time_period):  # tqdm?
+            # start, end = t, min((t + time_period - 1), end_hour)
+            day = t // 24
+            if t <= CUT_OFF_TIME:
+                device_hourly_loads_sh, unmet_tasks, unmet_load = process_load_shifting(
+                    # base_load,
+                    day,
+                    day1_loads,  # animation
+                    (sim_start, sim_end),
+                    daily_device_ownership,
+                    device_count,
+                    frames,  # animation
+                    hourly_priority_scores,
+                    # processed_total_electric_load, # NEW
+                    renewables_available,
+                    # shifted_load,
+                    tasks,
+                    total_unmet_load,
+                )
+                if unmet_load is not None:
+                    # if unmet_load is not None:
+                    total_unmet_load = unmet_load
+                total_unmet_tasks.extend(unmet_tasks)
+
+                for device, df in device_hourly_loads_sh.items():
+                    initial_shifted_load[device] = (
+                        df.loc[start_hour : start_hour + CUT_OFF_TIME]
+                        if device in initial_shifted_load
+                        else df.copy()
+                    )
+                    # initial_shifted_load[device] *= 1000
+            else:
+                pass
+                # _, total_electric_load_sh = process_load_shifting(
+                #     (start, end),
+                #     device_hourly_usage=device_hourly_usage,
+                #     daily_device_ownership=daily_device_ownership,
+                #     renewables_power_produced=renewables_power_produced,  # currently not considering other
+                #     # sources in renewables_energy_map
+                #     total_load=processed_total_electric_load,  # *****
+                # )
+            # shifted_total_load = pd.concat(
+            #     [shifted_total_load, total_electric_load_sh], ignore_index=True
+            # )
+
+        # overwrite unshifted load profile
+        # NOTE: yearly_stats not overwritten yet
+        # processed_total_electric_load = (base_load+shifted_load).to_frame()  # * 0.001  # kWh
+        processed_total_electric_load = (
+            renewables_power_produced.iloc[start_hour:end_hour, 0].copy()
+            - renewables_available
+        ).to_frame()
+        logger.info("Shifting loads completed")
+
     # Compute the electric input profiles.
     battery_storage_profile: pd.DataFrame
     grid_energy: pd.DataFrame
@@ -1811,7 +1988,7 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
         # consumption, can feed into the algorithm.
 
         # 1.1 initialise hourly load shifting parameter
-        shifted_out: dict[int, float] = {} # represents load shifted from t to t+1
+        # shifted_out: dict[int, float] = {} # represents load shifted from t to t+1
 
         for t in tqdm(
             range(int(battery_storage_profile.size)),
@@ -1827,7 +2004,7 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
                 grid_energy,
                 grid_profile,
                 new_hourly_battery_storage,
-                unmet_t # 1.1 unmet load at end of hour
+                # unmet_t # 1.1 unmet load at end of hour
             ) = battery_iteration_step(
                 battery_storage_profile,
                 grid_energy,
@@ -1877,10 +2054,9 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
 
             # Dumped energy and unmet demand
             energy_surplus[t] = excess_energy  # type: ignore
-            # 1.1 energy_deficit calculated later
-            # energy_deficit[t] = max(  # type: ignore
-            #     minimum_battery_storage - new_hourly_battery_storage, 0.0
-            # )  # Battery too empty
+            energy_deficit[t] = max(  # type: ignore
+                minimum_battery_storage - new_hourly_battery_storage, 0.0
+            )  # Battery too empty
 
             # Battery capacities and blackouts (if battery is too full or empty)
             new_hourly_battery_storage = min(
@@ -1909,17 +2085,17 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
                     minigrid,
                     storage_power_supplied,
                     time_index=t,
-                ) 
+                )
             # 1.1 update the hourly load parameters to shift unmet demand by an hour
-            if t < (int(battery_storage_profile.size) - 1):
-                battery_storage_profile.iloc[t+1, 0] -= unmet_t
-                energy_deficit[t] = 0.0
-                shifted_out[t] = unmet_t
-                # additional shifted load for t+1 = (NOT load at t +) shifted load
-                # reset load at t to 0
-            else:
-                shifted_out[t] = 0.0
-                energy_deficit[t] = unmet_t
+            # if t < (int(battery_storage_profile.size) - 1):
+            #     battery_storage_profile.iloc[t+1, 0] -= unmet_t
+            #     energy_deficit[t] = 0.0
+            #     shifted_out[t] = unmet_t
+            #     # additional shifted load for t+1 = (NOT load at t +) shifted load
+            #     # reset load at t to 0
+            # else:
+            #     shifted_out[t] = 0.0
+            #     energy_deficit[t] = unmet_t
 
             # End interup: [1.2] [END]
 
@@ -1944,10 +2120,10 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
         storage_power_supplied_frame = pd.DataFrame([0] * (end_hour - start_hour))
 
     # 1.1 process shifted load output
-    if shifted_out is not None and len(shifted_out) > 0:
-        shifted_energy_frame = dict_to_dataframe(shifted_out, logger)
-    else:
-        shifted_energy_frame = pd.DataFrame([0] * (end_hour - start_hour))
+    # if shifted_out is not None and len(shifted_out) > 0:
+    #     shifted_energy_frame = dict_to_dataframe(shifted_out, logger)
+    # else:
+    #     shifted_energy_frame = pd.DataFrame([0] * (end_hour - start_hour))
 
     # Determine the initial and final storage sizes
     initial_storage_size = float(electric_storage_size * minigrid.battery.storage_unit)
@@ -2019,6 +2195,8 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
         water_surplus_frame = pd.DataFrame([0.0] * int(battery_storage_profile.size))
 
     # Find unmet energy
+    # import pdb
+    # pdb.set_trace()
     unmet_energy = pd.DataFrame(
         (
             load_energy.values
@@ -2028,7 +2206,7 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
             - renewables_energy_used_directly.values
             - grid_energy.values
             - storage_power_supplied_frame.values
-            - shifted_energy_frame.values # 1.1 subtract shifted load from unmet energy
+            # - shifted_energy_frame.values # 1.1 subtract shifted load from unmet energy
         )
     )
     if thermal_desalination_electric_power_consumed is not None:
@@ -2037,18 +2215,18 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
         )
 
     # 1.1 Find load profile after shifting
-    base_electric_load_frame = processed_total_electric_load.reset_index(drop=True)
-    shifted_out_frame = dict_to_dataframe(shifted_out, logger).reindex(
-    range(len(base_electric_load_frame)), fill_value=0.0
-    )
-    shifted_in_frame = shifted_out_frame.shift(1).fillna(0.0)
+    # base_electric_load_frame = processed_total_electric_load.reset_index(drop=True)
+    # shifted_out_frame = dict_to_dataframe(shifted_out, logger).reindex(
+    # range(len(base_electric_load_frame)), fill_value=0.0
+    # )
+    # shifted_in_frame = shifted_out_frame.shift(1).fillna(0.0)
 
-    shifted_load_profile = (
-        base_electric_load_frame
-        - shifted_out_frame.values
-        + shifted_in_frame.values
-        - energy_deficit_frame.values
-    ).clip(lower=0.0)
+    # shifted_load_profile = (
+    #     base_electric_load_frame
+    #     - shifted_out_frame.values
+    #     + shifted_in_frame.values
+    #     - energy_deficit_frame.values
+    # ).clip(lower=0.0)
 
     # Determine the times for which the system experienced a blackout.
     blackout_times = ((unmet_energy > 0) * 1).astype(float)  # type: ignore [operator]
@@ -2363,7 +2541,7 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
         [ColumnHeader.TOTAL_ELECTRICITY_CONSUMED.value]
     )
     unmet_energy.columns = pd.Index([ColumnHeader.UNMET_ELECTRICITY.value])
-    shifted_load_profile.columns = pd.Index([ColumnHeader.SHIFTED_PROFILE.value]) # 1.1
+    # shifted_load_profile.columns = pd.Index([ColumnHeader.SHIFTED_PROFILE.value]) # 1.1
 
     # System details
     system_details = SystemDetails(
@@ -2469,7 +2647,7 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
         total_energy_used,
         power_used_on_electricity,
         unmet_energy,
-        shifted_load_profile,
+        # shifted_load_profile, # 1.1
         blackout_times,
         renewables_energy_used_directly,
         storage_power_supplied_frame,
@@ -2599,6 +2777,21 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
         system_performance_outputs_list,
         axis=1,
     )
+
+    # 1.2
+    if scenario.shifting_scenario.strategy == ShiftingStrategy.ENABLED:
+        # return initial_shifted_load back to main
+        return (
+            time_delta,
+            (
+                system_performance_outputs,
+                initial_shifted_load,
+                total_unmet_load,
+                total_unmet_tasks,
+                frames,
+            ),
+            system_details,
+        )
 
     return time_delta, system_performance_outputs, system_details
 

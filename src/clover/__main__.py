@@ -68,6 +68,7 @@ from .__utils__ import (
     OperatingMode,
     ProgrammerJudgementFault,
     save_simulation,
+    ShiftingStrategy,
 )
 from .simulation.__utils__ import check_scenario
 
@@ -300,6 +301,8 @@ def _prepare_water_system(
             initial_loads,
             total_load,
             yearly_load_statistics,
+            _,
+            _,
         ) = load.process_load_profiles(
             auto_generated_files_directory,
             device_utilisations,
@@ -810,6 +813,8 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
                 initial_electric_hourly_loads,
                 total_electric_load,
                 electric_yearly_load_statistics,
+                device_hourly_usage,
+                daily_device_ownerships,
             ) = load.process_load_profiles(
                 auto_generated_files_directory,
                 device_utilisations,
@@ -1141,6 +1146,8 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
                         for key, value in total_solar_data.items()
                     },
                     total_loads,
+                    device_hourly_usage,
+                    daily_device_ownerships,
                     (
                         total_wind_data[wind.WindDataType.WIND_SPEED.value]
                         if total_wind_data is not None
@@ -1172,6 +1179,14 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
             system_details.file_information = input_file_info
 
             # Compute the key results.
+            # 1.2
+            if scenario.shifting_scenario.strategy == ShiftingStrategy.ENABLED:
+                initial_electric_hourly_loads = system_performance_outputs[1]
+                unmet_load = pd.DataFrame(system_performance_outputs[2])
+                unmet_tasks = pd.DataFrame(system_performance_outputs[3])
+                frames = system_performance_outputs[4]
+                system_performance_outputs = system_performance_outputs[0]
+
             key_results = analysis.get_key_results(  # type: ignore
                 grid_profile,
                 simulation.end_year - simulation.start_year,
@@ -1247,6 +1262,20 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
                 system_details,
             )
 
+            if scenario.shifting_scenario.strategy == ShiftingStrategy.ENABLED:
+                unmet_load.to_csv(
+                    os.path.join(simulation_output_directory, output, "unmet_load")
+                )
+                unmet_tasks.to_csv(
+                    os.path.join(simulation_output_directory, output, "unmet_tasks")
+                )
+
+                analysis.animate_day1_device_load_shifts(
+                    frames,
+                    os.path.join(
+                        simulation_output_directory, output, "day1_shifts.gif"
+                    ),
+                )
         print(f"Beginning CLOVER simulation runs {'.' * 30}    {DONE}")
 
         print(
