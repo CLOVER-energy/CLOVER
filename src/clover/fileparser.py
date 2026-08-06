@@ -86,6 +86,10 @@ BATTERY: str = "battery"
 #   The relative path to the battery inputs file.
 BATTERY_INPUTS_FILE: str = os.path.join("simulation", "battery_inputs.yaml")
 
+# BIOGAS_INPUTS_FILE:
+#   The relative path to the biogas inputs file.
+BIOGAS_INPUTS_FILE: str = os.path.join("generation", "biogas.yaml")
+
 # Conventional water-source-availability directory:
 #   The directory containing availability profiles for conventional water sources.
 CONVENTIONAL_WATER_SOURCE_AVAILABILITY_DIRECTORY: str = os.path.join(
@@ -1146,6 +1150,9 @@ def parse_scenario_inputs(
 
     """
 
+    biogas_inputs_filepath: str = os.path.join(
+        inputs_directory_relative_path, BIOGAS_INPUTS_FILE
+    )
     desalination_scenario_inputs_filepath: str = os.path.join(
         inputs_directory_relative_path,
         DESALINATION_SCENARIO_INPUTS_FILE,
@@ -1153,6 +1160,11 @@ def parse_scenario_inputs(
     hot_water_scenario_inputs_filepath: str = os.path.join(
         inputs_directory_relative_path, HOT_WATER_SCENARIO_INPUTS_FILE
     )
+
+    # Parse the biogas inputs information if relevant.
+    if os.path.isfile(biogas_inputs_filepath):
+        # TODO: Parse the bigoas inputs information.
+        pass
 
     # Parse the desalination scenario inputs information if relevant.
     if os.path.isfile(desalination_scenario_inputs_filepath):
@@ -1228,6 +1240,7 @@ def parse_scenario_inputs(
 
     try:
         scenarios: List[Scenario] = [
+            # TODO: Update with additional scenarios information.
             Scenario.from_dict(
                 desalination_scenarios, hot_water_scenarios, logger, entry
             )

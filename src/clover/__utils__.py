@@ -29,7 +29,6 @@ from typing import Any, DefaultDict, Dict, List, Optional, Set, Union
 import json
 import numpy as np  # pylint: disable=import-error
 import pandas as pd  # pylint: disable=import-error
-import scipy  # pylint: disable=import-error
 import yaml  # pylint: disable=import-error
 
 from tqdm import tqdm  # pylint: disable=import-error
@@ -84,9 +83,13 @@ __all__ = (
 )
 
 
-# API token placeholder text:
-#   Placeholder text to use when the renewables.ninja API token has not been specified.
+# API renewables_ninja_token placeholder text:
+#   Placeholder text to use when the renewables.ninja API renewables_ninja_token has not been specified.
 API_TOKEN_PLACEHOLDER_TEXT: str = "YOUR API TOKEN HERE"
+
+# BIOGAS:
+#   Keyword for biogas information.
+BIOGAS: str = "biogas"
 
 # Cold water:
 #   Used for parsing cold-water related information.
@@ -224,7 +227,7 @@ STEP: str = "step"
 SUPPLY_TEMPERATURE: str = "supply_temperature"
 
 # Token:
-#   Keyword used when parsing the generation token.
+#   Keyword used when parsing the generation renewables_ninja_token.
 TOKEN: str = "renewables_ninja_token"
 
 # Zero celcius offset:
@@ -1392,7 +1395,7 @@ def monthly_profile_to_daily_profile(monthly_profile: pd.DataFrame) -> pd.DataFr
 
     # Interpolate the value that falls in the middle of the month.
     daily_profile = {
-        hour: scipy.interp(range(365), MONTH_MID_DAY, extended_year_profile.iloc[hour])
+        hour: np.interp(range(365), MONTH_MID_DAY, extended_year_profile.iloc[hour])
         for hour in range(24)
     }
 
@@ -1653,6 +1656,146 @@ class RenewablesNinjaError(Exception):
         )
 
 
+class BiogasMode(enum.Enum):
+    """
+    Contains information about the bigoas mode being considered.
+
+    - CENTRALISED:
+        Centralised biogas.
+
+    - CONVENTIONAL:
+        Conventional cooking only.
+
+    - HOUSEHOLD:
+        Individual household-level biodigesteres.
+
+    """
+
+    CENTRALISED: str = "centralised"
+    CONVENTIONAL: str = "conventional"
+    HOUSEHOLD: str = "household"
+
+
+@dataclasses.dataclass
+class FuelSource:
+    """
+    Represents a fuel source.
+
+    .. attribute:: name
+        The name of the fuel source.
+
+    """
+
+    name: str
+
+
+@dataclasses.dataclass
+class Feedstock:
+    """
+    Represents a feedstock.
+
+    .. attribute:: area
+        The area occupied by the feedstock.
+
+    """
+
+    area: float
+
+
+@dataclasses.dataclass
+class _BaseCooker:
+    """
+    Represents a base cooking device.
+
+    # TODO: Decide whether fuel consumption or efficiency makes more sense here.
+    .. attribute:: fuel_consumption
+        The fuel which is consumed per unit output.
+
+    .. attribute:: name
+        The name of the cooker.
+
+
+    """
+
+    fuel_consumption: float
+    name: str
+
+
+@dataclasses.dataclass
+class Cooker(_BaseCooker):
+    """
+    Represents a cooker.
+    .. attribute:: fuel_sources
+        The fuel sources which can power the cooker.
+
+    """
+
+    fuel_sources: list[FuelSource]
+
+    @classmethod
+    def from_dict(
+        cls, cooker_inputs: dict[str, Any], fuel_sources: list[FuelSource]
+    ) -> Any:
+        """
+        Instantiate a cooker based on the inputs from the biogas file.
+
+        Inputs:
+            - cooker_inputs:
+                The inputs for the cooker from the biogas file.
+
+        """
+
+        return cls(
+            float(cooker_inputs["fuel_consumption"]),
+            str(cooker_inputs[NAME]),
+            [
+                fuel_source
+                for fuel_source in fuel_sources
+                if fuel_source.name in cooker_inputs["fuels"]
+            ],
+        )
+
+
+@dataclasses.dataclass
+class Biodigester(Cooker):
+    """
+    Represents a biodigester.
+
+    .. attribute:: feedstocks:
+        The feedstocks which are contained.
+
+    """
+
+    feedstocks: list[Feedstock]
+
+    @classmethod
+    def from_dict(
+        cls,
+        cooker_inputs: dict[str, Any],
+        feedstocks: list[Feedstock],
+        fuel_sources: list[FuelSource],
+    ) -> Any:
+        """
+        Instantiate a cooker based on the inputs from the biogas file.
+
+        Inputs:
+            - cooker_inputs:
+                The inputs for the cooker from the biogas file.
+
+        """
+
+        return cls(
+            float(cooker_inputs["fuel_consumption"]),
+            str(cooker_inputs[NAME]),
+            [
+                fuel_source
+                for fuel_source in fuel_sources
+                if fuel_source.name in cooker_inputs["fuels"]
+            ],
+            feedstocks,
+        )
+
+
 @dataclasses.dataclass
 class BiogasScenario:
     """
@@ -1664,8 +1807,17 @@ class BiogasScenario:
     # NOTE: This may requrie writing several new helper classes to assist which may be
     # :class:`enum.Enum` instances.
 
+    mode: BiogasMode
+    cookers: list[Cooker]
+
     @classmethod
-    def from_dict(cls, biogas_inputs: dict[str, Any], logger: logging.Logger) -> Any:
+    def from_dict(
+        cls,
+        biogas_inputs: dict[str, Any],
+        biogas_scenario_inputs: dict[str, Any],
+        logger: logging.Logger,
+        mode: str,
+    ) -> Any:
         """
         Instantiate a biogas scenario from a `dict` of inputs.
 
@@ -1675,7 +1827,30 @@ class BiogasScenario:
 
         """
 
-        # TODO: Fill this out to match the inputs that are provided.
+        # TODO: Add any additional inputs here.
+        biogas_mode: BiogasMode = BiogasMode(mode)
+        fuel_sources = [FuelSource(entry.get(NAME)) for entry in biogas_inputs["fuels"]]
+        feedstocks = [
+            Feedstock(entry.get(NAME), entry.get("area", 0))
+            for entry in biogas_inputs["feedstocks"]
+        ]
+
+        # If only conventional fuels, then process these and return.
+        cookers: list[Cooker | Biodigester] = []
+        if biogas_mode == BiogasMode.CONVENTIONAL:
+            for entry in biogas_scenario_inputs.get("cooking", []):
+                if BIOGAS not in entry["fuels"]:
+                    cookers.append(Cooker.from_dict(entry, fuel_sources))
+                    biogas_scenario_inputs["cooking"].remove(entry)
+
+            return cls(biogas_mode, cookers)
+
+        # If centralised or household biodigesters are being used, then add the
+        # biodigesters.
+        for entry in biogas_scenario_inputs.get("cooking", []):
+            cookers.append(Biodigester.from_dict(entry, feedstocks))
+
+        return cls(biogas_mode, cookers)
 
 
 @dataclasses.dataclass
@@ -2094,6 +2269,7 @@ class Scenario:
     @classmethod
     def from_dict(
         cls,
+        biogas_inputs: dict[str, Any],
         desalination_scenarios: Optional[List[DesalinationScenario]],
         hot_water_scenarios: Optional[List[HotWaterScenario]],
         logger: logging.Logger,
@@ -2141,6 +2317,18 @@ class Scenario:
             ResourceType(RESOURCE_NAME_TO_RESOURCE_TYPE_MAPPING[resource_name])
             for resource_name in scenario_inputs["resource_types"]
         }
+
+        # Determine the biogas scenario to use for the run.
+        if (_biogas_key := "biogas") in scenario_inputs:
+            import pdb
+
+            pdb.set_trace()
+            biogas_scenario: BiogasScenario | None = BiogasScenario.from_dict(
+                biogas_inputs,
+                scenario_inputs[_biogas_key],
+                logger,
+                scenario_inputs[_biogas_key].get("mode", BiogasMode.CONVENTIONAL.value),
+            )
 
         # Determine the desalination and hot-water scenarios to use for the run.
         if desalination_scenarios is not None:
@@ -2219,6 +2407,7 @@ class Scenario:
 
         return cls(
             scenario_inputs["battery"],
+            biogas_scenario,
             demands,
             desalination_scenario,
             diesel_scenario,
@@ -3091,7 +3280,7 @@ def save_simulation(
         ) as f:
             simulation.to_csv(
                 f,  # type: ignore
-                line_terminator="\n",
+                lineterminator="\n",
             )
         logger.info("Simulation successfully saved to %s.", simulation_output_folder)
         pbar.update(1)

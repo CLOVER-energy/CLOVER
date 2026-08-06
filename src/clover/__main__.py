@@ -824,7 +824,7 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
             raise
 
     # * If there are any cooking devices present, generate a cooking load.
-    if any(ResourceType.COOKING in scenario.resource_type for scenario in scenarios):
+    if any(ResourceType.COOKING in scenario.resource_types for scenario in scenarios):
         # TODO: Fill in the calls to stochastic load generation.
         # NOTE: This should return a stochastically-generated total cooking load.
         # NOTE: Remove "| None" once computed.
