@@ -1,0 +1,7 @@
+feedstocks:
+  - name: wheat
+    energy_efficiency: 0.8
+    ghgs: 0.045
+  - name: grass_clippings
+    energy_efficiency: 0.9
+    ghgs: 0.0645

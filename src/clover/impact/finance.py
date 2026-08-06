@@ -467,6 +467,9 @@ def get_total_equipment_cost(  # pylint: disable=too-many-locals, too-many-state
 
     """
 
+    # TODO: Add code utilising `_component_cost` and `_component_installation_cost` for the
+    # newly added cooking components, including biodigesters and fuel sources.
+
     # Calculate the various system costs.
     # compoennts.
     bos_cost = _component_cost(

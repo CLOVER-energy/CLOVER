@@ -823,6 +823,15 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
             )
             raise
 
+    # * If there are any cooking devices present, generate a cooking load.
+    if any(ResourceType.COOKING in scenario.resource_type for scenario in scenarios):
+        # TODO: Fill in the calls to stochastic load generation.
+        # NOTE: This should return a stochastically-generated total cooking load.
+        # NOTE: Remove "| None" once computed.
+        initial_cooking_hourly_loads: pd.DataFrame | None = None
+        total_cooking_load: pd.DataFrame | None = None
+        cooking_yearly_load_statistics: pd.DataFrame = None
+
     clean_water_yearly_load_statistics: pd.DataFrame  # pylint: disable=unused-variable
     conventional_cw_source_profiles: Optional[Dict[WaterSource, pd.DataFrame]] = None
     initial_cw_hourly_loads: Optional[Dict[str, pd.DataFrame]] = None
@@ -895,6 +904,8 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
         ResourceType.CLEAN_WATER: total_cw_load,
         ResourceType.ELECTRIC: 0.001 * total_electric_load,  # type: ignore
         ResourceType.HOT_CLEAN_WATER: total_hw_load,
+        # TODO: Add in a total cooking load.
+        # ResourceType.COOKING: total_cooking_load
     }
 
     # Generate the grid-availability profiles if relevant.

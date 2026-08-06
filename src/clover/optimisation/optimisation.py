@@ -535,7 +535,6 @@ def _simulation_iteration(  # pylint: disable=too-many-locals, too-many-statemen
                 BColours.endc,
             )
             raise InternalError("Threshold criteria not set on system appraisal.")
-
         logger.info(
             "The largest system was found to be insufficient. Threshold criteria: %s",
             json.dumps(

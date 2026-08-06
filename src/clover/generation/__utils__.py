@@ -49,6 +49,7 @@ from ..__utils__ import (
 )
 
 __all__ = (
+    "BaseAreaComponent",
     "BaseRenewablesNinjaThread",
     "total_profile_output",
 )
@@ -66,6 +67,28 @@ FEB_29: int = (31 + 28) * 24
 #   To avoid being locked out of the renewables.ninja API, it is necessary for CLOVER to
 #   sleep between requests. The time taken for this, in seconds, is set below.
 RENEWABLES_NINJA_SLEEP_TIME = 12
+
+
+class BaseAreaComponent:
+    """
+    Represents a base component that could have an area footprint.
+
+    .. attribute:: area
+        The area footprint of the component, per unit component.
+
+    """
+
+    def __init__(self, area: float) -> None:
+        """
+        Instantiate a base-area component.
+
+        Inputs:
+            - area:
+                The area occupied by the component.
+
+        """
+
+        self.area = area
 
 
 class SolarDataType(enum.Enum):

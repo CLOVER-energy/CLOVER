@@ -354,6 +354,8 @@ class ColumnHeader(enum.Enum):
     - BATTERY_HEALTH:
         The health of the batteries installed.
 
+    # TODO: Add any columns for the output CSV which are associated with biogas.
+
     - BUFFER_TANK_OUTPUT:
         The output of the buffer tank(s) installed.
 
@@ -525,6 +527,7 @@ class ColumnHeader(enum.Enum):
 
     BLACKOUTS = "Blackouts"
     BATTERY_HEALTH = "Battery health"
+    # TODO: Define and add labels for these biogas columns for the output CSV file.
     BUFFER_TANK_OUTPUT = "Buffer tank output volume (l)"
     BUFFER_TANK_TEMPERATURE = "Buffer tank temperature (degC)"
     CLEAN_WATER_BLACKOUTS = "Clean water blackouts"
@@ -1193,11 +1196,20 @@ class ResourceType(enum.Enum):
     - CLEAN_WATER:
         Represents a clean-water load.
 
+    - COOKING:
+        Represents a cooking load.
+
+    - COOKING_FUEL:
+        Represents fuel which is consumed when carrying out conventional cooking.
+
     - DIESEL:
         Represents the resource of diesel.
 
     - ELECTRIC:
         Represents an electric load.
+
+    - FEEDSTOCK:
+        Represents feedstocks which are then processed to produce biogas.
 
     - GENERIC_WATER:
         Represents water where the exact specifiction of the water is not needed. E.G.,
@@ -1225,8 +1237,11 @@ class ResourceType(enum.Enum):
     """
 
     CLEAN_WATER = "clean_water"
+    COOKING = "cooking"
+    COOKING_FUEL = "cooking_fuel"
     DIESEL = "diesel"
     ELECTRIC = "electricity"
+    FEEDSTOCK = "feedstock"
     GENERIC_WATER = "generic_water"
     HEAT = "heat"
     HOT_CLEAN_WATER = "hot_water"
@@ -1471,6 +1486,10 @@ class Criterion(enum.Enum):
     - BLACKOUTS:
         Denotes the portion of time for which the system experienced a blackout.
 
+    TODO: Add any biogas criteria that would be associated with optimisations, either as a
+    threshold which must be met (_e.g._, the total land area) to both this docstring and
+    the code below.
+
     - CLEAN_WATER_BLACKOUTS:
         Denotes the portion of time for which the clean-water system experienced a
         blackout.
@@ -1523,6 +1542,7 @@ class Criterion(enum.Enum):
     """
 
     BLACKOUTS = "blackouts"
+    # TODO: Add criteria that need to be added and computed here.
     CLEAN_WATER_BLACKOUTS = "clean_water_blackouts"
     CUMULATIVE_COST = "cumulative_cost"
     CUMULATIVE_GHGS = "cumulative_ghgs"
@@ -1631,6 +1651,31 @@ class RenewablesNinjaError(Exception):
             "your API key and that you have not exceeded the hourly quota of 50 "
             "profiles."
         )
+
+
+@dataclasses.dataclass
+class BiogasScenario:
+    """
+    Represents the biogas scenario being run.
+
+    """
+
+    # TODO: Structure this in such a way as to reflect the necessary input information.
+    # NOTE: This may requrie writing several new helper classes to assist which may be
+    # :class:`enum.Enum` instances.
+
+    @classmethod
+    def from_dict(cls, biogas_inputs: dict[str, Any], logger: logging.Logger) -> Any:
+        """
+        Instantiate a biogas scenario from a `dict` of inputs.
+
+        Inputs:
+            - biogas_inputs:
+                ...
+
+        """
+
+        # TODO: Fill this out to match the inputs that are provided.
 
 
 @dataclasses.dataclass
@@ -2030,6 +2075,7 @@ class Scenario:
     """
 
     battery: bool
+    biogas_scenario: BiogasScenario | None
     demands: Demands
     desalination_scenario: Optional[DesalinationScenario]
     diesel_scenario: DieselScenario
@@ -2551,6 +2597,20 @@ class SystemDetails:
             self.final_hw_pvt_size if self.final_hw_pvt_size is not None else 0
         )
 
+    @property
+    def area(self) -> float:
+        """
+        Return the area of the energy system in terms of its land footprint.
+
+        Outputs:
+            - The total area of the energy system in terms of its land footprint.
+
+        """
+
+        # TODO: Implement a calculation to sum up the area of all installed components.
+
+        return 0
+
 
 @dataclasses.dataclass
 class CumulativeResults:
@@ -2650,6 +2710,7 @@ class EnvironmentalAppraisal:
 
     """
 
+    # TODO: Add any environmental information (if relevant; unlikely) here also.
     diesel_ghgs: float = 0
     grid_ghgs: float = 0
     kerosene_ghgs: float = 0
@@ -2717,6 +2778,7 @@ class FinancialAppraisal:
 
     """
 
+    # TODO: Add anhy financial information (if relevant: unlikely) here also.
     diesel_cost: float = 0
     grid_cost: float = 0
     kerosene_cost: float = 0
@@ -2812,8 +2874,14 @@ class TechnicalAppraisal:
 
     """
 
+    # TODO: Consider the "technical" values that are associated with the cooking modelling
+    # and add them here.
     blackouts: float = 0
+    biogas_cooking: float | None = None
+    biogas_cooking_fraction: float | None = None
     clean_water_blackouts: Optional[float] = 0
+    conventional_biogas_cooking: float | None = None
+    conventional_biogas_cooking_fraction: float | None = None
     diesel_energy: float = 0
     diesel_fuel_usage: float = 0
     discounted_energy: float = 0
@@ -2821,6 +2889,8 @@ class TechnicalAppraisal:
     kerosene_displacement: float = 0
     pv_energy: float = 0
     pvt_energy: Optional[float] = 0
+    renewable_cooking: float | None = None
+    renewable_cooking_fraction: float | None = None
     renewable_energy: float = 0
     renewable_energy_fraction: float = 0
     storage_energy: float = 0
@@ -2858,6 +2928,10 @@ class TechnicalAppraisal:
             technical_appraisal_dict["clean_water_blackouts"] = (
                 self.clean_water_blackouts
             )
+
+        # TODO: Add the added biogas variables here also so that these are saved.
+        if self.biogas_cooking is not None:
+            pass
 
         technical_appraisal_dict = {
             str(key): float(value) for key, value in technical_appraisal_dict.items()

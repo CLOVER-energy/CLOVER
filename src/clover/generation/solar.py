@@ -35,7 +35,12 @@ from ..__utils__ import (
     ProgrammerJudgementFault,
     RenewablesNinjaError,
 )
-from .__utils__ import BaseRenewablesNinjaThread, SolarDataType, total_profile_output
+from .__utils__ import (
+    BaseAreaComponent,
+    BaseRenewablesNinjaThread,
+    SolarDataType,
+    total_profile_output,
+)
 
 __all__ = (
     "get_profile_prefix",
@@ -153,7 +158,11 @@ class Tracking(enum.Enum):
         return "dual_axis"
 
 
-class SolarPanel:  # pylint: disable=too-few-public-methods
+# TODO: Adjust any other components that have an area footprint to inherit from the newly
+# created `BaseAreaComponent`.
+# NOTE: If the solar (PV) panels are the only components that you want to consider as having
+# an area footprint, then this is fine to leave as is.
+class SolarPanel(BaseAreaComponent):  # pylint: disable=too-few-public-methods
     """
     Represents a solar panel being considered.
 
@@ -204,11 +213,14 @@ class SolarPanel:  # pylint: disable=too-few-public-methods
         reference_temperature: Optional[float],
         thermal_coefficient: Optional[float],
         tilt: Optional[float],
+        area: float | None = None,
     ) -> None:
         """
         Instantiate a :class:`SolarPanel` instance.
 
         Inputs:
+            - area:
+                The area footprint of the :class:`SolarPanel` instance.
             - azimuthal_orientation:
                 The azimuthal orientation of the :class:`SolarPanel`.
             - lifetime:
@@ -244,6 +256,10 @@ class SolarPanel:  # pylint: disable=too-few-public-methods
         self.reference_temperature: Optional[float] = reference_temperature
         self.thermal_coefficient: Optional[float] = thermal_coefficient
         self.tilt: Optional[float] = tilt
+
+        # NOTE: Copy similar code as below to other area-related classes but, as per above,
+        # if the PV modules are the only components with area, then leave as is.
+        super().__init__(area if area is not None else 0)
 
     def __init_subclass__(cls, panel_type: SolarPanelType) -> None:
         """
@@ -286,6 +302,7 @@ class PVPanel(
         thermal_coefficient: Optional[float],
         tilt: Optional[float],
         tracking: Tracking,
+        area: float | None = None,
     ) -> None:
         """
         Instantiate a :class:`PVPanel` instance.
@@ -333,6 +350,8 @@ class PVPanel(
             reference_temperature,
             thermal_coefficient,
             tilt,
+            area,
+            # TODO: Update all children classes as appropriate.
         )
 
     def __hash__(self) -> int:
@@ -458,6 +477,8 @@ class PVPanel(
             ),
             tilt,
             tracking,
+            # TODO: Update all children and other area classes as appropriate.
+            solar_inputs.get("area", None),
         )
 
 

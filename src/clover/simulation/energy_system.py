@@ -1403,6 +1403,32 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
         np.mean(hot_water_pvt_electric_power_per_unit.values),
     )
 
+    # Calculate cooking-related profiles.
+    # TODO: Add in computations here via a call to a newly defined helper function.
+    # TODO: Code a newly-defined helper function which will:
+    #   - Process the cooking load in a manner similar to the conversion functionality
+    #     - Cooking load will first be dealt with via any biogassifiers present,
+    #       - The feedstock needed will be computed then based on the biogasifier efficiency
+    #         NOTE: It's worth considering whether the level of feedstock within each
+    #         biogasifier needs modelling; _i.e._, whether you want to consider feedstock as
+    #         simply being needed based on the number of biodigesters present, with an
+    #         associated land use resulting, or whether you want to dynamically compute the
+    #         quantity of feedstock needed based on the total consumption of the
+    #         biodigesters and the demand placed on them. I imagine the former, but worth
+    #         considering.
+    #     - Cooking load will then be delegated to any electric cookers present,
+    #       NOTE: Provided that these can meet the demand --- there may be nuances in the
+    #       types of cooking load placed on the system which may be differentiatied in some
+    #       way; as in, not all cooking can be done using an electric cooker, _e.g._,
+    #     - This will generate an electric load which should be added to the total electric
+    #       load for use when determining the optimum mini-grid system,
+    #     - Any conventional cookers present will then meet the remaining load,
+    #     - With any remaining cooking load going unmet.
+    # NOTE: This newly created helper function should return the feedstock usage of each
+    # feedstock type, as well as the fuel usage of conventional fuels, as separate returned
+    # items, ideally as :class:`pd.Series` instances, which can then be totaled up later
+    # when computing the overall impact of these biogasifiers and other cooking devices.
+
     # Calculate electricity-related profiles.
     if total_electric_load is None:
         logger.error(
@@ -2126,6 +2152,15 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
         kerosene_usage,
         kerosene_mitigation,
     ]
+
+    # TODO: Add to the system performance outputs (which are saved to a CSV file) the
+    # information that's relevant for computing the outputs associated with biogas.
+    # NOTE: You'll need to include columns, certainly, for the usage of each of the
+    # feedstocks and fuels present so that the area requirements and emissions resulting
+    # from these can be later considered.
+    # NOTE: You'll need to assign the column headers for these variables.
+    if scenario.biogas_scenario is not None:
+        pass
 
     if (
         scenario.desalination_scenario is not None

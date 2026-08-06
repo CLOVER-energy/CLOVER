@@ -729,6 +729,9 @@ def appraise_system(  # pylint: disable=too-many-locals
     )
 
     # Get results which will be carried forward into optimisation process
+    # NOTE: Do NOT add additional arguments to these functions; rather, ensure that all
+    # additional information needed is wrapped up in either the simulation results or the
+    # system details.
     technical_appraisal = _simulation_technical_appraisal(
         finance_inputs, logger, simulation_results, system_details
     )
@@ -824,8 +827,12 @@ def appraise_system(  # pylint: disable=too-many-locals
         cumulative_system_ghgs,
     )
 
+    # TODO: Compute any additional biogas criteria that are relevant to the simulations
+    # (for appraisal purposes) or optimisations (for optimisation purposes) here.
+
     criteria = {
         Criterion.BLACKOUTS: round(technical_appraisal.blackouts, 3),
+        # TODO: Add any criteria added here as rounding.
         Criterion.CUMULATIVE_COST: round(cumulative_results.cost, 3),
         Criterion.CUMULATIVE_GHGS: round(cumulative_results.ghgs, 3),
         Criterion.CUMULATIVE_SYSTEM_COST: round(cumulative_results.system_cost, 3),

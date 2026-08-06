@@ -2424,6 +2424,9 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
     ) = parse_scenario_inputs(inputs_directory_relative_path, logger)
     logger.info("Scenario inputs successfully parsed.")
 
+    # TODO: Based on the parsed scenario information, IF biogas has been specified, THEN
+    # parse a biogas file and add this information on.
+
     # Parse the optimisation input information.
     optimisation_inputs_filepath = os.path.join(
         inputs_directory_relative_path,
@@ -2767,6 +2770,13 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
             )
         ] = defaultdict(float, transmission_emissions[transmitter])
         logger.info("Transmitter %s impact data successfully updated.", transmitter)
+
+    # Add biogas-specific impacts.
+    # TODO: Add biogas impact information to the finance and ghg input information from the
+    # newly created biogas input file, following a pattern similar to that for the
+    # desalination and hot-water impacts as below.
+    # NOTE: This should contain a similar conditional statement to only execute if biogas is
+    # present within the biogas scenario.
 
     # Add desalination-specific impacts.
     if any(

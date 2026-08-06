@@ -1,0 +1,99 @@
+---
+################################################################################
+# diesel_inputs.yaml - Diesel-generator input parameters.                      #
+#                                                                              #
+# Author: Phil Sandwell, Ben Winchester                                        #
+# Copyright: Phil Sandwell & Ben Winchester, 2021                              #
+# Date created: 14/07/2021                                                     #
+# License: Open source                                                         #
+################################################################################
+
+cooking:
+  - name: biodigester
+    # NOTE: You may want to include some way to track biogas consumption as a
+    # base resource throughout the simulations/optimisations. Otherwise, I think
+    # you can remove the consumption and minimum load requirements.
+    fuel_consumption: 0.4
+    fuel_sources: biogas # NOTE: This should match up with what you're defining
+    # below in the list of fuel sources.
+    minimum_load: 0.35 # Minimum capacity factor (0.0 - 1.0)
+    costs:
+      # NOTE: The units need to be considered carefully here. The digesters
+      # could be installed in integer units, per household; a strict requirement
+      # of one per household, or a dynamic capacity.
+      cost: 200 # [$/kW]  # NOTE: The costs and other information need updating.
+      installation_cost: 50 # [$/kW]
+      installation_cost_decrease: 0 # [% p.a.]
+      o&m: 20 # [$/kW p.a.]
+      cost_decrease: 0 # [% p.a.]
+    # NOTE: These costs and emissions are per digester
+    emissions:
+      ghgs: 2000 # [kgCO2/kW]
+      ghg_decrease: 0 # [% p.a.]
+      installation_ghgs: 50 # [kgCO2/kW]
+      installation_ghg_decrease: 0 # [% p.a.]
+    fuel_emissions:
+      # NOTE: There needs to be some way to consider emissions from the burning of the
+      # biogas in the household cookers. I think this is the most sensible place.
+      ghgs: 150
+    # NOTE: Need to consider whether there is a cost per unit generated biogas
+  - name: fireplace
+    fuel_consumption: 0.8 # Firewood is a source of fuel for a conventional
+    fuel_sources: firewood
+    # cooking stove, or charcoal could be used..
+    costs:
+      # NOTE: Need to consider whether there is a cost for existing installations.
+      # Likely, there is no cost here to consider.
+      cost: 0
+    emissions:
+      ghgs: 0
+
+  - name: electric_hotplate
+    # NOTE: Efficiency and fuel consumption are equivalent metrics: they measure
+    # the amount of fuel used per unit fuel delivered. I'm not sure which makes
+    # most sense for what you're considering, so you may want to use both.
+    fuel_consumption: 1.8
+    fuel_sources: electricity
+    minimum_load: 0.75
+    # NOTE: These costs are, again, per device.
+    costs:
+      cost: 200 # [$/kW]  # NOTE: The costs and other information need updating.
+      installation_cost: 50 # [$/kW]
+      installation_cost_decrease: 0 # [% p.a.]
+      o&m: 20 # [$/kW p.a.]
+      cost_decrease: 0 # [% p.a.]
+    emissions:
+      ghgs: 2000 # [kgCO2/kW]
+      ghg_decrease: 0 # [% p.a.]
+      installation_ghgs: 50 # [kgCO2/kW]
+      installation_ghg_decrease: 0 # [% p.a.]
+
+# NOTE: For the feedstocks for the biodigesters, I think you need to consider what
+# information you want to be utilised and conveyed.
+feedstocks:
+  - name: wheat
+    area: 0.8
+    energy_efficiency: 0.8
+    ghgs: 0.045
+  - name: grass_clippings
+    area: 0.8
+    energy_efficiency: 0.9
+    ghgs: 0.0645
+
+
+fuels:
+    # NOTE: These are the costs and emissions per unit fuel consumed.
+  - name: firewood
+    costs:
+      cost: 0.05  # [$/kWh]
+      cost_decrease: 2 # [% p.a.]
+    emissions:
+      ghgs: 150  # [kgC)2/kWh]
+      cost_decrease: 0 # [% p.a.]
+  - name: charcoal
+    costs:
+      cost: 0.10  # [$/kWh]
+      cost_decrease: 5 # [% p.a.]
+    emissions:
+      cost: 250  # [$/kWh]
+      cost_decrease: 0 # [% p.a.]

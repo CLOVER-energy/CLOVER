@@ -40,6 +40,9 @@ class ImpactingComponent(enum.Enum):
     """
     Used to keep tracek of components within the systems that have associated impacts.
 
+    - BIOGASIFIERS:
+        Denotes the biogasifier costs.
+
     - BOS:
         Denotes the balance-of-systems aspect of the system.
 
@@ -48,6 +51,10 @@ class ImpactingComponent(enum.Enum):
 
     - CLEAN_WATER_TANK:
         Denotes the clean-water tank component of the system.
+
+    - CONVENTIONAL_COOKING:
+        Denotes conventional cooking sources which have a GHG and cost impact during the
+        meeting of cooking demand.
 
     - CONVENTIONAL_SOURCE:
         Denotes conventional sources which would be utilised during minigrid supply
@@ -65,6 +72,9 @@ class ImpactingComponent(enum.Enum):
 
     - DIESEL_WATER_HEATER:
         Denotes the diesel water heater component of the system.
+
+    - ELECTRIC_COOKING:
+        Denotes electric cooking sources.
 
     - ELECTRIC_WATER_HEATER:
         Denotes the electric water heater component of the system.
@@ -109,6 +119,7 @@ class ImpactingComponent(enum.Enum):
 
     """
 
+    # TODO: Add impacting components below.
     BOS = "bos"
     BUFFER_TANK = "buffer_tank"
     CLEAN_WATER_TANK = "clean_water_tank"

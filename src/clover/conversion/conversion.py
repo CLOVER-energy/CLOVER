@@ -330,6 +330,18 @@ class Converter:
         return self.name
 
 
+class Cooker(Converter):
+    """
+    Represents a converter that functions to fulfil a cooking demand.
+
+    # TODO: Complete with the necessary non-inhereted attribute information.
+
+    """
+
+    # NOTE: I think this structure makes most sense as a cooker converts one form of
+    # resource type into another.
+
+
 class MultiInputConverter(Converter):
     """
     Represents a converter that is capable of having multiple input resource types.
