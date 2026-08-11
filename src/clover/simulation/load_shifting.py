@@ -238,7 +238,6 @@ def _append_animation_frame(
 
 
 def process_load_shifting(
-    # base_load: pd.Series,
     day: int,
     day1_loads: dict[str, pd.DataFrame],  # animation
     sim_times: tuple[int, int],
@@ -255,26 +254,14 @@ def process_load_shifting(
     total_tasks: list[list[Task]],
     weights,
     logger
-    # unmet_load,
 ) -> tuple[dict[str, pd.Series], pd.Series]:
     """
 
     Rearranges loads over a time period based on renewable energy available and priority scores
-    NOTE: add tests,
+    NOTE: add tests/exceptions
 
     NOTE: could rename this load_shifting, and write a new process_load_shifting function
         that returns final shifted series/dicts, like a wrapper?
-
-    Inputs:
-        - period:
-            time period within which loads are being shifted
-        - device_hourly_usage:
-            A mapping between device and its hourly load usage count.
-        -
-        -
-
-    Outputs:
-        -
 
     """
 
@@ -316,10 +303,9 @@ def process_load_shifting(
             hour
             for hour in range(
                 max((original_time - shift_lim), sim_start),
-                min((original_time + shift_lim), sim_end),
+                min((original_time + shift_lim + 1), sim_end),
             )
-            if device_count[device].loc[hour]
-            < device_ownership  # number of active devices < number of devices owned
+            if device_count[device].loc[hour] < device_ownership
         }
         # if day%50 == 0 and task.task_id%100==0:
         #         logger.info(f"TIMING: task {task.task_id} find valid hours {elapsed_t():.6f}s")
@@ -329,9 +315,6 @@ def process_load_shifting(
             # best_hour = np.int64(original_time)
             continue
         else:
-            # if device.name == "fan":
-            #     import pdb
-            #     pdb.set_trace()
             best_hour = _calculate_best_hour(
                 device_count[device],
                 hourly_priority_scores,
@@ -367,7 +350,7 @@ def process_load_shifting(
         #         logger.info(f"TIMING: task {task.task_id} find metric change {elapsed_t():.6f}s")
 
         # with time_this_chunk_of_code() as elapsed_t:
-        if (metric_after_shift - metric_before_shift) > -0.20 * power:
+        if (metric_after_shift - metric_before_shift) > -0.02 * power:
             # assign the task
             device_count[device].loc[best_hour] += 1
             device_count[device].loc[original_time] -= 1
@@ -402,15 +385,12 @@ def process_load_shifting(
 
 
     # construct device-specific hourly usages
-    devices = set(device for device in ownerships)
-    device_hourly_loads_shifted: dict[str, pd.DataFrame] = {}
-    for d in devices:
-        p = d.electric_power
-        n = d.name
-        device_hourly_loads_shifted[n] = (device_count[d] * p).to_frame()
-        # else:  # unshiftable devices
-        #     d_hourly_usage = device_hourly_usage[d].iloc[hours, 0].astype(int)
-        #     device_hourly_loads_shifted[n] = (d_hourly_usage * p).to_frame()
+    # devices = set(device for device in ownerships)
+    # device_hourly_loads_shifted: dict[str, pd.DataFrame] = {}
+    # for d in devices:
+    #     p = d.electric_power
+    #     n = d.name
+    #     device_hourly_loads_shifted[n] = (device_count[d] * p).to_frame()
 
-    return (device_hourly_loads_shifted,)  # by device
-    # total loads over time_period by DemandType
+    # return device_hourly_loads_shifted # by device
+
