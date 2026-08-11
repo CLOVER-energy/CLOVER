@@ -1182,9 +1182,9 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
             # 1.2
             if scenario.shifting_scenario.strategy == ShiftingStrategy.ENABLED:
                 initial_electric_hourly_loads = system_performance_outputs[1]
-                unmet_load = pd.DataFrame(system_performance_outputs[2])
-                unmet_tasks = pd.DataFrame(system_performance_outputs[3])
-                frames = system_performance_outputs[4]
+                frames = system_performance_outputs[2]
+                frames_subtitle = system_performance_outputs[3]
+                metric_day1 = system_performance_outputs[4]
                 system_performance_outputs = system_performance_outputs[0]
 
             key_results = analysis.get_key_results(  # type: ignore
@@ -1263,15 +1263,10 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
             )
 
             if scenario.shifting_scenario.strategy == ShiftingStrategy.ENABLED:
-                unmet_load.to_csv(
-                    os.path.join(simulation_output_directory, output, "unmet_load")
-                )
-                unmet_tasks.to_csv(
-                    os.path.join(simulation_output_directory, output, "unmet_tasks")
-                )
-
                 analysis.animate_day1_device_load_shifts(
                     frames,
+                    frames_subtitle,
+                    metric_day1,
                     os.path.join(
                         simulation_output_directory, output, "day1_shifts.gif"
                     ),

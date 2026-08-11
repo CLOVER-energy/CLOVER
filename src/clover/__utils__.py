@@ -2255,7 +2255,10 @@ class ShiftingStrategy(enum.Enum):
 class ShiftingScenario:
     strategy: ShiftingStrategy = ShiftingStrategy.DISABLED
     shifting_period: int = 24
-    wr: float = 0.25
+    renewables_weight: float = 0.25
+    priority_weight: float = 0.25
+    penalty_weight: float = 0.25
+    device_count_weight: float = 0.25
 
     def to_dict(self) -> dict[str, Any]:
         """
@@ -2272,6 +2275,12 @@ class ShiftingScenario:
                 float(self.shifting_period) if self.shifting is not None else str(None)
             ),
             "strategy": str(self.strategy.value),
+            "weights": {
+                float(self.renewables_weight),
+                float(self.priority_weight),
+                float(self.penalty_weight),
+                float(self.device_count_weight),
+            },
         }
 
 
@@ -2521,7 +2530,24 @@ class Scenario:
             in [e.value for e in ShiftingStrategy]
             else None
         )
-        shifting_scenario = ShiftingScenario(strategy, shifting_period)
+
+        shifting_weights = scenario_inputs["shifting"].get(
+            "weights",
+            {
+                "renewables_weight": 0.25,
+                "priority_weight": 0.25,
+                "penalty_weight": 0.25,
+                "device_count_weight": 0.25,
+            },
+        )
+        shifting_scenario = ShiftingScenario(
+            strategy,
+            shifting_period,
+            shifting_weights["renewables_weight"],
+            shifting_weights["priority_weight"],
+            shifting_weights["penalty_weight"],
+            shifting_weights["device_count_weight"],
+        )
 
         return cls(
             scenario_inputs["battery"],

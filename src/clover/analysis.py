@@ -3814,7 +3814,7 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
 
 
 def animate_day1_device_load_shifts(
-    frames, save_path="day1_load_shifts.gif", interval=400
+    frames, frames_subtitle, metric, save_path="day1_load_shifts.gif", interval=400
 ):
     """
     frames: list of dicts
@@ -3827,34 +3827,45 @@ def animate_day1_device_load_shifts(
     }  # replace with friendly mapping if available
     hours = np.arange(24)
 
-    fig, ax = plt.subplots()
+    fig, (ax1, ax2) = plt.subplots(nrows=1, ncols=2, width_ratios=(2, 1))
     bar_containers = []
     cumulative_load = np.zeros(24, dtype=float)
     first = frames[0]
 
     for k in device_keys:
         vals = np.array(first.get(k, [0.0] * 24), dtype=float)
-        bars = ax.bar(hours, vals, label=display_name[k], bottom=cumulative_load)
+        bars = ax1.bar(hours, vals, label=display_name[k], bottom=cumulative_load)
         bar_containers.append(bars)
         cumulative_load += vals
 
-    ax.set_xlim(-0.5, 23.5)
-    ax.set_xticks(hours)
-    ax.set_xlabel("Hour of Day (first 24h)")
-    ax.set_ylabel("Device load / W")
-    ax.legend(loc="upper right", ncol=2, fontsize=8)
-    ax.grid(axis="y", alpha=0.25)
-    ax.set_ylim(0, 1500)
+    ax1.set_xlim(-0.5, 23.5)
+    ax1.set_xticks(hours)
+    ax1.set_xlabel("Hour of Day (first 24h)")
+    ax1.set_ylabel("Device load / W")
+    ax1.legend(loc="upper right", ncol=2, fontsize=8)
+    ax1.grid(axis="y", alpha=0.25)
+    ax1.set_ylim(0, 1500)
 
-    subtitle = ax.text(
+    subtitle = ax1.text(
         0.01,
         1.02,
-        "Step 0",
-        transform=ax.transAxes,
+        "Step 0 unshifted configuration",
+        transform=ax1.transAxes,
         ha="left",
         va="bottom",
         fontsize=10,
     )
+
+    x_vals = np.arange(0, len(metric))
+    scat = ax2.scatter(x_vals[0], metric[0], label="Total Renewables Used")
+
+    ax2.set(
+        xlim=(0, len(metric)),
+        ylim=((min(metric)), (max(metric))),
+        xlabel=f"Shifting Step ({len(metric)} total)",
+        ylabel="Total Renewables Used Directly",
+    )
+    ax2.legend(loc="lower right")
 
     def update(frame_idx):
         frame = frames[frame_idx]
@@ -3871,9 +3882,16 @@ def animate_day1_device_load_shifts(
 
             cumulative += vals
 
-        ax.set_ylim(0, 1500)
-        subtitle.set_text(f"Step {frame_idx}")
-        return [r for bc in bar_containers for r in bc] + [subtitle]
+        ax1.set_ylim(0, 1500)
+        subtitle.set_text(f"Step {frame_idx} {frames_subtitle[frame_idx-1]}")
+
+        x = x_vals[:frame_idx]
+        y = metric[:frame_idx]
+        # update the scatter plot:
+        data = np.stack([x, y]).T
+        scat.set_offsets(data)
+
+        return [r for bc in bar_containers for r in bc] + [subtitle, scat]
 
     anim = FuncAnimation(
         fig, update, frames=len(frames), interval=interval, blit=False, repeat=False

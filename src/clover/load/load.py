@@ -133,7 +133,7 @@ class DeviceShiftingStrategy:
     shiftability: Shiftability = Shiftability.UNSHIFTABLE
     shift_limit: int | None = 0
     shift_penalty: float | None = (
-        1.0  # penalty factor, if shiftable/priority OR only if priority
+        1.0  # penalty factor, if shiftable/priority
     )
 
     def to_dict(self) -> dict[str, Any]:
