@@ -980,11 +980,13 @@
                     #   mode: household # "centralised", "conventional" or "household"
                     #   cookers:
                     #     - biodigester
-                    #     - fireplace
+                    #     # - fireplace
+                    #     - electric_hotplate
                     #   feedstocks:
-                    #     - wheat
+                    #     wheat: 0.6
+                    #     maize_husk: 0.4
                     #   fuels:
-                    #     - firewood                    battery: true # "true" or "false"
+                    #     - firewood
                     demands:
                       domestic: true # "true" or "false"
                       commercial: true # "true" or "false"
@@ -1001,7 +1003,7 @@
                     pv: true # "true" or "false"
                     resource_types:
                       # - clean_water
-                        # - cooking
+                      # - cooking
                       - electric_power
                       # - heating
                       # - hot_water

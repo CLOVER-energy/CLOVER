@@ -36,7 +36,10 @@ from tqdm import tqdm  # pylint: disable=import-error
 __all__ = (
     "API_TOKEN_PLACEHOLDER_TEXT",
     "BColours",
+    "Biodigester",
+    "BiogasScenario",
     "CleanWaterMode",
+    "Cooker",
     "Criterion",
     "CUT_OFF_TIME",
     "daily_sum_to_monthly_sum",
@@ -87,10 +90,6 @@ __all__ = (
 #   Placeholder text to use when the renewables.ninja API renewables_ninja_token has not been specified.
 API_TOKEN_PLACEHOLDER_TEXT: str = "YOUR API TOKEN HERE"
 
-# BIOGAS:
-#   Keyword for biogas information.
-BIOGAS: str = "biogas"
-
 # Cold water:
 #   Used for parsing cold-water related information.
 COLD_WATER: str = "cold_water"
@@ -98,6 +97,10 @@ COLD_WATER: str = "cold_water"
 # Conventional sources:
 #   Keyword used for parsing conventional-source information.
 CONVENTIONAL_SOURCES: str = "conventional_sources"
+
+# COOKERS:
+#   Keyword for parsing cookers information in the biogas scenarios and inputs.
+COOKERS: str = "cookers"
 
 # Cut off time:
 #   The time up and to which information about the load of each device will be returned.
@@ -126,6 +129,14 @@ EXCHANGER: str = "heat_exchanger"
 # Failed message:
 #   The message to display when a task has failed.
 FAILED: str = "[  FAILED  ]"
+
+# Feedstocks:
+#   Keyword for parsing feedstock information.
+FEEDSTOCKS: str = "feedstocks"
+
+# Fuels:
+#   Keyword for parsing fuel information.
+FUELS: str = "fuels"
 
 # Heat capacity of water:
 #   The heat capacity of water, measured in Joules per kilogram Kelvin.
@@ -1196,6 +1207,9 @@ class ResourceType(enum.Enum):
     """
     Specifies the type of load being investigated.
 
+    - BIOGAS:
+        Represents a biogas load.
+
     - CLEAN_WATER:
         Represents a clean-water load.
 
@@ -1239,6 +1253,7 @@ class ResourceType(enum.Enum):
 
     """
 
+    BIOGAS = "biogas"
     CLEAN_WATER = "clean_water"
     COOKING = "cooking"
     COOKING_FUEL = "cooking_fuel"
@@ -1258,6 +1273,7 @@ class ResourceType(enum.Enum):
 RESOURCE_NAME_TO_RESOURCE_TYPE_MAPPING = {
     "clean_water": ResourceType.CLEAN_WATER,
     "cold_water": ResourceType.CLEAN_WATER,
+    "cooking": ResourceType.COOKING,
     "diesel_consumption": ResourceType.DIESEL,
     ELECTRIC_POWER: ResourceType.ELECTRIC,
     "feedwater": ResourceType.UNCLEAN_WATER,
@@ -1546,6 +1562,7 @@ class Criterion(enum.Enum):
 
     BLACKOUTS = "blackouts"
     # TODO: Add criteria that need to be added and computed here.
+    COOKING_DEMAND_MET_FRACTION = "cooking_demand_fraction_met"
     CLEAN_WATER_BLACKOUTS = "clean_water_blackouts"
     CUMULATIVE_COST = "cumulative_cost"
     CUMULATIVE_GHGS = "cumulative_ghgs"
@@ -1666,14 +1683,18 @@ class BiogasMode(enum.Enum):
     - CONVENTIONAL:
         Conventional cooking only.
 
+    - DISABLED:
+        Biogas modelling should be disabled.
+
     - HOUSEHOLD:
         Individual household-level biodigesteres.
 
     """
 
-    CENTRALISED: str = "centralised"
-    CONVENTIONAL: str = "conventional"
-    HOUSEHOLD: str = "household"
+    CENTRALISED = "centralised"
+    CONVENTIONAL = "conventional"
+    DISABLED = "disabled"
+    HOUSEHOLD = "household"
 
 
 @dataclasses.dataclass
@@ -1687,10 +1708,20 @@ class FuelSource:
     """
 
     name: str
+    resource_type: ResourceType
 
 
 @dataclasses.dataclass
-class Feedstock:
+class Biogas(FuelSource):
+    """Represents biogas as a source of fuel."""
+
+    def __init__(self) -> None:
+        """Instantiate biogas as a fuel."""
+        super().__init__(ResourceType.BIOGAS.value, ResourceType.BIOGAS)
+
+
+@dataclasses.dataclass
+class Feedstock(FuelSource):
     """
     Represents a feedstock.
 
@@ -1745,14 +1776,22 @@ class Cooker(_BaseCooker):
 
         """
 
+        this_fuel_sources: list[FuelSource] = [
+            fuel_source
+            for fuel_source in fuel_sources
+            if fuel_source.name in cooker_inputs[FUELS]
+        ]
+
+        if len(this_fuel_sources) == 0:
+            raise InputFileError(
+                "biogas scenario",
+                f"No fuel sources specified for cooker '{cooker_inputs.get(NAME, "")}'.",
+            )
+
         return cls(
             float(cooker_inputs["fuel_consumption"]),
             str(cooker_inputs[NAME]),
-            [
-                fuel_source
-                for fuel_source in fuel_sources
-                if fuel_source.name in cooker_inputs["fuels"]
-            ],
+            this_fuel_sources,
         )
 
 
@@ -1764,16 +1803,21 @@ class Biodigester(Cooker):
     .. attribute:: feedstocks:
         The feedstocks which are contained.
 
+    .. attribute:: feedstock_ratio:
+        The ratio in which feedstocks are consumed.
+
     """
 
     feedstocks: list[Feedstock]
+    feedstock_ratio: dict[str, float]
 
     @classmethod
     def from_dict(
         cls,
         cooker_inputs: dict[str, Any],
-        feedstocks: list[Feedstock],
+        feedstocks: dict[str, tuple[Feedstock, float]],
         fuel_sources: list[FuelSource],
+        logger: logging.Logger,
     ) -> Any:
         """
         Instantiate a cooker based on the inputs from the biogas file.
@@ -1781,19 +1825,75 @@ class Biodigester(Cooker):
         Inputs:
             - cooker_inputs:
                 The inputs for the cooker from the biogas file.
+            - feedstocks:
+                The feedstocks available along with the ratio in which they should be
+                consumed.
+            - fuel_sources:
+                Should be purely that biogas is consumed.
+            - logger:
+                The :class:`logging.Logger` being used for the run.
 
         """
+
+        # Check that the biogasser has only been setup to consume biogas.
+        this_fuel_sources = [
+            fuel_source
+            for fuel_source in fuel_sources
+            if fuel_source.name in cooker_inputs[FUELS]
+        ]
+        assert len(this_fuel_sources) == 1
+        assert isinstance(this_fuel_sources[0], Biogas)
+
+        # Re-scale the biogas ratios and warn if out of whack.
+        if (
+            feedstocks_normalisation_factor := sum(
+                entry[1] for entry in feedstocks.values()
+            )
+        ) != 1:
+            logger.warning(
+                "Feedstocks ratio defined for biogassifer does not sum to 1; rather "
+                f"sums to {feedstocks_normalisation_factor}"
+            )
 
         return cls(
             float(cooker_inputs["fuel_consumption"]),
             str(cooker_inputs[NAME]),
-            [
-                fuel_source
-                for fuel_source in fuel_sources
-                if fuel_source.name in cooker_inputs["fuels"]
-            ],
-            feedstocks,
+            this_fuel_sources,
+            [entry[0] for entry in feedstocks.values()],
+            {
+                key: entry[1] / feedstocks_normalisation_factor
+                for key, entry in feedstocks.items()
+            },
         )
+
+    def feedstock_consumption_ratio(self, feedstock: Feedstock | str) -> float:
+        """
+        Get the ratio of the consumption of a given feedstock.
+
+        Inputs:
+            - feedstock:
+                The feedstock to lookup.
+
+        Returns:
+            The ratio of the consumption of the given feedstock.
+
+        """
+
+        if isinstance(feedstock, Feedstock) and feedstock not in self.feedstocks:
+            raise KeyError(
+                f"Feedstock '{feedstock.name}' not a present feedstock. Present: {", ".join([f"'{entry.name}'" for entry in self.feedstocks])}"
+            )
+
+        if isinstance(feedstock, Feedstock):
+            feedstock = feedstock.name
+
+        try:
+            return self.feedstock_ratio[feedstock]
+        except KeyError:
+            raise ProgrammerJudgementFault(
+                "__utils__::Biodigester.feedstock_consumption_ratio",
+                "Mismatch between defined feedstocks and known ratios.",
+            ) from None
 
 
 @dataclasses.dataclass
@@ -1829,26 +1929,116 @@ class BiogasScenario:
 
         # TODO: Add any additional inputs here.
         biogas_mode: BiogasMode = BiogasMode(mode)
-        fuel_sources = [FuelSource(entry.get(NAME)) for entry in biogas_inputs["fuels"]]
-        feedstocks = [
-            Feedstock(entry.get(NAME), entry.get("area", 0))
-            for entry in biogas_inputs["feedstocks"]
+        fuel_sources = [
+            FuelSource(entry.get(NAME), ResourceType.COOKING_FUEL)
+            for entry in biogas_inputs[FUELS]
         ]
+        feedstocks: dict[str, Feedstock] = {
+            entry.get(NAME): Feedstock(
+                entry.get(NAME), ResourceType.FEEDSTOCK, entry.get("area", 0)
+            )
+            for entry in biogas_inputs[FEEDSTOCKS]
+        }
+
+        # Curtail the fuel sources and feedstocks based on the definitions in the scenarios
+        # file.
+        try:
+            fuel_sources = [
+                entry
+                for entry in fuel_sources
+                if entry.name in biogas_scenario_inputs[FUELS]
+            ]
+        except KeyError:
+            raise InputFileError(
+                "biogas inputs",
+                "Fuel sources specified in the scenario inputs not definied in the biogas inputs",
+            ) from None
+
+        if len(fuel_sources) == 0:
+            logger.info(
+                "No fuel sources specified in the scenarios file: electric and biogas only."
+            )
+
+        # Add on electricity as a fuel sources.
+        fuel_sources.append(
+            FuelSource(ResourceType.ELECTRIC.value, ResourceType.ELECTRIC)
+        )
+
+        try:
+            feedstocks_available: dict[str, tuple[Feedstock, float]] = {
+                feedstock_name: (feedstocks[feedstock_name], feedstock_ratio)
+                for feedstock_name, feedstock_ratio in biogas_scenario_inputs.get(
+                    FEEDSTOCKS, {}
+                ).items()
+            }
+        except KeyError as err:
+            raise InputFileError(
+                "scenario inputs",
+                f"Feedstocks {", ".join([f"'{entry}'" for entry in err.args])} were "
+                "requested in the scenarios file but not defined in the biogas inputs.",
+            ) from None
+
+        # If biogas is disabled, then raise an Exception.
+        if biogas_mode == BiogasMode.DISABLED:
+            raise ProgrammerJudgementFault(
+                "__utils__::BiogasScenario.from_dict",
+                "Biogas scenario instantiation attempted whilst mode is disabled.",
+            )
 
         # If only conventional fuels, then process these and return.
         cookers: list[Cooker | Biodigester] = []
-        if biogas_mode == BiogasMode.CONVENTIONAL:
-            for entry in biogas_scenario_inputs.get("cooking", []):
-                if BIOGAS not in entry["fuels"]:
-                    cookers.append(Cooker.from_dict(entry, fuel_sources))
-                    biogas_scenario_inputs["cooking"].remove(entry)
+        cooker_inputs: list[dict[str, Any]] = biogas_inputs.get(COOKERS, [])
+        for cooker_name in (
+            scenario_cookers := biogas_scenario_inputs.get(COOKERS, [])
+        ):
+            print(
+                f"Processing cooker {cooker_name} out of {", ".join(scenario_cookers)}"
+            )
+            if cooker_name not in [entry.get(NAME) for entry in cooker_inputs]:
+                raise InputFileError(
+                    "scenario inputs",
+                    f"Cooker '{cooker_name}' requested in scenario inputs but not defined "
+                    "in biogas inputs.",
+                )
+            if ResourceType.BIOGAS.value in (
+                cooker_input := [
+                    entry
+                    for entry in biogas_inputs[COOKERS]
+                    if entry.get(NAME, "") == cooker_name
+                ][0]
+            ).get(FUELS, []):
+                continue
 
+            cookers.append(Cooker.from_dict(cooker_input, fuel_sources))
+
+        if biogas_mode == BiogasMode.CONVENTIONAL:
             return cls(biogas_mode, cookers)
 
         # If centralised or household biodigesters are being used, then add the
         # biodigesters.
-        for entry in biogas_scenario_inputs.get("cooking", []):
-            cookers.append(Biodigester.from_dict(entry, feedstocks))
+        for cooker_name in [
+            entry
+            for entry in scenario_cookers
+            if entry not in [sub_entry.name for sub_entry in cookers]
+        ]:
+            if cooker_name not in [entry.get(NAME) for entry in cooker_inputs]:
+                raise InputFileError(
+                    "scenario inputs",
+                    f"Cooker '{cooker_name}' requested in scenario inputs but not defined in biogas inputs.",
+                )
+            if ResourceType.BIOGAS.value in (
+                cooker_input := [
+                    entry
+                    for entry in biogas_inputs[COOKERS]
+                    if entry.get(NAME, "") == cooker_name
+                ][0]
+            ).get(FUELS, []):
+                cookers.append(
+                    Biodigester.from_dict(
+                        cooker_input, feedstocks_available, [Biogas()], logger
+                    )
+                )
+                scenario_cookers.remove(cooker_name)
 
         return cls(biogas_mode, cookers)
 
@@ -2269,7 +2459,7 @@ class Scenario:
     @classmethod
     def from_dict(
         cls,
-        biogas_inputs: dict[str, Any],
+        biogas_inputs: dict[str, Any] | None,
         desalination_scenarios: Optional[List[DesalinationScenario]],
         hot_water_scenarios: Optional[List[HotWaterScenario]],
         logger: logging.Logger,
@@ -2320,15 +2510,27 @@ class Scenario:
 
         # Determine the biogas scenario to use for the run.
         if (_biogas_key := "biogas") in scenario_inputs:
-            import pdb
-
-            pdb.set_trace()
-            biogas_scenario: BiogasScenario | None = BiogasScenario.from_dict(
-                biogas_inputs,
-                scenario_inputs[_biogas_key],
-                logger,
-                scenario_inputs[_biogas_key].get("mode", BiogasMode.CONVENTIONAL.value),
-            )
+            if (
+                scenario_inputs[_biogas_key].get("mode", BiogasMode.CONVENTIONAL.value)
+                == BiogasMode.DISABLED.value
+            ):
+                biogas_scenario: BiogasScenario | None = None
+            else:
+                if biogas_inputs is None:
+                    raise InputFileError(
+                        "scenario file",
+                        "Biogas inputs file was not found despite biogas being requestesd in the scenario file.",
+                    )
+                biogas_scenario = BiogasScenario.from_dict(
+                    biogas_inputs,
+                    scenario_inputs[_biogas_key],
+                    logger,
+                    scenario_inputs[_biogas_key].get(
+                        "mode", BiogasMode.CONVENTIONAL.value
+                    ),
+                )
+        else:
+            biogas_scenario = None
 
         # Determine the desalination and hot-water scenarios to use for the run.
         if desalination_scenarios is not None:

@@ -631,6 +631,7 @@ def get_electric_battery_storage_profile(  # pylint: disable=too-many-locals, to
         sum(renewables_energy_map.values())  # type: ignore
     )
 
+    # NOTE: Similar to this:
     # Check for self-generation prioritisation
     if scenario.prioritise_self_generation:
         # Take energy from PV first
@@ -700,6 +701,8 @@ def get_electric_battery_storage_profile(  # pylint: disable=too-many-locals, to
             round(float(np.sum(renewables_energy_used_directly)), 2),  # type: ignore [arg-type]
         )
         logger.debug("Renewables direct: %s kWh", renewables_direct_rounded)
+
+    # NOTE: END
 
     battery_storage_profile.columns = pd.Index([ColumnHeader.STORAGE_PROFILE.value])
     grid_energy.columns = pd.Index([ColumnHeader.GRID_ENERGY.value])

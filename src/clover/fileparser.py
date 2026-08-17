@@ -1163,8 +1163,15 @@ def parse_scenario_inputs(
 
     # Parse the biogas inputs information if relevant.
     if os.path.isfile(biogas_inputs_filepath):
-        # TODO: Parse the bigoas inputs information.
-        pass
+        logger.info("Parsing biogas inputs file.")
+        biogas_scenario_inputs = read_yaml(
+            biogas_inputs_filepath,
+            logger,
+        )
+        if not isinstance(biogas_scenario_inputs, dict):
+            raise InputFileError(
+                "biogas inputs", "Biogas inputs is not of type `dict`."
+            )
 
     # Parse the desalination scenario inputs information if relevant.
     if os.path.isfile(desalination_scenario_inputs_filepath):
@@ -1240,9 +1247,12 @@ def parse_scenario_inputs(
 
     try:
         scenarios: List[Scenario] = [
-            # TODO: Update with additional scenarios information.
             Scenario.from_dict(
-                desalination_scenarios, hot_water_scenarios, logger, entry
+                biogas_scenario_inputs,
+                desalination_scenarios,
+                hot_water_scenarios,
+                logger,
+                entry,
             )
             for entry in scenario_inputs[SCENARIOS]
         ]

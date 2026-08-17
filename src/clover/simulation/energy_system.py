@@ -1429,6 +1429,8 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
     # items, ideally as :class:`pd.Series` instances, which can then be totaled up later
     # when computing the overall impact of these biogasifiers and other cooking devices.
 
+    electric_cooking_power_consumed: pd.DataFrame = pd.DataFrame([])
+
     # Calculate electricity-related profiles.
     if total_electric_load is None:
         logger.error(
@@ -1446,6 +1448,7 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
         + clean_water_power_consumed.values
         + hot_water_power_consumed.values
         + thermal_desalination_electric_power_consumed.values
+        + electric_cooking_power_consumed.values
     )
 
     # Compute the electric input profiles.

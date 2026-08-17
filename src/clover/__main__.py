@@ -828,9 +828,12 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
         # TODO: Fill in the calls to stochastic load generation.
         # NOTE: This should return a stochastically-generated total cooking load.
         # NOTE: Remove "| None" once computed.
+        # NOTE: This depends on the results of the surveys in terms of whether these
+        # give information about *exactly* when cooking takes place, or whether they
+        # indicate rough times for cooking.
         initial_cooking_hourly_loads: pd.DataFrame | None = None
         total_cooking_load: pd.DataFrame | None = None
-        cooking_yearly_load_statistics: pd.DataFrame = None
+        cooking_yearly_load_statistics: pd.DataFrame | None = None
 
     clean_water_yearly_load_statistics: pd.DataFrame  # pylint: disable=unused-variable
     conventional_cw_source_profiles: Optional[Dict[WaterSource, pd.DataFrame]] = None

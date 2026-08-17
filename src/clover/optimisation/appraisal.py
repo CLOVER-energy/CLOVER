@@ -547,6 +547,10 @@ def _simulation_technical_appraisal(  # pylint: disable=too-many-locals
     renewables_fraction = (total_renewables_used + total_storage_used) / total_energy
     unmet_fraction = total_unmet_energy / total_load_energy
 
+    biogas_cooking = np.sum(
+        simulation_results[ColumnHeader.BIOGAS_COOKING.value]
+    ) / np.sum(simulation_results[ColumnHeader.COOKING_DEMAND_MET.value])
+
     # Calculate total discounted energy
     total_energy_daily = hourly_profile_to_daily_sum(
         pd.DataFrame(simulation_results[ColumnHeader.TOTAL_ELECTRICITY_CONSUMED.value])
