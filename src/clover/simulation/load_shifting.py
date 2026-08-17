@@ -65,7 +65,7 @@ import time
 
 
 @contextmanager
-def time_this_chunk_of_code() -> float:
+def time_this_chunk_of_code():
     """
     Blah.
     """
@@ -128,49 +128,6 @@ class Context:
         pass
 
     # Lookup more.
-
-
-# def score_hours(
-#     device_count: defaultdict[Device, pd.Series],
-#     hourly_priority_scores: pd.Series,
-#     original_time: int,
-#     renewables_available: pd.Series,
-#     task: Task,
-#     valid_hours: set(int),
-#     weights: list[float],
-# ) -> pd.Series:
-
-#     renewables_weight, priority_weight, penalty_weight, device_count_weight = weights
-
-#     eps = 1e-9
-#     cand = sorted(valid_hours)  # NOTE: check if necessary
-
-#     R = pd.Series({h: renewables_available.loc[h] for h in cand})
-#     P = pd.Series({h: hourly_priority_scores.loc[h] for h in cand})
-#     C = pd.Series(
-#         {
-#             h: (
-#                 task.priority_score
-#                 * (task.shift_penalty ** abs(h - original_time))
-#                 * abs(h - original_time)
-#             )
-#             for h in cand
-#         },
-#     )
-#     D = pd.Series({h: device_count.loc[h] for h in cand})
-
-#     D_norm = (D - D.min()) / (D.max() - D.min() + eps)
-#     R_norm = (R - R.min()) / (R.max() - R.min() + eps)
-#     P_norm = (P - P.min()) / (P.max() - P.min() + eps)
-#     C_norm = (C - C.min()) / (C.max() - C.min() + eps)
-
-#     score = (
-#         renewables_weight * R_norm
-#         - priority_weight * P_norm
-#         - penalty_weight * C_norm
-#         - device_count_weight * D_norm
-#     )
-#     return score
 
 
 
@@ -314,17 +271,17 @@ def process_load_shifting(
         if len(valid_hours) == 0:
             # best_hour = np.int64(original_time)
             continue
-        else:
-            best_hour = _calculate_best_hour(
-                device_count[device],
-                hourly_priority_scores,
-                original_time,
-                renewables_available,
-                sim_start,
-                task,
-                valid_hours,
-                weights,
-            )
+
+        best_hour = _calculate_best_hour(
+            device_count[device],
+            hourly_priority_scores,
+            original_time,
+            renewables_available,
+            sim_start,
+            task,
+            valid_hours,
+            weights,
+        )
         if best_hour == original_time: 
             continue
         # if day%50 == 0 and task.task_id%100==0:
@@ -350,36 +307,36 @@ def process_load_shifting(
         #         logger.info(f"TIMING: task {task.task_id} find metric change {elapsed_t():.6f}s")
 
         # with time_this_chunk_of_code() as elapsed_t:
-        if (metric_after_shift - metric_before_shift) > -0.02 * power:
-            # assign the task
-            device_count[device].loc[best_hour] += 1
-            device_count[device].loc[original_time] -= 1
-            hourly_priority_scores.loc[best_hour] += task.priority_score * abs(
-                best_hour - original_time
-            )
-            hourly_priority_scores.loc[original_time] -= device.priority
-            renewables_available.loc[best_hour] -= power
-            renewables_available.loc[original_time] += power
-            total_load.loc[best_hour] += power
-            total_load.loc[original_time] -= power
-            renewables_used_directly: pd.Series = (
-                renewables_available > 0
-            ) * total_load.loc[sim_start:sim_end].values + (
-                renewables_available < 0
-            ) * renewables_produced.loc[
-                sim_start:sim_end
-            ].values
-
-            if day == 0:  # frame for animation
-                _append_animation_frame(
-                    day1_loads, frames, frames_subtitle, device, original_time, best_hour, sim_start
-                )
-                renewables_used_directly_metric.append(
-                    renewables_used_directly_metric[-1]
-                    + (metric_after_shift - metric_before_shift)
-                )
-        else:
+        if (metric_after_shift - metric_before_shift) <= -0.02 * power:
             continue
+
+        # assign the task
+        device_count[device].loc[best_hour] += 1
+        device_count[device].loc[original_time] -= 1
+        hourly_priority_scores.loc[best_hour] += task.priority_score * abs(
+            best_hour - original_time
+        )
+        hourly_priority_scores.loc[original_time] -= device.priority
+        renewables_available.loc[best_hour] -= power
+        renewables_available.loc[original_time] += power
+        total_load.loc[best_hour] += power
+        total_load.loc[original_time] -= power
+        renewables_used_directly: pd.Series = (
+            renewables_available > 0
+        ) * total_load.loc[sim_start:sim_end].values + (
+            renewables_available < 0
+        ) * renewables_produced.loc[
+            sim_start:sim_end
+        ].values
+
+        if day == 0:  # frame for animation
+            _append_animation_frame(
+                day1_loads, frames, frames_subtitle, device, original_time, best_hour, sim_start
+            )
+            renewables_used_directly_metric.append(
+                renewables_used_directly_metric[-1]
+                + (metric_after_shift - metric_before_shift)
+            )
         # if day%50 == 0 and task.task_id%100==0:
         #     logger.info(f"TIMING: task {task.task_id} assigning (or not) took {elapsed_t():.6f}s")
 

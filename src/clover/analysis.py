@@ -3861,7 +3861,7 @@ def animate_day1_device_load_shifts(
 
     ax2.set(
         xlim=(0, len(metric)),
-        ylim=((min(metric)), (max(metric))),
+        ylim=((min(metric)-0.1), (max(metric)+0.1)),
         xlabel=f"Shifting Step ({len(metric)} total)",
         ylabel="Total Renewables Used Directly",
     )
@@ -3898,6 +3898,7 @@ def animate_day1_device_load_shifts(
     )
 
     # Save GIF (Pillow required)
+    fig.set_tight_layout(True)
     anim.save(save_path, writer=PillowWriter(fps=max(1, int(1000 / interval))))
     plt.close(fig)
     return save_path
