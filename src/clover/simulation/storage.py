@@ -47,8 +47,6 @@ __all__ = (
 )
 
 
-# 1.2. Potentially adapt this function to take in a shorter dataframe with less
-# information.
 def battery_iteration_step(
     battery_storage_profile: pd.DataFrame,
     grid_energy: pd.DataFrame,

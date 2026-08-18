@@ -637,6 +637,7 @@ class ColumnHeader(enum.Enum):
     PV_ELECTRICITY_SUPPLIED = "PV energy supplied (kWh)"
     RENEWABLE_CW_USED_DIRECTLY = "Renewable clean water used directly (l)"
     RENEWABLE_ELECTRICITY_SUPPLIED = "Renewables energy supplied (kWh)"
+    RENEWABLE_ELECTRICITY_FORECAST = "Renewables energy forecast (kWh)"
     RENEWABLE_ELECTRICITY_USED_DIRECTLY = "Renewables energy used (kWh)"
     STORAGE_PROFILE = "Storage profile (kWh)"
     # SHIFTED_PROFILE = "Shifted Loads (kWh)" # 1.1
@@ -2284,6 +2285,14 @@ class ShiftingScenario:
         }
 
 
+class ForecastScenario(enum.Enum):
+    """
+    Describes weather forecasting scenario
+    """
+    ACCURATE = "accurate"
+    INACCURATE = "inaccurate"
+
+
 @dataclasses.dataclass
 class Scenario:
     """
@@ -2359,6 +2368,7 @@ class Scenario:
     pv_d: bool
     pv_t: bool
     shifting_scenario: ShiftingScenario  # 1.2
+    forecast: ForecastScenario = ForecastScenario.INACCURATE
     reference_thermal_efficiency: float = 0
 
     @classmethod
@@ -2549,6 +2559,7 @@ class Scenario:
             shifting_weights["device_count_weight"],
         )
 
+
         return cls(
             scenario_inputs["battery"],
             demands,
@@ -2566,11 +2577,13 @@ class Scenario:
             scenario_inputs["pv_d"] if "pv_d" in scenario_inputs else False,
             scenario_inputs["pv_t"] if "pv_t" in scenario_inputs else False,
             shifting_scenario,
+            scenario_inputs.get("forecast", ForecastScenario.INACCURATE),
             (
                 scenario_inputs["reference_thermal_efficiency"]
                 if "reference_thermal_efficiency" in scenario_inputs
                 else 0
             ),
+            
         )
 
     def to_dict(self) -> dict[str, Any]:
@@ -2599,6 +2612,7 @@ class Scenario:
             "prioritisation_strategy": self.prioritisation_strategy.value,
             "pv": self.pv,
             "shifting_scenario": self.shifting_scenario.to_dict(),
+            "forecast": str(self.forecast.value),
         }
 
         return scenario_dict

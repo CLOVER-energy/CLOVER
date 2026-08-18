@@ -47,7 +47,7 @@ from .generation import solar, weather, wind
 from .load import load
 from .mains_supply import grid, water_source
 from .scripts import new_location
-from .simulation import energy_system
+from .simulation import energy_system, forecasting
 
 from .optimisation.__utils__ import save_optimisation
 from .optimisation.appraisal import appraise_system
@@ -58,6 +58,7 @@ from .__utils__ import (
     BColours,
     DONE,
     FAILED,
+    ForecastScenario,
     get_locations_foldername,
     InternalError,
     Location,
@@ -977,6 +978,23 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
         for pv_panel in (minigrid.pv_panels + minigrid.pvt_panels)  # type: ignore
     }
     logger.info("Total solar output successfully computed and saved.")
+    true_solar_output = None
+    if any(scenario.forecast == ForecastScenario.INACCURATE.value for scenario in scenarios):
+        # generate true_solar_output
+        pv_produced = pd.DataFrame({
+            panel.name: total_solar_data[panel.name][
+                solar.SolarDataType.ELECTRICITY.value
+            ]
+            * panel.pv_unit
+            for panel in (minigrid.pv_panels + minigrid.pvt_panels)  # type: ignore
+        })
+        true_solar_output = forecasting.calculate_true_solar(
+            os.path.join(locations_foldername, parsed_args.location, INPUTS_DIRECTORY, "generation", f"forecast_accuracies.csv"),
+            os.path.join(auto_generated_files_directory, "weather"),  
+            logger,
+            location.max_years,               
+            pd.DataFrame(*[pv_produced]),
+        )
 
     if any(scenario.desalination_scenario is not None for scenario in scenarios):
         logger.info("Generating and saving total weather output file.")
@@ -1146,6 +1164,7 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
                         for key, value in total_solar_data.items()
                     },
                     total_loads,
+                    true_solar_output,
                     device_hourly_usage,
                     daily_device_ownerships,
                     (
