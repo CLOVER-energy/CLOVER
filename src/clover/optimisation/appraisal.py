@@ -492,7 +492,7 @@ def _simulation_technical_appraisal(  # pylint: disable=too-many-locals
     )
 
     # Clean-water system.
-    clean_water_blackouts: Optional[float] = (
+    clean_water_blackouts: float | None = (
         round(
             float(
                 np.mean(
@@ -547,9 +547,10 @@ def _simulation_technical_appraisal(  # pylint: disable=too-many-locals
     renewables_fraction = (total_renewables_used + total_storage_used) / total_energy
     unmet_fraction = total_unmet_energy / total_load_energy
 
-    biogas_cooking = np.sum(
-        simulation_results[ColumnHeader.BIOGAS_COOKING.value]
-    ) / np.sum(simulation_results[ColumnHeader.COOKING_DEMAND_MET.value])
+    # TODO: Code in new biogas calculations.
+    # biogas_cooking = np.sum(
+    #     simulation_results[ColumnHeader.BIOGAS_COOKING.value]
+    # ) / np.sum(simulation_results[ColumnHeader.COOKING_DEMAND_MET.value])
 
     # Calculate total discounted energy
     total_energy_daily = hourly_profile_to_daily_sum(
@@ -589,7 +590,11 @@ def _simulation_technical_appraisal(  # pylint: disable=too-many-locals
     # Return outputs
     return TechnicalAppraisal(
         round(system_blackouts, 3),
+        0,  # Biogas cooking
+        0,  # Biogas cooking fraction --- Mirror in __utils__::3275
         clean_water_blackouts,
+        0,  # Conventional cooking
+        0,  # Conventional cooking fraction,
         round(total_diesel_used, 3),
         round(total_diesel_fuel, 3),
         round(discounted_energy, 3),
@@ -597,6 +602,8 @@ def _simulation_technical_appraisal(  # pylint: disable=too-many-locals
         round(kerosene_displacement, 3),
         round(total_pv_energy, 3),
         round(total_pvt_energy, 3) if total_pvt_energy is not None else None,
+        0,  # Renewable cooking
+        0,  # Renewable cooking fraction
         round(total_renewables_used, 3),
         round(renewables_fraction, 3),
         round(total_storage_used, 3),
@@ -845,8 +852,10 @@ def appraise_system(  # pylint: disable=too-many-locals
         Criterion.KEROSENE_COST_MITIGATED: round(
             financial_appraisal.kerosene_cost_mitigated, 3
         ),
-        Criterion.KEROSENE_DISPLACEMENT: round(
-            technical_appraisal.kerosene_displacement, 3
+        Criterion.KEROSENE_DISPLACEMENT: (
+            round(technical_appraisal.kerosene_displacement, 3)
+            if technical_appraisal.kerosene_displacement is not None
+            else 0
         ),
         Criterion.KEROSENE_GHGS_MITIGATED: round(
             environmental_appraisal.kerosene_ghgs_mitigated, 3

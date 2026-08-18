@@ -201,9 +201,11 @@ def _get_profile_from_rn(
         renewables_ninja_params,
     )
     session_url = session.get(url, params=renewables_ninja_params)
+    logger.info("Response received from renewables Ninja.")
 
     # Parse JSON to get a pandas.DataFrame
     try:
+        logger.debug("Response received:\n    %s", session_url.text)
         parsed_response = json.loads(session_url.text)
     except JSONDecodeError as e:  # pylint: disable=invalid-name
         logger.error(
@@ -215,10 +217,19 @@ def _get_profile_from_rn(
         )
         logger.info("Session text: %s", session_url.text)
         raise RenewablesNinjaError() from None
+    logger.info("Successfully parsed JSON response from renewables.ninja.")
 
-    data_frame: pd.DataFrame = pd.DataFrame(
-        pd.read_json(json.dumps(parsed_response["data"]), orient="index")
-    )
+    try:
+        data_frame: pd.DataFrame = (
+            pd.DataFrame(json.loads(json.dumps((parsed_response["data"]))))
+            .transpose()
+            .sort_index()
+        )
+    except Exception:
+        logger.error("Error converting to DataFrame. Check pandas updates.")
+        raise
+
+    logger.info("Successfully converted renewables.ninja response to DataFrame.")
     data_frame = data_frame.reset_index(drop=True)
 
     # Remove leap days
@@ -232,7 +243,7 @@ def _get_profile_from_rn(
 
 
 def _get_profile_local_time(
-    data_utc: pd.DataFrame, time_difference: float = 0
+    data_utc: pd.DataFrame, logger: Logger, time_difference: float = 0
 ) -> pd.DataFrame:
     """
     Converts data from Renewables.ninja (kW/kWp in UTC time) to user-defined local time.
@@ -240,6 +251,8 @@ def _get_profile_local_time(
     Inputs:
         - data_utc
             Profile data in UTC.
+        - logger
+            The :class:`logging.Logger` to use for the run.
         - time_difference
             The desired time zone difference.
 
@@ -248,21 +261,28 @@ def _get_profile_local_time(
 
     """
 
-    #   Round time difference to nearest hour (NB India, Nepal etc. do not do this)
+    # Round time difference to nearest hour (NB India, Nepal etc. do not do this)
     time_difference = round(time_difference)
 
     # East of Greenwich
     if time_difference > 0:
+        logger.info("Splitting data based on East of UTC time")
         splits = np.split(data_utc, [len(data_utc) - time_difference])
-        data_local: pd.DataFrame = pd.concat([splits[1], splits[0]], ignore_index=True)
+        data_local: pd.DataFrame = pd.concat(
+            [pd.DataFrame(splits[1]), pd.DataFrame(splits[0])], ignore_index=True
+        )
     # West of Greenwich
     elif time_difference < 0:
+        logger.info("Splitting data based on West of UTC time")
         splits = np.split(data_utc, [abs(time_difference)])
-        data_local = pd.concat([splits[1], splits[0]], ignore_index=True)
+        data_local = pd.concat(
+            [pd.DataFrame(splits[1]), pd.DataFrame(splits[0])], ignore_index=True
+        )
     # No time difference, included for completeness
     else:
         data_local = data_utc
 
+    data_local.columns = data_utc.columns
     return data_local
 
 
@@ -301,8 +321,10 @@ def _get_profile_output(
             renewables_ninja_params,
             gen_year,
         ),
+        logger,
         time_difference=float(location.time_difference),
     )
+    logger.info("Output converted to local time.")
 
     return local_time_output
 
@@ -519,6 +541,9 @@ class BaseRenewablesNinjaThread(threading.Thread):
                     )
                 except KeyError as e:  # pylint: disable=invalid-name
                     self.logger.error("Missing data from input files: %s", str(e))
+                    raise
+                except Exception as e:
+                    self.logger.error("Error: %s", str(e))
                     raise
 
                 self.logger.info(

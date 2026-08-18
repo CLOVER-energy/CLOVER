@@ -183,7 +183,7 @@ class DieselWaterHeater(Converter):
 
 def _find_deficit_threshold_blackout(
     unmet_energy: pd.DataFrame, blackouts: pd.DataFrame, backup_threshold: float
-) -> Optional[float]:
+) -> float | None:
     """
     Identifies the threshold energy level at which the diesel backup generator turns on
     when the threshold criterion is blackouts.
@@ -203,7 +203,7 @@ def _find_deficit_threshold_blackout(
     """
 
     # Find the blackout percentage
-    blackout_percentage = float(blackouts.mean(axis=0))  # type: ignore
+    blackout_percentage = float(blackouts.mean(axis=0).item())  # type: ignore
 
     # Find the difference in reliability
     reliability_difference = blackout_percentage - backup_threshold
@@ -217,7 +217,7 @@ def _find_deficit_threshold_blackout(
 
 def _find_deficit_threshold_unmet(
     unmet_energy: pd.DataFrame, backup_threshold: float, total_electric_load: float
-) -> Optional[float]:
+) -> float | None:
     """
     Identifies the threshold energy level at which the diesel backup generator turns on
     when the threshold criterion is unmet energy.
@@ -265,7 +265,7 @@ def _find_deficit_threshold(
     backup_threshold: float,
     total_electric_load: float,
     diesel_mode: DieselMode,
-) -> Optional[float]:
+) -> float | None:
     """
     Identifies the threshold energy level at which the diesel backup generator turns on.
 

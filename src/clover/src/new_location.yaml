@@ -54,6 +54,9 @@
             - directory: clean_water
               contents:
                 - directory: device_load
+            - directory: cooking
+              contents:
+                - directory: device_load
             - directory: electric
               contents:
                 - directory: device_load
@@ -142,7 +145,7 @@
 
                 # NOTE: For the feedstocks for the biodigesters, I think you need to consider what
                 # information you want to be utilised and conveyed.
-                feedstocks:
+                feedstock:
                   - name: wheat
                     area: 0.8
                     energy_efficiency: 0.8
@@ -152,7 +155,7 @@
                     energy_efficiency: 0.9
                     ghgs: 0.0645
 
-                fuels:
+                cooking_fuel:
                     # NOTE: These are the costs and emissions per unit fuel consumed.
                   - name: firewood
                     costs:
@@ -557,37 +560,37 @@
                 # the demand of electric cooking plates as themselves being a demand, but I think that
                 # it makes most sense to consider a cooking profile in this way, stochastically.
                 # Ideally, you may use your own cooking-load profile.
-                - device: household_cooking
-                  available: true
-                  # NOTE: "Cooking" should here be measured in kWh or some other thermal unit.
-                  cooking: 25
-                  electric_power: 0
-                  # NOTE: If you anticipate growing demand, then adjust this here.
-                  initial_ownership: 1
-                  final_ownership: 1
-                  innovation: 0
-                  imitation: 0
-                  type: domestic
-                - device: cafe
-                  available: true
-                  cooking: 250
-                  electric_power: 0
-                  initial_ownership: 0.05
-                  final_ownership: 0.20
-                  innovation: 0.04
-                  imitation: 0.08
-                  type: commercial
-                - device: community_kitchen
-                  available: true
-                  cooking: 1000
-                  electric_power: 0
-                  # NOTE: With 100 households, and no growth in households, this means 2, on average,
-                  # within the community.
-                  initial_ownership: 0.02
-                  final_ownership: 0.04
-                  innovation: 0.04
-                  imitation: 0.08
-                  type: commercial
+                # - device: household_cooking
+                #   available: true
+                #   # NOTE: "Cooking" should here be measured in kWh or some other thermal unit.
+                #   cooking_usage: 25
+                #   electric_power: 0
+                #   # NOTE: If you anticipate growing demand, then adjust this here.
+                #   initial_ownership: 1
+                #   final_ownership: 1
+                #   innovation: 0
+                #   imitation: 0
+                #   type: domestic
+                # - device: cafe
+                #   available: true
+                #   cooking_usage: 250
+                #   electric_power: 0
+                #   initial_ownership: 0.05
+                #   final_ownership: 0.20
+                #   innovation: 0.04
+                #   imitation: 0.08
+                #   type: commercial
+                # - device: community_kitchen
+                #   available: true
+                #   cooking_usage: 1000
+                #   electric_power: 0
+                #   # NOTE: With 100 households, and no growth in households, this means 2, on average,
+                #   # within the community.
+                #   initial_ownership: 0.02
+                #   final_ownership: 0.04
+                #   innovation: 0.04
+                #   imitation: 0.08
+                #   type: commercial
             - directory: device_utilisation
               contents:
                 - file: cafe_times.csv
@@ -982,10 +985,10 @@
                     #     - biodigester
                     #     # - fireplace
                     #     - electric_hotplate
-                    #   feedstocks:
+                    #   feedstock:
                     #     wheat: 0.6
                     #     maize_husk: 0.4
-                    #   fuels:
+                    #   cooking_fuel:
                     #     - firewood
                     demands:
                       domestic: true # "true" or "false"

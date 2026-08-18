@@ -145,10 +145,10 @@ def _htf_fed_buffer_tank_mass_flow_rate(
 def _volume_withdrawn_from_tank(
     ambient_temperature: float,
     best_guess_tank_temperature: float,
-    hot_water_load: Optional[float],
+    hot_water_load: float | None,
     logger: Logger,
     minigrid: Minigrid,
-    previous_tank_temperature: Optional[float],
+    previous_tank_temperature: float | None,
     resource_type: ResourceType,
     thermal_desalination_plant: Optional[ThermalDesalinationPlant],
 ) -> Tuple[bool, float]:

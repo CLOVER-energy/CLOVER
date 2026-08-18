@@ -79,6 +79,9 @@ class ImpactingComponent(enum.Enum):
     - ELECTRIC_WATER_HEATER:
         Denotes the electric water heater component of the system.
 
+    - FEEDSTOCK:
+        Denotes feedstocks used in biogas cookers.
+
     - GENERAL:
         Denotes impacts generally associated with the system but not a specific
         component.
@@ -120,15 +123,19 @@ class ImpactingComponent(enum.Enum):
     """
 
     # TODO: Add impacting components below.
+    BIOGAS = "biogas"
+    BIOGASIFIERS = "biogasifiers"
     BOS = "bos"
     BUFFER_TANK = "buffer_tank"
     CLEAN_WATER_TANK = "clean_water_tank"
+    CONVENTIONAL_COOKING = "conventional_cooking"
     CONVENTIONAL_SOURCE = "conventional_source"
     CONVERTER = "converter"
     DIESEL = "diesel_generator"
     DIESEL_FUEL = "diesel_fuel"
     DIESEL_WATER_HEATER = "diesel_water_heater"
     ELECTRIC_WATER_HEATER = "electric_water_heater"
+    FEEDSTOCK = "feedstock"
     GENERAL = "general"
     GRID = "grid"
     HEAT_EXCHANGER = EXCHANGER

@@ -163,7 +163,7 @@ def _check_run(logger: Logger, hpc_run: Union[HpcOptimisation, HpcSimulation]) -
 
         # Parse the scenario files for the location.
         logger.info("%sParsing scenario input file.%s", BColours.fail, BColours.endc)
-        _, _, scenarios, _ = parse_scenario_inputs(
+        _, _, _, scenarios, _ = parse_scenario_inputs(
             os.path.join(LOCATIONS_FOLDER_NAME, hpc_run.location, INPUTS_DIRECTORY),
             logger,
         )

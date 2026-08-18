@@ -146,15 +146,15 @@ class Minigrid:
 
     """
 
-    ac_to_ac_conversion_efficiency: Optional[float]
-    ac_to_dc_conversion_efficiency: Optional[float]
-    ac_transmission_efficiency: Optional[float]
+    ac_to_ac_conversion_efficiency: float | None
+    ac_to_dc_conversion_efficiency: float | None
+    ac_transmission_efficiency: float | None
     battery: Optional[Battery]
     buffer_tank: Optional[HotWaterTank]
     clean_water_tank: Optional[CleanWaterTank]
-    dc_to_ac_conversion_efficiency: Optional[float]
-    dc_to_dc_conversion_efficiency: Optional[float]
-    dc_transmission_efficiency: Optional[float]
+    dc_to_ac_conversion_efficiency: float | None
+    dc_to_dc_conversion_efficiency: float | None
+    dc_transmission_efficiency: float | None
     diesel_generator: Optional[DieselGenerator]
     diesel_water_heater: Optional[DieselWaterHeater]
     electric_water_heater: Optional[Converter]

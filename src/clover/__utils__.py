@@ -130,14 +130,6 @@ EXCHANGER: str = "heat_exchanger"
 #   The message to display when a task has failed.
 FAILED: str = "[  FAILED  ]"
 
-# Feedstocks:
-#   Keyword for parsing feedstock information.
-FEEDSTOCKS: str = "feedstocks"
-
-# Fuels:
-#   Keyword for parsing fuel information.
-FUELS: str = "fuels"
-
 # Heat capacity of water:
 #   The heat capacity of water, measured in Joules per kilogram Kelvin.
 HEAT_CAPACITY_OF_WATER: int = 4182
@@ -764,7 +756,7 @@ class DieselScenario:
 
     """
 
-    backup_threshold: Optional[float]
+    backup_threshold: float | None
     mode: DieselMode
 
     def to_dict(self) -> Dict[str, Any]:
@@ -954,40 +946,40 @@ class KeyResults:
 
     """
 
-    average_daily_cw_demand_covered: Optional[float] = None
-    average_daily_cw_pvt_generation: Optional[float] = None
-    average_daily_cw_supplied: Optional[float] = None
-    average_daily_diesel_energy_supplied: Optional[float] = None
-    average_daily_dumped_energy: Optional[float] = None
-    average_daily_energy_consumption: Optional[float] = None
-    average_daily_grid_energy_supplied: Optional[float] = None
-    average_daily_hw_demand_covered: Optional[float] = None
-    average_daily_hw_pvt_generation: Optional[float] = None
-    average_daily_hw_supplied: Optional[float] = None
-    average_daily_pv_energy_supplied: Optional[float] = None
-    average_daily_renewables_energy_supplied: Optional[float] = None
-    average_daily_renewables_energy_used: Optional[float] = None
-    average_daily_stored_energy_supplied: Optional[float] = None
-    average_daily_unmet_energy: Optional[float] = None
+    average_daily_cw_demand_covered: float | None = None
+    average_daily_cw_pvt_generation: float | None = None
+    average_daily_cw_supplied: float | None = None
+    average_daily_diesel_energy_supplied: float | None = None
+    average_daily_dumped_energy: float | None = None
+    average_daily_energy_consumption: float | None = None
+    average_daily_grid_energy_supplied: float | None = None
+    average_daily_hw_demand_covered: float | None = None
+    average_daily_hw_pvt_generation: float | None = None
+    average_daily_hw_supplied: float | None = None
+    average_daily_pv_energy_supplied: float | None = None
+    average_daily_renewables_energy_supplied: float | None = None
+    average_daily_renewables_energy_used: float | None = None
+    average_daily_stored_energy_supplied: float | None = None
+    average_daily_unmet_energy: float | None = None
     average_pv_generation: Optional[Dict[str, float]] = None
-    average_pvt_electric_generation: Optional[float] = None
-    blackouts: Optional[float] = None
-    clean_water_blackouts: Optional[float] = None
-    cumulative_cw_load: Optional[float] = None
-    cumulative_cw_pvt_generation: Optional[float] = None
-    cumulative_cw_supplied: Optional[float] = None
-    cumulative_hw_load: Optional[float] = None
-    cumulative_hw_pvt_generation: Optional[float] = None
-    cumulative_hw_supplied: Optional[float] = None
+    average_pvt_electric_generation: float | None = None
+    blackouts: float | None = None
+    clean_water_blackouts: float | None = None
+    cumulative_cw_load: float | None = None
+    cumulative_cw_pvt_generation: float | None = None
+    cumulative_cw_supplied: float | None = None
+    cumulative_hw_load: float | None = None
+    cumulative_hw_pvt_generation: float | None = None
+    cumulative_hw_supplied: float | None = None
     cumulative_pv_generation: Optional[Dict[str, float]] = None
-    diesel_times: Optional[float] = None
-    grid_daily_hours: Optional[float] = None
-    max_buffer_tank_temperature: Optional[float] = None
-    max_cw_pvt_output_temperature: Optional[float] = None
-    mean_buffer_tank_temperature: Optional[float] = None
-    mean_cw_pvt_output_temperature: Optional[float] = None
-    min_buffer_tank_temperature: Optional[float] = None
-    min_cw_pvt_output_temperature: Optional[float] = None
+    diesel_times: float | None = None
+    grid_daily_hours: float | None = None
+    max_buffer_tank_temperature: float | None = None
+    max_cw_pvt_output_temperature: float | None = None
+    mean_buffer_tank_temperature: float | None = None
+    mean_cw_pvt_output_temperature: float | None = None
+    min_buffer_tank_temperature: float | None = None
+    min_cw_pvt_output_temperature: float | None = None
 
     def to_dict(  # pylint: disable=too-many-branches, too-many-statements
         self,
@@ -1145,9 +1137,15 @@ class KeyResults:
                 self.min_cw_pvt_output_temperature, 3
             )
 
+        def _float(value: float | pd.Series) -> float:
+            """Cast to float a series."""
+            if isinstance(value, pd.Series):
+                return float(value.item())
+            return float(value)
+
         data_dict = {
             str(key): (
-                float(value)
+                _float(value)
                 if not isinstance(value, dict)
                 else {
                     str(sub_key): float(sub_value)
@@ -1502,6 +1500,9 @@ class Criterion(enum.Enum):
     """
     The optimisation criteria values that are allowed.
 
+    - AREA:
+        The area occupied by an installation.
+
     - BLACKOUTS:
         Denotes the portion of time for which the system experienced a blackout.
 
@@ -1560,6 +1561,7 @@ class Criterion(enum.Enum):
 
     """
 
+    AREA = "area"
     BLACKOUTS = "blackouts"
     # TODO: Add criteria that need to be added and computed here.
     COOKING_DEMAND_MET_FRACTION = "cooking_demand_fraction_met"
@@ -1728,9 +1730,13 @@ class Feedstock(FuelSource):
     .. attribute:: area
         The area occupied by the feedstock.
 
+    .. attribute:: energy_efficiency
+        The energy efficiency of the feedstock.
+
     """
 
     area: float
+    energy_efficiency: float = 1
 
 
 @dataclasses.dataclass
@@ -1779,7 +1785,7 @@ class Cooker(_BaseCooker):
         this_fuel_sources: list[FuelSource] = [
             fuel_source
             for fuel_source in fuel_sources
-            if fuel_source.name in cooker_inputs[FUELS]
+            if fuel_source.name in cooker_inputs[ResourceType.COOKING_FUEL.value]
         ]
 
         if len(this_fuel_sources) == 0:
@@ -1839,7 +1845,7 @@ class Biodigester(Cooker):
         this_fuel_sources = [
             fuel_source
             for fuel_source in fuel_sources
-            if fuel_source.name in cooker_inputs[FUELS]
+            if fuel_source.name in cooker_inputs[ResourceType.COOKING_FUEL.value]
         ]
         assert len(this_fuel_sources) == 1
         assert isinstance(this_fuel_sources[0], Biogas)
@@ -1931,13 +1937,16 @@ class BiogasScenario:
         biogas_mode: BiogasMode = BiogasMode(mode)
         fuel_sources = [
             FuelSource(entry.get(NAME), ResourceType.COOKING_FUEL)
-            for entry in biogas_inputs[FUELS]
+            for entry in biogas_inputs[ResourceType.COOKING_FUEL.value]
         ]
         feedstocks: dict[str, Feedstock] = {
             entry.get(NAME): Feedstock(
-                entry.get(NAME), ResourceType.FEEDSTOCK, entry.get("area", 0)
+                entry.get(NAME),
+                ResourceType.FEEDSTOCK,
+                entry.get("area", 0),
+                entry.get("energy_efficiency", 1),
             )
-            for entry in biogas_inputs[FEEDSTOCKS]
+            for entry in biogas_inputs[ResourceType.FEEDSTOCK.value]
         }
 
         # Curtail the fuel sources and feedstocks based on the definitions in the scenarios
@@ -1946,7 +1955,7 @@ class BiogasScenario:
             fuel_sources = [
                 entry
                 for entry in fuel_sources
-                if entry.name in biogas_scenario_inputs[FUELS]
+                if entry.name in biogas_scenario_inputs[ResourceType.COOKING_FUEL.value]
             ]
         except KeyError:
             raise InputFileError(
@@ -1968,7 +1977,7 @@ class BiogasScenario:
             feedstocks_available: dict[str, tuple[Feedstock, float]] = {
                 feedstock_name: (feedstocks[feedstock_name], feedstock_ratio)
                 for feedstock_name, feedstock_ratio in biogas_scenario_inputs.get(
-                    FEEDSTOCKS, {}
+                    ResourceType.FEEDSTOCK.value, {}
                 ).items()
             }
         except KeyError as err:
@@ -1991,7 +2000,7 @@ class BiogasScenario:
         for cooker_name in (
             scenario_cookers := biogas_scenario_inputs.get(COOKERS, [])
         ):
-            print(
+            logger.info(
                 f"Processing cooker {cooker_name} out of {", ".join(scenario_cookers)}"
             )
             if cooker_name not in [entry.get(NAME) for entry in cooker_inputs]:
@@ -2006,7 +2015,7 @@ class BiogasScenario:
                     for entry in biogas_inputs[COOKERS]
                     if entry.get(NAME, "") == cooker_name
                 ][0]
-            ).get(FUELS, []):
+            ).get(ResourceType.COOKING_FUEL.value, []):
                 continue
 
             cookers.append(Cooker.from_dict(cooker_input, fuel_sources))
@@ -2032,7 +2041,7 @@ class BiogasScenario:
                     for entry in biogas_inputs[COOKERS]
                     if entry.get(NAME, "") == cooker_name
                 ][0]
-            ).get(FUELS, []):
+            ).get(ResourceType.COOKING_FUEL.value, []):
                 cookers.append(
                     Biodigester.from_dict(
                         cooker_input, feedstocks_available, [Biogas()], logger
@@ -2783,11 +2792,11 @@ class SystemDetails:
     diesel_capacity: float = 0
     end_year: int = 0
     final_converter_sizes: Optional[Dict[str, int]] = None
-    final_cw_pvt_size: Optional[float] = 0
-    final_hw_pvt_size: Optional[float] = 0
-    final_num_buffer_tanks: Optional[int] = 0
-    final_num_clean_water_tanks: Optional[int] = 0
-    final_num_hot_water_tanks: Optional[int] = 0
+    final_cw_pvt_size: float | None = 0
+    final_hw_pvt_size: float | None = 0
+    final_num_buffer_tanks: int | None = 0
+    final_num_clean_water_tanks: int | None = 0
+    final_num_hot_water_tanks: int | None = 0
     final_pv_sizes: Union[Dict[str, float], DefaultDict[str, float]] = (
         dataclasses.field(  # type: ignore [assignment]
             default_factory=lambda: collections.defaultdict(float)
@@ -2795,11 +2804,11 @@ class SystemDetails:
     )
     final_storage_size: float = 0
     initial_converter_sizes: Optional[Dict[str, int]] = None
-    initial_cw_pvt_size: Optional[float] = 0
-    initial_hw_pvt_size: Optional[float] = 0
-    initial_num_buffer_tanks: Optional[int] = 0
-    initial_num_clean_water_tanks: Optional[int] = 0
-    initial_num_hot_water_tanks: Optional[int] = 0
+    initial_cw_pvt_size: float | None = 0
+    initial_hw_pvt_size: float | None = 0
+    initial_num_buffer_tanks: int | None = 0
+    initial_num_clean_water_tanks: int | None = 0
+    initial_num_hot_water_tanks: int | None = 0
     initial_pv_sizes: Union[Dict[str, float], DefaultDict[str, float]] = (
         dataclasses.field(  # type: ignore [assignment]
             default_factory=lambda: collections.defaultdict(float)
@@ -3031,7 +3040,7 @@ class CumulativeResults:
 
     """
 
-    clean_water: Optional[float] = None
+    clean_water: float | None = None
     cost: float = 0
     discounted_energy: float = 0
     energy: float = 0
@@ -3268,9 +3277,9 @@ class TechnicalAppraisal:
     # TODO: Consider the "technical" values that are associated with the cooking modelling
     # and add them here.
     blackouts: float = 0
-    biogas_cooking: float | None = None
-    biogas_cooking_fraction: float | None = None
-    clean_water_blackouts: Optional[float] = 0
+    biogas_cooking: float | None = 0
+    biogas_cooking_fraction: float | None = 0
+    clean_water_blackouts: float | None = 0
     conventional_biogas_cooking: float | None = None
     conventional_biogas_cooking_fraction: float | None = None
     diesel_energy: float = 0
@@ -3279,7 +3288,7 @@ class TechnicalAppraisal:
     grid_energy: float = 0
     kerosene_displacement: float = 0
     pv_energy: float = 0
-    pvt_energy: Optional[float] = 0
+    pvt_energy: float | None = 0
     renewable_cooking: float | None = None
     renewable_cooking_fraction: float | None = None
     renewable_energy: float = 0
@@ -3325,7 +3334,7 @@ class TechnicalAppraisal:
             pass
 
         technical_appraisal_dict = {
-            str(key): float(value) for key, value in technical_appraisal_dict.items()
+            str(key): (float(value)) for key, value in technical_appraisal_dict.items()
         }
 
         return technical_appraisal_dict

@@ -189,7 +189,7 @@ def _parse_args(args: List[Any]) -> argparse.Namespace:
 
 
 def create_new_location(
-    from_existing: Optional[str],
+    from_existing: str | None,
     location: str,
     logger: logging.Logger,
     update: bool,

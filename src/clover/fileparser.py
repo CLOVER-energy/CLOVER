@@ -12,6 +12,7 @@ fileparser.py - The argument-parsing module for CLOVER.
 
 """
 
+import itertools
 import os
 import pickle
 import pkgutil
@@ -36,6 +37,8 @@ from .__utils__ import (
     API_TOKEN_PLACEHOLDER_TEXT,
     AuxiliaryHeaterType,
     BColours,
+    Biodigester,
+    Biogas,
     DesalinationScenario,
     DieselMode,
     EXCHANGER,
@@ -1132,7 +1135,7 @@ def _parse_pvt_reduced_models(  # pylint: disable=too-many-statements
 def parse_scenario_inputs(
     inputs_directory_relative_path: str,
     logger: Logger,
-) -> Tuple[str, str, List[Scenario], str]:
+) -> Tuple[str, str, str, List[Scenario], str]:
     """
     Parses the scenario input files.
 
@@ -1143,6 +1146,7 @@ def parse_scenario_inputs(
             The :class:`logging.Logger` to use for the run.
 
     Outputs:
+        - The biogas inputs filepath;
         - The desalination inputs filepath;
         - The hot-water inputs filepath;
         - The :class:`Scenario` to use for the run;
@@ -1164,14 +1168,18 @@ def parse_scenario_inputs(
     # Parse the biogas inputs information if relevant.
     if os.path.isfile(biogas_inputs_filepath):
         logger.info("Parsing biogas inputs file.")
-        biogas_scenario_inputs = read_yaml(
-            biogas_inputs_filepath,
-            logger,
+        biogas_scenario_inputs: dict[str, Any] | list[dict[str, Any]] | None = (
+            read_yaml(
+                biogas_inputs_filepath,
+                logger,
+            )
         )
         if not isinstance(biogas_scenario_inputs, dict):
             raise InputFileError(
                 "biogas inputs", "Biogas inputs is not of type `dict`."
             )
+    else:
+        biogas_scenario_inputs = None
 
     # Parse the desalination scenario inputs information if relevant.
     if os.path.isfile(desalination_scenario_inputs_filepath):
@@ -1305,6 +1313,7 @@ def parse_scenario_inputs(
             )
 
     return (
+        biogas_inputs_filepath,
         desalination_scenario_inputs_filepath,
         hot_water_scenario_inputs_filepath,
         scenarios,
@@ -1842,7 +1851,7 @@ def _parse_minigrid_inputs(  # pylint: disable=too-many-locals, too-many-stateme
     str,
     Optional[Dict[str, float]],
     Optional[Dict[str, float]],
-    Optional[str],
+    str | None,
     Optional[Dict[str, float]],
     Optional[Dict[str, float]],
     Minigrid,
@@ -1851,7 +1860,7 @@ def _parse_minigrid_inputs(  # pylint: disable=too-many-locals, too-many-stateme
     Optional[Dict[str, DefaultDict[str, float]]],
     Optional[Dict[str, DefaultDict[str, float]]],
     str,
-    Optional[str],
+    str | None,
     Dict[str, Dict[str, float]],
     Dict[str, Dict[str, float]],
     str,
@@ -2003,9 +2012,9 @@ def _parse_minigrid_inputs(  # pylint: disable=too-many-locals, too-many-stateme
     exchanger_costs: Optional[Dict[str, float]]
     exchanger_emissions: Optional[Dict[str, float]]
     exchanger_inputs: Optional[List[Dict[str, Any]]]
-    exchanger_inputs_filepath: Optional[str]
+    exchanger_inputs_filepath: str | None
     tank_inputs: Optional[List[Dict[str, Any]]]
-    tank_inputs_filepath: Optional[str]
+    tank_inputs_filepath: str | None
     if any(scenario.desalination_scenario is not None for scenario in scenarios) or any(
         scenario.hot_water_scenario is not None for scenario in scenarios
     ):
@@ -2296,10 +2305,10 @@ def _parse_transmission_inputs(
 
 def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
     debug: bool,
-    electric_load_profile: Optional[str],
+    electric_load_profile: str | None,
     location_name: str,
     logger: Logger,
-    optimisation_inputs_file: Optional[str],
+    optimisation_inputs_file: str | None,
 ) -> Tuple[
     Dict[str, Converter],
     Dict[load.load.Device, pd.DataFrame],
@@ -2314,7 +2323,7 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
     List[Optimisation],
     List[Scenario],
     List[Simulation],
-    Optional[pd.DataFrame],
+    pd.DataFrame | None,
     Dict[WaterSource, pd.DataFrame],
     Dict[str, str],
 ]:
@@ -2426,7 +2435,7 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
                 ),
                 "r",
             ) as f:
-                total_load_profile: Optional[pd.DataFrame] = pd.read_csv(f, index_col=0)
+                total_load_profile: pd.DataFrame | None = pd.read_csv(f, index_col=0)
         except FileNotFoundError:
             logger.error(
                 "%sTotal load profile '%s' could not be found.%s",
@@ -2440,6 +2449,7 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
 
     # Parse the scenario input information.
     (
+        biogas_inputs_filepath,
         desalination_scenario_inputs_filepath,
         hot_water_scenario_inputs_filepath,
         scenarios,
@@ -2620,7 +2630,7 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
     if any(scenario.desalination_scenario is not None for scenario in scenarios):
         # Parse the water-source inputs file.
         conventional_water_source_inputs: Optional[List[Dict[str, float]]]
-        conventional_water_source_inputs_filepath: Optional[str]
+        conventional_water_source_inputs_filepath: str | None
         conventional_water_sources: Optional[Set[WaterSource]]
         (
             conventional_water_source_inputs,
@@ -2764,7 +2774,7 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
     else:
         logger.info("PV-T disblaed in scenario file, skipping PV-T impact parsing.")
 
-    # Add transmitter impacts.
+    # Add converter impacts.
     for converter in converters.values():
         logger.info("Updating with %s impact data.", converter.name)
         finance_inputs[
@@ -2795,11 +2805,114 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
         logger.info("Transmitter %s impact data successfully updated.", transmitter)
 
     # Add biogas-specific impacts.
-    # TODO: Add biogas impact information to the finance and ghg input information from the
-    # newly created biogas input file, following a pattern similar to that for the
-    # desalination and hot-water impacts as below.
-    # NOTE: This should contain a similar conditional statement to only execute if biogas is
-    # present within the biogas scenario.
+    if os.path.isfile(biogas_inputs_filepath) and any(
+        scenario.biogas_scenario is not None for scenario in scenarios
+    ):
+        biogas_inputs_data = read_yaml(biogas_inputs_filepath, logger)
+        for cooker in list(
+            itertools.chain.from_iterable(
+                scenario.biogas_scenario.cookers for scenario in scenarios
+            )
+        ):
+            for cooking_fuel in list(cooker.fuel_sources):
+                # Skip electric cooking loads as the electric emissions depend on the
+                # carbon intensity of the electricity mix.
+                if cooking_fuel.resource_type == ResourceType.ELECTRIC:
+                    continue
+
+                # If the cooking fuel is biogas, add the biogas as an independent imapct
+                if cooking_fuel.resource_type == ResourceType.BIOGAS:
+                    finance_inputs[
+                        FINANCE_IMPACT.format(
+                            type=ImpactingComponent.BIOGAS.value,
+                            name=cooking_fuel.name,
+                        )
+                    ] = defaultdict(
+                        float,
+                        [
+                            entry[COSTS]
+                            for entry in biogas_inputs_data[
+                                ResourceType.COOKING_FUEL.value
+                            ]
+                            if entry[NAME] == cooking_fuel.name
+                        ][0],
+                    )
+                    ghg_inputs[
+                        GHG_IMPACT.format(
+                            type=ImpactingComponent.BIOGAS.value,
+                            name=cooking_fuel.name,
+                        )
+                    ] = defaultdict(
+                        float,
+                        [
+                            entry[EMISSIONS]
+                            for entry in biogas_inputs_data[
+                                ResourceType.COOKING_FUEL.value
+                            ]
+                            if entry[NAME] == cooking_fuel.name
+                        ][0],
+                    )
+                    continue
+
+                # Otherwise, add the imapct of the cooking fuel from the input file.
+                finance_inputs[
+                    FINANCE_IMPACT.format(
+                        type=ImpactingComponent.CONVENTIONAL_COOKING.value,
+                        name=cooking_fuel.name,
+                    )
+                ] = defaultdict(
+                    float,
+                    [
+                        entry[COSTS]
+                        for entry in biogas_inputs_data[ResourceType.COOKING_FUEL.value]
+                        if entry[NAME] == cooking_fuel.name
+                    ][0],
+                )
+                ghg_inputs[
+                    GHG_IMPACT.format(
+                        type=ImpactingComponent.CONVENTIONAL_COOKING.value,
+                        name=cooking_fuel.name,
+                    )
+                ] = defaultdict(
+                    float,
+                    [
+                        entry[EMISSIONS]
+                        for entry in biogas_inputs_data[ResourceType.COOKING_FUEL.value]
+                        if entry[NAME] == cooking_fuel.name
+                    ][0],
+                )
+
+            # If the cooker is a biodigester, add the impacts of the feedstocks.
+            if not isinstance(cooker, Biodigester):
+                continue
+
+            for feedstock in list(cooker.feedstocks):
+                finance_inputs[
+                    FINANCE_IMPACT.format(
+                        type=ImpactingComponent.FEEDSTOCK.value,
+                        name=feedstock.name,
+                    )
+                ] = defaultdict(
+                    float,
+                    [
+                        entry[COSTS]
+                        for entry in biogas_inputs_data[ResourceType.FEEDSTOCK.value]
+                        if entry[NAME] == feedstock.name
+                    ][0],
+                )
+                ghg_inputs[
+                    GHG_IMPACT.format(
+                        type=ImpactingComponent.FEEDSTOCK.value,
+                        name=feedstock.name,
+                    )
+                ] = defaultdict(
+                    float,
+                    [
+                        entry[EMISSIONS]
+                        for entry in biogas_inputs_data[ResourceType.FEEDSTOCK.value]
+                        if entry[NAME] == feedstock.name
+                    ][0],
+                )
 
     # Add desalination-specific impacts.
     if any(

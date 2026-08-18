@@ -237,7 +237,7 @@ def get_key_results(
 
 def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
     grid_input_profile: pd.DataFrame,
-    grid_profile: Optional[pd.DataFrame],
+    grid_profile: pd.DataFrame | None,
     initial_cw_hourly_loads: Optional[  # pylint: disable=unused-argument
         Dict[str, pd.DataFrame]
     ],

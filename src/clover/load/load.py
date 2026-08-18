@@ -39,6 +39,7 @@ from ..__utils__ import (
     InputFileError,
     InternalError,
     KEROSENE_DEVICE_NAME,
+    ProgrammerJudgementFault,
     ResourceType,
     Location,
     Scenario,
@@ -68,6 +69,10 @@ AVAILABLE: str = "available"
 # Clean-water usage:
 #   Keyword used for parsing the clean-water usage of a device.
 CLEAN_WATER_USAGE: str = "clean_water_usage"
+
+# Cooking load:
+#   Keyword used for parsing the cooking usage of a device.
+COOKING_LOAD: str = "cooking_load"
 
 # Device:
 #   Keyword used for parsing the name of a device.
@@ -141,6 +146,9 @@ class Device:
     .. attribute:: clean_water_usage
         The clean-water usage of the device, measured in litres per hour.
 
+    .. attribute:: cooking_load
+        The cooking load of the device, measured in kWh_th per hour.
+
     .. attribute:: hot_water_usage
         The hot-water usage of the device, measured in litres per hour.
 
@@ -148,14 +156,15 @@ class Device:
 
     available: bool
     demand_type: DemandType
-    electric_power: Optional[float]
+    electric_power: float | None
     final_ownership: float
     initial_ownership: float
     innovation: float
     imitation: float
     name: str
-    clean_water_usage: Optional[float]
-    hot_water_usage: Optional[float]
+    clean_water_usage: float | None
+    cooking_load: float | None
+    hot_water_usage: float | None
 
     def __hash__(self) -> int:
         """
@@ -187,6 +196,7 @@ class Device:
             + f"innovation={self.innovation}, "
             + f"imitation={self.imitation}, "
             + f"clean_water_usage={self.clean_water_usage} litres/hour, "
+            + f"cooking_load={self.cooking_load} kWh_th/hour, "
             + f"hot_water_usage={self.hot_water_usage} litres/hour"
             + ")"
         )
@@ -226,12 +236,9 @@ class Device:
             device_input[INNOVATION],
             device_input[IMITATION],
             device_input[DEVICE],
-            (
-                device_input[CLEAN_WATER_USAGE]
-                if CLEAN_WATER_USAGE in device_input
-                else None
-            ),
-            device_input[HOT_WATER_USAGE] if HOT_WATER_USAGE in device_input else None,
+            device_input.get(CLEAN_WATER_USAGE, None),
+            device_input.get(COOKING_LOAD, None),
+            device_input.get(HOT_WATER_USAGE, None),
         )
 
 
@@ -239,7 +246,7 @@ class Device:
 #   The default kerosene device to use in the event that no kerosene information is
 #   provided.
 DEFAULT_KEROSENE_DEVICE = Device(
-    False, DemandType.DOMESTIC, 1, 0, 0, 0, 0, KEROSENE_DEVICE_NAME, 0, 0
+    False, DemandType.DOMESTIC, 1, 0, 0, 0, 0, KEROSENE_DEVICE_NAME, 0, 0, 0
 )
 
 
@@ -434,7 +441,7 @@ def compute_total_hourly_load(  # pylint: disable=too-many-locals
     disable_tqdm: bool,
     generated_device_load_filepath: str,
     logger: Logger,
-    total_load_profile: Optional[pd.DataFrame],
+    total_load_profile: pd.DataFrame | None,
     years: int,
 ) -> Tuple[pd.DataFrame, pd.DataFrame]:
     """
@@ -674,6 +681,14 @@ def process_device_hourly_power(
                 )
 
             device_load = hourly_device_usage * device.hot_water_usage
+        elif resource_type == ResourceType.COOKING:
+            if device.cooking_load is None:
+                raise InternalError(
+                    f"{BColours.fail}Internal error processing device "
+                    + f"'{device.name}', cooking usage unexpectedly `None`."
+                    + f"{BColours.endc}",
+                )
+            device_load = hourly_device_usage * device.cooking_load
         else:
             logger.error(
                 "%sUnsuported load type used: %s%s",
@@ -692,7 +707,10 @@ def process_device_hourly_power(
                 resource_type.value,
                 BColours.endc,
             )
-            raise
+            raise ProgrammerJudgementFault(
+                "load::process_device_hourly_power",
+                "Unbound local error. Consider whether your new load type has been coded correctly.",
+            )
 
         # Save the hourly power profile.
         logger.info("Saving hourly power usage for %s.", device.name)
@@ -988,7 +1006,7 @@ def process_load_profiles(  # pylint: disable=too-many-locals
     logger: Logger,
     regenerate: bool,
     resource_type: ResourceType,
-    total_load_profile: Optional[pd.DataFrame] = None,
+    total_load_profile: pd.DataFrame | None = None,
 ) -> Tuple[Dict[str, pd.DataFrame], pd.DataFrame, pd.DataFrame]:
     """
     Process all the load information and profiles to generate the total load.
@@ -1043,6 +1061,13 @@ def process_load_profiles(  # pylint: disable=too-many-locals
             device: device_utilisation
             for device, device_utilisation in device_utilisations.items()
             if device.hot_water_usage is not None
+        }
+    elif resource_type == ResourceType.COOKING:
+        resource_name = "cooking"
+        relevant_device_utilisations = {
+            device: device_utilisation
+            for device, device_utilisation in device_utilisations.items()
+            if device.cooking_load is not None
         }
 
     else:
@@ -1177,7 +1202,7 @@ def compute_processed_load_profile(
 
     """
 
-    processed_total_load: Optional[pd.DataFrame] = None
+    processed_total_load: pd.DataFrame | None = None
 
     if scenario.demands.domestic:
         processed_total_load = pd.DataFrame(

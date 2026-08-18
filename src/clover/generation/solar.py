@@ -204,15 +204,15 @@ class SolarPanel(BaseAreaComponent):  # pylint: disable=too-few-public-methods
 
     def __init__(
         self,
-        azimuthal_orientation: Optional[float],
+        azimuthal_orientation: float | None,
         lifetime: int,
         name: str,
         pv_unit: float,
         pv_unit_overrided: bool,
-        reference_efficiency: Optional[float],
-        reference_temperature: Optional[float],
-        thermal_coefficient: Optional[float],
-        tilt: Optional[float],
+        reference_efficiency: float | None,
+        reference_temperature: float | None,
+        thermal_coefficient: float | None,
+        tilt: float | None,
         area: float | None = None,
     ) -> None:
         """
@@ -247,15 +247,15 @@ class SolarPanel(BaseAreaComponent):  # pylint: disable=too-few-public-methods
 
         """
 
-        self.azimuthal_orientation: Optional[float] = azimuthal_orientation
+        self.azimuthal_orientation: float | None = azimuthal_orientation
         self.lifetime: int = lifetime
         self.name: str = name
         self.pv_unit: float = pv_unit
         self.pv_unit_overrided: bool = pv_unit_overrided
-        self.reference_efficiency: Optional[float] = reference_efficiency
-        self.reference_temperature: Optional[float] = reference_temperature
-        self.thermal_coefficient: Optional[float] = thermal_coefficient
-        self.tilt: Optional[float] = tilt
+        self.reference_efficiency: float | None = reference_efficiency
+        self.reference_temperature: float | None = reference_temperature
+        self.thermal_coefficient: float | None = thermal_coefficient
+        self.tilt: float | None = tilt
 
         # NOTE: Copy similar code as below to other area-related classes but, as per above,
         # if the PV modules are the only components with area, then leave as is.
@@ -292,15 +292,15 @@ class PVPanel(
 
     def __init__(
         self,
-        azimuthal_orientation: Optional[float],
+        azimuthal_orientation: float | None,
         lifetime: int,
         name: str,
         pv_unit: float,
         pv_unit_overrided: bool,
-        reference_efficiency: Optional[float],
-        reference_temperature: Optional[float],
-        thermal_coefficient: Optional[float],
-        tilt: Optional[float],
+        reference_efficiency: float | None,
+        reference_temperature: float | None,
+        thermal_coefficient: float | None,
+        tilt: float | None,
         tracking: Tracking,
         area: float | None = None,
     ) -> None:
@@ -443,14 +443,12 @@ class PVPanel(
         )
 
         if tracking == Tracking.FIXED:
-            azimuthal_orientation: Optional[float] = solar_inputs[
-                "azimuthal_orientation"
-            ]
+            azimuthal_orientation: float | None = solar_inputs["azimuthal_orientation"]
         else:
             azimuthal_orientation = None
 
         if tracking != Tracking.DUAL_AXIS:
-            tilt: Optional[float] = solar_inputs["tilt"]
+            tilt: float | None = solar_inputs["tilt"]
         else:
             tilt = None
 
