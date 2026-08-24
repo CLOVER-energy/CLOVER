@@ -512,27 +512,27 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
                 continue
             cumulative_load += average_load
 
-        # pv_supplied = np.nanmean(
-        #     np.reshape(
-        #         simulation_output[0:HOURS_PER_YEAR][
-        #             ColumnHeader.RENEWABLE_ELECTRICITY_SUPPLIED.value
-        #         ].values,
-        #         (365, 24),
-        # ),
-        # axis=0,
-        # ) * 1000
-        # pv_forecast = np.nanmean(
-        #     np.reshape(
-        #         simulation_output[0:HOURS_PER_YEAR][
-        #             ColumnHeader.RENEWABLE_ELECTRICITY_FORECAST.value
-        #         ].values,
-        #         (365, 24),
-        # ),
-        # axis=0,
-        # ) * 1000
+        pv_supplied = np.nanmean(
+            np.reshape(
+                simulation_output[0:HOURS_PER_YEAR][
+                    ColumnHeader.RENEWABLE_ELECTRICITY_SUPPLIED.value
+                ].values,
+                (365, 24),
+        ),
+        axis=0,
+        ) * 1000
+        pv_forecast = np.nanmean(
+            np.reshape(
+                simulation_output[0:HOURS_PER_YEAR][
+                    ColumnHeader.RENEWABLE_ELECTRICITY_FORECAST.value
+                ].values,
+                (365, 24),
+        ),
+        axis=0,
+        ) * 1000
 
-        # ax.plot(range(24), pv_supplied, label="PV electricity generated",)
-        # ax.plot(range(24), pv_forecast, "--", label="PV electricity forecast")
+        ax.plot(range(24), pv_supplied, label="PV electricity generated",)
+        ax.plot(range(24), pv_forecast, "--", label="PV electricity forecast")
         
         ax.set_xlabel("Hour of Day")
         ax.set_ylabel("Device load / W")
@@ -549,42 +549,42 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
         )
         plt.close(fig)
         # 
-        # # Plot the electric load of each device for the first 24 hours.
-        # cumulative_load = 0
-        # fig, ax = plt.subplots()
-        # for device, load in sorted(initial_electric_hourly_loads.items()):
-        #     first_24_load = np.asarray(load[0:24]).squeeze()
-        #     if np.sum(first_24_load) > 0:
-        #         ax.bar(range(24), first_24_load, label=device, bottom=cumulative_load)
-        #     if isinstance(cumulative_load, int) and cumulative_load == 0:
-        #         cumulative_load = first_24_load.copy()
-        #         continue
-        #     cumulative_load += first_24_load
+        # Plot the electric load of each device for the first 24 hours.
+        cumulative_load = 0
+        fig, ax = plt.subplots()
+        for device, load in sorted(initial_electric_hourly_loads.items()):
+            first_24_load = np.asarray(load[0:24]).squeeze()
+            if np.sum(first_24_load) > 0:
+                ax.bar(range(24), first_24_load, label=device, bottom=cumulative_load)
+            if isinstance(cumulative_load, int) and cumulative_load == 0:
+                cumulative_load = first_24_load.copy()
+                continue
+            cumulative_load += first_24_load
 
-        # pv_supplied = (
-        # simulation_output[0:24][
-        #     ColumnHeader.RENEWABLE_ELECTRICITY_SUPPLIED.value
-        # ].values
-        # ) * 1000
+        pv_supplied = (
+        simulation_output[0:24][
+            ColumnHeader.RENEWABLE_ELECTRICITY_SUPPLIED.value
+        ].values
+        ) * 1000
 
-        # pv_forecast = (
-        # simulation_output[0:24][
-        #     ColumnHeader.RENEWABLE_ELECTRICITY_FORECAST.value
-        # ].values
-        # ) * 1000
+        pv_forecast = (
+        simulation_output[0:24][
+            ColumnHeader.RENEWABLE_ELECTRICITY_FORECAST.value
+        ].values
+        ) * 1000
 
-        # ax.plot(range(24), pv_supplied, label="PV electricity generated")
-        # ax.plot(range(24), pv_forecast, "--", label="PV electricity forecast")
+        ax.plot(range(24), pv_supplied, label="PV electricity generated")
+        ax.plot(range(24), pv_forecast, "--", label="PV electricity forecast")
 
-        # ax.set_xlabel("Hour of Day")
-        # ax.set_ylabel("Device load / W")
-        # ax.legend()
-        # plt.savefig(
-        # os.path.join(figures_directory, "electric_device_loads_first_day.png"),
-        # bbox_inches="tight",
-        # transparent=True,
-        # )
-        # plt.close(fig)
+        ax.set_xlabel("Hour of Day")
+        ax.set_ylabel("Device load / W")
+        ax.legend()
+        plt.savefig(
+        os.path.join(figures_directory, "electric_device_loads_first_day.png"),
+        bbox_inches="tight",
+        transparent=True,
+        )
+        plt.close(fig)
         pbar.update(1)
 
         # Plot the electric load breakdown by load type.
@@ -620,6 +620,26 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
             transparent=True,
         )
         plt.close()
+
+        # plt.plot(simulation_output[72:240][
+        #             ColumnHeader.RENEWABLE_ELECTRICITY_SUPPLIED.value
+        #         ].values, label="Solar observation / kWh"
+        #         )
+        # plt.plot(
+        # simulation_output[72:240][
+        #     ColumnHeader.RENEWABLE_ELECTRICITY_FORECAST.value
+        # ].values, label="Solar forecast / kWh"
+        # )
+        # plt.legend(loc="upper right")
+        # plt.xticks(list(np.arange(72, 241, 12)))
+        # plt.xlabel("Hour of simulation")
+        # plt.ylabel("Solar profiles / kW")
+        # # plt.title(f"Load profile of the community for the first {CUT_OFF_TIME} hours")
+        # plt.savefig(
+        #     os.path.join(figures_directory, "solar_profiles_testing.png"),
+        #     bbox_inches="tight",
+        #     transparent=True,
+        # )
         pbar.update(1)
 
         # Plot the average electric load breakdown by load type.
