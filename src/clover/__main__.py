@@ -1286,6 +1286,7 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
                     frames,
                     frames_subtitle,
                     metric_day1,
+                    system_performance_outputs,
                     os.path.join(
                         simulation_output_directory, output, "day1_shifts.gif"
                     ),

@@ -341,13 +341,13 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
     """
 
     # Set plotting parameters.
-    plt.rcParams["axes.labelsize"] = "11"
+    plt.rcParams["axes.labelsize"] = "12"
     # plt.rcParams["figure.figsize"] = (6.8, 5.8)
     plt.rcParams["font.family"] = "sans-serif"
     plt.rcParams["font.sans-serif"] = ["Arial"]
     plt.rcParams["font.size"] = "11"
-    plt.rcParams["xtick.labelsize"] = "11"
-    plt.rcParams["ytick.labelsize"] = "11"
+    plt.rcParams["xtick.labelsize"] = "12"
+    plt.rcParams["ytick.labelsize"] = "12"
     plt.style.use(STYLE_SHEET)
 
     # Create an output directory for the various plots to be saved in.
@@ -505,7 +505,7 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
                 axis=0,
             )
 
-            if np.sum(average_load) > 0:
+            if np.sum(average_load) >= 0:
                 ax.bar(range(24), average_load, label=device, bottom=cumulative_load)
             if isinstance(cumulative_load, int) and cumulative_load == 0:
                 cumulative_load = average_load.copy()
@@ -521,18 +521,18 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
         ),
         axis=0,
         ) * 1000
-        pv_forecast = np.nanmean(
-            np.reshape(
-                simulation_output[0:HOURS_PER_YEAR][
-                    ColumnHeader.RENEWABLE_ELECTRICITY_FORECAST.value
-                ].values,
-                (365, 24),
-        ),
-        axis=0,
-        ) * 1000
+        # pv_forecast = np.nanmean(
+        #     np.reshape(
+        #         simulation_output[0:HOURS_PER_YEAR][
+        #             ColumnHeader.RENEWABLE_ELECTRICITY_FORECAST.value
+        #         ].values,
+        #         (365, 24),
+        # ),
+        # axis=0,
+        # ) * 1000
 
         ax.plot(range(24), pv_supplied, label="PV electricity generated",)
-        ax.plot(range(24), pv_forecast, "--", label="PV electricity forecast")
+        # ax.plot(range(24), pv_forecast, "--", label="PV electricity forecast")
         
         ax.set_xlabel("Hour of Day")
         ax.set_ylabel("Device load / W")
@@ -548,7 +548,7 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
             transparent=True,
         )
         plt.close(fig)
-        # 
+
         # Plot the electric load of each device for the first 24 hours.
         cumulative_load = 0
         fig, ax = plt.subplots()
@@ -567,14 +567,14 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
         ].values
         ) * 1000
 
-        pv_forecast = (
-        simulation_output[0:24][
-            ColumnHeader.RENEWABLE_ELECTRICITY_FORECAST.value
-        ].values
-        ) * 1000
+        # pv_forecast = (
+        # simulation_output[0:24][
+        #     ColumnHeader.RENEWABLE_ELECTRICITY_FORECAST.value
+        # ].values
+        # ) * 1000
 
         ax.plot(range(24), pv_supplied, label="PV electricity generated")
-        ax.plot(range(24), pv_forecast, "--", label="PV electricity forecast")
+        # ax.plot(range(24), pv_forecast, "--", label="PV electricity forecast")
 
         ax.set_xlabel("Hour of Day")
         ax.set_ylabel("Device load / W")
@@ -3893,20 +3893,23 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
 
 
 def animate_day1_device_load_shifts(
-    frames, frames_subtitle, metric, save_path="day1_load_shifts.gif", interval=400
+    frames, frames_subtitle, metric, simulation_output, save_path="day1_load_shifts.gif", interval=400,
 ):
     """
     frames: list of dicts
         each frame: {device_name: [24 hourly loads]}
     """
-
+    # renew=simulation_output[ColumnHeader.RENEWABLE_ELECTRICITY_USED_DIRECTLY.value].values
+    # renew_offset = np.sum(renew[24:])
+    # metric = metric - renew_offset
     device_keys = list(frames[0].keys())  # stable order from frame 0
     display_name = {
         k: str(k) for k in device_keys
     }  # replace with friendly mapping if available
     hours = np.arange(24)
 
-    fig, (ax1, ax2) = plt.subplots(nrows=1, ncols=2, width_ratios=(2, 1))
+    # fig, (ax1, ax2) = plt.subplots(nrows=1, ncols=2, width_ratios=(3, 2), figsize=(15, 8))
+    fig, (ax1) = plt.subplots(nrows=1, ncols=1), figsize=(14, 8))
     bar_containers = []
     cumulative_load = np.zeros(24, dtype=float)
     first = frames[0]
@@ -3921,9 +3924,9 @@ def animate_day1_device_load_shifts(
     ax1.set_xticks(np.arange(0, 24, 2))
     ax1.set_xlabel("Hour of Day (first 24h)")
     ax1.set_ylabel("Device load / W")
-    ax1.legend(loc="upper right", ncol=2, fontsize=8)
+    ax1.legend(loc="upper right", ncol=2, fontsize=14)
     ax1.grid(axis="y", alpha=0.25)
-    ax1.set_ylim(0, 1500)
+    ax1.set_ylim(0, 4200)
 
     subtitle = ax1.text(
         0.01,
@@ -3932,19 +3935,19 @@ def animate_day1_device_load_shifts(
         transform=ax1.transAxes,
         ha="left",
         va="bottom",
-        fontsize=10,
+        fontsize=14,
     )
 
-    x_vals = np.arange(0, len(metric))
-    scat = ax2.scatter(x_vals[0], metric[0], label="Total Renewables Used")
+    # x_vals = np.arange(0, len(metric))
+    # scat = ax2.scatter(x_vals[0], metric[0], label="Total Renewables Used")
 
-    ax2.set(
-        xlim=(0, len(metric)),
-        ylim=((min(metric)-0.1), (max(metric)+0.1)),
-        xlabel=f"Shifting Step ({len(metric)} total)",
-        ylabel="Total Renewables Used Directly",
-    )
-    ax2.legend(loc="lower right")
+    # ax2.set(
+    #     xlim=(-1, len(metric)),
+    #     ylim=((min(metric)-0.1), (max(metric)+0.1)),
+    #     xlabel=f"Shifting Step ({len(metric)} total shifts)",
+    #     ylabel="Total Renewables Used Directly",
+    # )
+    # ax2.legend(loc="lower right")
 
     def update(frame_idx):
         frame = frames[frame_idx]
@@ -3961,22 +3964,23 @@ def animate_day1_device_load_shifts(
 
             cumulative += vals
 
-        ax1.set_ylim(0, 1500)
+        ax1.set_ylim(0, 4200)
         subtitle.set_text(f"Step {frame_idx} {frames_subtitle[frame_idx-1]}")
 
-        x = x_vals[:frame_idx]
-        y = metric[:frame_idx]
+        # x = x_vals[:frame_idx]
+        # y = metric[:frame_idx]
         # update the scatter plot:
-        data = np.stack([x, y]).T
-        scat.set_offsets(data)
+        # data = np.stack([x, y]).T
+        # scat.set_offsets(data)
 
-        return [r for bc in bar_containers for r in bc] + [subtitle, scat]
+        return [r for bc in bar_containers for r in bc] 
+            # + [subtitle, scat]
 
     anim = FuncAnimation(
         fig, update, frames=len(frames), interval=interval, blit=False, repeat=False
     )
 
-    # Save GIF (Pillow required)
+    # save gif
     fig.set_tight_layout(True)
     anim.save(save_path, writer=PillowWriter(fps=max(1, int(1000 / interval))))
     plt.close(fig)

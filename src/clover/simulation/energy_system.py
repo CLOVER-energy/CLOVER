@@ -1689,6 +1689,8 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
                 device.electric_power
             )  # animation
             # if device.shifting.shiftability == Shiftability.UNSHIFTABLE:
+            if hourly_counts.index.has_duplicates:
+                print(f"{device.name} has duplicate index labels:", hourly_counts.index[hourly_counts.index.duplicated(keep=False)][:20])
             hourly_priority_scores += hourly_counts.mul(device.priority)
             d_hourly_usage = hourly_df.iloc[start_hour:end_hour, 0].astype(int)
             device_count[device] = d_hourly_usage

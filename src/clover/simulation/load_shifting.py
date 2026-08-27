@@ -85,6 +85,7 @@ def time_this_chunk_of_code():
     finally:
         end_time = time.perf_counter()
 
+
 # @contextmanager
 # def time_this_chunk_of_code():
 #     start_time = time.perf_counter()
@@ -130,7 +131,6 @@ class Context:
     # Lookup more.
 
 
-
 def _calculate_best_hour(
     device_count_series: pd.Series,
     hourly_priority_scores: pd.Series,
@@ -141,7 +141,7 @@ def _calculate_best_hour(
     valid_hours: set[int],
     weights: list[float],
 ) -> int:
-    
+
     renewables_weight, priority_weight, penalty_weight, device_count_weight = weights
     eps = 1e-9
 
@@ -150,12 +150,12 @@ def _calculate_best_hour(
 
     cand = np.fromiter(valid_hours, dtype=np.int64)
 
-    R = renewables_available.values[cand-sim_start]
-    P = hourly_priority_scores.values[cand-sim_start]
-    D = device_count_series.values[cand-sim_start]
+    R = renewables_available.values[cand - sim_start]
+    P = hourly_priority_scores.values[cand - sim_start]
+    D = device_count_series.values[cand - sim_start]
 
     dist = np.abs(cand - original_time)
-    C = task.priority_score * (task.shift_penalty ** dist) * dist
+    C = task.priority_score * (task.shift_penalty**dist) * dist
 
     score = (
         renewables_weight * norm(R)
@@ -191,7 +191,9 @@ def _append_animation_frame(
 
     # Add new frame
     frames.append({k: v.copy() for k, v in day1_loads.items()})
-    frames_subtitle.append(f"{device.name} from hour {orig_hour-sim_start} to hour {best_hour-sim_start}")
+    frames_subtitle.append(
+        f"{device.name} from hour {orig_hour-sim_start} to hour {best_hour-sim_start}"
+    )
 
 
 def process_load_shifting(
@@ -210,7 +212,7 @@ def process_load_shifting(
     renewables_used_directly_metric,
     total_tasks: list[list[Task]],
     weights,
-    logger
+    logger,
 ) -> tuple[dict[str, pd.Series], pd.Series]:
     """
 
@@ -225,7 +227,10 @@ def process_load_shifting(
     # with time_this_chunk_of_code() as elapsed_t:
     # slice to consider time_period data only
     sim_start, sim_end = sim_times
-    ownerships = {device: df.iloc[day+sim_start//24,0] for device, df in daily_device_ownership.items()}
+    ownerships = {
+        device: df.iloc[day + sim_start // 24, 0]
+        for device, df in daily_device_ownership.items()
+    }
     # create a df of singular, hourly shiftable loads in the time period
     tasks = total_tasks[day]
 
@@ -253,7 +258,7 @@ def process_load_shifting(
             task.shift_limit
         )  # could vary this by adding stochastic limit generation
         device = task.device
-        device_ownership = ownerships[device] # ownership df of the device in the task
+        device_ownership = ownerships[device]  # ownership df of the device in the task
 
         # find valid hours for task, set comprehension
         valid_hours = {
@@ -282,7 +287,7 @@ def process_load_shifting(
             valid_hours,
             weights,
         )
-        if best_hour == original_time: 
+        if best_hour == original_time:
             continue
         # if day%50 == 0 and task.task_id%100==0:
         #         logger.info(f"TIMING: task {task.task_id} find best hour {elapsed_t():.6f}s")
@@ -307,7 +312,7 @@ def process_load_shifting(
         #         logger.info(f"TIMING: task {task.task_id} find metric change {elapsed_t():.6f}s")
 
         # with time_this_chunk_of_code() as elapsed_t:
-        if (metric_after_shift - metric_before_shift) <= -0.02 * power:
+        if (metric_after_shift - metric_before_shift) < -0 * power:
             continue
 
         # assign the task
@@ -331,7 +336,13 @@ def process_load_shifting(
 
         if day == 0:  # frame for animation
             _append_animation_frame(
-                day1_loads, frames, frames_subtitle, device, original_time, best_hour, sim_start
+                day1_loads,
+                frames,
+                frames_subtitle,
+                device,
+                original_time,
+                best_hour,
+                sim_start,
             )
             renewables_used_directly_metric.append(
                 renewables_used_directly_metric[-1]
@@ -339,7 +350,6 @@ def process_load_shifting(
             )
         # if day%50 == 0 and task.task_id%100==0:
         #     logger.info(f"TIMING: task {task.task_id} assigning (or not) took {elapsed_t():.6f}s")
-
 
     # construct device-specific hourly usages
     # devices = set(device for device in ownerships)
@@ -350,4 +360,3 @@ def process_load_shifting(
     #     device_hourly_loads_shifted[n] = (device_count[d] * p).to_frame()
 
     # return device_hourly_loads_shifted # by device
-
