@@ -15,19 +15,19 @@ scenarios:
     # In the below, this would be describing biodigesters at the household level
     # which are fed with wheat, as well as a fireplace which burns firewood as
     # a backup.
-    biogas:
-      mode: household # "centralised", "conventional" or "household"
-      cookers:
-        - biodigester
-        - fireplace
-      feedstocks:
-        - wheat
-      fuels:
-        - firewood
-    diesel:
-      mode: backup # "backup" or "disabled" currently supported
-      backup:
-        threshold: 0.1 # Maximum acceptible blackouts (0.0-1.0)
+    # biogas:
+    #   mode: household # "centralised", "conventional" or "household"
+    #   cookers:
+    #     - biodigester
+    #     - fireplace
+    #   feedstock:
+    #     wheat: 1.0
+    #   cooking_fuel:
+    #     - firewood
+    # diesel:
+    #   mode: backup # "backup" or "disabled" currently supported
+    #   backup:
+    #     threshold: 0.1 # Maximum acceptible blackouts (0.0-1.0)
     # fixed_inverter_size: false # [kW] A fixed inverter size in kW if specified
     grid: true # "true" or "false"
     grid_type: bahraich # The grid profile to use

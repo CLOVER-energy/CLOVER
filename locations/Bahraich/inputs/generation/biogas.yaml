@@ -1,20 +1,21 @@
 ---
 ################################################################################
-# diesel_inputs.yaml - Diesel-generator input parameters.                      #
+# biogas.yaml - Biogasifer and clean-cooking input parameters.                 #
 #                                                                              #
-# Author: Phil Sandwell, Ben Winchester                                        #
-# Copyright: Phil Sandwell & Ben Winchester, 2021                              #
-# Date created: 14/07/2021                                                     #
+# Author: Ben Winchester, Alexandra Olid Stepanchuk, Vivian Nyamvula Chumbe    #
+#   and Jeanette Munezero                                                      #
+# Copyright: Ben Winchester, 2026                                              #
+# Date created: 05/08/2026                                                     #
 # License: Open source                                                         #
 ################################################################################
 
-cooking:
+cookers:
   - name: biodigester
     # NOTE: You may want to include some way to track biogas consumption as a
     # base resource throughout the simulations/optimisations. Otherwise, I think
     # you can remove the consumption and minimum load requirements.
     fuel_consumption: 0.4
-    fuel_sources: biogas # NOTE: This should match up with what you're defining
+    fuels: biogas # NOTE: This should match up with what you're defining
     # below in the list of fuel sources.
     minimum_load: 0.35 # Minimum capacity factor (0.0 - 1.0)
     costs:
@@ -39,7 +40,9 @@ cooking:
     # NOTE: Need to consider whether there is a cost per unit generated biogas
   - name: fireplace
     fuel_consumption: 0.8 # Firewood is a source of fuel for a conventional
-    fuel_sources: firewood
+    fuels:
+      - firewood
+      - charcoal
     # cooking stove, or charcoal could be used..
     costs:
       # NOTE: Need to consider whether there is a cost for existing installations.
@@ -49,11 +52,11 @@ cooking:
       ghgs: 0
 
   - name: electric_hotplate
-    # NOTE: Efficiency and fuel consumption are equivalent metrics: they measure
+    # TODO: Efficiency and fuel consumption are equivalent metrics: they measure
     # the amount of fuel used per unit fuel delivered. I'm not sure which makes
     # most sense for what you're considering, so you may want to use both.
-    fuel_consumption: 1.8
-    fuel_sources: electricity
+    fuel_consumption: 1.8  # 1.8 Wh of electricity per TODO: UNIT of cooking
+    fuels: electricity
     minimum_load: 0.75
     # NOTE: These costs are, again, per device.
     costs:
@@ -70,7 +73,7 @@ cooking:
 
 # NOTE: For the feedstocks for the biodigesters, I think you need to consider what
 # information you want to be utilised and conveyed.
-feedstocks:
+feedstock:
   - name: wheat
     area: 0.8
     energy_efficiency: 0.8

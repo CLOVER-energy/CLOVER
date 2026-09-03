@@ -125,33 +125,33 @@
 # the demand of electric cooking plates as themselves being a demand, but I think that
 # it makes most sense to consider a cooking profile in this way, stochastically.
 # Ideally, you may use your own cooking-load profile.
-- device: household_cooking
-  available: true
-  # NOTE: "Cooking" should here be measured in kWh or some other thermal unit.
-  cooking: 25
-  # NOTE: If you anticipate growing demand, then adjust this here.
-  initial_ownership: 1
-  final_ownership: 1
-  innovation: 0
-  imitation: 0
-  type: domestic
+# - device: household_cooking
+#   available: true
+#   # NOTE: "Cooking" should here be measured in kWh or some other thermal unit.
+#   cooking_usage: 25
+#   # NOTE: If you anticipate growing demand, then adjust this here.
+#   initial_ownership: 1
+#   final_ownership: 1
+#   innovation: 0
+#   imitation: 0
+#   type: domestic
 
-- device: cafe
-  available: true
-  cooking: 250
-  initial_ownership: 0.05
-  final_ownership: 0.20
-  innovation: 0.04
-  imitation: 0.08
-  type: commercial
+# - device: cafe
+#   available: true
+#   cooking_usage: 250
+#   initial_ownership: 0.05
+#   final_ownership: 0.20
+#   innovation: 0.04
+#   imitation: 0.08
+#   type: commercial
 
-- device: community_kitchen
-  available: true
-  cooking: 1000
-  # NOTE: With 100 households, and no growth in households, this means 2, on average,
-  # within the community.
-  initial_ownership: 0.02
-  final_ownership: 0.04
-  innovation: 0.04
-  imitation: 0.08
-  type: commercial
+# - device: community_kitchen
+#   available: true
+#   cooking_usage: 1000
+#   # NOTE: With 100 households, and no growth in households, this means 2, on average,
+#   # within the community.
+#   initial_ownership: 0.02
+#   final_ownership: 0.04
+#   innovation: 0.04
+#   imitation: 0.08
+#   type: commercial
