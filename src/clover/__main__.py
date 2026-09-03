@@ -17,7 +17,7 @@ the clover module from the command-line interface.
 
 """
 
-__version__ = "6.0.0a2"
+__version__ = "6.0.0a3"
 
 import collections
 import datetime
@@ -71,7 +71,7 @@ from .__utils__ import (
 )
 from .simulation.__utils__ import check_scenario
 
-__all__ = ("main",)
+__all__ = ("main", "__version__")
 
 # Auto-generated-files directory:
 #   The name of the directory in which to save auto-generated files, relative to the
