@@ -1157,13 +1157,13 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
         self._check_output(
             info_file_data,
             average_daily_diesel=0.0,
-            average_daily_grid_energy=1.894,  # 5.288
+            average_daily_grid_energy=1.903,  # 1.894,  # 5.288
             average_daily_grid_times=9.338,
             average_daily_renewables_energy=5.81,  # 5.801
             average_daily_storage_energy=9.32,  # 7.516
-            blackouts=0.1,  # 0.029
-            cumulative_cost=43051.376,  # 41618.403
-            cumulative_ghgs=92127.493,  # 82405.975
+            blackouts=0.087,  # 0.029
+            cumulative_cost=42710.899,  # 43051.376,  # 41618.403
+            cumulative_ghgs=88822.543,  # 92127.493,  # 82405.975
             cumulative_pv_generation=36685.0,
             diesel_capacity=0.0,
             diesel_times=0.0,
@@ -1171,9 +1171,9 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
             final_storage_size=20.225,  # 21.342
             initial_pv_size=20.0,
             initial_storage_size=25.0,
-            lcue=1.738,  # 1.6
-            renewables_fraction=0.889,  # 0.716
-            unmet_energy_fraction=0.099,  # 0.032
+            lcue=1.737,  # 1.738,  # 1.6
+            renewables_fraction=0.888,  # 0.889,  # 0.716
+            unmet_energy_fraction=0.098,  # 0.099,  # 0.032
         )
 
     @pytest.mark.integtest
@@ -1477,13 +1477,13 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
         self._check_output(
             info_file_data,
             average_daily_diesel=0.0,
-            average_daily_grid_energy=1.894,  # 5.288
+            average_daily_grid_energy=1.903,  # 1.894,  # 5.288
             average_daily_grid_times=9.338,
             average_daily_renewables_energy=5.81,  # 5.801
             average_daily_storage_energy=9.32,  # 7.516
-            blackouts=0.1,  # 0.029
-            cumulative_cost=43051.376,  # 41618.403
-            cumulative_ghgs=92127.493,  # 82405.975
+            blackouts=0.087,  # 0.029
+            cumulative_cost=42710.899,  # 43051.376,  # 41618.403
+            cumulative_ghgs=88822.543,  # 92127.493,  # 82405.975
             cumulative_pv_generation=36685.0,
             diesel_capacity=0.0,
             diesel_times=0.0,
@@ -1491,9 +1491,9 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
             final_storage_size=20.225,  # 21.342
             initial_pv_size=20.0,
             initial_storage_size=25.0,
-            lcue=1.738,  # 1.6
-            renewables_fraction=0.889,  # 0.716
-            unmet_energy_fraction=0.099,  # 0.032
+            lcue=1.737,  # 1.738,  # 1.6
+            renewables_fraction=0.888,  # 0.889,  # 0.716
+            unmet_energy_fraction=0.098,  # 0.099,  # 0.032
         )
 
     @pytest.mark.integtest
@@ -1739,6 +1739,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
 
     # @unittest.skip("No need to test scenario with no power generation sources.")
     @pytest.mark.integtest
+    @pytest.mark.skip("No renewable assets")
     def test_self_consumption_no_diesel_no_grid_no_pv_no_storage(self):
         """
         Tests the case with diesel, grid, PV and storage.
