@@ -1799,7 +1799,7 @@ def appraise_system(  # pylint: disable=too-many-locals
         Criterion.LCUE_INCLUDING_CARBON_PRICE: round(
             (
                 financial_appraisal.total_cost
-                + 0.400 * environmental_appraisal.total_ghgs
+                + scenario.carbon_price * environmental_appraisal.total_ghgs
             )
             / technical_appraisal.total_energy_consumed
         ),

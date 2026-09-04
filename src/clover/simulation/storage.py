@@ -164,7 +164,9 @@ def battery_iteration_step(
         new_hourly_battery_storage = (
             energy_leftover_from_previous_timestep - discharged_power
         )
-        remaining_energy_balance = battery_energy_flow + abs(discharged_power)
+        remaining_energy_balance = battery_energy_flow + abs(discharged_power) / (
+            1.0 / battery.conversion_out
+        )
 
         return new_hourly_battery_storage, remaining_energy_balance
 
@@ -191,7 +193,9 @@ def battery_iteration_step(
                 # If the battery was discharging and there is still load to be met, then
                 # take power from the grid if available.
                 if scenario.grid:
-                    grid_energy.iloc[time_index, 0] += max(
+                    grid_energy.iloc[time_index, 0] = grid_energy.iloc[
+                        time_index, 0
+                    ] + max(
                         grid_power_consumed := (-remaining_energy_balance)
                         * grid_profile.iloc[time_index, 0],
                         0,
@@ -880,7 +884,7 @@ def get_electric_battery_storage_profile(  # pylint: disable=too-many-locals, to
                 remaining_profile += grid_energy
 
             else:
-                grid_energy = pd.DataFrame([0] * (end_hour - start_hour))
+                grid_energy = pd.DataFrame([0.0] * (end_hour - start_hour))
 
             # The profile is the remaining energy
             battery_storage_profile: pd.DataFrame = pd.DataFrame(

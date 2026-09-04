@@ -2543,6 +2543,9 @@ class Scenario:
     .. attribute:: battery
         Whether battery storage is being included in the scenario.
 
+    .. attribute:: carbon_price
+        The carbon price to use for the run.
+
     .. attribute:: demands
         The demands being modelled.
 
@@ -2592,6 +2595,7 @@ class Scenario:
     """
 
     battery: bool
+    carbon_price: float
     demands: Demands
     desalination_scenario: DesalinationScenario | None
     diesel_scenario: DieselScenario
@@ -2766,6 +2770,7 @@ class Scenario:
 
         return cls(
             scenario_inputs["battery"],
+            scenario_inputs.get("carbon_price", 0),
             demands,
             desalination_scenario,
             diesel_scenario,
@@ -2796,6 +2801,7 @@ class Scenario:
 
         scenario_dict = {
             "battery": self.battery,
+            "carbon_price": self.carbon_price,
             "demands": {
                 DemandType.COMMERCIAL.value: self.demands.commercial,
                 DemandType.DOMESTIC.value: self.demands.domestic,

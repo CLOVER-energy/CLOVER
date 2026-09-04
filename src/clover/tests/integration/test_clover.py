@@ -1117,6 +1117,7 @@ class SimulationTests(_BaseTest):  # pylint: disable=too-many-public-methods
 
     # @unittest.skip("No need to test scenario with no power generation sources.")
     @pytest.mark.integtest
+    @pytest.mark.skip("No renewable assets")
     def test_grid_prioritise_no_diesel_no_grid_no_pv_no_storage(self):
         """
         Tests the case with diesel, grid, PV and storage.
