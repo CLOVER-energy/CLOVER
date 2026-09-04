@@ -107,6 +107,9 @@ class ImpactingComponent(enum.Enum):
     - PV_T:
         Denotes the PV-T component of the system.
 
+    - SOLAR_THERMAL:
+        Denotes the solar-thermal component of the system.
+
     - STORAGE:
         Denotes the storage component of the system.
 
@@ -135,6 +138,7 @@ class ImpactingComponent(enum.Enum):
     MISC = "misc"
     PV = "pv"
     PV_T = "pv_t"
+    SOLAR_THERMAL = "solar_thermal"
     STORAGE = "storage"
     TRANSMITTER = "transmitter"
 
@@ -194,6 +198,11 @@ def update_diesel_costs(
             technical_appraisal.power_consumed_fraction[ResourceType.ELECTRIC]
             + technical_appraisal.power_consumed_fraction[ResourceType.HOT_CLEAN_WATER]
         )
+
+        # Do not apportion costs if not diesel power was consumed
+        if total_diesel_frac == 0:
+            return
+
         subsystem_impacts[ResourceType.ELECTRIC] += (
             diesel_impact
             * technical_appraisal.power_consumed_fraction[ResourceType.ELECTRIC]

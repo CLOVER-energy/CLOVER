@@ -40,10 +40,11 @@ from ..__utils__ import (
     InputFileError,
     InternalError,
     KEROSENE_DEVICE_NAME,
+    monthly_times_to_daily_times,
     ResourceType,
     Location,
     Scenario,
-    monthly_times_to_daily_times,
+    Simulation,
 )
 
 __all__ = (
@@ -132,9 +133,7 @@ class DeviceShiftingStrategy:
 
     shiftability: Shiftability = Shiftability.UNSHIFTABLE
     shift_limit: int | None = 0
-    shift_penalty: float | None = (
-        1.0  # penalty factor, if shiftable/priority
-    )
+    shift_penalty: float | None = 1.0  # penalty factor, if shiftable/priority
 
     def to_dict(self) -> dict[str, Any]:
         """
@@ -379,6 +378,92 @@ def _cumulative_sales_daily(
     return pd.DataFrame(list(cum_sales.values()))
 
 
+def _linear_population_hourly(
+    *, initial_community_size: int, final_community_size: int, num_growth_years: int
+) -> pd.DataFrame:
+    """
+    Function to generate a curtailed, or growing, population based on values.
+
+    The population size for a curtailed demand is assumed to decrease linearly with time
+    over the system lifetime.
+
+    :param: initial_community_size
+        The inital size of the community in households.
+
+    :param: final_community_size
+        The final size of the community in households.
+
+    :param: system_lifetime
+        The lifetime, in years, of the system.
+
+    :returns:
+        A :class:`pd.DataFrame` containing the population (number of households) for all
+        hours of the simulation period.
+
+    """
+
+    return pd.DataFrame(
+        [
+            math.floor(
+                initial_community_size
+                + (final_community_size - initial_community_size)
+                * (hour / (num_growth_years * 8760))
+            )
+            for hour in range(0, 8760 * num_growth_years)
+        ]
+    )
+
+
+def _normalised_linear_population_hourly(
+    *,
+    initial_community_size: int,
+    final_community_size: int,
+    num_growth_years: int,
+    num_years_total,
+) -> pd.DataFrame:
+    """
+    Function to generate a normalised growing population based on values.
+
+    The population size for a curtailed demand is assumed to decrease linearly with time
+    over the system lifetime. This is then normalised to give a growth rate.
+
+    :param: initial_community_size
+        The inital size of the community in households.
+
+    :param: final_community_size
+        The final size of the community in households.
+
+    :param: system_lifetime
+        The lifetime, in years, of the system.
+
+    :returns:
+        A :class:`pd.DataFrame` containing the population (number of households) for all
+        hours of the simulation period.
+
+    """
+
+    population = _linear_population_hourly(
+        initial_community_size=initial_community_size,
+        final_community_size=final_community_size,
+        num_growth_years=num_growth_years,
+    )
+
+    # Append the static popultion
+    population = pd.concat(
+        [
+            population,
+            pd.DataFrame(
+                [final_community_size] * (8760 * (num_years_total - num_growth_years))
+            ),
+        ],
+        axis=0,
+    )
+
+    population = population.reset_index(drop=True)
+
+    return population / initial_community_size
+
+
 def _population_growth_daily(
     community_growth_rate: float, community_size: int, num_years: int
 ) -> pd.DataFrame:
@@ -450,6 +535,7 @@ def _number_of_devices_daily(
     device: Device,
     location: Location,
     logger: Logger,
+    simulation: Simulation,
 ) -> pd.DataFrame:
     """
     Calculates the number of devices owned by the community on each day
@@ -461,6 +547,8 @@ def _number_of_devices_daily(
             The location currently being considered.
         - logger:
             The logger to use for the run.
+        - simulation:
+            The simulation for the run.
     Outputs:
         - daily_ownership:
             Returns the number of devives that are owned by the community on a given
@@ -474,11 +562,22 @@ def _number_of_devices_daily(
             "Calculating ownership for device %s.",
             device.name,
         )
-        population_growth_rate = _population_growth_daily(
-            location.community_growth_rate,
-            location.community_size,
-            location.max_years,
-        )
+
+        # Use the final-population parameters if provided.
+        if location.final_community_size is not None:
+            population_growth_rate = _linear_population_hourly(
+                initial_community_size=location.community_size,
+                final_community_size=location.final_community_size,
+                num_growth_years=simulation.end_year - simulation.start_year,
+            )
+        else:
+            population_growth_rate = _population_growth_daily(
+                location.community_growth_rate,
+                location.community_size,
+                location.max_years,
+            )
+
+        # Compute the growth rate in device demand.
         if device.final_ownership != device.initial_ownership:
             logger.info(
                 "%s ownership changes over time, calculating.",
@@ -504,6 +603,12 @@ def _number_of_devices_daily(
                 np.floor(  # type: ignore
                     population_growth_rate * device.initial_ownership
                 )
+            )
+            # Normalise the ownership based on the initial value being a math.floor.
+            daily_ownership = pd.DataFrame(
+                daily_ownership[0]
+                * math.floor(daily_ownership[0].loc[0])
+                / daily_ownership[0].loc[0]
             )
         logger.info(
             "Ownership for device %s calculated.",
@@ -589,7 +694,10 @@ def compute_total_hourly_load(  # pylint: disable=too-many-locals
 
             if device.demand_type == DemandType.DOMESTIC:
                 domestic_load = pd.DataFrame(
-                    domestic_load.values + device_hourly_loads[device.name].values
+                    domestic_load.values
+                    + device_hourly_loads[device.name].values[
+                        : len(domestic_load.values)
+                    ]
                 )
             elif device.demand_type == DemandType.COMMERCIAL:
                 commercial_load = pd.DataFrame(
@@ -623,30 +731,36 @@ def compute_total_hourly_load(  # pylint: disable=too-many-locals
 
     else:
         total_load = total_load_profile
-        if not all(
-            total_load.columns
-            == pd.Index(
-                [
-                    DemandType.DOMESTIC.value,
-                    DemandType.COMMERCIAL.value,
-                    DemandType.PUBLIC.value,
-                ]
-            )
-        ):
+        try:
+            if not all(
+                total_load.columns
+                == pd.Index(
+                    [
+                        DemandType.DOMESTIC.value,
+                        DemandType.COMMERCIAL.value,
+                        DemandType.PUBLIC.value,
+                    ]
+                )
+            ):
+                logger.error(
+                    "%sThe total load profile specified is not of the right format. See "
+                    "logs for details.%s",
+                    BColours.fail,
+                    BColours.endc,
+                )
+                logger.info(
+                    "The total load file given must have columns which match %s.",
+                    ", ".join(f"'{e.value}'" for e in DemandType),
+                )
+                raise InputFileError(
+                    "total-load file",
+                    "The total load profile is not of the correct format.",
+                )
+        except ValueError:
             logger.error(
-                "%sThe total load profile specified is not of the right format. See "
-                "logs for details.%s",
-                BColours.fail,
-                BColours.endc,
+                "Total load profile supplied is not of the correct format. Check that your load profile has the correct format of columns and re-run."
             )
-            logger.info(
-                "The total load file given must have columns which match %s.",
-                ", ".join(f"'{e.value}'" for e in DemandType),
-            )
-            raise InputFileError(
-                "total-load file",
-                "The total load profile is not of the correct format.",
-            )
+            raise
 
     # Attempt to read the yearly load statistics from a file and compute if it doesn't
     # exist.
@@ -663,7 +777,7 @@ def compute_total_hourly_load(  # pylint: disable=too-many-locals
     return total_load, yearly_load_statistics
 
 
-def population_hourly(location: Location) -> pd.DataFrame:
+def population_hourly(location: Location, simulation: Simulation) -> pd.DataFrame:
     """
     Calculates the growth in the number of households in the community for each hour
 
@@ -679,6 +793,15 @@ def population_hourly(location: Location) -> pd.DataFrame:
 
     """
 
+    # If a final size is provided, then perform a linear calculation.
+    if location.final_community_size is not None:
+        return _linear_population_hourly(
+            initial_community_size=location.community_size,
+            final_community_size=location.final_community_size,
+            num_growth_years=simulation.end_year - simulation.start_year,
+        )
+
+    # Otherwise, use CLOVER 4.0 functionality to do a community growth-rate calculation.
     growth_rate_hourly = (1 + location.community_growth_rate) ** (
         1 / (24.0 * 365.0)
     ) - 1
@@ -696,8 +819,10 @@ def process_device_hourly_power(
     generated_device_load_filepath: str,
     hourly_device_usage: pd.DataFrame,
     resource_type: ResourceType,
+    location: Location,
     logger: Logger,
     regenerate: bool,
+    simulation: Simulation,
 ) -> pd.DataFrame:
     """
     Calculate the hourly power consumption of the device.
@@ -727,15 +852,15 @@ def process_device_hourly_power(
 
     # If the hourly power usage file already exists, load the data in.
     logger.info("Processing hourly power profile for %s.", device.name)
-    if os.path.isfile(hourly_usage_filepath) and not regenerate:
-        with open(hourly_usage_filepath, "r") as f:
-            device_load: pd.DataFrame = pd.read_csv(f, header=None)
-        logger.info(
-            "Hourly power profile for %s successfully read from file %s.",
-            device.name,
-            hourly_usage_filepath,
-        )
-    else:
+    # if os.path.isfile(hourly_usage_filepath) and not regenerate:
+    #     with open(hourly_usage_filepath, "r") as f:
+    #         device_load: pd.DataFrame = pd.read_csv(f, header=None)
+    #     logger.info(
+    #         "Hourly power profile for %s successfully read from file %s.",
+    #         device.name,
+    #         hourly_usage_filepath,
+    #     )
+    if True:
         # Compute the hourly load profile.
         logger.info("Computing hourly power usage for %s.", device.name)
         if resource_type == ResourceType.ELECTRIC:
@@ -745,9 +870,17 @@ def process_device_hourly_power(
                     + f"'{device.name}', electric power unexpectedly `None`.{BColours.endc}",
                 )
             device_load = hourly_device_usage * device.electric_power
+            if location.final_community_size is not None:
+                device_load *= _normalised_linear_population_hourly(
+                    initial_community_size=location.community_size,
+                    final_community_size=location.final_community_size,
+                    num_growth_years=simulation.end_year - simulation.start_year,
+                    num_years_total=location.max_years,
+                )
             logger.info(
                 "Electric hourly power usage for %s successfully computed.", device.name
             )
+
         elif resource_type == ResourceType.CLEAN_WATER:
             if device.clean_water_usage is None:
                 raise InternalError(
@@ -758,6 +891,7 @@ def process_device_hourly_power(
 
             device_load = hourly_device_usage * device.clean_water_usage
             logger.info("Water usage for %s successfully computed.", device.name)
+
         elif resource_type == ResourceType.HOT_CLEAN_WATER:
             if device.hot_water_usage is None:
                 raise InternalError(
@@ -767,6 +901,7 @@ def process_device_hourly_power(
                 )
 
             device_load = hourly_device_usage * device.hot_water_usage
+
         else:
             logger.error(
                 "%sUnsuported load type used: %s%s",
@@ -789,6 +924,8 @@ def process_device_hourly_power(
 
         # Save the hourly power profile.
         logger.info("Saving hourly power usage for %s.", device.name)
+
+        os.makedirs(os.path.dirname(hourly_usage_filepath), exist_ok=True)
 
         with open(
             hourly_usage_filepath,
@@ -864,14 +1001,12 @@ def process_device_hourly_usage(
         # This processes a random distribution for usage based on the device ownership and
         # utilisation on any given day for all days within the simulation range.
         #
-
-        logger.info("Calculating number of %ss in use", device.name)
         try:
             hourly_device_usage = pd.concat(  # type: ignore
                 [
                     pd.DataFrame(  # type: ignore
                         np.random.binomial(  # type: ignore
-                            float(daily_device_ownership.iloc[day, 0]),  # type: ignore [arg-type]
+                            float(daily_device_ownership.iloc[day, 0]),
                             daily_device_utilisation.iloc[day, :],
                         )
                     )
@@ -888,6 +1023,8 @@ def process_device_hourly_usage(
                 BColours.endc,
             )
             raise
+
+        logger.info("Calculating number of %ss in use", device.name)
 
         logger.info("Hourly usage profile for %s successfully calculated.", device.name)
 
@@ -917,6 +1054,7 @@ def process_device_ownership(
     generated_device_ownership_directory: str,
     location: Location,
     logger: Logger,
+    simulation: Simulation,
     regenerate: bool,
 ) -> pd.DataFrame:
     """
@@ -934,6 +1072,8 @@ def process_device_ownership(
             The location currently being considered.
         - logger:
             The logger to use for the run.
+        - simulation:
+            The simulation to use for the run.
         - regenerate:
             Whether to force-regenerate the profiles.
 
@@ -969,6 +1109,7 @@ def process_device_ownership(
             device,
             location,
             logger,
+            simulation,
         )
         logger.info(
             "Monthly device ownership profile for %s successfully computed.",
@@ -1076,6 +1217,7 @@ def process_load_profiles(  # pylint: disable=too-many-locals
     logger: Logger,
     regenerate: bool,
     resource_type: ResourceType,
+    simulation: Simulation,
     total_load_profile: pd.DataFrame | None = None,
 ) -> tuple[dict[str, pd.DataFrame], pd.DataFrame, pd.DataFrame]:
     """
@@ -1099,6 +1241,8 @@ def process_load_profiles(  # pylint: disable=too-many-locals
             The logger to use for the run.
         - regenerate:
             Whether to force-regenerate the various profiles.
+        - simulation:
+            The simulation to use for the run.
         - total_load_profile:
             The total load profile to use in lieu of profile generation if specified.
 
@@ -1170,6 +1314,7 @@ def process_load_profiles(  # pylint: disable=too-many-locals
             ),
             location=location,
             logger=logger,
+            simulation=simulation,
             regenerate=regenerate,
         )
         logger.info(
@@ -1224,8 +1369,10 @@ def process_load_profiles(  # pylint: disable=too-many-locals
             ),
             hourly_device_usage=hourly_device_usage,
             resource_type=resource_type,
+            location=location,
             logger=logger,
             regenerate=regenerate,
+            simulation=simulation,
         )
         logger.info(
             "Device hourly load information for %s successfully computed.",

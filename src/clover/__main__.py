@@ -17,7 +17,7 @@ the clover module from the command-line interface.
 
 """
 
-__version__ = "6.0.0a1"
+__version__ = "6.0.0a3"
 
 import collections
 import datetime
@@ -73,7 +73,7 @@ from .__utils__ import (
 )
 from .simulation.__utils__ import check_scenario
 
-__all__ = ("main",)
+__all__ = ("main", "__version__")
 
 # Auto-generated-files directory:
 #   The name of the directory in which to save auto-generated files, relative to the
@@ -188,6 +188,9 @@ def _prepare_location(
 
     """
 
+    # Prepare for locations that may have been created in a CLOVER 5.2 environment.
+    locations_foldername = os.path.join(os.path.expanduser("~"), "clover_locations")
+
     if not os.path.isdir(os.path.join(locations_foldername, location)):
         logger.error(
             "%sThe specified location, '%s', does not exist. Try running the "
@@ -211,6 +214,7 @@ def _prepare_location(
             location,
             BColours.endc,
         )
+        # raise Exception("Cannot continue without kerosene: read the documentation.")
         new_location.create_new_location(None, location, logger, True)
         logger.info("%s succesfully updated with missing files.", location)
 
@@ -224,7 +228,10 @@ def _prepare_water_system(
     logger: logging.Logger,
     parsed_args: Namespace,
     resource_type: ResourceType,
+    simulation,
     water_source_times: dict[WaterSource, pd.DataFrame],
+    *,
+    clean_water_load_profile: pd.DataFrame | None = None,
 ) -> tuple[
     dict[WaterSource, pd.DataFrame], dict[str, pd.DataFrame], pd.DataFrame, pd.DataFrame
 ]:
@@ -246,6 +253,8 @@ def _prepare_water_system(
             The parsed command-line arguments.
         - resource_type:
             The :class:`ResourceType` being considered.
+        - simulation:
+            The :class:`Simulation` to use for the run.
         - water_source_times:
             The availability profile of each :class:`WaterSource` being considered.
 
@@ -312,6 +321,8 @@ def _prepare_water_system(
             logger,
             parsed_args.regenerate,
             resource_type,
+            simulation,
+            clean_water_load_profile,
         )
     except InputFileError:
         print(
@@ -607,10 +618,12 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
             optimisations,
             scenarios,
             simulations,
+            clean_water_load_profile,
             electric_load_profile,
             water_source_times,
             input_file_info,
         ) = parse_input_files(
+            parsed_args.clean_water_load_profile,
             parsed_args.debug,
             parsed_args.electric_load_profile,
             parsed_args.location,
@@ -650,7 +663,9 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
     print("Generating necessary profiles", end="\n")
 
     # Determine the capacities of the various PV panels that are to be considered.
-    pv_system_sizes: DefaultDict[str, float] = collections.defaultdict(float)
+    pv_system_sizes: collections.defaultdict[str, float] = collections.defaultdict(
+        float
+    )
     if parsed_args.pv_system_size is not None:
         try:
             pv_system_sizes.update(
@@ -705,15 +720,51 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
             )
 
     # Determine the number of background tasks to carry out.
-    panels_to_fetch: set[solar.PVPanel] = set(
-        minigrid.pv_panels + minigrid.pvt_panels  # type: ignore [operator]
+    candidate_panels_to_fetch: set[solar.SolarPanel] = set(
+        minigrid.pv_panels + minigrid.pvt_panels + minigrid.solar_thermal_panels  # type: ignore [operator]
     )
+    panels_to_fetch: set[solar.SolarPanel] = set()
+
+    def _tilt_angles_and_tracking_from_panel(
+        panel: solar.SolarPanel,
+    ) -> tuple[float | None, float | None, solar.Tracking]:
+        """
+        Determine the tilt angles and tracking for a panel.
+
+        Returns:
+            A `tuple` containing:
+            - The panel azimuthal angle,
+            - The panel tilt,
+            - The tracking of the panel.
+
+        """
+
+        return (panel.azimuthal_orientation, panel.tilt, panel.tracking)
+
+    for panel in candidate_panels_to_fetch:
+        if _tilt_angles_and_tracking_from_panel(panel) not in [
+            _tilt_angles_and_tracking_from_panel(sub_panel)
+            for sub_panel in panels_to_fetch
+        ]:
+            panels_to_fetch.add(panel)
+
     num_ninjas: int = (
         len(panels_to_fetch)
         + (1 if any(scenario.pv_t for scenario in scenarios) else 0)
         + (
             1
-            if any(scenario.desalination_scenario for scenario in scenarios) is not None
+            if any(scenario.pv_t or scenario.solar_thermal for scenario in scenarios)
+            else 0
+        )
+        + (
+            1
+            if (
+                any(scenario.desalination_scenario for scenario in scenarios)
+                is not None
+                or any(
+                    scenario.hot_water_scenario is not None for scenario in scenarios
+                )
+            )
             else 0
         )
     )
@@ -724,7 +775,7 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
     ninja_pause_index: int = 0
 
     # Generate and save the wind data for each year as a background task.
-    if any(scenario.pv_t for scenario in scenarios):
+    if any(scenario.pv_t or scenario.solar_thermal for scenario in scenarios):
         logger.info("Beginning wind-data fetching.")
         wind_data_thread: wind.WindDataThread | None = wind.WindDataThread(
             os.path.join(auto_generated_files_directory, "wind"),
@@ -748,8 +799,10 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
         wind_data_thread = None
 
     # Generate and save the weather data for each year as a background task.
-    if any(scenario.desalination_scenario is not None for scenario in scenarios):
-        # set up the system to call renewables.ninja at a slower rate.
+    if any(scenario.desalination_scenario is not None for scenario in scenarios) or any(
+        scenario.hot_water_scenario is not None for scenario in scenarios
+    ):
+        # Set up the system to call renewables.ninja at a slower rate.
         logger.info("Begining weather-data fetching.")
         weather_data_thread: weather.WeatherDataThread | None = (
             weather.WeatherDataThread(
@@ -778,9 +831,9 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
 
     # Generate and save the solar data for each year as a background task.
     logger.info("Beginning solar-data fetching.")
-    solar_data_threads: dict[solar.PVPanel, solar.SolarDataThread] = {}
+    solar_data_threads: dict[solar.SolarPanelType, solar.SolarDataThread] = {}
     for pv_panel in panels_to_fetch:
-        solar_data_threads[pv_panel] = solar.SolarDataThread(
+        solar_data_threads[pv_panel.panel_type] = solar.SolarDataThread(
             os.path.join(auto_generated_files_directory, "solar"),
             global_settings_inputs,
             location,
@@ -792,7 +845,7 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
             num_ninjas,
             parsed_args.verbose,
         )
-        solar_data_threads[pv_panel].start()
+        solar_data_threads[pv_panel.panel_type].start()
         ninja_pause_index += 1
     if len(panels_to_fetch) >= 1:
         logger.info(
@@ -824,6 +877,7 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
                 logger,
                 parsed_args.regenerate,
                 load.ResourceType.ELECTRIC,
+                simulations[0],
                 electric_load_profile,
             )
         except InputFileError:
@@ -876,7 +930,9 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
             logger,
             parsed_args,
             ResourceType.CLEAN_WATER,
+            simulations[0],
             water_source_times,
+            clean_water_load_profile=clean_water_load_profile,
         )
 
     conventional_hw_source_profiles: dict[  # pylint: disable=unused-variable
@@ -909,6 +965,7 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
             logger,
             parsed_args,
             ResourceType.HOT_CLEAN_WATER,
+            simulations[0],
             water_source_times,
         )
 
@@ -975,28 +1032,40 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
             location.max_years,
             pv_panel=pv_panel,
         )
-        for pv_panel in (minigrid.pv_panels + minigrid.pvt_panels)  # type: ignore
+        for pv_panel in minigrid.solar_panels  # type: ignore
     }
     logger.info("Total solar output successfully computed and saved.")
     true_solar_output = None
-    if any(scenario.forecast == ForecastScenario.INACCURATE.value for scenario in scenarios):
+    if any(
+        scenario.forecast == ForecastScenario.INACCURATE.value for scenario in scenarios
+    ):
         # generate true_solar_output
-        pv_produced = pd.DataFrame({
-            panel.name: total_solar_data[panel.name][
-                solar.SolarDataType.ELECTRICITY.value
-            ]
-            * panel.pv_unit
-            for panel in (minigrid.pv_panels + minigrid.pvt_panels)  # type: ignore
-        })
+        pv_produced = pd.DataFrame(
+            {
+                panel.name: total_solar_data[panel.name][
+                    solar.SolarDataType.ELECTRICITY.value
+                ]
+                * panel.pv_unit
+                for panel in (minigrid.pv_panels + minigrid.pvt_panels)  # type: ignore
+            }
+        )
         true_solar_output = forecasting.calculate_true_solar(
-            os.path.join(locations_foldername, parsed_args.location, INPUTS_DIRECTORY, "generation", f"forecast_accuracies.csv"),
-            os.path.join(auto_generated_files_directory, "weather"),  
+            os.path.join(
+                locations_foldername,
+                parsed_args.location,
+                INPUTS_DIRECTORY,
+                "generation",
+                f"forecast_accuracies.csv",
+            ),
+            os.path.join(auto_generated_files_directory, "weather"),
             logger,
-            location.max_years,               
+            location.max_years,
             pd.DataFrame(*[pv_produced]),
         )
 
-    if any(scenario.desalination_scenario is not None for scenario in scenarios):
+    if any(scenario.desalination_scenario is not None for scenario in scenarios) or any(
+        scenario.hot_water_scenario is not None for scenario in scenarios
+    ):
         logger.info("Generating and saving total weather output file.")
         total_weather_data = (  # pylint: disable=unused-variable
             weather.total_weather_output(
@@ -1008,7 +1077,7 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
         )
         logger.info("Total weather output successfully computed and saved.")
 
-    if any(scenario.pv_t for scenario in scenarios):
+    if any(scenario.pv_t or scenario.solar_thermal for scenario in scenarios):
         logger.info("Generating and saving total wind data output file.")
         total_wind_data: pd.DataFrame | None = wind.total_wind_output(
             os.path.join(auto_generated_files_directory, "wind"),
@@ -1055,9 +1124,7 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
     kerosene_usage.reset_index(drop=True)
 
     # Determine whether any default sizes have been overrided.
-    overrided_default_sizes: bool = any(
-        pv_panel.pv_unit_overrided for pv_panel in minigrid.pv_panels
-    ) or (
+    overrided_default_sizes: bool = (
         minigrid.battery.storage_unit_overrided
         if minigrid.battery is not None
         else False
@@ -1125,6 +1192,11 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
                         if parsed_args.clean_water_pvt_system_size is not None
                         else 0
                     ),
+                    (
+                        parsed_args.clean_water_solar_thermal_system_size
+                        if parsed_args.clean_water_solar_thermal_system_size is not None
+                        else 0
+                    ),
                     conventional_cw_source_profiles,
                     converters,
                     disable_tqdm,
@@ -1135,22 +1207,31 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
                         if parsed_args.hot_water_pvt_system_size is not None
                         else 0
                     ),
+                    (
+                        parsed_args.hot_water_solar_thermal_system_size
+                        if parsed_args.hot_water_solar_thermal_system_size is not None
+                        else 0
+                    ),
                     {
-                        key: value[solar.SolarDataType.TOTAL_IRRADIANCE.value]
-                        for key, value in total_solar_data.items()
+                        panel.name: total_solar_data[panel.name][
+                            solar.SolarDataType.TOTAL_IRRADIANCE.value
+                        ]
+                        for panel in minigrid.solar_panels
                     },
                     kerosene_usage,
                     location,
                     logger,
                     minigrid,
+                    parsed_args.num_clean_water_buffer_tanks,
                     parsed_args.num_clean_water_tanks,
+                    parsed_args.num_hot_water_buffer_tanks,
                     parsed_args.num_hot_water_tanks,
                     {
                         panel.name: total_solar_data[panel.name][
                             solar.SolarDataType.ELECTRICITY.value
                         ]
                         * panel.pv_unit
-                        for panel in (minigrid.pv_panels + minigrid.pvt_panels)  # type: ignore
+                        for panel in minigrid.solar_panels  # type: ignore
                     },
                     (
                         pv_system_sizes
@@ -1239,7 +1320,6 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
                             total_solar_data[pv_panel.name][
                                 solar.SolarDataType.ELECTRICITY.value
                             ]
-                            * pv_panel.pv_unit
                             for pv_panel in minigrid.pv_panels
                         ),
                     )
@@ -1425,20 +1505,21 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
                 )
                 raise
 
-            # Add the time to the counter.
-            optimisation_times.append(
-                "{0:.3f} s/year".format(  # pylint: disable=consider-using-f-string
-                    (time_delta.seconds + time_delta.microseconds * 0.000001)
-                    / (
-                        optimisation_results[-1].system_details.end_year
-                        - optimisation_results[0].system_details.start_year
-                    )
-                )
-            )
+            # FIXME: Fix this block of code.
+            # # Add the time to the counter.
+            # optimisation_times.append(
+            #     "{0:.3f} s/year".format(  # pylint: disable=consider-using-f-string
+            #         (time_delta.seconds + time_delta.microseconds * 0.000001)
+            #         / (
+            #             optimisation_results[-1].system_details.end_year
+            #             - optimisation_results[0].system_details.start_year
+            #         )
+            #     )
+            # )
 
-            # Add the input file information to the system details file.
-            for appraisal in optimisation_results:
-                appraisal.system_details.file_information = input_file_info
+            # # Add the input file information to the system details file.
+            # for appraisal in optimisation_results:
+            #     appraisal.system_details.file_information = input_file_info
 
             # Save the optimisation output.
             save_optimisation(

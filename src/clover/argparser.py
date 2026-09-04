@@ -118,8 +118,8 @@ def parse_args(args: list[Any]) -> argparse.Namespace:
         "--electric-load-profile",
         "-el",
         type=str,
-        help="The name of the load profile to use for the run. This overrides CLOVER's "
-        "in-built load-profile generation.",
+        help="The name of the electric load profile to use for the run. This overrides "
+        "CLOVER's in-built load-profile generation.",
     )
     action_arguments.add_argument(
         "--output",
@@ -155,6 +155,20 @@ def parse_args(args: list[Any]) -> argparse.Namespace:
         "clean-water-only arguments",
     )
     clean_water_parser.add_argument(
+        "--clean-water-load-profile",
+        "-cw",
+        type=str,
+        help="The name of the clean-water load profile to use for the run. This "
+        "overrides CLOVER's in-built load-profile generation.",
+    )
+    clean_water_parser.add_argument(
+        "--num-clean-water-buffer-tanks",
+        "-ncwbt",
+        default=0,
+        type=int,
+        help="The number of clean-water buffer tanks to be included in the system.",
+    )
+    clean_water_parser.add_argument(
         "--num-clean-water-tanks",
         "-ncwt",
         default=0,
@@ -168,23 +182,44 @@ def parse_args(args: list[Any]) -> argparse.Namespace:
         help="The size of the PV-T system being modelled, associated with the "
         "clean-water supply system, in PV-T panel units.",
     )
+    clean_water_parser.add_argument(
+        "--clean-water-solar-thermal-system-size",
+        "-cwst",
+        type=float,
+        help="The size of the solar-thermal system being modelled, associated with the "
+        "clean-water supply system, in PV-T panel units.",
+    )
 
     # Hot-water-specific arguments.
     hot_water_parser = parser.add_argument_group(
         "hot-water-only arguments",
     )
     hot_water_parser.add_argument(
+        "--num-hot-water-buffer-tanks",
+        "-nhwbt",
+        default=0,
+        type=int,
+        help="The number of hot-water buffer tanks to be included in the system.",
+    )
+    hot_water_parser.add_argument(
         "--num-hot-water-tanks",
         "-nhwt",
         default=0,
         type=int,
-        help="The number of hpt-water tanks to be included in the system.",
+        help="The number of hot-water tanks to be included in the system.",
     )
     hot_water_parser.add_argument(
         "--hot-water-pvt-system-size",
         "-hwpvt",
         type=float,
         help="The size of the PV-T system being modelled, associated with the "
+        "hot-water supply system, in PV-T panel units.",
+    )
+    hot_water_parser.add_argument(
+        "--hot-water-solar-thermal-system-size",
+        "-hwst",
+        type=float,
+        help="The size of the solar-thermal system being modelled, associated with the "
         "hot-water supply system, in PV-T panel units.",
     )
 

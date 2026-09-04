@@ -33,11 +33,20 @@ from ..__utils__ import (
 
 __all__ = (
     "Converter",
+    "converter_cost",
     "MultiInputConverter",
     "ThermalDesalinationPlant",
     "WaterSource",
 )
 
+
+# CAPEX:
+#   Keyword for parsing CapEx costs.
+CAPEX: str = "capex"
+
+# COST:
+#   Keyword for parsing costs.
+COST: str = "cost"
 
 # Heat source:
 #   Keyword used for parsing the heat source of thermal desalination plants.
@@ -67,9 +76,17 @@ MINIMUM_HTF_TEMPERATURE: str = "min_htf_temperature"
 #   Keyword used for parsing minimum output information.
 MINIMUM_OUTPUT: str = "minimum_output"
 
+# OPEX:
+#   Keyword for parsing OpEx costs.
+OPEX: str = "opex"
+
 # Output:
 #   Keyword used for parsing output information.
 OUTPUT: str = "output"
+
+# TOTEX:
+#   Keyword for parsing TotEx costs.
+TOTEX: str = "totex"
 
 # Waste products:
 #   Keyword used for parsing waste-product information.
@@ -159,6 +176,8 @@ class Converter:
 
     """
 
+    converter_to_throughput: dict[str, float] = {}
+
     def __init__(
         self,
         input_resource_consumption: dict[ResourceType, float],
@@ -194,6 +213,11 @@ class Converter:
             waste_production if waste_production is not None else {}
         )
 
+        self._throughput: float = 0
+
+        if name not in self.converter_to_throughput:
+            self.converter_to_throughput[self.name] = 0
+
     def __eq__(self, other: Any) -> bool:
         """
         Returns whether two :class:`Conversion` instances are equal.
@@ -206,12 +230,7 @@ class Converter:
 
         """
 
-        return bool(
-            self.input_resource_consumption == other.input_resource_consumption
-            and self.output_resource_type == other.output_resource_type
-            and self.consumption == other.consumption
-            and self.waste_production == other.waste_production
-        )
+        return bool(self.name == other.name)
 
     def __hash__(self) -> int:
         """
@@ -312,6 +331,28 @@ class Converter:
 
         return list(self.input_resource_consumption.values())[0]
 
+    def get_throughput(self) -> float:
+        """
+        Get the current value of the throughput.
+
+        Outputs:
+            The throughput through the converter.
+
+        """
+
+        return self.converter_to_throughput[self.name]
+
+    def set_throughput(self, throughput: float) -> None:
+        """
+        Set the throughput based on the lifetime throughput of the converter.
+
+        Inputs:
+            - The throughput.
+
+        """
+
+        self.converter_to_throughput[self.name] = throughput
+
     @property
     def value(self) -> str:
         """
@@ -328,6 +369,53 @@ class Converter:
         """
 
         return self.name
+
+
+def converter_cost(
+    converter: Converter, converter_costs: dict[str, float], num_converters: int
+) -> float:
+    """
+    Compute the lifetime cost of the converter.
+
+    Inputs:
+        - converter:
+            The converter to compute costs for.
+        - converter_costs:
+            The converter cost information.
+        - num_converters:
+            The number of converters which were installed.
+
+    Returns:
+        The lifetime cost associated with the converter, where "lifetime" refers to the
+        modelling period.
+
+    """
+
+    # Use totex cost if present
+    if TOTEX in converter_costs:
+        return converter_costs[TOTEX] * converter.get_throughput()
+
+    # Otherwise, use a combinatin of CapEx and OpEx costs.
+    opex = converter_costs.get(OPEX, 0) * converter.get_throughput()  # [$/m3]
+
+    if CAPEX in converter_costs:
+        capex = (
+            converter_costs[CAPEX]  # [$/m3/day]
+            * num_converters
+            * converter.maximum_output_capacity  # [litres/hour]
+            * 24  # [horus/day]
+            / 1000  # [litres/m3]
+        )
+
+        return capex + opex
+
+    if COST in converter_costs:
+        return opex + (converter_costs[COST] * num_converters)  #  [$/unit]
+
+    raise InputFileError(
+        "conversion_inputs.yaml",
+        f"The converter {converter.name} does not have properly formatted cost information.",
+    )
 
 
 class MultiInputConverter(Converter):
@@ -456,19 +544,19 @@ class ThermalDesalinationPlant(MultiInputConverter):
 
     .. attribute:: maximum_feedwater_temperature
         The maximum temperature of feedwater allowed by the plant, measured in degrees
-        Celcius.
+        Celsius.
 
     .. attribute:: maximum_htf_temperature
         The maximum temperature of HTF allowed by the plant, measured in degrees
-        Celcius.
+        Celsius.
 
     .. attribute:: minimum_feedwater_temperature
         The minimum temperature of feedwater allowed by the plant, measured in degrees
-        Celcius.
+        Celsius.
 
     .. attribute:: minimum_htf_temperature
         The minumum temperature of HTF allowed by the plant, measured in degrees
-        Celcius.
+        Celsius.
 
     .. attribute:: minimum_output_capacity
         The minimum output flow rate of the plant.
@@ -477,6 +565,7 @@ class ThermalDesalinationPlant(MultiInputConverter):
 
     def __init__(
         self,
+        hot_water_return_temperature: float | None,
         htf_mode: HTFMode,
         input_resource_consumption: dict[ResourceType, float],
         maximum_feedwater_temperature: float | None,
@@ -493,24 +582,26 @@ class ThermalDesalinationPlant(MultiInputConverter):
         Instantiate a :class:`ThermalDesalinationPlant` instance.
 
         Inputs:
+            - hot_water_return_temperature:
+                The return temperature for hot water from the plant, if appropriate.
             - htf_mode:
                 The mode of inputting heat to the plant.
             - input_resource_types:
                 The types of load inputted to the plant.
             - maximum_feedwater_temperature:
                 The maximum temperature of feedwater allowed into the plant, measured in
-                degrees Celcius.
+                degrees Celsius.
             - maximum_htf_temperature:
                 The maximum temperature of water allowed into the plant, measured in
-                degrees Celcius.
+                degrees Celsius.
             - maximum_output_capcity:
                 The maximum output capacity of the plant.
             - minimum_feedwater_temperature:
                 The minimum temperature of feedwater allowed into the plant, measured in
-                degrees Celcius.
+                degrees Celsius.
             - minimum_htf_temperature:
                 The mibimum temperature of water allowed into the plant, measured in
-                degrees Celcius.
+                degrees Celsius.
             - minimum_output_capcity:
                 The minimum output capacity of the plant.
             - name:
@@ -530,12 +621,52 @@ class ThermalDesalinationPlant(MultiInputConverter):
             waste_production,
         )
 
+        self.hot_water_return_temperature: float | None = hot_water_return_temperature
         self.htf_mode = htf_mode
         self.maximum_feedwater_temperature: float | None = maximum_feedwater_temperature
         self.maximum_htf_temperature: float | None = maximum_htf_temperature
-        self.minimum_feedwater_temperature: float | None = minimum_feedwater_temperature
-        self.minimum_htf_temperature: float | None = minimum_htf_temperature
-        self.minimum_output_capacity: float | None = minimum_output_capacity
+        self._minimum_feedwater_temperature: float | None = (
+            minimum_feedwater_temperature
+        )
+        self._minimum_htf_temperature: float | None = minimum_htf_temperature
+        self._minimum_output_capacity: float | None = minimum_output_capacity
+
+    @property
+    def minimum_feedwater_temperature(self) -> float:
+        """Return the minimum feedwater temperature."""
+
+        if self._minimum_feedwater_temperature is None:
+            if self.maximum_feedwater_temperature is not None:
+                return self.maximum_feedwater_temperature
+            raise InputFileError(
+                "conversion_inputs",
+                "Either minimum or maximum feedwater temperature must be specified.",
+            )
+
+        return self._minimum_feedwater_temperature
+
+    @property
+    def minimum_htf_temperature(self) -> float:
+        """Return the minimum HTF temperature."""
+
+        if self._minimum_htf_temperature is None:
+            if self.maximum_htf_temperature is not None:
+                return self.maximum_htf_temperature
+            raise InputFileError(
+                "conversion_inputs",
+                "Either minimum or maximum feedwater temperature must be specified.",
+            )
+
+        return self._minimum_htf_temperature
+
+    @property
+    def minimum_output_capacity(self) -> float:
+        """Return the minimum output capacity."""
+
+        if self._minimum_output_capacity is None:
+            return self.maximum_output_capacity
+
+        return self._minimum_output_capacity
 
     @classmethod
     def from_dict(cls, input_data: dict[str, Any], logger: Logger) -> Any:
@@ -632,6 +763,7 @@ class ThermalDesalinationPlant(MultiInputConverter):
             )
 
         return cls(
+            input_data.get("hot_water_return_temperature", None),
             htf_mode,
             input_resource_consumption,
             (

@@ -94,7 +94,7 @@ def total_wind_output(*args, **kwargs) -> pd.DataFrame:
 
     """
 
-    return total_profile_output(*args, **kwargs, profile_name="wind")
+    return total_profile_output(*args, **kwargs, profile_name="wind", profile_prefix="")
 
 
 class WindDataType(enum.Enum):

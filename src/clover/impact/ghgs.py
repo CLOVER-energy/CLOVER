@@ -198,8 +198,11 @@ def calculate_total_equipment_ghgs(  # pylint: disable=too-many-locals, too-many
     hot_water_tanks: int,
     logger: Logger,
     pv_array_size: dict[str, float],
-    pvt_array_size: float,
+    cw_pvt_array_size: dict[str, float],
+    hw_pvt_array_size: dict[str, float],
     scenario: Scenario,
+    cw_st_array_size: dict[str, float],
+    hw_st_array_size: dict[str, float],
     storage_size: float,
     technical_appraisal: TechnicalAppraisal,
     year: int = 0,
@@ -423,26 +426,132 @@ def calculate_total_equipment_ghgs(  # pylint: disable=too-many-locals, too-many
         for panel_name, array_size in pv_array_size.items()
     )
 
-    if ImpactingComponent.PV_T.value not in ghg_inputs and pvt_array_size > 0:
+    if (
+        ImpactingComponent.PV_T.value not in ghg_inputs
+        and sum(cw_pvt_array_size.values()) > 0
+    ):
         logger.error(
             "%sNo PV-T GHG input information provided.%s", BColours.fail, BColours.endc
         )
         raise InputFileError(
             "solar generation inputs",
-            "No PV-T ghg input information provided and a non-zero number of PV-T"
-            "panels are being considered.",
+            "No PV-T ghg input information provided and a non-zero number of clean-"
+            "water PV-T panels are being considered.",
         )
-    pvt_ghgs: float = 0
-    pvt_installation_ghgs: float = 0
-    if pvt_array_size > 0:
-        pvt_ghgs = calculate_ghgs(
-            pvt_array_size,
-            ghg_inputs,
-            ImpactingComponent.PV_T.value,
-            year,
+
+    cw_pvt_ghgs: float = 0
+    cw_pvt_installation_ghgs: float = 0
+    if sum(cw_pvt_array_size.values()) > 0:
+        cw_pvt_ghgs = sum(
+            calculate_ghgs(
+                array_size, ghg_inputs[ImpactingComponent.PV_T.value], panel_name, year
+            )
+            for panel_name, array_size in cw_pvt_array_size.items()
         )
-        pvt_installation_ghgs = calculate_installation_ghgs(
-            pvt_array_size, ghg_inputs, ImpactingComponent.PV.value, year
+        cw_pvt_installation_ghgs = sum(
+            calculate_installation_ghgs(
+                array_size, ghg_inputs[ImpactingComponent.PV_T.value], panel_name, year
+            )
+            for panel_name, array_size in cw_pvt_array_size.items()
+        )
+
+    if (
+        ImpactingComponent.PV_T.value not in ghg_inputs
+        and sum(hw_pvt_array_size.values()) > 0
+    ):
+        logger.error(
+            "%sNo PV-T GHG input information provided.%s", BColours.fail, BColours.endc
+        )
+        raise InputFileError(
+            "solar generation inputs",
+            "No PV-T ghg input information provided and a non-zero number of hot-water "
+            "PV-T panels are being considered.",
+        )
+
+    hw_pvt_ghgs: float = 0
+    hw_pvt_installation_ghgs: float = 0
+    if sum(hw_pvt_array_size.values()) > 0:
+        hw_pvt_ghgs = sum(
+            calculate_ghgs(
+                array_size, ghg_inputs[ImpactingComponent.PV_T.value], panel_name, year
+            )
+            for panel_name, array_size in hw_pvt_array_size.items()
+        )
+        hw_pvt_installation_ghgs = sum(
+            calculate_installation_ghgs(
+                array_size, ghg_inputs[ImpactingComponent.PV_T.value], panel_name, year
+            )
+            for panel_name, array_size in hw_pvt_array_size.items()
+        )
+
+    if (
+        ImpactingComponent.SOLAR_THERMAL.value not in ghg_inputs
+        and sum(cw_st_array_size.values()) > 0
+    ):
+        logger.error(
+            "%sNo ST GHG input information provided.%s", BColours.fail, BColours.endc
+        )
+        raise InputFileError(
+            "solar generation inputs",
+            "No ST ghg input information provided and a non-zero number of clean-water "
+            "ST collectors are being considered.",
+        )
+
+    cw_st_ghgs: float = 0
+    cw_st_installation_ghgs: float = 0
+    if sum(cw_st_array_size.values()) > 0:
+        cw_st_ghgs = sum(
+            calculate_ghgs(
+                array_size,
+                ghg_inputs[ImpactingComponent.SOLAR_THERMAL.value],
+                panel_name,
+                year,
+            )
+            for panel_name, array_size in cw_st_array_size.items()
+        )
+        cw_st_installation_ghgs = sum(
+            calculate_installation_ghgs(
+                array_size,
+                ghg_inputs[ImpactingComponent.SOLAR_THERMAL.value],
+                panel_name,
+                year,
+            )
+            for panel_name, array_size in cw_st_array_size.items()
+        )
+
+    if (
+        ImpactingComponent.SOLAR_THERMAL.value not in ghg_inputs
+        and sum(hw_st_array_size.values()) > 0
+    ):
+        logger.error(
+            "%sNo ST GHG input information provided.%s", BColours.fail, BColours.endc
+        )
+        raise InputFileError(
+            "solar generation inputs",
+            "No ST ghg input information provided and a non-zero number of hot-water ST"
+            "collectors are being considered.",
+        )
+
+    hw_st_ghgs: float = 0
+    hw_st_installation_ghgs: float = 0
+    if sum(hw_st_array_size.values()) > 0:
+        hw_st_ghgs = sum(
+            calculate_ghgs(
+                array_size,
+                ghg_inputs[ImpactingComponent.SOLAR_THERMAL.value],
+                panel_name,
+                year,
+            )
+            for panel_name, array_size in hw_st_array_size.items()
+        )
+        hw_st_installation_ghgs = sum(
+            calculate_installation_ghgs(
+                array_size,
+                ghg_inputs[ImpactingComponent.SOLAR_THERMAL.value],
+                panel_name,
+                year,
+            )
+            for panel_name, array_size in hw_st_array_size.items()
         )
 
     storage_ghgs = calculate_ghgs(
@@ -462,6 +571,10 @@ def calculate_total_equipment_ghgs(  # pylint: disable=too-many-locals, too-many
             + buffer_tank_installation_ghgs
             + clean_water_tank_ghgs
             + clean_water_tank_installation_ghgs
+            + cw_pvt_ghgs
+            + cw_pvt_installation_ghgs
+            + cw_st_ghgs
+            + cw_st_installation_ghgs
             + heat_exchanger_ghgs
             + heat_exchanger_installation_ghgs
             + (bos_ghgs + misc_ghgs + pv_ghgs + pv_installation_ghgs + storage_ghgs)
@@ -478,6 +591,10 @@ def calculate_total_equipment_ghgs(  # pylint: disable=too-many-locals, too-many
         subsystem_emissions[ResourceType.HOT_CLEAN_WATER] += (
             hot_water_tank_ghgs
             + hot_water_tank_installation_ghgs
+            + hw_pvt_ghgs
+            + hw_pvt_installation_ghgs
+            + hw_st_ghgs
+            + hw_st_installation_ghgs
             + (bos_ghgs + misc_ghgs + pv_ghgs + pv_installation_ghgs + storage_ghgs)
             * technical_appraisal.power_consumed_fraction[ResourceType.HOT_CLEAN_WATER]
         )
@@ -490,7 +607,7 @@ def calculate_total_equipment_ghgs(  # pylint: disable=too-many-locals, too-many
         technical_appraisal,
     )
 
-    return pvt_ghgs + pvt_installation_ghgs, subsystem_emissions
+    return 0, subsystem_emissions
 
 
 def calculate_connections_ghgs(
@@ -825,7 +942,7 @@ def calculate_grid_ghgs(
         total_daily_energy.values * daily_emissions_intensity.values
     )
 
-    return float(np.sum(daily_emissions, axis=0).iloc[0])  # type: ignore
+    return float(np.sum(daily_emissions, axis=0)[0])  # type: ignore
 
 
 def calculate_diesel_fuel_ghgs(
@@ -895,8 +1012,9 @@ def calculate_total_om(  # pylint: disable=too-many-locals
     hot_water_tanks: int,
     logger: Logger,
     pv_array_size: dict[str, float],
-    pvt_array_size: float,
+    pvt_array_size: dict[str, float],
     scenario: Scenario,
+    st_array_size: dict[str, float],
     storage_size: float,
     technical_appraisal: TechnicalAppraisal,
     start_year: int = 0,
@@ -1094,7 +1212,10 @@ def calculate_total_om(  # pylint: disable=too-many-locals
         for panel_name, array_size in pv_array_size.items()
     )
 
-    if ImpactingComponent.PV_T.value not in ghg_inputs and pvt_array_size > 0:
+    if (
+        ImpactingComponent.PV_T.value not in ghg_inputs
+        and sum(pvt_array_size.values()) > 0
+    ):
         logger.error(
             "%sNo PV-T GHG input information provided.%s", BColours.fail, BColours.endc
         )
@@ -1103,16 +1224,47 @@ def calculate_total_om(  # pylint: disable=too-many-locals
             "No PV-T ghg input information provided and a non-zero number of PV-T"
             "panels are being considered.",
         )
+
     # Include PV-T O&M GHGs in the total GHGs.
     pvt_om_ghgs: float = 0  # pylint: disable=unused-variable
-    if pvt_array_size > 0:
-        pvt_om_ghgs = calculate_om_ghgs(
-            pvt_array_size,
-            ghg_inputs,
-            ImpactingComponent.PV_T.value,
-            start_year,
-            end_year,
+    if sum(pvt_array_size.values()) > 0:
+        pvt_om_ghgs = sum(
+            calculate_om_ghgs(
+                array_size,
+                ghg_inputs[ImpactingComponent.PV_T.value],
+                panel_name,
+                start_year,
+                end_year,
+            )
+            for panel_name, array_size in pvt_array_size.items()
         )
+
+    if (
+        ImpactingComponent.SOLAR_THERMAL.value not in ghg_inputs
+        and sum(st_array_size.values()) > 0
+    ):
+        logger.error(
+            "%sNo ST GHG input information provided.%s", BColours.fail, BColours.endc
+        )
+        raise InputFileError(
+            "solar generation inputs",
+            "No ST ghg input information provided and a non-zero number of ST"
+            "panels are being considered.",
+        )
+
+    st_om_ghgs: float = 0
+    if sum(st_array_size.values()) > 0:
+        st_om_ghgs = sum(
+            calculate_om_ghgs(
+                array_size,
+                ghg_inputs[ImpactingComponent.SOLAR_THERMAL.value],
+                panel_name,
+                start_year,
+                end_year,
+            )
+            for panel_name, array_size in st_array_size.items()
+        )
+
     storage_om_ghgs = calculate_om_ghgs(
         storage_size, ghg_inputs, ImpactingComponent.STORAGE.value, start_year, end_year
     )
@@ -1149,4 +1301,4 @@ def calculate_total_om(  # pylint: disable=too-many-locals
         technical_appraisal,
     )
 
-    return 0, subsystem_emissions
+    return pvt_om_ghgs + st_om_ghgs, subsystem_emissions

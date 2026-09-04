@@ -94,7 +94,7 @@ For modelling certain renewable technologies, CLOVER utilises external file-host
 
 These files can be downlaoded using the latest DOI link below. Once downloaded, extract the archive into the `src/clover/src` directory within your repository:
 
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.6647054.svg)](https://doi.org/10.5281/zenodo.6647054)  
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.6647054.svg)](https://doi.org/10.5281/zenodo.6647054).
 
 ### ⚠️ One-time download from Github
 

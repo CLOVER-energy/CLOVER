@@ -16,8 +16,8 @@ calculations associated with these storage media are carried out in this module.
 
 """
 
+from collections import defaultdict
 from logging import Logger
-from typing import DefaultDict, Union
 
 import pandas as pd
 import numpy as np
@@ -93,7 +93,7 @@ def battery_iteration_step(
         -
     """
 
-    if minigrid.battery is None:
+    if (battery := minigrid.battery) is None:
         logger.error(
             "%sNo battery was defined on the minigrid despite the iteration "
             "calculation being called to compute the energy stored within the "
@@ -116,34 +116,57 @@ def battery_iteration_step(
 
         :returns:
             - The new hourly battery storage;
+
             - Any power which wasn't stored in the batteries or couldn't be discharged.
 
         """
+
         # Battery charging
         if battery_energy_flow >= 0.0:
+            # Charge by an amount dictated by the flow rates
             new_hourly_battery_storage = float(
                 hourly_battery_storage[time_index - 1]
-            ) * (1.0 - minigrid.battery.leakage) + minigrid.battery.conversion_in * (
+            ) * (1.0 - battery.leakage) + battery.conversion_in * (
                 stored_power := min(
                     battery_energy_flow,
-                    minigrid.battery.charge_rate
+                    battery.charge_rate
                     * (maximum_battery_storage - minimum_battery_storage),
                 )
+            )
+            new_hourly_battery_storage = min(
+                new_hourly_battery_storage, maximum_battery_storage
             )
             remaining_energy_balance = battery_energy_flow - stored_power
+            return new_hourly_battery_storage, remaining_energy_balance
+
         # Battery discharging
-        else:
-            new_hourly_battery_storage = hourly_battery_storage[time_index - 1] * (
-                1.0 - minigrid.battery.leakage
-            ) + (1.0 / minigrid.battery.conversion_out) * (
-                discharged_power := max(
-                    battery_energy_flow,
-                    (-1.0)
-                    * minigrid.battery.discharge_rate
-                    * (maximum_battery_storage - minimum_battery_storage),
+        # Discharge all available power if available but do not discharge the batteries
+        # below their minimum permitted value.
+        discharged_power = min(
+            (1.0 / battery.conversion_out)
+            * max(
+                -battery_energy_flow,
+                (-1.0)
+                * battery.discharge_rate
+                * (maximum_battery_storage - minimum_battery_storage),
+            ),
+            max(
+                (
+                    energy_leftover_from_previous_timestep := hourly_battery_storage[
+                        time_index - 1
+                    ]
+                    * (1.0 - battery.leakage)
                 )
-            )
-            remaining_energy_balance = battery_energy_flow + abs(discharged_power)
+                - minimum_battery_storage,
+                0,
+            ),
+        )
+        new_hourly_battery_storage = (
+            energy_leftover_from_previous_timestep - discharged_power
+        )
+        remaining_energy_balance = battery_energy_flow + abs(discharged_power) / (
+            1.0 / battery.conversion_out
+        )
 
         return new_hourly_battery_storage, remaining_energy_balance
 
@@ -151,6 +174,7 @@ def battery_iteration_step(
         battery_storage_profile.iloc[time_index, 0]
     )
     if time_index == 0:
+        # FIXME: Add conversion in/out factors here.
         new_hourly_battery_storage = (
             initial_battery_storage + energy_generation_or_load_deficit
         )
@@ -168,43 +192,36 @@ def battery_iteration_step(
 
                 # If the battery was discharging and there is still load to be met, then
                 # take power from the grid if available.
-                grid_energy.iloc[time_index, 0] += max(
-                    grid_power_consumed := (-remaining_energy_balance)
-                    * grid_profile.iloc[time_index, 0],
-                    0,
-                )
-                remaining_energy_balance += grid_power_consumed
+                if scenario.grid:
+                    grid_energy.iloc[time_index, 0] = grid_energy.iloc[
+                        time_index, 0
+                    ] + max(
+                        grid_power_consumed := (-remaining_energy_balance)
+                        * grid_profile.iloc[time_index, 0],
+                        0,
+                    )
+                    remaining_energy_balance += grid_power_consumed
 
             # If the battery storage functions as a backup _only_, such that power
             # should be taken from the grid first if available, then do this.
-            case PrioritisationStrategy.STORAGE_AS_SOLAR_BACKUP:
-                # Take power from the grid network if there is power to be taken.
-                # NOTE: Energy arbitrage could be coded up here.
-                grid_energy.iloc[time_index, 0] += (
-                    grid_power_consumed := -min(energy_generation_or_load_deficit, 0)
-                    * grid_profile.iloc[time_index, 0]
-                )
-                energy_generation_or_load_deficit += grid_power_consumed
-
-                # Then, if there is still unmet demand (such that the grid was not
-                # available), discharge the batteries.
-                # Similarly, if there is surplus power from the on-site solar, then
-                # charge the batteries by this amout.
-                new_hourly_battery_storage, remaining_energy_balance = (
-                    _charge_or_discharge(energy_generation_or_load_deficit)
-                )
-
+            # Power would have been taken from the grid if available when the storage
+            # profile was calculated before the iteration step. As such, power only
+            # needs to be charged or discharged if any remains.
+            # As such, if there is still unmet demand (such that the grid was not
+            # available), discharge the batteries.
+            # Similarly, if there is surplus power from the on-site solar, then
+            # charge the batteries by this amout.
+            #
             # If consuming from the grid, and storage is utilised to meet unmet demand but
             # is not topped up to function as an emergency backup, then power should be
             # taken from the storage if required but, if the grid is available, the storage
             # should not be charged up from the grid.
-            case PrioritisationStrategy.GRID_PRIORITISATION:
-                # If there is a deficit, and power needs to be met, then discharge as
-                # power would already have been taken from the grid if available.
-                # If there is surplus solar generation, then store this in the
-                # batteries.
-                new_hourly_battery_storage, remaining_energy_balance = (
-                    _charge_or_discharge(energy_generation_or_load_deficit)
+            case (
+                PrioritisationStrategy.STORAGE_AS_SOLAR_BACKUP
+                | PrioritisationStrategy.GRID_PRIORITISATION
+            ):
+                new_hourly_battery_storage, _ = _charge_or_discharge(
+                    energy_generation_or_load_deficit
                 )
 
             # If consuming from the grid and aiming to use storage as an emergency backup,
@@ -212,27 +229,51 @@ def battery_iteration_step(
             # is available, then they should be fully charged as much as is possible.
             case PrioritisationStrategy.STORAGE_AS_BACKUP_SERVICE:
                 # If there is a deficit, and power needs to be met, then discharge as
-                # power would already have been taken from the grid if available.
-                # If there is surplus solar generation, then store this in the
-                # batteries.
-                new_hourly_battery_storage, remaining_energy_balance = (
-                    _charge_or_discharge(energy_generation_or_load_deficit)
+                # power would already have been taken from the grid if available. So, if
+                # the grid is available, then an infinite amount of power can be
+                # supplied to the batteries.
+                if scenario.grid:
+                    grid_power_supply: float = (
+                        np.inf if grid_profile.iloc[time_index, 0] else -np.inf
+                    )
+                else:
+                    grid_power_supply = -np.inf
+                # If there is surplus solar generation, or if the grid is available,
+                # then store this surplus generation in the batteries or take power from
+                # the grid connection to charge them.
+                new_hourly_battery_storage, _ = _charge_or_discharge(
+                    max(energy_generation_or_load_deficit, grid_power_supply)
                 )
 
                 # Otherwise, the batteries should be fully charged if the grid is
-                # available.
-                grid_energy.iloc[time_index, 0] += (
-                    grid_power_consumed := min(
-                        (minigrid.battery.capacity - new_hourly_battery_storage),
-                        (
-                            minigrid.battery.charge_rate
-                            * (maximum_battery_storage - minimum_battery_storage),
-                        ),
+                # available, subject to the c-rates.
+                # print(
+                #     f"Hour: {time_index:.3g}; +/-: {energy_generation_or_load_deficit:.3f}; "
+                #     f"Storage: {new_hourly_battery_storage:.3f}; Grid?: {bool(grid_profile.iloc[time_index, 0])}",
+                #     end="\n",
+                # )
+                if False:
+                    grid_energy.iloc[time_index, 0] += (
+                        grid_power_consumed := (
+                            min(
+                                (maximum_battery_storage - new_hourly_battery_storage),
+                                (
+                                    battery.charge_rate
+                                    * (
+                                        maximum_battery_storage
+                                        - minimum_battery_storage
+                                    )
+                                ),
+                            )
+                            * grid_profile.iloc[time_index, 0]
+                        )
                     )
-                    * grid_profile.iloc[time_index, 0]
-                )
+                    print(f"Grid-power consumed: {grid_power_consumed:.3f}")
+
+                    new_hourly_battery_storage += grid_power_consumed
 
     excess_energy = max(new_hourly_battery_storage - maximum_battery_storage, 0.0)
+    new_hourly_battery_storage -= excess_energy
 
     # Option 1.1. Shift forward all load to the next hour, irrespective of forecasting.
     # [1.1] Compute unmet load which remains.
@@ -249,7 +290,7 @@ def battery_iteration_step(
 
 
 def cw_tank_iteration_step(  # pylint: disable=too-many-locals
-    backup_desalinator_water_supplied: dict[int, float],
+    prioritise_desalinator_water: dict[int, float],
     brine_per_desalinated_litre: float,
     clean_water_power_consumed_mapping: dict[int, float],
     clean_water_demand_met_by_excess_energy: dict[int, float],
@@ -266,20 +307,22 @@ def cw_tank_iteration_step(  # pylint: disable=too-many-locals
     maximum_cw_tank_storage: float,
     maximum_water_throughput: float,
     minigrid: Minigrid,
+    minimum_battery_storage: float,
     minimum_cw_tank_storage: float,
     new_hourly_battery_storage: float,
+    renewables_energy_used_directly: pd.DataFrame,
     scenario: Scenario,
     storage_water_supplied: dict[int, float],
     tank_storage_profile: pd.DataFrame,
-    total_waste_produced: dict[WasteProduct, DefaultDict[int, float]],
+    total_waste_produced: dict[WasteProduct, defaultdict[int, float]],
     *,
     time_index: int,
-) -> tuple[float, dict[WasteProduct, DefaultDict[int, float]]]:
+) -> tuple[float, float, float, dict[WasteProduct, defaultdict[int, float]]]:
     """
     Caries out an iteration calculation for the clean-water tanks.
 
     Inputs:
-        - backup_desalinator_water_supplied:
+        - prioritise_desalinator_water:
             The water supplied by the backup (electric) desalination.
         - clean_water_power_consumed_mapping:
             The power consumed in providing clean water.
@@ -342,7 +385,7 @@ def cw_tank_iteration_step(  # pylint: disable=too-many-locals
     """
 
     if scenario.desalination_scenario is not None:
-        tank_water_flow: float = float(tank_storage_profile.iloc[time_index, 0])  # type: ignore [arg-type]
+        tank_water_flow: float = float(tank_storage_profile.iloc[time_index, 0])
 
         # Raise an error if there is no clean-water tank defined.
         if minigrid.clean_water_tank is None:
@@ -361,6 +404,9 @@ def cw_tank_iteration_step(  # pylint: disable=too-many-locals
         if time_index == 0:
             current_net_water_flow = initial_cw_tank_storage + tank_water_flow
         else:
+            # The current_net_water_flow parameter is positive if water has been added
+            # to the tank via thermal desalination and is negative if water has been
+            # removed from the tank at this time step to fulfil demand.
             current_net_water_flow = (
                 hourly_cw_tank_storage[time_index - 1]
                 * (1.0 - minigrid.clean_water_tank.leakage)  # type: ignore
@@ -386,30 +432,36 @@ def cw_tank_iteration_step(  # pylint: disable=too-many-locals
             )
 
             # Compute the amount of water that was actually desalinated.
-            desalinated_water = min(
-                maximum_desalinated_water,
-                maximum_cw_tank_storage - current_net_water_flow,
+            desalinated_water = max(
+                min(
+                    maximum_desalinated_water,
+                    maximum_cw_tank_storage - current_net_water_flow,
+                ),
+                0,
             )
 
             # Compute the remaining excess energy and the energy used in
             # desalination along with the waste brine produced.
             brine_produced = brine_per_desalinated_litre * desalinated_water
             energy_consumed = energy_per_desalinated_litre * desalinated_water
-            new_hourly_battery_storage -= energy_consumed
+            excess_energy -= energy_consumed
+            # new_hourly_battery_storage -= energy_consumed
 
             # Ensure that the excess energy is normalised correctly.
-            excess_energy = max(
-                new_hourly_battery_storage - maximum_battery_storage, 0.0
-            )
+            # excess_energy = max(
+            #     new_hourly_battery_storage - maximum_battery_storage, 0.0
+            # )
 
             # Store this as water and electricity supplied using excess power.
             total_waste_produced[WasteProduct.BRINE][time_index] += brine_produced
             excess_energy_used_desalinating[time_index] = energy_consumed
+            renewables_energy_used_directly.iloc[time_index] += energy_consumed
             clean_water_demand_met_by_excess_energy[time_index] = max(
                 0, -current_net_water_flow
             )
             clean_water_supplied_by_excess_energy[time_index] = desalinated_water
         else:
+            desalinated_water = 0
             excess_energy_used_desalinating[time_index] = 0
             clean_water_demand_met_by_excess_energy[time_index] = 0
             clean_water_supplied_by_excess_energy[time_index] = 0
@@ -424,25 +476,62 @@ def cw_tank_iteration_step(  # pylint: disable=too-many-locals
             and scenario.desalination_scenario.clean_water_scenario.mode
             == CleanWaterMode.PRIORITISE
         ):
-            # Compute the electricity consumed meeting this demand.
-            energy_consumed = energy_per_desalinated_litre * current_unmet_water_demand
+            # Compute the electricity consumed meeting this demand subject to the
+            # availability of converters.
+            energy_consumed = min(
+                [
+                    energy_per_desalinated_litre
+                    * (
+                        maximum_water_supplied := min(
+                            current_unmet_water_demand, maximum_water_throughput
+                        )
+                    ),
+                    (
+                        (new_hourly_battery_storage - minimum_battery_storage)
+                        * (1 - minigrid.battery.leakage)  # type: ignore
+                        * minigrid.battery.conversion_out  # type: ignore
+                    )
+                    + excess_energy,
+                ]
+            )
 
-            # Withdraw this energy from the batteries.
+            # Use excess energy, then withdraw this energy from the batteries.
+            excess_energy -= (
+                excess_renewables_used_directly := min(energy_consumed, excess_energy)
+            )
+            excess_energy_used_desalinating[
+                time_index
+            ] += excess_renewables_used_directly
+            energy_consumed -= excess_renewables_used_directly
+
             new_hourly_battery_storage -= (
-                1.0 / minigrid.battery.conversion_out  # type: ignore
-            ) * energy_consumed
+                min(
+                    energy_consumed,
+                    (new_hourly_battery_storage - minimum_battery_storage),
+                )
+                * minigrid.battery.conversion_out  # type: ignore
+                / (1 - minigrid.battery.leakage)  # type: ignore
+            )  # type: ignore
 
             # Ensure that the excess energy is normalised correctly.
-            excess_energy = max(
-                new_hourly_battery_storage - maximum_battery_storage, 0.0
-            )
+            # excess_energy = max(
+            #     new_hourly_battery_storage - maximum_battery_storage, 0.0
+            # )
+
+            # Compute the water supplied and brine produced
+            water_supplied = energy_consumed / energy_per_desalinated_litre
+            brine_produced = brine_per_desalinated_litre * water_supplied
 
             # Store this as water and electricity supplied by backup.
             clean_water_power_consumed_mapping[time_index] += energy_consumed
-            backup_desalinator_water_supplied[time_index] = current_unmet_water_demand
+            current_hourly_cw_tank_storage -= water_supplied
+            current_unmet_water_demand -= water_supplied
+            prioritise_desalinator_water[time_index] = water_supplied
+            total_waste_produced[WasteProduct.BRINE][time_index] += brine_produced
+            desalinated_water += water_supplied
         else:
             clean_water_power_consumed_mapping[time_index] = 0
-            backup_desalinator_water_supplied[time_index] = 0
+            prioritise_desalinator_water[time_index] = 0
 
         # Any remaining unmet water demand should be met using conventional clean-water
         # sources if available.
@@ -451,7 +540,7 @@ def cw_tank_iteration_step(  # pylint: disable=too-many-locals
             conventional_cw_available: float = 0
             if conventional_cw_source_profiles is not None:
                 conventional_cw_available = float(
-                    sum(  # type: ignore [arg-type]
+                    sum(
                         entry.iloc[time_index]
                         for entry in conventional_cw_source_profiles.values()
                     )
@@ -487,7 +576,12 @@ def cw_tank_iteration_step(  # pylint: disable=too-many-locals
                 0.0,
             )
 
-    return excess_energy, total_waste_produced
+    return (
+        desalinated_water,
+        excess_energy,
+        new_hourly_battery_storage,
+        total_waste_produced,
+    )
 
 
 def get_electric_battery_storage_profile(  # pylint: disable=too-many-locals, too-many-statements
@@ -632,7 +726,7 @@ def get_electric_battery_storage_profile(  # pylint: disable=too-many-locals, to
         if RenewableEnergySource.CLEAN_WATER_PVT in renewables_power_produced:
             try:
                 clean_water_pvt_electric_power_produced: pd.DataFrame = pd.DataFrame(
-                    renewables_power_produced[RenewableEnergySource.CLEAN_WATER_PVT]  # type: ignore [arg-type]
+                    renewables_power_produced[RenewableEnergySource.CLEAN_WATER_PVT]
                 )
             except KeyError:
                 logger.error(
@@ -659,10 +753,13 @@ def get_electric_battery_storage_profile(  # pylint: disable=too-many-locals, to
             )
 
         # Compute the clean-water source.
-        if RenewableEnergySource.HOT_WATER_PVT in renewables_power_produced:
+        if (
+            RenewableEnergySource.HOT_WATER_PVT in renewables_power_produced
+            and scenario.pv_t
+        ):
             try:
                 hot_water_pvt_electric_power_produced: pd.DataFrame = pd.DataFrame(
-                    renewables_power_produced[RenewableEnergySource.HOT_WATER_PVT]  # type: ignore [arg-type]
+                    renewables_power_produced[RenewableEnergySource.HOT_WATER_PVT]
                 )
             except KeyError:
                 logger.error(
@@ -758,7 +855,7 @@ def get_electric_battery_storage_profile(  # pylint: disable=too-many-locals, to
         sum(renewables_energy_map.values())  # type: ignore
     )
 
-    # Check for self-generation prioritisation
+    # Check the prioritisation strategy
     match scenario.prioritisation_strategy:
         case (
             PrioritisationStrategy.SELF_CONSUMPTION
@@ -773,22 +870,30 @@ def get_electric_battery_storage_profile(  # pylint: disable=too-many-locals, to
                 + (remaining_profile < 0) * renewables_energy.values  # type: ignore [operator]
             )
 
+            # In the storage-as-solar-backup scenario, the battery storage should only
+            # be utilised if the grid is not available.
             if (
                 scenario.prioritisation_strategy
                 == PrioritisationStrategy.STORAGE_AS_SOLAR_BACKUP
                 and scenario.grid
             ):
+                # Compute the power taken from the grid.
                 grid_energy: pd.DataFrame = pd.DataFrame(
                     ((remaining_profile < 0) * remaining_profile)[0]  # type: ignore
                     * -1.0
                     * grid_profile.values
                 )
+
+                # Remove these hours from the "PV - Load" (remaining) profile as demand
+                # in these hours no longer needs to be met from storage.
+                remaining_profile += grid_energy
+
             else:
-                grid_energy = pd.DataFrame([0] * (end_hour - start_hour))
+                grid_energy = pd.DataFrame([0.0] * (end_hour - start_hour))
 
             # The profile is the remaining energy
             battery_storage_profile: pd.DataFrame = pd.DataFrame(
-                remaining_profile.values + grid_energy.values
+                remaining_profile.values
             )
 
         case (
@@ -812,14 +917,14 @@ def get_electric_battery_storage_profile(  # pylint: disable=too-many-locals, to
             # Then take energy from PV if generated
             logger.debug(
                 "Renewables profile: %s kWh",
-                f"{round(float(np.sum(renewables_energy, axis=0).iloc[0]), 2)}",  # type: ignore [arg-type, call-overload]
+                f"{round(float(np.sum((renewables_energy), axis=0).item()), 2)}",  # type: ignore [arg-type, call-overload]
             )
             battery_storage_profile = pd.DataFrame(
                 renewables_energy[0].values - remaining_profile.values  # type: ignore
             )
             logger.debug(
                 "Storage profile: %s kWh",
-                f"{round(float(np.sum(battery_storage_profile, axis=0).iloc[0]), 2)}",  # type: ignore [arg-type, call-overload]
+                f"{round(float(np.sum((battery_storage_profile), axis=0).item()), 2)}",  # type: ignore [arg-type, call-overload]
             )
 
             renewables_energy_used_directly = pd.DataFrame(
@@ -831,14 +936,14 @@ def get_electric_battery_storage_profile(  # pylint: disable=too-many-locals, to
 
             logger.debug(
                 "Grid energy: %s kWh",
-                f"{round(float(np.sum(grid_energy).iloc[0]), 2)}",  # type: ignore [arg-type, call-overload]
+                f"{round(float(np.sum(grid_energy).item()), 2)}",  # type: ignore [arg-type, call-overload]
             )
             renewables_direct_rounded: float = round(
-                float(np.sum(renewables_energy_used_directly).iloc[0]), 2  # type: ignore [arg-type, call-overload]
+                float(np.sum((renewables_energy_used_directly)).item()), 2  # type: ignore [arg-type, call-overload]
             )
             logger.debug(
                 "Renewables direct: %s kWh",
-                round(float(np.sum(renewables_energy_used_directly).iloc[0]), 2),  # type: ignore [arg-type, call-overload]
+                round(float(np.sum((renewables_energy_used_directly)).item()), 2),  # type: ignore [arg-type, call-overload]
             )
             logger.debug("Renewables direct: %s kWh", renewables_direct_rounded)
 
@@ -900,6 +1005,8 @@ def get_water_storage_profile(
             tanks.
 
     """
+
+    # TODO Include transmitter code here for CW power use.
 
     # Clean water is either produced directly or drawn from the storage tanks.
     remaining_profile = pd.DataFrame(

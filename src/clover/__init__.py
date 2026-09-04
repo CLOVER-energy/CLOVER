@@ -11,6 +11,7 @@
 The internals module"""
 
 from .__main__ import (
+    __version__,
     main,
     OPTIMISATION_OUTPUTS_FOLDER,
     OUTPUTS_FOLDER,

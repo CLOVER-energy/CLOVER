@@ -5,12 +5,18 @@ from tqdm import tqdm
 
 ENERGY_SYSTEM = Path("src/clover/simulation/energy_system.py")
 BASE_CMD = [
-    "python", "-m", "src.clover",
-    "-l", "test_1.2",
+    "python",
+    "-m",
+    "src.clover",
+    "-l",
+    "test_1.2",
     "-sim",
-    "-pv", "2",
-    "-s", "default",
-    "-b", "0.0000001",
+    "-pv",
+    "2",
+    "-s",
+    "default",
+    "-b",
+    "0.0000001",
     "-a",
 ]
 
@@ -30,20 +36,14 @@ pattern = re.compile(
     re.VERBOSE | re.MULTILINE,
 )
 
+
 def replace_weights(text: str, new_weights: tuple[float, float, float, float]) -> str:
     if len(new_weights) != 4:
         raise ValueError("new_weights must have exactly 4 values")
 
     a, b, c, d = new_weights
 
-    replacement = (
-        "weights = [\n"
-        f"{a},\n"
-        f"{b},\n"
-        f"{c},\n"
-        f"{d},\n"
-        "        ]"
-    )
+    replacement = "weights = [\n" f"{a},\n" f"{b},\n" f"{c},\n" f"{d},\n" "        ]"
 
     new_text, n = pattern.subn(replacement, text, count=1)
     if n != 1:
@@ -52,6 +52,7 @@ def replace_weights(text: str, new_weights: tuple[float, float, float, float]) -
             "Check pattern against energy_system.py."
         )
     return new_text
+
 
 # test cases
 cases = [
@@ -68,7 +69,6 @@ cases = [
 try:
     for name, weights in cases:
         print(f"\n=== Running case: {name} | weights={weights} ===")
-
 
         patched = replace_weights(original_text, weights)
         ENERGY_SYSTEM.write_text(patched, encoding="utf-8")

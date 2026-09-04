@@ -184,6 +184,14 @@ def _get_profile_from_rn(
     try:
         parsed_response = json.loads(session_url.text)
     except JSONDecodeError as e:  # pylint: disable=invalid-name
+        # Check that the token was correctly specified, and provide helpful info if so.
+        if " " in (token := session.headers["Authorization"]):
+            logger.error(
+                f"Your API token contains spaces and is therefore not valid. Token used: '{token}'"
+            )
+            logger.info("Session text: %s", session_url.text)
+            raise RenewablesNinjaError() from None
+
         logger.error(
             "%sFailed to parse renewables.ninja data. Check that you correctly specified "
             "your API key: %s%s",
@@ -495,7 +503,11 @@ class BaseRenewablesNinjaThread(threading.Thread):
                 )
                 try:
                     data = _get_profile_output(
-                        str(self.global_settings_inputs[TOKEN]),
+                        str(
+                            self.global_settings_inputs.get(
+                                TOKEN, self.global_settings_inputs.get("token", None)
+                            )
+                        ),
                         self.location,
                         self.logger,
                         self.profile_key,
@@ -544,7 +556,10 @@ class BaseRenewablesNinjaThread(threading.Thread):
                 "Error occured in profile fetching. See %s for details.",
                 f"{os.path.join('logs', self.logger_name)}.log",
             )
-            self.logger.info(str(e))
+            try:
+                self.logger.info(str(data))
+            except NameError:
+                pass
             raise
 
 
