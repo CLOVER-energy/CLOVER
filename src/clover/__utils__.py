@@ -2680,7 +2680,7 @@ class Scenario:
     pv_t: bool
     shifting_scenario: ShiftingScenario  # 1.2
     forecast: ForecastScenario = ForecastScenario.INACCURATE
-    solar_thermal: bool
+    solar_thermal: bool = False
     reference_thermal_efficiency: float = 0
 
     @classmethod
