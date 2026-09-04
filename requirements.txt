@@ -1,3 +1,4 @@
+bayesian-optimization>=3.3.0
 black>=22.3.0
 customtkinter>=5.2.0
 mypy>=0.960
