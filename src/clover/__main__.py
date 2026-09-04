@@ -207,17 +207,16 @@ def _prepare_location(
             locations_foldername, location, INPUTS_DIRECTORY, KEROSENE_TIMES_FILE
         )
     ):
-        logger.error(
+        logger.info(
             "%sThe specified location, '%s', does not contain a kerosene times file. "
-            "You can run the auto-generation script will be run to replace the lost "
-            "file.%s",
-            BColours.fail,
+            "The auto-generation script will be run to replace the lost file.%s",
+            BColours.warning,
             location,
             BColours.endc,
         )
-        raise Exception("Cannot continue without kerosene: read the documentation.")
-        # new_location.create_new_location(None, location, logger, True)
-        # logger.info("%s succesfully updated with missing files.", location)
+        # raise Exception("Cannot continue without kerosene: read the documentation.")
+        new_location.create_new_location(None, location, logger, True)
+        logger.info("%s succesfully updated with missing files.", location)
 
 
 def _prepare_water_system(
