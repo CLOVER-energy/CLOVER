@@ -90,7 +90,7 @@ def battery_iteration_step(
             The energy surplus generated which could not be stored in the batteries.
         - new_hourly_battery_storage;
             The computed level of energy stored in the batteries at this time step.
-
+        -
     """
 
     if (battery := minigrid.battery) is None:
@@ -275,12 +275,17 @@ def battery_iteration_step(
     excess_energy = max(new_hourly_battery_storage - maximum_battery_storage, 0.0)
     new_hourly_battery_storage -= excess_energy
 
+    # Option 1.1. Shift forward all load to the next hour, irrespective of forecasting.
+    # [1.1] Compute unmet load which remains.
+    # unmet_demand = max(-remaining_energy_balance, 0.0)
+
     return (
         energy_generation_or_load_deficit,
         excess_energy,
         grid_energy,
         grid_profile,
         new_hourly_battery_storage,
+        # unmet_demand # [1.1] Unmet load argument to return.
     )
 
 
@@ -819,7 +824,7 @@ def get_electric_battery_storage_profile(  # pylint: disable=too-many-locals, to
 
     # Consider transmission efficiency
     load_energy: pd.DataFrame = (
-        processed_total_electric_load / transmission_efficiency  # type: ignore
+        processed_total_electric_load.reset_index(drop=True) / transmission_efficiency  # type: ignore
     )
     pv_energy = pv_generation * transmission_efficiency
 

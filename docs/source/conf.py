@@ -19,14 +19,14 @@
 
 # -- Project information -----------------------------------------------------
 
-project = u"CLOVER"
-copyright = u"2020, Philip Sandwell"
-author = u"Philip Sandwell"
+project = "CLOVER"
+copyright = "2020, Philip Sandwell"
+author = "Philip Sandwell"
 
 # The short X.Y version
-version = u""
+version = ""
 # The full version, including alpha/beta/rc tags
-release = u"4.0.1"
+release = "4.0.1"
 
 
 # -- General configuration ---------------------------------------------------
@@ -127,7 +127,7 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, "CLOVER.tex", u"CLOVER Documentation", u"Philip Sandwell", "manual"),
+    (master_doc, "CLOVER.tex", "CLOVER Documentation", "Philip Sandwell", "manual"),
 ]
 
 
@@ -135,7 +135,7 @@ latex_documents = [
 
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
-man_pages = [(master_doc, "clover", u"CLOVER Documentation", [author], 1)]
+man_pages = [(master_doc, "clover", "CLOVER Documentation", [author], 1)]
 
 
 # -- Options for Texinfo output ----------------------------------------------
@@ -147,7 +147,7 @@ texinfo_documents = [
     (
         master_doc,
         "CLOVER",
-        u"CLOVER Documentation",
+        "CLOVER Documentation",
         author,
         "CLOVER",
         "One line description of project.",

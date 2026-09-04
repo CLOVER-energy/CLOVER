@@ -240,7 +240,19 @@ def _get_profile_local_time(
     # East of Greenwich
     if time_difference > 0:
         splits = np.split(data_utc, [len(data_utc) - time_difference])  # type: ignore [call-overload]
+        # try:
         data_local: pd.DataFrame = pd.concat([splits[1], splits[0]], ignore_index=True)  # type: ignore [list-item]
+        # except Exception:
+        #     print(type(splits[1]))
+        #     print(type(splits[0]))
+        #     with open("tmp.txt", "w") as f:
+        #         f.write("Splits 1")
+        #         f.write(str(splits[1]))
+        #         f.write("Splits 0")
+        #         f.write(str(splits[0]))
+
+        #     raise
+
     # West of Greenwich
     elif time_difference < 0:
         splits = np.split(data_utc, [abs(time_difference)])  # type: ignore [call-overload]
@@ -539,7 +551,7 @@ class BaseRenewablesNinjaThread(threading.Thread):
                 if year != self.global_settings_inputs["end_year"]:
                     time.sleep(RENEWABLES_NINJA_SLEEP_TIME * self.sleep_multiplier)
 
-        except Exception:
+        except Exception as e:
             self.logger.error(
                 "Error occured in profile fetching. See %s for details.",
                 f"{os.path.join('logs', self.logger_name)}.log",

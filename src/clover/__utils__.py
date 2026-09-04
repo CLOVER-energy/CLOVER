@@ -691,8 +691,10 @@ class ColumnHeader(enum.Enum):
     PV_ELECTRICITY_SUPPLIED = "PV energy supplied (kWh)"
     RENEWABLE_CW_USED_DIRECTLY = "Renewable clean water used directly (l)"
     RENEWABLE_ELECTRICITY_SUPPLIED = "Renewables energy supplied (kWh)"
+    RENEWABLE_ELECTRICITY_FORECAST = "Renewables energy forecast (kWh)"
     RENEWABLE_ELECTRICITY_USED_DIRECTLY = "Renewables energy used (kWh)"
     STORAGE_PROFILE = "Storage profile (kWh)"
+    # SHIFTED_PROFILE = "Shifted Loads (kWh)" # 1.1
     TOTAL_CW_CONSUMED = "Total clean water consumed (l)"
     TOTAL_CW_LOAD = "Total clean water demand (l)"
     TOTAL_CW_SUPPLIED = "Total clean water supplied (l)"
@@ -2535,6 +2537,66 @@ class PrioritisationStrategy(enum.Enum):
     STORAGE_AS_SOLAR_BACKUP = "storage_as_solar_backup"
 
 
+class ShiftingStrategy(enum.Enum):
+    """
+    Denotes the shifting strategy.
+
+    - DISABLED: No shifting is being carried out.
+
+    - ENABLED: Shifting is being carried out.
+
+    - PRIORITY_ONLY:
+
+    """
+
+    DISABLED = "disabled"
+    ENABLED = "enabled"
+    PRIORITY_ONLY = "priority_only"
+    # ... commercial_only, etc
+
+
+@dataclasses.dataclass
+class ShiftingScenario:
+    strategy: ShiftingStrategy = ShiftingStrategy.DISABLED
+    shifting_period: int = 24
+    renewables_weight: float = 0.25
+    priority_weight: float = 0.25
+    penalty_weight: float = 0.25
+    device_count_weight: float = 0.25
+
+    def to_dict(self) -> dict[str, Any]:
+        """
+        Returns a `dict` summarising the :class:`ShiftingScenario` instance.
+
+        Outputs:
+            - A `dict` summarising the information contained within the
+              :class:`ShiftingScenario` instance.
+
+        """
+
+        return {
+            "shifting_period": (
+                float(self.shifting_period) if self.shifting is not None else str(None)
+            ),
+            "strategy": str(self.strategy.value),
+            "weights": {
+                float(self.renewables_weight),
+                float(self.priority_weight),
+                float(self.penalty_weight),
+                float(self.device_count_weight),
+            },
+        }
+
+
+class ForecastScenario(enum.Enum):
+    """
+    Describes weather forecasting scenario
+    """
+
+    ACCURATE = "accurate"
+    INACCURATE = "inaccurate"
+
+
 @dataclasses.dataclass
 class Scenario:
     """
@@ -2592,6 +2654,12 @@ class Scenario:
     .. attribute:: reference_thermal_efficiency
         If defined, gives the reference efficiency of a thermal power plant.
 
+    .. attribute:: shifting
+        The type of shifting protocol being used.
+
+    ..attribute:: shifting_period
+        The number of hours within which you can shift loads.
+
     """
 
     battery: bool
@@ -2610,7 +2678,9 @@ class Scenario:
     pv: bool
     pv_d: bool
     pv_t: bool
-    solar_thermal: bool
+    shifting_scenario: ShiftingScenario  # 1.2
+    forecast: ForecastScenario = ForecastScenario.INACCURATE
+    solar_thermal: bool = False
     reference_thermal_efficiency: float = 0
 
     @classmethod
@@ -2767,6 +2837,39 @@ class Scenario:
                     "scenario_inputs",
                     "Self-prioritisation and prioritisation strategy fault.",
                 ) from None
+        # 1.2
+        # Parse the shifting strategy
+        try:
+            strategy = ShiftingStrategy(scenario_inputs["shifting"]["strategy"])
+        except ValueError:
+            raise InputFileError(
+                "scenario_inputs",
+                f"Shifting strategy fault, valid values are {", ".join([e.value for e in ShiftingStrategy])}.",
+            ) from None
+        shifting_period = (
+            scenario_inputs["shifting"]["shifting_period"]
+            if scenario_inputs["shifting"]["strategy"]
+            in [e.value for e in ShiftingStrategy]
+            else None
+        )
+
+        shifting_weights = scenario_inputs["shifting"].get(
+            "weights",
+            {
+                "renewables_weight": 0.25,
+                "priority_weight": 0.25,
+                "penalty_weight": 0.25,
+                "device_count_weight": 0.25,
+            },
+        )
+        shifting_scenario = ShiftingScenario(
+            strategy,
+            shifting_period,
+            shifting_weights["renewables_weight"],
+            shifting_weights["priority_weight"],
+            shifting_weights["penalty_weight"],
+            shifting_weights["device_count_weight"],
+        )
 
         return cls(
             scenario_inputs["battery"],
@@ -2785,6 +2888,13 @@ class Scenario:
             scenario_inputs["pv"],
             scenario_inputs.get("pv_d", False),
             scenario_inputs.get("pv_t", False),
+            shifting_scenario,
+            scenario_inputs.get("forecast", ForecastScenario.INACCURATE),
+            (
+                scenario_inputs["reference_thermal_efficiency"]
+                if "reference_thermal_efficiency" in scenario_inputs
+                else 0
+            ),
             scenario_inputs.get("solar_thermal", scenario_inputs.get("st", False)),
             scenario_inputs.get("reference_thermal_efficiency", 0),
         )
@@ -2815,6 +2925,8 @@ class Scenario:
             "resource_types": [str(e.value) for e in self.resource_types],
             "prioritisation_strategy": self.prioritisation_strategy.value,
             "pv": self.pv,
+            "shifting_scenario": self.shifting_scenario.to_dict(),
+            "forecast": str(self.forecast.value),
         }
 
         if self.desalination_scenario is not None:

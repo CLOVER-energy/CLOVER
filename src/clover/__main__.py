@@ -47,7 +47,7 @@ from .generation import solar, weather, wind
 from .load import load
 from .mains_supply import grid, water_source
 from .scripts import new_location
-from .simulation import energy_system
+from .simulation import energy_system, forecasting
 
 from .optimisation.__utils__ import save_optimisation
 from .optimisation.appraisal import appraise_system
@@ -58,6 +58,7 @@ from .__utils__ import (
     BColours,
     DONE,
     FAILED,
+    ForecastScenario,
     get_locations_foldername,
     InternalError,
     Location,
@@ -68,6 +69,7 @@ from .__utils__ import (
     OperatingMode,
     ProgrammerJudgementFault,
     save_simulation,
+    ShiftingStrategy,
 )
 from .simulation.__utils__ import check_scenario
 
@@ -309,6 +311,8 @@ def _prepare_water_system(
             initial_loads,
             total_load,
             yearly_load_statistics,
+            _,
+            _,
         ) = load.process_load_profiles(
             auto_generated_files_directory,
             device_utilisations,
@@ -863,6 +867,8 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
                 initial_electric_hourly_loads,
                 total_electric_load,
                 electric_yearly_load_statistics,
+                device_hourly_usage,
+                daily_device_ownerships,
             ) = load.process_load_profiles(
                 auto_generated_files_directory,
                 device_utilisations,
@@ -1029,6 +1035,33 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
         for pv_panel in minigrid.solar_panels  # type: ignore
     }
     logger.info("Total solar output successfully computed and saved.")
+    true_solar_output = None
+    if any(
+        scenario.forecast == ForecastScenario.INACCURATE.value for scenario in scenarios
+    ):
+        # generate true_solar_output
+        pv_produced = pd.DataFrame(
+            {
+                panel.name: total_solar_data[panel.name][
+                    solar.SolarDataType.ELECTRICITY.value
+                ]
+                * panel.pv_unit
+                for panel in (minigrid.pv_panels + minigrid.pvt_panels)  # type: ignore
+            }
+        )
+        true_solar_output = forecasting.calculate_true_solar(
+            os.path.join(
+                locations_foldername,
+                parsed_args.location,
+                INPUTS_DIRECTORY,
+                "generation",
+                f"forecast_accuracies.csv",
+            ),
+            os.path.join(auto_generated_files_directory, "weather"),
+            logger,
+            location.max_years,
+            pd.DataFrame(*[pv_produced]),
+        )
 
     if any(scenario.desalination_scenario is not None for scenario in scenarios) or any(
         scenario.hot_water_scenario is not None for scenario in scenarios
@@ -1212,6 +1245,9 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
                         for key, value in total_solar_data.items()
                     },
                     total_loads,
+                    true_solar_output,
+                    device_hourly_usage,
+                    daily_device_ownerships,
                     (
                         total_wind_data[wind.WindDataType.WIND_SPEED.value]
                         if total_wind_data is not None
@@ -1243,6 +1279,14 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
             system_details.file_information = input_file_info
 
             # Compute the key results.
+            # 1.2
+            if scenario.shifting_scenario.strategy == ShiftingStrategy.ENABLED:
+                initial_electric_hourly_loads = system_performance_outputs[1]
+                frames = system_performance_outputs[2]
+                frames_subtitle = system_performance_outputs[3]
+                metric_day1 = system_performance_outputs[4]
+                system_performance_outputs = system_performance_outputs[0]
+
             key_results = analysis.get_key_results(  # type: ignore
                 grid_profile,
                 simulation.end_year - simulation.start_year,
@@ -1317,6 +1361,16 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
                 system_details,
             )
 
+            if scenario.shifting_scenario.strategy == ShiftingStrategy.ENABLED:
+                analysis.animate_day1_device_load_shifts(
+                    frames,
+                    frames_subtitle,
+                    metric_day1,
+                    system_performance_outputs,
+                    os.path.join(
+                        simulation_output_directory, output, "day1_shifts.gif"
+                    ),
+                )
         print(f"Beginning CLOVER simulation runs {'.' * 30}    {DONE}")
 
         print(

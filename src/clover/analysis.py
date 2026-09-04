@@ -26,6 +26,7 @@ import pandas as pd  # pylint: disable=import-error
 import seaborn as sns  # pylint: disable=import-error
 
 import matplotlib.pyplot as plt  # pylint: disable=import-error
+from matplotlib.animation import FuncAnimation, PillowWriter
 
 from matplotlib import rc
 from tqdm import tqdm  # pylint: disable=import-error
@@ -522,6 +523,7 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
 
     with tqdm(
         total=15
+        # + 2 # +2 for 1.1 shifting plots, change to conditional for 1.2
         + (1 if grid_profile is not None else 0)
         + (17 if initial_cw_hourly_loads is not None else 0)
         + (4 if cw_pvt else 0)
@@ -677,7 +679,7 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
                 hatch=_hatch_from_index(index),
             )
             if isinstance(cumulative_load, int) and cumulative_load == 0:
-                cumulative_load = load[0]
+                cumulative_load = series.to_numpy(copy=True)
                 continue
             cumulative_load += load[0][:24]
 
@@ -782,7 +784,36 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
                 continue
             cumulative_load += average_load
 
-        ax.set_xlabel("Hour of simulation")
+        pv_supplied = (
+            np.nanmean(
+                np.reshape(
+                    simulation_output[0:HOURS_PER_YEAR][
+                        ColumnHeader.RENEWABLE_ELECTRICITY_SUPPLIED.value
+                    ].values,
+                    (365, 24),
+                ),
+                axis=0,
+            )
+            * 1000
+        )
+        # pv_forecast = np.nanmean(
+        #     np.reshape(
+        #         simulation_output[0:HOURS_PER_YEAR][
+        #             ColumnHeader.RENEWABLE_ELECTRICITY_FORECAST.value
+        #         ].values,
+        #         (365, 24),
+        # ),
+        # axis=0,
+        # ) * 1000
+
+        ax.plot(
+            range(24),
+            pv_supplied,
+            label="PV electricity generated",
+        )
+        # ax.plot(range(24), pv_forecast, "--", label="PV electricity forecast")
+
+        ax.set_xlabel("Hour of Day")
         ax.set_ylabel("Device load / W")
         # ax.set_title(
         #     "Average electric load demand of each device over the first {} days.".format(
@@ -801,7 +832,44 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
             bbox_inches="tight",
             pad_inches=0.05,
         )
-        plt.close()
+        plt.close(fig)
+
+        # Plot the electric load of each device for the first 24 hours.
+        cumulative_load = 0
+        fig, ax = plt.subplots()
+        for device, load in sorted(initial_electric_hourly_loads.items()):
+            first_24_load = np.asarray(load[0:24]).squeeze()
+            if np.sum(first_24_load) > 0:
+                ax.bar(range(24), first_24_load, label=device, bottom=cumulative_load)
+            if isinstance(cumulative_load, int) and cumulative_load == 0:
+                cumulative_load = first_24_load.copy()
+                continue
+            cumulative_load += first_24_load
+
+        pv_supplied = (
+            simulation_output[0:24][
+                ColumnHeader.RENEWABLE_ELECTRICITY_SUPPLIED.value
+            ].values
+        ) * 1000
+
+        # pv_forecast = (
+        # simulation_output[0:24][
+        #     ColumnHeader.RENEWABLE_ELECTRICITY_FORECAST.value
+        # ].values
+        # ) * 1000
+
+        ax.plot(range(24), pv_supplied, label="PV electricity generated")
+        # ax.plot(range(24), pv_forecast, "--", label="PV electricity forecast")
+
+        ax.set_xlabel("Hour of Day")
+        ax.set_ylabel("Device load / W")
+        ax.legend()
+        plt.savefig(
+            os.path.join(figures_directory, "electric_device_loads_first_day.png"),
+            bbox_inches="tight",
+            transparent=True,
+        )
+        plt.close(fig)
         pbar.update(1)
 
         # Plot the electric load breakdown by load type.
@@ -844,6 +912,26 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
             pad_inches=0.05,
         )
         plt.close()
+
+        # plt.plot(simulation_output[72:240][
+        #             ColumnHeader.RENEWABLE_ELECTRICITY_SUPPLIED.value
+        #         ].values, label="Solar observation / kWh"
+        #         )
+        # plt.plot(
+        # simulation_output[72:240][
+        #     ColumnHeader.RENEWABLE_ELECTRICITY_FORECAST.value
+        # ].values, label="Solar forecast / kWh"
+        # )
+        # plt.legend(loc="upper right")
+        # plt.xticks(list(np.arange(72, 241, 12)))
+        # plt.xlabel("Hour of simulation")
+        # plt.ylabel("Solar profiles / kW")
+        # # plt.title(f"Load profile of the community for the first {CUT_OFF_TIME} hours")
+        # plt.savefig(
+        #     os.path.join(figures_directory, "solar_profiles_testing.png"),
+        #     bbox_inches="tight",
+        #     transparent=True,
+        # )
         pbar.update(1)
 
         # Plot the average electric load breakdown by load type.
@@ -1166,6 +1254,67 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
         plt.close()
         pbar.update(1)
 
+        # 1.1 Plot the shifted load profile: first 3 days
+        # fig, ax = plt.subplots()
+
+        # shifted_load = simulation_output.iloc[0:72]["Shifted Loads (kWh)"]
+        # pv_supplied = simulation_output.iloc[0:72][
+        #     ColumnHeader.PV_ELECTRICITY_SUPPLIED.value
+        # ]
+
+        # ax.bar(range(72), shifted_load, label='Shifted load profile', zorder=1, alpha=0.7)
+        # ax.plot(range(72), pv_supplied, label="PV generated", zorder=2, color='lightskyblue')
+        # ax.set_xlim(0, 72)
+        # ax.set_xticks(range(0,72,3))
+        # ax.set_xlabel("Hour of Day")
+        # ax.set_ylabel("Load / kWh/hour")
+        # ax.legend()
+        # plt.savefig(
+        #     os.path.join(figures_directory, "shifted_loads_first_three_days.png"),
+        #     bbox_inches="tight",
+        #     transparent=True,
+        # )
+        # plt.close(fig)
+        # pbar.update(1)
+
+        # # 1.1 Plot the shifted load profile: average day
+        # fig, ax = plt.subplots()
+        # shifted_year = simulation_output[0:HOURS_PER_YEAR][
+        #     ColumnHeader.SHIFTED_PROFILE.value
+        # ].values.astype(float)
+        # shifted_2d = np.reshape(shifted_year, (365, 24))
+        # average_shifted_load = np.nanmean(
+        #     shifted_2d,
+        #     axis=0,
+        # )
+        # pv_supplied = np.nanmean(
+        #     np.reshape(
+        #         simulation_output[0:HOURS_PER_YEAR][
+        #             ColumnHeader.RENEWABLE_ELECTRICITY_SUPPLIED.value
+        #         ].values,
+        #         (365, 24),
+        #     ),
+        #     axis=0,
+        # )
+
+        # ax.bar(range(24), average_shifted_load, label='Shifted load profile', zorder = 1, alpha=0.7)
+        # ax.plot(range(24), pv_supplied, label="PV generated", zorder = 2, color='lightskyblue')
+        # ax.set_xlim(0, 23)
+        # ax.set_xticks(range(0,24,1))
+        # ax.set_xlabel("Hour of Day")
+        # ax.set_ylabel("Average Load / kWh/hour")
+        # ax.legend()
+        # plt.savefig(
+        #     os.path.join(figures_directory, "shifted_loads_average.png"),
+        #     bbox_inches="tight",
+        #     transparent=True,
+        # )
+        # plt.close(fig)
+        # pbar.update(1)
+
+        # Plot the electricity used hourly for each source on the average day
+        # import pdb
+        # pdb.set_trace()
         fig, axis = plt.subplots(figsize=(48 / 5, 32 / 5))
         total_used = np.nanmean(
             np.reshape(
@@ -1716,6 +1865,7 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
         plt.close()
         pbar.update(1)
 
+        # Plot the hourly electricity use for each source on the first day
         total_used = simulation_output.iloc[0:24][
             ColumnHeader.TOTAL_ELECTRICITY_CONSUMED.value
         ]
@@ -5158,3 +5308,103 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
             )
             plt.close()
             pbar.update(1)
+
+
+def animate_day1_device_load_shifts(
+    frames,
+    frames_subtitle,
+    metric,
+    simulation_output,
+    save_path="day1_load_shifts.gif",
+    interval=400,
+):
+    """
+    frames: list of dicts
+        each frame: {device_name: [24 hourly loads]}
+    """
+    # renew=simulation_output[ColumnHeader.RENEWABLE_ELECTRICITY_USED_DIRECTLY.value].values
+    # renew_offset = np.sum(renew[24:])
+    # metric = metric - renew_offset
+    device_keys = list(frames[0].keys())  # stable order from frame 0
+    display_name = {
+        k: str(k) for k in device_keys
+    }  # replace with friendly mapping if available
+    hours = np.arange(24)
+
+    # fig, (ax1, ax2) = plt.subplots(nrows=1, ncols=2, width_ratios=(3, 2), figsize=(15, 8))
+    fig, ax1 = plt.subplots(nrows=1, ncols=1, figsize=(14, 8))
+    bar_containers = []
+    cumulative_load = np.zeros(24, dtype=float)
+    first = frames[0]
+
+    for k in device_keys:
+        vals = np.array(first.get(k, [0.0] * 24), dtype=float)
+        bars = ax1.bar(hours, vals, label=display_name[k], bottom=cumulative_load)
+        bar_containers.append(bars)
+        cumulative_load += vals
+
+    ax1.set_xlim(-0.5, 23.5)
+    ax1.set_xticks(np.arange(0, 24, 2))
+    ax1.set_xlabel("Hour of Day (first 24h)")
+    ax1.set_ylabel("Device load / W")
+    ax1.legend(loc="upper right", ncol=2, fontsize=14)
+    ax1.grid(axis="y", alpha=0.25)
+    ax1.set_ylim(0, 4200)
+
+    subtitle = ax1.text(
+        0.01,
+        1.02,
+        "Step 0 unshifted configuration",
+        transform=ax1.transAxes,
+        ha="left",
+        va="bottom",
+        fontsize=14,
+    )
+
+    # x_vals = np.arange(0, len(metric))
+    # scat = ax2.scatter(x_vals[0], metric[0], label="Total Renewables Used")
+
+    # ax2.set(
+    #     xlim=(-1, len(metric)),
+    #     ylim=((min(metric)-0.1), (max(metric)+0.1)),
+    #     xlabel=f"Shifting Step ({len(metric)} total shifts)",
+    #     ylabel="Total Renewables Used Directly",
+    # )
+    # ax2.legend(loc="lower right")
+
+    def update(frame_idx):
+        frame = frames[frame_idx]
+
+        # Recompute stacked geometry for this frame
+        cumulative = np.zeros(24, dtype=float)
+        for i, device in enumerate(device_keys):
+            vals = np.array(frame[device], dtype=float)
+            bars = bar_containers[i]
+
+            for h, rect in enumerate(bars):
+                rect.set_y(cumulative[h])  # bottom
+                rect.set_height(vals[h])  # height
+
+            cumulative += vals
+
+        ax1.set_ylim(0, 4200)
+        subtitle.set_text(f"Step {frame_idx} {frames_subtitle[frame_idx-1]}")
+
+        # x = x_vals[:frame_idx]
+        # y = metric[:frame_idx]
+        # update the scatter plot:
+        # data = np.stack([x, y]).T
+        # scat.set_offsets(data)
+
+        return [r for bc in bar_containers for r in bc]
+        # + [subtitle, scat]
+
+    anim = FuncAnimation(
+        fig, update, frames=len(frames), interval=interval, blit=False, repeat=False
+    )
+
+    # save gif
+    fig.set_tight_layout(True)
+    anim.save(save_path, writer=PillowWriter(fps=max(1, int(1000 / interval))))
+    plt.close(fig)
+    return save_path

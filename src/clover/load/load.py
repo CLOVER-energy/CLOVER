@@ -18,6 +18,7 @@ in.
 
 """
 
+import enum
 import dataclasses
 import math
 import os
@@ -107,6 +108,56 @@ MEAN: str = "Mean"
 MEDIAN: str = "Median"
 
 
+class Shiftability(enum.Enum):
+    """ """
+
+    UNSHIFTABLE = 0
+    SHIFTABLE = 1
+    PRIORITY = 2
+
+
+@dataclasses.dataclass
+class DeviceShiftingStrategy:
+    """
+    .. attribute:: shiftability
+        Whether the device is shiftable or not, and if it is a priority load
+
+    .. attribute:: shift_limit
+        The maximum hours the device can be shifted from its original execution time
+
+    .. attribute:: shift_penalty
+        The penalty factor by which to scale the priority number of the load each time it
+        is shifted by an hour
+
+    """
+
+    shiftability: Shiftability = Shiftability.UNSHIFTABLE
+    shift_limit: int | None = 0
+    shift_penalty: float | None = 1.0  # penalty factor, if shiftable/priority
+
+    def to_dict(self) -> dict[str, Any]:
+        """
+        Returns a `dict` summarising the :class:`DeviceShiftingStrategy` instance.
+
+        Outputs:
+            - A `dict` summarising the information contained within the
+              :class:`DeviceShiftingStrategy` instance.
+
+        """
+
+        return {
+            "shiftability": (
+                int(self.shiftability.value) if self.shiftability is not None else 0
+            ),
+            "shift_limit": (
+                int(self.shift_limit) if self.shiftability is not None else None
+            ),
+            "shift_penalty": (
+                float(self.shift_penalty) if self.shiftability is not None else None
+            ),
+        }
+
+
 @dataclasses.dataclass
 class Device:
     """
@@ -149,6 +200,7 @@ class Device:
 
     available: bool
     demand_type: DemandType
+    # electric_energy_hourly: float | None
     electric_power: float | None
     final_ownership: float
     initial_ownership: float
@@ -157,6 +209,14 @@ class Device:
     name: str
     clean_water_usage: float | None
     hot_water_usage: float | None
+    # **OR** electric_runtime: float | None = 60
+    # [1.2] Keep track of shiftability of the load/device
+    priority: float | None = 0  # base priority score of the device
+    shifting: DeviceShiftingStrategy = dataclasses.field(
+        default_factory=DeviceShiftingStrategy
+    )
+    # shiftability: Shiftability = Shiftability.UNSHIFTABLE
+    # shift_limit: int | None = None
 
     def __hash__(self) -> int:
         """
@@ -218,6 +278,31 @@ class Device:
                 f"The device, {device_input['device']}, does not specify such a value.",
             )
 
+        priority = device_input.get("priority", 0.0)
+        if priority > 1 or priority < 0:
+            raise InputFileError(
+                "device inputs", "The priority value must be a float between 0 and 1."
+            )  # NOTE: or a ValueError??
+        ds = device_input.get("shifting", {})
+        shiftability = Shiftability(
+            ds.get("shiftability", Shiftability.UNSHIFTABLE.value)
+        )
+
+        shift_limit = (
+            ds.get("shift_limit") if shiftability != Shiftability.UNSHIFTABLE else None
+        )
+        shift_penalty = (
+            ds.get("shift_penalty", 1.0)
+            if shiftability != Shiftability.UNSHIFTABLE
+            else None
+        )
+
+        shifting = DeviceShiftingStrategy(
+            shiftability=shiftability,
+            shift_limit=shift_limit,
+            shift_penalty=shift_penalty,
+        )
+
         return cls(
             device_input[AVAILABLE],
             demand_type,
@@ -233,6 +318,8 @@ class Device:
                 else None
             ),
             device_input[HOT_WATER_USAGE] if HOT_WATER_USAGE in device_input else None,
+            priority,
+            shifting,
         )
 
 
@@ -1164,10 +1251,15 @@ def process_load_profiles(  # pylint: disable=too-many-locals
           first few cycles;
         - The total load use for all devices;
         - The yearly load statistics.
+        -
+        -
 
     """
 
     device_hourly_loads: dict[str, pd.DataFrame] = {}
+    daily_device_ownerships: dict[Device, pd.DataFrame] = {}
+    device_hourly_usage: dict[Device, pd.DataFrame] = {}
+
     if resource_type == ResourceType.ELECTRIC:
         resource_name: str = "electric"
         relevant_device_utilisations: dict[Device, pd.DataFrame] = {
@@ -1230,6 +1322,8 @@ def process_load_profiles(  # pylint: disable=too-many-locals
             device.name,
         )
 
+        daily_device_ownerships[device] = daily_device_ownership
+
         # Compute the device utilisation.
         daily_device_utilisaion = process_device_utilisation(
             device,
@@ -1264,6 +1358,8 @@ def process_load_profiles(  # pylint: disable=too-many-locals
             "Device hourly usage information for %s successfully computed.",
             device.name,
         )
+
+        device_hourly_usage[device] = hourly_device_usage
 
         # Compute the load profile based on this usage.
         device_hourly_loads[device.name] = process_device_hourly_power(
@@ -1302,8 +1398,12 @@ def process_load_profiles(  # pylint: disable=too-many-locals
             device_name: load.iloc[0:CUT_OFF_TIME, :]
             for device_name, load in device_hourly_loads.items()
         },
+        # [1.2] Device-specific hourly profiles, or
+        # Device-specific hourly usage counts and daily ownership for process_load_shifting
         total_load,
         yearly_statistics,
+        device_hourly_usage,
+        daily_device_ownerships,
     )
 
 
