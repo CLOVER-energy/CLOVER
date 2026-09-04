@@ -74,9 +74,15 @@ def generate_optimisation_string(
         ):
             optimisation_string_list.append(
                 "- Clean-water PV-T resolution of "
-                + f"{optimisation_inputs.cw_pvt_size.step} units "
-                + f"({minigrid.pvt_panel.pv_unit} kWp and "
-                + f"{minigrid.pvt_panel.thermal_unit} kWth per unit)"
+                + f"{optimisation_inputs.cw_pvt_size.step} collectors "
+            )
+        if (
+            optimisation_inputs.cw_st_size is not None
+            and minigrid.solar_thermal_panel is not None
+        ):
+            optimisation_string_list.append(
+                "- Clean-water solar-thermal resolution of "
+                + f"{optimisation_inputs.cw_st_size.step} collectors "
             )
         if (
             optimisation_inputs.clean_water_tanks is not None
@@ -96,9 +102,15 @@ def generate_optimisation_string(
         ):
             optimisation_string_list.append(
                 "- Hot-water PV-T resolution of "
-                f"{optimisation_inputs.hw_pvt_size.step} units "
-                + f"({minigrid.pvt_panel.pv_unit} kWp and "
-                + f"{minigrid.pvt_panel.thermal_unit} kWth per unit)"
+                f"{optimisation_inputs.hw_pvt_size.step} collectors "
+            )
+        if (
+            optimisation_inputs.hw_st_size is not None
+            and minigrid.solar_thermal_panel is not None
+        ):
+            optimisation_string_list.append(
+                "- Hot-water solar-thermal resolution of "
+                + f"{optimisation_inputs.cw_st_size.step} collectors "
             )
         if (
             optimisation_inputs.hot_water_tanks is not None
@@ -194,9 +206,20 @@ def generate_simulation_string(
         ):
             for pvt_panel in minigrid.pvt_panels:
                 simulation_string_list.append(
-                    f"- {parsed_args.clean_water_pvt_system_size} Clean-water PV-T panel "
-                    + f"units ({pvt_panel.pv_unit} kWp PV per unit)\n"
+                    f"- {parsed_args.clean_water_pvt_system_size} Clean-water "
+                    f"{pvt_panel.name} PV-T panels"
                 )
+
+        if (
+            parsed_args.clean_water_solar_thermal_system_size is not None
+            and len(minigrid.solar_thermal_panels) >= 1
+        ):
+            for st_panel in minigrid.solar_thermal_panels:
+                simulation_string_list.append(
+                    f"- {parsed_args.clean_water_solar_thermal_system_size} Clean-"
+                    f"water {st_panel.name} ST panels"
+                )
+
         if minigrid.clean_water_tank is not None:
             simulation_string_list.append(
                 f"- {parsed_args.num_clean_water_tanks}x "
@@ -214,9 +237,20 @@ def generate_simulation_string(
         ):
             for pvt_panel in minigrid.pvt_panels:
                 simulation_string_list.append(
-                    f"- {parsed_args.hot_water_pvt_system_size} Hot-water PV-T panel units "
-                    + f"({pvt_panel.pv_unit} kWp PV per unit)\n"
+                    f"- {parsed_args.hot_water_pvt_system_size} Hot-water "
+                    f"{pvt_panel.name} PV-T panels"
                 )
+
+        if (
+            parsed_args.hot_water_solar_thermal_system_size is not None
+            and len(minigrid.solar_thermal_panels) >= 1
+        ):
+            for st_panel in minigrid.solar_thermal_panels:
+                simulation_string_list.append(
+                    f"- {parsed_args.hot_water_solar_thermal_system_size} Hot-water"
+                    f"water {st_panel.name} ST panels"
+                )
+
         simulation_string_list.append(
             f"- {parsed_args.num_hot_water_tanks}x {minigrid.hot_water_tank.mass} "
             + "litres hot-water storage"

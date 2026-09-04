@@ -25,3 +25,5 @@ inverter:
   size_increment: 1 # [kW]
 pv_panel: default_pv
 # pvt_panel: default_pvt
+# solar_thermal: default_solar_thermal
+# water_pump: default_water_pump

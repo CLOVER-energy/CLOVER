@@ -22,7 +22,7 @@ parameter will result in a better system.
 """
 
 from logging import Logger
-from typing import Any, Union
+from typing import Any
 
 import numpy as np  # pylint: disable=import-error
 import pandas as pd
@@ -59,6 +59,7 @@ def single_line_simulation(  # pylint: disable=too-many-locals, too-many-stateme
     conventional_cw_source_profiles: dict[WaterSource, pd.DataFrame] | None,
     converter_sizes: dict[Converter, ConverterSize],
     cw_pvt_size: SolarSystemSize,
+    cw_st_size: SolarSystemSize,
     cw_tanks: TankSize,
     converters: dict[str, Converter],
     disable_tqdm: bool,
@@ -67,6 +68,7 @@ def single_line_simulation(  # pylint: disable=too-many-locals, too-many-stateme
     ghg_inputs: dict[str, Any],
     grid_profile: pd.DataFrame | None,
     hw_pvt_size: SolarSystemSize,
+    hw_st_size: SolarSystemSize,
     hw_tanks: TankSize,
     irradiance_data: dict[str, pd.Series],
     kerosene_usage: pd.DataFrame,
@@ -87,7 +89,9 @@ def single_line_simulation(  # pylint: disable=too-many-locals, too-many-stateme
 ) -> tuple[
     dict[Converter, ConverterSize],
     SolarSystemSize,
+    SolarSystemSize,
     TankSize,
+    SolarSystemSize,
     SolarSystemSize,
     TankSize,
     SolarSystemSize,
@@ -106,13 +110,17 @@ def single_line_simulation(  # pylint: disable=too-many-locals, too-many-stateme
             The largest size of each converter that was simulated.
         - cw_pvt_size:
             The largest clean-water PV-T size that was simulated.
-        - cw_pvt_size:
+        - cw_st_size:
+            The largest clean-water solar-thermal size that was simulated.
+        - cw_tanks:
             The largest clean-water tank size that was simulated.
         - disable_tqdm:
             Whether to disable the tqdm progress bars (True) or display them (False).
         - hw_pvt_size:
             The largest hot-water PV-T size that was simulated.
-        - hw_pvt_size:
+        - hw_st_size:
+            The largest hot-water solar-thermal size that was simulated.
+        - hw_tanks:
             The largest hot-water tank size that was simulated.
         - pv_size:
             The largest pv size that was simulated.
@@ -124,12 +132,18 @@ def single_line_simulation(  # pylint: disable=too-many-locals, too-many-stateme
             The system that was previously installed
 
     Outputs:
+        - converter_sizes:
+            The sizes of the various converters installed.
         - cw_pvt_system_size:
             The clean-water PV-T size of the largest system considered.
+        - cw_st_system_size:
+            The clean-water solar-thermal size of the largest system considered.
         - cw_tanks:
             The clean-water tank size of the largest system considered.
         - hw_pvt_system_size:
             The hot-water PV-T size of the largest system considered.
+        - hw_st_system_size:
+            The size of the largest hot-water solar-thermal system considered.
         - hw_tanks:
             The hot-water tank size of the largest system considered.
         - pv_system_size:
@@ -166,13 +180,23 @@ def single_line_simulation(  # pylint: disable=too-many-locals, too-many-stateme
         for name, value in potential_system.system_details.initial_converter_sizes.items()
     }
     potential_cw_pvt_size = (
-        potential_system.system_details.initial_cw_pvt_size
-        if potential_system.system_details.initial_cw_pvt_size is not None
+        potential_system.system_details.initial_cw_pvt_sizes
+        if potential_system.system_details.initial_cw_pvt_sizes is not None
+        else 0
+    )
+    potential_cw_st_size = (
+        potential_system.system_details.initial_cw_st_sizes
+        if potential_system.system_details.initial_cw_st_sizes is not None
         else 0
     )
     potential_hw_pvt_size = (
-        potential_system.system_details.initial_hw_pvt_size
-        if potential_system.system_details.initial_hw_pvt_size is not None
+        potential_system.system_details.initial_hw_pvt_sizes
+        if potential_system.system_details.initial_hw_pvt_sizes is not None
+        else 0
+    )
+    potential_hw_st_size = (
+        potential_system.system_details.initial_hw_st_sizes
+        if potential_system.system_details.initial_hw_st_sizes is not None
         else 0
     )
     potential_num_clean_water_tanks = (
@@ -219,11 +243,27 @@ def single_line_simulation(  # pylint: disable=too-many-locals, too-many-stateme
             ),
             reverse=True,
         )
+        increased_cw_st_system_sizes = sorted(
+            range(
+                int(cw_st_size.min),
+                int(np.ceil(cw_st_size.max + cw_st_size.step)),
+                int(cw_st_size.step),
+            ),
+            reverse=True,
+        )
         increased_hw_pvt_system_sizes = sorted(
             range(
                 int(hw_pvt_size.min),
                 int(np.ceil(hw_pvt_size.max + hw_pvt_size.step)),
                 int(hw_pvt_size.step),
+            ),
+            reverse=True,
+        )
+        increased_hw_st_system_sizes = sorted(
+            range(
+                int(hw_st_size.min),
+                int(np.ceil(hw_st_size.max + hw_st_size.step)),
+                int(hw_st_size.step),
             ),
             reverse=True,
         )
@@ -296,6 +336,18 @@ def single_line_simulation(  # pylint: disable=too-many-locals, too-many-stateme
                     increased_cw_pvt_system_sizes,
                 )
             )
+        if len(increased_cw_st_system_sizes) <= 1:
+            component_sizes[RenewableEnergySource.CLEAN_WATER_SOLAR_THERMAL] = (
+                potential_cw_st_size
+            )
+        else:
+            parameter_space.append(
+                (
+                    RenewableEnergySource.CLEAN_WATER_SOLAR_THERMAL,
+                    "simulation" if len(parameter_space) <= 1 else "cw st size",
+                    increased_cw_st_system_sizes,
+                )
+            )
         if len(increased_hw_pvt_system_sizes) <= 1:
             component_sizes[RenewableEnergySource.HOT_WATER_PVT] = potential_hw_pvt_size
         else:
@@ -304,6 +356,18 @@ def single_line_simulation(  # pylint: disable=too-many-locals, too-many-stateme
                     RenewableEnergySource.HOT_WATER_PVT,
                     "simulation" if len(parameter_space) <= 1 else "hw pv-t size",
                     increased_hw_pvt_system_sizes,
+                )
+            )
+        if len(increased_hw_st_system_sizes) <= 1:
+            component_sizes[RenewableEnergySource.HOT_WATER_SOLAR_THERMAL] = (
+                potential_hw_st_size
+            )
+        else:
+            parameter_space.append(
+                (
+                    RenewableEnergySource.HOT_WATER_SOLAR_THERMAL,
+                    "simulation" if len(parameter_space) <= 1 else "hw st size",
+                    increased_hw_st_system_sizes,
                 )
             )
         if len(increased_pv_system_sizes) <= 1:
@@ -354,12 +418,14 @@ def single_line_simulation(  # pylint: disable=too-many-locals, too-many-stateme
         ):
             _, simulation_results, system_details = energy_system.run_simulation(
                 int(potential_cw_pvt_size),
+                int(potential_cw_st_size),
                 conventional_cw_source_profiles,
                 converters,
                 disable_tqdm,
                 test_storage_size,
                 grid_profile,
                 int(potential_hw_pvt_size),
+                int(potential_hw_st_size),
                 irradiance_data,
                 kerosene_usage,
                 location,
@@ -411,6 +477,14 @@ def single_line_simulation(  # pylint: disable=too-many-locals, too-many-stateme
                 int(cw_pvt_size.min),
                 int(np.ceil(cw_pvt_size.max + cw_pvt_size.step)),
                 int(cw_pvt_size.step),
+            ),
+            reverse=True,
+        )
+        increased_cw_st_system_sizes = sorted(
+            range(
+                int(cw_st_size.min),
+                int(np.ceil(cw_st_size.max + cw_st_size.step)),
+                int(cw_st_size.step),
             ),
             reverse=True,
         )
@@ -482,6 +556,18 @@ def single_line_simulation(  # pylint: disable=too-many-locals, too-many-stateme
                     increased_cw_pvt_system_sizes,
                 )
             )
+        if len(increased_cw_st_system_sizes) <= 1:
+            component_sizes[RenewableEnergySource.CLEAN_WATER_SOLAR_THERMAL] = (
+                potential_cw_st_size
+            )
+        else:
+            parameter_space.append(
+                (
+                    RenewableEnergySource.CLEAN_WATER_SOLAR_THERMAL,
+                    "simulation" if len(parameter_space) <= 1 else "cw st size",
+                    increased_cw_st_system_sizes,
+                )
+            )
         if len(increased_pv_system_sizes) <= 1:
             component_sizes[RenewableEnergySource.PV] = (
                 potential_system.system_details.initial_pv_size
@@ -550,6 +636,14 @@ def single_line_simulation(  # pylint: disable=too-many-locals, too-many-stateme
             ),
             reverse=True,
         )
+        increased_hw_st_system_sizes = sorted(
+            range(
+                int(hw_st_size.min),
+                int(np.ceil(hw_st_size.max + hw_st_size.step)),
+                int(hw_st_size.step),
+            ),
+            reverse=True,
+        )
         increased_pv_system_sizes = sorted(
             np.arange(
                 pv_system_size.min,
@@ -614,6 +708,18 @@ def single_line_simulation(  # pylint: disable=too-many-locals, too-many-stateme
                     RenewableEnergySource.HOT_WATER_PVT,
                     "simulation",
                     increased_hw_pvt_system_sizes,
+                )
+            )
+        if len(increased_hw_st_system_sizes) <= 1:
+            component_sizes[RenewableEnergySource.HOT_WATER_SOLAR_THERMAL] = (
+                potential_hw_st_size
+            )
+        else:
+            parameter_space.append(
+                (
+                    RenewableEnergySource.HOT_WATER_SOLAR_THERMAL,
+                    "simulation" if len(parameter_space) <= 1 else "hw st size",
+                    increased_hw_st_system_sizes,
                 )
             )
         if len(increased_pv_system_sizes) <= 1:
@@ -692,6 +798,14 @@ def single_line_simulation(  # pylint: disable=too-many-locals, too-many-stateme
             ),
             reverse=True,
         )
+        increased_cw_st_system_sizes = sorted(
+            range(
+                int(cw_st_size.min),
+                int(np.ceil(cw_st_size.max + cw_st_size.step)),
+                int(cw_st_size.step),
+            ),
+            reverse=True,
+        )
         increased_cw_tank_sizes = sorted(
             range(
                 int(cw_tanks.min),
@@ -705,6 +819,14 @@ def single_line_simulation(  # pylint: disable=too-many-locals, too-many-stateme
                 int(hw_pvt_size.min),
                 int(np.ceil(hw_pvt_size.max + hw_pvt_size.step)),
                 int(hw_pvt_size.step),
+            ),
+            reverse=True,
+        )
+        increased_hw_st_system_sizes = sorted(
+            range(
+                int(hw_st_size.min),
+                int(np.ceil(hw_st_size.max + hw_st_size.step)),
+                int(hw_st_size.step),
             ),
             reverse=True,
         )
@@ -774,6 +896,18 @@ def single_line_simulation(  # pylint: disable=too-many-locals, too-many-stateme
                     increased_cw_pvt_system_sizes,
                 )
             )
+        if len(increased_cw_st_system_sizes) <= 1:
+            component_sizes[RenewableEnergySource.CLEAN_WATER_SOLAR_THERMAL] = (
+                potential_cw_st_size
+            )
+        else:
+            parameter_space.append(
+                (
+                    RenewableEnergySource.CLEAN_WATER_SOLAR_THERMAL,
+                    "simulation" if len(parameter_space) <= 1 else "cw st size",
+                    increased_cw_st_system_sizes,
+                )
+            )
         if len(increased_cw_tank_sizes) <= 1:
             component_sizes[ImpactingComponent.CLEAN_WATER_TANK] = (
                 potential_num_clean_water_tanks
@@ -794,6 +928,18 @@ def single_line_simulation(  # pylint: disable=too-many-locals, too-many-stateme
                     RenewableEnergySource.HOT_WATER_PVT,
                     "simulation" if len(parameter_space) <= 1 else "hw pv-t size",
                     increased_hw_pvt_system_sizes,
+                )
+            )
+        if len(increased_hw_st_system_sizes) <= 1:
+            component_sizes[RenewableEnergySource.HOT_WATER_SOLAR_THERMAL] = (
+                potential_hw_st_size
+            )
+        else:
+            parameter_space.append(
+                (
+                    RenewableEnergySource.HOT_WATER_SOLAR_THERMAL,
+                    "simulation" if len(parameter_space) <= 1 else "hw st size",
+                    increased_hw_st_system_sizes,
                 )
             )
         if len(increased_hw_tank_sizes) <= 1:
@@ -867,9 +1013,17 @@ def single_line_simulation(  # pylint: disable=too-many-locals, too-many-stateme
         potential_cw_pvt_size == cw_pvt_size.max
         and optimisation.scenario.desalination_scenario
     ):
-        logger.info("Increasing clean-water PV size.")
+        logger.info("Increasing clean-water PV-T size.")
 
         # Increase and iterate over the various storage sizes and other PV-T sizes.
+        increased_cw_st_system_sizes = sorted(
+            range(
+                int(cw_st_size.min),
+                int(np.ceil(cw_st_size.max + cw_st_size.step)),
+                int(cw_st_size.step),
+            ),
+            reverse=True,
+        )
         increased_cw_tank_sizes = sorted(
             range(
                 int(cw_tanks.min),
@@ -883,6 +1037,14 @@ def single_line_simulation(  # pylint: disable=too-many-locals, too-many-stateme
                 int(hw_pvt_size.min),
                 int(np.ceil(hw_pvt_size.max + hw_pvt_size.step)),
                 int(hw_pvt_size.step),
+            ),
+            reverse=True,
+        )
+        increased_hw_st_system_sizes = sorted(
+            range(
+                int(hw_st_size.min),
+                int(np.ceil(hw_st_size.max + hw_st_size.step)),
+                int(hw_st_size.step),
             ),
             reverse=True,
         )
@@ -950,6 +1112,18 @@ def single_line_simulation(  # pylint: disable=too-many-locals, too-many-stateme
         for converter, size in static_converter_sizes.items():
             component_sizes[converter] = size
 
+        if len(increased_cw_st_system_sizes) <= 1:
+            component_sizes[RenewableEnergySource.CLEAN_WATER_SOLAR_THERMAL] = (
+                potential_cw_st_size
+            )
+        else:
+            parameter_space.append(
+                (
+                    RenewableEnergySource.CLEAN_WATER_SOLAR_THERMAL,
+                    "simulation",
+                    increased_cw_st_system_sizes,
+                )
+            )
         if len(increased_cw_tank_sizes) <= 1:
             component_sizes[ImpactingComponent.CLEAN_WATER_TANK] = (
                 potential_num_clean_water_tanks
@@ -958,7 +1132,7 @@ def single_line_simulation(  # pylint: disable=too-many-locals, too-many-stateme
             parameter_space.append(
                 (
                     ImpactingComponent.CLEAN_WATER_TANK,
-                    "simulation",
+                    "simulation" if len(parameter_space) <= 1 else "cw tanks",
                     increased_cw_tank_sizes,
                 )
             )
@@ -970,6 +1144,18 @@ def single_line_simulation(  # pylint: disable=too-many-locals, too-many-stateme
                     RenewableEnergySource.HOT_WATER_PVT,
                     "simulation" if len(parameter_space) <= 1 else "hw pv-t size",
                     increased_hw_pvt_system_sizes,
+                )
+            )
+        if len(increased_hw_st_system_sizes) <= 1:
+            component_sizes[RenewableEnergySource.HOT_WATER_SOLAR_THERMAL] = (
+                potential_hw_st_size
+            )
+        else:
+            parameter_space.append(
+                (
+                    RenewableEnergySource.HOT_WATER_SOLAR_THERMAL,
+                    "simulation" if len(parameter_space) <= 1 else "hw st size",
+                    increased_hw_st_system_sizes,
                 )
             )
         if len(increased_hw_tank_sizes) <= 1:
@@ -1038,6 +1224,231 @@ def single_line_simulation(  # pylint: disable=too-many-locals, too-many-stateme
 
         cw_pvt_size.max = test_cw_pvt_size
 
+    # Check to see if clean-water solar-thermal size was an integer number of steps, and
+    # increase accordingly
+    if np.ceil(cw_st_size.max / cw_st_size.step) * cw_st_size.step == cw_st_size.max:
+        test_cw_st_size = float(cw_st_size.max + cw_st_size.step)
+    else:
+        test_cw_st_size = float(
+            np.ceil(cw_st_size.max / cw_st_size.step) * cw_st_size.step
+        )
+
+    # If clean-water solar-thermal was maxed out:
+    if (
+        potential_cw_st_size == cw_st_size.max
+        and optimisation.scenario.desalination_scenario
+    ):
+        logger.info("Increasing clean-water solar-thermal size.")
+
+        # Increase and iterate over the various storage sizes and other PV-T sizes.
+        increased_cw_pvt_system_sizes = sorted(
+            range(
+                int(cw_pvt_size.min),
+                int(np.ceil(cw_pvt_size.max + cw_pvt_size.step)),
+                int(cw_pvt_size.step),
+            ),
+            reverse=True,
+        )
+        increased_cw_tank_sizes = sorted(
+            range(
+                int(cw_tanks.min),
+                int(np.ceil(cw_tanks.max + cw_tanks.step)),
+                int(cw_tanks.step),
+            ),
+            reverse=True,
+        )
+        increased_hw_pvt_system_sizes = sorted(
+            range(
+                int(hw_pvt_size.min),
+                int(np.ceil(hw_pvt_size.max + hw_pvt_size.step)),
+                int(hw_pvt_size.step),
+            ),
+            reverse=True,
+        )
+        increased_hw_st_system_sizes = sorted(
+            range(
+                int(hw_st_size.min),
+                int(np.ceil(hw_st_size.max + hw_st_size.step)),
+                int(hw_st_size.step),
+            ),
+            reverse=True,
+        )
+        increased_hw_tank_sizes = sorted(
+            range(
+                int(hw_tanks.min),
+                int(np.ceil(hw_tanks.max + hw_tanks.step)),
+                int(hw_tanks.step),
+            ),
+            reverse=True,
+        )
+        increased_pv_system_sizes = sorted(
+            range(
+                int(pv_system_size.min),
+                int(np.ceil(pv_system_size.max + pv_system_size.step)),
+                int(pv_system_size.step),
+            ),
+            reverse=True,
+        )
+        increased_storage_sizes = sorted(
+            range(
+                int(storage_size.min),
+                int(np.ceil(storage_size.max + storage_size.step)),
+                int(storage_size.step),
+            ),
+            reverse=True,
+        )
+
+        # Prep variables for the iteration process.
+        component_sizes = {
+            RenewableEnergySource.CLEAN_WATER_PVT: int(
+                test_cw_pvt_size + cw_pvt_size.step
+            )
+        }
+        parameter_space = []
+
+        # Add the iterable converter sizes.
+        for converter, sizes in converter_sizes.items():
+            # Construct the list of available sizes for the given converter.
+            simulation_converter_sizes = sorted(
+                range(
+                    int(sizes.min),
+                    int(np.ceil(sizes.max + sizes.step)),
+                    int(sizes.step),
+                ),
+                reverse=True,
+            )
+
+            if len(simulation_converter_sizes) > 1:
+                parameter_space.append(
+                    (
+                        converter,
+                        (
+                            "simulation"
+                            if len(parameter_space) == 0
+                            else f"{converter.name} size"
+                        ),
+                        simulation_converter_sizes,
+                    )
+                )
+            else:
+                component_sizes[converter] = simulation_converter_sizes[0]
+
+        # Add the static converter sizes.
+        for converter, size in static_converter_sizes.items():
+            component_sizes[converter] = size
+
+        if len(increased_cw_pvt_system_sizes) <= 1:
+            component_sizes[RenewableEnergySource.CLEAN_WATER_PVT] = (
+                potential_cw_pvt_size
+            )
+        else:
+            parameter_space.append(
+                (
+                    RenewableEnergySource.CLEAN_WATER_PVT,
+                    "simulation",
+                    increased_cw_pvt_system_sizes,
+                )
+            )
+        if len(increased_cw_tank_sizes) <= 1:
+            component_sizes[ImpactingComponent.CLEAN_WATER_TANK] = (
+                potential_num_clean_water_tanks
+            )
+        else:
+            parameter_space.append(
+                (
+                    ImpactingComponent.CLEAN_WATER_TANK,
+                    "simulation" if len(parameter_space) <= 1 else "cw tanks",
+                    increased_cw_tank_sizes,
+                )
+            )
+        if len(increased_hw_pvt_system_sizes) <= 1:
+            component_sizes[RenewableEnergySource.HOT_WATER_PVT] = potential_hw_pvt_size
+        else:
+            parameter_space.append(
+                (
+                    RenewableEnergySource.HOT_WATER_PVT,
+                    "simulation" if len(parameter_space) <= 1 else "hw pv-t size",
+                    increased_hw_pvt_system_sizes,
+                )
+            )
+        if len(increased_hw_st_system_sizes) <= 1:
+            component_sizes[RenewableEnergySource.HOT_WATER_SOLAR_THERMAL] = (
+                potential_hw_st_size
+            )
+        else:
+            parameter_space.append(
+                (
+                    RenewableEnergySource.HOT_WATER_SOLAR_THERMAL,
+                    "simulation" if len(parameter_space) <= 1 else "hw st size",
+                    increased_hw_st_system_sizes,
+                )
+            )
+        if len(increased_hw_tank_sizes) <= 1:
+            component_sizes[ImpactingComponent.HOT_WATER_TANK] = (
+                potential_num_hot_water_tanks
+            )
+        else:
+            parameter_space.append(
+                (
+                    ImpactingComponent.HOT_WATER_TANK,
+                    "simulation" if len(parameter_space) <= 1 else "hw tanks",
+                    increased_hw_tank_sizes,
+                )
+            )
+        if len(increased_storage_sizes) <= 1:
+            component_sizes[ImpactingComponent.STORAGE] = (
+                potential_system.system_details.initial_storage_size
+            )
+        else:
+            parameter_space.append(
+                (
+                    ImpactingComponent.STORAGE,
+                    "simulation" if len(parameter_space) <= 1 else "storage size",
+                    increased_storage_sizes,
+                )
+            )
+        if len(increased_pv_system_sizes) <= 1:
+            component_sizes[RenewableEnergySource.PV] = (
+                potential_system.system_details.initial_pv_size
+            )
+        else:
+            parameter_space.append(
+                (
+                    RenewableEnergySource.PV,
+                    "simulation" if len(parameter_space) <= 1 else "pv size",
+                    increased_pv_system_sizes,
+                )
+            )
+
+        system_appraisals.extend(
+            recursive_iteration(
+                conventional_cw_source_profiles,
+                disable_tqdm,
+                end_year,
+                finance_inputs,
+                ghg_inputs,
+                grid_profile,
+                irradiance_data,
+                kerosene_usage,
+                location,
+                logger,
+                minigrid,
+                optimisation,
+                previous_system,
+                start_year,
+                temperature_data,
+                total_loads,
+                total_solar_pv_power_produced,
+                wind_speed_data,
+                yearly_electric_load_statistics,
+                component_sizes=component_sizes,
+                parameter_space=parameter_space,
+                system_appraisals=system_appraisals,
+            )
+        )
+
+        cw_st_size.max = test_cw_st_size
+
     # Check to see if hot-water PV-T size was an integer number of steps, and increase
     # accordingly
     if (
@@ -1055,7 +1466,7 @@ def single_line_simulation(  # pylint: disable=too-many-locals, too-many-stateme
         potential_hw_pvt_size == hw_pvt_size.max
         and optimisation.scenario.hot_water_scenario
     ):
-        logger.info("Increasing hot-water PV size.")
+        logger.info("Increasing hot-water PV-T size.")
 
         # Increase and iterate over the various storage sizes and other PV-T sizes.
         increased_cw_pvt_system_sizes = sorted(
@@ -1066,11 +1477,27 @@ def single_line_simulation(  # pylint: disable=too-many-locals, too-many-stateme
             ),
             reverse=True,
         )
+        increased_cw_st_system_sizes = sorted(
+            range(
+                int(cw_st_size.min),
+                int(np.ceil(cw_st_size.max + cw_st_size.step)),
+                int(cw_st_size.step),
+            ),
+            reverse=True,
+        )
         increased_cw_tank_sizes = sorted(
             range(
                 int(cw_tanks.min),
                 int(np.ceil(cw_tanks.max + cw_tanks.step)),
                 int(cw_tanks.step),
+            ),
+            reverse=True,
+        )
+        increased_hw_st_system_sizes = sorted(
+            range(
+                int(hw_st_size.min),
+                int(np.ceil(hw_st_size.max + hw_st_size.step)),
+                int(hw_st_size.step),
             ),
             reverse=True,
         )
@@ -1150,6 +1577,18 @@ def single_line_simulation(  # pylint: disable=too-many-locals, too-many-stateme
                     increased_cw_pvt_system_sizes,
                 )
             )
+        if len(increased_cw_st_system_sizes) <= 1:
+            component_sizes[RenewableEnergySource.CLEAN_WATER_SOLAR_THERMAL] = (
+                potential_cw_st_size
+            )
+        else:
+            parameter_space.append(
+                (
+                    RenewableEnergySource.CLEAN_WATER_SOLAR_THERMAL,
+                    "simulation" if len(parameter_space) <= 1 else "cw st size",
+                    increased_cw_st_system_sizes,
+                )
+            )
         if len(increased_cw_tank_sizes) <= 1:
             component_sizes[ImpactingComponent.CLEAN_WATER_TANK] = (
                 potential_num_clean_water_tanks
@@ -1158,8 +1597,20 @@ def single_line_simulation(  # pylint: disable=too-many-locals, too-many-stateme
             parameter_space.append(
                 (
                     ImpactingComponent.CLEAN_WATER_TANK,
-                    "simulation",
+                    "simulation" if len(parameter_space) <= 1 else "cw tanks",
                     increased_cw_tank_sizes,
+                )
+            )
+        if len(increased_hw_st_system_sizes) <= 1:
+            component_sizes[RenewableEnergySource.HOT_WATER_SOLAR_THERMAL] = (
+                potential_hw_st_size
+            )
+        else:
+            parameter_space.append(
+                (
+                    RenewableEnergySource.HOT_WATER_SOLAR_THERMAL,
+                    "simulation" if len(parameter_space) <= 1 else "hw st size",
+                    increased_hw_st_system_sizes,
                 )
             )
         if len(increased_hw_tank_sizes) <= 1:
@@ -1228,6 +1679,231 @@ def single_line_simulation(  # pylint: disable=too-many-locals, too-many-stateme
 
         hw_pvt_size.max = test_hw_pvt_size
 
+    # Check to see if hot-water solar-thermal size was an integer number of steps, and
+    # increase accordingly
+    if np.ceil(hw_st_size.max / hw_st_size.step) * hw_st_size.step == hw_st_size.max:
+        test_hw_st_size = float(hw_st_size.max + hw_st_size.step)
+    else:
+        test_hw_st_size = float(
+            np.ceil(hw_st_size.max / hw_st_size.step) * hw_st_size.step
+        )
+
+    # If hot-water solar-thermal was maxed out:
+    if (
+        potential_hw_st_size == hw_st_size.max
+        and optimisation.scenario.hot_water_scenario
+    ):
+        logger.info("Increasing hot-water solar-thermal size.")
+
+        # Increase and iterate over the various storage sizes and other PV-T sizes.
+        increased_cw_pvt_system_sizes = sorted(
+            range(
+                int(cw_pvt_size.min),
+                int(np.ceil(cw_pvt_size.max + cw_pvt_size.step)),
+                int(cw_pvt_size.step),
+            ),
+            reverse=True,
+        )
+        increased_cw_st_system_sizes = sorted(
+            range(
+                int(cw_st_size.min),
+                int(np.ceil(cw_st_size.max + cw_st_size.step)),
+                int(cw_st_size.step),
+            ),
+            reverse=True,
+        )
+        increased_cw_tank_sizes = sorted(
+            range(
+                int(cw_tanks.min),
+                int(np.ceil(cw_tanks.max + cw_tanks.step)),
+                int(cw_tanks.step),
+            ),
+            reverse=True,
+        )
+        increased_hw_pvt_system_sizes = sorted(
+            range(
+                int(hw_pvt_size.min),
+                int(np.ceil(hw_pvt_size.max + hw_pvt_size.step)),
+                int(hw_pvt_size.step),
+            ),
+            reverse=True,
+        )
+        increased_hw_tank_sizes = sorted(
+            range(
+                int(hw_tanks.min),
+                int(np.ceil(hw_tanks.max + hw_tanks.step)),
+                int(hw_tanks.step),
+            ),
+            reverse=True,
+        )
+        increased_pv_system_sizes = sorted(
+            range(
+                int(pv_system_size.min),
+                int(np.ceil(pv_system_size.max + pv_system_size.step)),
+                int(pv_system_size.step),
+            ),
+            reverse=True,
+        )
+        increased_storage_sizes = sorted(
+            range(
+                int(storage_size.min),
+                int(np.ceil(storage_size.max + storage_size.step)),
+                int(storage_size.step),
+            ),
+            reverse=True,
+        )
+
+        # Prep variables for the iteration process.
+        component_sizes = {
+            RenewableEnergySource.HOT_WATER_PVT: int(
+                test_hw_pvt_size + hw_pvt_size.step
+            )
+        }
+        parameter_space = []
+
+        # Add the iterable converter sizes.
+        for converter, sizes in converter_sizes.items():
+            # Construct the list of available sizes for the given converter.
+            simulation_converter_sizes = sorted(
+                range(
+                    int(sizes.min),
+                    int(np.ceil(sizes.max + sizes.step)),
+                    int(sizes.step),
+                ),
+                reverse=True,
+            )
+
+            if len(simulation_converter_sizes) > 1:
+                parameter_space.append(
+                    (
+                        converter,
+                        (
+                            "simulation"
+                            if len(parameter_space) == 0
+                            else f"{converter.name} size"
+                        ),
+                        simulation_converter_sizes,
+                    )
+                )
+            else:
+                component_sizes[converter] = simulation_converter_sizes[0]
+
+        # Add the static converter sizes.
+        for converter, size in static_converter_sizes.items():
+            component_sizes[converter] = size
+
+        if len(increased_cw_pvt_system_sizes) <= 1:
+            component_sizes[RenewableEnergySource.CLEAN_WATER_PVT] = (
+                potential_cw_pvt_size
+            )
+        else:
+            parameter_space.append(
+                (
+                    RenewableEnergySource.CLEAN_WATER_PVT,
+                    "simulation",
+                    increased_cw_pvt_system_sizes,
+                )
+            )
+        if len(increased_cw_st_system_sizes) <= 1:
+            component_sizes[RenewableEnergySource.CLEAN_WATER_SOLAR_THERMAL] = (
+                potential_cw_st_size
+            )
+        else:
+            parameter_space.append(
+                (
+                    RenewableEnergySource.CLEAN_WATER_SOLAR_THERMAL,
+                    "simulation" if len(parameter_space) <= 1 else "cw st size",
+                    increased_cw_st_system_sizes,
+                )
+            )
+        if len(increased_cw_tank_sizes) <= 1:
+            component_sizes[ImpactingComponent.CLEAN_WATER_TANK] = (
+                potential_num_clean_water_tanks
+            )
+        else:
+            parameter_space.append(
+                (
+                    ImpactingComponent.CLEAN_WATER_TANK,
+                    "simulation" if len(parameter_space) <= 1 else "cw tanks",
+                    increased_cw_tank_sizes,
+                )
+            )
+        if len(increased_hw_pvt_system_sizes) <= 1:
+            component_sizes[RenewableEnergySource.HOT_WATER_PVT] = potential_hw_pvt_size
+        else:
+            parameter_space.append(
+                (
+                    RenewableEnergySource.HOT_WATER_PVT,
+                    "simulation" if len(parameter_space) <= 1 else "hw pv-t size",
+                    increased_hw_pvt_system_sizes,
+                )
+            )
+        if len(increased_hw_tank_sizes) <= 1:
+            component_sizes[ImpactingComponent.HOT_WATER_TANK] = (
+                potential_num_hot_water_tanks
+            )
+        else:
+            parameter_space.append(
+                (
+                    ImpactingComponent.HOT_WATER_TANK,
+                    "simulation" if len(parameter_space) <= 1 else "hw tanks",
+                    increased_hw_tank_sizes,
+                )
+            )
+        if len(increased_storage_sizes) <= 1:
+            component_sizes[ImpactingComponent.STORAGE] = (
+                potential_system.system_details.initial_storage_size
+            )
+        else:
+            parameter_space.append(
+                (
+                    ImpactingComponent.STORAGE,
+                    "simulation" if len(parameter_space) <= 1 else "storage size",
+                    increased_storage_sizes,
+                )
+            )
+        if len(increased_pv_system_sizes) <= 1:
+            component_sizes[RenewableEnergySource.PV] = (
+                potential_system.system_details.initial_pv_size
+            )
+        else:
+            parameter_space.append(
+                (
+                    RenewableEnergySource.PV,
+                    "simulation" if len(parameter_space) <= 1 else "pv size",
+                    increased_pv_system_sizes,
+                )
+            )
+
+        system_appraisals.extend(
+            recursive_iteration(
+                conventional_cw_source_profiles,
+                disable_tqdm,
+                end_year,
+                finance_inputs,
+                ghg_inputs,
+                grid_profile,
+                irradiance_data,
+                kerosene_usage,
+                location,
+                logger,
+                minigrid,
+                optimisation,
+                previous_system,
+                start_year,
+                temperature_data,
+                total_loads,
+                total_solar_pv_power_produced,
+                wind_speed_data,
+                yearly_electric_load_statistics,
+                component_sizes=component_sizes,
+                parameter_space=parameter_space,
+                system_appraisals=system_appraisals,
+            )
+        )
+
+        hw_st_size.max = test_hw_st_size
+
     sufficient_appraisals.extend(
         get_sufficient_appraisals(optimisation, system_appraisals)
     )
@@ -1235,8 +1911,10 @@ def single_line_simulation(  # pylint: disable=too-many-locals, too-many-stateme
     return (
         converter_sizes,
         cw_pvt_size,
+        cw_st_size,
         cw_tanks,
         hw_pvt_size,
+        hw_st_size,
         hw_tanks,
         pv_system_size,
         storage_size,

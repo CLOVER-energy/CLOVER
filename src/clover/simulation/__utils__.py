@@ -25,8 +25,9 @@ that is passed in to the module.
 import dataclasses
 
 from argparse import Namespace
+from collections import defaultdict
 from logging import Logger
-from typing import Any, DefaultDict, Union
+from typing import Any
 from warnings import warn
 
 from ..__utils__ import (
@@ -45,7 +46,7 @@ from ..__utils__ import (
 )
 
 from ..conversion.conversion import Converter
-from ..generation.solar import HybridPVTPanel, PVPanel
+from ..generation.solar import HybridPVTPanel, PVPanel, SolarThermalPanel
 from ..impact.__utils__ import ImpactingComponent, LIFETIME, SIZE_INCREMENT
 from .diesel import DieselGenerator, DieselWaterHeater
 from .exchanger import Exchanger
@@ -141,6 +142,9 @@ class Minigrid:
     .. attribute:: pvt_panels
         The PV-T panel(s) being considered, if applicable.
 
+    .. attribute:: solar_thermal_panels
+        The solar-thermal panel(s) being considered, if applicable.
+
     .. attribute:: water_pump
         The water pump associated with the energy system, as a :class:`Transmitter`
         instance.
@@ -164,6 +168,7 @@ class Minigrid:
     inverter: Inverter
     pv_panels: list[PVPanel]
     pvt_panels: list[HybridPVTPanel]
+    solar_thermal_panels: list[SolarThermalPanel]
     water_pump: Transmitter | None
 
     @classmethod
@@ -172,11 +177,12 @@ class Minigrid:
         diesel_generator: DieselGenerator,
         diesel_water_heater: DieselWaterHeater | None,
         electric_water_heater: Converter | None,
-        finance_inputs: DefaultDict[str, DefaultDict[str, float]],
+        finance_inputs: defaultdict[str, defaultdict[str, float]],
         logger: Logger,
         minigrid_inputs: dict[str, Any],
         pv_panels: list[PVPanel],
         pvt_panels: list[HybridPVTPanel],
+        st_panels: list[SolarThermalPanel],
         battery_inputs: list[dict[str, Any]] | None = None,
         exchanger_inputs: list[dict[str, Any]] | None = None,
         tank_inputs: list[dict[str, Any]] | None = None,
@@ -203,6 +209,9 @@ class Minigrid:
                 The `list` of :class:`PVPanel` instances to use for the run.
             - pvt_panels:
                 The `list` of :class:`HybridPVTPanel` instances to use for the run,
+                if appropriate.
+            - solar_thermal_panesl:
+                The `list` of :class:`SolarThermalPanel` instances to use for the run,
                 if appropriate.
             - battery_inputs:
                 The battery input information.
@@ -363,10 +372,11 @@ class Minigrid:
             diesel_water_heater,
             electric_water_heater,
             heat_exchanger,
-            hot_water_tank,  # type: ignore [arg-type]
+            hot_water_tank,
             inverter,
             pv_panels,
             pvt_panels,
+            st_panels,
             water_pump,
         )
 
@@ -419,6 +429,49 @@ class Minigrid:
             )
 
         return self.pvt_panels[0]
+
+    @property
+    def solar_thermal_panel(self) -> SolarThermalPanel | None:
+        """
+        Returns a ST panel if there is only one panel modelled, otherwise errors.
+
+        Outputs:
+            - solar_thermal_panel:
+                The :class:`SolarThermalPanel` being modelled, if only one is present.
+                If ST panels are not present in the system, `None` is returned.
+
+        Raises:
+            - ProgrammerJudgementFault
+                Raised if this is called when multiple panels are present.
+
+        """
+
+        if self.solar_thermal_panels is None or len(self.solar_thermal_panels) == 0:
+            return None
+
+        if len(self.solar_thermal_panels) > 1:
+            raise ProgrammerJudgementFault(
+                "Minigrid.pvt_panel",
+                "Cannot use `pvt_panel` when multiple panels present.",
+            )
+
+        return self.solar_thermal_panels[0]
+
+    @property
+    def solar_panels(self) -> list[PVPanel | HybridPVTPanel | SolarThermalPanel]:
+        """
+        Returns a `list` of all panels associated with the :class:`Minigrid` instance.
+
+        Returns:
+            The solar panels associated with the minigrid.
+
+        """
+
+        return [
+            entry
+            for entry in [self.pv_panel, self.pvt_panel, self.solar_thermal_panel]
+            if entry is not None
+        ]
 
 
 def check_scenario(

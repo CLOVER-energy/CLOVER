@@ -25,12 +25,15 @@ import logging
 import math
 import os
 
+from collections import defaultdict
 from typing import Any, DefaultDict
 from warnings import warn
 
 import json
 import numpy as np  # pylint: disable=import-error
 import pandas as pd  # pylint: disable=import-error
+import scipy  # pylint: disable=import-error
+import scipy.interpolate
 import yaml  # pylint: disable=import-error
 
 from tqdm import tqdm  # pylint: disable=import-error
@@ -166,7 +169,7 @@ KEROSENE_DEVICE_NAME: str = "kerosene"
 
 # Locations folder name:
 #   The name of the locations folder.
-LOCATIONS_FOLDER_NAME: str = "clover_locations"
+LOCATIONS_FOLDER_NAME: str = os.path.join(os.path.expanduser("~"), "clover_locations")
 
 # Logger directory:
 #   The directory in which to save logs.
@@ -222,10 +225,6 @@ NUMBER_OF_ITERATIONS: str = "number_of_iterations"
 #   packaged but are accessed locally in developer code.
 PACKAGE_NAME: str = "clover"
 
-# PVT Scenario:
-#   Keyword used for parsing PV-T scenario information.
-PVT_SCENARIO: str = "pvt_scenario"
-
 # Raw CLOVER path:
 #   The path to the clover source directory to use when running in github mode.
 RAW_CLOVER_PATH: str = os.path.join("src", "clover")
@@ -233,6 +232,10 @@ RAW_CLOVER_PATH: str = os.path.join("src", "clover")
 # Skipped:
 #   Keyword used when skipping part of the CLOVER flow.
 SKIPPING: str = "[ SKIPPING ]"
+
+# Solar-thermal Collector Scenarios:
+#   Keyword used for parsing PV-T and solar-thermal scenario information.
+SOLAR_THERMAL_COLLECTOR_SCENARIOS: str = "solar_thermal_collector_scenarios"
 
 # Step:
 #   Keyword used when parsing information about the system size step to consider in
@@ -243,6 +246,9 @@ STEP: str = "step"
 #   Used to parse supply-temperature information.
 SUPPLY_TEMPERATURE: str = "supply_temperature"
 
+# Throughput mass flow rate:
+#   Used to parse the gloabl (throughput) mass flow rate.
+THROUGHPUT_MASS_FLOW_RATE: str = "throughput_mass_flow_rate"
 # Token:
 #   Keyword used when parsing the generation token.
 TOKEN: str = "renewables_ninja_token"
@@ -344,6 +350,15 @@ class CleanWaterScenario:
     mode: CleanWaterMode
     sources: list[str]
 
+    def to_dict(self) -> dict[str, Any]:
+        """Returns a nice-looking `dict` representing the class."""
+
+        return {
+            "conventional_sources": self.conventional_sources,
+            MODE: self.mode.value,
+            "sources": self.sources,
+        }
+
 
 class ColdWaterSupply(enum.Enum):
     """
@@ -413,6 +428,12 @@ class ColumnHeader(enum.Enum):
     - CW_PVT_OUTPUT_TEMPERATURE:
         The output temperature of the clean-water PV-T installed.
 
+    - CW_ST_INPUT_TEMPERATURE:
+        The input temperature of the clean-water solar-thermal installed.
+
+    - CW_ST_OUTPUT_TEMPERATURE:
+        The output temperature of the clean-water solar-thermal installed.
+
     - CW_TANK_STORAGE_PROFILE:
         The storage profile of the clean-water tanks.
 
@@ -473,6 +494,12 @@ class ColumnHeader(enum.Enum):
 
     - HW_SOLAR_THERMAL_FRACTION:
         The fraction of hot-water demand that was met through renewables.
+
+    - HW_ST_INPUT_TEMPERATURE:
+        The input temperature of the hot-water solar-thermal installed.
+
+    - HW_ST_OUTPUT_TEMPERATURE:
+        The output temperature of the hot-water solar-thermal installed.
 
     - HW_TANK_OUTPUT:
         The output volume from the hot-water tank(s) installed.
@@ -569,8 +596,6 @@ class ColumnHeader(enum.Enum):
     BATTERY_HEALTH = "Battery health"
     BLACKOUTS = "Blackouts"
     BRINE = "Brine produced (l)"
-    BUFFER_TANK_OUTPUT = "Buffer tank output volume (l)"
-    BUFFER_TANK_TEMPERATURE = "Buffer tank temperature (degC)"
     CLEAN_WATER_BLACKOUTS = "Clean water blackouts"
     CLEAN_WATER_FROM_CONVENTIONAL_SOURCES = (
         "Drinking water supplied via conventional sources (l)"
@@ -583,12 +608,31 @@ class ColumnHeader(enum.Enum):
     CLEAN_WATER_FROM_THERMAL_RENEWABLES = (
         "Renewable clean water produced directly and thermally (l)"
     )
+    CW_AUXILIARY_HEATING = "Clean-water auxiliary heating (kWh)"
+    CW_BUFFER_TANK_TEMPERATURE = "Clean-water buffer tank temperature (degC)"
+    CW_BUFFER_TANK_OUTPUT = "Clean-water buffer tank output volume (l)"
+    CW_HEAT_PUMP_ELECTRICITY_REQUIREMENTS = (
+        "Clean-water auxiliary heat-pump electricity requirements (kWh)"
+    )
     CW_PVT_ELECTRICITY_SUPPLIED = "Clean-water PV-T electric energy supplied (kWh)"
     CW_PVT_ELECTRICITY_SUPPLIED_PER_KWP = (
         "Clean-water PV-T electric energy supplied per kWp"
     )
+    CW_PVT_ELECTRICITY_SUPPLIED_PER_UNIT = (
+        "Clean-water PV-T electric energy supplied per unit"
+    )
+    CW_PVT_ELECTRICAL_EFFICIENCY = "Clean-water PV-T electrical efficiency"
+    CW_PVT_THERMAL_EFFICIENCY = "Clean-water PV-T thermal efficiency"
     CW_PVT_INPUT_TEMPERATURE = "Clean-water PV-T input temperature (degC)"
     CW_PVT_OUTPUT_TEMPERATURE = "Clean-water PV-T output temperature (degC)"
+    CW_PVT_REDUCED_TEMPERATURE = "Clean-water PV-T reduced temperature (degC / W/m$^2$)"
+    CW_RENEWABLE_HEATING = "Clean-water renewable heating (kWh)"
+    CW_ST_INPUT_TEMPERATURE = "Clean-water solar-thermal input temperature (degC)"
+    CW_ST_OUTPUT_TEMPERATURE = "Clean-water solar-thermal output temperature (degC)"
+    CW_ST_REDUCED_TEMPERATURE = (
+        "Clean-water solar-thermal reduced temperature (degC / W/m$^2$)"
+    )
+    CW_ST_THERMAL_EFFICIENCY = "Clean-water solar-thermal thermal efficiency"
     CW_TANK_STORAGE_PROFILE = "Water held in clean-water storage tanks (l)"
     DESALINATION_PLANT_RENEWABLE_FRACTION = (
         "Thermal desalination plant(s) renewable fraction"
@@ -609,6 +653,9 @@ class ColumnHeader(enum.Enum):
     HOUSEHOLDS = "Households"
     HW_PVT_INPUT_TEMPERATURE = "Hot-water PV-T input temperature (degC)"
     HW_PVT_OUTPUT_TEMPERATURE = "Hot-water PV-T output temperature (degC)"
+    HW_PVT_REDUCED_TEMPERATURE = "Hot-water PV-T reduced temperature (degC / W/m$^2$)"
+    HW_PVT_ELECTRICAL_EFFICIENCY = "Hot-water PV-T electrical efficiency"
+    HW_PVT_THERMAL_EFFICIENCY = "Hot-water PV-T thermal efficiency"
     HW_PVT_ELECTRICITY_SUPPLIED = "Hot-water PV-T electric energy supplied (kWh)"
     HW_PVT_ELECTRICITY_SUPPLIED_PER_KWP = (
         "Hot-water PV-T electric energy supplied per kWp"
@@ -617,6 +664,11 @@ class ColumnHeader(enum.Enum):
         "Hot-water PV-T electric energy supplied per unit panel"
     )
     HW_SOLAR_THERMAL_FRACTION = "Renewable hot-water fraction"
+    HW_ST_INPUT_TEMPERATURE = "Hot-water solar-thermal input temperature (degC)"
+    HW_ST_OUTPUT_TEMPERATURE = "Hot-water solar-thermal output temperature (degC)"
+    HW_ST_REDUCED_TEMPERATURE = (
+        "Hot-water solar-thermal reduced temperature (degC / W/m$^2$)"
+    )
     HW_TANK_OUTPUT = "Hot-water tank volume supplied (l)"
     HW_TANK_TEMPERATURE = "Hot-water tank temperature (degC)"
     HW_TEMPERATURE_GAIN = "Hot water temperature gain (degC)"
@@ -628,7 +680,9 @@ class ColumnHeader(enum.Enum):
     KEROSENE_MITIGATION = "Kerosene mitigation"
     LOAD_ENERGY = "Load energy (kWh)"
     MAXIMUM = "Maximum"
-    POWER_CONSUMED_BY_DESALINATION = "Power consumed providing clean water (kWh)"
+    POWER_CONSUMED_BY_PRIORITY_DESALINATION = (
+        "Power consumed providing (priority) electric clean water (kWh)"
+    )
     POWER_CONSUMED_BY_ELECTRIC_DEVICES = "Power consumed providing electricity (kWh)"
     POWER_CONSUMED_BY_HOT_WATER = "Power consumed providing hot water (kWh)"
     POWER_CONSUMED_BY_THERMAL_DESALINATION = (
@@ -841,6 +895,24 @@ class DistributionNetwork(enum.Enum):
 
     AC = "ac"
     DC = "dc"
+
+
+class FlowRateError(Exception):
+    """Raised when there is a mismatch in flow-rate requirements."""
+
+    def __init__(self, mismatched_object: str, msg: str) -> None:
+        """
+        Instantiate a :class:`FlowRateError` instance.
+
+        Inputs:
+            - mismatched_object:
+                The name of the object for which the flow rates are mismatched.
+            - msg:
+                The error message to append.
+
+        """
+
+        super().__init__(f"Error in flow rate of '{mismatched_object}': {msg}")
 
 
 def get_locations_foldername() -> str:
@@ -1266,10 +1338,16 @@ class RenewableEnergySource(enum.Enum):
     Specfiies the renewable energy sources that can be included in the system.
 
     - CLEAN_WATER_PVT:
-        Denotes PV-T associated with clean-water production.
+        Denotes PV-T collectors associated with clean-water production.
+
+    - CLEAN_WATER_SOLAR_THERMAL:
+        Denotes solar-thermal collectors associated with clean-water production.
 
     - HOT_WATER_PVT:
-        Denotes PV-T associated with hot-water production.
+        Denotes PV-T collectors associated with hot-water production.
+
+    - HOT_WATER_SOLAR_THERMAL:
+        Denotes solar-thermal collectors associated with hot-water production.
 
     - PV:
         Denotes purely electric PV-T panels.
@@ -1277,7 +1355,9 @@ class RenewableEnergySource(enum.Enum):
     """
 
     CLEAN_WATER_PVT = "clean_water_pv_t"
+    CLEAN_WATER_SOLAR_THERMAL = "clean_water_solar_thermal"
     HOT_WATER_PVT = "hot_water_pv_t"
+    HOT_WATER_SOLAR_THERMAL = "hot_water_solar_thermal"
     PV = "pv"
 
 
@@ -1350,6 +1430,24 @@ RESOURCE_NAME_TO_RESOURCE_TYPE_MAPPING = {
 }
 
 
+class SolarPanelType(enum.Enum):
+    """
+    Specifies the type of solar panel being considered.
+
+    - PV:
+        Denotes that a PV panel is being considered.
+    - PV_T:
+        Denotes that a PV-T panel is being considered.
+    - SOLAR_THERMAL:
+        Denotes that a solar-thermal panel is being considered.
+
+    """
+
+    PV = "pv"
+    PV_T = "pv_t"
+    SOLAR_THERMAL = "solar_thermal"
+
+
 class HTFMode(enum.Enum):
     """
     Specifies the type of material being used as the PV-T HTF.
@@ -1408,6 +1506,10 @@ class Location:
     .. attribute:: time_difference
         The time difference, in hours, at the location vs. UTC.
 
+    .. attribute:: final_community_size
+        Used in stranded-asset paper modelling to fix the final size of the
+        community.
+
     """
 
     community_growth_rate: float
@@ -1418,6 +1520,7 @@ class Location:
     max_years: int
     name: str
     time_difference: float
+    final_community_size: int | None
 
     @classmethod
     def from_dict(cls, location_inputs: dict[str, Any]) -> Any:
@@ -1442,6 +1545,7 @@ class Location:
             location_inputs["max_years"],
             location_inputs["location"],
             location_inputs["time_difference"],
+            location_inputs.get("final_community_size", None),
         )
 
     @property
@@ -1486,7 +1590,7 @@ def monthly_profile_to_daily_profile(monthly_profile: pd.DataFrame) -> pd.DataFr
     day_one_profile: pd.DataFrame = pd.DataFrame(np.zeros((24, 1)))
     for hour in range(24):
         day_one_profile.iloc[hour, 0] = 0.5 * float(
-            float(monthly_profile.iloc[hour, 0]) + float(monthly_profile.iloc[hour, 11])  # type: ignore [arg-type]
+            float(monthly_profile.iloc[hour, 0]) + float(monthly_profile.iloc[hour, 11])
         )
 
     extended_year_profile: pd.DataFrame = pd.DataFrame(np.zeros((24, 14)))
@@ -1709,9 +1813,11 @@ class Criterion(enum.Enum):
     CUMULATIVE_SYSTEM_COST = "cumulative_system_cost"
     CUMULATIVE_SYSTEM_GHGS = "cumulative_system_ghgs"
     CW_DEMAND_COVERED = "cw_demand_covered"
+    CW_EMISSIONS_INTENSITY = "cw_emissions_intensity"
     CW_RENEWABLES_FRACTION = "cw_renewables_fraction"
     CW_SOLAR_THERMAL_FRACTION = "solar_thermal_cw_fraction"
     EMISSIONS_INTENSITY = "emissions_intensity"
+    ENERGY_EMISSIONS_INTENSITY = "emissions_intensity_of_energy"
     HW_DEMAND_COVERED = "hw_demand_covered"
     HW_RENEWABLES_FRACTION = "hw_renewables_fraction"
     HW_SOLAR_THERMAL_FRACTION = "solar_thermal_hw_fraction"
@@ -1720,6 +1826,7 @@ class Criterion(enum.Enum):
     KEROSENE_GHGS_MITIGATED = "kerosene_ghgs_mitigated"
     LCU_ENERGY = "lcu_energy"
     LCUE = "lcue"
+    LCUE_INCLUDING_CARBON_PRICE = "lcue_using_carbon_price"
     LCUH = "lcuh"
     LCUW = "lcuw"
     RENEWABLES_ELECTRICITY_FRACTION = "renewables_fraction"
@@ -1761,9 +1868,14 @@ class PVTMode(enum.Enum):
 
 
 @dataclasses.dataclass
-class PVTScenario:
+class ThermalCollectorScenario:
     """
-    Specifies the PV-T scenario being carried out.
+    Specifies the solar-thermal-collector scenario being carried out.
+
+    This scenario can describe solar-thermal of PV-T collectors.
+
+    .. attribute:: collector_type
+        The type of collector that this scenario corresponds to.
 
     .. attribute:: heats
         The resource which is heated by the PV-T system.
@@ -1772,13 +1884,42 @@ class PVTScenario:
         The capacity of the HTF being used.
 
     .. attribute:: mass_flow_rate
-        The mass-flow rate through the collectors.
+        The mass-flow rate through the collectors, measured in kg/hour.
 
     """
 
+    collector_type: SolarPanelType
     heats: HTFMode
     htf_heat_capacity: float
     mass_flow_rate: float
+
+    def to_dict(self) -> dict[str, Any]:
+        """Returns a nice-looking representation of the class."""
+
+        return {
+            "collector_type": self.collector_type.value,
+            "heats": self.heats.value,
+            "htf_heat_capacity": self.htf_heat_capacity,
+            "mass_flow_rate": self.mass_flow_rate,
+        }
+
+    def __repr__(self) -> str:
+        """
+        The default representation of the :class:`ThermalCollectorScenario`.
+
+        Outputs:
+            - A nice-looking `str` giving a representation of the class.
+
+        """
+
+        return (
+            "ThermalCollectorScenario("
+            + f"collector_type: {self.collector_type.value}"
+            + f", heats: {self.heats.value}"
+            + f", htf_heat_capacity: {self.htf_heat_capacity}"
+            + f", mass_flow_rate: {self.mass_flow_rate}"
+            + ")"
+        )
 
 
 def read_yaml(
@@ -1824,10 +1965,10 @@ class RegressorType(enum.Enum):
 
     """
 
-    LOW_IRRADIANCE_LOW_TEMPERATURE: str = "low_irradiance_low_temp"
-    LOW_IRRADIANCE_HIGH_TEMPERATURE: str = "low_irradiance_high_temp"
-    STANDARD_IRRADIANCE_LOW_TEMPERATURE: str = "standard_irradiance_low_temp"
-    STANDARD_IRRADIANCE_HIGH_TEMPERATURE: str = "standard_irradiance_high_temp"
+    LOW_IRRADIANCE_LOW_TEMPERATURE = "low_irradiance_low_temp"
+    LOW_IRRADIANCE_HIGH_TEMPERATURE = "low_irradiance_high_temp"
+    STANDARD_IRRADIANCE_LOW_TEMPERATURE = "standard_irradiance_low_temp"
+    STANDARD_IRRADIANCE_HIGH_TEMPERATURE = "standard_irradiance_high_temp"
 
 
 class RenewablesNinjaError(Exception):
@@ -1869,16 +2010,55 @@ class DesalinationScenario:
     .. attribute:: pvt_scenario
         The PV-T scenario.
 
+    .. attribute:: solar_thermal_scenario
+        The solar-thermal scenario
+
+    .. attribute:: throughput_mass_flow_rate
+        The mass-flow rate through all of the collectors.
+
     .. attribute:: unclean_water_sources
         A `set` of `str` giving the unclean water sources.
 
     """
 
+    auxiliary_heater: AuxiliaryHeaterType | None
     clean_water_scenario: CleanWaterScenario
     feedwater_supply_temperature: float
     name: str
-    pvt_scenario: PVTScenario
-    unclean_water_sources: list[str]
+    pvt_scenario: ThermalCollectorScenario | None
+    solar_thermal_scenario: ThermalCollectorScenario | None
+    throughput_mass_flow_rate: float | None
+    unclean_water_sources: list[Any]
+
+    def to_dict(self) -> dict[str, Any]:
+        """
+        Returns a `dict` representing the class.
+
+        Returns:
+            -a nice-looking dictionary representing the class.
+
+        """
+
+        return {
+            "auxiliary_heater": (
+                self.auxiliary_heater.value
+                if self.auxiliary_heater is not None
+                else None
+            ),
+            "clean_water_scenario": self.clean_water_scenario.to_dict(),
+            "feedwater_supply_temperature": self.feedwater_supply_temperature,
+            "name": self.name,
+            "pvt_scenario": (
+                self.pvt_scenario.to_dict() if self.pvt_scenario is not None else None
+            ),
+            "solar_thermal_scenario": (
+                self.solar_thermal_scenario.to_dict()
+                if self.solar_thermal_scenario is not None
+                else None
+            ),
+            "throughput_mass_flow_rate": self.throughput_mass_flow_rate,
+            "unclean_water_sources": self.unclean_water_sources,
+        }
 
     @classmethod
     def from_dict(
@@ -1897,6 +2077,13 @@ class DesalinationScenario:
             - A :class:`DesalinationScenario` instance based on the input data provided.
 
         """
+
+        try:
+            auxiliary_heater = AUXILIARY_HEATER_NAME_TO_TYPE_MAPPING[
+                desalination_inputs[ResourceType.CLEAN_WATER.value]["auxiliary_heater"]
+            ]
+        except KeyError:
+            auxiliary_heater = None
 
         try:
             clean_water_mode = CleanWaterMode(
@@ -1920,7 +2107,7 @@ class DesalinationScenario:
                 BColours.endc,
             )
             raise InputFileError(
-                "desalination scenario", "Missing clean-water scenario information."
+                "desalination scenario", "Missing clean-water mode information."
             ) from None
 
         clean_water_scenario: CleanWaterScenario = CleanWaterScenario(
@@ -1937,34 +2124,78 @@ class DesalinationScenario:
         )
 
         try:
-            pvt_scenario: PVTScenario = PVTScenario(
-                HTFMode(desalination_inputs[PVT_SCENARIO]["heats"]),
-                (
-                    desalination_inputs[PVT_SCENARIO]["htf_heat_capacity"]
-                    if "htf_heat_capacity" in desalination_inputs[PVT_SCENARIO]
-                    else HEAT_CAPACITY_OF_WATER
-                ),
-                desalination_inputs[PVT_SCENARIO]["mass_flow_rate"],
+            thermal_collector_scenarios: list[ThermalCollectorScenario] = (
+                [
+                    ThermalCollectorScenario(
+                        SolarPanelType(collector_scenario_inputs["type"]),
+                        HTFMode(collector_scenario_inputs["heats"]),
+                        (
+                            collector_scenario_inputs["htf_heat_capacity"]
+                            if "htf_heat_capacity" in collector_scenario_inputs
+                            else HEAT_CAPACITY_OF_WATER
+                        ),
+                        collector_scenario_inputs["mass_flow_rate"],
+                    )
+                    for collector_scenario_inputs in desalination_inputs[
+                        SOLAR_THERMAL_COLLECTOR_SCENARIOS
+                    ]
+                ]
+                if SOLAR_THERMAL_COLLECTOR_SCENARIOS in desalination_inputs
+                else []
             )
-        except ValueError:
+        except ValueError as e:
             logger.error(
-                "%sInvalid HTF mode specified: %s%s",
+                "%sInvalid thermal-collector scenario information: %s\tCheck HTF "
+                "modes; valid HTF modes: %s%s",
                 BColours.fail,
-                desalination_inputs[PVT_SCENARIO]["heats"],
+                str(e),
+                {e.value for e in HTFMode},
                 BColours.endc,
             )
             raise InputFileError(
-                "desalination scenario", "Invalid HTF mode specified in PV-T scenario."
+                "desalination scenario",
+                "Invalid thermal-collector scenario information.",
             ) from None
-        except KeyError:
+        except KeyError as e:
             logger.error(
-                "%sMissing PV-T information in deslination scenario file.%s",
+                "%sMissing thermal-collector information in deslination scenario file: "
+                "%s%s",
                 BColours.fail,
+                str(e),
                 BColours.endc,
             )
             raise InputFileError(
-                "desalination scenario", "Missing PV-T scenario information."
+                "desalination scenario",
+                "Missing thermal-collector scenario information.",
             ) from None
+
+        try:
+            pvt_scenario: ThermalCollectorScenario | None = [
+                scenario
+                for scenario in thermal_collector_scenarios
+                if scenario.collector_type == SolarPanelType.PV_T
+            ][0]
+        except IndexError:
+            logger.info(
+                "%sNo PV-T scenario information in desalination file.%s",
+                BColours.fail,
+                BColours.endc,
+            )
+            pvt_scenario = None
+
+        try:
+            solar_thermal_scenario = [
+                scenario
+                for scenario in thermal_collector_scenarios
+                if scenario.collector_type == SolarPanelType.SOLAR_THERMAL
+            ][0]
+        except IndexError:
+            logger.info(
+                "%sNo PV-T scenario information in desalination file.%s",
+                BColours.fail,
+                BColours.endc,
+            )
+            solar_thermal_scenario = None
 
         try:
             feedwater_supply_temperature = desalination_inputs[
@@ -1977,6 +2208,14 @@ class DesalinationScenario:
                 BColours.fail,
                 BColours.endc,
             )
+            raise InputFileError(
+                "desalination scenario",
+                "Missing feedwater supply temperature in desalination scenario.",
+            ) from None
+
+        throughput_mass_flow_rate = desalination_inputs.get(
+            THROUGHPUT_MASS_FLOW_RATE, None
+        )
 
         try:
             unclean_water_sources = list(
@@ -1993,12 +2232,21 @@ class DesalinationScenario:
             ) from None
 
         return cls(
+            auxiliary_heater,
             clean_water_scenario,
             feedwater_supply_temperature,
             desalination_inputs[NAME],
             pvt_scenario,
+            solar_thermal_scenario,
+            throughput_mass_flow_rate,
             unclean_water_sources,
         )
+
+    @property
+    def htf_supply_temperature(self) -> float:
+        """The supply temperature of HTF for the scenario in degrees Celsius."""
+
+        return self.feedwater_supply_temperature
 
 
 @dataclasses.dataclass
@@ -2020,13 +2268,19 @@ class HotWaterScenario:
         A `list` of conventional sources.
 
     .. attribute:: demand_temperature
-        The temperature, in degrees Celcius, at which hot water should be supplied to the end user.
+        The temperature, in degrees Celsius, at which hot water should be supplied to the end user.
 
     .. attribute:: name
         The name of the hot-water scenario.
 
     .. attribute:: pvt_scenario
         The PV-T scenario.
+
+    .. attribute:: solar_thermal_scenario
+        The PV-T scenario.
+
+    .. attribute:: throughput_mass_flow_rate
+        The mass-flow rate through all of the collectors.
 
     """
 
@@ -2036,7 +2290,9 @@ class HotWaterScenario:
     conventional_sources: list[str]
     demand_temperature: float
     name: str
-    pvt_scenario: PVTScenario
+    pvt_scenario: ThermalCollectorScenario | None
+    solar_thermal_scenario: ThermalCollectorScenario | None
+    throughput_mass_flow_rate: float | None
 
     @classmethod
     def from_dict(cls, hot_water_inputs: dict[str, Any], logger: logging.Logger) -> Any:
@@ -2058,30 +2314,31 @@ class HotWaterScenario:
             auxiliary_heater = AUXILIARY_HEATER_NAME_TO_TYPE_MAPPING[
                 hot_water_inputs[ResourceType.HOT_CLEAN_WATER.value]["auxiliary_heater"]
             ]
-        except ValueError:
-            logger.error(
-                "%sInvalid auxiliary heater mode specified: %s. Valid options are %s."
-                "%s",
-                BColours.fail,
-                hot_water_inputs[ResourceType.HOT_CLEAN_WATER.value][
-                    "auxiliary_heater"
-                ],
-                ", ".join(f"'{e.value}'" for e in AuxiliaryHeaterType),
-                BColours.endc,
-            )
-            raise InputFileError(
-                "hot-water scenario",
-                "Invalid auxiliary heater mode specified in hot-water scenario.",
-            ) from None
         except KeyError:
-            logger.error(
-                "%sMissing auxiliary-heater mode in hot-water scenario file.%s",
-                BColours.fail,
-                BColours.endc,
-            )
-            raise InputFileError(
-                "hot-water scenario", "Missing auxiliary-heater mode information."
-            ) from None
+            try:
+                logger.error(
+                    "%sInvalid auxiliary heater mode specified: %s. Valid options are %s."
+                    "%s",
+                    BColours.fail,
+                    hot_water_inputs[ResourceType.HOT_CLEAN_WATER.value][
+                        "auxiliary_heater"
+                    ],
+                    ", ".join(f"'{e.value}'" for e in AuxiliaryHeaterType),
+                    BColours.endc,
+                )
+                raise InputFileError(
+                    "hot-water scenario",
+                    "Invalid auxiliary heater mode specified in hot-water scenario.",
+                ) from None
+            except KeyError:
+                logger.error(
+                    "%sMissing auxiliary-heater mode in hot-water scenario file.%s",
+                    BColours.fail,
+                    BColours.endc,
+                )
+                raise InputFileError(
+                    "hot-water scenario", "Missing auxiliary-heater mode information."
+                ) from None
 
         try:
             cold_water_supply = ColdWaterSupply(hot_water_inputs[COLD_WATER]["supply"])
@@ -2117,6 +2374,11 @@ class HotWaterScenario:
                 BColours.fail,
                 BColours.endc,
             )
+            raise InputFileError(
+                "hot water scenario",
+                "No cold-water supply temperature data was supplied. This is required "
+                "until location-specific profiles can be utilised.",
+            ) from None
 
         try:
             conventional_sources: list[str] = hot_water_inputs[
@@ -2134,19 +2396,6 @@ class HotWaterScenario:
             demand_temperature = hot_water_inputs[ResourceType.HOT_CLEAN_WATER.value][
                 "demand_temperature"
             ]
-        except ValueError:
-            logger.error(
-                "%sInvalid hot-water demand temperature specified: %s%s",
-                BColours.fail,
-                hot_water_inputs[ResourceType.HOT_CLEAN_WATER.value][
-                    "demand_temperature"
-                ],
-                BColours.endc,
-            )
-            raise InputFileError(
-                "hot-water scenario",
-                "Invalid hot-water demand temperature specified in hot-water scenario.",
-            ) from None
         except KeyError:
             logger.error(
                 "%sMissing hot-water demand temperature in hot-water scenario file.%s",
@@ -2158,34 +2407,80 @@ class HotWaterScenario:
             ) from None
 
         try:
-            pvt_scenario: PVTScenario = PVTScenario(
-                HTFMode(hot_water_inputs[PVT_SCENARIO]["heats"]),
-                (
-                    hot_water_inputs[PVT_SCENARIO]["htf_heat_capacity"]
-                    if "htf_heat_capacity" in hot_water_inputs[PVT_SCENARIO]
-                    else HEAT_CAPACITY_OF_WATER
-                ),
-                hot_water_inputs[PVT_SCENARIO]["mass_flow_rate"],
+            thermal_collector_scenarios = (
+                [
+                    ThermalCollectorScenario(
+                        SolarPanelType(collector_scenario_inputs["type"]),
+                        HTFMode(collector_scenario_inputs["heats"]),
+                        (
+                            collector_scenario_inputs["htf_heat_capacity"]
+                            if "htf_heat_capacity" in collector_scenario_inputs
+                            else HEAT_CAPACITY_OF_WATER
+                        ),
+                        collector_scenario_inputs["mass_flow_rate"],
+                    )
+                    for collector_scenario_inputs in hot_water_inputs[
+                        SOLAR_THERMAL_COLLECTOR_SCENARIOS
+                    ]
+                ]
+                if SOLAR_THERMAL_COLLECTOR_SCENARIOS in hot_water_inputs
+                else []
             )
-        except ValueError:
+        except IndexError as e:
             logger.error(
-                "%sInvalid HTF mode specified: %s%s",
+                "%sInvalid thermal-collector scenario information: %s\tCheck HTF "
+                "modes; valid HTF modes: %s%s",
                 BColours.fail,
-                hot_water_inputs[PVT_SCENARIO]["heats"],
+                str(e),
+                {e.value for e in HTFMode},
                 BColours.endc,
             )
             raise InputFileError(
-                "hot-water scenario", "Invalid HTF mode specified in PV-T scenario."
+                "hot-water scenario", "Invalid thermal-collector scenario information."
             ) from None
-        except KeyError:
+        except KeyError as e:
             logger.error(
-                "%sMissing PV-T information in hot-water scenario file.%s",
+                "%sMissing thermal-collector information in hot-water scenario file: "
+                "%s%s",
                 BColours.fail,
+                str(e),
                 BColours.endc,
             )
             raise InputFileError(
-                "hot-water scenario", "Missing PV-T scenario information."
+                "hot-water scenario", "Invalid HTF mode in solar-thermal scenarios."
             ) from None
+
+        try:
+            pvt_scenario: ThermalCollectorScenario | None = [
+                scenario
+                for scenario in thermal_collector_scenarios
+                if scenario.collector_type == SolarPanelType.PV_T
+            ][0]
+        except IndexError:
+            logger.info(
+                "%sNo PV-T scenario information in desalination file.%s",
+                BColours.fail,
+                BColours.endc,
+            )
+            pvt_scenario = None
+
+        try:
+            solar_thermal_scenario: ThermalCollectorScenario | None = [
+                scenario
+                for scenario in thermal_collector_scenarios
+                if scenario.collector_type == SolarPanelType.SOLAR_THERMAL
+            ][0]
+        except IndexError:
+            logger.info(
+                "%sNo solar-thermal scenario information in desalination file.%s",
+                BColours.fail,
+                BColours.endc,
+            )
+            solar_thermal_scenario = None
+
+        throughput_mass_flow_rate = hot_water_inputs.get(
+            THROUGHPUT_MASS_FLOW_RATE, None
+        )
 
         return cls(
             auxiliary_heater,
@@ -2195,7 +2490,15 @@ class HotWaterScenario:
             demand_temperature,
             hot_water_inputs[NAME],
             pvt_scenario,
+            solar_thermal_scenario,
+            throughput_mass_flow_rate,
         )
+
+    @property
+    def htf_supply_temperature(self) -> float:
+        """The supply temperature of HTF for the scenario in degrees Celsius."""
+
+        return self.cold_water_supply_temperature
 
 
 class PrioritisationStrategy(enum.Enum):
@@ -2240,6 +2543,9 @@ class Scenario:
     .. attribute:: battery
         Whether battery storage is being included in the scenario.
 
+    .. attribute:: carbon_price
+        The carbon price to use for the run.
+
     .. attribute:: demands
         The demands being modelled.
 
@@ -2280,12 +2586,16 @@ class Scenario:
     .. attribute:: pv_t
         Whether PV-T is being included in the scenario.
 
+    .. attribute:: solar_thermal
+        Whether solar-thermal collectors are being included in the scenario.
+
     .. attribute:: reference_thermal_efficiency
         If defined, gives the reference efficiency of a thermal power plant.
 
     """
 
     battery: bool
+    carbon_price: float
     demands: Demands
     desalination_scenario: DesalinationScenario | None
     diesel_scenario: DieselScenario
@@ -2300,6 +2610,7 @@ class Scenario:
     pv: bool
     pv_d: bool
     pv_t: bool
+    solar_thermal: bool
     reference_thermal_efficiency: float = 0
 
     @classmethod
@@ -2459,6 +2770,7 @@ class Scenario:
 
         return cls(
             scenario_inputs["battery"],
+            scenario_inputs.get("carbon_price", 0),
             demands,
             desalination_scenario,
             diesel_scenario,
@@ -2471,13 +2783,10 @@ class Scenario:
             resource_types,
             prioritisation_strategy,
             scenario_inputs["pv"],
-            scenario_inputs["pv_d"] if "pv_d" in scenario_inputs else False,
-            scenario_inputs["pv_t"] if "pv_t" in scenario_inputs else False,
-            (
-                scenario_inputs["reference_thermal_efficiency"]
-                if "reference_thermal_efficiency" in scenario_inputs
-                else 0
-            ),
+            scenario_inputs.get("pv_d", False),
+            scenario_inputs.get("pv_t", False),
+            scenario_inputs.get("solar_thermal", scenario_inputs.get("st", False)),
+            scenario_inputs.get("reference_thermal_efficiency", 0),
         )
 
     def to_dict(self) -> dict[str, Any]:
@@ -2492,6 +2801,7 @@ class Scenario:
 
         scenario_dict = {
             "battery": self.battery,
+            "carbon_price": self.carbon_price,
             "demands": {
                 DemandType.COMMERCIAL.value: self.demands.commercial,
                 DemandType.DOMESTIC.value: self.demands.domestic,
@@ -2506,6 +2816,11 @@ class Scenario:
             "prioritisation_strategy": self.prioritisation_strategy.value,
             "pv": self.pv,
         }
+
+        if self.desalination_scenario is not None:
+            scenario_dict["desalination_scenario"] = (
+                self.desalination_scenario.to_dict()
+            )
 
         return scenario_dict
 
@@ -2561,7 +2876,30 @@ class Simulation:
         return cls(simulation_inputs["end_year"], simulation_inputs["start_year"])
 
 
-@dataclasses.dataclass
+def _merge_and_sum_dictionaries(
+    dict_1: dict[Any, float], dict_2: dict[Any, float]
+) -> dict[Any, float]:
+    """
+    Merge and sum two dictionaries.
+
+    Inputs:
+        - dict_1:
+            The first dictionary to sum.
+        - dict_2:
+            The dictionary to add it to.
+
+    Returns:
+        - A combined, summed dictionary.
+
+    """
+
+    return {
+        key: dict_1.get(key, 0) + dict_2.get(key, 0)
+        for key in set(dict_1.keys()) | set(dict_2.keys())
+    }
+
+
+@dataclasses.dataclass(kw_only=True)
 class SystemDetails:
     """
     Contains system-detail information.
@@ -2579,8 +2917,14 @@ class SystemDetails:
     .. attribute:: final_cw_pvt_size
         The final clean-water pv-t size of the system.
 
+    .. attribute:: final_cw_st_size
+        The final clean-water solar-thermal size of the system.
+
     .. attribute:: final_hw_pvt_size
         The final hot-water pv-t size of the system.
+
+    .. attribute:: final_hw_st_size
+        The final hot-water solar-thermal size of the system.
 
     .. attribute:: final_num_buffer_tanks
         The final number of buffer tanks installed in the system.
@@ -2604,8 +2948,14 @@ class SystemDetails:
     .. attribute:: initial_cw_pvt_size
         The initial clean-water pv-t size of the system.
 
+    .. attribute:: initial_cw_st_size
+        The initial clean-water solar-thermal size of the system.
+
     .. attribute:: initial_hw_pvt_size
         The initial hot-water pv-t size of the system.
+
+    .. attribute:: initial_hw_st_size
+        The initial hot-water solar-thermal size of the system.
 
     .. attribute:: initial_num_buffer_tanks
         The initial number of buffer tanks installed in the system.
@@ -2637,32 +2987,116 @@ class SystemDetails:
     diesel_capacity: float = 0
     end_year: int = 0
     final_converter_sizes: dict[Any, int] | None = None
-    final_cw_pvt_size: float | None = 0
-    final_hw_pvt_size: float | None = 0
-    final_num_buffer_tanks: int | None = 0
+    final_cw_pvt_sizes: dict[str, float] | defaultdict[str, float] = dataclasses.field(
+        default_factory=lambda: collections.defaultdict(float)
+    )
+    final_cw_st_sizes: dict[str, float] | defaultdict[str, float] = dataclasses.field(
+        default_factory=lambda: collections.defaultdict(float)
+    )
+    final_hw_pvt_sizes: dict[str, float] | defaultdict[str, float] = dataclasses.field(
+        default_factory=lambda: collections.defaultdict(float)
+    )
+    final_hw_st_sizes: dict[str, float] | defaultdict[str, float] = dataclasses.field(
+        default_factory=lambda: collections.defaultdict(float)
+    )
+    final_num_clean_water_buffer_tanks: int | None = 0
     final_num_clean_water_tanks: int | None = 0
+    final_num_hot_water_buffer_tanks: int | None = 0
     final_num_hot_water_tanks: int | None = 0
-    final_pv_sizes: dict[str, float] | DefaultDict[str, float] = (
-        dataclasses.field(  # type: ignore [assignment]
-            default_factory=lambda: collections.defaultdict(float)
-        )
+    final_pv_sizes: dict[str, float] | defaultdict[str, float] = dataclasses.field(
+        default_factory=lambda: collections.defaultdict(float)
     )
     final_storage_size: float = 0
     initial_converter_sizes: dict[Any, int] | None = None
-    initial_cw_pvt_size: float | None = 0
-    initial_hw_pvt_size: float | None = 0
-    initial_num_buffer_tanks: int | None = 0
+    initial_cw_pvt_sizes: dict[str, float] | defaultdict[str, float] = (
+        dataclasses.field(default_factory=lambda: collections.defaultdict(float))
+    )
+    initial_cw_st_sizes: dict[str, float] | defaultdict[str, float] = dataclasses.field(
+        default_factory=lambda: collections.defaultdict(float)
+    )
+    initial_hw_pvt_sizes: dict[str, float] | defaultdict[str, float] = (
+        dataclasses.field(default_factory=lambda: collections.defaultdict(float))
+    )
+    initial_hw_st_sizes: dict[str, float] | defaultdict[str, float] = dataclasses.field(
+        default_factory=lambda: collections.defaultdict(float)
+    )
+    initial_num_clean_water_buffer_tanks: int | None = 0
     initial_num_clean_water_tanks: int | None = 0
+    initial_num_hot_water_buffer_tanks: int | None = 0
     initial_num_hot_water_tanks: int | None = 0
-    initial_pv_sizes: dict[str, float] | DefaultDict[str, float] = (
-        dataclasses.field(  # type: ignore [assignment]
-            default_factory=lambda: collections.defaultdict(float)
-        )
+    initial_pv_sizes: dict[str, float] | defaultdict[str, float] = dataclasses.field(
+        default_factory=lambda: collections.defaultdict(float)
     )
     initial_storage_size: float = 0
     required_feedwater_sources: list[str] | None = None
     start_year: int = 0
     file_information: dict[str, str] | None = None
+
+    @property
+    def initial_pvt_sizes(self) -> dict[str, float]:
+        """
+        Return a mapping which contains the initial PV-T sizes for hot and clean water.
+
+        Returns:
+            A combined mapping.
+
+        """
+
+        return collections.defaultdict(
+            float,
+            _merge_and_sum_dictionaries(
+                self.initial_cw_pvt_sizes, self.initial_hw_pvt_sizes
+            ),
+        )
+
+    @property
+    def final_pvt_sizes(self) -> dict[str, float]:
+        """
+        Return a mapping which contains the final PV-T sizes for hot and clean water.
+
+        Returns:
+            A combined mapping.
+
+        """
+
+        return collections.defaultdict(
+            float,
+            _merge_and_sum_dictionaries(
+                self.final_cw_pvt_sizes, self.final_hw_pvt_sizes
+            ),
+        )
+
+    @property
+    def initial_st_sizes(self) -> dict[str, float]:
+        """
+        Return a mapping which contains the PV-T sizes for both hot and clean water.
+
+        Returns:
+            A combined mapping.
+
+        """
+
+        return collections.defaultdict(
+            float,
+            _merge_and_sum_dictionaries(
+                self.initial_cw_st_sizes, self.initial_hw_st_sizes
+            ),
+        )
+
+    @property
+    def final_st_sizes(self) -> dict[str, float]:
+        """
+        Return a mapping which contains the PV-T sizes for both hot and clean water.
+
+        Returns:
+            A combined mapping.
+
+        """
+
+        return collections.defaultdict(
+            float,
+            _merge_and_sum_dictionaries(self.final_cw_st_sizes, self.final_hw_st_sizes),
+        )
 
     def to_dict(
         self,
@@ -2721,13 +3155,21 @@ class SystemDetails:
                     for key, value in self.final_converter_sizes.items()
                 }
             )
-        if self.initial_num_buffer_tanks is not None:
+        if self.initial_num_clean_water_buffer_tanks is not None:
             system_details_as_dict["initial_num_buffer_tanks"] = round(
-                self.initial_num_buffer_tanks, 3
+                self.initial_num_clean_water_buffer_tanks, 3
             )
-        if self.final_num_buffer_tanks is not None:
+        if self.final_num_clean_water_buffer_tanks is not None:
             system_details_as_dict["final_num_buffer_tanks"] = round(
-                self.final_num_buffer_tanks, 3
+                self.final_num_clean_water_buffer_tanks, 3
+            )
+        if self.initial_num_hot_water_buffer_tanks is not None:
+            system_details_as_dict["initial_num_buffer_tanks"] = round(
+                self.initial_num_hot_water_buffer_tanks, 3
+            )
+        if self.final_num_hot_water_buffer_tanks is not None:
+            system_details_as_dict["initial_num_buffer_tanks"] = round(
+                self.final_num_hot_water_buffer_tanks, 3
             )
         if self.initial_num_clean_water_tanks is not None:
             system_details_as_dict["initial_num_clean_water_tanks"] = round(
@@ -2745,22 +3187,46 @@ class SystemDetails:
             system_details_as_dict["final_num_hot_water_tanks"] = round(
                 self.final_num_hot_water_tanks, 3
             )
-        if self.initial_cw_pvt_size is not None:
-            system_details_as_dict["initial_cw_pvt_size"] = round(
-                self.initial_cw_pvt_size, 3
-            )
-        if self.final_cw_pvt_size is not None:
-            system_details_as_dict["final_cw_pvt_size"] = round(
-                self.final_cw_pvt_size, 3
-            )
-        if self.initial_hw_pvt_size is not None:
-            system_details_as_dict["initial_hw_pvt_size"] = round(
-                self.initial_hw_pvt_size, 3
-            )
-        if self.final_hw_pvt_size is not None:
-            system_details_as_dict["final_hw_pvt_size"] = round(
-                self.final_hw_pvt_size, 3
-            )
+        if self.initial_cw_pvt_sizes is not None:
+            system_details_as_dict["initial_cw_pvt_sizes"] = {
+                panel_name: round(capacity, 3)
+                for panel_name, capacity in self.initial_cw_pvt_sizes.items()
+            }
+        if self.final_cw_pvt_sizes is not None:
+            system_details_as_dict["final_cw_pvt_sizes"] = {
+                panel_name: round(capacity, 3)
+                for panel_name, capacity in self.final_cw_pvt_sizes.items()
+            }
+        if self.initial_cw_st_sizes is not None:
+            system_details_as_dict["initial_cw_st_sizes"] = {
+                panel_name: round(capacity, 3)
+                for panel_name, capacity in self.initial_cw_st_sizes.items()
+            }
+        if self.final_cw_st_sizes is not None:
+            system_details_as_dict["final_cw_st_sizes"] = {
+                panel_name: round(capacity, 3)
+                for panel_name, capacity in self.final_cw_st_sizes.items()
+            }
+        if self.initial_hw_pvt_sizes is not None:
+            system_details_as_dict["initial_hw_pvt_sizes"] = {
+                panel_name: round(capacity, 3)
+                for panel_name, capacity in self.initial_hw_pvt_sizes.items()
+            }
+        if self.final_hw_pvt_sizes is not None:
+            system_details_as_dict["final_hw_pvt_sizes"] = {
+                panel_name: round(capacity, 3)
+                for panel_name, capacity in self.final_hw_pvt_sizes.items()
+            }
+        if self.initial_hw_st_sizes is not None:
+            system_details_as_dict["initial_hw_st_sizes"] = {
+                panel_name: round(capacity, 3)
+                for panel_name, capacity in self.initial_hw_st_sizes.items()
+            }
+        if self.final_hw_st_sizes is not None:
+            system_details_as_dict["final_hw_st_sizes"] = {
+                panel_name: round(capacity, 3)
+                for panel_name, capacity in self.final_hw_st_sizes.items()
+            }
         if self.required_feedwater_sources is not None:
             system_details_as_dict["required_feedwater_sources"] = ", ".join(
                 self.required_feedwater_sources
@@ -2792,20 +3258,6 @@ class SystemDetails:
         return list(self.initial_pv_sizes.values())[0]
 
     @property
-    def initial_pvt_size(self) -> float:
-        """
-        Returns the total size of the PV-T system initially installed.
-
-        Outputs:
-            - The total size of the PV-T system initially installed.
-
-        """
-
-        return (
-            self.initial_cw_pvt_size if self.initial_cw_pvt_size is not None else 0
-        ) + (self.initial_hw_pvt_size if self.initial_hw_pvt_size is not None else 0)
-
-    @property
     def final_pv_size(self) -> float:
         """
         Returns the final PV size if only one panel is present, otherwise an error.
@@ -2827,20 +3279,6 @@ class SystemDetails:
             )
 
         return list(self.final_pv_sizes.values())[0]
-
-    @property
-    def final_pvt_size(self) -> float:
-        """
-        Returns the total size of the PV-T system installed at the end of the iteration.
-
-        Outputs:
-            - The total size of the PV-T system installed at the end of the simulation.
-
-        """
-
-        return (self.final_cw_pvt_size if self.final_cw_pvt_size is not None else 0) + (
-            self.final_hw_pvt_size if self.final_hw_pvt_size is not None else 0
-        )
 
 
 class WasteProduct(enum.Enum):
@@ -3451,7 +3889,7 @@ class SystemAppraisal:
 
         """
 
-        return (
+        return (  # type: ignore [no-any-return]
             (self_dict := self.to_dict())["cumulative_results"]
             | self_dict["environmental_appraisal"]
             | self_dict["financial_appraisal"]

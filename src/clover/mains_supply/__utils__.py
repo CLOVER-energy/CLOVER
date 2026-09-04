@@ -63,7 +63,7 @@ def get_intermittent_supply_status(  # pylint: disable=too-many-locals
     """
 
     # Extract the profile names from the dataframe.
-    profile_types: list[str] = list(profile_inputs)  # type: ignore [arg-type]
+    profile_types: list[str] = list(profile_inputs)
 
     # set up a holder dictionary to contain the grid information.
     profiles: dict[str, pd.DataFrame] = {}

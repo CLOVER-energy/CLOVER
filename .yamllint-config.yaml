@@ -22,7 +22,10 @@ rules:
   indentation: enable
   key-duplicates: enable
   key-ordering: disable
-  line-length: disable
+  line-length:
+    max: 80
+    ignore: |
+      src/clover/src/new_location.yaml
   new-line-at-end-of-file: enable
   new-lines: disable
   octal-values: disable
