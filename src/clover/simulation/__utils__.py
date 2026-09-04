@@ -372,7 +372,7 @@ class Minigrid:
             diesel_water_heater,
             electric_water_heater,
             heat_exchanger,
-            hot_water_tank,  # type: ignore [arg-type]
+            hot_water_tank,
             inverter,
             pv_panels,
             pvt_panels,

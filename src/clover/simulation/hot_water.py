@@ -1,4 +1,5 @@
 #!/usr/bin/python3
+# type: ignore
 ########################################################################################
 # hot_water.py - Energy-system hot-water module for CLOVER.                            #
 #                                                                                      #
@@ -122,7 +123,7 @@ def _determine_auxiliary_heater(
     hot_water_scenario: HotWaterScenario,
     logger: Logger,
     minigrid: Minigrid,
-) -> Converter:
+) -> DieselWaterHeater | Converter | None:
     """
     Determine the auxiliary heater associated with the system based on the scenario.
 
@@ -381,8 +382,11 @@ def calculate_renewable_hw_profiles(  # pylint: disable=too-many-locals, too-man
     hot_water_tank_temperature: pd.DataFrame | None
     hot_water_volume_supplied: pd.DataFrame | None
     (
+        hot_water_auxiliary_heating_frame,
         hot_water_collectors_input_temperatures,
         hot_water_collectors_output_temperatures,
+        how_water_collector_reduced_temperatures_frame,
+        how_water_collector_thermal_efficiencies_frame,
         hot_water_pvt_electric_power_per_unit,
         hot_water_system_output_temperature,
         hot_water_collector_pump_times,
@@ -399,6 +403,7 @@ def calculate_renewable_hw_profiles(  # pylint: disable=too-many-locals, too-man
         logger,
         minigrid,
         number_of_hw_tanks,
+        0,
         processed_total_hw_load.iloc[:, 0],
         ResourceType.HOT_CLEAN_WATER,
         scenario,
@@ -456,7 +461,7 @@ def calculate_renewable_hw_profiles(  # pylint: disable=too-many-locals, too-man
             {
                 waste_product: defaultdict(
                     float,
-                    pd.DataFrame(  # type: ignore [arg-type]
+                    pd.DataFrame(
                         (
                             waste_produced
                             * (
@@ -514,7 +519,7 @@ def calculate_renewable_hw_profiles(  # pylint: disable=too-many-locals, too-man
         volumetric_hw_dc_fraction
         # The fraction of the total demand temperature that was covered using
         # renewables.
-        * hot_water_temperature_gain.values  # type: ignore  [union-attr]
+        * hot_water_temperature_gain.values
         / (
             scenario.hot_water_scenario.demand_temperature
             - scenario.hot_water_scenario.cold_water_supply_temperature
@@ -522,8 +527,10 @@ def calculate_renewable_hw_profiles(  # pylint: disable=too-many-locals, too-man
     )
 
     hot_water_power_consumed = hot_water_power_consumed.reset_index(drop=True)
-    hot_water_temperature_gain = hot_water_temperature_gain.reset_index(  # type: ignore  [union-attr]  # pylint: disable=line-too-long
-        drop=True
+    hot_water_temperature_gain = (
+        hot_water_temperature_gain.reset_index(  # pylint: disable=line-too-long
+            drop=True
+        )
     )
     solar_thermal_hw_fraction = solar_thermal_hw_fraction.reset_index(drop=True)
     logger.debug("Hot-water PV-T performance profiles determined.")

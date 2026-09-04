@@ -67,7 +67,7 @@ from .diesel import (
 from .heat_pump import (
     calculate_heat_pump_electricity_consumption_and_cost_and_emissions,
 )
-from .hot_water import calculate_renewable_hw_profiles
+from .hot_water import calculate_renewable_hw_profiles  # type: ignore [attr-defined]
 from .solar import calculate_solar_thermal_output
 from .storage import (
     battery_iteration_step,
@@ -571,7 +571,7 @@ def _calculate_renewable_cw_profiles(  # pylint: disable=too-many-locals, too-ma
             ", ".join([str(source) for source in required_feedwater_sources]),
         )
 
-        thermal_collector_sizes: dict[SolarPanelType, float] = {}
+        thermal_collector_sizes: dict[SolarPanelType, int] = {}
         if scenario.pv_t:
             thermal_collector_sizes[SolarPanelType.PV_T] = pvt_size
         if scenario.solar_thermal:
@@ -595,7 +595,7 @@ def _calculate_renewable_cw_profiles(  # pylint: disable=too-many-locals, too-ma
             end_hour,
             (
                 irradiance_subdata := {
-                    panel: irradiance_data[panel.name]
+                    panel: pd.DataFrame(irradiance_data[panel.name])
                     for panel in minigrid.solar_panels
                     if panel.panel_type != SolarPanelType.PV
                 }
@@ -608,7 +608,7 @@ def _calculate_renewable_cw_profiles(  # pylint: disable=too-many-locals, too-ma
             ResourceType.CLEAN_WATER,
             scenario,
             {
-                entry.panel_type: entry
+                entry.panel_type: entry  # type: ignore [ misc]
                 for entry in minigrid.solar_panels
                 if entry.panel_type != SolarPanelType.PV
             },
@@ -1088,300 +1088,305 @@ def _calculate_renewable_hw_profiles(  # pylint: disable=too-many-locals, too-ma
                 "scenario specifying that this is needed.",
             )
 
-    if (
-        sum(
-            feedwater_source.maximum_output_capacity
-            for feedwater_source in feedwater_sources
-        )
-        < thermal_desalination_plant_input_flow_rate
-    ):
-        logger.error(
-            "%sThe feedwater sources are unable to supply enough throughput to "
-            "facilitate the thermal desalination plant. If you are running a "
-            "simulation, consider using a smaller desalination plant or a larger "
-            "number of feedwater sources. If you are running an optimisation, "
-            "consider using a greater number of feedwater sources as your initial "
-            "maximum point. Or, it is possible that no feedwater sources have been "
-            "defined within your optimisation inputs file.%s",
-            BColours.fail,
-            BColours.endc,
-        )
-        logger.info(
-            "Feedwater sources: %s",
-            ", ".join([str(source) for source in feedwater_sources]),
-        )
-        logger.info("Desalination plant: %s", thermal_desalination_plant)
-        raise InputFileError(
-            "desalination scenario",
-            "The feedwater sources cannot meet the thermal desalination plant "
-            "input demand.",
-        )
-
-    logger.info("Determining required feedwater sources.")
-    feedwater_capacity: float = 0
-    required_feedwater_sources: list[Converter] = []
-    while (
-        feedwater_capacity
-        < thermal_desalination_plant.input_resource_consumption[
-            thermal_desalination_plant_input_type
-        ]
-    ):
-        required_feedwater_sources.append(feedwater_sources.pop(0))
-        feedwater_capacity += required_feedwater_sources[-1].maximum_output_capacity
-
-    feedwater_sources.extend(required_feedwater_sources)
-    logger.info("Required feedwater sources determined.")
-    logger.debug(
-        "Required feedwater sources: %s",
-        ", ".join([str(source) for source in required_feedwater_sources]),
+    # FIXME: feedwater_sources not defined
+    raise ProgrammerJudgementFault(
+        "simulation.energy_system::_calculate_renewable_hw_profiles",
+        "Cannot be called as code still needs development.",
     )
+    # if (
+    #     sum(
+    #         feedwater_source.maximum_output_capacity
+    #         for feedwater_source in feedwater_sources
+    #     )
+    #     < thermal_desalination_plant_input_flow_rate
+    # ):
+    #     logger.error(
+    #         "%sThe feedwater sources are unable to supply enough throughput to "
+    #         "facilitate the thermal desalination plant. If you are running a "
+    #         "simulation, consider using a smaller desalination plant or a larger "
+    #         "number of feedwater sources. If you are running an optimisation, "
+    #         "consider using a greater number of feedwater sources as your initial "
+    #         "maximum point. Or, it is possible that no feedwater sources have been "
+    #         "defined within your optimisation inputs file.%s",
+    #         BColours.fail,
+    #         BColours.endc,
+    #     )
+    #     logger.info(
+    #         "Feedwater sources: %s",
+    #         ", ".join([str(source) for source in feedwater_sources]), #
+    #     )
+    #     logger.info("Desalination plant: %s", thermal_desalination_plant)
+    #     raise InputFileError(
+    #         "desalination scenario",
+    #         "The feedwater sources cannot meet the thermal desalination plant "
+    #         "input demand.",
+    #     )
 
-    # Compute the output of the PV-T and solar-thermal clean-water systems.
-    logger.info("Auxiliary heater successfully determined.")
-    logger.debug("Auxiliary heater: %s", str(auxiliary_heater))
+    # logger.info("Determining required feedwater sources.")
+    # feedwater_capacity: float = 0
+    # required_feedwater_sources: list[Converter] = []
+    # while (
+    #     feedwater_capacity
+    #     < thermal_desalination_plant.input_resource_consumption[
+    #         thermal_desalination_plant_input_type
+    #     ]
+    # ):
+    #     required_feedwater_sources.append(feedwater_sources.pop(0))
+    #     feedwater_capacity += required_feedwater_sources[-1].maximum_output_capacity
 
-    # Compute the output of the PV-T system.
-    hot_water_pvt_collector_output_temperature: pd.DataFrame | None
-    hot_water_pvt_electric_power_per_unit: pd.DataFrame
-    hot_water_pvt_pump_times: pd.DataFrame
-    hot_water_tank_temperature: pd.DataFrame | None
-    hot_water_tank_volume_supplied: pd.DataFrame | None
-    (
-        clean_water_collectors_input_temperatures,
-        clean_water_collectors_output_temperatures,
-        clean_water_pvt_electric_power_per_unit,
-        _,
-        clean_water_pvt_pump_times,
-        buffer_tank_temperature,
-        tank_volume_supplied,
-    ) = calculate_solar_thermal_output(
-        {SolarPanelType.PV_T: pvt_size},
-        disable_tqdm,
-        end_hour,
-        irradiance_data[minigrid.pvt_panel.name][start_hour:end_hour],  # type: ignore
-        logger,
-        minigrid,
-        number_of_hw_tanks,
-        processed_total_hw_load[0],  # type: ignore [call-overload]
-        pvt_size,
-        ResourceType.HOT_CLEAN_WATER,
-        scenario,
-        {
-            SolarPanelType.PV_T: minigrid.pvt_panel,  # type: ignore [dict-item]
-            SolarPanelType.SOLAR_THERMAL: minigrid.solar_thermal_panel,  # type: ignore [dict-item]
-        },
-        start_hour,
-        temperature_data[start_hour:end_hour],
-        thermal_desalination_plant,
-        wind_speed_data[start_hour:end_hour],
-    )
-    logger.debug("PV-T performance successfully computed.")
+    # feedwater_sources.extend(required_feedwater_sources)
+    # logger.info("Required feedwater sources determined.")
+    # logger.debug(
+    #     "Required feedwater sources: %s",
+    #     ", ".join([str(source) for source in required_feedwater_sources]),
+    # )
 
-    # Compute the electric power consumed by the auxiliary heater.
-    if auxiliary_heater is not None:
-        # Determine the electric power consumed by the auxiliary heater.
-        auxiliary_heater_power_consumption: pd.DataFrame = pd.DataFrame(  # type: ignore [call-overload]
-            0.001  # type: ignore[operator]
-            * auxiliary_heater.input_resource_consumption[
-                ResourceType.ELECTRIC
-            ]  # [Wh/degC]
-            * (
-                hot_water_tank_volume_supplied  # type: ignore [operator]
-                / auxiliary_heater.input_resource_consumption[ResourceType.CLEAN_WATER]
-            )  # [operating fraction]
-            * (hot_water_tank_volume_supplied > 0)  # type: ignore [operator]
-            * (  # type: ignore [arg-type]
-                scenario.hot_water_scenario.demand_temperature  # type: ignore [operator]
-                - hot_water_tank_temperature
-            )  # [degC]
-        )
+    # # Compute the output of the PV-T and solar-thermal clean-water systems.
+    # logger.info("Auxiliary heater successfully determined.")
+    # logger.debug("Auxiliary heater: %s", str(auxiliary_heater))
 
-        if isinstance(auxiliary_heater, DieselWaterHeater):
-            # Compute the heat consumed by the auxiliary heater.
-            # TODO: Write auxiliary-heater heat-consumption handling.
-            # fmt: off
-            auxiliary_heater_heat_consumption: pd.DataFrame = (  # pylint: disable=unused-variable
-                pd.DataFrame(
-                    (hot_water_tank_volume_supplied > 0)  # type: ignore [arg-type, operator]
-                    * hot_water_tank_volume_supplied  # type: ignore [operator]
-                    * minigrid.hot_water_tank.heat_capacity
-                    * (
-                        scenario.hot_water_scenario.demand_temperature  # type: ignore [operator]
-                        - hot_water_tank_temperature
-                    )
-                )
-            )
-            # fmt: on
-        else:
-            auxiliary_heater_heat_consumption = pd.DataFrame(
-                [0] * (end_hour - start_hour)
-            )
+    # # Compute the output of the PV-T system.
+    # hot_water_pvt_collector_output_temperature: pd.DataFrame | None
+    # hot_water_pvt_electric_power_per_unit: pd.DataFrame
+    # hot_water_pvt_pump_times: pd.DataFrame
+    # hot_water_tank_temperature: pd.DataFrame | None
+    # hot_water_tank_volume_supplied: pd.DataFrame | None
+    # (
+    #     clean_water_collectors_input_temperatures,
+    #     clean_water_collectors_output_temperatures,
+    #     clean_water_pvt_electric_power_per_unit,
+    #     _,
+    #     clean_water_pvt_pump_times,
+    #     buffer_tank_temperature,
+    #     tank_volume_supplied,
+    # ) = calculate_solar_thermal_output(
+    #     {SolarPanelType.PV_T: pvt_size},
+    #     disable_tqdm,
+    #     end_hour,
+    #     irradiance_data[minigrid.pvt_panel.name][start_hour:end_hour],  # type: ignore
+    #     logger,
+    #     minigrid,
+    #     number_of_hw_tanks,
+    #     processed_total_hw_load[0],  # type: ignore [call-overload]
+    #     pvt_size,
+    #     ResourceType.HOT_CLEAN_WATER,
+    #     scenario,
+    #     {
+    #         SolarPanelType.PV_T: minigrid.pvt_panel,  # type: ignore [dict-item]
+    #         SolarPanelType.SOLAR_THERMAL: minigrid.solar_thermal_panel,  # type: ignore [dict-item]
+    #     },
+    #     start_hour,
+    #     temperature_data[start_hour:end_hour],
+    #     thermal_desalination_plant,
+    #     wind_speed_data[start_hour:end_hour],
+    # )
+    # logger.debug("PV-T performance successfully computed.")
 
-        # Update the waste production calculation with the waste that's produced by
-        # the auxiliary water heater.
-        total_waste_produced.update(
-            {
-                waste_product: defaultdict(
-                    float,
-                    pd.DataFrame(  # type: ignore [arg-type]
-                        (
-                            waste_produced  # type: ignore [operator]
-                            * (
-                                hot_water_tank_volume_supplied  # type: ignore [operator]
-                                / auxiliary_heater.input_resource_consumption[
-                                    ResourceType.CLEAN_WATER
-                                ]
-                            )
-                            * (hot_water_tank_volume_supplied > 0)  # type: ignore [operator]
-                            * (  # type: ignore [attr-defined]
-                                scenario.hot_water_scenario.demand_temperature  # type: ignore [operator]  # pylint: disable=line-too-long
-                                - hot_water_tank_temperature
-                            )
-                        ).values
-                    ).to_dict(),
-                )
-                for waste_product, waste_produced in auxiliary_heater.waste_production.items()
-            }
-        )
+    # # Compute the electric power consumed by the auxiliary heater.
+    # if auxiliary_heater is not None:
+    #     # Determine the electric power consumed by the auxiliary heater.
+    #     auxiliary_heater_power_consumption: pd.DataFrame = pd.DataFrame(  # type: ignore [call-overload]
+    #         0.001  # type: ignore[operator]
+    #         * auxiliary_heater.input_resource_consumption[
+    #             ResourceType.ELECTRIC
+    #         ]  # [Wh/degC]
+    #         * (
+    #             hot_water_tank_volume_supplied  # type: ignore [operator]
+    #             / auxiliary_heater.input_resource_consumption[ResourceType.CLEAN_WATER]
+    #         )  # [operating fraction]
+    #         * (hot_water_tank_volume_supplied > 0)  # type: ignore [operator]
+    #         * (
+    #             scenario.hot_water_scenario.demand_temperature  # type: ignore [operator]
+    #             - hot_water_tank_temperature
+    #         )  # [degC]
+    #     )
 
-    # Compute the clean water supplied by the desalination unit.
-    renewable_thermal_cw_produced: pd.DataFrame = (
-        tank_volume_supplied > 0
-    ) * thermal_desalination_plant.maximum_output_capacity
+    #     if isinstance(auxiliary_heater, DieselWaterHeater):
+    #         # Compute the heat consumed by the auxiliary heater.
+    #         # TODO: Write auxiliary-heater heat-consumption handling.
+    #         # fmt: off
+    #         auxiliary_heater_heat_consumption: pd.DataFrame = (  # pylint: disable=unused-variable
+    #             pd.DataFrame(
+    #                 (hot_water_tank_volume_supplied > 0)  # type: ignore [arg-type, operator]
+    #                 * hot_water_tank_volume_supplied  # type: ignore [operator]
+    #                 * minigrid.hot_water_tank.heat_capacity
+    #                 * (
+    #                     scenario.hot_water_scenario.demand_temperature  # type: ignore [operator]
+    #                     - hot_water_tank_temperature
+    #                 )
+    #             )
+    #         )
+    #         # fmt: on
+    #     else:
+    #         auxiliary_heater_heat_consumption = pd.DataFrame(
+    #             [0] * (end_hour - start_hour)
+    #         )
 
-    # Compute the power consumed by the thermal desalination plant.
-    thermal_desalination_electric_power_consumed: pd.DataFrame = pd.DataFrame(
-        (
-            (renewable_thermal_cw_produced > 0)
-            * (
-                0.001
-                * thermal_desalination_plant.input_resource_consumption[
-                    ResourceType.ELECTRIC
-                ]
-                + 0.001
-                * sum(
-                    source.input_resource_consumption[ResourceType.ELECTRIC]
-                    for source in required_feedwater_sources
-                )
-            )
-        ).values
-        + (clean_water_pvt_pump_times > 0) * 0.001 * minigrid.water_pump.consumption
-    )
-    total_waste_produced.update(
-        {
-            waste_product: defaultdict(
-                float,
-                (
-                    pd.DataFrame(  # type: ignore [arg-type,call-overload]
-                        (renewable_thermal_cw_produced > 0).values
-                    )
-                    * amount_produced
-                )[0].to_dict(),
-            )
-            for (
-                waste_product,
-                amount_produced,
-            ) in thermal_desalination_plant.waste_production.items()
-        }
-    )
+    #     # Update the waste production calculation with the waste that's produced by
+    #     # the auxiliary water heater.
+    #     total_waste_produced.update(
+    #         {
+    #             waste_product: defaultdict(
+    #                 float,
+    #                 pd.DataFrame(
+    #                     (
+    #                         waste_produced  # type: ignore [operator]
+    #                         * (
+    #                             hot_water_tank_volume_supplied  # type: ignore [operator]
+    #                             / auxiliary_heater.input_resource_consumption[
+    #                                 ResourceType.CLEAN_WATER
+    #                             ]
+    #                         )
+    #                         * (hot_water_tank_volume_supplied > 0)  # type: ignore [operator]
+    #                         * (  # type: ignore [attr-defined]
+    #                             scenario.hot_water_scenario.demand_temperature  # type: ignore [operator]  # pylint: disable=line-too-long
+    #                             - hot_water_tank_temperature
+    #                         )
+    #                     ).values
+    #                 ).to_dict(),
+    #             )
+    #             for waste_product, waste_produced in auxiliary_heater.waste_production.items()
+    #         }
+    #     )
 
-    if buffer_tank_temperature is not None:
-        buffer_tank_temperature = buffer_tank_temperature.reset_index(drop=True)
-    clean_water_collectors_input_temperatures = {
-        key: value.reset_index(drop=True)
-        for key, value in clean_water_collectors_input_temperatures.items()
-    }
-    clean_water_collectors_output_temperatures = {
-        key: value.reset_index(drop=True)
-        for key, value in clean_water_collectors_input_temperatures.items()
-    }
-    clean_water_pvt_electric_power_per_unit = (
-        clean_water_pvt_electric_power_per_unit.reset_index(drop=True)
-    )
-    renewable_thermal_cw_produced = renewable_thermal_cw_produced.reset_index(drop=True)
-    tank_volume_supplied = tank_volume_supplied.reset_index(drop=True)
-    thermal_desalination_electric_power_consumed = (
-        thermal_desalination_electric_power_consumed.reset_index(drop=True)
-    )
-    hot_water_power_consumed: pd.DataFrame = pd.DataFrame(
-        auxiliary_heater_power_consumption
-        + 0.001
-        * (hot_water_pvt_pump_times > 0)  # type: ignore
-        * minigrid.water_pump.consumption
-    )
-    if auxiliary_heater_power_consumption is not None:
-        hot_water_power_consumed += auxiliary_heater_power_consumption  # type: ignore [operator]
+    # # Compute the clean water supplied by the desalination unit.
+    # renewable_thermal_cw_produced: pd.DataFrame = (
+    #     tank_volume_supplied > 0
+    # ) * thermal_desalination_plant.maximum_output_capacity
 
-    # Determine the volume of hot-water demand that was met by the system overall.
-    volumetric_hw_dc_fraction: pd.DataFrame = pd.DataFrame(
-        [
-            ((supplied / load) if load is not None and load > 0 else None)
-            for supplied, load in zip(
-                hot_water_tank_volume_supplied[0],  # type: ignore [call-overload, index]
-                processed_total_hw_load[0],  # type: ignore [call-overload]
-            )
-        ]
-    )
+    # # Compute the power consumed by the thermal desalination plant.
+    # thermal_desalination_electric_power_consumed: pd.DataFrame = pd.DataFrame(
+    #     (
+    #         (renewable_thermal_cw_produced > 0)
+    #         * (
+    #             0.001
+    #             * thermal_desalination_plant.input_resource_consumption[
+    #                 ResourceType.ELECTRIC
+    #             ]
+    #             + 0.001
+    #             * sum(
+    #                 source.input_resource_consumption[ResourceType.ELECTRIC]
+    #                 for source in required_feedwater_sources
+    #             )
+    #         )
+    #     ).values
+    #     + (clean_water_pvt_pump_times > 0) * 0.001 * minigrid.water_pump.consumption
+    # )
+    # total_waste_produced.update(
+    #     {
+    #         waste_product: defaultdict(
+    #             float,
+    #             (
+    #                 pd.DataFrame(  # type: ignore [arg-type,call-overload]
+    #                     (renewable_thermal_cw_produced > 0).values
+    #                 )
+    #                 * amount_produced
+    #             )[0].to_dict(),
+    #         )
+    #         for (
+    #             waste_product,
+    #             amount_produced,
+    #         ) in thermal_desalination_plant.waste_production.items()
+    #     }
+    # )
 
-    # Determine the temperature gain of the hot-water as compared with the mains
-    # supply temperature.
-    hot_water_temperature_gain: pd.DataFrame = (
-        hot_water_tank_temperature  # type: ignore [assignment,operator]
-        - scenario.hot_water_scenario.cold_water_supply_temperature
-    )
+    # if buffer_tank_temperature is not None:
+    #     buffer_tank_temperature = buffer_tank_temperature.reset_index(drop=True)
+    # clean_water_collectors_input_temperatures = {
+    #     key: value.reset_index(drop=True)
+    #     for key, value in clean_water_collectors_input_temperatures.items()
+    # }
+    # clean_water_collectors_output_temperatures = {
+    #     key: value.reset_index(drop=True)
+    #     for key, value in clean_water_collectors_input_temperatures.items()
+    # }
+    # clean_water_pvt_electric_power_per_unit = (
+    #     clean_water_pvt_electric_power_per_unit.reset_index(drop=True)
+    # )
+    # renewable_thermal_cw_produced = renewable_thermal_cw_produced.reset_index(drop=True)
+    # tank_volume_supplied = tank_volume_supplied.reset_index(drop=True)
+    # thermal_desalination_electric_power_consumed = (
+    #     thermal_desalination_electric_power_consumed.reset_index(drop=True)
+    # )
+    # hot_water_power_consumed: pd.DataFrame = pd.DataFrame(
+    #     auxiliary_heater_power_consumption
+    #     + 0.001
+    #     * (hot_water_pvt_pump_times > 0)  # type: ignore
+    #     * minigrid.water_pump.consumption
+    # )
+    # if auxiliary_heater_power_consumption is not None:
+    #     hot_water_power_consumed += auxiliary_heater_power_consumption  # type: ignore [operator]
 
-    # Determine the fraction of the output which was met renewably.
-    solar_thermal_hw_fraction: pd.DataFrame = (
-        # The fraction of the supply that was met volumetrically.
-        volumetric_hw_dc_fraction  # type: ignore [operator]
-        # The fraction of the total demand temperature that was covered using
-        # renewables.
-        * hot_water_temperature_gain.values  # type: ignore  [union-attr]
-        / (
-            scenario.hot_water_scenario.demand_temperature
-            - scenario.hot_water_scenario.cold_water_supply_temperature
-        )
-    )
+    # # Determine the volume of hot-water demand that was met by the system overall.
+    # volumetric_hw_dc_fraction: pd.DataFrame = pd.DataFrame(
+    #     [
+    #         ((supplied / load) if load is not None and load > 0 else None)
+    #         for supplied, load in zip(
+    #             hot_water_tank_volume_supplied[0],  # type: ignore [call-overload, index]
+    #             processed_total_hw_load[0],  # type: ignore [call-overload]
+    #         )
+    #     ]
+    # )
 
-    hot_water_power_consumed = hot_water_power_consumed.reset_index(drop=True)
+    # # Determine the temperature gain of the hot-water as compared with the mains
+    # # supply temperature.
+    # hot_water_temperature_gain: pd.DataFrame = (
+    #     hot_water_tank_temperature  # type: ignore [assignment,operator]
+    #     - scenario.hot_water_scenario.cold_water_supply_temperature
+    # )
 
-    if hot_water_pvt_collector_input_temperature is not None:
-        hot_water_pvt_collector_input_temperature = (
-            hot_water_pvt_collector_input_temperature.reset_index(drop=True)
-        )
+    # # Determine the fraction of the output which was met renewably.
+    # solar_thermal_hw_fraction: pd.DataFrame = (
+    #     # The fraction of the supply that was met volumetrically.
+    #     volumetric_hw_dc_fraction  # type: ignore [operator]
+    #     # The fraction of the total demand temperature that was covered using
+    #     # renewables.
+    #     * hot_water_temperature_gain.values
+    #     / (
+    #         scenario.hot_water_scenario.demand_temperature
+    #         - scenario.hot_water_scenario.cold_water_supply_temperature
+    #     )
+    # )
 
-    if hot_water_pvt_collector_output_temperature is not None:
-        hot_water_pvt_collector_output_temperature = (
-            hot_water_pvt_collector_output_temperature.reset_index(drop=True)
-        )
+    # hot_water_power_consumed = hot_water_power_consumed.reset_index(drop=True)
 
-    hot_water_tank_temperature = hot_water_pvt_electric_power_per_unit.reset_index(
-        drop=True
-    )
-    if hot_water_tank_temperature is not None:
-        hot_water_tank_temperature = hot_water_tank_temperature.reset_index(drop=True)
+    # if hot_water_pvt_collector_input_temperature is not None:
+    #     hot_water_pvt_collector_input_temperature = (
+    #         hot_water_pvt_collector_input_temperature.reset_index(drop=True)
+    #     )
 
-    if hot_water_tank_volume_supplied is not None:
-        hot_water_tank_volume_supplied = hot_water_tank_volume_supplied.reset_index(
-            drop=True
-        )
-    hot_water_temperature_gain = hot_water_temperature_gain.reset_index(  # type: ignore  [union-attr]  # pylint: disable=line-too-long
-        drop=True
-    )
-    logger.debug("Clean-water PV-T performance profiles determined.")
+    # if hot_water_pvt_collector_output_temperature is not None:
+    #     hot_water_pvt_collector_output_temperature = (
+    #         hot_water_pvt_collector_output_temperature.reset_index(drop=True)
+    #     )
 
-    return (
-        buffer_tank_temperature,
-        feedwater_sources,
-        clean_water_collectors_input_temperatures,
-        clean_water_collectors_output_temperatures,
-        clean_water_pvt_electric_power_per_unit,
-        renewable_thermal_cw_produced,
-        required_feedwater_sources,
-        tank_volume_supplied,
-        thermal_desalination_electric_power_consumed,
-        total_waste_produced,
-    )
+    # hot_water_tank_temperature = hot_water_pvt_electric_power_per_unit.reset_index(
+    #     drop=True
+    # )
+    # if hot_water_tank_temperature is not None:
+    #     hot_water_tank_temperature = hot_water_tank_temperature.reset_index(drop=True)
+
+    # if hot_water_tank_volume_supplied is not None:
+    #     hot_water_tank_volume_supplied = hot_water_tank_volume_supplied.reset_index(
+    #         drop=True
+    #     )
+    # hot_water_temperature_gain = hot_water_temperature_gain.reset_index(  # pylint: disable=line-too-long
+    #     drop=True
+    # )
+    # logger.debug("Clean-water PV-T performance profiles determined.")
+
+    # return (
+    #     buffer_tank_temperature,
+    #     feedwater_sources,
+    #     clean_water_collectors_input_temperatures,
+    #     clean_water_collectors_output_temperatures,
+    #     clean_water_pvt_electric_power_per_unit,
+    #     renewable_thermal_cw_produced,
+    #     required_feedwater_sources,
+    #     tank_volume_supplied,
+    #     thermal_desalination_electric_power_consumed,
+    #     total_waste_produced,
+    # )
 
 
 def _setup_tank_storage_profiles(
@@ -1840,15 +1845,27 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
     )
     logger.debug(
         "Mean clean-water PV-T electric power per unit: %s",
-        np.mean(cw_electric_power_per_unit.values),
+        (
+            np.mean(cw_electric_power_per_unit.values)
+            if cw_electric_power_per_unit is not None
+            else "N/A"
+        ),
     )
     logger.debug(
         "Maximum thermal desalination plant power consumption: %s kW",
-        np.max(thermal_desalination_electric_power_consumed.values),
+        (
+            np.max(thermal_desalination_electric_power_consumed.values)
+            if thermal_desalination_electric_power_consumed is not None
+            else "N/A"
+        ),
     )
     logger.debug(
         "Mean thermal desalination plant power consumption: %s kW",
-        np.mean(thermal_desalination_electric_power_consumed.values),
+        (
+            np.mean(thermal_desalination_electric_power_consumed.values)
+            if thermal_desalination_electric_power_consumed is not None
+            else "N/A"
+        ),
     )
 
     if scenario.desalination_scenario is not None:
@@ -1893,92 +1910,93 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
     processed_total_cw_load = processed_total_cw_load.reset_index(drop=True)
 
     if False:
-        # Calculate hot-water-related profiles.
-        processed_total_hw_load: pd.DataFrame
-        if scenario.hot_water_scenario is not None:
-            if total_hw_load is None:
-                raise Exception(
-                    f"{BColours.fail}A simulation was run that specified a hot-water load "
-                    + f"but no hot-water load was passed in.{BColours.endc}"
-                )
-            # Process the load profile based on the relevant scenario.
-            processed_total_hw_load = pd.DataFrame(
-                compute_processed_load_profile(scenario, total_hw_load)[  # type: ignore
-                    start_hour:end_hour
-                ]
-            )
-        else:
-            number_of_hw_tanks = 0
-            processed_total_hw_load = pd.DataFrame([0] * (end_hour - start_hour))
+        # # Calculate hot-water-related profiles.
+        # processed_total_hw_load: pd.DataFrame
+        # if scenario.hot_water_scenario is not None:
+        #     if total_hw_load is None:
+        #         raise Exception(
+        #             f"{BColours.fail}A simulation was run that specified a hot-water load "
+        #             + f"but no hot-water load was passed in.{BColours.endc}"
+        #         )
+        #     # Process the load profile based on the relevant scenario.
+        #     processed_total_hw_load = pd.DataFrame(
+        #         compute_processed_load_profile(scenario, total_hw_load)[  # type: ignore
+        #             start_hour:end_hour
+        #         ]
+        #     )
+        # else:
+        #     number_of_hw_tanks = 0
+        #     processed_total_hw_load = pd.DataFrame([0] * (end_hour - start_hour))
 
-        # Calculate hot-water PV-T related performance profiles.
-        hot_water_pump_electric_power_consumed: (
-            pd.DataFrame
-        )  # pylint: disable=unused-variable
-        hot_water_collectors_input_temperatures: (
-            dict[SolarPanelType, pd.DataFrame] | None
-        )
-        hot_water_collectors_output_temperatures: (
-            dict[SolarPanelType, pd.DataFrame] | None
-        )
-        hot_water_pvt_electric_power_per_unit: pd.DataFrame
-        hot_water_system_output_temperature: pd.DataFrame
-        hot_water_tank_temperature: pd.DataFrame | None
-        hot_water_tank_volume_supplied: pd.DataFrame | None
-        solar_thermal_hw_fraction: pd.DataFrame | None
-        hot_water_pvt_collector_input_temperature: pd.DataFrame | None
-        hot_water_pvt_collector_output_temperature: pd.DataFrame | None
-        hot_water_pvt_electric_power_per_unit: pd.DataFrame
-        hot_water_tank_temperature: pd.DataFrame | None
-        hot_water_tank_volume_supplied: pd.DataFrame | None
-        solar_thermal_hw_fraction: pd.DataFrame | None
+        # # Calculate hot-water PV-T related performance profiles.
+        # hot_water_pump_electric_power_consumed: (
+        #     pd.DataFrame
+        # )  # pylint: disable=unused-variable
+        # hot_water_collectors_input_temperatures: (
+        #     dict[SolarPanelType, pd.DataFrame] | None
+        # )
+        # hot_water_collectors_output_temperatures: (
+        #     dict[SolarPanelType, pd.DataFrame] | None
+        # )
+        # hot_water_pvt_electric_power_per_unit: pd.DataFrame
+        # hot_water_system_output_temperature: pd.DataFrame
+        # hot_water_tank_temperature: pd.DataFrame | None
+        # hot_water_tank_volume_supplied: pd.DataFrame | None
+        # solar_thermal_hw_fraction: pd.DataFrame | None
+        # hot_water_pvt_collector_input_temperature: pd.DataFrame | None
+        # hot_water_pvt_collector_output_temperature: pd.DataFrame | None
+        # hot_water_pvt_electric_power_per_unit: pd.DataFrame
+        # hot_water_tank_temperature: pd.DataFrame | None
+        # hot_water_tank_volume_supplied: pd.DataFrame | None
+        # solar_thermal_hw_fraction: pd.DataFrame | None
 
-        (
-            auxiliary_heater,  # pylint: disable=unused-variable
-            hot_water_power_consumed,
-            hot_water_collectors_input_temperatures,
-            hot_water_collectors_output_temperatures,
-            hot_water_pvt_electric_power_per_unit,
-            hot_water_system_output_temperature,
-            hot_water_tank_temperature,
-            hot_water_tank_volume_supplied,
-            hot_water_temperature_gain,
-            solar_thermal_hw_fraction,
-            total_waste_produced,
-            volumetric_hw_dc_fraction,
-        ) = calculate_renewable_hw_profiles(  # type: ignore [assignment]
-            available_converters,
-            disable_tqdm,
-            end_hour,
-            irradiance_data,
-            logger,
-            minigrid,
-            number_of_hw_tanks,
-            processed_total_hw_load,
-            hot_water_pvt_size,
-            scenario,
-            hot_water_solar_thermal_size,
-            start_hour,
-            temperature_data,
-            total_waste_produced,
-            wind_speed_data,
-        )
-        logger.debug(
-            "Mean hot-water tank temperature: %s",
-            (
-                np.mean(hot_water_tank_temperature.values)
-                if hot_water_tank_temperature is not None
-                else "N/A"
-            ),
-        )
-        logger.debug(
-            "Mean hot-water PV-T electric power per unit: %s",
-            (
-                np.mean(hot_water_pvt_electric_power_per_unit.values)
-                if hot_water_pvt_electric_power_per_unit is not None
-                else "N/A"
-            ),
-        )
+        # (
+        #     auxiliary_heater,  # pylint: disable=unused-variable
+        #     hot_water_power_consumed,
+        #     hot_water_collectors_input_temperatures,
+        #     hot_water_collectors_output_temperatures,
+        #     hot_water_pvt_electric_power_per_unit,
+        #     hot_water_system_output_temperature,
+        #     hot_water_tank_temperature,
+        #     hot_water_tank_volume_supplied,
+        #     hot_water_temperature_gain,
+        #     solar_thermal_hw_fraction,
+        #     total_waste_produced,
+        #     volumetric_hw_dc_fraction,
+        # ) = calculate_renewable_hw_profiles(
+        #     available_converters,
+        #     disable_tqdm,
+        #     end_hour,
+        #     irradiance_data,
+        #     logger,
+        #     minigrid,
+        #     number_of_hw_tanks,
+        #     processed_total_hw_load,
+        #     hot_water_pvt_size,
+        #     scenario,
+        #     hot_water_solar_thermal_size,
+        #     start_hour,
+        #     temperature_data,
+        #     total_waste_produced,
+        #     wind_speed_data,
+        # )
+        # logger.debug(
+        #     "Mean hot-water tank temperature: %s",
+        #     (
+        #         np.mean(hot_water_tank_temperature.values)
+        #         if hot_water_tank_temperature is not None
+        #         else "N/A"
+        #     ),
+        # )
+        # logger.debug(
+        #     "Mean hot-water PV-T electric power per unit: %s",
+        #     (
+        #         np.mean(hot_water_pvt_electric_power_per_unit.values)
+        #         if hot_water_pvt_electric_power_per_unit is not None
+        #         else "N/A"
+        #     ),
+        # )
+        pass
 
     else:
         processed_total_hw_load = pd.DataFrame([0] * (end_hour - start_hour))
@@ -2005,8 +2023,12 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
         ].values
         + cw_prioritisation_power_consumed.values
         + hot_water_power_consumed.values
-        + thermal_desalination_electric_power_consumed.values
     )
+
+    if thermal_desalination_electric_power_consumed is not None:
+        processed_total_electric_load += (
+            thermal_desalination_electric_power_consumed.values
+        )
 
     # Compute the electric input profiles.
     battery_storage_profile: pd.DataFrame
@@ -2253,7 +2275,7 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
                     excess_energy,
                     new_hourly_battery_storage,
                     total_waste_produced,
-                ) = cw_tank_iteration_step(  # type: ignore  [assignment]
+                ) = cw_tank_iteration_step(
                     prioritise_desalinator_water,
                     cw_el_brine_per_desalinated_litre,
                     cw_prioritisation_power_consumed_mapping,
@@ -2450,7 +2472,7 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
             blackout_times,
             minigrid,
             scenario,
-            processed_total_electric_load.sum(axis=0),  # type: ignore [arg-type]
+            processed_total_electric_load.sum(axis=0),
             unmet_energy,
         )
     elif scenario.diesel_scenario.mode == DieselMode.CYCLE_CHARGING:
@@ -2756,7 +2778,7 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
             system_performance_outputs_list.extend(
                 [
                     pd.DataFrame(
-                        auxiliary_electricity_requirements[
+                        auxiliary_electricity_requirements[  # type: ignore [index]
                             ColumnHeader.CW_HEAT_PUMP_ELECTRICITY_REQUIREMENTS.value
                         ]
                     ),
@@ -2955,107 +2977,108 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
     # Hot-water scenario system performance outputs.
     if scenario.hot_water_scenario is not None:
         # Process any errors.
-        if hot_water_collectors_input_temperatures is None:
+        if hot_water_collectors_input_temperatures is None:  # type: ignore [name-defined]
             raise InternalError("Hot-water collectors' input temperatures undefined.")
-        if hot_water_collectors_output_temperatures is None:
+        if hot_water_collectors_output_temperatures is None:  # type: ignore [name-defined]
             raise InternalError("Hot-water collectors' output temperatures undefined.")
         if minigrid.pvt_panel is None:
             raise InternalError("PV-T panel not defined.")
 
-        # Append various PV-T outputs
-        if scenario.pv_t:
-            # Collector input/output temperatures
-            hot_water_collectors_input_temperatures[SolarPanelType.PV_T].columns = (
-                pd.Index([ColumnHeader.HW_PVT_INPUT_TEMPERATURE.value])
-            )
-            hot_water_collectors_output_temperatures[SolarPanelType.PV_T].columns = (
-                pd.Index([ColumnHeader.HW_PVT_OUTPUT_TEMPERATURE.value])
-            )
+        # FIXME: Enable hot-water code.
+        # # Append various PV-T outputs
+        # if scenario.pv_t:
+        #     # Collector input/output temperatures
+        #     hot_water_collectors_input_temperatures[SolarPanelType.PV_T].columns = (
+        #         pd.Index([ColumnHeader.HW_PVT_INPUT_TEMPERATURE.value])
+        #     )
+        #     hot_water_collectors_output_temperatures[SolarPanelType.PV_T].columns = (
+        #         pd.Index([ColumnHeader.HW_PVT_OUTPUT_TEMPERATURE.value])
+        #     )
 
-            # Convert the PV-T units to kWh
-            hot_water_pvt_electric_power_per_kwh: pd.DataFrame = pd.DataFrame(
-                hot_water_pvt_electric_power_per_unit  # type: ignore
-                / minigrid.pvt_panel.pv_layer.pv_unit
-            )
-            hot_water_pvt_electric_power_per_kwh.columns = pd.Index(
-                [ColumnHeader.HW_PVT_ELECTRICITY_SUPPLIED_PER_KWP.value]
-            )
-            hot_water_pvt_electric_power_per_unit.columns = pd.Index(
-                [ColumnHeader.HW_PVT_ELECTRICITY_SUPPLIED_PER_UNIT.value]
-            )
+        #     # Convert the PV-T units to kWh
+        #     hot_water_pvt_electric_power_per_kwh: pd.DataFrame = pd.DataFrame(
+        #         hot_water_pvt_electric_power_per_unit  # type: ignore
+        #         / minigrid.pvt_panel.pv_layer.pv_unit
+        #     )
+        #     hot_water_pvt_electric_power_per_kwh.columns = pd.Index(
+        #         [ColumnHeader.HW_PVT_ELECTRICITY_SUPPLIED_PER_KWP.value]
+        #     )
+        #     hot_water_pvt_electric_power_per_unit.columns = pd.Index(
+        #         [ColumnHeader.HW_PVT_ELECTRICITY_SUPPLIED_PER_UNIT.value]
+        #     )
 
-            # Extend the outputs list with these PV-T specific variables
-            system_performance_outputs_list.extend(
-                [
-                    hot_water_collectors_input_temperatures[SolarPanelType.PV_T],
-                    hot_water_collectors_output_temperatures[SolarPanelType.PV_T],
-                    hot_water_pvt_electric_power_per_kwh,
-                    hot_water_pvt_electric_power_per_unit,
-                ]
-            )
+        #     # Extend the outputs list with these PV-T specific variables
+        #     system_performance_outputs_list.extend(
+        #         [
+        #             hot_water_collectors_input_temperatures[SolarPanelType.PV_T],
+        #             hot_water_collectors_output_temperatures[SolarPanelType.PV_T],
+        #             hot_water_pvt_electric_power_per_kwh,
+        #             hot_water_pvt_electric_power_per_unit,
+        #         ]
+        #     )
 
-        # Append various solar-thermal outputs
-        if scenario.solar_thermal:
-            # Collector input/output temperatures
-            hot_water_collectors_input_temperatures[
-                SolarPanelType.SOLAR_THERMAL
-            ].columns = pd.Index([ColumnHeader.HW_ST_INPUT_TEMPERATURE.value])
-            hot_water_collectors_output_temperatures[
-                SolarPanelType.SOLAR_THERMAL
-            ].columns = pd.Index([ColumnHeader.HW_ST_OUTPUT_TEMPERATURE.value])
+        # # Append various solar-thermal outputs
+        # if scenario.solar_thermal:
+        #     # Collector input/output temperatures
+        #     hot_water_collectors_input_temperatures[
+        #         SolarPanelType.SOLAR_THERMAL
+        #     ].columns = pd.Index([ColumnHeader.HW_ST_INPUT_TEMPERATURE.value])
+        #     hot_water_collectors_output_temperatures[
+        #         SolarPanelType.SOLAR_THERMAL
+        #     ].columns = pd.Index([ColumnHeader.HW_ST_OUTPUT_TEMPERATURE.value])
 
-            # Extend the outputs list with these PV-T specific variables
-            system_performance_outputs_list.extend(
-                [
-                    hot_water_collectors_input_temperatures[
-                        SolarPanelType.SOLAR_THERMAL
-                    ],
-                    hot_water_collectors_output_temperatures[
-                        SolarPanelType.SOLAR_THERMAL
-                    ],
-                ]
-            )
+        #     # Extend the outputs list with these PV-T specific variables
+        #     system_performance_outputs_list.extend(
+        #         [
+        #             hot_water_collectors_input_temperatures[
+        #                 SolarPanelType.SOLAR_THERMAL
+        #             ],
+        #             hot_water_collectors_output_temperatures[
+        #                 SolarPanelType.SOLAR_THERMAL
+        #             ],
+        #         ]
+        #     )
 
-        # Append the solar-thermal or PV-T relevant arguments
-        if scenario.pv_t or scenario.solar_thermal:
-            hot_water_power_consumed.columns = pd.Index(
-                [ColumnHeader.POWER_CONSUMED_BY_HOT_WATER.value]
-            )
-            system_performance_outputs_list.append(hot_water_power_consumed)
+        # # Append the solar-thermal or PV-T relevant arguments
+        # if scenario.pv_t or scenario.solar_thermal:
+        #     hot_water_power_consumed.columns = pd.Index(
+        #         [ColumnHeader.POWER_CONSUMED_BY_HOT_WATER.value]
+        #     )
+        #     system_performance_outputs_list.append(hot_water_power_consumed)
 
-        # Append the hot-water tank outputs
-        if hot_water_tank_temperature is not None:
-            hot_water_tank_temperature.columns = pd.Index(
-                [ColumnHeader.HW_TANK_TEMPERATURE.value]
-            )
-            hot_water_tank_volume_supplied.columns = pd.Index(  # type: ignore [union-attr]
-                [ColumnHeader.HW_TANK_OUTPUT.value]
-            )
-            system_performance_outputs_list.extend(
-                [
-                    hot_water_tank_temperature,
-                    hot_water_tank_volume_supplied,  # type: ignore [list-item]
-                ]
-            )
+        # # Append the hot-water tank outputs
+        # if hot_water_tank_temperature is not None:
+        #     hot_water_tank_temperature.columns = pd.Index(
+        #         [ColumnHeader.HW_TANK_TEMPERATURE.value]
+        #     )
+        #     hot_water_tank_volume_supplied.columns = pd.Index(
+        #         [ColumnHeader.HW_TANK_OUTPUT.value]
+        #     )
+        #     system_performance_outputs_list.extend(
+        #         [
+        #             hot_water_tank_temperature,
+        #             hot_water_tank_volume_supplied,  # type: ignore [list-item]
+        #         ]
+        #     )
 
-        hot_water_temperature_gain.columns = pd.Index(  # type: ignore [union-attr]
-            [ColumnHeader.HW_TEMPERATURE_GAIN.value]
-        )
-        processed_total_hw_load.columns = pd.Index([ColumnHeader.TOTAL_HW_LOAD.value])
-        solar_thermal_hw_fraction.columns = pd.Index(  # type: ignore [union-attr]
-            [ColumnHeader.HW_SOLAR_THERMAL_FRACTION.value]
-        )
-        volumetric_hw_dc_fraction.columns = pd.Index(  # type: ignore [union-attr]
-            [ColumnHeader.HW_VOL_DEMAND_COVERED.value]
-        )
-        system_performance_outputs_list.extend(
-            [
-                hot_water_temperature_gain,  # type: ignore [list-item]
-                processed_total_hw_load,
-                solar_thermal_hw_fraction,  # type: ignore [list-item]
-                volumetric_hw_dc_fraction,  # type: ignore [list-item]
-            ]
-        )
+        # hot_water_temperature_gain.columns = pd.Index(
+        #     [ColumnHeader.HW_TEMPERATURE_GAIN.value]
+        # )
+        # processed_total_hw_load.columns = pd.Index([ColumnHeader.TOTAL_HW_LOAD.value])
+        # solar_thermal_hw_fraction.columns = pd.Index(
+        #     [ColumnHeader.HW_SOLAR_THERMAL_FRACTION.value]
+        # )
+        # volumetric_hw_dc_fraction.columns = pd.Index(
+        #     [ColumnHeader.HW_VOL_DEMAND_COVERED.value]
+        # )
+        # system_performance_outputs_list.extend(
+        #     [
+        #         hot_water_temperature_gain,  # type: ignore [list-item]
+        #         processed_total_hw_load,
+        #         solar_thermal_hw_fraction,  # type: ignore [list-item]
+        #         volumetric_hw_dc_fraction,  # type: ignore [list-item]
+        #     ]
+        # )
 
     logger.info("Computing system details.")
 
@@ -3086,7 +3109,7 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
         final_pv_sizes={
             pv_panel.name: (pv_sizes[pv_panel.name] if pv_sizes is not None else 0)
             * float(
-                solar_degradation(pv_panel.lifetime, location.max_years).iloc[  # type: ignore [arg-type]
+                solar_degradation(pv_panel.lifetime, location.max_years).iloc[
                     HOURS_PER_YEAR * (simulation.end_year - simulation.start_year), 0
                 ]
             )

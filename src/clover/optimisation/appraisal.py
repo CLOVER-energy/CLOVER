@@ -856,9 +856,7 @@ def _appraise_clean_water_system_tech(  # pylint: disable=too-many-locals
 
     clean_water_blackouts: float = round(
         float(
-            np.mean(
-                simulation_results[ColumnHeader.CLEAN_WATER_BLACKOUTS.value].values  # type: ignore [arg-type]
-            )
+            np.mean(simulation_results[ColumnHeader.CLEAN_WATER_BLACKOUTS.value].values)
         ),
         3,
     )
@@ -1161,7 +1159,7 @@ def _appraise_hot_water_system_tech(
                     * simulation_results[ColumnHeader.HW_TANK_OUTPUT.value].values
                 )
             )
-            / np.nansum(simulation_results[ColumnHeader.HW_TANK_OUTPUT.value].values)  # type: ignore [arg-type]
+            / np.nansum(simulation_results[ColumnHeader.HW_TANK_OUTPUT.value].values)
         ),
         3,
     )
@@ -1255,9 +1253,7 @@ def _simulation_technical_appraisal(  # pylint: disable=too-many-locals
 
     # Calculate system blackouts
     system_blackouts: float = float(
-        np.mean(
-            simulation_results[ColumnHeader.BLACKOUTS.value].values  # type: ignore [arg-type]
-        )
+        np.mean(simulation_results[ColumnHeader.BLACKOUTS.value].values)
     )
 
     # Electricity system.
@@ -1761,13 +1757,13 @@ def appraise_system(  # pylint: disable=too-many-locals
 
     logger.info("Criteria computation.")
 
-    print(
-        f"{Criterion.CLEAN_WATER_BLACKOUTS.value}: {technical_appraisal.clean_water_blackouts}"
-    )
-    print(
-        f"{Criterion.CW_DEMAND_COVERED.value}: {technical_appraisal.cw_demand_covered}"
-    )
-    print(f"{Criterion.LCUW.value}: {round(lcu_w, 6) if lcu_w is not None else None}")
+    # print(
+    #     f"{Criterion.CLEAN_WATER_BLACKOUTS.value}: {technical_appraisal.clean_water_blackouts}"
+    # )
+    # print(
+    #     f"{Criterion.CW_DEMAND_COVERED.value}: {technical_appraisal.cw_demand_covered}"
+    # )
+    # print(f"{Criterion.LCUW.value}: {round(lcu_w, 6) if lcu_w is not None else None}")
 
     # pylint: disable=line-too-long
     criteria: dict[Criterion, float | None] = {

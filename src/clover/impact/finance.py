@@ -382,17 +382,19 @@ def _inverter_expenditure(  # pylint: disable=too-many-locals
         * inverter_info["Inverter cost ($/kW)"].iloc[i]
         for i in range(len(inverter_info))
     ]
-    inverter_discounted_cost = np.sum(
-        inverter_info.iloc[  # type: ignore [call-overload]
-            inverter_info.index[
-                inverter_info[ColumnHeader.INSTALLATION_YEAR.value].isin(
-                    list(np.array(range(start_year, end_year)))
-                )
-            ]
-        ][
-            ColumnHeader.DISCOUNTED_EXPENDITURE.value
-        ]  # type: ignore [index]
-    ).round(2)
+    inverter_discounted_cost = float(
+        np.sum(
+            inverter_info.iloc[  # type: ignore [call-overload]
+                inverter_info.index[
+                    inverter_info[ColumnHeader.INSTALLATION_YEAR.value].isin(
+                        list(np.array(range(start_year, end_year)))
+                    )
+                ]
+            ][
+                ColumnHeader.DISCOUNTED_EXPENDITURE.value
+            ]  # type: ignore [index]
+        ).round(2)
+    )
 
     return inverter_discounted_cost
 

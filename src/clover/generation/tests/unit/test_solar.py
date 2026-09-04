@@ -110,7 +110,15 @@ class TestPVPanel(unittest.TestCase):
 
         pv_panel = PVPanel.from_dict(mock.MagicMock(), self.input_data)
         with self.assertRaises(ProgrammerJudgementFault):
-            pv_panel.calculate_performance(0, 0, 0, 0, 0, 0, 0)
+            pv_panel.calculate_performance(
+                ambient_temperature=0,
+                htf_heat_capacity=0,
+                input_temperature=0,
+                logger=mock.MagicMock(),
+                mass_flow_rate=0,
+                solar_irradiance=0,
+                wind_speed=0,
+            )
 
 
 class TestHybridPVTPanelPerformance(unittest.TestCase):
@@ -185,13 +193,13 @@ class TestHybridPVTPanelPerformance(unittest.TestCase):
             reduced_temperature,
             thermal_efficiency,
         ) = self.pvt_collector.calculate_performance(
-            self.ambient_temperature,
-            self.test_logger,
-            self.irradiance,
-            HEAT_CAPACITY_OF_WATER,
-            self.input_temperature,
-            self.mass_flow_rate,
-            self.wind_speed,
+            ambient_temperature=self.ambient_temperature,
+            htf_heat_capacity=HEAT_CAPACITY_OF_WATER,
+            input_temperature=self.input_temperature,
+            logger=self.test_logger,
+            mass_flow_rate=self.mass_flow_rate,
+            solar_irradiance=self.irradiance,
+            wind_speed=self.wind_speed,
         )
 
         # Type-check the outputs
@@ -291,13 +299,13 @@ class TestSolarThermalPanelPerformance(unittest.TestCase):
 
         _, output_temperature, reduced_temperature, thermal_efficiency = (
             self.solar_thermal_panel.calculate_performance(
-                self.ambient_temperature,
-                self.test_logger,
-                self.irradiance,
-                HEAT_CAPACITY_OF_WATER,
-                self.input_temperature,
-                self.solar_thermal_panel.nominal_mass_flow_rate,
-                self.wind_speed,
+                ambient_temperature=self.ambient_temperature,
+                htf_heat_capacity=HEAT_CAPACITY_OF_WATER,
+                input_temperature=self.input_temperature,
+                logger=self.test_logger,
+                mass_flow_rate=self.solar_thermal_panel.nominal_mass_flow_rate,
+                solar_irradiance=self.irradiance,
+                wind_speed=self.wind_speed,
             )
         )
 
@@ -315,12 +323,22 @@ class TestSolarThermalPanelPerformance(unittest.TestCase):
             * (collector_temperature - self.ambient_temperature) ** 2
             / self.irradiance
         )
+        if self.solar_thermal_panel.nominal_mass_flow_rate is None:
+            raise ProgrammerJudgementFault(
+                "test_solar::TestSolarThermalPanelPerformance.test_mainline",
+                "Solar-thermal panel instantiated incorrectly.",
+            )
         efficiency_by_output: float = (
             (self.solar_thermal_panel.nominal_mass_flow_rate)
             * HEAT_CAPACITY_OF_WATER
             * (output_temperature - self.input_temperature)  # type: ignore [operator]
         ) / (self.solar_thermal_panel.area * self.irradiance)
 
+        if not isinstance(thermal_efficiency, float):
+            raise ProgrammerJudgementFault(
+                "test_solar::TestSolarThermalPanelPerformance.test_mainline",
+                "No thermal performance returned from thermal collector.",
+            )
         self.assertEqual(round(thermal_efficiency, 8), round(efficiency_by_equation, 8))
         self.assertEqual(
             round(efficiency_by_equation, 8), round(efficiency_by_output, 8)

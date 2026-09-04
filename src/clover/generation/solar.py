@@ -316,9 +316,9 @@ class Tracking(enum.Enum):
 
     """
 
-    FIXED: int = 0
-    SINGLE_AXIS: int = 1
-    DUAL_AXIS: int = 2
+    FIXED = 0
+    SINGLE_AXIS = 1
+    DUAL_AXIS = 2
 
     @classmethod
     def from_text(cls, logger: Logger, text: str) -> Any:
@@ -1021,7 +1021,7 @@ def reduced_temperature(
 #         self.electric_models = electric_models
 #         self.max_mass_flow_rate = solar_inputs["max_mass_flow_rate"]
 #         self.min_mass_flow_rate = solar_inputs["min_mass_flow_rate"]
-#         self.pv_layer: PVPanel = pv_layer  # type: ignore [assignment]
+#         self.pv_layer: PVPanel = pv_layer
 #         self.thermal_models = thermal_models
 #         self.thermal_unit = solar_inputs.get("thermal_unit", None)
 
@@ -1514,11 +1514,11 @@ class SolarPanel(ABC):  # pylint: disable=too-few-public-methods
     def __init__(
         self,
         area: float,
-        azimuthal_orientation: float,
+        azimuthal_orientation: float | None,
         land_use: float,
         lifetime: int,
         name: str,
-        tilt: float,
+        tilt: float | None,
         tracking: Tracking,
     ) -> None:
         """
@@ -1542,11 +1542,11 @@ class SolarPanel(ABC):  # pylint: disable=too-few-public-methods
         """
 
         self.area: float = area
-        self.azimuthal_orientation: float = azimuthal_orientation
+        self.azimuthal_orientation: float | None = azimuthal_orientation
         self.land_use: float = land_use
         self.lifetime: int = lifetime
         self.name: str = name
-        self.tilt: float = tilt
+        self.tilt: float | None = tilt
         self.tracking: Tracking = tracking
 
     def __init_subclass__(cls, panel_type: SolarPanelType) -> None:
@@ -1670,7 +1670,7 @@ class PVPanel(SolarPanel, panel_type=SolarPanelType.PV):
         self,
         absorptivity: float,
         area: float,
-        azimuthal_orientation: float,
+        azimuthal_orientation: float | None,
         emissivity: float,
         land_use: float,
         lifetime: int,
@@ -1968,14 +1968,20 @@ class PVPanel(SolarPanel, panel_type=SolarPanelType.PV):
 
     def calculate_performance(
         self,
+        *,
         ambient_temperature: float,
-        htf_heat_capacity: float,
-        input_temperature: float,
+        htf_heat_capacity: float | None,
+        input_temperature: float | None,
         logger: Logger,
-        mass_flow_rate: float,
+        mass_flow_rate: float | None,
         solar_irradiance: float,
-        wind_speed: float,
-    ) -> tuple[float | None, float | None]:
+        wind_speed: float | None,
+    ) -> tuple[
+        float | None,
+        float | None,
+        float | None,
+        float | None,
+    ]:
         """
         Not yet developed.
 
@@ -2288,13 +2294,14 @@ class HybridPVTPanel(SolarPanel, panel_type=SolarPanelType.PV_T):
 
     def calculate_performance(
         self,
+        *,
         ambient_temperature: float,
-        logger: Logger,
-        solar_irradiance: float,
         htf_heat_capacity: float | None,
         input_temperature: float | None,
+        logger: Logger,
         mass_flow_rate: float | None,
-        wind_speed: float | None = None,
+        solar_irradiance: float,
+        wind_speed: float | None,
     ) -> tuple[
         float | None,
         float | None,
@@ -2644,13 +2651,14 @@ class SolarThermalPanel(SolarPanel, panel_type=SolarPanelType.SOLAR_THERMAL):
 
     def calculate_performance(
         self,
+        *,
         ambient_temperature: float,
-        logger: Logger,
-        solar_irradiance: float,
         htf_heat_capacity: float | None,
         input_temperature: float | None,
+        logger: Logger,
         mass_flow_rate: float | None,
-        wind_speed: float | None = None,
+        solar_irradiance: float,
+        wind_speed: float | None,
     ) -> tuple[
         float | None,
         float | None,
@@ -2846,7 +2854,7 @@ COLLECTOR_FROM_TYPE: dict[SolarPanelType, Type[SolarPanel]] = {
 }
 
 
-def get_profile_prefix(panel: PVPanel | HybridPVTPanel) -> str:
+def get_profile_prefix(panel: SolarPanel | PVPanel | HybridPVTPanel) -> str:
     """
     Determine the prefix to use for profile names based on the tracking and angles.
 
@@ -2925,7 +2933,7 @@ class SolarDataThread(
         logger_name: str,
         pause_time: int,
         regenerate: bool,
-        pv_panel: PVPanel,
+        pv_panel: PVPanel | SolarThermalPanel | SolarPanel,
         sleep_multiplier: int = 1,
         verbose: bool = False,
     ):
@@ -2973,7 +2981,7 @@ class SolarDataThread(
 
 
 def total_solar_output(
-    *args, pv_panel: PVPanel | HybridPVTPanel
+    *args, pv_panel: PVPanel | HybridPVTPanel | SolarThermalPanel
 ) -> pd.DataFrame:  # type: ignore
     """
     Wrapper function to wrap the total solar output.

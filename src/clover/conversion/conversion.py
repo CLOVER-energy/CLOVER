@@ -636,7 +636,12 @@ class ThermalDesalinationPlant(MultiInputConverter):
         """Return the minimum feedwater temperature."""
 
         if self._minimum_feedwater_temperature is None:
-            return self.maximum_feedwater_temperature
+            if self.maximum_feedwater_temperature is not None:
+                return self.maximum_feedwater_temperature
+            raise InputFileError(
+                "conversion_inputs",
+                "Either minimum or maximum feedwater temperature must be specified.",
+            )
 
         return self._minimum_feedwater_temperature
 
@@ -645,7 +650,12 @@ class ThermalDesalinationPlant(MultiInputConverter):
         """Return the minimum HTF temperature."""
 
         if self._minimum_htf_temperature is None:
-            return self.maximum_htf_temperature
+            if self.maximum_htf_temperature is not None:
+                return self.maximum_htf_temperature
+            raise InputFileError(
+                "conversion_inputs",
+                "Either minimum or maximum feedwater temperature must be specified.",
+            )
 
         return self._minimum_htf_temperature
 

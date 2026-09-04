@@ -187,9 +187,7 @@ def _prepare_location(
     """
 
     # Prepare for locations that may have been created in a CLOVER 5.2 environment.
-    locations_foldername: str = os.path.join(
-        os.path.expanduser("~"), "clover_locations"
-    )
+    locations_foldername = os.path.join(os.path.expanduser("~"), "clover_locations")
 
     if not os.path.isdir(os.path.join(locations_foldername, location)):
         logger.error(
@@ -231,7 +229,7 @@ def _prepare_water_system(
     simulation,
     water_source_times: dict[WaterSource, pd.DataFrame],
     *,
-    clean_water_load_profile: pd.DataFrame | None,
+    clean_water_load_profile: pd.DataFrame | None = None,
 ) -> tuple[
     dict[WaterSource, pd.DataFrame], dict[str, pd.DataFrame], pd.DataFrame, pd.DataFrame
 ]:
@@ -725,7 +723,7 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
 
     def _tilt_angles_and_tracking_from_panel(
         panel: solar.SolarPanel,
-    ) -> tuple[float, float, solar.Tracking]:
+    ) -> tuple[float | None, float | None, solar.Tracking]:
         """
         Determine the tilt angles and tracking for a panel.
 
@@ -829,9 +827,9 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
 
     # Generate and save the solar data for each year as a background task.
     logger.info("Beginning solar-data fetching.")
-    solar_data_threads: dict[solar.PVPanel, solar.SolarDataThread] = {}
+    solar_data_threads: dict[solar.SolarPanelType, solar.SolarDataThread] = {}
     for pv_panel in panels_to_fetch:
-        solar_data_threads[pv_panel] = solar.SolarDataThread(
+        solar_data_threads[pv_panel.panel_type] = solar.SolarDataThread(
             os.path.join(auto_generated_files_directory, "solar"),
             global_settings_inputs,
             location,
@@ -843,7 +841,7 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
             num_ninjas,
             parsed_args.verbose,
         )
-        solar_data_threads[pv_panel].start()
+        solar_data_threads[pv_panel.panel_type].start()
         ninja_pause_index += 1
     if len(panels_to_fetch) >= 1:
         logger.info(
@@ -961,7 +959,7 @@ def main(  # pylint: disable=too-many-locals, too-many-statements
             logger,
             parsed_args,
             ResourceType.HOT_CLEAN_WATER,
-            simulation,
+            simulations[0],
             water_source_times,
         )
 

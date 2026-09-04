@@ -1590,7 +1590,7 @@ def monthly_profile_to_daily_profile(monthly_profile: pd.DataFrame) -> pd.DataFr
     day_one_profile: pd.DataFrame = pd.DataFrame(np.zeros((24, 1)))
     for hour in range(24):
         day_one_profile.iloc[hour, 0] = 0.5 * float(
-            float(monthly_profile.iloc[hour, 0]) + float(monthly_profile.iloc[hour, 11])  # type: ignore [arg-type]
+            float(monthly_profile.iloc[hour, 0]) + float(monthly_profile.iloc[hour, 11])
         )
 
     extended_year_profile: pd.DataFrame = pd.DataFrame(np.zeros((24, 14)))
@@ -1965,10 +1965,10 @@ class RegressorType(enum.Enum):
 
     """
 
-    LOW_IRRADIANCE_LOW_TEMPERATURE: str = "low_irradiance_low_temp"
-    LOW_IRRADIANCE_HIGH_TEMPERATURE: str = "low_irradiance_high_temp"
-    STANDARD_IRRADIANCE_LOW_TEMPERATURE: str = "standard_irradiance_low_temp"
-    STANDARD_IRRADIANCE_HIGH_TEMPERATURE: str = "standard_irradiance_high_temp"
+    LOW_IRRADIANCE_LOW_TEMPERATURE = "low_irradiance_low_temp"
+    LOW_IRRADIANCE_HIGH_TEMPERATURE = "low_irradiance_high_temp"
+    STANDARD_IRRADIANCE_LOW_TEMPERATURE = "standard_irradiance_low_temp"
+    STANDARD_IRRADIANCE_HIGH_TEMPERATURE = "standard_irradiance_high_temp"
 
 
 class RenewablesNinjaError(Exception):
@@ -2028,7 +2028,7 @@ class DesalinationScenario:
     pvt_scenario: ThermalCollectorScenario | None
     solar_thermal_scenario: ThermalCollectorScenario | None
     throughput_mass_flow_rate: float | None
-    unclean_water_sources: str | None
+    unclean_water_sources: list[Any]
 
     def to_dict(self) -> dict[str, Any]:
         """
@@ -2987,65 +2987,45 @@ class SystemDetails:
     diesel_capacity: float = 0
     end_year: int = 0
     final_converter_sizes: dict[Any, int] | None = None
-    final_cw_pvt_sizes: dict[str, float] | defaultdict[str, float] = (
-        dataclasses.field(  # type: ignore [assignment]
-            default_factory=lambda: collections.defaultdict(float)
-        )
+    final_cw_pvt_sizes: dict[str, float] | defaultdict[str, float] = dataclasses.field(
+        default_factory=lambda: collections.defaultdict(float)
     )
-    final_cw_st_sizes: dict[str, float] | defaultdict[str, float] = (
-        dataclasses.field(  # type: ignore [assignment]
-            default_factory=lambda: collections.defaultdict(float)
-        )
+    final_cw_st_sizes: dict[str, float] | defaultdict[str, float] = dataclasses.field(
+        default_factory=lambda: collections.defaultdict(float)
     )
-    final_hw_pvt_sizes: dict[str, float] | defaultdict[str, float] = (
-        dataclasses.field(  # type: ignore [assignment]
-            default_factory=lambda: collections.defaultdict(float)
-        )
+    final_hw_pvt_sizes: dict[str, float] | defaultdict[str, float] = dataclasses.field(
+        default_factory=lambda: collections.defaultdict(float)
     )
-    final_hw_st_sizes: dict[str, float] | defaultdict[str, float] = (
-        dataclasses.field(  # type: ignore [assignment]
-            default_factory=lambda: collections.defaultdict(float)
-        )
+    final_hw_st_sizes: dict[str, float] | defaultdict[str, float] = dataclasses.field(
+        default_factory=lambda: collections.defaultdict(float)
     )
     final_num_clean_water_buffer_tanks: int | None = 0
     final_num_clean_water_tanks: int | None = 0
     final_num_hot_water_buffer_tanks: int | None = 0
     final_num_hot_water_tanks: int | None = 0
-    final_pv_sizes: dict[str, float] | defaultdict[str, float] = (
-        dataclasses.field(  # type: ignore [assignment]
-            default_factory=lambda: collections.defaultdict(float)
-        )
+    final_pv_sizes: dict[str, float] | defaultdict[str, float] = dataclasses.field(
+        default_factory=lambda: collections.defaultdict(float)
     )
     final_storage_size: float = 0
     initial_converter_sizes: dict[Any, int] | None = None
     initial_cw_pvt_sizes: dict[str, float] | defaultdict[str, float] = (
-        dataclasses.field(  # type: ignore [assignment]
-            default_factory=lambda: collections.defaultdict(float)
-        )
+        dataclasses.field(default_factory=lambda: collections.defaultdict(float))
     )
-    initial_cw_st_sizes: dict[str, float] | defaultdict[str, float] = (
-        dataclasses.field(  # type: ignore [assignment]
-            default_factory=lambda: collections.defaultdict(float)
-        )
+    initial_cw_st_sizes: dict[str, float] | defaultdict[str, float] = dataclasses.field(
+        default_factory=lambda: collections.defaultdict(float)
     )
     initial_hw_pvt_sizes: dict[str, float] | defaultdict[str, float] = (
-        dataclasses.field(  # type: ignore [assignment]
-            default_factory=lambda: collections.defaultdict(float)
-        )
+        dataclasses.field(default_factory=lambda: collections.defaultdict(float))
     )
-    initial_hw_st_sizes: dict[str, float] | defaultdict[str, float] = (
-        dataclasses.field(  # type: ignore [assignment]
-            default_factory=lambda: collections.defaultdict(float)
-        )
+    initial_hw_st_sizes: dict[str, float] | defaultdict[str, float] = dataclasses.field(
+        default_factory=lambda: collections.defaultdict(float)
     )
     initial_num_clean_water_buffer_tanks: int | None = 0
     initial_num_clean_water_tanks: int | None = 0
     initial_num_hot_water_buffer_tanks: int | None = 0
     initial_num_hot_water_tanks: int | None = 0
-    initial_pv_sizes: dict[str, float] | defaultdict[str, float] = (
-        dataclasses.field(  # type: ignore [assignment]
-            default_factory=lambda: collections.defaultdict(float)
-        )
+    initial_pv_sizes: dict[str, float] | defaultdict[str, float] = dataclasses.field(
+        default_factory=lambda: collections.defaultdict(float)
     )
     initial_storage_size: float = 0
     required_feedwater_sources: list[str] | None = None
@@ -3909,7 +3889,7 @@ class SystemAppraisal:
 
         """
 
-        return (
+        return (  # type: ignore [no-any-return]
             (self_dict := self.to_dict())["cumulative_results"]
             | self_dict["environmental_appraisal"]
             | self_dict["financial_appraisal"]

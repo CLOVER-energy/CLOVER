@@ -42,6 +42,7 @@ import json
 import numpy as np  # pylint: disable=import-error
 import pandas as pd  # pylint: disable=import-error
 
+from bayes_opt import BayesianOptimization
 from tqdm import tqdm
 
 from ..simulation.__utils__ import determine_available_converters
@@ -1708,8 +1709,6 @@ def multiple_optimisation_step(  # pylint: disable=too-many-locals, too-many-sta
         unit="step",
     ):
         logger.info("Beginning optimisation step.")
-
-        from bayes_opt import BayesianOptimization
 
         # Setup the parameter bounds and include converter sizes.
         pbounds = optimisation_parameters.as_pbounds

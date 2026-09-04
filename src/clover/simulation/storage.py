@@ -380,7 +380,7 @@ def cw_tank_iteration_step(  # pylint: disable=too-many-locals
     """
 
     if scenario.desalination_scenario is not None:
-        tank_water_flow: float = float(tank_storage_profile.iloc[time_index, 0])  # type: ignore [arg-type]
+        tank_water_flow: float = float(tank_storage_profile.iloc[time_index, 0])
 
         # Raise an error if there is no clean-water tank defined.
         if minigrid.clean_water_tank is None:
@@ -535,7 +535,7 @@ def cw_tank_iteration_step(  # pylint: disable=too-many-locals
             conventional_cw_available: float = 0
             if conventional_cw_source_profiles is not None:
                 conventional_cw_available = float(
-                    sum(  # type: ignore [arg-type]
+                    sum(
                         entry.iloc[time_index]
                         for entry in conventional_cw_source_profiles.values()
                     )
@@ -721,7 +721,7 @@ def get_electric_battery_storage_profile(  # pylint: disable=too-many-locals, to
         if RenewableEnergySource.CLEAN_WATER_PVT in renewables_power_produced:
             try:
                 clean_water_pvt_electric_power_produced: pd.DataFrame = pd.DataFrame(
-                    renewables_power_produced[RenewableEnergySource.CLEAN_WATER_PVT]  # type: ignore [arg-type]
+                    renewables_power_produced[RenewableEnergySource.CLEAN_WATER_PVT]
                 )
             except KeyError:
                 logger.error(
@@ -754,7 +754,7 @@ def get_electric_battery_storage_profile(  # pylint: disable=too-many-locals, to
         ):
             try:
                 hot_water_pvt_electric_power_produced: pd.DataFrame = pd.DataFrame(
-                    renewables_power_produced[RenewableEnergySource.HOT_WATER_PVT]  # type: ignore [arg-type]
+                    renewables_power_produced[RenewableEnergySource.HOT_WATER_PVT]
                 )
             except KeyError:
                 logger.error(
