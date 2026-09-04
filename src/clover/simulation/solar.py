@@ -1527,7 +1527,8 @@ def _calculate_closed_loop_solar_thermal_output(  # pylint: disable=too-many-loc
     # plt.figure(figsize=(48 / 5, 32 / 5))
     # sns.scatterplot(pvt_temperature_frame[:24], marker="h", palette="Blues", s=100)
     # sns.scatterplot(st_temperature_frame[:24], marker="h", palette="Reds", s=100)
-    # plt.plot(tank_temperature_frame[:24].index, tank_temperature_frame[:24].values, dashes=(2, 2), color="teal", label="Tank")
+    # plt.plot(tank_temperature_frame[:24].index, tank_temperature_frame[:24].values,
+    # dashes=(2, 2), color="teal", label="Tank")
     # plt.fill_between(
     #     pvt_temperature_frame[:24].index,
     #     pvt_temperature_frame[:24]["input"],
@@ -1550,11 +1551,15 @@ def _calculate_closed_loop_solar_thermal_output(  # pylint: disable=too-many-loc
 
     # plt.figure(figsize=(48/5, 32/5))
 
-    # plt.plot((mean_pvt_frame:=pvt_temperature_frame.groupby("hour").mean()).index, mean_pvt_frame["input"], "--", color="C6", label="Input")
-    # plt.fill_between((std_pvt_frame:=pvt_temperature_frame.groupby("hour").std()).index, (mean_pvt_frame - std_pvt_frame)["input"], (mean_pvt_frame + std_pvt_frame)["input"], color="C6", alpha=0.2)
+    # plt.plot((mean_pvt_frame:=pvt_temperature_frame.groupby("hour").mean()).index,
+    # mean_pvt_frame["input"], "--", color="C6", label="Input")
+    # plt.fill_between((std_pvt_frame:=pvt_temperature_frame.groupby("hour").std()).index,
+    # (mean_pvt_frame - std_pvt_frame)["input"], (mean_pvt_frame + std_pvt_frame)["input"],
+    # color="C6", alpha=0.2)
 
     # plt.plot(mean_pvt_frame.index, mean_pvt_frame["output"], color="C2", label="Output")
-    # plt.fill_between(std_pvt_frame.index, (mean_pvt_frame - std_pvt_frame)["output"], (mean_pvt_frame + std_pvt_frame)["output"], color="C2", alpha=0.2)
+    # plt.fill_between(std_pvt_frame.index, (mean_pvt_frame - std_pvt_frame)["output"],
+    # (mean_pvt_frame + std_pvt_frame)["output"], color="C2", alpha=0.2)
 
     # plt.xlabel("Hour of the day / hour")
     # plt.ylabel("Temperature / $^\circ$C")
@@ -1564,11 +1569,15 @@ def _calculate_closed_loop_solar_thermal_output(  # pylint: disable=too-many-loc
 
     # plt.figure(figsize=(48/5, 32/5))
 
-    # plt.plot((mean_st_frame:=st_temperature_frame.groupby("hour").mean()).index, mean_st_frame["input"], "--", color="C4")
-    # plt.fill_between((std_st_frame:=st_temperature_frame.groupby("hour").std()).index, (mean_st_frame - std_st_frame)["input"], (mean_st_frame + std_st_frame)["input"], color="C4", alpha=0.2)
+    # plt.plot((mean_st_frame:=st_temperature_frame.groupby("hour").mean()).index,
+    # mean_st_frame["input"], "--", color="C4")
+    # plt.fill_between((std_st_frame:=st_temperature_frame.groupby("hour").std()).index,
+    # (mean_st_frame - std_st_frame)["input"], (mean_st_frame + std_st_frame)["input"],
+    # color="C4", alpha=0.2)
 
     # plt.plot(mean_st_frame.index, mean_st_frame["output"], color="C0")
-    # plt.fill_between(std_st_frame.index, (mean_st_frame - std_st_frame)["output"], (mean_st_frame + std_st_frame)["output"], color="C0", alpha=0.2)
+    # plt.fill_between(std_st_frame.index, (mean_st_frame - std_st_frame)["output"],
+    # (mean_st_frame + std_st_frame)["output"], color="C0", alpha=0.2)
 
     # plt.xlabel("Hour of the day / hour")
     # plt.ylabel("Temperature / $^\circ$C")
@@ -1578,20 +1587,33 @@ def _calculate_closed_loop_solar_thermal_output(  # pylint: disable=too-many-loc
 
     # plt.figure(figsize=(48/5, 32/5))
 
-    # plt.plot(mean_pvt_frame.index, mean_pvt_frame["input"], "--", color="C6", label="Collector-system (PV-T) input")
-    # plt.fill_between(std_pvt_frame.index, (mean_pvt_frame - std_pvt_frame)["input"], (mean_pvt_frame + std_pvt_frame)["input"], color="C6", alpha=0.2)
+    # plt.plot(mean_pvt_frame.index, mean_pvt_frame["input"], "--", color="C6",
+    # label="Collector-system (PV-T) input")
+    # plt.fill_between(std_pvt_frame.index, (mean_pvt_frame - std_pvt_frame)["input"],
+    # (mean_pvt_frame + std_pvt_frame)["input"], color="C6", alpha=0.2)
     # # plt.plot(mean_st_frame.index, mean_st_frame["input"], color="C2")
-    # # plt.fill_between(std_st_frame.index, (mean_st_frame - std_st_frame)["input"], (mean_st_frame + std_st_frame)["input"], color="C2", alpha=0.2)
+    # # plt.fill_between(std_st_frame.index, (mean_st_frame - std_st_frame)["input"],
+    # (mean_st_frame + std_st_frame)["input"], color="C2", alpha=0.2)
 
-    # plt.plot(mean_pvt_frame.index, mean_pvt_frame["output"], ":", color="C2", label="PV-T output/ST input")
-    # plt.fill_between(std_pvt_frame.index, (mean_pvt_frame - std_pvt_frame)["output"], (mean_pvt_frame + std_pvt_frame)["output"], color="C2", alpha=0.2)
-    # plt.plot(mean_st_frame.index, mean_st_frame["output"], color="C0", label="Collector-system (ST) output")
-    # plt.fill_between(std_st_frame.index, (mean_st_frame - std_st_frame)["output"], (mean_st_frame + std_st_frame)["output"], color="C0", alpha=0.2)
+    # plt.plot(mean_pvt_frame.index, mean_pvt_frame["output"], ":", color="C2",
+    # label="PV-T output/ST input")
+    # plt.fill_between(std_pvt_frame.index, (mean_pvt_frame - std_pvt_frame)["output"],
+    # (mean_pvt_frame + std_pvt_frame)["output"], color="C2", alpha=0.2)
+    # plt.plot(mean_st_frame.index, mean_st_frame["output"], color="C0",
+    # label="Collector-system (ST) output")
+    # plt.fill_between(std_st_frame.index, (mean_st_frame - std_st_frame)["output"],
+    # (mean_st_frame + std_st_frame)["output"], color="C0", alpha=0.2)
 
-    # plt.plot((mean_tank_frame:=tank_temperature_frame.groupby("hour").mean()).index, mean_tank_frame.values, "-.", color="C3", label="Buffer tank")
-    # plt.fill_between((std_tank_frame:=tank_temperature_frame.groupby("hour").std()).index, (mean_tank_frame - std_tank_frame)[0], (mean_tank_frame + std_tank_frame)[0], color="C3", alpha=0.2)
+    # plt.plot((mean_tank_frame:=tank_temperature_frame.groupby("hour").mean()).index,
+    # mean_tank_frame.values, "-.", color="C3", label="Buffer tank")
+    # plt.fill_between((std_tank_frame:=tank_temperature_frame.groupby("hour").std()).index,
+    # (mean_tank_frame - std_tank_frame)[0], (mean_tank_frame + std_tank_frame)[0], color="C3",
+    # alpha=0.2)
 
-    # plt.fill_between((x_series:=std_tank_frame.index), [thermal_desalination_plant.minimum_htf_temperature] * len(x_series), [thermal_desalination_plant.maximum_htf_temperature] * len(x_series), color="grey", alpha=0.1, hatch="//", label="Required temperature range")
+    # plt.fill_between((x_series:=std_tank_frame.index),
+    # [thermal_desalination_plant.minimum_htf_temperature] * len(x_series),
+    # [thermal_desalination_plant.maximum_htf_temperature] * len(x_series), color="grey",
+    # alpha=0.1, hatch="//", label="Required temperature range")
 
     # plt.xlabel("Hour of the day / hour")
     # plt.ylabel("Temperature / $^\circ$C")
@@ -1599,8 +1621,12 @@ def _calculate_closed_loop_solar_thermal_output(  # pylint: disable=too-many-loc
 
     # plt.show()
 
-    # pvt_thermal_efficiency_frame = pd.DataFrame({"eta": collector_thermal_efficiencies_frame["pv_t"].values, "t_r": collector_reduced_temperatures_frame["pv_t"].values})
-    # st_thermal_efficiency_frame = pd.DataFrame({"eta": collector_thermal_efficiencies_frame["solar_thermal"].values, "t_r": collector_reduced_temperatures_frame["solar_thermal"].values})
+    # pvt_thermal_efficiency_frame = pd.DataFrame(
+    # {"eta": collector_thermal_efficiencies_frame["pv_t"].values,
+    # "t_r": collector_reduced_temperatures_frame["pv_t"].values})
+    # st_thermal_efficiency_frame = pd.DataFrame(
+    # {"eta": collector_thermal_efficiencies_frame["solar_thermal"].values,
+    # "t_r": collector_reduced_temperatures_frame["solar_thermal"].values})
 
     # sns.set_palette(sns.color_palette(["teal", "orange"]))
 

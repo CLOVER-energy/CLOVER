@@ -43,7 +43,6 @@ persistent=yes
 
 # When enabled, pylint would attempt to guess common misconfiguration and emit
 # user-friendly hints instead of false-positive error messages.
-suggestion-mode=yes
 
 # Allow loading of arbitrary C extensions. Extensions are imported into the
 # active Python interpreter and may run arbitrary code.
@@ -140,10 +139,13 @@ disable=bad-option-value,
         suppressed-message,
         sys-max-int,
         too-many-arguments,
+        too-many-positional-arguments,
         too-many-boolean-expressions,
         too-many-branches,
         too-many-instance-attributes,
         too-many-lines,
+        too-many-locals,
+        too-many-statements,
         unexpected-special-method-signature,
         unichr-builtin,
         unicode-builtin,
