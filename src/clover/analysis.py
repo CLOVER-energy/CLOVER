@@ -196,9 +196,12 @@ def get_key_results(
 
     # Compute the grid results.
     if grid_input_profile is not None:
-        key_results.grid_daily_hours = np.sum(
-            grid_input_profile[: num_years * HOURS_PER_YEAR], axis=0
-        ) / (365 * num_years)
+        key_results.grid_daily_hours = float(
+            (
+                np.sum(grid_input_profile[: num_years * HOURS_PER_YEAR], axis=0)
+                / (365 * num_years)
+            ).item()
+        )
 
     # Compute the simulation related averages and sums.
     key_results.average_daily_diesel_energy_supplied = simulation_results[

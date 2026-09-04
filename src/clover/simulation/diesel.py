@@ -250,7 +250,7 @@ def _find_deficit_threshold_unmet(
     """
 
     # Find the unmet-energy fraction
-    unmet_energy_fraction = float((np.sum(unmet_energy) / total_electric_load).iloc[0])  # type: ignore
+    unmet_energy_fraction = float((np.sum((unmet_energy)) / total_electric_load).iloc[0])  # type: ignore
 
     # Find the difference in reliability
     reliability_difference = unmet_energy_fraction - backup_threshold
