@@ -819,6 +819,7 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
 
         ax.set_xlabel("Hour of simulation", fontsize=7)
         ax.set_ylabel("Device load / W", fontsize=7)
+        ax.set_ylim(0, round(ax.get_ylim()[1], -1))
         ax.tick_params(axis="both", which="major", labelsize=7)
         # ax.set_title("Electric load of each device")
         ax.legend(fontsize=7)
@@ -859,6 +860,7 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
         ax.set_xlabel("Hour of simulation", fontsize=7)
         ax.set_ylabel("Device load / W", fontsize=7)
         ax.tick_params(axis="both", which="major", labelsize=7)
+        ax.set_ylim(0, round(ax.get_ylim()[1], -1))
         # ax.set_title("Electric load of each device")
         ax.legend(fontsize=7, ncols=len(initial_electric_hourly_loads) // 10 + 1)
         plt.savefig(
@@ -1440,6 +1442,7 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
         axis[1].set_xlabel("Day of simulation period", fontsize=7)
         axis[1].set_xlabel("Load / kWh/day", fontsize=7)
         axis[1].tick_params(axis="both", which="major", labelsize=7)
+        axis[0].set_title("Total combined energy demand", fontsize=7)
         plt.tight_layout()
         plt.savefig(
             os.path.join(figures_directory, "electric_demand_annual_variation.png"),
@@ -1482,7 +1485,7 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
         )
         axis[0].set_xlabel("Day of simulation period", fontsize=7)
         axis[0].set_xlabel("Load / kWh/day", fontsize=7)
-        axis[0].set_title("Energy demand of\neach load type")
+        axis[0].set_title("Demand by load type", fontsize=7)
         axis[0].tick_params(axis="both", which="major", labelsize=7)
         axis[1].plot(
             range(365),
@@ -1499,6 +1502,7 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
         )
         axis[1].set_xlabel("Day of simulation period", fontsize=7)
         axis[1].set_xlabel("Load / kWh/day", fontsize=7)
+        axis[1].set_title("Total energy demand", fontsize=7)
         axis[1].tick_params(axis="both", which="major", labelsize=7)
         plt.tight_layout()
         plt.savefig(
