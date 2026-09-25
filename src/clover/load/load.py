@@ -766,14 +766,18 @@ def process_device_hourly_power(
     # If the hourly power usage file already exists, load the data in.
     logger.info("Processing hourly power profile for %s.", device.name)
     # if os.path.isfile(hourly_usage_filepath) and not regenerate:
-    #     with open(hourly_usage_filepath, "r") as f:
-    #         device_load: pd.DataFrame = pd.read_csv(f, header=None)
-    #     logger.info(
-    #         "Hourly power profile for %s successfully read from file %s.",
-    #         device.name,
-    #         hourly_usage_filepath,
-    #     )
-    if True:
+    if device.name.startswith("ev"):
+        with open(
+            hourly_usage_filepath,
+            "r",
+        ) as f:
+            device_load: pd.DataFrame = pd.read_csv(f, header=None)
+        logger.info(
+            "Hourly power profile for %s successfully read from file %s.",
+            device.name,
+            hourly_usage_filepath,
+        )
+    else:
         # Compute the hourly load profile.
         logger.info("Computing hourly power usage for %s.", device.name)
         if resource_type == ResourceType.ELECTRIC:
