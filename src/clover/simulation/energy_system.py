@@ -2308,9 +2308,12 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
                 electric_desalination_throughput += electric_desalinated_water
 
             # Dumped energy and unmet demand
-            energy_surplus[t] = excess_energy  # type: ignore
-            energy_deficit[t] = max(  # type: ignore
-                minimum_battery_storage - new_hourly_battery_storage, 0.0
+            energy_surplus[t] = max(excess_energy, 0.0)  # type: ignore
+            energy_deficit[t] = (
+                leakage_deficit := max(  # type: ignore
+                    minimum_battery_storage - new_hourly_battery_storage, 0.0
+                )
+                + max(-excess_energy, 0.0)
             )  # Battery too empty
 
             # Battery capacities and blackouts (if battery is too full or empty)
