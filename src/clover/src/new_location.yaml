@@ -1125,7 +1125,18 @@
                     grid_type: default # The grid profile to use
                     # hot_water_scenario: default
                     # fixed_inverter_size: false # [kW] A fixed inverter size in kW if specified
-                    prioritise_self_generation: true # "true" or "false"
+                    # [Obsolete] prioritise_self_generation: true # "true" or "false"
+                    prioritisation_strategy: storage_as_solar_backup
+                    # "grid_prioritisation"       --- grid first, with PV charging batteries
+                    # "self_consumption"          --- deplete batteries before grid, even if
+                    #                                 the grid is available
+                    # "storage_as_backup_service" --- grid first, with PV charging batteries,
+                    #                                 the grid will also charge batteries if
+                    #                                 available
+                    # "storage_as_solar_backup"   --- use storage only for solar backup
+                    pv: true # "true" or "false"
+                    # pv_t: false # "true" or "false"
+                    # solar_thermal: false # "true" or "false"
                     pv: true # "true" or "false"
                     # pv_t: false # "true" or "false"
                     # solar_thermal: false # "true" or "false"
