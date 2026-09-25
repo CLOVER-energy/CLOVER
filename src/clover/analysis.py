@@ -2101,7 +2101,7 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
         )
         plt.savefig(
             os.path.join(
-                figures_directory, "electricity_use_on_average_day_\oomed.pdf"
+                figures_directory, "electricity_use_on_average_day_zoomed.pdf"
             ),
             bbox_inches="tight",
             pad_inches=0.05,
