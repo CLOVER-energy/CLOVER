@@ -107,7 +107,7 @@ def battery_iteration_step(
             "Battery undefined despite an itteration step being called.",
         )
 
-    def _charge_or_discharge(battery_energy_flow: float) -> tuple[float, float]:
+    def _charge_or_discharge(battery_energy_flow: float) -> tuple[float, float, float]:
         """
         Charge or discharge the battery by some amount.
 
@@ -116,8 +116,8 @@ def battery_iteration_step(
 
         :returns:
             - The new hourly battery storage;
-
             - Any power which wasn't stored in the batteries or couldn't be discharged.
+            - The power which was stored in the batteries or which was discharged.
 
         """
 
@@ -137,7 +137,7 @@ def battery_iteration_step(
                 new_hourly_battery_storage, maximum_battery_storage
             )
             remaining_energy_balance = battery_energy_flow - stored_power
-            return new_hourly_battery_storage, remaining_energy_balance
+            return new_hourly_battery_storage, remaining_energy_balance, stored_power
 
         # Battery discharging
         # Discharge all available power if available but do not discharge the batteries
@@ -168,7 +168,7 @@ def battery_iteration_step(
             1.0 / battery.conversion_out
         )
 
-        return new_hourly_battery_storage, remaining_energy_balance
+        return new_hourly_battery_storage, remaining_energy_balance, -discharged_power
 
     energy_generation_or_load_deficit = float(
         battery_storage_profile.iloc[time_index, 0]
@@ -179,6 +179,7 @@ def battery_iteration_step(
             initial_battery_storage + energy_generation_or_load_deficit
         )
         remaining_energy_balance = 0
+        net_charge_or_discharge: float = energy_generation_or_load_deficit
 
     else:
         # Carry out logic based on the grid-electricity prioritisation strategy.
@@ -187,9 +188,11 @@ def battery_iteration_step(
             # If consuming self-generated electricity, then take power from the batteries
             # first, then use the grid if available.
             case PrioritisationStrategy.SELF_CONSUMPTION:
-                new_hourly_battery_storage, remaining_energy_balance = (
-                    _charge_or_discharge(energy_generation_or_load_deficit)
-                )
+                (
+                    new_hourly_battery_storage,
+                    remaining_energy_balance,
+                    net_charge_or_discharge,
+                ) = _charge_or_discharge(energy_generation_or_load_deficit)
 
                 # If the battery was discharging and there is still load to be met, then
                 # take power from the grid if available.
@@ -223,9 +226,11 @@ def battery_iteration_step(
                 PrioritisationStrategy.STORAGE_AS_SOLAR_BACKUP
                 | PrioritisationStrategy.GRID_PRIORITISATION
             ):
-                new_hourly_battery_storage, remaining_energy_balance = (
-                    _charge_or_discharge(energy_generation_or_load_deficit)
-                )
+                (
+                    new_hourly_battery_storage,
+                    remaining_energy_balance,
+                    net_charge_or_discharge,
+                ) = _charge_or_discharge(energy_generation_or_load_deficit)
 
             # If consuming from the grid and aiming to use storage as an emergency backup,
             # then the batteries should be discharged if there's unmet load but, if the grid
@@ -244,10 +249,12 @@ def battery_iteration_step(
                 # If there is surplus solar generation, or if the grid is available,
                 # then store this surplus generation in the batteries or take power from
                 # the grid connection to charge them.
-                new_hourly_battery_storage, remaining_energy_balance = (
-                    _charge_or_discharge(
-                        max(energy_generation_or_load_deficit, grid_power_supply)
-                    )
+                (
+                    new_hourly_battery_storage,
+                    remaining_energy_balance,
+                    net_charge_or_discharge,
+                ) = _charge_or_discharge(
+                    max(energy_generation_or_load_deficit, grid_power_supply)
                 )
 
                 # Otherwise, the batteries should be fully charged if the grid is
@@ -283,7 +290,7 @@ def battery_iteration_step(
     )
 
     return (
-        energy_generation_or_load_deficit,
+        net_charge_or_discharge,
         excess_energy,
         grid_energy,
         grid_profile,

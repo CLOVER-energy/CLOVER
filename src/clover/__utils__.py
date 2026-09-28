@@ -383,6 +383,9 @@ class ColumnHeader(enum.Enum):
     """
     Contains column header information.
 
+    - BATTERY_ENERGY_FLOW:
+        Net flow into or out of the battery storage.
+
     - BATTERY_HEALTH:
         The health of the batteries installed.
 
@@ -593,6 +596,7 @@ class ColumnHeader(enum.Enum):
 
     """
 
+    BATTERY_ENERGY_FLOW = "Battery energy flow (kWh/h)"
     BATTERY_HEALTH = "Battery health"
     BLACKOUTS = "Blackouts"
     BRINE = "Brine produced (l)"

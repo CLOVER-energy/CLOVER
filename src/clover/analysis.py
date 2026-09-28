@@ -17,6 +17,7 @@ corresponding to the sugetsed analysis within the user guide.
 
 """
 
+import math
 import os
 
 from typing import Dict, Optional
@@ -1418,9 +1419,19 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
         axis[0].plot(range(365), commercial_demand, alpha=0.5, color="C1")
         axis[0].plot(range(365), public_demand, alpha=0.5, color="C2")
         axis[0].legend(loc="best", fontsize=7)
+        axis[0].set_ylim(
+            0,
+            round(
+                axis[0].get_ylim()[1], 1 - math.floor(np.log10(axis[0].get_ylim()[1]))
+            ),
+        )
         axis[0].set(
             xticks=(range(0, 366, 60)),
-            yticks=range(0, 26, 5),
+            yticks=range(
+                _lower := 0,
+                _upper := int(math.ceil(axis[0].get_ylim()[1])),
+                int((_upper - _lower) / 10),
+            ),
         )
         axis[0].set_xlabel("Day of simulation period", fontsize=7)
         axis[0].set_xlabel("Load / kWh/day", fontsize=7)
@@ -1435,14 +1446,24 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
         )
         axis[1].plot(range(365), total_demand, "--", alpha=0.5, color="red")
         axis[1].legend(loc="best", fontsize=7)
+        axis[1].set_ylim(
+            0,
+            round(
+                axis[1].get_ylim()[1], 1 - math.floor(np.log10(axis[1].get_ylim()[1]))
+            ),
+        )
         axis[1].set(
             xticks=(range(0, 366, 60)),
-            yticks=range(15, 41, 5),
+            yticks=range(
+                _lower := 0,
+                _upper := int(math.ceil(axis[1].get_ylim()[1])),
+                int((_upper - _lower) / 10),
+            ),
         )
         axis[1].set_xlabel("Day of simulation period", fontsize=7)
         axis[1].set_xlabel("Load / kWh/day", fontsize=7)
         axis[1].tick_params(axis="both", which="major", labelsize=7)
-        axis[0].set_title("Total combined energy demand", fontsize=7)
+        axis[1].set_title("Total combined energy demand", fontsize=7)
         plt.tight_layout()
         plt.savefig(
             os.path.join(figures_directory, "electric_demand_annual_variation.png"),
@@ -1479,13 +1500,23 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
         axis[0].plot(range(365), commercial_demand, alpha=0.5, color="C1")
         axis[0].plot(range(365), public_demand, alpha=0.5, color="C2")
         axis[0].legend(loc="best", fontsize=7)
+        axis[0].set_ylim(
+            0,
+            round(
+                axis[0].get_ylim()[1], 1 - math.floor(np.log10(axis[0].get_ylim()[1]))
+            ),
+        )
         axis[0].set(
             xticks=(range(0, 366, 60)),
-            yticks=range(0, 26, 5),
+            yticks=range(
+                _lower := 0,
+                _upper := int(math.ceil(axis[0].get_ylim()[1])),
+                int((_upper - _lower) / 10),
+            ),
         )
         axis[0].set_xlabel("Day of simulation period", fontsize=7)
-        axis[0].set_xlabel("Load / kWh/day", fontsize=7)
-        axis[0].set_title("Demand by load type", fontsize=7)
+        axis[0].set_ylabel("Load / kWh/day", fontsize=7)
+        axis[0].set_title("Energy demand of each load type", fontsize=7)
         axis[0].tick_params(axis="both", which="major", labelsize=7)
         axis[1].plot(
             range(365),
@@ -1496,14 +1527,24 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
         )
         axis[1].plot(range(365), total_demand, "--", alpha=0.5, color="red")
         axis[1].legend(loc="best", fontsize=7)
+        axis[1].set_ylim(
+            0,
+            round(
+                axis[1].get_ylim()[1], 1 - math.floor(np.log10(axis[1].get_ylim()[1]))
+            ),
+        )
         axis[1].set(
             xticks=(range(0, 366, 60)),
-            yticks=range(15, 41, 5),
+            yticks=range(
+                _lower := 0,
+                _upper := int(math.ceil(axis[1].get_ylim()[1])),
+                int((_upper - _lower) / 10),
+            ),
         )
         axis[1].set_xlabel("Day of simulation period", fontsize=7)
-        axis[1].set_xlabel("Load / kWh/day", fontsize=7)
-        axis[1].set_title("Total energy demand", fontsize=7)
+        axis[1].set_ylabel("Load / kWh/day", fontsize=7)
         axis[1].tick_params(axis="both", which="major", labelsize=7)
+        axis[1].set_title("Total combined energy demand", fontsize=7)
         plt.tight_layout()
         plt.savefig(
             os.path.join(
@@ -1709,14 +1750,19 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
         plt.close()
         pbar.update(1)
 
-        import pdb
-
-        pdb.set_trace()
-
         total_used = np.nanmean(
             np.reshape(
                 simulation_output[0:HOURS_PER_YEAR][
                     ColumnHeader.TOTAL_ELECTRICITY_CONSUMED.value
+                ].values,
+                (365, 24),
+            ),
+            axis=0,
+        )
+        storage_profile = np.nanmean(
+            np.reshape(
+                simulation_output[0:HOURS_PER_YEAR][
+                    ColumnHeader.BATTERY_ENERGY_FLOW.value
                 ].values,
                 (365, 24),
             ),
@@ -1844,10 +1890,17 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
         )
         plt.bar(
             range(24),
-            dumped,
+            positive_storage_profile := (storage_profile * (storage_profile > 0)),
             bottom=(bottom := bottom + diesel_energy),
-            label="Dumped",
+            label="Charging",
             color="C4",
+        )
+        plt.bar(
+            range(24),
+            dumped,
+            bottom=(bottom := bottom + positive_storage_profile),
+            label="Dumped",
+            color="C6",
         )
         plt.bar(
             range(24),
@@ -1992,10 +2045,17 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
         )
         plt.bar(
             range(24),
-            dumped,
+            positive_storage_profile := (storage_profile * (storage_profile > 0)),
             bottom=(bottom := bottom + diesel_energy),
-            label="Dumped",
+            label="Charging",
             color="C4",
+        )
+        plt.bar(
+            range(24),
+            dumped,
+            bottom=(bottom := bottom + positive_storage_profile),
+            label="Dumped",
+            color="C6",
         )
         plt.bar(
             range(24),
@@ -2113,6 +2173,457 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
         plt.close()
         pbar.update(1)
 
+        total_used = simulation_output[0:72][
+            ColumnHeader.TOTAL_ELECTRICITY_CONSUMED.value
+        ].values
+        storage_profile = simulation_output[0:72][
+            ColumnHeader.BATTERY_ENERGY_FLOW.value
+        ].values
+        diesel_energy = simulation_output[0:72][
+            ColumnHeader.DIESEL_ENERGY_SUPPLIED.value
+        ].values
+        dumped = simulation_output[0:72][ColumnHeader.DUMPED_ELECTRICITY.value].values
+        grid_energy = simulation_output[0:72][ColumnHeader.GRID_ENERGY.value].values
+        renewable_energy = simulation_output[0:72][
+            ColumnHeader.RENEWABLE_ELECTRICITY_USED_DIRECTLY.value
+        ].values
+        pv_supplied = simulation_output[0:72][
+            ColumnHeader.RENEWABLE_ELECTRICITY_SUPPLIED.value
+        ].values
+        clean_water_pvt_supplied = (
+            simulation_output[0:72][
+                ColumnHeader.CW_PVT_ELECTRICITY_SUPPLIED.value
+            ].values
+            if ColumnHeader.CW_PVT_ELECTRICITY_SUPPLIED.value in simulation_output
+            else None
+        )
+        hot_water_pvt_supplied = (
+            simulation_output[0:72][
+                ColumnHeader.HW_PVT_ELECTRICITY_SUPPLIED.value
+            ].values
+            if ColumnHeader.HW_PVT_ELECTRICITY_SUPPLIED.value in simulation_output
+            else None
+        )
+        storage_energy = simulation_output[0:72][
+            ColumnHeader.ELECTRICITY_FROM_STORAGE.value
+        ].values
+        unmet_energy = simulation_output[0:72][
+            ColumnHeader.UNMET_ELECTRICITY.value
+        ].values
+
+        fig, axis = plt.subplots(figsize=(183 * MM, 122 * MM))
+        plt.bar(
+            range(72),
+            (bottom := renewable_energy),
+            # bottom=(bottom := bottom + diesel_energy),
+            label="Renewables used directly",
+            color="C3",
+        )
+        plt.bar(
+            range(72),
+            storage_energy,
+            bottom=(bottom := bottom),
+            label="Storage",
+            color="C1",
+        )
+        plt.bar(
+            range(72),
+            grid_energy,
+            bottom=(bottom := bottom + storage_energy),
+            # bottom=(bottom := bottom + unmet_energy),
+            label="Grid",
+            color="C0",
+        )
+        plt.bar(
+            range(72),
+            diesel_energy,
+            bottom=(bottom := bottom + grid_energy),
+            label="Diesel",
+            color="C2",
+        )
+        plt.bar(
+            range(72),
+            positive_storage_profile := (storage_profile * (storage_profile > 0)),
+            bottom=(bottom := bottom + diesel_energy),
+            label="Charging",
+            color="C4",
+        )
+        plt.bar(
+            range(72),
+            dumped,
+            bottom=(bottom := bottom + positive_storage_profile),
+            label="Dumped",
+            color="C6",
+        )
+        plt.bar(
+            range(72),
+            unmet_energy,
+            bottom=(bottom := bottom + dumped),
+            label="Unmet",
+            color="C5",
+        )
+        plt.plot(
+            pv_supplied, "--", label="PV electricity generated", zorder=8, color="C3"
+        )
+        plt.plot(total_used, "--", label="Total used", zorder=1, color="C0")
+
+        if cw_pvt:
+            clean_water_energy_via_excess = (
+                np.nanmean(
+                    np.reshape(
+                        simulation_output[0:HOURS_PER_YEAR][
+                            ColumnHeader.EXCESS_POWER_CONSUMED_BY_DESALINATION.value
+                        ].values,
+                        (365, 24),
+                    ),
+                    axis=0,
+                )
+                if ColumnHeader.EXCESS_POWER_CONSUMED_BY_DESALINATION.value
+                in simulation_output
+                else None
+            )
+            clean_water_energy_via_backup = (
+                np.nanmean(
+                    np.reshape(
+                        simulation_output[0:HOURS_PER_YEAR][
+                            ColumnHeader.POWER_CONSUMED_BY_PRIORITY_DESALINATION.value
+                        ].values,
+                        (365, 24),
+                    ),
+                    axis=0,
+                )
+                if ColumnHeader.POWER_CONSUMED_BY_PRIORITY_DESALINATION.value
+                in simulation_output
+                else None
+            )
+            thermal_desalination_energy = (
+                np.nanmean(
+                    np.reshape(
+                        simulation_output[0:HOURS_PER_YEAR][
+                            ColumnHeader.POWER_CONSUMED_BY_THERMAL_DESALINATION.value
+                        ].values,
+                        (365, 24),
+                    ),
+                    axis=0,
+                )
+                if ColumnHeader.POWER_CONSUMED_BY_THERMAL_DESALINATION.value
+                in simulation_output
+                else None
+            )
+            plt.plot(
+                clean_water_energy_via_excess,
+                "-.",
+                label="Excess -> clean water",
+                zorder=int(10 + (2 if cw_pvt else 0) + (1 if hw_pvt else 0)),
+                color="C0",
+            )
+            plt.plot(
+                clean_water_energy_via_backup,
+                "-.",
+                label="Backup -> clean water",
+                zorder=11 + (2 if cw_pvt else 0) + (1 if hw_pvt else 0),
+                color="C4",
+            )
+            plt.plot(
+                clean_water_pvt_supplied,
+                "--",
+                label="CW PV-T electricity generated",
+                zorder=9,
+                color="C3",
+            )
+            plt.plot(
+                thermal_desalination_energy,
+                "-.",
+                label="Thermal desal electric power",
+                zorder=10,
+                color="C6",
+            )
+
+        if hw_pvt:
+            plt.plot(
+                hot_water_pvt_supplied,
+                label="HW PV-T electricity generated",
+                zorder=(10 + (2 if cw_pvt else 0)),
+            )
+
+        plt.legend(fontsize=7)
+        plt.xlim(0, 71)
+        plt.xticks(range(0, 24, 1))
+        plt.xlabel("Hour of day", fontsize=7)
+        plt.ylabel("Average energy / kWh/hour", fontsize=7)
+        plt.gca().tick_params(axis="both", which="major", labelsize=7)
+        # plt.title("Energy supply and demand on an average day")
+        plt.savefig(
+            os.path.join(figures_directory, "electricity_use_on_first_three_days.png"),
+            bbox_inches="tight",
+            pad_inches=0.05,
+            transparent=True,
+        )
+        plt.savefig(
+            os.path.join(figures_directory, "electricity_use_on_first_three_days.pdf"),
+            bbox_inches="tight",
+            pad_inches=0.05,
+        )
+        plt.xlim(0, 23)
+        plt.xticks(range(0, 24, 1))
+        plt.xlabel("Hour of day", fontsize=7)
+        plt.ylabel("Average energy / kWh/hour", fontsize=7)
+        plt.gca().tick_params(axis="both", which="major", labelsize=7)
+        # plt.title("Energy supply and demand on an average day")
+        plt.savefig(
+            os.path.join(figures_directory, "electricity_use_on_first_day.png"),
+            bbox_inches="tight",
+            pad_inches=0.05,
+            transparent=True,
+        )
+        plt.savefig(
+            os.path.join(figures_directory, "electricity_use_on_first_day.pdf"),
+            bbox_inches="tight",
+            pad_inches=0.05,
+        )
+        plt.xlim(24, 47)
+        plt.xticks(range(24, 48), list(range(0, 24, 1)))
+        plt.xlabel("Hour of day", fontsize=7)
+        plt.ylabel("Average energy / kWh/hour", fontsize=7)
+        plt.gca().tick_params(axis="both", which="major", labelsize=7)
+        # plt.title("Energy supply and demand on an average day")
+        plt.savefig(
+            os.path.join(figures_directory, "electricity_use_on_second_day.png"),
+            bbox_inches="tight",
+            pad_inches=0.05,
+            transparent=True,
+        )
+        plt.savefig(
+            os.path.join(figures_directory, "electricity_use_on_second_day.pdf"),
+            bbox_inches="tight",
+            pad_inches=0.05,
+        )
+        plt.xlim(48, 71)
+        plt.xticks(range(48, 72), list(range(0, 24, 1)))
+        plt.xlabel("Hour of day", fontsize=7)
+        plt.ylabel("Average energy / kWh/hour", fontsize=7)
+        plt.gca().tick_params(axis="both", which="major", labelsize=7)
+        # plt.title("Energy supply and demand on an average day")
+        plt.savefig(
+            os.path.join(figures_directory, "electricity_use_on_third_day.png"),
+            bbox_inches="tight",
+            pad_inches=0.05,
+            transparent=True,
+        )
+        plt.savefig(
+            os.path.join(figures_directory, "electricity_use_on_third_day.pdf"),
+            bbox_inches="tight",
+            pad_inches=0.05,
+        )
+        plt.close()
+
+        fig, axis = plt.subplots(figsize=(90 * MM, 60 * MM))
+        plt.bar(
+            range(72),
+            (bottom := renewable_energy),
+            # bottom=(bottom := bottom + diesel_energy),
+            label="Renewables used directly",
+            color="C3",
+        )
+        plt.bar(
+            range(72),
+            storage_energy,
+            bottom=(bottom := bottom),
+            label="Storage",
+            color="C1",
+        )
+        plt.bar(
+            range(72),
+            grid_energy,
+            bottom=(bottom := bottom + storage_energy),
+            # bottom=(bottom := bottom + unmet_energy),
+            label="Grid",
+            color="C0",
+        )
+        plt.bar(
+            range(72),
+            diesel_energy,
+            bottom=(bottom := bottom + grid_energy),
+            label="Diesel",
+            color="C2",
+        )
+        plt.bar(
+            range(72),
+            positive_storage_profile := (storage_profile * (storage_profile > 0)),
+            bottom=(bottom := bottom + diesel_energy),
+            label="Charging",
+            color="C4",
+        )
+        plt.bar(
+            range(72),
+            dumped,
+            bottom=(bottom := bottom + positive_storage_profile),
+            label="Dumped",
+            color="C6",
+        )
+        plt.bar(
+            range(72),
+            unmet_energy,
+            bottom=(bottom := bottom + dumped),
+            label="Unmet",
+            color="C5",
+        )
+        plt.plot(
+            pv_supplied, "--", label="PV electricity generated", zorder=8, color="C3"
+        )
+        plt.plot(total_used, "--", label="Total used", zorder=1, color="C0")
+
+        if cw_pvt:
+            clean_water_energy_via_excess = (
+                np.nanmean(
+                    np.reshape(
+                        simulation_output[0:HOURS_PER_YEAR][
+                            ColumnHeader.EXCESS_POWER_CONSUMED_BY_DESALINATION.value
+                        ].values,
+                        (365, 24),
+                    ),
+                    axis=0,
+                )
+                if ColumnHeader.EXCESS_POWER_CONSUMED_BY_DESALINATION.value
+                in simulation_output
+                else None
+            )
+            clean_water_energy_via_backup = (
+                np.nanmean(
+                    np.reshape(
+                        simulation_output[0:HOURS_PER_YEAR][
+                            ColumnHeader.POWER_CONSUMED_BY_PRIORITY_DESALINATION.value
+                        ].values,
+                        (365, 24),
+                    ),
+                    axis=0,
+                )
+                if ColumnHeader.POWER_CONSUMED_BY_PRIORITY_DESALINATION.value
+                in simulation_output
+                else None
+            )
+            thermal_desalination_energy = (
+                np.nanmean(
+                    np.reshape(
+                        simulation_output[0:HOURS_PER_YEAR][
+                            ColumnHeader.POWER_CONSUMED_BY_THERMAL_DESALINATION.value
+                        ].values,
+                        (365, 24),
+                    ),
+                    axis=0,
+                )
+                if ColumnHeader.POWER_CONSUMED_BY_THERMAL_DESALINATION.value
+                in simulation_output
+                else None
+            )
+            plt.plot(
+                clean_water_energy_via_excess,
+                "-.",
+                label="Excess -> clean water",
+                zorder=int(10 + (2 if cw_pvt else 0) + (1 if hw_pvt else 0)),
+                color="C0",
+            )
+            plt.plot(
+                clean_water_energy_via_backup,
+                "-.",
+                label="Backup -> clean water",
+                zorder=11 + (2 if cw_pvt else 0) + (1 if hw_pvt else 0),
+                color="C4",
+            )
+            plt.plot(
+                clean_water_pvt_supplied,
+                "--",
+                label="CW PV-T electricity generated",
+                zorder=9,
+                color="C3",
+            )
+            plt.plot(
+                thermal_desalination_energy,
+                "-.",
+                label="Thermal desal electric power",
+                zorder=10,
+                color="C6",
+            )
+
+        if hw_pvt:
+            plt.plot(
+                hot_water_pvt_supplied,
+                label="HW PV-T electricity generated",
+                zorder=(10 + (2 if cw_pvt else 0)),
+            )
+
+        plt.legend(fontsize=7)
+        plt.xlim(0, 71)
+        plt.xticks(range(0, 24, 1))
+        plt.xlabel("Hour of day", fontsize=7)
+        plt.ylabel("Average energy / kWh/hour", fontsize=7)
+        plt.gca().tick_params(axis="both", which="major", labelsize=7)
+        # plt.title("Energy supply and demand on an average day")
+        plt.savefig(
+            os.path.join(figures_directory, "electricity_use_on_first_three_days.png"),
+            bbox_inches="tight",
+            pad_inches=0.05,
+            transparent=True,
+        )
+        plt.savefig(
+            os.path.join(figures_directory, "electricity_use_on_first_three_days.pdf"),
+            bbox_inches="tight",
+            pad_inches=0.05,
+        )
+        plt.xlim(0, 23)
+        plt.xticks(range(0, 24, 1))
+        plt.xlabel("Hour of day", fontsize=7)
+        plt.ylabel("Average energy / kWh/hour", fontsize=7)
+        plt.gca().tick_params(axis="both", which="major", labelsize=7)
+        # plt.title("Energy supply and demand on an average day")
+        plt.savefig(
+            os.path.join(figures_directory, "electricity_use_on_first_day_zoomed.png"),
+            bbox_inches="tight",
+            pad_inches=0.05,
+            transparent=True,
+        )
+        plt.savefig(
+            os.path.join(figures_directory, "electricity_use_on_first_day_zoomed.pdf"),
+            bbox_inches="tight",
+            pad_inches=0.05,
+        )
+        plt.xlim(24, 47)
+        plt.xticks(range(24, 48), list(range(0, 24, 1)))
+        plt.xlabel("Hour of day", fontsize=7)
+        plt.ylabel("Average energy / kWh/hour", fontsize=7)
+        plt.gca().tick_params(axis="both", which="major", labelsize=7)
+        # plt.title("Energy supply and demand on an average day")
+        plt.savefig(
+            os.path.join(figures_directory, "electricity_use_on_second_day_zoomed.png"),
+            bbox_inches="tight",
+            pad_inches=0.05,
+            transparent=True,
+        )
+        plt.savefig(
+            os.path.join(figures_directory, "electricity_use_on_second_day_zoomed.pdf"),
+            bbox_inches="tight",
+            pad_inches=0.05,
+        )
+        plt.xlim(48, 71)
+        plt.xticks(range(48, 72), list(range(0, 24, 1)))
+        plt.xlabel("Hour of day", fontsize=7)
+        plt.ylabel("Average energy / kWh/hour", fontsize=7)
+        plt.gca().tick_params(axis="both", which="major", labelsize=7)
+        # plt.title("Energy supply and demand on an average day")
+        plt.savefig(
+            os.path.join(figures_directory, "electricity_use_on_third_day_zoomed.png"),
+            bbox_inches="tight",
+            pad_inches=0.05,
+            transparent=True,
+        )
+        plt.savefig(
+            os.path.join(figures_directory, "electricity_use_on_third_day_zoomed.pdf"),
+            bbox_inches="tight",
+            pad_inches=0.05,
+        )
+        plt.close()
+        pbar.update(1)
+
         total_energy_demand = pd.DataFrame(
             (
                 simulation_output[0:HOURS_PER_YEAR][
@@ -2196,66 +2707,90 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
         )
 
         plt.figure(figsize=(183 * MM, 122 * MM))
-        plt.fill_between(
-            range(len(solar_probability)),
-            (bottom_line := [0] * len(blackouts)),
-            solar_probability + bottom_line,
-            color="C3",
-            alpha=0.3,
-        )
-        plt.plot(
-            (bottom_line := solar_probability + bottom_line),
-            label="Renewables",
-            color="C3",
-        )
-        plt.fill_between(
-            range(len(storage_probability)),
-            bottom_line,
-            storage_probability + bottom_line,
-            color="C2",
-            alpha=0.3,
-        )
-        plt.plot(
-            (bottom_line := storage_probability + bottom_line),
-            label="Storage",
-            color="C2",
-        )
-        plt.fill_between(
-            range(len(grid_probability)),
-            bottom_line,
-            grid_probability + bottom_line,
-            color="C1",
-            alpha=0.3,
-        )
-        plt.plot(
-            (bottom_line := grid_probability + bottom_line), label="Grid", color="C1"
-        )
-        plt.fill_between(
-            range(len(diesel_probability)),
-            bottom_line,
-            diesel_probability + bottom_line,
-            color="C0",
-            alpha=0.3,
-        )
-        plt.plot(
-            (bottom_line := diesel_probability + bottom_line),
-            label="Diesel",
-            color="C0",
-        )
+        if max(solar_probability) > 0:
+            plt.fill_between(
+                range(len(solar_probability)),
+                (bottom_line := [0] * len(blackouts)),
+                solar_probability + bottom_line,
+                color="C3",
+                alpha=0.3,
+                label="Renewables",
+            )
+            plt.plot(
+                (bottom_line := solar_probability + bottom_line),
+                label="Renewables",
+                color="C3",
+            )
+
+        if max(storage_probability) > 0:
+            plt.fill_between(
+                range(len(storage_probability)),
+                bottom_line,
+                storage_probability + bottom_line,
+                color="C1",
+                alpha=0.3,
+                label="Storage",
+            )
+            plt.plot(
+                (bottom_line := storage_probability + bottom_line),
+                label="Storage",
+                color="C1",
+            )
+
+        if max(grid_probability) > 0:
+            plt.fill_between(
+                range(len(grid_probability)),
+                bottom_line,
+                grid_probability + bottom_line,
+                color="C0",
+                alpha=0.3,
+                label="Grid",
+            )
+            plt.plot(
+                (bottom_line := grid_probability + bottom_line),
+                label="Grid",
+                color="C0",
+            )
+
+        if max(diesel_probability) > 0:
+            plt.fill_between(
+                range(len(diesel_probability)),
+                bottom_line,
+                diesel_probability + bottom_line,
+                color="C2",
+                alpha=0.3,
+                label="Diesel",
+            )
+            plt.plot(
+                (bottom_line := diesel_probability + bottom_line),
+                label="Diesel",
+                color="C2",
+            )
+
         plt.fill_between(
             range(len(blackouts)),
             bottom_line,
             unmet_probability + bottom_line,
-            color="C6",
+            color="C5",
             alpha=0.3,
+            label=ColumnHeader.UNMET_ELECTRICITY.value,
         )
         plt.plot(
             (bottom_line := unmet_probability + bottom_line),
             label=ColumnHeader.UNMET_ELECTRICITY.value,
-            color="C6",
+            color="C5",
         )
 
-        plt.legend(fontsize=7, loc="upper left")
+        handles, labels = (axis := plt.gca()).get_legend_handles_labels()
+        plt.legend(
+            [
+                (entry, handles[2 * index + 1])
+                for index, entry in enumerate(handles[::2])
+            ],
+            labels[::2],
+            fontsize=7,
+            loc="upper left",
+        )
         plt.xlim(0, 23)
         plt.xticks(range(0, 24, 1))
         # plt.ylim(0, 1)
@@ -2282,70 +2817,94 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
         plt.close()
 
         plt.figure(figsize=(90 * MM, 60 * MM))
-        plt.fill_between(
-            range(len(solar_probability)),
-            (bottom_line := [0] * len(blackouts)),
-            solar_probability + bottom_line,
-            color="C3",
-            alpha=0.3,
-        )
-        plt.plot(
-            (bottom_line := solar_probability + bottom_line),
-            label="Renewables",
-            color="C3",
-        )
-        plt.fill_between(
-            range(len(storage_probability)),
-            bottom_line,
-            storage_probability + bottom_line,
-            color="C2",
-            alpha=0.3,
-        )
-        plt.plot(
-            (bottom_line := storage_probability + bottom_line),
-            label="Storage",
-            color="C2",
-        )
-        plt.fill_between(
-            range(len(grid_probability)),
-            bottom_line,
-            grid_probability + bottom_line,
-            color="C1",
-            alpha=0.3,
-        )
-        plt.plot(
-            (bottom_line := grid_probability + bottom_line), label="Grid", color="C1"
-        )
-        plt.fill_between(
-            range(len(diesel_probability)),
-            bottom_line,
-            diesel_probability + bottom_line,
-            color="C0",
-            alpha=0.3,
-        )
-        plt.plot(
-            (bottom_line := diesel_probability + bottom_line),
-            label="Diesel",
-            color="C0",
-        )
+        if max(solar_probability) > 0:
+            plt.fill_between(
+                range(len(solar_probability)),
+                (bottom_line := [0] * len(blackouts)),
+                solar_probability + bottom_line,
+                color="C3",
+                alpha=0.3,
+                label="Renewables",
+            )
+            plt.plot(
+                (bottom_line := solar_probability + bottom_line),
+                label="Renewables",
+                color="C3",
+            )
+
+        if max(storage_probability) > 0:
+            plt.fill_between(
+                range(len(storage_probability)),
+                bottom_line,
+                storage_probability + bottom_line,
+                color="C1",
+                alpha=0.3,
+                label="Storage",
+            )
+            plt.plot(
+                (bottom_line := storage_probability + bottom_line),
+                label="Storage",
+                color="C1",
+            )
+
+        if max(grid_probability) > 0:
+            plt.fill_between(
+                range(len(grid_probability)),
+                bottom_line,
+                grid_probability + bottom_line,
+                color="C0",
+                alpha=0.3,
+                label="Grid",
+            )
+            plt.plot(
+                (bottom_line := grid_probability + bottom_line),
+                label="Grid",
+                color="C0",
+            )
+
+        if max(diesel_probability) > 0:
+            plt.fill_between(
+                range(len(diesel_probability)),
+                bottom_line,
+                diesel_probability + bottom_line,
+                color="C2",
+                alpha=0.3,
+                label="Diesel",
+            )
+            plt.plot(
+                (bottom_line := diesel_probability + bottom_line),
+                label="Diesel",
+                color="C2",
+            )
+
         plt.fill_between(
             range(len(blackouts)),
             bottom_line,
             unmet_probability + bottom_line,
-            color="C6",
+            color="C5",
             alpha=0.3,
+            label=ColumnHeader.UNMET_ELECTRICITY.value,
         )
         plt.plot(
             (bottom_line := unmet_probability + bottom_line),
             label=ColumnHeader.UNMET_ELECTRICITY.value,
-            color="C6",
+            color="C5",
         )
 
-        plt.legend(fontsize=7, loc="upper left")
+        handles, labels = (axis := plt.gca()).get_legend_handles_labels()
+        plt.legend(
+            [
+                (entry, handles[2 * index + 1])
+                for index, entry in enumerate(handles[::2])
+            ],
+            labels[::2],
+            fontsize=7,
+            loc="upper left",
+        )
         plt.xlim(0, 23)
         plt.xticks(range(0, 24, 1))
         # plt.ylim(0, 1)
-        plt.gca().tick_params(axis="both", which="major", labelsize=7)
+        axis.tick_params(axis="both", which="major", labelsize=7)
         plt.yticks(np.arange(0, 1.1, 0.25))
         plt.xlabel("Hour of day", fontsize=7)
         plt.ylabel("Probability", fontsize=7)
@@ -2497,7 +3056,7 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
         )
         ax4.set_xlabel("Hour of day", fontsize=7)
         ax4.set_ylabel("Day of year", fontsize=7)
-        ax4.set_title("Diesel+", fontsize=7)
+        ax4.set_title("Diesel", fontsize=7)
         ax4.tick_params(axis="both", which="major", labelsize=7)
         plt.tight_layout()
         fig.suptitle("Electricity from different sources (kWh)")
@@ -2521,247 +3080,247 @@ def plot_outputs(  # pylint: disable=too-many-locals, too-many-statements
         plt.close()
         pbar.update(1)
 
-        total_used = simulation_output.iloc[0:24][
-            ColumnHeader.TOTAL_ELECTRICITY_CONSUMED.value
-        ]
-        renewable_energy = simulation_output.iloc[0:24][
-            ColumnHeader.RENEWABLE_ELECTRICITY_USED_DIRECTLY.value
-        ]
-        storage_energy = simulation_output.iloc[0:24][
-            ColumnHeader.ELECTRICITY_FROM_STORAGE.value
-        ]
-        grid_energy = simulation_output.iloc[0:24][ColumnHeader.GRID_ENERGY.value]
-        diesel_energy = simulation_output.iloc[0:24][
-            ColumnHeader.DIESEL_ENERGY_SUPPLIED.value
-        ]
-        dumped_energy = simulation_output.iloc[0:24][
-            ColumnHeader.DUMPED_ELECTRICITY.value
-        ]
-        unmet_energy = simulation_output.iloc[0:24][
-            ColumnHeader.UNMET_ELECTRICITY.value
-        ]
-        pv_supplied = simulation_output.iloc[0:24][
-            ColumnHeader.PV_ELECTRICITY_SUPPLIED.value
-        ]
-        clean_water_pvt_supplied = (
-            simulation_output.iloc[0:24][ColumnHeader.CW_PVT_ELECTRICITY_SUPPLIED.value]
-            if ColumnHeader.CW_PVT_ELECTRICITY_SUPPLIED.value
-            in simulation_output.columns
-            else None
-        )
-        hot_water_pvt_supplied = (
-            simulation_output.iloc[0:24][ColumnHeader.HW_PVT_ELECTRICITY_SUPPLIED.value]
-            if ColumnHeader.HW_PVT_ELECTRICITY_SUPPLIED.value
-            in simulation_output.columns
-            else None
-        )
+        # total_used = simulation_output.iloc[0:24][
+        #     ColumnHeader.TOTAL_ELECTRICITY_CONSUMED.value
+        # ]
+        # renewable_energy = simulation_output.iloc[0:24][
+        #     ColumnHeader.RENEWABLE_ELECTRICITY_USED_DIRECTLY.value
+        # ]
+        # storage_energy = simulation_output.iloc[0:24][
+        #     ColumnHeader.ELECTRICITY_FROM_STORAGE.value
+        # ]
+        # grid_energy = simulation_output.iloc[0:24][ColumnHeader.GRID_ENERGY.value]
+        # diesel_energy = simulation_output.iloc[0:24][
+        #     ColumnHeader.DIESEL_ENERGY_SUPPLIED.value
+        # ]
+        # dumped_energy = simulation_output.iloc[0:24][
+        #     ColumnHeader.DUMPED_ELECTRICITY.value
+        # ]
+        # unmet_energy = simulation_output.iloc[0:24][
+        #     ColumnHeader.UNMET_ELECTRICITY.value
+        # ]
+        # pv_supplied = simulation_output.iloc[0:24][
+        #     ColumnHeader.PV_ELECTRICITY_SUPPLIED.value
+        # ]
+        # clean_water_pvt_supplied = (
+        #     simulation_output.iloc[0:24][ColumnHeader.CW_PVT_ELECTRICITY_SUPPLIED.value]
+        #     if ColumnHeader.CW_PVT_ELECTRICITY_SUPPLIED.value
+        #     in simulation_output.columns
+        #     else None
+        # )
+        # hot_water_pvt_supplied = (
+        #     simulation_output.iloc[0:24][ColumnHeader.HW_PVT_ELECTRICITY_SUPPLIED.value]
+        #     if ColumnHeader.HW_PVT_ELECTRICITY_SUPPLIED.value
+        #     in simulation_output.columns
+        #     else None
+        # )
 
-        plt.figure(figsize=(183 * MM, 122 * MM))
-        plt.plot(total_used, "--", label="Total used", zorder=2, color="C0")
-        plt.plot(
-            unmet_energy + total_used,
-            "--",
-            label="Total used + unmet",
-            zorder=2,
-            color="C1",
-        )
-        plt.plot(diesel_energy, label="Diesel", zorder=3, color="C5")
-        plt.plot(dumped, label="Dumped", zorder=4, color="C4")
-        plt.plot(
-            dumped + renewable_energy,
-            "--",
-            label="Dumped + used renewables",
-            zorder=4,
-            color="C4",
-        )
-        plt.plot(grid_energy, label="Grid", zorder=5, color="C1")
-        plt.plot(storage_energy, label="Storage", zorder=1, color="C2")
-        plt.plot(
-            renewable_energy,
-            label="Renewables used directly",
-            zorder=7,
-            color="C3",
-        )
-        plt.plot(
-            pv_supplied, "--", label="PV electricity generated", zorder=8, color="C3"
-        )
+        # plt.figure(figsize=(183 * MM, 122 * MM))
+        # plt.plot(total_used, "--", label="Total used", zorder=2, color="C0")
+        # plt.plot(
+        #     unmet_energy + total_used,
+        #     "--",
+        #     label="Total used + unmet",
+        #     zorder=2,
+        #     color="C1",
+        # )
+        # plt.plot(diesel_energy, label="Diesel", zorder=3, color="C5")
+        # plt.plot(dumped, label="Dumped", zorder=4, color="C4")
+        # plt.plot(
+        #     dumped + renewable_energy,
+        #     "--",
+        #     label="Dumped + used renewables",
+        #     zorder=4,
+        #     color="C4",
+        # )
+        # plt.plot(grid_energy, label="Grid", zorder=5, color="C1")
+        # plt.plot(storage_energy, label="Storage", zorder=1, color="C2")
+        # plt.plot(
+        #     renewable_energy,
+        #     label="Renewables used directly",
+        #     zorder=7,
+        #     color="C3",
+        # )
+        # plt.plot(
+        #     pv_supplied, "--", label="PV electricity generated", zorder=8, color="C3"
+        # )
 
-        if cw_pvt:
-            thermal_desalination_energy = simulation_output.iloc[0:24][
-                ColumnHeader.POWER_CONSUMED_BY_THERMAL_DESALINATION.value
-            ]
-            plt.plot(
-                clean_water_pvt_supplied,
-                "-.",
-                label="CW PV-T electricity generated",
-                zorder=9,
-                color="C3",
-            )
-            plt.plot(
-                thermal_desalination_energy,
-                "-.",
-                label="Thermal desal electric power",
-                zorder=10,
-            )
-
-        if hw_pvt:
-            plt.plot(
-                hot_water_pvt_supplied,
-                label="HW PV-T electricity generated",
-                zorder=9 + (2 if cw_pvt else 0),
-            )
-        # if initial_cw_hourly_loads is not None:
-        #     clean_water_energy_via_excess = simulation_output.iloc[0:24][
-        #         ColumnHeader.EXCESS_POWER_CONSUMED_BY_DESALINATION.value
-        #     ]
-        #     clean_water_energy_via_backup = simulation_output.iloc[0:24][
-        #         ColumnHeader.POWER_CONSUMED_BY_DESALINATION.value
+        # if cw_pvt:
+        #     thermal_desalination_energy = simulation_output.iloc[0:24][
+        #         ColumnHeader.POWER_CONSUMED_BY_THERMAL_DESALINATION.value
         #     ]
         #     plt.plot(
-        #         clean_water_energy_via_excess,
-        #         label="Excess -> clean water",
-        #         zorder=10 + (2 if cw_pvt else 0) + (1 if hw_pvt else 0),
+        #         clean_water_pvt_supplied,
+        #         "-.",
+        #         label="CW PV-T electricity generated",
+        #         zorder=9,
+        #         color="C3",
         #     )
         #     plt.plot(
-        #         clean_water_energy_via_backup,
-        #         label="Backup -> clean water",
-        #         zorder=11 + (2 if cw_pvt else 0) + (1 if hw_pvt else 0),
+        #         thermal_desalination_energy,
+        #         "-.",
+        #         label="Thermal desal electric power",
+        #         zorder=10,
         #     )
 
-        plt.legend()
-        plt.xlim(0, 23)
-        plt.xticks(range(0, 24, 1))
-        plt.xlabel("Hour of day")
-        plt.ylabel("Average energy / kWh/hour")
-        # plt.title("Energy supply and demand on the frist day")
-        plt.savefig(
-            os.path.join(figures_directory, "electricity_use_on_first_day.png"),
-            bbox_inches="tight",
-            pad_inches=0.05,
-            transparent=True,
-        )
-        plt.savefig(
-            os.path.join(figures_directory, "electricity_use_on_first_day.pdf"),
-            bbox_inches="tight",
-            pad_inches=0.05,
-        )
-        plt.close()
-        pbar.update(1)
+        # if hw_pvt:
+        #     plt.plot(
+        #         hot_water_pvt_supplied,
+        #         label="HW PV-T electricity generated",
+        #         zorder=9 + (2 if cw_pvt else 0),
+        #     )
+        # # if initial_cw_hourly_loads is not None:
+        # #     clean_water_energy_via_excess = simulation_output.iloc[0:24][
+        # #         ColumnHeader.EXCESS_POWER_CONSUMED_BY_DESALINATION.value
+        # #     ]
+        # #     clean_water_energy_via_backup = simulation_output.iloc[0:24][
+        # #         ColumnHeader.POWER_CONSUMED_BY_DESALINATION.value
+        # #     ]
+        # #     plt.plot(
+        # #         clean_water_energy_via_excess,
+        # #         label="Excess -> clean water",
+        # #         zorder=10 + (2 if cw_pvt else 0) + (1 if hw_pvt else 0),
+        # #     )
+        # #     plt.plot(
+        # #         clean_water_energy_via_backup,
+        # #         label="Backup -> clean water",
+        # #         zorder=11 + (2 if cw_pvt else 0) + (1 if hw_pvt else 0),
+        # #     )
 
-        pv_supplied = simulation_output.iloc[0:24][
-            ColumnHeader.PV_ELECTRICITY_SUPPLIED.value
-        ]
+        # plt.legend()
+        # plt.xlim(0, 23)
+        # plt.xticks(range(0, 24, 1))
+        # plt.xlabel("Hour of day")
+        # plt.ylabel("Average energy / kWh/hour")
+        # # plt.title("Energy supply and demand on the frist day")
+        # plt.savefig(
+        #     os.path.join(figures_directory, "electricity_use_on_first_day.png"),
+        #     bbox_inches="tight",
+        #     pad_inches=0.05,
+        #     transparent=True,
+        # )
+        # plt.savefig(
+        #     os.path.join(figures_directory, "electricity_use_on_first_day.pdf"),
+        #     bbox_inches="tight",
+        #     pad_inches=0.05,
+        # )
+        # plt.close()
+        # pbar.update(1)
 
-        plt.figure(figsize=(183 * MM, 122 * MM))
-        plt.bar(
-            range(24),
-            (bottom := renewable_energy),
-            # bottom=(bottom := bottom + diesel_energy),
-            label="Renewables used directly",
-            color="C3",
-        )
-        plt.bar(
-            range(24),
-            storage_energy,
-            bottom=(bottom := bottom),
-            label="Storage",
-            color="C1",
-        )
-        plt.bar(
-            range(24),
-            grid_energy,
-            bottom=(bottom := bottom + storage_energy),
-            # bottom=(bottom := bottom + unmet_energy),
-            label="Grid",
-            color="C0",
-        )
-        plt.bar(
-            range(24),
-            diesel_energy,
-            bottom=(bottom := bottom + grid_energy),
-            label="Diesel",
-            color="C2",
-        )
-        plt.bar(
-            range(24),
-            dumped,
-            bottom=(bottom := bottom + diesel_energy),
-            label="Dumped",
-            color="C4",
-        )
-        plt.bar(
-            range(24),
-            unmet_energy,
-            bottom=(bottom := bottom + dumped),
-            label="Unmet",
-            color="C5",
-        )
+        # pv_supplied = simulation_output.iloc[0:24][
+        #     ColumnHeader.PV_ELECTRICITY_SUPPLIED.value
+        # ]
 
-        plt.plot(pv_supplied, "--", color="C3", label="PV electricity generated")
-        plt.plot(total_used, "--", color="C0", label="Total used")
+        # plt.figure(figsize=(183 * MM, 122 * MM))
+        # plt.bar(
+        #     range(24),
+        #     (bottom := renewable_energy),
+        #     # bottom=(bottom := bottom + diesel_energy),
+        #     label="Renewables used directly",
+        #     color="C3",
+        # )
+        # plt.bar(
+        #     range(24),
+        #     storage_energy,
+        #     bottom=(bottom := bottom),
+        #     label="Storage",
+        #     color="C1",
+        # )
+        # plt.bar(
+        #     range(24),
+        #     grid_energy,
+        #     bottom=(bottom := bottom + storage_energy),
+        #     # bottom=(bottom := bottom + unmet_energy),
+        #     label="Grid",
+        #     color="C0",
+        # )
+        # plt.bar(
+        #     range(24),
+        #     diesel_energy,
+        #     bottom=(bottom := bottom + grid_energy),
+        #     label="Diesel",
+        #     color="C2",
+        # )
+        # plt.bar(
+        #     range(24),
+        #     dumped,
+        #     bottom=(bottom := bottom + diesel_energy),
+        #     label="Dumped",
+        #     color="C4",
+        # )
+        # plt.bar(
+        #     range(24),
+        #     unmet_energy,
+        #     bottom=(bottom := bottom + dumped),
+        #     label="Unmet",
+        #     color="C5",
+        # )
 
-        if cw_pvt:
-            thermal_desalination_energy = simulation_output.iloc[0:24][
-                ColumnHeader.POWER_CONSUMED_BY_THERMAL_DESALINATION.value
-            ]
-            plt.plot(
-                range(24),
-                clean_water_pvt_supplied,
-                "--",
-                label="CW PV-T electricity generated",
-                color="C0",
-            )
-            plt.plot(
-                range(24),
-                thermal_desalination_energy,
-                "--",
-                label="Thermal desal electric power",
-                color="C6",
-            )
+        # plt.plot(pv_supplied, "--", color="C3", label="PV electricity generated")
+        # plt.plot(total_used, "--", color="C0", label="Total used")
 
-        if hw_pvt:
-            plt.bar(
-                range(24),
-                hot_water_pvt_supplied,
-                label="HW PV-T electricity generated",
-            )
-        # if initial_cw_hourly_loads is not None:
-        #     clean_water_energy_via_excess = simulation_output.iloc[0:24][
-        #         ColumnHeader.EXCESS_POWER_CONSUMED_BY_DESALINATION.value
+        # if cw_pvt:
+        #     thermal_desalination_energy = simulation_output.iloc[0:24][
+        #         ColumnHeader.POWER_CONSUMED_BY_THERMAL_DESALINATION.value
         #     ]
-        #     clean_water_energy_via_backup = simulation_output.iloc[0:24][
-        #         ColumnHeader.POWER_CONSUMED_BY_DESALINATION.value
-        #     ]
-        #     plt.bar(range(24),
-        #         clean_water_energy_via_excess,
-        #         label="Excess -> clean water",
-        #         zorder=10 + (2 if cw_pvt else 0) + (1 if hw_pvt else 0),
+        #     plt.plot(
+        #         range(24),
+        #         clean_water_pvt_supplied,
+        #         "--",
+        #         label="CW PV-T electricity generated",
+        #         color="C0",
         #     )
         #     plt.plot(
-        #         clean_water_energy_via_backup,
-        #         label="Backup -> clean water",
-        #         zorder=11 + (2 if cw_pvt else 0) + (1 if hw_pvt else 0),
+        #         range(24),
+        #         thermal_desalination_energy,
+        #         "--",
+        #         label="Thermal desal electric power",
+        #         color="C6",
         #     )
 
-        plt.legend()
-        plt.xlim(0, 23)
-        plt.xticks(range(0, 24, 1))
-        plt.xlabel("Hour of day")
-        plt.ylabel("Average energy / kWh/hour")
-        # plt.title("Energy supply and demand on the frist day")
-        plt.savefig(
-            os.path.join(figures_directory, "electricity_use_on_first_day.png"),
-            bbox_inches="tight",
-            pad_inches=0.05,
-            transparent=True,
-        )
-        plt.savefig(
-            os.path.join(figures_directory, "electricity_use_on_first_day.pdf"),
-            bbox_inches="tight",
-            pad_inches=0.05,
-        )
-        plt.close()
-        pbar.update(1)
+        # if hw_pvt:
+        #     plt.bar(
+        #         range(24),
+        #         hot_water_pvt_supplied,
+        #         label="HW PV-T electricity generated",
+        #     )
+        # # if initial_cw_hourly_loads is not None:
+        # #     clean_water_energy_via_excess = simulation_output.iloc[0:24][
+        # #         ColumnHeader.EXCESS_POWER_CONSUMED_BY_DESALINATION.value
+        # #     ]
+        # #     clean_water_energy_via_backup = simulation_output.iloc[0:24][
+        # #         ColumnHeader.POWER_CONSUMED_BY_DESALINATION.value
+        # #     ]
+        # #     plt.bar(range(24),
+        # #         clean_water_energy_via_excess,
+        # #         label="Excess -> clean water",
+        # #         zorder=10 + (2 if cw_pvt else 0) + (1 if hw_pvt else 0),
+        # #     )
+        # #     plt.plot(
+        # #         clean_water_energy_via_backup,
+        # #         label="Backup -> clean water",
+        # #         zorder=11 + (2 if cw_pvt else 0) + (1 if hw_pvt else 0),
+        # #     )
+
+        # plt.legend()
+        # plt.xlim(0, 23)
+        # plt.xticks(range(0, 24, 1))
+        # plt.xlabel("Hour of day")
+        # plt.ylabel("Average energy / kWh/hour")
+        # # plt.title("Energy supply and demand on the frist day")
+        # plt.savefig(
+        #     os.path.join(figures_directory, "electricity_use_on_first_day.png"),
+        #     bbox_inches="tight",
+        #     pad_inches=0.05,
+        #     transparent=True,
+        # )
+        # plt.savefig(
+        #     os.path.join(figures_directory, "electricity_use_on_first_day.pdf"),
+        #     bbox_inches="tight",
+        #     pad_inches=0.05,
+        # )
+        # plt.close()
+        # pbar.update(1)
 
         if initial_cw_hourly_loads is not None:
             # Plot the initial clean-water load of each device.
