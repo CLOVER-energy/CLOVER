@@ -2180,6 +2180,7 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
     # water_deficit: list[float] = []
 
     # Initialise energy accounting parameters
+    battery_energy_flow_map: dict[int, float] | None = {}
     energy_surplus: dict[int, float] | None = {}
     energy_deficit: dict[int, float] | None = {}
     storage_power_supplied: dict[int, float] = {}
@@ -2307,6 +2308,9 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
                 # Electric desalination throughput
                 electric_desalination_throughput += electric_desalinated_water
 
+            # Energy transferred to or from storage
+            battery_energy_flow_map[t] = battery_energy_flow
+
             # Dumped energy and unmet demand
             energy_surplus[t] = max(excess_energy, 0.0)  # type: ignore
             energy_deficit[t] = (
@@ -2359,6 +2363,11 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
         )
 
     # Process the various outputs into dataframes.
+    if battery_energy_flow_map is not None and len(battery_energy_flow_map) > 0:
+        battery_energy_flow_frame = dict_to_dataframe(battery_energy_flow_map, logger)
+    else:
+        battery_energy_flow_frame = pd.DataFrame([0] * (end_hour - start_hour))
+
     if energy_deficit is not None and len(energy_deficit) > 0:
         energy_deficit_frame = dict_to_dataframe(energy_deficit, logger)
     else:
@@ -2618,6 +2627,9 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
     )
 
     # Add column headers to electric system performance outputs
+    battery_energy_flow_frame.columns = pd.Index(
+        [ColumnHeader.BATTERY_ENERGY_FLOW.value]
+    )
     battery_health_frame.columns = pd.Index([ColumnHeader.BATTERY_HEALTH.value])
     blackout_times.columns = pd.Index([ColumnHeader.BLACKOUTS.value])
     diesel_fuel_usage.columns = pd.Index([ColumnHeader.DIESEL_FUEL_USAGE.value])
@@ -2641,6 +2653,7 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
 
     # Assemble electrical outputs
     system_performance_outputs_list = [
+        battery_energy_flow_frame,
         battery_health_frame,
         battery_storage_profile,
         blackout_times,
