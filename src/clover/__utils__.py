@@ -225,7 +225,7 @@ SUPPLY_TEMPERATURE: str = "supply_temperature"
 
 # Token:
 #   Keyword used when parsing the generation token.
-TOKEN: str = "renewables_ninja_token"
+TOKEN: str = "token"
 
 # Zero celcius offset:
 #   Used for offsetting zero degrees celcius in Kelvin.
