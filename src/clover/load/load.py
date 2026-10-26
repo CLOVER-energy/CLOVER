@@ -226,9 +226,11 @@ class Device:
             device_input[INNOVATION],
             device_input[IMITATION],
             device_input[DEVICE],
-            device_input[CLEAN_WATER_USAGE]
-            if CLEAN_WATER_USAGE in device_input
-            else None,
+            (
+                device_input[CLEAN_WATER_USAGE]
+                if CLEAN_WATER_USAGE in device_input
+                else None
+            ),
             device_input[HOT_WATER_USAGE] if HOT_WATER_USAGE in device_input else None,
         )
 
@@ -562,9 +564,7 @@ def compute_total_hourly_load(  # pylint: disable=too-many-locals
 
     logger.info("Saving yearly load statistics.")
     with open(yearly_load_statistics_filepath, "w") as f:
-        yearly_load_statistics.to_csv(
-            f, index=False, lineterminator=""  # type: ignore
-        )
+        yearly_load_statistics.to_csv(f, index=False, lineterminator="")  # type: ignore
     logger.info("Yearly load statistics successfully saved.")
 
     return total_load, yearly_load_statistics

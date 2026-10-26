@@ -36,7 +36,6 @@ from clover.fileparser import INPUTS_DIRECTORY, SCENARIO_INPUTS_FILE
 from ...__main__ import main as clover_main
 from ...__utils__ import LOCATIONS_FOLDER_NAME, RAW_CLOVER_PATH
 
-
 # Default PV panel name:
 #    Name to use for the default PV panel.
 DEFAULT_PV_PANEL_NAME: str = "default_pv"

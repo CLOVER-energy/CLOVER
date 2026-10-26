@@ -37,7 +37,6 @@ from ..__utils__ import (
 )
 from ..conversion.conversion import MAXIMUM_OUTPUT, Converter
 
-
 __all__ = (
     "DIESEL_CONSUMPTION",
     "DieselGenerator",
@@ -145,9 +144,9 @@ class DieselWaterHeater(Converter):
         try:
             input_resource_consumption: Dict[ResourceType, float] = {
                 ResourceType.DIESEL: input_data[DIESEL_CONSUMPTION],
-                ResourceType.ELECTRIC: input_data[ELECTRIC_POWER]
-                if ELECTRIC_POWER in input_data
-                else 0,
+                ResourceType.ELECTRIC: (
+                    input_data[ELECTRIC_POWER] if ELECTRIC_POWER in input_data else 0
+                ),
             }
         except KeyError as e:
             logger.error(

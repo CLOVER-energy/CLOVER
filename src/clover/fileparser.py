@@ -2427,9 +2427,11 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
     # Parse the optimisation input information.
     optimisation_inputs_filepath = os.path.join(
         inputs_directory_relative_path,
-        optimisation_inputs_file
-        if optimisation_inputs_file is not None
-        else OPTIMISATION_INPUTS_FILE,
+        (
+            optimisation_inputs_file
+            if optimisation_inputs_file is not None
+            else OPTIMISATION_INPUTS_FILE
+        ),
     )
     optimisation_inputs = read_yaml(optimisation_inputs_filepath, logger)
     if not isinstance(optimisation_inputs, dict):
@@ -2921,9 +2923,9 @@ def parse_input_files(  # pylint: disable=too-many-locals, too-many-statements
 
     if any(scenario.desalination_scenario is not None for scenario in scenarios):
         if conventional_water_source_inputs_filepath is not None:
-            input_file_info[
-                "conventional_water_source_inputs"
-            ] = conventional_water_source_inputs_filepath
+            input_file_info["conventional_water_source_inputs"] = (
+                conventional_water_source_inputs_filepath
+            )
         if tank_inputs_filepath is not None:
             input_file_info["tank_inputs"] = tank_inputs_filepath
 
