@@ -115,7 +115,7 @@ def _process_water_source_availability(
         # Save this to the output file.
         with open(filepath, "w") as f:
             interpolated_daily_profile.to_csv(
-                f, header=None, index=False, line_terminator=""  # type: ignore
+                f, header=None, index=False, lineterminator=""  # type: ignore
             )
         logger.info(
             "Daily %s water-source availability profile for %s successfully saved to "
@@ -228,7 +228,7 @@ def _process_water_soure_hourly_probability(
             "w",
         ) as f:
             hourly_availability.to_csv(
-                f, header=None, index=False, line_terminator=""  # type: ignore
+                f, header=None, index=False, lineterminator=""  # type: ignore
             )
 
         logger.info(

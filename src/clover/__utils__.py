@@ -1375,7 +1375,7 @@ def monthly_profile_to_daily_profile(monthly_profile: pd.DataFrame) -> pd.DataFr
 
     # Interpolate the value that falls in the middle of the month.
     daily_profile = {
-        hour: scipy.interp(range(365), MONTH_MID_DAY, extended_year_profile.iloc[hour])
+        hour: np.interp(range(365), MONTH_MID_DAY, extended_year_profile.iloc[hour])
         for hour in range(24)
     }
 
@@ -3003,7 +3003,7 @@ def save_simulation(
         ) as f:
             simulation.to_csv(
                 f,  # type: ignore
-                line_terminator="\n",
+                lineterminator="\n",
             )
         logger.info("Simulation successfully saved to %s.", simulation_output_folder)
         pbar.update(1)
