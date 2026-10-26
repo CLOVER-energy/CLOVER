@@ -19,6 +19,7 @@ not affect the overall running of the code.
 """
 
 import os
+import random
 import time
 import unittest
 
@@ -35,7 +36,6 @@ from clover.fileparser import INPUTS_DIRECTORY, SCENARIO_INPUTS_FILE
 
 from ...__main__ import main as clover_main
 from ...__utils__ import LOCATIONS_FOLDER_NAME, RAW_CLOVER_PATH
-
 
 # Default PV panel name:
 #    Name to use for the default PV panel.
@@ -138,6 +138,7 @@ class _BaseTest(unittest.TestCase):
         self.temp_location_name: str = (
             f"{TEMP_LOCATION_FOLDER_NAME}_"
             + f"{time.ctime().replace(' ', '_').replace(':', '_').replace('__', '_')}"
+            + f"{random.random()}".split(".")[1]
         )
         self.temp_location_path: str = os.path.join(
             LOCATIONS_FOLDER_NAME, self.temp_location_name

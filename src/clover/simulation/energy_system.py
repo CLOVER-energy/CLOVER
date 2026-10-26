@@ -329,9 +329,11 @@ def _calculate_renewable_cw_profiles(  # pylint: disable=too-many-locals, too-ma
         )
         logger.debug(
             "Available feedwater sources determined: %s",
-            ", ".join([str(source) for source in feedwater_sources])
-            if len(feedwater_sources) > 0
-            else "",
+            (
+                ", ".join([str(source) for source in feedwater_sources])
+                if len(feedwater_sources) > 0
+                else ""
+            ),
         )
     else:
         feedwater_sources = []
@@ -702,9 +704,9 @@ def _calculate_renewable_hw_profiles(  # pylint: disable=too-many-locals, too-ma
 
         # Determine the auxiliary heater associated with the system.
         if scenario.hot_water_scenario.auxiliary_heater == AuxiliaryHeaterType.DIESEL:
-            auxiliary_heater: Optional[
-                Union[Converter, DieselWaterHeater]
-            ] = minigrid.diesel_water_heater
+            auxiliary_heater: Optional[Union[Converter, DieselWaterHeater]] = (
+                minigrid.diesel_water_heater
+            )
         if scenario.hot_water_scenario.auxiliary_heater == AuxiliaryHeaterType.ELECTRIC:
             try:
                 auxiliary_heater = [
@@ -1264,15 +1266,19 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
     )
     logger.debug(
         "Mean buffer tank temperature: %s",
-        np.mean(buffer_tank_temperature.values)
-        if buffer_tank_temperature is not None
-        else "N/A",
+        (
+            np.mean(buffer_tank_temperature.values)
+            if buffer_tank_temperature is not None
+            else "N/A"
+        ),
     )
     logger.debug(
         "Soruces of feedwater: %s",
-        ", ".join([str(source) for source in feedwater_sources])
-        if len(feedwater_sources) > 0
-        else "N/A",
+        (
+            ", ".join([str(source) for source in feedwater_sources])
+            if len(feedwater_sources) > 0
+            else "N/A"
+        ),
     )
     logger.debug(
         "Mean clean-water PV-T electric power per unit: %s",
@@ -1352,7 +1358,9 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
         processed_total_hw_load = pd.DataFrame([0] * (end_hour - start_hour))
 
     # Calculate hot-water PV-T related performance profiles.
-    hot_water_pump_electric_power_consumed: pd.DataFrame  # pylint: disable=unused-variable
+    hot_water_pump_electric_power_consumed: (
+        pd.DataFrame
+    )  # pylint: disable=unused-variable
     hot_water_pvt_collector_output_temperature: pd.DataFrame
     hot_water_pvt_electric_power_per_unit: pd.DataFrame
     hot_water_tank_temperature: pd.DataFrame
@@ -1384,9 +1392,11 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
     )
     logger.debug(
         "Mean hot-water tank temperature: %s",
-        np.mean(hot_water_tank_temperature.values)
-        if hot_water_tank_temperature is not None
-        else "N/A",
+        (
+            np.mean(hot_water_tank_temperature.values)
+            if hot_water_tank_temperature is not None
+            else "N/A"
+        ),
     )
     logger.debug(
         "Mean hot-water PV-T electric power per unit: %s",
@@ -2003,22 +2013,28 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
             converter.name: available_converters.count(converter)
             for converter in available_converters
         },
-        clean_water_pvt_size
-        * float(
-            solar_degradation(minigrid.pvt_panel.lifetime, location.max_years).iloc[
-                HOURS_PER_YEAR * (simulation.end_year - simulation.start_year), 0
-            ]
-        )
-        if minigrid.pvt_panel is not None and scenario.desalination_scenario is not None
-        else None,
-        hot_water_pvt_size
-        * float(
-            solar_degradation(minigrid.pvt_panel.lifetime, location.max_years).iloc[
-                HOURS_PER_YEAR * (simulation.end_year - simulation.start_year), 0
-            ]
-        )
-        if minigrid.pvt_panel is not None and scenario.hot_water_scenario is not None
-        else None,
+        (
+            clean_water_pvt_size
+            * float(
+                solar_degradation(minigrid.pvt_panel.lifetime, location.max_years).iloc[
+                    HOURS_PER_YEAR * (simulation.end_year - simulation.start_year), 0
+                ]
+            )
+            if minigrid.pvt_panel is not None
+            and scenario.desalination_scenario is not None
+            else None
+        ),
+        (
+            hot_water_pvt_size
+            * float(
+                solar_degradation(minigrid.pvt_panel.lifetime, location.max_years).iloc[
+                    HOURS_PER_YEAR * (simulation.end_year - simulation.start_year), 0
+                ]
+            )
+            if minigrid.pvt_panel is not None
+            and scenario.hot_water_scenario is not None
+            else None
+        ),
         number_of_buffer_tanks if scenario.desalination_scenario is not None else None,
         number_of_cw_tanks if scenario.desalination_scenario is not None else None,
         number_of_hw_tanks if scenario.hot_water_scenario is not None else None,
@@ -2040,22 +2056,32 @@ def run_simulation(  # pylint: disable=too-many-locals, too-many-statements
             converter.name: available_converters.count(converter)
             for converter in available_converters
         },
-        clean_water_pvt_size
-        if minigrid.pvt_panel is not None and scenario.desalination_scenario is not None
-        else None,
-        hot_water_pvt_size
-        if minigrid.pvt_panel is not None and scenario.hot_water_scenario is not None
-        else None,
+        (
+            clean_water_pvt_size
+            if minigrid.pvt_panel is not None
+            and scenario.desalination_scenario is not None
+            else None
+        ),
+        (
+            hot_water_pvt_size
+            if minigrid.pvt_panel is not None
+            and scenario.hot_water_scenario is not None
+            else None
+        ),
         number_of_buffer_tanks if scenario.desalination_scenario is not None else None,
         number_of_cw_tanks if scenario.desalination_scenario is not None else None,
         number_of_hw_tanks if scenario.hot_water_scenario is not None else None,
-        pv_sizes
-        if pv_sizes is not None
-        else {pv_panel.name: 0 for pv_panel in minigrid.pv_panels},
+        (
+            pv_sizes
+            if pv_sizes is not None
+            else {pv_panel.name: 0 for pv_panel in minigrid.pv_panels}
+        ),
         float(electric_storage_size * minigrid.battery.storage_unit),
-        [source.name for source in required_cw_feedwater_sources]
-        if len(required_cw_feedwater_sources) > 0
-        else None,
+        (
+            [source.name for source in required_cw_feedwater_sources]
+            if len(required_cw_feedwater_sources) > 0
+            else None
+        ),
         simulation.start_year,
     )
 

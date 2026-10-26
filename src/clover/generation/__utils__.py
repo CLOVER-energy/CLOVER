@@ -310,7 +310,7 @@ def _save_profile_output(
         profile.to_csv(
             f,  # type: ignore
             index=False,
-            line_terminator="\n",
+            lineterminator="\n",
         )
 
     logger.info(
@@ -399,9 +399,9 @@ class BaseRenewablesNinjaThread(threading.Thread):
         """
 
         self.auto_generated_files_directory: str = auto_generated_files_directory
-        self.generation_inputs: Dict[
-            str, Union[bool, int, str, float]
-        ] = generation_inputs
+        self.generation_inputs: Dict[str, Union[bool, int, str, float]] = (
+            generation_inputs
+        )
         self.global_settings_inputs: Dict[str, str] = global_settings_inputs
         self.location: Location = location
         self.logger: Logger = get_logger(logger_name, verbose)
@@ -609,7 +609,7 @@ def total_profile_output(
             total_output.to_csv(
                 f,  # type: ignore
                 index=False,
-                line_terminator="\n",
+                lineterminator="\n",
             )
 
     return total_output

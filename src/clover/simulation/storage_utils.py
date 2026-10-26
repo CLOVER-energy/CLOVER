@@ -357,9 +357,11 @@ class Battery(_BaseStorage, label="battery", resource_type=ResourceType.ELECTRIC
             storage_data["conversion_out"],
             storage_data["c_rate_discharging"],
             storage_data["lifetime_loss"],
-            storage_data["storage_unit"]
-            if "storage_unit" in storage_data
-            else DEFAULT_STORAGE_UNIT,
+            (
+                storage_data["storage_unit"]
+                if "storage_unit" in storage_data
+                else DEFAULT_STORAGE_UNIT
+            ),
             "storage_unit" in storage_data,
         )
 
@@ -614,8 +616,10 @@ class HotWaterTank(
             storage_data[NAME],
             storage_data["mass"],
             storage_data["area"],
-            storage_data["heat_capacity"]
-            if "heat_capacity" in storage_data
-            else HEAT_CAPACITY_OF_WATER,
+            (
+                storage_data["heat_capacity"]
+                if "heat_capacity" in storage_data
+                else HEAT_CAPACITY_OF_WATER
+            ),
             storage_data["heat_loss_coefficient"],
         )
